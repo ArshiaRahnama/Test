@@ -1,0 +1,553 @@
+/* =========================================================
+   UniqueRP — Duty Tracking Terminal
+   Dark tactical HUD theme, gold/amber accent
+   ========================================================= */
+
+@font-face {
+    font-family: Peyda;
+    src: url(font/Peyda-Bold.ttf);
+}
+
+:root {
+    --bg-panel: #0b0e14;
+    --bg-panel-2: #11151f;
+    --line: rgba(232, 179, 77, 0.28);
+    --gold: #e8b34d;
+    --gold-bright: #ffcf6b;
+    --gold-dim: #7a5a24;
+    --text: #eef1f6;
+    --text-dim: #8b93a3;
+    --danger: #ff4d5e;
+    --radius: 14px;
+}
+
+* {
+    font-family: Peyda;
+    box-sizing: border-box;
+}
+
+body {
+    direction: rtl;
+}
+
+.hidden {
+    display: none;
+}
+
+/* ---------------- Panel shell ---------------- */
+
+#menu {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 620px;
+    padding: 24px 26px 22px;
+    background:
+        repeating-radial-gradient(circle at 50% 92px, rgba(232, 179, 77, 0.05) 0 1px, transparent 1px 26px),
+        radial-gradient(120% 140% at 50% 0%, rgba(232, 179, 77, 0.12), transparent 55%),
+        linear-gradient(180deg, var(--bg-panel-2) 0%, var(--bg-panel) 100%);
+    border: 2px solid var(--gold);
+    border-radius: var(--radius);
+    box-shadow:
+        0 0 0 5px var(--bg-panel),
+        0 0 0 7px var(--gold-dim),
+        0 20px 60px rgba(0, 0, 0, 0.6),
+        0 0 0 1px rgba(255, 255, 255, 0.03) inset,
+        0 0 40px rgba(232, 179, 77, 0.1);
+    color: var(--text);
+    overflow: hidden;
+}
+
+.panel-glow {
+    position: absolute;
+    top: -2px;
+    left: 8%;
+    right: 8%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--gold-bright), transparent);
+    animation: scanPulse 3.2s ease-in-out infinite;
+    pointer-events: none;
+}
+
+@keyframes scanPulse {
+    0%, 100% { opacity: 0.25; }
+    50% { opacity: 0.95; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .panel-glow { animation: none; opacity: 0.6; }
+}
+
+/* subtle corner brackets for that terminal feel */
+#menu::before,
+#menu::after {
+    content: "";
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    border-top: 2px solid var(--gold-dim);
+    border-right: 2px solid var(--gold-dim);
+    top: 10px;
+    right: 10px;
+    opacity: 0.6;
+}
+#menu::after {
+    top: auto;
+    right: auto;
+    bottom: 10px;
+    left: 10px;
+    border-top: none;
+    border-right: none;
+    border-bottom: 2px solid var(--gold-dim);
+    border-left: 2px solid var(--gold-dim);
+}
+
+/* ---------------- Header / medallion crest ---------------- */
+
+.panel-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.crest {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin-bottom: 8px;
+}
+
+.star {
+    color: var(--gold);
+    font-size: 11px;
+    text-shadow: 0 0 6px rgba(232, 179, 77, 0.7);
+    opacity: 0.85;
+}
+.star-l2, .star-r2 { opacity: 0.5; font-size: 9px; }
+
+.form-logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 68px;
+    height: 68px;
+    border-radius: 50%;
+    background:
+        radial-gradient(circle at 30% 25%, #1c2231, #05070b 75%);
+    border: 3px solid var(--gold);
+    box-shadow:
+        0 0 0 2px var(--bg-panel),
+        0 0 0 4px var(--gold-dim),
+        0 0 18px rgba(232, 179, 77, 0.35),
+        inset 0 0 10px rgba(0,0,0,0.6);
+}
+
+.form-logo img {
+    width: 44px;
+    height: 44px;
+    object-fit: contain;
+    filter: drop-shadow(0 0 6px rgba(232, 179, 77, 0.35));
+}
+
+.laurel-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.laurel {
+    width: 30px;
+    height: 56px;
+    flex-shrink: 0;
+    opacity: 0.9;
+}
+.laurel-right {
+    transform: scaleX(-1);
+}
+
+.panel-heading {
+    text-align: center;
+}
+
+.ribbon {
+    position: relative;
+    display: inline-block;
+    padding: 7px 22px;
+    background: linear-gradient(180deg, #0f1826, #0a0f18);
+    border-top: 2px solid var(--gold);
+    border-bottom: 2px solid var(--gold);
+}
+.ribbon::before,
+.ribbon::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 12px;
+    background: inherit;
+    border-top: 2px solid var(--gold);
+    border-bottom: 2px solid var(--gold);
+}
+.ribbon::before {
+    left: -12px;
+    clip-path: polygon(100% 0, 0 50%, 100% 100%);
+}
+.ribbon::after {
+    right: -12px;
+    clip-path: polygon(0 0, 100% 50%, 0 100%);
+}
+
+#menu h2 {
+    margin: 0;
+    font-size: 19px;
+    color: var(--gold-bright);
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+}
+
+.panel-subtitle {
+    display: block;
+    margin-top: 8px;
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: var(--gold);
+    opacity: 0.75;
+    font-family: Arial, sans-serif;
+}
+
+/* ---------------- HUD strip (job / rank) ---------------- */
+
+.hud-strip {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+#jobInfo,
+#jobInforank {
+    flex: 1;
+    position: static;
+    width: auto;
+    text-align: center;
+    background: rgba(232, 179, 77, 0.06);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 8px 10px;
+    font-size: 14px;
+    color: var(--gold-bright);
+    cursor: default;
+}
+
+/* ---------------- Form fields ---------------- */
+
+.field-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 6px;
+}
+
+.field-row {
+    display: flex;
+    gap: 12px;
+}
+
+.field-row .field {
+    flex: 1;
+}
+
+#menu label {
+    display: block;
+    margin: 10px 0 6px;
+    font-size: 13px;
+    color: var(--text-dim);
+    letter-spacing: 0.3px;
+}
+
+#menu input,
+#menu select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    background-color: #161b26;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.25s, box-shadow 0.25s;
+}
+
+.jobMember {
+    background-color: #161b26;
+    color: var(--text);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+}
+
+#menu input:focus,
+#menu select:focus {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 3px rgba(232, 179, 77, 0.18);
+}
+
+.inp1 {
+    color-scheme: dark;
+}
+
+/* ---------------- Buttons ---------------- */
+
+#refresh-button {
+    display: block;
+    width: 100%;
+    margin-top: 16px;
+    padding: 12px 15px;
+    background: linear-gradient(180deg, var(--gold-bright), var(--gold) 60%, #b9803a);
+    color: #1a1204;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    box-shadow: 0 6px 18px rgba(232, 179, 77, 0.28), inset 0 1px 0 rgba(255,255,255,0.4);
+    transition: transform 0.15s ease, box-shadow 0.25s ease, filter 0.25s ease;
+}
+
+#refresh-button:hover {
+    filter: brightness(1.08);
+    box-shadow: 0 8px 22px rgba(232, 179, 77, 0.4), inset 0 1px 0 rgba(255,255,255,0.5);
+}
+
+#refresh-button:active {
+    transform: translateY(1px) scale(0.99);
+}
+
+#close-button {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    width: 30px;
+    height: 30px;
+    background-color: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--line);
+    border-radius: 50%;
+    font-size: 16px;
+    line-height: 1;
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: all 0.25s;
+}
+
+#close-button:hover {
+    color: #fff;
+    background-color: var(--danger);
+    border-color: var(--danger);
+}
+
+/* ---------------- Results table ---------------- */
+
+#result {
+    margin-top: 18px;
+    font-size: 14px;
+    color: var(--text);
+    white-space: pre-wrap;
+    background-color: #0e121b;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    padding: 12px;
+    border-radius: 12px;
+    box-shadow: inset 0 0 20px rgba(0,0,0,0.35);
+    text-align: right;
+    direction: rtl;
+    overflow-y: auto;
+    max-height: 300px;
+}
+
+#result table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: center;
+}
+
+#result th,
+#result td {
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 9px 8px;
+}
+
+#result th {
+    background-color: rgba(232, 179, 77, 0.12);
+    color: var(--gold-bright);
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 0.3px;
+}
+
+#result tbody tr {
+    background-color: transparent;
+    transition: background-color 0.2s;
+}
+
+#result tbody tr:nth-child(even) {
+    background-color: rgba(255, 255, 255, 0.03);
+}
+
+#result tbody tr:hover {
+    background-color: rgba(232, 179, 77, 0.08);
+}
+
+#result::-webkit-scrollbar {
+    width: 8px;
+}
+#result::-webkit-scrollbar-track {
+    background: transparent;
+}
+#result::-webkit-scrollbar-thumb {
+    background: var(--gold-dim);
+    border-radius: 8px;
+}
+
+.no-data {
+    text-align: center;
+    color: var(--text-dim);
+    padding: 16px 0;
+}
+
+/* ---------------- Duty log table + summary pills ---------------- */
+
+.log-table {
+    margin-bottom: 4px;
+}
+
+.log-table td {
+    font-size: 14px;
+}
+
+.log-date {
+    color: var(--text-dim);
+    font-variant-numeric: tabular-nums;
+}
+
+.log-duration {
+    color: var(--gold-bright);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.5px;
+}
+
+.log-duration .sep,
+.stat-value .sep {
+    color: var(--gold-dim);
+    margin: 0 2px;
+}
+
+.stat-strip {
+    display: flex;
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.stat-pill {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 10px 8px;
+    background: linear-gradient(180deg, rgba(232, 179, 77, 0.08), rgba(232, 179, 77, 0.02));
+    border: 1px solid var(--line);
+    border-radius: 10px;
+}
+
+.stat-label {
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 0.5px;
+}
+
+.stat-value {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--gold-bright);
+    font-variant-numeric: tabular-nums;
+}
+
+.stat-pill-total {
+    background: linear-gradient(180deg, rgba(232, 179, 77, 0.18), rgba(232, 179, 77, 0.05));
+    border-color: var(--gold);
+}
+
+.stat-pill-total .stat-value {
+    color: #fff3da;
+    text-shadow: 0 0 10px rgba(232, 179, 77, 0.5);
+}
+
+/* legacy blocks kept for compatibility with older markup/JS references */
+.result-item {
+    margin-bottom: 12px;
+    padding: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    background-color: #161b26;
+    font-size: 14px;
+    direction: rtl;
+    text-align: right;
+}
+
+.result-item .date {
+    font-weight: bold;
+    font-size: 18px;
+    color: var(--gold-bright);
+}
+
+.result-item .time {
+    font-size: 16px;
+    color: var(--text);
+}
+
+.total-time {
+    margin-top: 16px;
+    padding: 14px;
+    background-color: #161b26;
+    color: var(--text);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: bold;
+    direction: rtl;
+    text-align: right;
+}
+
+.total-time span {
+    color: #4fd97a;
+}
+
+#daily-time, #weekly-time {
+    margin-top: 10px;
+    padding: 14px;
+    background-color: #161b26;
+    color: var(--text);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: bold;
+    direction: rtl;
+    text-align: right;
+}
+
+#daily-time, #weekly-time, #total-time {
+    display: none;
+}
+
+#daily-time.visible, #weekly-time.visible, #total-time.visible {
+    display: block;
+}
+
+.sharif-style { background-color: #f0f0f0; color: #333; }
+.medik-style { background-color: #e0f7fa; color: #00796b; }
+.taxi-style { background-color: #fff3e0; color: #f57c00; }
+.weazel-style { background-color: #fce4ec; color: #d81b60; }

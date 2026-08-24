@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Access Terminal</title>
+  <link rel="stylesheet" href="styles/fonts.css" />
+  <link rel="stylesheet" href="styles/style.css" />
+  <link rel="stylesheet" href="styles/quest.css" />
+  <link rel="stylesheet" href="styles/skill.css" />
+  <link rel="stylesheet" href="styles/collections.css" />
+  <link rel="stylesheet" href="styles/leaderboard.css" />
+  <link rel="stylesheet" href="styles/compare.css" />
+  <link rel="stylesheet" href="styles/confetti.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+</head>
+
+<body>
+  <div class="container">
+    <div class="window">
+      <div class="compareOverlay hidden" id="compareOverlay">
+        <div class="compareCard">
+          <button class="compareClose" id="compareCloseBtn"><i class="fa-solid fa-xmark"></i></button>
+          <h2 class="compareTitle">Player Comparison</h2>
+          <div class="compareGrid">
+            <div class="compareCol compareCol-you">
+              <div class="compareColLabel">YOU</div>
+              <div class="compareName" id="compareYouName">-</div>
+              <div class="compareStat"><span>Level</span><span id="compareYouLevel">-</span></div>
+              <div class="compareStat"><span>XP</span><span id="compareYouXp">-</span></div>
+              <div class="compareStat"><span>Coin</span><span id="compareYouCoin">-</span></div>
+              <div class="compareStat"><span>Hours</span><span id="compareYouHours">-</span></div>
+            </div>
+            <div class="compareVs">VS</div>
+            <div class="compareCol compareCol-them">
+              <div class="compareColLabel">THEM</div>
+              <div class="compareName" id="compareThemName">-</div>
+              <div class="compareStat"><span>Level</span><span id="compareThemLevel">-</span></div>
+              <div class="compareStat"><span>XP</span><span id="compareThemXp">-</span></div>
+              <div class="compareStat"><span>Coin</span><span id="compareThemCoin">-</span></div>
+              <div class="compareStat"><span>Hours</span><span id="compareThemHours">-</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+      <div class="topbar">
+        <!-- explicit physical order (topbar forces direction:ltr) -->
+        <div class="headerName">
+          <div class="leftRow">
+            <div class="avatarWrap"><div class="avatar" id="avatarImg"><i class="fa-solid fa-user"></i></div></div>
+            <div class="pnameBlock">
+              <div class="pname name_span">PlayerName</div>
+              <div class="memberSince">Member since <span class="memberSince_span">-</span></div>
+
+              <div class="wealthRow">
+                <div class="wealthChip">
+                  <i class="fa-solid fa-money-bill"></i>
+                  <span class="cash_span">-</span>
+                </div>
+                <div class="wealthChip">
+                  <i class="fa-solid fa-landmark"></i>
+                  <span class="bank_span">-</span>
+                </div>
+                <div class="wealthChip">
+                  <i class="fa-solid fa-coins"></i>
+                  <span class="coin_span">-</span>
+                </div>
+              </div>
+
+              <div class="bankCard">
+                <i class="fa-solid fa-credit-card"></i>
+                <div class="bankCardText">
+                  <span class="iban_span">IBAN —</span>
+                  <span class="accountNum_span">ACC #—</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tCenter">
+          <div class="lvBox">
+            <div class="lvTitle">LEVEL</div>
+            <div class="lvValue level-number">0</div>
+            <div class="lvXpRow">
+              <span class="xp-fraction">0/0</span>
+            </div>
+            <div class="xp-bar"><div class="xp-fill" style="width:0%"></div></div>
+            <div class="paycheckTimer"><i class="fa-solid fa-clock"></i> <span class="paycheck_span">Syncing...</span></div>
+          </div>
+        </div>
+
+        <div class="headerBadges">
+          <div class="rightBox">
+            <div class="badgeTile">
+              <div class="badgeIcon" id="jobIcon"><i class="fa-solid fa-briefcase"></i></div>
+              <div class="badgeText">
+                <span class="badgeTitle">JOB</span>
+                <span class="badgeValue job_span">-</span>
+              </div>
+            </div>
+            <div class="badgeTile">
+              <div class="badgeIcon" id="gangIcon"><i class="fa-solid fa-people-group"></i></div>
+              <div class="badgeText">
+                <span class="badgeTitle">GANG</span>
+                <span class="badgeValue gang_span">-</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tabs">
+        <button class="tab active" data-tab="quests">
+          <i class="fa-solid fa-person-circle-question"></i> QUESTS
+        </button>
+        <button class="tab" data-tab="skill">
+          <i class="fa-solid fa-chart-line"></i> SKILL
+        </button>
+        <button class="tab" data-tab="collections">
+          <i class="fa-solid fa-layer-group"></i> COLLECTIONS
+        </button>
+        <button class="tab" data-tab="leaderboard">
+          <i class="fa-solid fa-trophy"></i> LEADERBOARD
+        </button>
+      </div>
+
+      <div class="content">
+        <div class="panel" id="tab_quests">
+          <div class="quests-grid"></div>
+        </div>
+
+        <div class="panel hidden" id="tab_skill">
+          <div class="skill-summary"></div>
+          <div class="skill-list"></div>
+        </div>
+
+        <div class="panel hidden" id="tab_leaderboard">
+          <div class="subtabs">
+            <button class="subtab active" data-lbsub="players">TOP 10 PLAYER</button>
+            <button class="subtab" data-lbsub="gangs">TOP 10 GANG</button>
+          </div>
+
+          <div class="panel2" id="lb_players">
+            <div class="board-list" id="lb_players_list"></div>
+          </div>
+
+          <div class="panel2 hidden" id="lb_gangs">
+            <div class="board-list" id="lb_gangs_list"></div>
+          </div>
+        </div>
+
+        <div class="panel hidden" id="tab_collections">
+          <div class="subtabs">
+            <button class="subtab active" data-sub="vehicles">VEHICLES</button>
+            <button class="subtab" data-sub="houses">HOUSES</button>
+          </div>
+
+          <div class="panel2" id="sub_vehicles">
+            <div class="gridCards" id="veh_grid"></div>
+            <div class="emptyState hidden" id="veh_empty">
+              <i class="fa-solid fa-car-side"></i>
+              <span>No vehicles owned</span>
+            </div>
+          </div>
+
+          <div class="panel2 hidden" id="sub_houses">
+            <div class="gridCards" id="house_grid"></div>
+            <div class="emptyState hidden" id="house_empty">
+              <i class="fa-solid fa-house"></i>
+              <span>No properties owned</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="hint">Press ESC to close</div>
+    </div>
+  </div>
+
+  <script src="scripts/sound.js"></script>
+  <script src="scripts/confetti.js"></script>
+  <script src="scripts/script.js"></script>
+  <script src="scripts/personal.js"></script>
+  <script src="scripts/quest.js"></script>
+  <script src="scripts/skill.js"></script>
+  <script src="scripts/collections.js"></script>
+  <script src="scripts/leaderboard.js"></script>
+  <script src="scripts/compare.js"></script>
+</body>
+</html>

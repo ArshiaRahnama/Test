@@ -1,0 +1,1255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Capture UI</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Bahnschrift', 'Arial Narrow', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+        }
+
+        .boards-wrap {
+            position: fixed;
+            bottom: 260px;
+            right: 20px;
+            display: none;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 1000;
+        }
+
+        .boards-wrap.show {
+            display: flex;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        .ui-container {
+            width: 270px;
+            background: linear-gradient(180deg, rgba(10, 5, 5, 0.92), rgba(18, 8, 8, 0.92));
+            border: 2px solid #c0263a;
+            border-radius: 10px;
+            box-shadow: 0 4px 18px rgba(0, 0, 0, 0.55), 0 0 12px rgba(192, 38, 58, 0.3) inset;
+            overflow: hidden;
+            color: #fff;
+        }
+
+        .toggle-hint {
+          display: none;
+          position: fixed;
+          bottom: 500px;
+          right: 20px;
+          color: #ff5468;
+          font-size: 14px;
+          font-weight: 700;
+          letter-spacing: 0.5px;
+          padding: 8px 14px;
+          background: rgba(10, 5, 5, 0.75);
+          border: 1px solid #c0263a;
+          border-radius: 5px;
+          z-index: 999;
+        }
+
+        .header {
+            background: linear-gradient(90deg, rgba(192, 38, 58, 0.15), rgba(192, 38, 58, 0.35), rgba(192, 38, 58, 0.15));
+            padding: 7px 10px;
+            text-align: center;
+            border-bottom: 2px solid #c0263a;
+        }
+
+        .title {
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            color: #ff5468;
+            text-transform: uppercase;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+        }
+
+        .content {
+            padding: 7px 10px;
+        }
+
+        ul.rank-list {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .rank-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 4px 8px;
+            margin-bottom: 4px;
+            background: #08080885;
+            border: 1px solid rgba(192, 38, 58, 0.4);
+            border-radius: 8px;
+        }
+
+        .rank {
+            flex: 0 0 18px;
+            height: 18px;
+            line-height: 18px;
+            text-align: center;
+            border-radius: 50%;
+            background: linear-gradient(180deg, #ff5468, #8c1c2a);
+            color: #fff;
+            font-weight: 700;
+            font-size: 10px;
+        }
+
+        .gang-logo {
+            flex: 0 0 18px;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 1px solid rgba(255, 84, 104, 0.6);
+            background: #1a0a0a;
+        }
+
+        .player-photo {
+            flex: 0 0 18px;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 1px solid rgba(255, 84, 104, 0.6);
+            background: #1a0a0a;
+        }
+
+        .name {
+            flex-grow: 1;
+            color: #fff;
+            font-size: 11px;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .points {
+            color: #ff5468;
+            font-weight: 700;
+            font-size: 11px;
+        }
+
+        .timer-container {
+            width: 270px;
+            background: linear-gradient(180deg, rgba(10, 5, 5, 0.92), rgba(18, 8, 8, 0.92));
+            border: 2px solid #c0263a;
+            border-radius: 10px;
+            padding: 8px 10px;
+        }
+
+        #myProgress {
+            width: 100%;
+            height: 26px;
+            background-color: rgba(192, 38, 58, 0.15);
+            border: 1px solid #c0263a;
+            border-radius: 6px;
+            text-align: center;
+            background-image: url("imgs/proccess.png");
+            background-repeat: no-repeat;
+            background-size: 100% 100%;
+            filter: hue-rotate(310deg) saturate(1.4);
+            transition: background-size 0.6s ease;
+            position: relative;
+        }
+
+        #myProgress p {
+            margin: 0;
+            line-height: 26px;
+            font-size: 14px;
+            font-weight: 700;
+            color: #fff;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.7);
+            letter-spacing: 1px;
+            filter: none;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .kill-message {
+            position: fixed;
+            top: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 300px;
+            padding: 6px;
+            background: linear-gradient(180deg, rgba(10, 5, 5, 0.95), rgba(18, 8, 8, 0.95));
+            border: 1px solid #c0263a;
+            border-radius: 6px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+            display: none;
+            z-index: 1001;
+        }
+
+        .kill-message.show {
+            display: block;
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+
+        .kill-message .back {
+            width: 100%;
+            height: 22px;
+            background: linear-gradient(90deg, rgba(192, 38, 58, 0.3) 0%, rgba(192, 38, 58, 0.1) 100%);
+            border-radius: 3px;
+        }
+
+        .kill-message .killer, .kill-message .damaged {
+            position: absolute;
+            height: 22px;
+            line-height: 22px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .kill-message .killer {
+            left: 6px;
+            color: #ff5468;
+        }
+
+        .kill-message .damaged {
+            right: 6px;
+            color: #ccc;
+        }
+
+        .kill-message .weapon-icon {
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            top: 3px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .rank-badge {
+            display: inline-block;
+            font-size: 9px;
+            font-weight: 700;
+            padding: 1px 5px;
+            border-radius: 4px;
+            background: linear-gradient(180deg, #ff5468, #8c1c2a);
+            color: #fff;
+            vertical-align: middle;
+            margin: 0 2px;
+        }
+
+        /* ============ Dashboard ============ */
+        .dash-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(circle at center, rgba(30,5,5,0.88), rgba(5,2,2,0.96));
+            z-index: 3000;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Bahnschrift', 'Arial Narrow', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .dash-overlay.show {
+            display: flex;
+            animation: fadeIn 0.25s ease-out;
+        }
+
+        .dash-panel {
+            width: 900px;
+            max-width: 92vw;
+            max-height: 88vh;
+            overflow-y: auto;
+            background: linear-gradient(180deg, rgba(15, 6, 6, 0.97), rgba(8, 3, 3, 0.98));
+            border: 2px solid #c0263a;
+            border-radius: 14px;
+            box-shadow: 0 0 40px rgba(192, 38, 58, 0.35), 0 10px 40px rgba(0,0,0,0.6);
+            color: #fff;
+            padding: 0;
+        }
+
+        .dash-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 18px 26px;
+            border-bottom: 2px solid #c0263a;
+            background: linear-gradient(90deg, rgba(192,38,58,0.25), rgba(192,38,58,0.05));
+            position: sticky;
+            top: 0;
+            backdrop-filter: blur(4px);
+        }
+
+        .dash-title {
+            font-size: 22px;
+            font-weight: 800;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: #ff5468;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.6);
+        }
+
+        .dash-title small {
+            display: block;
+            font-size: 11px;
+            font-weight: 600;
+            color: #d9a5ab;
+            letter-spacing: 2px;
+            margin-top: 3px;
+        }
+
+        .dash-close {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            border: 1px solid #c0263a;
+            background: rgba(192,38,58,0.15);
+            color: #ff5468;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .dash-close:hover {
+            background: #c0263a;
+            color: #fff;
+        }
+
+        .dash-body {
+            padding: 22px 26px 28px 26px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 18px;
+        }
+
+        .dash-card {
+            background: #0d0505ad;
+            border: 1px solid rgba(192, 38, 58, 0.4);
+            border-radius: 10px;
+            padding: 16px;
+        }
+
+        .dash-card.full {
+            grid-column: 1 / -1;
+        }
+
+        .dash-card-title {
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: #ff5468;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(192,38,58,0.35);
+        }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .stat-box {
+            background: rgba(255,255,255,0.03);
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .stat-box .num {
+            font-size: 20px;
+            font-weight: 800;
+            color: #ff5468;
+        }
+
+        .stat-box .lbl {
+            font-size: 10px;
+            color: #cfa7ab;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 3px;
+        }
+
+        .rank-pill {
+            display: inline-block;
+            padding: 5px 16px;
+            border-radius: 20px;
+            font-weight: 800;
+            font-size: 13px;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+        }
+        .rank-pill.Bronze { background: linear-gradient(180deg,#c98a4b,#7a4a1f); color:#fff; }
+        .rank-pill.Silver { background: linear-gradient(180deg,#d9d9d9,#8c8c8c); color:#222; }
+        .rank-pill.Gold   { background: linear-gradient(180deg,#f2c744,#b5852a); color:#3a2600; }
+        .rank-pill.Legend { background: linear-gradient(180deg,#ff5468,#8c1c2a); color:#fff; box-shadow: 0 0 12px rgba(255,84,104,0.6); }
+
+        .dash-list {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            max-height: 190px;
+            overflow-y: auto;
+        }
+
+        .dash-list li {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 8px;
+            font-size: 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .dash-list li .n { color: #fff; font-weight: 600; }
+        .dash-list li .p { color: #ff5468; font-weight: 700; }
+        .dash-list .empty { color: #8a6a6d; font-style: italic; font-size: 12px; padding: 6px 8px; }
+
+        .medal-supply-bar {
+            width: 100%;
+            height: 18px;
+            background: rgba(255,255,255,0.06);
+            border-radius: 9px;
+            overflow: hidden;
+            margin: 8px 0 4px 0;
+        }
+        .medal-supply-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff5468, #8c1c2a);
+            transition: width 0.4s ease;
+        }
+        .medal-supply-text {
+            font-size: 11px;
+            color: #cfa7ab;
+        }
+
+        .season-timer {
+            font-size: 26px;
+            font-weight: 800;
+            color: #ff5468;
+            text-align: center;
+            margin: 6px 0;
+        }
+        .season-sub {
+            text-align: center;
+            font-size: 11px;
+            color: #cfa7ab;
+            letter-spacing: 1px;
+        }
+
+        .dash-footer {
+            text-align: center;
+            padding: 10px;
+            font-size: 11px;
+            letter-spacing: 2px;
+            color: #7a5457;
+            border-top: 1px solid rgba(192,38,58,0.25);
+        }
+        .dash-footer b { color: #ff5468; }
+
+        /* ============ Academy HUD ============ */
+        .academy-hud {
+            display: none;
+            position: fixed;
+            top: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1500;
+            width: 340px;
+            background: linear-gradient(180deg, rgba(10,5,5,0.94), rgba(20,8,8,0.96));
+            border: 2px solid #1abc9c;
+            border-radius: 12px;
+            box-shadow: 0 0 30px rgba(26,188,156,0.35), 0 6px 20px rgba(0,0,0,0.6);
+            overflow: hidden;
+        }
+        .academy-hud.show {
+            display: block;
+            animation: fadeIn 0.3s ease-out;
+        }
+        .academy-hud-header {
+            background: linear-gradient(90deg, rgba(26,188,156,0.25), rgba(26,188,156,0.06));
+            padding: 8px 14px;
+            text-align: center;
+            border-bottom: 2px solid #1abc9c;
+            font-size: 13px;
+            font-weight: 800;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: #1abc9c;
+        }
+        .academy-hud-body {
+            display: flex;
+            padding: 12px 14px;
+            gap: 10px;
+        }
+        .academy-stat {
+            flex: 1;
+            text-align: center;
+            background: rgba(255,255,255,0.03);
+            border-radius: 8px;
+            padding: 10px 4px;
+        }
+        .academy-stat .num {
+            font-size: 22px;
+            font-weight: 800;
+            color: #1abc9c;
+        }
+        .academy-stat .lbl {
+            font-size: 10px;
+            color: #9fd6ca;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 2px;
+        }
+        .academy-kill-pop {
+            position: absolute;
+            top: -28px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 12px;
+            font-weight: 800;
+            color: #1abc9c;
+            text-shadow: 0 0 8px rgba(26,188,156,0.8);
+            opacity: 0;
+            pointer-events: none;
+        }
+        .academy-kill-pop.pop {
+            animation: academyPop 0.9s ease-out forwards;
+        }
+        @keyframes academyPop {
+            0% { opacity: 0; transform: translateX(-50%) translateY(10px) scale(0.8); }
+            30% { opacity: 1; transform: translateX(-50%) translateY(-6px) scale(1.15); }
+            100% { opacity: 0; transform: translateX(-50%) translateY(-22px) scale(1); }
+        }
+
+        /* ============ Spectator HUD ============ */
+        .spectate-hud {
+            display: none;
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1500;
+            padding: 8px 22px;
+            background: linear-gradient(90deg, rgba(10,5,5,0.9), rgba(20,8,8,0.92));
+            border: 2px solid #9b59b6;
+            border-radius: 30px;
+            box-shadow: 0 0 24px rgba(155,89,182,0.4);
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            color: #c9a3d9;
+            text-transform: uppercase;
+        }
+        .spectate-hud.show { display: block; animation: fadeIn 0.3s ease-out; }
+        .spectate-hud b { color: #9b59b6; }
+
+        /* ============ Spectate Player List ============ */
+        .spectate-list-panel {
+            display: none;
+            position: fixed;
+            top: 60px;
+            right: 20px;
+            width: 260px;
+            z-index: 1600;
+            background: linear-gradient(180deg, rgba(10,5,5,0.94), rgba(20,8,8,0.96));
+            border: 2px solid #9b59b6;
+            border-radius: 12px;
+            box-shadow: 0 0 30px rgba(155,89,182,0.35), 0 6px 20px rgba(0,0,0,0.6);
+            overflow: hidden;
+        }
+        .spectate-list-panel.show { display: block; animation: fadeIn 0.25s ease-out; }
+        .spectate-list-header {
+            background: linear-gradient(90deg, rgba(155,89,182,0.28), rgba(155,89,182,0.06));
+            padding: 8px 14px;
+            text-align: center;
+            border-bottom: 2px solid #9b59b6;
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: #c9a3d9;
+        }
+        .spectate-list-body {
+            max-height: 300px;
+            overflow-y: auto;
+            padding: 8px;
+        }
+        .spectate-list-empty {
+            text-align: center;
+            color: #7a5a86;
+            font-size: 11px;
+            padding: 14px 6px;
+        }
+        .spectate-player-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(155,89,182,0.15);
+            border-radius: 8px;
+            padding: 7px 10px;
+            margin-bottom: 6px;
+            cursor: pointer;
+            transition: background 0.15s, border-color 0.15s, transform 0.1s;
+        }
+        .spectate-player-row:hover {
+            background: rgba(155,89,182,0.15);
+            border-color: #9b59b6;
+            transform: translateX(-2px);
+        }
+        .spectate-player-row .p-name { font-size: 12px; font-weight: 700; color: #eee; }
+        .spectate-player-row .p-gang { font-size: 10px; color: #9fbdd6; text-transform: uppercase; }
+        .spectate-freecam-btn {
+            display: block;
+            width: calc(100% - 16px);
+            margin: 4px 8px 8px 8px;
+            padding: 8px;
+            background: rgba(155,89,182,0.18);
+            border: 1px solid #9b59b6;
+            border-radius: 8px;
+            color: #c9a3d9;
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            text-align: center;
+            text-transform: uppercase;
+            cursor: pointer;
+        }
+        .spectate-freecam-btn:hover { background: rgba(155,89,182,0.32); }
+
+        /* ============ Spectate Vitals (locked target) ============ */
+        .spectate-vitals {
+            display: none;
+            position: fixed;
+            bottom: 26px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 300px;
+            z-index: 1600;
+            background: linear-gradient(180deg, rgba(10,5,5,0.94), rgba(20,8,8,0.96));
+            border: 2px solid #9b59b6;
+            border-radius: 12px;
+            box-shadow: 0 0 30px rgba(155,89,182,0.35), 0 6px 20px rgba(0,0,0,0.6);
+            padding: 10px 14px;
+        }
+        .spectate-vitals.show { display: block; animation: fadeIn 0.25s ease-out; }
+        .spectate-vitals .v-name {
+            text-align: center;
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            color: #c9a3d9;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+        .spectate-bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+        .spectate-bar-row:last-child { margin-bottom: 0; }
+        .spectate-bar-label { font-size: 10px; width: 46px; text-transform: uppercase; letter-spacing: 0.5px; color: #9fbdd6; }
+        .spectate-bar-track { flex: 1; height: 8px; background: rgba(255,255,255,0.08); border-radius: 4px; overflow: hidden; }
+        .spectate-bar-fill { height: 100%; border-radius: 4px; transition: width 0.25s ease-out; }
+        .spectate-bar-fill.health { background: linear-gradient(90deg, #ff5468, #ff8a3d); }
+        .spectate-bar-fill.armor { background: linear-gradient(90deg, #3d9fff, #1abc9c); }
+        .spectate-bar-pct { font-size: 10px; width: 30px; text-align: right; color: #eee; font-weight: 700; }
+
+        .dash-tabs {
+            display: flex;
+            gap: 6px;
+            padding: 12px 26px 0 26px;
+        }
+        .dash-tab {
+            padding: 9px 20px;
+            border-radius: 8px 8px 0 0;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(192,38,58,0.35);
+            border-bottom: none;
+            color: #cfa7ab;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .dash-tab:hover { color: #fff; }
+        .dash-tab.active {
+            background: rgba(192,38,58,0.22);
+            color: #ff5468;
+            border-color: #c0263a;
+        }
+
+        .dash-page { display: none; }
+        .dash-page.active { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+        .dash-page.single { display: none; }
+        .dash-page.single.active { display: block; }
+
+        .action-btn {
+            display: block;
+            width: 100%;
+            padding: 13px 16px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            border: 1px solid rgba(192,38,58,0.5);
+            background: linear-gradient(180deg, rgba(192,38,58,0.18), rgba(192,38,58,0.06));
+            color: #fff;
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-align: left;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .action-btn:hover {
+            background: linear-gradient(180deg, #c0263a, #8c1c2a);
+            transform: translateX(3px);
+        }
+        .action-btn .sub {
+            display: block;
+            font-size: 10px;
+            font-weight: 400;
+            color: #d9a5ab;
+            margin-top: 3px;
+            letter-spacing: 0;
+        }
+        .action-btn.danger {
+            border-color: rgba(255,84,104,0.7);
+        }
+        .action-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        @media (max-width: 700px) {
+            .action-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="dash-overlay" id="dashOverlay">
+        <div class="dash-panel">
+            <div class="dash-header">
+                <div class="dash-title">Unique Capture Dashboard<small>YOUR STATS · LEADERBOARDS · SEASON · MEDALS</small></div>
+                <button class="dash-close" id="dashCloseBtn">✕</button>
+            </div>
+
+            <div class="dash-tabs">
+                <div class="dash-tab active" data-tab="stats">📊 Stats</div>
+                <div class="dash-tab" data-tab="academy">🎯 Academy</div>
+                <div class="dash-tab" data-tab="commands">⚡ Commands</div>
+            </div>
+
+            <div class="dash-page active" id="tab-stats">
+                <div class="dash-card">
+                    <div class="dash-card-title">My Stats</div>
+                    <div id="dashRankPill"></div>
+                    <div class="stat-grid">
+                        <div class="stat-box"><div class="num" id="dashKills">0</div><div class="lbl">Kills</div></div>
+                        <div class="stat-box"><div class="num" id="dashDeaths">0</div><div class="lbl">Deaths</div></div>
+                        <div class="stat-box"><div class="num" id="dashKD">0</div><div class="lbl">K/D</div></div>
+                        <div class="stat-box"><div class="num" id="dashGangPoints">0</div><div class="lbl">Gang Pts</div></div>
+                        <div class="stat-box"><div class="num" id="dashTop5">0</div><div class="lbl">Top 5s</div></div>
+                        <div class="stat-box"><div class="num" id="dashScore">0</div><div class="lbl">Score</div></div>
+                    </div>
+                </div>
+
+                <div class="dash-card">
+                    <div class="dash-card-title">Season</div>
+                    <div class="season-timer" id="dashSeasonTimer">--</div>
+                    <div class="season-sub" id="dashSeasonSub">Season --</div>
+                </div>
+
+                <div class="dash-card">
+                    <div class="dash-card-title">My Best Zones</div>
+                    <ul class="dash-list" id="dashMyZones"></ul>
+                </div>
+
+                <div class="dash-card">
+                    <div class="dash-card-title">🏅 Scarce Medals</div>
+                    <div class="medal-supply-bar"><div class="medal-supply-fill" id="dashMedalFill"></div></div>
+                    <div class="medal-supply-text" id="dashMedalText">--</div>
+                    <ul class="dash-list" id="dashMyMedals" style="margin-top:8px;"></ul>
+                </div>
+
+                <div class="dash-card">
+                    <div class="dash-card-title">🔫 All-Time Top Killers</div>
+                    <ul class="dash-list" id="dashTopKillers"></ul>
+                </div>
+
+                <div class="dash-card">
+                    <div class="dash-card-title">🏆 Gang Standings (This Season)</div>
+                    <ul class="dash-list" id="dashGangStandings"></ul>
+                </div>
+            </div>
+
+            <div class="dash-page single" id="tab-academy">
+                <div class="dash-card">
+                    <div class="dash-card-title">🎯 Training Academy</div>
+                    <p style="font-size:12px; color:#cfa7ab; line-height:1.6;">
+                        Practice combat against NPCs before jumping into a real round.
+                        <b style="color:#ff5468;">No real stats, kills, or points are ever recorded here.</b>
+                    </p>
+                    <button class="action-btn" id="btnEnterAcademy">
+                        🎯 Enter Training Academy
+                        <span class="sub">Only works near a designated entry point</span>
+                    </button>
+                    <button class="action-btn danger" id="btnLeaveAcademy">
+                        🚪 Leave Academy
+                        <span class="sub">Exit training and clean up NPCs</span>
+                    </button>
+                </div>
+
+                <div class="dash-card">
+                    <div class="dash-card-title">🏅 My Academy Record</div>
+                    <div id="academyBadgePill"></div>
+                    <div class="stat-grid" style="grid-template-columns: 1fr;">
+                        <div class="stat-box"><div class="num" id="academyDashKills">0</div><div class="lbl">Total Academy Kills</div></div>
+                    </div>
+                </div>
+
+                <div class="dash-card full">
+                    <div class="dash-card-title">📈 Academy Leaderboard (All-Time)</div>
+                    <ul class="dash-list" id="academyLeaderboardList"></ul>
+                </div>
+            </div>
+
+            <div class="dash-page single" id="tab-commands">
+                <div class="dash-card">
+                    <div class="dash-card-title">⚡ Quick Actions</div>
+                    <div class="action-grid">
+                        <button class="action-btn" data-cmd="join">
+                            🚩 Join Capture
+                            <span class="sub">Join the active round</span>
+                        </button>
+                        <button class="action-btn danger" data-cmd="leave">
+                            🚪 Leave Capture
+                            <span class="sub">Exit the capture world</span>
+                        </button>
+                        <button class="action-btn" data-cmd="respawn">
+                            🔄 Respawn
+                            <span class="sub">Force respawn while stuck</span>
+                        </button>
+                        <button class="action-btn" data-cmd="seasons">
+                            📜 Season History
+                            <span class="sub">Past season winners</span>
+                        </button>
+                        <button class="action-btn" data-cmd="standings" id="btnStandings">
+                            📈 League Standings
+                            <span class="sub">Live gang standings</span>
+                        </button>
+                        <button class="action-btn" data-cmd="medals">
+                            🏅 Medal Supply
+                            <span class="sub">Remaining medals this season</span>
+                        </button>
+                        <button class="action-btn" data-cmd="mymedals">
+                            🎖️ My Medals
+                            <span class="sub">Your claimed medals</span>
+                        </button>
+                        <button class="action-btn" data-cmd="halloffame">
+                            🏛️ Hall of Fame
+                            <span class="sub">Inducted legends</span>
+                        </button>
+                        <button class="action-btn" data-cmd="spectate">
+                            📷 Spectate Round
+                            <span class="sub">Free camera over the active battle</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dash-footer">UNIQUE RP &nbsp;·&nbsp; <b>arshiahub.ir</b></div>
+        </div>
+    </div>
+
+    <div class="toggle-hint">Press G for Show Scoreboard</div>
+    <div class="boards-wrap" id="boardsWrap">
+        <div class="ui-container">
+            <div class="header">
+                <span class="title">🔫 Top 5 Killers</span>
+            </div>
+            <div class="content">
+                <ul class="rank-list" id="killerList"></ul>
+            </div>
+        </div>
+        <div class="ui-container">
+            <div class="header">
+                <span class="title">🏆 Top 5 Gangs</span>
+            </div>
+            <div class="content">
+                <ul class="rank-list" id="gangList"></ul>
+            </div>
+        </div>
+        <div class="ui-container">
+            <div class="header">
+                <span class="title">⭐ Top 5 Player All Cap</span>
+            </div>
+            <div class="content">
+                <ul class="rank-list" id="allTimeList"></ul>
+            </div>
+        </div>
+        <div class="timer-container">
+            <div id="myProgress">
+                <p id="timer">00:00</p>
+            </div>
+        </div>
+    </div>
+    <div class="kill-message" id="killMessage"></div>
+
+    <div class="academy-hud" id="academyHud">
+        <div class="academy-hud-header">🎯 Training Academy</div>
+        <div class="academy-hud-body">
+            <div class="academy-stat">
+                <div class="num" id="academyTimer">00:00</div>
+                <div class="lbl">Time In Session</div>
+            </div>
+            <div class="academy-stat" style="position:relative;">
+                <div class="academy-kill-pop" id="academyKillPop">+1</div>
+                <div class="num" id="academyTotalKills">0</div>
+                <div class="lbl">Total Academy Kills</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="spectate-hud" id="spectateHud">
+        📷 <b>SPECTATING</b> &nbsp;|&nbsp; WASD move · Mouse look · TAB player list · ESC exit
+    </div>
+
+    <div class="spectate-list-panel" id="spectateListPanel">
+        <div class="spectate-list-header">👥 Players In Round</div>
+        <div class="spectate-list-body" id="spectateListBody"></div>
+        <div class="spectate-freecam-btn" id="spectateFreeCamBtn">🎥 Free Camera</div>
+    </div>
+
+    <div class="spectate-vitals" id="spectateVitals">
+        <div class="v-name" id="spectateVitalsName">—</div>
+        <div class="spectate-bar-row">
+            <div class="spectate-bar-label">Health</div>
+            <div class="spectate-bar-track"><div class="spectate-bar-fill health" id="spectateHealthFill" style="width:100%"></div></div>
+            <div class="spectate-bar-pct" id="spectateHealthPct">100%</div>
+        </div>
+        <div class="spectate-bar-row">
+            <div class="spectate-bar-label">Armor</div>
+            <div class="spectate-bar-track"><div class="spectate-bar-fill armor" id="spectateArmorFill" style="width:0%"></div></div>
+            <div class="spectate-bar-pct" id="spectateArmorPct">0%</div>
+        </div>
+    </div>
+
+    <script>
+        const boardsWrap = document.getElementById('boardsWrap');
+        const toggleHint = document.querySelector('.toggle-hint');
+        const killMessage = document.getElementById('killMessage');
+        const academyHud = document.getElementById('academyHud');
+        const spectateHud = document.getElementById('spectateHud');
+        const spectateListPanel = document.getElementById('spectateListPanel');
+        const spectateListBody = document.getElementById('spectateListBody');
+        const spectateVitals = document.getElementById('spectateVitals');
+        const myProgress = document.getElementById('myProgress');
+        let isVisible = false;
+
+        function spectateNui(callbackName, payload) {
+            fetch(`https://${GetParentResourceName()}/${callbackName}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json; charset=UTF-8' },
+                body: JSON.stringify(payload || {})
+            });
+        }
+
+        function renderSpectateList(players) {
+            spectateListBody.innerHTML = '';
+            if (!players || players.length === 0) {
+                spectateListBody.innerHTML = '<div class="spectate-list-empty">No players in the round right now.</div>';
+                return;
+            }
+            players.forEach((p) => {
+                const row = document.createElement('div');
+                row.className = 'spectate-player-row';
+                row.innerHTML = `<span class="p-name">${p.name}</span><span class="p-gang">${p.gang}</span>`;
+                row.addEventListener('click', () => {
+                    spectateNui('spectateSelectTarget', { source: p.source });
+                    spectateListPanel.classList.remove('show');
+                });
+                spectateListBody.appendChild(row);
+            });
+        }
+
+        document.getElementById('spectateFreeCamBtn').addEventListener('click', () => {
+            spectateNui('spectateFreeCam');
+            spectateListPanel.classList.remove('show');
+        });
+
+        function renderList(elementId, data, imgClass) {
+            const list = document.getElementById(elementId);
+            list.innerHTML = '';
+            if (!data || data.length === 0) {
+                return;
+            }
+            data.slice(0, 5).forEach((item, i) => {
+                const li = document.createElement('li');
+                li.className = 'rank-item';
+                const imgHtml = item.img
+                    ? `<img class="${imgClass}" src="${item.img}" onerror="this.onerror=null;this.src='imgs/no_photo.png';">`
+                    : '';
+                li.innerHTML = `
+                    <span class="rank">${i + 1}</span>
+                    ${imgHtml}
+                    <span class="name">${item.name}</span>
+                    <span class="points">${item.points}</span>
+                `;
+                list.appendChild(li);
+            });
+        }
+
+        function updateTimer(time, percent) {
+            document.getElementById('timer').textContent = time || '00:00';
+            if (typeof percent === 'number') {
+                myProgress.style.backgroundSize = percent + '% 100%';
+            }
+        }
+
+        function showKillMessage(killer, damaged, weapon, killerRank, damagedRank) {
+            const killerRankHtml = killerRank ? `<span class="rank-badge">${killerRank}</span>` : '';
+            const damagedRankHtml = damagedRank ? `<span class="rank-badge">${damagedRank}</span>` : '';
+            killMessage.innerHTML = `
+                <div class="back"></div>
+                <div class="killer">${killer} ${killerRankHtml}</div>
+                <div class="damaged">${damagedRankHtml} ${damaged}</div>
+                <img class="weapon-icon" src="${weapon === 'pistol' ? 'img/Pistol-Icon.png' : 'img/Rifle-Icon.png'}" alt="Weapon">
+            `;
+            killMessage.classList.add('show');
+            setTimeout(() => killMessage.classList.remove('show'), 5000);
+        }
+
+        // ============ Dashboard ============
+        const dashOverlay = document.getElementById('dashOverlay');
+        const dashCloseBtn = document.getElementById('dashCloseBtn');
+
+        function fillSimpleList(elementId, rows, nameKey, pointKey, pointSuffix) {
+            const list = document.getElementById(elementId);
+            list.innerHTML = '';
+            if (!rows || rows.length === 0) {
+                list.innerHTML = '<div class="empty">No data yet</div>';
+                return;
+            }
+            rows.forEach((row, i) => {
+                const li = document.createElement('li');
+                li.innerHTML = `<span class="n">#${i + 1} ${row[nameKey]}</span><span class="p">${row[pointKey]}${pointSuffix || ''}</span>`;
+                list.appendChild(li);
+            });
+        }
+
+        function closeDashboard() {
+            dashOverlay.classList.remove('show');
+            fetch(`https://${GetParentResourceName()}/closeDashboard`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json; charset=UTF-8' },
+                body: JSON.stringify({})
+            });
+        }
+
+        dashCloseBtn.addEventListener('click', closeDashboard);
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && dashOverlay.classList.contains('show')) {
+                closeDashboard();
+            }
+        });
+
+        // ============ Tabs ============
+        document.querySelectorAll('.dash-tab').forEach((tabBtn) => {
+            tabBtn.addEventListener('click', () => {
+                document.querySelectorAll('.dash-tab').forEach((t) => t.classList.remove('active'));
+                document.querySelectorAll('.dash-page').forEach((p) => p.classList.remove('active'));
+                tabBtn.classList.add('active');
+                document.getElementById('tab-' + tabBtn.dataset.tab).classList.add('active');
+            });
+        });
+
+        // ============ Action Buttons ============
+        function runDashboardAction(action) {
+            fetch(`https://${GetParentResourceName()}/dashboardAction`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json; charset=UTF-8' },
+                body: JSON.stringify({ action: action })
+            });
+        }
+
+        document.getElementById('btnEnterAcademy').addEventListener('click', () => {
+            runDashboardAction('enterAcademy');
+            closeDashboard();
+        });
+        document.getElementById('btnLeaveAcademy').addEventListener('click', () => {
+            runDashboardAction('leaveAcademy');
+        });
+        document.querySelectorAll('.action-btn[data-cmd]').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                runDashboardAction(btn.dataset.cmd);
+                if (btn.dataset.cmd === 'spectate') {
+                    closeDashboard();
+                }
+            });
+        });
+
+        function openDashboard(d) {
+            const s = d.myStats || {};
+            document.getElementById('dashKills').textContent = s.kills || 0;
+            document.getElementById('dashDeaths').textContent = s.deaths || 0;
+            document.getElementById('dashKD').textContent = s.deaths > 0 ? (s.kills / s.deaths).toFixed(2) : (s.kills || 0);
+            document.getElementById('dashGangPoints').textContent = s.gang_points || 0;
+            document.getElementById('dashTop5').textContent = s.top5 || 0;
+            document.getElementById('dashScore').textContent = s.score || 0;
+
+            const rank = s.rank || 'Bronze';
+            document.getElementById('dashRankPill').innerHTML = `<span class="rank-pill ${rank}">${rank}</span>` +
+                (d.hallOfFame ? ' <span class="rank-badge" style="background:linear-gradient(180deg,#f2c744,#8c1c2a);">🎖️ Hall of Fame</span>' : '');
+
+            fillSimpleList('dashMyZones', d.myZones, 'zone_name', 'points', ' pts');
+            fillSimpleList('dashTopKillers', d.topKillers, 'name', 'kills', ' kills');
+            fillSimpleList('dashGangStandings', d.gangStandings, 'gang_name', 'points', ' pts');
+
+            const season = d.season || {};
+            const hrs = season.hours_remaining || 0;
+            const days = Math.floor(hrs / 24);
+            const remHrs = hrs % 24;
+            document.getElementById('dashSeasonTimer').textContent = `${days}d ${remHrs}h`;
+            document.getElementById('dashSeasonSub').textContent = `Season ${season.number || 1} · Time Until Reset`;
+
+            const medals = d.medals || {};
+            if (medals.enabled === false) {
+                document.getElementById('dashMedalText').textContent = 'Scarcity Engine Disabled';
+                document.getElementById('dashMedalFill').style.width = '0%';
+            } else {
+                const minted = medals.minted || 0;
+                const supply = medals.supply || 100;
+                const pct = Math.min(100, (minted / supply) * 100);
+                document.getElementById('dashMedalFill').style.width = pct + '%';
+                document.getElementById('dashMedalText').textContent = `${minted}/${supply} Claimed This Season`;
+            }
+            const myMedalsList = document.getElementById('dashMyMedals');
+            if (medals.mine && medals.mine.length > 0) {
+                myMedalsList.innerHTML = '';
+                medals.mine.forEach((m) => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `<span class="n">🏅 #${m.serial_number}</span><span class="p">Season ${m.season_number}</span>`;
+                    myMedalsList.appendChild(li);
+                });
+            } else {
+                myMedalsList.innerHTML = '<div class="empty">No medals yet</div>';
+            }
+
+            document.getElementById('btnStandings').style.display = d.leagueEnabled ? 'block' : 'none';
+
+            const academy = d.academy || {};
+            document.getElementById('academyDashKills').textContent = academy.kills || 0;
+            document.getElementById('academyBadgePill').innerHTML = academy.badge
+                ? `<span class="rank-pill Legend">🏅 ${academy.badge}</span>`
+                : `<span style="font-size:11px; color:#8a6a6d;">No badge yet — keep training</span>`;
+            fillSimpleList('academyLeaderboardList', academy.leaderboard, 'name', 'kills', ' kills');
+
+            dashOverlay.classList.add('show');
+        }
+
+        window.addEventListener('message', (event) => {
+            const data = event.data;
+            if (!data || typeof data !== 'object') {
+                console.warn('Received invalid data from message event:', event);
+                return;
+            }
+
+            if (data.action === 'updateData') {
+                const killers = [
+                    { name: data.playercallback1, points: data.pointcallback1, img: data.playerphotocallback1 },
+                    { name: data.playercallback2, points: data.pointcallback2, img: data.playerphotocallback2 },
+                    { name: data.playercallback3, points: data.pointcallback3, img: data.playerphotocallback3 },
+                    { name: data.playercallback4, points: data.pointcallback4, img: data.playerphotocallback4 },
+                    { name: data.playercallback5, points: data.pointcallback5, img: data.playerphotocallback5 }
+                ].filter(item => item.name && item.name !== 'N/A');
+                const gangs = [
+                    { name: data.gangcallback1, points: data.gangpointcallback1, img: data.ganglogocallback1 },
+                    { name: data.gangcallback2, points: data.gangpointcallback2, img: data.ganglogocallback2 },
+                    { name: data.gangcallback3, points: data.gangpointcallback3, img: data.ganglogocallback3 },
+                    { name: data.gangcallback4, points: data.gangpointcallback4, img: data.ganglogocallback4 },
+                    { name: data.gangcallback5, points: data.gangpointcallback5, img: data.ganglogocallback5 }
+                ].filter(item => item.name && item.name !== 'N/A');
+                updateTimer(data.time, data.percent);
+                renderList('killerList', killers, 'player-photo');
+                renderList('gangList', gangs, 'gang-logo');
+            } else if (data.action === 'updateAllTime') {
+                const allTime = [1, 2, 3, 4, 5]
+                    .map(i => ({ name: data['alltimeplayer' + i], points: data['alltimescore' + i], img: data['alltimephoto' + i] }))
+                    .filter(item => item.name);
+                renderList('allTimeList', allTime, 'player-photo');
+            } else if (data.action === 'newKill') {
+              let killer = data.killer || 'Unknown';
+              let damaged = data.damaged || 'Unknown';
+              const weapon = data.weapon || 'pistol';
+              killer = killer.length > 7 ? killer.substring(0, 7) + '...' : killer;
+              damaged = damaged.length > 7 ? damaged.substring(0, 7) + '...' : damaged;
+              showKillMessage(killer, damaged, weapon, data.killerRank, data.damagedRank);
+            } else if (data.action === 'toggleTips') {
+              isVisible = !isVisible;
+              boardsWrap.classList.toggle('show', isVisible);
+              toggleHint.style.display = isVisible ? 'none' : 'block';
+            } else if (data.action === 'changeShow') {
+              isVisible = !data.hide;
+              boardsWrap.classList.toggle('show', isVisible);
+              toggleHint.style.display = isVisible ? 'none' : 'block';
+            } else if (data.action === 'resetUi') {
+              isVisible = false;
+              boardsWrap.classList.remove('show');
+              toggleHint.style.display = 'none';
+              killMessage.classList.remove('show');
+            } else if (data.action === 'openDashboard') {
+              openDashboard(data.data || {});
+            } else if (data.action === 'academyOpen') {
+              document.getElementById('academyTotalKills').textContent = data.totalKills || 0;
+              document.getElementById('academyTimer').textContent = '00:00';
+              academyHud.classList.add('show');
+            } else if (data.action === 'academyTimer') {
+              document.getElementById('academyTimer').textContent = data.time || '00:00';
+            } else if (data.action === 'academyKillUpdate') {
+              document.getElementById('academyTotalKills').textContent = data.totalKills || 0;
+              const pop = document.getElementById('academyKillPop');
+              pop.classList.remove('pop');
+              void pop.offsetWidth; // restart animation
+              pop.classList.add('pop');
+            } else if (data.action === 'academyClose') {
+              academyHud.classList.remove('show');
+            } else if (data.action === 'spectateOpen') {
+              spectateHud.classList.add('show');
+            } else if (data.action === 'spectateClose') {
+              spectateHud.classList.remove('show');
+              spectateListPanel.classList.remove('show');
+              spectateVitals.classList.remove('show');
+            } else if (data.action === 'spectateListOpen') {
+              renderSpectateList(data.players || []);
+              spectateListPanel.classList.add('show');
+            } else if (data.action === 'spectateListClose') {
+              spectateListPanel.classList.remove('show');
+            } else if (data.action === 'spectateVitalsOpen') {
+              document.getElementById('spectateVitalsName').textContent = data.name || 'Unknown';
+              document.getElementById('spectateHealthFill').style.width = '100%';
+              document.getElementById('spectateHealthPct').textContent = '100%';
+              document.getElementById('spectateArmorFill').style.width = '0%';
+              document.getElementById('spectateArmorPct').textContent = '0%';
+              spectateVitals.classList.add('show');
+            } else if (data.action === 'spectateVitalsUpdate') {
+              const hp = Math.max(0, Math.min(100, data.health || 0));
+              const ap = Math.max(0, Math.min(100, data.armor || 0));
+              document.getElementById('spectateHealthFill').style.width = hp + '%';
+              document.getElementById('spectateHealthPct').textContent = hp + '%';
+              document.getElementById('spectateArmorFill').style.width = ap + '%';
+              document.getElementById('spectateArmorPct').textContent = ap + '%';
+            } else if (data.action === 'spectateVitalsClose') {
+              spectateVitals.classList.remove('show');
+            }
+        });
+    </script>
+</body>
+</html>

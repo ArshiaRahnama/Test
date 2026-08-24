@@ -1,0 +1,566 @@
+/* ═══════════════════════════════════════════════════════════
+   Security App — glassmorphism redesign
+   ═══════════════════════════════════════════════════════════ */
+
+.security-app {
+    display: none;
+    height: 100%;
+    width: 100%;
+    background: radial-gradient(circle at 30% 0%, #1a2b2a 0%, #141414 55%, #0d0d0d 100%);
+    overflow: hidden;
+}
+
+.security-app-header {
+    position: absolute;
+    height: 9vh;
+    width: 100%;
+    background: linear-gradient(135deg, #00c9a7 0%, #00a8cc 100%);
+    text-align: center;
+    line-height: 12.5vh;
+    color: white;
+    font-family: 'Samsung Sans Bold';
+    font-size: 1.5vh;
+    letter-spacing: .05vh;
+    box-shadow: 0 .4vh 1.4vh rgba(0, 201, 167, 0.35);
+    z-index: 1;
+}
+
+.security-app-header i {
+    margin-left: .6vh;
+    filter: drop-shadow(0 0 .6vh rgba(255,255,255,.6));
+}
+
+.security-homescreen {
+    position: absolute;
+    height: 100%;
+    width: 100%;
+    left: 0vh;
+}
+
+/* EXPANSION: subtle fade at the bottom of the scroll area, hinting there's
+   more content below without needing an explicit "scroll down" label. */
+.security-homescreen::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 4vh;
+    background: linear-gradient(transparent, rgba(20, 20, 20, 0.85));
+    pointer-events: none;
+    z-index: 2;
+}
+
+.security-scroll {
+    position: absolute;
+    width: 87%;
+    height: 80vh;
+    top: 10.5vh;
+    margin: 0 auto;
+    left: 0;
+    right: 0;
+    overflow-y: scroll;
+    padding-bottom: 3vh;
+    box-sizing: border-box;
+    animation: securityFadeIn .35s ease;
+}
+
+/* EXPANSION: was fully hidden (display:none) before — replaced with a
+   slim, subtle scroll thumb so it's visually clear the panel scrolls,
+   without a bulky default OS scrollbar breaking the phone aesthetic. */
+.security-scroll::-webkit-scrollbar {
+    width: .5vh;
+}
+.security-scroll::-webkit-scrollbar-track {
+    background: transparent;
+}
+.security-scroll::-webkit-scrollbar-thumb {
+    background: rgba(0, 201, 167, 0.35);
+    border-radius: 1vh;
+}
+.security-scroll::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 201, 167, 0.55);
+}
+
+@keyframes securityFadeIn {
+    from { opacity: 0; transform: translateY(1vh); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── section cards (glass) ─────────────────────────────────── */
+.security-card {
+    position: relative;
+    background: rgba(255, 255, 255, 0.045);
+    backdrop-filter: blur(1.2vh);
+    -webkit-backdrop-filter: blur(1.2vh);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 1.8vh;
+    padding: 1.6vh 1.5vh;
+    margin-bottom: 1.4vh;
+    box-shadow: 0 .6vh 1.6vh rgba(0, 0, 0, 0.25);
+}
+
+/* ── security score gauge ──────────────────────────────────── */
+.security-score-card {
+    display: flex;
+    align-items: center;
+    gap: 1.6vh;
+}
+
+.security-score-ring {
+    position: relative;
+    flex: 0 0 auto;
+    width: 8vh;
+    height: 8vh;
+}
+
+.security-score-ring svg {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+}
+
+.security-score-track {
+    fill: none;
+    stroke: rgba(255, 255, 255, 0.08);
+    stroke-width: 9;
+}
+
+.security-score-fill {
+    fill: none;
+    stroke: #00e0bb;
+    stroke-width: 9;
+    stroke-linecap: round;
+    stroke-dasharray: 264;
+    stroke-dashoffset: 264;
+    transition: stroke-dashoffset 1s cubic-bezier(.4,0,.2,1), stroke 0.4s ease;
+}
+
+.security-score-value {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-family: 'Samsung Sans Bold';
+    font-size: 1.5vh;
+}
+
+.security-score-info { flex: 1; min-width: 0; }
+
+.security-score-label {
+    color: white;
+    font-family: 'Samsung Sans Bold';
+    font-size: 1.05vh;
+    margin-bottom: .8vh;
+}
+
+.security-score-stats {
+    display: flex;
+    flex-direction: column;
+    gap: .5vh;
+}
+
+.security-score-stat {
+    display: flex;
+    align-items: center;
+    gap: .6vh;
+    color: rgb(160, 160, 160);
+    font-family: 'Samsung Sans Regular';
+    font-size: 0.88vh;
+}
+
+.security-score-stat i {
+    color: #00c9a7;
+    width: 1.4vh;
+    text-align: center;
+    font-size: 0.85vh;
+}
+
+.security-score-stat span {
+    direction: ltr;
+    unicode-bidi: embed;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ── password visibility toggle ────────────────────────────── */
+.security-input-wrap {
+    position: relative;
+}
+
+.security-input-wrap .security-input {
+    padding-left: 3vh;
+}
+
+.security-toggle-eye {
+    position: absolute;
+    top: 50%;
+    left: 1vh;
+    transform: translateY(-50%);
+    color: rgb(120, 120, 120);
+    font-size: 1vh;
+    cursor: pointer;
+    transition: color .15s ease;
+}
+
+.security-toggle-eye:hover { color: #00c9a7; }
+
+.security-section-title {
+    display: flex;
+    align-items: center;
+    gap: .6vh;
+    color: #ffffff;
+    font-family: 'Samsung Sans Bold';
+    font-size: 1.15vh;
+    margin-bottom: .9vh;
+}
+
+.security-section-title i {
+    color: #00c9a7;
+    font-size: 1.15vh;
+}
+
+.security-hint-text {
+    color: rgb(150, 150, 150);
+    font-family: 'Samsung Sans Regular';
+    font-size: 0.92vh;
+    line-height: 1.65;
+    margin: 0 0 1.1vh;
+}
+
+.security-hint-text b {
+    color: #00e0bb;
+    font-family: 'Samsung Sans Bold';
+    direction: ltr;
+    unicode-bidi: embed;
+}
+
+/* ── inputs ─────────────────────────────────────────────────── */
+.security-input {
+    width: 100%;
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 1.2vh;
+    color: white;
+    font-family: 'Samsung Sans Regular';
+    font-size: 1.1vh;
+    padding: 1.15vh 1.2vh;
+    margin-bottom: .8vh;
+    box-sizing: border-box;
+    transition: border-color .15s ease, box-shadow .15s ease;
+}
+
+.security-input:focus {
+    outline: none;
+    border-color: #00c9a7;
+    box-shadow: 0 0 0 .25vh rgba(0, 201, 167, 0.25);
+}
+
+.security-input::placeholder { color: rgb(110, 110, 110); }
+
+/* ── buttons ────────────────────────────────────────────────── */
+.security-change-password-btn {
+    width: 100%;
+    height: 4.2vh;
+    line-height: 4.2vh;
+    text-align: center;
+    background: linear-gradient(135deg, #00c9a7, #00e0bb);
+    color: rgb(15, 20, 20);
+    font-family: 'Samsung Sans Bold';
+    font-size: 1.1vh;
+    border-radius: 1.2vh;
+    margin-top: .5vh;
+    box-shadow: 0 .5vh 1.2vh rgba(0, 201, 167, 0.3);
+    transition: transform .12s ease, box-shadow .12s ease;
+    cursor: pointer;
+}
+
+.security-change-password-btn:active {
+    transform: scale(.97);
+    box-shadow: 0 .2vh .6vh rgba(0, 201, 167, 0.3);
+}
+
+.security-change-password-btn i { margin-left: .5vh; }
+
+.security-change-password-btn.security-disabled {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+.security-change-msg {
+    font-size: 0.98vh;
+    font-family: 'Samsung Sans Regular';
+    text-align: center;
+    margin-top: .9vh;
+    min-height: 1.4vh;
+    transition: color .15s ease;
+}
+
+.security-change-msg.security-msg-error { color: #ff6b6b; animation: securityShake .35s; }
+.security-change-msg.security-msg-ok { color: #00e0bb; }
+
+@keyframes securityShake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-.4vh); }
+    75% { transform: translateX(.4vh); }
+}
+
+/* ── OTP step ───────────────────────────────────────────────── */
+#security-pw-step2 { animation: securityFadeIn .3s ease; }
+
+#security-otp-code {
+    text-align: center;
+    letter-spacing: .8vh;
+    font-size: 1.6vh;
+    font-family: 'Samsung Sans Bold';
+}
+
+.security-pw-step2-footer {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 1.1vh;
+    font-family: 'Samsung Sans Regular';
+    font-size: 0.95vh;
+}
+
+#security-back-to-step1 {
+    color: rgb(150, 150, 150);
+    cursor: pointer;
+    transition: color .15s ease;
+}
+#security-back-to-step1:hover { color: white; }
+
+#security-resend-otp {
+    color: #00c9a7;
+    cursor: pointer;
+    font-family: 'Samsung Sans Bold';
+}
+
+#security-resend-otp.security-disabled {
+    opacity: 0.4;
+    pointer-events: none;
+}
+
+/* ── divider ────────────────────────────────────────────────── */
+.security-divider {
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,.12), transparent);
+    margin: 1.8vh 0;
+}
+
+/* ── account summary + status badge ────────────────────────── */
+.security-account-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: white;
+    font-family: 'Samsung Sans Regular';
+    font-size: 1.05vh;
+    margin-bottom: 1.1vh;
+}
+
+.security-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: .4vh;
+    padding: .35vh .9vh;
+    border-radius: 2vh;
+    font-family: 'Samsung Sans Bold';
+    font-size: 0.85vh;
+}
+
+.security-status-badge.status-ok {
+    background: rgba(0, 201, 167, 0.15);
+    color: #00e0bb;
+    border: 1px solid rgba(0, 201, 167, 0.35);
+}
+
+.security-status-badge.status-locked {
+    background: rgba(255, 107, 107, 0.15);
+    color: #ff6b6b;
+    border: 1px solid rgba(255, 107, 107, 0.35);
+    animation: securityPulse 1.6s ease-in-out infinite;
+}
+
+@keyframes securityPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(255, 107, 107, 0.35); }
+    50% { box-shadow: 0 0 0 .5vh rgba(255, 107, 107, 0); }
+}
+
+/* ── device list ────────────────────────────────────────────── */
+.security-empty {
+    position: relative;
+    width: 100%;
+    text-align: center;
+    color: rgb(140, 140, 140);
+    font-family: 'Samsung Sans Regular';
+    font-size: 1.1vh;
+    padding: 1.5vh 0;
+}
+
+.device-row {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 1vh;
+    width: 100%;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 1.4vh;
+    padding: 1vh 1.2vh;
+    box-sizing: border-box;
+    transition: border-color .15s ease, background .15s ease;
+}
+
+.device-row + .device-row { margin-top: .7vh; }
+
+.device-row.device-current {
+    border-color: rgba(0, 201, 167, 0.45);
+    background: rgba(0, 201, 167, 0.06);
+}
+
+.device-row-icon {
+    flex: 0 0 auto;
+    width: 3.4vh;
+    height: 3.4vh;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.06);
+    color: #00c9a7;
+    font-size: 1.3vh;
+}
+
+.device-row.device-current .device-row-icon {
+    background: rgba(0, 201, 167, 0.18);
+    color: #00e0bb;
+}
+
+.device-row-info { flex: 1; min-width: 0; }
+
+.device-row-info b {
+    display: block;
+    color: white;
+    font-family: 'Samsung Sans Bold';
+    font-size: 1.02vh;
+}
+
+.device-row-info span {
+    display: block;
+    color: rgb(150, 150, 150);
+    font-family: 'Samsung Sans Regular';
+    font-size: 0.88vh;
+    margin-top: .2vh;
+}
+
+.device-row-current-tag {
+    flex: 0 0 auto;
+    background: #00c9a7;
+    color: rgb(15, 20, 20);
+    font-family: 'Samsung Sans Bold';
+    font-size: 0.75vh;
+    padding: .3vh .7vh;
+    border-radius: 1.5vh;
+}
+
+/* ── logout-all ─────────────────────────────────────────────── */
+.security-logout-all {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: .6vh;
+    width: 100%;
+    margin-top: 1.8vh;
+    height: 5vh;
+    background: linear-gradient(135deg, #ff6b6b, #ff4757);
+    border-radius: 1.6vh;
+    text-align: center;
+    font-family: 'Samsung Sans Bold';
+    font-size: 1.15vh;
+    color: white;
+    box-shadow: 0 .5vh 1.4vh rgba(255, 71, 87, 0.3);
+    box-sizing: border-box;
+    transition: transform .12s ease;
+    cursor: pointer;
+}
+
+.security-logout-all:active { transform: scale(.97); }
+
+.security-logout-all.security-disabled {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+/* ── confirm dialog ─────────────────────────────────────────── */
+.security-confirm-overlay {
+    display: none;
+    position: absolute;
+    top: 0; left: 0;
+    height: 100%;
+    width: 100%;
+    background: rgba(0, 0, 0, 0.72);
+    backdrop-filter: blur(.4vh);
+    z-index: 20;
+    animation: securityFadeIn .2s ease;
+}
+
+.security-confirm-box {
+    position: absolute;
+    width: 80%;
+    top: 36%;
+    left: 0;
+    right: 0;
+    margin: 0 auto;
+    background: rgba(30, 30, 30, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 1.8vh;
+    padding: 2.2vh 1.7vh;
+    text-align: center;
+    box-sizing: border-box;
+    box-shadow: 0 1vh 3vh rgba(0,0,0,.5);
+}
+
+.security-confirm-icon {
+    font-size: 2.6vh;
+    color: #ff6b6b;
+    margin-bottom: 1vh;
+}
+
+.security-confirm-text {
+    color: white;
+    font-family: 'Samsung Sans Regular';
+    font-size: 1.1vh;
+    margin-bottom: 1.7vh;
+    line-height: 1.65;
+}
+
+.security-confirm-buttons {
+    display: flex;
+    gap: 1vh;
+}
+
+.security-confirm-cancel,
+.security-confirm-yes {
+    flex: 1;
+    height: 4.4vh;
+    line-height: 4.4vh;
+    border-radius: 1.2vh;
+    font-family: 'Samsung Sans Bold';
+    font-size: 1.05vh;
+    color: white;
+    cursor: pointer;
+    transition: transform .12s ease;
+}
+
+.security-confirm-cancel:active,
+.security-confirm-yes:active { transform: scale(.96); }
+
+.security-confirm-cancel { background: rgba(255, 255, 255, 0.08); }
+.security-confirm-yes { background: linear-gradient(135deg, #ff6b6b, #ff4757); }

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>ScriptPack UI</title>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            background: transparent;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        iframe {
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: transparent;
+        }
+        /* headbag is a passive full-screen overlay image - never needs mouse input */
+        #hb-frame {
+            pointer-events: none;
+            z-index: 10;
+        }
+        /* these two are interactive tools (buttons/sliders/text inputs) */
+        #babicz-frame {
+            pointer-events: auto;
+            z-index: 20;
+        }
+        #vinewood-frame {
+            pointer-events: auto;
+            z-index: 30;
+        }
+        /* synsit debug copy-to-clipboard tool - no visible UI, no mouse input needed */
+        #synsit-frame {
+            pointer-events: none;
+            z-index: 40;
+        }
+    </style>
+</head>
+<body>
+    <!-- Merged from: headbag, BabiczHandlingEditor, changwinwood, Syn_Sit (debug) -->
+    <!-- Each keeps its own original html/js/css untouched; this shell just
+         relays SendNUIMessage() payloads from Lua to the right iframe,
+         since a FiveM resource can only declare a single ui_page. -->
+    <iframe id="hb-frame" src="headbag/index.html"></iframe>
+    <iframe id="babicz-frame" src="babicz/index.html"></iframe>
+    <iframe id="vinewood-frame" src="changwinwood/index.html"></iframe>
+    <iframe id="synsit-frame" src="synsit/index.html"></iframe>
+
+    <script>
+        const hbFrame = document.getElementById('hb-frame');
+        const babiczFrame = document.getElementById('babicz-frame');
+        const vinewoodFrame = document.getElementById('vinewood-frame');
+        const synsitFrame = document.getElementById('synsit-frame');
+
+        // NUI callbacks (fetch('https://ResourceName/callback')) issued from
+        // inside an iframe are still routed correctly by the game client -
+        // they are matched by resource name, not by which frame sent them.
+        // Only SendNUIMessage() needs manual relaying, since it only ever
+        // reaches the top-level document's "message" listeners.
+        window.addEventListener('message', function (event) {
+            const data = event.data || {};
+
+            // headbag payloads: { type = 'openGeneral' | 'closeAll' }
+            if (data.type === 'openGeneral' || data.type === 'closeAll') {
+                hbFrame.contentWindow.postMessage(data, '*');
+                return;
+            }
+
+            // changwinwood payloads: { type = 'SET_LOCALES' | 'OPEN' | 'UPDATE' }
+            if (data.type === 'SET_LOCALES' || data.type === 'OPEN' || data.type === 'UPDATE') {
+                vinewoodFrame.contentWindow.postMessage(data, '*');
+                if (data.type === 'OPEN') {
+                    vinewoodFrame.contentWindow.focus();
+                }
+                return;
+            }
+
+            // BabiczHandlingEditor payloads: { action = 'show' | 'hide', ... }
+            if (data.action === 'show' || data.action === 'hide') {
+                babiczFrame.contentWindow.postMessage(data, '*');
+                if (data.action === 'show') {
+                    babiczFrame.contentWindow.focus();
+                }
+                return;
+            }
+
+            // Syn_Sit debug payloads: { coords = "..." } (copy-to-clipboard helper)
+            if (data.coords !== undefined) {
+                synsitFrame.contentWindow.postMessage(data, '*');
+                return;
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,220 @@
+.subtabs {
+  display: flex;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+.subtab {
+  flex: 1;
+  padding: 12px 10px;
+  border: none;
+  background: transparent;
+  color: #8d8d8d;
+  cursor: pointer;
+  font-weight: 900;
+  font-size: 11.5px;
+  letter-spacing: 0.6px;
+  position: relative;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.subtab:hover { color: #d8d8dd; }
+.subtab.active { color: #fff; background: rgba(255, 140, 26, 0.1); }
+.subtab.active::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 2px;
+  background: var(--orange);
+}
+
+.panel2 { height: calc(100% - 56px); overflow-y: auto; }
+
+.gridCards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 14px;
+}
+
+.imgCard {
+  position: relative;
+  background: rgba(24, 24, 24, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+  animation: cardIn 0.35s ease backwards;
+}
+
+.gridCards .imgCard:nth-child(1) { animation-delay: 0.02s; }
+.gridCards .imgCard:nth-child(2) { animation-delay: 0.05s; }
+.gridCards .imgCard:nth-child(3) { animation-delay: 0.08s; }
+.gridCards .imgCard:nth-child(4) { animation-delay: 0.11s; }
+.gridCards .imgCard:nth-child(5) { animation-delay: 0.14s; }
+.gridCards .imgCard:nth-child(6) { animation-delay: 0.17s; }
+
+.imgCard:hover {
+  border-color: rgba(255, 255, 255, 0.22);
+  transform: translateY(-3px);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.35);
+}
+
+.cardIcon {
+  height: 110px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 34px;
+  color: var(--steel);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.cardImg {
+  height: 110px;
+  width: 100%;
+  object-fit: cover;
+  background: #000;
+  display: block;
+}
+
+.imgCard .cap {
+  padding: 10px 12px;
+  color: #fff;
+  font-weight: 800;
+  text-align: center;
+  font-size: 13px;
+  line-height: 1.4;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.imgCard .cap small {
+  color: var(--muted);
+  font-weight: 700;
+  font-size: 10.5px;
+}
+
+.waypointBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  margin: 8px auto 0;
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--muted);
+  font-size: 9.5px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.waypointBtn:hover {
+  color: var(--orange2);
+  border-color: rgba(255, 140, 26, 0.4);
+  background: rgba(255, 140, 26, 0.08);
+}
+
+.garageStatus {
+  display: block;
+  margin: 6px auto 0;
+  width: fit-content;
+  font-size: 8.5px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  padding: 3px 8px;
+  border-radius: 20px;
+}
+
+.status-garage { color: #4ee08a; background: rgba(31, 211, 75, 0.12); }
+.status-out { color: var(--steel); background: rgba(255, 255, 255, 0.06); }
+.status-impound { color: #ff6b6b; background: rgba(226, 85, 78, 0.14); }
+
+.fuelBar {
+  margin: 8px auto 0;
+  width: 80%;
+  height: 5px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.fuelFill {
+  height: 100%;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #ff6b6b, var(--orange2), #4ee08a);
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 60px 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.emptyState i {
+  font-size: 30px;
+  opacity: 0.4;
+}
+
+.imgCard.clickable {
+  cursor: pointer;
+}
+
+.vehDetails {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  padding: 0 12px;
+  transition: max-height 0.25s ease, opacity 0.2s ease, padding 0.25s ease;
+  border-top: 1px solid transparent;
+}
+
+.imgCard.expanded .vehDetails {
+  max-height: 160px;
+  opacity: 1;
+  padding: 10px 12px 12px;
+  border-top-color: rgba(255, 255, 255, 0.08);
+}
+
+.vehColors {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.colorSwatch {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+}
+
+.vehModGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 10px;
+  font-size: 9.5px;
+  font-weight: 700;
+  color: #cfd2da;
+  margin-bottom: 6px;
+}
+
+.vehTint {
+  text-align: center;
+  font-size: 9.5px;
+  font-weight: 700;
+  color: var(--muted);
+}

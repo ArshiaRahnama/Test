@@ -1,0 +1,14 @@
+{
+  "name": "UNIQUE_AC Hub",
+  "short_name": "UNIQUE_AC",
+  "description": "Multi-server status dashboard for UNIQUE_AC",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#07090A",
+  "theme_color": "#07090A",
+  "orientation": "portrait-primary",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

@@ -1,0 +1,571 @@
+@import url('https://fonts.googleapis.com/css?family=Syncopate|Unica+One');
+@import url(https://fonts.googleapis.com/css?family=Roboto:400,400italic,500,500italic,700,700italic,900,900italic,300italic,300,100italic,100);
+
+body, html {
+	overflow-y: hidden;
+}
+/* main.css */
+
+
+.mainbt{ 
+    color: white;
+    background-color:  #03306b;
+    font-family: 'Unica One', cursive;
+	font-size: 20px;
+    background-size: 50px;
+    margin: 15px auto;
+	padding: 10px 24px;
+    cursor: pointer;
+	/* border-radius: 10px; */
+	border: none;
+    text-transform: uppercase;
+    width: 90%;
+    height: 14%;
+    display: inline-block;
+    position: relative;
+    /* left: 10%; */
+    bottom: -100px;
+	top: 6%;
+	border-bottom: 1px solid rgba(81, 81, 81, 0.657);
+	margin-bottom: 20px;
+	/* box-shadow: rgba(4, 67, 255, 0.35) 0px 5px 10px; */
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 10px;
+	transition: all 0.8s;
+
+}
+.mainbt:hover{
+	background-color: #021c3f;
+	border-right: 1px solid rgb(255, 255, 255);
+}
+.tt{
+	margin-top: 50px;
+	width: 100%;
+    height: 5%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+.tt h2{
+	position: absolute;
+	top: 1%;
+	right: 70%;
+	font-size: 17px;
+	color: white;
+	cursor: pointer;
+}
+.tt img{
+	color: white;
+	/* font-size: 12px; */
+	width: 150px;
+}
+#exitbank{
+	width: 20%;
+	position: absolute;
+	right:40% ;
+	bottom: 1px;
+	color: white;
+    background-color:  #0051ba;
+    font-family: 'Unica One', cursive;
+	font-size: 20px;
+    background-size: 50px;
+    margin: 15px auto;
+	padding: 10px 10px;
+    cursor: pointer;
+	border-radius: 10px;
+	border: none;
+    text-transform: uppercase;
+	box-shadow: rgba(4, 67, 255, 0.35) 0px 5px 15px;
+}
+.disbt{
+	color: white;
+    background-color:  #0051ba;
+    font-family: 'Unica One', cursive;
+	font-size: 20px;
+    background-size: 50px;
+    margin: 15px auto;
+	padding: 15px 24px;
+    cursor: pointer;
+	border-radius: 10px;
+	border: none;
+    text-transform: uppercase;
+    width: 70%;
+    height: 14%;
+    display: inline-block;
+    position: relative;
+    /* left: 10%; */
+	right: 2%;
+    bottom: -100px;
+	box-shadow: rgba(4, 67, 255, 0.35) 0px 5px 15px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 10px;
+	transition: all 0.5s;
+}
+.widbt{
+	color: white;
+    background-color:  #0051ba;
+    font-family: 'Unica One', cursive;
+	font-size: 20px;
+    background-size: 50px;
+    margin: 15px auto;
+	padding: 15px 24px;
+    cursor: pointer;
+	border-radius: 10px;
+	border: none;
+    text-transform: uppercase;
+    width: 70%;
+    height: 14%;
+    display: inline-block;
+    position: relative;
+    /* left: 10%; */
+	right: 2%;
+    bottom: -100px;
+	box-shadow: rgba(4, 67, 255, 0.35) 0px 5px 15px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 10px;
+	transition: all 0.5s;
+}
+.blbt{
+	color: white;
+    background-color:  #0051ba;
+    font-family: 'Unica One', cursive;
+	font-size: 20px;
+    background-size: 50px;
+    margin: 15px auto;
+	padding: 15px 24px;
+    cursor: pointer;
+	border-radius: 10px;
+	border: none;
+    text-transform: uppercase;
+    width: 70%;
+    height: 14%;
+    display: inline-block;
+    position: relative;
+    /* left: 10%; */
+	right: 2%;
+    bottom: -100px;
+	box-shadow: rgba(4, 67, 255, 0.35) 0px 5px 15px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 10px;
+	transition: all 0.5s;
+
+}
+
+.trbt{
+	color: white;
+    background-color:  #0051ba;
+    font-family: 'Unica One', cursive;
+	font-size: 20px;
+    background-size: 50px;
+    margin: 15px auto;
+	padding: 15px 24px;
+    cursor: pointer;
+	border-radius: 10px;
+	border: none;
+    text-transform: uppercase;
+    width: 70%;
+    height: 14%;
+    display: inline-block;
+    position: relative;
+    /* left: 10%; */
+	right: 2%;
+    bottom: -150px;
+	box-shadow: rgba(4, 67, 255, 0.35) 0px 5px 15px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 10px;
+	transition: all 0.5s;
+}
+
+
+h3{
+	position: absolute;
+	/* left: 10%; */
+	
+	bottom: 85%;
+	/* top: 0; */
+	color: white;
+	background-color: #0051ba;
+	width: 200px;
+	padding: 10px;
+	border-radius: 10px;
+	
+}
+.mjdiv{
+	position: absolute;
+	right: 30%;
+	top: 26%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	/* background-image: url(./img/360_F_926335766_oJW8WWcSkePS1qxUUuXMUeCVHvUoIDpY.png); */
+	background-size: 500px 300px;
+	background-color: #052258;
+	border-radius: 10px;
+	width: 500px;
+	height: 300px;
+	transition: transform 0.5s, box-shadow 0.5s;
+	box-shadow: rgba(1, 68, 176, 0.35) 0px 5px 15px;
+	
+}
+.mjdiv:hover {
+    transform: perspective(1000px) rotateY(10deg) rotateX(10deg) ;
+	/* transform: perspective(1000px) rotateY(-10deg) rotateX(10deg); */
+    box-shadow: rgba(1, 68, 176, 0.35) 0px 20px 30px;
+}
+.cardsec{
+	/* position: absolute; */
+	width: 100px;
+	margin-bottom: 30px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	margin-left: 25px;
+
+}
+.mj1{
+	position: absolute;
+	right: 56%;
+	top: 50%;
+	color: white;
+	font-size: 30px;
+	width: 200px;
+}
+.mj2{
+	position: absolute;
+	right: 78%;
+	top: 10%;
+	color: white;
+	font-size: 30px;
+	
+}
+.mj3{
+	position: absolute;
+	right: 78%;
+	top: 10%;
+	color: white;
+	font-size: 30px;
+	
+}
+.mj4{
+	position: absolute;
+	right: 22%;
+	top: -3%;
+	color: white;
+	font-size: 30px;
+	
+}
+.mj5{
+	position: absolute;
+	right: 78%;
+	top: 10%;
+	color: white;
+	font-size: 30px;
+	
+}
+
+#balanceX{
+	position: absolute;
+	margin: 10px auto;
+	left: 47%;
+	top: 40%;
+	
+	font-size:30px;
+}
+
+
+#cancelbalance{
+	position: absolute;
+	left: 3%;
+	bottom: 20%;
+}
+.main{
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	left: 83%;
+	top: 0;
+	/* border-top-left-radius: 10px; */
+	border-top-right-radius: 10px;
+	/* border-top-left-radius: 10px; */
+	border-bottom-right-radius: 10px;
+	position: fixed;
+	height: 575px;
+	background-color: #03306b;
+	transition: all 0.2s ease-in;
+}
+
+
+.general{
+    background-image: url('img/bank-background-3m2869ucap3327qs.png');
+	/* background-color: rgb(1, 36, 117); */
+	background-repeat: no-repeat;
+	background-size: cover;
+	background-position: center ;
+	font-family: 'Unica One', cursive;
+	/* background-size: 620px 430px; */
+	width: 900px;
+	height: 550px;
+	/* position: absolute; */
+	left: 50%;
+	transform: translateX(-50%);
+	border-radius: 20px;
+    padding: 5px;
+	position: absolute;
+	top: 50%;
+	left: 70%;
+	margin-top: -250px;
+	margin-left: -400px;
+	padding-bottom: 20px;
+}
+
+.depositUI{
+    background-image: url('img/bank-background-3m2869ucap3327qs.png');
+	background-repeat: no-repeat;
+	font-family: 'Unica One', cursive;
+	background-size:cover;
+	width: 800px;
+	height: 500px;
+	position: absolute;
+	left: 50%;
+	transform: translateX(-50%);
+    padding: 10px;
+	top: 50%;
+	left: 70%;
+	margin-top: -250px;
+	margin-left: -400px;
+	padding-bottom: 20px;
+}
+.withdrawUI{
+    background-image: url('img/bank-background-3m2869ucap3327qs.png');
+	border-radius: 10px;
+	background-repeat: no-repeat;
+	font-family: 'Unica One', cursive;
+	background-size: cover;
+	width: 800px;
+	height: 500px;
+	position: absolute;
+	left: 50%;
+	transform: translateX(-50%);
+    padding: 10px;
+	position: absolute;
+	top: 50%;
+	left: 70%;
+	margin-top: -250px;
+	margin-left: -400px;
+	padding-bottom: 20px;
+}
+
+.balanceUI{
+    background-image: url('img/bank-background-3m2869ucap3327qs.png');
+	background-color: #052258;
+	border-radius: 10px;
+	background-repeat: no-repeat;
+	font-family: 'Unica One', cursive;
+	background-size: cover;
+	width: 800px;
+	height: 500px;
+	position: absolute;
+	left: 50%;
+	transform: translateX(-50%);
+    padding: 10px;
+	position: absolute;
+	top: 50%;
+	left: 70%;
+	margin-top: -250px;
+	margin-left: -400px;
+	padding-bottom: 20px;
+}
+
+.transferUI{
+    background-image: url('img/bank-background-3m2869ucap3327qs.png');
+	background-color: #052258;
+	background-repeat: no-repeat;
+	font-family: 'Unica One', cursive;
+	background-size: cover;
+	width: 800px;
+	height: 500px;
+	position: absolute;
+	left: 50%;
+	transform: translateX(-50%);
+    padding: 10px;
+	top: 50%;
+	left: 70%;
+	border-radius: 10px;
+	margin-top: -250px;
+	margin-left: -400px;
+	padding-bottom: 20px;
+}
+
+#from {
+	position: relative;
+    top: 100px;
+    left: 62px;
+    
+	font-family: 'Unica One';
+    width: 40%;
+    height: 8%;
+    padding: 5px 5px;
+    margin: 15px 0;
+    box-sizing: border-box;
+}
+#amountt{
+    position: relative;
+    top: 100px;
+    left: 23%;
+    
+    font-family: 'Unica One';
+    width: 50%;
+    height: 8%;
+    padding: 10px 10px;
+    margin: 15px 0;
+    box-sizing: border-box;
+}
+#to{
+    position: relative;
+    top: 100px;
+    left: 23%;
+    
+    font-family: 'Unica One';
+    width: 50%;
+    height: 8%;
+    padding: 10px 10px;
+    margin: 15px 0;
+    box-sizing: border-box;
+}
+
+
+h1{
+	font-family: 'Unica One', cursive;
+	color: rgb(255, 255, 255);
+	position: relative;
+	left: 48%;
+	top: 39%;
+}
+.b{
+	
+	font-family: 'Unica One', cursive;
+	color: black;
+	position: relative;
+	left: 30%;
+	top: 30%;
+}
+.curbalance{
+	color: white;
+	font-size: 30px;
+	width: 100%;
+}
+.curbalance1{
+	color: white;
+	font-size: 20px;
+}
+.curbalance2{
+	color: white;
+	font-size: 20px;
+}
+.curbalance3{
+	color: white;
+	font-size: 20px;
+}
+.curbalance4{
+	color: white;
+	font-size: 30px;
+	/* background-color: aliceblue; */
+	width: 100%;
+}
+.username1{
+	color: white;
+	
+}
+.sans2{
+	position: absolute;
+	top: 22%;
+	left: 26%;
+	color: white;
+	font-size: 20px;
+}
+
+
+#backbalnace {
+	position:relative;
+	top: 60%;
+	left: 30%;
+}
+
+
+
+
+.disinp[type=text] {
+	position: relative;
+    top: 100px;
+    left: 62px;
+    border: none;
+	font-family: 'Unica One';
+    width: 80%;
+    height: 13%;
+    padding: 5px 5px;
+    margin: 40px 0;
+    box-sizing: border-box;
+	border-radius: 5px;
+	transition: all 0.5s;
+	
+ 
+	
+}
+.widinp[type=text] {
+	position: relative;
+    top: 100px;
+    left: 62px;
+    border: none;
+	font-family: 'Unica One';
+    width: 80%;
+    height: 13%;
+    padding: 5px 5px;
+    margin: 40px 0;
+    box-sizing: border-box;
+	border-radius: 5px;
+	transition: all 0.5s;
+	
+ 
+	
+}
+
+.trinp[type=text] {
+	position: absolute;
+	top:20%;
+	left: 62px;
+	border: none;
+	font-family: 'Unica One';
+	width: 80%;
+	height: 13%;
+	padding: 5px 5px;
+	margin: 40px 0;
+	box-sizing: border-box;
+	border-radius: 5px;
+	transition: all 0.5s;
+	
+ 
+	
+}
+
+.disinp[type=text]:focus {
+	/* border: 2px solid #0051ba; */
+	height: 15%;
+}
+
+
+button:hover{
+    background-color: #052258;
+}
+
+

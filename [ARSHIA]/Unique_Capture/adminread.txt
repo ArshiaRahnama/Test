@@ -1,0 +1,430 @@
+╔════════════════════════════════════════════════════════════════╗
+║             UNIQUE_CAPTURE — ADMIN GUIDE                        ║
+║             By Arshia | arshiahub.ir | Unique RP                ║
+╚════════════════════════════════════════════════════════════════╝
+
+Permission note: any command marked (ADMIN) requires
+xPlayer.permission_level > Config.CommandPerm (default: 10).
+If you get "You Don't Have Permissions!", your permission group
+needs adjusting in Config.lua or your ACE/permission setup.
+
+⚠️ REQUIRED DEPENDENCY: this resource now uses ox_lib for all
+notifications and ox_target for Academy entry/exit interactions.
+Make sure both are installed and started BEFORE this resource in
+your server.cfg:
+  ensure ox_lib
+  ensure ox_target
+  ensure Unique_Capture
+
+⚠️ REQUIRED SETUP BEFORE GOING LIVE: Config.AcademyEntryPoints in
+Config.lua is a placeholder (a single fake coordinate). You must
+replace it with real, safe locations on your map before enabling
+the Training Academy, or players won't be able to enter it at all.
+
+────────────────────────────────────────────────────────────────
+  1. THE DASHBOARD — TELL YOUR PLAYERS ABOUT THIS ONE
+────────────────────────────────────────────────────────────────
+
+/capture
+  Opens a full-screen dashboard with EVERYTHING in one place — no
+  need to remember /captureStats, /captureMedals, /captureStandings
+  separately. Shows: rank badge, kills/deaths/K-D/gang points/
+  top-5 count/score, best zones, all-time Top 10 killers, this
+  season's gang standings, countdown to next season reset, and
+  your scarce medal collection with a live supply bar. Close with
+  the X button or Escape.
+
+────────────────────────────────────────────────────────────────
+  2. RUNNING A ROUND (core commands)
+────────────────────────────────────────────────────────────────
+
+/startCap                              (ADMIN)
+  Starts a new capture round using the zones and time currently
+  set. Announces to the WHOLE server that the round has started
+  and tells everyone to use /joinCap. Does nothing if a round is
+  already active.
+
+/editCap                               (ADMIN)
+  Opens the admin menu in-game: set zones, set round time,
+  start the round, or send a server announcement — all from a
+  menu instead of typing commands.
+
+/endCap                                (ADMIN)
+  Force-ends the current round immediately. Same result as the
+  round timer reaching zero: results get saved, leaderboards get
+  logged, everyone is pulled out of the capture world.
+
+/joinCap
+  Any player uses this to join the currently active round (must
+  be in their gang first).
+
+/leaveCap
+  Lets a player leave the capture world at any time — whether
+  they're mid-round, stuck in a menu, or anything in between.
+  ⚠️ If a player is actively standing in a zone's marker
+  (defending) when they use this, they get locked out of
+  re-entering that SPECIFIC zone for a few minutes
+  (Config.LeaveZonePenaltySeconds, default 180s) — this only
+  triggers on a real /leaveCap, never when a round ends normally.
+
+/reCap
+  Self-service respawn — lets a stuck-but-alive player inside
+  the capture world force a respawn without waiting for a real
+  death.
+
+────────────────────────────────────────────────────────────────
+  3. STATS & HISTORY (open to everyone unless noted)
+────────────────────────────────────────────────────────────────
+
+/captureStats
+  Shows your own all-time Kills, Deaths, K/D ratio, how many
+  times you've placed in a round's Top 5, your best zones, and
+  the server's all-time Top 10 killers.
+
+/captureHistory                        (ADMIN)
+  Opens a menu listing the last 15 rounds — date, winning gang,
+  top killer. Click any round for full Top 5 Killers/Gangs
+  detail from that specific round.
+
+/captureSeasons
+  Lists the last 10 completed seasons: winning player + winning
+  gang for each one.
+
+────────────────────────────────────────────────────────────────
+  4. SEASONS
+────────────────────────────────────────────────────────────────
+
+How it works automatically:
+  Every player's all-time stats (Config: capture_player_stats)
+  and every gang's season points (capture_gang_stats) reset on
+  their own every Config.SeasonAutoResetDays days (default 30).
+  Right before the reset:
+    • A full raw JSON backup is saved to
+      resources/Unique_Capture/backups/ (separate safety net,
+      independent of the database archive).
+    • Full standings (with final rank) are archived into
+      capture_season_archive / capture_gang_season_archive —
+      query these anytime for full season history.
+    • Winners (player + gang) are recorded in capture_seasons
+      and announced to the whole server.
+  Prizes are NOT paid automatically — check capture_seasons /
+  capture_gang_season_archive and hand them out yourselves.
+
+/captureSeasonReset                    (ADMIN)
+  Forces a season to end right now instead of waiting for the
+  automatic timer. Use this if you want to run a season shorter
+  than 30 days, or wrap one up for a special event.
+
+If Config.EnableSeasonWarning is on (default: yes), the whole
+server gets a heads-up chat message Config.SeasonWarningHoursBefore
+hours (default 24) before an automatic reset happens — not just
+at the moment it happens.
+
+────────────────────────────────────────────────────────────────
+  5. VISUAL THEMES (purely cosmetic, zero gameplay effect)
+────────────────────────────────────────────────────────────────
+
+/captureTheme [name]                   (ADMIN)
+  Changes the zone marker colors live for the whole server.
+  Run it with no name to see the list of available themes.
+  Built-in themes: Default, Halloween, Christmas, Bloodmoon.
+  Add your own in Config.Themes.
+  Anyone who joins mid-event automatically gets the active theme.
+
+────────────────────────────────────────────────────────────────
+  6. DIAGNOSTICS / MAINTENANCE TOOLS
+────────────────────────────────────────────────────────────────
+
+/captureDryRun                         (ADMIN)
+  Checks your zones, round time, active theme, score weights,
+  and database table/column names are all valid — WITHOUT
+  actually starting a round. Run this after you change Config.lua
+  to catch typos before players notice.
+
+/captureHealth                         (ADMIN)
+  Quick status report: is a round active, current theme, how many
+  zones are configured, and a live row-count for every stat/
+  history table. Good first step when something looks broken.
+
+Admin commands have a short cooldown per-admin (5 seconds by
+default, Config.AdminCommandCooldown) to stop accidental double-
+presses/spam. Turn off with Config.EnableAdminRateLimit = false.
+
+────────────────────────────────────────────────────────────────
+  7. ZONES FROM A FILE (optional, off by default)
+────────────────────────────────────────────────────────────────
+
+By default zones live in Config.DefaultZones. If you'd rather
+manage them from a separate file:
+
+  1. Set Config.EnableExternalZonesFile = true in Config.lua.
+  2. /captureExportZones (ADMIN) — saves your CURRENT zones to
+     resources/Unique_Capture/zones.json as a starting point.
+  3. Edit zones.json by hand (or hand it to a builder).
+  4. /captureImportZones (ADMIN) — reloads zones from that file
+     and replaces the active ones. Blocked while a round is
+     active, for safety — end the round first.
+
+────────────────────────────────────────────────────────────────
+  8. LEAGUE MODE (optional, OFF by default)
+────────────────────────────────────────────────────────────────
+
+Turn on with Config.EnableLeagueMode = true for a football-style
+layer on top of the normal season system:
+
+/captureStandings
+  Live current-season gang points table, open to everyone.
+
+Comeback Of The Season
+  Fully automatic — announced to the server at season end,
+  comparing each gang's final rank to last season's rank.
+
+Playoffs (Config.EnablePlayoffs, its own separate toggle):
+  At season end, the top 4 gangs by points are automatically
+  paired into semifinals (1st vs 4th, 2nd vs 3rd) and announced.
+  There's no automated 1-gang-vs-1-gang match mode, so admins
+  referee each match manually and record the result:
+
+    /capturePlayoffResult semi1 [gang_name]
+    /capturePlayoffResult semi2 [gang_name]
+    /capturePlayoffResult final [gang_name]
+
+  The Final's matchup is filled in automatically the moment both
+  semifinal winners have been recorded.
+
+────────────────────────────────────────────────────────────────
+  9. PUBLIC READ-ONLY API (optional, OFF by default)
+────────────────────────────────────────────────────────────────
+
+Config.EnablePublicAPI = true exposes a GET endpoint
+(Config.PublicAPIPath, default "/uniquecapture/status") on your
+server's game port, returning live JSON: round active/time
+remaining, zone count, active theme, Top Killers, Top Gangs.
+
+⚠️ IMPORTANT: FiveM only allows ONE HTTP handler per server.
+Enabling this WILL override any other resource on your server
+that also uses SetHttpHandler. Only turn this on if you're sure
+nothing else does.
+
+────────────────────────────────────────────────────────────────
+  10. SCARCITY ENGINE — LIMITED NUMBERED MEDALS (on by default)
+────────────────────────────────────────────────────────────────
+
+The moment a player's rank first crosses into "Legend" during a
+season, they get a shot at a numbered medal from that season's
+fixed pool (Config.ScarceMedalSupplyPerSeason, default 100).
+Once the pool is empty, NOBODY else gets one that season — no
+exceptions, no refills, even if they earned it. Serial numbers
+are permanent, recorded forever in capture_scarce_medals, and
+never reused.
+
+/captureMedals
+  Shows how many medals have been claimed this season and how
+  many are left.
+
+/mymedals
+  Shows every medal you personally own, across every season.
+
+Turn off entirely with Config.EnableScarcityEngine = false.
+Change the pool size with Config.ScarceMedalSupplyPerSeason, or
+which rank tier triggers it with Config.ScarceMedalRank.
+
+────────────────────────────────────────────────────────────────
+  11. HALL OF FAME (on by default, fully automatic)
+────────────────────────────────────────────────────────────────
+
+Any player who reaches "Legend" rank and then goes inactive for
+Config.HallOfFameInactivityDays (default 60 days) gets
+automatically, permanently inducted — no score attached, never
+removed, even if they come back and play again later. It's purely
+an honor, checked every 6 hours in the background.
+
+/hallOfFame
+  Lists the last 20 inductees with career kills and final rank.
+
+Turn off with Config.EnableHallOfFame = false.
+
+────────────────────────────────────────────────────────────────
+  12. TRAINING ACADEMY (on by default — but read the warning below)
+────────────────────────────────────────────────────────────────
+
+/captureAcademy
+  Target-interact (ox_target) with the instructor NPC standing at
+  one of Config.AcademyEntryPoints to enter — no more "press E"
+  prompt. Teleports you into a SEPARATE routing bucket/world
+  (Config.AcademyWorld, default 51) and spawns hostile NPCs,
+  created server-side and networked to you, to fight. Never
+  touches real kills, points, or any leaderboard table.
+
+  ⚠️ Config.AcademyEntryPoints now defaults to a real spot (outside
+  Mission Row PD) so it works out of the box — but it's still just
+  an example. Change it to wherever fits your server.
+
+  Each entry point also gets its own map blip (Config.AcademyBlip —
+  sprite, color, scale) so players can actually see where to go
+  instead of needing to be told the coordinates.
+
+  The moment you walk in, you land inside a Safe Zone centered
+  exactly on your spawn point (Config.AcademySafeZoneRadius, default
+  8.0 units). Inside it you're genuinely untouchable — you're made
+  invincible AND every NPC is switched to a neutral relationship
+  group and stood down, so nothing can re-target you by accident.
+  Step outside that radius and every NPC in the academy switches to
+  hunting you immediately; step back in and they immediately back
+  off again, with a heads-up notification either way. There's no
+  on-screen marker for it (removed — it's a fixed, known radius
+  around your spawn point, not something that needs a visual).
+  (Config.AcademySafeZoneOffset lets you shift the safe zone
+  off-center if you ever want the spawn and the safe area to be two
+  different spots.)
+
+  NPC count now ramps up instead of swarming you from second one:
+  you start with just Config.AcademyStartNPCCount (default 1) NPC
+  actively hunting you, and gain one more every
+  Config.AcademyNPCCountStep total kills (default every 8), capped
+  at Config.AcademyMaxNPCCount (default 4) so it never spirals out
+  of control. New NPCs trickle in one at a time with a short random
+  delay between them rather than all appearing at once. Accuracy and
+  armor still scale up separately via Config.AcademyDifficultyStep.
+
+  NPCs can hurt you but can never actually kill you. Your max health
+  is boosted to Config.AcademyPlayerMaxHealth (default 500, restored
+  to normal the moment you leave) and clamped so it can never drop
+  below Config.AcademyHealthFloorPercent of that (default 12%). This
+  is enforced the instant damage lands — not on a delay — so even a
+  full rifle burst can't slip through and drop you. This is a
+  sandbox, not a death trap. If you do somehow go down another way,
+  you get an on-screen "Press E to respawn" prompt and revive right
+  there through this server's real revive trigger
+  (Config.ReviveTrigger) — dying does NOT kick you out of the
+  Academy.
+
+  A second instructor NPC spawns inside the Academy itself — target
+  it (or use the dashboard's Leave button / /leaveAcademy) to exit.
+  You're teleported back to exactly where you entered from.
+
+  NPCs get tougher (accuracy + armor) as your permanent Academy
+  kill count climbs — see Config.AcademyDifficultyStep /
+  Config.AcademyMaxAccuracy / Config.AcademyMaxArmor.
+
+  A marked Safe Zone inside the Academy makes NPCs stop attacking
+  the instant you step into it (Config.AcademySafeZoneOffset/
+  Radius) — useful to catch your breath.
+
+  If you stay past Config.AcademyTimeLimitMinutes (default 20), you
+  get a friendly reminder to go try a real round, repeating every
+  Config.AcademyReminderIntervalMinutes.
+
+  The first time you enter, a full step-by-step chat guide explains
+  exactly how a real capture round works, and a green practice
+  marker inside the Academy shows what a real capture point looks
+  like.
+
+/leaveAcademy
+  Exits the academy and cleans up the NPCs.
+
+While inside, a dedicated on-screen panel shows a live session
+timer and your TOTAL Academy kill count (a separate, permanent
+counter in capture_academy_stats — it never resets and can never
+touch your real capture stats, rank, or medals). Killed NPCs
+respawn automatically so training never runs dry. Your badges
+(Sharpshooter/Marksman Elite/Academy Legend) and the all-time
+Academy leaderboard are visible right in the Academy tab of
+/capture.
+
+⚠️ REQUIRED SETUP: Config.AcademyCoord is a placeholder
+(vector3(0.0, 0.0, 72.0)) and needs to be changed to a real, safe,
+out-of-the-way spot on your map before you rely on this — otherwise
+players will spawn at 0,0,72 which is not a real location.
+
+Turn off with Config.EnableAcademy = false.
+
+────────────────────────────────────────────────────────────────
+  13. FULL DISCORD LOGGING (fully configurable)
+────────────────────────────────────────────────────────────────
+
+Config.Webhooks in Config.lua has one slot per category:
+
+  RoundStart    A round starts
+  RoundEnd      A round ends (short summary)
+  ZoneCapture   A zone changes hands mid-round
+  Kills         Every individual kill (gets noisy - that's the point)
+  Season        Season warnings, season end, Hall of Fame inductions
+  Medals        Every scarce medal claimed
+  Admin         Theme changes, forced resets, manual start/end,
+                dry-run results, zone import/export
+
+Leave any category as "" to turn OFF just that one. Point two or
+more categories at the same webhook URL to combine them into one
+Discord channel — totally up to you how granular you want it.
+
+Master switch: Config.EnableDetailedLogging = false turns
+everything off at once, regardless of individual URLs.
+
+A missing or broken webhook NEVER breaks gameplay — at worst it
+prints a one-line warning to console.
+
+────────────────────────────────────────────────────────────────
+  14. SPECTATOR MODE (on by default — now permission-gated)
+────────────────────────────────────────────────────────────────
+
+⚠️ REQUIRES PERMISSION: xPlayer.permission_level must be ABOVE
+Config.SpectatePermLevel (defaults to Config.CommandPerm, the same
+threshold as the other admin commands) to run /captureSpectate at
+all. Set Config.SpectatePermLevel = 0 in Config.lua if you want to
+open spectating back up to every player.
+
+/captureSpectate
+  Only works while a round is active. Drops you into a free-flying
+  camera over the battle — WASD to move, mouse to look, Space/Ctrl
+  for up/down, hold Shift to move faster. Your character is frozen,
+  invisible, and invincible for the entire time — you cannot be
+  seen, hurt, or interfere with the round in any way, and you don't
+  need to be in a gang to use it.
+
+  Press TAB at any time to open a live list of every player
+  currently in the round. Click a name to lock the camera onto
+  them — it orbits around that player instead of flying freely
+  (mouse still rotates the view), and a Health/Armor panel tracks
+  them live. Hit "Free Camera" in the list (or press TAB again) to
+  unlock and go back to flying wherever you like. If the player you
+  locked onto disconnects or leaves the capture world, you're
+  automatically dropped back to free camera with a notification —
+  spectating never gets stuck watching nobody.
+
+/leaveSpectate (or press ESC)
+  Exits and puts you back exactly where you were standing.
+
+Automatically exits cleanly if the round ends while you're
+watching. Turn off with Config.EnableSpectate = false.
+
+────────────────────────────────────────────────────────────────
+  QUICK REFERENCE — ALL COMMANDS
+────────────────────────────────────────────────────────────────
+/capture                        Full dashboard - everything in one screen
+/startCap              ADMIN   Start a round
+/editCap               ADMIN   Open admin menu
+/endCap                ADMIN   Force-end the round
+/joinCap                       Join the active round
+/leaveCap                      Leave the capture world
+/reCap                         Self-respawn while stuck
+/captureStats                  Your own K/D + all-time top 10
+/captureHistory        ADMIN   Browse past rounds
+/captureSeasons                Browse past season winners
+/captureSeasonReset    ADMIN   Force a season to end now
+/captureTheme [name]   ADMIN   Change zone marker colors
+/captureDryRun         ADMIN   Validate Config without starting
+/captureHealth         ADMIN   DB/table/status diagnostics
+/captureExportZones    ADMIN   Save current zones to file
+/captureImportZones    ADMIN   Load zones from file
+/captureStandings              Live gang standings (League Mode)
+/capturePlayoffResult  ADMIN   Record a playoff winner (League Mode)
+/captureMedals                 Remaining scarce medal supply
+/mymedals                      Your own claimed scarce medals
+/hallOfFame                    List of inducted Hall of Fame legends
+/captureAcademy                 Practice vs NPCs, no stats recorded
+/leaveAcademy                   Exit the training academy
+/captureSpectate                 Free camera over an active round
+/leaveSpectate                   Exit spectator mode
+
+════════════════════════════════════════════════════════════════

@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Duty Job Menu</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="menu" class="hidden">
+        <div class="panel-glow"></div>
+
+        <!-- دکمه ضربدر کوچک برای بستن منو -->
+        <button id="close-button" onclick="closeMenu()">×</button>
+
+        <div class="panel-header">
+            <div class="crest">
+                <span class="star star-l2">★</span>
+                <span class="star star-l1">★</span>
+                <div class="form-logo">
+                    <img src="Police.png" alt="">
+                </div>
+                <span class="star star-r1">★</span>
+                <span class="star star-r2">★</span>
+            </div>
+
+            <div class="laurel-row">
+                <svg class="laurel laurel-left" viewBox="0 0 80 140" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M40 138 C 18 105, 12 72, 24 34 C 30 14, 40 4, 40 4" fill="none" stroke="#caa452" stroke-width="3"/>
+                    <g fill="#e8c877">
+                        <ellipse cx="33" cy="118" rx="12" ry="5" transform="rotate(-35 33 118)"/>
+                        <ellipse cx="24" cy="101" rx="12" ry="5" transform="rotate(-25 24 101)"/>
+                        <ellipse cx="20" cy="83" rx="12" ry="5" transform="rotate(-12 20 83)"/>
+                        <ellipse cx="21" cy="64" rx="12" ry="5" transform="rotate(2 21 64)"/>
+                        <ellipse cx="26" cy="46" rx="11" ry="5" transform="rotate(16 26 46)"/>
+                        <ellipse cx="34" cy="28" rx="10" ry="4.5" transform="rotate(32 34 28)"/>
+                        <ellipse cx="40" cy="13" rx="8" ry="4" transform="rotate(48 40 13)"/>
+                    </g>
+                </svg>
+
+                <div class="panel-heading">
+                    <div class="ribbon"><h2>بررسی تایم پلی</h2></div>
+                    <span class="panel-subtitle">DUTY TRACKING TERMINAL</span>
+                </div>
+
+                <svg class="laurel laurel-right" viewBox="0 0 80 140" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M40 138 C 18 105, 12 72, 24 34 C 30 14, 40 4, 40 4" fill="none" stroke="#caa452" stroke-width="3"/>
+                    <g fill="#e8c877">
+                        <ellipse cx="33" cy="118" rx="12" ry="5" transform="rotate(-35 33 118)"/>
+                        <ellipse cx="24" cy="101" rx="12" ry="5" transform="rotate(-25 24 101)"/>
+                        <ellipse cx="20" cy="83" rx="12" ry="5" transform="rotate(-12 20 83)"/>
+                        <ellipse cx="21" cy="64" rx="12" ry="5" transform="rotate(2 21 64)"/>
+                        <ellipse cx="26" cy="46" rx="11" ry="5" transform="rotate(16 26 46)"/>
+                        <ellipse cx="34" cy="28" rx="10" ry="4.5" transform="rotate(32 34 28)"/>
+                        <ellipse cx="40" cy="13" rx="8" ry="4" transform="rotate(48 40 13)"/>
+                    </g>
+                </svg>
+            </div>
+        </div>
+
+        <div class="hud-strip">
+            <div id="jobInfo" class="job-info"></div>
+            <div id="jobInforank" class="job-inforank"></div>
+        </div>
+
+        <div class="field-grid">
+            <div class="field">
+                <label for="jobMember">انتخاب بازیکن:</label>
+                <select id="jobMember" class="jobMember"></select>
+            </div>
+
+            <div class="field-row">
+                <div class="field">
+                    <label for="startDate">تاریخ شروع:</label>
+                    <input type="date" id="startDate" class="inp1">
+                </div>
+
+                <div class="field">
+                    <label for="endDate">تاریخ پایان:</label>
+                    <input type="date" id="endDate" class="inp1">
+                </div>
+            </div>
+        </div>
+
+        <button id="refresh-button" onclick="checkDutyTime()">
+            <span>بررسی تایم</span>
+        </button>
+
+        <div id="result">
+            <table>
+                <thead>
+                    <tr>
+                        <th>نام بازیکن</th>
+                        <th>تایم روزانه</th>
+                        <th>تایم هفتگی</th>
+                        <th>تایم کل</th>
+                    </tr>
+                </thead>
+                <tbody id="result-body">
+                    <!-- داده‌ها اینجا نمایش داده می‌شوند -->
+                </tbody>
+            </table>
+            <!-- <div id="daily-time" class="total-time"></div>
+            <div id="weekly-time" class="total-time"></div>
+            <div id="total-time" class="total-time"></div> -->
+        </div>
+
+
+    </div>
+
+
+    <script src="script.js"></script>
+
+
+</body>
+</html>
+
+
+
+

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#07090A">
+<title>UNIQUE_AC Hub</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg">
+<link rel="apple-touch-icon" href="icon.svg">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <h1>UNIQUE<span>_AC</span> <small>HUB</small></h1>
+    <div class="topbar-actions">
+      <span class="live-dot" id="live-dot"></span>
+      <a href="heatmap.php" class="logout-link">Heatmap</a>
+      <a href="compare.php" class="logout-link">Compare</a>
+      <a href="logout.php" class="logout-link">Sign out</a>
+    </div>
+  </header>
+
+  <main id="app">
+    <div class="empty-state" id="loading-state">Loading servers…</div>
+    <div class="server-grid" id="server-grid" hidden></div>
+
+    <section class="urgent-section" id="urgent-section" hidden>
+      <h2>Recent Alerts</h2>
+      <div class="urgent-list" id="urgent-list"></div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title></title>
+  <link href="vendor/latofonts.css" rel="stylesheet">
+  <link href="vendor/flexboxgrid.6.3.1.min.css" rel="stylesheet"></link>
+  <link href="vendor/animate.3.5.2.min.css" rel="stylesheet"></link>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Rajdhani:wght@500;700&family=Orbitron:wght@500;700&family=Chakra+Petch:wght@500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link href="index.css" rel="stylesheet"></link>
+
+  <script src="vendor/vue.2.3.3.min.js" type="text/javascript"></script>
+  <script src="config.default.js" type="text/javascript"></script>
+  <script src="config.js" type="text/javascript"></script>
+</head>
+<body>
+  <div id="app"></div>
+
+  <!-- App Template -->
+  <script type="text/x-template" id="app_template">
+    <div id="app" :style="appStyle" :class="{ dragging: dragging }">
+      <div class="chat-window" :style="windowStyle" :class="{ 'fadeOut animated': !showWindow }">
+        <div class="chat-tabs">
+          <span class="drag-handle" @mousedown="startDrag" title="بگیر و جابه‌جا کن">
+            <svg fill="currentColor" viewBox="0 0 24 24" width="13" height="13">
+              <circle cx="9" cy="6" r="1.6"></circle><circle cx="9" cy="12" r="1.6"></circle><circle cx="9" cy="18" r="1.6"></circle>
+              <circle cx="15" cy="6" r="1.6"></circle><circle cx="15" cy="12" r="1.6"></circle><circle cx="15" cy="18" r="1.6"></circle>
+            </svg>
+          </span>
+          <div v-for="tab in visibleTabs"
+               :key="tab.id"
+               :ref="'tabref-' + tab.id"
+               class="chat-tab"
+               :class="[{ active: activeTab === tab.id }, 'tab-' + tab.id]"
+               @click="selectTab(tab.id)">
+            <span class="tab-icon">{{ tab.icon }}</span>{{ tab.label }}
+            <span class="unread-dot" v-if="unread[tab.id] && activeTab !== tab.id"></span>
+          </div>
+          <div class="tab-indicator" :style="indicatorStyle"></div>
+        </div>
+        <div class="chat-pinned" v-if="pinned">
+          <span class="pin-icon-badge">📌</span>
+          <span class="pin-body">
+            <span class="pin-author" v-if="pinned.author">{{ pinned.author }}</span>
+            <span class="pin-text" v-if="pinned.text">{{ pinned.text }}</span>
+          </span>
+        </div>
+        <div class="chat-messages" ref="messages">
+          <message v-for="msg in filteredMessages"
+                   :templates="templates"
+                   :multiline="msg.multiline"
+                   :args="msg.args"
+                   :color="msg.color"
+                   :template="msg.template"
+                   :template-id="msg.templateId"
+                   :action="msg.action"
+                   :msg-id="msg._id"
+                   :key="msg._id">
+          </message>
+        </div>
+      </div>
+      <div class="chat-input" :style="inputStyle" v-show="showInput">
+        <div class="chat-input-inner">
+          <span class="gear-btn" @click="toggleSettings" title="تنظیمات چت">⚙</span>
+          <span class="star-toggle-btn" @click="toggleStarredPanel" title="پیام‌های ستاره‌دار">
+            <svg viewBox="0 0 24 24" width="13" height="13">
+              <path :fill="showStarred ? '#ffd166' : 'none'" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" d="M12 2.5l2.9 6.26L22 9.77l-5 4.87 1.18 6.88L12 18.27l-6.18 3.25L7 14.64 2 9.77l7.1-1.01L12 2.5z"/>
+            </svg>
+            <span class="star-count" v-if="starred.length">{{ starred.length }}</span>
+          </span>
+          <span class="chevron">›</span>
+          <textarea v-model="message"
+                    ref="input"
+                    type="text"
+                    autofocus
+                    spellcheck="false"
+					@keyup.tab="On_Tab"
+                    @keyup.esc="hideInput"
+                    @keyup="keyUp"
+                    @keydown="keyDown"
+                    @keypress.enter.prevent="send">
+          </textarea>
+        </div>
+
+        <div class="starred-panel animated fadeIn" v-if="showStarred">
+          <div class="settings-header">
+            <span class="settings-title">پیام‌های ستاره‌دار</span>
+            <span class="settings-close" @click="showStarred = false">✕</span>
+          </div>
+          <div class="settings-body">
+            <div class="starred-empty" v-if="starred.length === 0">هنوز پیامی ستاره نزدی</div>
+            <div class="starred-item" v-for="s in [...starred].reverse()" :key="s.id + '-' + s.ts">
+              <span class="starred-item-text">{{ s.text }}</span>
+              <span class="starred-item-remove" @click="removeStar(s.id)">✕</span>
+            </div>
+          </div>
+          <div class="settings-actions" v-if="starred.length">
+            <button class="settings-btn cancel" @click="clearStarred">پاک کردن همه</button>
+          </div>
+        </div>
+
+        <div class="chat-settings animated fadeIn" v-else-if="showSettings">
+          <div class="settings-header">
+            <span class="settings-title">Chat Settings</span>
+            <span class="settings-close" @click="cancelSettings">✕</span>
+          </div>
+
+          <div class="settings-tabswitch">
+            <span class="tabswitch-btn" :class="{ active: settingsTab === 'chat' }" @click="settingsTab = 'chat'">CHAT</span>
+            <span class="tabswitch-btn" :class="{ active: settingsTab === 'live' }" @click="settingsTab = 'live'">SHOW IN LIVE</span>
+          </div>
+
+          <div class="settings-body" v-if="settingsTab === 'chat'">
+            <div class="settings-group-label">BEHAVIOR</div>
+            <div class="toggle-row">
+              <label>Show on new message</label>
+              <div class="toggle-switch" :class="{ on: autoShowOnMessage }" @click="autoShowOnMessage = !autoShowOnMessage">
+                <div class="toggle-knob"></div>
+              </div>
+            </div>
+            <div class="toggle-row">
+              <label>Lock position</label>
+              <div class="toggle-switch" :class="{ on: lockPosition }" @click="lockPosition = !lockPosition">
+                <div class="toggle-knob"></div>
+              </div>
+            </div>
+            <div class="toggle-row">
+              <label>Sound notifications</label>
+              <div class="toggle-switch" :class="{ on: soundEnabled }" @click="soundEnabled = !soundEnabled">
+                <div class="toggle-knob"></div>
+              </div>
+            </div>
+            <div class="toggle-row">
+              <label>Background</label>
+              <div class="toggle-switch" :class="{ on: bgEnabled }" @click="bgEnabled = !bgEnabled">
+                <div class="toggle-knob"></div>
+              </div>
+            </div>
+
+            <div class="settings-group-label">APPEARANCE</div>
+            <div class="toggle-row">
+              <label>Font Size</label>
+              <div class="size-btns">
+                <span class="size-btn" :class="{ active: fontScale === 85 }" @click="fontScale = 85">S</span>
+                <span class="size-btn" :class="{ active: fontScale === 100 }" @click="fontScale = 100">M</span>
+                <span class="size-btn" :class="{ active: fontScale === 115 }" @click="fontScale = 115">L</span>
+              </div>
+            </div>
+
+            <div class="slider-block">
+              <div class="slider-toprow"><label>Width</label><span class="slider-val">{{ sizeWidth }}%</span></div>
+              <input type="range" min="25" max="65" v-model.number="sizeWidth" :style="sliderFill(sizeWidth, 25, 65)">
+            </div>
+            <div class="slider-block">
+              <div class="slider-toprow"><label>Height</label><span class="slider-val">{{ sizeHeight }}px</span></div>
+              <input type="range" min="150" max="420" step="10" v-model.number="sizeHeight" :style="sliderFill(sizeHeight, 150, 420)">
+            </div>
+            <div class="slider-block" :class="{ 'row-disabled': !bgEnabled }">
+              <div class="slider-toprow"><label>Opacity</label><span class="slider-val">{{ opacity }}%</span></div>
+              <input type="range" min="20" max="95" v-model.number="opacity" :disabled="!bgEnabled" :style="sliderFill(opacity, 20, 95)">
+            </div>
+
+            <div class="toggle-row font-row">
+              <label>Message Font</label>
+            </div>
+            <div class="font-chips">
+              <span v-for="f in fontPresets"
+                    :key="f.id"
+                    class="font-chip"
+                    :class="{ selected: msgFont === f.id }"
+                    :style="{ fontFamily: f.family }"
+                    @click="msgFont = f.id">
+                {{ f.label }}
+              </span>
+            </div>
+
+            <div class="settings-group-label">THEME</div>
+            <div class="toggle-row">
+              <label>Accent Color</label>
+              <div class="color-field">
+                <input type="color" class="color-input" v-model="accent">
+                <span class="settings-val mono">{{ accent }}</span>
+              </div>
+            </div>
+            <div class="accent-swatches">
+              <span v-for="c in accentPresets"
+                    :key="c"
+                    class="accent-swatch"
+                    :class="{ selected: accent === c }"
+                    :style="{ backgroundColor: c, boxShadow: accent === c ? ('0 0 10px ' + c) : 'none' }"
+                    @click="accent = c">
+                <span class="accent-check" v-if="accent === c">✓</span>
+              </span>
+            </div>
+          </div>
+
+          <div class="settings-body" v-else>
+            <div class="settings-group-label">SHOW IN LIVE TAB</div>
+            <div class="toggle-row" v-for="tab in tabs.filter(t => t.id !== 'live')" :key="tab.id">
+              <label><span class="tab-icon">{{ tab.icon }}</span> {{ tab.label }}</label>
+              <div class="toggle-switch" :class="{ on: liveInclude[tab.id] }" @click="liveInclude[tab.id] = !liveInclude[tab.id]">
+                <div class="toggle-knob"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="settings-actions">
+            <button class="settings-btn reset" @click="resetSettings">Reset</button>
+            <button class="settings-btn cancel" @click="cancelSettings">Cancel</button>
+            <button class="settings-btn save" @click="saveSettings()">Apply</button>
+          </div>
+
+          <div class="settings-tip">Tip: Use <b>/chatsetting</b> to open this menu</div>
+        </div>
+
+        <suggestions v-else :message="message" :suggestions="suggestions">
+        </suggestions>
+      </div>
+    </div>
+  </script>
+
+  <!-- Message Template -->
+  <script type="text/x-template" id="message_template">
+    <div class="msg" :class="{ multiline }">
+      <span v-html="textEscaped"></span>
+      <span class="action-btn" v-if="action" @click="runAction">{{ action.label || 'برو' }} ›</span>
+      <span class="msg-actions">
+        <span class="msg-icon-btn star-btn" :class="{ active: starred }" @click="toggleStar" :title="starred ? 'حذف از ستاره‌دارها' : 'ستاره‌دار کن'">
+          <svg viewBox="0 0 24 24" width="12" height="12">
+            <path :fill="starred ? '#ffd166' : 'none'" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" d="M12 2.5l2.9 6.26L22 9.77l-5 4.87 1.18 6.88L12 18.27l-6.18 3.25L7 14.64 2 9.77l7.1-1.01L12 2.5z"/>
+          </svg>
+        </span>
+        <span class="msg-icon-btn" @click="quoteText" title="پاسخ / درج در چت">
+          <svg viewBox="0 0 24 24" width="12" height="12"><path fill="currentColor" d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z"/></svg>
+        </span>
+        <span class="msg-icon-btn" :class="{ copied }" @click="copyText" :title="copied ? 'کپی شد' : 'کپی متن'">
+          <svg v-if="!copied" viewBox="0 0 24 24" width="12" height="12"><path fill="currentColor" d="M16 1H4a2 2 0 0 0-2 2v14h2V3h12V1zm3 4H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2zm0 16H8V7h11v14z"/></svg>
+          <svg v-else viewBox="0 0 24 24" width="13" height="13"><path fill="#1dd1a1" d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg>
+        </span>
+      </span>
+    </div>
+  </script>
+
+  <!-- Suggestions Template -->
+  <script type="text/x-template" id="suggestions_template">
+    <ul class="suggestions" v-show="currentSuggestions.length > 0">
+      <li class="suggestion" v-for="s in currentSuggestions" :class="{ 'disabled': s.disabled }">
+        <span class="suggestion-mark">/</span>
+        <div class="suggestion-body">
+          <p>
+            <span :class="{ 'disabled': s.disabled }">
+              {{s.name}}
+            </span>
+            <span class="param"
+                  v-for="(p, index) in s.params"
+                  :class="{ 'disabled': p.disabled }">
+              [{{p.name}}]
+            </span>
+          </p>
+          <small class="help">
+            <template v-if="!s.disabled">
+              {{s.help}}
+            </template>
+            <template v-for="p in s.params" v-if="!p.disabled">
+              {{p.help}}
+            </template>
+          </small>
+        </div>
+      </li>
+    </ul>
+  </script>
+
+  <!-- Scripts -->
+  <script type="text/javascript" src="./Suggestions.js"></script>
+  <script type="text/javascript" src="./Message.js"></script>
+  <script type="text/javascript" src="./App.js"></script>
+
+  <!-- Main Entry -->
+  <script type="text/javascript">
+  window.post = (url, data) => {
+    var request = new XMLHttpRequest();
+    request.open('POST', url, true);
+    request.setRequestHeader('Content-Type', 'application/json; charset=UTF-8');
+    request.send(data);
+  }
+
+  const instance = new Vue({
+    el: '#app',
+    render: h => h(APP),
+  });
+
+  window.emulate = (type, detail = {}) => {
+    detail.type = type;
+    window.dispatchEvent(new CustomEvent('message', {
+      detail,
+    }));
+  };
+  </script>
+
+</body>
+</html>

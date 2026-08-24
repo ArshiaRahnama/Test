@@ -1,0 +1,249 @@
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&display=swap');
+
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Rajdhani', sans-serif; }
+html, body { width: 100%; height: 100%; background: transparent; overflow: hidden; }
+.hidden { display: none !important; }
+
+:root {
+  --bg: rgba(15, 17, 21, 0.92);
+  --bg-soft: rgba(26, 29, 36, 0.92);
+  --accent: #c9a24b;      /* warm amber "RP" accent, replaces default blue */
+  --accent-soft: rgba(201, 162, 75, 0.15);
+  --text: #e7e6e2;
+  --text-dim: #9a9a95;
+  --danger: #c85450;
+  --good: #5fae72;
+  --radius: 10px;
+}
+
+/* ============================== STATS WIDGET ============================== */
+#statsWidget {
+  position: fixed;
+  bottom: 230px;
+  right: 30px;
+  background: var(--bg);
+  border: 1px solid rgba(201, 162, 75, 0.35);
+  border-radius: var(--radius);
+  padding: 10px 16px;
+  min-width: 150px;
+  color: var(--text);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+}
+.statsTitle {
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--accent);
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+.statsRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--text-dim);
+  padding: 2px 0;
+}
+.statsRow span:last-child { color: var(--text); font-weight: 600; }
+#statsReportsRow {
+  border-top: 1px solid rgba(201, 162, 75, 0.15);
+  margin-top: 4px;
+  padding-top: 6px;
+}
+#statsReportsRow.hasOpen span:last-child {
+  color: var(--danger);
+  animation: pulseReport 1.4s infinite;
+}
+@keyframes pulseReport {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+
+/* ============================== RADIAL MENU ============================== */
+#radial {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+}
+#radialRing {
+  position: relative;
+  width: 320px;
+  height: 320px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--bg-soft) 40%, transparent 41%);
+  border: 1px solid rgba(201, 162, 75, 0.4);
+}
+.radialSlice {
+  position: absolute;
+  width: 110px;
+  height: 46px;
+  top: 50%;
+  left: 50%;
+  margin: -23px 0 0 -55px;
+  background: var(--bg);
+  border: 1px solid rgba(201, 162, 75, 0.3);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.12s, transform 0.12s;
+}
+.radialSlice:hover, .radialSlice.active {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+  transform: scale(1.06);
+}
+#radialLabel {
+  margin-top: 18px;
+  color: var(--text-dim);
+  font-size: 13px;
+  letter-spacing: 1px;
+}
+
+/* ============================== PANEL (inspect/reports/chatlog) ============================== */
+#panel {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  width: 420px;
+  max-height: 65vh;
+  background: var(--bg);
+  border: 1px solid rgba(201, 162, 75, 0.35);
+  border-radius: var(--radius);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.55);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateX(-24px);
+  animation: panelIn 0.28s ease forwards;
+}
+@keyframes panelIn {
+  from { opacity: 0; transform: translateX(-24px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+#panelHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 18px;
+  background: var(--bg-soft);
+  border-bottom: 1px solid rgba(201, 162, 75, 0.25);
+}
+#panelTitle {
+  color: var(--accent);
+  font-weight: 700;
+  letter-spacing: 1px;
+  font-size: 15px;
+}
+#panelClose {
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 16px;
+}
+#panelClose:hover { color: var(--danger); }
+
+#panelSearchWrap { padding: 10px 18px; border-bottom: 1px solid rgba(201, 162, 75, 0.15); }
+#panelSearch {
+  width: 100%;
+  background: var(--bg-soft);
+  border: 1px solid rgba(201, 162, 75, 0.25);
+  border-radius: 6px;
+  padding: 8px 10px;
+  color: var(--text);
+  font-size: 13px;
+  outline: none;
+}
+#panelSearch:focus { border-color: var(--accent); }
+
+#panelBody {
+  padding: 14px 18px;
+  overflow-y: auto;
+  color: var(--text);
+  font-size: 13px;
+}
+#panelBody::-webkit-scrollbar { width: 6px; }
+#panelBody::-webkit-scrollbar-thumb { background: rgba(201,162,75,0.35); border-radius: 3px; }
+
+.infoRow { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.infoRow span:first-child { color: var(--text-dim); }
+.infoRow span:last-child { font-weight: 600; }
+
+.sectionTitle {
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(201, 162, 75, 0.25);
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+.sectionTitle.sectionWarn { color: var(--danger); }
+.noteLine {
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  font-style: italic;
+}
+
+.logLine { padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
+.logLine .who { color: var(--accent); font-weight: 600; }
+.logLine .time { color: var(--text-dim); font-size: 11px; margin-left: 6px; }
+
+.reportCard {
+  padding: 10px;
+  margin-bottom: 8px;
+  background: var(--bg-soft);
+  border-left: 3px solid var(--accent);
+  border-radius: 4px;
+}
+.reportCard.status-open { border-left-color: var(--danger); }
+.reportCard.status-pending { border-left-color: #d6a83a; }
+.reportCard .rTitle { font-weight: 700; color: var(--text); }
+.reportCard .rMeta { color: var(--text-dim); font-size: 11px; margin-top: 4px; }
+.statusTag { font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+.statusTag.status-open { color: var(--danger); }
+.statusTag.status-pending { color: #d6a83a; }
+.rActions { margin-top: 8px; display: flex; gap: 8px; }
+.rBtn {
+  border: 1px solid rgba(201, 162, 75, 0.4);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+.rBtn.accept:hover { background: var(--good); border-color: var(--good); color: #0f1115; }
+.rBtn.close:hover { background: var(--danger); border-color: var(--danger); color: #0f1115; }
+
+/* ============================== NEW-REPORT TOAST ============================== */
+#reportToast {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translate(-50%, -140%);
+  background: var(--danger);
+  color: #fff;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  padding: 12px 24px;
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  opacity: 0;
+  transition: transform 0.35s ease, opacity 0.35s ease;
+  z-index: 999;
+}
+#reportToast.show {
+  transform: translate(-50%, 0);
+  opacity: 1;
+}

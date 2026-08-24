@@ -1,0 +1,230 @@
+<html>
+    <head>
+        <link href="style.css" rel="stylesheet" type="text/css" />
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+        <style>
+            .general {display: none;}
+            .main {display: none;}
+            .deposit {display: none;}
+            .depositUI {display: none;} 
+            .withdrawUI {display: none;}
+            .balanceUI {display:none;}
+            .transferUI {display: none;}
+        </style>
+    </head>
+    <body>
+        <div class="general">
+            <h3 class="sans">Welcome: <span class="username1"></span></h3>
+            <div class="mjdiv">
+                <div class="cardsec">
+                    <img src="./img/credit-card-on-png-background-600nw-2259495135.png" alt="">
+                </div>
+                <h4 class="sans2">IBAN: <span class="cardnumber1"></span></h4>
+                <h4 class="mj1">Mojoodi: <span class="curbalance"></span></h4>
+            </div>
+            <div class="main">  
+                <div class="tt">
+                    <h2 id="closet">>></h2>
+                    <img src="./img/Untitled-1.png"  alt="">
+                </div>          
+                <button id="deposit" class="mainbt"> <img src="img/send-square--36250.png" width="20px" alt="elogo">  Variz</button>
+                <button id="withdraw" class="mainbt"><img src="img/wallet-passes-app--2504.png" width="20px" alt="elogo"> Bardasht</button>
+                <!-- <button id="balance" class="mainbt"> <img src="img/sack--15711.png" width="20px" alt="elogo"> Mojoodi</button> -->
+                <button id="transfer" class="mainbt"> <img src="img/document--rasanika.com.png" width="20px" alt="elogo"> Enteghal</button>
+            </div>
+            <button id="exitbank"> <img src="img/right-from-bracket--12507.png" width="20px" alt="elogo"> Khorooj</button>
+        </div>
+        <div class='depositUI'>
+            <form id="deposit1">
+                <h3 class="sans">Welcome: <span class="username1"></span></h3>
+                <h4 class="mj2">Mojoodi: <span class="curbalance2"></span></h4>
+                <input id="amount" type="text" placeholder="Meghdar Bardasht Pol" class="disinp"><br>
+                <button id="deposit1" type="submit" class="disbt"> <img src="img/send-square--36250.png" width="20px" alt="elogo"> Variz</button>
+                <button id="canceldeposit" type="button" class="disbt"> <img src="img/right-from-bracket--12507.png" width="20px" alt="elogo"> Bazgasht</button> 	
+            </form>
+        </div>
+        <div class='withdrawUI'>
+            <form id="withdraw1">
+                <h3 class="sans">Welcome: <span class="username1"></span></h3>
+                <h4 class="mj3">Mojoodi: <span class="curbalance3"></span></h4>
+                <input id="amountw" type="text" class="widinp" placeholder="Amount to withdraw"><br>
+                <button id="withdraw1" class="widbt" type="submit">Bardasht</button>
+                <button id="cancelwithdraw" class="widbt" type="button">Bazgasht</button> 	
+            </form>
+        </div>
+        <div class='transferUI'>
+            <form id="transfer1">
+                <h3 class="sans">Welcome: <span class="username1"></span></h3>
+                <h4 class="mj4">Mojoodi: <span class="curbalance"></span></h4>
+                <input id="to" type="text" placeholder="To Player ID" class="trinp"><br>
+                <input id="amountt" type="text" placeholder="Amount to transfer" class="trinp"><br>
+                <button id="transfer1" type="submit" class="trbt">Enteghal</button>
+                <button id="canceltransfer" type="button" class="trbt">Bazgasht</button> 	
+            </form>
+        </div>
+    </body>
+    <script type="text/javascript">
+        $(function() {
+            window.addEventListener('message', function(event) {
+                if (event.data.type == "openGeneral"){
+                    $('.main').css('display', 'block')
+                    $('.general').css('display', 'block')
+                    $('.deposit').css('display', 'none')
+                } else if(event.data.type == "balanceHUD") {
+                    $('.username1').html(event.data.player);
+                    $('.curbalance').html('<span style="color:green">' + '$' + '</span>' + event.data.balance)
+                    $('.cardnumber1').html(event.data.cardnumber);
+                } else if (event.data.type == "closeAll"){
+                    $('.main').css('display', 'none')
+                    $('.general').css('display', 'none')
+                    $('.deposit').css('display', 'none')
+                } 
+            });
+        });
+
+        $('#exitbank').click(function(){
+            $('.general').css('display', 'none')
+            $('.main').css('display', 'none')
+            $.post('http://new_banking/NUIFocusOff', JSON.stringify({}));
+        });
+
+        $('#deposit').click(function(){
+            $('.general').css('display', 'none')
+            $('.depositUI').css('display', 'block')
+            $('#deposit1').css('display', 'block')
+        });
+
+        $('#cancelbalance').click(function(){
+            $('.general').css('display', 'block')
+            $('.balanceUI').css('display', 'none')
+        });
+
+        $('#balance').click(function(){
+            $('.general').css('display', 'none')
+            $('.balanceUI').css('display', 'block')
+        });
+
+        $('#withdraw').click(function(){
+            $('.general').css('display', 'none')
+            $('.withdrawUI').css('display', 'block')
+            $('#withdraw1').css('display', 'block')
+        });
+
+        $('#canceldeposit').click(function(){
+            $('.general').css('display', 'block')
+            $('.depositUI').css('display', 'none')
+        });
+
+        $('#cancelwithdraw').click(function(){
+            $('.general').css('display', 'block')
+            $('.withdrawUI').css('display', 'none')
+        });
+
+        $("#deposit1").submit(function(e) {
+            e.preventDefault();
+            $.post('http://new_banking/deposit', JSON.stringify({
+                amount: $("#amount").val()
+            }));
+            $('.general').css('display', 'none')
+            $('.depositUI').css('display', 'none')
+            $('#deposit1').css('display', 'none')
+            $.post('http://new_banking/NUIFocusOff', JSON.stringify({}));
+        });
+
+        $("#transfer1").submit(function(h) {
+            h.preventDefault();
+            $.post('http://new_banking/transfer', JSON.stringify({
+                to: $("#to").val(),
+                amountt: $("#amountt").val()
+            }));
+            $('.general').css('display', 'none')
+            $('.depositUI').css('display', 'none')
+            $('#deposit1').css('display', 'none')
+            $('.transferUI').css('display', 'none')
+            $('#transfer1').css('display', 'none')
+            $('.withdrawUI').css('display', 'none')
+            $('.withdraw11').css('display', 'none')
+            $.post('http://new_banking/NUIFocusOff', JSON.stringify({}));
+        });
+
+        $("#withdraw1").submit(function(g) {
+            g.preventDefault();
+            $.post('http://new_banking/withdrawl', JSON.stringify({
+                amountw: $("#amountw").val()
+            }));
+            $('.general').css('display', 'none')
+            $('.depositUI').css('display', 'none')
+            $('#deposit1').css('display', 'none')
+            $('.withdrawUI').css('display', 'none')
+            $('.withdraw11').css('display', 'none')
+            $.post('http://new_banking/NUIFocusOff', JSON.stringify({}));
+        });
+
+        $('#balance').click(function(){
+            $('.general').css('display', 'none')
+            $('.balanceUI').css('display', 'none')
+            $.post('http://new_banking/balance', JSON.stringify({}));
+        });
+
+        $('#transfer').click(function(){
+            $('.general').css('display', 'none')
+            $('.transferUI').css('display', 'block')
+            $('#transfer1').css('display', 'block')
+        });
+
+        $('#canceltransfer').click(function(){
+            $('.general').css('display', 'block')
+            $('.transferUI').css('display', 'none')
+        });
+
+        document.onkeyup = function(data){
+            if (data.which == 27){
+                $('.main').css('display', 'none')
+                $('.general').css('display', 'none')
+                $('.deposit').css('display', 'none')
+                $('.withdraw').css('display', 'none')
+                $('.transferUI').css('display', 'none')
+                $('.depositUI').css('display', 'none')
+                $('#deposit1').css('display', 'none')
+                $('.withdrawUI').css('display', 'none')
+                $('.withdraw11').css('display', 'none')
+                $.post('http://new_banking/NUIFocusOff', JSON.stringify({}));
+            }
+        }
+
+        const closetButton = document.querySelector('.tt #closet');
+        const mainButtons = document.querySelectorAll('.main .mainbt');
+        const ttImage = document.querySelector('.tt img');
+        let isCollapsed = false;
+        const maini = document.querySelector('.main')
+
+closetButton.addEventListener('click', () => {
+    if (isCollapsed) {
+        mainButtons.forEach(button => {
+            const img = button.querySelector('img');
+            const text = button.getAttribute('data-text');
+            button.innerHTML = ''; 
+            button.appendChild(img); 
+            button.appendChild(document.createTextNode(text)); 
+            button.style.width = '90%'; 
+            closetButton.style.right = "70%";
+            maini.style.left = '83%';
+        });
+        ttImage.style.width = '150px'; 
+        isCollapsed = false;
+    } else {
+        mainButtons.forEach(button => {
+            const img = button.querySelector('img');
+            button.setAttribute('data-text', button.textContent.trim());
+            button.innerHTML = ''; 
+            button.appendChild(img); 
+            maini.style.left = '95%';
+             closetButton.style.right = "40%"
+            button.style.width = '50px'; 
+        });
+        ttImage.style.width = '50px'; 
+        isCollapsed = true;
+    }
+});
+    </script>
+</html>

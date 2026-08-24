@@ -1,0 +1,77 @@
+/* googleFonts */
+@import url('https://fonts.googleapis.com/css2?family=Archivo&display=swap');
+
+/* General styling */
+* {
+	box-sizing: border-box;
+	font-family: 'Archivo', sans-serif;
+	margin: 0; padding: 0;
+}
+
+#container {
+	position: absolute;
+	padding: 0 10px;
+	color: #fff;
+	bottom: 5vh;
+	left: 18.5%;
+	width: 360px;
+	text-shadow: 2px 0px 3px #000;
+	transform: scale(1.0);
+}
+.directionHolder { 
+	width: 20%;
+	float: left;
+	display:flex;
+	color:#a7a7a7;
+	font-size: 1.7rem;
+}
+.directionHolder h4 { 
+	display: flex;
+    text-align: center;
+    margin-right: auto;
+    margin-left: auto;
+}
+.directionHolder h4 {
+	color:#fff;
+	padding:0 2px;
+	font-weight: bold;
+}
+.addressHolder {
+	padding-left: .5rem;
+	width: 80%;
+	float: right;
+	color:#a7a7a7;
+}
+#newbie { 
+	width: 100%;
+	display: block;
+	color:#00ff4a;
+	/* text-shadow: 0px 0px 15px #00ff4a; */
+	/* text-shadow: 2px 2px 2px #333; */
+	font-weight:bold;
+	margin-bottom:5px;
+}
+.yellow { 
+	color:#dbac1e;
+	/* text-shadow: 0px 0px 15px #dbac1e; */
+	font-weight:bold;
+}
+.red { 
+	color:#db1e1e;
+	/* text-shadow: 0px 0px 15px #dbac1e; */
+	font-weight:bold;
+}
+.white { 
+	/* text-shadow: 2px 2px 2px #333; */
+	color:#fff;
+}
+@media(min-width:1921px) and (max-height:1081px) {
+	#container {
+		left: 25%;
+	}
+}
+@media(max-width:1441px) and (max-height:901px) {
+	#container {
+		left: 19.5%;
+	}
+}

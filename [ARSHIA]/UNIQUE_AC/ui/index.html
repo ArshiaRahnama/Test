@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>UNIQUE_AC Admin Control Center</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="./css/style.css" rel="stylesheet">
+  <script src="nui://game/ui/jquery.js" type="text/javascript"></script>
+</head>
+<body>
+  <section class="uniqueac-shell" id="main-ui" style="display:none;">
+    <div class="uniqueac-panel uniqueac-panel--tabs">
+      <header class="uniqueac-header">
+        <div class="brand-lockup">
+          <div class="brand-mark"><img src="./assists/logo.png" alt="UNIQUE_AC"></div>
+          <div class="brand-copy">
+            <strong id="brand-name">UNIQUE<span>_AC</span></strong>
+            <small>SECURITY OPERATIONS</small>
+          </div>
+        </div>
+        <div class="page-title">
+          <span id="breadcrumb">Dashboard</span>
+          <h1 id="title">Admin Control Center</h1>
+        </div>
+        <div class="header-actions">
+          <button class="streamer-toggle" id="streamer-toggle" onclick="toggleStreamerMode()" title="Hide player names/IDs (safe for streaming)">🎥 Streamer Mode</button>
+          <div class="status-pill"><i></i><span>Protected</span></div>
+          <button class="back-button" id="header-back" onclick="goBack()" style="display:none;">Back</button>
+          <button class="close-button" onclick="closeUI()" aria-label="Close UNIQUE_AC menu">×</button>
+        </div>
+      </header>
+
+      <nav class="admin-tabs" aria-label="UNIQUE_AC admin tabs">
+        <button class="tab-button is-active" data-page="home" onclick="openPage('home')"><span>⌁</span>Dashboard</button>
+        <button class="tab-button" data-page="admin" onclick="openPage('admin')"><span>⚡</span>Self</button>
+        <button class="tab-button" data-page="players" onclick="openPage('players')"><span>👥</span>Players</button>
+        <button class="tab-button" data-page="server" onclick="openPage('server')"><span>📦</span>Entity</button>
+        <button class="tab-button" data-page="teleport" onclick="openPage('teleport')"><span>📍</span>Teleport</button>
+        <button class="tab-button" data-page="vehicle" onclick="openPage('vehicle')"><span>🚗</span>Vehicle</button>
+        <button class="tab-button" data-page="bans" onclick="openPage('bans')"><span>⛔</span>Bans</button>
+        <button class="tab-button" data-page="admins" onclick="openPage('admins')"><span>🛡️</span>Admins</button>
+        <button class="tab-button" data-page="whitelist" onclick="openPage('whitelist')"><span>✅</span>Whitelist</button>
+        <button class="tab-button" data-page="unban" onclick="openPage('unban')"><span>🔓</span>Unban</button>
+        <button class="tab-button" data-page="quarantine" onclick="openPage('quarantine')"><span>🧊</span>Quarantine<i class="quarantine-badge" id="quarantine-badge" hidden>0</i></button>
+        <button class="tab-button" data-page="adminlog" onclick="openPage('adminlog')"><span>🧾</span>Admin Log</button>
+        <button class="tab-button" data-page="appeals" onclick="openPage('appeals')"><span>📮</span>Appeals<i class="quarantine-badge" id="appeals-badge" hidden>0</i></button>
+        <button class="tab-button" data-page="changelog" onclick="openPage('changelog')"><span>📝</span>Changelog</button>
+      </nav>
+
+      <main class="uniqueac-body">
+        <section class="view view-home is-active" id="view-home" data-title="Admin Control Center" data-breadcrumb="Dashboard">
+          <div class="hero-card hero-card--dashboard">
+            <div>
+              <span class="eyebrow">LIVE SECURITY OVERVIEW <em class="build-badge">V8.0.0 · +3 NEW DETECTIONS</em></span>
+              <h2>UNIQUE_AC Tactical Admin Panel</h2>
+              <p>Dashboard is the default tab. Switch tabs to load self tools, players, entities, teleport and vehicle control.</p>
+            </div>
+            <div class="hero-orb"><span>/uniqueac</span><small>Admin Menu</small></div>
+          </div>
+
+          <div class="status-strip">
+            <div class="status-card" id="status-card-godmode"><small>Godmode</small><b id="status-godmode">OFF</b></div>
+            <div class="status-card" id="status-card-invisible"><small>Invisible</small><b id="status-invisible">OFF</b></div>
+            <div class="status-card" id="status-card-vision"><small>Vision</small><b id="status-vision">Normal</b></div>
+            <div class="status-card" id="status-card-spectate"><small>Spectate</small><b id="status-spectate">OFF</b></div>
+          </div>
+
+          <div class="dashboard-grid dashboard-grid--center" id="dashboard-grid">
+            <button class="dash-card primary" data-page="players" onclick="openPage('players')"><span class="card-icon">👥</span><strong id="stat-players">0</strong><small>Online Players</small><em>Open players menu</em></button>
+            <button class="dash-card" data-page="server" onclick="openPage('server')"><span class="card-icon">📦</span><strong id="stat-props">0</strong><small>Props / Objects</small><em>Entity menu</em></button>
+            <button class="dash-card" data-page="vehicle" onclick="openPage('vehicle')"><span class="card-icon">🚗</span><strong id="stat-vehicles">0</strong><small>Vehicles</small><em>Vehicle menu</em></button>
+            <button class="dash-card" data-page="server" onclick="openPage('server')"><span class="card-icon">🧍</span><strong id="stat-peds">0</strong><small>Peds</small><em>Cleanup tools</em></button>
+            <button class="dash-card danger" data-page="bans" onclick="openPage('bans')"><span class="card-icon">⛔</span><strong id="stat-bans">0</strong><small>Banned Players</small><em>Ban overview</em></button>
+            <button class="dash-card" data-page="admins" onclick="openPage('admins')"><span class="card-icon">🛡️</span><strong id="stat-admins">0</strong><small>Admins</small><em>Admin access</em></button>
+            <button class="dash-card" data-page="whitelist" onclick="openPage('whitelist')"><span class="card-icon">✅</span><strong id="stat-whitelist">0</strong><small>Whitelist</small><em>Trusted users</em></button>
+            <button class="dash-card" data-page="unban" onclick="openPage('unban')"><span class="card-icon">🔓</span><strong id="stat-unban">0</strong><small>Unban Access</small><em>Unban permissions</em></button>
+          </div>
+
+          <div class="overview-grid">
+            <div class="overview-card">
+              <div class="section-head compact"><h2>Latest Admins</h2><p>Last 5 saved admin records.</p></div>
+              <div class="record-list mini" id="overview-admins"></div>
+            </div>
+            <div class="overview-card">
+              <div class="section-head compact"><h2>Latest Bans</h2><p>Last 5 ban records.</p></div>
+              <div class="record-list mini" id="overview-bans"></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="view" id="view-admin" data-title="Self Menu" data-breadcrumb="Dashboard / Self Menu">
+          <div class="section-head"><h2>Self Menu</h2><p>Personal admin modes and quick actions. All modes grant anti-cheat grace while active.</p></div>
+          <div class="tool-grid two">
+            <button class="tool-card" id="godmode" onclick="doAction('godmode')"><span>⚡</span><b>Godmode</b><small id="godmode-state">OFF</small></button>
+            <button class="tool-card" id="invisible" onclick="doAction('invisible')"><span>🫥</span><b>Invisible</b><small id="invisible-state">OFF</small></button>
+          </div>
+          <div class="tool-grid four">
+            <button class="tool-card" id="noclip" onclick="doAction('noclip')"><span>🛸</span><b>NoClip</b><small id="noclip-state">OFF</small></button>
+            <button class="tool-card" id="superjump" onclick="doAction('superjump')"><span>🦘</span><b>Super Jump</b><small id="superjump-state">OFF</small></button>
+            <button class="tool-card" id="fastrun" onclick="doAction('fastrun')"><span>🏃</span><b>Fast Run</b><small id="fastrun-state">OFF</small></button>
+            <button class="tool-card" id="playerBlips" onclick="doAction('playerBlips')"><span>📡</span><b>Player Blips</b><small id="playerBlips-state">OFF</small></button>
+          </div>
+          <div class="tool-grid two">
+            <button class="tool-card" id="infiniteStamina" onclick="doAction('infiniteStamina')"><span>🔋</span><b>Infinite Stamina</b><small id="infiniteStamina-state">OFF</small></button>
+            <button class="tool-card" id="noRagdoll" onclick="doAction('noRagdoll')"><span>🧍</span><b>No Rag Doll</b><small id="noRagdoll-state">OFF</small></button>
+          </div>
+          <div class="tool-grid five">
+            <button class="tool-card compact" onclick="doAction('suicide')"><span>☠️</span><b>Suicide</b></button>
+            <button class="tool-card compact" onclick="doAction('heal')"><span>❤️</span><b>Heal</b></button>
+            <button class="tool-card compact" onclick="doAction('giveAllWeapon')"><span>🔫</span><b>All Weapons</b></button>
+            <button class="tool-card compact" onclick="doAction('removeAllWeapon')"><span>🧹</span><b>Clear Weapons</b></button>
+            <button class="tool-card compact" onclick="doAction('copyLiveCoords')"><span>📋</span><b>Copy Coords</b></button>
+          </div>
+          <div class="tool-grid two">
+            <button class="tool-card" onclick="changeVisionView('night')"><span>🌙</span><b>Night Vision</b><small>Toggle</small></button>
+            <button class="tool-card" onclick="changeVisionView('thermal')"><span>🔥</span><b>Thermal Vision</b><small>Toggle</small></button>
+          </div>
+          <div class="coords-card"><span>LIVE COORDINATES</span><code class="coords-loaction">Waiting for coordinates...</code></div>
+        </section>
+
+        <section class="view" id="view-players" data-title="Players Menu" data-breadcrumb="Dashboard / Players Menu">
+          <div class="section-head"><h2>Players Menu</h2><p>Click a player to open moderation and teleport actions.</p></div>
+          <div class="search-box"><span>Search</span><input class="record-search" data-target=".playerList" type="text" placeholder="Search by player name, ID, license, admin, whitelist..." autocomplete="off"></div>
+          <div class="list-grid playerList"></div>
+          <div class="playerAction action-panel" style="display:none;">
+            <div class="action-panel-head"><button class="mini-back" onclick="closePlayerActionMenu()">Back to players</button><strong id="playerName">Player</strong><span>#<b id="playerId">0</b></span></div>
+            <div class="mini-stats"><div><small>Health</small><b id="heartCount">0</b></div><div><small>Armour</small><b id="armourCount">0</b></div><div><small>Trust</small><b id="profile-trust">100</b></div><div><small>Risk</small><b id="profile-risk">0</b></div></div>
+            <div class="profile-notes">
+              <div class="section-head compact"><h2>Admin Notes</h2><p>Shared with your whole staff team.</p></div>
+              <div class="profile-notes-list" id="profile-notes-list"></div>
+              <div class="input-row"><input id="new-note-text" type="text" maxlength="500" placeholder="Add a note about this player..." autocomplete="off"><button onclick="addPlayerNote()">Add</button></div>
+            </div>
+            <div class="profile-history">
+              <div class="section-head compact"><h2>Recent Detections</h2><p>Last flags and actions for this player.</p></div>
+              <div class="profile-history-list" id="profile-history-list"></div>
+            </div>
+            <div class="moderation-box">
+              <label>Ban / Kick reason</label>
+              <input id="moderation-reason" type="text" maxlength="180" placeholder="Example: Toxic behavior, exploit abuse, event spam..." autocomplete="off">
+              <label class="confirm-ban-label">Type the player's exact current name to confirm a ban</label>
+              <input id="moderation-confirm-name" type="text" maxlength="80" placeholder="Type name exactly, e.g. John_Doe" autocomplete="off">
+            </div>
+            <div class="tool-grid five player-action-grid">
+              <button class="tool-card compact" onclick="doActionOnTargetPlayer('gotoPlayer')"><span>➡️</span><b>Goto</b></button>
+              <button class="tool-card compact" onclick="doActionOnTargetPlayer('bringPlayer')"><span>⬅️</span><b>Bring</b></button>
+              <button class="tool-card compact" onclick="doActionOnTargetPlayer('slapPlayer')"><span>👋</span><b>Slap</b></button>
+              <button class="tool-card compact danger" onclick="doActionOnTargetPlayer('kickPlayer')"><span>👢</span><b>Kick</b><small>Uses reason</small></button>
+              <button class="tool-card compact" onclick="doActionOnTargetPlayer('spectate')"><span>🎥</span><b>Spectate</b></button>
+              <button class="tool-card compact danger" onclick="doActionOnTargetPlayer('ban')"><span>⛔</span><b>Ban</b><small>Uses reason</small></button>
+              <button class="tool-card compact" onclick="doActionOnTargetPlayer('addToAdmin')"><span>🛡️</span><b>Make Admin</b></button>
+              <button class="tool-card compact" onclick="doActionOnTargetPlayer('addToWhiteList')"><span>✅</span><b>Whitelist</b></button>
+              <button class="tool-card compact" onclick="doActionOnTargetPlayer('addToUnban')"><span>🔓</span><b>Unban Access</b></button>
+            </div>
+          </div>
+        </section>
+
+        <section class="view" id="view-server" data-title="Entity Menu" data-breadcrumb="Dashboard / Entity Menu">
+          <div class="section-head"><h2>Entity Menu</h2><p>Cleanup tools are server-authorized. Player peds are never deleted.</p></div>
+          <div class="tool-grid four">
+            <button class="tool-card danger" onclick="doOnServer('delete_vehicles')"><span>🚗</span><b>Delete Vehicles</b><small id="server-vehicles">0 detected</small></button>
+            <button class="tool-card danger" onclick="doOnServer('delete_objects')"><span>📦</span><b>Delete Props</b><small id="server-props">0 detected</small></button>
+            <button class="tool-card danger" onclick="doOnServer('delete_peds')"><span>🧍</span><b>Delete Peds</b><small id="server-peds">0 detected</small></button>
+            <button class="tool-card danger" onclick="doOnServer('delete_all_entity')"><span>🔥</span><b>Delete All</b><small>Vehicles, props and peds</small></button>
+          </div>
+        </section>
+
+        <section class="view" id="view-teleport" data-title="Teleport Menu" data-breadcrumb="Dashboard / Teleport Menu">
+          <div class="section-head"><h2>Teleport Menu</h2><p>Admin teleport actions grant temporary grace to prevent false teleport bans.</p></div>
+          <div class="form-grid">
+            <div class="form-card center"><span>📍</span><h3>Waypoint</h3><button onclick="teleportToWaypoint()">Teleport to Waypoint</button></div>
+            <div class="form-card"><span>🧭</span><h3>Manual Coordinates</h3><div class="input-row"><input id="x-coords" placeholder="X"><input id="y-coords" placeholder="Y"><input id="z-coords" placeholder="Z"></div><button onclick="teleportToCoords()">Teleport</button></div>
+            <div class="form-card"><span>🚧</span><h3>RP-Stop Zone</h3><div class="input-row"><input id="zone-radius" placeholder="Radius (m)" value="15"></div><div class="button-row"><button onclick="createRpZoneHere()">Create Here</button><button class="danger-btn" onclick="clearMyRpZones()">Clear My Zones</button></div></div>
+          </div>
+        </section>
+
+        <section class="view" id="view-vehicle" data-title="Vehicle Menu" data-breadcrumb="Dashboard / Vehicle Menu">
+          <div class="section-head"><h2>Vehicle Menu</h2><p>Spawn, repair, color and fully customize your current vehicle.</p></div>
+          <div class="form-grid">
+            <div class="form-card"><span>🚘</span><h3>Spawn For Yourself</h3><input id="vehicle-name-m" placeholder="vehicle model, e.g. sultan"><button onclick="spawnVehicleForSelf()">Spawn Vehicle</button></div>
+            <div class="form-card"><span>🎯</span><h3>Spawn For Player</h3><input id="vehicle-name-o" placeholder="vehicle model"><input id="target-player" placeholder="target server id"><button onclick="spawnVehicleOthers()">Spawn For Target</button></div>
+            <div class="form-card"><span>🎨</span><h3>Vehicle Color</h3><div class="input-row"><input id="veh-r" placeholder="R" value="255"><input id="veh-g" placeholder="G" value="120"><input id="veh-b" placeholder="B" value="24"></div><button onclick="setVehicleColor()">Apply RGB</button></div>
+            <div class="form-card center"><span>🛠️</span><h3>Current Vehicle</h3><div class="button-row"><button onclick="vehicleAction('repairVehicle')">Repair</button><button onclick="vehicleAction('cleanVehicle')">Clean</button><button onclick="vehicleAction('maxVehicleMods')">Full Custom</button><button class="danger-btn" onclick="vehicleAction('deleteCurrentVehicle')">Delete</button></div></div>
+          </div>
+        </section>
+
+        <section class="view" id="view-bans" data-title="Banned Players" data-breadcrumb="Dashboard / Banned Players"><div class="section-head"><h2>Banned Players</h2><p>Player name is shown first, identifiers below. Click a record to unban it.</p></div><div class="search-box"><span>Search</span><input class="record-search" data-target="#ban-records" type="text" placeholder="Search by name, license, discord, Ban ID, reason..." autocomplete="off"></div><div class="record-list paged-list" id="ban-records"></div><div class="pager" id="ban-pager"></div></section>
+
+        <section class="view" id="view-admins" data-title="Access Menu" data-breadcrumb="Dashboard / Access Menu">
+          <div class="section-head"><h2>Admins</h2><p>Add online players or click a record to remove admin access.</p></div>
+          <div class="access-picker"><div class="access-picker-head"><div><h3>Add online player as admin</h3><p>The server saves name + license.</p></div><button type="button" onclick="refreshAccessPlayers('admins')">Refresh</button></div><div class="search-box mini-search"><span>Online Search</span><input class="record-search" data-target="#admin-online-picker" type="text" placeholder="Search online player by name, ID or license..." autocomplete="off"></div><div class="access-player-list" id="admin-online-picker"></div></div>
+          <div class="section-head compact"><h2>Current Admins</h2><p>Click a record to remove access.</p></div><div class="search-box"><span>Search</span><input class="record-search" data-target="#admin-records" type="text" placeholder="Search by admin name, license or record ID..." autocomplete="off"></div><div class="record-list paged-list" id="admin-records"></div><div class="pager" id="admin-pager"></div>
+        </section>
+
+        <section class="view" id="view-unban" data-title="Unban Access" data-breadcrumb="Dashboard / Unban Access"><div class="section-head"><h2>Unban Access</h2><p>Click a record to remove unban permission.</p></div><div class="search-box"><span>Search</span><input class="record-search" data-target="#unban-records" type="text" placeholder="Search by name, license or record ID..." autocomplete="off"></div><div class="record-list paged-list" id="unban-records"></div><div class="pager" id="unban-pager"></div></section>
+
+        <section class="view" id="view-whitelist" data-title="Whitelist" data-breadcrumb="Dashboard / Whitelist">
+          <div class="section-head"><h2>Whitelist</h2><p>Add online players or click a record to remove whitelist access.</p></div>
+          <div class="access-picker"><div class="access-picker-head"><div><h3>Add online player to whitelist</h3><p>The server saves name + license.</p></div><button type="button" onclick="refreshAccessPlayers('whitelist')">Refresh</button></div><div class="search-box mini-search"><span>Online Search</span><input class="record-search" data-target="#whitelist-online-picker" type="text" placeholder="Search online player by name, ID or license..." autocomplete="off"></div><div class="access-player-list" id="whitelist-online-picker"></div></div>
+          <div class="section-head compact"><h2>Current Whitelist</h2><p>Click a record to remove access.</p></div><div class="search-box"><span>Search</span><input class="record-search" data-target="#whitelist-records" type="text" placeholder="Search by whitelist name, license or record ID..." autocomplete="off"></div><div class="record-list paged-list" id="whitelist-records"></div><div class="pager" id="whitelist-pager"></div>
+        </section>
+
+        <section class="view" id="view-quarantine" data-title="Quarantine Review" data-breadcrumb="Dashboard / Quarantine">
+          <div class="section-head"><h2>Quarantine Review</h2><p>Players whose Trust Score hit zero are frozen here instead of being auto-punished. Approve to apply the original detection's punishment, or Release to clear them and restore some trust.</p></div>
+          <div class="quarantine-list" id="quarantine-list"></div>
+          <div class="quarantine-empty" id="quarantine-empty">✅ No one is currently in quarantine.</div>
+        </section>
+
+        <section class="view" id="view-adminlog" data-title="Admin Log" data-breadcrumb="Dashboard / Admin Log">
+          <div class="section-head"><h2>Admin Action Log</h2><p>Who did what to whom, for staff accountability.</p></div>
+          <div class="record-list" id="adminlog-list"></div>
+          <div class="quarantine-empty" id="adminlog-empty">No admin actions recorded yet.</div>
+        </section>
+
+        <section class="view" id="view-appeals" data-title="Ban Appeals" data-breadcrumb="Dashboard / Appeals">
+          <div class="section-head"><h2>Ban Appeals</h2><p>Submitted through the standalone appeal form. Approve unbans them, Reject keeps the ban.</p></div>
+          <div class="quarantine-list" id="appeals-list"></div>
+          <div class="quarantine-empty" id="appeals-empty">📭 No pending appeals.</div>
+        </section>
+
+        <section class="view" id="view-changelog" data-title="Changelog" data-breadcrumb="Dashboard / Changelog">
+          <div class="section-head"><h2>Changelog</h2><p>Read straight from update.txt — always matches what's actually installed.</p></div>
+          <pre class="changelog-box" id="changelog-box">Loading…</pre>
+        </section>
+      </main>
+
+      <footer class="uniqueac-footer"><span id="footer-brand">UNIQUE_AC Hardened UI</span><i></i><span>ESC: Back / Close</span><i></i><span class="footer-credit" id="footer-credit">Developed by Arshia · arshiahub.ir</span><i></i><b id="footer-version">V9.6.0</b></footer>
+    </div>
+  </section>
+  <script src="./js/script.js" type="text/javascript"></script>
+</body>
+</html>

@@ -1,0 +1,1138 @@
+/* ============================================================
+   UniqueRP Paintball — Match Making Lobby
+   Tactical ops-center look: dark glass panels, hairline grid,
+   arena-orange for actions, blue/red kept as literal team colors.
+   All existing IDs/classes are preserved — script.js is untouched.
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap');
+
+:root {
+    --bg-void: #060505;
+    --panel: rgba(13, 12, 14, 0.82);
+    --panel-2: rgba(20, 18, 20, 0.72);
+    --line: rgba(255, 255, 255, 0.09);
+    --accent: #ff5a36;
+    --accent-2: #ffb238;
+    --team-blue: #2f8fe0;
+    --team-red: #e5384f;
+    --text-hi: #f5f3ef;
+    --text-mid: #a79f96;
+    --text-dim: #6b645d;
+    --good: #38c172;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: 'Oswald', sans-serif;
+}
+
+::-webkit-scrollbar {
+    width: 0.5vw;
+}
+
+::-webkit-scrollbar-track {
+    border-radius: 1vw;
+    background: #ffffff0d;
+}
+
+::-webkit-scrollbar-thumb {
+    border-radius: 1vw;
+    background: var(--accent);
+}
+
+img {
+    -webkit-user-drag: none;
+    -khtml-user-drag: none;
+    -moz-user-drag: none;
+    -o-user-drag: none;
+}
+
+p {
+    color: var(--text-mid);
+}
+
+/* ---------------------------------------------------------
+   Shell
+   --------------------------------------------------------- */
+
+.lobby {
+    background-color: var(--bg-void);
+    background-image:
+        radial-gradient(120% 90% at 50% 0%, rgba(255, 90, 54, 0.10) 0%, rgba(0, 0, 0, 0) 55%),
+        url(../imgs/arena_bg.png);
+    background-position: center;
+    background-size: cover;
+    width: 80vw;
+    height: 90vh;
+    margin: auto;
+    border-radius: 0.6vw;
+    border: 1px solid var(--line);
+    box-shadow: 0 2vw 4vw rgba(0, 0, 0, 0.6);
+    position: relative;
+    overflow: hidden;
+}
+
+.header {
+    width: 100%;
+    text-align: center;
+    margin-left: 0;
+    font-family: 'Oswald', sans-serif;
+    font-weight: 600;
+    letter-spacing: 0.15vw;
+    text-transform: uppercase;
+    color: var(--text-hi);
+    padding-top: 4vh;
+    padding-bottom: 6vh;
+    font-size: 1.9vw;
+}
+
+.header::after {
+    content: "";
+    display: block;
+    width: 4vw;
+    height: 3px;
+    background: var(--accent);
+    margin: 1vh auto 0;
+    border-radius: 2px;
+}
+
+.header.join {
+    position: static;
+    margin: 0;
+    padding: 1.4vh 0;
+    font-size: 1.1vw;
+    background: var(--panel-2);
+    border-bottom: 1px solid var(--line);
+    letter-spacing: 0.1vw;
+}
+
+.header.join::after {
+    display: none;
+}
+
+/* ---------------------------------------------------------
+   Create / Join question screen
+   --------------------------------------------------------- */
+
+.question {
+    gap: 3vw;
+    margin-top: 26vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cr, .jo {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    width: 15vw;
+    border-radius: 0.6vw;
+    padding: 1.4vw 1.4vw 1.8vw;
+    gap: 1.2vw;
+    backdrop-filter: blur(6px);
+    transition: border-color 0.25s ease, transform 0.25s ease;
+}
+
+.cr:hover, .jo:hover {
+    border-color: var(--accent);
+    transform: translateY(-0.3vw);
+}
+
+.cr img, .jo img {
+    border-radius: 0.4vw;
+    width: 100%;
+    height: 8vw;
+    object-fit: cover;
+    filter: saturate(0.85) contrast(1.05);
+}
+
+.question button {
+    background-color: transparent;
+    border: 1.5px solid var(--accent);
+    color: var(--accent);
+    padding: 0.9vw 0;
+    width: 100%;
+    text-align: center;
+    font-weight: 600;
+    text-decoration: none;
+    font-size: 0.95vw;
+    letter-spacing: 0.08vw;
+    text-transform: uppercase;
+    transition: all ease 0.25s;
+    font-family: 'Oswald', sans-serif;
+    border-radius: 0.4vw;
+    outline: none;
+}
+
+.question button:hover {
+    background-color: var(--accent);
+    color: #1a0d06;
+}
+
+/* ---------------------------------------------------------
+   Join list / password screen
+   --------------------------------------------------------- */
+
+.boxlobbeys {
+    width: 26vw;
+    height: 46vh;
+    margin: 10vh auto 0;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    overflow-x: auto;
+    border-radius: 0.6vw;
+    backdrop-filter: blur(6px);
+}
+
+.lobby-password {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background-color: transparent;
+    text-align: center;
+}
+
+.inputs-pass {
+    position: absolute;
+    top: 18vh;
+    width: 100%;
+}
+
+.inputs-pass label {
+    display: block;
+    color: var(--text-mid);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85vw;
+    letter-spacing: 0.08vw;
+    text-transform: uppercase;
+    margin-bottom: 1vh;
+}
+
+#lpass {
+    width: 17vw;
+}
+
+.lobbeys, .player {
+    margin: 0.6vw;
+    margin-bottom: 0.5vw;
+    overflow: hidden;
+    box-shadow: none;
+    color: var(--text-hi);
+    background-color: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: 0.35vw;
+    text-align: center;
+    font-family: 'Oswald', sans-serif;
+    font-size: 1.0vw;
+    padding: 0.6vh 0;
+}
+
+.player {
+    font-size: 1.3vw;
+}
+
+.player.ready {
+    background-color: rgba(56, 193, 114, 0.18);
+    border-color: var(--good);
+    color: var(--good);
+}
+
+/* ---------------------------------------------------------
+   Generic footer action buttons
+   --------------------------------------------------------- */
+
+.buttom {
+    text-align: center;
+    padding: 0 2vw;
+    height: 5vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.4vw;
+    border: 1.5px solid var(--line);
+    position: absolute;
+    cursor: pointer;
+    transition: all ease 0.25s;
+    background: var(--panel-2);
+}
+
+.buttom-text {
+    margin: 0;
+    font-size: 1.05vw;
+    font-family: 'Oswald', sans-serif;
+    letter-spacing: 0.06vw;
+    text-transform: uppercase;
+}
+
+.start {
+    border-color: rgba(56, 193, 114, 0.5);
+}
+
+.start:hover {
+    background: var(--good);
+    border-color: var(--good);
+}
+
+.start h4 {
+    color: var(--good) !important;
+}
+
+.start:hover h4 {
+    color: #08210f !important;
+}
+
+.leave {
+    border-color: rgba(229, 56, 79, 0.5);
+    background: var(--panel-2);
+    left: 2vw;
+}
+
+.leave h4 {
+    transition: all ease 0.25s;
+}
+
+.leave:hover {
+    background: var(--team-red);
+    border-color: var(--team-red);
+}
+
+.leave:hover h4 {
+    color: #fff !important;
+}
+
+.back {
+    color: var(--team-red) !important;
+}
+
+.sabz {
+    color: var(--good) !important;
+    transition: all ease 0.25s;
+}
+
+.zard {
+    color: var(--accent-2);
+}
+
+.ready2 {
+    border-color: rgba(255, 178, 56, 0.55);
+    background: var(--panel-2);
+}
+
+.ready2:hover {
+    background: var(--accent-2);
+}
+
+.ready2:hover h4 {
+    color: #241505 !important;
+}
+
+.right {
+    right: 2vw;
+}
+
+.footer {
+    bottom: 6vh;
+    height: 5vh;
+    position: absolute;
+}
+
+/* ---------------------------------------------------------
+   Map select
+   --------------------------------------------------------- */
+
+.selectmap2 {}
+
+.select {
+    margin: 3vw 0 0;
+    color: var(--text-hi);
+    text-align: center;
+}
+
+#lmap {
+    color: var(--text-hi);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.1vw;
+    letter-spacing: 0.1vw;
+    text-transform: uppercase;
+    display: block;
+    text-align: center;
+    margin: 0 auto 1.5vh;
+    width: 100%;
+}
+
+.maps {
+    width: 60vw;
+    max-width: 60vw;
+    margin: 1.5vh auto 0;
+    overflow-y: auto;
+    border: 1px solid var(--line);
+    background: var(--panel);
+    border-radius: 0.6vw;
+    overflow-x: hidden;
+    height: 36vh;
+    padding: 1vw 0.5vw;
+    backdrop-filter: blur(6px);
+}
+
+.mapl {
+    display: flex;
+    justify-content: center;
+}
+
+.maps div {
+    margin: 0.8vw;
+    border-radius: 0.5vw;
+    position: relative;
+}
+
+.map-img {
+    height: 11vw;
+    width: 13vw;
+    object-fit: cover;
+    filter: grayscale(100%) brightness(0.75);
+    border-radius: 0.4vw;
+    border: 1.5px solid var(--line);
+    transition: all ease 0.25s;
+    display: block;
+}
+
+#bank {
+    filter: none;
+}
+
+.map-overlay {
+    position: absolute;
+    bottom: 0;
+    top: auto;
+    left: 0;
+    text-align: center;
+    padding: 0.5vw 0;
+    font-size: 0.95vw;
+    background: linear-gradient(0deg, rgba(0, 0, 0, 0.82) 0%, rgba(0, 0, 0, 0) 100%);
+    width: 100%;
+    font-family: 'Oswald', sans-serif;
+    font-weight: 600;
+    letter-spacing: 0.05vw;
+    text-transform: uppercase;
+    color: var(--text-hi);
+    border-radius: 0 0 0.4vw 0.4vw;
+    pointer-events: none;
+}
+
+.checkbox {
+    position: absolute;
+    right: 0.4vw;
+    top: 0.4vw;
+    transition: 0.25s;
+    width: 1.6vw;
+    display: none;
+    filter: drop-shadow(0 0 4px rgba(0, 0, 0, 0.6));
+}
+
+input[type=radio] {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    margin: 0;
+    cursor: pointer;
+}
+
+input[name=map]:checked + .map-overlay {
+    color: var(--accent-2);
+}
+
+/* selected-state border handled by JS toggling filter on .map-img via id;
+   we add a matching ring using the checkbox visibility as a hook */
+.maps div:has(.checkbox[style*="block"]) .map-img {
+    border-color: var(--accent);
+    filter: none;
+}
+
+/* ---------------------------------------------------------
+   Weapon select
+   --------------------------------------------------------- */
+
+.weapon-select {
+    margin-top: 20vh;
+    text-align: center;
+}
+
+.weapon-title {
+    color: var(--text-hi);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1vw;
+    letter-spacing: 0.15vw;
+    text-transform: uppercase;
+    margin: 0 0 3vh;
+    padding: 0;
+}
+
+.weapon {
+    height: 14vh;
+    max-width: 34vw;
+    filter: drop-shadow(0 0.4vw 0.6vw rgba(0, 0, 0, 0.6));
+}
+
+.selector {
+    color: var(--text-hi);
+    font-size: 3vw;
+    margin-top: 0;
+}
+
+.sleft, .sright {
+    position: absolute;
+    top: 50%;
+    margin: 0;
+    transform: translateY(-38%);
+}
+
+.sleft {
+    left: 20vw;
+}
+
+.sright {
+    right: 20vw;
+}
+
+#sbutton-left, #sbutton-right {
+    background-color: transparent;
+    border: 1.5px solid var(--line);
+    color: var(--text-hi);
+    font-family: 'Oswald', sans-serif;
+    font-size: 1.6vw;
+    width: 3vw;
+    height: 3vw;
+    border-radius: 50%;
+    outline: none;
+    cursor: pointer;
+    transition: all ease 0.25s;
+}
+
+#sbutton-left:hover, #sbutton-right:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.weapon-name {
+    color: var(--text-hi);
+    text-transform: uppercase;
+    letter-spacing: 0.08vw;
+    text-align: center;
+    margin: 2vh 0 0.5vh;
+    font-size: 1.3vw;
+    font-family: 'Oswald', sans-serif;
+    font-weight: 600;
+}
+
+.weapon-price {
+    color: var(--accent-2);
+    font-size: 1vw;
+    font-family: 'JetBrains Mono', monospace;
+    text-align: center;
+    margin: 0;
+}
+
+/* ---------------------------------------------------------
+   Match settings
+   --------------------------------------------------------- */
+
+.setting {
+    text-align: center;
+}
+
+.title {
+    color: var(--text-hi);
+    font-size: 1.8vw;
+    font-family: 'Oswald', sans-serif;
+    font-weight: 600;
+    letter-spacing: 0.1vw;
+    text-transform: uppercase;
+    text-shadow: none;
+    margin-top: 3vh;
+}
+
+.form {
+    margin-top: 6vh;
+    margin-left: 0;
+    display: flex;
+    justify-content: center;
+}
+
+.form ul {
+    list-style-type: none;
+    list-style-position: outside;
+    margin: 0px;
+    padding: 0px;
+    width: 28vw;
+}
+
+.form li {
+    padding: 0.6vh 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.form label {
+    color: var(--text-mid);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85vw;
+    letter-spacing: 0.05vw;
+    text-transform: uppercase;
+    display: inline-block;
+    text-align: left;
+    width: 10vw;
+    text-shadow: none;
+}
+
+input, select {
+    width: 15vw;
+    padding: 0.9vh 0.7vw;
+    margin: 0.4vh 0;
+    display: inline-block;
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: 0.3vw;
+    box-sizing: border-box;
+    color: var(--text-hi);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85vw;
+    outline: none;
+    transition: border-color 0.2s ease;
+}
+
+input:focus, select:focus {
+    border-color: var(--accent);
+}
+
+/* ---------------------------------------------------------
+   Main lobby (team select)
+   --------------------------------------------------------- */
+
+div[name="main"] {
+    height: 100%;
+}
+
+.box {
+    width: 21vw;
+    height: 46vh;
+    margin-left: 3vw;
+    margin-top: 2vh;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 0.5vw;
+    overflow-x: auto;
+    float: left;
+    backdrop-filter: blur(6px);
+}
+
+.box.teamone {
+    border-top: 3px solid var(--team-blue);
+}
+
+.box.teamtwo {
+    border-top: 3px solid var(--team-red);
+}
+
+.box.joiners {
+    border-top: 3px solid var(--accent-2);
+}
+
+.elb {
+    margin: 0 1vw 1vw;
+    border-radius: 0.4vw;
+    padding: 0.6vw;
+    text-align: center;
+    color: var(--good);
+    font-size: 1vw !important;
+}
+
+.enter {
+    background: transparent;
+    transition: 0.25s;
+    border: 1.5px solid var(--good);
+    cursor: pointer;
+}
+
+.enter:hover {
+    background: var(--good);
+    color: #08210f;
+}
+
+/* ---------------------------------------------------------
+   In-game HUD (kept positioned as original — restyled only)
+   --------------------------------------------------------- */
+
+.gamehud {
+    font-family: 'Oswald', sans-serif;
+}
+
+.btn-grad {
+    background: rgba(10, 9, 10, 0.72);
+    border: 1px solid var(--line);
+    position: absolute;
+    left: 45vw;
+    bottom: 0vw;
+    margin: 0;
+    transform: translateY(-95%);
+    font-weight: 500;
+    padding: 0.7vw 2vw 0.7vw 2.6vw;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 0.05vw;
+    transition: 0.3s;
+    font-size: 0.85vw;
+    color: var(--text-hi);
+    border-radius: 0.3vw;
+    backdrop-filter: blur(4px);
+}
+
+.btn-grad img {
+    width: 1.2vw;
+    position: absolute;
+    left: 0.7vw;
+    top: 50%;
+    transform: translateY(-50%);
+    opacity: 0.8;
+}
+
+.milad {
+    width: 18vw;
+    height: 4vw;
+    position: absolute;
+    left: 45vw;
+    top: 2.1vw;
+}
+
+.btn-grad2, .btn-grad3 {
+    background: transparent;
+    overflow: hidden;
+    position: absolute;
+    margin: 0;
+    font-size: 1.15vw;
+    font-weight: 700;
+    letter-spacing: 0.05vw;
+    width: 20vw;
+    height: 3vw;
+    text-align: center;
+    text-transform: uppercase;
+    transition: 0.3s;
+    text-shadow: 0 0.15vw 0.4vw rgba(0, 0, 0, 0.85);
+    border-style: none;
+}
+
+.btn-grad2 {
+    left: 0;
+    transform: translateX(-82%);
+    color: var(--team-blue);
+}
+
+.btn-grad3 {
+    right: 0;
+    transform: translateX(57%);
+    color: var(--team-red);
+}
+
+.btn-grad4 {
+    background: rgba(10, 9, 10, 0.72);
+    border: 1px solid var(--line);
+    position: absolute;
+    margin: 0;
+    top: 4.0vw;
+    width: 9vw;
+    height: 1.7vw;
+    left: 6.5vw;
+    transform: translateX(-50%);
+    text-align: center;
+    text-transform: uppercase;
+    font-size: 0.85vw;
+    line-height: 1.7vw;
+    padding: 0;
+    transition: 0.3s;
+    color: var(--text-hi);
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.06vw;
+    border-radius: 0.25vw;
+    border-style: none;
+}
+
+.btn-grad5 {
+    background: var(--accent);
+    position: absolute;
+    font-size: 1.3vw;
+    font-weight: 700;
+    margin: 0;
+    transform: translateY(-7%) translateX(-50%);
+    text-align: center;
+    height: 3.6vw;
+    line-height: 3.6vw;
+    padding: 0;
+    width: 6vw;
+    left: 6.5vw;
+    text-transform: uppercase;
+    transition: 0.3s;
+    color: #1a0d06;
+    border-radius: 0.25vw;
+    border-style: none;
+}
+
+.contendertop {
+    float: right;
+    margin-top: 45vh;
+    border-radius: 0.4vw;
+    color: var(--text-hi);
+}
+
+.btn-pbtop-1 {
+    background: rgba(10, 9, 10, 0.72);
+    border: 1px solid var(--line);
+    margin: 0.15vw 0.5vw;
+    padding: 0.4vw 0.6vw;
+    text-align: center;
+    text-transform: uppercase;
+    color: var(--accent-2);
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    border-radius: 0.2vw;
+    border-style: none;
+}
+
+.text-style {
+    padding: 0.4vw 0.6vw 0.4vw 0;
+    padding-left: 9vw;
+    margin-right: 1vw;
+    background: rgba(10, 9, 10, 0.72);
+    border: 1px solid var(--line);
+    border-radius: 0.2vw;
+    display: inline-block;
+    color: var(--text-hi);
+    font-size: 0.9vw;
+}
+
+.btn-pbtop {
+    background: var(--accent);
+    margin: 0;
+    margin-left: 0.6vw;
+    padding: 0.35vw 0.6vw;
+    text-align: center;
+    color: #1a0d06;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    border-radius: 0.2vw;
+    border-style: none;
+}
+
+.processtTime {
+    margin: 0 0 0 12vw;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 2vh;
+    color: var(--text-mid);
+}
+
+/* ============================================================
+   Extra polish pass — tactical frame, glow, motion
+   ============================================================ */
+
+@keyframes scanline {
+    0% { transform: translateY(-100%); opacity: 0; }
+    10% { opacity: 0.5; }
+    90% { opacity: 0.5; }
+    100% { transform: translateY(2000%); opacity: 0; }
+}
+
+@keyframes pulseGlow {
+    0%, 100% { box-shadow: 0 0 0.6vw 0 rgba(255, 90, 54, 0.35); }
+    50% { box-shadow: 0 0 1.4vw 0.15vw rgba(255, 90, 54, 0.55); }
+}
+
+@keyframes crosshairSpin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.lobby {
+    isolation: isolate;
+}
+
+/* tactical corner brackets */
+.lobby::before, .lobby::after {
+    content: "";
+    position: absolute;
+    width: 2.2vw;
+    height: 2.2vw;
+    border: 2px solid var(--accent-2);
+    pointer-events: none;
+    z-index: 5;
+    opacity: 0.85;
+}
+
+.lobby::before {
+    top: 0.6vw;
+    left: 0.6vw;
+    border-right: none;
+    border-bottom: none;
+}
+
+.lobby::after {
+    bottom: 0.6vw;
+    right: 0.6vw;
+    border-left: none;
+    border-top: none;
+}
+
+/* thin scanning light sweeping the whole lobby */
+.gamehud::before {
+    content: none;
+}
+
+.lobby > .question::before {
+    content: none;
+}
+
+/* scanline overlay, anchored to the lobby itself */
+.lobby {
+    background-blend-mode: normal;
+}
+
+.lobby > *:first-child {
+    position: relative;
+}
+
+.question {
+    position: relative;
+}
+
+/* header glow */
+.header {
+    text-shadow: 0 0 0.6vw rgba(255, 90, 54, 0.45), 0 0 1.6vw rgba(255, 90, 54, 0.15);
+}
+
+.header::after {
+    background: linear-gradient(90deg, transparent, var(--accent), var(--accent-2), transparent);
+    box-shadow: 0 0 0.5vw rgba(255, 90, 54, 0.6);
+}
+
+/* create/join cards: glow + shine sweep */
+.cr, .jo {
+    position: relative;
+    overflow: hidden;
+}
+
+.cr::before, .jo::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -60%;
+    width: 40%;
+    height: 100%;
+    background: linear-gradient(115deg, transparent, rgba(255, 255, 255, 0.12), transparent);
+    transform: skewX(-20deg);
+    transition: left 0.6s ease;
+    pointer-events: none;
+}
+
+.cr:hover::before, .jo:hover::before {
+    left: 130%;
+}
+
+.cr:hover, .jo:hover {
+    box-shadow: 0 0 1.4vw rgba(255, 90, 54, 0.3), 0 0.4vw 1vw rgba(0, 0, 0, 0.5);
+}
+
+/* buttons: shine sweep on hover */
+.question button {
+    position: relative;
+    overflow: hidden;
+}
+
+.buttom {
+    overflow: hidden;
+}
+
+.question button::before, .buttom::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -75%;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(115deg, transparent, rgba(255, 255, 255, 0.25), transparent);
+    transform: skewX(-20deg);
+    transition: left 0.5s ease;
+    pointer-events: none;
+}
+
+.question button:hover::before, .buttom:hover::before {
+    left: 130%;
+}
+
+.start:hover, .ready2:hover {
+    animation: pulseGlow 1.4s ease-in-out infinite;
+}
+
+/* selected map card: stronger glow ring */
+.maps div:has(.checkbox[style*="block"]) .map-img {
+    box-shadow: 0 0 0 2px var(--accent), 0 0 1.2vw rgba(255, 90, 54, 0.55);
+    transform: translateY(-0.2vw);
+}
+
+.map-img:hover {
+    transform: translateY(-0.15vw);
+    box-shadow: 0 0.3vw 0.8vw rgba(0, 0, 0, 0.5);
+}
+
+.checkbox {
+    filter: drop-shadow(0 0 0.3vw rgba(255, 90, 54, 0.9));
+}
+
+/* weapon showcase: pulsing radial glow behind the gun */
+.weapon-select {
+    position: relative;
+}
+
+.weapon-select::before {
+    content: "";
+    position: absolute;
+    top: 46%;
+    left: 50%;
+    width: 16vw;
+    height: 16vw;
+    transform: translate(-50%, -50%);
+    background: radial-gradient(circle, rgba(255, 90, 54, 0.22) 0%, rgba(255, 90, 54, 0) 70%);
+    animation: pulseGlow 2.6s ease-in-out infinite;
+    pointer-events: none;
+    z-index: -1;
+}
+
+.weapon {
+    position: relative;
+    z-index: 1;
+}
+
+#sbutton-left:hover, #sbutton-right:hover {
+    box-shadow: 0 0 0.8vw rgba(255, 90, 54, 0.6);
+}
+
+/* team boxes: colored glow matching their accent */
+.box.teamone {
+    box-shadow: 0 0 1.2vw rgba(47, 143, 224, 0.18) inset;
+}
+
+.box.teamtwo {
+    box-shadow: 0 0 1.2vw rgba(229, 56, 79, 0.18) inset;
+}
+
+.box.joiners {
+    box-shadow: 0 0 1.2vw rgba(255, 178, 56, 0.15) inset;
+}
+
+/* HUD: subtle glow on live score + team labels */
+.btn-grad2 {
+    text-shadow: 0 0.15vw 0.4vw rgba(0, 0, 0, 0.85), 0 0 0.8vw rgba(47, 143, 224, 0.5);
+}
+
+.btn-grad3 {
+    text-shadow: 0 0.15vw 0.4vw rgba(0, 0, 0, 0.85), 0 0 0.8vw rgba(229, 56, 79, 0.5);
+}
+
+.btn-pbtop {
+    box-shadow: 0 0 0.5vw rgba(255, 90, 54, 0.5);
+}
+
+.btn-grad5 {
+    box-shadow: 0 0 0.6vw rgba(255, 90, 54, 0.55);
+}
+
+/* input focus glow to match the rest */
+input:focus, select:focus {
+    box-shadow: 0 0 0.5vw rgba(255, 90, 54, 0.35);
+}
+
+/* ============================================================
+   Kill feed (top-right, in-match)
+   ============================================================ */
+
+.killfeed {
+    position: absolute;
+    top: 1vw;
+    right: 1vw;
+    width: 20vw;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.4vw;
+    z-index: 4;
+    pointer-events: none;
+}
+
+.kill-wrapper {
+    width: 100%;
+}
+
+.kill {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.5vw;
+    background: rgba(10, 9, 10, 0.78);
+    border: 1px solid var(--line);
+    border-right: 3px solid var(--accent);
+    border-radius: 0.25vw;
+    padding: 0.45vw 0.7vw;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85vw;
+    box-shadow: 0 0.2vw 0.6vw rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(4px);
+}
+
+.kill p {
+    margin: 0;
+    font-weight: 700;
+    letter-spacing: 0.03vw;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 7vw;
+}
+
+.kill .team-blue {
+    color: var(--team-blue);
+}
+
+.kill .team-red {
+    color: var(--team-red);
+}
+
+.kill .team-neutral {
+    color: var(--text-hi);
+}
+
+.kf-icon {
+    width: 1.1vw;
+    height: 1.1vw;
+    flex-shrink: 0;
+    color: var(--text-mid);
+}
+
+.kf-headshot {
+    color: var(--accent-2);
+}
+
+.kf-weapon {
+    width: 2vw;
+    height: auto;
+    flex-shrink: 0;
+    filter: drop-shadow(0 0.1vw 0.2vw rgba(0, 0, 0, 0.6));
+}

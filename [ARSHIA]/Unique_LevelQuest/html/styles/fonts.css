@@ -1,0 +1,10 @@
+@font-face {
+    font-family: 'Yekan';
+    src: url('../fonts/yekan-regular.eot');
+    src: url('../fonts/yekan-regular.eot?#iefix') format('embedded-opentype'),
+         url('../fonts/yekan-regular.woff') format('woff'),
+         url('../fonts/yekan-regular.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+  }
+  

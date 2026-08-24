@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>esx_uniquejobs NUI</title>
+    <style>
+        /*
+          FiveM only lets one resource have one ui_page (one NUI browser).
+          This resource bundles two independent NUI apps (the bodydamage HUD
+          and the CAD/MDT tablet), so instead of merging their HTML/CSS/JS by
+          hand (high risk of id/class/global collisions) each keeps its own
+          document in its own iframe, and this page just relays
+          SendNuiMessage() to both. Each iframe still receives the exact same
+          message shape it always did, so neither app's own code needed to
+          change its message-handling logic.
+        */
+        html, body {
+            margin: 0;
+            padding: 0;
+            background: transparent;
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+        }
+        iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: transparent;
+        }
+        /* The bodydamage HUD is a passive status overlay - it never needs
+           mouse/keyboard input, so it must never swallow clicks meant for
+           the CAD tablet (or the game) when the two overlap on screen. */
+        #frame_bodydamage {
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <iframe id="frame_bodydamage" src="bodydamage/html/index.html"></iframe>
+    <iframe id="frame_cad" src="cad/html/index.html"></iframe>
+
+    <script>
+        var frameBodydamage = document.getElementById('frame_bodydamage');
+        var frameCad = document.getElementById('frame_cad');
+
+        var ready = { bodydamage: false, cad: false };
+        var pending = [];
+
+        function relay(data) {
+            try {
+                if (frameBodydamage && frameBodydamage.contentWindow) {
+                    frameBodydamage.contentWindow.postMessage(data, '*');
+                }
+            } catch (e) {}
+            try {
+                if (frameCad && frameCad.contentWindow) {
+                    frameCad.contentWindow.postMessage(data, '*');
+                }
+            } catch (e) {}
+        }
+
+        function flushPending() {
+            if (!ready.bodydamage || !ready.cad) return;
+            while (pending.length) relay(pending.shift());
+        }
+
+        // Don't relay until BOTH iframes have actually finished loading and
+        // attached their own message listeners - otherwise a message that
+        // arrives right after SetNuiFocus (e.g. the very first /cad press)
+        // can be sent before the cad iframe's app.js is ready to catch it,
+        // and is lost for good (postMessage is not queued for late listeners).
+        frameBodydamage.addEventListener('load', function () {
+            ready.bodydamage = true;
+            flushPending();
+        });
+        frameCad.addEventListener('load', function () {
+            ready.cad = true;
+            flushPending();
+        });
+
+        // Safety net: if a 'load' event never fires for some reason, don't
+        // let queued messages get stuck forever - force a flush after 3s.
+        setTimeout(function () {
+            ready.bodydamage = true;
+            ready.cad = true;
+            flushPending();
+        }, 3000);
+
+        window.addEventListener('message', function (event) {
+            // Ignore anything bounced back up from one of our own iframes -
+            // only relay messages that actually came from the game (Lua).
+            if (frameBodydamage && event.source === frameBodydamage.contentWindow) return;
+            if (frameCad && event.source === frameCad.contentWindow) return;
+
+            if (ready.bodydamage && ready.cad) {
+                relay(event.data);
+            } else {
+                pending.push(event.data);
+            }
+        });
+    </script>
+</body>
+</html>

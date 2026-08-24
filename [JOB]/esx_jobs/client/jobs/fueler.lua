@@ -1,0 +1,201 @@
+ESX = nil
+
+Citizen.CreateThread(function()
+	while ESX == nil do
+		TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
+		Citizen.Wait(0)
+	end
+end)
+
+function GettimeSkill(name, time)
+
+	local ChekSkills = 0
+	if GetResourceState('Unique_Skills') == 'started' then
+		local ok, result = pcall(function() return exports['Unique_Skills']:CheckSkill(name) end)
+		if ok then ChekSkills = result end
+	end
+	if ChekSkills == 100 then
+		local time2 = tonumber(time) / 2
+		return time2
+	else
+		return time
+	end
+end
+
+Config.Jobs.fueler = {
+	JobName = 'fueler',
+
+	BlipInfos = {
+		Sprite = 436,
+		Color = 5
+	},
+
+	Vehicles = {
+
+		Truck = {
+			Spawner = 1,
+			Hash = "phantom",
+			Trailer = "tanker",
+			HasCaution = true
+		}
+
+	},
+
+	Zones = {
+
+		CloakRoom = {
+			Pos = {x = 557.93, y = -2327.90, z = 4.82},
+			Size = {x = 3.0, y = 3.0, z = 2.0},
+			Color = {r = 204, g = 204, b = 0},
+			Marker = 1,
+			Blip = true,
+			Name = _U("f_oil_refiner"),
+			Type = "cloakroom",
+			Hint = _U("cloak_change"),
+			GPS = {x = 554.59, y = -2314.43, z = 4.86}
+		},
+
+		OilFarm = {
+			Pos = {x = 609.58, y = 2856.74, z = 38.90},
+			Size = {x = 20.0, y = 20.0, z = 1.0},
+			Color = {r = 204, g = 204, b = 0},
+			Marker = 1,
+			Blip = true,
+			Name = _U("f_drill_oil"),
+			Type = "work",
+			Item = {
+				{
+					name = _U("f_fuel"),
+					db_name = "petrol",
+					time = GettimeSkill("SherkatNaft", 2500),
+					max = 25,
+					add = 1,
+					remove = 1,
+					requires = "nothing",
+					requires_name = "Nothing",
+					drop = 25
+				}
+			},
+			Hint = _U("f_drillbutton"),
+			GPS = {x = 2736.94, y = 1417.99, z = 23.48}
+		},
+
+		OilRefinement = {
+			Pos = {x = 2736.94, y = 1417.99, z = 23.48},
+			Size = {x = 10.0, y = 10.0, z = 1.0},
+			Color = {r = 204, g = 204, b = 0},
+			Marker = 1,
+			Blip = true,
+			Name = _U("f_fuel_refine"),
+			Type = "work",
+			Item = {
+				{
+					name = _U("f_fuel_refine"),
+					db_name = "petrol_raffin",
+					time = GettimeSkill("SherkatNaft", 5000),
+					max = 50,
+					add = 2,
+					remove = 1,
+					requires = "petrol",
+					requires_name = _U("f_fuel"),
+					drop = 50
+				}
+			},
+			Hint = _U("f_refine_fuel_button"),
+			GPS = {x = 265.75, y = -3013.39, z = 4.73}
+		},
+
+		OilMix = {
+			Pos = {x = 265.75, y = -3013.39, z = 4.73},
+			Size = {x = 10.0, y = 10.0, z = 1.0},
+			Color = {r = 204, g = 204, b = 0},
+			Marker = 1,
+			Blip = true,
+			Name = _U("f_fuel_mixture"),
+			Type = "work",
+			Item = {
+				{
+					name = _U("f_gas"),
+					db_name = "essence",
+					time = GettimeSkill("SherkatNaft", 5000),
+					max = 100,
+					add = 2,
+					remove = 1,
+					requires = "petrol_raffin",
+					requires_name = _U("f_fuel_refine"),
+					drop = 100
+				}
+			},
+			Hint = _U("f_fuel_mixture_button"),
+			GPS = {x = 491.40, y = -2163.37, z = 4.91}
+		},
+
+		VehicleSpawner = {
+			Pos = {x = 554.59, y = -2314.43, z = 4.86},
+			Size = {x = 3.0, y = 3.0, z = 2.0},
+			Color = {r = 204, g = 204, b = 0},
+			Marker = 1,
+			Blip = false,
+			Name = _U("spawn_veh"),
+			Type = "vehspawner",
+			Spawner = 1,
+			Hint = _U("spawn_truck_button"),
+			Caution = 50000,
+			GPS = {x = 602.25, y = 2926.62, z = 39.68}
+		},
+
+		VehicleSpawnPoint = {
+			Pos = {x = 570.54, y = -2309.70, z = 4.90},
+			Size = {x = 3.0, y = 3.0, z = 1.0},
+			Marker = -1,
+			Blip = false,
+			Name = _U("service_vh"),
+			Type = "vehspawnpt",
+			Spawner = 1,
+			GPS = 0,
+			Heading = 0
+		},
+
+		VehicleDeletePoint = {
+			Pos = {x = 574.8255, y = -2328.69, z = 4.9072},
+			Size = {x = 5.0, y = 5.0, z = 1.0},
+			Color = {r = 255, g = 0, b = 0},
+			Marker = 1,
+			Blip = false,
+			Name = _U("return_vh"),
+			Type = "vehdelete",
+			Hint = _U("return_vh_button"),
+			Spawner = 1,
+			Caution = 50000,
+			GPS = 0,
+			Teleport = 0
+		},
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	}
+}

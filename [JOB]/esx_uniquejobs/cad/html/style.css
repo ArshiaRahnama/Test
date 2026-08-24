@@ -1,0 +1,741 @@
+@import url('https://fonts.googleapis.com/css2?family=Lato:wght@400;500;600;700&display=swap');
+
+/* ==========================================================================
+   Unique_Cad — flat navy dispatch terminal
+   Design tokens
+   ========================================================================== */
+:root {
+  --bg-deep:    #0a1220;
+  --bg-panel:   #0d1626;
+  --bg-header:  #14243b;
+  --bg-card:    #101d33;
+  --bg-active:  #1b2c47;
+  --bg-hover:   #15243c;
+  --border:     rgba(255, 255, 255, 0.07);
+  --gold:       #cdbf8f;
+  --gold-soft:  #a79c78;
+  --text:       #eef1f6;
+  --text-dim:   #7d879c;
+  --ok:         #3ddc91;
+  --danger:     #ff5c5c;
+  --danger-dim: #6e2d2d;
+  --radius:     6px;
+  --font: 'Lato', sans-serif;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  font-family: var(--font);
+  background-color: transparent;
+}
+
+/* ==========================================================================
+   Frame
+   ========================================================================== */
+.tablet {
+  width: 62%;
+  height: 82%;
+  max-width: 1250px;
+  aspect-ratio: 1.31 / 1;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 26px;
+  background: #08090c;
+  padding: 20px;
+  box-shadow:
+    0 0 0 3px #1c1d21,
+    0 0 0 6px #c7c8cc,
+    0 0 0 7px #8d8e93,
+    0 30px 90px rgba(0, 0, 0, 0.65);
+  overflow: visible;
+}
+
+.bezel-camera {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #16171b;
+  box-shadow: 0 0 0 2px #2b2c31, inset 0 0 2px #000;
+  z-index: 2;
+}
+
+.bezel-btn {
+  position: absolute;
+  left: -9px;
+  width: 3px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #8d8e93, #c7c8cc);
+  z-index: 2;
+}
+
+.bezel-btn-1 { top: 14%; height: 4%; }
+.bezel-btn-2 { top: 20%; height: 8%; }
+.bezel-btn-3 { top: 30%; height: 8%; }
+
+/* ==========================================================================
+   Loading
+   ========================================================================== */
+.Loading {
+  display: none;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+
+.Loading img {
+  width: 56px;
+}
+
+/* ==========================================================================
+   Login
+   ========================================================================== */
+.Login {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 300px;
+  padding: 36px 28px 26px;
+  border-radius: 10px;
+  color: var(--text);
+  text-align: center;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.55);
+}
+
+.Login img {
+  width: 25%;
+}
+
+.Login h1 {
+  margin-top: 18px;
+  font-family: var(--font);
+  font-weight: 700;
+  font-size: 20px;
+  letter-spacing: 0.5px;
+  color: var(--text);
+}
+
+.Login button {
+  width: 100%;
+  color: var(--bg-deep);
+  border-radius: 5px;
+  padding: 12px;
+  border: none;
+  outline: none;
+  font-family: var(--font);
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0.5px;
+  margin-top: 26px;
+  background-color: var(--gold);
+  cursor: pointer;
+  transition: 150ms ease;
+}
+
+.Login button:hover,
+.login button:hover {
+  background-color: var(--gold-soft);
+}
+
+.Login > p {
+  margin-top: 14px;
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+/* ==========================================================================
+   Main shell
+   ========================================================================== */
+.MainPage {
+  display: none;
+  font-family: var(--font);
+  height: 100%;
+}
+
+.Header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  height: 86px;
+  color: var(--text);
+  padding: 10px 24px;
+  background: var(--bg-header);
+  border-bottom: 1px solid var(--border);
+}
+
+.Header img {
+  width: 44px;
+  height: 44px;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.Header h2 {
+  font-family: var(--font);
+  font-weight: 600;
+  font-size: 18px;
+  letter-spacing: 0.5px;
+  color: var(--gold);
+  flex: 1;
+  margin-left: 16px;
+}
+
+.ExitButton {
+  padding: 9px 18px;
+  width: auto;
+  min-width: 76px;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 5px;
+  font-family: var(--font);
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  transition: 150ms ease;
+}
+
+.ExitButton:hover {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+/* ==========================================================================
+   Sidebar / tabs
+   ========================================================================== */
+.MainPageTabs {
+  float: left;
+  width: 24%;
+  height: auto;
+  background: var(--bg-panel);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  flex-wrap: wrap;
+  align-content: center;
+  position: absolute;
+  top: 86px;
+  bottom: 0;
+}
+
+.MainPageUserInfo {
+  margin-top: 26px;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  color: var(--text);
+  width: 100%;
+  padding-bottom: 18px;
+}
+
+.MainPageUserInfo span {
+  color: var(--ok);
+  font-size: 13px;
+  position: relative;
+  bottom: 1px;
+}
+
+.MainPageUserInfo p {
+  margin-left: 8px;
+  font-family: var(--font);
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--text);
+}
+
+#Rank_mdt {
+  font-family: var(--font) !important;
+  font-weight: 400;
+  font-size: 13px !important;
+  color: var(--gold-soft) !important;
+  left: 0 !important;
+  flex-basis: 100% !important;
+  text-align: center;
+  margin-top: 4px;
+}
+
+.MainPageTabButtons {
+  margin-top: 6px;
+  width: 100%;
+  padding: 0 14px;
+}
+
+.MainPageTabButton {
+  width: 100%;
+  background: none;
+  border: none;
+  outline: none;
+  margin-top: 4px;
+  padding: 13px 16px;
+  font-family: var(--font);
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-dim);
+  text-align: left;
+  cursor: pointer;
+  transition: 150ms ease;
+  border-radius: var(--radius);
+}
+
+.MainPageTabButton:hover {
+  color: var(--text);
+  background: var(--bg-hover);
+}
+
+.MainPageTabActiveButton {
+  width: 100%;
+  transition: 150ms ease;
+  background: var(--bg-active);
+  border-radius: var(--radius);
+  color: var(--text) !important;
+}
+
+/* ==========================================================================
+   Content area
+   ========================================================================== */
+.MainPageTabContent {
+  float: right;
+  width: 76%;
+  height: auto;
+  overflow-y: auto;
+  padding: 26px 30px;
+  color: var(--text);
+  position: absolute;
+  right: 0;
+  top: 86px;
+  bottom: 0;
+  background: var(--bg-deep);
+}
+
+.MainPageTabContent::-webkit-scrollbar {
+  width: 6px;
+}
+
+.MainPageTabContent::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.MainPageTabContent::-webkit-scrollbar-thumb {
+  background: var(--bg-active);
+  border-radius: 4px;
+}
+
+#Page_MainPanel > p:first-child,
+.MainPage_Header p {
+  font-family: var(--font) !important;
+  font-weight: 700;
+  color: var(--text) !important;
+  font-size: 22px !important;
+}
+
+.Main_Panel_Page_WantedPeople,
+.Main_Panel_Page_WnatedCars {
+  float: left;
+  width: 50%;
+  font-size: 1.5vw;
+}
+
+.Main_Panel_Page_WantedPeople > p,
+.Main_Panel_Page_WnatedCars > p {
+  font-family: var(--font);
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text-dim);
+  margin-bottom: 10px;
+}
+
+.Main_Panel_Page_List {
+  width: 92%;
+  min-height: 30px;
+  margin-right: 25px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 6px;
+}
+
+#CitizenSearch, #VehicleSearch {
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background-color: var(--bg-card);
+  color: var(--text);
+  font-family: var(--font);
+  padding: 9px 12px;
+  outline: none;
+  transition: 150ms ease;
+}
+
+#CitizenSearch:focus, #VehicleSearch:focus {
+  border-color: var(--gold);
+}
+
+#CitizenSearch::placeholder, #VehicleSearch::placeholder {
+  color: var(--text-dim);
+}
+
+.MainPage_Header {
+  height: auto;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0 20px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.MainPage_Header input {
+  padding: 9px 12px;
+  width: 30%;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 13px;
+  outline: none;
+  transition: 150ms ease;
+}
+
+.MainPage_Header input:focus {
+  border-color: var(--gold);
+}
+
+/* ==========================================================================
+   Citizen / car detail
+   ========================================================================== */
+#Page_CitizensDetailInfo,
+#Page_CarDetailInfo {
+  display: flex;
+  flex-direction: column;
+}
+
+.Character_Info {
+  position: relative;
+  top: 50px;
+  height: 20%;
+}
+
+.Profile_Picture {
+  float: left;
+  width: 35%;
+}
+
+.Profile_Picture img {
+  border-radius: 6px;
+  border: 1px solid var(--border);
+}
+
+.Profile_Picture .Change_Profile_Button {
+  position: absolute;
+  bottom: 42%;
+  left: 10%;
+  opacity: 0;
+  transition: opacity 0.25s linear;
+  background: var(--gold);
+  color: var(--bg-deep);
+  padding: 8px 14px;
+  border: none;
+  outline: none;
+  border-radius: 5px;
+  font-family: var(--font);
+  font-weight: 700;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.Profile_Picture:hover .Change_Profile_Button {
+  opacity: 1;
+}
+
+.Character_Details {
+  width: 60%;
+  height: auto;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  position: absolute;
+  right: 0;
+  top: 5px;
+  bottom: 20px;
+  padding: 4px 18px;
+}
+
+.WantedColor {
+  height: 3px;
+  width: 120%;
+  margin-bottom: 4px;
+}
+
+.Character_Info_Row {
+  flex-basis: 100%;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 1.1vw;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.Character_Info_Row:last-of-type {
+  border-bottom: none;
+}
+
+.Character_Info_Row > p:first-child {
+  color: var(--text-dim);
+  font-family: var(--font);
+  font-weight: 600;
+  font-size: 0.9vw;
+}
+
+.Character_Info_Row > p:last-child {
+  font-family: var(--font);
+  color: var(--text);
+}
+
+.Mdt_Select {
+  background: var(--bg-active);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 5px 8px;
+  font-family: var(--font);
+}
+
+/* ==========================================================================
+   Lists (rows)
+   ========================================================================== */
+.MDT_List {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+}
+
+.List_Row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 13px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  margin-top: 6px;
+  border-radius: var(--radius);
+  transition: 150ms ease;
+  cursor: pointer;
+}
+
+.List_Row_Wanted {
+  border-left: 3px solid var(--danger);
+}
+
+.List_Row:hover {
+  background: var(--bg-hover);
+  border-color: var(--gold-soft);
+}
+
+.List_Row p {
+  margin: 0;
+  font-family: var(--font);
+  font-size: 1vw;
+  color: var(--text);
+}
+
+/* ==========================================================================
+   Data log (notes / history)
+   ========================================================================== */
+.Data_List {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.Data_List_Content {
+  padding: 15px;
+}
+
+.Data_List_Content > .data_Row:first-child {
+  color: var(--text-dim) !important;
+  font-family: var(--font) !important;
+  font-weight: 700;
+  font-size: 12px !important;
+}
+
+.data_Row {
+  margin-top: 4px;
+  width: 67%;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  font-family: var(--font);
+  font-size: 13px;
+  color: var(--text);
+}
+
+.Data_List_Content hr {
+  border: none;
+  border-top: 1px solid var(--border) !important;
+  margin-top: 8px !important;
+}
+
+.Data_Delete_Button {
+  position: relative;
+  right: 20px;
+  border-radius: 5px;
+  border: 1px solid var(--danger-dim);
+  padding: 3px 8px;
+  color: var(--danger);
+  background: none;
+  cursor: pointer;
+  transition: 150ms ease;
+}
+
+.Data_Delete_Button:hover {
+  background: var(--danger);
+  color: var(--bg-deep);
+}
+
+/* ==========================================================================
+   Modal
+   ========================================================================== */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 20;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(5, 8, 14, 0.7);
+}
+
+.modal-content {
+  background: var(--bg-panel) !important;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin: 15% auto;
+  padding: 26px;
+  width: 80%;
+  max-width: 420px;
+  height: auto;
+  color: var(--text);
+  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.6);
+}
+
+.modal-content h1 {
+  font-family: var(--font);
+  font-weight: 700;
+  font-size: 18px;
+  color: var(--gold);
+}
+
+.modal-content h4 {
+  font-family: var(--font);
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 16px;
+}
+
+.modal-content hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 10px 0;
+}
+
+.modal-content .close {
+  float: right;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 20px;
+  transition: 150ms ease;
+}
+
+.modal-content .close:hover {
+  color: var(--danger);
+}
+
+.modal-content input {
+  padding: 10px 12px;
+  width: 80%;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--text);
+  outline: none;
+  font-family: var(--font);
+  font-size: 13px;
+  transition: 150ms ease;
+}
+
+.modal-content input:focus {
+  border-color: var(--gold);
+}
+
+.DiscardButton {
+  padding: 10px 16px;
+  width: auto;
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  border-radius: 5px;
+  font-family: var(--font);
+  font-weight: 600;
+  font-size: 12px;
+  cursor: pointer;
+  transition: 150ms ease;
+}
+
+.DiscardButton:hover {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+/* ==========================================================================
+   Utility / legacy hooks
+   ========================================================================== */
+.font-Secular,
+.font-Lalezar,
+.font-Pacifico,
+.font-Goch_-hand {
+  font-family: var(--font);
+}
+
+.Input-error {
+  border-color: var(--danger) !important;
+}

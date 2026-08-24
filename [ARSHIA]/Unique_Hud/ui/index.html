@@ -1,0 +1,269 @@
+<html>
+
+<head>
+  <!-- <script src="nui://game/ui/jquery.js" type="text/javascript"></script> -->
+  <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+  <link href="style.css" rel="stylesheet" type="text/css" />
+  <link href="index.css" rel="stylesheet" type="text/css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.2/css/all.min.css" />
+</head>
+
+<body style="visibility: visible; display: none">
+  <table class="indicator"></table>
+
+  
+
+  <div class="row toggle">
+    <div style="
+          width: 13vw;
+          position: absolute;
+          margin-top: 5vh;
+          right: -4px;
+        ">
+
+      <div class="flex rounded-lg rounded-r-none rounded-b-none px-4 h-8" style="background-color: rgba(8, 8, 8, 0.2)">
+        <div class="flex justify-center items-center">
+          <i class="fa fa-wifi" style="font-size: 12px"></i>
+        </div>
+        <div class="flex-grow flex justify-center items-center">
+          <span class="textTest text-center text-xl pr-6">UNIQUE</span>
+        </div>
+        <div>
+          <span class="text-white hour" id="hour" style="margin-top: 7px;font-family: 'Quicksand-Bold'">12:12</span>
+        </div>
+      </div>
+
+      <div id="UperStatus" class="flex flex-col px-2 pt-2" style="background-color: rgba(8, 8, 8, 0.1)">
+
+        <div class="w-full flex " style="height: 35px">
+
+          <div class="w-12 h-full rounded rounded-r-none ml-2 flex justify-center items-center">
+            <!--<img src="./assets/pp.jpg" class="rounded w-full h-full mugshotpos" style="margin-top: .5px;" />-->
+			<span class="rounded w-full h-full mugshotpos" style="margin-top: .5px;"></span>
+          </div>
+          <span name="PlayerName"
+            class="playerName text-white flex-grow rounded h-full flex items-center pl-1 rounded-r-none rounded-l-none text-xs" style="
+                background-color: rgba(3, 4, 6, 0.2);
+                font-family: 'Quicksand-Bold';
+              ">type /reload</span>
+          <div class="w-11 rounded rounded-l-none mr-2 h-full flex items-center justify-center"
+            style="background-color: rgba(3, 4, 6, 0.3)">
+            <span name="PlayerId" class="text-white text-xs" style="font-family: 'Quicksand-Bold'">Id</span>
+          </div>
+        </div>
+
+
+        <!-- <div class="w-1/4 mugshotpos toggle"></div> -->
+        <div class="flex w-full">
+
+          <div class="data w-full flex flex-row-reverse mt-2 mx-2">
+            <div class="rounded w-full h-6 flex justify-center items-center  rounded ml-1"
+              style="background-color: rgba(3, 4, 6, 0.1)">
+              <span name="cash" class="cashmoney text-green-400 text-sm"
+                style="font-family: 'Quicksand-Bold'">$1,000,000</span>
+            </div>
+
+            <div class="rounded w-full h-6 flex justify-center items-center  rounded mr-1"
+              style="background-color: rgba(3, 4, 6, 0.1)">
+              <span name="tc" class="tc text-sm text-yellow-400" style="font-family: 'Quicksand-Bold'">0 ��</span>
+            </div>
+          </div>
+        </div>
+
+
+        <div class="bar tcBar flex mx-2 mt-1 opacity-90">
+          <div class="relative border-2 border-yellow-400 " style="width: 100%; border-radius: 2px;">
+            <div class="progress-bar bg-yellow-400 progress-tc h-1 flex justify-center items-center" name="tctime" role="progressbar"
+              style="width: 10%" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100"></div>
+            <div class="absolute top-0 inset-x-0 inset-y-0 flex justify-center items-center">
+            </div>
+          </div>
+        </div>
+
+
+
+      </div>
+      <!-- Card -->
+      <div class="card card-cascade" style="
+            border-top-left-radius: 0;
+            box-shadow: none;
+            border-top-right-radius: 0;
+            border-bottom-right-radius: 0;
+            border-bottom-left-radius: 10px;
+            background-color: rgba(8, 8, 8, 0.2);
+          ">
+        <!-- Card Data -->
+
+        <!-- Card content -->
+        <div class="card-body flex flex-col mt-1">
+          <div class="bar health ">
+            <div class="progress relative" style="width: 100%">
+              <div class="progress-bar bg-danger progress-health h-4 flex justify-center items-center rounded opacity-80"
+                role="progressbar" style="width: 70%" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100"></div>
+              <div class="absolute top-0 inset-x-0 inset-y-0 flex justify-center items-center">
+                <i class="fa fa-heartbeat" style="font-size: 13px"></i>
+              </div>
+            </div>
+          </div>
+          <div class="bar armor ">
+            <div class="progress relative mt-2" style="width: 100%">
+              <div class="progress-bar bg-blue-500 progress-armor h-4 flex justify-center items-center rounded opacity-80"
+                role="progressbar" style="width: 40%" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100"></div>
+              <div class="absolute top-0 inset-x-0 inset-y-0 flex justify-center items-center">
+                <i class="fa fa-shield-alt" style="font-size: 13px"></i>
+              </div>
+            </div>
+          </div>
+
+          <div class="w-full flex mt-2">
+            <div class="bar food w-full  mr-1">
+              <div class="progress relative" style="width: 100%">
+                <div class="progress-bar orange darken-2 progress-hunger h-4 flex justify-center items-center rounded opacity-80"
+                  role="progressbar" style="width: 10%" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100"></div>
+                <div class="absolute top-0 inset-x-0 inset-y-0 flex justify-center items-center">
+                  <i class="fa fa-utensils" style="font-size: 13px"></i>
+                </div>
+              </div>
+            </div>
+
+            <div class="bar water w-full  ml-1">
+              <div class="progress relative" style="width: 100%">
+                <div class="progress-bar bg-primary progress-thirst h-4 flex justify-center items-center rounded opacity-80"
+                  role="progressbar" style="width: 60%" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100"></div>
+                <div class="absolute top-0 inset-x-0 inset-y-0 flex justify-center items-center">
+                  <i class="fa fa-burn" style="font-size: 13px"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="">
+        <!--  
+        <div class="infolabel mt-1 h-9 flex items-center" name="jobimg" style="
+              background-image: url(assets/imgs/sheriff.png);
+              background-color: rgba(3, 4, 6, 0.2);
+            ">
+          <!-- <i class="fa fa-stethoscope"></i> 
+          <!-- <img src="" name="jobimg" alt=""> 
+          <span name="job" class="pl-6 pr-2 text-center text-white text-sm labels">NoJob</span>
+        </div> -->
+		
+		<div class="infolabel mt-1 h-9 grid grid-cols-6"
+            style="
+              background-color: rgba(3, 4, 6, 0.2);
+            " name="jobtag">
+            <div class="col-span-1 flex items-center justify-center">
+              <img src="./assets/imgs/nojob.png" name="jobimg" height="38px" width="38px" class="-ml-1 rounded-full">
+            </div>
+            <div class="col-span-5 flex items-center">
+          <span name="job" class="pl-2 pr-2 text-center text-white text-sm">No Job</span>
+          </div>
+        </div>
+		
+		
+        <div class="infolabel mt-1 h-9 grid grid-cols-6"
+            style="
+              background-color: rgba(3, 4, 6, 0.2);
+            " name="gangtag">
+            <div class="col-span-1 flex items-center justify-center">
+              <img src="./assets/imgs/gang.png" name="gangimg" height="38px" width="38px" class="-ml-1 rounded-full">
+            </div>
+            <div class="col-span-5 flex items-center">
+          <span name="gang" class="pl-2 pr-2 text-center text-white text-sm">No Gang</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="hidden transform -rotate-90 toggleMenu flex items-end" style="
+    height: 200px;
+    width: 200px;
+    position: absolute;
+    top: 4vh;
+    right: 0;">
+    <div class="card-body flex flex-col">
+      <div class="bar health ">
+        <div class="relative rounded" style="width: 100% ; background-color: rgba(8, 8, 8, 0.1)">
+          <div class="progress-bar bg-danger progress-health h-3 flex justify-center items-center rounded opacity-80"
+            role="progressbar" style="width: 70%" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100"></div>
+          <div class="absolute top-0 inset-x-0 inset-y-0 flex justify-center items-center">
+            <i class="fa fa-heartbeat" style="font-size: 10px"></i>
+          </div>
+        </div>
+      </div>
+
+      <div class="bar armor ">
+        <div class="progress relative mt-2 rounded" style="width: 100% ; background-color: rgba(8, 8, 8, 0.1)">
+          <div class="progress-bar bg-blue-500 progress-armor h-3 flex justify-center items-center rounded opacity-80"
+            role="progressbar" style="width: 40%" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100"></div>
+          <div class="absolute top-0 inset-x-0 inset-y-0 flex justify-center items-center">
+            <i class="fa fa-shield-alt" style="font-size: 10px"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- JS Scripts -->
+  <script src="https://code.jquery.com/jquery-2.2.4.min.js"
+    integrity="sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44=" crossorigin="anonymous"></script>
+  <script src="script.js" type="text/javascript"></script>
+  <script>
+    // پل بین صفحه‌ی اصلی و iframeهای ماژول‌های ادغام‌شده. SendNUIMessage فقط
+    // به پنجره‌ی اصلی می‌رسه، پس هر پیام رو بر اساس شکلش به iframe درستش پاس می‌دیم.
+    window.addEventListener('message', function (event) {
+      var item = event.data;
+      if (!item) return;
+
+      if (item.type === 'streetLabel:MSG') {
+        var slFrame = document.getElementById('streetlabel-frame');
+        if (slFrame && slFrame.contentWindow) {
+          slFrame.contentWindow.postMessage(item, '*');
+        }
+      } else if (item.action === 'new' || item.action === 'hide') {
+        // کامبت‌مود: هم 'hide' با ماژول سرعت‌سنج مشترکه، ولی چون فیلد
+        // 'action' اونجا مقادیر دیگه‌ای (speedo:...) داره تداخلی پیش نمیاد.
+        var cbFrame = document.getElementById('combat-frame');
+        if (cbFrame && cbFrame.contentWindow) {
+          cbFrame.contentWindow.postMessage(item, '*');
+        }
+      } else if (item.type === 'updateVehicleHud' || item.type === 'initSpeedUnit') {
+        var spFrame = document.getElementById('speedometer-frame');
+        if (spFrame && spFrame.contentWindow) {
+          spFrame.contentWindow.postMessage(item, '*');
+        }
+      } else if (item.id === 'scoreboard') {
+        var sbFrame = document.getElementById('scoreboard-frame');
+        if (sbFrame && sbFrame.contentWindow) {
+          sbFrame.contentWindow.postMessage(item, '*');
+        }
+      }
+    });
+  </script>
+<!-- Street label (از sun-streetlabel ادغام شد) - صفحه‌ی خودش رو داخل یه iframe
+     شفاف نگه می‌داره چون CSS/JS اون کاملاً مستقله و ادغام دستی داخل همین صفحه
+     ریسک به‌هم‌ریختن استایل HUD اصلی رو داشت. -->
+<iframe id="streetlabel-frame" src="streetlabel/index.html"
+  style="position:fixed;top:0;left:0;width:100%;height:100%;border:none;pointer-events:none;background:transparent;z-index:9998;">
+</iframe>
+
+<!-- Combat Mode (فایل‌های خودتون ادغام شد) -->
+<iframe id="combat-frame" src="combat/index.html"
+  style="position:fixed;top:0;left:0;width:100%;height:100%;border:none;pointer-events:none;background:transparent;z-index:9996;">
+</iframe>
+
+<!-- Speedometer (نسخه‌ی خودتون - vehicle-hud) -->
+<iframe id="speedometer-frame" src="speedometer/index.html"
+  style="position:fixed;top:0;left:0;width:100%;height:100%;border:none;pointer-events:none;background:transparent;z-index:9995;">
+</iframe>
+
+<!-- Scoreboard (کلید F9) -->
+<iframe id="scoreboard-frame" src="scoreboard/index.html"
+  style="position:fixed;top:0;left:0;width:100%;height:100%;border:none;pointer-events:none;background:transparent;z-index:9999;">
+</iframe>
+
+</body>
+
+</html>

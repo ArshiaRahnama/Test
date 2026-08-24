@@ -1,0 +1,325 @@
+*{
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+    list-style: none;
+    resize: none;
+
+    font-family: 'Roboto', sans-serif;
+}
+
+.DocumentBox{
+    overflow-y: scroll;
+    height: 100vh;
+}
+.DocumentBox::-webkit-scrollbar-track {
+    background-color: #ffffff;
+}
+.DocumentBox::-webkit-scrollbar {
+    width: 0.5vh;
+    background: rgba(136, 20, 20, 0.8);
+}
+.DocumentBox::-webkit-scrollbar-thumb {
+    background: rgba(139, 7, 7, 0.8);
+    border-radius: 20px;
+}
+.DocumentButtonsBox{
+    position: fixed;
+    top: 50%;
+    left: 2%;
+    transform: translate(-2%, -50%);
+}
+.DocumentButtons{
+    width: 20vh;
+    height: 8vh;
+    /* background-color: black; */
+
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-end;
+    align-items: center;
+}
+.DocumentButtons:hover .DocumentButtonsText{
+    display: block;
+}
+.DocumentButtonsText{
+    margin-right: -1vh;
+    padding: 0.5vh 1vh;
+    padding-right: 2vh;
+    background-color: rgb(27, 27, 27);
+    color: white;
+    display: none;
+
+    width: 70%;
+
+    font-size: 2vh;
+
+    animation: enterText;
+    animation-duration: 1s;
+
+    word-break: keep-all;
+    white-space: nowrap;
+    overflow: hidden;
+}
+@keyframes enterText{
+    0%{
+        width: 0%;
+    }
+    100%{
+        width: 70%;
+    }
+}
+.DocumentButtonsImageBox{
+    width: 35%;
+    background-color: rgb(59, 59, 59);
+    border-radius: 50%;
+    padding: 0.8vh;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+.DocumentButtonsImage{
+    width: 100%;
+}
+.DocumentPageBox{
+    border: 1px solid black;
+    background-color: rgb(255, 255, 255);
+
+    width: 68vh;
+    height: auto;    
+    min-height: 80vh;
+    /* height: fit-content; */
+
+    margin: auto;
+    margin-top: 5vh;
+    margin-bottom: 1vh;   
+    padding: 1vh; 
+
+    position: relative;
+
+
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-content: flex-start;
+    align-items: flex-start;
+    /* background-color: goldenrod; */
+}
+
+.PageHeaderBox{
+    width: 30%;
+    position: absolute;
+    right: 0;
+    top: 0;
+}
+
+.PageHeaderImage{
+    width: 100%;
+}
+
+.PageFooterBox{
+    width: 100%;
+    position: absolute;
+    right: 0;
+    bottom: 2%;
+}
+
+.PageFooterImage{
+    width: 100%;
+}
+
+.DocumentTitleBox{
+    width: 90%;
+    margin: 0 auto;
+    margin-top: 3vh;
+}
+
+.DocumentTitleImageBox{
+    width: 50%;
+    /* margin: auto; */
+    text-align: center;
+}
+
+.DocumentTitleImage{
+    width: 40%;
+    border-radius: 50%;
+}
+
+.DocumentTitleText{
+    font-size: 3vh;
+    font-weight: bold;
+    color: rgb(103, 103, 255);
+}
+
+.DocumentTitleDate{
+    font-size: 2vh;
+    color: rgb(223, 99, 99);
+    font-weight: bold;
+}
+
+.DocumentTextBox{
+    width: 85%;
+    flex: 1;
+    margin: 0 auto;
+    margin-top: 5vh;
+
+    display: flex;
+    flex-direction: column;
+}
+
+.DocumentTextTitle{
+    font-size: 2.5vh;
+    font-weight: 500;
+}
+
+.DocumentTextLiteralBox{
+    margin-top: 1vh;
+    padding-bottom: 10vh;
+    flex: 1;
+}
+
+.DocumentTextLiteral{
+    width: 100%;
+    height: 30vh;
+    /* background-color: rgb(70, 70, 70); */
+}
+textarea{
+    min-height: 10vh;
+    /* padding: 2vh; */
+    /* height: max-content; */
+
+    padding: 1vh;
+
+    font-size: 1.8vh;
+
+    overflow: hidden;
+}
+
+input, textarea{
+    border: none;
+    outline-color: rgb(120, 159, 243);
+}
+
+.DocumentImagesBox{
+    width: 50%;
+    margin: 0 auto;
+    margin-top: 0.5vh;
+    text-align: center;
+
+    position: relative;
+}
+.DocumentImagesBox:last-child{
+    margin-bottom: 8vh;
+}
+.DocumentImages{
+    width: 100%;
+    min-height: 10vh;
+}
+
+.DocumentImagesBox:hover .DocumentImagesDeleteBox{
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.DocumentImagesDeleteBox{
+    position: absolute;
+    top: 0;
+    left: 0;
+
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.589);
+
+    display: none;
+}
+
+.DocumentImagesDelete{
+    width: 30%;
+}
+
+.DocumentInsertImageBox{
+    position: absolute;
+    top: 0;
+    left: 0;
+
+    width: 100%;
+    height: 100%;
+    background-color: rgb(255, 255, 255);
+    /* border: 1px solid black; */
+    border-radius: 5px;
+
+    display: none;
+}
+
+.DocumentInsertImageBoxEnable{
+    display: flex !important;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.DocumentInsert{
+    width: 100%;
+    padding: 1vh;
+    font-size: 1.8vh;
+
+    border: 1px solid gray;
+    border-radius: 5px;
+}
+
+.DocumentInsertButton{
+    font-size: 2vh;
+    background-color: rgb(223, 99, 99);
+    color: white;
+    padding: 1vh;
+    margin-top: 1vh;
+    border-radius: 5px;
+
+    transition: 0.5s all;
+}
+
+.DocumentInsertButton:hover{
+    background-color: rgb(100, 47, 47);
+}
+
+.DocumentAllAsignsBox{
+    display: flex;
+    flex-direction: column;
+
+    width: 100%;
+    flex: 1;
+
+    justify-content: center;
+    align-content: center;
+    align-items: center;
+}
+
+.DocumentAsignBox{
+    width: 70%;
+    margin-bottom: 3vh;
+}
+
+.DocumentAsign{
+    font-size: 4.5vh;
+    border-bottom: 2px solid black;
+    padding-bottom: 0.5vh;
+
+    text-align: center;
+
+    width: 100%;
+
+    /* background-color: blue; */
+
+    font-family: 'Dancing Script', cursive;
+    font-weight: bold;
+}
+
+.DocumentInfoAsign{
+    font-size: 1.8vh;
+    text-align: center;
+    width: 100%;
+}
