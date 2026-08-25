@@ -8,50 +8,92 @@ function tLength(t)
 end
 db = {}
 
+-- SECURITY FIX: this used to accept an arbitrary table from the client and
+-- blindly UPDATE every key in it (group, permission_level, money, bank, ...)
+-- via raw string concatenation into the SQL query -- both an unrestricted
+-- privilege-escalation vector (any client could set their own group/
+-- permission_level) and a straight SQL injection (unescaped string values
+-- concatenated directly into the query). Fixed by:
+--   1. A hard whitelist of columns this event is allowed to touch (only
+--      the fields it was actually meant for -- extend ALLOWED_UPDATE_FIELDS
+--      if you need to expose more, never accept an arbitrary table again).
+--   2. Fully parameterized query (no string concatenation of values at all).
+local ALLOWED_UPDATE_FIELDS = {
+    dateofbirth = "string",
+}
+
 RegisterServerEvent("db:updateUser")
 AddEventHandler(
     "db:updateUser",
     function(new)
-        if new.playerName or new.dateofbirth then
-            identifier = GetPlayerIdentifier(source, 0)
-            db.updateUser(identifier, new)
-        else
-
-            exports.UNIQUE_AC:BanPlayer(source, 'Cheat Lua Executer \\ Setperm ;)', 'Tried Use update User '..json.encode(new)..' :)')
+        if type(new) ~= "table" then
+            exports.UNIQUE_AC:BanPlayer(source, 'Cheat Lua Executer \\ Setperm ;)', 'Tried Use update User with invalid payload')
+            return
         end
+
+        -- Build a filtered copy containing ONLY whitelisted fields with the
+        -- expected type. Anything else in `new` (group, permission_level,
+        -- money, bank, custom keys, ...) is silently dropped.
+        local filtered = {}
+        local hasAny = false
+        for field, expectedType in pairs(ALLOWED_UPDATE_FIELDS) do
+            local v = new[field]
+            if v ~= nil and type(v) == expectedType then
+                filtered[field] = v
+                hasAny = true
+            end
+        end
+
+        if not hasAny then
+            exports.UNIQUE_AC:BanPlayer(source, 'Cheat Lua Executer \\ Setperm ;)', 'Tried Use update User '..json.encode(new)..' :)')
+            return
+        end
+
+        local identifier = GetPlayerIdentifier(source, 0)
+        db.updateUser(identifier, filtered, nil, source)
     end
 )
 
-function db.updateUser(identifier, new, callback)
-    local updateString = ""
+-- `new` here MUST already be pre-filtered to whitelisted fields only
+-- (see ALLOWED_UPDATE_FIELDS above) -- this function no longer accepts
+-- arbitrary keys and builds the SQL fully parameterized, no string
+-- concatenation of values into the query text.
+function db.updateUser(identifier, new, callback, playerSource)
+    local setClauses = {}
+    local params = {
+        ["identifier"] = identifier,
+        ["name"] = playerSource and GetPlayerName(playerSource) or nil
+    }
 
-    local length = tLength(new)
-    local cLength = 1
+    local i = 0
     for k, v in pairs(new) do
-        if cLength < length then
-            if (type(v) == "number") then
-                updateString = updateString .. "`" .. k .. "`=" .. v .. ","
-            elseif (type(v) == "string") then
-                updateString = updateString .. "`" .. k .. "`='" .. v .. "',"
-            elseif (type(v) == "talbe") then
-                updateString = updateString .. "`" .. k .. "`='" .. ESX.dump(v) "',"
-            end
-        else
-            if (type(v) == "number") then
-                updateString = updateString .. "`" .. k .. "`=" .. v .. ""
+        if ALLOWED_UPDATE_FIELDS[k] then
+            i = i + 1
+            local paramName = "p" .. i
+            table.insert(setClauses, "`" .. k .. "` = @" .. paramName)
+            if type(v) == "table" then
+                params[paramName] = ESX.dump(v)
             else
-                updateString = updateString .. "`" .. k .. "`='" .. ESX.dump(v) .. "'"
+                params[paramName] = v
             end
         end
-        cLength = cLength + 1
+    end
+
+    if #setClauses == 0 then
+        if callback then callback(false) end
+        return
+    end
+
+    local nameClause = ""
+    if params["name"] then
+        nameClause = ", `name` = @name"
+    else
+        params["name"] = nil
     end
 
     exports.oxmysql:execute(
-        "UPDATE users SET " .. updateString .. ", name = @name WHERE `identifier`=@identifier",
-        {
-            ["identifier"] = identifier,
-            ["name"] = GetPlayerName(source)
-        },
+        "UPDATE users SET " .. table.concat(setClauses, ", ") .. nameClause .. " WHERE `identifier` = @identifier",
+        params,
         function(done)
             if callback then
                 callback(true)

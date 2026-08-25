@@ -158,7 +158,11 @@ AddEventHandler('Hunt:Sellmeat', function(Animal)
         if Oghab == 0 then return end
         local All = Oghab  * price.rabbit
         xPlayer.addMoney(All)
-        xPlayer.removeInventoryItem('gazellemeet', Oghab)
+        -- BUG FIX: was removing 'gazellemeet' instead of the meat actually
+        -- being paid for ('rabbitmeat') -- let players sell rabbit meat for
+        -- money while keeping the rabbit meat (and losing unrelated gazelle
+        -- meat, or nothing at all if they had none).
+        xPlayer.removeInventoryItem('rabbitmeat', Oghab)
    elseif  Animal == 'Aho' then
     local Oghab =  xPlayer.getInventoryItem('gazellemeet').count
     if Oghab == 0 then return end
@@ -1129,14 +1133,24 @@ ESX.RegisterServerCallback('checkEskenasAmount', function(source, cb)
     end
 end)
 
+-- SECURITY FIX: the amount removed from inventory (itemcount) came straight
+-- from the client and had NO relation to the fixed 30000 payout -- sending
+-- itemcount = 0 paid out 30000 for free, repeatedly, without ever losing
+-- any 'eskenas'. The removed amount is now a fixed, server-defined constant
+-- that matches the requirement check, so the exchange is always 50000
+-- eskenas -> 30000 cash, and the client-supplied itemcount is ignored.
+local POOLKASIF_REQUIRED_ESKENAS = 50000
+local POOLKASIF_PAYOUT = 30000
+
 RegisterServerEvent('poolkasif')
 AddEventHandler('poolkasif', function(itemcount)
     local _source = source
     local xPlayer = ESX.GetPlayerFromId(_source)
+    if not xPlayer then return end
 
-    if xPlayer.getInventoryItem('eskenas').count >= 50000 then
-        xPlayer.removeInventoryItem('eskenas', itemcount)
-        xPlayer.addMoney(30000)
+    if xPlayer.getInventoryItem('eskenas').count >= POOLKASIF_REQUIRED_ESKENAS then
+        xPlayer.removeInventoryItem('eskenas', POOLKASIF_REQUIRED_ESKENAS)
+        xPlayer.addMoney(POOLKASIF_PAYOUT)
     else
         TriggerClientEvent('esx:showNotification', _source, "شما باید 50K پول کثیف داشته باشید!")
     end

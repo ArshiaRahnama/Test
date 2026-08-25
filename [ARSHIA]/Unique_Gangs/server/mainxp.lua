@@ -208,8 +208,29 @@ function UpdateXPALL(gang, Add)
     end
 end
 
+-- SECURITY FIX: previously took the gang name AND the XP amount straight
+-- from the client with zero validation -- any player could grant unlimited
+-- XP to any gang (their own or a rival's) with a single event call. Now the
+-- caller must actually belong to a gang (uses THEIR gang, not a client-
+-- supplied name) and the amount is clamped to a sane per-call ceiling.
+local MAX_XP_PER_CALL = 100
+
 RegisterNetEvent("gangs:AddXpGang")
 AddEventHandler('gangs:AddXpGang', function(gang2, Add2)
-    UpdateXPALL(gang2, Add2)
-    Database(Add2, gang2)
+    local _source = source
+    local xPlayer = ESX.GetPlayerFromId(_source)
+    if not xPlayer or xPlayer.gang.name == "nogang" then
+        print(('gangs:AddXpGang: %s attempted to call without a gang!'):format(xPlayer and xPlayer.identifier or _source))
+        return
+    end
+
+    Add2 = tonumber(Add2)
+    if not Add2 or Add2 <= 0 then return end
+    if Add2 > MAX_XP_PER_CALL then Add2 = MAX_XP_PER_CALL end
+
+    -- Ignore whatever gang name the client sent; only ever credit the
+    -- caller's own, server-known gang.
+    local gang = xPlayer.gang.name
+    UpdateXPALL(gang, Add2)
+    Database(Add2, gang)
 end)

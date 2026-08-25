@@ -479,18 +479,48 @@ AddEventHandler(
     end
 )
 
+-- SECURITY FIX: this event previously had NO permission check at all --
+-- any connected client could call TriggerServerEvent("esx_aduty:AddUserMoney",
+-- "id", myId, 999999999) and give themselves (or anyone) unlimited cash.
+-- Nothing client-side calls this event; it looks like it was meant for an
+-- external admin panel and the server-side gate was simply never added.
+-- Now requires the same permission_level >= 8 threshold this file uses for
+-- its other admin-money actions, and unauthorized attempts are banned the
+-- same way the rest of this codebase handles a raw cheat-tool call.
 RegisterNetEvent("esx_aduty:AddUserMoney")
 AddEventHandler(
     "esx_aduty:AddUserMoney",
     function(Type, identifier, amount, callback)
+        local _source = source
+        local xCaller = ESX.GetPlayerFromId(_source)
+        callback = callback or function() end
+
+        if not xCaller or not xCaller.permission_level or xCaller.permission_level < 8 then
+            if exports.UNIQUE_AC then
+                exports.UNIQUE_AC:BanPlayer(_source, 'Cheat Lua Executer', 'Tried esx_aduty:AddUserMoney without permission')
+            end
+            callback("no permission")
+            return
+        end
+
+        amount = tonumber(amount)
+        if not amount or amount <= 0 or amount ~= math.floor(amount) then
+            callback("invalid amount")
+            return
+        end
+
         if Type == "id" then
             local xPlayer = ESX.GetPlayerFromId(tonumber(identifier))
-            xPlayer.addMoney(tonumber(amount))
+            if not xPlayer then
+                callback("Offline")
+                return
+            end
+            xPlayer.addMoney(amount)
             callback(true)
         elseif Type == "steam" then
             if ESX.GetPlayerFromIdentifier(identifier) then
                 local xPlayer = ESX.GetPlayerFromIdentifier(identifier)
-                xPlayer.addMoney(tonumber(amount))
+                xPlayer.addMoney(amount)
                 callback(true)
             else
                 callback("Offline")

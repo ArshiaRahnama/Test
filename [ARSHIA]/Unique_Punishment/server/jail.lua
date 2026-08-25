@@ -26,6 +26,14 @@ local function DecodeJailData(raw, identifier)
 		time = tonumber(data.time),
 		unjail = data.unjail or Config.AdminJail.unjail,
 		reason = data.reason or 'N/A',
+		-- Existing jail records from before this security patch (or a
+		-- server restart) have no real "started at" timestamp on file.
+		-- Defaulting to now (rather than trusting a stored/absent value)
+		-- means UpdateTime's elapsed-time check counts their remaining
+		-- time from this restart -- it can only make a resumed sentence
+		-- run a bit longer than originally intended, never shorter, so
+		-- it can't be leveraged for an early release.
+		startedAt = tonumber(data.startedAt) or os.time(),
 	}
 end
 
@@ -63,13 +71,52 @@ local function ClearJail(identifier)
 	})
 end
 
+local PendingRelease = {} -- [identifier] = true while a legitimate release is in flight
+
 RegisterServerEvent('arshia_jail:sendto')
 AddEventHandler('arshia_jail:sendto',function (target, type, time, reason, unjail)
 	local source = source
+	local xPlayer = ESX.GetPlayerFromId(source)
+	-- SECURITY FIX: this event previously had NO permission check at all --
+	-- any connected player could call TriggerServerEvent('arshia_jail:sendto',
+	-- targetId, 'admin', 999999, 'x') directly and jail anyone for any
+	-- length. The /ajail admin command DOES check permission (perm level 2,
+	-- i.e. xPlayer.permission_level >= 2) but only before triggering a
+	-- CLIENT event that then calls straight back into this unprotected
+	-- server event -- so the command's gate was trivially bypassable.
+	-- Now this event enforces its own permission: permission_level >= 2 for
+	-- admin jails, actual membership in an allowed faction job for faction
+	-- jails (mirrors the dispatch-message gate already used a few lines
+	-- below via IsJobAllowed).
+	if not xPlayer then return end
+	if type == 'admin' then
+		if not xPlayer.permission_level or xPlayer.permission_level < 2 then
+			if exports.UNIQUE_AC then
+				exports.UNIQUE_AC:BanPlayer(source, 'Cheat Lua Executer', 'Tried arshia_jail:sendto (admin) without permission')
+			end
+			return
+		end
+	elseif type == 'faction' then
+		if not IsJobAllowed(xPlayer.job.name) then
+			if exports.UNIQUE_AC then
+				exports.UNIQUE_AC:BanPlayer(source, 'Cheat Lua Executer', 'Tried arshia_jail:sendto (faction) without an allowed job')
+			end
+			return
+		end
+	else
+		return
+	end
+
+	time = tonumber(time)
+	if not time or time <= 0 then return end
+
 	local xTarget = ESX.GetPlayerFromId(target)
 	if not xTarget then return end
 	local identifier = xTarget.identifier
-	local sentence = {type = type, time = time, unjail = unjail, reason = reason}
+	-- startedAt is the server's own clock for when this sentence began --
+	-- used by UpdateTime below to verify a release request corresponds to
+	-- real elapsed time rather than trusting the client's claim outright.
+	local sentence = {type = type, time = time, unjail = unjail, reason = reason, startedAt = os.time()}
 	sentences[identifier] = sentence
 	PersistJail(identifier, sentence)
 	ExemptFromAntiCheat(target, 12000, { teleport = true, speed = true, invisibility = true })
@@ -97,13 +144,36 @@ AddEventHandler('arshia_jail:UpdateTime',function (time)
 	local xPlayer = ESX.GetPlayerFromId(source)
 	if not xPlayer then return end
 	local identifier = xPlayer.identifier
+	local sentence = sentences[identifier]
+	if not sentence then return end
+
+	time = tonumber(time) or 0
+
 	if time > 0 then
-		if sentences[identifier] then
-			sentences[identifier].time = time
+		-- SECURITY FIX: only allow the countdown to move DOWN, and never
+		-- past what real elapsed time since the sentence started would
+		-- allow -- prevents a jailed player from feeding an inflated
+		-- `time` to reset/extend their own countdown, and from jumping
+		-- the value around arbitrarily.
+		local maxPlausible = math.max(0, sentence.time - math.floor((os.time() - sentence.startedAt) / 60))
+		if time <= sentence.time and time <= maxPlausible + 1 then
+			sentence.time = time
 		end
 	else
-		sentences[identifier] = nil
-		ClearJail(identifier)
+		-- Releasing to 0 is only accepted if either the real sentence
+		-- duration has actually elapsed, or the server itself granted an
+		-- early release (PendingRelease ticket set by UnjailPlayer / the
+		-- aunjail-icunjail admin commands below) -- closes the exploit
+		-- where a jailed player just sent UpdateTime(0) directly to
+		-- instantly clear their own sentence.
+		local elapsedMinutes = (os.time() - sentence.startedAt) / 60
+		if PendingRelease[identifier] or elapsedMinutes >= sentence.time then
+			PendingRelease[identifier] = nil
+			sentences[identifier] = nil
+			ClearJail(identifier)
+		else
+			print(('arshia_jail: %s attempted to self-release from jail early!'):format(identifier))
+		end
 	end
 end)
 
@@ -122,9 +192,23 @@ end)
 
 RegisterServerEvent("arshia_jail:UnjailPlayer")
 AddEventHandler("arshia_jail:UnjailPlayer", function(id)
+	local source = source
 	local zPlayer = ESX.GetPlayerFromId(source)
-	local xPlayers = ESX.GetPlayers()
+	-- SECURITY FIX: previously had NO permission check -- any player could
+	-- release any jailed player (including themselves) on demand.
+	if not zPlayer or not zPlayer.permission_level or zPlayer.permission_level < 2 then
+		if exports.UNIQUE_AC then
+			exports.UNIQUE_AC:BanPlayer(source, 'Cheat Lua Executer', 'Tried arshia_jail:UnjailPlayer without permission')
+		end
+		return
+	end
 	local yPlayer = ESX.GetPlayerFromId(id)
+	if not yPlayer then return end
+	if yPlayer.identifier then
+		PendingRelease[yPlayer.identifier] = true
+	end
+
+	local xPlayers = ESX.GetPlayers()
 	for i=1, #xPlayers, 1 do
 		local xPlayer = ESX.GetPlayerFromId(xPlayers[i])
 		if IsJobAllowed(xPlayer.job.name) then
@@ -199,6 +283,10 @@ TriggerEvent('es:addAdminCommand', 'aunjail', 5, function(source, args, user)
 		if sentences[identifier].time > 0 then
 			if sentences[identifier].type == 'admin' then
 				ExemptFromAntiCheat(target, 5000, { teleport = true, speed = true })
+				-- Open a release ticket so the fixed UpdateTime handler
+				-- (which no longer trusts a client-sent 0 on its own)
+				-- accepts this legitimate, admin-granted early release.
+				PendingRelease[identifier] = true
 				TriggerClientEvent("arshia_jail:UnjailPlayer", target)
 				TriggerClientEvent('chatMessage', source, "[SYSTEM]", {255, 0, 0}, "Player Unjail Shod.")
 			else
@@ -227,6 +315,8 @@ TriggerEvent('es:addAdminCommand', 'icunjail', 8, function(source, args, user)
 		if sentences[identifier].time > 0 then
 			if sentences[identifier].type == 'faction' then
 				ExemptFromAntiCheat(target, 5000, { teleport = true, speed = true })
+				-- Same release ticket as the admin branch above.
+				PendingRelease[identifier] = true
 				TriggerClientEvent("arshia_jail:UnjailPlayer", target)
 				TriggerClientEvent('chatMessage', source, "[SYSTEM]", {255, 0, 0}, "Player Unjail Shod.")
 			else

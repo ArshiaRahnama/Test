@@ -42,9 +42,35 @@ ESX.RegisterServerCallback('gangprop:getOnlinePlayers', function(source, cb)
 	cb(players)
 end)
 
+-- SECURITY FIX: this had NO check at all -- any connected player, gang
+-- member or not, could call TriggerServerEvent('gangprop:giveWeapon',
+-- 'WEAPON_RPG', 999999) and instantly get any weapon with any ammo count.
+-- Now requires actual gang membership (same "nogang" pattern the rest of
+-- this resource uses), validates the weapon name looks like a real weapon
+-- hash instead of an arbitrary string, and caps the ammo that can be
+-- granted in one call.
+local MAX_GIVEWEAPON_AMMO = 250
+
 RegisterServerEvent('gangprop:giveWeapon')
 AddEventHandler('gangprop:giveWeapon', function(weapon, ammo)
-    local xPlayer = ESX.GetPlayerFromId(source)
+    local _source = source
+    local xPlayer = ESX.GetPlayerFromId(_source)
+    if not xPlayer then return end
+
+    if xPlayer.gang.name == "nogang" then
+        print(('gangprop: %s attempted to call giveWeapon without a gang!'):format(xPlayer.identifier))
+        return
+    end
+
+    if type(weapon) ~= "string" or not weapon:match("^WEAPON_[%u_]+$") then
+        print(('gangprop: %s attempted to call giveWeapon with invalid weapon "%s"!'):format(xPlayer.identifier, tostring(weapon)))
+        return
+    end
+
+    ammo = tonumber(ammo) or 0
+    if ammo < 0 then ammo = 0 end
+    if ammo > MAX_GIVEWEAPON_AMMO then ammo = MAX_GIVEWEAPON_AMMO end
+
     xPlayer.addWeapon(weapon, ammo)
 end)
 
@@ -173,8 +199,20 @@ ESX.RegisterServerCallback('gangprop:getOwnedBoats', function(source, cb)
   end)
 end)
 
+-- SECURITY FIX: this let ANY player send an arbitrary fake "system"
+-- notification to any target id -- usable for scam/phishing (fake admin
+-- warnings, fake trade confirmations, etc). Restricted to gang members
+-- (this resource's own membership gate) and the message is length-capped
+-- and stripped of rich-text tags so it can't be dressed up as a system
+-- notice.
 RegisterServerEvent('gangprop:messagex')
 AddEventHandler('gangprop:messagex', function(target, msg)
+	local _source = source
+	local xPlayer = ESX.GetPlayerFromId(_source)
+	if not xPlayer or xPlayer.gang.name == "nogang" then return end
+	if type(msg) ~= "string" then return end
+
+	msg = msg:sub(1, 200):gsub("~[a-zA-Z]~", "")
 	TriggerClientEvent('esx:showNotification', target, msg)
 end)
 
@@ -234,6 +272,19 @@ ESX.RegisterServerCallback("gangprop:GetPedHandsUpStatus", function(source, cb, 
 	cb(IsCuffed, Injure, Dead)
 end)
 
+-- SECURITY FIX: SetCuffStatus used to blindly trust whatever `status` the
+-- calling client sent, on themselves, with no relation to whether an
+-- authorized gang/officer had actually just arrested or released them --
+-- meaning any cuffed player could simply call
+-- TriggerServerEvent('gangprop:SetCuffStatus', false) and instantly escape.
+-- Fixed with a server-side "pending transition" ticket: requestarrest /
+-- requestrelease (both already permission/proximity-checked) are the ONLY
+-- places allowed to open a pending transition for a target, and
+-- SetCuffStatus now only applies a change that matches an open,
+-- server-issued ticket for that exact player -- an unsolicited call with
+-- no matching ticket is rejected.
+local PendingCuffTicket = {} -- [targetId] = expected boolean status
+
 RegisterServerEvent('gangprop:requestarrest')
 AddEventHandler('gangprop:requestarrest', function(targetid, playerheading, playerCoords, playerlocation, front)
 	local source = source
@@ -245,6 +296,7 @@ AddEventHandler('gangprop:requestarrest', function(targetid, playerheading, play
 	if xPlayer.gang.name ~= "nogang" then
 		if #(GetEntityCoords(GetPlayerPed(source)) - GetEntityCoords(GetPlayerPed(tonumber(targetid)))) < 15.0 then
 			if not cPlayer.get("Cuff") then
+				PendingCuffTicket[tonumber(targetid)] = true
 				TriggerClientEvent("gangprop:getarrested", targetid, playerheading, playerCoords, playerlocation, true, front)
 				TriggerClientEvent("gangprop:doarrested", source, front)
 			else
@@ -262,6 +314,16 @@ RegisterServerEvent('gangprop:SetCuffStatus')
 AddEventHandler('gangprop:SetCuffStatus', function(status)
 	local source = source
 	local xPlayer = ESX.GetPlayerFromId(source)
+	if not xPlayer then return end
+
+	status = status and true or false
+	local ticket = PendingCuffTicket[source]
+	if ticket == nil or ticket ~= status then
+		print(('gangprop: %s attempted unsolicited SetCuffStatus(%s) with no matching arrest/release ticket!'):format(xPlayer.identifier, tostring(status)))
+		return
+	end
+
+	PendingCuffTicket[source] = nil
 	xPlayer.set('Cuff', status)
 end)
 
@@ -277,6 +339,7 @@ AddEventHandler('gangprop:requestrelease', function(targetid, playerheading, pla
 		if #(GetEntityCoords(GetPlayerPed(source)) - GetEntityCoords(GetPlayerPed(tonumber(targetid)))) < 15.0 then
 			if cPlayer.get("Cuff") then
 
+				PendingCuffTicket[tonumber(targetid)] = false
 				TriggerClientEvent("gangprop:getuncuffed", targetid, playerheading, playerCoords, playerlocation)
 				TriggerClientEvent("gangprop:douncuffing", source)
 
@@ -294,7 +357,10 @@ end)
 RegisterServerEvent('gangprop:drag')
 AddEventHandler('gangprop:drag', function(target)
 	local cPlayer = ESX.GetPlayerFromId(target)
-	if GetPlayerName(target) or cPlayer then
+	-- BUG FIX: was `or cPlayer` -- a truthy GetPlayerName(target) with a nil
+	-- cPlayer (e.g. target disconnecting mid-call) would still enter this
+	-- block and crash on cPlayer.get("Cuff"). Both must be present.
+	if GetPlayerName(target) and cPlayer then
 		if #(GetEntityCoords(GetPlayerPed(source)) - GetEntityCoords(GetPlayerPed(tonumber(target)))) < 20.0 then
 			if cPlayer.get("Cuff") then
 
@@ -319,7 +385,8 @@ AddEventHandler('gangprop:putInVehicle', function(target)
     local closestVehicle = nil
     local closestDistance = nil
 
-	if GetPlayerName(target) or cPlayer then
+	-- BUG FIX: was `or cPlayer` (see gangprop:drag above for why `and` is correct)
+	if GetPlayerName(target) and cPlayer then
 		if #(GetEntityCoords(GetPlayerPed(source)) - GetEntityCoords(GetPlayerPed(tonumber(target)))) < 15.0 then
 			if cPlayer.get("Cuff") then
 
@@ -351,7 +418,9 @@ end)
 RegisterServerEvent('gangprop:OutVehicle')
 AddEventHandler('gangprop:OutVehicle', function(target)
 	local cPlayer = ESX.GetPlayerFromId(target)
-	if GetPlayerName(target) or not cPlayer then
+	-- BUG FIX: was `or not cPlayer` -- inverted, meant the block would run
+	-- specifically WHEN the target didn't exist, crashing on cPlayer.get("Cuff").
+	if GetPlayerName(target) and cPlayer then
 		if #(GetEntityCoords(GetPlayerPed(source)) - GetEntityCoords(GetPlayerPed(tonumber(target)))) < 15.0 then
 			if cPlayer.get("Cuff") then
 
@@ -363,4 +432,7 @@ AddEventHandler('gangprop:OutVehicle', function(target)
 
 		end
 	end
+end)
+AddEventHandler('playerDropped', function()
+	PendingCuffTicket[source] = nil
 end)

@@ -54,8 +54,18 @@ end)
 
 RegisterServerEvent('esx_mechanicjob:getStockItem')
 AddEventHandler('esx_mechanicjob:getStockItem', function(itemName, count)
-	local xPlayer = ESX.GetPlayerFromId(source)
-
+	local _source = source
+	local xPlayer = ESX.GetPlayerFromId(_source)
+	-- SECURITY FIX: previously had NO job check at all -- any player
+	-- (any job, even none) could pull items straight out of the
+	-- society_mechanic armory just by calling this event with a valid
+	-- item name. Restricted to actual mechanic employees.
+	if not xPlayer or xPlayer.job.name ~= 'mechanic' then
+		if exports.UNIQUE_AC then
+			exports.UNIQUE_AC:BanPlayer(_source, 'Cheat Lua Executer', 'Tried esx_mechanicjob:getStockItem without the mechanic job')
+		end
+		return
+	end
 	TriggerEvent('esx_addoninventory:getSharedInventory', 'society_mechanic', function(inventory)
 		local item = inventory.getItem(itemName)
 		local sourceItem = xPlayer.getInventoryItem(itemName)
@@ -144,7 +154,15 @@ end)
 RegisterServerEvent('esx_mechanicjob:putStockItems')
 AddEventHandler('esx_mechanicjob:putStockItems', function(itemName, count)
 
-  local xPlayer = ESX.GetPlayerFromId(source)
+  local _source = source
+  local xPlayer = ESX.GetPlayerFromId(_source)
+  -- SECURITY FIX: see getStockItem above -- same missing job check.
+  if not xPlayer or xPlayer.job.name ~= 'mechanic' then
+    if exports.UNIQUE_AC then
+      exports.UNIQUE_AC:BanPlayer(_source, 'Cheat Lua Executer', 'Tried esx_mechanicjob:putStockItems without the mechanic job')
+    end
+    return
+  end
 
   TriggerEvent('esx_addoninventory:getSharedInventory', 'society_mechanic', function(inventory)
 

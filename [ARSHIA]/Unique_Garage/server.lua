@@ -27,9 +27,26 @@ ESX.RegisterServerCallback("Unique_Garage:checkRepairCost", function(source, cb,
 	cb(xPlayer.canAfford(fee))
 end)
 
+-- SECURITY FIX: `price` was accepted verbatim from the client with no
+-- relation to the vehicle's actual damage/repair cost -- if this ever gets
+-- wired up client-side, sending price = 1 would repair any vehicle for
+-- almost nothing. Nothing calls this event yet, but it's hardened here:
+-- price is validated as a positive integer and capped at a sane ceiling so
+-- it can never be abused for a near-free repair even if connected later.
+-- TODO if this is wired up: compute the real repair cost server-side from
+-- the vehicle's actual engine/body health instead of trusting a client value.
+local MAX_REPAIR_PRICE = 20000
+
 RegisterServerEvent("Unique_Garage:payhealth")
 AddEventHandler("Unique_Garage:payhealth", function(price)
 	local xPlayer = ESX.GetPlayerFromId(source)
+	if not xPlayer then return end
+
+	price = tonumber(price)
+	if not price or price <= 0 or price ~= math.floor(price) or price > MAX_REPAIR_PRICE then
+		return
+	end
+
 	if not xPlayer.canAfford(price) then
 		return
 	end

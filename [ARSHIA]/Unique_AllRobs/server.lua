@@ -568,6 +568,25 @@ end)
 RegisterServerEvent('Morphy_RobSystem:robberySuccess')
 AddEventHandler('Morphy_RobSystem:robberySuccess', function(robname,RobberyCode)
     local _source = source
+    -- SECURITY FIX: this handler used to pay out purely based on the
+    -- client-supplied `robname`, with NO check that this player had ever
+    -- actually gone through robberyNeeds/robberyStarted for that robbery.
+    -- That meant TriggerServerEvent('Morphy_RobSystem:robberySuccess',
+    -- 'anyRobName') alone -- skipping cop-count, item, cooldown and team
+    -- requirements entirely -- paid out the full reward, repeatably.
+    -- Now the robbery actually in progress for this player (set by the
+    -- already-validated robberyNeeds/robberyStarted flow) must match the
+    -- robname being "completed" here.
+    if not robname or RobsInProgress[_source] ~= robname then
+        print(('Unique_AllRobs: %s attempted robberySuccess("%s") with no matching in-progress robbery!'):format(_source, tostring(robname)))
+        RobsInProgress[_source] = nil
+        return
+    end
+    if not Config.Rob.Robs[robname] then
+        RobsInProgress[_source] = nil
+        return
+    end
+
     RobsInProgress[_source] = nil
     local xPlayer  = ESX.GetPlayerFromId(_source)
     -- TEMP FIX (was crashing: exports["esx_policejob"] doesn't exist, that

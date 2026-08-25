@@ -109,7 +109,11 @@ end)
 RegisterServerEvent('esx_fbi_job:putInVehicle')
 AddEventHandler('esx_fbi_job:putInVehicle', function(target, netId)
   local xPlayer = ESX.GetPlayerFromId(source)
-  if xPlayer.job.name ~= "nojob" then
+  -- BUG FIX: was `~= "nojob"`, which let ANY employed player (any job at
+  -- all, not just fbi) force any target into a vehicle -- matches the
+  -- `== 'fbi'` check used by every sibling handler in this file
+  -- (handcuff, drag, OutVehicle).
+  if xPlayer.job.name == "fbi" then
     TriggerClientEvent('esx_fbi_job:putInVehicle', target, netId)
   else
 
@@ -131,6 +135,26 @@ RegisterServerEvent('esx_fbi_job:getStockItem')
 AddEventHandler('esx_fbi_job:getStockItem', function(itemName, count)
 	local _source = source
 	local xPlayer = ESX.GetPlayerFromId(_source)
+	-- SECURITY FIX: previously had NO job check at all -- any player
+	-- (any job, even none) could pull items straight out of the
+	-- society_fbi armory just by calling this event with a valid
+	-- item name. Restricted to actual fbi employees.
+	if not xPlayer or xPlayer.job.name ~= 'fbi' then
+		if exports.UNIQUE_AC then
+			exports.UNIQUE_AC:BanPlayer(_source, 'Cheat Lua Executer', 'Tried esx_fbi_job:getStockItem without the fbi job')
+		end
+		return
+	end
+	-- SECURITY FIX: previously had NO job check at all -- any player
+	-- (any job, even none) could pull items straight out of the
+	-- society_fbi armory just by calling this event with a valid
+	-- item name. Restricted to actual fbi employees.
+	if not xPlayer or xPlayer.job.name ~= 'fbi' then
+		if exports.UNIQUE_AC then
+			exports.UNIQUE_AC:BanPlayer(_source, 'Cheat Lua Executer', 'Tried esx_fbi_job:getStockItem without the fbi job')
+		end
+		return
+	end
 	local sourceItem = xPlayer.getInventoryItem(itemName)
 
 	TriggerEvent('esx_addoninventory:getSharedInventory', 'society_fbi', function(inventory)
@@ -161,7 +185,15 @@ end)
 
 RegisterServerEvent('esx_fbi_job:putStockItems')
 AddEventHandler('esx_fbi_job:putStockItems', function(itemName, count)
-	local xPlayer = ESX.GetPlayerFromId(source)
+	local _source = source
+	local xPlayer = ESX.GetPlayerFromId(_source)
+	-- SECURITY FIX: see getStockItem above -- same missing job check.
+	if not xPlayer or xPlayer.job.name ~= 'fbi' then
+		if exports.UNIQUE_AC then
+			exports.UNIQUE_AC:BanPlayer(_source, 'Cheat Lua Executer', 'Tried esx_fbi_job:putStockItems without the fbi job')
+		end
+		return
+	end
 	local sourceItem = xPlayer.getInventoryItem(itemName)
 
 	TriggerEvent('esx_addoninventory:getSharedInventory', 'society_fbi', function(inventory)
@@ -500,16 +532,32 @@ end)
 
 RegisterServerEvent('esx_fbi_job:message')
 AddEventHandler('esx_fbi_job:message', function(target, msg)
+	-- SECURITY FIX: previously had no check at all -- any player could
+	-- send an arbitrary fake "system" notification to any target id.
+	local _source = source
+	local xPlayer = ESX.GetPlayerFromId(_source)
+	if not xPlayer or xPlayer.job.name ~= 'fbi' then return end
+	if type(msg) ~= "string" then return end
+	msg = msg:sub(1, 200):gsub("~[a-zA-Z]~", "")
 	TriggerClientEvent('esx:showNotification', target, msg)
 end)
 
 RegisterServerEvent('esx_fbi_job:requestarrest')
 AddEventHandler('esx_fbi_job:requestarrest', function(targetid, playerheading, playerCoords,  playerlocation)
-    _source = source
+    local _source = source
+    local xPlayer = ESX.GetPlayerFromId(_source)
+    -- SECURITY FIX: previously had NO job check -- any player could
+    -- "arrest" any other player. Matches the job gate used by
+    -- handcuff/drag/OutVehicle elsewhere in this file.
+    if not xPlayer or xPlayer.job.name ~= 'fbi' then
+        if exports.UNIQUE_AC then
+            exports.UNIQUE_AC:BanPlayer(_source, 'Cheat Lua Executer', 'Tried esx_fbi_job:requestarrest without the fbi job')
+        end
+        return
+    end
     TriggerClientEvent('esx_fbi_job:getarrested', targetid, playerheading, playerCoords, playerlocation)
     TriggerClientEvent('esx_fbi_job:doarrested', _source)
 
-    local xPlayer = ESX.GetPlayerFromId(_source)
     local xTarget = ESX.GetPlayerFromId(targetid)
     if xPlayer and xTarget then
         TriggerEvent('esx_society:logAction', 'fbi', 'Player Arrested', {
@@ -521,11 +569,19 @@ end)
 
 RegisterServerEvent('esx_fbi_job:requestrelease')
 AddEventHandler('esx_fbi_job:requestrelease', function(targetid, playerheading, playerCoords,  playerlocation)
-    _source = source
+    local _source = source
+    local xPlayer = ESX.GetPlayerFromId(_source)
+    -- SECURITY FIX: previously had NO job check -- any player could
+    -- release any arrested player.
+    if not xPlayer or xPlayer.job.name ~= 'fbi' then
+        if exports.UNIQUE_AC then
+            exports.UNIQUE_AC:BanPlayer(_source, 'Cheat Lua Executer', 'Tried esx_fbi_job:requestrelease without the fbi job')
+        end
+        return
+    end
     TriggerClientEvent('esx_fbi_job:getuncuffed', targetid, playerheading, playerCoords, playerlocation)
     TriggerClientEvent('esx_fbi_job:douncuffing', _source)
 
-    local xPlayer = ESX.GetPlayerFromId(_source)
     local xTarget = ESX.GetPlayerFromId(targetid)
     if xPlayer and xTarget then
         TriggerEvent('esx_society:logAction', 'fbi', 'Player Released', {

@@ -16,7 +16,7 @@ function rent_vehicle(model, price, location)
 							Options.have_rented = true
 							set_blip(false)
 						end)
-						TriggerServerEvent('unique_rent:pay', price)
+						TriggerServerEvent('unique_rent:pay', price, model)
 						if Config.Options['time'] then
 							show_timer()
 						end
@@ -24,7 +24,7 @@ function rent_vehicle(model, price, location)
 						Notification(Config.Options['spawnpoint_blocked'])
 					end
 				end
-			end, price)
+			end, price, model)
 		end
 	end
 end
