@@ -1,0 +1,152 @@
+<html>
+  <head>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="js/main.js" type="text/javascript"></script>
+    <link rel="stylesheet" type="text/css" href="css/index.css" />
+    <title>Scoreboard</title>
+  </head>
+
+  <body>
+    <div style="display: none;" id="wrap">
+      <div class="container" id="container">
+
+        <div class="RightSide">
+          <div class="LogoBox">
+            <img src="images/Assets/silver_logo.png">
+          </div>
+
+          <div class="InfoBox">
+            <h1>Players</h1>
+            <h2><span id="playersnum">0</span></h2>
+            <label class="switch">
+              <input type="checkbox" class="switch-input" id="Dl_input" checked>
+              <span class="switch-label" style="cursor: pointer;" id="DarkMode_switch" data-on="Dark" data-off="Light"></span>
+              <span id="DarkMode_Switch_Handle" class="switch-handle DarkMode" style="cursor: pointer;"></span>
+            </label>
+            <p id="Clock">--:--</p>
+          </div>
+
+        </div>
+
+        <div class="Jobs">
+          <label class="switch">
+            <input type="checkbox" class="switch-input" id="police_input" disabled="disabled">
+            <span class="switch-label" id="police_switch" data-on="+0" data-off="Offline"></span>
+            <span class="switch-handle police"></span>
+          </label>
+
+          <label class="switch">
+            <input type="checkbox" class="switch-input" id="mt_input" disabled="disabled">
+            <span class="switch-label" id="mt_switch" data-on="+0" data-off="Offline"></span>
+            <span class="switch-handle mt"></span>
+          </label>
+
+          <label class="switch">
+            <input type="checkbox" class="switch-input" id="ambulance_input" disabled="disabled">
+            <span class="switch-label" id="ambulance_switch" data-on="+0" data-off="Offline"></span>
+            <span class="switch-handle ambulance"></span>
+          </label>
+
+          <label class="switch">
+            <input type="checkbox" class="switch-input" id="mechanic_input" disabled="disabled">
+            <span class="switch-label" id="mechanic_switch" data-on="+0" data-off="Offline"></span>
+            <span class="switch-handle mechanic"></span>
+          </label>
+
+          <label class="switch">
+            <input type="checkbox" class="switch-input" id="taxi_input" disabled="disabled">
+            <span class="switch-label" id="taxi_switch" data-on="+0" data-off="Offline"></span>
+            <span class="switch-handle taxi"></span>
+          </label>
+
+          <label class="switch">
+            <input type="checkbox" class="switch-input" id="weazel_input" disabled="disabled">
+            <span class="switch-label" id="weazel_switch" data-on="+0" data-off="Offline"></span>
+            <span class="switch-handle weazel"></span>
+          </label>
+
+          <label class="switch">
+            <input type="checkbox" class="switch-input" id="fbi_input" disabled="disabled">
+            <span class="switch-label" id="fbi_switch" data-on="+0" data-off="Offline"></span>
+            <span class="switch-handle fbi"></span>
+          </label>
+
+          <label class="switch">
+            <input type="checkbox" class="switch-input" id="admins_input" disabled="disabled">
+            <span class="switch-label" id="admins_switch" data-on="+0" data-off="Offline"></span>
+            <span class="switch-handle admins"></span>
+          </label>
+
+        </div>
+
+        <div class="robs">
+
+            <div class="RobStatusBase">
+              <div class="RobStatus shop" id="shop" onclick="robclick('shop')"></div>
+            </div>
+
+            <div class="RobStatusBase">
+              <div class="RobStatus Bank" id="Bank" onclick="robclick('Bank')"></div>
+            </div>
+
+            <div class="RobStatusBase">
+              <div class="RobStatus SheriffBank" id="SheriffBank" onclick="robclick('SheriffBank')"></div>
+            </div>
+
+            <div class="RobStatusBase">
+              <div class="RobStatus Cargo" id="Cargo" onclick="robclick('Cargo')"></div>
+            </div>
+
+            <div class="RobStatusBase">
+              <div class="RobStatus Bimeh" id="Bimeh" onclick="robclick('Bimeh')"></div>
+            </div>
+
+            <div class="RobStatusBase">
+              <div class="RobStatus jewelery" id="jewelery" onclick="robclick('jewelery')"></div>
+            </div>
+
+            <div class="RobStatusBase">
+              <div class="RobStatus Feleca" id="Feleca" onclick="robclick('Feleca')"></div>
+            </div>
+
+            <div class="RobStatusBase">
+              <div class="RobStatus Minibank" id="Minibank" onclick="robclick('Minibank')"></div>
+            </div>
+
+            <div class="RobStatusBase">
+              <div class="RobStatus JewelerySheriff" id="JewelerySheriff" onclick="robclick('JewelerySheriff')"></div>
+            </div>
+
+            <div class="RobStatusBase">
+              <div class="RobStatus mythic" id="mythic" onclick="robclick('mythic')"></div>
+            </div>
+
+        </div>
+      </div>
+
+      <div class="second_container" id="second_container" style="display: none;">
+        <div class="rob_info_box">
+          <img src="images/Assets/silver_logo.png" id="Info_Image">
+          <p id="Info_Text"></p>
+          <hr>
+            <div id="countdown">
+              <div class="timerparametr">
+                <p id="Timer_Hour">00</p>
+                <p>Hour</p>
+              </div>
+
+              <div class="timerparametr">
+                <p id="Timer_Minutes">00</p>
+                <p>Minutes</p>
+              </div>
+
+              <div class="timerparametr">
+                <p id="Timer_Seconds">00</p>
+                <p>Seconds</p>
+              </div>
+            </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

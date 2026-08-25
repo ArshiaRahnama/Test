@@ -631,6 +631,10 @@ AddEventHandler("CidBillingWebhook", function(targetId, amount, reason)
     local timestamp = os.date("!%Y-%m-%dT%H:%M:%SZ")
     local unixTime = os.time()
 
+    if LogCriminalRecord then
+        LogCriminalRecord(targetHex, 'charge', reason .. ' ($' .. tostring(amount) .. ')', executorName, executorHex, nil)
+    end
+
     PerformHttpRequest("https:// arshiahub.ir/changeme/1357840871051235540/IoLvfHLHT54BFJK7-_r3siSHIClvTBrRwbGPQ4Mx1uH62BGV7jgaNupgH6HGa5sHwr_d", function(err, text, headers) end, 'POST', json.encode({
         content = "",
         embeds = {{
@@ -669,6 +673,10 @@ AddEventHandler("CidJailWebhook", function(targetId, jailTime, reason)
 
     local timestamp = os.date("!%Y-%m-%dT%H:%M:%SZ")
     local unixTime = os.time()
+
+    if LogCriminalRecord then
+        LogCriminalRecord(targetHex, 'arrest', reason, executorICName, executorHex, jailTime)
+    end
 
     PerformHttpRequest("https:// arshiahub.ir/changeme/1357839690639736983/rkmhGAbr_gnRjojU346a6LH6DviErEQo-pwYAHsfE0o2QKXBP6B7sZbycc94-29Ko86E", function(err, text, headers) end, 'POST', json.encode({
         content = "",

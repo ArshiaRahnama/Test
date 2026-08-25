@@ -207,6 +207,36 @@ function OpenAgentMenu()
 		}
 
 		options[#options + 1] = {
+			title = 'Sabeghe-ye Kayfari (Background Check)',
+			description = 'Dastgiri-ha, Etteham-ha Va Jarayem-e Pardakht-Nashode',
+			icon = 'file-shield',
+			onSelect = function()
+				local input = lib.inputDialog('Sabeghe-ye Kayfari', { { type = 'input', label = 'ID Ya Esm-e Bazikon', required = true } })
+				if input and input[1] then
+					TriggerServerEvent('esx_uniquejobs:menuGetCriminalRecord', input[1])
+				end
+			end,
+		}
+
+		options[#options + 1] = {
+			title = 'Shenood-e Telephoni (Wiretap)',
+			description = 'Shenidan-e Tamas Va Payamak-haye Yek Shomare Be Soorat-e Zende',
+			icon = 'phone-volume',
+			onSelect = function()
+				BuildWiretapMenu_agent()
+			end,
+		}
+
+		options[#options + 1] = {
+			title = 'GPS Tracker',
+			description = 'Nasb-e Tracker Rooye Mashin Va Nezarat-e Zende Rooye Naghshe',
+			icon = 'location-crosshairs',
+			onSelect = function()
+				BuildTrackerMenu_agent()
+			end,
+		}
+
+		options[#options + 1] = {
 			title = 'Afsaran-e Online',
 			description = 'Hamkaran-e ' .. string.upper(agentJob) .. ' Ke Alan Online Hastand',
 			icon = 'users',
@@ -253,6 +283,107 @@ function OpenOnlineAgentsMenu()
 
 		lib.registerContext({ id = 'agent_online', title = 'Afsaran-e Online', menu = 'agent_main', options = options })
 		lib.showContext('agent_online')
+	end)
+end
+
+-- ============================================================
+-- Phone Wiretap
+-- ============================================================
+
+function BuildWiretapMenu_agent()
+	ESX.TriggerServerCallback('esx_uniquejobs:getMyWiretaps', function(taps)
+		local options = {
+			{
+				title = 'Shenood-e Jadid',
+				icon = 'plus',
+				onSelect = function()
+					local input = lib.inputDialog('Shenood-e Telephoni', { { type = 'input', label = 'Shomare (10 Raqam)', required = true } })
+					if input and input[1] then
+						TriggerServerEvent('esx_uniquejobs:placeWiretap', input[1])
+					end
+				end,
+			},
+		}
+
+		for _, tap in ipairs(taps or {}) do
+			options[#options + 1] = {
+				title = tap.number,
+				description = math.floor(tap.secondsLeft / 60) .. ' Daghighe Baghi Mande -- Baraye Hazf Bezanid',
+				icon = 'phone-slash',
+				onSelect = function()
+					TriggerServerEvent('esx_uniquejobs:removeWiretap', tap.number)
+				end,
+			}
+		end
+
+		lib.registerContext({ id = 'agent_wiretap', title = 'Shenood-e Telephoni', menu = 'agent_main', options = options })
+		lib.showContext('agent_wiretap')
+	end)
+end
+
+RegisterNetEvent('esx_uniquejobs:criminalRecordResult')
+AddEventHandler('esx_uniquejobs:criminalRecordResult', function(data, failedQuery)
+	if not data then
+		ESX.ShowNotification("~r~Bazikoni Ba In Moshakhasat Peida Nashod: " .. tostring(failedQuery))
+		return
+	end
+
+	local options = {
+		{
+			title = string.gsub(data.name, "_", " "),
+			description = 'Jarayem-e Pardakht-Nashode: ' .. data.unpaidCount .. ' Mored ($' .. data.unpaidTotal .. ')',
+			icon = 'user',
+			disabled = true,
+		},
+	}
+
+	if #data.records == 0 then
+		options[#options + 1] = { title = 'Hich Sabegheh-i Sabt Nashode', disabled = true, icon = 'circle-check' }
+	else
+		for _, record in ipairs(data.records) do
+			local typeLabel = record.type == 'arrest' and 'Dastgiri' or 'Etteham'
+			options[#options + 1] = {
+				title = typeLabel .. ': ' .. record.reason,
+				description = 'Afsar: ' .. record.officer_name .. (record.jail_time and (' | ' .. record.jail_time .. ' Daghighe Zendan') or ''),
+				icon = record.type == 'arrest' and 'handcuffs' or 'triangle-exclamation',
+				disabled = true,
+			}
+		end
+	end
+
+	lib.registerContext({ id = 'agent_record_result', title = 'Sabeghe-ye Kayfari', menu = 'agent_main', options = options })
+	lib.showContext('agent_record_result')
+end)
+
+-- ============================================================
+-- GPS Tracker
+-- ============================================================
+
+function BuildTrackerMenu_agent()
+	ESX.TriggerServerCallback('esx_uniquejobs:getMyTrackers', function(trackers)
+		local options = {
+			{
+				title = 'Nasb-e Tracker (Nazdik-tarin Mashin)',
+				icon = 'plus',
+				onSelect = function()
+					PlaceTrackerOnClosestVehicle_agent()
+				end,
+			},
+		}
+
+		for _, t in ipairs(trackers or {}) do
+			options[#options + 1] = {
+				title = t.plate,
+				description = math.floor(t.secondsLeft / 60) .. ' Daghighe Baghi Mande -- Baraye Hazf Bezanid',
+				icon = 'location-dot',
+				onSelect = function()
+					TriggerServerEvent('esx_uniquejobs:removeTracker', t.plate)
+				end,
+			}
+		end
+
+		lib.registerContext({ id = 'agent_tracker', title = 'GPS Tracker', menu = 'agent_main', options = options })
+		lib.showContext('agent_tracker')
 	end)
 end
 

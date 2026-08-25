@@ -394,6 +394,18 @@ function OpenPhone()
                         DisableControlAction(0, 245, true)
                         DisableControlAction(0, 245, true)
                         DisableControlAction(0, 105, true)
+                        -- FIX: mouse-wheel / weapon-wheel controls were missing from
+                        -- this list. Without disabling them, scrolling inside the
+                        -- phone (e.g. the browser app, or any scrollable list) ALSO
+                        -- scrolled the game's weapon wheel underneath — cycling or
+                        -- opening it while you were just trying to scroll the phone.
+                        DisableControlAction(0, 14, true)  -- INPUT_WEAPON_WHEEL_NEXT (mwheelup)
+                        DisableControlAction(0, 15, true)  -- INPUT_WEAPON_WHEEL_PREV (mwheeldown)
+                        DisableControlAction(0, 16, true)  -- INPUT_SELECT_NEXT_WEAPON
+                        DisableControlAction(0, 17, true)  -- INPUT_SELECT_PREV_WEAPON
+                        DisableControlAction(0, 19, true)  -- INPUT_WEAPON_WHEEL_UD
+                        DisableControlAction(0, 20, true)  -- INPUT_WEAPON_WHEEL_LR
+                        DisableControlAction(0, 37, true)  -- INPUT_SELECT_WEAPON (hold Tab/Q to open wheel)
                         if IsControlJustPressed(1, 22) then
                             TriggerEvent('KeyDown:space')
                         end

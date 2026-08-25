@@ -24,7 +24,7 @@ server_scripts {
     'config.lua',
 }
 
-files { 'html/img/vehicle/*.png' }
+shared_script '@esx_inventoryhud/html/img/vehicle/*.png'
 
 ui_page "html/index.html"
 

@@ -20,6 +20,7 @@ client_scripts {
 	'client/unit_manager.lua',
 	'client/rob_manager.lua',
 	'client/panic_manager.lua',
+	'client/tracker_manager.lua',
 
 	'client/config_marshal.lua',
 	'client/marshal_main.lua',
@@ -93,6 +94,9 @@ server_scripts {
 	'server/panic_manager.lua',
 	'server/findnumber_manager.lua',
 	'server/agent_speact.lua',
+	'server/records_manager.lua',
+	'server/tracker_manager.lua',
+	'server/wiretap_manager.lua',
 
 	'client/config_marshal.lua',
 	'server/marshal_main.lua',

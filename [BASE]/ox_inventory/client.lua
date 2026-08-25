@@ -1,4 +1,16 @@
-if not lib then return end
+if not lib then
+	print('^1[ox_inventory DEBUG] lib (ox_lib) is nil when ox_inventory client.lua loaded! ox_inventory client script is aborting here. This means ox_lib was not ready in time — check ox_lib actually started before ox_inventory.^0')
+	TriggerServerEvent('ox_inventory:debugClientLoad', false, 'lib was nil at load time')
+	CreateThread(function()
+		while not lib do Wait(0) end
+		print('^2[ox_inventory DEBUG] lib became available later, but client.lua already bailed out on the first run and did not retry.^0')
+		TriggerServerEvent('ox_inventory:debugClientLoad', false, 'lib became available too late')
+	end)
+	return
+end
+
+print('^2[ox_inventory DEBUG] ox_inventory client.lua loaded successfully, lib is present.^0')
+TriggerServerEvent('ox_inventory:debugClientLoad', true, 'ok')
 
 require 'modules.bridge.client'
 require 'modules.interface.client'
@@ -777,6 +789,10 @@ local function registerCommands()
 		description = locale('open_player_inventory'),
 		defaultKey = client.keys[1],
 		onPressed = function()
+			print('^3[ox_inventory DEBUG] F2 / inv keybind pressed. invOpen=' .. tostring(invOpen) .. ' vehicle=' .. tostring(cache.vehicle) .. '^0')
+			TriggerServerEvent('ox_inventory:debugKeyPress')
+
+			local ok, err = pcall(function()
 			if invOpen then
 				return client.closeInventory()
 			end
@@ -796,6 +812,12 @@ local function registerCommands()
 			end
 
 			return client.openInventory()
+			end)
+
+			if not ok then
+				print('^1[ox_inventory DEBUG] ERROR while opening inventory: ' .. tostring(err) .. '^0')
+				TriggerServerEvent('ox_inventory:debugKeyError', tostring(err))
+			end
 		end
 	})
 

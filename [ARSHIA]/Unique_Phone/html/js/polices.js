@@ -7,29 +7,39 @@ Setuppolices = function(data) {
     var ambulance = [];
     var LSPD = [];
     var weazel = [];
+    // EXPANSION: any job with jobs.hasapp = 1 that ISN'T one of the 7
+    // categories above (no hardcoded icon/section for it) used to be
+    // fetched by the server but then silently dropped here — never
+    // rendered, never clickable. Grouped generically instead, keyed by
+    // job name, so newly-added jobs actually show up.
+    var otherJobsMap = {};
+
+    var KNOWN_JOBS = ["uwucafe", "police", "mechanic", "taxi", "sheriff", "ambulance", "weazel"];
 
     if (data.length > 0) {
         $.each(data, function(i, police) {
             if (police.typejob == "uwucafe") {
                 uwucafe.push(police);
-            }
-            if (police.typejob == "police") {
+            } else if (police.typejob == "police") {
                 LSPD.push(police);
-            }
-            if (police.typejob == "mechanic") {
+            } else if (police.typejob == "mechanic") {
                 mechanic.push(police);
-            }
-            if (police.typejob == "taxi") {
+            } else if (police.typejob == "taxi") {
                 taxi.push(police);
-            }
-            if (police.typejob == "sheriff") {
+            } else if (police.typejob == "sheriff") {
                 sheriff.push(police);
-            }
-            if (police.typejob == "ambulance") {
+            } else if (police.typejob == "ambulance") {
                 ambulance.push(police);
-            }
-            if (police.typejob == "weazel") {
+            } else if (police.typejob == "weazel") {
                 weazel.push(police);
+            } else {
+                if (!otherJobsMap[police.typejob]) {
+                    otherJobsMap[police.typejob] = {
+                        label: police.jobLabel || police.typejob,
+                        entries: []
+                    };
+                }
+                otherJobsMap[police.typejob].entries.push(police);
             }
         });
 
@@ -120,6 +130,21 @@ Setuppolices = function(data) {
             var element = '<div class="police-list"><div class="no-polices">There is no Weazel News available.</div></div>'
             $(".polices-list").append(element);
         }
+
+        // EXPANSION: one section per newly-added job (jobs.hasapp = 1)
+        // that doesn't have a dedicated hardcoded section above — generic
+        // briefcase icon, real job label, same "one representative + call"
+        // pattern as Sheriff/Ambulance/Taxi/Mechanic.
+        $.each(otherJobsMap, function(jobName, jobGroup) {
+            $(".polices-list").append('<br><h1 style="font-size:1.641025641025641vh; padding:1.0256410256410255vh; color:#fff; margin-top:0; width:100%; display:block; background-color: rgb(80, 90, 110);">'
+                + jobGroup.label + ' (' + (jobGroup.entries.length > 5 ? "+5" : jobGroup.entries.length) + ')</h1>');
+
+            var repPolice = jobGroup.entries[0];
+            var elementId = "policeid-other-" + jobName;
+            var element = '<div class="police-list" id="' + elementId + '"> <div class="police-list-firstletter" style="background-color: rgb(80, 90, 110); display: flex; align-items: center; justify-content: center;"> <i class="fas fa-briefcase" style="color:#fff; font-size: 1.4vh;"></i> </div> <div class="police-list-fullname">' + jobGroup.label + '</div> <div class="police-list-call"><i class="fas fa-phone"></i></div> </div>';
+            $(".polices-list").append(element);
+            $("#" + elementId).data('policeData', repPolice);
+        });
     } else {
         $(".polices-list").append('<h1 style="font-size:1.641025641025641vh; padding:1.0256410256410255vh; color:#fff; margin-top:0; border-top-left-radius: .5vh; border-top-right-radius: .5vh; width:100%; display:block; background-color: rgb(138, 84, 33);">Sheriff (' + sheriff.length + ')</h1>');
 
@@ -246,48 +271,45 @@ $(document).on('click', '.police-list-call', function(e) {
                 return;
             } else {
                 lastRequestTime = Date.now();
-                if (policeData.typejob === "police" || policeData.typejob === "sheriff" || policeData.typejob === "ambulance") {
+                // FIX: this used to only handle police/sheriff/ambulance —
+                // clicking call on any OTHER job (fbi/cid/cia/marshal/judge/
+                // doa were already allow-listed server-side before, and any
+                // newly-added job now too) fell through and did NOTHING at
+                // all. Now anything not already handled above (uwucafe/
+                // weazel/mechanic/taxi) gets this same message+location
+                // dispatch.
+                //
+                // IMPORTANT: ChatNumber MUST be built from the real job
+                // NAME (policeData.typejob), not the display label —
+                // server-side SendJobMessage matches it against
+                // xPlayer.job.name after stripping " Deparment" and
+                // lowercasing. Using the label here (e.g. "Metropolitan"
+                // for job name "mt") would silently never match anyone and
+                // the dispatch would go nowhere. jobLabel is only used
+                // below for the human-readable notification text.
+                var jobNameCapitalized = policeData.typejob.charAt(0).toUpperCase() + policeData.typejob.slice(1);
+                var Number = jobNameCapitalized + " Deparment";
+                var displayLabel = policeData.jobLabel || jobNameCapitalized;
+                var message = "Man Be " + displayLabel + " Niyaz Daram";
 
-
-
-                    if (policeData.typejob === "police") {
-                        var Number = "Police Deparment";
-                        var message = "Man Be Police Niyaz Daram";
-                    } else if (policeData.typejob === "sheriff") {
-                        var Number = "Sheriff Deparment";
-                        var message = "Man Be Sheriff Niyaz Daram";
-                    } else if (policeData.typejob === "ambulance") {
-                        var Number = "Ambulance Deparment";
-                        var message = "Man Be Medic Niyaz Daram";
-                    }
-
-                    $.post('http://Unique_Phone/SendMessageToJobs', JSON.stringify({
-                        ChatNumber: Number,
-                        ChatDate: GetCurrentDateKey(),
-                        ChatMessage: message,
-                        ChatTime: FormatMessageTime(),
-                        ChatType: "message",
-                    }));
-            
-                    $.post('http://Unique_Phone/SendMessageToJobs', JSON.stringify({
-                        ChatNumber: Number,
-                        ChatDate: GetCurrentDateKey(),
-                        ChatMessage: "Shared Location",
-                        ChatTime: FormatMessageTime(),
-                        ChatType: "location",
-                    
-                    }));
-
-                    if (policeData.typejob === "police") {
-                        MI.Phone.Notifications.Add("fas fa-user", "Request Sended (Police) Wait 15m", " ", "#93BFCF", 7000);
-                    } else if (policeData.typejob === "sheriff") {
-                        MI.Phone.Notifications.Add("fas fa-user", "Request Sended (Sheriff) Wait 15m", " ", "#93BFCF", 7000);
-                    } else if (policeData.typejob === "ambulance") {
-                        MI.Phone.Notifications.Add("fas fa-user", "Request Sended (Medic) Wait 15m", " ", "#93BFCF", 7000);
-                    }
+                $.post('http://Unique_Phone/SendMessageToJobs', JSON.stringify({
+                    ChatNumber: Number,
+                    ChatDate: GetCurrentDateKey(),
+                    ChatMessage: message,
+                    ChatTime: FormatMessageTime(),
+                    ChatType: "message",
+                }));
+        
+                $.post('http://Unique_Phone/SendMessageToJobs', JSON.stringify({
+                    ChatNumber: Number,
+                    ChatDate: GetCurrentDateKey(),
+                    ChatMessage: "Shared Location",
+                    ChatTime: FormatMessageTime(),
+                    ChatType: "location",
                 
+                }));
 
-                } 
+                MI.Phone.Notifications.Add("fas fa-user", "Request Sended (" + displayLabel + ") Wait 15m", " ", "#93BFCF", 7000);
             }
         }
     }

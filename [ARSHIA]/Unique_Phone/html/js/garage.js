@@ -32,8 +32,8 @@ SetupGarageVehicles = function(Vehicles) {
                                                                                                                                                                      
             var Element = '<div class="garage-vehicle" id="vehicle-'+i+'">' +
             '<span class="garage-vehicle-firstletter" style="display:inline-block;width:7vh;height:7vh;border-radius:50%;overflow:hidden">' +
-            '<img src="nui://Unique_Phone/html/img/vehicle/'+vehicle.model+'.png" ' +
-            'onerror="this.onerror=null;this.src=\'nui://Unique_Phone/html/img/vehicle/defoult.png\'" ' +
+            '<img src="nui://esx_inventoryhud/html/img/vehicle/'+vehicle.model+'.png" ' +
+            'onerror="this.onerror=null;this.src=\'nui://esx_inventoryhud/html/img/vehicle/defoult.png\'" ' +
             'style="width:100%;height:100%;object-fit:cover;object-position:50% 20%">' +
             '</span>' +
             '<span class="garage-vehicle-name">'+vehicle.fullname+'</span>' +

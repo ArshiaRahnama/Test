@@ -127,7 +127,8 @@ $(document).on('click', '.phone-application', function(e){
                 MI.Phone.Data.currentApplication = PressedApplication;
     
                 if (PressedApplication == "settings") {
-                    $("#myPhoneNumber").text(MI.Phone.Data.PlayerData.charinfo.phone)
+                    var rawPhone = MI.Phone.Data.PlayerData.charinfo.phone;
+                    $("#myPhoneNumber").text(formatPhoneDisplay(rawPhone)).attr("data-raw", rawPhone);
                 } else if (PressedApplication == "twitter") {
                     $.post('http://Unique_Phone/GetMentionedTweets', JSON.stringify({}), function(MentionedTweets){
                         MI.Phone.Notifications.LoadMentionedTweets(MentionedTweets)
@@ -482,6 +483,16 @@ MI.Phone.Functions.UpdateTime = function(data) {
 
 var NotificationTimeout = null;
 
+// EXPANSION: purely cosmetic display formatter (0911XXXXXXX -> 0911-XXX-XXXX).
+// The underlying stored/looked-up value is never touched — see
+// copyMyPhoneNumber() for how the raw digits are preserved for copy/paste.
+function formatPhoneDisplay(rawPhone) {
+    if (!rawPhone) return rawPhone;
+    var digits = String(rawPhone).replace(/\D/g, "");
+    if (digits.length !== 11) return rawPhone; // unexpected format, show as-is
+    return digits.slice(0, 4) + "-" + digits.slice(4, 7) + "-" + digits.slice(7);
+}
+
 MI.Screen.Notification = function(title, content, icon, timeout, color) {
     $.post('http://Unique_Phone/HasPhone', JSON.stringify({}), function(HasPhone){
         if (HasPhone) {
@@ -803,11 +814,18 @@ $(document).on('keydown', function(event) {
 
 copyMyPhoneNumber = () =>{
     var copyText = document.getElementById("myPhoneNumber");
-  
+
     let elem = document.createElement("textarea");
     let success = false;
-  
-    elem.value = copyText.innerHTML;
+
+    // FIX: this used to copy the DISPLAYED text directly. Now that the
+    // display is formatted with dashes for readability (0911-345-6789),
+    // copying the displayed text would give people a number that doesn't
+    // exactly match what's actually stored/looked-up elsewhere (contacts,
+    // calling, search-by-number all compare against the raw digit string).
+    // `data-raw` (set alongside the formatted text above) always holds the
+    // real, unformatted number, so copy/paste still works everywhere.
+    elem.value = copyText.getAttribute("data-raw") || copyText.innerHTML;
     document.body.appendChild(elem);
   
     elem.focus();

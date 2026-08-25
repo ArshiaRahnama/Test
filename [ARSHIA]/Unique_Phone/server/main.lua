@@ -47,20 +47,17 @@ local Calls = {}
 local Adverts = {}
 local GeneratedPlates = {}
 
+-- FIX: was a generic "052-XXXXXXXX"-style number with no real-world
+-- resemblance. Now picks a real Iranian mobile prefix (Config.PhoneNumberPrefixes)
+-- and appends 7 random digits — same total length (11 chars) as before, so
+-- nothing that stores/matches this number elsewhere needed to change.
 function getPhoneRandomNumber()
-    local numBase0  = 0
-    local numBase1  = 5
-    local numBase2  = 2
-    local numBase3  = math.random(1, 9)
-    local numBase4  = math.random(0, 9)
-    local numBase5  = math.random(0, 9)
-    local numBase6  = math.random(0, 9)
-    local numBase7  = math.random(0, 9)
-    local numBase8  = math.random(0, 9)
-    local numBase9  = math.random(0, 9)
-    local numBase10 = math.random(0, 9)
-    local num = string.format(numBase0 .. "" .. numBase1 .. "" .. numBase2 .. ""..numBase3 .. "" .. numBase4 .. "" .. numBase5 .. "" .. numBase6 .. "" .. numBase7 .. "" .. numBase8 .. "" .. numBase9 .. "" .. numBase10 .. "")
-    return num
+    local prefix = Config.PhoneNumberPrefixes[math.random(1, #Config.PhoneNumberPrefixes)]
+    local rest = ""
+    for i = 1, 7 do
+        rest = rest .. tostring(math.random(0, 9))
+    end
+    return prefix .. rest
 end
 
 function generateIBAN()
@@ -1358,23 +1355,43 @@ AddEventHandler('Unique_Phone:server:AddTransaction', function(data)
     ExecuteSql(false, "INSERT INTO `crypto_transactions` (`identifier`, `title`, `message`) VALUES (@p1, @p2, @p3)", {['@p1'] = Player.identifier, ['@p2'] = escape_sqli(data.TransactionTitle), ['@p3'] = escape_sqli(data.TransactionMessage)})
 end)
 
+-- FIX: this used to hardcode a fixed list of job names directly in Lua
+-- (ambulance/taxi/mechanic/weazel/police/sheriff/mt/fbi/cid/cia/marshal/
+-- judge/doa/uwucafe) — any job added to the server later (like the newer
+-- custom jobs) silently never showed up here, because the list was never
+-- updated to match. `jobs.hasapp` already existed in the database schema
+-- for exactly this purpose (mark a job as "should appear in the phone's
+-- Services directory") but was never wired up (every job had it at 0).
+-- Now this reads that column live, so adding a job to this directory going
+-- forward is just:
+--     UPDATE jobs SET hasapp = 1 WHERE name = 'yourjobname';
+-- — no more code edits needed here ever again.
 ESX.RegisterServerCallback('Unique_Phone:server:GetCurrentpolices', function(source, cb)
-    local polices = {}
-    for k, v in pairs(ESX.GetPlayers()) do
-        local Player = ESX.GetPlayerFromId(v)
-        local character = GetCharacter(v)
+    MySQL.Async.fetchAll("SELECT name FROM jobs WHERE hasapp = 1", {}, function(jobRows)
+        local allowedJobs = {}
+        for _, row in ipairs(jobRows or {}) do
+            allowedJobs[row.name] = true
+        end
 
-        if Player ~= nil then
-            if (Player.job.name == "ambulance" or Player.job.name == "taxi" or Player.job.name == "mechanic" or Player.job.name == "weazel" or Player.job.name == "police" or Player.job.name == "sheriff" or Player.job.name == "mt" or Player.job.name == "fbi" or Player.job.name == "cid" or Player.job.name == "cia" or Player.job.name == "marshal" or Player.job.name == "judge" or Player.job.name == "doa" or Player.job.name == "uwucafe") then
+        local polices = {}
+        for k, v in pairs(ESX.GetPlayers()) do
+            local Player = ESX.GetPlayerFromId(v)
+            local character = GetCharacter(v)
+
+            if Player ~= nil and allowedJobs[Player.job.name] then
                 table.insert(polices, {
                     name = Player.name,
                     phone = character.phone or 0,
-                    typejob = Player.job.name
+                    typejob = Player.job.name,
+                    -- EXPANSION: real, human-readable job name (e.g. "Judge"
+                    -- instead of "judge") for any job the client-side UI
+                    -- doesn't have a hardcoded label for — see polices.js.
+                    jobLabel = Player.job.label,
                 })
             end
         end
-    end
-    cb(polices)
+        cb(polices)
+    end)
 end)
 
 function GetCharacter(source)

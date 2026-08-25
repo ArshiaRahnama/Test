@@ -1,4 +1,18 @@
 Config = {}
+
+-- EXPANSION: the in-game RP phone number (used for contacts/calls/
+-- WhatsApp/Twitter within Unique_Phone) now looks like a real Iranian
+-- mobile number instead of a generic "052-XXXXXXXX" placeholder — pick
+-- from real Iranian mobile operator prefixes for immersion. This is
+-- SEPARATE from the real phone number players type into Unique_Login for
+-- SMS verification — that one must stay a real, working number and is
+-- never touched here.
+Config.PhoneNumberPrefixes = {
+    "0911", "0912", "0913", "0914", "0915", "0916", "0917", "0918", "0919", -- Hamrah-e Avval
+    "0901", "0902", "0903", "0905",                                        -- Hamrah-e Avval (newer)
+    "0930", "0933", "0935", "0936", "0937", "0938", "0939",                -- Irancell
+    "0920", "0921", "0922",                                                -- RighTel
+}
 Config.RepeatTimeout = 500
 Config.CallRepeats = 120
 Config.OpenPhone = 288

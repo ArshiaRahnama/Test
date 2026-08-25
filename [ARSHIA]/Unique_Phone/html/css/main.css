@@ -110,6 +110,47 @@ body {
   position: absolute;
 }
 
+/* ═══════════════════════════════════════════════════════════
+   EXPANSION: purely additive visual polish for the whole phone frame —
+   no existing rule above is modified, so no app's layout/JS logic is
+   touched. Just an ambient glow, a subtle glass bezel, and a nicer status
+   bar, applied on top of what's already there.
+   ═══════════════════════════════════════════════════════════ */
+
+.phone-container {
+  box-shadow:
+    0 0 4vh rgba(0, 0, 0, 0.5),
+    0 0 2.2vh rgba(80, 170, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Subtle diagonal glass sheen across the whole screen — decorative only,
+   sits above the background image but never intercepts clicks/scroll. */
+.phone-container::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.06) 0%,
+    rgba(255, 255, 255, 0) 30%,
+    rgba(255, 255, 255, 0) 70%,
+    rgba(255, 255, 255, 0.03) 100%
+  );
+  pointer-events: none;
+  z-index: 2;
+}
+
+#phone-icons {
+  filter: drop-shadow(0 0 .3vh rgba(255, 255, 255, 0.35));
+}
+
+#phone-server {
+  text-shadow: 0 0 .6vh rgba(80, 170, 255, 0.6);
+  letter-spacing: .05vh;
+}
+
 .phone-background {
   height: 60.7vh;
   width: 28.4vh;
@@ -373,7 +414,13 @@ body {
   background: rgba(29, 160, 242, 0.9);
   height: 9vh;
   width: 34vh;
-  bottom: 5vh;
+  /* FIX: was bottom: 5vh (bottom-right) — moved to vertical-center on the
+     right side, per request. jQuery's .animate() in app.js only ever
+     touches the `right` property (for the slide-in/out), so switching the
+     vertical anchor from bottom to top+transform here doesn't conflict
+     with that animation at all. */
+  top: 50%;
+  transform: translateY(-50%);
   right: -35vh;
   border-radius: 1.7vh;
   z-index: -5;
