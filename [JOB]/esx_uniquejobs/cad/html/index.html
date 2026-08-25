@@ -56,11 +56,13 @@
                       <!-- CrimeScene (Unique_CrimeScene) tabs -- hidden by default, CS_ApplyJobVisibility()
                            shows/hides the doj-tab / law-tab ones once we know the player's job group -->
                       <button class="MainPageTabButton doj-tab" style="display:none;" id="Page_Button_CS_Cases" onclick="DuckMdt.TabSelected('CS_Cases')">Cases</button>
+                      <button class="MainPageTabButton doj-tab" style="display:none;" id="Page_Button_CS_ColdCases" onclick="DuckMdt.TabSelected('CS_ColdCases')">Cold Cases</button>
                       <button class="MainPageTabButton doj-tab" style="display:none;" id="Page_Button_CS_Wanted" onclick="DuckMdt.TabSelected('CS_Wanted')">Wanted Board</button>
                       <button class="MainPageTabButton law-tab" style="display:none;" id="Page_Button_CS_Bolo" onclick="DuckMdt.TabSelected('CS_Bolo')">BOLO</button>
                       <button class="MainPageTabButton law-tab" style="display:none;" id="Page_Button_CS_Booking" onclick="DuckMdt.TabSelected('CS_Booking')">Booking</button>
                       <button class="MainPageTabButton cs-tab" style="display:none;" id="Page_Button_CS_Records" onclick="DuckMdt.TabSelected('CS_Records')">Records</button>
                       <button class="MainPageTabButton cs-tab" style="display:none;" id="Page_Button_CS_Leaderboard" onclick="DuckMdt.TabSelected('CS_Leaderboard')">Leaderboard</button>
+                      <button class="MainPageTabButton cs-tab" style="display:none;" id="Page_Button_CS_IA" onclick="DuckMdt.TabSelected('CS_IA')">Internal Affairs</button>
                     </div>
                 </div>
 
@@ -190,6 +192,18 @@
                               <p style="margin-left: 130px;">Vehicle Model</p>
                           </div> -->
 
+                        </div>
+
+                        <div class="Data_List" style="margin-top: 10px;">
+                          <div class="Data_List_Content">
+                            <div class="data_Row" style="color: blanchedalmond;">
+                              <p>Charges</p>
+                              <p>Fine / Jail</p>
+                              <p>Officer</p>
+                            </div>
+                            <hr style="color: rgb(49, 49, 49); margin-top: 2px;">
+                            <div id="Character_Profile_Records_List"></div>
+                          </div>
                         </div>
 
                         <div class="Data_List">
@@ -335,6 +349,16 @@
                         <div class="Data_List">
                           <div class="Data_List_Content">
                             <div class="data_Row" style="color: blanchedalmond;">
+                              <p>Suspect</p><p>Role</p>
+                            </div>
+                            <hr style="color: rgb(49, 49, 49); margin-top: 2px;">
+                            <div id="CS_SuspectsList"></div>
+                          </div>
+                        </div>
+
+                        <div class="Data_List">
+                          <div class="Data_List_Content">
+                            <div class="data_Row" style="color: blanchedalmond;">
                               <p>Type</p><p>Content</p><p>Found By</p>
                             </div>
                             <hr style="color: rgb(49, 49, 49); margin-top: 2px;">
@@ -358,6 +382,14 @@
                         </div>
 
                         <div id="CS_CaseActions" style="margin-top: 14px;"></div>
+                      </div>
+
+                      <!-- ===================== CrimeScene: Cold Cases (DOJ) ===================== -->
+                      <div id="Page_CS_ColdCases" style="display: none;">
+                        <div class="MainPage_Header">
+                          <p style="font-size: 2vw;">Cold Cases</p>
+                        </div>
+                        <div id="CS_ColdCasesList" class="MDT_List"></div>
                       </div>
 
                       <!-- ===================== CrimeScene: Wanted Board (DOJ) ===================== -->
@@ -418,6 +450,39 @@
                             <p style="color: var(--text-dim); font-weight: 600; font-size: 13px; margin-bottom: 10px;">Top Officers (Law)</p>
                             <div id="CS_LeaderOfficers" class="MDT_List"></div>
                           </div>
+                        </div>
+                      </div>
+
+                      <!-- ===================== CrimeScene: Internal Affairs ===================== -->
+                      <div id="Page_CS_IA" style="display: none;">
+                        <div class="MainPage_Header">
+                          <p style="font-size: 2vw;">Internal Affairs</p>
+                        </div>
+
+                        <div style="padding: 12px 20px; max-width: 480px;">
+                          <p style="color: var(--text-dim); font-weight: 600; font-size: 13px; margin-bottom: 8px;">File a Report</p>
+                          <input id="CS_IATargetName" type="text" placeholder="Officer name" style="width: 100%; margin-bottom: 8px;">
+                          <select id="CS_IACategory" style="width: 100%; margin-bottom: 8px;">
+                            <option value="shooting">Shooting</option>
+                            <option value="wrongful_arrest">Wrongful Arrest</option>
+                            <option value="excessive_force">Excessive Force</option>
+                            <option value="booking_abuse">Booking Abuse</option>
+                            <option value="other">Other</option>
+                          </select>
+                          <input id="CS_IADescription" type="text" placeholder="What happened" style="width: 100%; margin-bottom: 8px;">
+                          <button class="ExitButton" onclick="CS_SubmitIAReport()">Submit Report</button>
+                        </div>
+
+                        <div id="CS_IAReviewerSection" style="display: none;">
+                          <div style="padding: 4px 20px;">
+                            <p style="color: var(--text-dim); font-weight: 600; font-size: 13px; margin-bottom: 8px;">Recent Officer Activity</p>
+                          </div>
+                          <div id="CS_OfficerActivityList" class="MDT_List"></div>
+
+                          <div style="padding: 12px 20px 4px;">
+                            <p style="color: var(--text-dim); font-weight: 600; font-size: 13px; margin-bottom: 8px;">Reports</p>
+                          </div>
+                          <div id="CS_IAReportsList" class="MDT_List"></div>
                         </div>
                       </div>
 

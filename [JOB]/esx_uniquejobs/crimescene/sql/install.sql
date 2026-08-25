@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS `doj_cases` (
   `warrant_requested_by` VARCHAR(64) DEFAULT NULL,
   `warrant_decided_by` VARCHAR(64) DEFAULT NULL,
   `closed_by_name` VARCHAR(64) DEFAULT NULL,
+  `archived_at` DATETIME DEFAULT NULL, -- set when a cold case gets archived (manually or by the auto-sweep)
   `coords_x` FLOAT DEFAULT NULL,
   `coords_y` FLOAT DEFAULT NULL,
   `coords_z` FLOAT DEFAULT NULL,
@@ -63,7 +64,45 @@ CREATE TABLE IF NOT EXISTS `doj_criminal_records` (
   PRIMARY KEY (`id`),
   KEY `idx_case_id` (`case_id`),
   KEY `idx_suspect_name` (`suspect_name`),
+  KEY `idx_suspect_identifier` (`suspect_identifier`),
   CONSTRAINT `fk_records_case` FOREIGN KEY (`case_id`) REFERENCES `doj_cases` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Multi-suspect cases: doj_cases.suspect_identifier/suspect_name stay as
+-- the "primary" suspect (whoever finished the hack, unchanged behaviour
+-- for everything that already reads those two columns), this table adds
+-- the rest of a team robbery's participants on top.
+CREATE TABLE IF NOT EXISTS `doj_case_suspects` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `case_id` INT NOT NULL,
+  `suspect_identifier` VARCHAR(64) DEFAULT NULL,
+  `suspect_name` VARCHAR(64) DEFAULT NULL,
+  `role` VARCHAR(16) NOT NULL DEFAULT 'accomplice', -- primary | accomplice
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_case_id` (`case_id`),
+  CONSTRAINT `fk_suspects_case` FOREIGN KEY (`case_id`) REFERENCES `doj_cases` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Internal Affairs: misconduct reports filed against Law Enforcement
+-- (or DOJ) members, reviewed/closed by CIA or FBI.
+CREATE TABLE IF NOT EXISTS `doj_ia_reports` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `target_identifier` VARCHAR(64) DEFAULT NULL,
+  `target_name` VARCHAR(64) NOT NULL,
+  `target_job` VARCHAR(32) DEFAULT NULL,
+  `category` VARCHAR(32) NOT NULL DEFAULT 'other', -- shooting | wrongful_arrest | excessive_force | booking_abuse | other
+  `description` TEXT NOT NULL,
+  `filed_by` VARCHAR(64) DEFAULT NULL,
+  `filed_by_name` VARCHAR(64) DEFAULT NULL,
+  `status` VARCHAR(16) NOT NULL DEFAULT 'open', -- open | reviewing | cleared | disciplined
+  `verdict` TEXT DEFAULT NULL,
+  `reviewed_by_name` VARCHAR(64) DEFAULT NULL,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_target_identifier` (`target_identifier`),
+  KEY `idx_status` (`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- If you already ran an earlier version of this file (without the `plate`
@@ -84,3 +123,9 @@ CREATE TABLE IF NOT EXISTS `doj_criminal_records` (
 -- If you already ran an earlier version without `suspect_identifier` on
 -- doj_criminal_records (added for the Unique_Cad integration):
 -- ALTER TABLE `doj_criminal_records` ADD COLUMN `suspect_identifier` VARCHAR(64) DEFAULT NULL AFTER `case_id`;
+
+-- If you already ran an earlier version without the `archived_at` column
+-- on doj_cases (added for cold-case archiving), or without the
+-- doj_case_suspects / doj_ia_reports tables, run this once to upgrade:
+-- ALTER TABLE `doj_cases` ADD COLUMN `archived_at` DATETIME DEFAULT NULL AFTER `closed_by_name`;
+-- (then run the CREATE TABLE doj_case_suspects / doj_ia_reports statements above by themselves)

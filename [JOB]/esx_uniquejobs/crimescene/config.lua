@@ -187,3 +187,45 @@ Config_cs.PrisonBreak = {
 	-- reported position to run /freeprisoner.
 	freeDistance = 5.0,
 }
+
+-- ============================================================
+-- Internal Affairs -- CIA/FBI review misconduct reports filed against
+-- Law Enforcement (or DOJ) members.
+-- ============================================================
+
+-- Who can FILE a report (anyone who might witness misconduct -- DOJ and
+-- Law Enforcement both, matches who's normally around a scene).
+Config_cs.IAReporterJobs = { 'cid', 'cia', 'marshal', 'fbi', 'judge', 'doa', 'police', 'sheriff', 'mt' }
+
+-- Only these can review/close a report (same as case referral targets --
+-- keeps "who prosecutes/oversees" consistent across the whole system).
+Config_cs.IAReviewerJobs = { 'judge', 'cia', 'fbi' }
+
+Config_cs.IACategories = { 'shooting', 'wrongful_arrest', 'excessive_force', 'booking_abuse', 'other' }
+
+-- ============================================================
+-- Multi-suspect cases -- if the robber who finishes the hack is in a
+-- Team (Unique_AllRobs' merged-in PartySystem/TeamSystem), everyone else
+-- on that team gets attached to the case too as accomplices.
+-- ============================================================
+
+Config_cs.MultiSuspect = {
+	enabled = true,
+	-- Resource that owns the global IsInTeam(source) function (exported).
+	-- See Unique_AllRobs/server.lua around line 245/264.
+	teamResource = 'Unique_AllRobs',
+}
+
+-- ============================================================
+-- Cold case archiving
+-- ============================================================
+
+-- A case sitting at status = 'cold' for this many days with no new notes
+-- gets auto-archived (status stays 'cold' for filtering purposes, but
+-- archived_at gets set and it drops out of the normal Cases/Cold Cases
+-- tabs into a separate Archive view). DOJ can also archive one manually
+-- any time from the case detail, or reopen a cold case back to 'open'.
+Config_cs.ColdCaseAutoArchiveDays = 14
+
+-- How often (minutes) the server sweeps for cases to auto-archive.
+Config_cs.ColdCaseSweepIntervalMinutes = 60

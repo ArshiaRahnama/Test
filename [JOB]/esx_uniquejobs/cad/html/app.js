@@ -69,6 +69,14 @@ DuckMdt.TabSelected = function(NewTab) {
             $.post('https://esx_uniquejobs/CS_GetRecords', JSON.stringify({}));
         } else if (NewTab === 'CS_Leaderboard') {
             $.post('https://esx_uniquejobs/CS_GetLeaderboard', JSON.stringify({}));
+        } else if (NewTab === 'CS_ColdCases') {
+            $.post('https://esx_uniquejobs/CS_GetColdCases', JSON.stringify({}));
+        } else if (NewTab === 'CS_IA') {
+            $('#CS_IAReviewerSection').css('display', CS_IAReviewerJobs.indexOf(CS_playerJob) !== -1 ? 'block' : 'none')
+            if (CS_IAReviewerJobs.indexOf(CS_playerJob) !== -1) {
+                $.post('https://esx_uniquejobs/CS_GetOfficerActivity', JSON.stringify({}));
+                $.post('https://esx_uniquejobs/CS_GetIAReports', JSON.stringify({}));
+            }
         }
         DuckMdt.PageSwitch(currenttab, NewTab, 500)
         currenttab = NewTab
@@ -184,6 +192,7 @@ function ExitTablet() {
 let CS_currentCaseId = null
 let CS_playerJob = null
 const CS_ReferralJobs = ['judge', 'cia', 'fbi']
+const CS_IAReviewerJobs = ['judge', 'cia', 'fbi']
 const CS_StatusLabels = {
     open: 'Open', cold: 'Cold', closed: 'Closed',
     referred_judge: 'Referred: Judge', referred_cia: 'Referred: CIA', referred_fbi: 'Referred: FBI',
@@ -260,6 +269,35 @@ function CS_SubmitBooking() {
         jailMinutes: $('#CS_BookJail').val() || 0,
     }))
     $('#CS_BookTarget, #CS_BookCase, #CS_BookSuspect, #CS_BookCharges, #CS_BookFine, #CS_BookJail').val('')
+}
+
+function CS_ReopenCase(id) {
+    $.post('https://esx_uniquejobs/CS_ReopenCase', JSON.stringify({ id: id }))
+}
+
+function CS_ArchiveCase(id) {
+    $.post('https://esx_uniquejobs/CS_ArchiveCase', JSON.stringify({ id: id }))
+}
+
+function CS_SubmitIAReport() {
+    let targetName = $('#CS_IATargetName').val()
+    let description = $('#CS_IADescription').val()
+    if (!targetName || !description) {
+        alert('Officer name and description are required')
+        return
+    }
+    $.post('https://esx_uniquejobs/CS_FileIAReport', JSON.stringify({
+        targetName: targetName,
+        targetJob: null,
+        category: $('#CS_IACategory').val(),
+        description: description,
+    }))
+    $('#CS_IATargetName, #CS_IADescription').val('')
+}
+
+function CS_CloseIAReport(id, outcome) {
+    let verdict = prompt((outcome === 'disciplined' ? 'Disciplinary action taken:' : 'Notes (optional):')) || ''
+    $.post('https://esx_uniquejobs/CS_CloseIAReport', JSON.stringify({ id: id, outcome: outcome, verdict: verdict }))
 }
 
 
@@ -456,6 +494,15 @@ window.addEventListener('message', function(event) {
                     $('#Character_Profile_Cars_List').append('<div class="List_Row" id="Cars_SearchResult_List"  style="padding-right: 265px; padding-left: 25px;" onclick="Open_Car_Profile(`' + element['plate'] + '`)" onclick="Open_Car_Profile(`' + element['owner'] + '`)"><p>' + number++ + '</p><p>' + element['plate'] + '</p><p>' + status + '</p></div>')
                 }
             })
+
+            $('#Character_Profile_Records_List').empty()
+            let records = data.records || []
+            if (!records.length) {
+                $('#Character_Profile_Records_List').append('<div class="data_Row"><p>-</p><p>No record</p><p>-</p></div>')
+            }
+            records.forEach(r => {
+                $('#Character_Profile_Records_List').append('<div class="data_Row"><p>' + r['charges'] + '</p><p>$' + r['fine'] + ' / ' + r['jail_minutes'] + 'm</p><p>' + (r['booked_by_name'] || '?') + '</p></div>')
+            })
         }, 500)
 
     } else if (data.type === "LoadCarProfile") {
@@ -539,6 +586,15 @@ window.addEventListener('message', function(event) {
         }
         $('#CS_CaseStatus_P').text(statusText)
 
+        $('#CS_SuspectsList').empty()
+        if (!c.suspects || !c.suspects.length) {
+            $('#CS_SuspectsList').append('<div class="data_Row"><p>' + caseRow.suspect_name + '</p><p>primary</p></div>')
+        } else {
+            c.suspects.forEach(s => {
+                $('#CS_SuspectsList').append('<div class="data_Row"><p>' + s.suspect_name + '</p><p>' + s.role + '</p></div>')
+            })
+        }
+
         $('#CS_EvidenceList').empty()
         if (!c.evidence.length) $('#CS_EvidenceList').append('<div class="data_Row"><p>-</p><p>No evidence yet</p><p>-</p></div>')
         c.evidence.forEach(ev => {
@@ -617,6 +673,42 @@ window.addEventListener('message', function(event) {
         $('#CS_LeaderOfficers').empty()
         ;(data.data.officers || []).forEach((row, i) => {
             $('#CS_LeaderOfficers').append('<div class="List_Row"><p>#' + (i + 1) + '</p><p>' + row.name + '</p><p>' + row.score + '</p></div>')
+        })
+
+    } else if (data.type === 'CS_ColdCases') {
+        $('#CS_ColdCasesList').empty()
+        if (!data.list.length) $('#CS_ColdCasesList').append('<p style="color: var(--text-dim); padding: 10px;">No cold cases</p>')
+        data.list.forEach(c => {
+            let archived = !!c.archived_at
+            let actions = archived
+                ? '<span style="color: var(--text-dim);">Archived</span>'
+                : '<button class="ExitButton" style="margin-right:6px;" onclick="event.stopPropagation(); CS_ReopenCase(' + c.id + ')">Reopen</button>' +
+                  '<button class="DiscardButton" onclick="event.stopPropagation(); CS_ArchiveCase(' + c.id + ')">Archive</button>'
+            $('#CS_ColdCasesList').append(
+                '<div class="List_Row" onclick="CS_OpenCase(' + c.id + ')"><p>#' + c.id + '</p><p>' + c.rob_name + '</p><p>' + actions + '</p></div>'
+            )
+        })
+
+    } else if (data.type === 'CS_OfficerActivity') {
+        $('#CS_OfficerActivityList').empty()
+        if (!data.list.length) $('#CS_OfficerActivityList').append('<p style="color: var(--text-dim); padding: 10px;">No recent activity</p>')
+        data.list.forEach(row => {
+            $('#CS_OfficerActivityList').append(
+                '<div class="List_Row"><p>' + (row.booked_by_name || '?') + '</p><p>Booked ' + row.suspect_name + '</p><p>' + row.charges + '</p></div>'
+            )
+        })
+
+    } else if (data.type === 'CS_IAReports') {
+        $('#CS_IAReportsList').empty()
+        if (!data.list.length) $('#CS_IAReportsList').append('<p style="color: var(--text-dim); padding: 10px;">No reports</p>')
+        data.list.forEach(r => {
+            let actions = r.status === 'open'
+                ? '<button class="ExitButton" style="margin-right:6px;" onclick="CS_CloseIAReport(' + r.id + ', \'cleared\')">Clear</button>' +
+                  '<button class="DiscardButton" onclick="CS_CloseIAReport(' + r.id + ', \'disciplined\')">Discipline</button>'
+                : '<span style="color: var(--text-dim);">' + r.status + '</span>'
+            $('#CS_IAReportsList').append(
+                '<div class="List_Row"><p>' + r.target_name + '</p><p>' + r.category + '</p><p>' + r.description + '</p><p>' + actions + '</p></div>'
+            )
         })
     }
 

@@ -20,7 +20,6 @@ client_scripts {
 	'client/unit_manager.lua',
 	'client/rob_manager.lua',
 	'client/panic_manager.lua',
-	'client/tracker_manager.lua',
 
 	'client/config_marshal.lua',
 	'client/marshal_main.lua',
@@ -88,15 +87,13 @@ client_scripts {
 
 server_scripts {
 	'@mysql-async/lib/MySQL.lua',
+	'@oxmysql/lib/MySQL.lua',
 
 	'server/unit_manager.lua',
 	'server/rob_manager.lua',
 	'server/panic_manager.lua',
 	'server/findnumber_manager.lua',
 	'server/agent_speact.lua',
-	'server/records_manager.lua',
-	'server/tracker_manager.lua',
-	'server/wiretap_manager.lua',
 
 	'client/config_marshal.lua',
 	'server/marshal_main.lua',
@@ -172,7 +169,7 @@ files {
 dependencies {
 	'essentialmode',
 	'esx_society',
-	'mysql-async',
+	'oxmysql',
 	'ox_lib',
 	'ox_target',
 }

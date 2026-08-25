@@ -458,7 +458,11 @@ AddEventHandler('Morphy_RobSystem:robberyNeeds', function(robname)
     end
 
     if Config.Rob.RobTypes[Config.Rob.Robs[robname].type].teammatesrequired ~= 0 then
-        local InTeam,PlayerTeam,TeamID = exports["PartySystem"]:IsInTeam(_source)
+        -- was: exports["PartySystem"]:IsInTeam(_source) -- PartySystem got merged
+        -- into this same file/resource a while back, that export doesn't exist
+        -- anymore. IsInTeam is a plain global function defined above in this
+        -- same file, just call it directly.
+        local InTeam,PlayerTeam,TeamID = IsInTeam(_source)
         if not InTeam then
             TriggerClientEvent('esx:showNotification', _source, "Baraye Starte In Robbery Shoma Bayad Dar Team Bashid! /party" )
             return
@@ -570,10 +574,10 @@ AddEventHandler('Morphy_RobSystem:robberySuccess', function(robname,RobberyCode)
     -- resource is esx_uniquejobs now, and its real export is
     -- CheckRob_police/CheckRob_marshal not CheckRob). Always giving full
     -- reward for now until the final "who approves a rob" design is
-    -- decided (police-tier escalation vs PartySystem/TeamSystem -- this
-    -- file already uses exports["PartySystem"]:IsInTeam(...) elsewhere,
-    -- around line 461, for the teammatesrequired check at robbery start,
-    -- so a team-based accept flow here would follow the same pattern).
+    -- decided (police-tier escalation vs team-based -- this file's own
+    -- IsInTeam(source) global function, used around line 461 for the
+    -- teammatesrequired check at robbery start, would be the natural fit
+    -- for a team-based accept flow here).
     local accepted = true
     if accepted then
         for itemname,amount in pairs(Config.Rob.RobTypes[Config.Rob.Robs[robname].type].reward) do

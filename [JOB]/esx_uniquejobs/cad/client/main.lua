@@ -114,7 +114,8 @@ RegisterNUICallback('CitizenProfile', function(data, cb)
         SendNuiMessage(json.encode({
             type = 'LoadCitizenProfile',
             object = obj.CitizenProfile,
-            cars = obj.CitizenCars
+            cars = obj.CitizenCars,
+            records = obj.CriminalRecords
         }))
 
         SendNuiMessage(json.encode({
@@ -305,6 +306,48 @@ RegisterNUICallback('CS_GetLeaderboard', function()
     ESX.TriggerServerCallback('CrimeScene:getLeaderboard', function(lb)
         SendNuiMessage(json.encode({ type = 'CS_Leaderboard', data = lb }))
     end)
+end)
+
+-- ============================================================
+-- Cold cases (reopen / archive)
+-- ============================================================
+
+RegisterNUICallback('CS_GetColdCases', function()
+    ESX.TriggerServerCallback('CrimeScene:getColdCases', function(cases)
+        SendNuiMessage(json.encode({ type = 'CS_ColdCases', list = cases }))
+    end)
+end)
+
+RegisterNUICallback('CS_ReopenCase', function(data)
+    TriggerServerEvent('CrimeScene:reopenCase', tonumber(data.id))
+end)
+
+RegisterNUICallback('CS_ArchiveCase', function(data)
+    TriggerServerEvent('CrimeScene:archiveCase', tonumber(data.id))
+end)
+
+-- ============================================================
+-- Internal Affairs
+-- ============================================================
+
+RegisterNUICallback('CS_GetOfficerActivity', function()
+    ESX.TriggerServerCallback('CrimeScene:getOfficerActivity', function(list)
+        SendNuiMessage(json.encode({ type = 'CS_OfficerActivity', list = list }))
+    end)
+end)
+
+RegisterNUICallback('CS_FileIAReport', function(data)
+    TriggerServerEvent('CrimeScene:fileIAReport', data.targetName, data.targetJob, data.category, data.description)
+end)
+
+RegisterNUICallback('CS_GetIAReports', function()
+    ESX.TriggerServerCallback('CrimeScene:getIAReports', function(list)
+        SendNuiMessage(json.encode({ type = 'CS_IAReports', list = list }))
+    end)
+end)
+
+RegisterNUICallback('CS_CloseIAReport', function(data)
+    TriggerServerEvent('CrimeScene:closeIAReport', tonumber(data.id), data.outcome, data.verdict)
 end)
 
 -- Live refresh: if the currently open case gets updated by someone else

@@ -47,6 +47,12 @@ ESX.RegisterServerCallback('DuckMdt:CitizenProfile', function(src, cb, Steam)
             object.CitizenCars = result
             MySQL.Async.fetchAll('SELECT `id`, `steam`, `reason`, `date`, `author` FROM duckcad_data WHERE `deleted` = 0 AND `steam` = @steam', {['@steam'] = Steam}, function(result)
                 object.Data = result
+                -- Criminal record (crimescene/, this same resource) for this
+                -- citizen, shown right under their profile instead of
+                -- needing to jump to the separate Records tab.
+                MySQL.Async.fetchAll('SELECT `suspect_name`, `charges`, `fine`, `jail_minutes`, `booked_by_name`, `created_at` FROM doj_criminal_records WHERE `suspect_identifier` = @identifier ORDER BY `created_at` DESC LIMIT 20', {['@identifier'] = Steam}, function(result)
+                    object.CriminalRecords = result
+                end)
             end)
         end)
     end)

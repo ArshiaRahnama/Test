@@ -175,6 +175,28 @@ local function FindNearbyVehiclePlate(coords)
     return nil
 end
 
+-- Shared by both first-time scene creation and cold-case reopening so the
+-- point-scattering math only lives in one place.
+local function GenerateEvidencePoints(coords, family)
+    local evidenceCount = Config_cs.EvidenceCountByFamily[family] or Config_cs.EvidenceCountByFamily.default
+    local points = {}
+    local pointsForClient = {}
+    for i = 1, evidenceCount do
+        local angle = math.random(0, 359)
+        local dist = math.random(2, math.floor(Config_cs.SceneRadius))
+        local rad = math.rad(angle)
+        local px = coords.x + math.cos(rad) * dist
+        local py = coords.y + math.sin(rad) * dist
+        local pCoords = vector3(px, py, coords.z)
+
+        NextPointId = NextPointId + 1
+        local pointId = NextPointId
+        points[pointId] = { coords = pCoords, collected = false }
+        pointsForClient[#pointsForClient + 1] = { id = pointId, coords = pCoords }
+    end
+    return points, pointsForClient
+end
+
 -- ============================================================
 -- Crime scene creation
 -- ============================================================
@@ -189,8 +211,29 @@ AddEventHandler('Morphy_RobSystem:robberySuccess', function(robname, robberyCode
     local coords = GetEntityCoords(ped)
 
     local family = GuessRobFamily(robname)
-    local evidenceCount = Config_cs.EvidenceCountByFamily[family] or Config_cs.EvidenceCountByFamily.default
     local plate = FindNearbyVehiclePlate(coords)
+
+    -- Multi-suspect: if the finisher is in a Team (Unique_AllRobs' merged
+    -- PartySystem/TeamSystem), everyone else on it gets attached to the
+    -- case as an accomplice. Guarded with pcall so a missing/renamed team
+    -- resource never breaks case creation -- it just falls back to a
+    -- single-suspect case, same as before this feature existed.
+    local accompliceList = {}
+    if Config_cs.MultiSuspect.enabled then
+        local ok, inTeam, playerTeam = pcall(function()
+            return exports[Config_cs.MultiSuspect.teamResource]:IsInTeam(_source)
+        end)
+        if ok and inTeam and type(playerTeam) == 'table' then
+            for mateId, _ in pairs(playerTeam) do
+                if mateId ~= _source then
+                    local xMate = ESX.GetPlayerFromId(mateId)
+                    if xMate then
+                        accompliceList[#accompliceList + 1] = { identifier = xMate.identifier, name = xMate.name }
+                    end
+                end
+            end
+        end
+    end
 
     MySQL.Async.insert(
         'INSERT INTO doj_cases (rob_name, rob_family, status, suspect_identifier, suspect_name, coords_x, coords_y, coords_z) VALUES (@rob_name, @rob_family, @status, @suspect_identifier, @suspect_name, @x, @y, @z)',
@@ -207,21 +250,18 @@ AddEventHandler('Morphy_RobSystem:robberySuccess', function(robname, robberyCode
         function(caseId)
             if not caseId or caseId == 0 then return end
 
-            local points = {}
-            local pointsForClient = {}
-            for i = 1, evidenceCount do
-                local angle = math.random(0, 359)
-                local dist = math.random(2, math.floor(Config_cs.SceneRadius))
-                local rad = math.rad(angle)
-                local px = coords.x + math.cos(rad) * dist
-                local py = coords.y + math.sin(rad) * dist
-                local pCoords = vector3(px, py, coords.z)
-
-                NextPointId = NextPointId + 1
-                local pointId = NextPointId
-                points[pointId] = { coords = pCoords, collected = false }
-                pointsForClient[#pointsForClient + 1] = { id = pointId, coords = pCoords }
+            MySQL.Async.execute(
+                'INSERT INTO doj_case_suspects (case_id, suspect_identifier, suspect_name, role) VALUES (@case_id, @identifier, @name, @role)',
+                { ['@case_id'] = caseId, ['@identifier'] = xPlayer.identifier, ['@name'] = xPlayer.name, ['@role'] = 'primary' }
+            )
+            for _, mate in ipairs(accompliceList) do
+                MySQL.Async.execute(
+                    'INSERT INTO doj_case_suspects (case_id, suspect_identifier, suspect_name, role) VALUES (@case_id, @identifier, @name, @role)',
+                    { ['@case_id'] = caseId, ['@identifier'] = mate.identifier, ['@name'] = mate.name, ['@role'] = 'accomplice' }
+                )
             end
+
+            local points, pointsForClient = GenerateEvidencePoints(coords, family)
 
             ActiveScenes[caseId] = {
                 robname            = robname,
@@ -231,6 +271,7 @@ AddEventHandler('Morphy_RobSystem:robberySuccess', function(robname, robberyCode
                 secured            = false,
                 suspectIdentifier  = xPlayer.identifier,
                 suspectName        = xPlayer.name,
+                accomplices        = accompliceList,
                 points             = points,
                 createdAt          = os.time(),
             }
@@ -511,11 +552,14 @@ AddEventHandler('CrimeScene:closeCase', function(caseId, verdict)
     ClearBOLOsForCase(caseId)
     BroadcastToJobs(Config_cs.LawEnforcementJobs, 'CrimeScene:boloListUpdated')
 
-    -- Case resolved: clear any wanted flags this investigation put on the
-    -- suspect / their vehicles in Unique_Cad's MDT.
-    MySQL.Async.fetchAll('SELECT suspect_identifier FROM doj_cases WHERE id = @id', { ['@id'] = caseId }, function(caseRows)
-        local identifier = caseRows and caseRows[1] and caseRows[1].suspect_identifier
-        PushCadCitizenStatus(identifier, Config_cs.CadWantedLevels.standard)
+    -- Case resolved: clear any wanted flags this investigation put on
+    -- every suspect (primary + accomplices) / their vehicles in
+    -- Unique_Cad's MDT.
+    MySQL.Async.fetchAll('SELECT suspect_identifier FROM doj_case_suspects WHERE case_id = @id AND suspect_identifier IS NOT NULL', { ['@id'] = caseId }, function(suspectRows)
+        if not suspectRows then return end
+        for i = 1, #suspectRows do
+            PushCadCitizenStatus(suspectRows[i].suspect_identifier, Config_cs.CadWantedLevels.standard)
+        end
     end)
     MySQL.Async.fetchAll("SELECT DISTINCT plate FROM doj_case_evidence WHERE case_id = @id AND plate IS NOT NULL", { ['@id'] = caseId }, function(plateRows)
         if not plateRows then return end
@@ -886,18 +930,137 @@ ESX.RegisterServerCallback('CrimeScene:getCases', function(source, cb)
 
     if IsReferralJob(xPlayer.job.name) then
         MySQL.Async.fetchAll(
-            "SELECT * FROM doj_cases WHERE status IN ('open','cold', @refstatus) ORDER BY created_at DESC LIMIT 50",
+            "SELECT * FROM doj_cases WHERE archived_at IS NULL AND status IN ('open','cold', @refstatus) ORDER BY created_at DESC LIMIT 50",
             { ['@refstatus'] = 'referred_' .. xPlayer.job.name },
             function(result) cb(result or {}) end
         )
     else
         MySQL.Async.fetchAll(
-            "SELECT * FROM doj_cases WHERE status IN ('open','cold') ORDER BY created_at DESC LIMIT 50",
+            "SELECT * FROM doj_cases WHERE archived_at IS NULL AND status IN ('open','cold') ORDER BY created_at DESC LIMIT 50",
             {},
             function(result) cb(result or {}) end
         )
     end
 end)
+
+-- ============================================================
+-- Cold case list / reopen / archive
+-- ============================================================
+
+ESX.RegisterServerCallback('CrimeScene:getColdCases', function(source, cb)
+    local xPlayer = ESX.GetPlayerFromId(source)
+    if not xPlayer or not IsDOJJob(xPlayer.job.name) then
+        cb({})
+        return
+    end
+
+    MySQL.Async.fetchAll(
+        "SELECT * FROM doj_cases WHERE status = 'cold' ORDER BY (archived_at IS NULL) DESC, updated_at DESC LIMIT 50",
+        {},
+        function(result) cb(result or {}) end
+    )
+end)
+
+-- Puts a cold case back to 'open' and, if the original scene coords are
+-- still known, spawns a fresh set of evidence points there too -- so
+-- reopening is a real second chance to investigate, not just a status flip.
+RegisterServerEvent('CrimeScene:reopenCase')
+AddEventHandler('CrimeScene:reopenCase', function(caseId)
+    local _source = source
+    local xPlayer = ESX.GetPlayerFromId(_source)
+    if not xPlayer or not IsDOJJob(xPlayer.job.name) then return end
+
+    MySQL.Async.fetchAll('SELECT * FROM doj_cases WHERE id = @id AND status = @status', { ['@id'] = caseId, ['@status'] = 'cold' }, function(rows)
+        local caseRow = rows and rows[1]
+        if not caseRow then
+            TriggerClientEvent('esx:showNotification', _source, 'In Parvande Sard Nist Ya Peida Nashod', 'error')
+            return
+        end
+
+        MySQL.Async.execute(
+            "UPDATE doj_cases SET status = 'open', archived_at = NULL WHERE id = @id",
+            { ['@id'] = caseId }
+        )
+        MySQL.Async.execute(
+            'INSERT INTO doj_case_notes (case_id, author, author_name, note) VALUES (@case_id, @author, @author_name, @note)',
+            { ['@case_id'] = caseId, ['@author'] = 'SYSTEM', ['@author_name'] = xPlayer.name, ['@note'] = 'Parvande Dobare Baz Shod' }
+        )
+
+        if caseRow.coords_x and not ActiveScenes[caseId] then
+            local coords = vector3(caseRow.coords_x, caseRow.coords_y, caseRow.coords_z)
+            local points, pointsForClient = GenerateEvidencePoints(coords, caseRow.rob_family)
+
+            ActiveScenes[caseId] = {
+                robname            = caseRow.rob_name,
+                family             = caseRow.rob_family,
+                coords             = coords,
+                plate              = nil,
+                secured            = true, -- already investigated once, no need to re-secure
+                suspectIdentifier  = caseRow.suspect_identifier,
+                suspectName        = caseRow.suspect_name,
+                accomplices        = {},
+                points             = points,
+                createdAt          = os.time(),
+            }
+
+            BroadcastToJobs(Config_cs.DOJJobs, 'CrimeScene:sceneCreated', caseId, coords, pointsForClient, true)
+            NotifyJobs(Config_cs.DOJJobs, 'Parvande #' .. caseId .. ' Dobare Baz Shod, Madarek Jadid Dar Sahne.', 'info')
+
+            SetTimeout(Config_cs.SceneLifetimeMinutes * 60000, function()
+                if ActiveScenes[caseId] then
+                    ActiveScenes[caseId] = nil
+                    BroadcastToJobs(Config_cs.DOJJobs, 'CrimeScene:sceneExpired', caseId)
+                    MySQL.Async.execute(
+                        "UPDATE doj_cases SET status = @newstatus WHERE id = @id AND status = @openstatus",
+                        { ['@newstatus'] = 'cold', ['@id'] = caseId, ['@openstatus'] = 'open' }
+                    )
+                end
+            end)
+        end
+
+        TriggerClientEvent('esx:showNotification', _source, 'Parvande Baz Shod', 'success')
+        TriggerClientEvent('CrimeScene:refreshCase', _source, caseId)
+    end)
+end)
+
+RegisterServerEvent('CrimeScene:archiveCase')
+AddEventHandler('CrimeScene:archiveCase', function(caseId)
+    local _source = source
+    local xPlayer = ESX.GetPlayerFromId(_source)
+    if not xPlayer or not IsDOJJob(xPlayer.job.name) then return end
+
+    MySQL.Async.execute(
+        "UPDATE doj_cases SET archived_at = NOW() WHERE id = @id AND status = 'cold' AND archived_at IS NULL",
+        { ['@id'] = caseId },
+        function(rowsChanged)
+            if not rowsChanged or rowsChanged == 0 then
+                TriggerClientEvent('esx:showNotification', _source, 'In Parvande Ghabele Archive Nist', 'error')
+                return
+            end
+            MySQL.Async.execute(
+                'INSERT INTO doj_case_notes (case_id, author, author_name, note) VALUES (@case_id, @author, @author_name, @note)',
+                { ['@case_id'] = caseId, ['@author'] = 'SYSTEM', ['@author_name'] = xPlayer.name, ['@note'] = 'Parvande Archive Shod' }
+            )
+            TriggerClientEvent('esx:showNotification', _source, 'Parvande Archive Shod', 'success')
+            TriggerClientEvent('CrimeScene:refreshCase', _source, caseId)
+        end
+    )
+end)
+
+-- Auto-archive cold cases nobody's touched in a while.
+CreateThread(function()
+    while true do
+        Wait(Config_cs.ColdCaseSweepIntervalMinutes * 60000)
+        MySQL.Async.execute(
+            "UPDATE doj_cases SET archived_at = NOW() WHERE status = 'cold' AND archived_at IS NULL AND updated_at < DATE_SUB(NOW(), INTERVAL @days DAY)",
+            { ['@days'] = Config_cs.ColdCaseAutoArchiveDays }
+        )
+    end
+end)
+
+-- ============================================================
+-- Case detail
+-- ============================================================
 
 ESX.RegisterServerCallback('CrimeScene:getCaseDetail', function(source, cb, caseId)
     local xPlayer = ESX.GetPlayerFromId(source)
@@ -914,7 +1077,9 @@ ESX.RegisterServerCallback('CrimeScene:getCaseDetail', function(source, cb, case
 
         MySQL.Async.fetchAll('SELECT * FROM doj_case_evidence WHERE case_id = @id ORDER BY created_at ASC', { ['@id'] = caseId }, function(evidence)
             MySQL.Async.fetchAll('SELECT * FROM doj_case_notes WHERE case_id = @id ORDER BY created_at ASC', { ['@id'] = caseId }, function(notes)
-                cb({ case = caseRows[1], evidence = evidence or {}, notes = notes or {} })
+                MySQL.Async.fetchAll('SELECT suspect_name, role FROM doj_case_suspects WHERE case_id = @id ORDER BY role DESC, created_at ASC', { ['@id'] = caseId }, function(suspects)
+                    cb({ case = caseRows[1], evidence = evidence or {}, notes = notes or {}, suspects = suspects or {} })
+                end)
             end)
         end)
     end)
@@ -1059,4 +1224,116 @@ AddEventHandler('esx:playerDropped', function(playerId)
             CS_FinishTransport(transportId, 'delivered')
         end
     end
+end)
+
+-- ============================================================
+-- Internal Affairs -- CIA/FBI/Judge review misconduct reports filed by
+-- anyone in DOJ or Law Enforcement who witnessed something.
+-- ============================================================
+
+local function IsIAReporterJob(job)
+    for i = 1, #Config_cs.IAReporterJobs do
+        if Config_cs.IAReporterJobs[i] == job then return true end
+    end
+    return false
+end
+
+local function IsIAReviewerJob(job)
+    for i = 1, #Config_cs.IAReviewerJobs do
+        if Config_cs.IAReviewerJobs[i] == job then return true end
+    end
+    return false
+end
+
+-- Recent booking activity, as a browsable "what has this officer been
+-- doing" feed reviewers can check before deciding whether to file/pursue
+-- a report -- this is what "review sensitive actions" means in practice,
+-- since there's no separate use-of-force logging system to hook into.
+ESX.RegisterServerCallback('CrimeScene:getOfficerActivity', function(source, cb)
+    local xPlayer = ESX.GetPlayerFromId(source)
+    if not xPlayer or not IsIAReviewerJob(xPlayer.job.name) then
+        cb({})
+        return
+    end
+
+    MySQL.Async.fetchAll(
+        'SELECT suspect_name, charges, fine, jail_minutes, booked_by_name, created_at FROM doj_criminal_records ORDER BY created_at DESC LIMIT 30',
+        {},
+        function(result) cb(result or {}) end
+    )
+end)
+
+RegisterServerEvent('CrimeScene:fileIAReport')
+AddEventHandler('CrimeScene:fileIAReport', function(targetName, targetJob, category, description)
+    local _source = source
+    local xPlayer = ESX.GetPlayerFromId(_source)
+    if not xPlayer or not IsIAReporterJob(xPlayer.job.name) then return end
+
+    if not targetName or targetName == '' or not description or description == '' then
+        TriggerClientEvent('esx:showNotification', _source, 'Esme Fard Va Tozihat Alzami Ast', 'error')
+        return
+    end
+
+    local validCategory = false
+    for i = 1, #Config_cs.IACategories do
+        if Config_cs.IACategories[i] == category then validCategory = true break end
+    end
+    if not validCategory then category = 'other' end
+
+    MySQL.Async.insert(
+        'INSERT INTO doj_ia_reports (target_name, target_job, category, description, filed_by, filed_by_name) VALUES (@target_name, @target_job, @category, @description, @filed_by, @filed_by_name)',
+        {
+            ['@target_name']    = targetName,
+            ['@target_job']     = targetJob,
+            ['@category']       = category,
+            ['@description']    = description,
+            ['@filed_by']       = xPlayer.identifier,
+            ['@filed_by_name']  = xPlayer.name,
+        },
+        function(reportId)
+            if not reportId or reportId == 0 then return end
+            TriggerClientEvent('esx:showNotification', _source, 'Gozaresh Sabt Shod', 'success')
+            NotifyJobs(Config_cs.IAReviewerJobs, 'Gozareshe Jadide Bazrasi Dakheli Sabt Shod.', 'info')
+        end
+    )
+end)
+
+ESX.RegisterServerCallback('CrimeScene:getIAReports', function(source, cb)
+    local xPlayer = ESX.GetPlayerFromId(source)
+    if not xPlayer or not IsIAReviewerJob(xPlayer.job.name) then
+        cb({})
+        return
+    end
+
+    MySQL.Async.fetchAll(
+        "SELECT * FROM doj_ia_reports ORDER BY status = 'open' DESC, created_at DESC LIMIT 50",
+        {},
+        function(result) cb(result or {}) end
+    )
+end)
+
+RegisterServerEvent('CrimeScene:closeIAReport')
+AddEventHandler('CrimeScene:closeIAReport', function(reportId, outcome, verdict)
+    local _source = source
+    local xPlayer = ESX.GetPlayerFromId(_source)
+    if not xPlayer or not IsIAReviewerJob(xPlayer.job.name) then return end
+    if outcome ~= 'cleared' and outcome ~= 'disciplined' then return end
+
+    MySQL.Async.fetchAll('SELECT filed_by FROM doj_ia_reports WHERE id = @id AND status = @status', { ['@id'] = reportId, ['@status'] = 'open' }, function(rows)
+        local reportRow = rows and rows[1]
+        if not reportRow then
+            TriggerClientEvent('esx:showNotification', _source, 'In Gozaresh Peida Nashod Ya Ghablan Baste Shode', 'error')
+            return
+        end
+        if reportRow.filed_by == xPlayer.identifier then
+            TriggerClientEvent('esx:showNotification', _source, 'Gozareshe Khodetun Ra Nemitoonid Barresi Konid', 'error')
+            return
+        end
+
+        MySQL.Async.execute(
+            'UPDATE doj_ia_reports SET status = @status, verdict = @verdict, reviewed_by_name = @reviewer WHERE id = @id',
+            { ['@status'] = outcome, ['@verdict'] = verdict, ['@reviewer'] = xPlayer.name, ['@id'] = reportId }
+        )
+        TriggerClientEvent('esx:showNotification', _source, 'Gozaresh Baste Shod', 'success')
+    end)
 end)
