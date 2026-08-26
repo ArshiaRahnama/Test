@@ -753,6 +753,13 @@ RegisterNUICallback("addPlayerNote", function(data, cb)
     cb("ok")
 end)
 
+-- EXPANSION: manual override for the Unique_Login suspicious-device lock.
+RegisterNUICallback("clearSecurityHold", function(data, cb)
+    if not requireAdmin(cb) then return end
+    TriggerServerEvent("UNIQUE_AC:clearSecurityHold", tonumber(data and data.playerId))
+    cb("ok")
+end)
+
 RegisterNUICallback("getAdminLog", function(data, cb)
     if not requireAdmin(cb) then return end
     TriggerServerEvent("UNIQUE_AC:getAdminLog")

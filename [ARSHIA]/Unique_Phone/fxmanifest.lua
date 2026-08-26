@@ -7,6 +7,9 @@ lua54 'yes'
 -- EXPANSION: Security app calls exports['Unique_Login'], so make sure that
 -- resource is guaranteed to start first.
 dependency 'Unique_Login'
+-- EXPANSION: Job Manager (Services app) calls exports['UNIQUE_AC']:isAdmin
+-- for permission checks — same requirement.
+dependency 'UNIQUE_AC'
 
 client_scripts {
     '@ox_lib/init.lua',

@@ -105,11 +105,14 @@ button { color: inherit; }
 .mini-stats small { color: var(--muted); display: block; margin-bottom: 6px; }
 .profile-notes, .profile-history { margin-top: 18px; }
 .profile-notes-list, .profile-history-list { display: flex; flex-direction: column; gap: 8px; max-height: 160px; overflow-y: auto; margin-bottom: 10px; }
-.note-row, .history-row { padding: 10px 12px; border: 1px solid var(--line); border-radius: 4px; background: rgba(255,255,255,.03); font-size: 12px; }
-.note-row b, .history-row b { color: var(--accent); font: 900 10px var(--font-mono); text-transform: uppercase; }
-.note-row span, .history-row span { display: block; color: var(--muted); font-size: 10px; margin-top: 3px; }
+.note-row, .history-row, .device-row { padding: 10px 12px; border: 1px solid var(--line); border-radius: 4px; background: rgba(255,255,255,.03); font-size: 12px; }
+.note-row b, .history-row b, .device-row b { color: var(--accent); font: 900 10px var(--font-mono); text-transform: uppercase; }
+.note-row span, .history-row span, .device-row span { display: block; color: var(--muted); font-size: 10px; margin-top: 3px; }
 .history-row.action-BAN b, .history-row.action-KICK b { color: var(--danger); }
 .history-row.action-QUARANTINE b { color: var(--warning); }
+.profile-security-lock-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px; margin: 12px 0; border: 1px solid var(--danger); border-radius: 6px; background: rgba(239,68,68,.08); font-size: 12px; }
+.device-row.device-current { border-color: var(--accent); }
+.device-row + .device-row { margin-top: 6px; }
 .record-list { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; }
 .record-row.danger:hover { border-color: rgba(239, 68, 68,.55); background: rgba(239, 68, 68,.08); }
 .form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }

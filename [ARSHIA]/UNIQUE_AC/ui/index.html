@@ -130,6 +130,21 @@
               <div class="profile-notes-list" id="profile-notes-list"></div>
               <div class="input-row"><input id="new-note-text" type="text" maxlength="500" placeholder="Add a note about this player..." autocomplete="off"><button onclick="addPlayerNote()">Add</button></div>
             </div>
+            <div class="profile-security" id="profile-security">
+              <div class="section-head compact"><h2>Account Security</h2><p>Unique_Login account, devices, and suspicious-activity lock.</p></div>
+              <div id="profile-security-empty" class="empty-state small" style="display:none;">No linked Unique_Login account found for this player.</div>
+              <div id="profile-security-body" style="display:none;">
+                <div class="mini-stats">
+                  <div><small>Account</small><b id="profile-security-username">-</b></div>
+                  <div><small>Status</small><b id="profile-security-status">-</b></div>
+                </div>
+                <div class="profile-security-lock-row" id="profile-security-lock-row" style="display:none;">
+                  <span>🔒 Locked by suspicious-device auto-hold — normal login is blocked until phone-verified or manually cleared.</span>
+                  <button class="danger-btn" onclick="clearSecurityHold()">Clear Lock</button>
+                </div>
+                <div class="profile-devices-list" id="profile-devices-list"></div>
+              </div>
+            </div>
             <div class="profile-history">
               <div class="section-head compact"><h2>Recent Detections</h2><p>Last flags and actions for this player.</p></div>
               <div class="profile-history-list" id="profile-history-list"></div>

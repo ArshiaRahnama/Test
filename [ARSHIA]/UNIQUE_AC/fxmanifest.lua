@@ -51,5 +51,7 @@ server_exports {
 }
 
 dependencies {
-    'oxmysql'
+    'oxmysql',
+    -- EXPANSION: player-profile "Security" tab calls exports['Unique_Login']
+    'Unique_Login'
 }

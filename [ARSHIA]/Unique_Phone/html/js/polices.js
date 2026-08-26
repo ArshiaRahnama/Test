@@ -44,7 +44,7 @@ Setuppolices = function(data) {
         });
 
       
-        $(".polices-list").append('<h1 style="font-size:1.641025641025641vh; padding:1.0256410256410255vh; color:#fff; margin-top:0; border-top-left-radius: .5vh; border-top-right-radius: .5vh; width:100%; display:block; background-color: rgb(43, 43, 43);">Police (' + (LSPD.length > 5 ? "+5" : LSPD.length) + ')</h1>');
+        $(".polices-list").append('<h1 class="police-section-header" style="border-top-left-radius: .5vh; border-top-right-radius: .5vh; background-color: rgb(43, 43, 43);">Police (' + (LSPD.length > 5 ? "+5" : LSPD.length) + ')</h1>');
 
         if (LSPD.length > 0) {
             var police1 = LSPD[0]; 
@@ -57,7 +57,7 @@ Setuppolices = function(data) {
         }
 
        
-        $(".polices-list").append('<br><h1 style="font-size:1.641025641025641vh; padding:1.0256410256410255vh; color:#fff; margin-top:0; width:100%; display:block; background-color: rgb(138, 84, 33);">Sheriff (' + (sheriff.length > 5 ? "+5" : sheriff.length) + ')</h1>');
+        $(".polices-list").append('<br><h1 class="police-section-header" style="background-color: rgb(138, 84, 33);">Sheriff (' + (sheriff.length > 5 ? "+5" : sheriff.length) + ')</h1>');
 
         if (sheriff.length > 0) {
             var police = sheriff[0];
@@ -69,7 +69,7 @@ Setuppolices = function(data) {
             $(".polices-list").append(element);
         }
 
-        $(".polices-list").append('<br><h1 style="font-size:1.641025641025641vh; padding:1.0256410256410255vh; color:#fff; margin-top:0; width:100%; display:block; background-color: rgb(255, 0, 0);">Ambulance (' + ambulance.length + ')</h1>');
+        $(".polices-list").append('<br><h1 class="police-section-header" style="background-color: rgb(255, 0, 0);">Ambulance (' + ambulance.length + ')</h1>');
 
         if (ambulance.length > 0) {
             var police2 = ambulance[0]; 
@@ -81,7 +81,7 @@ Setuppolices = function(data) {
             $(".polices-list").append(element);
         }
         
-        $(".polices-list").append('<br><h1 style="font-size:1.641025641025641vh; padding:1.0256410256410255vh; color:#fff; margin-top:0; width:100%; display:block; background-color: rgb(255, 190, 27);">Taxi (' + taxi.length + ')</h1>');
+        $(".polices-list").append('<br><h1 class="police-section-header" style="background-color: rgb(255, 190, 27);">Taxi (' + taxi.length + ')</h1>');
 
         if (taxi.length > 0) {
             var police3 = taxi[0]; 
@@ -93,7 +93,7 @@ Setuppolices = function(data) {
             $(".polices-list").append(element);
         }
         
-        $(".polices-list").append('<br><h1 style="font-size:1.641025641025641vh; padding:1.0256410256410255vh; color:#fff; margin-top:0; width:100%; display:block; background-color: rgb(255, 128, 0);">Mechanic (' + mechanic.length + ')</h1>');
+        $(".polices-list").append('<br><h1 class="police-section-header" style="background-color: rgb(255, 128, 0);">Mechanic (' + mechanic.length + ')</h1>');
         var element = '<div class="police-list" id="policeid4-0"> <div class="police-list-firstletter" style="background-color: rgb(255, 128, 0); display: flex; align-items: center; justify-content: center;"> <img src="./img/jobs/mc.png" alt="Mechanic" style="width: 100%; height: 100%; object-fit: contain;"> </div> <div class="police-list-fullname">Mechanic</div> <div class="police-list-call"><i class="fas fa-phone"></i></div> </div>';
         if (mechanic.length > 0) {
             var police4 = mechanic[0]; 
@@ -105,7 +105,7 @@ Setuppolices = function(data) {
             $(".polices-list").append(element);
         }
         
-        $(".polices-list").append('<br><h1 style="font-size:1.641025641025641vh; padding:1.0256410256410255vh; color:#fff; margin-top:0; width:100%; display:block; background-color: rgb(182, 20, 182);">UwU Cafe (' + uwucafe.length + ')</h1>');
+        $(".polices-list").append('<br><h1 class="police-section-header" style="background-color: rgb(182, 20, 182);">UwU Cafe (' + uwucafe.length + ')</h1>');
 
         if (uwucafe.length > 0) {
             $.each(uwucafe, function(i, police5) {
@@ -118,7 +118,7 @@ Setuppolices = function(data) {
             $(".polices-list").append(element);
         }
 
-        $(".polices-list").append('<br><h1 style="font-size:1.641025641025641vh; padding:1.0256410256410255vh; color:#fff; margin-top:0; width:100%; display:block; background-color: rgb(255, 0, 0);">Weazel News (' + weazel.length + ')</h1>');
+        $(".polices-list").append('<br><h1 class="police-section-header" style="background-color: rgb(255, 0, 0);">Weazel News (' + weazel.length + ')</h1>');
 
         if (weazel.length > 0) {
             $.each(weazel, function(i, police6) {
@@ -136,7 +136,7 @@ Setuppolices = function(data) {
         // briefcase icon, real job label, same "one representative + call"
         // pattern as Sheriff/Ambulance/Taxi/Mechanic.
         $.each(otherJobsMap, function(jobName, jobGroup) {
-            $(".polices-list").append('<br><h1 style="font-size:1.641025641025641vh; padding:1.0256410256410255vh; color:#fff; margin-top:0; width:100%; display:block; background-color: rgb(80, 90, 110);">'
+            $(".polices-list").append('<br><h1 class="police-section-header" style="background-color: rgb(80, 90, 110);">'
                 + jobGroup.label + ' (' + (jobGroup.entries.length > 5 ? "+5" : jobGroup.entries.length) + ')</h1>');
 
             var repPolice = jobGroup.entries[0];
@@ -146,37 +146,37 @@ Setuppolices = function(data) {
             $("#" + elementId).data('policeData', repPolice);
         });
     } else {
-        $(".polices-list").append('<h1 style="font-size:1.641025641025641vh; padding:1.0256410256410255vh; color:#fff; margin-top:0; border-top-left-radius: .5vh; border-top-right-radius: .5vh; width:100%; display:block; background-color: rgb(138, 84, 33);">Sheriff (' + sheriff.length + ')</h1>');
+        $(".polices-list").append('<h1 class="police-section-header" style="border-top-left-radius: .5vh; border-top-right-radius: .5vh; background-color: rgb(138, 84, 33);">Sheriff (' + sheriff.length + ')</h1>');
 
         var element = '<div class="police-list"><div class="no-polices">There are no Sheriff available.</div></div>'
         $(".polices-list").append(element);
 
-        $(".polices-list").append('<br><h1 style="font-size:1.641025641025641vh; padding:1.0256410256410255vh; color:#fff; margin-top:0; width:100%; display:block; background-color: rgb(43, 43, 43);">Police (' + LSPD.length + ')</h1>');
+        $(".polices-list").append('<br><h1 class="police-section-header" style="background-color: rgb(43, 43, 43);">Police (' + LSPD.length + ')</h1>');
 
         var element = '<div class="police-list"><div class="no-polices">There are no Police available.</div></div>'
         $(".polices-list").append(element);
 
-        $(".polices-list").append('<br><h1 style="font-size:1.641025641025641vh; padding:1.0256410256410255vh; color:#fff; margin-top:0; width:100%; display:block; background-color: rgb(255, 0, 0);">Ambulance (' + ambulance.length + ')</h1>');
+        $(".polices-list").append('<br><h1 class="police-section-header" style="background-color: rgb(255, 0, 0);">Ambulance (' + ambulance.length + ')</h1>');
 
         var element = '<div class="police-list"><div class="no-polices">There are no Ambulance available.</div></div>'
         $(".polices-list").append(element);
 
-        $(".polices-list").append('<br><h1 style="font-size:1.641025641025641vh; padding:1.0256410256410255vh; color:#F5F5DC; margin-top:0; width:100%; display:block; background-color: rgb(255, 190, 27);">Taxi (' + taxi.length + ')</h1>');
+        $(".polices-list").append('<br><h1 class="police-section-header" style="color:#F5F5DC; background-color: rgb(255, 190, 27);">Taxi (' + taxi.length + ')</h1>');
 
         var element = '<div class="police-list"><div class="no-polices">There are no taxis available.</div></div>'
         $(".polices-list").append(element);
         
-        $(".polices-list").append('<br><h1 style="font-size:1.641025641025641vh; padding:1.0256410256410255vh; color:#fff; margin-top:0; width:100%; display:block; background-color: rgb(255, 128, 0);">Mechanic (' + mechanic.length + ')</h1>');
+        $(".polices-list").append('<br><h1 class="police-section-header" style="background-color: rgb(255, 128, 0);">Mechanic (' + mechanic.length + ')</h1>');
 
         var element = '<div class="police-list"><div class="no-polices">There are no Mechanic a available.</div></div>'
         $(".polices-list").append(element);
         
-        $(".polices-list").append('<br><h1 style="font-size:1.641025641025641vh; padding:1.0256410256410255vh; color:#fff; margin-top:0; width:100%; display:block; background-color: rgb(182, 20, 182);">UwU Cafe (' + uwucafe.length + ')</h1>');
+        $(".polices-list").append('<br><h1 class="police-section-header" style="background-color: rgb(182, 20, 182);">UwU Cafe (' + uwucafe.length + ')</h1>');
 
         var element = '<div class="police-list"><div class="no-polices">There are no UwU Cafe a available.</div></div>'
         $(".polices-list").append(element);
 
-        $(".polices-list").append('<br><h1 style="font-size:1.641025641025641vh; padding:1.0256410256410255vh; color:#fff; margin-top:0; width:100%; display:block; background-color: rgb(255, 0, 0);">Weazel News (' + weazel.length + ')</h1>');
+        $(".polices-list").append('<br><h1 class="police-section-header" style="background-color: rgb(255, 0, 0);">Weazel News (' + weazel.length + ')</h1>');
 
         var element = '<div class="police-list"><div class="no-polices">There are no Weazel News a available.</div></div>'
         $(".polices-list").append(element);

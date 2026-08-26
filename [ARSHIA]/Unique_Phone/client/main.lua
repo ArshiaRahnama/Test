@@ -563,6 +563,18 @@ RegisterNUICallback('GetSecurityDevices', function(data, cb)
     ESX.TriggerServerCallback('Unique_Phone:server:GetSecurityDevices', cb)
 end)
 
+-- EXPANSION: Job Manager (Services app, admin-only)
+RegisterNUICallback('IsJobManagerAdmin', function(data, cb)
+    ESX.TriggerServerCallback('Unique_Phone:server:IsJobManagerAdmin', function(result)
+        cb(result)
+    end)
+end)
+
+RegisterNUICallback('SaveJob', function(data, cb)
+    TriggerServerEvent('Unique_Phone:server:SaveJob', data)
+    cb('ok')
+end)
+
 RegisterNUICallback('LogoutAllDevices', function(data, cb)
     TriggerServerEvent('Unique_Phone:server:LogoutAllDevices')
     cb('ok')

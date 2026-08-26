@@ -640,11 +640,30 @@ local function uniqueacSendPlayerProfile(src, targetId)
         id = targetId, name = GetPlayerName(targetId),
         trust = st and st.trust or 100, risk = st and st.riskScore or 0,
         flagCount = st and st.flagCount or 0, quarantineCount = st and st.quarantineCount or 0,
-        notes = {}, detections = {}
+        notes = {}, detections = {}, security = nil
     }
 
+    -- EXPANSION: "Security" section of the player profile — pulled from
+    -- Unique_Login (account username, suspicious-activity lock state,
+    -- recent device history). Wrapped in pcall since Unique_Login's export
+    -- list can change independently of this resource; a missing export
+    -- should never break the rest of the profile.
+    local function withSecurityInfo(next)
+        local ok = pcall(function()
+            exports['Unique_Login']:getDevicesForPlayer(targetId, function(secData)
+                profile.security = secData
+                next()
+            end)
+        end)
+        if not ok then
+            next()
+        end
+    end
+
     if not license then
-        TriggerClientEvent("UNIQUE_AC:updatePlayerProfile", src, profile)
+        withSecurityInfo(function()
+            TriggerClientEvent("UNIQUE_AC:updatePlayerProfile", src, profile)
+        end)
         return
     end
 
@@ -652,7 +671,9 @@ local function uniqueacSendPlayerProfile(src, targetId)
         profile.notes = noteRows or {}
         MySQL.Async.fetchAll("SELECT reason, details, action, UNIX_TIMESTAMP(created_at) AS at FROM uniqueac_detections WHERE identifier = @id ORDER BY id DESC LIMIT 30", { ["@id"] = license }, function(detRows)
             profile.detections = detRows or {}
-            TriggerClientEvent("UNIQUE_AC:updatePlayerProfile", src, profile)
+            withSecurityInfo(function()
+                TriggerClientEvent("UNIQUE_AC:updatePlayerProfile", src, profile)
+            end)
         end)
     end)
 end
@@ -663,6 +684,30 @@ AddEventHandler("UNIQUE_AC:getPlayerProfile", function(targetId)
     targetId = tonumber(targetId)
     if not src or not targetId or not UNIQUE_AC_GETADMINS(src) then return end
     uniqueacSendPlayerProfile(src, targetId)
+end)
+
+-- EXPANSION: manual override for Unique_Login's suspicious-device
+-- auto-lock (security_hold) — for when a locked player's SMS never
+-- arrives and "forgot password" isn't a real option for them.
+RegisterNetEvent("UNIQUE_AC:clearSecurityHold")
+AddEventHandler("UNIQUE_AC:clearSecurityHold", function(targetId)
+    local src = tonumber(source)
+    targetId = tonumber(targetId)
+    if not src or not targetId or not UNIQUE_AC_GETADMINS(src) then return end
+    if not GetPlayerName(targetId) then return end
+
+    local ok = pcall(function()
+        exports['Unique_Login']:clearSecurityHold(targetId, GetPlayerName(src) or tostring(src), function(success, accountUsername)
+            if success then
+                UNIQUE_AC_LOG_ADMIN_ACTION(src, "SECURITY_HOLD_CLEAR", uniqueacPlayerLicense(targetId), GetPlayerName(targetId), accountUsername or "")
+                uniqueacNotify(targetId, "قفل امنیتی اکانتت توسط ادمین باز شد.", { 75, 227, 154 })
+            end
+            uniqueacSendPlayerProfile(src, targetId)
+        end)
+    end)
+    if not ok then
+        uniqueacSendPlayerProfile(src, targetId)
+    end
 end)
 
 RegisterNetEvent("UNIQUE_AC:addPlayerNote")
@@ -2727,6 +2772,13 @@ function UNIQUE_AC_GETADMINS(SRC)
     end
     return databasePermission(src, "admin")
 end
+
+-- EXPANSION: exposed so OTHER resources (e.g. Unique_Phone's Job Manager
+-- screen) can reuse this exact same admin check instead of re-implementing
+-- their own admin-detection convention. Single source of truth.
+exports("isAdmin", function(src)
+    return UNIQUE_AC_GETADMINS(src)
+end)
 
 function UNIQUE_AC_UNBANACCESS(SRC)
     local src = tonumber(SRC)

@@ -1394,6 +1394,62 @@ ESX.RegisterServerCallback('Unique_Phone:server:GetCurrentpolices', function(sou
     end)
 end)
 
+-- ─────────────────────────────────────────────────────────
+-- EXPANSION: Job Manager — admin-only, single upsert form (see
+-- html/js/job-manager.js + the "⚙️" gear in the Services app header).
+-- Deliberately simple: one form either creates a job or updates it
+-- (matched by internal name) — no big editable list to keep this small.
+-- ─────────────────────────────────────────────────────────
+
+local function isPhoneJobManagerAdmin(src, cb)
+    local ok, result = pcall(function()
+        return exports['UNIQUE_AC']:isAdmin(src)
+    end)
+    cb(ok and result == true)
+end
+
+ESX.RegisterServerCallback('Unique_Phone:server:IsJobManagerAdmin', function(source, cb)
+    isPhoneJobManagerAdmin(source, cb)
+end)
+
+RegisterServerEvent('Unique_Phone:server:SaveJob')
+AddEventHandler('Unique_Phone:server:SaveJob', function(data)
+    local src = source
+    isPhoneJobManagerAdmin(src, function(isAdmin)
+        if not isAdmin then return end
+        if type(data) ~= "table" then return end
+
+        local name = data.name and tostring(data.name):lower():gsub("%s+", "") or nil
+        local label = data.label and tostring(data.label):sub(1, 50) or nil
+        local hasapp = data.hasapp and 1 or 0
+
+        -- Keep job names safe: ESX uses job.name as an identifier all over
+        -- (permissions, spawn points, vehicle shops, etc.), so only allow
+        -- the same charset FiveM/ESX itself expects there.
+        if not name or name == "" or not name:match("^[a-z0-9_]+$") then return end
+        if not label or label == "" then return end
+
+        -- INSERT ... ON DUPLICATE KEY UPDATE: creates the job if `name` is
+        -- new, or just updates label/hasapp if it already exists — one
+        -- query handles both "add" and "edit".
+        MySQL.Async.execute(
+            "INSERT INTO jobs (name, label, whitelisted, washmoney, handyservice, hasapp, onlyboss, icon_url) "
+                .. "VALUES (@name, @label, 0, 0, '0', @hasapp, 0, NULL) "
+                .. "ON DUPLICATE KEY UPDATE label = VALUES(label), hasapp = VALUES(hasapp)",
+            { ["@name"] = name, ["@label"] = label, ["@hasapp"] = hasapp }
+        )
+
+        -- A job with zero grades breaks essentialmode's job assignment/HUD
+        -- for it — make sure a brand-new job always has at least a default
+        -- grade 0. INSERT IGNORE so re-saving an EXISTING job never
+        -- touches/duplicates its real grades.
+        MySQL.Async.execute(
+            "INSERT IGNORE INTO job_grades (job_name, grade, name, label, salary) VALUES (@job_name, 0, 'employee', 'Employee', 50)",
+            { ["@job_name"] = name }
+        )
+    end)
+end)
+
 function GetCharacter(source)
     local xPlayer = ESX.GetPlayerFromId(source)
 

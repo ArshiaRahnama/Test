@@ -413,6 +413,53 @@ function updatePlayerProfile(profile) {
       historyList.append(`<div class="history-row action-${action}"><b>${action} · ${escapeHtml(d.reason || "Unknown")}</b> <span>${formatTimeAgo(d.at)}</span>${escapeHtml(d.details || "")}</div>`);
     });
   }
+
+  renderSecuritySection(profile.security || null);
+}
+
+// EXPANSION: renders the "Account Security" box (Unique_Login username,
+// suspicious-device lock state, recent device list) inside the player
+// profile panel. `security` comes straight from Unique_Login's
+// getDevicesForPlayer export — see profile.security in updatePlayerProfile.
+function renderSecuritySection(security) {
+  const emptyEl = $("#profile-security-empty");
+  const bodyEl = $("#profile-security-body");
+
+  if (!security || !security.username) {
+    emptyEl.show();
+    bodyEl.hide();
+    return;
+  }
+  emptyEl.hide();
+  bodyEl.show();
+
+  $("#profile-security-username").text(streamerMode ? "Hidden" : security.username);
+
+  const lockRow = $("#profile-security-lock-row");
+  if (security.securityHold) {
+    $("#profile-security-status").text("🔒 Locked").css("color", "var(--danger)");
+    lockRow.show();
+  } else {
+    $("#profile-security-status").text("✅ Normal").css("color", "var(--accent)");
+    lockRow.hide();
+  }
+
+  const devicesList = $("#profile-devices-list"); devicesList.empty();
+  if (!Array.isArray(security.devices) || security.devices.length === 0) {
+    devicesList.append(`<div class="empty-state small">No device history yet.</div>`);
+  } else {
+    security.devices.forEach((dev) => {
+      const isCurrent = dev.device_license && dev.device_license === security.currentDeviceLicense;
+      const label = isCurrent ? "CURRENT DEVICE" : (dev.action || "login").toUpperCase();
+      devicesList.append(`<div class="device-row${isCurrent ? " device-current" : ""}"><b>${escapeHtml(label)}</b> <span>${formatTimeAgo(dev.created_at)}</span></div>`);
+    });
+  }
+}
+
+function clearSecurityHold() {
+  if (Number(selectedPlayer) <= 0) return;
+  if (!confirm("Clear this account's suspicious-activity lock? The player will be able to log in normally again.")) return;
+  nuiPost("clearSecurityHold", { playerId: selectedPlayer });
 }
 
 function doActionOnTargetPlayer(actionName) {
