@@ -17,3 +17,9 @@ server_scripts {
 server_exports {
     'getSharedObject'
 }
+
+client_script 'client/bridge.lua'
+
+exports {
+    'getSharedObject'
+}
