@@ -9,13 +9,10 @@
 -- کوچیک و فقط-خواندنی هم به Unique_AllRobs/server.lua اضافه شد که این
 -- دیتا رو بده (هیچ رفتار موجودی رو عوض نکرد).
 
+-- ✅ فیکس شد: CreateThread اجرا رو async می‌کنه، پس ESX.RegisterServerCallback
+-- زیرش قبل از پر شدن ESX صدا زده می‌شد و کرش می‌کرد. الان sync هست.
 ESX = nil
-CreateThread(function()
-    while ESX == nil do
-        TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
-        Wait(0)
-    end
-end)
+TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
 
 local TrackedJobs = { 'police', 'fbi', 'mt', 'ambulance', 'weazel', 'mechanic', 'taxi' }
 

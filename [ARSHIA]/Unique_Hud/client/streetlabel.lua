@@ -56,9 +56,20 @@ CreateThread(function()
 
     while UH_ESX == nil do Wait(0) end
 
-    UH_ESX.TriggerServerCallback('sun-streetlabel:getAccountId', function(id)
-        UH_accountId = id or 0
-    end)
+    -- ✅ محافظت اضافه: حتی با فیکس سمت سرور، اگه به هر دلیلی بار اول 0
+    -- برگشت، چندبار دیگه هم امتحان می‌کنه به‌جای اینکه برای همیشه رو 0 بمونه.
+    local function RequestAccountId(attempt)
+        UH_ESX.TriggerServerCallback('sun-streetlabel:getAccountId', function(id)
+            UH_accountId = id or 0
+            if UH_accountId == 0 and attempt < 6 then
+                Citizen.SetTimeout(1500, function()
+                    RequestAccountId(attempt + 1)
+                end)
+            end
+        end)
+    end
+    RequestAccountId(1)
+
     UH_ESX.TriggerServerCallback('sun-streetlabel:getServerTime', function(time)
         UH_ts = time or UH_ts
     end)

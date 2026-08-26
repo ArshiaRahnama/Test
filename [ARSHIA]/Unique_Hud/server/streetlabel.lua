@@ -23,21 +23,32 @@ end)
 -- ترمیم می‌کنه: هر حسابی که account_num=0 داره، همون لحظه که وصل میشه یه بار
 -- برای همیشه شماره‌ی واقعی و یکتا می‌گیره.
 --
--- ✅ فیکس شد: تلاش قبلی از ترفند "SET column = NULL" استفاده می‌کرد که فقط
--- روی INSERT باعث میشه MySQL خودش شماره‌ی بعدی رو بده - روی UPDATE هیچ کاری
--- نمی‌کنه (و چون ستون NOT NULLه، اون UPDATE اصلاً با خطا شکست می‌خورد، pcall
--- بی‌صدا قورتش می‌داد و همیشه 0 برمی‌گشت). الان مستقیم MAX(account_num)+1
--- محاسبه و ست میشه - همون روش استانداردی که برای بک‌فیل ستون‌های
--- AUTO_INCREMENT روی ردیف‌های موجود استفاده میشه.
+-- ✅ فیکس شد (بار سوم): مشکل باقی‌مونده یه race condition بود - بار اولی که
+-- یه پلیر تازه وصل میشه، ممکنه xPlayer هنوز کامل ساخته نشده باشه (identifier
+-- نال) دقیقاً همون لحظه‌ای که این callback صدا زده میشه. الان تا ۱۵ بار (هر
+-- نیم‌ثانیه) صبر می‌کنه تا xPlayer واقعاً آماده بشه، به‌علاوه‌ی print برای
+-- دیباگ - اگه بازم مشکلی بود، این پرینت‌ها تو کنسول سرور دقیق نشون می‌دن کجا
+-- گیر کرده.
 UH_ESX.RegisterServerCallback('sun-streetlabel:getAccountId', function(source, cb)
-    local xPlayer = UH_ESX.GetPlayerFromId(source)
-    if not xPlayer or not xPlayer.identifier then return cb(0) end
+    local xPlayer = nil
+    for i = 1, 15 do
+        xPlayer = UH_ESX.GetPlayerFromId(source)
+        if xPlayer and xPlayer.identifier then break end
+        Wait(500)
+        xPlayer = nil
+    end
+
+    if not xPlayer or not xPlayer.identifier then
+        print('[Unique_Hud] getAccountId: xPlayer/identifier آماده نشد برای source=' .. tostring(source))
+        return cb(0)
+    end
 
     local ok, row = pcall(function()
         return MySQL.single.await('SELECT account_num FROM users WHERE identifier = ?', { xPlayer.identifier })
     end)
 
     if not ok or not row then
+        print('[Unique_Hud] getAccountId: SELECT اولیه fail شد برای identifier=' .. tostring(xPlayer.identifier) .. ' ok=' .. tostring(ok))
         return cb(0)
     end
 
@@ -45,7 +56,7 @@ UH_ESX.RegisterServerCallback('sun-streetlabel:getAccountId', function(source, c
         return cb(row.account_num)
     end
 
-    local fixOk = pcall(function()
+    local fixOk, fixErr = pcall(function()
         -- ساب‌کوئری داخل یه derived table (AS t) لازمه چون MySQL اجازه نمیده
         -- مستقیم از همون جدولی که داره UPDATE میشه SELECT بزنی.
         MySQL.update.await([[
@@ -54,6 +65,10 @@ UH_ESX.RegisterServerCallback('sun-streetlabel:getAccountId', function(source, c
             WHERE identifier = ? AND account_num = 0
         ]], { xPlayer.identifier })
     end)
+
+    if not fixOk then
+        print('[Unique_Hud] getAccountId: UPDATE بک‌فیل fail شد: ' .. tostring(fixErr))
+    end
 
     if fixOk then
         local okAfter, rowAfter = pcall(function()
@@ -64,6 +79,7 @@ UH_ESX.RegisterServerCallback('sun-streetlabel:getAccountId', function(source, c
         end
     end
 
+    print('[Unique_Hud] getAccountId: نهایتاً 0 برگشت برای identifier=' .. tostring(xPlayer.identifier))
     cb(0)
 end)
 

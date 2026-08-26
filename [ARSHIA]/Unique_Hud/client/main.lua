@@ -23,14 +23,15 @@ local hunger = 100
 local thirst = 100
 local health = 100
 local armor  = 100
--- ✅ فیکس شد: عکس خیلی بزرگ و مستطیلی دیده می‌شد. الان کوچیک‌تر و مربعی‌تره
--- (اندازه‌ی یه آیکون کوچیک، هماهنگ با بقیه‌ی HUD). اگه هنوز دقیق جای درستش
--- نبود، همین ۴ عدد رو کم/زیاد کن: w/h اندازه، x/y موقعیت (۰ تا ۱، از گوشه‌ی
--- بالا-چپ صفحه).
-local w = 0.028
-local h = 0.05
-local x = 0.855
-local y = 0.045
+-- ✅ فیکس واقعی: مشکل هیچ‌وقت این مقادیر پیش‌فرض نبودن. جاوااسکریپت موقعیت
+-- واقعی عکس رو با getBoundingClientRect می‌خونه و با fetch به Lua پس می‌فرسته،
+-- ولی آدرسش هاردکد شده بود رو "http://status/setmugpos" (اسم قدیمی ریسورس).
+-- تو ui/script.js به "http://Unique_Hud/setmugpos" درست شد - این مقادیر فقط
+-- fallback اولیه‌ن، به‌محض لود شدن HUD خودکار با موقعیت واقعی جایگزین میشن.
+local w = 1920
+local h = 1080
+local x = 0.885
+local y = 0.175
 local pname
 local showpic = true
 local mugshot, mugTxd = nil, nil

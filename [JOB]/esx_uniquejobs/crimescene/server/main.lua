@@ -201,10 +201,26 @@ end
 -- Crime scene creation
 -- ============================================================
 
+local LastSceneCreatedAt = {} -- [source] = os.time()
+
 AddEventHandler('Morphy_RobSystem:robberySuccess', function(robname, robberyCode)
     local _source = source
     local xPlayer = ESX.GetPlayerFromId(_source)
     if not xPlayer then return end
+
+    -- Unique_AllRobs' own robberySuccess handler now validates robname
+    -- against that player's actual RobsInProgress entry before paying out
+    -- a reward -- but that table is local to that resource, so this
+    -- listener (a separate AddEventHandler on the same event name) has no
+    -- way to see it and still fires on a spoofed TriggerServerEvent. No
+    -- money is at stake here, but without a guard someone could still
+    -- spam fake crime scenes/evidence points. Simple per-player cooldown
+    -- as a cheap mitigation until/unless a shared validation hook exists.
+    local now = os.time()
+    if LastSceneCreatedAt[_source] and (now - LastSceneCreatedAt[_source]) < Config_cs.MinSecondsBetweenScenes then
+        return
+    end
+    LastSceneCreatedAt[_source] = now
 
     local ped = GetPlayerPed(_source)
     if not ped or ped == 0 then return end

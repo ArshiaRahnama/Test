@@ -16,13 +16,9 @@
           </div>
 
           <div class="InfoBox">
+            <button id="refresh_btn" onclick="requestRefresh()">🔄 آپدیت</button>
             <h1>Players</h1>
             <h2><span id="playersnum">0</span></h2>
-            <label class="switch">
-              <input type="checkbox" class="switch-input" id="Dl_input" checked>
-              <span class="switch-label" style="cursor: pointer;" id="DarkMode_switch" data-on="Dark" data-off="Light"></span>
-              <span id="DarkMode_Switch_Handle" class="switch-handle DarkMode" style="cursor: pointer;"></span>
-            </label>
             <p id="Clock">--:--</p>
           </div>
 
@@ -126,7 +122,6 @@
 
       <div class="second_container" id="second_container" style="display: none;">
         <div class="rob_info_box">
-          <img src="images/Assets/silver_logo.png" id="Info_Image">
           <p id="Info_Text"></p>
           <hr>
             <div id="countdown">

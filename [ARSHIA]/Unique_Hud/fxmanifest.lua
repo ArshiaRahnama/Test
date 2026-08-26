@@ -51,9 +51,15 @@ files {
     'ui/speedometer/index.html',
     'ui/speedometer/script.js',
     'ui/speedometer/style.css',
-    'ui/scoreboard/index.html',
-    'ui/scoreboard/script.js',
-    'ui/scoreboard/style.css',
+    'ui/scoreboard/ui.html',
+    'ui/scoreboard/js/main.js',
+    'ui/scoreboard/css/index.css',
+    'ui/scoreboard/css/dark.png',
+    'ui/scoreboard/css/light.png',
+    'ui/scoreboard/css/weazel.png',
+    'ui/scoreboard/css/Job/*.png',
+    'ui/scoreboard/css/Robb/*.png',
+    'ui/scoreboard/images/Assets/*.png',
 }
 
 -- speedometer.lua از exports['LegacyFuel']:GetFuel استفاده می‌کنه (همون

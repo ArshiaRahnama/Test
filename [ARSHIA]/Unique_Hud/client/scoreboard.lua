@@ -3,7 +3,6 @@
 -- ============================================================
 
 local scoreboardOpen = false
-local refreshThread = nil
 
 local function RefreshScoreboard()
     while ESX == nil do Wait(0) end
@@ -19,10 +18,11 @@ end
 local function OpenScoreboard()
     if scoreboardOpen then return end
     scoreboardOpen = true
+    SetNuiFocus(true, true)
     SendNUIMessage({ id = 'scoreboard', event = 'toggle', open = true })
     RefreshScoreboard()
 
-    refreshThread = Citizen.CreateThread(function()
+    Citizen.CreateThread(function()
         while scoreboardOpen do
             Citizen.Wait(3000)
             RefreshScoreboard()
@@ -33,12 +33,11 @@ end
 local function CloseScoreboard()
     if not scoreboardOpen then return end
     scoreboardOpen = false
+    SetNuiFocus(false, false)
     SendNUIMessage({ id = 'scoreboard', event = 'toggle', open = false })
 end
 
--- کلید پیش‌فرض F9 (کلیدهای اسکوربورد معمول باز/بسته). اگه خواستید کلید دیگه‌ای
--- باشه، همین اسم "F9" رو با یه کلید دیگه (لیست کامل کلیدها تو مستندات FiveM
--- تحت "RegisterKeyMapping" هست) عوض کنید.
+-- کلید F10 (هم باز، هم بسته می‌کنه)
 RegisterCommand('+opensbUniqueHud', function()
     if scoreboardOpen then
         CloseScoreboard()
@@ -47,7 +46,28 @@ RegisterCommand('+opensbUniqueHud', function()
     end
 end, false)
 RegisterCommand('-opensbUniqueHud', function() end, false)
-RegisterKeyMapping('+opensbUniqueHud', 'باز/بسته کردن اسکوربورد', 'keyboard', 'F9')
+RegisterKeyMapping('+opensbUniqueHud', 'باز/بسته کردن اسکوربورد', 'keyboard', 'F10')
+
+-- بستن با Esc - کاملاً سمت Lua با نیتیو خودِ بازی (نیازی به ارتباط با JS نیست،
+-- پس دیگه به مشکل GetParentResourceName داخل iframe تودرتو برنمی‌خوریم).
+Citizen.CreateThread(function()
+    while true do
+        if scoreboardOpen then
+            Citizen.Wait(0)
+            if IsControlJustPressed(0, 322) then -- INPUT_FRONTEND_PAUSE (Esc)
+                CloseScoreboard()
+            end
+        else
+            Citizen.Wait(250)
+        end
+    end
+end)
+
+-- دکمه‌ی رفرش دستی تو خودِ پنل
+RegisterNUICallback('refreshScoreboardUniqueHud', function(data, cb)
+    RefreshScoreboard()
+    cb('ok')
+end)
 
 AddEventHandler('onResourceStop', function(resourceName)
     if resourceName == GetCurrentResourceName() then

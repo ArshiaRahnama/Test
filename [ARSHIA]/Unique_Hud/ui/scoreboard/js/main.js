@@ -1,15 +1,9 @@
 // ============================================================
 // Unique_Hud / ui / scoreboard / js / main.js
 // ============================================================
-// این فایل قبلاً خالی بود (۰ بایت) - کل منطق از صفر نوشته شده، ولی هیچ‌جای
-// HTML/CSS اصلی دست نخورده. ظاهر دقیقاً همونیه که فرستادید.
 
 var jobKeys = ['police', 'mt', 'ambulance', 'mechanic', 'taxi', 'weazel', 'fbi'];
 
-// نگاشت ۴ دسته‌ای که با سیستم دزدی واقعی (Unique_AllRobs) مطابقت دارن.
-// بقیه‌ی ۶ دسته (SheriffBank/Cargo/Bimeh/Feleca/JewelerySheriff/mythic) تو
-// سیستم دزدی واقعی شما اصلاً وجود ندارن، پس همیشه رو حالت خنثی/Deactive
-// می‌مونن - به‌جای این‌که وضعیت الکی نشون بدم.
 var robMap = {
   shop: 'Shop',
   Bank: 'Palateo_Bank',
@@ -73,12 +67,10 @@ function renderScoreboard(data) {
       } else if (info.active > 0) {
         el.classList.add(htmlId + '_active');
       }
-      // اگه هیچ‌کدوم نبود، همون کلاس پایه (Deactive) که تو HTML هست می‌مونه.
     }
   });
 }
 
-// این ۶ دسته با سیستم دزدی واقعی شما مطابقت ندارن (توضیح کامل بالای فایل).
 var unmappedRobIds = ['SheriffBank', 'Cargo', 'Bimeh', 'Feleca', 'JewelerySheriff', 'mythic'];
 
 function robclick(htmlId) {
@@ -125,18 +117,9 @@ function robclick(htmlId) {
   }
 }
 
-function CopyClipBoard(text) {
-  navigator.clipboard.writeText(text).then(function () {
-    $('#CopyDone').css('display', 'block');
-    setTimeout(function () {
-      $('#CopyDone').css('display', 'none');
-    }, 1500);
-  });
+function requestRefresh() {
+  window.parent.postMessage({ id: 'scoreboard', event: 'requestRefresh' }, '*');
 }
-
-// ✅ دکمه‌ی "Copy Discord Link" و کلیک روی لوگو تو نسخه‌ی اصلی به دیسکورد/سایت
-// خودِ Sunset (sunrp.ir) وصل بود - حذف شد چون تبلیغ سرور دیگه‌ای رو سرور شما
-// معنی نداشت. اگه لینک دیسکورد/سایت خودتون رو بدید، دوباره اضافه‌ش می‌کنم.
 
 window.addEventListener('message', function (event) {
   var item = event.data;
@@ -151,15 +134,5 @@ window.addEventListener('message', function (event) {
     }
   } else if (item.event === 'update') {
     if (item.data) renderScoreboard(item.data);
-  }
-});
-
-document.addEventListener('keyup', function (e) {
-  if (e.key === 'Escape' && $('#wrap').css('display') !== 'none') {
-    fetch('https://' + GetParentResourceName() + '/closeScoreboardUniqueHud', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({}),
-    });
   }
 });

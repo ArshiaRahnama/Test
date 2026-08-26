@@ -55,6 +55,13 @@ Config_cs.PlateCheckDistance = 5.0
 -- case is marked 'cold' instead of deleted (still visible in /cad).
 Config_cs.SceneLifetimeMinutes = 20
 
+-- Cheap anti-spam guard: minimum seconds a single player must wait between
+-- one robberySuccess creating a scene and the next one being allowed to.
+-- See the comment on LastSceneCreatedAt in server/main.lua for why this
+-- exists (Unique_AllRobs' own in-progress-robbery check isn't visible from
+-- this resource).
+Config_cs.MinSecondsBetweenScenes = 30
+
 -- How far (meters) around the spot the robber finished the job at,
 -- evidence points get scattered.
 Config_cs.SceneRadius = 15.0

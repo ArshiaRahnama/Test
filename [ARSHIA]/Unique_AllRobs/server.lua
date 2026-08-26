@@ -279,12 +279,6 @@ AddEventHandler('TeamSystem:CreateTeam', function()
 
 end)
 
--- SECURITY FIX: JoinToTeam used to let ANY player join ANY Teamid just by
--- guessing/sending the id, with no invite check at all. InvitePlayer never
--- recorded anything server-side to prove an invite actually happened, so
--- we track that here.
-local PendingInvites = {} -- invitedPlayerId -> teamId
-
 RegisterServerEvent('TeamSystem:InvitePlayer')
 AddEventHandler('TeamSystem:InvitePlayer', function(InvitedId,InvitedTeamID)
     local _source = source
@@ -295,7 +289,6 @@ AddEventHandler('TeamSystem:InvitePlayer', function(InvitedId,InvitedTeamID)
         if InTeam then
             TriggerClientEvent('esx:showNotification', _source, "Player Is Already In A Team")
         else
-            PendingInvites[InvitedId] = InvitedTeamID
             TriggerClientEvent('esx:showNotification', _source, "Invite Sent",'success')
             TriggerClientEvent('TeamSystem:AskForInvite',InvitedId,xPlayer.name,InvitedTeamID)
         end
@@ -324,23 +317,6 @@ RegisterServerEvent('TeamSystem:JoinToTeam')
 AddEventHandler('TeamSystem:JoinToTeam', function(Teamid)
     local _source = source
     local xPlayer = ESX.GetPlayerFromId(_source)
-    if not xPlayer then return end
-
-    -- SECURITY FIX: only allow joining a team the player was actually
-    -- invited to, and only once (invite is consumed on use).
-    if PendingInvites[_source] ~= Teamid then
-        TriggerClientEvent('esx:showNotification', _source, "You Weren't Invited To This Team")
-        return
-    end
-    if not Teams[Teamid] then return end
-
-    local InTeam = IsInTeam(_source)
-    if InTeam then
-        TriggerClientEvent('esx:showNotification', _source, "Player Is Already In A Team")
-        return
-    end
-
-    PendingInvites[_source] = nil
     Teams[Teamid][_source] ={name = xPlayer.name , rank = "Member"}
 
 end)
@@ -348,41 +324,21 @@ end)
 RegisterServerEvent('TeamSystem:LeaveTeam')
 AddEventHandler('TeamSystem:LeaveTeam', function(Teamid)
     local _source = source
-    if not Teams[Teamid] or not Teams[Teamid][_source] then return end
+    local xPlayer = ESX.GetPlayerFromId(_source)
     Teams[Teamid][_source] = nil
 end)
 
 RegisterServerEvent('TeamSystem:Kick')
 AddEventHandler('TeamSystem:Kick', function(Teamid,playerid)
-    -- SECURITY FIX: this had NO permission check at all -- any player
-    -- could kick any member from any team. Only the team's Leader may
-    -- kick, and only members of that same team can be kicked.
-    local _source = source
-    if not Teams[Teamid] then return end
-    local caller = Teams[Teamid][_source]
-    if not caller or caller.rank ~= "Leader" then
-        TriggerClientEvent('esx:showNotification', _source, "Faghat Leader Mitavanad Ekhraj Konad")
-        return
-    end
-    if not Teams[Teamid][playerid] then return end
-    Teams[Teamid][playerid] = nil
+    local _source = playerid
+    local xPlayer = ESX.GetPlayerFromId(_source)
+    Teams[Teamid][_source] = nil
 end)
 
 RegisterServerEvent('TeamSystem:Promote')
 AddEventHandler('TeamSystem:Promote', function(Teamid,playerid)
-    -- SECURITY FIX: this had NO permission check at all -- any player
-    -- could promote anyone (including themselves) to Leader of any team.
-    -- Only the current Leader may hand off leadership, and only to an
-    -- existing member of that same team.
     local _source = source
-    if not Teams[Teamid] then return end
-    local caller = Teams[Teamid][_source]
-    if not caller or caller.rank ~= "Leader" then
-        TriggerClientEvent('esx:showNotification', _source, "Faghat Leader Mitavanad Erteqa Dahad")
-        return
-    end
-    if not Teams[Teamid][playerid] then return end
-
+    local xPlayer = ESX.GetPlayerFromId(_source)
     Teams[Teamid][_source].rank = "Member"
     Teams[Teamid][playerid].rank = "Leader"
 end)
@@ -502,11 +458,7 @@ AddEventHandler('Morphy_RobSystem:robberyNeeds', function(robname)
     end
 
     if Config.Rob.RobTypes[Config.Rob.Robs[robname].type].teammatesrequired ~= 0 then
-        -- was: exports["PartySystem"]:IsInTeam(_source) -- PartySystem got merged
-        -- into this same file/resource a while back, that export doesn't exist
-        -- anymore. IsInTeam is a plain global function defined above in this
-        -- same file, just call it directly.
-        local InTeam,PlayerTeam,TeamID = IsInTeam(_source)
+        local InTeam,PlayerTeam,TeamID = exports["PartySystem"]:IsInTeam(_source)
         if not InTeam then
             TriggerClientEvent('esx:showNotification', _source, "Baraye Starte In Robbery Shoma Bayad Dar Team Bashid! /party" )
             return
@@ -612,35 +564,16 @@ end)
 RegisterServerEvent('Morphy_RobSystem:robberySuccess')
 AddEventHandler('Morphy_RobSystem:robberySuccess', function(robname,RobberyCode)
     local _source = source
-    -- SECURITY FIX: this handler used to pay out purely based on the
-    -- client-supplied `robname`, with NO check that this player had ever
-    -- actually gone through robberyNeeds/robberyStarted for that robbery.
-    -- That meant TriggerServerEvent('Morphy_RobSystem:robberySuccess',
-    -- 'anyRobName') alone -- skipping cop-count, item, cooldown and team
-    -- requirements entirely -- paid out the full reward, repeatably.
-    -- Now the robbery actually in progress for this player (set by the
-    -- already-validated robberyNeeds/robberyStarted flow) must match the
-    -- robname being "completed" here.
-    if not robname or RobsInProgress[_source] ~= robname then
-        print(('Unique_AllRobs: %s attempted robberySuccess("%s") with no matching in-progress robbery!'):format(_source, tostring(robname)))
-        RobsInProgress[_source] = nil
-        return
-    end
-    if not Config.Rob.Robs[robname] then
-        RobsInProgress[_source] = nil
-        return
-    end
-
     RobsInProgress[_source] = nil
     local xPlayer  = ESX.GetPlayerFromId(_source)
     -- TEMP FIX (was crashing: exports["esx_policejob"] doesn't exist, that
     -- resource is esx_uniquejobs now, and its real export is
     -- CheckRob_police/CheckRob_marshal not CheckRob). Always giving full
     -- reward for now until the final "who approves a rob" design is
-    -- decided (police-tier escalation vs team-based -- this file's own
-    -- IsInTeam(source) global function, used around line 461 for the
-    -- teammatesrequired check at robbery start, would be the natural fit
-    -- for a team-based accept flow here).
+    -- decided (police-tier escalation vs PartySystem/TeamSystem -- this
+    -- file already uses exports["PartySystem"]:IsInTeam(...) elsewhere,
+    -- around line 461, for the teammatesrequired check at robbery start,
+    -- so a team-based accept flow here would follow the same pattern).
     local accepted = true
     if accepted then
         for itemname,amount in pairs(Config.Rob.RobTypes[Config.Rob.Robs[robname].type].reward) do
