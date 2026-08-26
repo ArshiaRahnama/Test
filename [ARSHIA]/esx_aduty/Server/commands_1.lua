@@ -1003,7 +1003,7 @@ TriggerEvent(
                 local xPlayer = ESX.getPlayerFromId(args[1])
                 local weaponName = string.upper(args[2])
 				local ammo = (args[3] == nil and 250 or tonumber(args[3]))
-                xPlayer.addWeapon("weapon_".. weaponName, ammo)
+                xPlayer.addWeapon("WEAPON_".. weaponName, ammo)
                 TriggerEvent('DiscordBot:ToDiscord', 'addweapon', "Gived By Admin", "```css\nAdmin: "..namep.."("..source..")("..steamp.. ")\nBaraye: "..xPlayer.name.."("..tonumber(args[1])..")("..xPlayer.identifier..") \nWeapon : "..weaponName.." ("..ammo..") Add Kard \n```",'user', true, source, false)
             else
                 TriggerClientEvent("chat:addMessage", source, {args = {"^1SYSTEM", "Invalid Usage."}})
