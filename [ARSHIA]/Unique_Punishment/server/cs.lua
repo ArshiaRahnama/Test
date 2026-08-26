@@ -169,8 +169,33 @@ AddEventHandler('esx_communityGGservice:extendService', function()
 	end)
 end)
 
+-- SECURITY FIX: neither of these two events checked WHO was calling them --
+-- any connected player could TriggerServerEvent this directly with any
+-- `target`/`steamhex` and sentence (or un-restrain) anyone, with no police/
+-- judge job requirement at all. Mirrors the IsJobAllowed pattern jail.lua
+-- already uses for the same class of action.
+local function IsJobAllowed(jobname)
+	for _, job in pairs(Config.AllowedJobs) do
+		if jobname == job.name then
+			return true
+		end
+	end
+	return false
+end
+
 RegisterServerEvent('esx_communityGGservice:sendToCommunityService')
 AddEventHandler('esx_communityGGservice:sendToCommunityService', function(target, actions_count, reason)
+	local _source = source
+	local xSender = ESX.GetPlayerFromId(_source)
+	if not xSender or not IsJobAllowed(xSender.job.name) then
+		if exports.UNIQUE_AC then
+			exports.UNIQUE_AC:BanPlayer(_source, 'Cheat Lua Executer', 'Tried esx_communityGGservice:sendToCommunityService without permission')
+		end
+		return
+	end
+
+	actions_count = tonumber(actions_count)
+	if not actions_count or actions_count <= 0 then return end
 
 	local xTarget = ESX.GetPlayerFromId(target)
 	if not xTarget then return end
@@ -217,6 +242,17 @@ local playerNameVariable
 
 RegisterServerEvent('esx_communityGGservice:sendToCommunityServiceoffline')
 AddEventHandler('esx_communityGGservice:sendToCommunityServiceoffline', function(steamhex, actions_count, reason)
+	local _source = source
+	local xSender = ESX.GetPlayerFromId(_source)
+	if not xSender or not IsJobAllowed(xSender.job.name) then
+		if exports.UNIQUE_AC then
+			exports.UNIQUE_AC:BanPlayer(_source, 'Cheat Lua Executer', 'Tried esx_communityGGservice:sendToCommunityServiceoffline without permission')
+		end
+		return
+	end
+
+	actions_count = tonumber(actions_count)
+	if not actions_count or actions_count <= 0 then return end
 
 	MySQL.Async.fetchAll('SELECT * FROM communityservice WHERE identifier = @identifier', {
 		['@identifier'] = steamhex,

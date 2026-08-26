@@ -522,9 +522,20 @@ function CreatePlayer(
     end
 
     self.removeInventoryItem = function(name, count)
-        count = tonumber(count) or 0
+        -- SECURITY FIX: a negative (or non-numeric) `count` used to be
+        -- subtracted straight from item.count, which for a negative value
+        -- actually INCREASES it -- i.e. calling removeInventoryItem with a
+        -- negative count duplicated items instead of removing them. Every
+        -- other mutator (addMoney/removeMoney/removeBank/addBank) already
+        -- guards against this; this one didn't. Now rejects anything that
+        -- isn't a positive number, same as the money functions.
+        count = tonumber(count)
+        if type(count) ~= "number" or count <= 0 then return end
+
         local item, i = self.getInventoryItem(name)
-        local newCount = item.count - count
+        if not item then return end
+
+        local newCount = math.max(0, item.count - count)
         item.count = newCount
 
         TriggerEvent("esx:onRemoveInventoryItem", self.source, item, count)

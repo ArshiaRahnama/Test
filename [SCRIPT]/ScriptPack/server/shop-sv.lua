@@ -1,6 +1,18 @@
 ESX = nil
 TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
 
+-- SECURITY FIX: every buy_* handler below used to multiply the CLIENT-
+-- SUPPLIED `itemPrice` by `amount` and charge that -- a modified client
+-- could send itemPrice = 1 (or any value) for any item, including guns in
+-- buy_gunshop, and pay whatever it wants instead of the configured price.
+-- This looks the real price up server-side from ShopConfig instead; the
+-- price argument from the client is no longer trusted anywhere below.
+local function getShopItemPrice(configTable, itemName)
+    local itemData = configTable and configTable[itemName]
+    if not itemData then return nil end
+    return itemData.price
+end
+
 ESX.RegisterServerCallback('getitemsForSaleShops', function(source, cb)
     local itemsForSaleShops = {}
 
@@ -20,9 +32,15 @@ end)
 RegisterServerEvent('shops_item:buy_shops')
 AddEventHandler('shops_item:buy_shops', function(itemName, amount, itemPrice)
     local xPlayer = ESX.GetPlayerFromId(source)
+    if not xPlayer then return end
 
+    amount = tonumber(amount)
+    if not amount or amount <= 0 or amount ~= math.floor(amount) then return end
 
-    local totalPrice = itemPrice * amount
+    -- SECURITY FIX: real price from config, not the client's itemPrice.
+    local realPrice = getShopItemPrice(ShopConfig.itemsForSaleShops, itemName)
+    if not realPrice then return end
+    local totalPrice = realPrice * amount
 
 
     if xPlayer.canAfford(totalPrice) then
@@ -72,9 +90,15 @@ end)
 RegisterServerEvent('mc_item:buy_mc')
 AddEventHandler('mc_item:buy_mc', function(itemName, amount, itemPrice)
     local xPlayer = ESX.GetPlayerFromId(source)
+    if not xPlayer then return end
 
+    amount = tonumber(amount)
+    if not amount or amount <= 0 or amount ~= math.floor(amount) then return end
 
-    local totalPrice = itemPrice * amount
+    -- SECURITY FIX: real price from config, not the client's itemPrice.
+    local realPrice = getShopItemPrice(ShopConfig.itemsForSaleMC, itemName)
+    if not realPrice then return end
+    local totalPrice = realPrice * amount
 
 
     if xPlayer.canAfford(totalPrice) then
@@ -124,8 +148,15 @@ end)
 RegisterServerEvent('narekshop_item:buy_narekshop')
 AddEventHandler('narekshop_item:buy_narekshop', function(itemName, amount, itemPrice)
     local xPlayer = ESX.GetPlayerFromId(source)
+    if not xPlayer then return end
 
-    local totalPrice = itemPrice * amount
+    amount = tonumber(amount)
+    if not amount or amount <= 0 or amount ~= math.floor(amount) then return end
+
+    -- SECURITY FIX: real price from config, not the client's itemPrice.
+    local realPrice = getShopItemPrice(ShopConfig.itemsForSaleNarekshop, itemName)
+    if not realPrice then return end
+    local totalPrice = realPrice * amount
 
 
 
@@ -178,8 +209,15 @@ end)
 RegisterServerEvent('gunshop_item:buy_gunshop')
 AddEventHandler('gunshop_item:buy_gunshop', function(itemName, amount, itemPrice)
     local xPlayer = ESX.GetPlayerFromId(source)
+    if not xPlayer then return end
 
-    local totalPrice = itemPrice * amount
+    amount = tonumber(amount)
+    if not amount or amount <= 0 or amount ~= math.floor(amount) then return end
+
+    -- SECURITY FIX: real price from config, not the client's itemPrice.
+    local realPrice = getShopItemPrice(ShopConfig.itemsForSaleGunshop, itemName)
+    if not realPrice then return end
+    local totalPrice = realPrice * amount
 
 
 

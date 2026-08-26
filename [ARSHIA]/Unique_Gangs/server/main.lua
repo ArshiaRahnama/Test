@@ -768,8 +768,18 @@ end)
 RegisterServerEvent('gangs:withdrawMoney')
 AddEventHandler('gangs:withdrawMoney', function(gangName, amount)
 	local xPlayer = ESX.GetPlayerFromId(source)
+	if not xPlayer then return end
+
+	-- SECURITY FIX: GetGang returns nil for an unrecognized gangName, and
+	-- amount can be nil/non-numeric -- both used to be dereferenced/passed
+	-- on unchecked (gang.name, ESX.Math.Round(nil)), letting any client
+	-- crash this resource just by sending a bogus gang name or amount.
 	local gang = GetGang(gangName)
-	amount = ESX.Math.Round(tonumber(amount))
+	if not gang then return end
+
+	amount = tonumber(amount)
+	if not amount then return end
+	amount = ESX.Math.Round(amount)
 
  	if xPlayer.gang.name ~= gang.name then
 		print(('gangs: %s attempted to call withdrawMoney!'):format(xPlayer.identifier))
@@ -817,8 +827,16 @@ end)
 RegisterServerEvent('gangs:depositMoney')
 AddEventHandler('gangs:depositMoney', function(gang, amount)
 	local xPlayer = ESX.GetPlayerFromId(source)
-	local gang = GetGang(gang)
-	amount = ESX.Math.Round(tonumber(amount))
+	if not xPlayer then return end
+
+	-- SECURITY FIX: same nil-crash issue as withdrawMoney above.
+	local gangName = gang
+	gang = GetGang(gang)
+	if not gang then return end
+
+	amount = tonumber(amount)
+	if not amount then return end
+	amount = ESX.Math.Round(amount)
 
  	if xPlayer.gang.name ~= gang.name then
 		print(('gangs: %s attempted to call depositMoney!'):format(xPlayer.identifier))

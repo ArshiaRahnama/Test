@@ -1,3 +1,24 @@
+-- SECURITY FIX: `price` used to be trusted verbatim from the client -- a
+-- modified client could send price = 1 (or 0) and buy any outfit for
+-- almost nothing. There's no per-store id sent to the server either, so
+-- instead of trusting the client we look up which Config.Stores entry the
+-- player is actually standing next to right now and charge ITS configured
+-- price. If they aren't near any store, the purchase is rejected outright.
+-- Shared by both the ESX and QB-Core payForClothes callbacks below.
+local function getNearbyStorePrice(source)
+    local ped = GetPlayerPed(source)
+    if ped == 0 then return nil end
+    local playerCoords = GetEntityCoords(ped)
+
+    for _, store in ipairs(Config.Stores) do
+        local storeCoords = vector3(store.coords.x, store.coords.y, store.coords.z)
+        if #(playerCoords - storeCoords) < 15.0 then
+            return store.price
+        end
+    end
+    return nil
+end
+
 if Config.Core == "ESX" then
     ESX = nil
     TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
@@ -84,7 +105,14 @@ if Config.Core == "ESX" then
 
     ESX.RegisterServerCallback('unique_clothestore:payForClothes', function(source, cb, price, type, number, pin)
         local xPlayer = ESX.GetPlayerFromId(source)
-        local price = tonumber(price)
+        if not xPlayer then cb(false) return end
+
+        local price = getNearbyStorePrice(source)
+        if not price then
+            cb(false)
+            return
+        end
+
         if type == "cash" then
             if xPlayer.money >= price then
                 xPlayer.removeMoney(price)
@@ -215,8 +243,16 @@ elseif Config.Core == "QB-Core" then
 
     QBCore.Functions.CreateCallback('unique_clothestore:payForClothes', function(source, cb, price, type)
         local Player = QBCore.Functions.GetPlayer(source)
+        if not Player then cb(false) return end
+
+        -- SECURITY FIX: use the real nearby-store price, not the client's.
+        local price = getNearbyStorePrice(source)
+        if not price then
+            cb(false)
+            return
+        end
+
         local myMoney = type == "cash" and Player.Functions.GetMoney('cash') or Player.Functions.GetMoney('bank')
-        local price = tonumber(price)
         if myMoney >= price then
             if type == "cash" then
                 Player.Functions.RemoveMoney('cash', price, "Clothes")

@@ -38,7 +38,18 @@ end)
 ESX.RegisterServerCallback("unique_rent:check", function(source, cb, amount, model)
     local _source = source
     local xPlayer = ESX.GetPlayerFromId(_source)
-    local realPrice = getConfigRentPrice(model) or amount
+    if not xPlayer then cb(false) return end
+
+    -- SECURITY FIX: this used to fall back to the client-supplied `amount`
+    -- whenever the model wasn't found in Config.Vehicles -- same class of
+    -- bug as unique_rent:pay used to have. Now it just refuses to affirm
+    -- affordability for a model it doesn't recognize.
+    local realPrice = getConfigRentPrice(model)
+    if not realPrice then
+        cb(false)
+        return
+    end
+
     if xPlayer.canAfford(realPrice) then
         cb(true)
     else
@@ -47,18 +58,24 @@ ESX.RegisterServerCallback("unique_rent:check", function(source, cb, amount, mod
     end
 end)
 
+-- SECURITY FIX: any player could call this with an arbitrary `plate` and
+-- delete ANY vehicle on the server (even ones belonging to other players)
+-- -- there was no check that the caller actually owns/is using that
+-- vehicle. Now it only deletes a vehicle the calling player is currently
+-- sitting in as the driver.
 RegisterServerEvent('unique_rent:deleteveh')
 AddEventHandler('unique_rent:deleteveh', function(plate)
-    local allVehicles = GetGamePool('CVehicle')
+    local _source = source
+    local playerPed = GetPlayerPed(_source)
+    if not playerPed or playerPed == 0 then return end
 
-    for _, vehicle in ipairs(allVehicles) do
-        local vehiclePlate = GetVehicleNumberPlateText(vehicle)
-        if vehiclePlate == plate then
-            DeleteEntity(vehicle)
-            return vehicle
-        end
-    end
-    return nil
+    local vehicle = GetVehiclePedIsIn(playerPed, false)
+    if not vehicle or vehicle == 0 then return end
+
+    if GetVehicleNumberPlateText(vehicle) ~= plate then return end
+    if GetPedInVehicleSeat(vehicle, -1) ~= playerPed then return end
+
+    DeleteEntity(vehicle)
 end)
 
 

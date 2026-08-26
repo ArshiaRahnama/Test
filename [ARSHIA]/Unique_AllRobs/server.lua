@@ -279,6 +279,12 @@ AddEventHandler('TeamSystem:CreateTeam', function()
 
 end)
 
+-- SECURITY FIX: JoinToTeam used to let ANY player join ANY Teamid just by
+-- guessing/sending the id, with no invite check at all. InvitePlayer never
+-- recorded anything server-side to prove an invite actually happened, so
+-- we track that here.
+local PendingInvites = {} -- invitedPlayerId -> teamId
+
 RegisterServerEvent('TeamSystem:InvitePlayer')
 AddEventHandler('TeamSystem:InvitePlayer', function(InvitedId,InvitedTeamID)
     local _source = source
@@ -289,6 +295,7 @@ AddEventHandler('TeamSystem:InvitePlayer', function(InvitedId,InvitedTeamID)
         if InTeam then
             TriggerClientEvent('esx:showNotification', _source, "Player Is Already In A Team")
         else
+            PendingInvites[InvitedId] = InvitedTeamID
             TriggerClientEvent('esx:showNotification', _source, "Invite Sent",'success')
             TriggerClientEvent('TeamSystem:AskForInvite',InvitedId,xPlayer.name,InvitedTeamID)
         end
@@ -317,6 +324,23 @@ RegisterServerEvent('TeamSystem:JoinToTeam')
 AddEventHandler('TeamSystem:JoinToTeam', function(Teamid)
     local _source = source
     local xPlayer = ESX.GetPlayerFromId(_source)
+    if not xPlayer then return end
+
+    -- SECURITY FIX: only allow joining a team the player was actually
+    -- invited to, and only once (invite is consumed on use).
+    if PendingInvites[_source] ~= Teamid then
+        TriggerClientEvent('esx:showNotification', _source, "You Weren't Invited To This Team")
+        return
+    end
+    if not Teams[Teamid] then return end
+
+    local InTeam = IsInTeam(_source)
+    if InTeam then
+        TriggerClientEvent('esx:showNotification', _source, "Player Is Already In A Team")
+        return
+    end
+
+    PendingInvites[_source] = nil
     Teams[Teamid][_source] ={name = xPlayer.name , rank = "Member"}
 
 end)
@@ -324,21 +348,41 @@ end)
 RegisterServerEvent('TeamSystem:LeaveTeam')
 AddEventHandler('TeamSystem:LeaveTeam', function(Teamid)
     local _source = source
-    local xPlayer = ESX.GetPlayerFromId(_source)
+    if not Teams[Teamid] or not Teams[Teamid][_source] then return end
     Teams[Teamid][_source] = nil
 end)
 
 RegisterServerEvent('TeamSystem:Kick')
 AddEventHandler('TeamSystem:Kick', function(Teamid,playerid)
-    local _source = playerid
-    local xPlayer = ESX.GetPlayerFromId(_source)
-    Teams[Teamid][_source] = nil
+    -- SECURITY FIX: this had NO permission check at all -- any player
+    -- could kick any member from any team. Only the team's Leader may
+    -- kick, and only members of that same team can be kicked.
+    local _source = source
+    if not Teams[Teamid] then return end
+    local caller = Teams[Teamid][_source]
+    if not caller or caller.rank ~= "Leader" then
+        TriggerClientEvent('esx:showNotification', _source, "Faghat Leader Mitavanad Ekhraj Konad")
+        return
+    end
+    if not Teams[Teamid][playerid] then return end
+    Teams[Teamid][playerid] = nil
 end)
 
 RegisterServerEvent('TeamSystem:Promote')
 AddEventHandler('TeamSystem:Promote', function(Teamid,playerid)
+    -- SECURITY FIX: this had NO permission check at all -- any player
+    -- could promote anyone (including themselves) to Leader of any team.
+    -- Only the current Leader may hand off leadership, and only to an
+    -- existing member of that same team.
     local _source = source
-    local xPlayer = ESX.GetPlayerFromId(_source)
+    if not Teams[Teamid] then return end
+    local caller = Teams[Teamid][_source]
+    if not caller or caller.rank ~= "Leader" then
+        TriggerClientEvent('esx:showNotification', _source, "Faghat Leader Mitavanad Erteqa Dahad")
+        return
+    end
+    if not Teams[Teamid][playerid] then return end
+
     Teams[Teamid][_source].rank = "Member"
     Teams[Teamid][playerid].rank = "Leader"
 end)

@@ -10,9 +10,27 @@ local function ExemptFromAntiCheat(targetId, ms, kinds)
 	end)
 end
 
+-- SECURITY FIX: this event is public (any client can call it on itself)
+-- with a client-controlled `ms`. UNIQUE_AC clamps a single call to at most
+-- 10 minutes, but nothing stopped a player from calling it again every
+-- ~10 minutes to stay permanently anti-cheat-exempt. Every legitimate call
+-- site in this resource uses 4000-5000ms, so (a) clamp ms to that range and
+-- (b) add a short per-player cooldown so it can't be spammed back-to-back.
+local lastExemptCall = {} -- source -> os.time()
+
 RegisterServerEvent('Unique_Punishment:AntiCheatExempt')
 AddEventHandler('Unique_Punishment:AntiCheatExempt', function(ms, kinds)
-	ExemptFromAntiCheat(source, ms, kinds)
+	local _source = source
+	local now = os.time()
+	if lastExemptCall[_source] and (now - lastExemptCall[_source]) < 3 then
+		return
+	end
+	lastExemptCall[_source] = now
+
+	ms = tonumber(ms) or 5000
+	ms = math.max(1000, math.min(ms, 6000))
+
+	ExemptFromAntiCheat(_source, ms, kinds)
 end)
 
 local function DecodeJailData(raw, identifier)

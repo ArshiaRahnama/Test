@@ -15,40 +15,6 @@
 
 local ESX = nil
 
--- Serial-prefix rules for weapon registration, based on the giving player's
--- job/gang at the moment the weapon is created:
---   Law Enforcement jobs -> serial starts with "LAW"
---   Department of Justice jobs -> serial starts with "DOJ"
---   Anyone in a gang (no matching job) -> serial contains "GANG"
--- (mirrors [JOB]/esx_uniquejobs/shared/departments.lua's LE/DOJ job lists)
-local LAW_JOBS = { police = true, sheriff = true, mt = true }
-local DOJ_JOBS = { cid = true, cia = true, marshal = true, fbi = true, judge = true, doa = true }
-
-local function randomDigits(n)
-    local out = {}
-    for i = 1, n do out[i] = tostring(math.random(0, 9)) end
-    return table.concat(out)
-end
-
-local function buildSerial(xPlayer)
-    local jobName = xPlayer.job and xPlayer.job.name
-    local prefix
-
-    if jobName and LAW_JOBS[jobName] then
-        prefix = 'LAW'
-    elseif jobName and DOJ_JOBS[jobName] then
-        prefix = 'DOJ'
-    elseif xPlayer.gang and xPlayer.gang.name and xPlayer.gang.name ~= '' then
-        prefix = 'GANG'
-    end
-
-    if not prefix then
-        return nil -- let ox_inventory generate its normal random serial
-    end
-
-    return ('%s-%s'):format(prefix, randomDigits(6))
-end
-
 local function patchPlayer(xPlayer)
     if not xPlayer or xPlayer.__bridgePatched then return xPlayer end
 
@@ -59,69 +25,6 @@ local function patchPlayer(xPlayer)
             return { money = xPlayer.money or 0 }
         end
         return { money = 0 }
-    end
-
-    -- some scripts (e.g. Unique_Radio) call xPlayer.getName() — essentialmode
-    -- only has the plain .name field, not a getter method for it.
-    xPlayer.getName = xPlayer.getName or function()
-        return xPlayer.name
-    end
-
-    -- Route essentialmode's weapon system through ox_inventory instead of its
-    -- own internal `self.loadout` table, so weapons actually show up as items
-    -- you can drag/drop/equip from the inventory UI.
-    if not xPlayer.__weaponsBridged then
-        xPlayer.addWeapon = function(weaponName, ammo)
-            -- normalize casing defensively — some old commands/scripts pass
-            -- "weapon_x" (lowercase prefix), but ox_inventory's weapon items
-            -- are registered as "WEAPON_X" (all caps) and are case-sensitive.
-            weaponName = string.upper(weaponName)
-            local serial = buildSerial(xPlayer)
-            exports.ox_inventory:AddItem(xPlayer.source, weaponName, 1, { ammo = ammo or 0, serial = serial })
-        end
-
-        xPlayer.removeWeapon = function(weaponName)
-            weaponName = string.upper(weaponName)
-            exports.ox_inventory:RemoveItem(xPlayer.source, weaponName, 1)
-        end
-
-        xPlayer.hasWeapon = function(weaponName)
-            weaponName = string.upper(weaponName)
-            return exports.ox_inventory:Search(xPlayer.source, 'count', weaponName) > 0
-        end
-
-        -- Same problem exists for regular items: essentialmode's own
-        -- getInventoryItem/addInventoryItem/removeInventoryItem write
-        -- straight into self.inventory, completely bypassing ox_inventory.
-        -- Any admin command or script using these (like /giveitem) needs
-        -- to go through ox_inventory too, or the item never actually shows
-        -- up for the player.
-        xPlayer.addInventoryItem = function(name, count)
-            exports.ox_inventory:AddItem(xPlayer.source, name, tonumber(count) or 1)
-        end
-
-        xPlayer.removeInventoryItem = function(name, count)
-            exports.ox_inventory:RemoveItem(xPlayer.source, name, tonumber(count) or 1)
-        end
-
-        xPlayer.getInventoryItem = function(name)
-            local count = exports.ox_inventory:Search(xPlayer.source, 'count', name) or 0
-            local itemData = exports.ox_inventory:Items(name)
-
-            if not itemData then return nil end
-
-            return {
-                name = name,
-                count = count,
-                label = itemData.label,
-                limit = itemData.stack == false and 1 or nil,
-                usable = itemData.consume ~= nil or itemData.client ~= nil,
-                rare = false,
-                canRemove = true
-            }
-        end
-
-        xPlayer.__weaponsBridged = true
     end
 
     xPlayer.sex = xPlayer.sex or 'm'
@@ -192,7 +95,7 @@ end
 -- instant — anyone who joins afterwards (i.e. basically every real player)
 -- never gets an inventory, which is why F2 / the whole inventory silently
 -- does nothing for them. Wire it up here.
-local function convertInventoryFormat(inventory, loadout)
+local function convertInventoryFormat(inventory)
     -- essentialmode stores player.inventory as a LIST of {name=.., count=..}
     -- entries. ox_inventory's own convertInventory() expects a DICT of
     -- {[itemName] = count} (old ESX 1.0 style) and breaks (silently compares
@@ -207,27 +110,6 @@ local function convertInventoryFormat(inventory, loadout)
             if type(v) == 'table' and v.name and v.count and v.count > 0 then
                 slot = slot + 1
                 slots[slot] = { slot = slot, name = v.name, count = v.count }
-            end
-        end
-    end
-
-    -- essentialmode keeps weapons in a SEPARATE table (self.loadout), not in
-    -- .inventory at all. Bring them into the same slot list as weapon items
-    -- with ammo/components carried over as metadata, so existing weapons
-    -- migrate into ox_inventory instead of silently vanishing.
-    if type(loadout) == 'table' then
-        for _, w in ipairs(loadout) do
-            if w.name then
-                slot = slot + 1
-                slots[slot] = {
-                    slot = slot,
-                    name = w.name,
-                    count = 1,
-                    metadata = {
-                        ammo = w.ammo or 0,
-                        components = w.components or {}
-                    }
-                }
             end
         end
     end
@@ -267,7 +149,7 @@ local function setupPlayerInventory(source, player)
         player.source = source
 
         local ok, err = pcall(function()
-            exports.ox_inventory:setPlayerInventory(player, convertInventoryFormat(player.inventory, player.loadout))
+            exports.ox_inventory:setPlayerInventory(player, convertInventoryFormat(player.inventory))
         end)
 
         if ok then

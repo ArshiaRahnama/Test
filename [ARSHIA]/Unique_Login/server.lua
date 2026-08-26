@@ -28,6 +28,26 @@ local smsAttemptsByIp    = {} -- ip    -> { count = n, windowStart = os.time() }
 local loginFailures      = {} -- lowercased username -> { count = n, lockUntil = os.time() }
 local newDeviceEvents    = {} -- account license -> { timestamp, timestamp, ... } (see Config.SuspiciousDeviceLock)
 
+-- SECURITY FIX: guess-limit for a phone's currently-active OTP code (used
+-- by both registration step 2 and forgot-password step 2). Without this,
+-- a 6-digit code could be brute-forced with unlimited retries inside its
+-- 2-minute validity window -- for forgot-password specifically, a
+-- successful guess is a full account takeover (attacker sets a new
+-- password). Cleared whenever a fresh code is issued or expires.
+local codeVerifyAttempts = {} -- phone -> count
+
+local function isCodeVerifyLocked(phone)
+    return (codeVerifyAttempts[phone] or 0) >= Config.CodeVerifyLockout.MaxAttempts
+end
+
+local function registerCodeVerifyFailure(phone)
+    codeVerifyAttempts[phone] = (codeVerifyAttempts[phone] or 0) + 1
+end
+
+local function clearCodeVerifyAttempts(phone)
+    codeVerifyAttempts[phone] = nil
+end
+
 -- Returns true and bumps the counter if under the limit, false if the
 -- caller should be blocked. windowSeconds is the rolling window length.
 local function rateLimitCheck(store, key, maxCount, windowSeconds)
@@ -794,13 +814,27 @@ function ShowRegisterStep2_VerifyCode(deferrals, phone, sentCode)
                 return
             end
 
+            -- SECURITY FIX: cap guesses against this code before checking
+            -- it, so an attacker can't just keep resubmitting the same
+            -- card with a new guess every time.
+            if isCodeVerifyLocked(phone) then
+                smscodedict[phone] = nil
+                clearCodeVerifyAttempts(phone)
+                ShowError(deferrals, "تعداد تلاش‌های مجاز برای این کد تمام شد. لطفاً دوباره کد بگیرید.", function()
+                    ShowRegisterStep1_Phone(deferrals)
+                end)
+                return
+            end
+
             if enteredCode ~= sentCode then
+                registerCodeVerifyFailure(phone)
                 ShowError(deferrals, "کد تأیید اشتباه است!", function()
                     ShowRegisterStep2_VerifyCode(deferrals, phone, sentCode)
                 end)
                 return
             end
             smscodedict[phone] = nil
+            clearCodeVerifyAttempts(phone)
             ShowRegisterStep3_UserPass(deferrals, phone)
         else
             ShowRegisterStep2_VerifyCode(deferrals, phone, sentCode)
@@ -1387,7 +1421,21 @@ function ShowForgotPassword_Step2(deferrals, phone, resetCode, username)
                 return
             end
 
+            -- SECURITY FIX: this code resets an EXISTING account's
+            -- password -- an unlimited-guess brute force here is a full
+            -- account takeover, not just a nuisance. Same guess-cap as
+            -- registration's verify step.
+            if isCodeVerifyLocked(phone) then
+                smscodedict[phone] = nil
+                clearCodeVerifyAttempts(phone)
+                ShowError(deferrals, "تعداد تلاش‌های مجاز برای این کد تمام شد. لطفاً دوباره کد بگیرید.", function()
+                    ShowForgotPassword_Step1(deferrals)
+                end)
+                return
+            end
+
             if code ~= resetCode then
+                registerCodeVerifyFailure(phone)
                 ShowError(deferrals, "کد تأیید اشتباه است!", function()
                     ShowForgotPassword_Step2(deferrals, phone, resetCode, username)
                 end)
@@ -1410,6 +1458,7 @@ function ShowForgotPassword_Step2(deferrals, phone, resetCode, username)
 
             UpdatePassword(phone, newPassword, function(success)
                 if success then
+                    clearCodeVerifyAttempts(phone)
                     logAudit("password_reset", username, nil, deferrals.src)
                     sendDiscordAlert(
                         "🔑 رمز عبور تغییر کرد",
@@ -1576,6 +1625,7 @@ local function SMSHolderTimer(phone)
     -- window for someone to brute-force the 6-digit code.
     Citizen.SetTimeout(2*60*1000, function()
         smscodedict[phone] = nil
+        clearCodeVerifyAttempts(phone)
     end)
 end
 
@@ -1596,6 +1646,7 @@ function SendSMSCode(phone, src)
 
         local code = tostring(math.random(100000, 999999))
         smscodedict[phone] = code
+        clearCodeVerifyAttempts(phone)
         SMSHolderTimer(phone)
         -- SECURITY FIX: this used to print(phone .. " : " .. code), writing
         -- the OTP straight into the server console/log file in plaintext —

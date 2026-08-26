@@ -907,31 +907,6 @@ local function registerCommands()
 		})
 	end
 
-	-- Extra: TAB draws/holsters whatever is in hotbar slot 1 (usually your
-	-- sidearm), same behaviour as pressing "1", just on a more reachable key.
-	lib.addKeybind({
-		name = 'tabdraw',
-		description = 'Draw / Holster Weapon (Slot 1)',
-		defaultKey = 'TAB',
-		onPressed = function()
-			if invOpen or EnableWeaponWheel or not invHotkeys or IsNuiFocused() then return end
-			useSlot(1)
-		end
-	})
-
-	-- TAB is GTA's own vanilla default key for the native Weapon Wheel
-	-- (which also brings up the radio-station wheel as part of the same
-	-- native UI). Without disabling that control, our custom TAB keybind
-	-- above fires ALONGSIDE the game's own weapon wheel/radio wheel, which
-	-- is why hitting TAB was opening the radio too. Disable it permanently
-	-- so only our keybind reacts to TAB from now on.
-	CreateThread(function()
-		while true do
-			DisableControlAction(0, 37, true) -- INPUT_SELECT_WEAPON (TAB)
-			Wait(0)
-		end
-	end)
-
 	registerCommands = nil
 end
 
