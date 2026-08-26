@@ -1,0 +1,473 @@
+<!doctype html>
+<html lang="fa">
+<head>
+	<meta charset="UTF-8">
+	<title>AlaviOne</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link href="css/style.css" rel="stylesheet" type="text/css">
+	<link href="https://fonts.googleapis.com/css?family=Open+Sans" rel="stylesheet">
+	 <script src="nui://game/ui/jquery.js" type="text/javascript"></script>
+	 <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+	 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.2/css/all.min.css">
+	 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Fredoka+One&family=Mulish:wght@200&display=swap" rel="stylesheet" />
+	 <script src="js/script.js" type="text/javascript ">  </script>
+	 <script src="js/jquery.js" type="text/javascript ">  </script>
+	 <script src="js/jquery.min.js" type="text/javascript ">  </script>
+</head>
+<body style="display: block;">
+		<!-- Create Gang Menu -->
+		<div class="CGMain" id="CGMain" style="display: none;">
+			<div class="CGTop"> 
+				<img class="CGLogo" src="img/logo.png">
+				<div class="CGTopTitle">
+					For5M
+				</div>
+			</div>
+			<!-- --    --  -->
+			<div class="CGLeft"> 
+				
+			
+				<div class="CGLeftTitle">
+					<span style="margin-top: 7px;left: 52px;position: absolute;"> ACTIONS</span>
+					<span style="background: rgba(255, 255, 255, 0.5); height: 1px; width: 25px;  position: absolute; left: 12px; top: 87px;"></span>
+				</div>
+				<div class="CGLeftButton">
+					<button class = 'CGButton' id = 'GOHOMEPAGE'><img src="img/home.png" > Home </button>
+					<button class = 'CGButton'id = 'GOGANGSPAGE'><img src="img/menu.png" style="margin-right: 4px"><span style="position: relative;right: -10px;">  Gangs </span></button>
+					<button class = 'CGButton' id = 'GOCREATEGANGSPAGE'><img src="img/create.png" style="margin-right: 0;">  <span style="position: relative;right: -16px;">Create</span> </button>
+					<button class = 'CGButton' id = 'GOPACKSPAGE'> <img src="img/packs.png" style="margin-right: 9px;"><span style="position: relative;right: -10px;">Packs</span> </button>
+				</div>
+				<div class="CGLeftAdmin">
+					<div class="CGLeftAdminPic" style="position: absolute;    top: 0;"> 
+					<img class="CGLeftAdminPic" id = 'ADMINPHOTO' src="img/playerpic.png">	
+					</div>
+					<span class="CGLeftAdminName" id="ADMINNAME"></span>
+					<div class="point" style="position: relative;top: 56px;left:25px;"></div>
+					<span class="CGLeftAdminRank" id = 'ADMINRANK'> </span>
+				</div>
+			</div>
+			<!-- --    --  -->
+			<div class="CGMiddle"> 
+					<!-- --  Home  --  -->
+				<div class="CGMHomePage" id = 'HOMEPAGE' style="display: none;" > 
+					<div class="CGMidCreated" >
+						<div class="point" style="width: 3px;height: 3px ;position: absolute;right: 53px;top:56.5px ;background-color: #ffffff;"></div>
+						
+						<div class="CGMCLogo"> <img src="img/allgangsicon.png"> </div>
+						<div class="CGMCText" id = 'ALLCREATED'>0 CREATED</div>
+						<div class="CGMCInfo">GANGS</div>
+						<div class="AllGangsLine"><div class="AllGangsLineValue" id="CREATEDLINEVALUE" ></div></div>
+					</div>
+					<div class="CGMidMembersOff" >
+						<div class="point" style="width: 3px;height: 3px ;position: absolute;right: 53px;top:56.5px ;background-color: #00FF4C;"></div>
+						
+						<div class="CGMCLogo"> <img src="img/onlines.png"> </div>
+						<div class="CGMCText" id = 'ONLINEMEMBERS'>0 MEMBERS</div>
+						<div class="CGMCInfo">ONLINE</div>
+						<div class="AllGangsLine"><div class="AllGangsLineValue"  id="ONLINELINEVALUE" style="background: #00D8FF;"></div></div>
+					</div>
+					<div class="CGMidMembersOn" >
+						<div class="point" style="width: 3px;height: 3px ;position: absolute;right: 58px;top:56.5px ;background-color: #FF0000;"></div>
+						
+						<div class="CGMCLogo"> <img src="img/offlines.png"> </div>
+						<div class="CGMCText" id = 'OFFLINEMEMBERS'>0 MEMBERS</div>
+						<div class="CGMCInfo">OFFLINE</div>
+						<div class="AllGangsLine"><div class="AllGangsLineValue"   id="OFFLINELINEVALUE"style="background: #FF00FF;"></div></div>
+					</div>
+					<div class="CGGILine"></div>
+					<div class="CGGILine" style="right: 27px;   background: linear-gradient(to left, rgba(153, 153, 153, 0), #999999);"></div>
+					<div class="CGMiddleGangInfo">GANGS INFO</div>
+					<div class="CGMiddleGang" >
+						<div class="CGMGangRightInfo" id = 'HOMEPAGEGANGBADGE' style="display: none;">
+							<img src="img/playerpic.png" id = BADGELOGOGANGHOME>
+							<div class="CGMGRIGangName" id="HOMEGANGNAME"></div>
+
+							<div class="CGMGRIMembers">Members</div>
+							<div class="CGMGRIMembersLine"><div class="CGMGRIMembersLineValue" id = HOMEGANGMEMBERLINE></div></div>
+
+							<div class="CGMGRIExpire">Expire</div>
+							<div class="CGMGRIExpireLine"><div class="CGMGRIExpireLineValue" id = HOMEGANGEXPIRELINE></div></div>
+
+							<div class="CGMGRILeveL" >LEVEL</div>
+							<div class="CGMGRILeveLText" id = 'HOMEGANGLEVELTEXT' >5/10</div>
+							<div class="CGMGRILeveLLine"><div class="CGMGRILeveLLineValue" id = 'HOMEGANGLEVELLINE'></div></div>
+
+							<div class="CGMGRIXP" >XP</div>
+							<div class="CGMGRIXPText" id = HOMEGANGXPTEXT >500/1000</div>
+							<div class="CGMGRIXPLine"><div class="CGMGRIXPLineValue" id = HOMEGANGXPLINE></div></div>
+
+
+						</div>
+							<div class="CGMGangMemberList">
+								<div class="CGMMemberInfo" >
+									<div class="CGMIText">PROFILE</div>
+									<div class="CGMIText">NAME</div>
+									<div class="CGMIText">GRADE</div>
+									<div class="CGMIText" style="width: 67px;">STEAM</div>
+								</div>
+								<div class="CGMMemberList" id = HOMEGANGPLAYERLIST  >
+								</div>
+							</div>
+						</div>
+				</div>
+					<!-- --  Gangs  --  -->
+					 <div class="CGMGangsPage" id="GANGSPAGE" style="display: none;">
+						<div class="CGMGSreachBar" > 
+							<img src="img/search.png">
+							<input class="CGMGSreachBarinput" id = GANGSEARCHNAME placeholder="search..." ></input>
+							<button class="CMGSSButton" id = SREACHBUTTOM>Search</button>
+						</div>
+						<div class="CGMGGangsList" id = GANGSPAGELIST >								
+						</div>
+					 </div>
+					 <div class="CGMShowGangInfoPage" id = 'SHOWGANGINFOPAGE'style="display: none;"> 
+						<div class="CGMSGIAll">
+							<img class="CGMSGIGangPic" src="img/playerpic.png" id="INFOGANGPIC">
+
+							<div class="CGMSGIGangName" id = INFOGANGNAME >								 
+								<button class="CGMSGIDeletebutton">DELETE</button>
+							</div>
+							<div class="CGMSGIGangValues">
+								<div class="CGMSGIInfoText">Level</div>
+								<div class="CGMSGIInfoTextLine"><div class="CGMSGIInfoTextLineValue" id = INFOGANGLEVEL></div></div>
+								<div class="CGMSGIITLVText" id = INFOGANGLEVELTEXT>0/0</div>	
+								<div class="CGMSGIInfoText" >XP</div>
+								<div class="CGMSGIInfoTextLine"><div class="CGMSGIInfoTextLineValue"  id = INFOGANGXP></div></div>
+								<div class="CGMSGIITLVText" id = INFOGANGXPLEVEL >0/0</div>	
+								<div class="CGMSGIInfoText"  >Expire</div>
+								<div class="CGMSGIInfoTextLine"><div class="CGMSGIInfoTextLineValue" id = INFOGANGEXPIRE></div></div>
+								<div class="CGMSGIITLVText" id = INFOGANGEXPIRELEVEL>0/0</div>			
+							</div>
+							<div class="CGMSGIGangValues" style="left: 349px;">
+								<div class="CGMSGIInfoText">Members</div>
+								<div class="CGMSGIInfoTextLine"><div class="CGMSGIInfoTextLineValue" id="INFOGANGMEMBERS"></div></div>
+								<div class="CGMSGIITLVText" id="INFOGANGMEMBERSTEXT" >0/0</div>	
+								<div class="CGMSGIInfoText">Slot</div>
+								<div class="CGMSGIInfoTextLine"><div class="CGMSGIInfoTextLineValue" id="INFOGANGSLOT"></div></div>
+								<div class="CGMSGIITLVText" id="INFOGANGSLOTTEXT">0/0</div>	
+								<div class="CGMSGIInfoText">Armor</div>
+								<div class="CGMSGIInfoTextLine"><div class="CGMSGIInfoTextLineValue" id="INFOGANGARMOUR"></div></div>
+								<div class="CGMSGIITLVText"  id="INFOGANGARMOURTEXT">0/0</div>			
+							</div>
+							<div class="CGMSGIGangValues CGMSGIbuttons"  style="left: 553px; width: 84px; top: 47px;">
+								<button class = 'CGMSGIbuttonValues' id="INFOGANGUPGRADE">UPGRADE</button>
+								<button class = 'CGMSGIbuttonValues'id = 'INFOGANGTELEPORT'>TELEPORT</button>
+								<button class = 'CGMSGIbuttonValues' style="background: linear-gradient(0deg, rgba(36, 38, 38, 0.3), rgba(36, 38, 38, 0.3)), #FF0000;" id="INFOGANGDISBAND">DISBAND</button>
+							</div>
+							<div class="CGGILine"></div>
+							<div class="CGGILine" style="right: 27px;   background: linear-gradient(to left, rgba(153, 153, 153, 0), #999999);"></div>
+							<div class="CGMiddleGangInfo" style="font-size: 16px;left: 50.7%;top: 193px;">Members</div>
+							<div class="CGMSGIListNameSec">
+								<div class="CGMSGILNStext">PROFILE</div>
+								<div class="CGMSGILNStext">NAME</div>
+								<div class="CGMSGILNStext">GRADE</div>
+								<div class="CGMSGILNStext">STEAM</div>
+							</div>
+							<div class="CGMSGIGangMemberlist" id = 'INFOGANGPLAYERLIST'>
+								
+							</div>
+						</div>
+
+					 </div>
+					 <div class="CGMCreateGang" style="display: none;" id="CREATEGANG"> <!-- CGCG  -->
+							<div class="CGCGOptionList"><!-- CGCGButtonSelected -->
+								<button class="CGCGOptionbutton"id='CGGANG'> Gang </button>
+								<button class="CGCGOptionbutton"id="blip" > Blip </button>
+								<button class="CGCGOptionbutton"id = boss> Boss </button>
+								<button class="CGCGOptionbutton"id="locker"> Locker </button>
+								<button class="CGCGOptionbutton"id = armory> Armory </button>
+								<button class="CGCGOptionbutton"id="veh"> Veh </button>
+								<button class="CGCGOptionbutton"id = vehspawn> V-Spawn </button>
+								<button class="CGCGOptionbutton"id="heli"> Heli </button>
+								<button class="CGCGOptionbutton"id = helispawn > H-Spawn </button>
+								<button class="CGCGOptionbutton"id = boat > Boat </button>
+								<button class="CGCGOptionbutton"id = boatspawn > B-Spawn </button>
+								<button class="CGCGOptionbutton"id=deletecars > CarsDel</button>
+								<button class="CGCGOptionbutton"id = craft > Craft </button>
+								<button class="CGCGOptionbutton"id = shop > Shop </button>
+								<button class="CGCGOptionbutton"id = flag > Flag </button>
+								<button class="CGCGOptionbutton"id = bots > Bots </button>
+								<button class="CGCGOptionbutton"id = others> Others </button>
+							</div>
+							<div class="CGCGCreateGang" id="CGGANGPAGE" style="display: block;">
+								<div class="CGCGCGInputName" style="display: block;">
+									Name
+									<input class="CGCGCGinput" placeholder="type here" id="CREATEGANGNAMEINPUT"></input>
+								</div>
+								<div class="CGCGCGInputName" style="display: block;">
+									Label
+									<input class="CGCGCGinput" placeholder="type here" id="CREATEGANGLABELINPUT" ></input>
+								</div>
+								<div class="CGCGCGInputName" style="display: block;">
+									Expire
+									<input class="CGCGCGinput" placeholder="DAY"  id="CREATEGANGEXPIREINPUT" ></input>
+								</div>
+								<div class="CGCGCGInputName" style="display: block;">
+									Logo
+									<input class="CGCGCGinput" placeholder="URL"  id="CREATEGANGLOGOINPUT"></input>
+								</div>
+								<div class="CGCGCGInputName" style="display: block;">
+									Webhook 
+									<input class="CGCGCGinput" placeholder="URL"  id="CREATEGANGWEBHOOKINPUT"></input>
+								</div>
+								
+								<img  class = 'CGCGCGGanglogo' id = 'GANGLOGOINUPDATEPAGE' src = "img/playerpic.png">
+								<button class="CGCGCGCreateButton"id = CREATEFGANG>CREATE</button>
+								<div class="CGCGCGRankList">
+									<div class="CGCGCGRADDRankMenu" style="display: none;">
+										<div class="CGCGCGARMBody">
+											<span class="CGCGCGARMBName">Rank Name</span>
+											<input class="CGCGCGARMBRankName" placeholder="Name" id="GRADEINPUTNAME"></input>
+											<span class="CGCGCGARMBLAbeL">Rank Label</span>
+											<input class="CGCGCGARMBRankLabeL" placeholder="Label" id="GRADEINPUTLABEL"></input>
+											<span class="CGCGCGARMBSalary">Rank Salary</span>
+											<input class="CGCGCGARMBRankSalary" placeholder="100" id="GRADEINPUTSALARY" type="number"></input>
+											<span class="CGCGCGARMBAccess" id  =CGCGCGARMBAccess >Access</span>
+											<div class="CGCGCGARMBAccsesList">
+												<!-- -->
+												<div class="CGCGCGARMBAccse">
+													<img src="img/take.png">
+													<div class="CGCGCGARMBAccsesbtn">
+														<button class="SetAccsegreen "id = takeitem  ></button>
+														<button class="SetAccsegred"id = takeitemr ></button>
+													</div>
+													<span style="
+													left: 4px;
+												">Take</span>
+												</div>
+												<!-- -->
+												<div class="CGCGCGARMBAccse">
+													<img src="img/put.png">
+													<div class="CGCGCGARMBAccsesbtn">
+														<button class="SetAccsegreen "id = putitem  ></button>
+														<button class="SetAccsegred"id = putitemr ></button>
+													</div>
+													<span>PUT</span>
+												</div>
+												<!-- -->
+												<div class="CGCGCGARMBAccse">
+													<img src="img/garage.png">
+													<div class="CGCGCGARMBAccsesbtn">
+														<button class="SetAccsegreen "id = garage  ></button>
+														<button class="SetAccsegred"id = garager ></button>
+													</div>
+													<span style="
+													left: -4px;
+												">Garage</span>
+												</div>
+												<!-- -->
+												<div class="CGCGCGARMBAccse">
+													<img src="img/clothe.png">
+													<div class="CGCGCGARMBAccsesbtn">
+														<button class="SetAccsegreen "id = setclothe  ></button>
+														<button class="SetAccsegred"id = setclother ></button>
+													</div>
+													<span style="
+													left: 4px;
+												">SET</span>
+												</div>
+												<!-- -->
+												<div class="CGCGCGARMBAccse">
+													<img src="img/hb.png">
+													<div class="CGCGCGARMBAccsesbtn">
+														<button class="SetAccsegreen "id = heliANDBoat  ></button>
+														<button class="SetAccsegred"id = heliANDBoatr ></button>
+													</div>
+													<span>H & B</span>
+												</div>
+												<!-- -->
+												<div class="CGCGCGARMBAccse">
+													<img src="img/moneypack.png">
+													<div class="CGCGCGARMBAccsesbtn">
+														<button class="SetAccsegreen"id = bossaction  ></button>
+														<button class="SetAccsegred "id = bossactionr ></button>
+													</div>
+													<span>Boss</span>
+												</div>
+												<!-- -->
+												
+											</div>
+
+
+
+
+											<button class="CGCGCGCreateButton"id = 'CGADDRANK' >ADD</button>
+											<button class="CGCGCGCreateButton"id = 'CGCLOSEMENURANK' >CLOSE</button>
+										</div>
+								
+									</div>
+									<div class="CGCGCGRTopListText">
+										<div class="CGCGCGRText">.</div>
+										<div class="CGCGCGRText">Label</div>
+										<div class="CGCGCGRText">Name</div>
+										<div class="CGCGCGRText">Grade</div>
+										<div class="CGCGCGRText">Edit/Delete</div>
+									</div>
+									<div class="CGCGCGRanks"  id = RANKLISTINUPDATEGANG>
+									
+									</div>
+									<button class="CGCGCGRankCreateButton" id="CREATEGANGRANK">CREATE</button>
+								</div>
+							</div>
+							<div class="CGCGCreateOption" id="OTHERSPAGE" style="display: none;height: 350px;" >
+								<div class="CGCGCOthersList">
+									<div class="OthersBadge"  id = slot >
+										<img src="img/slot.png">
+										<span>slot</span>
+										<input class="CGCGOthersinput" placeholder="number">
+										<button class="OthersBtn"  id = slot>SAVE</button>
+									</div>
+									<div class="OthersBadge" id = armor >
+										<img src="img/armor.png" style="margin-left: 14px;">
+										<span>armor</span>
+										<input class="CGCGOthersinput" placeholder="number">
+										<button class="OthersBtn"  id = armor>SAVE</button>
+									</div>
+									<div class="OthersBadge" id = clothe >
+										<img src="img/clothe.png">
+										<span>clothe</span>
+										<input class="CGCGOthersinput" placeholder="number">
+										<button class="OthersBtn" id = clothe >SAVE</button>
+									</div>
+									<div class="OthersBadge" style="border-right: none;" id = search >
+										<img src="img/searchs.png">
+										<span>Search</span>
+										<button class="OthersBtn2"id = search  style="margin-left: 38px;"></button>
+										<button class="OthersBtn3"id = search ></button>
+									</div>
+									<div class="OthersBadge"style="border-bottom: none" id = gps >
+										<img src="img/gps.png"style="margin-left: 8px;">	
+										<span style="width:  122px;">GPS</span>
+										<button class="OthersBtn2" id = gps style="margin-left: 27px;"></button>
+										<button class="OthersBtn3"id = gps  ></button>
+									</div>
+									<div class="OthersBadge"style="border-bottom: none" id = basealaram >
+										<img src="img/alarm.png"style="margin-left: 8px;">
+										<span style="width:  122px;" >ALARM</span>
+										<button class="OthersBtn2"id = basealaram style="margin-left: 27px;"></button>
+										<button class="OthersBtn3"id = basealaram ></button>
+									</div>
+									<div class="OthersBadge" style="border-bottom: none;" id = cuff>
+										<img src="img/cuff.png"style="margin-left: 8px;">
+										<span style="width:  122px;">CUFF</span>
+										<button class="OthersBtn2"id = cuff style="margin-left: 27px;"></button>
+										<button class="OthersBtn3"id = cuff ></button>
+									</div>
+									<div class="OthersBadge" style="border-right: none;border-bottom: none;" id = lockpick>
+										<img src="img/lockpick.png" style="margin-left: 8px;">
+										<span style="width:  122px;">LOCKPICK</span>
+										<button class="OthersBtn2" id = lockpick style="margin-left: 27px;"></button>
+										<button class="OthersBtn3" id = lockpick></button>
+									</div>
+								</div>
+
+							</div>
+							<div class="CGCGCreateOption" id="CGOPTIONS" style="display: none;">
+								<div class="CGCGRightInfoText">Marker</div>
+								<img class="CGCGMarker" id = MARKERIMAGE src="img/marker/0.png">
+								<div class="CGCGColorofMarkers">
+									<div class="CGCGColorofMarker" id = RED style="background: #FF0000;"></div>
+									<div class="CGCGColorofMarker" id = GREEN style="background: #00FF55;"></div>
+									<div class="CGCGColorofMarker" id = BLUE  style="background: #002BFF;"></div>
+									<input class="CGCGColorofMarkerinput"id = WHITE  type="color"  value="#ffffff"> 
+								</div>
+								<div class="CGCGNextLeft" id = MARKERLEFT > <img src="img/left.png"></div>
+								<div class="CGCGNextRight" id = MARKERRIGHT> <img src="img/right.png"></div>
+								<div class="CGCGLine"></div>
+								<div class="CGCGCreateOptionbuttons">
+									<button class="CGCGCPBbutton" id = ped >Ped</button>
+									<button class="CGCGCPBbutton" id = marker>Marker</button>
+									<button class="CGCGCPBbutton"id = object>Object</button>
+									<button class="CGCGCPBbutton" id = ADDGANGMARKER style="width: 61px;height: 43px;position: absolute;bottom: 4px;left: 176px;cursor: pointer; background-color:#00FF4C ; color: #000;">ADD</button>
+									<input class="CGCGinput" id = MARKERX placeholder="X" value="1.5"></input>
+									<input class="CGCGinput"id = MARKERY placeholder="Y"value="1.5"></input>
+									<input class="CGCGinput" id = MARKERZ placeholder="Z"value="1.5"></input>
+								</div>
+								<div class="CGCGHLine"></div> 
+								<div class="CGCGLeftInfoText">V-Spawn</div>
+								<div class="CGCGAlradyCreatedOfthisOptionList" id = 'CREATEGANGOPTIONLIST'>
+								
+
+									
+									
+								</div>
+							</div>
+						
+					</div>
+					<div class="CGMPacksPage" id="PACKSPAGE" style="display: none;">
+						<div class="CGMPPack">
+							<div class="CGMPPackText">PISTOL PACK</div>
+							<img src="img/pistolpack.png">
+							<input class="CGMPInput" id="pistolpackinput" placeholder="Gang Name"></input>
+							<button  class="CGMPbutton" id="pistolpack">GIVE</button>
+						</div>
+						<div class="CGMPPack">
+							<div class="CGMPPackText">RIFLE PACK</div>
+							<img src="img/riflepack.png">
+							<input class="CGMPInput" placeholder="Gang Name"  id = riflepackinput></input>
+							<button  class="CGMPbutton" id = riflepack>GIVE</button>
+						</div>
+						<div class="CGMPPack">
+							<div class="CGMPPackText">MONEY PACK</div>
+							<img src="img/moneypack.png">
+							<input class="CGMPInput" placeholder="Gang Name" id = moneypackinput ></input>
+							<button  class="CGMPbutton" id = moneypack >GIVE</button>
+						</div>
+						<div class="CGMPPack">
+							<div class="CGMPPackText">ITEM PACK</div>
+							<img src="img/ItemPack.png">
+							<input class="CGMPInput" placeholder="Gang Name" id = itempackinput></input>
+							<button  class="CGMPbutton" id = itempack >GIVE</button>
+						</div>
+						<div class="CGMPPack">
+							<div class="CGMPPackText">ATTCHMENT PACK</div>
+							<img src="img/attchmetpack.png">
+							<input class="CGMPInput" placeholder="Gang Name" id = attchmentpackinput></input>
+							<button  class="CGMPbutton" id = attchmentpack > GIVE</button>
+						</div>
+						<div class="CGMPPack">
+							<div class="CGMPPackText">XP PACK</div>
+							<img src="img/XPPACK.png">
+							<input class="CGMPInput" placeholder="Gang Name"id = xppackinput></input>
+							<button  class="CGMPbutton" id = xppack >GIVE</button>
+						</div>
+						
+						
+					</div>
+			</div>
+			<!-- --    --  -->
+			<div class="CGRight"> 
+				<img class="CGExit" id="CLOSEADMINPAGE" src="img/exit.png">
+				<div class="CGRightTitle">
+					<span style="margin-top: 7px;left: 29px;position: absolute;"> GANGS</span>
+					<span style="background: rgba(255, 255, 255, 0.5); height: 1px; width: 30px;  position: absolute; right: 12px ; top: 87px;"></span>
+				</div>
+				<div class="CGRightTopGangs" id = RIGHTTOPGANGS>										 		
+				</div>
+				<div class="CGRightClock" id =TIME>00:00 PM<img src="img/clock.png"></div>
+				<div class="CGRightDay" id = 'TODAY'>00-00-00<img src="img/day.png"></div>
+			</div>
+		</div>
+		<!-- Create Gang Menu -->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</body>
+
+</html>

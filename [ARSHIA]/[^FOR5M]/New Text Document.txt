@@ -1,0 +1,7 @@
+RegisterServerEvent('For5M:SetGangs')
+AddEventHandler('For5M:SetGangs', function(alldata)
+    alldata['nogang'] = { name = 'nogang', label = 'nogang' }
+    alldata['nogang'].grades = {}
+    alldata['nogang'].grades[0] = { gang_name = 'nogang', grade = 0, name = 'nogang', label = 'nogang', clothes = {}, access = {} }
+    ESX.Gangs = alldata
+end)

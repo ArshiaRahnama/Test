@@ -1,0 +1,255 @@
+Config = {}
+Config.ESX = 'esx:getSharedObject'
+Config.inventoryimg  = "nui://esx_inventoryhud/html/img/items" 
+Config.permission = 1
+---
+Config.OPENPANELCMD = 'openpanel'
+Config.ADDXPCMD = 'addgangxp'
+Config.REMOVEXPCMD = 'removegangxp'
+----
+Config.Skin = 'esx_skin'
+Config.skinchanger = 'skinchanger'
+Config.SteamWebApiKey = '2E63E55937A74CF716E31D90A420ED57'
+Config.DefaultAvatar = "img/gangicon.png"
+Config.MenuSkintrigger = 'esx_skin:openRestrictedMenu' 
+--- chatMessage event / showNotification event
+Config.chatMessage = 'chatMessage'
+Config.showNotification = 'esx:showNotification' 
+Config.showAdvancedNotification = 'esx:showAdvancedNotification'
+---- inventory 
+Config.OpenInventory = 'esx_inventoryhud:openGangInventory'
+Config.TakeItemEvent = 'For5M:getFromInventory'
+Config.AddItemToInventory = 'For5M:addToInventory'
+----
+Config.TimeToPay = 15 -- min 
+----
+function IsPlayerCanOpenPanel(source) 
+    local xPlayer = ESX.GetPlayerFromId(source) 
+    if xPlayer.permission_level >= Config.permission  then  
+        return true 
+    else 
+        return false 
+    end 
+end 
+function GetAdminName(source) 
+    local xPlayer = ESX.GetPlayerFromId(source)
+    return xPlayer.name 
+end 
+
+function GetAdminRank(source) 
+    local xPlayer = ESX.GetPlayerFromId(source)
+    local GetRankLabeL = {
+        [1] =  'Helper'    , 
+        [2] =  'Helper'    , 
+        [3] =  'Helper'    , 
+        [4] =  'ADMIN'     , 
+        [5] =  'ADMIN'     , 
+        [6] =  'ADMIN'     , 
+        [7] =  'HEADADMIN' , 
+        [8] =  'HEADADMIN' , 
+        [9] =  'HEADADMIN' , 
+        [10] = 'DEVELOPER' , 
+        [11] = 'DEVELOPER' , 
+        [12] = 'GAMEMASTER' , 
+    }
+    local RankName = GetRankLabeL[ xPlayer.permission_level ] or 'GAMEMASTER'
+    return RankName
+end 
+function Notifiaction(text)
+    ESX.ShowNotification(text)
+end 
+
+Config.GangLeveL = {
+    [1] = 1000,
+    [2] = 2000,
+    [3] = 3000,
+    [4] = 4000,
+    [5] = 5000,
+    [6] = 6000,
+    [7] = 7000,
+    [8] = 8000,
+    [9] = 9000,
+    [10] = 10000,
+}
+
+Config.LevelReward = {
+    [1] = 1000,
+    [2] = 2000,
+    [3] = 3000,
+    [4] = 4000,
+    [5] = 5000,
+    [6] = 6000,
+    [7] = 7000,
+    [8] = 8000,
+    [9] = 9000,
+    [10] = 10000,
+}
+
+Config.DefaultRanks = {
+   {
+    Grade = 1, 
+    Label = 'Rank 1',
+    Name  = 'Rank1'
+   },
+   {
+    Grade = 2, 
+    Label = 'Rank 2',
+    Name  = 'Rank2'
+   },
+   {
+    Grade = 3, 
+    Label = 'Rank 3',
+    Name  = 'Rank3'
+   },
+   {
+    Grade = 4, 
+    Label = 'Rank 4',
+    Name  = 'Rank4'
+   },
+   {
+    Grade = 5, 
+    Label = 'Rank 5',
+    Name  = 'Rank5'
+   },
+   {
+    Grade = 6, 
+    Label = 'Rank 6',
+    Name  = 'Rank6'
+   },
+   {
+    Grade = 7, 
+    Label = 'Rank 7',
+    Name  = 'Rank7'
+   },
+   {
+    Grade = 8, 
+    Label = 'Rank 8',
+    Name  = 'Rank8'
+   },
+   {
+    Grade = 9, 
+    Label = 'Rank 9',
+    Name  = 'Rank9'
+   },
+   {
+    Grade = 10, 
+    Label = 'Rank 10',
+    Name  = 'Rank10'
+   },
+
+}
+Config.markers = {
+  [0] = 0, 
+  1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43
+}
+Config.peds = {
+    [0] ='a_m_m_beach_01' ,
+    'cs_dreyfuss' ,
+    'csb_jackhowitzer' ,
+    'g_m_m_chicold_01' ,
+    'g_m_y_ballaorig_01' ,
+    'g_m_y_ballasout_01' ,
+    'g_m_y_famca_01' ,
+    'g_m_y_famdnf_01' ,
+    'g_m_y_lost_01' ,
+    'g_m_y_lost_02' ,
+    'g_m_y_salvagoon_01' ,
+}
+Config.blip = {
+    [0] =1,
+    8,16,36,38,40,43,47,50,72,84,85,303
+}
+Config.object = {
+    [0] ='imp_prop_impexp_boxpile_01' ,
+    'imp_prop_impexp_boxpile_02' ,
+    'imp_prop_impexp_boxwood_01' ,
+    'prop_box_ammo03a_set2' ,
+    'prop_box_wood02a_mws' , 
+    'prop_box_wood02a_pu' , 
+    'prop_toolchest_04' , 
+    'xm_prop_crates_weapon_mix_01a' , 
+
+
+}
+Config.flag = {
+    [0] = 'apa_prop_flag_china' , 
+    'prop_flag_japan' , 
+    'prop_flag_lsservices' , 
+}
+
+Config.NeedHandsup = {
+    ['Search'] = false,
+    ['Cuff'] = false,
+}
+Config.Animations = {
+    ['handsup_anim'] = 'missminuteman_1ig_2',
+    ['handsup_anim_dict'] = 'handsup_enter',
+    ['dead_anim'] = 'dead',
+    ['dead_anim_dict'] = 'dead_a',
+}
+Config.DefaultEvents = {
+    ['Cuff'] = 'For5M:Cuff',
+    ['UnCuff'] = 'For5M:UnCuff',
+    ['Drag'] = 'For5M:Drag',
+    ['PutInVeh'] = 'For5M:PutInVeh',
+    ['PutOutVeh'] = 'For5M:PutOutVeh',
+    ['LockPick'] = 'For5M:LockPick',
+    ['confiscatePlayerItem'] = 'esx:confiscatePlayerItem',
+    ['onPlayerDeath'] = 'esx:onPlayerDeath',
+    ['playerSpawned'] = 'playerSpawned',
+    ['playerLoaded'] = 'esx:playerLoaded',
+    ['setGang'] = 'esx:setGang',
+    ['DataCard'] = 'esx:getOtherPlayerDataCard',
+}
+Config.Packs = {
+    ['pistolpack'] = {
+        --- Name  
+        ['WEAPON_APPISTOL'] = { Count = 1 , ammo = 250  } ,
+        ['WEAPON_PISTOL'] = { Count = 5 , ammo = 250  } ,
+        ['WEAPON_PISTOL50'] = { Count = 3 , ammo = 250  } ,
+        ['WEAPON_PISTOL_MK2'] = { Count = 8 , ammo = 250  } ,
+        ['WEAPON_SNSPISTOL']= { Count = 10 , ammo = 250  } ,
+        ['WEAPON_SNSPISTOL_MK2']= { Count = 5 , ammo = 250  } ,
+    } , 
+    ['riflepack'] = {
+        --- Name  
+        ['WEAPON_SNSPISTOL_MK2'] = { Count = 1 , ammo = 250  } ,
+        ['WEAPON_ASSAULTRIFLE_MK2'] = { Count = 1 , ammo = 250  } ,
+        ['WEAPON_ASSAULTSHOTGUN'] = { Count = 1 , ammo = 250  } ,
+        ['WEAPON_ASSAULTSMG'] = { Count = 5 , ammo = 250  } ,
+        ['WEAPON_ADVANCEDRIFLE']= { Count = 1 , ammo = 250  } ,
+        ['WEAPON_CARBINERIFLE']= { Count = 3 , ammo = 250  } ,
+    } , 
+    ['moneypack'] =  1000000,  -- > Add To Boss Action
+    ['xppack'] =  20000,
+    ['itempack'] ={
+        ['iron'] = 10 ,
+        ['gold'] = 20 ,
+    } , 
+    ['attchmentpack'] = {
+        --- Name   , count
+        ['grip'] = 10 ,
+        ['clip'] = 20 ,
+       
+    }, 
+
+}
+
+
+function getVehicleCategory(vehicle) 
+    if not vehicle or vehicle == nil then 
+        return "car" 
+    end 
+    local model = GetEntityModel(vehicle) 
+    local modelName = GetDisplayNameFromVehicleModel(model) 
+    local class = GetVehicleClass(vehicle) 
+    if class == 14 then -- HELICOPTERS 
+        return "heli" 
+    elseif class == 15 then -- PLANES 
+        return "heli" 
+    elseif class == 8 then -- BOATS 
+        return "boat" 
+    else 
+        return "car" 
+    end 
+end 
