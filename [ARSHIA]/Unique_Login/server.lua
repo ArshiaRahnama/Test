@@ -28,6 +28,26 @@ local smsAttemptsByIp    = {} -- ip    -> { count = n, windowStart = os.time() }
 local loginFailures      = {} -- lowercased username -> { count = n, lockUntil = os.time() }
 local newDeviceEvents    = {} -- account license -> { timestamp, timestamp, ... } (see Config.SuspiciousDeviceLock)
 
+-- SECURITY FIX: guess-limit for a phone's currently-active OTP code (used
+-- by both registration step 2 and forgot-password step 2). Without this,
+-- a 6-digit code could be brute-forced with unlimited retries inside its
+-- 2-minute validity window -- for forgot-password specifically, a
+-- successful guess is a full account takeover (attacker sets a new
+-- password). Cleared whenever a fresh code is issued or expires.
+local codeVerifyAttempts = {} -- phone -> count
+
+local function isCodeVerifyLocked(phone)
+    return (codeVerifyAttempts[phone] or 0) >= Config.CodeVerifyLockout.MaxAttempts
+end
+
+local function registerCodeVerifyFailure(phone)
+    codeVerifyAttempts[phone] = (codeVerifyAttempts[phone] or 0) + 1
+end
+
+local function clearCodeVerifyAttempts(phone)
+    codeVerifyAttempts[phone] = nil
+end
+
 -- Returns true and bumps the counter if under the limit, false if the
 -- caller should be blocked. windowSeconds is the rolling window length.
 local function rateLimitCheck(store, key, maxCount, windowSeconds)
@@ -794,13 +814,27 @@ function ShowRegisterStep2_VerifyCode(deferrals, phone, sentCode)
                 return
             end
 
+            -- SECURITY FIX: cap guesses against this code before checking
+            -- it, so an attacker can't just keep resubmitting the same
+            -- card with a new guess every time.
+            if isCodeVerifyLocked(phone) then
+                smscodedict[phone] = nil
+                clearCodeVerifyAttempts(phone)
+                ShowError(deferrals, "تعداد تلاش‌های مجاز برای این کد تمام شد. لطفاً دوباره کد بگیرید.", function()
+                    ShowRegisterStep1_Phone(deferrals)
+                end)
+                return
+            end
+
             if enteredCode ~= sentCode then
+                registerCodeVerifyFailure(phone)
                 ShowError(deferrals, "کد تأیید اشتباه است!", function()
                     ShowRegisterStep2_VerifyCode(deferrals, phone, sentCode)
                 end)
                 return
             end
             smscodedict[phone] = nil
+            clearCodeVerifyAttempts(phone)
             ShowRegisterStep3_UserPass(deferrals, phone)
         else
             ShowRegisterStep2_VerifyCode(deferrals, phone, sentCode)
@@ -1387,7 +1421,21 @@ function ShowForgotPassword_Step2(deferrals, phone, resetCode, username)
                 return
             end
 
+            -- SECURITY FIX: this code resets an EXISTING account's
+            -- password -- an unlimited-guess brute force here is a full
+            -- account takeover, not just a nuisance. Same guess-cap as
+            -- registration's verify step.
+            if isCodeVerifyLocked(phone) then
+                smscodedict[phone] = nil
+                clearCodeVerifyAttempts(phone)
+                ShowError(deferrals, "تعداد تلاش‌های مجاز برای این کد تمام شد. لطفاً دوباره کد بگیرید.", function()
+                    ShowForgotPassword_Step1(deferrals)
+                end)
+                return
+            end
+
             if code ~= resetCode then
+                registerCodeVerifyFailure(phone)
                 ShowError(deferrals, "کد تأیید اشتباه است!", function()
                     ShowForgotPassword_Step2(deferrals, phone, resetCode, username)
                 end)
@@ -1410,6 +1458,7 @@ function ShowForgotPassword_Step2(deferrals, phone, resetCode, username)
 
             UpdatePassword(phone, newPassword, function(success)
                 if success then
+                    clearCodeVerifyAttempts(phone)
                     logAudit("password_reset", username, nil, deferrals.src)
                     sendDiscordAlert(
                         "🔑 رمز عبور تغییر کرد",
@@ -1576,6 +1625,7 @@ local function SMSHolderTimer(phone)
     -- window for someone to brute-force the 6-digit code.
     Citizen.SetTimeout(2*60*1000, function()
         smscodedict[phone] = nil
+        clearCodeVerifyAttempts(phone)
     end)
 end
 
@@ -1596,6 +1646,7 @@ function SendSMSCode(phone, src)
 
         local code = tostring(math.random(100000, 999999))
         smscodedict[phone] = code
+        clearCodeVerifyAttempts(phone)
         SMSHolderTimer(phone)
         -- SECURITY FIX: this used to print(phone .. " : " .. code), writing
         -- the OTP straight into the server console/log file in plaintext —
@@ -1645,6 +1696,19 @@ local function generateRandomString(length)
     end
     
     return table.concat(result)
+end
+
+-- SECURITY FIX: helper for the salted-password fix below (was previously
+-- bare SHA2(password, 256) with no salt at all, i.e. rainbow-table
+-- vulnerable). 32 hex chars = 128 bits of randomness per user.
+local function GenerateSalt()
+    local chars = "0123456789abcdef"
+    local out = {}
+    for i = 1, 32 do
+        local idx = math.random(1, #chars)
+        out[i] = chars:sub(idx, idx)
+    end
+    return table.concat(out)
 end
 
 -- تولید لایسنس یکتا با فرمت مشخص
@@ -1714,14 +1778,17 @@ end
 -- end
 
 -- SECURITY FIX: was comparing/storing passwords in PLAINTEXT before.
--- Hashing happens inside the SQL itself (SHA2-256) so no plaintext
--- password is ever written to the database or a query log.
+-- Hashing happens inside the SQL itself (SHA2-256, now salted per-user —
+-- see GenerateSalt above) so no plaintext password is ever written to the
+-- database or a query log.
 function CheckLogin(username, password, def, cb)
     -- EXPANSION: separated into two queries so the caller can tell "no
     -- account with this username/phone exists at all" apart from "account
     -- exists but password was wrong" — used to point brand-new players
     -- straight at registration instead of a dead-end "wrong password".
-    local existsQuery = "SELECT id FROM login_users WHERE (username = @username OR phone = @username) LIMIT 1"
+    -- Also doubles as the salt lookup now, since the salt has to be known
+    -- before we can build the password-matching WHERE clause below.
+    local existsQuery = "SELECT id, password_salt FROM login_users WHERE (username = @username OR phone = @username) LIMIT 1"
     MySQL.Async.fetchAll(existsQuery, {
         ["@username"] = username
     }, function(existsResult)
@@ -1731,10 +1798,16 @@ function CheckLogin(username, password, def, cb)
             return
         end
 
-        local query = "SELECT * FROM login_users WHERE (username = @username OR phone = @username) AND password = SHA2(@password, 256)"
+        -- Legacy rows created before this fix have password_salt = '';
+        -- CONCAT(@password, '') = @password, so the query below still
+        -- matches their old unsalted hash unchanged.
+        local salt = existsResult[1].password_salt or ""
+
+        local query = "SELECT * FROM login_users WHERE (username = @username OR phone = @username) AND password = SHA2(CONCAT(@password, @salt), 256)"
         MySQL.Async.fetchAll(query, {
             ["@username"] = username,
-            ["@password"] = password
+            ["@password"] = password,
+            ["@salt"] = salt
         }, function(result)
             if result and #result > 0 then
                 -- EXPANSION: correct password, but the account is on
@@ -1745,6 +1818,19 @@ function CheckLogin(username, password, def, cb)
                     cb(false, nil, true, true)
                     return
                 end
+
+                -- SECURITY FIX: lazily upgrade a legacy unsalted row to a
+                -- fresh random salt now that we know the correct plaintext
+                -- password — every account gets salted the next time it
+                -- logs in, with no forced reset needed.
+                if salt == "" then
+                    local newSalt = GenerateSalt()
+                    MySQL.Async.execute(
+                        "UPDATE login_users SET password = SHA2(CONCAT(@password, @salt), 256), password_salt = @salt WHERE id = @id",
+                        { ["@password"] = password, ["@salt"] = newSalt, ["@id"] = result[1].id }
+                    )
+                end
+
                 cb(true, result[1].license, true, false)
             else
                 cb(false, nil, true, false)
@@ -1801,14 +1887,17 @@ function RegisterUser(username, password, phone, def, cb)
     -- steam = "steam".. string.sub(license, string.len("license:"), string.len(license))
 
     local license = generateUniqueLicense()
-    -- SECURITY FIX: SHA2-256 the password inside the query, same as CheckLogin
+    -- SECURITY FIX: SHA2-256 the password inside the query with a fresh
+    -- per-user salt, same approach as CheckLogin.
+    local salt = GenerateSalt()
     local query = [[
-        INSERT INTO login_users (username, password, phone, license)
-        VALUES (@username, SHA2(@password, 256), @phone, @license)
+        INSERT INTO login_users (username, password, password_salt, phone, license)
+        VALUES (@username, SHA2(CONCAT(@password, @salt), 256), @salt, @phone, @license)
     ]]
     MySQL.Async.execute(query, {
         ["@username"] = username,
         ["@password"] = password,
+        ["@salt"]     = salt,
         ["@phone"]    = phone,
         ["@license"]  = license
 
@@ -1822,9 +1911,12 @@ function UpdatePassword(phone, newPassword, cb)
     -- device — already relied on elsewhere) and security_hold. A completed
     -- SMS-OTP reset is exactly the "prove you own the phone" step that's
     -- supposed to lift a suspicious-activity hold.
-    local query = "UPDATE login_users SET password = SHA2(@password, 256), device_license = NULL, security_hold = 0 WHERE phone = @phone"
+    -- SECURITY FIX: fresh random salt on every reset, same as registration.
+    local salt = GenerateSalt()
+    local query = "UPDATE login_users SET password = SHA2(CONCAT(@password, @salt), 256), password_salt = @salt, device_license = NULL, security_hold = 0 WHERE phone = @phone"
     MySQL.Async.execute(query, {
         ["@password"] = newPassword,
+        ["@salt"]     = salt,
         ["@phone"]    = phone
     }, function(affected)
         cb(affected and affected > 0)
@@ -2306,31 +2398,45 @@ exports("requestPasswordChangeOtp", function(src, oldPassword, cb)
         return
     end
 
+    -- SECURITY FIX: look up the salt first, then verify against the
+    -- salted hash — same two-step pattern as CheckLogin.
     MySQL.Async.fetchAll(
-        "SELECT username, phone FROM login_users WHERE license = @lic AND password = SHA2(@old, 256) LIMIT 1",
-        { ["@lic"] = license, ["@old"] = oldPassword },
-        function(rows)
-            if not rows or not rows[1] then
+        "SELECT username, phone, password_salt FROM login_users WHERE license = @lic LIMIT 1",
+        { ["@lic"] = license },
+        function(userRows)
+            if not userRows or not userRows[1] then
                 cb(false, "wrong_old_password")
                 return
             end
+            local salt = userRows[1].password_salt or ""
 
-            local phone = rows[1].phone
-            local code, err = SendSMSCode(phone, src)
-            if not code then
-                cb(false, err == "rate_limited" and "rate_limited" or "sms_failed")
-                return
-            end
+            MySQL.Async.fetchAll(
+                "SELECT username, phone FROM login_users WHERE license = @lic AND password = SHA2(CONCAT(@old, @salt), 256) LIMIT 1",
+                { ["@lic"] = license, ["@old"] = oldPassword, ["@salt"] = salt },
+                function(rows)
+                    if not rows or not rows[1] then
+                        cb(false, "wrong_old_password")
+                        return
+                    end
 
-            pendingPasswordChangeOtp[src] = {
-                phone = phone,
-                license = license,
-                username = rows[1].username,
-                expiresAt = os.time() + 120, -- matches the 2-minute OTP validity used elsewhere
-            }
-            -- Masked so the UI can show "کد به شماره‌ی ...1234 ارسال شد"
-            -- without exposing the full phone number.
-            cb(true, nil, "***" .. tostring(phone):sub(-4))
+                    local phone = rows[1].phone
+                    local code, err = SendSMSCode(phone, src)
+                    if not code then
+                        cb(false, err == "rate_limited" and "rate_limited" or "sms_failed")
+                        return
+                    end
+
+                    pendingPasswordChangeOtp[src] = {
+                        phone = phone,
+                        license = license,
+                        username = rows[1].username,
+                        expiresAt = os.time() + 120, -- matches the 2-minute OTP validity used elsewhere
+                    }
+                    -- Masked so the UI can show "کد به شماره‌ی ...1234 ارسال شد"
+                    -- without exposing the full phone number.
+                    cb(true, nil, "***" .. tostring(phone):sub(-4))
+                end
+            )
         end
     )
 end)
@@ -2363,9 +2469,11 @@ exports("confirmPasswordChange", function(src, code, newPassword, cb)
     smscodedict[pending.phone] = nil
     pendingPasswordChangeOtp[src] = nil
 
+    -- SECURITY FIX: fresh random salt on every password change too.
+    local salt = GenerateSalt()
     MySQL.Async.execute(
-        "UPDATE login_users SET password = SHA2(@new, 256) WHERE license = @lic",
-        { ["@new"] = newPassword, ["@lic"] = pending.license }
+        "UPDATE login_users SET password = SHA2(CONCAT(@new, @salt), 256), password_salt = @salt WHERE license = @lic",
+        { ["@new"] = newPassword, ["@salt"] = salt, ["@lic"] = pending.license }
     )
     logAudit("password_change", pending.username, pending.license, src)
     sendDiscordAlert(

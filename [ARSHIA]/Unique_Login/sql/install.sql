@@ -3,7 +3,16 @@
 CREATE TABLE IF NOT EXISTS `login_users` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `username` varchar(64) NOT NULL,
-  `password` char(64) NOT NULL, -- SHA2-256 hex digest, never plaintext
+  `password` char(64) NOT NULL, -- SHA2-256 hex digest of (password .. password_salt), never plaintext
+  -- SECURITY FIX: previously the password column was SHA2(password, 256)
+  -- with NO per-user salt, which is vulnerable to precomputed rainbow-table
+  -- attacks (identical passwords across accounts hash identically, and
+  -- generic SHA-256 rainbow tables for common passwords are widely
+  -- available). Pure bcrypt/argon2 isn't available in stock FXServer Lua
+  -- without a native module, so this adds a random per-user salt that's
+  -- mixed into the hash instead -- it defeats rainbow tables and makes
+  -- identical passwords hash differently across accounts.
+  `password_salt` char(32) NOT NULL DEFAULT '', -- random per-user salt, mixed into the SHA2 hash above
   `phone` varchar(32) DEFAULT NULL,
   `license` varchar(128) NOT NULL,
   -- EXPANSION: the real FiveM `license:` identifier of the device that most
@@ -49,6 +58,13 @@ CREATE TABLE IF NOT EXISTS `login_users` (
 --
 -- ALTER TABLE `login_users`
 --   ADD COLUMN `security_hold` tinyint(1) NOT NULL DEFAULT 0 AFTER `device_license`;
+--
+-- And to add the per-user password salt (existing rows will have an empty
+-- salt until they next log in/reset their password — see server.lua's
+-- CheckLogin, which lazily upgrades them):
+--
+-- ALTER TABLE `login_users`
+--   ADD COLUMN `password_salt` char(32) NOT NULL DEFAULT '' AFTER `password`;
 -- ─────────────────────────────────────────────────────────
 
 -- EXPANSION: audit trail — every login attempt (success/fail), registration,
