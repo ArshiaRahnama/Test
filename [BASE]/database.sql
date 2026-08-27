@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS `addon_account` (
   PRIMARY KEY (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Dumping data for table essentialmode.addon_account: ~45 rows (approximately)
+-- Dumping data for table essentialmode.addon_account: ~43 rows (approximately)
 REPLACE INTO `addon_account` (`name`, `label`, `shared`) VALUES
 	('caution', 'Caution', 0),
 	('society_ambulance', 'ambulance', 1),
@@ -87,9 +87,9 @@ CREATE TABLE IF NOT EXISTS `addon_account_data` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `index_addon_account_data_account_name_owner` (`account_name`,`owner`),
   KEY `index_addon_account_data_account_name` (`account_name`)
-) ENGINE=InnoDB AUTO_INCREMENT=9765 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=9828 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Dumping data for table essentialmode.addon_account_data: ~170 rows (approximately)
+-- Dumping data for table essentialmode.addon_account_data: ~233 rows (approximately)
 REPLACE INTO `addon_account_data` (`id`, `account_name`, `money`, `owner`) VALUES
 	(1, 'society_uwucafe', 0, NULL),
 	(2, 'society_ambulance', 0, NULL),
@@ -260,7 +260,70 @@ REPLACE INTO `addon_account_data` (`id`, `account_name`, `money`, `owner`) VALUE
 	(9761, 'society_cratecarry', 0, NULL),
 	(9762, 'society_turfco', 0, NULL),
 	(9763, 'society_doj', 100, NULL),
-	(9764, 'society_law', 9956907, NULL);
+	(9764, 'society_law', 9956907, NULL),
+	(9765, 'society_uwucafe', 0, NULL),
+	(9766, 'society_obsidian', 0, NULL),
+	(9767, 'society_voltage', 0, NULL),
+	(9768, 'society_ember', 0, NULL),
+	(9769, 'society_anchor', 0, NULL),
+	(9770, 'society_crimson', 0, NULL),
+	(9771, 'society_flourish', 0, NULL),
+	(9772, 'society_goldcrust', 0, NULL),
+	(9773, 'society_static', 0, NULL),
+	(9774, 'society_nightjar', 0, NULL),
+	(9775, 'society_firebrick', 0, NULL),
+	(9776, 'society_slice', 0, NULL),
+	(9777, 'society_frostbite', 0, NULL),
+	(9778, 'society_sundae', 0, NULL),
+	(9779, 'society_koi', 0, NULL),
+	(9780, 'society_wasabi', 0, NULL),
+	(9781, 'society_carwash', 0, NULL),
+	(9782, 'society_meridian', 0, NULL),
+	(9783, 'society_blacktide', 0, NULL),
+	(9784, 'society_cratecarry', 0, NULL),
+	(9785, 'society_turfco', 0, NULL),
+	(9786, 'society_uwucafe', 0, NULL),
+	(9787, 'society_obsidian', 0, NULL),
+	(9788, 'society_voltage', 0, NULL),
+	(9789, 'society_ember', 0, NULL),
+	(9790, 'society_anchor', 0, NULL),
+	(9791, 'society_crimson', 0, NULL),
+	(9792, 'society_flourish', 0, NULL),
+	(9793, 'society_goldcrust', 0, NULL),
+	(9794, 'society_static', 0, NULL),
+	(9795, 'society_nightjar', 0, NULL),
+	(9796, 'society_firebrick', 0, NULL),
+	(9797, 'society_slice', 0, NULL),
+	(9798, 'society_frostbite', 0, NULL),
+	(9799, 'society_sundae', 0, NULL),
+	(9800, 'society_koi', 0, NULL),
+	(9801, 'society_wasabi', 0, NULL),
+	(9802, 'society_carwash', 0, NULL),
+	(9803, 'society_meridian', 0, NULL),
+	(9804, 'society_blacktide', 0, NULL),
+	(9805, 'society_cratecarry', 0, NULL),
+	(9806, 'society_turfco', 0, NULL),
+	(9807, 'society_uwucafe', 0, NULL),
+	(9808, 'society_obsidian', 0, NULL),
+	(9809, 'society_voltage', 0, NULL),
+	(9810, 'society_ember', 0, NULL),
+	(9811, 'society_anchor', 0, NULL),
+	(9812, 'society_crimson', 0, NULL),
+	(9813, 'society_flourish', 0, NULL),
+	(9814, 'society_goldcrust', 0, NULL),
+	(9815, 'society_static', 0, NULL),
+	(9816, 'society_nightjar', 0, NULL),
+	(9817, 'society_firebrick', 0, NULL),
+	(9818, 'society_slice', 0, NULL),
+	(9819, 'society_frostbite', 0, NULL),
+	(9820, 'society_sundae', 0, NULL),
+	(9821, 'society_koi', 0, NULL),
+	(9822, 'society_wasabi', 0, NULL),
+	(9823, 'society_carwash', 0, NULL),
+	(9824, 'society_meridian', 0, NULL),
+	(9825, 'society_blacktide', 0, NULL),
+	(9826, 'society_cratecarry', 0, NULL),
+	(9827, 'society_turfco', 0, NULL);
 
 -- Dumping structure for table essentialmode.addon_inventory
 DROP TABLE IF EXISTS `addon_inventory`;
@@ -381,12 +444,13 @@ CREATE TABLE IF NOT EXISTS `admin_ip_log` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `identifier_ip` (`identifier`,`ip`),
   KEY `ip` (`ip`)
-) ENGINE=InnoDB AUTO_INCREMENT=20 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=69 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Dumping data for table essentialmode.admin_ip_log: ~1 rows (approximately)
+-- Dumping data for table essentialmode.admin_ip_log: ~3 rows (approximately)
 REPLACE INTO `admin_ip_log` (`id`, `identifier`, `license`, `discord`, `ip`, `playername`, `last_seen`) VALUES
-	(1, 'steam:11000014bf543e0', 'license:153122398469261248', 'no info', '192.168.1.110', 'GD', '2026-08-16 00:41:01'),
-	(2, 'steam:11000014bf543e0', 'license:153122398469261248', 'no info', '172.20.10.2', 'GD', '2026-08-18 09:56:34');
+	(1, 'steam:11000014bf543e0', 'license:153122398469261248', 'no info', '192.168.1.110', 'GD', '2026-08-25 16:25:50'),
+	(2, 'steam:11000014bf543e0', 'license:153122398469261248', 'no info', '172.20.10.2', 'GD', '2026-08-19 21:05:57'),
+	(42, 'steam:11000014bf543e0', 'license:153122398469261248', 'no info', '172.20.10.3', 'GD', '2026-08-26 11:33:09');
 
 -- Dumping structure for table essentialmode.admin_player_notes
 DROP TABLE IF EXISTS `admin_player_notes`;
@@ -483,9 +547,9 @@ CREATE TABLE IF NOT EXISTS `audit` (
   `timestamp` varchar(50) DEFAULT NULL,
   `type` varchar(50) DEFAULT NULL,
   PRIMARY KEY (`log_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=286 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=383 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Dumping data for table essentialmode.audit: ~258 rows (approximately)
+-- Dumping data for table essentialmode.audit: ~366 rows (approximately)
 REPLACE INTO `audit` (`log_id`, `id`, `identifier`, `oname`, `timestamp`, `type`) VALUES
 	(1, 1, 'steam:11000014bf543e0', 'AghaT BardiA', '1785397967', 'Enter'),
 	(2, 2, 'steam:11000014bf543e0', 'AghaT BardiA', '1785398099', 'Exit([txAdmin] You have been kicked: for unknown r'),
@@ -771,7 +835,104 @@ REPLACE INTO `audit` (`log_id`, `id`, `identifier`, `oname`, `timestamp`, `type`
 	(282, 1, 'steam:11000014bf543e0', 'GD', '1787033706', 'Enter'),
 	(283, 1, 'steam:11000014bf543e0', 'GD', '1787034258', 'Exit(Server shutting down: SIGHUP received)'),
 	(284, 1, 'steam:11000014bf543e0', 'GD', '1787034396', 'Enter'),
-	(285, 1, 'steam:11000014bf543e0', 'GD', '1787034628', 'Exit(Server shutting down: SIGHUP received)');
+	(285, 1, 'steam:11000014bf543e0', 'GD', '1787034628', 'Exit(Server shutting down: SIGHUP received)'),
+	(286, 1, 'steam:11000014bf543e0', 'GD', '1787034817', 'Enter'),
+	(287, 1, 'steam:11000014bf543e0', 'GD', '1787034980', 'Exit(Exiting)'),
+	(288, 1, 'steam:11000014bf543e0', 'GD', '1787049211', 'Enter'),
+	(289, 1, 'steam:11000014bf543e0', 'GD', '1787049585', 'Exit(Exiting)'),
+	(290, 1, 'steam:11000014bf543e0', 'GD', '1787050345', 'Enter'),
+	(291, 1, 'steam:11000014bf543e0', 'GD', '1787051562', 'Exit(Exiting)'),
+	(292, 1, 'steam:11000014bf543e0', 'GD', '1787053190', 'Enter'),
+	(293, 1, 'steam:11000014bf543e0', 'GD', '1787053544', 'Exit(متاسفانه سیستم امنیتی رفتار مشکوکی رو در حساب'),
+	(294, 2, 'steam:11000014bf543e0', 'GD', '1787053603', 'Enter'),
+	(295, 2, 'steam:11000014bf543e0', 'GD', '1787053618', 'Exit(متاسفانه سیستم امنیتی رفتار مشکوکی رو در حساب'),
+	(296, 1, 'steam:11000014bf543e0', 'GD', '1787066788', 'Enter'),
+	(297, 1, 'steam:11000014bf543e0', 'GD', '1787067614', 'Exit(متاسفانه سیستم امنیتی رفتار مشکوکی رو در حساب'),
+	(298, 2, 'steam:11000014bf543e0', 'GD', '1787067669', 'Enter'),
+	(299, 2, 'steam:11000014bf543e0', 'GD', '1787067942', 'Exit(Server shutting down: SIGHUP received)'),
+	(300, 1, 'steam:11000014bf543e0', 'GD', '1787086741', 'Enter'),
+	(301, 1, 'steam:11000014bf543e0', 'GD', '1787086767', 'Exit(متاسفانه سیستم امنیتی رفتار مشکوکی رو در حساب'),
+	(302, 2, 'steam:11000014bf543e0', 'GD', '1787086882', 'Enter'),
+	(303, 2, 'steam:11000014bf543e0', 'GD', '1787086884', 'Exit(متاسفانه سیستم امنیتی رفتار مشکوکی رو در حساب'),
+	(304, 3, 'steam:11000014bf543e0', 'GD', '1787086953', 'Enter'),
+	(305, 3, 'steam:11000014bf543e0', 'GD', '1787087934', 'Exit(Server->client connection timed out. Last see'),
+	(306, 1, 'steam:11000014bf543e0', 'GD', '1787125716', 'Enter'),
+	(307, 1, 'steam:11000014bf543e0', 'GD', '1787125717', 'Exit(متاسفانه سیستم امنیتی رفتار مشکوکی رو در حساب'),
+	(308, 2, 'steam:11000014bf543e0', 'GD', '1787125786', 'Enter'),
+	(309, 2, 'steam:11000014bf543e0', 'GD', '1787126487', 'Exit(Server shutting down: SIGHUP received)'),
+	(310, 1, 'steam:11000014bf543e0', 'GD', '1787133952', 'Enter'),
+	(311, 1, 'steam:11000014bf543e0', 'GD', '1787133953', 'Exit(متاسفانه سیستم امنیتی رفتار مشکوکی رو در حساب'),
+	(312, 2, 'steam:11000014bf543e0', 'GD', '1787134040', 'Enter'),
+	(313, 2, 'steam:11000014bf543e0', 'GD', '1787134347', 'Exit(Server->client connection timed out. Last see'),
+	(314, 1, 'steam:11000014bf543e0', 'GD', '1787134692', 'Enter'),
+	(315, 1, 'steam:11000014bf543e0', 'GD', '1787134693', 'Exit(متاسفانه سیستم امنیتی رفتار مشکوکی رو در حساب'),
+	(316, 2, 'steam:11000014bf543e0', 'GD', '1787134788', 'Enter'),
+	(317, 2, 'steam:11000014bf543e0', 'GD', '1787134835', 'Exit(Server->client connection timed out. Last see'),
+	(318, 1, 'steam:11000014bf543e0', 'GD', '1787160845', 'Enter'),
+	(319, 1, 'steam:11000014bf543e0', 'GD', '1787160845', 'Exit(متاسفانه سیستم امنیتی رفتار مشکوکی رو در حساب'),
+	(320, 2, 'steam:11000014bf543e0', 'GD', '1787160959', 'Enter'),
+	(321, 2, 'steam:11000014bf543e0', 'GD', '1787161307', 'Exit(Server shutting down: SIGHUP received)'),
+	(322, 1, 'steam:11000014bf543e0', 'GD', '1787173115', 'Enter'),
+	(323, 1, 'steam:11000014bf543e0', 'GD', '1787173445', 'Exit(Server shutting down: SIGHUP received)'),
+	(324, 1, 'steam:11000014bf543e0', 'GD', '1787175079', 'Enter'),
+	(325, 1, 'steam:11000014bf543e0', 'GD', '1787175298', 'Exit(Exiting)'),
+	(326, 1, 'steam:11000014bf543e0', 'GD', '1787209990', 'Enter'),
+	(327, 1, 'steam:11000014bf543e0', 'GD', '1787210771', 'Exit(Server shutting down: SIGHUP received)'),
+	(328, 1, 'steam:11000014bf543e0', 'GD', '1787228211', 'Enter'),
+	(329, 1, 'steam:11000014bf543e0', 'GD', '1787229119', 'Exit(Exiting)'),
+	(330, 1, 'steam:11000014bf543e0', 'GD', '1787419622', 'Enter'),
+	(331, 1, 'steam:11000014bf543e0', 'GD', '1787420303', 'Exit([txAdmin] Server restarting (admin request).)'),
+	(332, 1, 'steam:11000014bf543e0', 'GD', '1787421635', 'Enter'),
+	(333, 1, 'steam:11000014bf543e0', 'GD', '1787422086', 'Exit(Server shutting down: SIGHUP received)'),
+	(334, 1, 'steam:11000014bf543e0', 'GD', '1787422154', 'Enter'),
+	(335, 1, 'steam:11000014bf543e0', 'GD', '1787425278', 'Exit(Server shutting down: SIGHUP received)'),
+	(336, 1, 'steam:11000014bf543e0', 'GD', '1787476027', 'Enter'),
+	(337, 1, 'steam:11000014bf543e0', 'GD', '1787476972', 'Exit(Exiting)'),
+	(338, 1, 'steam:11000014bf543e0', 'GD', '1787477064', 'Enter'),
+	(339, 1, 'steam:11000014bf543e0', 'GD', '1787478260', 'Exit(Server shutting down: SIGHUP received)'),
+	(340, 1, 'steam:11000014bf543e0', 'GD', '1787494898', 'Enter'),
+	(341, 1, 'steam:11000014bf543e0', 'GD', '1787496577', 'Exit(Exiting)'),
+	(342, 1, 'steam:11000014bf543e0', 'GD', '1787506126', 'Enter'),
+	(343, 1, 'steam:11000014bf543e0', 'GD', '1787507872', 'Exit(Exiting)'),
+	(344, 1, 'steam:11000014bf543e0', 'GD', '1787508709', 'Enter'),
+	(345, 1, 'steam:11000014bf543e0', 'GD', '1787508970', 'Exit([txAdmin] Server restarting (admin request).)'),
+	(346, 1, 'steam:11000014bf543e0', 'GD', '1787509042', 'Enter'),
+	(347, 1, 'steam:11000014bf543e0', 'GD', '1787509597', 'Exit(Server shutting down: SIGHUP received)'),
+	(348, 1, 'steam:11000014bf543e0', 'GD', '1787510724', 'Enter'),
+	(349, 1, 'steam:11000014bf543e0', 'GD', '1787511635', 'Exit([txAdmin] Server restarting (admin request).)'),
+	(350, 1, 'steam:11000014bf543e0', 'GD', '1787511700', 'Enter'),
+	(351, 1, 'steam:11000014bf543e0', 'GD', '1787512675', 'Exit(Server->client connection timed out. Last see'),
+	(352, 1, 'steam:11000014bf543e0', 'GD', '1787513161', 'Enter'),
+	(353, 1, 'steam:11000014bf543e0', 'GD', '1787513881', 'Exit(Server->client connection timed out. Last see'),
+	(354, 1, 'steam:11000014bf543e0', 'GD', '1787562866', 'Enter'),
+	(355, 1, 'steam:11000014bf543e0', 'GD', '1787564196', 'Exit(Server shutting down: SIGHUP received)'),
+	(356, 1, 'steam:11000014bf543e0', 'GD', '1787580060', 'Enter'),
+	(357, 1, 'steam:11000014bf543e0', 'GD', '1787581935', 'Exit(Server shutting down: SIGHUP received)'),
+	(358, 1, 'steam:11000014bf543e0', 'GD', '1787583696', 'Enter'),
+	(359, 1, 'steam:11000014bf543e0', 'GD', '1787583895', 'Exit(Exiting)'),
+	(360, 1, 'steam:11000014bf543e0', 'GD', '1787600590', 'Enter'),
+	(361, 1, 'steam:11000014bf543e0', 'GD', '1787601602', 'Exit(Server->client connection timed out. Last see'),
+	(362, 1, 'steam:11000014bf543e0', 'GD', '1787602016', 'Enter'),
+	(363, 1, 'steam:11000014bf543e0', 'GD', '1787602448', 'Exit(Server shutting down: SIGHUP received)'),
+	(364, 1, 'steam:11000014bf543e0', 'GD', '1787602608', 'Enter'),
+	(365, 1, 'steam:11000014bf543e0', 'GD', '1787602772', 'Exit(Server->client connection timed out. Last see'),
+	(366, 1, 'steam:11000014bf543e0', 'GD', '1787603580', 'Enter'),
+	(367, 1, 'steam:11000014bf543e0', 'GD', '1787603660', 'Exit(Exiting)'),
+	(368, 1, 'steam:11000014bf543e0', 'GD', '1787643602', 'Enter'),
+	(369, 1, 'steam:11000014bf543e0', 'GD', '1787644439', 'Exit([txAdmin] Server restarting (admin request).)'),
+	(370, 1, 'steam:11000014bf543e0', 'GD', '1787644493', 'Enter'),
+	(371, 1, 'steam:11000014bf543e0', 'GD', '1787644570', 'Exit([txAdmin] Server restarting (admin request).)'),
+	(372, 1, 'steam:11000014bf543e0', 'GD', '1787644624', 'Enter'),
+	(373, 1, 'steam:11000014bf543e0', 'GD', '1787662552', 'Enter'),
+	(374, 1, 'steam:11000014bf543e0', 'GD', '1787663867', 'Exit(Server shutting down: SIGHUP received)'),
+	(375, 1, 'steam:11000014bf543e0', 'GD', '1787728800', 'Enter'),
+	(376, 1, 'steam:11000014bf543e0', 'GD', '1787729526', 'Exit([txAdmin] Server restarting (admin request).)'),
+	(377, 1, 'steam:11000014bf543e0', 'GD', '1787729591', 'Enter'),
+	(378, 1, 'steam:11000014bf543e0', 'GD', '1787730007', 'Exit([txAdmin] Server restarting (admin request).)'),
+	(379, 1, 'steam:11000014bf543e0', 'GD', '1787730065', 'Enter'),
+	(380, 1, 'steam:11000014bf543e0', 'GD', '1787730218', 'Exit(Server shutting down: SIGHUP received)'),
+	(381, 1, 'steam:11000014bf543e0', 'GD', '1787731391', 'Enter'),
+	(382, 1, 'steam:11000014bf543e0', 'GD', '1787731532', 'Exit(Exiting)');
 
 -- Dumping structure for table essentialmode.bag_inventories
 DROP TABLE IF EXISTS `bag_inventories`;
@@ -899,7 +1060,7 @@ CREATE TABLE IF NOT EXISTS `capture_academy_stats` (
 
 -- Dumping data for table essentialmode.capture_academy_stats: ~0 rows (approximately)
 REPLACE INTO `capture_academy_stats` (`identifier`, `name`, `kills`) VALUES
-	('steam:11000014bf543e0', 'GD', 65);
+	('steam:11000014bf543e0', 'GD', 72);
 
 -- Dumping structure for table essentialmode.capture_gang_season_archive
 DROP TABLE IF EXISTS `capture_gang_season_archive`;
@@ -924,7 +1085,7 @@ CREATE TABLE IF NOT EXISTS `capture_gang_stats` (
 
 -- Dumping data for table essentialmode.capture_gang_stats: ~0 rows (approximately)
 REPLACE INTO `capture_gang_stats` (`gang_name`, `points`) VALUES
-	('A', 61);
+	('A', 112);
 
 -- Dumping structure for table essentialmode.capture_hall_of_fame
 DROP TABLE IF EXISTS `capture_hall_of_fame`;
@@ -1118,6 +1279,16 @@ CREATE TABLE IF NOT EXISTS `crypto_transactions` (
 
 -- Dumping data for table essentialmode.crypto_transactions: ~0 rows (approximately)
 
+-- Dumping structure for table essentialmode.custom_names
+DROP TABLE IF EXISTS `custom_names`;
+CREATE TABLE IF NOT EXISTS `custom_names` (
+  `entity_job` varchar(50) NOT NULL,
+  `custom_label` varchar(50) NOT NULL,
+  PRIMARY KEY (`entity_job`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Dumping data for table essentialmode.custom_names: ~0 rows (approximately)
+
 -- Dumping structure for table essentialmode.datastore
 DROP TABLE IF EXISTS `datastore`;
 CREATE TABLE IF NOT EXISTS `datastore` (
@@ -1297,9 +1468,9 @@ CREATE TABLE IF NOT EXISTS `duty_logs` (
   `date` date DEFAULT NULL,
   `total_time` int(11) DEFAULT 0,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=236 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=248 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Dumping data for table essentialmode.duty_logs: ~49 rows (approximately)
+-- Dumping data for table essentialmode.duty_logs: ~60 rows (approximately)
 REPLACE INTO `duty_logs` (`id`, `steamhex`, `ic_name`, `job_name`, `job_grade`, `date`, `total_time`) VALUES
 	(186, 'steam:110000146d830cd', 'Sohrab_Qaderi', 'police', 'Chief', '2025-02-06', 7800),
 	(187, 'steam:110000146d830cd', 'Sohrab_Qaderi', 'police', 'Chief', '2025-02-07', 2400),
@@ -1348,8 +1519,20 @@ REPLACE INTO `duty_logs` (`id`, `steamhex`, `ic_name`, `job_name`, `job_grade`, 
 	(231, 'steam:11000014bf543e0', 'Arshia_Mtz', 'mt', 'Officer I', '2026-08-17', 3600),
 	(232, 'steam:11000014bf543e0', 'Arshia_Mtz', 'police', 'Commissioner', '2026-08-17', 1800),
 	(233, 'steam:11000014bf543e0', 'Arshia_Mtz', 'ambulance', 'Intern', '2026-08-17', 1500),
-	(234, 'steam:11000014bf543e0', 'Arshia_Mtz', 'police', 'Commissioner', '2026-08-18', 1500),
-	(235, 'steam:11000014bf543e0', 'Arshia_Mtz', 'marshal', 'Deputy Chief', '2026-08-18', 1200);
+	(234, 'steam:11000014bf543e0', 'Arshia_Mtz', 'police', 'Commissioner', '2026-08-18', 2100),
+	(235, 'steam:11000014bf543e0', 'Arshia_Mtz', 'marshal', 'Deputy Chief', '2026-08-18', 1800),
+	(236, 'steam:11000014bf543e0', 'Arshia_Mtz', 'cid', 'CID Officer 1', '2026-08-18', 1200),
+	(237, 'steam:11000014bf543e0', 'Arshia_Mtz', 'cid', 'CID Officer 1', '2026-08-19', 300),
+	(238, 'steam:11000014bf543e0', 'Arshia_Mtz', 'police', 'Commissioner', '2026-08-19', 900),
+	(239, 'steam:11000014bf543e0', 'Arshia_Mtz', 'doa', 'DOA Officer 5', '2026-08-19', 900),
+	(240, 'steam:11000014bf543e0', 'Arshia_Mtz', 'doa', 'DOA Officer 5', '2026-08-20', 2100),
+	(241, 'steam:11000014bf543e0', 'Arshia_Mtz', 'cratecarry', 'Owner', '2026-08-22', 300),
+	(242, 'steam:11000014bf543e0', 'Arshia_Mtz', 'police', 'Commissioner', '2026-08-23', 6300),
+	(243, 'steam:11000014bf543e0', 'Arshia_Mtz', 'fbi', 'Deputy Chief', '2026-08-23', 1500),
+	(244, 'steam:11000014bf543e0', 'Arshia_Mtz', 'police', 'Commissioner', '2026-08-24', 2100),
+	(245, 'steam:11000014bf543e0', 'Arshia_Mtz', 'cia', 'Senior Agent ', '2026-08-24', 2100),
+	(246, 'steam:11000014bf543e0', 'Arshia_Mtz', 'police', 'Commissioner', '2026-08-25', 2100),
+	(247, 'steam:11000014bf543e0', 'Arshia_Mtz', 'police', 'Commissioner', '2026-08-26', 900);
 
 -- Dumping structure for table essentialmode.fightbans
 DROP TABLE IF EXISTS `fightbans`;
@@ -1801,7 +1984,7 @@ CREATE TABLE IF NOT EXISTS `job_grades` (
   PRIMARY KEY (`job_name`,`grade`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Dumping data for table essentialmode.job_grades: ~524 rows (approximately)
+-- Dumping data for table essentialmode.job_grades: ~625 rows (approximately)
 REPLACE INTO `job_grades` (`job_name`, `grade`, `name`, `label`, `salary`, `skin_male`, `skin_female`, `vehicles`, `helis`, `weapons`, `items`) VALUES
 	('ambulance', 0, 'ambulance', 'Ambulancier', 20, '{"tshirt_2":0,"hair_color_1":5,"glasses_2":3,"shoes":9,"torso_2":3,"hair_color_2":0,"pants_1":24,"glasses_1":4,"hair_1":2,"sex":0,"decals_2":0,"tshirt_1":15,"helmet_1":8,"helmet_2":0,"arms":92,"face":19,"decals_1":60,"torso_1":13,"hair_2":0,"skin":34,"pants_2":5}', '{"tshirt_2":3,"decals_2":0,"glasses":0,"hair_1":2,"torso_1":73,"shoes":1,"hair_color_2":0,"glasses_1":19,"skin":13,"face":6,"pants_2":5,"tshirt_1":75,"pants_1":37,"helmet_1":57,"torso_2":0,"arms":14,"sex":1,"glasses_2":0,"decals_1":0,"hair_2":0,"helmet_2":0,"hair_color_1":0}', NULL, NULL, NULL, NULL),
 	('ambulance', 1, 'intern', 'Intern', 3000, '{"mask_1":0,"jaw_1":0,"age_1":0,"lip_thickness":0,"ears_1":-1,"face_2":21,"moles_2":1,"glasses_2":-1,"blush_1":-1,"nose_5":0,"beard_3":0,"sex":0,"tshirt_2":0,"beard_1":0,"face_md_weight":50.0,"chin_3":0,"beard_4":0,"bags_2":0,"decals_1":0,"neck_thickness":0,"eye_squint":0,"beard_2":10,"hair_2":0,"blush_2":10,"eyebrows_3":12,"lipstick_1":0,"shoes_2":0,"jaw_2":0,"complexion_1":0,"watches_2":-1,"blush_3":0,"skin":12,"hair_color_2":0,"watches_1":-1,"ears_2":-1,"chest_1":-1,"hair_color_1":0,"arms":85,"shoes_1":179,"age_2":0,"chin_4":0,"bodyb_1":-1,"cheeks_2":0,"lipstick_4":0,"lipstick_3":0,"makeup_2":0,"makeup_4":0,"chain_1":126,"sun_1":-1,"torso_2":4,"bodyb_3":-1,"chin_1":0,"blemishes_1":-1,"nose_4":0,"bracelets_1":-1,"helmet_1":-1,"eyebrows_2":10,"eye_color":0,"moles_1":0,"bproof_1":0,"eyebrows_6":0,"bags_1":0,"eyebrows_4":12,"hair_1":10,"bproof_2":0,"glasses_1":-1,"decals_2":0,"bracelets_2":0,"makeup_1":0,"tshirt_1":15,"dad":0,"bodyb_4":0,"face_1":0,"bodyb_2":0,"face_3":5,"pants_1":279,"mom":21,"blemishes_2":10,"complexion_2":1,"cheeks_3":0,"eyebrows_5":0,"sun_2":10,"chin_2":0,"nose_2":0,"helmet_2":-1,"nose_3":0,"nose_6":0,"torso_1":791,"pants_2":4,"arms_2":0,"makeup_3":0,"nose_1":0,"chain_2":0,"cheeks_1":0,"mask_2":0,"lipstick_2":0,"chest_2":10,"skin_md_weight":6,"chest_3":0,"eyebrows_1":0}', '{}', '[{"status":true,"model":"ambulance"},{"status":true,"model":"1200rt"},{"status":true,"model":"corvette"},{"status":false,"model":"motorpm"},{"status":false,"model":"orbmwm5"},{"status":false,"model":"polkch"},{"status":false,"model":"poljug"},{"status":false,"model":"polkmd"},{"status":false,"model":"polreb"},{"status":false,"model":"polros"}]', NULL, '', '[]'),
@@ -2076,6 +2259,20 @@ REPLACE INTO `job_grades` (`job_name`, `grade`, `name`, `label`, `salary`, `skin
 	('offambulance', 16, 'boss', 'Ambulance', 0, '{}', '{}', '[]', NULL, '', '[]'),
 	('offambulance', 17, 'lparamedic', 'Ambulance', 0, '{}', '{}', '[]', NULL, '', '[]'),
 	('offambulance', 18, 'lparamedic', 'Ambulance', 0, '{}', '{}', '[]', NULL, '', '[]'),
+	('offanchor', 0, 'off_grade_0', 'Off Duty', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offanchor', 1, 'rank1', 'Rank1', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offanchor', 2, 'rank2', 'Rank2', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offanchor', 3, 'rank3', 'Rank3', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offanchor', 4, 'boss', 'Rank4', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offblacktide', 0, 'off_grade_0', 'Off Duty', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offblacktide', 1, 'rank1', 'Runner', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offblacktide', 2, 'rank2', 'Enforcer', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offblacktide', 3, 'boss', 'Boss', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offcarwash', 0, 'off_grade_0', 'Off Duty', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offcarwash', 1, 'rank1', 'Rank1', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offcarwash', 2, 'rank2', 'Rank2', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offcarwash', 3, 'rank3', 'Rank3', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offcarwash', 4, 'boss', 'Rank4', 0, '{}', '{}', '[]', '[]', NULL, NULL),
 	('offcatcafe', 0, 'off_grade_0', 'Off-Duty', 0, '{}', '{}', NULL, NULL, NULL, NULL),
 	('offcatcafe', 1, 'boss', 'Off-Duty', 0, '{}', '{}', '', NULL, '', ''),
 	('offcia', 0, 'off_grade_0', 'Off-Duty', 0, '{}', '{}', NULL, NULL, NULL, NULL),
@@ -2101,13 +2298,52 @@ REPLACE INTO `job_grades` (`job_name`, `grade`, `name`, `label`, `salary`, `skin
 	('offcia', 20, 'boss', 'CIA', 0, '{}', '{}', '[]', NULL, '', ''),
 	('offcia', 21, 'boss', 'CIA', 0, '{}', '{}', '[]', NULL, '', ''),
 	('offcid', 0, 'unemployed', 'Off Duty', 0, '{}', '{}', NULL, NULL, NULL, NULL),
+	('offcratecarry', 0, 'off_grade_0', 'Off Duty', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offcratecarry', 1, 'rank1', 'Driver', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offcratecarry', 2, 'rank2', 'Manager', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offcratecarry', 3, 'boss', 'Owner', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offcrimson', 0, 'off_grade_0', 'Off Duty', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offcrimson', 1, 'rank1', 'Rank1', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offcrimson', 2, 'rank2', 'Rank2', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offcrimson', 3, 'rank3', 'Rank3', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offcrimson', 4, 'boss', 'Rank4', 0, '{}', '{}', '[]', '[]', NULL, NULL),
 	('offdoa', 0, 'unemployed', 'Off Duty', 0, '{}', '{}', NULL, NULL, NULL, NULL),
+	('offember', 0, 'off_grade_0', 'Off Duty', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offember', 1, 'rank1', 'Rank1', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offember', 2, 'rank2', 'Rank2', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offember', 3, 'rank3', 'Rank3', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offember', 4, 'boss', 'Rank4', 0, '{}', '{}', '[]', '[]', NULL, NULL),
 	('offfbi', 0, 'agent', 'Agent', 0, '{}', '{}', NULL, NULL, NULL, NULL),
 	('offfbi', 1, 'special', 'Experienced Agent', 0, '{}', '{}', NULL, NULL, NULL, NULL),
 	('offfbi', 2, 'supervisor', 'Supervisor', 0, '{}', '{}', NULL, NULL, NULL, NULL),
 	('offfbi', 3, 'assistant', 'Assistant Director', 0, '{}', '{}', NULL, NULL, NULL, NULL),
 	('offfbi', 4, 'boss', 'Director', 0, '{}', '{}', NULL, NULL, NULL, NULL),
+	('offfirebrick', 0, 'off_grade_0', 'Off Duty', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offfirebrick', 1, 'rank1', 'Rank1', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offfirebrick', 2, 'rank2', 'Rank2', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offfirebrick', 3, 'rank3', 'Rank3', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offfirebrick', 4, 'boss', 'Rank4', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offflourish', 0, 'off_grade_0', 'Off Duty', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offflourish', 1, 'rank1', 'Rank1', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offflourish', 2, 'rank2', 'Rank2', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offflourish', 3, 'rank3', 'Rank3', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offflourish', 4, 'boss', 'Rank4', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offfrostbite', 0, 'off_grade_0', 'Off Duty', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offfrostbite', 1, 'rank1', 'Rank1', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offfrostbite', 2, 'rank2', 'Rank2', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offfrostbite', 3, 'rank3', 'Rank3', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offfrostbite', 4, 'boss', 'Rank4', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offgoldcrust', 0, 'off_grade_0', 'Off Duty', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offgoldcrust', 1, 'rank1', 'Rank1', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offgoldcrust', 2, 'rank2', 'Rank2', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offgoldcrust', 3, 'rank3', 'Rank3', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offgoldcrust', 4, 'boss', 'Rank4', 0, '{}', '{}', '[]', '[]', NULL, NULL),
 	('offjudge', 0, 'unemployed', 'Off Duty', 0, '{}', '{}', NULL, NULL, NULL, NULL),
+	('offkoi', 0, 'off_grade_0', 'Off Duty', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offkoi', 1, 'rank1', 'Rank1', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offkoi', 2, 'rank2', 'Rank2', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offkoi', 3, 'rank3', 'Rank3', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offkoi', 4, 'boss', 'Rank4', 0, '{}', '{}', '[]', '[]', NULL, NULL),
 	('offmarshal', 0, 'unemployed', 'Off Duty', 0, '{}', '{}', NULL, NULL, NULL, NULL),
 	('offmechanic', 0, 'off_grade_0', 'Off Duty 0', 0, '{}', '{}', NULL, NULL, NULL, NULL),
 	('offmechanic', 1, 'recrue', 'Mechanic', 0, '{}', '{}', '', NULL, '', ''),
@@ -2128,6 +2364,10 @@ REPLACE INTO `job_grades` (`job_name`, `grade`, `name`, `label`, `salary`, `skin
 	('offmechanic', 16, 'boss', 'Mechanic', 0, '{}', '{}', '', NULL, '', ''),
 	('offmechanic', 17, 'boss', 'Mechanic', 0, '{}', '{}', '', NULL, '', ''),
 	('offmechanic', 18, 'boss', 'Mechanic', 0, '{}', '{}', '', NULL, '', ''),
+	('offmeridian', 0, 'off_grade_0', 'Off Duty', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offmeridian', 1, 'rank1', 'Analyst', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offmeridian', 2, 'rank2', 'Director', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offmeridian', 3, 'boss', 'CEO', 0, '{}', '{}', '[]', '[]', NULL, NULL),
 	('offmt', 0, 'off_grade_0', 'Off Duty', 0, '{}', '{}', NULL, NULL, NULL, NULL),
 	('offmt', 1, 'off_grade_1', 'Off Duty', 0, '{}', '{}', NULL, NULL, NULL, NULL),
 	('offmt', 2, 'off_grade_2', 'Off Duty', 0, '{}', '{}', NULL, NULL, NULL, NULL),
@@ -2148,6 +2388,16 @@ REPLACE INTO `job_grades` (`job_name`, `grade`, `name`, `label`, `salary`, `skin
 	('offmt', 17, 'off_grade_17', 'Off Duty', 0, '{}', '{}', NULL, NULL, NULL, NULL),
 	('offmt', 18, 'off_grade_18', 'Off Duty', 0, '{}', '{}', NULL, NULL, NULL, NULL),
 	('offmt', 19, 'off_grade_19', 'Off Dut', 0, '{}', '{}', NULL, NULL, NULL, NULL),
+	('offnightjar', 0, 'off_grade_0', 'Off Duty', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offnightjar', 1, 'rank1', 'Rank1', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offnightjar', 2, 'rank2', 'Rank2', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offnightjar', 3, 'rank3', 'Rank3', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offnightjar', 4, 'boss', 'Rank4', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offobsidian', 0, 'off_grade_0', 'Off Duty', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offobsidian', 1, 'rank1', 'Rank1', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offobsidian', 2, 'rank2', 'Rank2', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offobsidian', 3, 'rank3', 'Rank3', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offobsidian', 4, 'boss', 'Rank4', 0, '{}', '{}', '[]', '[]', NULL, NULL),
 	('offpolice', 0, 'off_grade_0', 'Off Duty 0', 0, '{}', '{}', NULL, NULL, NULL, NULL),
 	('offpolice', 1, 'cadet', 'Police', 0, '{}', '{}', '', NULL, '', ''),
 	('offpolice', 2, 'cadet', 'Police', 0, '{}', '{}', '', NULL, '', ''),
@@ -2193,6 +2443,21 @@ REPLACE INTO `job_grades` (`job_name`, `grade`, `name`, `label`, `salary`, `skin
 	('offsheriff', 20, 'boss', 'Sheriff', 0, '{}', '{}', '', NULL, '', ''),
 	('offsheriff', 21, 'boss', 'Sheriff', 0, '{}', '{}', '', NULL, '', ''),
 	('offsheriff', 22, 'boss', 'Sheriff', 0, '{}', '{}', '', NULL, '', ''),
+	('offslice', 0, 'off_grade_0', 'Off Duty', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offslice', 1, 'rank1', 'Rank1', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offslice', 2, 'rank2', 'Rank2', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offslice', 3, 'rank3', 'Rank3', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offslice', 4, 'boss', 'Rank4', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offstatic', 0, 'off_grade_0', 'Off Duty', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offstatic', 1, 'rank1', 'Rank1', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offstatic', 2, 'rank2', 'Rank2', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offstatic', 3, 'rank3', 'Rank3', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offstatic', 4, 'boss', 'Rank4', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offsundae', 0, 'off_grade_0', 'Off Duty', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offsundae', 1, 'rank1', 'Rank1', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offsundae', 2, 'rank2', 'Rank2', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offsundae', 3, 'rank3', 'Rank3', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offsundae', 4, 'boss', 'Rank4', 0, '{}', '{}', '[]', '[]', NULL, NULL),
 	('offtaxi', 0, 'off_grade_0', 'Off Duty 0', 0, '{}', '{}', NULL, NULL, NULL, NULL),
 	('offtaxi', 1, 'recrue', 'Taxi', 0, '{}', '{}', '[]', NULL, '', '[]'),
 	('offtaxi', 2, 'recrue', 'Taxi', 0, '{}', '{}', '[]', NULL, '', '[]'),
@@ -2212,6 +2477,25 @@ REPLACE INTO `job_grades` (`job_name`, `grade`, `name`, `label`, `salary`, `skin
 	('offtaxi', 16, 'boss', 'Taxi', 0, '{}', '{}', '[]', NULL, '', '[]'),
 	('offtaxi', 17, 'boss', 'Taxi', 0, '{}', '{}', '[]', NULL, '', '[]'),
 	('offtaxi', 18, 'boss', 'Taxi', 0, '{}', '{}', '[]', NULL, '', '[]'),
+	('offturfco', 0, 'off_grade_0', 'Off Duty', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offturfco', 1, 'rank1', 'Referee', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offturfco', 2, 'rank2', 'Manager', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offturfco', 3, 'boss', 'Owner', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offuwucafe', 0, 'off_grade_0', 'Off Duty', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offuwucafe', 1, 'rank1', 'Rank1', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offuwucafe', 2, 'rank2', 'Rank2', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offuwucafe', 3, 'rank3', 'Rank3', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offuwucafe', 4, 'boss', 'Rank4', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offvoltage', 0, 'off_grade_0', 'Off Duty', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offvoltage', 1, 'rank1', 'Rank1', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offvoltage', 2, 'rank2', 'Rank2', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offvoltage', 3, 'rank3', 'Rank3', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offvoltage', 4, 'boss', 'Rank4', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offwasabi', 0, 'off_grade_0', 'Off Duty', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offwasabi', 1, 'rank1', 'Rank1', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offwasabi', 2, 'rank2', 'Rank2', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offwasabi', 3, 'rank3', 'Rank3', 0, '{}', '{}', '[]', '[]', NULL, NULL),
+	('offwasabi', 4, 'boss', 'Rank4', 0, '{}', '{}', '[]', '[]', NULL, NULL),
 	('offweazel', 0, 'off_grade_0', 'Off Duty 0', 0, '{}', '{}', NULL, NULL, NULL, NULL),
 	('offweazel', 1, 'boss', 'Off-Duty', 0, '{}', '{}', '', NULL, '', ''),
 	('offweazel', 2, 'off_grade_2', 'Off Duty 2', 0, '{}', '{}', NULL, NULL, NULL, NULL),
@@ -2346,13 +2630,14 @@ CREATE TABLE IF NOT EXISTS `job_skill` (
   `identifier` varchar(60) NOT NULL,
   `job` varchar(50) NOT NULL,
   `minutes` int(11) NOT NULL DEFAULT 0,
+  `milestones_paid` varchar(50) NOT NULL DEFAULT '',
   PRIMARY KEY (`identifier`,`job`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Dumping data for table essentialmode.job_skill: ~2 rows (approximately)
-REPLACE INTO `job_skill` (`identifier`, `job`, `minutes`) VALUES
-	('steam:11000014bf543e0', 'ambulance', 15),
-	('steam:11000014bf543e0', 'police', 15);
+REPLACE INTO `job_skill` (`identifier`, `job`, `minutes`, `milestones_paid`) VALUES
+	('steam:11000014bf543e0', 'ambulance', 15, ''),
+	('steam:11000014bf543e0', 'police', 210, '');
 
 -- Dumping structure for table essentialmode.jobs
 DROP TABLE IF EXISTS `jobs`;
@@ -2368,60 +2653,81 @@ CREATE TABLE IF NOT EXISTS `jobs` (
   PRIMARY KEY (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Dumping data for table essentialmode.jobs: ~70 rows (approximately)
+-- Dumping data for table essentialmode.jobs: ~91 rows (approximately)
 REPLACE INTO `jobs` (`name`, `label`, `whitelisted`, `washmoney`, `handyservice`, `hasapp`, `onlyboss`, `icon_url`) VALUES
 	('ambulance', 'Ambulance', 1, 0, '0', 0, 0, NULL),
-	('anchor', 'The Rusty Anchor', 1, 0, '0', 0, 0, NULL),
+	('anchor', 'Restaurant Anchor', 0, 0, '0', 0, 0, NULL),
 	('artesh', 'Artesh', 0, 0, '0', 0, 0, NULL),
-	('blacktide', 'Blacktide Logistics', 1, 0, '0', 0, 0, NULL),
+	('blacktide', 'Blacktide Logistics', 0, 0, '0', 0, 0, NULL),
 	('burgershot', 'Burgershot', 1, 0, '0', 0, 0, NULL),
 	('cafe', 'Cafe', 1, 0, '0', 0, 0, NULL),
 	('cardealer', 'Cardealer', 0, 0, '0', 0, 0, NULL),
-	('carwash', 'Suds & Cash', 1, 0, '0', 0, 0, NULL),
+	('carwash', 'Carwash Suds', 0, 0, '0', 0, 0, NULL),
 	('cia', 'CIA', 1, 0, '0', 0, 0, NULL),
 	('cid', 'CID', 1, 0, '0', 0, 0, NULL),
 	('coffee', 'Coffee Shop', 0, 0, '0', 0, 0, NULL),
-	('cratecarry', 'Crate & Carry Distribution', 1, 0, '0', 0, 0, NULL),
-	('crimson', 'Crimson Fork', 1, 0, '0', 0, 0, NULL),
+	('cratecarry', 'Crate & Carry Distribution', 0, 0, '0', 0, 0, NULL),
+	('crimson', 'Restaurant Crimson', 0, 0, '0', 0, 0, NULL),
 	('dadgostari', 'Dadgostari', 0, 0, '0', 0, 0, NULL),
 	('doa', 'DOA', 1, 0, '0', 0, 0, NULL),
 	('doc', 'Doctor', 0, 0, '0', 0, 0, NULL),
-	('ember', 'Ember & Ash', 1, 0, '0', 0, 0, NULL),
+	('ember', 'Restaurant Ember', 0, 0, '0', 0, 0, NULL),
 	('fbi', 'FBI', 1, 0, '0', 0, 0, NULL),
-	('firebrick', 'Firebrick Pizza Co.', 1, 0, '0', 0, 0, NULL),
+	('firebrick', 'Pizza Firebrick', 0, 0, '0', 0, 0, NULL),
 	('fisherman', 'Mahi Gir', 0, 0, '0', 0, 0, NULL),
-	('flourish', 'Flourish Bakery', 1, 0, '0', 0, 0, NULL),
+	('flourish', 'Bakery Flourish', 0, 0, '0', 0, 0, NULL),
 	('food', 'Food Delivery', 0, 0, '0', 0, 0, NULL),
 	('forces', 'Special Forces', 0, 0, '0', 0, 0, NULL),
-	('frostbite', 'Frostbite Creamery', 1, 0, '0', 0, 0, NULL),
+	('frostbite', 'Bastani Frostbite', 0, 0, '0', 0, 0, NULL),
 	('fueler', 'Sherekat Naft', 0, 0, '0', 0, 0, NULL),
-	('goldcrust', 'Gold Crust Bakehouse', 1, 0, '0', 0, 0, NULL),
+	('goldcrust', 'Bakery GoldCrust', 0, 0, '0', 0, 0, NULL),
 	('government', 'Government', 0, 0, '0', 0, 0, NULL),
 	('judge', 'Judge', 1, 0, '0', 0, 0, NULL),
-	('koi', 'Koi Sushi House', 1, 0, '0', 0, 0, NULL),
+	('koi', 'Sushi Koi', 0, 0, '0', 0, 0, NULL),
 	('lumberjack', 'Najar', 0, 0, '0', 0, 0, NULL),
 	('marshal', 'Marshal', 1, 0, '0', 0, 0, NULL),
 	('mechanic', 'Mechanic', 1, 0, '0', 0, 0, NULL),
-	('meridian', 'Meridian Holdings', 1, 0, '0', 0, 0, NULL),
+	('meridian', 'Holding 1', 0, 0, '0', 0, 0, NULL),
 	('miner', 'Madanchi', 0, 0, '0', 0, 0, NULL),
 	('mt', 'Metropolitan', 0, 0, '0', 0, 0, NULL),
 	('nightclub', 'Nightclub', 0, 0, '0', 0, 0, NULL),
-	('nightjar', 'Nightjar Pub', 1, 0, '0', 0, 0, NULL),
+	('nightjar', 'Bar Nightjar', 0, 0, '0', 0, 0, NULL),
 	('nojob', 'Bikar', 0, 0, '0', 0, 0, NULL),
-	('obsidian', 'Obsidian Brew', 1, 0, '0', 0, 0, NULL),
+	('obsidian', 'Cafe Obsidian', 0, 0, '0', 0, 0, NULL),
 	('offambulance', 'Off-Duty', 1, 0, '0', 0, 0, NULL),
+	('offanchor', 'Off Duty - Restaurant Anchor', 1, 0, '0', 0, 0, NULL),
+	('offblacktide', 'Off Duty - Blacktide Logistics', 1, 0, '0', 0, 0, NULL),
+	('offcarwash', 'Off Duty - Carwash Suds', 1, 0, '0', 0, 0, NULL),
 	('offcatcafe', 'Off-Duty', 1, 0, '0', 0, 0, NULL),
 	('offcia', 'Off-Duty', 1, 0, '0', 0, 0, NULL),
 	('offcid', 'Off-Duty', 1, 0, '0', 0, 0, NULL),
+	('offcratecarry', 'Off Duty - Crate & Carry Distribution', 1, 0, '0', 0, 0, NULL),
+	('offcrimson', 'Off Duty - Restaurant Crimson', 1, 0, '0', 0, 0, NULL),
 	('offdoa', 'Off-Duty', 1, 0, '0', 0, 0, NULL),
+	('offember', 'Off Duty - Restaurant Ember', 1, 0, '0', 0, 0, NULL),
 	('offfbi', 'FBI (Off Duty)', 0, 0, '0', 0, 0, NULL),
+	('offfirebrick', 'Off Duty - Pizza Firebrick', 1, 0, '0', 0, 0, NULL),
+	('offflourish', 'Off Duty - Bakery Flourish', 1, 0, '0', 0, 0, NULL),
+	('offfrostbite', 'Off Duty - Bastani Frostbite', 1, 0, '0', 0, 0, NULL),
+	('offgoldcrust', 'Off Duty - Bakery GoldCrust', 1, 0, '0', 0, 0, NULL),
 	('offjudge', 'Off-Duty', 1, 0, '0', 0, 0, NULL),
+	('offkoi', 'Off Duty - Sushi Koi', 1, 0, '0', 0, 0, NULL),
 	('offmarshal', 'Off-Duty', 1, 0, '0', 0, 0, NULL),
 	('offmechanic', 'Off-Duty', 1, 0, '0', 0, 0, NULL),
+	('offmeridian', 'Off Duty - Holding 1', 1, 0, '0', 0, 0, NULL),
 	('offmt', 'Off Duty', 0, 0, '0', 0, 0, NULL),
+	('offnightjar', 'Off Duty - Bar Nightjar', 1, 0, '0', 0, 0, NULL),
+	('offobsidian', 'Off Duty - Cafe Obsidian', 1, 0, '0', 0, 0, NULL),
 	('offpolice', 'Off-Duty', 1, 0, '0', 0, 0, NULL),
 	('offsheriff', 'Off-Duty', 1, 0, '0', 0, 0, NULL),
+	('offslice', 'Off Duty - Pizza Slice', 1, 0, '0', 0, 0, NULL),
+	('offstatic', 'Off Duty - Bar Static', 1, 0, '0', 0, 0, NULL),
+	('offsundae', 'Off Duty - Bastani Sundae', 1, 0, '0', 0, 0, NULL),
 	('offtaxi', 'Off-Duty', 1, 0, '0', 0, 0, NULL),
+	('offturfco', 'Off Duty - Holding 2', 1, 0, '0', 0, 0, NULL),
+	('offuwucafe', 'Off Duty - Cafe UwU', 1, 0, '0', 0, 0, NULL),
+	('offvoltage', 'Off Duty - Cafe Voltage', 1, 0, '0', 0, 0, NULL),
+	('offwasabi', 'Off Duty - Sushi Wasabi', 1, 0, '0', 0, 0, NULL),
 	('offweazel', 'Off-Duty', 1, 0, '0', 0, 0, NULL),
 	('police', 'Police', 1, 0, '0', 0, 0, NULL),
 	('psuspend', 'Suspended', 0, 0, '0', 0, 0, NULL),
@@ -2429,16 +2735,16 @@ REPLACE INTO `jobs` (`name`, `label`, `whitelisted`, `washmoney`, `handyservice`
 	('resturan', 'Resturan', 1, 0, '0', 0, 0, NULL),
 	('sheriff', 'Sheriff', 1, 0, '0', 0, 0, NULL),
 	('slaughterer', 'Qasab', 0, 0, '0', 0, 0, NULL),
-	('slice', 'Slice Society', 1, 0, '0', 0, 0, NULL),
-	('static', 'Static Lounge', 1, 0, '0', 0, 0, NULL),
-	('sundae', 'Sundae Funday', 1, 0, '0', 0, 0, NULL),
+	('slice', 'Pizza Slice', 0, 0, '0', 0, 0, NULL),
+	('static', 'Bar Static', 0, 0, '0', 0, 0, NULL),
+	('sundae', 'Bastani Sundae', 0, 0, '0', 0, 0, NULL),
 	('tailor', 'Khayat', 0, 0, '0', 0, 0, NULL),
 	('taxi', 'Taxi', 1, 0, '0', 0, 0, NULL),
-	('turfco', 'Turf Wars Inc.', 1, 0, '0', 0, 0, NULL),
+	('turfco', 'Holding 2', 0, 0, '0', 0, 0, NULL),
 	('unemployed', 'Unemployed', 0, 0, '0', 0, 0, NULL),
-	('uwucafe', 'UwU Cafe', 1, 0, '0', 0, 0, NULL),
-	('voltage', 'Voltage Coffee Co.', 1, 0, '0', 0, 0, NULL),
-	('wasabi', 'Wasabi & Co.', 1, 0, '0', 0, 0, NULL),
+	('uwucafe', 'Cafe UwU', 0, 0, '0', 0, 0, NULL),
+	('voltage', 'Cafe Voltage', 0, 0, '0', 0, 0, NULL),
+	('wasabi', 'Sushi Wasabi', 0, 0, '0', 0, 0, NULL),
 	('weazel', 'Weazel News', 1, 0, '0', 0, 0, NULL);
 
 -- Dumping structure for table essentialmode.lapraces
@@ -2469,7 +2775,63 @@ REPLACE INTO `licenses` (`type`, `label`) VALUES
 	('dmv', 'Code de la route'),
 	('drive', 'Permis de conduire'),
 	('drive_bike', 'Permis moto'),
-	('drive_truck', 'Permis camion');
+	('drive_truck', 'Permis camion'),
+	('weapon', 'Weapon License');
+
+-- Dumping structure for table essentialmode.login_audit
+DROP TABLE IF EXISTS `login_audit`;
+CREATE TABLE IF NOT EXISTS `login_audit` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `username` varchar(64) DEFAULT NULL,
+  `license` varchar(128) DEFAULT NULL,
+  `device_license` varchar(128) DEFAULT NULL,
+  `ip` varchar(64) DEFAULT NULL,
+  `action` enum('login_success','login_fail','register','password_reset','new_device','logout_all','password_change','security_hold') NOT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `idx_login_audit_username` (`username`),
+  KEY `idx_login_audit_device_license` (`device_license`),
+  KEY `idx_login_audit_created_at` (`created_at`)
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+
+-- Dumping data for table essentialmode.login_audit: ~0 rows (approximately)
+REPLACE INTO `login_audit` (`id`, `username`, `license`, `device_license`, `ip`, `action`, `created_at`) VALUES
+	(1, 'Arshia', 'steam:-pHaJ-kL0r-jNa7', 'license:153122398469261248', 'ip:172.20.10.3', 'register', '2026-08-22 21:30:14');
+
+-- Dumping structure for table essentialmode.login_reset_throttle
+DROP TABLE IF EXISTS `login_reset_throttle`;
+CREATE TABLE IF NOT EXISTS `login_reset_throttle` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `bucket_key` varchar(64) NOT NULL,
+  `window_start` int(10) unsigned NOT NULL,
+  `count` int(10) unsigned NOT NULL DEFAULT 1,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_bucket_key` (`bucket_key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+
+-- Dumping data for table essentialmode.login_reset_throttle: ~0 rows (approximately)
+
+-- Dumping structure for table essentialmode.login_users
+DROP TABLE IF EXISTS `login_users`;
+CREATE TABLE IF NOT EXISTS `login_users` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `username` varchar(64) NOT NULL,
+  `password` char(64) NOT NULL,
+  `phone` varchar(32) DEFAULT NULL,
+  `license` varchar(128) NOT NULL,
+  `device_license` varchar(128) DEFAULT NULL,
+  `security_hold` tinyint(1) NOT NULL DEFAULT 0,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_login_users_username` (`username`),
+  UNIQUE KEY `uq_login_users_license` (`license`),
+  KEY `idx_login_users_phone` (`phone`),
+  KEY `idx_login_users_device_license` (`device_license`)
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+
+-- Dumping data for table essentialmode.login_users: ~1 rows (approximately)
+REPLACE INTO `login_users` (`id`, `username`, `password`, `phone`, `license`, `device_license`, `security_hold`, `created_at`) VALUES
+	(1, 'Arshia', '9eb68160fb191cc45f205242590d735d11d6db95454df07dafdeaca2ec5dce06', '9058214586', 'steam:-pHaJ-kL0r-jNa7', 'license:153122398469261248', 0, '2026-08-22 21:30:14');
 
 -- Dumping structure for table essentialmode.market
 DROP TABLE IF EXISTS `market`;
@@ -2496,7 +2858,25 @@ CREATE TABLE IF NOT EXISTS `meridian_portfolio` (
   PRIMARY KEY (`business_job`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Dumping data for table essentialmode.meridian_portfolio: ~0 rows (approximately)
+-- Dumping data for table essentialmode.meridian_portfolio: ~17 rows (approximately)
+REPLACE INTO `meridian_portfolio` (`business_job`, `kind`, `status`, `rank`) VALUES
+	('anchor', 'vip', 'partnered', NULL),
+	('carwash', 'vip', 'partnered', NULL),
+	('crimson', 'vip', 'partnered', NULL),
+	('ember', 'vip', 'partnered', NULL),
+	('firebrick', 'portfolio', 'acquired', 'bronze'),
+	('flourish', 'portfolio', 'acquired', 'bronze'),
+	('frostbite', 'portfolio', 'acquired', 'bronze'),
+	('goldcrust', 'portfolio', 'acquired', 'bronze'),
+	('koi', 'portfolio', 'acquired', 'bronze'),
+	('nightjar', 'portfolio', 'acquired', 'bronze'),
+	('obsidian', 'vip', 'partnered', NULL),
+	('slice', 'portfolio', 'acquired', 'bronze'),
+	('static', 'portfolio', 'acquired', 'bronze'),
+	('sundae', 'portfolio', 'acquired', 'bronze'),
+	('uwucafe', 'vip', 'partnered', NULL),
+	('voltage', 'vip', 'partnered', NULL),
+	('wasabi', 'portfolio', 'acquired', 'bronze');
 
 -- Dumping structure for table essentialmode.owned_peds
 DROP TABLE IF EXISTS `owned_peds`;
@@ -2506,9 +2886,11 @@ CREATE TABLE IF NOT EXISTS `owned_peds` (
   `ped_model` varchar(60) DEFAULT NULL,
   `ped_expiry` datetime DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Dumping data for table essentialmode.owned_peds: ~2 rows (approximately)
+REPLACE INTO `owned_peds` (`id`, `identifier`, `ped_model`, `ped_expiry`) VALUES
+	(3, 'steam:11000014bf543e0', 'a_m_m_beach_01', '2026-08-31 17:38:40');
 
 -- Dumping structure for table essentialmode.owned_pets
 DROP TABLE IF EXISTS `owned_pets`;
@@ -2536,7 +2918,7 @@ CREATE TABLE IF NOT EXISTS `owned_properties` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Dumping data for table essentialmode.owned_properties: ~3 rows (approximately)
+-- Dumping data for table essentialmode.owned_properties: ~4 rows (approximately)
 REPLACE INTO `owned_properties` (`id`, `name`, `price`, `rented`, `owner`, `storage_data`) VALUES
 	(2, 'Aqua3Apartment', 1500000, 0, 'steam:11000014bf543e0', NULL),
 	(3, 'NorthConkerAvenue2045', 1500000, 0, 'steam:11000014bf543e0', 'property'),
@@ -2563,37 +2945,55 @@ CREATE TABLE IF NOT EXISTS `owned_vehicles` (
   `buyer` varchar(60) DEFAULT NULL,
   `fuel` float NOT NULL DEFAULT 100,
   `body` float NOT NULL DEFAULT 1000,
+  `trunk` longtext DEFAULT NULL,
+  `glovebox` longtext DEFAULT NULL,
   PRIMARY KEY (`plate`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Dumping data for table essentialmode.owned_vehicles: ~26 rows (approximately)
-REPLACE INTO `owned_vehicles` (`owner`, `plate`, `vehicle`, `type`, `job`, `stored`, `WantedLevel`, `Profile_Pic`, `engine`, `police`, `parkmeter`, `parkmeternum`, `damage`, `garagenum`, `steamowned`, `buyer`, `fuel`, `body`) VALUES
-	('steam:11000014bf543e0', '1', '{"modArmor":-1,"modSpeakers":-1,"modTrimB":-1,"modSpoilers":-1,"tyreSmokeColor":[255,255,255],"windowTint":-1,"modVanityPlate":-1,"modAirFilter":-1,"modTrimA":-1,"wheelColor":0,"wheels":0,"model":-1848994066,"modDoorSpeaker":-1,"modTank":-1,"pearlescentColor":2,"modFrontWheels":-1,"modFrame":-1,"neonEnabled":[false,false,false,false],"IsPrimaryCustomColor":false,"plate":"1","modRoof":-1,"neonColor":[255,0,255],"modHood":-1,"modDial":-1,"modSmokeEnabled":false,"headlight":255,"modRightFender":-1,"modHydrolic":-1,"modShifterLeavers":-1,"modExhaust":-1,"modEngine":-1,"modHorns":-1,"plateIndex":0,"modFender":-1,"modRearBumper":-1,"modDashboard":-1,"modGrille":-1,"color2":1,"modBackWheels":-1,"modWindows":-1,"IsSecondaryCustomColor":false,"modTrunk":-1,"modOrnaments":-1,"modAPlate":-1,"modSuspension":-1,"modSeats":-1,"modLivery":-1,"modEngineBlock":-1,"modTurbo":false,"modStruts":-1,"SecondaryCustomColor":{"r":15,"g":15,"b":15},"modFrontBumper":-1,"modTransmission":-1,"modSideSkirt":-1,"color1":0,"modBrakes":-1,"fuel":64.98500061035156,"modAerials":-1,"modArchCover":-1,"livery":-1,"modPlateHolder":-1,"PrimaryCustomColor":{"r":8,"g":8,"b":8},"modSteeringWheel":-1}', 'car', '', 1, 'standard', 'https://media.discordapp.net/attachments/813604209462214676/858319794900959232/unknown.png?width=1201&height=676', 1000, 0, 0, 0, NULL, 1, 'steam:11000014bf543e0', NULL, 64.985, 1000),
-	('steam:11000014bf543e0', '123213', '{"modDial":-1,"modAPlate":-1,"modRoof":-1,"modSmokeEnabled":false,"fuel":64.95999908447266,"model":-1848994066,"modSeats":-1,"modHood":-1,"modSpeakers":-1,"color1":64,"modArchCover":-1,"modEngineBlock":-1,"modBrakes":-1,"modRearBumper":-1,"modBackWheels":-1,"modGrille":-1,"modRightFender":-1,"modOrnaments":-1,"modSideSkirt":-1,"livery":-1,"modHydrolic":-1,"modSpoilers":-1,"modPlateHolder":-1,"pearlescentColor":73,"modTurbo":false,"modTrimB":-1,"modDashboard":-1,"modEngine":-1,"tyreSmokeColor":[255,255,255],"modFrontWheels":-1,"SecondaryCustomColor":{"b":8,"r":8,"g":8},"modFender":-1,"headlight":255,"modWindows":-1,"modTank":-1,"modExhaust":-1,"modStruts":-1,"plateIndex":0,"modFrontBumper":-1,"modHorns":-1,"modTrimA":-1,"windowTint":-1,"modSteeringWheel":-1,"modVanityPlate":-1,"wheelColor":0,"IsSecondaryCustomColor":false,"plate":"123213","modShifterLeavers":-1,"modDoorSpeaker":-1,"modFrame":-1,"neonColor":[255,0,255],"color2":0,"modAerials":-1,"PrimaryCustomColor":{"b":87,"r":0,"g":27},"neonEnabled":[false,false,false,false],"wheels":0,"modAirFilter":-1,"modTrunk":-1,"IsPrimaryCustomColor":false,"modArmor":-1,"modLivery":-1,"modTransmission":-1,"modSuspension":-1}', 'car', '', 1, 'standard', 'https://media.discordapp.net/attachments/813604209462214676/858319794900959232/unknown.png?width=1201&height=676', 1000, 0, 0, 0, NULL, 1, 'steam:11000014bf543e0', NULL, 64.96, 1000),
-	('steam:11000014bf543e0', 'A5T4N49S', '{"modExhaust":-1,"plateIndex":4,"modArmor":-1,"modSideSkirt":-1,"modTrimB":-1,"modAirFilter":-1,"fuel":64.86500549316406,"modAPlate":-1,"modGrille":-1,"modSteeringWheel":-1,"modTank":-1,"SecondaryCustomColor":{"b":8,"g":8,"r":8},"modArchCover":-1,"modTurbo":false,"windowTint":-1,"IsSecondaryCustomColor":false,"modVanityPlate":-1,"modFender":-1,"modFrame":-1,"neonColor":[255,0,255],"modRearBumper":-1,"modStruts":-1,"modDashboard":-1,"modHydrolic":-1,"modTransmission":-1,"modHood":-1,"headlight":255,"tyreSmokeColor":[255,255,255],"PrimaryCustomColor":{"b":255,"g":255,"r":255},"modPlateHolder":-1,"modOrnaments":-1,"plate":"A5T4N49S","modShifterLeavers":-1,"neonEnabled":[false,false,false,false],"modDial":-1,"modFrontWheels":-1,"modSeats":-1,"modBackWheels":-1,"modSuspension":-1,"model":-1627000575,"wheels":0,"color2":0,"modRoof":-1,"modLivery":-1,"modEngine":-1,"modWindows":-1,"modFrontBumper":-1,"modSpeakers":-1,"livery":2,"IsPrimaryCustomColor":false,"color1":134,"modBrakes":-1,"modEngineBlock":-1,"modDoorSpeaker":-1,"modTrimA":-1,"modRightFender":-1,"pearlescentColor":0,"modHorns":-1,"modSmokeEnabled":false,"modSpoilers":-1,"modAerials":-1,"wheelColor":156,"modTrunk":-1}', 'car', '', 1, 'standard', 'https://media.discordapp.net/attachments/813604209462214676/858319794900959232/unknown.png?width=1201&height=676', 1000, 0, 0, 0, NULL, 1, 'steam:11000014bf543e0', NULL, 64.865, 1000),
-	('steam:11000014bf543e0', 'B0Z6S41Z', '{"modFrontWheels":-1,"modAirFilter":-1,"modHorns":-1,"modSpoilers":-1,"SecondaryCustomColor":{"r":15,"g":15,"b":15},"modDial":-1,"modRearBumper":-1,"neonColor":[255,0,255],"modFender":-1,"windowTint":-1,"modRoof":-1,"modHood":-1,"modRightFender":-1,"color1":0,"modPlateHolder":-1,"fuel":65.0,"modShifterLeavers":-1,"modLivery":-1,"plate":"B0Z6S41Z","color2":1,"modEngine":-1,"modExhaust":-1,"headlight":255,"modTurbo":false,"modBrakes":-1,"model":-1848994066,"modSeats":-1,"modGrille":-1,"modHydrolic":-1,"modSmokeEnabled":1,"modArmor":-1,"neonEnabled":[false,false,false,false],"modTrimB":-1,"modBackWheels":-1,"modTrunk":-1,"PrimaryCustomColor":{"r":8,"g":8,"b":8},"modSuspension":-1,"modAerials":-1,"modDoorSpeaker":-1,"tyreSmokeColor":[255,255,255],"plateIndex":0,"modAPlate":-1,"modVanityPlate":-1,"modEngineBlock":-1,"livery":-1,"modFrontBumper":-1,"pearlescentColor":2,"modFrame":-1,"IsSecondaryCustomColor":false,"modOrnaments":-1,"modSpeakers":-1,"modTrimA":-1,"modDashboard":-1,"modTank":-1,"IsPrimaryCustomColor":false,"modTransmission":-1,"modWindows":-1,"modStruts":-1,"modArchCover":-1,"modSideSkirt":-1,"wheels":0,"modSteeringWheel":-1,"wheelColor":0}', 'car', '', 1, 'standard', 'https://media.discordapp.net/attachments/813604209462214676/858319794900959232/unknown.png?width=1201&height=676', 1000, 0, 0, 0, NULL, 1, 'steam:11000014bf543e0', NULL, 100, 1000),
-	('steam:11000014bf543e0', 'C7V8G75Y', '{"modLivery":-1,"modArmor":-1,"modTransmission":-1,"plate":"C7V8G75Y","modDial":-1,"modEngine":-1,"modGrille":-1,"wheelColor":0,"modHorns":-1,"modRoof":-1,"modTrimA":-1,"pearlescentColor":73,"modDoorSpeaker":-1,"model":-1848994066,"modFender":-1,"modTrunk":-1,"modFrontBumper":-1,"tyreSmokeColor":[255,255,255],"modExhaust":-1,"modFrontWheels":-1,"modArchCover":-1,"modAPlate":-1,"IsSecondaryCustomColor":false,"SecondaryCustomColor":{"r":8,"g":8,"b":8},"modHydrolic":-1,"modVanityPlate":-1,"modSuspension":-1,"modEngineBlock":-1,"modStruts":-1,"wheels":0,"fuel":99.90000915527344,"modOrnaments":-1,"modDashboard":-1,"PrimaryCustomColor":{"r":0,"g":27,"b":87},"modSeats":-1,"modBrakes":-1,"headlight":255,"livery":-1,"modBackWheels":-1,"IsPrimaryCustomColor":false,"color1":64,"plateIndex":0,"modWindows":-1,"modHood":-1,"windowTint":-1,"modSpoilers":-1,"modShifterLeavers":-1,"modFrame":-1,"modAirFilter":-1,"modTank":-1,"modSteeringWheel":-1,"color2":0,"modPlateHolder":-1,"modAerials":-1,"neonColor":[255,0,255],"modSmokeEnabled":false,"modRearBumper":-1,"neonEnabled":[false,false,false,false],"modSideSkirt":-1,"modSpeakers":-1,"modTurbo":false,"modRightFender":-1,"modTrimB":-1}', 'car', '', 1, 'standard', 'https://media.discordapp.net/attachments/813604209462214676/858319794900959232/unknown.png?width=1201&height=676', 1000, 0, 0, 0, NULL, 1, 'steam:11000014bf543e0', NULL, 99.9, 1000),
-	('steam:11000014bf543e0', 'E1T3P75W', '{"modShifterLeavers":-1,"modTurbo":false,"model":-1848994066,"modTrimB":-1,"tyreSmokeColor":[255,255,255],"modArchCover":-1,"modRightFender":-1,"fuel":64.98500061035156,"wheelColor":0,"modVanityPlate":-1,"color2":0,"modFender":-1,"modArmor":-1,"modSteeringWheel":-1,"modStruts":-1,"modFrontBumper":-1,"modSpeakers":-1,"modDial":-1,"modLivery":-1,"modHood":-1,"modHorns":-1,"PrimaryCustomColor":{"b":87,"g":27,"r":0},"livery":-1,"modBackWheels":-1,"modAerials":-1,"IsSecondaryCustomColor":false,"modPlateHolder":-1,"modAPlate":-1,"modFrontWheels":-1,"modRearBumper":-1,"plateIndex":0,"wheels":0,"modBrakes":-1,"modEngineBlock":-1,"windowTint":-1,"modDashboard":-1,"color1":64,"modGrille":-1,"IsPrimaryCustomColor":false,"modFrame":-1,"modTrunk":-1,"modRoof":-1,"modSmokeEnabled":false,"modSideSkirt":-1,"modExhaust":-1,"modTrimA":-1,"SecondaryCustomColor":{"b":8,"g":8,"r":8},"modSpoilers":-1,"modTransmission":-1,"plate":"E1T3P75W","modSuspension":-1,"neonEnabled":[false,false,false,false],"modTank":-1,"modSeats":-1,"modOrnaments":-1,"modEngine":-1,"modWindows":-1,"modHydrolic":-1,"headlight":255,"modAirFilter":-1,"pearlescentColor":73,"modDoorSpeaker":-1,"neonColor":[255,0,255]}', 'car', '', 1, 'standard', 'https://media.discordapp.net/attachments/813604209462214676/858319794900959232/unknown.png?width=1201&height=676', 1000, 0, 0, 0, NULL, 1, 'steam:11000014bf543e0', NULL, 100, 1000),
-	('steam:11000014bf543e0', 'H4V5T40P', '{"wheelColor":156,"modDial":-1,"modHood":-1,"modSuspension":-1,"modArmor":-1,"plate":"H4V5T40P","modArchCover":-1,"headlight":255,"modSmokeEnabled":false,"modSpeakers":-1,"modDoorSpeaker":-1,"modEngineBlock":-1,"modTank":-1,"modWindows":-1,"modRearBumper":-1,"modLivery":-1,"modExhaust":-1,"IsSecondaryCustomColor":false,"wheels":1,"IsPrimaryCustomColor":false,"pearlescentColor":0,"modVanityPlate":-1,"windowTint":-1,"color2":134,"modOrnaments":-1,"modTransmission":-1,"modEngine":-1,"modRoof":-1,"model":2046537925,"modTurbo":false,"modSpoilers":-1,"modBackWheels":-1,"SecondaryCustomColor":{"b":255,"r":255,"g":255},"modFrontBumper":-1,"modTrimB":-1,"modTrunk":-1,"modPlateHolder":-1,"plateIndex":4,"livery":0,"modSeats":-1,"neonColor":[255,0,255],"modRightFender":-1,"neonEnabled":[false,false,false,false],"modFender":-1,"modShifterLeavers":-1,"PrimaryCustomColor":{"b":255,"r":255,"g":255},"modSideSkirt":-1,"modFrame":-1,"modAPlate":-1,"modSteeringWheel":-1,"modAirFilter":-1,"modStruts":-1,"modTrimA":-1,"modHorns":-1,"modHydrolic":-1,"fuel":64.8949966430664,"modDashboard":-1,"modAerials":-1,"modBrakes":-1,"color1":134,"modGrille":-1,"tyreSmokeColor":[255,255,255],"modFrontWheels":-1}', 'car', '', 1, 'standard', 'https://media.discordapp.net/attachments/813604209462214676/858319794900959232/unknown.png?width=1201&height=676', 1000, 0, 0, 0, NULL, 1, 'steam:11000014bf543e0', NULL, 64.895, 1000),
-	('steam:11000014bf543e0', 'J3X7Y74B', '{"modBrakes":-1,"modDashboard":-1,"modRightFender":-1,"pearlescentColor":73,"IsPrimaryCustomColor":false,"PrimaryCustomColor":{"r":0,"b":87,"g":27},"modSuspension":-1,"modExhaust":-1,"modFender":-1,"modLivery":-1,"headlight":255,"modTrunk":-1,"color1":64,"modSeats":-1,"modFrontWheels":-1,"modAerials":-1,"modRearBumper":-1,"modGrille":-1,"modAPlate":-1,"modTank":-1,"modFrontBumper":-1,"modSpoilers":-1,"modTransmission":-1,"modTurbo":false,"wheels":0,"livery":-1,"modVanityPlate":-1,"modSpeakers":-1,"plate":"J3X7Y74B","modTrimA":-1,"wheelColor":0,"modArmor":-1,"modHydrolic":-1,"tyreSmokeColor":[255,255,255],"modDoorSpeaker":-1,"neonColor":[255,0,255],"modBackWheels":-1,"model":-1848994066,"modWindows":-1,"modEngineBlock":-1,"modHorns":-1,"IsSecondaryCustomColor":false,"modHood":-1,"modShifterLeavers":-1,"modSmokeEnabled":false,"windowTint":-1,"plateIndex":0,"modTrimB":-1,"modStruts":-1,"modFrame":-1,"SecondaryCustomColor":{"r":8,"b":8,"g":8},"modOrnaments":-1,"fuel":99.97000122070313,"modAirFilter":-1,"modEngine":-1,"neonEnabled":[false,false,false,false],"color2":0,"modRoof":-1,"modSteeringWheel":-1,"modSideSkirt":-1,"modDial":-1,"modArchCover":-1,"modPlateHolder":-1}', 'car', '', 1, 'standard', 'https://media.discordapp.net/attachments/813604209462214676/858319794900959232/unknown.png?width=1201&height=676', 1000, 0, 0, 0, NULL, 1, 'steam:11000014bf543e0', NULL, 100, 1000),
-	('steam:11000014bf543e0', 'J4E9P13G', '{"modStruts":-1,"modRearBumper":-1,"modSideSkirt":-1,"modDial":-1,"plate":"J4E9P13G","modHydrolic":-1,"modSpeakers":-1,"pearlescentColor":0,"livery":0,"modRightFender":-1,"modTrimA":-1,"modEngineBlock":-1,"modSpoilers":-1,"modVanityPlate":-1,"modWindows":-1,"modExhaust":-1,"modTank":-1,"headlight":255,"neonColor":[255,0,255],"modHood":-1,"color2":134,"modAPlate":-1,"modRoof":-1,"modSmokeEnabled":false,"wheelColor":156,"modBrakes":-1,"modTransmission":-1,"modGrille":-1,"color1":134,"modTurbo":false,"modAerials":-1,"wheels":1,"modTrimB":-1,"modBackWheels":-1,"modFrontWheels":-1,"plateIndex":4,"IsSecondaryCustomColor":false,"modOrnaments":-1,"modLivery":-1,"modDashboard":-1,"IsPrimaryCustomColor":false,"modArchCover":-1,"modFender":-1,"SecondaryCustomColor":{"g":255,"r":255,"b":255},"modDoorSpeaker":-1,"model":2046537925,"modShifterLeavers":-1,"modSteeringWheel":-1,"windowTint":-1,"modFrontBumper":-1,"fuel":65.0,"modHorns":-1,"modAirFilter":-1,"modEngine":-1,"PrimaryCustomColor":{"g":255,"r":255,"b":255},"modSeats":-1,"neonEnabled":[false,false,false,false],"modFrame":-1,"tyreSmokeColor":[255,255,255],"modSuspension":-1,"modArmor":-1,"modPlateHolder":-1,"modTrunk":-1}', 'car', '', 1, 'standard', 'https://media.discordapp.net/attachments/813604209462214676/858319794900959232/unknown.png?width=1201&height=676', 1000, 0, 0, 0, NULL, 1, 'steam:11000014bf543e0', NULL, 100, 1000),
-	('steam:11000014bf543e0', 'J8V5K97B', '{"modDoorSpeaker":-1,"modTransmission":-1,"modRoof":-1,"modSuspension":-1,"modAPlate":-1,"IsSecondaryCustomColor":false,"modVanityPlate":-1,"modExhaust":-1,"neonEnabled":[false,false,false,false],"modWindows":-1,"modAirFilter":-1,"modTrunk":-1,"SecondaryCustomColor":{"b":8,"r":8,"g":8},"modSmokeEnabled":false,"plateIndex":0,"windowTint":-1,"PrimaryCustomColor":{"b":87,"r":0,"g":27},"livery":-1,"modStruts":-1,"plate":"J8V5K97B","neonColor":[255,0,255],"modHood":-1,"modBrakes":-1,"headlight":255,"modShifterLeavers":-1,"wheels":0,"modFrontWheels":-1,"modEngine":-1,"color2":0,"modHorns":-1,"modTurbo":false,"modDashboard":-1,"modGrille":-1,"modRightFender":-1,"modRearBumper":-1,"modSpoilers":-1,"model":-1848994066,"tyreSmokeColor":[255,255,255],"fuel":99.8600082397461,"modLivery":-1,"IsPrimaryCustomColor":false,"modBackWheels":-1,"modOrnaments":-1,"pearlescentColor":73,"modDial":-1,"modHydrolic":-1,"modSpeakers":-1,"modFrontBumper":-1,"modTank":-1,"color1":64,"modAerials":-1,"modSteeringWheel":-1,"modArmor":-1,"modSideSkirt":-1,"modTrimB":-1,"modFender":-1,"modSeats":-1,"modPlateHolder":-1,"modTrimA":-1,"modEngineBlock":-1,"wheelColor":0,"modFrame":-1,"modArchCover":-1}', 'car', '', 1, 'standard', 'https://media.discordapp.net/attachments/813604209462214676/858319794900959232/unknown.png?width=1201&height=676', 1000, 0, 0, 0, NULL, 1, 'steam:11000014bf543e0', NULL, 99.86, 1000),
-	('steam:11000014bf543e0', 'L1Q3J72C', '{"wheels":6,"modWindows":-1,"modDial":-1,"modTurbo":false,"modDashboard":-1,"SecondaryCustomColor":{"g":94,"r":90,"b":102},"PrimaryCustomColor":{"g":8,"r":8,"b":8},"livery":-1,"pearlescentColor":5,"modPlateHolder":-1,"modTrunk":-1,"modRoof":-1,"modHorns":-1,"modSpoilers":-1,"neonEnabled":[false,false,false,false],"modVanityPlate":-1,"modRightFender":-1,"wheelColor":112,"modSmokeEnabled":false,"modBrakes":-1,"modArchCover":-1,"modEngineBlock":-1,"modShifterLeavers":-1,"modSeats":-1,"headlight":255,"modFrame":-1,"modFrontBumper":-1,"color2":4,"modGrille":-1,"model":86520421,"windowTint":-1,"modFender":-1,"modTrimA":-1,"fuel":99.86500549316406,"modSideSkirt":-1,"modArmor":-1,"IsSecondaryCustomColor":false,"modLivery":-1,"neonColor":[255,0,255],"modRearBumper":-1,"modEngine":-1,"modStruts":-1,"modHood":-1,"IsPrimaryCustomColor":false,"modSuspension":-1,"modTrimB":-1,"modFrontWheels":-1,"plate":"L1Q3J72C","plateIndex":0,"modSteeringWheel":-1,"tyreSmokeColor":[255,255,255],"modAirFilter":-1,"modBackWheels":-1,"modAPlate":-1,"modOrnaments":-1,"modSpeakers":-1,"modTank":-1,"modDoorSpeaker":-1,"modAerials":-1,"modTransmission":-1,"color1":0,"modExhaust":-1,"modHydrolic":-1}', 'car', '', 1, 'standard', 'https://media.discordapp.net/attachments/813604209462214676/858319794900959232/unknown.png?width=1201&height=676', 1000, 0, 0, 0, NULL, 1, 'steam:11000014bf543e0', NULL, 99.865, 1000),
-	('steam:11000014bf543e0', 'L6V4W46D', '{"modBrakes":-1,"model":-1848994066,"modArchCover":-1,"SecondaryCustomColor":{"r":8,"g":8,"b":8},"modEngine":-1,"modWindows":-1,"modBackWheels":-1,"fuel":64.84000396728516,"modAirFilter":-1,"modArmor":-1,"modTransmission":-1,"modFrontBumper":-1,"neonColor":[255,0,255],"tyreSmokeColor":[255,255,255],"modFender":-1,"modEngineBlock":-1,"modSteeringWheel":-1,"modRearBumper":-1,"modFrame":-1,"modHood":-1,"modDial":-1,"headlight":255,"modSpeakers":-1,"modDoorSpeaker":-1,"modRoof":-1,"modAPlate":-1,"wheelColor":0,"PrimaryCustomColor":{"r":0,"g":27,"b":87},"modVanityPlate":-1,"modPlateHolder":-1,"modAerials":-1,"livery":-1,"modTrimB":-1,"modShifterLeavers":-1,"neonEnabled":[false,false,false,false],"color2":0,"wheels":0,"pearlescentColor":73,"modGrille":-1,"plate":"L6V4W46D","modRightFender":-1,"plateIndex":0,"modExhaust":-1,"modHydrolic":-1,"modTrimA":-1,"modTrunk":-1,"IsPrimaryCustomColor":false,"modSmokeEnabled":false,"modStruts":-1,"modSideSkirt":-1,"modLivery":-1,"modSpoilers":-1,"IsSecondaryCustomColor":false,"color1":64,"modTank":-1,"modHorns":-1,"modTurbo":false,"modDashboard":-1,"modOrnaments":-1,"modSeats":-1,"windowTint":-1,"modSuspension":-1,"modFrontWheels":-1}', 'car', '', 1, 'standard', 'https://media.discordapp.net/attachments/813604209462214676/858319794900959232/unknown.png?width=1201&height=676', 1000, 0, 0, 0, NULL, 1, 'steam:11000014bf543e0', NULL, 64.84, 1000),
-	('steam:11000014bf543e0', 'mtz', '{"modWindows":-1,"modDial":-1,"modArmor":-1,"modBrakes":-1,"wheelColor":0,"windowTint":-1,"modSuspension":-1,"IsPrimaryCustomColor":false,"modStruts":-1,"modEngineBlock":-1,"modTank":-1,"neonColor":[255,0,255],"modShifterLeavers":-1,"tyreSmokeColor":[255,255,255],"modLivery":-1,"modArchCover":-1,"model":-1848994066,"modBackWheels":-1,"modTrimA":-1,"modSpoilers":-1,"modSeats":-1,"wheels":0,"modAirFilter":-1,"fuel":99.8699951171875,"modSteeringWheel":-1,"modRearBumper":-1,"modSmokeEnabled":false,"modFrame":-1,"modEngine":-1,"livery":-1,"color2":0,"modPlateHolder":-1,"modAPlate":-1,"plate":"MTZ","modHorns":-1,"modSpeakers":-1,"modTurbo":false,"modDashboard":-1,"modFender":-1,"modDoorSpeaker":-1,"pearlescentColor":73,"headlight":255,"modGrille":-1,"modExhaust":-1,"IsSecondaryCustomColor":false,"modOrnaments":-1,"modRightFender":-1,"modVanityPlate":-1,"modSideSkirt":-1,"modHydrolic":-1,"modRoof":-1,"modTrunk":-1,"plateIndex":0,"modAerials":-1,"modTrimB":-1,"SecondaryCustomColor":{"r":8,"b":8,"g":8},"modFrontWheels":-1,"neonEnabled":[false,false,false,false],"modTransmission":-1,"modHood":-1,"color1":64,"modFrontBumper":-1,"PrimaryCustomColor":{"r":0,"b":87,"g":27}}', 'car', '', 1, 'standard', 'https://media.discordapp.net/attachments/813604209462214676/858319794900959232/unknown.png?width=1201&height=676', 1000, 0, 0, 0, NULL, 1, 'steam:11000014bf543e0', NULL, 99.87, 1000),
-	('steam:11000014bf543e0', 'O5X7Y45C', '{"modSteeringWheel":-1,"modFrame":-1,"tyreSmokeColor":[255,255,255],"modSpoilers":-1,"modStruts":-1,"modDial":-1,"modGrille":-1,"modAPlate":-1,"modFender":-1,"windowTint":-1,"modAirFilter":-1,"modHood":-1,"IsPrimaryCustomColor":false,"plate":"O5X7Y45C","livery":-1,"modSpeakers":-1,"SecondaryCustomColor":{"b":15,"g":15,"r":15},"modLivery":-1,"IsSecondaryCustomColor":false,"color2":1,"modFrontBumper":-1,"neonColor":[255,0,255],"headlight":255,"modTurbo":false,"modBrakes":-1,"model":-1848994066,"modSeats":-1,"fuel":65.0,"modHydrolic":-1,"modSmokeEnabled":1,"wheels":0,"neonEnabled":[false,false,false,false],"modRoof":-1,"modTrimB":-1,"modTrunk":-1,"color1":0,"modPlateHolder":-1,"modAerials":-1,"modDoorSpeaker":-1,"modEngine":-1,"modArmor":-1,"modSuspension":-1,"modVanityPlate":-1,"modShifterLeavers":-1,"wheelColor":0,"modArchCover":-1,"PrimaryCustomColor":{"b":8,"g":8,"r":8},"modTrimA":-1,"modOrnaments":-1,"modRearBumper":-1,"modExhaust":-1,"modBackWheels":-1,"modDashboard":-1,"modFrontWheels":-1,"plateIndex":0,"modTransmission":-1,"modWindows":-1,"pearlescentColor":2,"modTank":-1,"modSideSkirt":-1,"modRightFender":-1,"modHorns":-1,"modEngineBlock":-1}', 'car', '', 1, 'standard', 'https://media.discordapp.net/attachments/813604209462214676/858319794900959232/unknown.png?width=1201&height=676', 1000, 0, 0, 0, NULL, 1, 'steam:11000014bf543e0', NULL, 100, 1000),
-	('steam:11000014bf543e0', 'Q5E9O77Z', '{"modExhaust":-1,"plateIndex":0,"modArmor":-1,"modSideSkirt":-1,"modTrimB":-1,"modAirFilter":-1,"fuel":64.98500061035156,"modAPlate":-1,"modGrille":-1,"modSteeringWheel":-1,"modTank":-1,"SecondaryCustomColor":{"b":8,"g":8,"r":8},"modArchCover":-1,"modTurbo":false,"windowTint":-1,"IsSecondaryCustomColor":false,"modVanityPlate":-1,"modFender":-1,"modFrame":-1,"neonColor":[255,0,255],"modRearBumper":-1,"modStruts":-1,"modDashboard":-1,"modHydrolic":-1,"modTransmission":-1,"modHood":-1,"headlight":255,"tyreSmokeColor":[255,255,255],"PrimaryCustomColor":{"b":87,"g":27,"r":0},"modPlateHolder":-1,"modOrnaments":-1,"plate":"Q5E9O77Z","modShifterLeavers":-1,"neonEnabled":[false,false,false,false],"modDial":-1,"modFrontWheels":-1,"modSeats":-1,"modBackWheels":-1,"modSuspension":-1,"model":-1848994066,"wheels":0,"color2":0,"modRoof":-1,"modLivery":-1,"modEngine":-1,"modWindows":-1,"modFrontBumper":-1,"modSpeakers":-1,"livery":-1,"IsPrimaryCustomColor":false,"color1":64,"modBrakes":-1,"modEngineBlock":-1,"modDoorSpeaker":-1,"modTrimA":-1,"modRightFender":-1,"pearlescentColor":73,"modHorns":-1,"modSmokeEnabled":false,"modSpoilers":-1,"modAerials":-1,"wheelColor":0,"modTrunk":-1}', 'car', '', 1, 'standard', 'https://media.discordapp.net/attachments/813604209462214676/858319794900959232/unknown.png?width=1201&height=676', 1000, 0, 0, 0, NULL, 1, 'steam:11000014bf543e0', NULL, 64.985, 1000),
-	('steam:11000014bf543e0', 'R3U0J33P', '{"modShifterLeavers":-1,"modRightFender":-1,"modOrnaments":-1,"color1":70,"color2":1,"modBrakes":-1,"IsSecondaryCustomColor":false,"neonEnabled":[false,false,false,false],"modTrimB":-1,"modAPlate":-1,"modHorns":-1,"modWindows":-1,"modHydrolic":-1,"modAirFilter":-1,"modSpoilers":-1,"modDial":-1,"modTransmission":-1,"windowTint":-1,"headlight":255,"modFrontWheels":-1,"modSeats":-1,"modDashboard":-1,"modPlateHolder":-1,"modHood":-1,"wheelColor":0,"modFender":-1,"modFrontBumper":-1,"SecondaryCustomColor":{"b":15,"g":15,"r":15},"modSteeringWheel":-1,"modTrunk":-1,"modEngine":-1,"PrimaryCustomColor":{"b":196,"g":85,"r":0},"fuel":99.94000244140625,"plateIndex":0,"modArchCover":-1,"modAerials":-1,"tyreSmokeColor":[255,255,255],"pearlescentColor":67,"modSpeakers":-1,"modExhaust":-1,"wheels":0,"model":-1848994066,"livery":-1,"modTank":-1,"modRearBumper":-1,"modVanityPlate":-1,"modLivery":-1,"IsPrimaryCustomColor":false,"modStruts":-1,"modBackWheels":-1,"modRoof":-1,"modSuspension":-1,"plate":"R3U0J33P","modSideSkirt":-1,"neonColor":[255,0,255],"modSmokeEnabled":false,"modTurbo":false,"modArmor":-1,"modEngineBlock":-1,"modTrimA":-1,"modDoorSpeaker":-1,"modGrille":-1,"modFrame":-1}', 'car', NULL, 1, 'standard', 'https://media.discordapp.net/attachments/813604209462214676/858319794900959232/unknown.png?width=1201&height=676', 1000, 0, 0, 0, NULL, 1, 'steam:11000014bf543e0', NULL, 100, 1000),
-	('steam:11000014bf543e0', 'sfasf', '{"modShifterLeavers":-1,"modTurbo":false,"model":-1848994066,"modTrimB":-1,"tyreSmokeColor":[255,255,255],"modArchCover":-1,"modRightFender":-1,"fuel":65.0,"wheelColor":0,"modVanityPlate":-1,"color2":0,"modFender":-1,"modArmor":-1,"modSteeringWheel":-1,"modStruts":-1,"modFrontBumper":-1,"modSpeakers":-1,"modDial":-1,"modLivery":-1,"modHood":-1,"modHorns":-1,"PrimaryCustomColor":{"b":87,"g":27,"r":0},"livery":-1,"modBackWheels":-1,"modAerials":-1,"IsSecondaryCustomColor":false,"modPlateHolder":-1,"modAPlate":-1,"modFrontWheels":-1,"modRearBumper":-1,"plateIndex":0,"wheels":0,"modBrakes":-1,"modEngineBlock":-1,"windowTint":-1,"modDashboard":-1,"color1":64,"modGrille":-1,"IsPrimaryCustomColor":false,"modFrame":-1,"modTrunk":-1,"modRoof":-1,"modSmokeEnabled":false,"modSideSkirt":-1,"modExhaust":-1,"modTrimA":-1,"SecondaryCustomColor":{"b":8,"g":8,"r":8},"modSpoilers":-1,"modTransmission":-1,"plate":"sfasf","modSuspension":-1,"neonEnabled":[false,false,false,false],"modTank":-1,"modSeats":-1,"modOrnaments":-1,"modEngine":-1,"modWindows":-1,"modHydrolic":-1,"headlight":255,"modAirFilter":-1,"pearlescentColor":73,"modDoorSpeaker":-1,"neonColor":[255,0,255]}', 'car', '', 1, 'standard', 'https://media.discordapp.net/attachments/813604209462214676/858319794900959232/unknown.png?width=1201&height=676', 1000, 0, 0, 0, NULL, 1, 'steam:11000014bf543e0', NULL, 100, 1000),
-	('steam:11000014bf543e0', 'T1B8V97N', '{"modEngine":-1,"modSpeakers":-1,"modAerials":-1,"modAirFilter":-1,"modFrontWheels":-1,"modExhaust":-1,"modTurbo":false,"modRearBumper":-1,"modHorns":-1,"modGrille":-1,"neonEnabled":[false,false,false,false],"modOrnaments":-1,"headlight":255,"wheelColor":156,"modSmokeEnabled":false,"modDoorSpeaker":-1,"modTrunk":-1,"IsSecondaryCustomColor":false,"SecondaryCustomColor":{"g":8,"b":8,"r":8},"modSuspension":-1,"modAPlate":-1,"windowTint":-1,"modDashboard":-1,"modSteeringWheel":-1,"neonColor":[255,0,255],"modSpoilers":-1,"color1":132,"modSeats":-1,"modEngineBlock":-1,"model":-1205689942,"modBrakes":-1,"modWindows":-1,"modBackWheels":-1,"pearlescentColor":0,"tyreSmokeColor":[255,255,255],"modRoof":-1,"modFender":-1,"modArmor":-1,"modTrimB":-1,"color2":0,"modHydrolic":-1,"modFrame":-1,"modRightFender":-1,"modDial":-1,"modTransmission":-1,"plate":"T1B8V97N","IsPrimaryCustomColor":false,"modTrimA":-1,"PrimaryCustomColor":{"g":240,"b":240,"r":240},"modVanityPlate":-1,"modSideSkirt":-1,"fuel":65.0,"modTank":-1,"modStruts":-1,"plateIndex":4,"livery":-1,"modPlateHolder":-1,"modFrontBumper":-1,"modArchCover":-1,"modShifterLeavers":-1,"modHood":-1,"wheels":0,"modLivery":-1}', 'car', '', 1, 'standard', 'https://media.discordapp.net/attachments/813604209462214676/858319794900959232/unknown.png?width=1201&height=676', 1000, 0, 0, 0, NULL, 1, 'steam:11000014bf543e0', NULL, 100, 1000),
-	('steam:11000014bf543e0', 'V2G5M31P', '{"modArchCover":-1,"modRearBumper":-1,"modOrnaments":-1,"headlight":255,"modHood":-1,"modTransmission":-1,"modBrakes":-1,"modGrille":-1,"tyreSmokeColor":[255,255,255],"neonColor":[255,0,255],"modVanityPlate":-1,"IsSecondaryCustomColor":false,"color1":1,"pearlescentColor":3,"modEngine":-1,"color2":1,"modEngineBlock":-1,"modSmokeEnabled":false,"fuel":65.0,"modTurbo":false,"modFender":-1,"modShifterLeavers":-1,"modSeats":-1,"plate":"V2G5M31P","neonEnabled":[false,false,false,false],"modAPlate":-1,"modTank":-1,"modRightFender":-1,"modAerials":-1,"SecondaryCustomColor":{"g":15,"r":15,"b":15},"modStruts":-1,"modSuspension":-1,"modSpeakers":-1,"windowTint":-1,"plateIndex":4,"PrimaryCustomColor":{"g":15,"r":15,"b":15},"modBackWheels":-1,"modDashboard":-1,"modAirFilter":-1,"modTrimA":-1,"wheels":0,"modHydrolic":-1,"modWindows":-1,"modSideSkirt":-1,"livery":-1,"modDoorSpeaker":-1,"modTrimB":-1,"modRoof":-1,"modDial":-1,"modFrontWheels":-1,"model":1127131465,"modFrontBumper":-1,"modArmor":-1,"modHorns":-1,"modSpoilers":-1,"modPlateHolder":-1,"modExhaust":-1,"modSteeringWheel":-1,"modTrunk":-1,"IsPrimaryCustomColor":false,"modFrame":-1,"modLivery":-1,"wheelColor":156}', 'car', '', 1, 'standard', 'https://media.discordapp.net/attachments/813604209462214676/858319794900959232/unknown.png?width=1201&height=676', 1000, 0, 0, 0, NULL, 1, 'steam:11000014bf543e0', NULL, 100, 1000),
-	('steam:11000014bf543e0', 'V8P0I07C', '{"modShifterLeavers":-1,"plate":"V8P0I07C","pearlescentColor":0,"modArmor":-1,"modTurbo":false,"modRearBumper":-1,"modAPlate":-1,"livery":2,"IsSecondaryCustomColor":false,"modRoof":-1,"modHorns":-1,"tyreSmokeColor":[255,255,255],"modStruts":-1,"modSideSkirt":-1,"modTransmission":-1,"modFrontBumper":-1,"modLivery":-1,"model":-1627000575,"modDial":-1,"modTrimB":-1,"IsPrimaryCustomColor":false,"neonEnabled":[false,false,false,false],"modAirFilter":-1,"modSpeakers":-1,"modBrakes":-1,"modArchCover":-1,"modAerials":-1,"modEngine":-1,"modFrontWheels":-1,"neonColor":[255,0,255],"modWindows":-1,"modExhaust":-1,"modOrnaments":-1,"SecondaryCustomColor":{"g":8,"b":8,"r":8},"modVanityPlate":-1,"modHydrolic":-1,"color2":0,"headlight":255,"wheelColor":156,"modFender":-1,"modDashboard":-1,"fuel":65.0,"modSpoilers":-1,"modSuspension":-1,"modSmokeEnabled":false,"modTrimA":-1,"modGrille":-1,"modPlateHolder":-1,"modDoorSpeaker":-1,"windowTint":-1,"PrimaryCustomColor":{"g":255,"b":255,"r":255},"modTrunk":-1,"modSteeringWheel":-1,"plateIndex":4,"modHood":-1,"modSeats":-1,"modEngineBlock":-1,"modRightFender":-1,"color1":134,"modBackWheels":-1,"modFrame":-1,"wheels":0,"modTank":-1}', 'car', '', 1, 'standard', 'https://media.discordapp.net/attachments/813604209462214676/858319794900959232/unknown.png?width=1201&height=676', 1000, 0, 0, 0, NULL, 1, 'steam:11000014bf543e0', NULL, 100, 1000),
-	('steam:11000014bf543e0', 'w', '{"modShifterLeavers":-1,"modTurbo":false,"model":-1848994066,"modTrimB":-1,"tyreSmokeColor":[255,255,255],"modArchCover":-1,"modRightFender":-1,"fuel":65.0,"wheelColor":0,"modVanityPlate":-1,"color2":0,"modFender":-1,"modArmor":-1,"modSteeringWheel":-1,"modStruts":-1,"modFrontBumper":-1,"modSpeakers":-1,"modDial":-1,"modLivery":-1,"modHood":-1,"modHorns":-1,"PrimaryCustomColor":{"b":87,"g":27,"r":0},"livery":-1,"modBackWheels":-1,"modAerials":-1,"IsSecondaryCustomColor":false,"modPlateHolder":-1,"modAPlate":-1,"modFrontWheels":-1,"modRearBumper":-1,"plateIndex":0,"wheels":0,"modBrakes":-1,"modEngineBlock":-1,"windowTint":-1,"modDashboard":-1,"color1":64,"modGrille":-1,"IsPrimaryCustomColor":false,"modFrame":-1,"modTrunk":-1,"modRoof":-1,"modSmokeEnabled":false,"modSideSkirt":-1,"modExhaust":-1,"modTrimA":-1,"SecondaryCustomColor":{"b":8,"g":8,"r":8},"modSpoilers":-1,"modTransmission":-1,"plate":"w","modSuspension":-1,"neonEnabled":[false,false,false,false],"modTank":-1,"modSeats":-1,"modOrnaments":-1,"modEngine":-1,"modWindows":-1,"modHydrolic":-1,"headlight":255,"modAirFilter":-1,"pearlescentColor":73,"modDoorSpeaker":-1,"neonColor":[255,0,255]}', 'car', '', 1, 'standard', 'https://media.discordapp.net/attachments/813604209462214676/858319794900959232/unknown.png?width=1201&height=676', 1000, 0, 0, 0, NULL, 1, 'steam:11000014bf543e0', NULL, 100, 1000),
-	('steam:11000014bf543e0', 'W1P3F37N', '{"modShifterLeavers":-1,"plate":"W1P3F37N","modSeats":-1,"modVanityPlate":-1,"modTurbo":false,"modGrille":-1,"modSteeringWheel":-1,"livery":-1,"modBackWheels":-1,"modRoof":-1,"modSpeakers":-1,"modEngineBlock":-1,"modStruts":-1,"modSideSkirt":-1,"modFrontWheels":-1,"SecondaryCustomColor":{"g":8,"b":8,"r":8},"modArchCover":-1,"model":-1848994066,"IsSecondaryCustomColor":false,"modTrimB":-1,"IsPrimaryCustomColor":false,"neonEnabled":[false,false,false,false],"modAirFilter":-1,"tyreSmokeColor":[255,255,255],"PrimaryCustomColor":{"g":27,"b":87,"r":0},"modDial":-1,"modArmor":-1,"modEngine":-1,"color2":0,"neonColor":[255,0,255],"fuel":65.0,"modTransmission":-1,"modOrnaments":-1,"modPlateHolder":-1,"modLivery":-1,"modHydrolic":-1,"modWindows":-1,"headlight":255,"wheelColor":0,"modFender":-1,"modDashboard":-1,"modFrame":-1,"modSpoilers":-1,"modSuspension":-1,"modSmokeEnabled":false,"modTrimA":-1,"modExhaust":-1,"modHorns":-1,"modDoorSpeaker":-1,"windowTint":-1,"modRearBumper":-1,"modTrunk":-1,"modBrakes":-1,"modFrontBumper":-1,"modHood":-1,"pearlescentColor":73,"modTank":-1,"modAPlate":-1,"color1":64,"plateIndex":0,"modRightFender":-1,"wheels":0,"modAerials":-1}', 'car', '', 1, 'standard', 'https://media.discordapp.net/attachments/813604209462214676/858319794900959232/unknown.png?width=1201&height=676', 1000, 0, 0, 0, NULL, 1, 'steam:11000014bf543e0', NULL, 100, 1000),
-	('steam:11000014bf543e0', 'W8X4A87V', '{"modEngine":-1,"modSpeakers":-1,"modAerials":-1,"wheels":6,"modExhaust":-1,"modFrame":-1,"modTurbo":false,"modTransmission":-1,"modTrunk":-1,"modGrille":-1,"neonEnabled":[false,false,false,false],"modOrnaments":-1,"headlight":255,"modTrimB":-1,"modSpoilers":-1,"modDoorSpeaker":-1,"modFrontWheels":-1,"IsSecondaryCustomColor":false,"SecondaryCustomColor":{"g":94,"b":102,"r":90},"modSmokeEnabled":false,"modAPlate":-1,"windowTint":-1,"IsPrimaryCustomColor":false,"PrimaryCustomColor":{"g":8,"b":8,"r":8},"modRoof":-1,"modRearBumper":-1,"color1":0,"modSeats":-1,"modEngineBlock":-1,"model":86520421,"modBrakes":-1,"modDial":-1,"modBackWheels":-1,"pearlescentColor":5,"tyreSmokeColor":[255,255,255],"wheelColor":112,"modFender":-1,"modArmor":-1,"modSuspension":-1,"color2":4,"fuel":99.95500183105469,"modTrimA":-1,"plateIndex":0,"modArchCover":-1,"modDashboard":-1,"modVanityPlate":-1,"modSteeringWheel":-1,"modRightFender":-1,"modPlateHolder":-1,"modAirFilter":-1,"modSideSkirt":-1,"plate":"W8X4A87V","modTank":-1,"modStruts":-1,"modHydrolic":-1,"neonColor":[255,0,255],"modWindows":-1,"modFrontBumper":-1,"modHorns":-1,"modShifterLeavers":-1,"modHood":-1,"livery":-1,"modLivery":-1}', 'car', '', 1, 'standard', 'https://media.discordapp.net/attachments/813604209462214676/858319794900959232/unknown.png?width=1201&height=676', 1000, 0, 0, 0, NULL, 1, 'steam:11000014bf543e0', NULL, 100, 1000),
-	('steam:11000014bf543e0', 'W9V2F07L', '{"modDoorSpeaker":-1,"modTransmission":-1,"modRoof":-1,"modSuspension":-1,"modAPlate":-1,"IsSecondaryCustomColor":false,"modVanityPlate":-1,"modExhaust":-1,"neonEnabled":[false,false,false,false],"modWindows":-1,"modAirFilter":-1,"modTrunk":-1,"SecondaryCustomColor":{"b":15,"r":15,"g":15},"modSmokeEnabled":false,"plateIndex":0,"windowTint":-1,"PrimaryCustomColor":{"b":196,"r":0,"g":85},"livery":-1,"modStruts":-1,"plate":"W9V2F07L","neonColor":[255,0,255],"modHood":-1,"modBrakes":-1,"headlight":255,"modShifterLeavers":-1,"wheels":0,"modFrontWheels":-1,"modEngine":-1,"color2":1,"modHorns":-1,"modTurbo":false,"modDashboard":-1,"modGrille":-1,"modRightFender":-1,"modRearBumper":-1,"modSpoilers":-1,"model":-1848994066,"tyreSmokeColor":[255,255,255],"fuel":99.8550033569336,"modLivery":-1,"IsPrimaryCustomColor":false,"modBackWheels":-1,"modOrnaments":-1,"pearlescentColor":67,"modDial":-1,"modHydrolic":-1,"modSpeakers":-1,"modFrontBumper":-1,"modTank":-1,"color1":70,"modAerials":-1,"modSteeringWheel":-1,"modArmor":-1,"modSideSkirt":-1,"modTrimB":-1,"modFender":-1,"modSeats":-1,"modPlateHolder":-1,"modTrimA":-1,"modEngineBlock":-1,"wheelColor":0,"modFrame":-1,"modArchCover":-1}', 'car', '', 1, 'standard', 'https://media.discordapp.net/attachments/813604209462214676/858319794900959232/unknown.png?width=1201&height=676', 966, 0, 0, 0, NULL, 1, 'steam:11000014bf543e0', NULL, 99.855, 994),
-	('steam:11000014bf543e0', 'Y7Q1U87M', '{"modAirFilter":-1,"modRearBumper":-1,"modExhaust":-1,"modFrame":-1,"modSpoilers":-1,"modHorns":-1,"modFender":-1,"wheelColor":156,"modDial":-1,"modSmokeEnabled":false,"neonColor":[255,0,255],"modArchCover":-1,"modTurbo":false,"pearlescentColor":0,"modEngine":-1,"modTrunk":-1,"modSuspension":-1,"modSteeringWheel":-1,"modWindows":-1,"modTransmission":-1,"modShifterLeavers":-1,"tyreSmokeColor":[255,255,255],"modBackWheels":-1,"IsSecondaryCustomColor":false,"modFrontBumper":-1,"plateIndex":4,"SecondaryCustomColor":{"r":8,"b":8,"g":8},"IsPrimaryCustomColor":false,"color2":0,"modStruts":-1,"modSeats":-1,"modFrontWheels":-1,"modGrille":-1,"modPlateHolder":-1,"wheels":0,"modArmor":-1,"modHood":-1,"modTank":-1,"modDashboard":-1,"PrimaryCustomColor":{"r":240,"b":240,"g":240},"neonEnabled":[false,false,false,false],"modVanityPlate":-1,"fuel":64.8699951171875,"modSideSkirt":-1,"modEngineBlock":-1,"modBrakes":-1,"modAerials":-1,"modHydrolic":-1,"modAPlate":-1,"headlight":255,"modTrimB":-1,"modLivery":-1,"model":-1205689942,"livery":-1,"color1":132,"windowTint":-1,"plate":"Y7Q1U87M","modDoorSpeaker":-1,"modOrnaments":-1,"modRightFender":-1,"modSpeakers":-1,"modRoof":-1,"modTrimA":-1}', 'car', '', 1, 'standard', 'https://media.discordapp.net/attachments/813604209462214676/858319794900959232/unknown.png?width=1201&height=676', 1000, 0, 0, 0, NULL, 1, 'steam:11000014bf543e0', NULL, 64.87, 1000),
-	('steam:11000014bf543e0', 'Y9K0Q95Y', '{"modTrunk":-1,"modSuspension":-1,"modAirFilter":-1,"modTransmission":-1,"modHood":-1,"modRoof":-1,"modSeats":-1,"plateIndex":4,"modVanityPlate":-1,"modSideSkirt":-1,"modHorns":-1,"modTrimB":-1,"pearlescentColor":3,"color1":1,"modDial":-1,"modBrakes":-1,"headlight":255,"modRearBumper":-1,"modBackWheels":-1,"model":1127131465,"modArmor":-1,"modAPlate":-1,"modStruts":-1,"tyreSmokeColor":[255,255,255],"modArchCover":-1,"modAerials":-1,"neonColor":[255,0,255],"livery":-1,"modTrimA":-1,"plate":"Y9K0Q95Y","PrimaryCustomColor":{"b":15,"g":15,"r":15},"fuel":64.82999420166016,"modPlateHolder":-1,"modHydrolic":-1,"modSpeakers":-1,"modFender":-1,"wheelColor":156,"color2":1,"modOrnaments":-1,"modDashboard":-1,"modDoorSpeaker":-1,"modFrontWheels":-1,"modTank":-1,"modGrille":-1,"modEngineBlock":-1,"modExhaust":-1,"modFrame":-1,"modRightFender":-1,"windowTint":-1,"modSpoilers":-1,"IsPrimaryCustomColor":false,"IsSecondaryCustomColor":false,"modSmokeEnabled":false,"modSteeringWheel":-1,"modLivery":-1,"modFrontBumper":-1,"modShifterLeavers":-1,"modTurbo":false,"neonEnabled":[false,false,false,false],"modWindows":-1,"wheels":0,"modEngine":-1,"SecondaryCustomColor":{"b":15,"g":15,"r":15}}', 'car', '', 1, 'standard', 'https://media.discordapp.net/attachments/813604209462214676/858319794900959232/unknown.png?width=1201&height=676', 1000, 0, 0, 0, NULL, 1, 'steam:11000014bf543e0', NULL, 64.83, 1000);
+REPLACE INTO `owned_vehicles` (`owner`, `plate`, `vehicle`, `type`, `job`, `stored`, `WantedLevel`, `Profile_Pic`, `engine`, `police`, `parkmeter`, `parkmeternum`, `damage`, `garagenum`, `steamowned`, `buyer`, `fuel`, `body`, `trunk`, `glovebox`) VALUES
+	('steam:11000014bf543e0', '1', '{"modArmor":-1,"modSpeakers":-1,"modTrimB":-1,"modSpoilers":-1,"tyreSmokeColor":[255,255,255],"windowTint":-1,"modVanityPlate":-1,"modAirFilter":-1,"modTrimA":-1,"wheelColor":0,"wheels":0,"model":-1848994066,"modDoorSpeaker":-1,"modTank":-1,"pearlescentColor":2,"modFrontWheels":-1,"modFrame":-1,"neonEnabled":[false,false,false,false],"IsPrimaryCustomColor":false,"plate":"1","modRoof":-1,"neonColor":[255,0,255],"modHood":-1,"modDial":-1,"modSmokeEnabled":false,"headlight":255,"modRightFender":-1,"modHydrolic":-1,"modShifterLeavers":-1,"modExhaust":-1,"modEngine":-1,"modHorns":-1,"plateIndex":0,"modFender":-1,"modRearBumper":-1,"modDashboard":-1,"modGrille":-1,"color2":1,"modBackWheels":-1,"modWindows":-1,"IsSecondaryCustomColor":false,"modTrunk":-1,"modOrnaments":-1,"modAPlate":-1,"modSuspension":-1,"modSeats":-1,"modLivery":-1,"modEngineBlock":-1,"modTurbo":false,"modStruts":-1,"SecondaryCustomColor":{"r":15,"g":15,"b":15},"modFrontBumper":-1,"modTransmission":-1,"modSideSkirt":-1,"color1":0,"modBrakes":-1,"fuel":64.98500061035156,"modAerials":-1,"modArchCover":-1,"livery":-1,"modPlateHolder":-1,"PrimaryCustomColor":{"r":8,"g":8,"b":8},"modSteeringWheel":-1}', 'car', '', 1, 'standard', 'https://media.discordapp.net/attachments/813604209462214676/858319794900959232/unknown.png?width=1201&height=676', 1000, 0, 0, 0, NULL, 1, 'steam:11000014bf543e0', NULL, 64.985, 1000, NULL, NULL),
+	('steam:11000014bf543e0', '123213', '{"modAerials":-1,"modDial":-1,"modHorns":-1,"modTransmission":-1,"modSteeringWheel":-1,"modSpoilers":-1,"modFrame":-1,"wheelColor":0,"modTrunk":-1,"modSeats":-1,"modAirFilter":-1,"modPlateHolder":-1,"modTank":-1,"IsPrimaryCustomColor":false,"modRearBumper":-1,"neonColor":[255,0,255],"modDoorSpeaker":-1,"plate":"123213","modRightFender":-1,"modWindows":-1,"modArmor":-1,"modGrille":-1,"SecondaryCustomColor":{"r":8,"g":8,"b":8},"modBrakes":-1,"modEngineBlock":-1,"modArchCover":-1,"modTrimB":-1,"color2":0,"modHydrolic":-1,"modDashboard":-1,"plateIndex":0,"modSideSkirt":-1,"model":-1848994066,"tyreSmokeColor":[255,255,255],"headlight":255,"modTrimA":-1,"modEngine":-1,"fuel":64.74500274658203,"IsSecondaryCustomColor":false,"modRoof":-1,"modHood":-1,"modOrnaments":-1,"modStruts":-1,"neonEnabled":[false,false,false,false],"windowTint":-1,"pearlescentColor":73,"modLivery":-1,"modTurbo":false,"modFender":-1,"modBackWheels":-1,"wheels":0,"modFrontBumper":-1,"modAPlate":-1,"color1":64,"modShifterLeavers":-1,"modExhaust":-1,"modSmokeEnabled":1,"modFrontWheels":-1,"PrimaryCustomColor":{"r":0,"g":27,"b":87},"modVanityPlate":-1,"modSuspension":-1,"livery":-1,"modSpeakers":-1}', 'car', '', 1, 'standard', 'https://media.discordapp.net/attachments/813604209462214676/858319794900959232/unknown.png?width=1201&height=676', 1000, 0, 0, 0, NULL, 1, 'steam:11000014bf543e0', NULL, 64.745, 1000, NULL, NULL),
+	('steam:11000014bf543e0', 'A5T4N49S', '{"modExhaust":-1,"plateIndex":4,"modArmor":-1,"modSideSkirt":-1,"modTrimB":-1,"modAirFilter":-1,"fuel":64.86500549316406,"modAPlate":-1,"modGrille":-1,"modSteeringWheel":-1,"modTank":-1,"SecondaryCustomColor":{"b":8,"g":8,"r":8},"modArchCover":-1,"modTurbo":false,"windowTint":-1,"IsSecondaryCustomColor":false,"modVanityPlate":-1,"modFender":-1,"modFrame":-1,"neonColor":[255,0,255],"modRearBumper":-1,"modStruts":-1,"modDashboard":-1,"modHydrolic":-1,"modTransmission":-1,"modHood":-1,"headlight":255,"tyreSmokeColor":[255,255,255],"PrimaryCustomColor":{"b":255,"g":255,"r":255},"modPlateHolder":-1,"modOrnaments":-1,"plate":"A5T4N49S","modShifterLeavers":-1,"neonEnabled":[false,false,false,false],"modDial":-1,"modFrontWheels":-1,"modSeats":-1,"modBackWheels":-1,"modSuspension":-1,"model":-1627000575,"wheels":0,"color2":0,"modRoof":-1,"modLivery":-1,"modEngine":-1,"modWindows":-1,"modFrontBumper":-1,"modSpeakers":-1,"livery":2,"IsPrimaryCustomColor":false,"color1":134,"modBrakes":-1,"modEngineBlock":-1,"modDoorSpeaker":-1,"modTrimA":-1,"modRightFender":-1,"pearlescentColor":0,"modHorns":-1,"modSmokeEnabled":false,"modSpoilers":-1,"modAerials":-1,"wheelColor":156,"modTrunk":-1}', 'car', '', 1, 'standard', 'https://media.discordapp.net/attachments/813604209462214676/858319794900959232/unknown.png?width=1201&height=676', 1000, 0, 0, 0, NULL, 1, 'steam:11000014bf543e0', NULL, 64.865, 1000, NULL, NULL),
+	('steam:11000014bf543e0', 'B0Z6S41Z', '{"modFrontWheels":-1,"modAirFilter":-1,"modHorns":-1,"modSpoilers":-1,"SecondaryCustomColor":{"r":15,"g":15,"b":15},"modDial":-1,"modRearBumper":-1,"neonColor":[255,0,255],"modFender":-1,"windowTint":-1,"modRoof":-1,"modHood":-1,"modRightFender":-1,"color1":0,"modPlateHolder":-1,"fuel":65.0,"modShifterLeavers":-1,"modLivery":-1,"plate":"B0Z6S41Z","color2":1,"modEngine":-1,"modExhaust":-1,"headlight":255,"modTurbo":false,"modBrakes":-1,"model":-1848994066,"modSeats":-1,"modGrille":-1,"modHydrolic":-1,"modSmokeEnabled":1,"modArmor":-1,"neonEnabled":[false,false,false,false],"modTrimB":-1,"modBackWheels":-1,"modTrunk":-1,"PrimaryCustomColor":{"r":8,"g":8,"b":8},"modSuspension":-1,"modAerials":-1,"modDoorSpeaker":-1,"tyreSmokeColor":[255,255,255],"plateIndex":0,"modAPlate":-1,"modVanityPlate":-1,"modEngineBlock":-1,"livery":-1,"modFrontBumper":-1,"pearlescentColor":2,"modFrame":-1,"IsSecondaryCustomColor":false,"modOrnaments":-1,"modSpeakers":-1,"modTrimA":-1,"modDashboard":-1,"modTank":-1,"IsPrimaryCustomColor":false,"modTransmission":-1,"modWindows":-1,"modStruts":-1,"modArchCover":-1,"modSideSkirt":-1,"wheels":0,"modSteeringWheel":-1,"wheelColor":0}', 'car', '', 1, 'standard', 'https://media.discordapp.net/attachments/813604209462214676/858319794900959232/unknown.png?width=1201&height=676', 1000, 0, 0, 0, NULL, 1, 'steam:11000014bf543e0', NULL, 100, 1000, NULL, NULL),
+	('steam:11000014bf543e0', 'C7V8G75Y', '{"modLivery":-1,"modArmor":-1,"modTransmission":-1,"plate":"C7V8G75Y","modDial":-1,"modEngine":-1,"modGrille":-1,"wheelColor":0,"modHorns":-1,"modRoof":-1,"modTrimA":-1,"pearlescentColor":73,"modDoorSpeaker":-1,"model":-1848994066,"modFender":-1,"modTrunk":-1,"modFrontBumper":-1,"tyreSmokeColor":[255,255,255],"modExhaust":-1,"modFrontWheels":-1,"modArchCover":-1,"modAPlate":-1,"IsSecondaryCustomColor":false,"SecondaryCustomColor":{"r":8,"g":8,"b":8},"modHydrolic":-1,"modVanityPlate":-1,"modSuspension":-1,"modEngineBlock":-1,"modStruts":-1,"wheels":0,"fuel":99.90000915527344,"modOrnaments":-1,"modDashboard":-1,"PrimaryCustomColor":{"r":0,"g":27,"b":87},"modSeats":-1,"modBrakes":-1,"headlight":255,"livery":-1,"modBackWheels":-1,"IsPrimaryCustomColor":false,"color1":64,"plateIndex":0,"modWindows":-1,"modHood":-1,"windowTint":-1,"modSpoilers":-1,"modShifterLeavers":-1,"modFrame":-1,"modAirFilter":-1,"modTank":-1,"modSteeringWheel":-1,"color2":0,"modPlateHolder":-1,"modAerials":-1,"neonColor":[255,0,255],"modSmokeEnabled":false,"modRearBumper":-1,"neonEnabled":[false,false,false,false],"modSideSkirt":-1,"modSpeakers":-1,"modTurbo":false,"modRightFender":-1,"modTrimB":-1}', 'car', '', 1, 'standard', 'https://media.discordapp.net/attachments/813604209462214676/858319794900959232/unknown.png?width=1201&height=676', 1000, 0, 0, 0, NULL, 1, 'steam:11000014bf543e0', NULL, 99.9, 1000, NULL, NULL),
+	('steam:11000014bf543e0', 'E1T3P75W', '{"modShifterLeavers":-1,"modTurbo":false,"model":-1848994066,"modTrimB":-1,"tyreSmokeColor":[255,255,255],"modArchCover":-1,"modRightFender":-1,"fuel":64.98500061035156,"wheelColor":0,"modVanityPlate":-1,"color2":0,"modFender":-1,"modArmor":-1,"modSteeringWheel":-1,"modStruts":-1,"modFrontBumper":-1,"modSpeakers":-1,"modDial":-1,"modLivery":-1,"modHood":-1,"modHorns":-1,"PrimaryCustomColor":{"b":87,"g":27,"r":0},"livery":-1,"modBackWheels":-1,"modAerials":-1,"IsSecondaryCustomColor":false,"modPlateHolder":-1,"modAPlate":-1,"modFrontWheels":-1,"modRearBumper":-1,"plateIndex":0,"wheels":0,"modBrakes":-1,"modEngineBlock":-1,"windowTint":-1,"modDashboard":-1,"color1":64,"modGrille":-1,"IsPrimaryCustomColor":false,"modFrame":-1,"modTrunk":-1,"modRoof":-1,"modSmokeEnabled":false,"modSideSkirt":-1,"modExhaust":-1,"modTrimA":-1,"SecondaryCustomColor":{"b":8,"g":8,"r":8},"modSpoilers":-1,"modTransmission":-1,"plate":"E1T3P75W","modSuspension":-1,"neonEnabled":[false,false,false,false],"modTank":-1,"modSeats":-1,"modOrnaments":-1,"modEngine":-1,"modWindows":-1,"modHydrolic":-1,"headlight":255,"modAirFilter":-1,"pearlescentColor":73,"modDoorSpeaker":-1,"neonColor":[255,0,255]}', 'car', '', 1, 'standard', 'https://media.discordapp.net/attachments/813604209462214676/858319794900959232/unknown.png?width=1201&height=676', 1000, 0, 0, 0, NULL, 1, 'steam:11000014bf543e0', NULL, 100, 1000, NULL, NULL),
+	('steam:11000014bf543e0', 'H4V5T40P', '{"wheelColor":156,"modDial":-1,"modHood":-1,"modSuspension":-1,"modArmor":-1,"plate":"H4V5T40P","modArchCover":-1,"headlight":255,"modSmokeEnabled":false,"modSpeakers":-1,"modDoorSpeaker":-1,"modEngineBlock":-1,"modTank":-1,"modWindows":-1,"modRearBumper":-1,"modLivery":-1,"modExhaust":-1,"IsSecondaryCustomColor":false,"wheels":1,"IsPrimaryCustomColor":false,"pearlescentColor":0,"modVanityPlate":-1,"windowTint":-1,"color2":134,"modOrnaments":-1,"modTransmission":-1,"modEngine":-1,"modRoof":-1,"model":2046537925,"modTurbo":false,"modSpoilers":-1,"modBackWheels":-1,"SecondaryCustomColor":{"b":255,"r":255,"g":255},"modFrontBumper":-1,"modTrimB":-1,"modTrunk":-1,"modPlateHolder":-1,"plateIndex":4,"livery":0,"modSeats":-1,"neonColor":[255,0,255],"modRightFender":-1,"neonEnabled":[false,false,false,false],"modFender":-1,"modShifterLeavers":-1,"PrimaryCustomColor":{"b":255,"r":255,"g":255},"modSideSkirt":-1,"modFrame":-1,"modAPlate":-1,"modSteeringWheel":-1,"modAirFilter":-1,"modStruts":-1,"modTrimA":-1,"modHorns":-1,"modHydrolic":-1,"fuel":64.8949966430664,"modDashboard":-1,"modAerials":-1,"modBrakes":-1,"color1":134,"modGrille":-1,"tyreSmokeColor":[255,255,255],"modFrontWheels":-1}', 'car', '', 1, 'standard', 'https://media.discordapp.net/attachments/813604209462214676/858319794900959232/unknown.png?width=1201&height=676', 1000, 0, 0, 0, NULL, 1, 'steam:11000014bf543e0', NULL, 64.895, 1000, NULL, NULL),
+	('steam:11000014bf543e0', 'J3X7Y74B', '{"modBrakes":-1,"modDashboard":-1,"modRightFender":-1,"pearlescentColor":73,"IsPrimaryCustomColor":false,"PrimaryCustomColor":{"r":0,"b":87,"g":27},"modSuspension":-1,"modExhaust":-1,"modFender":-1,"modLivery":-1,"headlight":255,"modTrunk":-1,"color1":64,"modSeats":-1,"modFrontWheels":-1,"modAerials":-1,"modRearBumper":-1,"modGrille":-1,"modAPlate":-1,"modTank":-1,"modFrontBumper":-1,"modSpoilers":-1,"modTransmission":-1,"modTurbo":false,"wheels":0,"livery":-1,"modVanityPlate":-1,"modSpeakers":-1,"plate":"J3X7Y74B","modTrimA":-1,"wheelColor":0,"modArmor":-1,"modHydrolic":-1,"tyreSmokeColor":[255,255,255],"modDoorSpeaker":-1,"neonColor":[255,0,255],"modBackWheels":-1,"model":-1848994066,"modWindows":-1,"modEngineBlock":-1,"modHorns":-1,"IsSecondaryCustomColor":false,"modHood":-1,"modShifterLeavers":-1,"modSmokeEnabled":false,"windowTint":-1,"plateIndex":0,"modTrimB":-1,"modStruts":-1,"modFrame":-1,"SecondaryCustomColor":{"r":8,"b":8,"g":8},"modOrnaments":-1,"fuel":99.97000122070313,"modAirFilter":-1,"modEngine":-1,"neonEnabled":[false,false,false,false],"color2":0,"modRoof":-1,"modSteeringWheel":-1,"modSideSkirt":-1,"modDial":-1,"modArchCover":-1,"modPlateHolder":-1}', 'car', '', 1, 'standard', 'https://media.discordapp.net/attachments/813604209462214676/858319794900959232/unknown.png?width=1201&height=676', 1000, 0, 0, 0, NULL, 1, 'steam:11000014bf543e0', NULL, 100, 1000, NULL, NULL),
+	('steam:11000014bf543e0', 'J4E9P13G', '{"modStruts":-1,"modRearBumper":-1,"modSideSkirt":-1,"modDial":-1,"plate":"J4E9P13G","modHydrolic":-1,"modSpeakers":-1,"pearlescentColor":0,"livery":0,"modRightFender":-1,"modTrimA":-1,"modEngineBlock":-1,"modSpoilers":-1,"modVanityPlate":-1,"modWindows":-1,"modExhaust":-1,"modTank":-1,"headlight":255,"neonColor":[255,0,255],"modHood":-1,"color2":134,"modAPlate":-1,"modRoof":-1,"modSmokeEnabled":false,"wheelColor":156,"modBrakes":-1,"modTransmission":-1,"modGrille":-1,"color1":134,"modTurbo":false,"modAerials":-1,"wheels":1,"modTrimB":-1,"modBackWheels":-1,"modFrontWheels":-1,"plateIndex":4,"IsSecondaryCustomColor":false,"modOrnaments":-1,"modLivery":-1,"modDashboard":-1,"IsPrimaryCustomColor":false,"modArchCover":-1,"modFender":-1,"SecondaryCustomColor":{"g":255,"r":255,"b":255},"modDoorSpeaker":-1,"model":2046537925,"modShifterLeavers":-1,"modSteeringWheel":-1,"windowTint":-1,"modFrontBumper":-1,"fuel":65.0,"modHorns":-1,"modAirFilter":-1,"modEngine":-1,"PrimaryCustomColor":{"g":255,"r":255,"b":255},"modSeats":-1,"neonEnabled":[false,false,false,false],"modFrame":-1,"tyreSmokeColor":[255,255,255],"modSuspension":-1,"modArmor":-1,"modPlateHolder":-1,"modTrunk":-1}', 'car', '', 1, 'standard', 'https://media.discordapp.net/attachments/813604209462214676/858319794900959232/unknown.png?width=1201&height=676', 1000, 0, 0, 0, NULL, 1, 'steam:11000014bf543e0', NULL, 100, 1000, NULL, NULL),
+	('steam:11000014bf543e0', 'J8V5K97B', '{"modDoorSpeaker":-1,"modTransmission":-1,"modRoof":-1,"modSuspension":-1,"modAPlate":-1,"IsSecondaryCustomColor":false,"modVanityPlate":-1,"modExhaust":-1,"neonEnabled":[false,false,false,false],"modWindows":-1,"modAirFilter":-1,"modTrunk":-1,"SecondaryCustomColor":{"b":8,"r":8,"g":8},"modSmokeEnabled":false,"plateIndex":0,"windowTint":-1,"PrimaryCustomColor":{"b":87,"r":0,"g":27},"livery":-1,"modStruts":-1,"plate":"J8V5K97B","neonColor":[255,0,255],"modHood":-1,"modBrakes":-1,"headlight":255,"modShifterLeavers":-1,"wheels":0,"modFrontWheels":-1,"modEngine":-1,"color2":0,"modHorns":-1,"modTurbo":false,"modDashboard":-1,"modGrille":-1,"modRightFender":-1,"modRearBumper":-1,"modSpoilers":-1,"model":-1848994066,"tyreSmokeColor":[255,255,255],"fuel":99.8600082397461,"modLivery":-1,"IsPrimaryCustomColor":false,"modBackWheels":-1,"modOrnaments":-1,"pearlescentColor":73,"modDial":-1,"modHydrolic":-1,"modSpeakers":-1,"modFrontBumper":-1,"modTank":-1,"color1":64,"modAerials":-1,"modSteeringWheel":-1,"modArmor":-1,"modSideSkirt":-1,"modTrimB":-1,"modFender":-1,"modSeats":-1,"modPlateHolder":-1,"modTrimA":-1,"modEngineBlock":-1,"wheelColor":0,"modFrame":-1,"modArchCover":-1}', 'car', '', 1, 'standard', 'https://media.discordapp.net/attachments/813604209462214676/858319794900959232/unknown.png?width=1201&height=676', 1000, 0, 0, 0, NULL, 1, 'steam:11000014bf543e0', NULL, 99.86, 1000, NULL, NULL),
+	('steam:11000014bf543e0', 'L1Q3J72C', '{"wheels":6,"modWindows":-1,"modDial":-1,"modTurbo":false,"modDashboard":-1,"SecondaryCustomColor":{"g":94,"r":90,"b":102},"PrimaryCustomColor":{"g":8,"r":8,"b":8},"livery":-1,"pearlescentColor":5,"modPlateHolder":-1,"modTrunk":-1,"modRoof":-1,"modHorns":-1,"modSpoilers":-1,"neonEnabled":[false,false,false,false],"modVanityPlate":-1,"modRightFender":-1,"wheelColor":112,"modSmokeEnabled":false,"modBrakes":-1,"modArchCover":-1,"modEngineBlock":-1,"modShifterLeavers":-1,"modSeats":-1,"headlight":255,"modFrame":-1,"modFrontBumper":-1,"color2":4,"modGrille":-1,"model":86520421,"windowTint":-1,"modFender":-1,"modTrimA":-1,"fuel":99.86500549316406,"modSideSkirt":-1,"modArmor":-1,"IsSecondaryCustomColor":false,"modLivery":-1,"neonColor":[255,0,255],"modRearBumper":-1,"modEngine":-1,"modStruts":-1,"modHood":-1,"IsPrimaryCustomColor":false,"modSuspension":-1,"modTrimB":-1,"modFrontWheels":-1,"plate":"L1Q3J72C","plateIndex":0,"modSteeringWheel":-1,"tyreSmokeColor":[255,255,255],"modAirFilter":-1,"modBackWheels":-1,"modAPlate":-1,"modOrnaments":-1,"modSpeakers":-1,"modTank":-1,"modDoorSpeaker":-1,"modAerials":-1,"modTransmission":-1,"color1":0,"modExhaust":-1,"modHydrolic":-1}', 'car', '', 1, 'standard', 'https://media.discordapp.net/attachments/813604209462214676/858319794900959232/unknown.png?width=1201&height=676', 1000, 0, 0, 0, NULL, 1, 'steam:11000014bf543e0', NULL, 99.865, 1000, NULL, NULL),
+	('steam:11000014bf543e0', 'L6V4W46D', '{"modBrakes":-1,"model":-1848994066,"modArchCover":-1,"SecondaryCustomColor":{"r":8,"g":8,"b":8},"modEngine":-1,"modWindows":-1,"modBackWheels":-1,"fuel":64.84000396728516,"modAirFilter":-1,"modArmor":-1,"modTransmission":-1,"modFrontBumper":-1,"neonColor":[255,0,255],"tyreSmokeColor":[255,255,255],"modFender":-1,"modEngineBlock":-1,"modSteeringWheel":-1,"modRearBumper":-1,"modFrame":-1,"modHood":-1,"modDial":-1,"headlight":255,"modSpeakers":-1,"modDoorSpeaker":-1,"modRoof":-1,"modAPlate":-1,"wheelColor":0,"PrimaryCustomColor":{"r":0,"g":27,"b":87},"modVanityPlate":-1,"modPlateHolder":-1,"modAerials":-1,"livery":-1,"modTrimB":-1,"modShifterLeavers":-1,"neonEnabled":[false,false,false,false],"color2":0,"wheels":0,"pearlescentColor":73,"modGrille":-1,"plate":"L6V4W46D","modRightFender":-1,"plateIndex":0,"modExhaust":-1,"modHydrolic":-1,"modTrimA":-1,"modTrunk":-1,"IsPrimaryCustomColor":false,"modSmokeEnabled":false,"modStruts":-1,"modSideSkirt":-1,"modLivery":-1,"modSpoilers":-1,"IsSecondaryCustomColor":false,"color1":64,"modTank":-1,"modHorns":-1,"modTurbo":false,"modDashboard":-1,"modOrnaments":-1,"modSeats":-1,"windowTint":-1,"modSuspension":-1,"modFrontWheels":-1}', 'car', '', 1, 'standard', 'https://media.discordapp.net/attachments/813604209462214676/858319794900959232/unknown.png?width=1201&height=676', 1000, 0, 0, 0, NULL, 1, 'steam:11000014bf543e0', NULL, 64.84, 1000, NULL, NULL),
+	('steam:11000014bf543e0', 'mtz', '{"modWindows":-1,"modDial":-1,"modArmor":-1,"modBrakes":-1,"wheelColor":0,"windowTint":-1,"modSuspension":-1,"IsPrimaryCustomColor":false,"modStruts":-1,"modEngineBlock":-1,"modTank":-1,"neonColor":[255,0,255],"modShifterLeavers":-1,"tyreSmokeColor":[255,255,255],"modLivery":-1,"modArchCover":-1,"model":-1848994066,"modBackWheels":-1,"modTrimA":-1,"modSpoilers":-1,"modSeats":-1,"wheels":0,"modAirFilter":-1,"fuel":99.8699951171875,"modSteeringWheel":-1,"modRearBumper":-1,"modSmokeEnabled":false,"modFrame":-1,"modEngine":-1,"livery":-1,"color2":0,"modPlateHolder":-1,"modAPlate":-1,"plate":"MTZ","modHorns":-1,"modSpeakers":-1,"modTurbo":false,"modDashboard":-1,"modFender":-1,"modDoorSpeaker":-1,"pearlescentColor":73,"headlight":255,"modGrille":-1,"modExhaust":-1,"IsSecondaryCustomColor":false,"modOrnaments":-1,"modRightFender":-1,"modVanityPlate":-1,"modSideSkirt":-1,"modHydrolic":-1,"modRoof":-1,"modTrunk":-1,"plateIndex":0,"modAerials":-1,"modTrimB":-1,"SecondaryCustomColor":{"r":8,"b":8,"g":8},"modFrontWheels":-1,"neonEnabled":[false,false,false,false],"modTransmission":-1,"modHood":-1,"color1":64,"modFrontBumper":-1,"PrimaryCustomColor":{"r":0,"b":87,"g":27}}', 'car', '', 1, 'standard', 'https://media.discordapp.net/attachments/813604209462214676/858319794900959232/unknown.png?width=1201&height=676', 1000, 0, 0, 0, NULL, 1, 'steam:11000014bf543e0', NULL, 99.87, 1000, NULL, NULL),
+	('steam:11000014bf543e0', 'O5X7Y45C', '{"modSteeringWheel":-1,"modFrame":-1,"tyreSmokeColor":[255,255,255],"modSpoilers":-1,"modStruts":-1,"modDial":-1,"modGrille":-1,"modAPlate":-1,"modFender":-1,"windowTint":-1,"modAirFilter":-1,"modHood":-1,"IsPrimaryCustomColor":false,"plate":"O5X7Y45C","livery":-1,"modSpeakers":-1,"SecondaryCustomColor":{"b":15,"g":15,"r":15},"modLivery":-1,"IsSecondaryCustomColor":false,"color2":1,"modFrontBumper":-1,"neonColor":[255,0,255],"headlight":255,"modTurbo":false,"modBrakes":-1,"model":-1848994066,"modSeats":-1,"fuel":65.0,"modHydrolic":-1,"modSmokeEnabled":1,"wheels":0,"neonEnabled":[false,false,false,false],"modRoof":-1,"modTrimB":-1,"modTrunk":-1,"color1":0,"modPlateHolder":-1,"modAerials":-1,"modDoorSpeaker":-1,"modEngine":-1,"modArmor":-1,"modSuspension":-1,"modVanityPlate":-1,"modShifterLeavers":-1,"wheelColor":0,"modArchCover":-1,"PrimaryCustomColor":{"b":8,"g":8,"r":8},"modTrimA":-1,"modOrnaments":-1,"modRearBumper":-1,"modExhaust":-1,"modBackWheels":-1,"modDashboard":-1,"modFrontWheels":-1,"plateIndex":0,"modTransmission":-1,"modWindows":-1,"pearlescentColor":2,"modTank":-1,"modSideSkirt":-1,"modRightFender":-1,"modHorns":-1,"modEngineBlock":-1}', 'car', '', 1, 'standard', 'https://media.discordapp.net/attachments/813604209462214676/858319794900959232/unknown.png?width=1201&height=676', 1000, 0, 0, 0, NULL, 1, 'steam:11000014bf543e0', NULL, 100, 1000, NULL, NULL),
+	('steam:11000014bf543e0', 'Q5E9O77Z', '{"modExhaust":-1,"plateIndex":0,"modArmor":-1,"modSideSkirt":-1,"modTrimB":-1,"modAirFilter":-1,"fuel":64.98500061035156,"modAPlate":-1,"modGrille":-1,"modSteeringWheel":-1,"modTank":-1,"SecondaryCustomColor":{"b":8,"g":8,"r":8},"modArchCover":-1,"modTurbo":false,"windowTint":-1,"IsSecondaryCustomColor":false,"modVanityPlate":-1,"modFender":-1,"modFrame":-1,"neonColor":[255,0,255],"modRearBumper":-1,"modStruts":-1,"modDashboard":-1,"modHydrolic":-1,"modTransmission":-1,"modHood":-1,"headlight":255,"tyreSmokeColor":[255,255,255],"PrimaryCustomColor":{"b":87,"g":27,"r":0},"modPlateHolder":-1,"modOrnaments":-1,"plate":"Q5E9O77Z","modShifterLeavers":-1,"neonEnabled":[false,false,false,false],"modDial":-1,"modFrontWheels":-1,"modSeats":-1,"modBackWheels":-1,"modSuspension":-1,"model":-1848994066,"wheels":0,"color2":0,"modRoof":-1,"modLivery":-1,"modEngine":-1,"modWindows":-1,"modFrontBumper":-1,"modSpeakers":-1,"livery":-1,"IsPrimaryCustomColor":false,"color1":64,"modBrakes":-1,"modEngineBlock":-1,"modDoorSpeaker":-1,"modTrimA":-1,"modRightFender":-1,"pearlescentColor":73,"modHorns":-1,"modSmokeEnabled":false,"modSpoilers":-1,"modAerials":-1,"wheelColor":0,"modTrunk":-1}', 'car', '', 1, 'standard', 'https://media.discordapp.net/attachments/813604209462214676/858319794900959232/unknown.png?width=1201&height=676', 1000, 0, 0, 0, NULL, 1, 'steam:11000014bf543e0', NULL, 64.985, 1000, NULL, NULL),
+	('steam:11000014bf543e0', 'R3U0J33P', '{"modShifterLeavers":-1,"modRightFender":-1,"modOrnaments":-1,"color1":70,"color2":1,"modBrakes":-1,"IsSecondaryCustomColor":false,"neonEnabled":[false,false,false,false],"modTrimB":-1,"modAPlate":-1,"modHorns":-1,"modWindows":-1,"modHydrolic":-1,"modAirFilter":-1,"modSpoilers":-1,"modDial":-1,"modTransmission":-1,"windowTint":-1,"headlight":255,"modFrontWheels":-1,"modSeats":-1,"modDashboard":-1,"modPlateHolder":-1,"modHood":-1,"wheelColor":0,"modFender":-1,"modFrontBumper":-1,"SecondaryCustomColor":{"b":15,"g":15,"r":15},"modSteeringWheel":-1,"modTrunk":-1,"modEngine":-1,"PrimaryCustomColor":{"b":196,"g":85,"r":0},"fuel":99.94000244140625,"plateIndex":0,"modArchCover":-1,"modAerials":-1,"tyreSmokeColor":[255,255,255],"pearlescentColor":67,"modSpeakers":-1,"modExhaust":-1,"wheels":0,"model":-1848994066,"livery":-1,"modTank":-1,"modRearBumper":-1,"modVanityPlate":-1,"modLivery":-1,"IsPrimaryCustomColor":false,"modStruts":-1,"modBackWheels":-1,"modRoof":-1,"modSuspension":-1,"plate":"R3U0J33P","modSideSkirt":-1,"neonColor":[255,0,255],"modSmokeEnabled":false,"modTurbo":false,"modArmor":-1,"modEngineBlock":-1,"modTrimA":-1,"modDoorSpeaker":-1,"modGrille":-1,"modFrame":-1}', 'car', NULL, 1, 'standard', 'https://media.discordapp.net/attachments/813604209462214676/858319794900959232/unknown.png?width=1201&height=676', 1000, 0, 0, 0, NULL, 1, 'steam:11000014bf543e0', NULL, 100, 1000, NULL, NULL),
+	('steam:11000014bf543e0', 'sfasf', '{"modShifterLeavers":-1,"modTurbo":false,"model":-1848994066,"modTrimB":-1,"tyreSmokeColor":[255,255,255],"modArchCover":-1,"modRightFender":-1,"fuel":65.0,"wheelColor":0,"modVanityPlate":-1,"color2":0,"modFender":-1,"modArmor":-1,"modSteeringWheel":-1,"modStruts":-1,"modFrontBumper":-1,"modSpeakers":-1,"modDial":-1,"modLivery":-1,"modHood":-1,"modHorns":-1,"PrimaryCustomColor":{"b":87,"g":27,"r":0},"livery":-1,"modBackWheels":-1,"modAerials":-1,"IsSecondaryCustomColor":false,"modPlateHolder":-1,"modAPlate":-1,"modFrontWheels":-1,"modRearBumper":-1,"plateIndex":0,"wheels":0,"modBrakes":-1,"modEngineBlock":-1,"windowTint":-1,"modDashboard":-1,"color1":64,"modGrille":-1,"IsPrimaryCustomColor":false,"modFrame":-1,"modTrunk":-1,"modRoof":-1,"modSmokeEnabled":false,"modSideSkirt":-1,"modExhaust":-1,"modTrimA":-1,"SecondaryCustomColor":{"b":8,"g":8,"r":8},"modSpoilers":-1,"modTransmission":-1,"plate":"sfasf","modSuspension":-1,"neonEnabled":[false,false,false,false],"modTank":-1,"modSeats":-1,"modOrnaments":-1,"modEngine":-1,"modWindows":-1,"modHydrolic":-1,"headlight":255,"modAirFilter":-1,"pearlescentColor":73,"modDoorSpeaker":-1,"neonColor":[255,0,255]}', 'car', '', 1, 'standard', 'https://media.discordapp.net/attachments/813604209462214676/858319794900959232/unknown.png?width=1201&height=676', 1000, 0, 0, 0, NULL, 1, 'steam:11000014bf543e0', NULL, 100, 1000, NULL, NULL),
+	('steam:11000014bf543e0', 'T1B8V97N', '{"modEngine":-1,"modSpeakers":-1,"modAerials":-1,"modAirFilter":-1,"modFrontWheels":-1,"modExhaust":-1,"modTurbo":false,"modRearBumper":-1,"modHorns":-1,"modGrille":-1,"neonEnabled":[false,false,false,false],"modOrnaments":-1,"headlight":255,"wheelColor":156,"modSmokeEnabled":false,"modDoorSpeaker":-1,"modTrunk":-1,"IsSecondaryCustomColor":false,"SecondaryCustomColor":{"g":8,"b":8,"r":8},"modSuspension":-1,"modAPlate":-1,"windowTint":-1,"modDashboard":-1,"modSteeringWheel":-1,"neonColor":[255,0,255],"modSpoilers":-1,"color1":132,"modSeats":-1,"modEngineBlock":-1,"model":-1205689942,"modBrakes":-1,"modWindows":-1,"modBackWheels":-1,"pearlescentColor":0,"tyreSmokeColor":[255,255,255],"modRoof":-1,"modFender":-1,"modArmor":-1,"modTrimB":-1,"color2":0,"modHydrolic":-1,"modFrame":-1,"modRightFender":-1,"modDial":-1,"modTransmission":-1,"plate":"T1B8V97N","IsPrimaryCustomColor":false,"modTrimA":-1,"PrimaryCustomColor":{"g":240,"b":240,"r":240},"modVanityPlate":-1,"modSideSkirt":-1,"fuel":65.0,"modTank":-1,"modStruts":-1,"plateIndex":4,"livery":-1,"modPlateHolder":-1,"modFrontBumper":-1,"modArchCover":-1,"modShifterLeavers":-1,"modHood":-1,"wheels":0,"modLivery":-1}', 'car', '', 1, 'standard', 'https://media.discordapp.net/attachments/813604209462214676/858319794900959232/unknown.png?width=1201&height=676', 1000, 0, 0, 0, NULL, 1, 'steam:11000014bf543e0', NULL, 100, 1000, NULL, NULL),
+	('steam:11000014bf543e0', 'V2G5M31P', '{"modArchCover":-1,"modRearBumper":-1,"modOrnaments":-1,"headlight":255,"modHood":-1,"modTransmission":-1,"modBrakes":-1,"modGrille":-1,"tyreSmokeColor":[255,255,255],"neonColor":[255,0,255],"modVanityPlate":-1,"IsSecondaryCustomColor":false,"color1":1,"pearlescentColor":3,"modEngine":-1,"color2":1,"modEngineBlock":-1,"modSmokeEnabled":false,"fuel":65.0,"modTurbo":false,"modFender":-1,"modShifterLeavers":-1,"modSeats":-1,"plate":"V2G5M31P","neonEnabled":[false,false,false,false],"modAPlate":-1,"modTank":-1,"modRightFender":-1,"modAerials":-1,"SecondaryCustomColor":{"g":15,"r":15,"b":15},"modStruts":-1,"modSuspension":-1,"modSpeakers":-1,"windowTint":-1,"plateIndex":4,"PrimaryCustomColor":{"g":15,"r":15,"b":15},"modBackWheels":-1,"modDashboard":-1,"modAirFilter":-1,"modTrimA":-1,"wheels":0,"modHydrolic":-1,"modWindows":-1,"modSideSkirt":-1,"livery":-1,"modDoorSpeaker":-1,"modTrimB":-1,"modRoof":-1,"modDial":-1,"modFrontWheels":-1,"model":1127131465,"modFrontBumper":-1,"modArmor":-1,"modHorns":-1,"modSpoilers":-1,"modPlateHolder":-1,"modExhaust":-1,"modSteeringWheel":-1,"modTrunk":-1,"IsPrimaryCustomColor":false,"modFrame":-1,"modLivery":-1,"wheelColor":156}', 'car', '', 1, 'standard', 'https://media.discordapp.net/attachments/813604209462214676/858319794900959232/unknown.png?width=1201&height=676', 1000, 0, 0, 0, NULL, 1, 'steam:11000014bf543e0', NULL, 100, 1000, NULL, NULL),
+	('steam:11000014bf543e0', 'V8P0I07C', '{"modShifterLeavers":-1,"plate":"V8P0I07C","pearlescentColor":0,"modArmor":-1,"modTurbo":false,"modRearBumper":-1,"modAPlate":-1,"livery":2,"IsSecondaryCustomColor":false,"modRoof":-1,"modHorns":-1,"tyreSmokeColor":[255,255,255],"modStruts":-1,"modSideSkirt":-1,"modTransmission":-1,"modFrontBumper":-1,"modLivery":-1,"model":-1627000575,"modDial":-1,"modTrimB":-1,"IsPrimaryCustomColor":false,"neonEnabled":[false,false,false,false],"modAirFilter":-1,"modSpeakers":-1,"modBrakes":-1,"modArchCover":-1,"modAerials":-1,"modEngine":-1,"modFrontWheels":-1,"neonColor":[255,0,255],"modWindows":-1,"modExhaust":-1,"modOrnaments":-1,"SecondaryCustomColor":{"g":8,"b":8,"r":8},"modVanityPlate":-1,"modHydrolic":-1,"color2":0,"headlight":255,"wheelColor":156,"modFender":-1,"modDashboard":-1,"fuel":65.0,"modSpoilers":-1,"modSuspension":-1,"modSmokeEnabled":false,"modTrimA":-1,"modGrille":-1,"modPlateHolder":-1,"modDoorSpeaker":-1,"windowTint":-1,"PrimaryCustomColor":{"g":255,"b":255,"r":255},"modTrunk":-1,"modSteeringWheel":-1,"plateIndex":4,"modHood":-1,"modSeats":-1,"modEngineBlock":-1,"modRightFender":-1,"color1":134,"modBackWheels":-1,"modFrame":-1,"wheels":0,"modTank":-1}', 'car', '', 1, 'standard', 'https://media.discordapp.net/attachments/813604209462214676/858319794900959232/unknown.png?width=1201&height=676', 1000, 0, 0, 0, NULL, 1, 'steam:11000014bf543e0', NULL, 100, 1000, NULL, NULL),
+	('steam:11000014bf543e0', 'w', '{"modShifterLeavers":-1,"modTurbo":false,"model":-1848994066,"modTrimB":-1,"tyreSmokeColor":[255,255,255],"modArchCover":-1,"modRightFender":-1,"fuel":65.0,"wheelColor":0,"modVanityPlate":-1,"color2":0,"modFender":-1,"modArmor":-1,"modSteeringWheel":-1,"modStruts":-1,"modFrontBumper":-1,"modSpeakers":-1,"modDial":-1,"modLivery":-1,"modHood":-1,"modHorns":-1,"PrimaryCustomColor":{"b":87,"g":27,"r":0},"livery":-1,"modBackWheels":-1,"modAerials":-1,"IsSecondaryCustomColor":false,"modPlateHolder":-1,"modAPlate":-1,"modFrontWheels":-1,"modRearBumper":-1,"plateIndex":0,"wheels":0,"modBrakes":-1,"modEngineBlock":-1,"windowTint":-1,"modDashboard":-1,"color1":64,"modGrille":-1,"IsPrimaryCustomColor":false,"modFrame":-1,"modTrunk":-1,"modRoof":-1,"modSmokeEnabled":false,"modSideSkirt":-1,"modExhaust":-1,"modTrimA":-1,"SecondaryCustomColor":{"b":8,"g":8,"r":8},"modSpoilers":-1,"modTransmission":-1,"plate":"w","modSuspension":-1,"neonEnabled":[false,false,false,false],"modTank":-1,"modSeats":-1,"modOrnaments":-1,"modEngine":-1,"modWindows":-1,"modHydrolic":-1,"headlight":255,"modAirFilter":-1,"pearlescentColor":73,"modDoorSpeaker":-1,"neonColor":[255,0,255]}', 'car', '', 1, 'standard', 'https://media.discordapp.net/attachments/813604209462214676/858319794900959232/unknown.png?width=1201&height=676', 1000, 0, 0, 0, NULL, 1, 'steam:11000014bf543e0', NULL, 100, 1000, NULL, NULL),
+	('steam:11000014bf543e0', 'W1P3F37N', '{"modShifterLeavers":-1,"plate":"W1P3F37N","modSeats":-1,"modVanityPlate":-1,"modTurbo":false,"modGrille":-1,"modSteeringWheel":-1,"livery":-1,"modBackWheels":-1,"modRoof":-1,"modSpeakers":-1,"modEngineBlock":-1,"modStruts":-1,"modSideSkirt":-1,"modFrontWheels":-1,"SecondaryCustomColor":{"g":8,"b":8,"r":8},"modArchCover":-1,"model":-1848994066,"IsSecondaryCustomColor":false,"modTrimB":-1,"IsPrimaryCustomColor":false,"neonEnabled":[false,false,false,false],"modAirFilter":-1,"tyreSmokeColor":[255,255,255],"PrimaryCustomColor":{"g":27,"b":87,"r":0},"modDial":-1,"modArmor":-1,"modEngine":-1,"color2":0,"neonColor":[255,0,255],"fuel":65.0,"modTransmission":-1,"modOrnaments":-1,"modPlateHolder":-1,"modLivery":-1,"modHydrolic":-1,"modWindows":-1,"headlight":255,"wheelColor":0,"modFender":-1,"modDashboard":-1,"modFrame":-1,"modSpoilers":-1,"modSuspension":-1,"modSmokeEnabled":false,"modTrimA":-1,"modExhaust":-1,"modHorns":-1,"modDoorSpeaker":-1,"windowTint":-1,"modRearBumper":-1,"modTrunk":-1,"modBrakes":-1,"modFrontBumper":-1,"modHood":-1,"pearlescentColor":73,"modTank":-1,"modAPlate":-1,"color1":64,"plateIndex":0,"modRightFender":-1,"wheels":0,"modAerials":-1}', 'car', '', 1, 'standard', 'https://media.discordapp.net/attachments/813604209462214676/858319794900959232/unknown.png?width=1201&height=676', 1000, 0, 0, 0, NULL, 1, 'steam:11000014bf543e0', NULL, 100, 1000, NULL, NULL),
+	('steam:11000014bf543e0', 'W8X4A87V', '{"modEngine":-1,"modSpeakers":-1,"modAerials":-1,"wheels":6,"modExhaust":-1,"modFrame":-1,"modTurbo":false,"modTransmission":-1,"modTrunk":-1,"modGrille":-1,"neonEnabled":[false,false,false,false],"modOrnaments":-1,"headlight":255,"modTrimB":-1,"modSpoilers":-1,"modDoorSpeaker":-1,"modFrontWheels":-1,"IsSecondaryCustomColor":false,"SecondaryCustomColor":{"g":94,"b":102,"r":90},"modSmokeEnabled":false,"modAPlate":-1,"windowTint":-1,"IsPrimaryCustomColor":false,"PrimaryCustomColor":{"g":8,"b":8,"r":8},"modRoof":-1,"modRearBumper":-1,"color1":0,"modSeats":-1,"modEngineBlock":-1,"model":86520421,"modBrakes":-1,"modDial":-1,"modBackWheels":-1,"pearlescentColor":5,"tyreSmokeColor":[255,255,255],"wheelColor":112,"modFender":-1,"modArmor":-1,"modSuspension":-1,"color2":4,"fuel":99.95500183105469,"modTrimA":-1,"plateIndex":0,"modArchCover":-1,"modDashboard":-1,"modVanityPlate":-1,"modSteeringWheel":-1,"modRightFender":-1,"modPlateHolder":-1,"modAirFilter":-1,"modSideSkirt":-1,"plate":"W8X4A87V","modTank":-1,"modStruts":-1,"modHydrolic":-1,"neonColor":[255,0,255],"modWindows":-1,"modFrontBumper":-1,"modHorns":-1,"modShifterLeavers":-1,"modHood":-1,"livery":-1,"modLivery":-1}', 'car', '', 1, 'standard', 'https://media.discordapp.net/attachments/813604209462214676/858319794900959232/unknown.png?width=1201&height=676', 1000, 0, 0, 0, NULL, 1, 'steam:11000014bf543e0', NULL, 100, 1000, NULL, NULL),
+	('steam:11000014bf543e0', 'W9V2F07L', '{"modDoorSpeaker":-1,"modTransmission":-1,"modRoof":-1,"modSuspension":-1,"modAPlate":-1,"IsSecondaryCustomColor":false,"modVanityPlate":-1,"modExhaust":-1,"neonEnabled":[false,false,false,false],"modWindows":-1,"modAirFilter":-1,"modTrunk":-1,"SecondaryCustomColor":{"b":15,"r":15,"g":15},"modSmokeEnabled":false,"plateIndex":0,"windowTint":-1,"PrimaryCustomColor":{"b":196,"r":0,"g":85},"livery":-1,"modStruts":-1,"plate":"W9V2F07L","neonColor":[255,0,255],"modHood":-1,"modBrakes":-1,"headlight":255,"modShifterLeavers":-1,"wheels":0,"modFrontWheels":-1,"modEngine":-1,"color2":1,"modHorns":-1,"modTurbo":false,"modDashboard":-1,"modGrille":-1,"modRightFender":-1,"modRearBumper":-1,"modSpoilers":-1,"model":-1848994066,"tyreSmokeColor":[255,255,255],"fuel":99.8550033569336,"modLivery":-1,"IsPrimaryCustomColor":false,"modBackWheels":-1,"modOrnaments":-1,"pearlescentColor":67,"modDial":-1,"modHydrolic":-1,"modSpeakers":-1,"modFrontBumper":-1,"modTank":-1,"color1":70,"modAerials":-1,"modSteeringWheel":-1,"modArmor":-1,"modSideSkirt":-1,"modTrimB":-1,"modFender":-1,"modSeats":-1,"modPlateHolder":-1,"modTrimA":-1,"modEngineBlock":-1,"wheelColor":0,"modFrame":-1,"modArchCover":-1}', 'car', '', 1, 'standard', 'https://media.discordapp.net/attachments/813604209462214676/858319794900959232/unknown.png?width=1201&height=676', 966, 0, 0, 0, NULL, 1, 'steam:11000014bf543e0', NULL, 99.855, 994, NULL, NULL),
+	('steam:11000014bf543e0', 'Y7Q1U87M', '{"modAirFilter":-1,"modRearBumper":-1,"modExhaust":-1,"modFrame":-1,"modSpoilers":-1,"modHorns":-1,"modFender":-1,"wheelColor":156,"modDial":-1,"modSmokeEnabled":false,"neonColor":[255,0,255],"modArchCover":-1,"modTurbo":false,"pearlescentColor":0,"modEngine":-1,"modTrunk":-1,"modSuspension":-1,"modSteeringWheel":-1,"modWindows":-1,"modTransmission":-1,"modShifterLeavers":-1,"tyreSmokeColor":[255,255,255],"modBackWheels":-1,"IsSecondaryCustomColor":false,"modFrontBumper":-1,"plateIndex":4,"SecondaryCustomColor":{"r":8,"b":8,"g":8},"IsPrimaryCustomColor":false,"color2":0,"modStruts":-1,"modSeats":-1,"modFrontWheels":-1,"modGrille":-1,"modPlateHolder":-1,"wheels":0,"modArmor":-1,"modHood":-1,"modTank":-1,"modDashboard":-1,"PrimaryCustomColor":{"r":240,"b":240,"g":240},"neonEnabled":[false,false,false,false],"modVanityPlate":-1,"fuel":64.8699951171875,"modSideSkirt":-1,"modEngineBlock":-1,"modBrakes":-1,"modAerials":-1,"modHydrolic":-1,"modAPlate":-1,"headlight":255,"modTrimB":-1,"modLivery":-1,"model":-1205689942,"livery":-1,"color1":132,"windowTint":-1,"plate":"Y7Q1U87M","modDoorSpeaker":-1,"modOrnaments":-1,"modRightFender":-1,"modSpeakers":-1,"modRoof":-1,"modTrimA":-1}', 'car', '', 1, 'standard', 'https://media.discordapp.net/attachments/813604209462214676/858319794900959232/unknown.png?width=1201&height=676', 1000, 0, 0, 0, NULL, 1, 'steam:11000014bf543e0', NULL, 64.87, 1000, NULL, NULL),
+	('steam:11000014bf543e0', 'Y9K0Q95Y', '{"modTrunk":-1,"modSuspension":-1,"modAirFilter":-1,"modTransmission":-1,"modHood":-1,"modRoof":-1,"modSeats":-1,"plateIndex":4,"modVanityPlate":-1,"modSideSkirt":-1,"modHorns":-1,"modTrimB":-1,"pearlescentColor":3,"color1":1,"modDial":-1,"modBrakes":-1,"headlight":255,"modRearBumper":-1,"modBackWheels":-1,"model":1127131465,"modArmor":-1,"modAPlate":-1,"modStruts":-1,"tyreSmokeColor":[255,255,255],"modArchCover":-1,"modAerials":-1,"neonColor":[255,0,255],"livery":-1,"modTrimA":-1,"plate":"Y9K0Q95Y","PrimaryCustomColor":{"b":15,"g":15,"r":15},"fuel":64.82999420166016,"modPlateHolder":-1,"modHydrolic":-1,"modSpeakers":-1,"modFender":-1,"wheelColor":156,"color2":1,"modOrnaments":-1,"modDashboard":-1,"modDoorSpeaker":-1,"modFrontWheels":-1,"modTank":-1,"modGrille":-1,"modEngineBlock":-1,"modExhaust":-1,"modFrame":-1,"modRightFender":-1,"windowTint":-1,"modSpoilers":-1,"IsPrimaryCustomColor":false,"IsSecondaryCustomColor":false,"modSmokeEnabled":false,"modSteeringWheel":-1,"modLivery":-1,"modFrontBumper":-1,"modShifterLeavers":-1,"modTurbo":false,"neonEnabled":[false,false,false,false],"modWindows":-1,"wheels":0,"modEngine":-1,"SecondaryCustomColor":{"b":15,"g":15,"r":15}}', 'car', '', 1, 'standard', 'https://media.discordapp.net/attachments/813604209462214676/858319794900959232/unknown.png?width=1201&height=676', 1000, 0, 0, 0, NULL, 1, 'steam:11000014bf543e0', NULL, 64.83, 1000, NULL, NULL);
+
+-- Dumping structure for table essentialmode.ox_inventory
+DROP TABLE IF EXISTS `ox_inventory`;
+CREATE TABLE IF NOT EXISTS `ox_inventory` (
+  `owner` varchar(60) DEFAULT NULL,
+  `name` varchar(100) NOT NULL,
+  `data` longtext DEFAULT NULL,
+  `lastupdated` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  UNIQUE KEY `owner` (`owner`,`name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Dumping data for table essentialmode.ox_inventory: ~2 rows (approximately)
+REPLACE INTO `ox_inventory` (`owner`, `name`, `data`, `lastupdated`) VALUES
+	('0', 'gang_a', '[{"name":"blowtorch","count":1,"slot":1}]', '2026-08-24 13:59:14'),
+	('steam:11000014bf543e0', 'property_steam:11000014bf543e0', '[]', '2026-08-24 13:59:14'),
+	('', 'gang_a', NULL, '2026-08-26 07:25:00');
 
 -- Dumping structure for table essentialmode.paintball_job_access
 DROP TABLE IF EXISTS `paintball_job_access`;
@@ -2801,7 +3201,7 @@ CREATE TABLE IF NOT EXISTS `quest` (
 
 -- Dumping data for table essentialmode.quest: ~0 rows (approximately)
 REPLACE INTO `quest` (`ID`, `identifier`, `daily_data`, `weekly_data`, `bigtime_data`, `quests`, `job`, `job2`, `job3`, `gang`, `gang2`, `farm`, `farm2`, `give`, `sell`, `dailyquests`, `date`) VALUES
-	(134, 'steam:11000014bf543e0', '{"AllEnd":false,"End":false,"Completed":0,"ID":0,"Trigger":"","Category":0,"Finish":0,"status":false}', '{"End":false,"Finish2":0,"Trigger":"","Completed2":0,"Finish":0,"status":false,"Completed":0,"Category":0,"ID":0}', '{"End":false,"Completed":0,"ID":0,"Trigger":"","Category":0,"Finish":0,"status":false}', '{"4":0,"23":0,"16":0,"13":0,"2":0,"15":0}', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '2026/08/18');
+	(134, 'steam:11000014bf543e0', '{"AllEnd":false,"End":false,"Completed":0,"ID":0,"Trigger":"","Category":0,"Finish":0,"status":false}', '{"End":false,"Finish2":0,"Trigger":"","Completed2":0,"Finish":0,"status":false,"Completed":0,"Category":0,"ID":0}', '{"End":false,"Completed":0,"ID":0,"Trigger":"","Category":0,"Finish":0,"status":false}', '{"1":0,"Job":"police"}', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, '2026/08/26');
 
 -- Dumping structure for table essentialmode.quest_list
 DROP TABLE IF EXISTS `quest_list`;
@@ -3197,7 +3597,7 @@ CREATE TABLE IF NOT EXISTS `uniqueac_trust` (
 
 -- Dumping data for table essentialmode.uniqueac_trust: ~0 rows (approximately)
 REPLACE INTO `uniqueac_trust` (`identifier`, `player_name`, `trust_score`, `risk_score`, `flag_count`, `quarantine_count`, `reconnect_count`, `last_reconnect_at`, `first_seen`, `last_seen`) VALUES
-	('license:153122398469261248', 'GD', 100, 40, 0, 0, 4, 145527, '2026-08-11 10:06:10', '2026-08-18 08:41:10');
+	('license:153122398469261248', 'GD', 100, 40, 0, 0, 4, 604498, '2026-08-11 10:06:10', '2026-08-23 13:03:12');
 
 -- Dumping structure for table essentialmode.uniqueac_unban
 DROP TABLE IF EXISTS `uniqueac_unban`;
@@ -3308,7 +3708,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `iban` varchar(50) DEFAULT NULL,
   `badge` varchar(20) DEFAULT NULL,
   `rank` int(11) NOT NULL DEFAULT 0,
-  `jail` int(11) NOT NULL DEFAULT 0,
+  `jail` text NOT NULL DEFAULT '0',
   `timePlay` bigint(20) NOT NULL DEFAULT 0,
   `level` int(11) NOT NULL DEFAULT 1,
   `R` int(11) NOT NULL DEFAULT 0,
@@ -3320,9 +3720,11 @@ CREATE TABLE IF NOT EXISTS `users` (
   `account_num` int(11) NOT NULL AUTO_INCREMENT,
   PRIMARY KEY (`identifier`),
   UNIQUE KEY `account_num` (`account_num`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Dumping data for table essentialmode.users: ~0 rows (approximately)
+REPLACE INTO `users` (`identifier`, `accounts`, `inventory`, `job`, `job_grade`, `group`, `gang`, `gang_grade`, `divisions`, `position`, `firstname`, `lastname`, `dateofbirth`, `sex`, `height`, `skin`, `is_dead`, `last_property`, `money`, `bank`, `black_money`, `loadout`, `disabled`, `disabled_reason`, `phone_number`, `steam`, `license`, `discord`, `fivem`, `xbl`, `live`, `ip`, `playtime`, `last_seen`, `created_at`, `coin`, `timercoin`, `score`, `skills`, `WantedLevel`, `Profile_Pic`, `token`, `tasks`, `tasks_completed`, `winnings`, `tattoos`, `status`, `name`, `playerName`, `discordid`, `subscription_uses`, `permission_level`, `phone`, `iban`, `badge`, `rank`, `jail`, `timePlay`, `level`, `R`, `starterpack`, `roles`, `xp`, `setwarn`, `division`, `account_num`) VALUES
+	('steam:11000014bf543e0', NULL, '[{"count":2,"item":"radio"},{"count":2,"item":"phone"},{"count":1,"item":"hifi"},{"count":1,"item":"CarKey|64JJA687"}]', 'police', 21, 'user', 'A', 13, '[]', '{"x":219.0469512939453,"y":-767.0297241210938,"z":30.47820854187011}', NULL, NULL, '02/01/2000', '0', NULL, '{"sex":0,"bracelets_1":-1,"arms_2":0,"watches_1":-1,"ears_1":-1,"tshirt_2":0,"beard_3":0,"chain_1":0,"bags_2":0,"chain_2":0,"eyebrows_2":10,"shoes_2":0,"complexion_1":0,"bproof_1":0,"face_1":0,"hair_color_2":0,"pants_1":61,"moles_2":1,"bproof_2":0,"face_3":5,"mask_2":0,"beard_2":10,"eye_color":5,"watches_2":-1,"complexion_2":1,"pants_2":4,"eyebrows_1":0,"hair_1":1,"helmet_1":-1,"age_2":0,"hair_color_1":0,"tshirt_1":15,"mask_1":0,"torso_2":0,"beard_4":0,"helmet_2":-1,"torso_1":15,"skin":12,"glasses_2":-1,"age_1":0,"bracelets_2":-1,"moles_1":0,"ears_2":-1,"glasses_1":-1,"beard_1":0,"face_2":21,"shoes_1":34,"hair_2":0,"arms":15,"bags_1":0}', 0, NULL, 0, 280000, 0, '[]', 0, NULL, NULL, NULL, 'license:153122398469261248', NULL, NULL, NULL, NULL, NULL, 0, NULL, '2026-08-22 18:00:33', 6, 90, 0, NULL, 'standard', '', 0, NULL, NULL, '', NULL, NULL, 'GD', 'Arshia_Mtz', 'N/A', 0, 16, '05252198153', '7030581', NULL, 1, '0', 20916, 1, 0, 'false', '', 10, '0', '', 4);
 
 -- Dumping structure for table essentialmode.uwumarket
 DROP TABLE IF EXISTS `uwumarket`;
@@ -3649,6 +4051,22 @@ REPLACE INTO `vehicles` (`name`, `model`, `price`, `category`) VALUES
 	('Zombie', 'zombiea', 9500, 'motorcycles'),
 	('Zombie Luxuary', 'zombieb', 12000, 'motorcycles'),
 	('Z-Type', 'ztype', 220000, 'sportsclassics');
+
+-- Dumping structure for table essentialmode.weapon_serials
+DROP TABLE IF EXISTS `weapon_serials`;
+CREATE TABLE IF NOT EXISTS `weapon_serials` (
+  `serial` varchar(12) NOT NULL,
+  `weapon` varchar(50) NOT NULL,
+  `owner_identifier` varchar(60) DEFAULT NULL,
+  `registered_identifier` varchar(60) DEFAULT NULL,
+  `ammo` int(11) NOT NULL DEFAULT 0,
+  `components` text NOT NULL DEFAULT '[]',
+  `status` varchar(20) NOT NULL DEFAULT 'unowned',
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`serial`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Dumping data for table essentialmode.weapon_serials: ~0 rows (approximately)
 
 -- Dumping structure for table essentialmode.whitelist
 DROP TABLE IF EXISTS `whitelist`;
