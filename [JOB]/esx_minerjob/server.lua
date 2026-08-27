@@ -379,13 +379,23 @@ end)
 RegisterServerEvent('mining:MeltItems')
 AddEventHandler('mining:MeltItems', function(type)
     local xPlayer = ESX.GetPlayerFromId(source)
-    local item = xPlayer.getInventoryItem("washed_stone")
-	if type == "gold_piece" then
+    if not xPlayer then return end
+
+    -- SECURITY FIX: this used to unconditionally give the refined item and
+    -- try to remove 20 raw pieces regardless of whether the player actually
+    -- had 20 -- with no balance check, a player with 0 (or any amount less
+    -- than 20) raw pieces could spam this event for unlimited free
+    -- gold/iron.
+    if type == "gold_piece" then
+        local item = xPlayer.getInventoryItem("gold_piece")
+        if not item or item.count < 20 then return end
         xPlayer.addInventoryItem('gold', 1)
-		xPlayer.removeInventoryItem('gold_piece', 20)
-	elseif type == "iron_piece" then
+        xPlayer.removeInventoryItem('gold_piece', 20)
+    elseif type == "iron_piece" then
+        local item = xPlayer.getInventoryItem("iron_piece")
+        if not item or item.count < 20 then return end
         xPlayer.addInventoryItem('iron', 1)
-		xPlayer.removeInventoryItem('iron_piece', 20)
+        xPlayer.removeInventoryItem('iron_piece', 20)
     end
 end)
 

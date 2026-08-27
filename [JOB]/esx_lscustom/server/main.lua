@@ -52,6 +52,22 @@ local function getRealVehiclePrice(vehicleModelHash)
 	return nil
 end
 
+-- SECURITY FIX: resolves the vehicle's ACTUAL current model server-side by
+-- matching its plate against the live game vehicle pool, instead of trusting
+-- vehicleProps.model (which comes straight from the client and could be
+-- spoofed to claim a cheap model while modding an expensive one -- the gap
+-- noted in the previous fix above). GetVehicleNumberPlateText/GetEntityModel
+-- read the actual synced entity state, so this can't be spoofed the same way.
+local function getServerVehicleModelByPlate(plate)
+	if not plate then return nil end
+	for _, veh in ipairs(GetGamePool('CVehicle')) do
+		if GetVehicleNumberPlateText(veh) == plate then
+			return GetEntityModel(veh)
+		end
+	end
+	return nil
+end
+
 RegisterServerEvent('esx_lscustom:buyMod')
 AddEventHandler('esx_lscustom:buyMod', function(price, vehicle)
 	local _source = source
@@ -72,18 +88,16 @@ AddEventHandler('esx_lscustom:buyMod', function(price, vehicle)
 	-- getVehiclesPrices (see below), which always happens on esx:playerLoaded
 	-- long before anyone could reach buyMod -- if it's still nil here, there's
 	-- nothing to validate against, so refuse rather than trust the client.
-	-- NOTE: vehicleModelHash comes from client-supplied vehicleProps (see
-	-- esx_lscustom:VehiclesInWatingList below), so a modified client could
-	-- still under-report which model it's modding to shop for a lower
-	-- ceiling. That's a separate, deeper issue (the protocol has no
-	-- server-verified vehicle identity at all); this fix's scope is closing
-	-- the immediate $0-mod exploit and bounding the price to something
-	-- plausible, not full identity verification.
-	local vehicleModelHash = VehiclesInWatingList[k].props and VehiclesInWatingList[k].props.model
+	--
+	-- vehicleModelHash is resolved server-side from the live entity by plate
+	-- (see getServerVehicleModelByPlate above) -- NOT from the client-supplied
+	-- vehicleProps.model -- so a modified client can no longer under-report
+	-- the model to shop for a lower ceiling.
+	local vehicleModelHash = getServerVehicleModelByPlate(vehicle)
 	local realVehiclePrice = getRealVehiclePrice(vehicleModelHash)
 	if not realVehiclePrice then
 		-- Matches the client's own fallback default (see CustomColor()) for
-		-- unrecognized models so legitimate purchases on those still work.
+		-- unrecognized/unresolved models so legitimate purchases still work.
 		realVehiclePrice = 10000000
 	end
 

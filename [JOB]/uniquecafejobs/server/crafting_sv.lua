@@ -7,6 +7,14 @@ TriggerEvent(
     end
 )
 
+-- SECURITY FIX: AH_uwucafejob:itemCrafted (below) used to grant the crafted
+-- item/weapon purely on the (item, count) the CLIENT sent, with no check
+-- that this player had actually gone through craft() and paid the
+-- ingredients/tax first -- any player could TriggerServerEvent it directly
+-- for a free item. This tracks what was legitimately started server-side so
+-- itemCrafted can verify (and consume) it before granting anything.
+local PendingCrafts = {} -- source -> { item = string, expiresAt = os.time() }
+
 function setCraftingLevel(identifier, level)
 	local xPlayer = ESX.GetPlayerFromIdentifier(identifier)
 	-- TriggerEvent("GangXPSystem:setXP", xPlayer.gang.name, level)
@@ -83,6 +91,7 @@ function craft(src, item, retrying)
 			end
 
 			TriggerClientEvent("AH_uwucafejob:craftStart", src, item, count)
+			PendingCrafts[src] = { item = item, expiresAt = os.time() + 120 }
 			
 			
 		else
@@ -122,6 +131,7 @@ function craft(src, item, retrying)
                                     end
 
                                     TriggerClientEvent("AH_uwucafejob:craftStart", src, item, count)
+                                    PendingCrafts[src] = { item = item, expiresAt = os.time() + 120 }
                                 else
                                     TriggerClientEvent('esx:showNotification', src, 'Shoma Pol Kafi Nadarid')
                                 end
@@ -149,6 +159,7 @@ function craft(src, item, retrying)
 					end
 
 					TriggerClientEvent("AH_uwucafejob:craftStart", src, item, count)
+					PendingCrafts[src] = { item = item, expiresAt = os.time() + 120 }
 				else
 					TriggerClientEvent('esx:showNotification', src, _U("not_enough_ingredients"))
 				end
@@ -166,6 +177,17 @@ AddEventHandler(
 function(item, count)
     local src = source
     local xPlayer = ESX.GetPlayerFromId(src)
+    if not xPlayer then return end
+
+    -- SECURITY FIX: require a matching, unexpired pending craft (see
+    -- PendingCrafts above) -- i.e. this player must have actually gone
+    -- through craft() and paid for the ingredients -- before granting
+    -- anything. Consumed on use so it can't be replayed.
+    local pending = PendingCrafts[src]
+    if not pending or pending.item ~= item or os.time() > pending.expiresAt then
+        return
+    end
+    PendingCrafts[src] = nil
 
     if ConfigCrafting.Recipes[item].SuccessRate > math.random(0, ConfigCrafting.Recipes[item].SuccessRate) then
         if ConfigCrafting.UseLimitSystem then
