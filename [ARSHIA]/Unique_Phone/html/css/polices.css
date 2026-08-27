@@ -141,6 +141,11 @@
     color: white;
 }
 
+.police-list-jobtag {
+    color: rgb(150, 150, 150);
+    font-size: 1.05vh;
+}
+
 .no-polices {
     position: absolute;
     top: 50%;

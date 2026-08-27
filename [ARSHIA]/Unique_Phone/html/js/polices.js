@@ -1,188 +1,124 @@
-Setuppolices = function(data) {
-    $(".polices-list").html("");
-    var uwucafe = [];
-    var mechanic = [];
-    var taxi = [];
-    var sheriff = [];
-    var ambulance = [];
-    var LSPD = [];
-    var weazel = [];
-    // EXPANSION: any job with jobs.hasapp = 1 that ISN'T one of the 7
-    // categories above (no hardcoded icon/section for it) used to be
-    // fetched by the server but then silently dropped here — never
-    // rendered, never clickable. Grouped generically instead, keyed by
-    // job name, so newly-added jobs actually show up.
-    var otherJobsMap = {};
-
-    var KNOWN_JOBS = ["uwucafe", "police", "mechanic", "taxi", "sheriff", "ambulance", "weazel"];
-
-    if (data.length > 0) {
-        $.each(data, function(i, police) {
-            if (police.typejob == "uwucafe") {
-                uwucafe.push(police);
-            } else if (police.typejob == "police") {
-                LSPD.push(police);
-            } else if (police.typejob == "mechanic") {
-                mechanic.push(police);
-            } else if (police.typejob == "taxi") {
-                taxi.push(police);
-            } else if (police.typejob == "sheriff") {
-                sheriff.push(police);
-            } else if (police.typejob == "ambulance") {
-                ambulance.push(police);
-            } else if (police.typejob == "weazel") {
-                weazel.push(police);
-            } else {
-                if (!otherJobsMap[police.typejob]) {
-                    otherJobsMap[police.typejob] = {
-                        label: police.jobLabel || police.typejob,
-                        entries: []
-                    };
-                }
-                otherJobsMap[police.typejob].entries.push(police);
-            }
-        });
-
-      
-        $(".polices-list").append('<h1 class="police-section-header" style="border-top-left-radius: .5vh; border-top-right-radius: .5vh; background-color: rgb(43, 43, 43);">Police (' + (LSPD.length > 5 ? "+5" : LSPD.length) + ')</h1>');
-
-        if (LSPD.length > 0) {
-            var police1 = LSPD[0]; 
-            var element = '<div class="police-list" id="policeid1-0"> <div class="police-list-firstletter" style="background-color: rgb(43, 43, 43);"><img src="./img/jobs/pd.png" alt="Police" style="width: 100%; height: 100%; object-fit: cover;"></div> <div class="police-list-fullname">Police</div> <div class="police-list-call"><i class="fas fa-phone"></i></div> </div>';
-            $(".polices-list").append(element);
-            $("#policeid1-0").data('policeData', police1); 
-        } else {
-            var element = '<div class="police-list"><div class="no-polices">There are no Police available.</div></div>';
-            $(".polices-list").append(element);
-        }
-
-       
-        $(".polices-list").append('<br><h1 class="police-section-header" style="background-color: rgb(138, 84, 33);">Sheriff (' + (sheriff.length > 5 ? "+5" : sheriff.length) + ')</h1>');
-
-        if (sheriff.length > 0) {
-            var police = sheriff[0];
-            var element = '<div class="police-list" id="policeid-0"> <div class="police-list-firstletter" style="background-color: rgb(138, 84, 33); display: flex; align-items: center; justify-content: center;"> <img src="./img/jobs/sh.png" alt="Sheriff" style="width: 100%; height: 100%; object-fit: contain;"> </div> <div class="police-list-fullname">Sheriff</div> <div class="police-list-call"><i class="fas fa-phone"></i></div> </div>';
-            $(".polices-list").append(element);
-            $("#policeid-0").data('policeData', police);
-        } else {
-            var element = '<div class="police-list"><div class="no-polices">There are no Sheriff available.</div></div>';
-            $(".polices-list").append(element);
-        }
-
-        $(".polices-list").append('<br><h1 class="police-section-header" style="background-color: rgb(255, 0, 0);">Ambulance (' + ambulance.length + ')</h1>');
-
-        if (ambulance.length > 0) {
-            var police2 = ambulance[0]; 
-            var element = '<div class="police-list" id="policeid2-0"> <div class="police-list-firstletter" style="background-color: rgb(255, 0, 0); display: flex; align-items: center; justify-content: center;"> <img src="./img/jobs/md.png" alt="Ambulance" style="width: 100%; height: 100%; object-fit: contain;"> </div> <div class="police-list-fullname">Ambulance</div> <div class="police-list-call"><i class="fas fa-phone"></i></div> </div>';
-            $(".polices-list").append(element);
-            $("#policeid2-0").data('policeData', police2);
-        } else {
-            var element = '<div class="police-list"><div class="no-polices">There are no Ambulance available.</div></div>';
-            $(".polices-list").append(element);
-        }
-        
-        $(".polices-list").append('<br><h1 class="police-section-header" style="background-color: rgb(255, 190, 27);">Taxi (' + taxi.length + ')</h1>');
-
-        if (taxi.length > 0) {
-            var police3 = taxi[0]; 
-            var element = '<div class="police-list" id="policeid3-0"> <div class="police-list-firstletter" style="background-color: rgb(253, 202, 74); display: flex; align-items: center; justify-content: center;"> <img src="./img/jobs/tx.png" alt="Taxi" style="width: 100%; height: 100%; object-fit: contain;"> </div> <div class="police-list-fullname">Taxi</div> <div class="police-list-call"><i class="fas fa-phone"></i></div> </div>';
-            $(".polices-list").append(element);
-            $("#policeid3-0").data('policeData', police3);
-        } else {
-            var element = '<div class="police-list"><div class="no-polices">There are no taxis available.</div></div>';
-            $(".polices-list").append(element);
-        }
-        
-        $(".polices-list").append('<br><h1 class="police-section-header" style="background-color: rgb(255, 128, 0);">Mechanic (' + mechanic.length + ')</h1>');
-        var element = '<div class="police-list" id="policeid4-0"> <div class="police-list-firstletter" style="background-color: rgb(255, 128, 0); display: flex; align-items: center; justify-content: center;"> <img src="./img/jobs/mc.png" alt="Mechanic" style="width: 100%; height: 100%; object-fit: contain;"> </div> <div class="police-list-fullname">Mechanic</div> <div class="police-list-call"><i class="fas fa-phone"></i></div> </div>';
-        if (mechanic.length > 0) {
-            var police4 = mechanic[0]; 
-
-            $(".polices-list").append(element);
-            $("#policeid4-0").data('policeData', police4);
-        } else {
-            var element = '<div class="police-list"><div class="no-polices">There is no Mechanic available.</div></div>';
-            $(".polices-list").append(element);
-        }
-        
-        $(".polices-list").append('<br><h1 class="police-section-header" style="background-color: rgb(182, 20, 182);">UwU Cafe (' + uwucafe.length + ')</h1>');
-
-        if (uwucafe.length > 0) {
-            $.each(uwucafe, function(i, police5) {
-                var element = '<div class="police-list" id="policeid5-' + i + '"> <div class="police-list-firstletter" style="background-color: rgb(182, 20, 182); display: flex; align-items: center; justify-content: center;"> <img src="./img/jobs/uwu.png" alt="Police" style="width: 100%; height: 100%; object-fit: contain;"> </div> <div class="police-list-fullname">' + police5.name + '</div> <div class="police-list-call"><i class="fas fa-phone"></i></div> </div>';
-                $(".polices-list").append(element);
-                $("#policeid5-" + i).data('policeData', police5);
-            });
-        } else {
-            var element = '<div class="police-list"><div class="no-polices">There is no UwU Cafe available.</div></div>'
-            $(".polices-list").append(element);
-        }
-
-        $(".polices-list").append('<br><h1 class="police-section-header" style="background-color: rgb(255, 0, 0);">Weazel News (' + weazel.length + ')</h1>');
-
-        if (weazel.length > 0) {
-            $.each(weazel, function(i, police6) {
-                var element = '<div class="police-list" id="policeid6-' + i + '"> <div class="police-list-firstletter" style="background-color: rgb(255, 0, 0); display: flex; align-items: center; justify-content: center;"> <img src="./img/jobs/wz.png" alt="Police" style="width: 100%; height: 100%; object-fit: contain;"> </div> <div class="police-list-fullname">' + police6.name + '</div> <div class="police-list-call"><i class="fas fa-phone"></i></div> </div>';
-                $(".polices-list").append(element);
-                $("#policeid6-" + i).data('policeData', police6);
-            });
-        } else {
-            var element = '<div class="police-list"><div class="no-polices">There is no Weazel News available.</div></div>'
-            $(".polices-list").append(element);
-        }
-
-        // EXPANSION: one section per newly-added job (jobs.hasapp = 1)
-        // that doesn't have a dedicated hardcoded section above — generic
-        // briefcase icon, real job label, same "one representative + call"
-        // pattern as Sheriff/Ambulance/Taxi/Mechanic.
-        $.each(otherJobsMap, function(jobName, jobGroup) {
-            $(".polices-list").append('<br><h1 class="police-section-header" style="background-color: rgb(80, 90, 110);">'
-                + jobGroup.label + ' (' + (jobGroup.entries.length > 5 ? "+5" : jobGroup.entries.length) + ')</h1>');
-
-            var repPolice = jobGroup.entries[0];
-            var elementId = "policeid-other-" + jobName;
-            var element = '<div class="police-list" id="' + elementId + '"> <div class="police-list-firstletter" style="background-color: rgb(80, 90, 110); display: flex; align-items: center; justify-content: center;"> <i class="fas fa-briefcase" style="color:#fff; font-size: 1.4vh;"></i> </div> <div class="police-list-fullname">' + jobGroup.label + '</div> <div class="police-list-call"><i class="fas fa-phone"></i></div> </div>';
-            $(".polices-list").append(element);
-            $("#" + elementId).data('policeData', repPolice);
-        });
-    } else {
-        $(".polices-list").append('<h1 class="police-section-header" style="border-top-left-radius: .5vh; border-top-right-radius: .5vh; background-color: rgb(138, 84, 33);">Sheriff (' + sheriff.length + ')</h1>');
-
-        var element = '<div class="police-list"><div class="no-polices">There are no Sheriff available.</div></div>'
-        $(".polices-list").append(element);
-
-        $(".polices-list").append('<br><h1 class="police-section-header" style="background-color: rgb(43, 43, 43);">Police (' + LSPD.length + ')</h1>');
-
-        var element = '<div class="police-list"><div class="no-polices">There are no Police available.</div></div>'
-        $(".polices-list").append(element);
-
-        $(".polices-list").append('<br><h1 class="police-section-header" style="background-color: rgb(255, 0, 0);">Ambulance (' + ambulance.length + ')</h1>');
-
-        var element = '<div class="police-list"><div class="no-polices">There are no Ambulance available.</div></div>'
-        $(".polices-list").append(element);
-
-        $(".polices-list").append('<br><h1 class="police-section-header" style="color:#F5F5DC; background-color: rgb(255, 190, 27);">Taxi (' + taxi.length + ')</h1>');
-
-        var element = '<div class="police-list"><div class="no-polices">There are no taxis available.</div></div>'
-        $(".polices-list").append(element);
-        
-        $(".polices-list").append('<br><h1 class="police-section-header" style="background-color: rgb(255, 128, 0);">Mechanic (' + mechanic.length + ')</h1>');
-
-        var element = '<div class="police-list"><div class="no-polices">There are no Mechanic a available.</div></div>'
-        $(".polices-list").append(element);
-        
-        $(".polices-list").append('<br><h1 class="police-section-header" style="background-color: rgb(182, 20, 182);">UwU Cafe (' + uwucafe.length + ')</h1>');
-
-        var element = '<div class="police-list"><div class="no-polices">There are no UwU Cafe a available.</div></div>'
-        $(".polices-list").append(element);
-
-        $(".polices-list").append('<br><h1 class="police-section-header" style="background-color: rgb(255, 0, 0);">Weazel News (' + weazel.length + ')</h1>');
-
-        var element = '<div class="police-list"><div class="no-polices">There are no Weazel News a available.</div></div>'
-        $(".polices-list").append(element);
+// EXPANSION: replaced the old "one section per job" layout (Police,
+// Sheriff, Taxi, Ambulance, Mechanic, UwU Cafe, Weazel News as 7 separate
+// sections) with 3 broader organizations, each grouping several jobs
+// together and listing every online person within it. The click-to-call
+// logic further down is untouched — it already routes by the person's
+// REAL job (typejob), not by which category they're grouped under here.
+var JOB_CATEGORIES = [
+    {
+        title: "Department Of Justice",
+        color: "rgb(90, 60, 140)",
+        icon: "fas fa-scale-balanced",
+        jobs: ["cid", "cia", "marshal", "fbi", "judge", "doa"]
+    },
+    {
+        title: "Law Enforcement",
+        color: "rgb(43, 43, 43)",
+        icon: "fas fa-shield-halved",
+        jobs: ["police", "sheriff", "mt"]
+    },
+    {
+        title: "Organ Services",
+        color: "rgb(0, 150, 120)",
+        icon: "fas fa-briefcase-medical",
+        jobs: ["taxi", "mechanic", "ambulance", "weazel"]
     }
+];
+
+var JOB_ICON_IMAGES = {
+    police: "pd.png",
+    sheriff: "sh.png",
+    taxi: "tx.png",
+    mechanic: "mc.png",
+    ambulance: "md.png",
+    weazel: "wz.png"
+};
+
+var JOB_ICON_FALLBACK = {
+    fbi: "fa-user-secret",
+    cid: "fa-magnifying-glass",
+    cia: "fa-user-ninja",
+    marshal: "fa-gavel",
+    judge: "fa-scale-balanced",
+    doa: "fa-file-signature",
+    mt: "fa-shield-halved"
+};
+
+function jobIconHtml(jobName) {
+    if (JOB_ICON_IMAGES[jobName]) {
+        return '<img src="./img/jobs/' + JOB_ICON_IMAGES[jobName] + '" alt="' + jobName + '" style="width:100%; height:100%; object-fit:contain;">';
+    }
+    var icon = JOB_ICON_FALLBACK[jobName] || "fa-briefcase";
+    return '<i class="fas ' + icon + '" style="color:#fff; font-size:1.4vh;"></i>';
 }
 
+Setuppolices = function(data) {
+    $(".polices-list").html("");
+    data = data || [];
+
+    var jobToCategory = {};
+    $.each(JOB_CATEGORIES, function(i, cat) {
+        $.each(cat.jobs, function(j, jobName) {
+            jobToCategory[jobName] = cat;
+        });
+    });
+
+    var grouped = {};
+    $.each(JOB_CATEGORIES, function(i, cat) { grouped[cat.title] = []; });
+    // Anything with jobs.hasapp = 1 that isn't in one of the 3 categories
+    // above (e.g. uwucafe, or any newly-added job) still shows up here
+    // instead of silently disappearing.
+    var otherEntries = [];
+
+    $.each(data, function(i, police) {
+        var cat = jobToCategory[police.typejob];
+        if (cat) {
+            grouped[cat.title].push(police);
+        } else {
+            otherEntries.push(police);
+        }
+    });
+
+    function renderRow(rowId, police, bgColor) {
+        var el =
+            '<div class="police-list" id="' + rowId + '">' +
+                '<div class="police-list-firstletter" style="background-color: ' + bgColor + ';">' + jobIconHtml(police.typejob) + '</div>' +
+                '<div class="police-list-fullname">' + police.name + ' <span class="police-list-jobtag">(' + (police.jobLabel || police.typejob) + ')</span></div>' +
+                '<div class="police-list-call"><i class="fas fa-phone"></i></div>' +
+            '</div>';
+        $(".polices-list").append(el);
+        $("#" + rowId).data('policeData', police);
+    }
+
+    $.each(JOB_CATEGORIES, function(i, cat) {
+        var entries = grouped[cat.title];
+        $(".polices-list").append(
+            '<h1 class="police-section-header" style="background-color: ' + cat.color + ';">'
+                + '<span><i class="' + cat.icon + '"></i> ' + cat.title + '</span>'
+                + '<span>' + entries.length + '</span></h1>'
+        );
+
+        if (entries.length === 0) {
+            $(".polices-list").append('<div class="police-list"><div class="no-polices">No one from ' + cat.title + ' is online.</div></div>');
+        } else {
+            $.each(entries, function(idx, police) {
+                renderRow("police-row-" + i + "-" + idx, police, cat.color);
+            });
+        }
+        $(".polices-list").append('<br>');
+    });
+
+    if (otherEntries.length > 0) {
+        $(".polices-list").append(
+            '<h1 class="police-section-header" style="background-color: rgb(80, 90, 110);">'
+                + '<span><i class="fas fa-briefcase"></i> Other Services</span>'
+                + '<span>' + otherEntries.length + '</span></h1>'
+        );
+        $.each(otherEntries, function(idx, police) {
+            renderRow("police-row-other-" + idx, police, "rgb(80, 90, 110)");
+        });
+    }
+}
 var lastRequestTime = 0;
 var cooldownTime = 5 * 60 * 1000; 
 

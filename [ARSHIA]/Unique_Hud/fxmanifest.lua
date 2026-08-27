@@ -23,6 +23,7 @@ client_scripts {
     'client/combat.lua',
     'client/speedometer.lua',
     'client/scoreboard.lua',
+    'client/seatbelt.lua',
 }
 
 ui_page 'ui/index.html'
@@ -60,6 +61,10 @@ files {
     'ui/scoreboard/css/Job/*.png',
     'ui/scoreboard/css/Robb/*.png',
     'ui/scoreboard/images/Assets/*.png',
+    'ui/seatbelt/index.html',
+    'ui/seatbelt/app.js',
+    'ui/seatbelt/style.css',
+    'ui/seatbelt/img/seatbelt.png',
 }
 
 -- speedometer.lua از exports['LegacyFuel']:GetFuel استفاده می‌کنه (همون

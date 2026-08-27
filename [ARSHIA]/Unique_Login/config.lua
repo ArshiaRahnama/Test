@@ -25,16 +25,6 @@ Config.LoginLockout = {
     LockMinutes  = 15,  -- how long the username stays locked
 }
 
--- SECURITY FIX: sending an OTP was already rate-limited (Config.SmsRateLimit
--- above), but GUESSING a code that had already been sent was not -- a
--- phone's 6-digit code could be tried as many times as fit in its 2-minute
--- validity window (register step 2 AND forgot-password step 2, since both
--- share this limit). This caps guesses per code; exceeding it invalidates
--- the code and forces a resend.
-Config.CodeVerifyLockout = {
-    MaxAttempts = 5,
-}
-
 -- EXPANSION: how many DISTINCT new devices, within how many seconds, before
 -- an account is put on security_hold (see sql/install.sql comment). Only
 -- a successful SMS-OTP password reset clears the hold.

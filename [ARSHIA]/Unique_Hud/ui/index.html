@@ -248,6 +248,11 @@
         if (sbFrame && sbFrame.contentWindow) {
           sbFrame.contentWindow.postMessage(item, '*');
         }
+      } else if (item.displayWindow !== undefined) {
+        var sbeltFrame = document.getElementById('seatbelt-frame');
+        if (sbeltFrame && sbeltFrame.contentWindow) {
+          sbeltFrame.contentWindow.postMessage(item, '*');
+        }
       }
     });
   </script>
@@ -271,6 +276,11 @@
 <!-- Scoreboard (کلید F10) -->
 <iframe id="scoreboard-frame" src="scoreboard/ui.html"
   style="position:fixed;top:0;left:0;width:100%;height:100%;border:none;pointer-events:auto;background:transparent;z-index:9999;">
+</iframe>
+
+<!-- Seatbelt warning (از carhud/seatbelt_client.lua سانست ادغام شد) -->
+<iframe id="seatbelt-frame" src="seatbelt/index.html"
+  style="position:fixed;top:0;left:0;width:100%;height:100%;border:none;pointer-events:none;background:transparent;z-index:9997;">
 </iframe>
 
 </body>
