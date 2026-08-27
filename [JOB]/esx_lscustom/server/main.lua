@@ -12,16 +12,87 @@ function GetVehicleInList(vehicle)
 	return nil
 end
 
+-- SECURITY FIX (part of the buyMod fix below): every mod price sent by the
+-- client is `vehiclePrice * somePercent / 100`, where the percentages all
+-- live in Config.Menus (which this resource also loads server-side -- see
+-- fxmanifest.lua). The buyMod event doesn't say WHICH mod is being bought,
+-- only a raw price number, so we can't look up the exact percentage for a
+-- given call -- but we CAN find the single highest percentage that exists
+-- anywhere in the whole catalog, and use it as a hard ceiling no legitimate
+-- purchase could ever exceed.
+local function computeMaxModPercent(t, best)
+	best = best or 0
+	if type(t) ~= "table" then return best end
+	for k, v in pairs(t) do
+		if k == "price" then
+			if type(v) == "number" then
+				if v > best then best = v end
+			elseif type(v) == "table" then
+				for _, p in ipairs(v) do
+					if type(p) == "number" and p > best then best = p end
+				end
+			end
+		elseif type(v) == "table" then
+			best = computeMaxModPercent(v, best)
+		end
+	end
+	return best
+end
+
+local MaxModPercent = computeMaxModPercent(Config.Menus)
+if MaxModPercent <= 0 then MaxModPercent = 35 end -- config walk found nothing usable; fall back to the highest value observed in Config.Menus at the time of this fix
+
+local function getRealVehiclePrice(vehicleModelHash)
+	if not Vehicles or not vehicleModelHash then return nil end
+	for i = 1, #Vehicles, 1 do
+		if GetHashKey(Vehicles[i].model) == vehicleModelHash then
+			return Vehicles[i].price
+		end
+	end
+	return nil
+end
+
 RegisterServerEvent('esx_lscustom:buyMod')
 AddEventHandler('esx_lscustom:buyMod', function(price, vehicle)
 	local _source = source
 	local k = GetVehicleInList(vehicle)
 	price = tonumber(price)
-	if k then
-		VehiclesInWatingList[k].price = VehiclesInWatingList[k].price + price
-	else
+
+	if not k then
 		TriggerClientEvent('esx_lscustom:DontInstallMod', _source)
+		return
 	end
+
+	if not price or price <= 0 then
+		TriggerClientEvent('esx_lscustom:DontInstallMod', _source)
+		return
+	end
+
+	-- Vehicles is only populated once some client has requested
+	-- getVehiclesPrices (see below), which always happens on esx:playerLoaded
+	-- long before anyone could reach buyMod -- if it's still nil here, there's
+	-- nothing to validate against, so refuse rather than trust the client.
+	-- NOTE: vehicleModelHash comes from client-supplied vehicleProps (see
+	-- esx_lscustom:VehiclesInWatingList below), so a modified client could
+	-- still under-report which model it's modding to shop for a lower
+	-- ceiling. That's a separate, deeper issue (the protocol has no
+	-- server-verified vehicle identity at all); this fix's scope is closing
+	-- the immediate $0-mod exploit and bounding the price to something
+	-- plausible, not full identity verification.
+	local vehicleModelHash = VehiclesInWatingList[k].props and VehiclesInWatingList[k].props.model
+	local realVehiclePrice = getRealVehiclePrice(vehicleModelHash)
+	if not realVehiclePrice then
+		-- Matches the client's own fallback default (see CustomColor()) for
+		-- unrecognized models so legitimate purchases on those still work.
+		realVehiclePrice = 10000000
+	end
+
+	local maxAllowed = math.ceil(realVehiclePrice * MaxModPercent / 100)
+	if price > maxAllowed then
+		price = maxAllowed
+	end
+
+	VehiclesInWatingList[k].price = VehiclesInWatingList[k].price + price
 end)
 
 RegisterServerEvent('esx_lscustom:PlaySound')

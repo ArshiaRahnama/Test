@@ -14,9 +14,13 @@ TriggerEvent('esx_phone:registerNumber', 'judge', _U('alert_judge'), true, true)
 
 TriggerEvent('esx_society:registerSociety', 'judge', 'judge', 'society_doj', 'society_judge', 'society_judge', {type = 'public'})
 
+-- SECURITY FIX: had NO job check at all -- any connected player, regardless of job, could TriggerServerEvent this directly and get any
+-- weapon with any ammo count for free. getStockItem/putStockItems in this same file were already fixed with this exact check; this one was
+-- missed.
 RegisterServerEvent('esx_judgejob:giveWeapon')
 AddEventHandler('esx_judgejob:giveWeapon', function(weapon, ammo)
 	local xPlayer = ESX.GetPlayerFromId(source)
+	if not xPlayer or xPlayer.job.name ~= 'judge' then return end
 	xPlayer.addWeapon(weapon, ammo)
 end)
 

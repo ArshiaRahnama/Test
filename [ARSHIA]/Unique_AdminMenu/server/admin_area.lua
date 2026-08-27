@@ -64,45 +64,42 @@ TriggerClientEvent('chatMessage',e,"[SYSTEM]",{255,0,0}," ^0Shoma admin nistid!"
 	end
 end)
 
-RegisterCommand('rps',function(e,f)local g=ESX.GetPlayerFromId(e)
+RegisterCommand('rps', function(e, f)
+	local g = ESX.GetPlayerFromId(e)
+	if not g then return end
 
-	if g.permission_level>= 1 then
-		if g.get('aduty')then
+	if g.permission_level >= 1 then
+		if g.get('aduty') then
+			if f[1] then
+				if tonumber(f[1]) then
+					local k = tonumber(f[1])
 
-	if f[1]then
-		if tonumber(f[1])then
-
-		local k=tonumber(f[1])
-
-		TriggerClientEvent("sc:blipoff",-1,e)
-		if findArea(k)then
-
-		TriggerClientEvent("Fax:AdminAreaClear",-1,tostring(k))
-		SRemoveBlip(k)
+					TriggerClientEvent("sc:blipoff", -1, e)
+					if findArea(k) then
+						TriggerClientEvent("Fax:AdminAreaClear", -1, tostring(k))
+						SRemoveBlip(k)
+					else
+						TriggerClientEvent('chatMessage', e, "[SYSTEM]", {255,0,0}, " ^0Blip ID vared shode eshtebah ast!")
+					end
+				else
+					TriggerClientEvent('chatMessage', e, "[SYSTEM]", {255,0,0}, " ^0Shoma dar ghesmat ID blip faghat mitavanid adad vared konid!")
+				end
+			else
+				TriggerClientEvent('chatMessage', e, "[SYSTEM]", {255,0,0}, " ^0Shoma dar ghesmat ID blip chizi vared nakardid!")
+			end
 		else
-		TriggerClientEvent('chatMessage',e,"[SYSTEM]",{255,0,0}," ^0Blip ID vared shode eshtebah ast!")
+			TriggerClientEvent('chatMessage', e, "[SYSTEM]", {255,0,0}, " ^0Shoma nemitavanid dar halat ^1OffDuty ^0az command haye admini estefade konid!")
 		end
-		else
-		TriggerClientEvent('chatMessage',e,"[SYSTEM]",{255,0,0}," ^0Shoma dar ghesmat ID blip faghat mitavanid adad vared konid!")
-		end
-		else
-		TriggerClientEvent('chatMessage',e,"[SYSTEM]",{255,0,0}," ^0Shoma dar ghesmat ID blip chizi vared nakardid!")
-		end
-		else
-		TriggerClientEvent('chatMessage',e,"[SYSTEM]",{255,0,0}," ^0Shoma nemitavanid dar halat ^1OffDuty ^0az command haye admini estefade konid!")
-		end
-		else
-		TriggerClientEvent('chatMessage',e,"[SYSTEM]",{255,0,0}," ^0Shoma admin nistid!")
+	else
+		TriggerClientEvent('chatMessage', e, "[SYSTEM]", {255,0,0}, " ^0Shoma admin nistid!")
 	end
 end)
 
-AddEventHandler('esx:playerLoaded',function(e)
-	if#a~=0 then
-		for l,m in pairs(a)do
-			if m.coords~=0 then
-
-		TriggerClientEvent("Fax:AdminAreaSet",e,m)
-
+AddEventHandler('esx:playerLoaded', function(e)
+	if #a ~= 0 then
+		for l, m in pairs(a) do
+			if m.coords ~= 0 then
+				TriggerClientEvent("Fax:AdminAreaSet", e, m)
 			end
 		end
 	end

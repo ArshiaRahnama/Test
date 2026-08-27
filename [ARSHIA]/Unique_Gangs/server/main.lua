@@ -1279,10 +1279,32 @@ AddEventHandler('gangs:buy', function(weaponName, station)
 
 end)
 
+-- SECURITY FIX: `dbname` came straight from the client and was concatenated
+-- directly into a raw SQL UPDATE as a column name (column names can't be
+-- parameterized like values can), so ANY value the client sent became part
+-- of the query -- a full SQL injection reachable by any gang member with
+-- grade >= 12. Only these four columns are ever legitimately set here, so
+-- whitelist against them and refuse anything else. `databasename` was also
+-- missing `local`, making it a global shared across every concurrent call
+-- to this callback from any player/gang -- scoped locally now too.
+local GangHookColumns = {
+	webhookboss  = true,
+	webhookveh   = true,
+	webhookinv   = true,
+	webhookmoney = true,
+}
+
 ESX.RegisterServerCallback('gangs:sethook', function(source, cb, webhook, dbname)
 	local _source, hook = source, webhook
 	local xPlayer = ESX.GetPlayerFromId(_source)
-	databasename = dbname
+	if not xPlayer then cb(false) return end
+
+	local databasename = dbname
+	if not GangHookColumns[databasename] then
+		cb(false)
+		return
+	end
+
 	if xPlayer.gang.name == "nogang" then
 		cb(false)
 
