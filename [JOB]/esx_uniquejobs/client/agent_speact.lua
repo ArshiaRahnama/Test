@@ -213,6 +213,7 @@ function OpenAgentMenu()
 			onSelect = function()
 				local input = lib.inputDialog('Sabeghe-ye Kayfari', { { type = 'input', label = 'ID Ya Esm-e Bazikon', required = true } })
 				if input and input[1] then
+					RecordSearchReturnMenu = 'agent_main'
 					TriggerServerEvent('esx_uniquejobs:menuGetCriminalRecord', input[1])
 				end
 			end,
@@ -321,6 +322,10 @@ function BuildWiretapMenu_agent()
 	end)
 end
 
+-- Set by whichever menu (agent_main or doj_main) triggers a criminal
+-- record search, so the result's "back" button returns to the right place
+RecordSearchReturnMenu = 'agent_main'
+
 RegisterNetEvent('esx_uniquejobs:criminalRecordResult')
 AddEventHandler('esx_uniquejobs:criminalRecordResult', function(data, failedQuery)
 	if not data then
@@ -351,7 +356,7 @@ AddEventHandler('esx_uniquejobs:criminalRecordResult', function(data, failedQuer
 		end
 	end
 
-	lib.registerContext({ id = 'agent_record_result', title = 'Sabeghe-ye Kayfari', menu = 'agent_main', options = options })
+	lib.registerContext({ id = 'agent_record_result', title = 'Sabeghe-ye Kayfari', menu = RecordSearchReturnMenu, options = options })
 	lib.showContext('agent_record_result')
 end)
 
