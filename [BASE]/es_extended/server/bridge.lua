@@ -124,14 +124,88 @@ local function patchPlayer(xPlayer)
         xPlayer.__weaponsBridged = true
     end
 
+    -- CASH AS A REAL ITEM
+    -- ---------------------------------------------------------------
+    -- essentialmode keeps cash as a plain `self.money` number. To make
+    -- it a real draggable/giveable "money" item in ox_inventory while
+    -- keeping essentialmode itself untouched, we sync in both directions:
+    --   1) addMoney/removeMoney/setMoney -> also update the ox_inventory
+    --      "money" item count to match (script gives you cash -> item updates)
+    --   2) A periodic check compares the item count against what we last
+    --      synced; any difference (player dropped/gave/spent it from the
+    --      UI) gets applied back to the real self.money via the same
+    --      addMoney/removeMoney functions everything else already uses.
+    if not xPlayer.__cashBridged then
+        xPlayer.__lastSyncedCash = xPlayer.money or 0
+
+        local originalAddMoney = xPlayer.addMoney
+        local originalRemoveMoney = xPlayer.removeMoney
+        local originalSetMoney = xPlayer.setMoney
+
+        local function pushCashToItem()
+            local ok = pcall(function()
+                local current = exports.ox_inventory:Search(xPlayer.source, 'count', 'money') or 0
+                local target = xPlayer.money or 0
+                local diff = target - current
+
+                if diff > 0 then
+                    exports.ox_inventory:AddItem(xPlayer.source, 'money', diff)
+                elseif diff < 0 then
+                    exports.ox_inventory:RemoveItem(xPlayer.source, 'money', -diff)
+                end
+
+                xPlayer.__lastSyncedCash = target
+            end)
+
+            if not ok then
+                -- inventory isn't ready yet (e.g. still on the character
+                -- creation screen) — just remember the real balance so the
+                -- first real setPlayerInventory picks it up correctly.
+                xPlayer.__lastSyncedCash = xPlayer.money or 0
+            end
+        end
+
+        xPlayer.addMoney = function(m)
+            originalAddMoney(m)
+            pushCashToItem()
+        end
+
+        xPlayer.removeMoney = function(m)
+            originalRemoveMoney(m)
+            pushCashToItem()
+        end
+
+        xPlayer.setMoney = function(m)
+            originalSetMoney(m)
+            pushCashToItem()
+        end
+
+        -- Reverse direction: ox_inventory calls xPlayer.syncInventory(weight,
+        -- maxWeight, items, accounts) every time this player's inventory
+        -- changes, and `accounts.money` is the current count of the "money"
+        -- item sitting in it (ox_inventory tracks this automatically). If
+        -- that count moved on its own (player gave/dropped/spent cash from
+        -- the UI, not through addMoney/removeMoney), apply the difference
+        -- to the real balance so the two stay in sync either way.
+        xPlayer.syncInventory = function(weight, maxWeight, items, accounts)
+            if not accounts or accounts.money == nil then return end
+
+            local diff = accounts.money - xPlayer.__lastSyncedCash
+
+            if diff > 0 then
+                originalAddMoney(diff)
+            elseif diff < 0 then
+                originalRemoveMoney(-diff)
+            end
+
+            xPlayer.__lastSyncedCash = accounts.money
+        end
+
+        xPlayer.__cashBridged = true
+    end
+
     xPlayer.sex = xPlayer.sex or 'm'
     xPlayer.dateofbirth = xPlayer.dateofbirth or '01/01/1990'
-
-    -- essentialmode has no equivalent of es_extended's xPlayer.syncInventory
-    -- (used by ox_inventory to push weight/account updates to the client).
-    -- essentialmode's own HUD/money display updates through its own separate
-    -- mechanism already, so a safe no-op here is enough to stop the crash.
-    xPlayer.syncInventory = xPlayer.syncInventory or function(weight, maxWeight, items, money) end
 
     xPlayer.__bridgePatched = true
     return xPlayer
@@ -192,7 +266,7 @@ end
 -- instant — anyone who joins afterwards (i.e. basically every real player)
 -- never gets an inventory, which is why F2 / the whole inventory silently
 -- does nothing for them. Wire it up here.
-local function convertInventoryFormat(inventory, loadout)
+local function convertInventoryFormat(inventory, loadout, cashAmount)
     -- essentialmode stores player.inventory as a LIST of {name=.., count=..}
     -- entries. ox_inventory's own convertInventory() expects a DICT of
     -- {[itemName] = count} (old ESX 1.0 style) and breaks (silently compares
@@ -232,6 +306,15 @@ local function convertInventoryFormat(inventory, loadout)
         end
     end
 
+    -- Give the player their real cash as an actual "money" item slot too,
+    -- so it's there to drag/give/drop from the very first load — not just
+    -- something that appears the next time addMoney/removeMoney runs.
+    local cash = tonumber(cashAmount) or 0
+    if cash > 0 then
+        slot = slot + 1
+        slots[slot] = { slot = slot, name = 'money', count = cash }
+    end
+
     return slots
 end
 
@@ -267,7 +350,7 @@ local function setupPlayerInventory(source, player)
         player.source = source
 
         local ok, err = pcall(function()
-            exports.ox_inventory:setPlayerInventory(player, convertInventoryFormat(player.inventory, player.loadout))
+            exports.ox_inventory:setPlayerInventory(player, convertInventoryFormat(player.inventory, player.loadout, player.money))
         end)
 
         if ok then

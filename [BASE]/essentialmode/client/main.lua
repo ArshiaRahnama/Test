@@ -444,6 +444,16 @@ AddEventHandler('esx:removeInventoryItem', function(item, count)
 	end
 end)
 
+-- Safe replacement for the old esx:addInventoryItem/removeInventoryItem
+-- notification (that one crashed because ox_inventory only sends the item
+-- NAME, not a full item table like essentialmode's own inventory used to).
+-- This just shows the popup directly with pre-built, safe data — no touching
+-- ESX.PlayerData.inventory at all, since ox_inventory owns that now.
+RegisterNetEvent('ox_inventory:showItemNotification')
+AddEventHandler('ox_inventory:showItemNotification', function(added, item, count)
+	ESX.UI.ShowInventoryItemNotification(added, item, count)
+end)
+
 RegisterNetEvent('esx:setJob')
 AddEventHandler('esx:setJob', function(job)
 	ESX.PlayerData.job = job

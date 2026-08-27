@@ -911,11 +911,29 @@ local function registerCommands()
 	-- sidearm), same behaviour as pressing "1", just on a more reachable key.
 	lib.addKeybind({
 		name = 'tabdraw',
-		description = 'Draw / Holster Weapon (Slot 1)',
+		description = 'Draw / Holster Weapon (Hotbar 1-5)',
 		defaultKey = 'TAB',
 		onPressed = function()
 			if invOpen or EnableWeaponWheel or not invHotkeys or IsNuiFocused() then return end
-			useSlot(1)
+
+			-- Only ever draw a WEAPON with TAB, never whatever happens to be
+			-- sitting in slot 1 (radio, phone, etc). Scan all 5 hotbar slots
+			-- and use the first one that's actually a weapon; if none of
+			-- them are a weapon, TAB does nothing at all.
+			if currentWeapon then
+				-- already holding a weapon — holster it, regardless of
+				-- which hotbar slot it came from
+				return useSlot(currentWeapon.slot)
+			end
+
+			for i = 1, 5 do
+				local slotItem = PlayerData.inventory[i]
+				local itemData = slotItem and Items[slotItem.name]
+
+				if itemData and itemData.ammo then
+					return useSlot(i)
+				end
+			end
 		end
 	})
 
@@ -1014,7 +1032,15 @@ local function updateInventory(data, weight)
 
             if count < 0 then
                 if shared.framework == 'esx' then
-                    TriggerEvent('esx:removeInventoryItem', item.name, item.count)
+                    -- NOTE: essentialmode has its own old client-side
+                    -- esx:removeInventoryItem handler that expects a full
+                    -- item TABLE as the first argument, but this event only
+                    -- ever sends the item NAME (a string) — that mismatch
+                    -- crashed essentialmode's handler. ox_inventory is the
+                    -- only real inventory UI now, so essentialmode's own
+                    -- copy of this data is unused; don't fire the event.
+                    -- TriggerEvent('esx:removeInventoryItem', item.name, item.count)
+                    TriggerEvent('ox_inventory:showItemNotification', false, { name = item.name, label = item.label }, math.abs(count))
                 end
 
                 if item.client?.remove then
@@ -1022,7 +1048,9 @@ local function updateInventory(data, weight)
                 end
             elseif count > 0 then
                 if shared.framework == 'esx' then
-                    TriggerEvent('esx:addInventoryItem', item.name, item.count)
+                    -- same reasoning as above for the add case
+                    -- TriggerEvent('esx:addInventoryItem', item.name, item.count)
+                    TriggerEvent('ox_inventory:showItemNotification', true, { name = item.name, label = item.label }, count)
                 end
 
                 if item.client?.add then
