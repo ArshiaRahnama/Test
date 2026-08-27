@@ -141,10 +141,18 @@ ESX.RegisterServerCallback('Unique_Garage:storeVehicle', function(source, cb, ve
 	end)
 end)
 
-ESX.RegisterServerCallback('GetVehicles', function(source, cb, job, playerjob)
+ESX.RegisterServerCallback('GetVehicles', function(source, cb, job, playerjob, vehType)
 	local Player = ESX.GetPlayerFromId(source)
 	if job == 'Job' then
 		MySQL.Async.fetchAll('SELECT * FROM owned_vehicles WHERE owner = ? AND job = ? AND type = ?', {Player.identifier, playerjob,"car"}, function(result)
+			if result[1] then cb(result) else cb(nil) end
+		end)
+	elseif job == 'Gang' then
+		-- Gang-owned garage: vehicles stored under this gang, playerjob here is
+		-- the gang name (mirrors how the 'Job' branch reuses playerjob for the job name).
+		-- vehType lets FMGangs ask for 'car' / 'heli' / 'boat' separately, unlike the
+		-- 'Job' branch above which is hardcoded to 'car'.
+		MySQL.Async.fetchAll('SELECT * FROM owned_vehicles WHERE LOWER(`owner`) = ? AND type = ?', {string.lower(playerjob or ''), vehType or 'car'}, function(result)
 			if result[1] then cb(result) else cb(nil) end
 		end)
 	elseif job == 'Impound' then
@@ -181,6 +189,13 @@ RegisterNetEvent('SetVehState', function(stored, plate, table, job, playerjob)
 		else
 			MySQL.Async.execute('UPDATE owned_vehicles SET stored = ?, job = ? WHERE plate = ?', {stored, playerjob, plate})
 		end
+	elseif job == 'Gang' then
+		-- same as 'Job' but keys off owner (gang name), never touches the job column
+		if stored == 1 then
+			MySQL.Async.execute('UPDATE owned_vehicles SET stored = ?, fuel = ?, engine = ?, body = ?, vehicle = ? WHERE LOWER(`owner`) = ? AND plate = ?', {stored, table.fuel, table.engine, table.body, json.encode(table.props), string.lower(playerjob or ''), plate})
+		else
+			MySQL.Async.execute('UPDATE owned_vehicles SET stored = ? WHERE LOWER(`owner`) = ? AND plate = ?', {stored, string.lower(playerjob or ''), plate})
+		end
 	else
 		if stored == 1 then
 			MySQL.Async.execute('UPDATE owned_vehicles SET stored = ?, fuel = ?, engine = ?, body = ?, vehicle = ?, job = ? WHERE plate = ?', {stored, table.fuel, table.engine, table.body, json.encode(table.props), '', plate})
@@ -200,6 +215,10 @@ ESX.RegisterServerCallback("IsVehOwned", function(source, cb, plate, job, player
 		MySQL.Async.fetchAll('SELECT * FROM owned_vehicles WHERE plate = ? AND owner = ? AND job = ?',{plate, Player.identifier, playerjob}, function(result)
 			if result[1] then cb(true) else cb(false) end
 		end)
+	elseif job == 'Gang' then
+		MySQL.Async.fetchAll('SELECT * FROM owned_vehicles WHERE plate = ? AND LOWER(`owner`) = ?', {plate, string.lower(playerjob or '')}, function(result)
+			if result[1] then cb(true) else cb(false) end
+		end)
 	else
 		MySQL.Async.fetchAll('SELECT * FROM owned_vehicles WHERE plate = ? AND owner = ?',{plate, Player.identifier}, function(result)
 			if result[1] then cb(true) else cb(false) end
@@ -209,28 +228,11 @@ end)
 
 ESX.RegisterServerCallback("isPrice", function(source, cb, money)
 	local Player = ESX.GetPlayerFromId(source)
-	-- FIX: `Player` was used without a nil-check (crashes the callback with
-	-- no cb() call -> NUI hangs forever with no feedback if the player
-	-- object wasn't ready yet), and `money` was trusted as-is instead of
-	-- being coerced/validated like the rest of this file already does for
-	-- `Unique_Garage:payhealth`.
-	if not Player then
-		cb(false)
-		return
-	end
-	money = tonumber(money) or 0
-	if money < 0 then money = 0 end
-
 	if Player.canAfford(money) then
-		if money > 0 then Player.payAny(money) end
+		Player.payAny(money)
 		cb(true)
 	else
-		-- FIX: this used to fire 'esx_Notification:SendNotification', which
-		-- nothing in this resource ever listened for, so the player never
-		-- actually saw "You Don't Have Money" -- the SPAWN button just
-		-- appeared to do nothing. Routed through the same SafeNotify path
-		-- everything else in the resource uses.
-		TriggerClientEvent("Unique_Garage:Notify", source, "~r~Shoma Pool Kafi Nadarid!")
+		TriggerClientEvent("esx_Notification:SendNotification", source, "You Don't Have Money","Error")
 		cb(false)
 	end
 end)
