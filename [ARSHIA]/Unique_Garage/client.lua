@@ -54,6 +54,14 @@ function SafeNotify(msg)
     end
 end
 
+-- FIX: the server used to fire 'esx_Notification:SendNotification', an event
+-- this resource never registered a handler for, so "You Don't Have Money"
+-- and similar server-side messages were silently swallowed on the client.
+-- This gives the server a reliable way to talk to SafeNotify.
+RegisterNetEvent('Unique_Garage:Notify', function(msg)
+    SafeNotify(msg)
+end)
+
 function ToStoredNum(v)
     if type(v) == 'boolean' then
         return v and 1 or 0
@@ -66,27 +74,74 @@ if Customize.ESX == 'ESX' then
 
 
     RegisterNUICallback('SpawnVehicle', function(data)
-        ESX.TriggerServerCallback('isPrice', function(istrue)
-            if istrue then
-                HZSpawnVehicle(json.decode(data.Table.vehicle).model, function(Veh)
-                    SetNetworkIdAlwaysExistsForPlayer(NetworkGetNetworkIdFromEntity(Veh), PlayerPedId(), true)
-                    ESX.Game.SetVehicleProperties(Veh, json.decode(data.Table.vehicle))
-                    SetVehicleNumberPlateText(Veh, data.Table.plate)
-                    SetEntityHeading(Veh, LastSpawnPos.w)
-                    Customize.SetVehFuel(Veh, data.Table.fuel)
-                    SetVehicleEngineHealth(Veh, (tonumber(data.Table.engine) or 1000.0) + 0.0)
-                    SetVehicleBodyHealth(Veh, (tonumber(data.Table.body) or 1000.0) + 0.0)
-                    SetEntityAsMissionEntity(Veh, true, true)
-                    TaskWarpPedIntoVehicle(PlayerPedId(), Veh, -1)
-                    SetVehicleEngineOn(Veh, true, true)
-                    AttachOwnCarBlip(Veh)
-                    SendReactMessage('Close')
-                    TriggerServerEvent('SetVehState0', 0, data.Table.plate)
-					Wait(100)
-					TriggerServerEvent("CarLock:ToggleKey", true, data.Table.plate)
-                end, LastSpawnPos, true)
-            end
-        end, data.Price)
+        -- FIX: this used to json.decode(data.Table.vehicle) straight into the
+        -- spawn call with no validation. If `vehicle` was nil/malformed
+        -- (bad DB row, empty selection, stale NUI state) json.decode either
+        -- errored (killing the whole callback silently client-side, no
+        -- console line) or returned a table with no `.model`, so
+        -- HZSpawnVehicle got called with a nil model and bailed out with
+        -- nothing on screen. Now we validate first and always tell the
+        -- player + print to console instead of doing nothing.
+        if not data or not data.Table or not data.Table.vehicle then
+            SafeNotify('~r~Khataye Spawn: Etelaate Mashin Peyda Nashod. (console ra check konid)')
+            print('^1[Unique_Garage] SpawnVehicle: data.Table.vehicle is missing - NUI sent: ' .. tostring(json.encode(data)) .. '^0')
+            return
+        end
+
+        local ok, vehData = pcall(json.decode, data.Table.vehicle)
+        if not ok or type(vehData) ~= 'table' or not vehData.model then
+            SafeNotify('~r~Khataye Spawn: Etelaate Mashin Kharab Ast. (console ra check konid)')
+            print('^1[Unique_Garage] SpawnVehicle: failed to decode vehicle JSON for plate ' .. tostring(data.Table.plate) .. ' -> ' .. tostring(data.Table.vehicle) .. '^0')
+            return
+        end
+
+        -- FIX (per request): spawning a vehicle you already own from the
+        -- garage should be free -- it was charging Customize.GaragesPrice
+        -- via the 'isPrice' server callback on every spawn. That check now
+        -- only runs for job/impound garages where a price is actually
+        -- configured (Customize.JobGaragesPrice / ImpoundGaragesPrice);
+        -- normal garage spawns skip straight to spawning, no charge.
+        if (tonumber(data.Price) or 0) > 0 then
+            ESX.TriggerServerCallback('isPrice', function(istrue)
+                if istrue then
+                    HZSpawnVehicle(vehData.model, function(Veh)
+                        SetNetworkIdAlwaysExistsForPlayer(NetworkGetNetworkIdFromEntity(Veh), PlayerPedId(), true)
+                        ESX.Game.SetVehicleProperties(Veh, vehData)
+                        SetVehicleNumberPlateText(Veh, data.Table.plate)
+                        SetEntityHeading(Veh, LastSpawnPos.w)
+                        Customize.SetVehFuel(Veh, data.Table.fuel)
+                        SetVehicleEngineHealth(Veh, (tonumber(data.Table.engine) or 1000.0) + 0.0)
+                        SetVehicleBodyHealth(Veh, (tonumber(data.Table.body) or 1000.0) + 0.0)
+                        SetEntityAsMissionEntity(Veh, true, true)
+                        TaskWarpPedIntoVehicle(PlayerPedId(), Veh, -1)
+                        SetVehicleEngineOn(Veh, true, true)
+                        AttachOwnCarBlip(Veh)
+                        SendReactMessage('Close')
+                        TriggerServerEvent('SetVehState0', 0, data.Table.plate)
+						Wait(100)
+						TriggerServerEvent("CarLock:ToggleKey", true, data.Table.plate)
+                    end, LastSpawnPos, true)
+                end
+            end, data.Price)
+        else
+            HZSpawnVehicle(vehData.model, function(Veh)
+                SetNetworkIdAlwaysExistsForPlayer(NetworkGetNetworkIdFromEntity(Veh), PlayerPedId(), true)
+                ESX.Game.SetVehicleProperties(Veh, vehData)
+                SetVehicleNumberPlateText(Veh, data.Table.plate)
+                SetEntityHeading(Veh, LastSpawnPos.w)
+                Customize.SetVehFuel(Veh, data.Table.fuel)
+                SetVehicleEngineHealth(Veh, (tonumber(data.Table.engine) or 1000.0) + 0.0)
+                SetVehicleBodyHealth(Veh, (tonumber(data.Table.body) or 1000.0) + 0.0)
+                SetEntityAsMissionEntity(Veh, true, true)
+                TaskWarpPedIntoVehicle(PlayerPedId(), Veh, -1)
+                SetVehicleEngineOn(Veh, true, true)
+                AttachOwnCarBlip(Veh)
+                SendReactMessage('Close')
+                TriggerServerEvent('SetVehState0', 0, data.Table.plate)
+				Wait(100)
+				TriggerServerEvent("CarLock:ToggleKey", true, data.Table.plate)
+            end, LastSpawnPos, true)
+        end
     end)
 
     RegisterNUICallback('VehicleInfo', function(data, cb)
@@ -111,23 +166,42 @@ elseif Customize.ESX == 'QBCore' then
     if Customize.ESX == "OLDQBCore" then while ESX == nil do TriggerEvent('QBCore:GetObject', function(obj) ESX = obj end) HZ.Wait(4) end else ESX = exports['qb-core']:GetCoreObject() end
 
     RegisterNUICallback('SpawnVehicle', function(data)
-        ESX.Functions.TriggerCallback('isPrice', function(istrue)
-            if istrue then
-                HZSpawnVehicle(data.Table.vehicle, function(Veh)
-                    SetNetworkIdAlwaysExistsForPlayer(NetworkGetNetworkIdFromEntity(Veh), PlayerPedId(), true)
-                    SetVehicleProperties(json.decode(data.Table.mods), Veh)
-                    SetVehicleNumberPlateText(Veh, data.Table.plate)
-                    SetEntityHeading(Veh, LastSpawnPos.w)
-                    Customize.SetVehFuel(Veh, data.Table.fuel)
-                    SetEntityAsMissionEntity(Veh, true, true)
-                    TaskWarpPedIntoVehicle(PlayerPedId(), Veh, -1)
-                    SetVehicleEngineOn(Veh, true, true)
-                    AttachOwnCarBlip(Veh)
-                    SendReactMessage('Close')
-                    TriggerServerEvent('SetVehState0', 0, data.Table.plate)
-                end, LastSpawnPos, true)
-            end
-        end, data.Price)
+        -- FIX (per request): same free-spawn logic as the ESX branch above --
+        -- only charge when a price is actually configured (job/impound
+        -- garages), otherwise spawn directly with no charge.
+        if (tonumber(data.Price) or 0) > 0 then
+            ESX.Functions.TriggerCallback('isPrice', function(istrue)
+                if istrue then
+                    HZSpawnVehicle(data.Table.vehicle, function(Veh)
+                        SetNetworkIdAlwaysExistsForPlayer(NetworkGetNetworkIdFromEntity(Veh), PlayerPedId(), true)
+                        SetVehicleProperties(json.decode(data.Table.mods), Veh)
+                        SetVehicleNumberPlateText(Veh, data.Table.plate)
+                        SetEntityHeading(Veh, LastSpawnPos.w)
+                        Customize.SetVehFuel(Veh, data.Table.fuel)
+                        SetEntityAsMissionEntity(Veh, true, true)
+                        TaskWarpPedIntoVehicle(PlayerPedId(), Veh, -1)
+                        SetVehicleEngineOn(Veh, true, true)
+                        AttachOwnCarBlip(Veh)
+                        SendReactMessage('Close')
+                        TriggerServerEvent('SetVehState0', 0, data.Table.plate)
+                    end, LastSpawnPos, true)
+                end
+            end, data.Price)
+        else
+            HZSpawnVehicle(data.Table.vehicle, function(Veh)
+                SetNetworkIdAlwaysExistsForPlayer(NetworkGetNetworkIdFromEntity(Veh), PlayerPedId(), true)
+                SetVehicleProperties(json.decode(data.Table.mods), Veh)
+                SetVehicleNumberPlateText(Veh, data.Table.plate)
+                SetEntityHeading(Veh, LastSpawnPos.w)
+                Customize.SetVehFuel(Veh, data.Table.fuel)
+                SetEntityAsMissionEntity(Veh, true, true)
+                TaskWarpPedIntoVehicle(PlayerPedId(), Veh, -1)
+                SetVehicleEngineOn(Veh, true, true)
+                AttachOwnCarBlip(Veh)
+                SendReactMessage('Close')
+                TriggerServerEvent('SetVehState0', 0, data.Table.plate)
+            end, LastSpawnPos, true)
+        end
     end)
 
     RegisterNUICallback('VehicleInfo', function(data, cb)
@@ -861,7 +935,15 @@ end
 function HZSpawnVehicle(model, cb, coords, isnetworked, teleportInto)
     local ped = PlayerPedId()
     model = type(model) == 'string' and GetHashKey(model) or model
-    if not IsModelInCdimage(model) then return end
+    -- FIX: this used to `return` here with zero feedback whenever the model
+    -- wasn't a valid/streamed vehicle model, so the SPAWN button looked like
+    -- it did nothing (menu stayed open, no vehicle, no error). Now it
+    -- notifies the player and logs the exact model hash to console.
+    if not model or not IsModelInCdimage(model) or not IsModelAVehicle(model) then
+        SafeNotify('~r~In Mashin Dar Bazi Mojood Nist! (Model: ' .. tostring(model) .. ')')
+        print('^1[Unique_Garage] HZSpawnVehicle: model ' .. tostring(model) .. ' is not a valid/streamed vehicle model.^0')
+        return
+    end
     if coords then
         coords = type(coords) == 'table' and vec3(coords.x, coords.y, coords.z) or coords
     else

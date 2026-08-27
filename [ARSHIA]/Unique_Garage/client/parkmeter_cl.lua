@@ -8,6 +8,10 @@ local PosCorrds            = {}
 local VehLocal             = {}
 local activeAutoParkTimers = {}
 local lastDriver           = nil
+-- FIX: this is the debounce lock for the E-press bug (multiple vehicles on
+-- multiple E presses). See notes below at IsControlJustReleased and inside
+-- HandleParkingOrRetrieve for how it's used.
+local parkingBusy          = false
 
 function SimpleProgressBar(duration, text)
     return lib.progressBar({
@@ -78,7 +82,16 @@ Citizen.CreateThread(function()
                 ShowHelpNotification("~INPUT_CONTEXT~ Park / Baziabi Mashin")
 
                 if IsControlJustReleased(0, 38) then
-                    HandleParkingOrRetrieve(i)
+                    -- FIX: pressing E again while a park/retrieve is still
+                    -- being processed used to fire HandleParkingOrRetrieve a
+                    -- second (or third...) time before the first one
+                    -- finished, spawning an extra decorative parked vehicle
+                    -- each time. Now a second press is simply ignored until
+                    -- the first one fully completes.
+                    if not parkingBusy then
+                        parkingBusy = true
+                        HandleParkingOrRetrieve(i)
+                    end
                 end
             end
         end
@@ -193,11 +206,13 @@ function HandleParkingOrRetrieve(markerIndex)
         ESX.TriggerServerCallback('temporaryParking:getVehicleDatas', function(Chek)
             if not Chek then
                 lib.notify({title = 'Parking', description = 'Error!', type = 'error', position = 'center-right'})
+                parkingBusy = false -- FIX: release the lock on every exit path
                 return
             end
 
             if playerParkingStatus[markerIndex] then
                 lib.notify({title = 'Parking', description = 'Shoma Dar In Parking Mashin Darid!', type = 'error', position = 'center-right'})
+                parkingBusy = false -- FIX
                 return
             end
 
@@ -213,6 +228,19 @@ function HandleParkingOrRetrieve(markerIndex)
 
                 local coords = vector3(Customize.ParkMeter[markerIndex].x, Customize.ParkMeter[markerIndex].y, Customize.ParkMeter[markerIndex].z)
                 local heading = Customize.ParkMeter[markerIndex].w
+
+                -- FIX (the actual "multiple cars" bug): VehLocal[markerIndex]
+                -- only ever tracks the LAST decorative vehicle spawned at
+                -- this spot. If a decorative vehicle was already sitting
+                -- here (stale/leftover from a previous store that never got
+                -- cleaned up), it just got overwritten below and forgotten
+                -- forever -- it stayed in the world, fully visible, with
+                -- nothing left pointing to it to delete later. Deleting any
+                -- existing one first closes that leak.
+                if VehLocal[markerIndex] and DoesEntityExist(VehLocal[markerIndex]) then
+                    ESX.Game.DeleteVehicle(VehLocal[markerIndex])
+                    VehLocal[markerIndex] = nil
+                end
 
                 ESX.Game.SpawnLocalVehicle(vehsprop.model, coords, heading, function(vehicle)
                     ESX.Game.SetVehicleProperties(vehicle, vehsprop)
@@ -232,11 +260,18 @@ function HandleParkingOrRetrieve(markerIndex)
                     SetVehiclePetrolTankHealth(vehicle, -10000.0)
                     SetDisableVehiclePetrolTankDamage(vehicle, true)
                     SetDisableVehiclePetrolTankFires(vehicle, true)
+                    parkingBusy = false -- FIX
                 end)
+            else
+                parkingBusy = false -- FIX: progress bar got cancelled/interrupted
             end
         end, vehsprop.plate)
     else
         TriggerServerEvent('temporaryParking:retrieveVehicle', markerIndex)
+        parkingBusy = false -- FIX: retrieve is already duplicate-safe server-side
+                             -- (parkedVehicles[markerIndex][identifier] is cleared
+                             -- the instant the server processes the request), so
+                             -- the lock only needs to guard the store/parking path.
     end
 end
 
@@ -253,6 +288,9 @@ AddEventHandler('temporaryParking:spawnVehicle', function(vehsprop, markerIndex)
         local Chekorgan = string.sub(vehsprop.plate, 1, 2)
         RemoveOwnCarBlip(VehLocal[markerIndex])
         ESX.Game.DeleteVehicle(VehLocal[markerIndex])
+        VehLocal[markerIndex] = nil -- FIX: was left pointing at a deleted
+                                     -- entity handle; nil it so the next
+                                     -- park cycle's existence check works.
         Wait(50)
         if Chekorgan == "PD" or Chekorgan == "MD" or Chekorgan == 'MC' or Chekorgan == "SH" or Chekorgan == "FB" or Chekorgan == "TX" or Chekorgan == "WZ" then
             ESX.Game.SpawnVehicleJobs(vehsprop.model, coords, heading, function(vehicle)
@@ -373,6 +411,14 @@ function StartParkCountdown(vehicle, plate, zoneIndex)
                 playerParkingStatus[zoneIndex] = true
                 local coords = vector3(Customize.ParkMeter[zoneIndex].x, Customize.ParkMeter[zoneIndex].y, Customize.ParkMeter[zoneIndex].z)
                 local heading = Customize.ParkMeter[zoneIndex].w
+
+                -- FIX: same ghost-vehicle leak as HandleParkingOrRetrieve --
+                -- clear any decorative vehicle already sitting at this spot
+                -- before spawning a new one, so it can't be orphaned.
+                if VehLocal[zoneIndex] and DoesEntityExist(VehLocal[zoneIndex]) then
+                    ESX.Game.DeleteVehicle(VehLocal[zoneIndex])
+                    VehLocal[zoneIndex] = nil
+                end
 
                 ESX.Game.SpawnLocalVehicle(vehsprop.model, coords, heading, function(vehicle)
                     ESX.Game.SetVehicleProperties(vehicle, vehsprop)

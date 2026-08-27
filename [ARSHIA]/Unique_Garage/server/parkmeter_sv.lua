@@ -1,4 +1,3 @@
-
 local parkedVehicles = {}
 
 ESX.RegisterServerCallback('temporaryParking:getPlayerBucket', function(source, cb)
@@ -42,17 +41,31 @@ ESX.RegisterServerCallback('temporaryParking:getVehicleDatas', function(source, 
         return
     end
     if playerBucket ~= 0 then cb(false) return end
-    if ItemKey.count >= 1 then cb(true) return end
+    -- FIX: getInventoryItem returns nil when the player doesn't have this
+    -- item (or the per-plate "CarKey|<plate>" item was never registered),
+    -- and .count was read straight off it -- crashing this whole callback
+    -- with no cb() call, which is exactly why the client hung/did nothing
+    -- when you pressed E without a key item present. Every other
+    -- getInventoryItem() call in this resource already nil-checks first;
+    -- this one didn't.
+    if ItemKey and ItemKey.count and ItemKey.count >= 1 then cb(true) return end
 
-    MySQL.Async.fetchAll("SELECT * FROM owned_vehicles WHERE plate = @plate", {
+    MySQL.Async.fetchAll("SELECT * FROM owned_vehicles WHERE (owner = @player OR LOWER(`owner`) = @gang) AND plate = @plate", {
+        ['@player'] = xPlayer.identifier,
+        ['@gang'] = string.lower(Gname or ''),
         ['@plate'] =  tostring(Plate)
     }, function(Res)
+        -- FIX: this is the "Parking / Error!" bug from your screenshot.
+        -- It used to only check `Res[1].owner == Gname` -- comparing the
+        -- DB's `owner` column against the player's GANG name. For a normal
+        -- personal vehicle, `owner` is the player's identifier (a long
+        -- license string), never their short gang tag, so this check could
+        -- never pass and personal cars could never be parked here. Every
+        -- other ownership check in this resource (see storeVehicle in
+        -- server.lua) uses `owner = player_identifier OR LOWER(owner) =
+        -- gang_name` -- this one was just missing the player-identifier half.
         if Res[1] then
-            if Res[1].owner == Gname then
-                cb(true)
-            else
-                cb(false)
-            end
+            cb(true)
         else
             cb(false)
         end
