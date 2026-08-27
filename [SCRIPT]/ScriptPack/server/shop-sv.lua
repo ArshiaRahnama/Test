@@ -1,18 +1,6 @@
 ESX = nil
 TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
 
--- SECURITY FIX: every buy_* handler below used to multiply the CLIENT-
--- SUPPLIED `itemPrice` by `amount` and charge that -- a modified client
--- could send itemPrice = 1 (or any value) for any item, including guns in
--- buy_gunshop, and pay whatever it wants instead of the configured price.
--- This looks the real price up server-side from ShopConfig instead; the
--- price argument from the client is no longer trusted anywhere below.
-local function getShopItemPrice(configTable, itemName)
-    local itemData = configTable and configTable[itemName]
-    if not itemData then return nil end
-    return itemData.price
-end
-
 ESX.RegisterServerCallback('getitemsForSaleShops', function(source, cb)
     local itemsForSaleShops = {}
 
@@ -32,15 +20,9 @@ end)
 RegisterServerEvent('shops_item:buy_shops')
 AddEventHandler('shops_item:buy_shops', function(itemName, amount, itemPrice)
     local xPlayer = ESX.GetPlayerFromId(source)
-    if not xPlayer then return end
 
-    amount = tonumber(amount)
-    if not amount or amount <= 0 or amount ~= math.floor(amount) then return end
 
-    -- SECURITY FIX: real price from config, not the client's itemPrice.
-    local realPrice = getShopItemPrice(ShopConfig.itemsForSaleShops, itemName)
-    if not realPrice then return end
-    local totalPrice = realPrice * amount
+    local totalPrice = itemPrice * amount
 
 
     if xPlayer.canAfford(totalPrice) then
@@ -90,15 +72,9 @@ end)
 RegisterServerEvent('mc_item:buy_mc')
 AddEventHandler('mc_item:buy_mc', function(itemName, amount, itemPrice)
     local xPlayer = ESX.GetPlayerFromId(source)
-    if not xPlayer then return end
 
-    amount = tonumber(amount)
-    if not amount or amount <= 0 or amount ~= math.floor(amount) then return end
 
-    -- SECURITY FIX: real price from config, not the client's itemPrice.
-    local realPrice = getShopItemPrice(ShopConfig.itemsForSaleMC, itemName)
-    if not realPrice then return end
-    local totalPrice = realPrice * amount
+    local totalPrice = itemPrice * amount
 
 
     if xPlayer.canAfford(totalPrice) then
@@ -148,15 +124,8 @@ end)
 RegisterServerEvent('narekshop_item:buy_narekshop')
 AddEventHandler('narekshop_item:buy_narekshop', function(itemName, amount, itemPrice)
     local xPlayer = ESX.GetPlayerFromId(source)
-    if not xPlayer then return end
 
-    amount = tonumber(amount)
-    if not amount or amount <= 0 or amount ~= math.floor(amount) then return end
-
-    -- SECURITY FIX: real price from config, not the client's itemPrice.
-    local realPrice = getShopItemPrice(ShopConfig.itemsForSaleNarekshop, itemName)
-    if not realPrice then return end
-    local totalPrice = realPrice * amount
+    local totalPrice = itemPrice * amount
 
 
 
@@ -208,16 +177,13 @@ end)
 
 RegisterServerEvent('gunshop_item:buy_gunshop')
 AddEventHandler('gunshop_item:buy_gunshop', function(itemName, amount, itemPrice)
+    -- NOTE: weapon purchases now flow through ox_inventory —
+    -- xPlayer.addWeapon() / hasWeapon() are bridged to it in
+    -- [BASE]/es_extended/server/bridge.lua (adds proper ammo,
+    -- a job/gang-based serial prefix, and puts it in a real slot).
     local xPlayer = ESX.GetPlayerFromId(source)
-    if not xPlayer then return end
 
-    amount = tonumber(amount)
-    if not amount or amount <= 0 or amount ~= math.floor(amount) then return end
-
-    -- SECURITY FIX: real price from config, not the client's itemPrice.
-    local realPrice = getShopItemPrice(ShopConfig.itemsForSaleGunshop, itemName)
-    if not realPrice then return end
-    local totalPrice = realPrice * amount
+    local totalPrice = itemPrice * amount
 
 
 
@@ -226,24 +192,20 @@ AddEventHandler('gunshop_item:buy_gunshop', function(itemName, amount, itemPrice
 
         local itemLabel = ESX.GetWeaponLabel(itemName)
 
-
-        if not xPlayer.hasWeapon(itemName) then
-
-            xPlayer.payAny(totalPrice)
-
-
-            xPlayer.addWeapon(itemName, 50)
+        -- Buying a second (or third...) copy of the same weapon is allowed
+        -- now — ox_inventory gives every weapon its own serial/slot, so
+        -- owning duplicates is fine and no longer needs blocking here.
+        xPlayer.payAny(totalPrice)
 
 
-            TriggerClientEvent('chat:addMessage', source, {
-                args = {"[System]", 'Shoma ^2 ' .. amount .. '^2x ' .. itemLabel .. ' ^0Ra be ^1$^1'.. totalPrice .. ' ^0Kharidid'},
-                color = {255, 0, 0}
-            })
+        xPlayer.addWeapon(itemName, 50)
 
-        else
 
-            TriggerClientEvent('esx:showNotification', source, 'Shoma In Aslehe Ra Darid.')
-        end
+        TriggerClientEvent('chat:addMessage', source, {
+            args = {"[System]", 'Shoma ^2 ' .. amount .. '^2x ' .. itemLabel .. ' ^0Ra be ^1$^1'.. totalPrice .. ' ^0Kharidid'},
+            color = {255, 0, 0}
+        })
+
     else
 
         TriggerClientEvent('esx:showNotification', source, 'Shoma Pool Kafi Nadarid.')

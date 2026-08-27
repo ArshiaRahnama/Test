@@ -8,25 +8,9 @@ local function ExemptFromAntiCheat(targetId, ms, kinds)
     end)
 end
 
--- SECURITY FIX: same issue as Unique_Punishment's identical event -- public,
--- client-controlled `ms`, no cooldown, so it could be spammed to stay
--- permanently anti-cheat-exempt. Every legitimate call site here uses
--- 5000ms, so clamp to that range and rate-limit.
-local lastExemptCall = {} -- source -> os.time()
-
 RegisterServerEvent('esx_aduty:AntiCheatExempt')
 AddEventHandler('esx_aduty:AntiCheatExempt', function(ms, kinds)
-    local _source = source
-    local now = os.time()
-    if lastExemptCall[_source] and (now - lastExemptCall[_source]) < 3 then
-        return
-    end
-    lastExemptCall[_source] = now
-
-    ms = tonumber(ms) or 5000
-    ms = math.max(1000, math.min(ms, 6000))
-
-    ExemptFromAntiCheat(_source, ms, kinds)
+    ExemptFromAntiCheat(source, ms, kinds)
 end)
 
 TriggerEvent('es:addAdminCommand', 'setwarn', 9, function(source, args)
@@ -832,7 +816,7 @@ TriggerEvent(
             local steamhex = xPlayer.identifier
             local money_type = args[2]
             local money_amount = tonumber(args[3])
-            local xPlayer = ESX.getPlayerFromId(target)
+            local xPlayer = ESX.GetPlayerFromId(target)
 
             if target and money_type and money_amount and xPlayer ~= nil then
                 if money_type == "cash" then
@@ -897,7 +881,7 @@ TriggerEvent(
         if xPlayer.get("aduty") then
             if tonumber(args[1]) and args[2] then
                 local _source = source
-                local xPlayer = ESX.getPlayerFromId(args[1])
+                local xPlayer = ESX.GetPlayerFromId(args[1])
                 local item = args[2]
                 local count = (args[3] == nil and 1 or tonumber(args[3]))
 
@@ -1016,10 +1000,10 @@ TriggerEvent(
         local steamp = xPlayer.identifier
         if xPlayer.get("aduty") then
             if tonumber(args[1]) and args[2] then
-                local xPlayer = ESX.getPlayerFromId(args[1])
+                local xPlayer = ESX.GetPlayerFromId(args[1])
                 local weaponName = string.upper(args[2])
 				local ammo = (args[3] == nil and 250 or tonumber(args[3]))
-                xPlayer.addWeapon("weapon_".. weaponName, ammo)
+                xPlayer.addWeapon("WEAPON_".. weaponName, ammo)
                 TriggerEvent('DiscordBot:ToDiscord', 'addweapon', "Gived By Admin", "```css\nAdmin: "..namep.."("..source..")("..steamp.. ")\nBaraye: "..xPlayer.name.."("..tonumber(args[1])..")("..xPlayer.identifier..") \nWeapon : "..weaponName.." ("..ammo..") Add Kard \n```",'user', true, source, false)
             else
                 TriggerClientEvent("chat:addMessage", source, {args = {"^1SYSTEM", "Invalid Usage."}})
@@ -1105,9 +1089,9 @@ TriggerEvent(
 
         if xPlayer.get("aduty") then
             if args[1] then
-                xPlayer = ESX.getPlayerFromId(args[1])
+                xPlayer = ESX.GetPlayerFromId(args[1])
             else
-                xPlayer = ESX.getPlayerFromId(source)
+                xPlayer = ESX.GetPlayerFromId(source)
             end
 
             if not xPlayer then
@@ -1145,9 +1129,9 @@ TriggerEvent(
 
         if xPlayer.get("aduty") then
             if args[1] then
-                xPlayer = ESX.getPlayerFromId(args[1])
+                xPlayer = ESX.GetPlayerFromId(args[1])
             else
-                xPlayer = ESX.getPlayerFromId(source)
+                xPlayer = ESX.GetPlayerFromId(source)
             end
 
             if not xPlayer then

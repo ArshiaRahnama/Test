@@ -90,6 +90,13 @@ function Inventory.OpenTrunk(entity)
 
     if not door then return end
 
+    -- Locked vehicles should refuse trunk access with a clear message
+    -- instead of silently opening (or silently doing nothing).
+    local lockStatus = GetVehicleDoorLockStatus(entity)
+    if lockStatus and lockStatus >= 2 then
+        return lib.notify({ type = 'error', description = 'در ماشین قفله' })
+    end
+
     local coords = GetEntityCoords(entity)
 
     TaskTurnPedToFaceCoord(cache.ped, coords.x, coords.y, coords.z, 0)
@@ -102,6 +109,41 @@ function Inventory.OpenTrunk(entity)
         end
     else
         SetVehicleDoorOpen(entity, door --[[@as number]], false, false)
+    end
+end
+
+---Can this vehicle be reached from outside (walk-up, ox_target) for its glovebox/dashboard storage?
+---@param entity number
+function Inventory.CanAccessGlovebox(entity)
+    if not NetworkGetEntityIsNetworked(entity) then return end
+    if IsEntityDead(entity) then return end
+
+    local vehicleHash = GetEntityModel(entity)
+    local vehicleClass = GetVehicleClass(entity)
+    local checkVehicle = Vehicles.Storage[vehicleHash]
+
+    -- No storage configured, or no glovebox for this class/model
+    if (checkVehicle == 0 or checkVehicle == 2) or (not Vehicles.glovebox[vehicleClass] and not Vehicles.glovebox.models[vehicleHash]) then
+        return
+    end
+
+    return true
+end
+
+---Opens the glovebox/dashboard storage from outside the vehicle (ox_target), with a lock check.
+---@param entity number
+function Inventory.OpenGlovebox(entity)
+    if not Inventory.CanAccessGlovebox(entity) then return end
+
+    local lockStatus = GetVehicleDoorLockStatus(entity)
+    if lockStatus and lockStatus >= 2 then
+        return lib.notify({ type = 'error', description = 'در ماشین قفله' })
+    end
+
+    local isOpen = client.openInventory('glovebox', { netid = NetworkGetNetworkIdFromEntity(entity) })
+
+    if isOpen then
+        currentInventory.entity = entity
     end
 end
 
@@ -120,6 +162,16 @@ if shared.target then
         canInteract = Inventory.CanAccessTrunk,
         onSelect = function(data)
             return Inventory.OpenTrunk(data.entity)
+        end
+    })
+
+    exports.ox_target:addGlobalVehicle({
+        icon = 'fas fa-car-side',
+        label = 'باز کردن داشبورد',
+        distance = 1.5,
+        canInteract = Inventory.CanAccessGlovebox,
+        onSelect = function(data)
+            return Inventory.OpenGlovebox(data.entity)
         end
     })
 end
