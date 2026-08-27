@@ -1,7 +1,7 @@
 
 
 $(document).ready(function() {
-    $.post('http://FMGangBoss/Uiloaded', JSON.stringify({}));
+    $.post('http://' + GetParentResourceName() + '/Uiloaded', JSON.stringify({}));
 })    
 window.addEventListener('message', function(event) {
     if (event.data.type == 'displaynone') {
@@ -82,7 +82,7 @@ window.addEventListener('message', function(event) {
         maps.style.display = "none";
         var map = document.querySelector('.case');
         map.style.display = "block";
-        $.post('http://FMGangBoss/opencase', JSON.stringify({}));
+        $.post('http://' + GetParentResourceName() + '/opencase', JSON.stringify({}));
     });
 
     $(document).on('click', '.box-1-mini', function(event) {
@@ -91,7 +91,7 @@ window.addEventListener('message', function(event) {
         maps.style.display = "none";
         var map = document.querySelector('.case');
         map.style.display = "block";
-        $.post('http://FMGangBoss/opencase', JSON.stringify({}));
+        $.post('http://' + GetParentResourceName() + '/opencase', JSON.stringify({}));
     });
 
     let ReloadColdDown = false 
@@ -107,7 +107,7 @@ window.addEventListener('message', function(event) {
         $('#kutular2').empty()
         var map = document.querySelector('.case');
         map.style.display = "none";
-        $.post('http://FMGangBoss/openrecruit', JSON.stringify({}));
+        $.post('http://' + GetParentResourceName() + '/openrecruit', JSON.stringify({}));
     });
 
     $(document).on('click', '.box-2-mini', function(event) {
@@ -122,12 +122,12 @@ window.addEventListener('message', function(event) {
         $('#kutular2').empty()
         var map = document.querySelector('.case');
         map.style.display = "none";
-        $.post('http://FMGangBoss/openrecruit', JSON.stringify({}));
+        $.post('http://' + GetParentResourceName() + '/openrecruit', JSON.stringify({}));
     });
     
     
     $(document).on('click', '.exit-button', function(event) {
-        $.post('http://FMGangBoss/close', JSON.stringify({}));
+        $.post('http://' + GetParentResourceName() + '/close', JSON.stringify({}));
         var map = document.querySelector('.bg');
         map.style.display = "none";
     });
@@ -145,7 +145,7 @@ window.addEventListener('message', function(event) {
 
     function withdraw() {
         var para = $(".input").val()
-        $.post('http://FMGangBoss/witmoney', JSON.stringify({
+        $.post('http://' + GetParentResourceName() + '/witmoney', JSON.stringify({
             para: para
         }));
         var map = document.querySelector('.bg');
@@ -156,7 +156,7 @@ window.addEventListener('message', function(event) {
     }
 
     function stash() {
-        $.post('http://FMGangBoss/stash', JSON.stringify({}));
+        $.post('http://' + GetParentResourceName() + '/stash', JSON.stringify({}));
         var map = document.querySelector('.bg');
         map.style.display = "none";
         var maps = document.querySelector('.case');
@@ -166,7 +166,7 @@ window.addEventListener('message', function(event) {
 
     function deposit() {
         var para = $(".input").val()
-        $.post('http://FMGangBoss/deposit', JSON.stringify({
+        $.post('http://' + GetParentResourceName() + '/deposit', JSON.stringify({
             para: para
         }));
         var map = document.querySelector('.bg');
@@ -178,7 +178,7 @@ window.addEventListener('message', function(event) {
 
     $(document).on('click', '.up', function(event) {
         var thisid = this.id
-        $.post('http://FMGangBoss/addrutbe', JSON.stringify({
+        $.post('http://' + GetParentResourceName() + '/addrutbe', JSON.stringify({
             id: thisid
         }));
         var map = document.querySelector('.recruit');
@@ -190,7 +190,7 @@ window.addEventListener('message', function(event) {
     $(document).on('click', '.down', function(event) {
         var thisid = this.id
         console.log(true)
-        $.post('http://FMGangBoss/removerutbe', JSON.stringify({
+        $.post('http://' + GetParentResourceName() + '/removerutbe', JSON.stringify({
    
             id: thisid
         }));
@@ -201,7 +201,7 @@ window.addEventListener('message', function(event) {
     });
     $(document).on('click', '.fire', function(event) {
         var thisid = this.id
-        $.post('http://FMGangBoss/fireplayer', JSON.stringify({
+        $.post('http://' + GetParentResourceName() + '/fireplayer', JSON.stringify({
             cid: thisid
         }));
         var map = document.querySelector('.recruit');
@@ -212,7 +212,7 @@ window.addEventListener('message', function(event) {
   
     function givejob() {
         var id = $(".input2").val()
-        $.post('http://FMGangBoss/givejob', JSON.stringify({
+        $.post('http://' + GetParentResourceName() + '/givejob', JSON.stringify({
             id: id
         }));
         var map = document.querySelector('.bg');

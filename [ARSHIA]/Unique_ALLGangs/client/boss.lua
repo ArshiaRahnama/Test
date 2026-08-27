@@ -51,6 +51,11 @@ RegisterNUICallback('close', function ()
     SetNuiFocus(false,false)
     OpenUi = false
     PlayerADDUI = {}
+    -- was missing here (present on the 'otf'/wardrobe close path below,
+    -- just not on the main close button) - without it the boss-panel
+    -- iframe stayed visually on screen after closing since nothing told
+    -- the bridge in web/ui.html to hide it again.
+    SendNUIMessage({type = 'displaynone'})
 end)
 
 RegisterNUICallback('back', function ()
@@ -61,6 +66,7 @@ RegisterNUICallback('stash', function ()
     SetNuiFocus(false,false)
     OpenUi = false
     PlayerADDUI = {}
+    SendNUIMessage({type = 'displaynone'})
     ESX.TriggerServerCallback('FMGangs:GetPlayerData', function(data , Prof ) 
         TriggerEvent('For5M:OpenBossPanel' , { Name = data.name  , Rank = data.gang.grade_name , Profile = Prof } , data.gang.name)
     end)
@@ -92,6 +98,7 @@ RegisterNUICallback('witmoney', function (data)
     SetNuiFocus(false, false)
     OpenUi = false 
     PlayerADDUI = {}
+    SendNUIMessage({type = 'displaynone'})
     TriggerServerEvent("FMGangsBoss:server:withdrawMoney", moneywit)
   
     ESX.TriggerServerCallback('FMGangsBoss:getmoney', function(money)
@@ -113,6 +120,7 @@ RegisterNUICallback('deposit', function (data)
     SetNuiFocus(false, false)
     OpenUi = false 
     PlayerADDUI = {}
+    SendNUIMessage({type = 'displaynone'})
     TriggerServerEvent("FMGangsBoss:server:depositMoney", money)
     ESX.TriggerServerCallback('FMGangsBoss:getmoney', function(money)
         money = money
@@ -132,6 +140,7 @@ RegisterNUICallback('addrutbe', function (data)
     SetNuiFocus(false, false)
     OpenUi = false
     PlayerADDUI = {}
+    SendNUIMessage({type = 'displaynone'})
    
     ESX.TriggerServerCallback('FMGangs:GetGangsData', function(gangs,expire, Allmembers , MyGangMembers )
         for _, v in pairs(MyGangMembers['online']) do
@@ -155,6 +164,7 @@ RegisterNUICallback('removerutbe', function (data)
     SetNuiFocus(false, false)
     OpenUi = false
     PlayerADDUI = {}
+    SendNUIMessage({type = 'displaynone'})
   
     ESX.TriggerServerCallback('FMGangs:GetGangsData', function(gangs,expire, Allmembers , MyGangMembers )
   
@@ -182,6 +192,7 @@ RegisterNUICallback('fireplayer', function (data)
     SetNuiFocus(false, false)
     OpenUi = false
     PlayerADDUI = {}
+    SendNUIMessage({type = 'displaynone'})
     TriggerServerEvent('FMGangsBoss:server:FireEmployee',GetPlayerServerId(PlayerId()) , data )
 end)
 
@@ -334,10 +345,12 @@ RegisterNUICallback("givejob", function (data)
             SetNuiFocus(false, false)
             OpenUi = false
             PlayerADDUI = {}
+            SendNUIMessage({type = 'displaynone'})
         else
             SetNuiFocus(false, false)
             OpenUi = false
             PlayerADDUI = {}
+            SendNUIMessage({type = 'displaynone'})
             ESX.ShowNotification("Your Gang Slot is Full")
         end
     end)

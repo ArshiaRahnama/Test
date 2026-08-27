@@ -48,7 +48,43 @@ end)
 RegisterNUICallback('CLOSEADMINPANEL', function(data, cb)
 	InAdminPanel = false 
 	SetNuiFocus(false, false)
+	-- also make sure the boss-panel iframe (if it was ever opened) is
+	-- hidden - it wasn't being told to close here before, only on the
+	-- Escape-key path below, which could leave a full-screen overlay
+	-- element sitting on top of the game after closing normally.
+	SendNUIMessage({ type = 'displaynone' })
+	if cb then cb('ok') end
 end)
+
+-------------------------------------------------------------------
+-- FIX (mouse gets stuck on screen when the panel is open):
+-- the only way to close the panel and release NUI focus was clicking
+-- the in-UI (X) button - fetch('CLOSEADMINPANEL'). Pressing Escape (the
+-- instinctive way anyone tries to close a menu) did nothing at all, so
+-- SetNuiFocus(true,true) just stayed on forever, leaving the cursor
+-- stuck/locked with no way to get control back except relogging.
+-- This adds Escape (control 322) as a fallback that closes the panel
+-- the same way the (X) button does - including telling the UI to hide
+-- itself (and the boss-panel iframe, via the same 'displaynone'
+-- message its own close button already sends) so it isn't left open
+-- and invisible with focus still stuck.
+-------------------------------------------------------------------
+CreateThread(function()
+	while true do
+		Wait(0)
+		if InAdminPanel then
+			if IsControlJustPressed(0, 322) then -- ESC
+				InAdminPanel = false
+				SetNuiFocus(false, false)
+				SendNUIMessage({ type = 'CLOSEPANEL' })
+				SendNUIMessage({ type = 'displaynone' }) -- also closes the boss-panel iframe if it was open
+			end
+		else
+			Wait(500)
+		end
+	end
+end)
+
 RegisterNUICallback('HOMEDATA', function(data, cb)
 	ESX.TriggerServerCallback('FMGangs:GetPanelData' , function(Count, OnlinePLayers, OfflinePLayers, AllMem, TopGangs,  AllMembers  )
 		cb({Count = Count , Online = OnlinePLayers ,  Offline = OfflinePLayers  , All = AllMem , TopGang = TopGangs[1] , MaxXP = Config.GangLeveL , AllMembers = AllMembers  , TopGangs = TopGangs   })
@@ -81,12 +117,36 @@ RegisterNUICallback('UPGRADEGANGINFO', function(data, cb)
 end)
 
 RegisterNUICallback('CREATEGANG', function(data, cb) 
-	if UIColdDown then return end 
+	-------------------------------------------------------------------
+	-- FIX (clicking Create does nothing): UIColdDown is ONE global
+	-- flag shared by 7 different buttons (Create, EditRank, EditAccess,
+	-- DeleteRank, AddRank, UpdateGang, AddOptions). If ANY of them had
+	-- fired in the last second, this would just `return` here without
+	-- ever calling cb(...) - the button's fetch() request never
+	-- resolves, so nothing visibly happens at all, no error, nothing.
+	-- Also: neither success nor failure ever showed any notification,
+	-- so even a create that DID work looked identical to one that
+	-- didn't (this exists in the panel elsewhere too - not something
+	-- I've swept the whole file for, but this is the one you hit).
+	-- Now: still resolves cb() either way, and always tells the player
+	-- what happened.
+	-------------------------------------------------------------------
+	if UIColdDown then 
+		print('^1[Unique_ALLGangs] CREATEGANG blocked by UIColdDown (shared cooldown was active)^7')
+		cb( { Created = false } )
+		return Notifiaction('Please wait a moment before trying again')
+	end 
 	UIColdDowns()
+	print(('[Unique_ALLGangs] CREATEGANG fired | name=%s label=%s expire=%s logo=%s webhook=%s'):format(
+		tostring(data['name']), tostring(data['label']), tostring(data['expire']), tostring(data['logo']), tostring(data['webhook'])
+	))
 	ESX.TriggerServerCallback('FMGangs:CreateGang' , function(Create, msg)
+		print('[Unique_ALLGangs] CREATEGANG server response | Create=' .. tostring(Create) .. ' msg=' .. tostring(msg))
 		if Create then
+			Notifiaction('Gang created')
 			cb( { Created = true })
 		else
+			Notifiaction(msg or 'Could not create the gang')
 			cb( { Created = false })
 		end
 	end, { name = data['name'], label = data['label'], expire = data['expire'], logo = data['logo'] ,  webhook = data['webhook'] })
@@ -98,42 +158,42 @@ RegisterNUICallback('UPGRADEOPTIONS', function(data, cb)
 	end, data.gang_name, data.option )
 end)
 RegisterNUICallback('EDITRANK', function(data, cb) 
-	if UIColdDown then return end 
+	if UIColdDown then cb(false) return Notifiaction('Please wait a moment before trying again') end 
 	UIColdDowns()
 	ESX.TriggerServerCallback('FMGangs:EditRank' , function(Dataa)
 		cb( Dataa )
 	end, data.gang_name, data.grade, data.name,  data.label , data.salary ) 
 end)
 RegisterNUICallback('EDITACCESS', function(data, cb) 
-	if UIColdDown then return end 
+	if UIColdDown then cb(false) return Notifiaction('Please wait a moment before trying again') end 
 	UIColdDowns()
 	ESX.TriggerServerCallback('FMGangs:EditAccess' , function(Update)
 		cb( Update )
 	end, data.gang_name, data.grade,  data.access , data.value  ) 
 end)
 RegisterNUICallback('DELETERANK', function(data, cb)
-	if UIColdDown then return end 
+	if UIColdDown then cb(false) return Notifiaction('Please wait a moment before trying again') end 
 	UIColdDowns()
 	ESX.TriggerServerCallback('FMGangs:DeleteRank' , function(Dataa)
 		cb(Dataa)
 	end, data.gang_name, data.grade)
 end)
 RegisterNUICallback('ADDRANK', function(data, cb) 
-	if UIColdDown then return end 
+	if UIColdDown then cb(false) return Notifiaction('Please wait a moment before trying again') end 
 	UIColdDowns()
 	ESX.TriggerServerCallback('FMGangs:AddRank' , function(Dataa)
 		cb(Dataa)
 	end, data.gang_name, data.label, data.name, data.salary  )
 end)
 RegisterNUICallback('UPDATEGANG', function(data, cb) 
-	if UIColdDown then return end 
+	if UIColdDown then cb(false) return Notifiaction('Please wait a moment before trying again') end 
 	UIColdDowns()
 	ESX.TriggerServerCallback('FMGangs:UpdateGang' , function(Dataa)
 		cb(true)
 	end, data['gang_name'], data['label'], data['expire'], data['logo'] ,  data['webhook'] ) 
 end)
 RegisterNUICallback('ADDOPTIONS', function(data, cb) 
-	if UIColdDown then return end 
+	if UIColdDown then cb(false) return Notifiaction('Please wait a moment before trying again') end 
 	UIColdDowns()
 	if data.option == 'bots' and data.type  ~= 'ped' then 
 		return  Notifiaction('This Option Is For Ped Types')

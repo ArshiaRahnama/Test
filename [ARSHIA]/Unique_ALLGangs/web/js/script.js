@@ -1,5 +1,18 @@
 $(document).ready(function() {
-    window.ResourceName = 'FMGangs'
+    // FIX (nothing in the panel ever worked - Home/Gangs empty, Create
+    // doing nothing, etc): FiveM NUI callbacks are routed by URL as
+    // https://<resource-name>/<callback-name>, and the resource name in
+    // that URL has to match the ACTUAL running resource. This was
+    // hardcoded to 'FMGangs' - correct back when this was its own
+    // separate resource, but this whole file's resource is now
+    // Unique_ALLGangs, so every single $.post() in this file (Home,
+    // Gangs, Create, every button) was posting to a resource name that
+    // doesn't exist anymore and silently failing with no response ever
+    // coming back - explains every "nothing happens" symptom reported
+    // so far in one shot. GetParentResourceName() always returns the
+    // correct, actual current resource name, so this can never drift
+    // out of sync again even if the resource gets renamed later.
+    window.ResourceName = GetParentResourceName()
     let closeKeys = [ 27];
     let GangInofPageOpen = 'nogang'
     let GangSelectedInCreatedCODE = 0
@@ -897,6 +910,14 @@ $(document).ready(function() {
         }
         else  if (event.data.type == 'OPENBOSSPANEL') {
             OpenBossSectionPanel(event.data.Admin.Name , event.data.Admin.Rank , event.data.Admin.Profile  ,event.data.GangName ) 
+        }
+        // Escape-key fallback close (see client/main.lua) - hides the
+        // panel the same way the (X) button's CloseAdminPanel() does,
+        // just without re-posting CLOSEADMINPANEL (Lua already released
+        // focus before sending this).
+        else if (event.data.type == 'CLOSEPANEL') {
+            $("#CGMain").fadeOut();
+            CloseAllAdminPanelPages();
         }
     })
 })    

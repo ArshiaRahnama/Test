@@ -1,6 +1,13 @@
 body {
   overflow: hidden;
   background-color: transparent;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
 }
 
 /* Hud */
@@ -12,7 +19,7 @@ body {
   bottom: 2%;
   left: 98.5%;
   transform: translate(-50%, 0%);
-  z-index: 2;
+  z-index: 999999;
 }
 
 .mainHud {

@@ -118,6 +118,151 @@ happy to add it if you want that back exactly as it was.
   (gps.lua, lib.lua, load.lua, level.lua) is untouched from the
   original FMGangs.
 
+## 4) `gangs:getGangData` console error (Unique_Hud compat)
+
+`Unique_Hud/client/main.lua` still calls the **old Unique_Gangs**
+callback name `gangs:getGangData` to fetch a gang's icon for the HUD.
+Since the gang system running now is this resource (not the old
+`Unique_Gangs`), that callback didn't exist and essentialmode logged
+`TriggerServerCallback => [gangs:getGangData] does not exist` every
+time the HUD tried to refresh. Added a small compatibility callback in
+`server/Gangs.lua` under the same name, backed by this resource's own
+`Gangs` table, so `Unique_Hud` keeps working unmodified.
+
+## 5) Creating a gang required a server restart to actually work
+
+Root cause: `essentialmode` only loads its live `ESX.Gangs` table from
+the `gangs` / `gang_grades` tables **once**, on resource start
+(`essentialmode/server/common.lua`). `xPlayer.setGang(name, grade)`
+refuses to do anything for a gang that isn't in `ESX.Gangs`
+(`ESX.DoesGangExist` check) - so a gang created through the panel was
+invisible to `setGang` until essentialmode was restarted and re-read
+the database. On top of that, **nothing ever called `setGang` for the
+gang's creator in the first place** - so even after a restart, the
+creator wasn't automatically put in the gang they'd just made.
+
+**Fix (`server/Gangs.lua`, `FMGangs:CreateGang`):** `ESX` is the same
+shared table both resources hold, so the new gang and its grades are
+now written directly into `ESX.Gangs` at creation time - no restart
+needed, it's live immediately. Right after that, the creator is placed
+into their new gang at the top grade via `xPlayer.setGang(name, #grades)`,
+matching the same "top grade number = boss" rule `FMGangs:isBoss`
+already uses elsewhere.
+
+## 6) Mouse/cursor gets stuck when the panel is open
+
+The only way to close the panel and release the mouse (`SetNuiFocus`)
+was clicking the in-UI (X) button. Pressing **Escape** - the first
+thing anyone tries - did nothing, so the cursor stayed locked on
+screen with no way back except relogging.
+
+**Fix:** `client/main.lua` now has an Escape-key fallback (control 322)
+that closes the panel and releases focus exactly like the (X) button
+does, and also tells the UI to hide itself - I added a small `CLOSEPANEL`
+message handler in `web/js/script.js` for this, since Lua had no way to
+trigger the existing `CloseAdminPanel()` JS function on its own. This
+also closes the boss-panel iframe if it was open.
+
+## 7) Home/Gangs tabs stayed empty (even with a real gang created)
+
+Real bug, found in `server/Gangs.lua`, three places (`GetPanelData`,
+`GetGangsData`, `GetGangData`): each one loops over every gang in the
+`Gangs` table and computes `100 / v.expire_day` for an expiration
+percentage. The special `nogang` entry - which is **always** in that
+table, seeded permanently in `database.sql` - has `expire_day = 0`.
+Dividing by zero produces `inf`, and `inf` can't be represented in
+JSON, so the callback's response to the NUI silently failed to
+serialize. The panel's `fetch()` for Home/Gangs data just hung
+forever with no response - it wasn't an empty-state, it never actually
+got data at all, gang or no gang. Fixed by guarding all three: skip
+the percentage calculation (default to `0`) whenever `expire_day` is
+`0` or missing.
+
+## 8) Boss panel staying visually stuck on screen
+
+Every boss-panel action (withdraw, deposit, promote, demote, fire,
+recruit, wardrobe, the main close button) released NUI focus
+(`SetNuiFocus(false,false)`) when done, but only the wardrobe
+(`otf`) action actually told the UI to hide the panel afterward
+(`SendNUIMessage({type='displaynone'})`). Every other action left the
+boss-panel iframe sitting on screen, fully unresponsive (focus already
+released, so clicks do nothing) with no way to dismiss it short of
+relogging - this is almost certainly what "mouse/panel gets stuck"
+was describing. Added the missing `displaynone` message to every one
+of those action handlers in `client/boss.lua`, and to the main panel's
+close handler in `client/main.lua` too (it was only being sent on the
+Escape-key path, not the normal (X)-button close).
+
+## 9) "Create" button did nothing
+
+Real, reproducible bug in `client/main.lua`. `CREATEGANG` and 6 other
+buttons (`EDITRANK`, `EDITACCESS`, `DELETERANK`, `ADDRANK`,
+`UPDATEGANG`, `ADDOPTIONS`) all share **one single global** 1-second
+cooldown flag (`UIColdDown`). If any of those had fired in the last
+second, the guarded callback did `return` **without ever calling
+`cb(...)`** - the NUI `fetch()`/`$.post()` on the JS side never
+resolves, so the button just does nothing: no error, no success, no
+feedback of any kind. On top of that, neither success nor failure ever
+showed a notification anywhere, so even a Create that *did* work
+looked identical to one that silently failed - there was no way to
+tell them apart.
+
+**Fix:** all 7 callbacks now always call `cb(...)` even when the
+cooldown blocks them (with a "please wait a moment" notification
+instead of silence), and `CREATEGANG` specifically now shows a clear
+success ("Gang created") or failure notification (with the actual
+reason from the server - e.g. "a gang with that name already exists")
+every time, so you can always tell what happened.
+
+## 10) THE root cause of "nothing happens" across the whole panel
+
+Found it, and this explains basically every "does nothing" / "stuck"
+symptom reported so far in one shot.
+
+FiveM routes every NUI callback by URL: `https://<resource-name>/<callback-name>`
+- the resource name in that URL **has to match the actual running
+resource** (FiveM's official docs use `GetParentResourceName()` for
+exactly this reason). Both of the original UIs hardcoded the OLD,
+pre-merge resource names instead:
+
+- `web/js/script.js` (member panel): `window.ResourceName = 'FMGangs'`
+- `html/js.js` (boss panel): every single `$.post(...)` had
+  `'http://FMGangBoss/...'` hardcoded directly into the URL string (13
+  places)
+
+Since this is all one resource now (`Unique_ALLGangs`), **every NUI
+request from both panels was posting to a resource name that no
+longer exists** and silently failing with no response ever coming
+back - no error shown anywhere, because neither script has a `.fail()`
+handler on these requests. This is why Home/Gangs stayed empty, why
+Create did nothing, and almost certainly why the boss panel
+(withdraw/deposit/promote/fire/recruit/close - literally every button)
+never worked either: none of those clicks were ever reaching the Lua
+side to release `SetNuiFocus` in the first place.
+
+**Fix:** both files now use `GetParentResourceName()` (FiveM's
+built-in JS function that always returns the actual current resource
+name) instead of a hardcoded string, so this can never drift out of
+sync again even if the resource gets renamed later.
+
+One caveat I want to flag honestly: the boss panel now lives in a
+nested `<iframe>` (see section on the NUI merge above). I'm confident
+`GetParentResourceName()` and NUI callback routing work correctly from
+within that iframe based on how FiveM's NUI injection works, but I
+have not been able to verify this visually in a running game client -
+if the boss panel's buttons still don't respond after this fix
+specifically (as opposed to the member panel, which isn't nested and
+should be unaffected by this caveat), that's the next thing to
+investigate.
+
+## 11) Debug logging added for this round of testing
+
+Added `print(...)` statements around the gang-creation flow (both
+`server/Gangs.lua` and `client/main.lua`) so if anything is still
+wrong, the server console and F8 client console will show exactly
+which branch ran and what data was involved - look for lines starting
+with `[Unique_ALLGangs]`.
+
 ## Testing checklist before going live
 
 - [ ] `/openpanel` opens instantly even with several gang members online

@@ -179,7 +179,7 @@ ESX.RegisterServerCallback('For5M:GetGangData', function(source, cb, name)
             local Expire_Day = Gangs[name].expire_day
             local Disband = Gangs[name].disband
             local UnixExpire = (Expire- os.time()) / 86400
-            local Az100 = 100 / Expire_Day * UnixExpire
+            local Az100 = (Expire_Day and Expire_Day > 0) and (100 / Expire_Day * UnixExpire) or 0
             if Az100 > 0 and Disband == 0 then
                 cb(true, Gangs[name])
             else
@@ -192,8 +192,17 @@ end)
 
 ESX.RegisterServerCallback('FMGangs:CreateGang', function(source, cb, data)
     local xPlayer = ESX.GetPlayerFromId(source)
+    print(('[Unique_ALLGangs] CreateGang called by source %s | name=%s label=%s expire=%s logo=%s webhook=%s'):format(
+        tostring(source), tostring(data and data.name), tostring(data and data.label),
+        tostring(data and data.expire), tostring(data and data.logo), tostring(data and data.webhook)
+    ))
+    if not xPlayer then
+        print('[Unique_ALLGangs] CreateGang ABORT: xPlayer is nil for source ' .. tostring(source))
+        return cb(false, 'player not found')
+    end
     if data.name and data.label and data.expire and data.logo then
         if Gangs[data.name] == nil then
+            print('[Unique_ALLGangs] CreateGang: creating new gang "' .. data.name .. '"')
             Gangs[data.name] = {}
             Gangs[data.name].label = data.label
             Gangs[data.name].logo = data.logo
@@ -219,9 +228,31 @@ ESX.RegisterServerCallback('FMGangs:CreateGang', function(source, cb, data)
             }
             CreateGangs(data.name, data.label, data.logo, (data.expire * 86400) + os.time(), data.expire ,data.webhook  )
             local Ranks_Data = Config.DefaultRanks
-           
+
+            -------------------------------------------------------------
+            -- FIX (create gang required a server restart to work):
+            -- essentialmode only reads the `gangs`/`gang_grades` tables
+            -- into its live ESX.Gangs table ONCE, on resource start
+            -- (essentialmode/server/common.lua). xPlayer.setGang(...)
+            -- refuses to work for any gang missing from ESX.Gangs
+            -- (ESX.DoesGangExist check), so a gang created here was
+            -- invisible to essentialmode until essentialmode restarted
+            -- and re-read the DB - and even then, nothing ever actually
+            -- called setGang for the creator, so they were never put in
+            -- their own new gang at all.
+            --
+            -- ESX (the shared object both resources hold) is the SAME
+            -- table in memory, so writing into ESX.Gangs here takes
+            -- effect immediately, no restart needed. The top grade
+            -- (highest grade number, matching FMGangs:isBoss's own
+            -- "grade == grade count" check) is registered as boss and
+            -- the creator is placed into it right away.
+            -------------------------------------------------------------
+            ESX.Gangs[data.name] = { name = data.name, label = data.label, grades = {} }
+
             for i=1, #Ranks_Data, 1 do
                 Gangs[data.name].grades[tonumber(Ranks_Data[i].Grade)] = {gang_name = data.name, grade = Ranks_Data[i].Grade, label = Ranks_Data[i].Label, name = Ranks_Data[i].Name, clothes = {} , access =  {['putitem'] = false ,['takeitem'] = false ,['garage']   = false ,['setclothe'] = false ,['heliANDBoat'] = false ,  ['bossaction'] = false ,} , salary = 0 }
+                ESX.Gangs[data.name].grades[tonumber(Ranks_Data[i].Grade)] = { name = Ranks_Data[i].Name, label = Ranks_Data[i].Label, salary = 0 }
                 MySQL.Async.execute('INSERT INTO gang_grades (gang_name, grade, label, name , access , salary) VALUES (@gang_name, @grade, @label, @name , @access ,@salary )', 
                 {
                     ['@gang_name']  = data.name,
@@ -238,13 +269,25 @@ ESX.RegisterServerCallback('FMGangs:CreateGang', function(source, cb, data)
                     }) , 
                     ['@salary'] 	= 0 
                 })
+
             end
             TriggerEvent('For5M:SetGangs' ,Gangs )
+
+            -- Put the creator into their own new gang, as boss (top grade),
+            -- right now - no restart needed (see notes above).
+            print('[Unique_ALLGangs] CreateGang: calling xPlayer.setGang("' .. data.name .. '", ' .. tostring(#Ranks_Data) .. ') for source ' .. tostring(source))
+            print('[Unique_ALLGangs] CreateGang: ESX.DoesGangExist("' .. data.name .. '", ' .. tostring(#Ranks_Data) .. ') = ' .. tostring(ESX.DoesGangExist and ESX.DoesGangExist(data.name, #Ranks_Data)))
+            xPlayer.setGang(data.name, #Ranks_Data)
+            print('[Unique_ALLGangs] CreateGang: after setGang, xPlayer.gang.name = ' .. tostring(xPlayer.gang and xPlayer.gang.name))
+
+            print('[Unique_ALLGangs] CreateGang SUCCESS: "' .. data.name .. '" created and creator assigned.')
             cb(true, 'gang sakhe shod')
         else
+            print('[Unique_ALLGangs] CreateGang FAIL: a gang named "' .. tostring(data.name) .. '" already exists.')
             cb(false, 'in gang vojood darad')
         end
     else
+        print('[Unique_ALLGangs] CreateGang FAIL: missing required field(s) - name/label/expire/logo must all be non-empty.')
         cb(false, 'etelaat ro kamel vared kon')
     end
 end)
@@ -831,7 +874,7 @@ ESX.RegisterServerCallback('FMGangs:GetPanelData', function(source, cb)
     for k,v in pairs(Gangs) do 
 
         local UnixExpire = (v.expire - os.time()) / 86400
-        local Az100 = 100 / v.expire_day * UnixExpire
+        local Az100 = (v.expire_day and v.expire_day > 0) and (100 / v.expire_day * UnixExpire) or 0
         table.insert(TopGangs, { Name = v.name, Level = v.level , XP = v.xp , Expire = v.expire_day, ExpirationDP = Az100 , logo = v.logo })
         AllMembers[v.name] = {}
         AllMembers[v.name]['online'] = {} 
@@ -855,6 +898,24 @@ ESX.RegisterServerCallback('FMGangs:GetPanelData', function(source, cb)
     end
 
    cb( CountTable(Gangs), OnlinePLayers, OfflinePLayers, OnlinePLayers + OfflinePLayers, TopGangs,  AllMembers )
+end)
+
+-------------------------------------------------------------------
+-- COMPAT SHIM: Unique_Hud's client (client/main.lua -> SendGangMessage)
+-- still calls the OLD Unique_Gangs callback name 'gangs:getGangData'
+-- to fetch a gang's icon for the HUD (logs
+-- "essentialmode: TriggerServerCallback => [gangs:getGangData] does
+-- not exist" without this, because Unique_Gangs is no longer the
+-- resource running the gang system). Registering it here - pointed at
+-- FMGangs' own Gangs table - makes the HUD keep working without
+-- touching Unique_Hud itself.
+-------------------------------------------------------------------
+ESX.RegisterServerCallback('gangs:getGangData', function(source, cb, gang)
+    if Gangs[gang] then
+        cb({ icon = Gangs[gang].logo })
+    else
+        cb(nil)
+    end
 end)
 
 ESX.RegisterServerCallback('FMGangs:GetOthersFromGang', function(source, cb)
@@ -885,7 +946,7 @@ ESX.RegisterServerCallback('FMGangs:GetGangsData', function(source, cb)
     local AllMembers = {}
     for k,v in pairs(Gangs) do 
         local UnixExpire = (v.expire - os.time()) / 86400
-        local Az100 = 100 / v.expire_day * UnixExpire
+        local Az100 = (v.expire_day and v.expire_day > 0) and (100 / v.expire_day * UnixExpire) or 0
         Expires[v.name] = Az100
         AllMembers[v.name] = {}
         AllMembers[v.name]['online'] = {} 
