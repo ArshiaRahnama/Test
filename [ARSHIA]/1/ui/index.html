@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width,initial-scale=1" />
+        <meta name="theme-color" content="#000000" />
+        <script src="nui://game/ui/jquery.js"></script>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
+        <link rel="stylesheet" href="style.css">
+        <script defer="defer" src="main.js"></script>
+    </head>
+    <body>
+        <div class="hudWrapper">
+          <div class="mainHud" id="main">
+            <svg class="circle" id="health" width="60" height="60">
+              <circle class="progressplayer health" id="health-circle" stroke="#FF7C7C" stroke-width="4.5" style="stroke-opacity: 1.0" fill="#000000" r="20" cx="24" cy="24" stroke-dasharray="70 30" stroke-dashoffset="0"/>
+              <image href="./img/logos/health.png" height="17" width="17" x="26%" y="47.5%"></image>
+            </svg>
+
+            <svg class="circle" id="armor" width="60" height="60">
+              <circle class="progressplayer armor" id="armor-circle" stroke="#827CFF" stroke-width="4.5" style="stroke-opacity: 1.0" fill="#000000" r="20" cx="24" cy="24" stroke-dasharray="70 30" stroke-dashoffset="0"/>
+              <image href="./img/logos/armor.png" height="17" width="17" x="26%" y="47.5%"></image>
+            </svg>
+
+            <svg class="circle" id="hunger" width="60" height="60">
+              <circle class="progressplayer hunger" id="hunger-circle" stroke="#ffa200" stroke-width="4.5" style="stroke-opacity: 1.0" fill="#000000" r="20" cx="24" cy="24" stroke-dasharray="70 30" stroke-dashoffset="0"/>
+              <image href="./img/logos/hunger.png" height="17" width="17" x="25.5%" y="46.5%"></image>
+            </svg>
+
+            <svg class="circle" id="thirst" width="60" height="60">
+              <circle class="progressplayer thirst" id="thirst-circle" stroke="#00b6e3" stroke-width="4.5" style="stroke-opacity: 1.0" fill="#000000" r="20" cx="24" cy="24" stroke-dasharray="70 30" stroke-dashoffset="0"/>
+              <image href="./img/logos/thirst.png" height="17" width="17" x="25.5%" y="46.5%"></image>
+            </svg>
+
+            <svg class="circle" id="microphone" width="60" height="60">
+              <circle class="progressplayer microphone" id="microphone-circle" stroke="#696969" stroke-width="4.5" style="stroke-opacity: 1.0" fill="#000000" r="20" cx="24" cy="24" stroke-dasharray="70 30" stroke-dashoffset="0"/>
+              <image href="./img/logos/microphone.png" height="17" width="17" x="26%" y="47.5%"></image>
+            </svg>
+          </div>
+        </div>
+    </body>
+</html>

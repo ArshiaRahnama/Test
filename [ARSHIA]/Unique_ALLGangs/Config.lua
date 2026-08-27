@@ -1,6 +1,6 @@
 Config = {}
 Config.ESX = 'esx:getSharedObject'
-Config.inventoryimg  = "nui://esx_inventoryhud/html/img/items" 
+Config.inventoryimg  = "nui://ox_inventory/web/images" -- ox_inventory item icon path (was esx_inventoryhud)
 Config.permission = 1
 ---
 Config.OPENPANELCMD = 'openpanel'
@@ -16,10 +16,10 @@ Config.MenuSkintrigger = 'esx_skin:openRestrictedMenu'
 Config.chatMessage = 'chatMessage'
 Config.showNotification = 'esx:showNotification' 
 Config.showAdvancedNotification = 'esx:showAdvancedNotification'
----- inventory 
-Config.OpenInventory = 'esx_inventoryhud:openGangInventory'
-Config.TakeItemEvent = 'For5M:getFromInventory'
-Config.AddItemToInventory = 'For5M:addToInventory'
+---- inventory (converted to ox_inventory - see server/Gangs.lua EnsureArmoryStash)
+-- Config.OpenInventory / TakeItemEvent / AddItemToInventory are no longer
+-- used: ox_inventory's 'ox_inventory:openInventory' event + its own item
+-- movement replace the old esx_inventoryhud custom NUI flow entirely.
 ----
 Config.TimeToPay = 15 -- min 
 ----

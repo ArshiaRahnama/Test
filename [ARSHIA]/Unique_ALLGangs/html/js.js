@@ -126,13 +126,6 @@ window.addEventListener('message', function(event) {
     });
     
     
-    $(document).on('click', '.box-1-settings', function(event) {
-        event.stopPropagation();
-        $.post('http://FMGangBoss/opensettings', JSON.stringify({}));
-        var map = document.querySelector('.bg');
-        map.style.display = "none";
-    });
-
     $(document).on('click', '.exit-button', function(event) {
         $.post('http://FMGangBoss/close', JSON.stringify({}));
         var map = document.querySelector('.bg');

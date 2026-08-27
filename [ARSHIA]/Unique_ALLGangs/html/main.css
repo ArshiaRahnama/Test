@@ -385,22 +385,8 @@
       overflow: hidden;
     }
 
-    .box-1-settings {
+    .box-1-mini {
       position: absolute;
-      top: 0.6vw;
-      right: 0.6vw;
-      font-size: 1.2vw;
-      color: rgba(255, 255, 255, 0.75);
-      cursor: pointer;
-      z-index: 5;
-      transition: 100ms;
-    }
-
-    .box-1-settings:hover {
-      color: #FFEF5A;
-    }
-
-    .box-1-mini {      position: absolute;
       width: 10.714110429447852vw;
       height: 3.024539877300613vw;
       left: 20.28159509202454vw;

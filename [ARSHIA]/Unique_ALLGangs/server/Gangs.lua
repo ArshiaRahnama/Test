@@ -984,73 +984,75 @@ AddEventHandler('For5MGBlip:toggleSiren', function(isOn)
         dutyTable[src].flashColors = nil
     end
 end)
+-------------------------------------------------------------------
+-- OX_INVENTORY CONVERSION (was esx_inventoryhud)
+-- The old flow kept armory contents as a hand-rolled JSON blob on the
+-- gang record and pushed a custom NUI event (Config.OpenInventory =
+-- 'esx_inventoryhud:openGangInventory') that only worked because
+-- esx_inventoryhud happened to be installed. That event doesn't exist
+-- in ox_inventory, so it silently did nothing on an ox_inventory server.
+--
+-- Each armory "station" (identified by its code) is now a real
+-- ox_inventory stash, registered on demand. ox_inventory's own UI/
+-- movement/weight/stacking/anti-dupe logic takes over from here, so
+-- the old AddItemToInventory/TakeItemEvent handlers (which manually
+-- mutated the JSON blob) are no longer needed and have been removed.
+--
+-- Access: opening now requires putitem OR takeitem grade access (the
+-- old code let anyone with the door code view it and only checked
+-- access when clicking put/take). If you need put-only vs take-only
+-- enforcement inside the stash UI itself, that requires a custom
+-- ox_inventory `openInventory` hook - ask and it can be added.
+-------------------------------------------------------------------
 local PlayersOGInventory = {}
-ESX.RegisterServerCallback('For5M:OpenInventory', function(source , cb  , code )
-    PlayersOGInventory[source] = code 
-    local playergang = ESX.GetPlayerFromId(source).gang.name
-    local armory  , key  =   GetArmoryByCode( playergang , code )
-    if key == 0 then return cb(false) end 
-    local items = armory['items'] or {}
-    local weapons = armory['weapons'] or {}
-    TriggerClientEvent(Config.OpenInventory , source, { items =  items  , weapons = weapons } )
-    cb(true)
-end)
-RegisterNetEvent(Config.AddItemToInventory)
-AddEventHandler(Config.AddItemToInventory, function(type ,name , count )
-    local playergang = ESX.GetPlayerFromId(source).gang.name
-    local armory =   GetArmoryByCode( playergang ,  PlayersOGInventory[source] )
-    local items = armory['items'] or {}
-    local weapons = armory['weapons'] or {}
-    local xPlayer = ESX.GetPlayerFromId(source)
-    if  not Gangs[ playergang ].grades[ xPlayer.gang.grade ].access['putitem'] then return  TriggerClientEvent(Config.showNotification , source , 'You Dont Have Access To put Item') end 
-    if type == 'item_standard'  then 
-        table.insert( items , {name = name, count =count , label = name })
-        xPlayer.removeInventoryItem(name, count)
-        TriggerEvent('For5M:SendLog', source , 'Inventory' , ' Put item ' .. name .. ' | count : ' .. count )
-        
-    else 
-        table.insert( weapons , {name = name, ammo =count })
-        xPlayer.removeWeapon(name)
-        TriggerEvent('For5M:SendLog', source , 'Inventory' , ' Put weapon ' .. name .. ' | ammo : ' .. count )
-    end 
-    armory['items'] =  items
-    armory['weapons'] =  weapons
-    UpdateGangsData(playergang, 'armory', Gangs[playergang]['armory'])
-    TriggerClientEvent(Config.OpenInventory , source, { items = items , weapons = weapons  } )
-end)
-RegisterNetEvent(Config.TakeItemEvent )
-AddEventHandler(Config.TakeItemEvent , function(type ,name , count ) -- take
-    local playergang = ESX.GetPlayerFromId(source).gang.name
-    local armory , key =   GetArmoryByCode( playergang ,  PlayersOGInventory[source] )
-    local items = armory['items'] or {}
-    local weapons = armory['weapons'] or {}
-    local xPlayer = ESX.GetPlayerFromId(source)
-    if  not Gangs[ playergang ].grades[ xPlayer.gang.grade ].access['takeitem'] then return TriggerClientEvent(Config.showNotification , source , 'You Dont Have Access To Take Item') end 
-    if type == 'item_standard'  then 
-        for k,v in pairs( items ) do 
-            if v.name == name  and v.count>= count then 
-                items[k]['count'] = items[k]['count'] - count 
-                xPlayer.addInventoryItem(v.name , count)
-                TriggerEvent('For5M:SendLog', source , 'Inventory' , ' Take item ' .. v.name .. ' |  ' .. count )
-                break 
-            end 
-        end 
-    else 
-        for k,v in pairs( weapons ) do 
-            if v.name == name  then 
-                xPlayer.addWeapon(v.name , v.ammo ) 
-                weapons[k] = nil 
-                TriggerEvent('For5M:SendLog', source , 'Inventory' , ' Take weapon ' .. v.name .. ' | ammo : ' .. v.ammo )
-                break 
-            end 
-        end 
-    end 
-    Wait(50)
-    armory['items'] =  items
-    armory['weapons'] =  weapons
-    UpdateGangsData(playergang, 'armory', Gangs[playergang]['armory'])
-    TriggerClientEvent(Config.OpenInventory , xPlayer.source, { items =  armory['items']  , weapons = armory['weapons']  }  )
+local RegisteredArmoryStashes = {}
 
+local function GetArmoryStashId(playergang, key)
+    return ('gang_armory_%s_%s'):format(playergang, tostring(key))
+end
+
+-- Seeds an ox_inventory stash from the legacy armory JSON the first
+-- time it's opened, then remembers not to do it again.
+local function EnsureArmoryStash(playergang, key, armory)
+    local stashId = GetArmoryStashId(playergang, key)
+    if RegisteredArmoryStashes[stashId] then return stashId end
+
+    local seedItems = {}
+    for _, v in pairs(armory.items or {}) do
+        seedItems[#seedItems + 1] = { v.name, v.count }
+    end
+    for _, v in pairs(armory.weapons or {}) do
+        seedItems[#seedItems + 1] = { v.name, 1 }
+    end
+
+    exports.ox_inventory:RegisterStash(stashId, playergang .. ' Armory', 50, 100000, false)
+
+    if #seedItems > 0 then
+        for _, item in ipairs(seedItems) do
+            exports.ox_inventory:AddItem(stashId, item[1], item[2])
+        end
+    end
+
+    RegisteredArmoryStashes[stashId] = true
+    return stashId
+end
+
+ESX.RegisterServerCallback('For5M:OpenInventory', function(source, cb, code)
+    PlayersOGInventory[source] = code
+    local xPlayer = ESX.GetPlayerFromId(source)
+    local playergang = xPlayer.gang.name
+    local armory, key = GetArmoryByCode(playergang, code)
+    if not key or key == 0 then return cb(false) end
+
+    local access = Gangs[playergang].grades[xPlayer.gang.grade].access
+    if not access['putitem'] and not access['takeitem'] then
+        TriggerClientEvent(Config.showNotification, source, 'You Dont Have Access To This Armory')
+        return cb(false)
+    end
+
+    local stashId = EnsureArmoryStash(playergang, key, armory)
+    TriggerClientEvent('ox_inventory:openInventory', source, 'stash', stashId)
+    cb(true)
 end)
 RegisterNetEvent('For5M:itemPacks')
 AddEventHandler('For5M:itemPacks', function ( gang, name ) 
@@ -1109,33 +1111,49 @@ ESX.RegisterServerCallback('FMGangs:MyGangLevel', function(source, cb)
     cb(player , GetAvatar(source) )
 
  end)
- exports("GetMoneyOfGang", function(playergang) 
-    if Gangs[playergang] ~= nil then 
-        return Gangs[playergang].others.money 
-    else 
-        return 0 
-    end 
-end) 
-exports("AddGangMoney", function(playergang , Amount ) 
-    if Gangs[playergang] ~= nil then 
-        UpdateOthers(playergang, 'money', Amount, 'add') 
-        return  true 
-    else 
-        return false  
-    end 
-end) 
-exports("RemoveGangMoney", function(playergang , Amount ) 
-    if Gangs[playergang] ~= nil then 
-        if  Gangs[playergang].others.money >= Amount then 
-            UpdateOthers(playergang, 'money', Amount, 'remove') 
-            return  true 
-        else 
-            return false  
-        end 
-    else 
-        return false  
-    end 
-end) 
+-------------------------------------------------------------------
+-- MERGE NOTE: these used to be exports("...") so the separate
+-- FMGangBoss resource could reach into FMGangs cross-resource.
+-- Now that boss.lua lives inside this same resource, they are plain
+-- global functions - boss.lua calls them directly (GetMoneyOfGang(...)
+-- instead of exports.FMGangs:GetMoneyOfGang(...)). Also kept as
+-- exports() below (self-registration is harmless) purely so any other
+-- external resource that still expects exports.Unique_ALLGangs:... to
+-- exist keeps working.
+-------------------------------------------------------------------
+function GetMoneyOfGang(playergang)
+    if Gangs[playergang] ~= nil then
+        return Gangs[playergang].others.money
+    else
+        return 0
+    end
+end
+
+function AddGangMoney(playergang, Amount)
+    if Gangs[playergang] ~= nil then
+        UpdateOthers(playergang, 'money', Amount, 'add')
+        return true
+    else
+        return false
+    end
+end
+
+function RemoveGangMoney(playergang, Amount)
+    if Gangs[playergang] ~= nil then
+        if Gangs[playergang].others.money >= Amount then
+            UpdateOthers(playergang, 'money', Amount, 'remove')
+            return true
+        else
+            return false
+        end
+    else
+        return false
+    end
+end
+
+exports("GetMoneyOfGang", GetMoneyOfGang)
+exports("AddGangMoney", AddGangMoney)
+exports("RemoveGangMoney", RemoveGangMoney)
 function GangPayCheck() 
     local xPlayers = ESX.GetPlayers()
     for i=1, #xPlayers, 1 do

@@ -8,12 +8,6 @@ end)
 local AllMarkers = {}
 function CreateMarker( Name , data , cb)
 	if data.coord and data.type and Name then 
-		if AllMarkers[Name] ~= nil then
-			-- an entity/marker with this Name already exists (e.g. reloaded via
-			-- For5M:UpdateMyGang broadcast) -> delete it first so we never leak
-			-- a duplicate ped/object at the same coords
-			RemoveMarker(Name)
-		end
 		AllMarkers[Name] = {
 			name = Name ,
 			coord = vector3(data.coord.x , data.coord.y ,data.coord.z)  , 

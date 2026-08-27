@@ -1,17 +1,23 @@
 
-ESX = nil
-TriggerEvent(Config.ESX, function(obj) ESX = obj end)
+-------------------------------------------------------------------
+-- MERGE NOTE: this file used to be FMGangBoss/server.lua, a SEPARATE
+-- resource that reached into FMGangs via exports.FMGangs:... Now both
+-- live in the same Unique_ALLGangs resource, so we call the global
+-- functions from server/Gangs.lua directly - no exports/cross-resource
+-- hop needed (and no risk of it breaking if someone renames the
+-- resource, which is exactly what broke when it was first merged).
+-------------------------------------------------------------------
 local Accounts = {}
 function GetAccount(account)
-	return exports.FMGangs:GetMoneyOfGang(account) 
+	return GetMoneyOfGang(account)
 end
 
 function AddMoney(account, amount)
-	exports.FMGangs:AddGangMoney(account , amount ) 
+	AddGangMoney(account, amount)
 end
 function RemoveMoney(account, amount)
 	if tonumber(amount) and tonumber(amount) > 0 then
-		return 	exports.FMGangs:RemoveGangMoney(account , amount ) 
+		return RemoveGangMoney(account, amount)
 	end
 end
 

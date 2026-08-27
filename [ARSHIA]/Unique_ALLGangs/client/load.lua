@@ -44,8 +44,9 @@ end)
 RegisterNetEvent('For5M:UpdateMyGang')
 AddEventHandler('For5M:UpdateMyGang', function(GangName)
     RemveoAllZones()
-    RemoveAllMarkers()
     if PlayerData.gang.name == GangName then
+        RemoveAllMarkers()
+
         LoadMyGangOptions()
     end 
     LoadZoneOfGangOptions()
@@ -456,19 +457,15 @@ function OpenArmoryMenu(armory)
         end 
      end , armory )
 end 
--- FMCrafting and FMBlackMarket were removed. These two marker types
--- (craft / shop) are kept as no-ops instead of being ripped out everywhere,
--- so old marker data saved on gangs in the DB doesn't error the resource --
--- they just politely tell the player the feature is gone.
 function OpenCraftMenu()
     if KeyPressedCD then return end 
     KeyPressedCD = true SetTimeout(1500, function() KeyPressedCD =false  end)
-    Notifiaction('Crafting is not available anymore')
+    TriggerEvent('For5M:OpenCraftMenu')
 end 
 function OpenShopMenu()
     if KeyPressedCD then return end 
     KeyPressedCD = true SetTimeout(1500, function() KeyPressedCD =false  end)
-    Notifiaction('The black market is not available anymore')
+    TriggerEvent('FMBlackMarket:openShop')
 end
 function OpenVehicleMenu()
     if IsPedInAnyVehicle(PlayerPedId()) then return end 
@@ -479,7 +476,7 @@ function OpenVehicleMenu()
         if Distance < 80.0 then 
             ESX.TriggerServerCallback('FMGangs:GetRankAccess', function(access)
                 if access['garage'] then 
-                    TriggerEvent('Unique_Garage:OpenGangGarage', PlayerData.gang.name, { x = MyGangData.vehspawn[Key].coord.x , y = MyGangData.vehspawn[Key].coord.y , z = MyGangData.vehspawn[Key].coord.z , h = MyGangData.vehspawn[Key].heading }, 'car') 
+                    TriggerEvent('For5M:OpenGarage', PlayerData.gang.name, { x = MyGangData.vehspawn[Key].coord.x , y = MyGangData.vehspawn[Key].coord.y , z = MyGangData.vehspawn[Key].coord.z , h = MyGangData.vehspawn[Key].heading }, 'car') 
                 else 
                     Notifiaction('You Does Not Have Access To Open Garage !!')
                 end 
@@ -501,7 +498,7 @@ function OpenHeliMenu()
         if Distance < 80.0 then 
             ESX.TriggerServerCallback('FMGangs:GetRankAccess', function(access)
                 if access['heliANDBoat'] then
-                    TriggerEvent('Unique_Garage:OpenGangGarage', PlayerData.gang.name, { x = MyGangData.helispawn[Key].coord.x , y = MyGangData.helispawn[Key].coord.y , z = MyGangData.helispawn[Key].coord.z , h = MyGangData.helispawn[Key].heading }, 'heli')  
+                    TriggerEvent('For5M:OpenGarage', PlayerData.gang.name, { x = MyGangData.helispawn[Key].coord.x , y = MyGangData.helispawn[Key].coord.y , z = MyGangData.helispawn[Key].coord.z , h = MyGangData.helispawn[Key].heading }, 'heli')  
                 else 
                     Notifiaction('You Does Not Have Access To Open Heli Garage !!')
                 end 
@@ -522,7 +519,7 @@ function OpenBoatMenu()
         if Distance < 80.0 then 
             ESX.TriggerServerCallback('FMGangs:GetRankAccess', function(access)
                 if access['heliANDBoat'] then
-                    TriggerEvent('Unique_Garage:OpenGangGarage', PlayerData.gang.name, { x = MyGangData.boatspawn[Key].coord.x , y = MyGangData.boatspawn[Key].coord.y , z = MyGangData.boatspawn[Key].coord.z , h = MyGangData.boatspawn[Key].heading }, 'boat') 
+                    TriggerEvent('For5M:OpenGarage', PlayerData.gang.name, { x = MyGangData.boatspawn[Key].coord.x , y = MyGangData.boatspawn[Key].coord.y , z = MyGangData.boatspawn[Key].coord.z , h = MyGangData.boatspawn[Key].heading }, 'boat') 
                 else 
                     Notifiaction('You Does Not Have Access To Open Boat Garage !!')
                 end 
@@ -538,10 +535,15 @@ function DeleteTheVehicle(type)
     if KeyPressedCD then return end 
     local Vehicle =  GetVehiclePedIsIn(PlayerPedId())
     if DoesEntityExist(Vehicle) then 
-        TriggerServerEvent('For5M:SendLog', GetPlayerServerId(PlayerId()) , 'Garage' , 'stored Vehicle '  )
-        -- ownership (is this plate actually owned by our gang?) is checked
-        -- server-side inside Unique_Garage's handler before it stores/deletes
-        TriggerEvent('Unique_Garage:StoreGangVehicle', PlayerData.gang.name)
+        ESX.TriggerServerCallback('For5mG-garage:getvehiclebyplate', function(gangveh) 
+            if gangveh then 
+                TriggerServerEvent('For5M:SendLog', GetPlayerServerId(PlayerId()) , 'Garage' , 'stored Vehicle '  )
+                TriggerServerEvent('For5mG-garage:stored', GetVehicleNumberPlateText(GetVehiclePedIsIn(PlayerPedId())) , 1)
+                ESX.Game.DeleteVehicle(Vehicle)
+            else 
+                Notifiaction(' This Vehicle Its Not For This Gang  !!')
+            end 
+        end, GetVehicleNumberPlateText(GetVehiclePedIsIn(PlayerPedId())))
     end 
 end
 

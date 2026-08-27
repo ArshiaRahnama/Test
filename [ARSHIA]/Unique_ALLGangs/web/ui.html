@@ -465,8 +465,49 @@
 
 
 
+<!--
+	MERGE BRIDGE (Unique_ALLGangs)
+	------------------------------
+	The boss panel used to be its own separate resource (FMGangBoss)
+	with its own ui_page/NUI frame. A FiveM resource can only have ONE
+	ui_page, so now that it lives inside this resource, its page
+	(html/ui.html) is loaded here as a hidden iframe and this script
+	relays the SendNUIMessage() calls meant for it (client/boss.lua)
+	into that iframe via postMessage. RegisterNUICallback fetches made
+	from inside the iframe (e.g. fetch('https://Unique_ALLGangs/...'))
+	are resource-scoped, not frame-scoped, so they reach the Lua side
+	normally without any relay needed.
+	This bridge has not been visually tested in-game - verify the boss
+	panel opens/closes/updates correctly and adjust the TYPES list or
+	iframe CSS below if anything doesn't show.
+-->
+<iframe id="bossPanelFrame" src="html/ui.html"
+	style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; border:none; z-index:9999;">
+</iframe>
+<script>
+(function () {
+	var bossFrame = document.getElementById('bossPanelFrame');
+	// message types that belong to the boss panel (html/ui.html + js.js)
+	var BOSS_TYPES = {
+		displaynone: 1, displayblock: 1, changename: 1, add: 1, 'add-2': 1,
+		player: 1, 'case-update': 1, 'add-offline': 1, 'add-offline-2': 1,
+		moneypage: 1, clear: 1
+	};
 
+	window.addEventListener('message', function (event) {
+		var data = event.data;
+		if (!data || !data.type || !BOSS_TYPES[data.type]) return;
 
+		if (data.type === 'displayblock') {
+			bossFrame.style.display = 'block';
+		} else if (data.type === 'displaynone') {
+			bossFrame.style.display = 'none';
+		}
+
+		bossFrame.contentWindow.postMessage(data, '*');
+	});
+})();
+</script>
 
 </body>
 
