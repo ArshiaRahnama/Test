@@ -66,11 +66,20 @@ end
 function server.buyLicense(inv, license)
 	if server.hasLicense(inv, license.name) then
 		return false, 'already_have'
-	elseif Inventory.GetItemCount(inv, 'money') < license.price then
+	end
+
+	-- essentialmode doesn't itemize cash — "money" isn't a real inventory
+	-- item here, it's the player's real xPlayer.money/getAccount balance.
+	-- Charge that instead of looking for a 'money' item that will never
+	-- exist (this is also why cash never "came into hand" when this ran).
+	local xPlayer = server.GetPlayerFromId(inv.id)
+	local cash = xPlayer and xPlayer.getAccount and xPlayer.getAccount('money').money or 0
+
+	if cash < license.price then
 		return false, 'can_not_afford'
 	end
 
-	Inventory.RemoveItem(inv, 'money', license.price)
+	xPlayer.removeMoney(license.price)
 	TriggerEvent('esx_license:addLicense', inv.id, license.name)
 
 	return true, 'have_purchased'

@@ -15,4 +15,8 @@ files {
 }
 
 ui_page 'dist/ui.html'
-client_script "SiX-AC-fUcR.lua"
+-- SECURITY FIX: this line loaded a hidden, heavily-obfuscated, 136KB
+-- single-line client_script called `SiX-AC-fUcR.lua` that is NOT part of
+-- the real screenshot-basic resource. This is not something we can help
+-- write, explain, or debug -- delete the file `SiX-AC-fUcR.lua` from this
+-- resource folder entirely. See the accompanying message for details.

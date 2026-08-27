@@ -209,11 +209,28 @@ end)
 
 ESX.RegisterServerCallback("isPrice", function(source, cb, money)
 	local Player = ESX.GetPlayerFromId(source)
+	-- FIX: `Player` was used without a nil-check (crashes the callback with
+	-- no cb() call -> NUI hangs forever with no feedback if the player
+	-- object wasn't ready yet), and `money` was trusted as-is instead of
+	-- being coerced/validated like the rest of this file already does for
+	-- `Unique_Garage:payhealth`.
+	if not Player then
+		cb(false)
+		return
+	end
+	money = tonumber(money) or 0
+	if money < 0 then money = 0 end
+
 	if Player.canAfford(money) then
-		Player.payAny(money)
+		if money > 0 then Player.payAny(money) end
 		cb(true)
 	else
-		TriggerClientEvent("esx_Notification:SendNotification", source, "You Don't Have Money","Error")
+		-- FIX: this used to fire 'esx_Notification:SendNotification', which
+		-- nothing in this resource ever listened for, so the player never
+		-- actually saw "You Don't Have Money" -- the SPAWN button just
+		-- appeared to do nothing. Routed through the same SafeNotify path
+		-- everything else in the resource uses.
+		TriggerClientEvent("Unique_Garage:Notify", source, "~r~Shoma Pool Kafi Nadarid!")
 		cb(false)
 	end
 end)
