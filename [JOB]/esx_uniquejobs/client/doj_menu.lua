@@ -57,39 +57,183 @@ Citizen.CreateThread(function()
 end)
 
 -- ============================================================
--- Law codebook -- static reference data. Edit this table to
--- match your server's actual penal code; these are placeholder
--- examples so the feature works out of the box.
+-- Law codebook -- persistent, judge-editable, categorized
+-- (server/law_codebook.lua). Judges get Add/Edit/Delete/Recategorize;
+-- everyone else sees a read-only, grouped, searchable list with an
+-- "Issue Ticket" action, same as /law for police/sheriff/mt.
 -- ============================================================
 
-local LAW_CODEBOOK = {
-	{ code = '§1', title = 'Sor\'at-e Gheir-e Mojaz', fine = 500, jail = 0 },
-	{ code = '§2', title = 'Ranandegi-e Khatarnak', fine = 1000, jail = 5 },
-	{ code = '§3', title = 'Farar Az Police', fine = 2500, jail = 15 },
-	{ code = '§4', title = 'Moghavemat Dar Barabar-e Dastgiri', fine = 1500, jail = 10 },
-	{ code = '§5', title = 'Hamle-ye Sadeh', fine = 2000, jail = 10 },
-	{ code = '§6', title = 'Hamle-ye Mosallahane', fine = 5000, jail = 30 },
-	{ code = '§7', title = 'Sereghat', fine = 3000, jail = 15 },
-	{ code = '§8', title = 'Sereghat-e Mosallahane', fine = 7500, jail = 45 },
-	{ code = '§9', title = 'Hamle-ye Dozdi (Grand Theft Auto)', fine = 6000, jail = 30 },
-	{ code = '§10', title = 'Negah-dari-e Mavad-e Mokhader', fine = 4000, jail = 20 },
-	{ code = '§11', title = 'Ghachagh-e Mavad-e Mokhader', fine = 10000, jail = 60 },
-	{ code = '§12', title = 'Negah-dari-e Salah-e Gheir-e Mojaz', fine = 5000, jail = 25 },
+local CODEBOOK_CATEGORIES = {
+	traffic = { label = 'Ranandegi', icon = 'car' },
+	property = { label = 'Amval', icon = 'house' },
+	violent = { label = 'Khoshoonat', icon = 'hand-fist' },
+	drug = { label = 'Mavad-e Mokhader', icon = 'pills' },
+	weapons = { label = 'Salah', icon = 'gun' },
+	other = { label = 'Sayer', icon = 'file-lines' },
 }
 
-function OpenCodebookMenu()
-	local options = {}
-	for _, law in ipairs(LAW_CODEBOOK) do
-		options[#options + 1] = {
-			title = law.code .. ' -- ' .. law.title,
-			description = 'Jarime: $' .. law.fine .. (law.jail > 0 and (' | Zendan: ' .. law.jail .. ' Daghighe') or ' | Bedoon-e Zendan'),
-			icon = 'gavel',
-			disabled = true,
+local function lawLine(law)
+	return 'Jarime: $' .. law.fine .. (law.jail_minutes > 0 and (' | Zendan: ' .. law.jail_minutes .. ' Daghighe') or ' | Bedoon-e Zendan')
+end
+
+function OpenLawRowMenu(law, canEdit, backMenuId)
+	local rowOptions = {
+		{
+			title = 'Sodoor Jarime',
+			icon = 'money-bill',
+			onSelect = function()
+				local input = lib.inputDialog('Sodoor Jarime -- ' .. law.title, { { type = 'number', label = 'ID Bazikon', required = true } })
+				if input and input[1] then
+					TriggerServerEvent('esx_uniquejobs:issueTicketFromLaw', law.id, input[1])
+				end
+			end,
+		},
+	}
+
+	if canEdit then
+		rowOptions[#rowOptions + 1] = {
+			title = 'Virayesh',
+			icon = 'pen',
+			onSelect = function()
+				local input = lib.inputDialog('Virayesh-e Ghanoon', {
+					{ type = 'input', label = 'Onvan', default = law.title, required = true },
+					{ type = 'number', label = 'Jarime ($)', default = law.fine, required = true },
+					{ type = 'number', label = 'Zendan (Daghighe)', default = law.jail_minutes },
+				})
+				if input and input[1] then
+					TriggerServerEvent('esx_uniquejobs:judgeEditLaw', law.id, input[1], input[2], input[3])
+					OpenCodebookMenu()
+				end
+			end,
+		}
+
+		local categoryOptions = {}
+		for key, cat in pairs(CODEBOOK_CATEGORIES) do
+			categoryOptions[#categoryOptions + 1] = {
+				title = cat.label,
+				icon = key == law.category and 'check' or cat.icon,
+				onSelect = function()
+					TriggerServerEvent('esx_uniquejobs:judgeSetLawCategory', law.id, key)
+					OpenCodebookMenu()
+				end,
+			}
+		end
+		rowOptions[#rowOptions + 1] = {
+			title = 'Taghire Dastebandi',
+			icon = 'tags',
+			menu = 'doj_law_recat_' .. law.id,
+		}
+		lib.registerContext({ id = 'doj_law_recat_' .. law.id, title = 'Dastebandi', menu = 'doj_law_row_' .. law.id, options = categoryOptions })
+
+		rowOptions[#rowOptions + 1] = {
+			title = 'Hazf',
+			icon = 'trash',
+			onSelect = function()
+				local alert = lib.alertDialog({ header = 'Hazf-e Ghanoon', content = 'Motmaen Hastid?', centered = true, cancel = true })
+				if alert == 'confirm' then
+					TriggerServerEvent('esx_uniquejobs:judgeDeleteLaw', law.id)
+					OpenCodebookMenu()
+				end
+			end,
 		}
 	end
 
-	lib.registerContext({ id = 'doj_codebook', title = 'Ghanoon-name', menu = 'doj_main', options = options })
-	lib.showContext('doj_codebook')
+	lib.registerContext({ id = 'doj_law_row_' .. law.id, title = law.code .. ' -- ' .. law.title, menu = backMenuId, options = rowOptions })
+	lib.showContext('doj_law_row_' .. law.id)
+end
+
+function OpenCodebookMenu()
+	ESX.TriggerServerCallback('esx_uniquejobs:getCodebook', function(laws, canEdit)
+		laws = laws or {}
+		local options = {}
+
+		if canEdit then
+			options[#options + 1] = {
+				title = 'Ezafe Kardan-e Ghanoon-e Jadid',
+				icon = 'plus',
+				onSelect = function()
+					local categorySelect = {}
+					for key, cat in pairs(CODEBOOK_CATEGORIES) do
+						categorySelect[#categorySelect + 1] = { value = key, label = cat.label }
+					end
+					local input = lib.inputDialog('Ghanoon-e Jadid', {
+						{ type = 'input', label = 'Code (masalan §13)', required = true },
+						{ type = 'input', label = 'Onvan', required = true },
+						{ type = 'select', label = 'Dastebandi', options = categorySelect, required = true },
+						{ type = 'number', label = 'Jarime ($)', required = true },
+						{ type = 'number', label = 'Zendan (Daghighe, 0 Agar Nadarad)', default = 0 },
+					})
+					if input and input[1] then
+						TriggerServerEvent('esx_uniquejobs:judgeAddLaw', input[1], input[2], input[3], input[4], input[5])
+						OpenCodebookMenu()
+					end
+				end,
+			}
+		end
+
+		options[#options + 1] = {
+			title = 'Jostoju Dar Ghanoon-name',
+			icon = 'magnifying-glass',
+			onSelect = function()
+				local input = lib.inputDialog('Jostoju', { { type = 'input', label = 'Code Ya Onvan', required = true } })
+				if input and input[1] then
+					local query = string.lower(input[1])
+					local results = {}
+					for _, law in ipairs(laws) do
+						if string.find(string.lower(law.title), query, 1, true) or string.find(string.lower(law.code), query, 1, true) then
+							results[#results + 1] = {
+								title = law.code .. ' -- ' .. law.title,
+								description = lawLine(law),
+								icon = 'gavel',
+								onSelect = function()
+									OpenLawRowMenu(law, canEdit, 'doj_codebook')
+								end,
+							}
+						end
+					end
+					if #results == 0 then
+						results[#results + 1] = { title = 'Chizi Peida Nashod', disabled = true, icon = 'circle-info' }
+					end
+					lib.registerContext({ id = 'doj_law_search', title = 'Natije-ye Jostoju', menu = 'doj_codebook', options = results })
+					lib.showContext('doj_law_search')
+				end
+			end,
+		}
+
+		for key, cat in pairs(CODEBOOK_CATEGORIES) do
+			local count = 0
+			for _, law in ipairs(laws) do
+				if law.category == key then count = count + 1 end
+			end
+
+			options[#options + 1] = {
+				title = cat.label .. ' (' .. count .. ')',
+				icon = cat.icon,
+				menu = 'doj_codebook_cat_' .. key,
+			}
+
+			local catOptions = {}
+			for _, law in ipairs(laws) do
+				if law.category == key then
+					catOptions[#catOptions + 1] = {
+						title = law.code .. ' -- ' .. law.title,
+						description = lawLine(law),
+						icon = 'gavel',
+						onSelect = function()
+							OpenLawRowMenu(law, canEdit, 'doj_codebook_cat_' .. key)
+						end,
+					}
+				end
+			end
+			if #catOptions == 0 then
+				catOptions[#catOptions + 1] = { title = 'Khali Ast', disabled = true, icon = 'circle-info' }
+			end
+			lib.registerContext({ id = 'doj_codebook_cat_' .. key, title = cat.label, menu = 'doj_codebook', options = catOptions })
+		end
+
+		lib.registerContext({ id = 'doj_codebook', title = 'Ghanoon-name', menu = 'doj_main', options = options })
+		lib.showContext('doj_codebook')
+	end)
 end
 
 -- ============================================================
@@ -148,7 +292,9 @@ function OpenDojMenu()
 
 	options[#options + 1] = {
 		title = 'Ghanoon-name (Codebook)',
-		description = 'Jarayem Va Jarime/Zendan-e Marboote',
+		description = dojJob == 'judge'
+			and 'Jarayem Va Jarime/Zendan -- Shoma Mitavanid Virayesh Konid'
+			or 'Jarayem Va Jarime/Zendan-e Marboote',
 		icon = 'book',
 		onSelect = function()
 			OpenCodebookMenu()
@@ -267,42 +413,109 @@ function OpenDojRosterMenu()
 end
 
 -- ============================================================
--- Case files
+-- Case files (expanded: multiple suspects, charges from the
+-- codebook, richer status, separate notes/evidence)
 -- ============================================================
 
-function OpenCasesMenu(evidenceMode)
+local CASE_STATUS_OPTIONS = {
+	{ value = 'open', label = 'Baz' },
+	{ value = 'investigating', label = 'Dar Hale Tahghigh' },
+	{ value = 'trial', label = 'Dar Hale Mohakeme' },
+	{ value = 'closed', label = 'Baste Shode' },
+	{ value = 'dismissed', label = 'Rad Shode' },
+}
+
+local CASE_PRIORITY_OPTIONS = {
+	{ value = 'low', label = 'Paeen', icon = 'arrow-down' },
+	{ value = 'medium', label = 'Motevaset', icon = 'minus' },
+	{ value = 'high', label = 'Bala', icon = 'arrow-up' },
+}
+
+local function priorityIcon(priority)
+	for _, p in ipairs(CASE_PRIORITY_OPTIONS) do
+		if p.value == priority then return p.icon end
+	end
+	return 'minus'
+end
+
+local function statusLabelFor(status)
+	for _, s in ipairs(CASE_STATUS_OPTIONS) do
+		if s.value == status then return s.label end
+	end
+	return status
+end
+
+function OpenCasesMenu(evidenceMode, filterStatus, searchSuspect)
 	ESX.TriggerServerCallback('esx_uniquejobs:dojGetCases', function(cases)
 		local options = {
 			{
 				title = 'Parvande-ye Jadid',
 				icon = 'plus',
 				onSelect = function()
+					local priorityInput = {}
+					for _, p in ipairs(CASE_PRIORITY_OPTIONS) do
+						priorityInput[#priorityInput + 1] = { value = p.value, label = p.label }
+					end
 					local input = lib.inputDialog('Parvande-ye Jadid', {
 						{ type = 'input', label = 'Onvan-e Parvande', required = true },
-						{ type = 'input', label = 'ID Ya Esm-e Mozanne (Ekhtiari)' },
+						{ type = 'select', label = 'Ahamiyat', options = priorityInput, default = 'medium', required = true },
+						{ type = 'input', label = 'ID Ya Esm-e Mozanne-ye Avval (Ekhtiari)' },
 					})
 					if input and input[1] then
-						TriggerServerEvent('esx_uniquejobs:dojOpenCase', input[1], input[2])
+						TriggerServerEvent('esx_uniquejobs:dojOpenCase', input[1], input[2], input[3])
 					end
 				end,
 			},
+			{
+				title = 'Jostoju Bar Asas-e Mozanne',
+				icon = 'magnifying-glass',
+				onSelect = function()
+					local input = lib.inputDialog('Jostoju', { { type = 'input', label = 'Esm-e Mozanne', required = true } })
+					if input and input[1] then
+						OpenCasesMenu(evidenceMode, nil, input[1])
+					end
+				end,
+			},
+			{
+				title = 'Filter Bar Asas-e Vaziat',
+				icon = 'filter',
+				menu = 'doj_cases_filter',
+			},
 		}
 
+		local filterOptions = { { title = 'Hame', icon = 'list', onSelect = function() OpenCasesMenu(evidenceMode) end } }
+		for _, s in ipairs(CASE_STATUS_OPTIONS) do
+			filterOptions[#filterOptions + 1] = {
+				title = s.label,
+				icon = s.value == filterStatus and 'check' or 'circle',
+				onSelect = function()
+					OpenCasesMenu(evidenceMode, s.value)
+				end,
+			}
+		end
+		lib.registerContext({ id = 'doj_cases_filter', title = 'Filter', menu = 'doj_cases', options = filterOptions })
+
 		for _, case in ipairs(cases or {}) do
+			local ageMinutes = math.floor((os.time() - case.created_at) / 60)
 			options[#options + 1] = {
 				title = '#' .. case.id .. ' -- ' .. case.title,
-				description = 'Mozanne: ' .. (case.suspectName or 'Na Moshakhas') .. ' | ' .. case.noteCount .. ' Yaddasht'
-					.. (case.referredTo and (' | Erja Shode Be ' .. case.referredTo) or ''),
-				icon = 'folder',
+				description = 'Vaziat: ' .. statusLabelFor(case.status) .. ' | Massol: ' .. case.lead_officer_name
+					.. ' | ' .. ageMinutes .. ' Daghighe Pish'
+					.. (case.referred_to and (' | Erja Shode Be ' .. case.referred_to) or ''),
+				icon = priorityIcon(case.priority),
 				onSelect = function()
 					OpenCaseDetailMenu(case.id, evidenceMode)
 				end,
 			}
 		end
 
+		if #cases == 0 then
+			options[#options + 1] = { title = 'Hich Parvande-i Peida Nashod', disabled = true, icon = 'circle-info' }
+		end
+
 		lib.registerContext({ id = 'doj_cases', title = evidenceMode and 'Entekhab-e Parvande' or 'Parvande-ha', menu = 'doj_main', options = options })
 		lib.showContext('doj_cases')
-	end)
+	end, filterStatus, searchSuspect)
 end
 
 function OpenCaseDetailMenu(caseId, evidenceMode)
@@ -315,37 +528,154 @@ function OpenCaseDetailMenu(caseId, evidenceMode)
 		local options = {
 			{
 				title = case.title,
-				description = 'Mozanne: ' .. (case.suspectName or 'Na Moshakhas') .. ' | Baz Konande: ' .. case.openedByName,
-				icon = 'folder-open',
+				description = 'Vaziat: ' .. case.statusLabel .. ' | Massol: ' .. case.leadOfficerName .. ' | Baz Konande: ' .. case.openedByName
+					.. ' | ' .. case.ageMinutes .. ' Daghighe Pish',
+				icon = priorityIcon(case.priority),
 				disabled = true,
+			},
+			{
+				title = 'Massol Shodan-e In Parvande',
+				description = 'Feli: ' .. case.leadOfficerName,
+				icon = 'user-tie',
+				onSelect = function()
+					TriggerServerEvent('esx_uniquejobs:dojAssignLead', caseId)
+					OpenCaseDetailMenu(caseId, evidenceMode)
+				end,
 			},
 		}
 
+		local priorityRowOptions = {}
+		for _, p in ipairs(CASE_PRIORITY_OPTIONS) do
+			priorityRowOptions[#priorityRowOptions + 1] = {
+				title = p.label,
+				icon = p.value == case.priority and 'check' or p.icon,
+				onSelect = function()
+					TriggerServerEvent('esx_uniquejobs:dojSetCasePriority', caseId, p.value)
+				end,
+			}
+		end
 		options[#options + 1] = {
-			title = evidenceMode and 'Ezafe Kardan-e Madrak' or 'Ezafe Kardan-e Yaddasht',
+			title = 'Taghire Ahamiyat (Feli: ' .. (case.priority and case.priority:sub(1,1):upper() .. case.priority:sub(2) or 'Motevaset') .. ')',
+			icon = 'flag',
+			menu = 'doj_case_priority_' .. caseId,
+		}
+		lib.registerContext({ id = 'doj_case_priority_' .. caseId, title = 'Ahamiyat', menu = 'doj_case_detail_' .. caseId, options = priorityRowOptions })
+
+		-- Suspects
+		local suspectNames = {}
+		for _, s in ipairs(case.suspects) do
+			suspectNames[#suspectNames + 1] = s.name
+		end
+		options[#options + 1] = {
+			title = 'Mozannin: ' .. (#suspectNames > 0 and table.concat(suspectNames, ', ') or 'Hich Kas'),
+			description = 'Baraye Ezafe Kardan-e Mozanne-ye Jadid Bezanid',
+			icon = 'user-group',
+			onSelect = function()
+				local input = lib.inputDialog('Ezafe Kardan-e Mozanne', { { type = 'input', label = 'ID Ya Esm', required = true } })
+				if input and input[1] then
+					TriggerServerEvent('esx_uniquejobs:dojAddSuspect', caseId, input[1])
+				end
+				OpenCaseDetailMenu(caseId, evidenceMode)
+			end,
+		}
+
+		-- Charges
+		options[#options + 1] = {
+			title = 'Etteham-ha (' .. #case.charges .. ')',
+			description = #case.charges > 0 and ('Majmoo-e Jarime: $' .. case.totalFine .. ' | Majmoo-e Zendan: ' .. case.totalJail .. ' Daghighe') or 'Hich Ettehami Sabt Nashode',
+			icon = 'scale-unbalanced',
+			menu = 'doj_case_charges_' .. caseId,
+		}
+
+		local chargeOptions = {
+			{
+				title = 'Ezafe Kardan-e Etteham Az Ghanoon-name',
+				icon = 'plus',
+				onSelect = function()
+					ESX.TriggerServerCallback('esx_uniquejobs:getCodebook', function(laws)
+						local lawOptions = {}
+						for _, law in ipairs(laws or {}) do
+							lawOptions[#lawOptions + 1] = {
+								title = law.code .. ' -- ' .. law.title,
+								description = 'Jarime: $' .. law.fine,
+								icon = 'gavel',
+								onSelect = function()
+									TriggerServerEvent('esx_uniquejobs:dojAddCharge', caseId, law.id)
+								end,
+							}
+						end
+						lib.registerContext({ id = 'doj_case_charge_pick_' .. caseId, title = 'Entekhab-e Ghanoon', menu = 'doj_case_charges_' .. caseId, options = lawOptions })
+						lib.showContext('doj_case_charge_pick_' .. caseId)
+					end)
+				end,
+			},
+		}
+		for _, charge in ipairs(case.charges) do
+			chargeOptions[#chargeOptions + 1] = {
+				title = charge.law_code .. ' -- ' .. charge.law_title,
+				description = 'Jarime: $' .. charge.fine .. (charge.jail_minutes > 0 and (' | Zendan: ' .. charge.jail_minutes .. ' Daghighe') or ''),
+				icon = 'gavel',
+				disabled = true,
+			}
+		end
+		lib.registerContext({ id = 'doj_case_charges_' .. caseId, title = 'Etteham-ha', menu = 'doj_case_detail_' .. caseId, options = chargeOptions })
+
+		-- Notes / evidence
+		options[#options + 1] = {
+			title = 'Ezafe Kardan-e Yaddasht',
 			icon = 'pen',
 			onSelect = function()
-				local input = lib.inputDialog(evidenceMode and 'Madrak-e Jadid' or 'Yaddasht-e Jadid', { { type = 'input', label = 'Matn', required = true } })
+				local input = lib.inputDialog('Yaddasht-e Jadid', { { type = 'input', label = 'Matn', required = true } })
 				if input and input[1] then
-					local text = evidenceMode and ('[MADRAK] ' .. input[1]) or input[1]
-					TriggerServerEvent('esx_uniquejobs:dojAddCaseNote', caseId, text)
+					TriggerServerEvent('esx_uniquejobs:dojAddCaseNote', caseId, 'note', input[1])
 				end
+				OpenCaseDetailMenu(caseId, evidenceMode)
+			end,
+		}
+		options[#options + 1] = {
+			title = 'Ezafe Kardan-e Madrak',
+			icon = 'magnifying-glass-chart',
+			onSelect = function()
+				local input = lib.inputDialog('Madrak-e Jadid', { { type = 'input', label = 'Matn', required = true } })
+				if input and input[1] then
+					TriggerServerEvent('esx_uniquejobs:dojAddCaseNote', caseId, 'evidence', input[1])
+				end
+				OpenCaseDetailMenu(caseId, evidenceMode)
 			end,
 		}
 
 		if #case.notes == 0 then
-			options[#options + 1] = { title = 'Hich Yaddashti Sabt Nashode', disabled = true, icon = 'circle-info' }
+			options[#options + 1] = { title = 'Hich Yaddasht/Madraki Sabt Nashode', disabled = true, icon = 'circle-info' }
 		else
 			for _, note in ipairs(case.notes) do
 				options[#options + 1] = {
-					title = note.text,
-					description = 'Sabt Shode Tavasote: ' .. note.byName,
-					icon = 'note-sticky',
+					title = (note.note_type == 'evidence' and '[MADRAK] ' or '[YADDASHT] ') .. note.text,
+					description = 'Sabt Shode Tavasote: ' .. note.by_name,
+					icon = note.note_type == 'evidence' and 'magnifying-glass-chart' or 'note-sticky',
 					disabled = true,
 				}
 			end
 		end
 
+		-- Status
+		local statusOptions = {}
+		for _, s in ipairs(CASE_STATUS_OPTIONS) do
+			statusOptions[#statusOptions + 1] = {
+				title = s.label,
+				icon = s.value == case.status and 'check' or 'circle',
+				onSelect = function()
+					TriggerServerEvent('esx_uniquejobs:dojSetCaseStatus', caseId, s.value)
+				end,
+			}
+		end
+		options[#options + 1] = {
+			title = 'Taghire Vaziat (Feli: ' .. case.statusLabel .. ')',
+			icon = 'list-check',
+			menu = 'doj_case_status_' .. caseId,
+		}
+		lib.registerContext({ id = 'doj_case_status_' .. caseId, title = 'Taghire Vaziat', menu = 'doj_case_detail_' .. caseId, options = statusOptions })
+
+		-- Refer
 		options[#options + 1] = {
 			title = 'Erja-e Parvande Be Departmani Digar',
 			icon = 'share',
@@ -363,21 +693,13 @@ function OpenCaseDetailMenu(caseId, evidenceMode)
 						}
 					end
 				end
-				lib.registerContext({ id = 'doj_case_refer', title = 'Erja Be', menu = 'doj_main', options = referOptions })
-				lib.showContext('doj_case_refer')
+				lib.registerContext({ id = 'doj_case_refer_' .. caseId, title = 'Erja Be', menu = 'doj_case_detail_' .. caseId, options = referOptions })
+				lib.showContext('doj_case_refer_' .. caseId)
 			end,
 		}
 
-		options[#options + 1] = {
-			title = 'Baste Kardan-e Parvande',
-			icon = 'box-archive',
-			onSelect = function()
-				TriggerServerEvent('esx_uniquejobs:dojCloseCase', caseId)
-			end,
-		}
-
-		lib.registerContext({ id = 'doj_case_detail', title = 'Parvande #' .. caseId, menu = 'doj_cases', options = options })
-		lib.showContext('doj_case_detail')
+		lib.registerContext({ id = 'doj_case_detail_' .. caseId, title = 'Parvande #' .. caseId, menu = 'doj_cases', options = options })
+		lib.showContext('doj_case_detail_' .. caseId)
 	end, caseId)
 end
 

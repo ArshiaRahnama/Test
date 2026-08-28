@@ -65,6 +65,7 @@ local Suggestions = {
     { '/jailpd', 'Zendani kardan-e edari ba flag-e cell-e vaghei-ye PD: /jailpd [id] [daghighe] [dalil]' },
     { '/joblist', 'Namayesh-e list-e player-haye online be tafkik-e shoghl (niazmand-e permission)' },
     { '/keys', 'Refresh/barrasi-e mojaddad-e kelid-haye mashin-e mojood dar inventory' },
+    { '/law', 'Baz kardan-e ghanoon-name baraye police/sheriff/mt va sodoor-e jarime' },
     { '/lockdoor', 'Ghofl/baz kardan-e dar-e nazdik (ba pin dar soorat-e niaz)' },
     { '/me', 'Namayesh-e yek matn-e action bala-ye sar-e character (Roleplay /me)' },
     { '/menu', 'Baz kardan-e menu-ye level/quest/dastavard (Unique_LevelQuest)' },

@@ -220,40 +220,47 @@ return {
 	-- inventory automatically. A matching `worn_clothing_*` item is given
 	-- back in its place — using THAT one takes the piece back off and
 	-- swaps it back for the original `clothing_*` item.
-	['clothing_tshirt'] = { label = 'Tishert', weight = 200, stack = false },
-	['clothing_torso'] = { label = 'Lebas', weight = 300, stack = false },
-	['clothing_arms'] = { label = 'Dastkesh', weight = 100, stack = false },
-	['clothing_decals'] = { label = 'Neshan', weight = 50, stack = false },
-	['clothing_pants'] = { label = 'Shalvar', weight = 300, stack = false },
-	['clothing_shoes'] = { label = 'Kafsh', weight = 250, stack = false },
-	['clothing_mask'] = { label = 'Mask', weight = 100, stack = false },
-	['clothing_bproof'] = { label = 'Jelighe', weight = 500, stack = false },
-	['clothing_chain'] = { label = 'Gardanband', weight = 50, stack = false },
-	['clothing_bags'] = { label = 'Kif', weight = 300, stack = false },
-	['clothing_helmet'] = { label = 'Kolah', weight = 400, stack = false },
-	['clothing_glasses'] = { label = 'Eynak', weight = 50, stack = false },
-	['clothing_watches'] = { label = 'Saat', weight = 50, stack = false },
-	['clothing_bracelets'] = { label = 'Dastband', weight = 20, stack = false },
-	['clothing_ears'] = { label = 'Gushvare', weight = 20, stack = false },
+	['clothing_tshirt'] = { label = 'Tishert', weight = 200, stack = false, client = { image = 'clothing_tshirt.png' } },
+	['clothing_torso'] = { label = 'Lebas', weight = 300, stack = false, client = { image = 'clothing_torso.png' } },
+	['clothing_arms'] = { label = 'Dastkesh', weight = 100, stack = false, client = { image = 'clothing_arms.png' } },
+	['clothing_decals'] = { label = 'Neshan', weight = 50, stack = false, client = { image = 'clothing_decals.png' } },
+	['clothing_pants'] = { label = 'Shalvar', weight = 300, stack = false, client = { image = 'clothing_pants.png' } },
+	['clothing_shoes'] = { label = 'Kafsh', weight = 250, stack = false, client = { image = 'clothing_shoes.png' } },
+	['clothing_mask'] = { label = 'Mask', weight = 100, stack = false, client = { image = 'clothing_mask.png' } },
+	['clothing_bproof'] = { label = 'Jelighe', weight = 500, stack = false, client = { image = 'clothing_bproof.png' } },
+	['clothing_chain'] = { label = 'Gardanband', weight = 50, stack = false, client = { image = 'clothing_chain.png' } },
+	['clothing_bags'] = { label = 'Kif', weight = 300, stack = false, client = { image = 'clothing_bags.png' } },
+	['clothing_helmet'] = { label = 'Kolah', weight = 400, stack = false, client = { image = 'clothing_helmet.png' } },
+	['clothing_glasses'] = { label = 'Eynak', weight = 50, stack = false, client = { image = 'clothing_glasses.png' } },
+	['clothing_watches'] = { label = 'Saat', weight = 50, stack = false, client = { image = 'clothing_watches.png' } },
+	['clothing_bracelets'] = { label = 'Dastband', weight = 20, stack = false, client = { image = 'clothing_bracelets.png' } },
+	['clothing_ears'] = { label = 'Gushvare', weight = 20, stack = false, client = { image = 'clothing_ears.png' } },
 
 	-- "Currently worn" placeholders — appear in the inventory while a piece
 	-- is equipped. Using one takes that piece off and gives the real
 	-- `clothing_*` item back.
-	['worn_clothing_tshirt'] = { label = '(Worn) Tishert', weight = 200, stack = false },
-	['worn_clothing_torso'] = { label = '(Worn) Lebas', weight = 300, stack = false },
-	['worn_clothing_arms'] = { label = '(Worn) Dastkesh', weight = 100, stack = false },
-	['worn_clothing_decals'] = { label = '(Worn) Neshan', weight = 50, stack = false },
-	['worn_clothing_pants'] = { label = '(Worn) Shalvar', weight = 300, stack = false },
-	['worn_clothing_shoes'] = { label = '(Worn) Kafsh', weight = 250, stack = false },
-	['worn_clothing_mask'] = { label = '(Worn) Mask', weight = 100, stack = false },
-	['worn_clothing_bproof'] = { label = '(Worn) Jelighe', weight = 500, stack = false },
-	['worn_clothing_chain'] = { label = '(Worn) Gardanband', weight = 50, stack = false },
-	['worn_clothing_bags'] = { label = '(Worn) Kif', weight = 300, stack = false },
-	['worn_clothing_helmet'] = { label = '(Worn) Kolah', weight = 400, stack = false },
-	['worn_clothing_glasses'] = { label = '(Worn) Eynak', weight = 50, stack = false },
-	['worn_clothing_watches'] = { label = '(Worn) Saat', weight = 50, stack = false },
-	['worn_clothing_bracelets'] = { label = '(Worn) Dastband', weight = 20, stack = false },
-	['worn_clothing_ears'] = { label = '(Worn) Gushvare', weight = 20, stack = false },
+	['worn_clothing_tshirt'] = { label = '(Worn) Tishert', weight = 200, stack = false, client = { image = 'clothing_tshirt.png' } },
+	['worn_clothing_torso'] = { label = '(Worn) Lebas', weight = 300, stack = false, client = { image = 'clothing_torso.png' } },
+	['worn_clothing_arms'] = { label = '(Worn) Dastkesh', weight = 100, stack = false, client = { image = 'clothing_arms.png' } },
+	['worn_clothing_decals'] = { label = '(Worn) Neshan', weight = 50, stack = false, client = { image = 'clothing_decals.png' } },
+	['worn_clothing_pants'] = { label = '(Worn) Shalvar', weight = 300, stack = false, client = { image = 'clothing_pants.png' } },
+	['worn_clothing_shoes'] = { label = '(Worn) Kafsh', weight = 250, stack = false, client = { image = 'clothing_shoes.png' } },
+	['worn_clothing_mask'] = { label = '(Worn) Mask', weight = 100, stack = false, client = { image = 'clothing_mask.png' } },
+	['worn_clothing_bproof'] = { label = '(Worn) Jelighe', weight = 500, stack = false, client = { image = 'clothing_bproof.png' } },
+	['worn_clothing_chain'] = { label = '(Worn) Gardanband', weight = 50, stack = false, client = { image = 'clothing_chain.png' } },
+	['worn_clothing_bags'] = { label = '(Worn) Kif', weight = 300, stack = false, client = { image = 'clothing_bags.png' } },
+	['worn_clothing_helmet'] = { label = '(Worn) Kolah', weight = 400, stack = false, client = { image = 'clothing_helmet.png' } },
+	['worn_clothing_glasses'] = { label = '(Worn) Eynak', weight = 50, stack = false, client = { image = 'clothing_glasses.png' } },
+	['worn_clothing_watches'] = { label = '(Worn) Saat', weight = 50, stack = false, client = { image = 'clothing_watches.png' } },
+	['worn_clothing_bracelets'] = { label = '(Worn) Dastband', weight = 20, stack = false, client = { image = 'clothing_bracelets.png' } },
+	['worn_clothing_ears'] = { label = '(Worn) Gushvare', weight = 20, stack = false, client = { image = 'clothing_ears.png' } },
+
+	-- One real item for ALL vehicle keys (essentialmode used to dynamically
+	-- create a unique "CarKey|<plate>" item per vehicle at runtime, which
+	-- ox_inventory can't do). Each set of keys is a separate instance of
+	-- this same item, distinguished by its own metadata.plate.
+	['vehicle_keys'] = { label = 'Vehicle Keys', weight = 50, stack = false, client = { image = 'vehicle_keys.png' } },
+
 
 	['mastercard'] = {
 		label = 'Fleeca Card',

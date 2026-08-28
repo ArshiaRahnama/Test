@@ -72,15 +72,14 @@ ESX.RegisterServerCallback('CarLock:haskey', function(source, cb, plate)
     if not xPlayer or not plate then cb(false) return end
 
     plate = ESX.Math.Trim(plate)
-    local item = "CarKey|" .. plate
 
     if HasJobPlateAccess(xPlayer, plate) then
         cb(true)
         return
     end
 
-    local inventoryItem = xPlayer.getInventoryItem(item)
-    if inventoryItem and inventoryItem.count >= 1 then
+    local keyCount = exports.ox_inventory:Search(source, 'count', 'vehicle_keys', { plate = plate }) or 0
+    if keyCount >= 1 then
         cb(true)
         return
     end
@@ -155,20 +154,26 @@ AddEventHandler("CarLock:ToggleKey", function(op, plate)
     plate = ESX.Math.Trim(plate)
     if plate == "" or #plate > 12 then return end
 
-    local item = "CarKey|" .. plate
+    -- ox_inventory has no per-vehicle dynamic item creation (unlike
+    -- essentialmode's old "CarKey|<plate>" trick, one unique item name per
+    -- plate — that's unbounded and can't be pre-registered). Every set of
+    -- keys is instead the SAME item, distinguished by its own metadata.plate.
+    local KEY_ITEM = "vehicle_keys"
 
     local function applyGrant()
-        if xPlayer.getInventoryItem(item) == nil or xPlayer.getInventoryItem(item).count <= 0 then
-            xPlayer.addInventoryItem(item, 1, nil, nil, 0)
+        local count = exports.ox_inventory:Search(src, 'count', KEY_ITEM, { plate = plate }) or 0
+        if count <= 0 then
+            exports.ox_inventory:AddItem(src, KEY_ITEM, 1, { plate = plate, label = 'Keys: ' .. plate })
         end
     end
 
     local function applyRevoke()
         local xPlayers = ESX.GetPlayers()
         for i = 1, #xPlayers, 1 do
-            local xPlayerr = ESX.GetPlayerFromId(xPlayers[i])
-            if xPlayerr and xPlayerr.getInventoryItem(item) ~= nil and xPlayerr.getInventoryItem(item).count > 0 then
-                xPlayerr.removeInventoryItem(item, 1)
+            local otherSource = xPlayers[i]
+            local count = exports.ox_inventory:Search(otherSource, 'count', KEY_ITEM, { plate = plate }) or 0
+            if count > 0 then
+                exports.ox_inventory:RemoveItem(otherSource, KEY_ITEM, count, { plate = plate })
             end
         end
     end
@@ -220,7 +225,7 @@ AddEventHandler("CarLock:ToggleKey", function(op, plate)
     else
 
 
-        if IsStaff(xPlayer) or (xPlayer.getInventoryItem(item) and xPlayer.getInventoryItem(item).count > 0) then
+        if IsStaff(xPlayer) or (exports.ox_inventory:Search(src, 'count', KEY_ITEM, { plate = plate }) or 0) > 0 then
             applyRevoke()
         else
             CheckDbOwnership(xPlayer, plate, function(isOwner)
@@ -252,12 +257,11 @@ AddEventHandler("CarLock:ToggleKey2", function(op, plate, targetId)
     end
 
     plate = ESX.Math.Trim(plate)
-    local item = "CarKey|" .. plate
 
     local function senderHasAccess(cb)
         if IsStaff(xPlayer) then cb(true) return end
-        local invItem = xPlayer.getInventoryItem(item)
-        if invItem and invItem.count > 0 then cb(true) return end
+        local keyCount = exports.ox_inventory:Search(src, 'count', 'vehicle_keys', { plate = plate }) or 0
+        if keyCount > 0 then cb(true) return end
         CheckDbOwnership(xPlayer, plate, function(isOwner) cb(isOwner) end)
     end
 
@@ -268,13 +272,15 @@ AddEventHandler("CarLock:ToggleKey2", function(op, plate, targetId)
             return
         end
 
+        local targetKeyCount = exports.ox_inventory:Search(targetId, 'count', 'vehicle_keys', { plate = plate }) or 0
+
         if op then
-            if xTarget.getInventoryItem(item) == nil or xTarget.getInventoryItem(item).count <= 0 then
-                xTarget.addInventoryItem(item, 1, nil, nil, 0)
+            if targetKeyCount <= 0 then
+                exports.ox_inventory:AddItem(targetId, 'vehicle_keys', 1, { plate = plate, label = 'Keys: ' .. plate })
             end
         else
-            if xTarget.getInventoryItem(item) ~= nil then
-                xTarget.removeInventoryItem(item, 1)
+            if targetKeyCount > 0 then
+                exports.ox_inventory:RemoveItem(targetId, 'vehicle_keys', targetKeyCount, { plate = plate })
             end
         end
     end)
@@ -318,8 +324,7 @@ ESX.RegisterServerCallback('CarLock:canHotwire', function(source, cb, plate)
     if not xPlayer or not plate then cb(false) return end
 
     plate = ESX.Math.Trim(plate)
-    local item = "CarKey|" .. plate
-    local hasKey = xPlayer.getInventoryItem(item) and xPlayer.getInventoryItem(item).count >= 1
+    local hasKey = (exports.ox_inventory:Search(source, 'count', 'vehicle_keys', { plate = plate }) or 0) >= 1
 
     if hasKey then
         cb(false)

@@ -133,8 +133,16 @@ RegisterNUICallback('buyClothes', function(data)
                     DeleteSkinCam()
                     TriggerEvent('skinchanger:getSkin', function(skin)
                         if Config.SkinManager == "esx_skin" then
-                            TriggerServerEvent('esx_skin:save', skin)
+                            -- Give the bought items to the inventory FIRST
+                            -- (still worn/unworn state), then revert the
+                            -- character's actual appearance back to how it
+                            -- was before trying anything on in this shop —
+                            -- items are only supposed to get worn when the
+                            -- player USEs them from the inventory, not just
+                            -- from having tried them on here.
                             TriggerServerEvent('unique_clothestore:giveClotheItems', computeBoughtClotheItems(lastSkin, skin))
+                            TriggerEvent('skinchanger:loadSkin', lastSkin)
+                            TriggerServerEvent('esx_skin:save', lastSkin)
                         elseif Config.SkinManager == "fivem-appearance" then
                             TriggerEvent('fivem-appearance:setOutfit', Character_AP)
                             TriggerServerEvent('fivem-appearance:save', Character_AP)
@@ -158,8 +166,16 @@ RegisterNUICallback('buyClothes', function(data)
                     DeleteSkinCam()
                     TriggerEvent('skinchanger:getSkin', function(skin)
                         if Config.SkinManager == "esx_skin" then
-                            TriggerServerEvent('esx_skin:save', skin)
+                            -- Give the bought items to the inventory FIRST
+                            -- (still worn/unworn state), then revert the
+                            -- character's actual appearance back to how it
+                            -- was before trying anything on in this shop —
+                            -- items are only supposed to get worn when the
+                            -- player USEs them from the inventory, not just
+                            -- from having tried them on here.
                             TriggerServerEvent('unique_clothestore:giveClotheItems', computeBoughtClotheItems(lastSkin, skin))
+                            TriggerEvent('skinchanger:loadSkin', lastSkin)
+                            TriggerServerEvent('esx_skin:save', lastSkin)
                         elseif Config.SkinManager == "fivem-appearance" then
                             TriggerEvent('fivem-appearance:setOutfit', Character_AP)
                             TriggerServerEvent('fivem-appearance:save', Character_AP)

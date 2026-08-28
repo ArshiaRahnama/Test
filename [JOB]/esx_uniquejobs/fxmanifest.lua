@@ -42,6 +42,7 @@ client_scripts {
 
 	'client/agent_speact.lua',
 	'client/doj_menu.lua',
+	'client/law_menu.lua',
 
 
 
@@ -99,6 +100,8 @@ server_scripts {
 	'server/tracker_manager.lua',
 	'server/wiretap_manager.lua',
 	'server/doj_manager.lua',
+	'server/doj_cases.lua',
+	'server/law_codebook.lua',
 	'server/doa_manager.lua',
 
 	'client/config_marshal.lua',
