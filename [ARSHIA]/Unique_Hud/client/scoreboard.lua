@@ -37,19 +37,22 @@ local function CloseScoreboard()
     SendNUIMessage({ id = 'scoreboard', event = 'toggle', open = false })
 end
 
--- کلید F10 (هم باز، هم بسته می‌کنه)
-RegisterCommand('+opensbUniqueHud', function()
+-- ✅ فیکس شد: کلید قبلی (+opensbUniqueHud) رو یه بار قبلاً روی F9 دیفالت کرده
+-- بودیم؛ FiveM بایند هر دستور رو سمت کلاینت ذخیره می‌کنه، پس فقط عوض کردن
+-- کد کافی نبود - همون بایند قدیمی (F9) می‌موند. با یه اسم دستور کاملاً جدید
+-- (+scoreboardUniqueHudV2)، بازی مجبوره یه بایند تازه با پیش‌فرض واقعی (F10)
+-- بسازه.
+RegisterCommand('+scoreboardUniqueHudV2', function()
     if scoreboardOpen then
         CloseScoreboard()
     else
         OpenScoreboard()
     end
 end, false)
-RegisterCommand('-opensbUniqueHud', function() end, false)
-RegisterKeyMapping('+opensbUniqueHud', 'باز/بسته کردن اسکوربورد', 'keyboard', 'F10')
+RegisterCommand('-scoreboardUniqueHudV2', function() end, false)
+RegisterKeyMapping('+scoreboardUniqueHudV2', 'باز/بسته کردن اسکوربورد', 'keyboard', 'F10')
 
--- بستن با Esc - کاملاً سمت Lua با نیتیو خودِ بازی (نیازی به ارتباط با JS نیست،
--- پس دیگه به مشکل GetParentResourceName داخل iframe تودرتو برنمی‌خوریم).
+-- بستن با Esc - کاملاً سمت Lua با نیتیو خودِ بازی.
 Citizen.CreateThread(function()
     while true do
         if scoreboardOpen then
@@ -61,12 +64,6 @@ Citizen.CreateThread(function()
             Citizen.Wait(250)
         end
     end
-end)
-
--- دکمه‌ی رفرش دستی تو خودِ پنل
-RegisterNUICallback('refreshScoreboardUniqueHud', function(data, cb)
-    RefreshScoreboard()
-    cb('ok')
 end)
 
 AddEventHandler('onResourceStop', function(resourceName)

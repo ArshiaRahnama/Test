@@ -46,6 +46,7 @@ AddEventHandler('For5M:OpenBossPanel', function(data , GangName )
 end) 
 
 RegisterNUICallback('CLOSEADMINPANEL', function(data, cb)
+	print('[Unique_ALLGangs] CLOSEADMINPANEL received - releasing NUI focus')
 	InAdminPanel = false 
 	SetNuiFocus(false, false)
 	-- also make sure the boss-panel iframe (if it was ever opened) is
@@ -54,6 +55,18 @@ RegisterNUICallback('CLOSEADMINPANEL', function(data, cb)
 	-- element sitting on top of the game after closing normally.
 	SendNUIMessage({ type = 'displaynone' })
 	if cb then cb('ok') end
+	-- Defensive re-assertion: if anything else in this resource (or
+	-- another one) re-locks NUI focus back to true in the same frame
+	-- or shortly after (a race we haven't been able to reproduce/find
+	-- in code but that would explain focus staying stuck even though
+	-- this handler ran), force it back off a moment later too.
+	CreateThread(function()
+		Wait(250)
+		if not InAdminPanel then
+			SetNuiFocus(false, false)
+			print('[Unique_ALLGangs] CLOSEADMINPANEL: re-asserted SetNuiFocus(false,false) after 250ms as a safety net')
+		end
+	end)
 end)
 
 -------------------------------------------------------------------

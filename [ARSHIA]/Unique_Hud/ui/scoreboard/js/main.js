@@ -2,123 +2,93 @@
 // Unique_Hud / ui / scoreboard / js / main.js
 // ============================================================
 
-var jobKeys = ['police', 'mt', 'ambulance', 'mechanic', 'taxi', 'weazel', 'fbi'];
+var organizations = [
+  {
+    key: 'doj',
+    label: 'Department Of Justice',
+    jobs: [
+      { key: 'cid', label: 'CID' },
+      { key: 'cia', label: 'CIA' },
+      { key: 'marshal', label: 'Marshal' },
+      { key: 'fbi', label: 'FBI' },
+      { key: 'judge', label: 'Judge' },
+      { key: 'doa', label: 'DOA' },
+    ],
+  },
+  {
+    key: 'law',
+    label: 'Law Enforcement',
+    jobs: [
+      { key: 'police', label: 'Police' },
+      { key: 'sheriff', label: 'Sheriff' },
+      { key: 'mt', label: 'MT' },
+    ],
+  },
+  {
+    key: 'organ',
+    label: 'Organ Services',
+    jobs: [
+      { key: 'taxi', label: 'Taxi' },
+      { key: 'mechanic', label: 'Mechanic' },
+      { key: 'ambulance', label: 'Medic' },
+      { key: 'weazel', label: 'Weazel' },
+    ],
+  },
+];
 
-var robMap = {
-  shop: 'Shop',
-  Bank: 'Palateo_Bank',
-  Minibank: 'Minibank',
-  jewelery: 'Jewerlly',
-};
-var robLabels = {
-  shop: 'مغازه',
-  Bank: 'بانک',
-  SheriffBank: 'بانک شریف',
-  Cargo: 'کارگو',
-  Bimeh: 'بیمه',
-  jewelery: 'جواهرفروشی',
-  Feleca: 'فلیکا بانک',
-  Minibank: 'مینی‌بانک',
-  JewelerySheriff: 'جواهرفروشی شریف',
-  mythic: 'میتیک',
-};
+function buildOrgList() {
+  var container = document.getElementById('org-list');
+  container.innerHTML = '';
 
-var latestRobData = {};
+  organizations.forEach(function (org) {
+    var card = document.createElement('div');
+    card.className = 'org-card';
+    card.id = 'org-' + org.key;
 
-function updateClock() {
-  var now = new Date();
-  var h = now.getHours().toString().padStart(2, '0');
-  var m = now.getMinutes().toString().padStart(2, '0');
-  $('#Clock').text(h + ':' + m);
-}
-setInterval(updateClock, 1000);
-updateClock();
+    var header = document.createElement('div');
+    header.className = 'org-header';
+    header.innerHTML =
+      '<span class="org-title">' + org.label + '</span>' +
+      '<span><span class="org-count" id="org-count-' + org.key + '">0</span>' +
+      '<span class="org-arrow">▶</span></span>';
+    header.addEventListener('click', function () {
+      card.classList.toggle('expanded');
+    });
 
-function setJobSwitch(key, count) {
-  var input = $('#' + key + '_input');
-  var label = $('#' + key + '_switch');
-  label.attr('data-on', '+' + count);
-  input.prop('checked', count > 0);
+    var jobsWrap = document.createElement('div');
+    jobsWrap.className = 'org-jobs';
+
+    org.jobs.forEach(function (job) {
+      var row = document.createElement('div');
+      row.className = 'org-job-row';
+      row.id = 'jobrow-' + job.key;
+      row.innerHTML = '<span>' + job.label + '</span><span class="count-badge" id="jobcount-' + job.key + '">0</span>';
+      jobsWrap.appendChild(row);
+    });
+
+    card.appendChild(header);
+    card.appendChild(jobsWrap);
+    container.appendChild(card);
+  });
 }
 
 function renderScoreboard(data) {
   $('#playersnum').text(data.total);
 
-  jobKeys.forEach(function (key) {
-    setJobSwitch(key, (data.jobs && data.jobs[key]) || 0);
+  organizations.forEach(function (org) {
+    var orgTotal = 0;
+    org.jobs.forEach(function (job) {
+      var count = (data.jobs && data.jobs[job.key]) || 0;
+      orgTotal += count;
+
+      var badge = document.getElementById('jobcount-' + job.key);
+      var row = document.getElementById('jobrow-' + job.key);
+      if (badge) badge.textContent = count;
+      if (row) row.classList.toggle('online', count > 0);
+    });
+    var orgCountEl = document.getElementById('org-count-' + org.key);
+    if (orgCountEl) orgCountEl.textContent = orgTotal + ' آنلاین';
   });
-
-  var adminCount = (data.admins && data.admins.length) || 0;
-  setJobSwitch('admins', adminCount);
-
-  latestRobData = data.robs || {};
-
-  Object.keys(robMap).forEach(function (htmlId) {
-    var realType = robMap[htmlId];
-    var info = latestRobData[realType];
-    var el = document.getElementById(htmlId);
-    if (!el) return;
-
-    el.classList.remove(htmlId + '_active', htmlId + '_down');
-
-    if (info) {
-      if (info.beingRobbed > 0) {
-        el.classList.add(htmlId + '_down');
-      } else if (info.active > 0) {
-        el.classList.add(htmlId + '_active');
-      }
-    }
-  });
-}
-
-var unmappedRobIds = ['SheriffBank', 'Cargo', 'Bimeh', 'Feleca', 'JewelerySheriff', 'mythic'];
-
-function robclick(htmlId) {
-  $('#second_container').css('display', 'flex');
-
-  if (unmappedRobIds.indexOf(htmlId) !== -1) {
-    $('#Info_Text').text(robLabels[htmlId] + ': این مکان تو سیستم دزدی فعلی سرور تعریف نشده.');
-    $('#Timer_Hour').text('--');
-    $('#Timer_Minutes').text('--');
-    $('#Timer_Seconds').text('--');
-    return;
-  }
-
-  var realType = robMap[htmlId];
-  var info = latestRobData[realType];
-
-  if (!info) {
-    $('#Info_Text').text(robLabels[htmlId] + ': اطلاعاتی در دسترس نیست.');
-    $('#Timer_Hour').text('--');
-    $('#Timer_Minutes').text('--');
-    $('#Timer_Seconds').text('--');
-    return;
-  }
-
-  if (info.beingRobbed > 0) {
-    $('#Info_Text').text(robLabels[htmlId] + ': در حال حاضر در حال دزدیه.');
-    $('#Timer_Hour').text('--');
-    $('#Timer_Minutes').text('--');
-    $('#Timer_Seconds').text('--');
-  } else if (info.active > 0) {
-    $('#Info_Text').text(robLabels[htmlId] + ': الان آزاد و قابل دزدیه.');
-    $('#Timer_Hour').text('00');
-    $('#Timer_Minutes').text('00');
-    $('#Timer_Seconds').text('00');
-  } else {
-    var secondsLeft = info.secondsUntilAvailable || 0;
-    var hh = Math.floor(secondsLeft / 3600);
-    var mm = Math.floor((secondsLeft % 3600) / 60);
-    var ss = secondsLeft % 60;
-    $('#Info_Text').text(robLabels[htmlId] + ': در کول‌داون، تا آزاد شدن:');
-    $('#Timer_Hour').text(hh.toString().padStart(2, '0'));
-    $('#Timer_Minutes').text(mm.toString().padStart(2, '0'));
-    $('#Timer_Seconds').text(ss.toString().padStart(2, '0'));
-  }
-}
-
-function requestRefresh() {
-  window.parent.postMessage({ id: 'scoreboard', event: 'requestRefresh' }, '*');
 }
 
 window.addEventListener('message', function (event) {
@@ -130,9 +100,10 @@ window.addEventListener('message', function (event) {
       $('#wrap').css('display', 'block');
     } else {
       $('#wrap').css('display', 'none');
-      $('#second_container').css('display', 'none');
     }
   } else if (item.event === 'update') {
     if (item.data) renderScoreboard(item.data);
   }
 });
+
+buildOrgList();

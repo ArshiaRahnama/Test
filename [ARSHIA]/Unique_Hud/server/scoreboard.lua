@@ -1,20 +1,31 @@
 -- ============================================================
 -- Unique_Hud / server / scoreboard.lua
 -- ============================================================
--- توضیح مهم: مرجعی که فرستادید ۹ تا دسته‌ی دزدی مخصوص خودِ Sunset داشت
--- (Bank/SheriffBank/Cargo/Bimeh/Feleca/Minibank/JewelerySheriff/mythic...)
--- که هیچ‌کدوم با سیستم دزدی واقعی شما (Unique_AllRobs) مطابقت نداشت. به‌جای
--- ساختن یه پنل قلابی با دیتای الکی، اینجا به دسته‌های واقعی خودتون
--- (Shop, Jewerlly, Minibank, Palateo_Bank, Life_Invader) وصل شده - یه export
--- کوچیک و فقط-خواندنی هم به Unique_AllRobs/server.lua اضافه شد که این
--- دیتا رو بده (هیچ رفتار موجودی رو عوض نکرد).
 
--- ✅ فیکس شد: CreateThread اجرا رو async می‌کنه، پس ESX.RegisterServerCallback
--- زیرش قبل از پر شدن ESX صدا زده می‌شد و کرش می‌کرد. الان sync هست.
 ESX = nil
 TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
 
-local TrackedJobs = { 'police', 'fbi', 'mt', 'ambulance', 'weazel', 'mechanic', 'taxi' }
+-- ✅ بازطراحی شد: شغل‌ها به ۳ ارگان گروه‌بندی شدن (طبق خواسته‌ی شما)، و بخش
+-- وضعیت دزدی‌ها کلاً حذف شد. اسم‌های شغل زیر دقیقاً از esx_society/config.lua
+-- خودتون تأیید شده (police, sheriff, mt, cid, cia, marshal, fbi, judge, doa,
+-- taxi, mechanic, ambulance, weazel).
+local Organizations = {
+    {
+        key = 'doj',
+        label = 'Department Of Justice',
+        jobs = { 'cid', 'cia', 'marshal', 'fbi', 'judge', 'doa' },
+    },
+    {
+        key = 'law',
+        label = 'Law Enforcement',
+        jobs = { 'police', 'sheriff', 'mt' },
+    },
+    {
+        key = 'organ',
+        label = 'Organ Services',
+        jobs = { 'taxi', 'mechanic', 'ambulance', 'weazel' },
+    },
+}
 
 local function GetOnlinePlayers()
     local list = {}
@@ -31,8 +42,10 @@ ESX.RegisterServerCallback('Unique_Hud:scoreboard:getCounts', function(source, c
     local players = GetOnlinePlayers()
 
     local jobCounts = {}
-    for _, jobName in ipairs(TrackedJobs) do
-        jobCounts[jobName] = 0
+    for _, org in ipairs(Organizations) do
+        for _, jobName in ipairs(org.jobs) do
+            jobCounts[jobName] = 0
+        end
     end
 
     local gangCounts = {}
@@ -60,20 +73,11 @@ ESX.RegisterServerCallback('Unique_Hud:scoreboard:getCounts', function(source, c
         table.insert(gangList, { label = label, count = count })
     end
 
-    local robStatus = {}
-    local ok, result = pcall(function()
-        return exports['Unique_AllRobs']:GetRobStatusSummary()
-    end)
-    if ok and result then
-        robStatus = result
-    end
-
     cb({
         total = #players,
         jobs = jobCounts,
         gangs = gangList,
         admins = admins,
-        robs = robStatus,
         maxPlayers = GetConvarInt('sv_maxclients', 48),
     })
 end)

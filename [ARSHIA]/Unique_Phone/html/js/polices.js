@@ -94,10 +94,9 @@ Setuppolices = function(data) {
         var count = countByJob[job.name] || 0;
         var label = labelByJob[job.name] || job.label;
         var rowId = "police-row-" + job.name;
-        var disabledClass = count === 0 ? " police-list-empty" : "";
 
         var el =
-            '<div class="police-list' + disabledClass + '" id="' + rowId + '">' +
+            '<div class="police-list" id="' + rowId + '">' +
                 '<div class="police-list-firstletter" style="background-color: ' + color + ';">' + jobIconHtml(job.name) + '</div>' +
                 '<div class="police-list-fullname">' + label + ' <span class="police-list-jobtag">(' + count + ' online)</span></div>' +
                 '<div class="police-list-call"><i class="fas fa-phone"></i></div>' +
@@ -109,9 +108,12 @@ Setuppolices = function(data) {
         $("#" + rowId).data('policeData', { typejob: job.name, jobLabel: label, name: label });
     }
 
+    // EXPANSION: only jobs with someone ACTUALLY online get a row now —
+    // no more dimmed/disabled rows for empty jobs cluttering the list.
     $.each(JOB_CATEGORIES, function(i, cat) {
+        var onlineJobs = cat.jobs.filter(function(job) { return (countByJob[job.name] || 0) > 0; });
         var totalOnline = 0;
-        $.each(cat.jobs, function(j, job) { totalOnline += (countByJob[job.name] || 0); });
+        $.each(onlineJobs, function(j, job) { totalOnline += countByJob[job.name]; });
 
         $(".polices-list").append(
             '<h1 class="police-section-header" style="background-color: ' + cat.color + ';">'
@@ -119,16 +121,22 @@ Setuppolices = function(data) {
                 + '<span>' + totalOnline + '</span></h1>'
         );
 
-        $.each(cat.jobs, function(j, job) {
-            renderJobRow(job, cat.color);
-        });
+        if (onlineJobs.length === 0) {
+            $(".polices-list").append('<div class="police-list-empty-note">No one from ' + cat.title + ' is online.</div>');
+        } else {
+            $.each(onlineJobs, function(j, job) {
+                renderJobRow(job, cat.color);
+            });
+        }
         $(".polices-list").append('<br>');
     });
 
     // Anything with jobs.hasapp = 1 that isn't in one of the 3 categories
     // above (e.g. uwucafe, or any newly-added job) still gets its own row
     // here instead of silently disappearing — grouped by job, same as
-    // everything else, not by individual person.
+    // everything else, not by individual person. Already online-only by
+    // construction (built straight from `data`, which only contains
+    // currently-connected people).
     var otherCounts = {};
     var otherLabels = {};
     $.each(data, function(i, police) {

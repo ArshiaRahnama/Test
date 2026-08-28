@@ -323,6 +323,31 @@ Went through the whole resource specifically hunting for any other
 Nothing else turned up. This is the version I'd consider ready for
 real testing.
 
+## 13) Closing via the (X) button still got reported as stuck
+
+I re-checked the whole close path (`web/js/script.js`'s
+`CloseAdminPanel()` -> `CLOSEADMINPANEL` in `client/main.lua`) and the
+fix from section 6 is in place and correct - `SetNuiFocus(false,false)`
+does run there. Two likely explanations if this is still happening:
+
+1. **NUI web assets can be cached by the game client** even after the
+   resource is restarted server-side - `restart` reloads the Lua, but
+   the CEF browser can still be serving an old cached copy of
+   `script.js`/`ui.html` from before the fix. **Fully disconnect and
+   rejoin the server** (not just a resource restart) when testing UI
+   changes, or this and every earlier fix could look like it "isn't
+   working" even though the file on disk is correct.
+2. In case it's something else entirely that hasn't shown up in static
+   review: added `console.log(...)` around `CloseAdminPanel()` (F8
+   client console) and `print(...)` around the `CLOSEADMINPANEL`
+   handler (also F8, script errors/prints show there for client-side
+   resources) - both prefixed `[Unique_ALLGangs]` - plus a defensive
+   re-assertion that calls `SetNuiFocus(false,false)` again 250ms
+   later as a safety net in case something else is re-locking focus
+   right after. If it's still stuck after a full reconnect, check F8
+   for these lines and send them over - that'll show exactly whether
+   the click is even reaching Lua at all.
+
 ## Testing checklist before going live
 
 - [ ] `/openpanel` opens instantly even with several gang members online

@@ -68,7 +68,10 @@ $(document).ready(function() {
         $("#CGMain").fadeIn(400);
     }
     function CloseAdminPanel() {
-        $.post('http://'+ window.ResourceName  + '/CLOSEADMINPANEL', JSON.stringify({})  );
+        console.log('[Unique_ALLGangs] CloseAdminPanel() called, posting CLOSEADMINPANEL to ' + window.ResourceName)
+        $.post('http://'+ window.ResourceName  + '/CLOSEADMINPANEL', JSON.stringify({})  )
+            .done(function() { console.log('[Unique_ALLGangs] CLOSEADMINPANEL response received OK') })
+            .fail(function(xhr, status, err) { console.log('[Unique_ALLGangs] CLOSEADMINPANEL request FAILED:', status, err) });
         $("#CGMain").fadeOut();
         CloseAllAdminPanelPages();
     }
