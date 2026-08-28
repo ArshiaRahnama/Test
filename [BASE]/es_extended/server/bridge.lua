@@ -221,10 +221,13 @@ local function setupESX()
     end
 
     if not ESX.UseItem then
-        ESX.UseItem = function(source, item)
+        ESX.UseItem = function(source, item, slotData)
             local cb = ESX.UsableItemsCallbacks and ESX.UsableItemsCallbacks[item]
             if cb then
-                cb(source)
+                -- pass the full ox_inventory slot (includes .metadata, e.g.
+                -- clothing drawable/texture/label) through as a 3rd arg —
+                -- existing callbacks that only take `source` still work fine
+                cb(source, slotData)
                 return true
             end
             return false
@@ -349,8 +352,26 @@ local function setupPlayerInventory(source, player)
         patchPlayer(player)
         player.source = source
 
+        -- Only build a fresh inventory from essentialmode's own data the
+        -- FIRST time this player is ever seen by ox_inventory. After that,
+        -- ox_inventory already has its own real saved copy (in the
+        -- ox_inventory_data column) with whatever slot arrangement the
+        -- player left it in — passing nil here makes it load that instead
+        -- of us re-generating (and overwriting) it from essentialmode every
+        -- single time they connect.
+        local hasSavedInventory = MySQL.scalar.await(
+            'SELECT 1 FROM `users` WHERE `identifier` = ? AND `ox_inventory_data` IS NOT NULL',
+            { player.identifier }
+        )
+
+        local initialData = nil
+        if not hasSavedInventory then
+            initialData = convertInventoryFormat(player.inventory, player.loadout, player.money)
+            print(('^3[es_extended bridge DEBUG] No existing ox_inventory save for %s — migrating from essentialmode once.^0'):format(tostring(player.identifier)))
+        end
+
         local ok, err = pcall(function()
-            exports.ox_inventory:setPlayerInventory(player, convertInventoryFormat(player.inventory, player.loadout, player.money))
+            exports.ox_inventory:setPlayerInventory(player, initialData)
         end)
 
         if ok then

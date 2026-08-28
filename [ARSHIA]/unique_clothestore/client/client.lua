@@ -91,6 +91,37 @@ AddEventHandler('unique_clothestore:wearClotheItem', function(clotheType, drawab
     end
 end)
 
+-- Taking a piece back off (triggered by using the "(Worn)" item in the
+-- inventory) — props go back to -1 (GTA's real "no prop" value). Regular
+-- clothing components have no single universal "bare" index across every
+-- ped model, so this resets to 0/0 (closest to bare on the standard
+-- freemode models); a heavily custom skin might not look fully nude for
+-- every slot, but it's the safest default that works everywhere.
+RegisterNetEvent('unique_clothestore:takeOffClotheItem')
+AddEventHandler('unique_clothestore:takeOffClotheItem', function(clotheType)
+    local slot
+    for _, s in ipairs(ClotheItemSlots) do
+        if s.type == clotheType then slot = s break end
+    end
+    if not slot then return end
+
+    local ped = PlayerPedId()
+    local componentIds = { tshirt = 8, torso = 11, arms = 3, decals = 10, pants = 4, shoes = 6, mask = 1, bproof = 9, chain = 7, bags = 5 }
+    local propIds = { helmet = 0, glasses = 1, watches = 6, bracelets = 7, ears = 2 }
+
+    if slot.prop then
+        SetPedPropIndex(ped, propIds[clotheType], -1, 0, true)
+    else
+        SetPedComponentVariation(ped, componentIds[clotheType], 0, 0, 2)
+    end
+
+    if Config.SkinManager == 'esx_skin' then
+        TriggerEvent('skinchanger:getSkin', function(skin)
+            TriggerServerEvent('esx_skin:save', skin)
+        end)
+    end
+end)
+
 RegisterNUICallback('buyClothes', function(data)
 
     if Config.Core == "ESX" then

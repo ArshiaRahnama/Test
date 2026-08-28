@@ -43,20 +43,65 @@ if Config.Core == "ESX" then
     local KnownClotheTypes = {}
     for t in pairs(ClotheTypeLabel) do KnownClotheTypes[t] = true end
 
-    local function ensureClotheItemRegistered(itemName, clotheType, drawable, texture)
+    -- ox_inventory can't create a new item per drawable/texture at runtime,
+    -- so each purchased piece becomes an instance of the matching
+    -- clothing_<type> item (registered in ox_inventory/data/items.lua),
+    -- distinguished by its own metadata instead of its own item name.
+    local function giveClotheItem(source, clotheType, drawable, texture)
         local label = (ClotheTypeLabel[clotheType] or clotheType) .. (' #%d'):format(drawable)
-        if ESX.Items[itemName] == nil then
-            TriggerEvent('esx:CreateItem', itemName, label, -1, false, true)
-        end
 
+        exports.ox_inventory:AddItem(source, 'clothing_' .. clotheType, 1, {
+            label = label,
+            clotheType = clotheType,
+            drawable = drawable,
+            texture = texture
+        })
+    end
 
+    -- Wearing a clothing item: registered once per TYPE (not per item),
+    -- reading the actual drawable/texture from that specific slot's
+    -- metadata (passed through as the 3rd arg by the es_extended bridge).
+    -- Wearing a clothing item: registered once per TYPE (not per item),
+    -- reading the actual drawable/texture from that specific slot's
+    -- metadata (passed through as the 3rd arg by the es_extended bridge).
+    -- ox_inventory removes the `clothing_<type>` item itself afterwards
+    -- (consume defaults to 1) — we give a matching `worn_clothing_<type>`
+    -- placeholder back so there's something in the inventory to interact
+    -- with again in order to take it off.
+    for clotheType in pairs(ClotheTypeLabel) do
+        ESX.RegisterUsableItem('clothing_' .. clotheType, function(playerId, slotData)
+            local metadata = slotData and slotData.metadata
+            if not metadata or not metadata.drawable then return end
 
+            TriggerClientEvent('unique_clothestore:wearClotheItem', playerId, metadata.clotheType or clotheType, metadata.drawable, metadata.texture or 0)
 
+            exports.ox_inventory:AddItem(playerId, 'worn_clothing_' .. clotheType, 1, {
+                label = metadata.label,
+                clotheType = metadata.clotheType or clotheType,
+                drawable = metadata.drawable,
+                texture = metadata.texture or 0
+            })
+        end)
 
-        ESX.RegisterUsableItem(itemName, function(playerId)
-            TriggerClientEvent('unique_clothestore:wearClotheItem', playerId, clotheType, drawable, texture)
+        -- Taking it back off: using the "(Worn)" placeholder removes the
+        -- visual piece and gives the real, original item back (with its
+        -- original label/drawable/texture intact via its own metadata) —
+        -- ox_inventory removes the worn_clothing_<type> placeholder itself.
+        ESX.RegisterUsableItem('worn_clothing_' .. clotheType, function(playerId, slotData)
+            local metadata = slotData and slotData.metadata
+            if not metadata or not metadata.drawable then return end
+
+            TriggerClientEvent('unique_clothestore:takeOffClotheItem', playerId, metadata.clotheType or clotheType)
+
+            exports.ox_inventory:AddItem(playerId, 'clothing_' .. clotheType, 1, {
+                label = metadata.label,
+                clotheType = metadata.clotheType or clotheType,
+                drawable = metadata.drawable,
+                texture = metadata.texture or 0
+            })
         end)
     end
+
 
 
 
@@ -95,9 +140,7 @@ if Config.Core == "ESX" then
             if type(clotheType) == 'string' and KnownClotheTypes[clotheType]
                 and drawable and drawable >= 0 and drawable <= 999
                 and texture >= 0 and texture <= 999 then
-                local itemName = ('clothe_%s_%d_%d'):format(clotheType, drawable, texture)
-                ensureClotheItemRegistered(itemName, clotheType, drawable, texture)
-                xPlayer.addInventoryItem(itemName, 1)
+                giveClotheItem(source, clotheType, drawable, texture)
                 given = given + 1
             end
         end

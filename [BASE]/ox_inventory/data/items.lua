@@ -209,6 +209,52 @@ return {
 		consume = 0,
 	},
 
+	-- Unique_clothestore items: one real ox_inventory item PER CLOTHING
+	-- SLOT TYPE (not per drawable/texture — ox_inventory has no runtime
+	-- item-creation API like essentialmode's esx:CreateItem, so a unique
+	-- item per outfit combo can't exist here). Each purchased piece is a
+	-- separate, non-stacking instance of the matching type, distinguished
+	-- by its own metadata (label/drawable/texture) set at purchase time —
+	-- so two different shirts both show up correctly with their own name.
+	-- consume = 1 (the default): using it to wear it removes it from the
+	-- inventory automatically. A matching `worn_clothing_*` item is given
+	-- back in its place — using THAT one takes the piece back off and
+	-- swaps it back for the original `clothing_*` item.
+	['clothing_tshirt'] = { label = 'Tishert', weight = 200, stack = false },
+	['clothing_torso'] = { label = 'Lebas', weight = 300, stack = false },
+	['clothing_arms'] = { label = 'Dastkesh', weight = 100, stack = false },
+	['clothing_decals'] = { label = 'Neshan', weight = 50, stack = false },
+	['clothing_pants'] = { label = 'Shalvar', weight = 300, stack = false },
+	['clothing_shoes'] = { label = 'Kafsh', weight = 250, stack = false },
+	['clothing_mask'] = { label = 'Mask', weight = 100, stack = false },
+	['clothing_bproof'] = { label = 'Jelighe', weight = 500, stack = false },
+	['clothing_chain'] = { label = 'Gardanband', weight = 50, stack = false },
+	['clothing_bags'] = { label = 'Kif', weight = 300, stack = false },
+	['clothing_helmet'] = { label = 'Kolah', weight = 400, stack = false },
+	['clothing_glasses'] = { label = 'Eynak', weight = 50, stack = false },
+	['clothing_watches'] = { label = 'Saat', weight = 50, stack = false },
+	['clothing_bracelets'] = { label = 'Dastband', weight = 20, stack = false },
+	['clothing_ears'] = { label = 'Gushvare', weight = 20, stack = false },
+
+	-- "Currently worn" placeholders — appear in the inventory while a piece
+	-- is equipped. Using one takes that piece off and gives the real
+	-- `clothing_*` item back.
+	['worn_clothing_tshirt'] = { label = '(Worn) Tishert', weight = 200, stack = false },
+	['worn_clothing_torso'] = { label = '(Worn) Lebas', weight = 300, stack = false },
+	['worn_clothing_arms'] = { label = '(Worn) Dastkesh', weight = 100, stack = false },
+	['worn_clothing_decals'] = { label = '(Worn) Neshan', weight = 50, stack = false },
+	['worn_clothing_pants'] = { label = '(Worn) Shalvar', weight = 300, stack = false },
+	['worn_clothing_shoes'] = { label = '(Worn) Kafsh', weight = 250, stack = false },
+	['worn_clothing_mask'] = { label = '(Worn) Mask', weight = 100, stack = false },
+	['worn_clothing_bproof'] = { label = '(Worn) Jelighe', weight = 500, stack = false },
+	['worn_clothing_chain'] = { label = '(Worn) Gardanband', weight = 50, stack = false },
+	['worn_clothing_bags'] = { label = '(Worn) Kif', weight = 300, stack = false },
+	['worn_clothing_helmet'] = { label = '(Worn) Kolah', weight = 400, stack = false },
+	['worn_clothing_glasses'] = { label = '(Worn) Eynak', weight = 50, stack = false },
+	['worn_clothing_watches'] = { label = '(Worn) Saat', weight = 50, stack = false },
+	['worn_clothing_bracelets'] = { label = '(Worn) Dastband', weight = 20, stack = false },
+	['worn_clothing_ears'] = { label = '(Worn) Gushvare', weight = 20, stack = false },
+
 	['mastercard'] = {
 		label = 'Fleeca Card',
 		stack = false,

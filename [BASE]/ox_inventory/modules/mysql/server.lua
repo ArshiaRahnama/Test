@@ -8,10 +8,15 @@ local Query = {
     INSERT_STASH = 'INSERT INTO ox_inventory (owner, name) VALUES (?, ?)',
     SELECT_GLOVEBOX = 'SELECT plate, glovebox FROM `{vehicle_table}` WHERE `{vehicle_column}` = ?',
     SELECT_TRUNK = 'SELECT plate, trunk FROM `{vehicle_table}` WHERE `{vehicle_column}` = ?',
-    SELECT_PLAYER = 'SELECT inventory FROM `{user_table}` WHERE `{user_column}` = ?',
+    -- Uses a dedicated `ox_inventory_data` column instead of `inventory` —
+    -- essentialmode's own periodic/disconnect save ALSO writes to `users`.`inventory`
+    -- with its own (different, non-slotted) format, and was silently clobbering
+    -- whatever ox_inventory had just saved there, resetting slot positions on
+    -- every reconnect/restart. A separate column means the two never collide.
+    SELECT_PLAYER = 'SELECT ox_inventory_data FROM `{user_table}` WHERE `{user_column}` = ?',
     UPDATE_TRUNK = 'UPDATE `{vehicle_table}` SET trunk = ? WHERE `{vehicle_column}` = ?',
     UPDATE_GLOVEBOX = 'UPDATE `{vehicle_table}` SET glovebox = ? WHERE `{vehicle_column}` = ?',
-    UPDATE_PLAYER = 'UPDATE `{user_table}` SET inventory = ? WHERE `{user_column}` = ?',
+    UPDATE_PLAYER = 'UPDATE `{user_table}` SET ox_inventory_data = ? WHERE `{user_column}` = ?',
 }
 
 Citizen.CreateThreadNow(function()
