@@ -55,7 +55,7 @@ files {
     'ui/scoreboard/ui.html',
     'ui/scoreboard/js/main.js',
     'ui/scoreboard/css/index.css',
-    'ui/scoreboard/images/Assets/*.png',
+    'ui/scoreboard/images/Assets/silver_logo.png',
     'ui/seatbelt/index.html',
     'ui/seatbelt/app.js',
     'ui/seatbelt/style.css',
@@ -64,8 +64,6 @@ files {
 
 -- speedometer.lua از exports['LegacyFuel']:GetFuel استفاده می‌کنه (همون
 -- الگویی که تو Unique_Garage/client/vehiclehud_cl.lua خودتون هم هست).
--- ✅ dependency روی Unique_AllRobs حذف شد چون بخش وضعیت دزدی‌ها از اسکوربورد
--- کلاً برداشته شد.
 dependencies {
     'oxmysql',
     'LegacyFuel'

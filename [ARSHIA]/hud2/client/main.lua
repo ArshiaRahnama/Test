@@ -1,13 +1,21 @@
 -- ============================================================
 -- ریسورس "hud1" — کاملاً مستقل، هیچ وابستگی‌ای به Unique_Hud نداره
 -- ============================================================
--- خودش ui_page/index.html خودشو داره (تو ui/) و فقط ۵ تا چیز نشون میده:
--- هیل، آرمور، آب (thirst)، غذا (hunger)، میکروفون.
+-- خودش ui_page/index.html خودشو داره (تو ui/) و نشون میده:
+-- هیل، آرمور، آب (thirst)، غذا (hunger)، میکروفون - همیشه.
+-- استامینا و اکسیژن - اختیاری: فقط وقتی می‌دویی/شنا می‌کنی موقتاً ظاهر
+-- میشن (دقیقاً منطق قبلی IsPedSprinting/IsPedSwimming) و بعد چند ثانیه
+-- بی‌حرکتی خودکار محو میشن.
 --
 -- ✅ اسم ریسورس از "1" به "hud1" تغییر کرد چون همون علت اصلی نمایش داده نشدن
 -- UI بود - اسم خالص عددی باعث میشد ui_page درست ساخته نشه.
 
 local pauseMenu = false
+
+-- استامینا/اکسیژن: چند میلی‌ثانیه بعد از قطع دویدن/شنا، خودکار مخفی بشن
+local HIDE_DELAY_MS = 3000
+local staminaShown, staminaHideAt = false, 0
+local oxygenShown, oxygenHideAt = false, 0
 
 CreateThread(function()
     local player = PlayerId()
@@ -25,16 +33,45 @@ CreateThread(function()
             ClearPedTasksImmediately(ped)
         end
 
-        -- GetEntityHealth پد بین ۱۰۰ (مرگ) تا ۲۰۰ (کامل) برمی‌گرده، برای همین
-        -- ۱۰۰ ازش کم میشه تا دایره‌ی هیل درصد ۰ تا ۱۰۰ درست رو نشون بده.
-        -- GetPedArmour از قبل خودش ۰ تا ۱۰۰ هست، نیازی به تغییر نداره.
-        SendNUIMessage({
+        local sendData = {
             id = 'hud',
             event = 'setData',
+            -- GetEntityHealth پد بین ۱۰۰ (مرگ) تا ۲۰۰ (کامل) برمی‌گرده، برای همین
+            -- ۱۰۰ ازش کم میشه تا دایره‌ی هیل درصد ۰ تا ۱۰۰ درست رو نشون بده.
+            -- GetPedArmour از قبل خودش ۰ تا ۱۰۰ هست، نیازی به تغییر نداره.
             health = GetEntityHealth(ped) - 100,
             armor = GetPedArmour(ped),
             talking = MumbleIsPlayerTalking(player),
-        })
+        }
+
+        -- استامینا: دقیقاً همون منطق قبلی (IsPedSprinting)
+        if IsPedSprinting(ped) then
+            sendData.stamina = GetPlayerStamina(player)
+            if not staminaShown then
+                staminaShown = true
+                SendNUIMessage({ id = 'hud', event = 'toggleDisplay3', key = '#stamina', state = true })
+            end
+            staminaHideAt = GetGameTimer() + HIDE_DELAY_MS
+        elseif staminaShown and GetGameTimer() >= staminaHideAt then
+            staminaShown = false
+            SendNUIMessage({ id = 'hud', event = 'toggleDisplay3', key = '#stamina', state = false })
+        end
+
+        -- اکسیژن: دقیقاً همون منطق قبلی (IsPedSwimming)
+        if IsPedSwimming(ped) then
+            local oxygen = GetPlayerUnderwaterTimeRemaining(player) * 10
+            sendData.oxygen = oxygen > 0 and oxygen or 0
+            if not oxygenShown then
+                oxygenShown = true
+                SendNUIMessage({ id = 'hud', event = 'toggleDisplay3', key = '#oxygen', state = true })
+            end
+            oxygenHideAt = GetGameTimer() + HIDE_DELAY_MS
+        elseif oxygenShown and GetGameTimer() >= oxygenHideAt then
+            oxygenShown = false
+            SendNUIMessage({ id = 'hud', event = 'toggleDisplay3', key = '#oxygen', state = false })
+        end
+
+        SendNUIMessage(sendData)
     end
 end)
 

@@ -18,6 +18,12 @@ function CreateMarker( Name , data , cb)
 			color = data.color , 
 			label = data.label , 
 		}
+		-- decided up front (not inside the async ped-load callback below)
+		-- so the E-key listener registration further down can correctly
+		-- skip itself for ped-type markers when ox_target will handle it
+		-- instead, with no race window where both would be active.
+		local usesOxTarget = (data.type == 'ped' and GetResourceState('ox_target') == 'started')
+		AllMarkers[Name].usesOxTarget = usesOxTarget
 		if AllMarkers[Name].type == 'marker' then 
 			AllMarkers[Name].active = true 
 		elseif AllMarkers[Name].type == 'object' then 
@@ -27,6 +33,28 @@ function CreateMarker( Name , data , cb)
 		elseif AllMarkers[Name].type == 'ped' then 
 			CreateMarkerPed(GetHashKey( AllMarkers[Name].marker ) , AllMarkers[Name].coord  , AllMarkers[Name].heading  , function(Ped)  
 				AllMarkers[Name].ped = Ped 
+				-------------------------------------------------------------
+				-- ox_target for peds (markers/objects stay on the E-key
+				-- prompt system below, unchanged) - requested so ped
+				-- interactions (like the boss NPC) use ox_target's
+				-- targeting instead of a plain proximity E-press.
+				-- Falls back to the old E-key behavior if ox_target
+				-- isn't running, so this never hard-breaks a server that
+				-- doesn't have it installed.
+				-------------------------------------------------------------
+				if usesOxTarget then
+					exports.ox_target:addLocalEntity(Ped, {
+						{
+							name = Name,
+							icon = 'fa-solid fa-user',
+							label = 'Open ' .. string.upper(AllMarkers[Name].label or ''),
+							distance = (AllMarkers[Name].size and AllMarkers[Name].size.x or 2.0) + 0.5,
+							onSelect = function()
+								if AllMarkers[Name] then cb(true) end
+							end,
+						}
+					})
+				end
 			end)
 		elseif AllMarkers[Name].type == 'flag' then 
 			SetFlagoles( AllMarkers[Name].coord , AllMarkers[Name].marker , 255 , function(Object , Object2)
@@ -37,7 +65,9 @@ function CreateMarker( Name , data , cb)
 		else 
 			print('The marker has the wrong type  ' .. Name  )
 		end 
-		if AllMarkers[Name].label  ~= false then 
+		-- ped markers using ox_target skip this E-key listener entirely -
+		-- ox_target's onSelect (above) is what fires cb() for them.
+		if AllMarkers[Name].label  ~= false and not usesOxTarget then 
 			CreateThread(function() 
 				AddEventHandler('onKeyDown',function(key)
 					if key == 'e' and AllMarkers[Name]  then 		
@@ -87,7 +117,7 @@ CreateThread(function()
 		local Sleep = true 
 		local MyCoords = GetEntityCoords(PlayerPedId())
 		for Name , data in pairs(AllMarkers) do
-			if data.label ~= false and  GetDistanceBetweenCoords(MyCoords , data.coord , true ) <= 25.0 then 
+			if data.label ~= false and not data.usesOxTarget and  GetDistanceBetweenCoords(MyCoords , data.coord , true ) <= 25.0 then 
 				Sleep = false 
 				if data.type == 'marker' and data.active == true then 
 					DrawMarker(data.marker, data.coord.x , data.coord.y , data.coord.z , 0.0, 0.0, 0.0, 0.0, data.heading, 0.0, data.size.x  , data.size.y , data.size.z, data.color.r , data.color.g, data.color.b,90, false, true, 2, nil, nil, false)

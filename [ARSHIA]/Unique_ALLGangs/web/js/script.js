@@ -69,7 +69,7 @@ $(document).ready(function() {
     }
     function CloseAdminPanel() {
         console.log('[Unique_ALLGangs] CloseAdminPanel() called, posting CLOSEADMINPANEL to ' + window.ResourceName)
-        $.post('http://'+ window.ResourceName  + '/CLOSEADMINPANEL', JSON.stringify({})  )
+        $.post('https://'+ window.ResourceName  + '/CLOSEADMINPANEL', JSON.stringify({})  )
             .done(function() { console.log('[Unique_ALLGangs] CLOSEADMINPANEL response received OK') })
             .fail(function(xhr, status, err) { console.log('[Unique_ALLGangs] CLOSEADMINPANEL request FAILED:', status, err) });
         $("#CGMain").fadeOut();
@@ -462,7 +462,7 @@ $(document).ready(function() {
                             $("#"+ key ) .click(function () {
                                 if ( ThisFunctionCode !=  GangSelectedInCreatedCODE) return 
                           
-                                $.post('http://'+ window.ResourceName  + '/EDITACCESS', JSON.stringify({ gang_name : data.name , grade : EditRank, access: key , value : true ,  }), function( statuts  ) { 
+                                $.post('https://'+ window.ResourceName  + '/EDITACCESS', JSON.stringify({ gang_name : data.name , grade : EditRank, access: key , value : true ,  }), function( statuts  ) { 
                                     if ( ThisFunctionCode !=  GangSelectedInCreatedCODE) return 
                                     if ( statuts === true ) {
                                         $('#'+key ).addClass('SetAccesSelected'); 
@@ -477,7 +477,7 @@ $(document).ready(function() {
                             })
                             $("#"+ key +'r') .click(function () {
                                 if ( ThisFunctionCode !=  GangSelectedInCreatedCODE) return 
-                                $.post('http://'+ window.ResourceName  + '/EDITACCESS', JSON.stringify({ gang_name : data.name , grade : EditRank, access: key , value : false ,  }), function( statuts  ) { 
+                                $.post('https://'+ window.ResourceName  + '/EDITACCESS', JSON.stringify({ gang_name : data.name , grade : EditRank, access: key , value : false ,  }), function( statuts  ) { 
                                     if ( ThisFunctionCode !=  GangSelectedInCreatedCODE) return 
                                     if ( statuts === true ) {
                                         $('#'+key ).addClass('SetAccesSelected'); 
@@ -504,7 +504,7 @@ $(document).ready(function() {
                             let label = $("#GRADEINPUTLABEL").val()
                             let name = $("#GRADEINPUTNAME").val()
                             let salary = $("#GRADEINPUTSALARY").val()
-                            $.post('http://'+ window.ResourceName  + '/EDITRANK', JSON.stringify({ gang_name : data.name , grade : EditRank, name : name ,label : label ,salary:salary  }), function( dataeidt  ) { 
+                            $.post('https://'+ window.ResourceName  + '/EDITRANK', JSON.stringify({ gang_name : data.name , grade : EditRank, name : name ,label : label ,salary:salary  }), function( dataeidt  ) { 
                                 EditRank = 0 
                                 AdminPanelCreateGangOpenOption(Option , Upgrade , GangName )
                             })
@@ -513,14 +513,14 @@ $(document).ready(function() {
                             let label = $("#GRADEINPUTLABEL").val()
                             let name = $("#GRADEINPUTNAME").val()
                             let salary = $("#GRADEINPUTSALARY").val()
-                            $.post('http://'+ window.ResourceName  + '/ADDRANK', JSON.stringify({ gang_name : data.name , name : name ,label : label , salary:salary }), function( dataeidt  ) {                        
+                            $.post('https://'+ window.ResourceName  + '/ADDRANK', JSON.stringify({ gang_name : data.name , name : name ,label : label , salary:salary }), function( dataeidt  ) {                        
                                 AdminPanelCreateGangOpenOption(Option , Upgrade , GangName )
                             })
                         }
                     }); 
                     $(".CGCGCGDeleteRank").click(function () { 
                         if ( ThisFunctionCode !=  GangSelectedInCreatedCODE) return 
-                        $.post('http://'+ window.ResourceName  + '/DELETERANK',  JSON.stringify({ gang_name : data.name , grade : this.id , }) , function( datadelete  ) { 
+                        $.post('https://'+ window.ResourceName  + '/DELETERANK',  JSON.stringify({ gang_name : data.name , grade : this.id , }) , function( datadelete  ) { 
                             AdminPanelCreateGangOpenOption(Option , Upgrade , GangName )
                         })
                 
@@ -532,7 +532,7 @@ $(document).ready(function() {
         else if (Option == 'others') {
             $(".OthersBtn2").removeClass('othersSelected')
             $(".OthersBtn3").removeClass('othersSelected')
-            $.post('http://'+ window.ResourceName  + '/GETOTHERS', JSON.stringify({ gang_name : GangName  ,  }), function( data  ) {    
+            $.post('https://'+ window.ResourceName  + '/GETOTHERS', JSON.stringify({ gang_name : GangName  ,  }), function( data  ) {    
                 if ( ThisFunctionCode !=  GangSelectedInCreatedCODE) return 
                 if (data.gps === 0 ) {
                     $("#gps .OthersBtn2").addClass('othersSelected')
@@ -580,19 +580,19 @@ $(document).ready(function() {
                 $(".OthersBtn").click(function () { 
                     if ( ThisFunctionCode !=  GangSelectedInCreatedCODE) return 
                     let val = $("#"+ this.id + " .CGCGOthersinput").val()
-                    $.post('http://'+ window.ResourceName  + '/SAVEOTHERS', JSON.stringify({ gang_name : GangName  , option : this.id , value : val }), function(   ) {    
+                    $.post('https://'+ window.ResourceName  + '/SAVEOTHERS', JSON.stringify({ gang_name : GangName  , option : this.id , value : val }), function(   ) {    
                         AdminPanelCreateGangOpenOption(Option , Upgrade , GangName )
                     })
                 });
                 $(".OthersBtn2").click(function () { 
                     if ( ThisFunctionCode !=  GangSelectedInCreatedCODE) return              
-                    $.post('http://'+ window.ResourceName  + '/SAVEOTHERS', JSON.stringify({ gang_name : GangName  , option : this.id , value : 0 }), function(   ) {    
+                    $.post('https://'+ window.ResourceName  + '/SAVEOTHERS', JSON.stringify({ gang_name : GangName  , option : this.id , value : 0 }), function(   ) {    
                         AdminPanelCreateGangOpenOption(Option , Upgrade , GangName )
                     })
                 });
                 $(".OthersBtn3").click(function () { 
                     if ( ThisFunctionCode !=  GangSelectedInCreatedCODE) return 
-                    $.post('http://'+ window.ResourceName  + '/SAVEOTHERS', JSON.stringify({ gang_name : GangName  , option : this.id , value : 1 }), function(   ) {    
+                    $.post('https://'+ window.ResourceName  + '/SAVEOTHERS', JSON.stringify({ gang_name : GangName  , option : this.id , value : 1 }), function(   ) {    
                         AdminPanelCreateGangOpenOption(Option , Upgrade , GangName )
                     })
                 });
@@ -855,7 +855,7 @@ $(document).ready(function() {
        let GangName = $("#" +this.id + 'input').val() 
        let pack = this.id 
        $(".CGMPInput").val( '')
-       $.post('http://'+ window.ResourceName  + '/GIVEPACK', JSON.stringify({ pack  : pack , gang_name : GangName})  );
+       $.post('https://'+ window.ResourceName  + '/GIVEPACK', JSON.stringify({ pack  : pack , gang_name : GangName})  );
        CloseAllAdminPanelPages()
        $("#PACKSPAGE").fadeIn(1000);
    

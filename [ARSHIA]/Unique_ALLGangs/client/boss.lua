@@ -197,7 +197,23 @@ RegisterNUICallback('fireplayer', function (data)
 end)
 
 
-function OpenBossMenu()
+-------------------------------------------------------------------
+-- RENAMED from OpenBossMenu() to RefreshBossMenuMembers() (was a name
+-- collision - see notes below and in client/load.lua):
+-- client/load.lua ALSO has a global function called OpenBossMenu() -
+-- the CORRECT one, which just does
+-- TriggerEvent("FMGangsBoss:client:OpenMenu") to actually open the
+-- panel (access check, SetNuiFocus, displayblock, everything). These
+-- used to be two separate resources (FMGangs had load.lua's version,
+-- FMGangBoss had this one), so they never collided. Now that both
+-- load into the same resource/Lua globals, and this file loads AFTER
+-- load.lua in fxmanifest.lua, THIS function was silently overwriting
+-- load.lua's - so pressing E on the boss NPC called this (which just
+-- pushes member-list NUI messages into a panel that was never told to
+-- open/focus) instead of the real open flow. Nothing visibly happened
+-- - exactly "boss action doesn't open".
+-------------------------------------------------------------------
+function RefreshBossMenuMembers()
     ESX.TriggerServerCallback('FMGangs:GetGangsData', function(gangs,expire, Allmembers , MyGangMembers)
 
         for _, v in pairs(MyGangMembers['online']) do
@@ -251,7 +267,7 @@ RegisterNetEvent('FMGangsBoss:client:OpenMenu', function()
                         totalplayer = 0
                         onlineplayer = 0
                         offlineplayer = 0
-                        OpenBossMenu()
+                        RefreshBossMenuMembers()
                         namechange()
                         SendNUIMessage({
                             type = 'displayblock' , 

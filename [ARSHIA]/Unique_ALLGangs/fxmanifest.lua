@@ -11,6 +11,12 @@ version '1.0.0'
 --   ensure ox_lib
 --   ensure ox_inventory
 --   ensure Unique_ALLGangs
+--
+-- ox_target is OPTIONAL: ped interactions (e.g. the boss NPC) use it
+-- automatically if it's running (checked at runtime via
+-- GetResourceState), and fall back to the old press-E prompt if it
+-- isn't installed. Marker/object-type interactions (Locker, Armory,
+-- etc.) always stay on press-E regardless, unchanged.
 
 shared_script 'Config.lua'
 
@@ -35,7 +41,8 @@ client_scripts {
 ui_page 'web/ui.html'
 
 files {
-    -- member panel (FMGangs)
+    -- member panel (FMGangs) - now also contains the boss panel's
+    -- markup directly (merged into one page, see notes in web/ui.html)
     'web/ui.html',
     'web/css/style.css',
     'web/css/Audiowide.ttf',
@@ -47,9 +54,10 @@ files {
     'web/img/blip/*.png',
     'web/img/flag/*.png',
 
-    -- boss panel (FMGangBoss) - loaded into the same NUI frame, see
-    -- client/boss.lua / README for how it's invoked.
-    'html/ui.html',
+    -- boss panel (FMGangBoss) assets - html/ui.html itself is no
+    -- longer loaded as its own page (its markup now lives directly in
+    -- web/ui.html); its stylesheet and script are still linked from
+    -- there and kept as separate files.
     'html/main.css',
     'html/js.js',
     'html/img/*.png',

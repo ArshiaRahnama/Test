@@ -234,6 +234,15 @@
         if (spFrame && spFrame.contentWindow) {
           spFrame.contentWindow.postMessage(item, '*');
         }
+      } else if (item.id === 'scoreboard' && item.event === 'requestClose') {
+        // این پیام از داخل iframe تودرتوی اسکوربورد میاد (دکمه‌ی ✕).
+        // GetParentResourceName داخل اون iframe کار نمی‌کرد، پس همین‌جا
+        // (سطح بالا) که قابل‌اعتماده انجامش می‌دیم.
+        fetch('https://' + GetParentResourceName() + '/closeScoreboardUniqueHud', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({}),
+        }).catch(function () {});
       } else if (item.id === 'scoreboard') {
         var sbFrame = document.getElementById('scoreboard-frame');
         if (sbFrame && sbFrame.contentWindow) {

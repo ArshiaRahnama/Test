@@ -348,6 +348,125 @@ does run there. Two likely explanations if this is still happening:
    for these lines and send them over - that'll show exactly whether
    the click is even reaching Lua at all.
 
+## 14) THE actual reason the mouse stuck bug kept surviving every fix
+
+Your F8 log nailed it:
+```
+[Unique_ALLGangs] CLOSEADMINPANEL request FAILED: error
+```
+FiveM serves NUI pages over `https://cfx-nui-<resource>`. Any request
+made with `http://` (not https) from inside that page gets silently
+blocked by the browser's mixed-content policy - this is a well-known,
+documented FiveM behavior, not something specific to this resource.
+`CLOSEADMINPANEL` (and 9 other calls in `web/js/script.js`, plus all
+13 in `html/js.js`) were built with `'http://'` instead of `'https://'`.
+Every fix I made to the *logic* behind these calls (section 6, 13, the
+resource-name fix in section 10) was correct, but none of it mattered
+because the request never left the browser in the first place.
+
+This single scheme mismatch also explains two more things you just
+reported:
+- **"Others" tab empty** - `GETOTHERS` was one of the `http://` calls.
+- **Packs section not working for any gang name** - `GIVEPACK` was too.
+
+**Fix:** every `$.post('http://'...)` in both `web/js/script.js` and
+`html/js.js` (23 total) is now `https://`. This is very likely the
+real, final fix for the recurring stuck-mouse reports.
+
+## 15) Boss action (E prompt) never actually opened - found the real cause
+
+This one was introduced by the merge itself, not a pre-existing bug:
+**two different functions were both named `OpenBossMenu()`.**
+
+- `client/load.lua`'s version (the correct one) just does
+  `TriggerEvent("FMGangsBoss:client:OpenMenu")` - the real "check
+  access, open the UI, set focus" flow.
+- `client/boss.lua` also defined a function with the *exact same name*
+  - an internal helper that only refreshes the member list inside an
+  *already-open* panel.
+
+These used to be two separate resources, so this never collided.
+Once merged into one resource with shared Lua globals, and since
+`boss.lua` loads after `load.lua` in `fxmanifest.lua`, boss.lua's
+version silently overwrote load.lua's. So pressing E on the boss NPC
+called the wrong function - it just queued NUI messages for a panel
+that was never told to open or take focus. Nothing visibly happened.
+
+**Fix:** renamed `boss.lua`'s version to `RefreshBossMenuMembers()`
+and updated its one internal call site. `OpenBossMenu()` now
+unambiguously means load.lua's correct version everywhere. Also
+swept the entire client and server for any other duplicate global
+function names from the merge - this was the only one.
+
+## 16) Ped interactions now use ox_target (markers stay on E)
+
+As requested: `client/lib.lua`'s `CreateMarker` now checks
+`GetResourceState('ox_target')` up front. For `type == 'ped'` markers
+(like the boss NPC), if ox_target is running, the interaction is
+registered via `exports.ox_target:addLocalEntity(...)` instead of the
+old press-E proximity check, and the "PRESS E TO OPEN X" 3D text is
+skipped for that marker (ox_target draws its own prompt). Marker and
+object types (Locker, Armory, etc.) are untouched - still plain
+press-E, as asked. If ox_target isn't installed/running, ped markers
+transparently fall back to the old E-key behavior instead of breaking.
+
+## 17) "Clothes Menu" position - not something this resource controls
+
+The Locker's Clothes Menu uses ESX's own built-in context menu
+(`ESX.UI.Menu.Open('default', ...)`) - its on-screen position is
+entirely controlled by a *separate* resource (normally
+`esx_menu_default`), not by anything in `Unique_ALLGangs`. That
+resource's files weren't part of what got merged here, so I can't
+change its position from inside this resource. If you want it moved
+to match your other top-left menus, that's a CSS change in
+`esx_menu_default` itself (or swap this specific menu to a different
+menu system) - happy to help with that if you can share that
+resource.
+
+## 18) Boss panel replaced iframe with a real single-page merge (important)
+
+Your screenshot showed ox_target correctly prompting on the boss NPC
+(so section 16's fix worked), but selecting it always said "Insufficient
+authorization" - which turned out to just mean `Uiloaded` (the boss
+panel's own "I've finished loading" ping) had never become `true`,
+even after the `https://` fix in section 14. That's strong evidence
+the nested-`<iframe>` approach from section 5/10 was never reliable in
+the first place: FiveM's documentation only describes/guarantees NUI
+callback routing (`fetch()`/`$.post()` reaching `RegisterNUICallback`)
+for a resource's actual top-level `ui_page` document - nothing
+confirms it works the same way from inside a nested iframe within that
+page, and the evidence here says it doesn't.
+
+**Fix, done properly this time:** removed the iframe entirely. The
+boss panel's actual HTML markup (`html/ui.html`'s `<div class="bg">`
+and everything inside it) is now embedded directly inside
+`web/ui.html` - one real page, one real top-level document, which is
+the only pattern FiveM actually documents as supported. Its stylesheet
+(`html/main.css`) and script (`html/js.js`) are linked in from there
+instead of loaded as a separate page. Checked thoroughly before
+merging:
+- **Zero id/class name collisions** between the two apps (checked
+  every id and every class programmatically) - safe to share one DOM.
+- **Zero overlapping jQuery delegated-click selectors** between the
+  two scripts (e.g. `.exit-button`, `.box-2-button` are only used by
+  the boss panel's script; the member panel uses entirely different,
+  prefixed class names) - clicking one panel's buttons can't
+  accidentally trigger the other's.
+- `html/ui.html`'s root `.bg` element is already `display:none` by
+  default in its own CSS, so it stays correctly hidden until
+  `SendNUIMessage({type='displayblock'})` shows it - exact same
+  mechanism as before, no Lua changes needed for show/hide.
+
+`html/ui.html` itself is no longer loaded as a page (its markup lives
+in `web/ui.html` now) and was removed from `fxmanifest.lua`'s
+`files{}` - the file is still there on disk but unused; I left it
+rather than delete it.
+
+This should be the real fix for the boss panel never opening. If
+anything in the boss panel still doesn't respond after this, the
+`console.log`/`print` debugging pattern from sections 11/13 is the
+next thing to add around whichever button doesn't work.
+
 ## Testing checklist before going live
 
 - [ ] `/openpanel` opens instantly even with several gang members online

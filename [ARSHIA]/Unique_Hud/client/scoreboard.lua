@@ -37,11 +37,8 @@ local function CloseScoreboard()
     SendNUIMessage({ id = 'scoreboard', event = 'toggle', open = false })
 end
 
--- ✅ فیکس شد: کلید قبلی (+opensbUniqueHud) رو یه بار قبلاً روی F9 دیفالت کرده
--- بودیم؛ FiveM بایند هر دستور رو سمت کلاینت ذخیره می‌کنه، پس فقط عوض کردن
--- کد کافی نبود - همون بایند قدیمی (F9) می‌موند. با یه اسم دستور کاملاً جدید
--- (+scoreboardUniqueHudV2)، بازی مجبوره یه بایند تازه با پیش‌فرض واقعی (F10)
--- بسازه.
+-- کلید F10 (اسم دستور عمداً جدیده تا بایند قدیمی F9 که سمت کلاینت ذخیره شده
+-- بود دور زده بشه).
 RegisterCommand('+scoreboardUniqueHudV2', function()
     if scoreboardOpen then
         CloseScoreboard()
@@ -52,7 +49,18 @@ end, false)
 RegisterCommand('-scoreboardUniqueHudV2', function() end, false)
 RegisterKeyMapping('+scoreboardUniqueHudV2', 'باز/بسته کردن اسکوربورد', 'keyboard', 'F10')
 
--- بستن با Esc - کاملاً سمت Lua با نیتیو خودِ بازی.
+-- ✅ فیکس شد: وقتی SetNuiFocus(true,true) فعاله، کیبورد کامل قبضه‌ی مرورگر
+-- NUI میشه و کلیدهای RegisterKeyMapping (مثل همین F10) دیگه به بازی نمی‌رسن
+-- - دقیقاً چرا نمی‌تونستی با همون کلید ببندیش. برای همین یه دکمه‌ی ✕ داخل
+-- خودِ پنل اضافه شد که این NUI callback رو صدا می‌زنه و همیشه کار می‌کنه،
+-- صرف‌نظر از قبضه بودن کیبورد یا نه.
+RegisterNUICallback('closeScoreboardUniqueHud', function(data, cb)
+    CloseScoreboard()
+    cb('ok')
+end)
+
+-- Esc هم امتحان می‌کنیم (ممکنه بسته به تنظیمات بازی کار کنه)، ولی دکمه‌ی ✕
+-- تضمینیه.
 Citizen.CreateThread(function()
     while true do
         if scoreboardOpen then

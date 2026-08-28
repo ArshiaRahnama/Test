@@ -15,6 +15,7 @@ client_scripts {
 	'client/player_toggles.lua',
 	'client/admin_tools_menu.lua',
 	'client/nui_panel.lua',
+	'client/expansion.lua',
 }
 
 server_scripts {
@@ -22,6 +23,7 @@ server_scripts {
 	'server/admin_area.lua',
 	'server/main.lua',
 	'server/admin_tools.lua',
+	'server/expansion.lua',
 }
 
 ui_page('html/index.html')

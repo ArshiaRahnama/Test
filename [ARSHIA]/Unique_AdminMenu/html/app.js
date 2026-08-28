@@ -95,6 +95,89 @@ function drawChatLog(list) {
   `).join('');
 }
 
+// ============================================================================
+// PANEL: SCREENSHOT
+// ============================================================================
+function renderScreenshot(dataUri, name) {
+  openPanel(`Screenshot: ${name || ''}`, false);
+  document.getElementById('panelBody').innerHTML =
+    `<img class="screenshotImg" src="${dataUri}" alt="screenshot" />`;
+}
+
+// ============================================================================
+// PANEL: NEARBY VEHICLE LIST
+// ============================================================================
+function renderVehicleList(list) {
+  openPanel(`Nearby Vehicles (${list.length})`, false);
+  if (!list.length) {
+    document.getElementById('panelBody').innerHTML = '<div class="infoRow"><span>No vehicles nearby</span></div>';
+    return;
+  }
+  document.getElementById('panelBody').innerHTML = list.map(v => `
+    <div class="listRow">
+      <div class="listRowMain">
+        <span class="listRowTitle">${escapeHtml(v.model)}</span>
+        <span class="rMeta">${escapeHtml(v.plate || '')} - ${v.distance}m${v.occupied ? ' - occupied' : ''}</span>
+      </div>
+      <div class="listRowActions">
+        <button class="smallBtn" data-net="${v.netId}" data-action="teleport">Teleport</button>
+        <button class="smallBtn smallBtnDanger" data-net="${v.netId}" data-action="delete">Delete</button>
+      </div>
+    </div>
+  `).join('');
+
+  document.getElementById('panelBody').querySelectorAll('.smallBtn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      post('vehicleListAction', { netId: Number(btn.dataset.net), action: btn.dataset.action });
+      closePanel();
+    });
+  });
+}
+
+// ============================================================================
+// PANEL: ONLINE PLAYERS
+// ============================================================================
+function renderOnlinePlayers(list) {
+  openPanel(`Online Players (${list.length})`, true);
+  drawOnlinePlayers(list);
+  window._onlinePlayersCache = list;
+}
+function drawOnlinePlayers(list) {
+  if (!list.length) {
+    document.getElementById('panelBody').innerHTML = '<div class="infoRow"><span>No players online</span></div>';
+    return;
+  }
+  document.getElementById('panelBody').innerHTML = list.map(p => `
+    <div class="infoRow">
+      <span>[${p.id}] ${escapeHtml(p.name)} <span class="rMeta">(${escapeHtml(p.job)})</span></span>
+      <span>${p.ping}ms - ${p.sessionMinutes}m session</span>
+    </div>
+  `).join('');
+}
+
+// ============================================================================
+// PANEL: DASHBOARD
+// ============================================================================
+function renderDashboard(data) {
+  openPanel('Server Dashboard', false);
+  let html = `<div class="sectionTitle">Top 10 Richest Players</div>`;
+  html += (data.richest && data.richest.length)
+    ? data.richest.map((r, i) => `<div class="infoRow"><span>${i + 1}. ${escapeHtml((r.pname || '').trim() || r.identifier)}</span><span>$${Number(r.total || 0).toLocaleString()}</span></div>`).join('')
+    : `<div class="rMeta">No data</div>`;
+
+  html += `<div class="sectionTitle">Most Warned Players</div>`;
+  html += (data.mostWarned && data.mostWarned.length)
+    ? data.mostWarned.map((w, i) => `<div class="infoRow"><span>${i + 1}. ${escapeHtml(w.playername || w.identifier)}</span><span>${w.cnt} warnings</span></div>`).join('')
+    : `<div class="rMeta">No warnings logged</div>`;
+
+  html += `<div class="sectionTitle">Resources (${data.resources.length})</div>`;
+  html += data.resources.map(r =>
+    `<div class="infoRow"><span>${escapeHtml(r.name)}</span><span class="${r.state === 'started' ? 'stateGood' : 'stateBad'}">${escapeHtml(r.state)}</span></div>`
+  ).join('');
+
+  document.getElementById('panelBody').innerHTML = html;
+}
+
 function escapeHtml(str) {
   const d = document.createElement('div');
   d.textContent = String(str ?? '');
@@ -104,9 +187,14 @@ function escapeHtml(str) {
 document.getElementById('panelClose').addEventListener('click', closePanel);
 document.getElementById('panelSearch').addEventListener('input', (e) => {
   const q = e.target.value.toLowerCase();
-  if (document.getElementById('panelTitle').textContent === 'Chat Log') {
+  const title = document.getElementById('panelTitle').textContent;
+  if (title === 'Chat Log') {
     drawChatLog(currentChatLog.filter(m =>
       (m.message || '').toLowerCase().includes(q) || (m.name || '').toLowerCase().includes(q)
+    ));
+  } else if (title.startsWith('Online Players')) {
+    drawOnlinePlayers((window._onlinePlayersCache || []).filter(p =>
+      (p.name || '').toLowerCase().includes(q) || String(p.id).includes(q)
     ));
   }
 });
@@ -175,7 +263,7 @@ function showToast(count) {
 // MESSAGE ROUTER (from Lua)
 // ============================================================================
 window.addEventListener('message', (event) => {
-  const { type, data, count } = event.data;
+  const { type, data, count, name } = event.data;
   switch (type) {
     case 'stats': renderStats(data); break;
     case 'inspect': renderInspect(data); break;
@@ -183,6 +271,10 @@ window.addEventListener('message', (event) => {
     case 'showRadial': showRadial(); break;
     case 'hideRadial': hideRadial(); break;
     case 'newReportAlert': showToast(count); break;
+    case 'screenshot': renderScreenshot(data, name); break;
+    case 'vehiclelist': renderVehicleList(data); break;
+    case 'onlineplayers': renderOnlinePlayers(data); break;
+    case 'dashboard': renderDashboard(data); break;
   }
 });
 

@@ -3,16 +3,57 @@
 SelectedTargetId = nil
 SavedLocationsCache = {}
 
+-- Small helper so every category submenu gets a distinct accent color
+-- without repeating the same three SetX calls everywhere.
+local function ColorMenu(id, r, g, b)
+    WarMenu.SetTitleBackgroundColor(id, r, g, b, 255)
+    WarMenu.SetMenuFocusColor(id, r, g, b, 255)
+end
+
 Citizen.CreateThread(function()
     WarMenu.CreateSubMenu('select_target', 'main', 'Select Target Player')
     -- player_tools is only ever opened FROM select_target (you pick a
     -- player, then land here), so Backspace needs to take you back to that
-    -- player list - not all the way up to the main menu.
+    -- player list - not all the way up to the main menu. Same idea applies
+    -- to every category submenu below: its "back" parent is always the hub
+    -- you actually opened it from, so Backspace never skips a level.
     WarMenu.CreateSubMenu('player_tools', 'select_target', 'Player Tools')
+
+    WarMenu.CreateSubMenu('player_quick', 'player_tools', 'Quick Actions')
+    ColorMenu('player_quick', 74, 144, 201)          -- blue: everyday utility
+
+    WarMenu.CreateSubMenu('player_punish', 'player_tools', 'Punishments')
+    ColorMenu('player_punish', 200, 84, 80)          -- red: consequences
+
+    WarMenu.CreateSubMenu('player_control', 'player_tools', 'Player Control')
+    ColorMenu('player_control', 155, 110, 210)       -- purple: buffs/state
+
+    WarMenu.CreateSubMenu('player_econ', 'player_tools', 'Economy & Job')
+    ColorMenu('player_econ', 95, 174, 114)           -- green: money/job
+
+    WarMenu.CreateSubMenu('player_investigate', 'player_tools', 'Investigate')
+    ColorMenu('player_investigate', 95, 170, 170)    -- teal: information
+
     WarMenu.CreateSubMenu('vehicle_tools', 'main', 'Vehicle Tools')
+    WarMenu.CreateSubMenu('vehicle_spawn', 'vehicle_tools', 'Spawn & Give')
+    ColorMenu('vehicle_spawn', 95, 174, 114)
+    WarMenu.CreateSubMenu('vehicle_nearby', 'vehicle_tools', 'Nearby Vehicle Actions')
+    ColorMenu('vehicle_nearby', 74, 144, 201)
+
     WarMenu.CreateSubMenu('world_tools', 'main', 'World Tools')
-    WarMenu.CreateSubMenu('saved_locations', 'world_tools', 'Saved Locations')
+    WarMenu.CreateSubMenu('world_weather', 'world_tools', 'Weather, Time & Traffic')
+    ColorMenu('world_weather', 74, 144, 201)
+    WarMenu.CreateSubMenu('world_teleport', 'world_tools', 'Teleport & Locations')
+    ColorMenu('world_teleport', 155, 110, 210)
+    -- Saved Locations now lives under Teleport & Locations, not the World
+    -- Tools hub directly, so its back parent moves with it.
+    WarMenu.CreateSubMenu('saved_locations', 'world_teleport', 'Saved Locations')
+
     WarMenu.CreateSubMenu('server_tools', 'main', 'Server Tools')
+    WarMenu.CreateSubMenu('server_comms', 'server_tools', 'Communication')
+    ColorMenu('server_comms', 74, 144, 201)
+    WarMenu.CreateSubMenu('server_reports', 'server_tools', 'Reports & Logs')
+    ColorMenu('server_reports', 95, 170, 170)
 end)
 
 local function OpenPlayerTools()
@@ -31,6 +72,10 @@ local function DrawSelectTargetMenu()
     end
 end
 
+-- ---------------------------------------------------------- PLAYER TOOLS ---
+-- Player Tools is now just a hub: pick the target, then jump into whichever
+-- category you need. Keeps each screen short instead of one 20+ item wall.
+
 local function DrawPlayerToolsMenu()
     if not SelectedTargetId then
         WarMenu.OpenMenu('select_target')
@@ -41,6 +86,14 @@ local function DrawPlayerToolsMenu()
         OpenPlayerTools()
     end
 
+    WarMenu.MenuButton('» Quick Actions', 'player_quick')
+    WarMenu.MenuButton('» Punishments', 'player_punish')
+    WarMenu.MenuButton('» Player Control', 'player_control')
+    WarMenu.MenuButton('» Economy & Job', 'player_econ')
+    WarMenu.MenuButton('» Investigate', 'player_investigate')
+end
+
+local function DrawPlayerQuickMenu()
     if WarMenu.Button("Teleport to Target") then
         local targetId = SelectedTargetId
         WarMenu.ForceCloseAll()
@@ -62,7 +115,87 @@ local function DrawPlayerToolsMenu()
     if WarMenu.Button("Revive") then
         TriggerServerEvent('Unique_AdminMenu:RevivePlayer', SelectedTargetId)
     end
+end
 
+local function DrawPlayerPunishMenu()
+    if WarMenu.Button("Kick") then
+        local reason = GetUserInput("Kick reason") or ""
+        ExecuteCommand('akick ' .. SelectedTargetId .. ' ' .. reason)
+    end
+
+    if WarMenu.Button("Ban (minutes)") then
+        local dur = GetUserInput("Minutes (or type perm)", "60") or ""
+        local reason = GetUserInput("Ban reason") or ""
+        ExecuteCommand('aban ' .. SelectedTargetId .. ' ' .. dur .. ' ' .. reason)
+    end
+
+    if WarMenu.Button("Warn") then
+        local reason = GetUserInput("Warn reason") or ""
+        ExecuteCommand('awarn ' .. SelectedTargetId .. ' ' .. reason)
+    end
+
+    if WarMenu.Button("Send to Jail") then
+        local dur = GetUserInput("Minutes", "10") or ""
+        local reason = GetUserInput("Jail reason") or ""
+        TriggerServerEvent('Unique_AdminMenu:JailTarget', SelectedTargetId, dur, reason)
+    end
+
+    if WarMenu.Button("Release from Jail") then
+        TriggerServerEvent('Unique_AdminMenu:UnjailTarget', SelectedTargetId)
+    end
+
+    if WarMenu.Button("Impound Vehicle") then
+        TriggerServerEvent('Unique_AdminMenu:ImpoundTarget', SelectedTargetId)
+    end
+end
+
+local function DrawPlayerControlMenu()
+    if WarMenu.Button("Set Health %") then
+        local pct = tonumber(GetUserInput("Health percent (0-100)", "100"))
+        if pct then
+            TriggerServerEvent('Unique_AdminMenu:SetHealth', SelectedTargetId, pct)
+        end
+    end
+
+    if WarMenu.Button("Set Armor %") then
+        local pct = tonumber(GetUserInput("Armor percent (0-100)", "100"))
+        if pct then
+            TriggerServerEvent('Unique_AdminMenu:SetArmor', SelectedTargetId, pct)
+        end
+    end
+
+    if WarMenu.Button("Toggle God Mode (Target)") then
+        TriggerServerEvent('Unique_AdminMenu:ToggleTargetGodmode', SelectedTargetId)
+    end
+
+    if WarMenu.Button("Cuff / Uncuff") then
+        TriggerServerEvent('Unique_AdminMenu:ToggleCuff', SelectedTargetId)
+    end
+end
+
+local function DrawPlayerEconMenu()
+    if WarMenu.Button("Set Job/Grade") then
+        local job = GetUserInput("Job name (e.g. police)") or ""
+        local grade = GetUserInput("Grade", "0") or "0"
+        ExecuteCommand('asetjob ' .. SelectedTargetId .. ' ' .. job .. ' ' .. grade)
+    end
+
+    if WarMenu.Button("Give Money") then
+        local acc = GetUserInput("Account: money or bank", "money") or "money"
+        local amt = GetUserInput("Amount", "1000") or "0"
+        local reason = GetUserInput("Reason") or ""
+        ExecuteCommand('agivemoney ' .. SelectedTargetId .. ' ' .. acc .. ' ' .. amt .. ' ' .. reason)
+    end
+
+    if WarMenu.Button("Remove Money") then
+        local acc = GetUserInput("Account: money or bank", "money") or "money"
+        local amt = GetUserInput("Amount", "1000") or "0"
+        local reason = GetUserInput("Reason") or ""
+        ExecuteCommand('aremovemoney ' .. SelectedTargetId .. ' ' .. acc .. ' ' .. amt .. ' ' .. reason)
+    end
+end
+
+local function DrawPlayerInvestigateMenu()
     if WarMenu.Button("Inspect") then
         ESX.TriggerServerCallback('Unique_AdminMenu:InspectPlayer', function(data)
             if not data then
@@ -83,48 +216,27 @@ local function DrawPlayerToolsMenu()
         end
     end
 
-    if WarMenu.Button("Kick") then
-        local reason = GetUserInput("Kick reason") or ""
-        ExecuteCommand('akick ' .. SelectedTargetId .. ' ' .. reason)
+    if WarMenu.Button("Screenshot Player") then
+        TriggerServerEvent('Unique_AdminMenu:ScreenshotTarget', SelectedTargetId)
+        drawNotification("~b~Requesting screenshot...")
     end
 
-    if WarMenu.Button("Ban (minutes)") then
-        local dur = GetUserInput("Minutes (or type perm)", "60") or ""
-        local reason = GetUserInput("Ban reason") or ""
-        ExecuteCommand('aban ' .. SelectedTargetId .. ' ' .. dur .. ' ' .. reason)
-    end
-
-    if WarMenu.Button("Warn") then
-        local reason = GetUserInput("Warn reason") or ""
-        ExecuteCommand('awarn ' .. SelectedTargetId .. ' ' .. reason)
-    end
-
-    if WarMenu.Button("Set Job/Grade") then
-        local job = GetUserInput("Job name (e.g. police)") or ""
-        local grade = GetUserInput("Grade", "0") or "0"
-        ExecuteCommand('asetjob ' .. SelectedTargetId .. ' ' .. job .. ' ' .. grade)
-    end
-
-    if WarMenu.Button("Give Money") then
-        local acc = GetUserInput("Account: money or bank", "money") or "money"
-        local amt = GetUserInput("Amount", "1000") or "0"
-        local reason = GetUserInput("Reason") or ""
-        ExecuteCommand('agivemoney ' .. SelectedTargetId .. ' ' .. acc .. ' ' .. amt .. ' ' .. reason)
-    end
-
-    if WarMenu.Button("Remove Money") then
-        local acc = GetUserInput("Account: money or bank", "money") or "money"
-        local amt = GetUserInput("Amount", "1000") or "0"
-        local reason = GetUserInput("Reason") or ""
-        ExecuteCommand('aremovemoney ' .. SelectedTargetId .. ' ' .. acc .. ' ' .. amt .. ' ' .. reason)
-    end
-
-    if WarMenu.Button("Impound Vehicle") then
-        TriggerServerEvent('Unique_AdminMenu:ImpoundTarget', SelectedTargetId)
+    if WarMenu.Button("Whisper Message") then
+        local msg = GetUserInput("Private message to this player", "", 150) or ""
+        if msg ~= "" then
+            TriggerServerEvent('Unique_AdminMenu:WhisperTarget', SelectedTargetId, msg)
+        end
     end
 end
 
+-- --------------------------------------------------------- VEHICLE TOOLS ---
+
 local function DrawVehicleToolsMenu()
+    WarMenu.MenuButton('» Spawn & Give', 'vehicle_spawn')
+    WarMenu.MenuButton('» Nearby Vehicle Actions', 'vehicle_nearby')
+end
+
+local function DrawVehicleSpawnMenu()
     if WarMenu.Button("Spawn Vehicle") then
         local model = GetUserInput("Vehicle model name", "adder") or ""
         if model ~= "" then
@@ -141,14 +253,46 @@ local function DrawVehicleToolsMenu()
         TriggerServerEvent('Unique_AdminMenu:VehicleAction', 'clean')
     end
 
+    if WarMenu.Button("Give Vehicle to Target" .. (SelectedTargetId and (" [" .. SelectedTargetId .. "]") or " (pick a target first)")) then
+        if not SelectedTargetId then
+            drawNotification("~r~Pick a target in Player Tools first")
+        else
+            local model = GetUserInput("Vehicle model name", "adder") or ""
+            if model ~= "" then
+                TriggerServerEvent('Unique_AdminMenu:GiveVehicle', SelectedTargetId, model)
+            end
+        end
+    end
+end
+
+local function DrawVehicleNearbyMenu()
+    if WarMenu.Button("Nearby Vehicle List") then
+        OpenVehicleList()
+    end
+
+    if WarMenu.Button("Lock/Unlock nearest vehicle") then
+        TriggerServerEvent('Unique_AdminMenu:VehicleAction', 'lock')
+    end
+
+    if WarMenu.Button("Max upgrade nearest vehicle") then
+        TriggerServerEvent('Unique_AdminMenu:VehicleAction', 'maxupgrade')
+    end
+
     if WarMenu.Button("Delete nearest empty vehicle") then
         TriggerServerEvent('Unique_AdminMenu:VehicleAction', 'deletenearest')
     end
 end
 
+-- ----------------------------------------------------------- WORLD TOOLS ---
+
 local WeatherPresets = { "EXTRASUNNY", "CLEAR", "CLOUDS", "OVERCAST", "RAIN", "THUNDER", "SMOG", "FOGGY", "XMAS", "SNOWLIGHT", "BLIZZARD" }
 
 local function DrawWorldToolsMenu()
+    WarMenu.MenuButton('» Weather, Time & Traffic', 'world_weather')
+    WarMenu.MenuButton('» Teleport & Locations', 'world_teleport')
+end
+
+local function DrawWorldWeatherMenu()
     if WarMenu.Button("Set Weather") then
         local weather = GetUserInput(table.concat(WeatherPresets, "/"), "CLEAR") or ""
         if weather ~= "" then
@@ -162,6 +306,19 @@ local function DrawWorldToolsMenu()
         TriggerServerEvent('Unique_AdminMenu:SetTime', hour, minute)
     end
 
+    if WarMenu.Button("Freeze/Resume Server Time") then
+        TriggerServerEvent('Unique_AdminMenu:ToggleFreezeTime')
+    end
+
+    if WarMenu.Button("Traffic Density") then
+        local level = GetUserInput("off / low / normal / high", "normal") or ""
+        if level ~= "" then
+            TriggerServerEvent('Unique_AdminMenu:SetTrafficDensity', level:lower())
+        end
+    end
+end
+
+local function DrawWorldTeleportMenu()
     if WarMenu.Button("Teleport to Waypoint") then
         local waypoint = GetFirstBlipInfoId(8)
         if DoesBlipExist(waypoint) then
@@ -210,7 +367,21 @@ local function DrawSavedLocationsMenu()
     end
 end
 
+-- ---------------------------------------------------------- SERVER TOOLS ---
+
 local function DrawServerToolsMenu()
+    WarMenu.MenuButton('» Communication', 'server_comms')
+    WarMenu.MenuButton('» Reports & Logs', 'server_reports')
+
+    if WarMenu.Button("⚠ Restart Resource") then
+        local res = GetUserInput("Resource to restart (requires ACE: command.arestart)") or ""
+        if res ~= "" then
+            ExecuteCommand('arestart ' .. res)
+        end
+    end
+end
+
+local function DrawServerCommsMenu()
     if WarMenu.Button("Announce to server") then
         local msg = GetUserInput("Announcement text", "", 120) or ""
         if msg ~= "" then
@@ -219,13 +390,22 @@ local function DrawServerToolsMenu()
         end
     end
 
-    if WarMenu.Button("Restart Resource") then
-        local res = GetUserInput("Resource to restart (requires ACE: command.arestart)") or ""
-        if res ~= "" then
-            ExecuteCommand('arestart ' .. res)
+    if WarMenu.Button("Broadcast with Sound") then
+        local msg = GetUserInput("Announcement text", "", 120) or ""
+        if msg ~= "" then
+            TriggerServerEvent('Unique_AdminMenu:AnnounceWithSound', msg)
         end
     end
 
+    if WarMenu.Button("Admin Chat") then
+        local msg = GetUserInput("Message (only visible to on-duty admins)", "", 150) or ""
+        if msg ~= "" then
+            TriggerServerEvent('Unique_AdminMenu:AdminChat', msg)
+        end
+    end
+end
+
+local function DrawServerReportsMenu()
     if WarMenu.Button("Report Queue") then
         OpenReportsMenu()
     end
@@ -237,29 +417,47 @@ local function DrawServerToolsMenu()
             InAdminNui = true
         end)
     end
+
+    if WarMenu.Button("Online Players & Playtime") then
+        OpenOnlinePlayersPanel()
+    end
+
+    if WarMenu.Button("Dashboard") then
+        OpenDashboardPanel()
+    end
 end
+
+-- ------------------------------------------------------------- MAIN LOOP ---
+
+local MenuDrawers = {
+    select_target        = DrawSelectTargetMenu,
+    player_tools          = DrawPlayerToolsMenu,
+    player_quick           = DrawPlayerQuickMenu,
+    player_punish          = DrawPlayerPunishMenu,
+    player_control          = DrawPlayerControlMenu,
+    player_econ              = DrawPlayerEconMenu,
+    player_investigate         = DrawPlayerInvestigateMenu,
+    vehicle_tools         = DrawVehicleToolsMenu,
+    vehicle_spawn           = DrawVehicleSpawnMenu,
+    vehicle_nearby           = DrawVehicleNearbyMenu,
+    world_tools           = DrawWorldToolsMenu,
+    world_weather            = DrawWorldWeatherMenu,
+    world_teleport            = DrawWorldTeleportMenu,
+    saved_locations             = DrawSavedLocationsMenu,
+    server_tools          = DrawServerToolsMenu,
+    server_comms            = DrawServerCommsMenu,
+    server_reports           = DrawServerReportsMenu,
+}
 
 Citizen.CreateThread(function()
     while true do
         Citizen.Wait(0)
-        if WarMenu.IsMenuOpened('select_target') then
-            DrawSelectTargetMenu()
-            WarMenu.Display()
-        elseif WarMenu.IsMenuOpened('player_tools') then
-            DrawPlayerToolsMenu()
-            WarMenu.Display()
-        elseif WarMenu.IsMenuOpened('vehicle_tools') then
-            DrawVehicleToolsMenu()
-            WarMenu.Display()
-        elseif WarMenu.IsMenuOpened('world_tools') then
-            DrawWorldToolsMenu()
-            WarMenu.Display()
-        elseif WarMenu.IsMenuOpened('saved_locations') then
-            DrawSavedLocationsMenu()
-            WarMenu.Display()
-        elseif WarMenu.IsMenuOpened('server_tools') then
-            DrawServerToolsMenu()
-            WarMenu.Display()
+        for id, drawFn in pairs(MenuDrawers) do
+            if WarMenu.IsMenuOpened(id) then
+                drawFn()
+                WarMenu.Display()
+                break
+            end
         end
     end
 end)

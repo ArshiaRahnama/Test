@@ -19,6 +19,12 @@ window.addEventListener('message', function (event) {
             if (data.thirst != undefined) {
                 progressCircle(data.thirst, '.thirst');
             }
+            if (data.stamina != undefined) {
+                progressCircle(data.stamina, '.stamina');
+            }
+            if (data.oxygen != undefined) {
+                progressCircle(data.oxygen, '.oxygen');
+            }
             if (data.talking != undefined) {
                 var micCircle = document.getElementById('microphone-circle');
                 if (micCircle) {

@@ -2785,13 +2785,26 @@ RegisterNUICallback("TakePhoto", function(data,cb)
                     DestroyMobilePhone()
                     CellCamActivate(false, false)
                 end)
-                exports['screenshot-basic']:requestScreenshotUpload(tostring(Config.webhooksscreenshot), "files[]", function(data)
-                    local image = json.decode(data)
-                    TriggerServerEvent('Unique_Phone:server:addImageToGallery', image.attachments[1].proxy_url)
-                    Wait(1000)
-                    TriggerServerEvent('Unique_Phone:server:getImageFromGallery')
-                    cb(json.encode(image.attachments[1].proxy_url))
+                -- pcall guard: if screenshot-basic is missing/broken (no
+                -- requestScreenshotUpload export), calling it directly
+                -- throws immediately and this whole NUI callback aborts
+                -- right there - cb() never fires, and the phone UI is left
+                -- waiting forever for a response. Catching it lets us tell
+                -- the player and still resolve the callback cleanly.
+                local ok, err = pcall(function()
+                    exports['screenshot-basic']:requestScreenshotUpload(tostring(Config.webhooksscreenshot), "files[]", function(data)
+                        local image = json.decode(data)
+                        TriggerServerEvent('Unique_Phone:server:addImageToGallery', image.attachments[1].proxy_url)
+                        Wait(1000)
+                        TriggerServerEvent('Unique_Phone:server:getImageFromGallery')
+                        cb(json.encode(image.attachments[1].proxy_url))
+                    end)
                 end)
+                if not ok then
+                    print("[Unique_Phone] screenshot-basic export call failed: " .. tostring(err))
+                    TriggerEvent('esx:showNotification', "~r~Camera is unavailable right now (screenshot-basic error)")
+                    cb(json.encode({ url = nil }))
+                end
             end
 
             takePhoto = false

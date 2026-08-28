@@ -4,35 +4,47 @@
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width,initial-scale=1" />
         <meta name="theme-color" content="#000000" />
-        <link rel="stylesheet" href="style.css?v=4">
-        <script defer="defer" src="main.js?v=4"></script>
+        <link rel="stylesheet" href="style.css?v=7">
+        <script defer="defer" src="main.js?v=7"></script>
     </head>
     <body>
-        <div class="hudWrapper" style="position:absolute; bottom:20px; right:0px; width:60px; height:332px; z-index:999999;">
-          <div class="mainHud" id="main" style="position:relative; width:60px; height:332px;">
-            <svg class="circle" id="microphone" width="60" height="60" style="position:absolute; left:0; top:272px;">
-              <circle class="progressplayer microphone" id="microphone-circle" stroke="#696969" stroke-width="4.5" style="stroke-opacity: 1.0" fill="#000000" r="20" cx="24" cy="24" stroke-dasharray="70 30" stroke-dashoffset="0"/>
-              <image href="./img/logos/microphone.png" height="17" width="17" x="26%" y="47.5%"></image>
+        <div class="hudWrapper" style="position:absolute; bottom:20px; right:0px; width:60px; height:468px; z-index:999999;">
+          <div class="mainHud" id="main" style="position:relative; width:60px; height:468px;">
+            <!-- استامینا و اکسیژن پیش‌فرض مخفی‌ان (display:none) - فقط موقع
+                 دویدن/شنا کردن با toggleDisplay3 از main.lua نشون داده میشن -->
+            <svg class="circle" id="oxygen" width="60" height="60" style="display:none; position:absolute; left:0; top:0px;">
+              <circle class="progressplayer oxygen" id="oxygen-circle" stroke="#39c0ff" stroke-width="4.5" style="stroke-opacity: 1.0" fill="#000000" r="20" cx="24" cy="24" stroke-dasharray="70 30" stroke-dashoffset="0"/>
+              <image href="./img/logos/oxygen.png" height="17" width="17" x="26%" y="47.5%"></image>
             </svg>
 
-            <svg class="circle" id="thirst" width="60" height="60" style="position:absolute; left:0; top:204px;">
-              <circle class="progressplayer thirst" id="thirst-circle" stroke="#00b6e3" stroke-width="4.5" style="stroke-opacity: 1.0" fill="#000000" r="20" cx="24" cy="24" stroke-dasharray="70 30" stroke-dashoffset="0"/>
-              <image href="./img/logos/thirst.png" height="17" width="17" x="25.5%" y="46.5%"></image>
+            <svg class="circle" id="stamina" width="60" height="60" style="display:none; position:absolute; left:0; top:68px;">
+              <circle class="progressplayer stamina" id="stamina-circle" stroke="#7CFF9E" stroke-width="4.5" style="stroke-opacity: 1.0" fill="#000000" r="20" cx="24" cy="24" stroke-dasharray="70 30" stroke-dashoffset="0"/>
+              <image href="./img/logos/stamina.png" height="17" width="17" x="26%" y="47.5%"></image>
             </svg>
 
-            <svg class="circle" id="hunger" width="60" height="60" style="position:absolute; left:0; top:136px;">
-              <circle class="progressplayer hunger" id="hunger-circle" stroke="#ffa200" stroke-width="4.5" style="stroke-opacity: 1.0" fill="#000000" r="20" cx="24" cy="24" stroke-dasharray="70 30" stroke-dashoffset="0"/>
-              <image href="./img/logos/hunger.png" height="17" width="17" x="25.5%" y="46.5%"></image>
+            <svg class="circle" id="health" width="60" height="60" style="position:absolute; left:0; top:136px;">
+              <circle class="progressplayer health" id="health-circle" stroke="#FF7C7C" stroke-width="4.5" style="stroke-opacity: 1.0" fill="#000000" r="20" cx="24" cy="24" stroke-dasharray="70 30" stroke-dashoffset="0"/>
+              <image href="./img/logos/health.png" height="17" width="17" x="26%" y="47.5%"></image>
             </svg>
 
-            <svg class="circle" id="armor" width="60" height="60" style="position:absolute; left:0; top:68px;">
+            <svg class="circle" id="armor" width="60" height="60" style="position:absolute; left:0; top:204px;">
               <circle class="progressplayer armor" id="armor-circle" stroke="#827CFF" stroke-width="4.5" style="stroke-opacity: 1.0" fill="#000000" r="20" cx="24" cy="24" stroke-dasharray="70 30" stroke-dashoffset="0"/>
               <image href="./img/logos/armor.png" height="17" width="17" x="26%" y="47.5%"></image>
             </svg>
 
-            <svg class="circle" id="health" width="60" height="60" style="position:absolute; left:0; top:0;">
-              <circle class="progressplayer health" id="health-circle" stroke="#FF7C7C" stroke-width="4.5" style="stroke-opacity: 1.0" fill="#000000" r="20" cx="24" cy="24" stroke-dasharray="70 30" stroke-dashoffset="0"/>
-              <image href="./img/logos/health.png" height="17" width="17" x="26%" y="47.5%"></image>
+            <svg class="circle" id="hunger" width="60" height="60" style="position:absolute; left:0; top:272px;">
+              <circle class="progressplayer hunger" id="hunger-circle" stroke="#ffa200" stroke-width="4.5" style="stroke-opacity: 1.0" fill="#000000" r="20" cx="24" cy="24" stroke-dasharray="70 30" stroke-dashoffset="0"/>
+              <image href="./img/logos/hunger.png" height="17" width="17" x="25.5%" y="46.5%"></image>
+            </svg>
+
+            <svg class="circle" id="thirst" width="60" height="60" style="position:absolute; left:0; top:340px;">
+              <circle class="progressplayer thirst" id="thirst-circle" stroke="#00b6e3" stroke-width="4.5" style="stroke-opacity: 1.0" fill="#000000" r="20" cx="24" cy="24" stroke-dasharray="70 30" stroke-dashoffset="0"/>
+              <image href="./img/logos/thirst.png" height="17" width="17" x="25.5%" y="46.5%"></image>
+            </svg>
+
+            <svg class="circle" id="microphone" width="60" height="60" style="position:absolute; left:0; top:408px;">
+              <circle class="progressplayer microphone" id="microphone-circle" stroke="#696969" stroke-width="4.5" style="stroke-opacity: 1.0" fill="#000000" r="20" cx="24" cy="24" stroke-dasharray="70 30" stroke-dashoffset="0"/>
+              <image href="./img/logos/microphone.png" height="17" width="17" x="26%" y="47.5%"></image>
             </svg>
           </div>
         </div>

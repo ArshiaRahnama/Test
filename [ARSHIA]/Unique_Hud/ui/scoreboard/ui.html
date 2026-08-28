@@ -1,12 +1,8 @@
 <html>
   <head>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-    <script src="js/main.js" type="text/javascript"></script>
     <link rel="stylesheet" type="text/css" href="css/index.css" />
     <style>
-      /* ✅ بازطراحی شد: پنل کوچیک‌تر، لوگو کوچیک‌تر، بخش ارگان‌ها و آکاردئون -
-         بخش‌های حذف‌شده (robs/second_container/Clock/refresh) دیگه اینجا
-         نیستن، پس CSS اضافه‌ای هم لازم نبود براشون. */
       #wrap {
         width: 560px !important;
         height: auto !important;
@@ -15,13 +11,30 @@
         padding-bottom: 10px;
       }
       .LogoBox img {
-        height: 110px !important;
+        height: 90px !important;
       }
       .InfoBox h1 {
         font-size: 13px;
       }
       .InfoBox h2 {
-        font-size: 28px;
+        font-size: 26px;
+      }
+      #close_btn {
+        position: absolute;
+        top: 10px;
+        left: 14px;
+        background: rgba(255, 255, 255, 0.08);
+        color: #fff;
+        border: none;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        cursor: pointer;
+        font-size: 15px;
+        line-height: 1;
+      }
+      #close_btn:hover {
+        background: #ff3547;
       }
 
       .org-list {
@@ -56,6 +69,7 @@
         transition: 300ms;
         margin-right: 8px;
         color: #9ca3af;
+        display: inline-block;
       }
       .org-card.expanded .org-arrow {
         transform: rotate(90deg);
@@ -91,7 +105,9 @@
   </head>
 
   <body>
-    <div style="display: none;" id="wrap">
+    <div style="display: none; position: relative;" id="wrap">
+      <button id="close_btn" onclick="requestClose()">✕</button>
+
       <div class="container" id="container">
 
         <div class="RightSide">
@@ -110,5 +126,11 @@
 
       </div>
     </div>
+
+    <!-- ✅ فیکس شد: اسکریپت آخرِ body قرار گرفت (نه تو head مثل قبل)، چون
+         document.getElementById('org-list') قبل از این‌که خودِ اون div لود
+         بشه صدا زده می‌شد و کرش می‌کرد (Cannot set properties of null) -
+         دقیقاً همون خطایی که می‌دیدی. -->
+    <script src="js/main.js" type="text/javascript"></script>
   </body>
 </html>

@@ -38,6 +38,7 @@ var organizations = [
 
 function buildOrgList() {
   var container = document.getElementById('org-list');
+  if (!container) return;
   container.innerHTML = '';
 
   organizations.forEach(function (org) {
@@ -49,7 +50,7 @@ function buildOrgList() {
     header.className = 'org-header';
     header.innerHTML =
       '<span class="org-title">' + org.label + '</span>' +
-      '<span><span class="org-count" id="org-count-' + org.key + '">0</span>' +
+      '<span><span class="org-count" id="org-count-' + org.key + '">0</span> ' +
       '<span class="org-arrow">▶</span></span>';
     header.addEventListener('click', function () {
       card.classList.toggle('expanded');
@@ -73,7 +74,8 @@ function buildOrgList() {
 }
 
 function renderScoreboard(data) {
-  $('#playersnum').text(data.total);
+  var playersEl = document.getElementById('playersnum');
+  if (playersEl) playersEl.textContent = data.total;
 
   organizations.forEach(function (org) {
     var orgTotal = 0;
@@ -91,16 +93,21 @@ function renderScoreboard(data) {
   });
 }
 
+// ✅ فیکس شد: چون داخل این iframe تودرتو GetParentResourceName کار نمی‌کنه،
+// درخواست بستن رو به صفحه‌ی اصلی پاس می‌دیم که خودش fetch واقعی رو انجام بده
+// (دقیقاً همون الگویی که برای دکمه‌ی آپدیت قبلی درست کار می‌کرد).
+function requestClose() {
+  window.parent.postMessage({ id: 'scoreboard', event: 'requestClose' }, '*');
+}
+
 window.addEventListener('message', function (event) {
   var item = event.data;
   if (!item || item.id !== 'scoreboard') return;
 
   if (item.event === 'toggle') {
-    if (item.open) {
-      $('#wrap').css('display', 'block');
-    } else {
-      $('#wrap').css('display', 'none');
-    }
+    var wrap = document.getElementById('wrap');
+    if (!wrap) return;
+    wrap.style.display = item.open ? 'block' : 'none';
   } else if (item.event === 'update') {
     if (item.data) renderScoreboard(item.data);
   }

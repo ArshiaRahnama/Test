@@ -13,6 +13,14 @@
 	 <script src="js/script.js" type="text/javascript ">  </script>
 	 <script src="js/jquery.js" type="text/javascript ">  </script>
 	 <script src="js/jquery.min.js" type="text/javascript ">  </script>
+	 <!--
+	 MERGE (Unique_ALLGangs): the boss panel's own head assets, brought
+	 in directly instead of via a nested iframe (see notes further down
+	 for why the iframe approach was replaced).
+	 -->
+	 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Montserrat:300,400,700,900&display=swap">
+	 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.7.2/animate.min.css">
+	 <link rel="stylesheet" type="text/css" href="../html/main.css">
 </head>
 <body style="display: block;">
 		<!-- Create Gang Menu -->
@@ -466,49 +474,81 @@
 
 
 <!--
-	MERGE BRIDGE (Unique_ALLGangs)
-	------------------------------
-	The boss panel used to be its own separate resource (FMGangBoss)
-	with its own ui_page/NUI frame. A FiveM resource can only have ONE
-	ui_page, so now that it lives inside this resource, its page
-	(html/ui.html) is loaded here as a hidden iframe and this script
-	relays the SendNUIMessage() calls meant for it (client/boss.lua)
-	into that iframe via postMessage. RegisterNUICallback fetches made
-	from inside the iframe (e.g. fetch('https://Unique_ALLGangs/...'))
-	are resource-scoped, not frame-scoped, so they reach the Lua side
-	normally without any relay needed.
-	This bridge has not been visually tested in-game - verify the boss
-	panel opens/closes/updates correctly and adjust the TYPES list or
-	iframe CSS below if anything doesn't show.
+	MERGE (Unique_ALLGangs): the boss panel used to be its own separate
+	resource (FMGangBoss) with its own ui_page/NUI frame. It was first
+	brought in here as a nested <iframe>, but NUI callback routing
+	(fetch()/$.post() reaching RegisterNUICallback in Lua) turned out to
+	be unreliable from inside a nested iframe - only the officially
+	documented pattern (the actual top-level ui_page document) is
+	guaranteed to work. So instead, its markup is embedded directly
+	below, and its stylesheet/script are loaded alongside this page's
+	own (see <head> above and the script tag near the end of <body>).
+	Its root .bg element is display:none by default (see html/main.css)
+	and is shown/hidden by the exact same SendNUIMessage({type:'displayblock'/'displaynone'})
+	calls from client/boss.lua as before - no Lua changes needed for this part.
 -->
-<iframe id="bossPanelFrame" src="html/ui.html"
-	style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; border:none; z-index:9999;">
-</iframe>
-<script>
-(function () {
-	var bossFrame = document.getElementById('bossPanelFrame');
-	// message types that belong to the boss panel (html/ui.html + js.js)
-	var BOSS_TYPES = {
-		displaynone: 1, displayblock: 1, changename: 1, add: 1, 'add-2': 1,
-		player: 1, 'case-update': 1, 'add-offline': 1, 'add-offline-2': 1,
-		moneypage: 1, clear: 1
-	};
+<div class="bg">
+    <div class="recruit">
+        <div class="recruit-text">EMPLOYEES</div>
+        <div class="stroke"></div>
+        <div class="online"></div>
+        <div class="online-text"><span2>1</span2><span>/1</span></div>
+        <div class="exit-button3" onclick="close3()" ></div>
+            <input class="input2" placeholder="ID" type="text">
+            <div class="enter" onclick="givejob()">Give Job</div>
+        <div class="recruit-bg">
+          <div id="kutular2"></div>
+        </div>
+    </div>
+    <div class="case">
+        <div class="case-img"></div>
+        <div class="exit-button2" onclick="close2()" ></div>
+        <div class="case-text">MONEY <span>CASE</span></div>
+        <div class="case-mini-text">BALANCE : </div>
+        <div class="case-price">$<span>5000</span></div>
+        <div class="amount-text">AMOUNT</div>
+        <input class="input" placeholder="$0" type="text" style="font-size: 2.6041666666666665vw;">
+        <div class="wit-button" onclick="withdraw()">WITHDRAW</div>
+        <div class="dep-button" onclick="deposit()">DEPOSIT</div>
+        <div class="stash-button" onclick="stash()">RANKS</div>
+    </div>
+    <div class="main-menu">
+        <div class="box-1">
+            <div class="box-1-class">NULL...</div>
+            <div class="box-1-cizgi">NULL...</div>
+            <div class="box-1-icon"><i class="fa-solid fa-suitcase"></i></div>
+            <div class="box-1-price">$0</div>
+        </div>
+        <div class="box-2">
+            <div class="box-2-class">CASE</div>
+            <div class="box-2-img"></div>
+            <div class="box-2-button">OPEN MENU</div>
+        </div>
+        <div class="box-3">
+            <div class="box-3-class">EMPLOYEES</div>
+            <div class="box-3-img"></div>
+            <div class="box-3-button">OPEN MENU</div>
+        </div>
+        <div class="box-4">
+            <div class="box-4-member">MEMBER</div>
+            <div class="box-4-img"></div>
+            <div class="box-4-members"><span2>1</span2><span>/1</span></div>
+            <div class="box-4-items">
+                <div id="kutular"></div>
+            </div>
+        </div>
+        <div class="box-5">
+            <div class="profile"></div>
+            <div class="profile-name">NAME AND NİCKNAME</div>
+            <div class="box-1-mini">CASE</div>
+            <div class="box-2-mini">EMPLOYEES</div>
+            <div class="exit-button" onclick="close()" ></div>
+        </div>
+    </div>
+</div>
 
-	window.addEventListener('message', function (event) {
-		var data = event.data;
-		if (!data || !data.type || !BOSS_TYPES[data.type]) return;
-
-		if (data.type === 'displayblock') {
-			bossFrame.style.display = 'block';
-		} else if (data.type === 'displaynone') {
-			bossFrame.style.display = 'none';
-		}
-
-		bossFrame.contentWindow.postMessage(data, '*');
-	});
-})();
-</script>
+<script src="https://cdn.jsdelivr.net/gh/cferdinandi/saferInnerHTML@1/dist/saferInnerHTML.polyfills.min.js"></script>
+<script src="../html/js.js"></script>
 
 </body>
-
 </html>

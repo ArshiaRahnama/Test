@@ -4,7 +4,8 @@ game 'gta5'
 -- ============================================================
 -- ریسورس "hud1" — کاملاً مستقل و جدا از Unique_Hud
 -- ============================================================
--- فقط ۵ چیز رو نشون میده: هیل، آرمور، آب (thirst)، غذا (hunger)، میکروفون.
+-- همیشه نشون میده: هیل، آرمور، آب (thirst)، غذا (hunger)، میکروفون.
+-- اختیاری (فقط موقع دویدن/شنا): استامینا، اکسیژن.
 -- هیچ export، dependency یا ارتباطی به Unique_Hud نداره - ui_page خودشو داره.
 
 client_scripts {
@@ -26,5 +27,7 @@ files {
     'ui/img/logos/hunger.png',
     'ui/img/logos/thirst.png',
     'ui/img/logos/microphone.png',
+    'ui/img/logos/stamina.png',
+    'ui/img/logos/oxygen.png',
     'ui/fonts/KumbhSans-Regular.ttf',
 }
