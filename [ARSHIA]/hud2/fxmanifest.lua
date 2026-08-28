@@ -26,6 +26,5 @@ files {
     'ui/img/logos/hunger.png',
     'ui/img/logos/thirst.png',
     'ui/img/logos/microphone.png',
-    'ui/img/logos/engine.png',
     'ui/fonts/KumbhSans-Regular.ttf',
 }

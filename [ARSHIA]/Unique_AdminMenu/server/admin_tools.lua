@@ -356,6 +356,20 @@ AddEventHandler('Unique_AdminMenu:ImpoundTarget', function(targetId)
     LogAdminAction(source, "impound", ("target: %s (id:%s)"):format(GetPlayerName(targetId), targetId), ESX.GetPlayerFromId(targetId).identifier, GetPlayerName(targetId))
 end)
 
+RegisterServerEvent('Unique_AdminMenu:BringTarget')
+AddEventHandler('Unique_AdminMenu:BringTarget', function(targetId)
+    local source = source
+    if not IsOnDutyAdmin(source) then return end
+    targetId = tonumber(targetId)
+    local Target = ESX.GetPlayerFromId(targetId)
+    if not Target then return end
+
+    local coords = GetEntityCoords(GetPlayerPed(source))
+    ExemptFromAntiCheat(targetId, 5000, { teleport = true, speed = true })
+    TriggerClientEvent('Unique_AdminMenu:ApplyTeleportCoords', targetId, coords.x, coords.y, coords.z)
+    LogAdminAction(source, "bring", ("target: %s (id:%s)"):format(GetPlayerName(targetId), targetId), Target.identifier, GetPlayerName(targetId))
+end)
+
 RegisterServerEvent('Unique_AdminMenu:SetWeather')
 AddEventHandler('Unique_AdminMenu:SetWeather', function(weatherName)
     local source = source

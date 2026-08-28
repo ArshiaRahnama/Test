@@ -21,7 +21,7 @@ end)
 
 RegisterNetEvent('esx_aduty:ChangeMenuStatus')
 AddEventHandler('esx_aduty:ChangeMenuStatus', function(boolean)
-  WarMenu.CloseMenu()
+  WarMenu.ForceCloseAll()
   aduty = boolean
   if aduty and OffDuty == nil then
     AdminM()
@@ -33,10 +33,21 @@ AddEventHandler('esx_aduty:ChangeMenuStatus', function(boolean)
   end
 end)
 
+-- F4 toggles the admin menu. If we're already sitting at the top-level
+-- 'main' menu, it closes fully. If we're closed, or deep inside a submenu,
+-- it resets cleanly straight back to 'main' in one step. Previously this
+-- called WarMenu.CloseMenu() (a two-step toggle meant for Backspace) and
+-- then immediately reopened the menu, which could leave it flagged as
+-- "about to close" - so the very next frame would silently close it again
+-- right after opening (the open/close flicker). ForceCloseAll() closes
+-- everything in one shot, so that can't happen anymore.
 AddEventHandler("onKeyDown", function(key)
-  if key == "f4" and aduty then
-    WarMenu.CloseMenu()
-    Wait(100)
+  if key ~= "f4" or not aduty then return end
+
+  if WarMenu.CurrentMenu() == 'main' then
+    WarMenu.ForceCloseAll()
+  else
+    WarMenu.ForceCloseAll()
     WarMenu.OpenMenu('main')
     AdminMenu()
   end
@@ -66,7 +77,7 @@ function Infinity()
       ESX.TriggerServerCallback('Admin_Menu:GetActivePlayers', function(players)
         PlayersCache = players
       end)
-      Citizen.Wait(15000)
+      Citizen.Wait(5000)
     end
   end)
 end
@@ -74,8 +85,8 @@ end
 Citizen.CreateThread(function ()
   WarMenu.CreateMenu('main', 'Admin Menu')
   WarMenu.CreateSubMenu('spectate', 'main', 'Spectate Players')
-  WarMenu.CreateSubMenu('teleport_player', 'main', 'Teleport to Players')
-  WarMenu.CreateSubMenu('player_menu', 'main', 'Admin Menu')
+  WarMenu.CreateSubMenu('teleport_player', 'main', 'Teleport to Spectated')
+  WarMenu.CreateSubMenu('player_menu', 'main', 'My Abilities')
 end)
 
 RegisterNetEvent('AdminMenu:SlapPlayers')
@@ -103,13 +114,19 @@ function AdminMenu()
 
   if WarMenu.IsMenuOpened('main') then
     mOpen = true
-    WarMenu.MenuButton('Spectate Menu', 'spectate')
-    WarMenu.MenuButton('Teleport to player', 'teleport_player')
-    WarMenu.MenuButton('Player Menu', 'player_menu')
-    WarMenu.MenuButton('Player Tools', 'select_target')
-    WarMenu.MenuButton('Vehicle Tools', 'vehicle_tools')
-    WarMenu.MenuButton('World Tools', 'world_tools')
-    WarMenu.MenuButton('Server Tools', 'server_tools')
+
+    -- Grouped so related tools sit together: player-facing tools first,
+    -- then vehicle/world/server tools. Player Tools and Spectate Menu pull
+    -- a fresh player list from the server the instant you open them, so
+    -- the list always reflects who's actually online right now instead of
+    -- whatever the last background refresh happened to catch.
+    if WarMenu.MenuButton('» My Abilities', 'player_menu') then end
+    if WarMenu.MenuButton('» Player Tools', 'select_target') then AdminM() end
+    if WarMenu.MenuButton('» Spectate Menu', 'spectate') then AdminM() end
+    WarMenu.MenuButton('» Teleport to Spectated', 'teleport_player')
+    WarMenu.MenuButton('» Vehicle Tools', 'vehicle_tools')
+    WarMenu.MenuButton('» World Tools', 'world_tools')
+    WarMenu.MenuButton('» Server Tools', 'server_tools')
 
     WarMenu.Display()
 
@@ -161,13 +178,14 @@ function AdminMenu()
   elseif WarMenu.IsMenuOpened('teleport_player') then
     mOpen = true
     if TargetSpectate then
-      WarMenu.CloseMenu()
+      WarMenu.ForceCloseAll()
       teleportToPlayer(TargetSpectate)
       spec[TargetSpectate] = false
       InSpectatorMode = false
       lastspec = 0
       TargetSpectate = nil
     else
+      drawNotification("~r~Spectate a player first (Spectate Menu), then use this to teleport to them.")
       WarMenu.OpenMenu('main')
     end
     WarMenu.Display()

@@ -124,7 +124,7 @@ ESX.RegisterServerCallback('Admin_Menu:GetActivePlayers', function(source, cb)
       local cSource = cX[i]
       local name = GetPlayerName(cSource)
       if name ~= '**Invalid**' then
-        cJ[cSource] = name
+        cJ[cSource] = (cSource == source) and (name .. ' (You)') or name
       end
     end
     cb(cJ)

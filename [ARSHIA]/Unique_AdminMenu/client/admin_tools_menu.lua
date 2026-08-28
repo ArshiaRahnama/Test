@@ -5,7 +5,10 @@ SavedLocationsCache = {}
 
 Citizen.CreateThread(function()
     WarMenu.CreateSubMenu('select_target', 'main', 'Select Target Player')
-    WarMenu.CreateSubMenu('player_tools', 'main', 'Player Tools')
+    -- player_tools is only ever opened FROM select_target (you pick a
+    -- player, then land here), so Backspace needs to take you back to that
+    -- player list - not all the way up to the main menu.
+    WarMenu.CreateSubMenu('player_tools', 'select_target', 'Player Tools')
     WarMenu.CreateSubMenu('vehicle_tools', 'main', 'Vehicle Tools')
     WarMenu.CreateSubMenu('world_tools', 'main', 'World Tools')
     WarMenu.CreateSubMenu('saved_locations', 'world_tools', 'Saved Locations')
@@ -36,6 +39,16 @@ local function DrawPlayerToolsMenu()
 
     if WarMenu.Button("Target: [" .. SelectedTargetId .. "] " .. (PlayersCache[SelectedTargetId] or "?")) then
         OpenPlayerTools()
+    end
+
+    if WarMenu.Button("Teleport to Target") then
+        local targetId = SelectedTargetId
+        WarMenu.ForceCloseAll()
+        teleportToPlayer(targetId)
+    end
+
+    if WarMenu.Button("Bring Target to Me") then
+        TriggerServerEvent('Unique_AdminMenu:BringTarget', SelectedTargetId)
     end
 
     if WarMenu.Button("Freeze / Unfreeze") then

@@ -17,24 +17,46 @@ html, body { width: 100%; height: 100%; background: transparent; overflow: hidde
 }
 
 /* ============================== STATS WIDGET ============================== */
+/* Sits on the right edge, vertically centered in the empty gap between the
+   top-right HUD (name/coins/money/health/armor/hunger/thirst/job, ends
+   ~28% down) and the bottom-right quick-action icons + minimap area
+   (starts ~70% down) - so it never overlaps either. pointer-events:none
+   since it's purely informational (see the note in app.js) and should
+   never intercept clicks even by accident. */
 #statsWidget {
   position: fixed;
-  bottom: 230px;
-  right: 30px;
+  top: 48%;
+  right: 20px;
+  transform: translateY(-50%);
   background: var(--bg);
   border: 1px solid rgba(201, 162, 75, 0.35);
   border-radius: var(--radius);
-  padding: 10px 16px;
-  min-width: 150px;
+  padding: 8px 14px;
+  min-width: 130px;
   color: var(--text);
   box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  font-size: 12px;
+  z-index: 5;
+  pointer-events: none;
 }
 .statsTitle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-size: 11px;
   letter-spacing: 2px;
   color: var(--accent);
   font-weight: 700;
   margin-bottom: 6px;
+}
+.statsTitle::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--good);
+  box-shadow: 0 0 6px var(--good);
+  animation: pulseReport 1.6s infinite;
 }
 .statsRow {
   display: flex;

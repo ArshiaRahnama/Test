@@ -9,11 +9,6 @@
 
 local pauseMenu = false
 
--- GTA native GetVehicleEngineHealth رنج تقریبی ۰ تا ۱۰۰۰ داره؛ تقسیم بر ۱۰
--- می‌کنیم تا بشه درصد ۰ تا ۱۰۰. فقط وقتی خودت رانندگی می‌کنی (نه سرنشین) نشون
--- داده میشه.
-local vehicleShown = false
-
 CreateThread(function()
     local player = PlayerId()
     local unarmed = `WEAPON_UNARMED`
@@ -30,35 +25,16 @@ CreateThread(function()
             ClearPedTasksImmediately(ped)
         end
 
-        local sendData = {
+        -- GetEntityHealth پد بین ۱۰۰ (مرگ) تا ۲۰۰ (کامل) برمی‌گرده، برای همین
+        -- ۱۰۰ ازش کم میشه تا دایره‌ی هیل درصد ۰ تا ۱۰۰ درست رو نشون بده.
+        -- GetPedArmour از قبل خودش ۰ تا ۱۰۰ هست، نیازی به تغییر نداره.
+        SendNUIMessage({
             id = 'hud',
             event = 'setData',
-            -- GetEntityHealth پد بین ۱۰۰ (مرگ) تا ۲۰۰ (کامل) برمی‌گرده، برای همین
-            -- ۱۰۰ ازش کم میشه تا دایره‌ی هیل درصد ۰ تا ۱۰۰ درست رو نشون بده.
-            -- GetPedArmour از قبل خودش ۰ تا ۱۰۰ هست، نیازی به تغییر نداره.
             health = GetEntityHealth(ped) - 100,
             armor = GetPedArmour(ped),
             talking = MumbleIsPlayerTalking(player),
-        }
-
-        local inVeh = IsPedInAnyVehicle(ped, false)
-        local vehicle = inVeh and GetVehiclePedIsIn(ped, false) or false
-        if vehicle and GetPedInVehicleSeat(vehicle, -1) ~= ped then
-            vehicle = false -- فقط راننده، نه سرنشین
-        end
-
-        if vehicle then
-            sendData.engine = GetVehicleEngineHealth(vehicle) / 10
-            if not vehicleShown then
-                vehicleShown = true
-                SendNUIMessage({ id = 'hud', event = 'toggleDisplay3', key = '#engine', state = true })
-            end
-        elseif vehicleShown then
-            vehicleShown = false
-            SendNUIMessage({ id = 'hud', event = 'toggleDisplay3', key = '#engine', state = false })
-        end
-
-        SendNUIMessage(sendData)
+        })
     end
 end)
 

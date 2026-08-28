@@ -279,6 +279,23 @@ function WarMenu.CloseMenu()
     end
 end
 
+-- Immediately and reliably closes whatever menu is open, in a single call.
+-- WarMenu.CloseMenu() is a two-step toggle (the first call only flags
+-- "aboutToBeClosed"; a second call is what actually closes it) which is
+-- meant for the in-game Backspace flow. Anything driven from script logic
+-- (F4 handler, duty-status changes, etc.) should call this instead, so the
+-- menu can never end up half-closed and flicker open/closed on the next
+-- frame.
+function WarMenu.ForceCloseAll()
+    if currentMenu and menus[currentMenu] then
+        menus[currentMenu].visible = false
+        menus[currentMenu].aboutToBeClosed = false
+    end
+    optionCount = 0
+    currentMenu = nil
+    currentKey = nil
+end
+
 function WarMenu.Button(text, subText)
     local buttonText = text
     if subText then

@@ -19,9 +19,6 @@ window.addEventListener('message', function (event) {
             if (data.thirst != undefined) {
                 progressCircle(data.thirst, '.thirst');
             }
-            if (data.engine != undefined) {
-                progressCircle(data.engine, '.engine');
-            }
             if (data.talking != undefined) {
                 var micCircle = document.getElementById('microphone-circle');
                 if (micCircle) {
