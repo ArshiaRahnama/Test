@@ -263,6 +263,66 @@ wrong, the server console and F8 client console will show exactly
 which branch ran and what data was involved - look for lines starting
 with `[Unique_ALLGangs]`.
 
+## 12) Mouse stuck / can't aim while placing a Ped, Object, Vehicle, etc.
+
+Confirmed real (`client/lib.lua`, `SetMarkerCoord`): this function runs
+while the gang panel's NUI focus is still active from opening the
+panel. The instructional buttons (Rotate/Place/Cancel) drew fine
+because those are a HUD overlay, unaffected by NUI focus - but actual
+camera-look (needed to aim where the placement raycast points) was
+blocked the whole time, since the mouse was still locked in on-screen
+UI-pointer mode. This affected every option type equally (Ped, Object,
+Vehicle, Flag) - Marker likely just looked "fine" at a glance since it
+doesn't need camera aim as much to look reasonable.
+
+**Fix:** `SetNuiFocus(false, false)` now runs at the very start of
+`SetMarkerCoord`, before anything is spawned, handing camera control
+back for the whole placement phase. On a successful placement the
+panel already reopens afterward (`ExecuteCommand(Config.OPENPANELCMD)`
+in `client/main.lua`), which restores focus naturally. On Cancel (Q),
+you're left in normal game control with no panel open - that's a
+pre-existing minor UX gap (not something newly introduced), not the
+"stuck" bug itself; open the panel again from the action menu if you
+want to try placing again.
+
+## Final audit (full sweep, requested explicitly)
+
+Went through the whole resource specifically hunting for any other
+"mouse stuck" / dead-click bugs before calling this done:
+
+- **Every `SetNuiFocus(true, ...)` in the resource now has a matching
+  release path.** Inventoried all of them (`client/main.lua`,
+  `client/boss.lua`, `client/lib.lua`) - each "open" (panel open, boss
+  menu open, placement mode start) has a corresponding "close" that
+  actually runs (button, Escape, or successful completion).
+- **No other hardcoded old resource names anywhere.** Swept every
+  `.js`/`.html`/`.css` file in `web/` and `html/` for leftover
+  `FMGangs`/`FMGangBoss` references - none left except my own comments
+  explaining the fix.
+- **Every CSS `url(...)` and image path resolves to a real file** that
+  actually exists in this resource and is included in `fxmanifest.lua`'s
+  `files{}` - checked file-by-file, nothing missing.
+- **Every `RegisterNUICallback` that takes a `cb` parameter actually
+  calls it** - swept both `client/main.lua` and `client/boss.lua`
+  programmatically, no dangling ones left.
+- Confirmed the boss panel's `Uiloaded` ready-ping (`html/js.js` ->
+  `client/boss.lua`) was ALSO broken by the same hardcoded-URL bug from
+  section 10 - meaning the boss panel could never even open before
+  that fix (it would have shown "Insufficient authorization" every
+  time, regardless of actual permission). Fixing section 10 fixed this
+  too.
+- Found one pre-existing (not introduced by this merge) piece of dead
+  code: `client/boss.lua`'s `money`/`moneypage`/`editle`/`clear`
+  messages have no corresponding button in `html/js.js` that ever
+  triggers them, and no listener for `moneypage`/`editle` either.
+  Doesn't affect anything currently in use (nothing calls it), so I
+  left it as-is rather than build a whole feature that wasn't asked
+  for - flagging it here in case you intended a dedicated "money page"
+  that never got wired up on the UI side.
+
+Nothing else turned up. This is the version I'd consider ready for
+real testing.
+
 ## Testing checklist before going live
 
 - [ ] `/openpanel` opens instantly even with several gang members online

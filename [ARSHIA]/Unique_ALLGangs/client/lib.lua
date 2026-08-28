@@ -176,6 +176,23 @@ function SetMarkerCoord(data , cb )
 	local heading = 0.0
 	local Current2Entity = 0 
 	local isMarker = false 
+	-------------------------------------------------------------------
+	-- FIX (mouse stuck / can't aim while placing a Ped/Object/Vehicle):
+	-- this function is called while the gang panel's NUI focus is still
+	-- active (SetNuiFocus(true,true)), so the mouse was locked in
+	-- on-screen UI-pointer mode the whole time you were supposed to be
+	-- looking around with the camera to aim the placement raycast. The
+	-- instructional buttons (Rotate/Place/Cancel) drew fine because
+	-- that's a HUD overlay, not something NUI focus affects - only the
+	-- actual camera-look was blocked. Releasing focus here hands mouse
+	-- control back to the camera for the whole placement phase; it's
+	-- restored either by the panel reopening after a successful
+	-- placement (ExecuteCommand(Config.OPENPANELCMD) in client/main.lua
+	-- already does this) or, on Cancel, the player is simply left in
+	-- normal game control - open the panel again from the action menu
+	-- if you want to try again.
+	-------------------------------------------------------------------
+	SetNuiFocus(false, false)
 	if data.type == 'object' then 
 		RequestSpawnObject(data.marker)
 		CurrentEntity = CreateObject(data.marker,1.0, 1.0, 1.0, false, true, false)
