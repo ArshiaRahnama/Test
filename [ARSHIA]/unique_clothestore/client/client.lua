@@ -68,21 +68,33 @@ end)
 
 RegisterNetEvent('unique_clothestore:wearClotheItem')
 AddEventHandler('unique_clothestore:wearClotheItem', function(clotheType, drawable, texture)
+    print(('^3[unique_clothestore CLIENT DEBUG] wearClotheItem received: clotheType=%s drawable=%s texture=%s^0'):format(tostring(clotheType), tostring(drawable), tostring(texture)))
+
     local slot
     for _, s in ipairs(ClotheItemSlots) do
         if s.type == clotheType then slot = s break end
     end
-    if not slot then return end
+    if not slot then
+        print(('^1[unique_clothestore CLIENT DEBUG] ABORTED: no matching slot found for clotheType "%s"^0'):format(tostring(clotheType)))
+        return
+    end
 
     local ped = PlayerPedId()
     local componentIds = { tshirt = 8, torso = 11, arms = 3, decals = 10, pants = 4, shoes = 6, mask = 1, bproof = 9, chain = 7, bags = 5 }
     local propIds = { helmet = 0, glasses = 1, watches = 6, bracelets = 7, ears = 2 }
 
     if slot.prop then
+        print(('^2[unique_clothestore CLIENT DEBUG] Applying PROP: propId=%s drawable=%s texture=%s^0'):format(tostring(propIds[clotheType]), tostring(drawable), tostring(texture)))
         SetPedPropIndex(ped, propIds[clotheType], drawable, texture, true)
     else
+        print(('^2[unique_clothestore CLIENT DEBUG] Applying COMPONENT: componentId=%s drawable=%s texture=%s^0'):format(tostring(componentIds[clotheType]), tostring(drawable), tostring(texture)))
         SetPedComponentVariation(ped, componentIds[clotheType], drawable, texture, 2)
     end
+
+    print(('^2[unique_clothestore CLIENT DEBUG] Ped model after apply: %s. Current drawable now reads back as: %s^0'):format(
+        tostring(GetEntityModel(ped)),
+        tostring(slot.prop and GetPedPropIndex(ped, propIds[clotheType]) or GetPedDrawableVariation(ped, componentIds[clotheType]))
+    ))
 
     if Config.SkinManager == 'esx_skin' then
         TriggerEvent('skinchanger:getSkin', function(skin)

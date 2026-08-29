@@ -132,8 +132,18 @@ function OpenBossMoneyMenu(gang)
 end
 
 function OpenBossEmployeesMenu(gang)
-    ESX.TriggerServerCallback('FMGangs:GetGangsData', function(gangsCount, online, offline, total, top, allMembers)
-        local myMembers = (allMembers and allMembers[gang]) or {}
+    -- FIX (member list always empty - showed just the search bar with
+    -- nothing below it): FMGangs:GetGangsData's real callback
+    -- signature is cb(Gangs, Expires, AllMembers, MyGangMembers) -
+    -- only 4 values, not the 6 this used to assume. That mismatch
+    -- meant `allMembers` here was always nil (there is no 6th value),
+    -- so myMembers always fell through to `{}` - an empty list every
+    -- time, regardless of how many members the gang actually had.
+    -- MyGangMembers (the real 4th value) is already exactly this
+    -- gang's member list, pre-filtered server-side - no need to index
+    -- by gang name at all.
+    ESX.TriggerServerCallback('FMGangs:GetGangsData', function(Gangs, Expires, AllMembers, MyGangMembers)
+        local myMembers = MyGangMembers or {}
         local elements = {
             head = {'Name', 'Grade', 'Status'},
             rows = {}
@@ -144,6 +154,10 @@ function OpenBossEmployeesMenu(gang)
         end
         for _, m in pairs(myMembers.offline or {}) do
             table.insert(elements.rows, {data = m, cols = {m.Name, m.Grade, 'Offline'}})
+        end
+
+        if #elements.rows == 0 then
+            ESX.ShowNotification('No gang members found')
         end
 
         ESX.UI.Menu.Open('list', GetCurrentResourceName(), 'boss_employees_' .. gang, elements, function(data, menu)
