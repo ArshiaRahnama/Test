@@ -220,18 +220,27 @@ local function setupESX()
         end
     end
 
-    if not ESX.UseItem then
-        ESX.UseItem = function(source, item, slotData)
-            local cb = ESX.UsableItemsCallbacks and ESX.UsableItemsCallbacks[item]
-            if cb then
-                -- pass the full ox_inventory slot (includes .metadata, e.g.
-                -- clothing drawable/texture/label) through as a 3rd arg —
-                -- existing callbacks that only take `source` still work fine
-                cb(source, slotData)
-                return true
-            end
-            return false
+    -- essentialmode already defines its OWN ESX.UseItem (in
+    -- server/functions.lua) that only calls `callback(source)` — no slot
+    -- data. Since it always exists, "if not ESX.UseItem" here never ran,
+    -- so the metadata (clothing drawable/texture, etc) never reached any
+    -- usable-item callback and things like wearing clothes silently did
+    -- nothing. Always override it instead of only filling a gap.
+    ESX.UseItem = function(source, item, slotData)
+        print(('^3[es_extended bridge DEBUG] ESX.UseItem called: source=%s item=%s hasSlotData=%s^0'):format(tostring(source), tostring(item), tostring(slotData ~= nil)))
+
+        local cb = ESX.UsableItemsCallbacks and ESX.UsableItemsCallbacks[item]
+        if cb then
+            print(('^2[es_extended bridge DEBUG] Found usable callback for "%s", invoking it.^0'):format(tostring(item)))
+            -- pass the full ox_inventory slot (includes .metadata, e.g.
+            -- clothing drawable/texture/label) through as a 3rd arg —
+            -- existing callbacks that only take `source` still work fine
+            cb(source, slotData)
+            return true
         end
+
+        print(('^1[es_extended bridge DEBUG] No usable callback registered for "%s" — nothing happens.^0'):format(tostring(item)))
+        return false
     end
 
     if not ESX.__bridgeWrapped then

@@ -1,7 +1,31 @@
 
 
+console.log('[Unique_ALLGangs] html/js.js (boss panel) loaded and parsing');
+// FIX ("Uiloaded request FAILED"): this kept failing even after the
+// nested-iframe was removed (section 18), which means it was never
+// really about iframe nesting - it's a startup race. This page's
+// document.ready can fire before client/boss.lua has reached its
+// RegisterNUICallback('Uiloaded', ...) line (Lua client scripts and
+// the NUI page both start loading around the same time, in no
+// guaranteed order). A single one-shot post can lose that race.
+// Fix: retry with a short backoff until it actually succeeds, instead
+// of giving up after one failed attempt.
+function pingUiloaded(attempt) {
+    attempt = attempt || 1;
+    $.post('https://' + GetParentResourceName() + '/Uiloaded', JSON.stringify({}))
+        .done(function() { console.log('[Unique_ALLGangs] Uiloaded response received OK (attempt ' + attempt + ')') })
+        .fail(function(xhr, status, err) {
+            console.log('[Unique_ALLGangs] Uiloaded request FAILED (attempt ' + attempt + '):', status, err);
+            if (attempt < 20) {
+                setTimeout(function() { pingUiloaded(attempt + 1) }, 500);
+            } else {
+                console.log('[Unique_ALLGangs] Uiloaded gave up after 20 attempts - client/boss.lua may not be running at all');
+            }
+        });
+}
 $(document).ready(function() {
-    $.post('https://' + GetParentResourceName() + '/Uiloaded', JSON.stringify({}));
+    console.log('[Unique_ALLGangs] html/js.js $(document).ready fired, posting Uiloaded');
+    pingUiloaded();
 })    
 window.addEventListener('message', function(event) {
     if (event.data.type == 'displaynone') {

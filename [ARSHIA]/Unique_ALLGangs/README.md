@@ -467,6 +467,121 @@ anything in the boss panel still doesn't respond after this, the
 `console.log`/`print` debugging pattern from sections 11/13 is the
 next thing to add around whichever button doesn't work.
 
+## 19) Cache-busting added + one important thing to check server-side
+
+Given the same "should be fixed but still isn't" pattern has come up
+several times, `web/ui.html` now loads its own first-party assets
+(`css/style.css`, `js/script.js`, `../html/main.css`, `../html/js.js`)
+with a `?v=<timestamp>` query string. This forces the game's NUI
+browser to treat them as new URLs and fetch fresh copies, so stale
+client-side caching can no longer be the hidden reason a fix "doesn't
+seem to work" - bump that number any time you edit these files
+yourself going forward. Also added `console.log(...)` right at the top
+of both `web/js/script.js` and `html/js.js` so a quick F8 check
+immediately shows whether the current build is even loading, before
+digging into anything else.
+
+One more thing worth checking, unrelated to any of this: your
+screenshot shows `[es_extended_bridge] Client-side ready.` in the
+log, meaning the actual framework running is **ESX Legacy
+(es_extended)**, not essentialmode - everything in this resource
+(and originally in FMGangs/FMGangBoss) is written against
+essentialmode's API (`xPlayer.permission_level`, `xPlayer.setGang`,
+`ESX.Gangs`, `ESX.DoesGangExist`, etc.). The fact that things like
+avatar loading, gang creation, and the panel opening have worked in
+earlier tests suggests `es_extended_bridge` is doing a solid job
+translating between the two - but if `/openpanel` truly does nothing
+(not even the "Insufficient authorization"-style notifications), it's
+worth checking the **server console** (not F8, which is client-only)
+for a Lua error when you run the command - `IsPlayerCanOpenPanel` in
+`Config.lua` reads `xPlayer.permission_level` directly, and if that
+field isn't present on the bridge's player object, the command would
+error out silently from the player's perspective while logging on the
+server side.
+
+## 20) Boss grade label + max-level crash + non-admin permission check
+
+- **Top grade now auto-labeled "Boss"**: access was already correctly
+  based on grade *number* (top grade = boss, via `FMGangs:isBoss`),
+  not the label text - the panel screenshot confirmed this already
+  worked. But the default label was just generic "Rank 10", which
+  looked wrong. `FMGangs:CreateGang` now names the top grade "Boss"
+  automatically and also flips `access['bossaction']` on for it, so it
+  reads correctly everywhere (member list, rank editor) without
+  changing who actually has access.
+- **Fixed a real server crash** (`server/level.lua:19: attempt to
+  compare nil with number`): once a gang reached max level (10),
+  `Config.GangLeveL[11]` doesn't exist, and comparing a number against
+  that `nil` crashed the entire XP-granting function - meaning a maxed
+  gang would error out (and lose the XP grant) every time it earned
+  more. Fixed to cap at max level instead of crashing.
+- **Hardened `IsPlayerCanOpenPanel`** (`Config.lua`): the command is
+  fully server-gated (`/openpanel` only does anything if this returns
+  true), so a non-admin causing a stuck cursor with nothing showing
+  shouldn't be possible with the code as written - but the old check
+  (`xPlayer.permission_level >= Config.permission`) would have thrown
+  the same "compare nil with number" error if `permission_level` was
+  ever `nil` for a given player (plausible on the es_extended bridge
+  noted in section 19 if it doesn't set that field for regular users).
+  Now nil-safe, and logs `permission_level` for every `/openpanel`
+  attempt so if this happens again, the server console will show
+  exactly what value (or lack of one) caused it.
+
+## 21) Two more real crashes + Uiloaded still failing (fixed with a retry, not more re-architecting)
+
+- **`client/level.lua:47: attempt to compare number with nil`**: the
+  exact same class of bug fixed server-side in section 20
+  (`Config.GangLeveL[Data.Level + 1]` returning `nil` once a gang is
+  at max level 10) also existed independently in the CLIENT-side XP
+  bar code - 7 unguarded lookups across `client/level.lua`. Added a
+  `NextThreshold(level)` helper that caps at the max level's threshold
+  instead of ever returning `nil`, and every call site now goes
+  through it. The leveling loop itself is also now bounded
+  (`until Data.Level >= #Config.GangLeveL or ...`) so it can't try to
+  level past 10 in the first place.
+
+- **`Uiloaded` still failed even after the iframe was removed** in
+  section 18 - which is actually useful information: it rules out
+  iframe nesting as the cause entirely, since there's no iframe left
+  and it still failed. The real explanation is almost certainly a
+  **startup race**: the NUI page's `$(document).ready(...)` can fire
+  before `client/boss.lua` has reached its
+  `RegisterNUICallback('Uiloaded', ...)` line - the NUI browser and
+  the Lua client scripts both start loading around resource start with
+  no guaranteed ordering between them, and a single one-shot POST can
+  simply lose that race. Rather than one more theory about the page
+  architecture, `html/js.js` now retries the `Uiloaded` ping every
+  500ms (up to 20 times) until it actually gets a response, which
+  should make this immune to that race regardless of which side wins
+  it. Watch F8 for `Uiloaded response received OK (attempt N)` - if
+  it's still failing after 20 attempts (10 seconds), that means
+  `client/boss.lua` isn't running at all, which is a different problem
+  (check the server/F8 console for a script error preventing that file
+  from loading).
+
+Also bumped the cache-bust version (section 19) since these files
+changed again - same reasoning as before, so there's no ambiguity
+about whether you're testing the current build.
+
+## 22) "Uiloaded FAILED" resolved - it was never a routing/race bug at all
+
+Your screenshot actually already proved the boss panel was working -
+real data (Boss Action $4998, member list, Case/Employees) was
+rendering correctly - despite the log showing repeated "FAILED". That
+contradiction was the clue: `RegisterNUICallback('Uiloaded', function
+() Uiloaded = true end)` in `client/boss.lua` never declared a `cb`
+parameter or called `cb(...)`. `Uiloaded = true` genuinely ran
+correctly in Lua on the very first attempt (which is why the panel
+worked), but since Lua never sent a response back, the JS side timed
+out and logged "FAILED" every single time regardless - my own retry
+loop from last round was dutifully retrying something that had
+already succeeded. Fixed by adding `cb('ok')`, matching the same
+pattern already used elsewhere. Also checked every other
+`RegisterNUICallback` in `client/boss.lua` - the rest intentionally
+don't take a `cb` param at all (fire-and-forget, matching how the UI
+updates via `SendNUIMessage` pushes rather than direct responses), so
+this was the only one that needed it.
+
 ## Testing checklist before going live
 
 - [ ] `/openpanel` opens instantly even with several gang members online

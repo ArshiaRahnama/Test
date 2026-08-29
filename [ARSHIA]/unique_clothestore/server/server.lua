@@ -70,10 +70,34 @@ if Config.Core == "ESX" then
     -- with again in order to take it off.
     for clotheType in pairs(ClotheTypeLabel) do
         ESX.RegisterUsableItem('clothing_' .. clotheType, function(playerId, slotData)
+            print(('^3[unique_clothestore DEBUG] clothing_%s used by %s. slotData=%s^0'):format(clotheType, tostring(playerId), tostring(slotData and json.encode(slotData) or 'nil')))
+
             local metadata = slotData and slotData.metadata
-            if not metadata or not metadata.drawable then return end
+            if not metadata or not metadata.drawable then
+                print('^1[unique_clothestore DEBUG] ABORTED: metadata or metadata.drawable missing — the slot data never arrived with real clothing info.^0')
+                return
+            end
+
+            -- If a piece of the same type is already worn, take it off
+            -- (back into the inventory as a normal item) BEFORE putting the
+            -- new one on — otherwise you'd end up with two different
+            -- "worn_clothing_<type>" placeholders which makes no sense for
+            -- a single clothing slot on the ped.
+            local wornSlots = exports.ox_inventory:Search(playerId, 'slots', 'worn_clothing_' .. clotheType)
+            local wornSlot = wornSlots and wornSlots['worn_clothing_' .. clotheType] and wornSlots['worn_clothing_' .. clotheType][1]
+            if wornSlot then
+                local wornMeta = wornSlot.metadata or {}
+                exports.ox_inventory:RemoveItem(playerId, 'worn_clothing_' .. clotheType, 1, nil, wornSlot.slot)
+                exports.ox_inventory:AddItem(playerId, 'clothing_' .. clotheType, 1, {
+                    label = wornMeta.label,
+                    clotheType = wornMeta.clotheType or clotheType,
+                    drawable = wornMeta.drawable,
+                    texture = wornMeta.texture or 0
+                })
+            end
 
             TriggerClientEvent('unique_clothestore:wearClotheItem', playerId, metadata.clotheType or clotheType, metadata.drawable, metadata.texture or 0)
+            print(('^2[unique_clothestore DEBUG] Sent wearClotheItem to player %s: type=%s drawable=%s texture=%s^0'):format(tostring(playerId), tostring(metadata.clotheType or clotheType), tostring(metadata.drawable), tostring(metadata.texture or 0)))
 
             exports.ox_inventory:AddItem(playerId, 'worn_clothing_' .. clotheType, 1, {
                 label = metadata.label,

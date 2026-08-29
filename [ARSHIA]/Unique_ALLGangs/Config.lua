@@ -25,7 +25,13 @@ Config.TimeToPay = 15 -- min
 ----
 function IsPlayerCanOpenPanel(source) 
     local xPlayer = ESX.GetPlayerFromId(source) 
-    if xPlayer.permission_level >= Config.permission  then  
+    if not xPlayer then
+        print('[Unique_ALLGangs] IsPlayerCanOpenPanel: no xPlayer for source ' .. tostring(source) .. ' - denying')
+        return false
+    end
+    local level = tonumber(xPlayer.permission_level)
+    print('[Unique_ALLGangs] IsPlayerCanOpenPanel: source=' .. tostring(source) .. ' permission_level=' .. tostring(xPlayer.permission_level) .. ' (Config.permission=' .. tostring(Config.permission) .. ')')
+    if level and level >= Config.permission then  
         return true 
     else 
         return false 

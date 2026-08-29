@@ -1,0 +1,138 @@
+@import url("https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@400;700&display=swap");
+
+html, body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background: transparent;
+  font-family: "Roboto Condensed", sans-serif;
+  direction: rtl;
+}
+
+#sb-wrap {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+#sb-panel {
+  width: 460px;
+  max-height: 78vh;
+  overflow-y: auto;
+  background: rgba(20, 22, 27, 0.82);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 18px 20px;
+  color: #fff;
+  opacity: 0;
+  transform: translateY(-12px) scale(0.97);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+#sb-panel.visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.sb-header {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sb-title {
+  font-weight: 700;
+  font-size: 18px;
+  letter-spacing: 2px;
+  color: #ffc315;
+}
+
+.sb-sub {
+  font-size: 13px;
+  color: #9ca3af;
+  flex: 1;
+}
+
+.sb-players {
+  font-size: 13px;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 3px 10px;
+  border-radius: 20px;
+}
+
+.sb-section {
+  margin-bottom: 14px;
+}
+
+.sb-section-title {
+  font-size: 12px;
+  color: #9ca3af;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+
+.sb-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.sb-chip {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  padding: 6px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sb-chip .sb-chip-label {
+  font-size: 11px;
+  color: #d1d5db;
+}
+
+.sb-chip .sb-chip-value {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.sb-chip.robbing .sb-chip-value {
+  color: #ff3547;
+}
+
+.sb-chip.idle .sb-chip-value {
+  color: #33cc66;
+}
+
+.sb-admin-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sb-admin-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 6px;
+  padding: 5px 9px;
+}
+
+.sb-empty {
+  font-size: 12px;
+  color: #6b7280;
+  padding: 4px 0;
+}

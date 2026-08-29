@@ -1,4 +1,6 @@
--- Run this once against your server's database before starting Unique_CrimeScene.
+-- Run this once against your server's database before using the Crime
+-- Scene Investigation tab in /cad (this used to be the standalone
+-- Unique_CrimeScene resource, now merged into cad/).
 
 CREATE TABLE IF NOT EXISTS `doj_cases` (
   `id` INT NOT NULL AUTO_INCREMENT,

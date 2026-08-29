@@ -251,21 +251,32 @@ ESX.RegisterServerCallback('FMGangs:CreateGang', function(source, cb, data)
             ESX.Gangs[data.name] = { name = data.name, label = data.label, grades = {} }
 
             for i=1, #Ranks_Data, 1 do
-                Gangs[data.name].grades[tonumber(Ranks_Data[i].Grade)] = {gang_name = data.name, grade = Ranks_Data[i].Grade, label = Ranks_Data[i].Label, name = Ranks_Data[i].Name, clothes = {} , access =  {['putitem'] = false ,['takeitem'] = false ,['garage']   = false ,['setclothe'] = false ,['heliANDBoat'] = false ,  ['bossaction'] = false ,} , salary = 0 }
-                ESX.Gangs[data.name].grades[tonumber(Ranks_Data[i].Grade)] = { name = Ranks_Data[i].Name, label = Ranks_Data[i].Label, salary = 0 }
+                -- The top grade (last one, i == #Ranks_Data) is the boss
+                -- grade - FMGangs:isBoss already grants it full access
+                -- based on grade NUMBER alone (grade == count of grades),
+                -- so this doesn't change who has access. It only fixes
+                -- the label/name so it reads "Boss" instead of the
+                -- generic "Rank 10" default, and also flips
+                -- access['bossaction'] on for it so it's consistent if
+                -- an admin later inspects/edits access in the panel.
+                local isTopGrade = (i == #Ranks_Data)
+                local gradeLabel = isTopGrade and 'Boss' or Ranks_Data[i].Label
+                local gradeName  = isTopGrade and 'Boss' or Ranks_Data[i].Name
+                Gangs[data.name].grades[tonumber(Ranks_Data[i].Grade)] = {gang_name = data.name, grade = Ranks_Data[i].Grade, label = gradeLabel, name = gradeName, clothes = {} , access =  {['putitem'] = false ,['takeitem'] = false ,['garage']   = false ,['setclothe'] = false ,['heliANDBoat'] = false ,  ['bossaction'] = isTopGrade ,} , salary = 0 }
+                ESX.Gangs[data.name].grades[tonumber(Ranks_Data[i].Grade)] = { name = gradeName, label = gradeLabel, salary = 0 }
                 MySQL.Async.execute('INSERT INTO gang_grades (gang_name, grade, label, name , access , salary) VALUES (@gang_name, @grade, @label, @name , @access ,@salary )', 
                 {
                     ['@gang_name']  = data.name,
                     ['@grade']  = Ranks_Data[i].Grade,
-                    ['@label'] 	= Ranks_Data[i].Label,
-                    ['@name'] 	= Ranks_Data[i].Name , 
+                    ['@label'] 	= gradeLabel,
+                    ['@name'] 	= gradeName , 
                     ['@access'] 	=  json.encode( {
                         ['putitem'] = false ,
                         ['takeitem'] = false ,
                         ['garage']   = false ,
                         ['setclothe'] = false ,
                         ['heliANDBoat'] = false ,
-                        ['bossaction'] = false ,
+                        ['bossaction'] = isTopGrade ,
                     }) , 
                     ['@salary'] 	= 0 
                 })

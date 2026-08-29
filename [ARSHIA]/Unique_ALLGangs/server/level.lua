@@ -13,9 +13,25 @@ function Database(source, XP, gang)
             XP    = tonumber(Gangs[gang].xp) ,
             
         } 
-        if ganglevels[gang].XP + XP >= Config.GangLeveL[ganglevels[gang].Level + 1] then
+        -------------------------------------------------------------
+        -- FIX (SCRIPT ERROR: attempt to compare nil with number, at
+        -- the "if ganglevels[gang].XP + XP >= Config.GangLeveL[...]"
+        -- line below): Config.GangLeveL only has entries for levels
+        -- 1-10. Once a gang is already AT level 10 (max) and gains
+        -- more XP, the old code looked up
+        -- Config.GangLeveL[10 + 1] = Config.GangLeveL[11], which
+        -- doesn't exist (nil) - comparing a number against that nil
+        -- crashed this entire function (and the XP grant along with
+        -- it) every time a maxed-out gang earned any more XP.
+        -- Now: if already at max level, XP is just added without
+        -- attempting to level up further - no more out-of-bounds
+        -- lookup, and a maxed gang no longer errors out just for
+        -- existing.
+        -------------------------------------------------------------
+        local atMaxLevel = ganglevels[gang].Level >= #Config.GangLeveL
+        if not atMaxLevel and ganglevels[gang].XP + XP >= Config.GangLeveL[ganglevels[gang].Level + 1] then
             ganglevels[gang].XP =  ganglevels[gang].XP + XP
-            while true do 
+            while ganglevels[gang].Level < #Config.GangLeveL do 
                 if ganglevels[gang].XP  >= Config.GangLeveL[ganglevels[gang].Level + 1]  then 
                     ganglevels[gang].XP = ganglevels[gang].XP  - Config.GangLeveL[ganglevels[gang].Level]
                     ganglevels[gang].Level = ganglevels[gang].Level + 1  

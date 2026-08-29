@@ -12,7 +12,7 @@ shared_scripts {
 	'locales/*.lua',
 	'shared/departments.lua',
 	'cad/config_cad.lua',
-	'crimescene/config.lua',
+	'cad/config_crimescene.lua',
 }
 
 client_scripts {
@@ -85,7 +85,7 @@ client_scripts {
 
 
 	'cad/client/main.lua',
-	'crimescene/client/main.lua',
+	'cad/client/crimescene.lua',
 }
 
 server_scripts {
@@ -141,7 +141,7 @@ server_scripts {
 
 
 	'cad/server/main.lua',
-	'crimescene/server/main.lua',
+	'cad/server/crimescene.lua',
 }
 
 ui_page 'ui.html'

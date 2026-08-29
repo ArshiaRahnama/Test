@@ -63,7 +63,7 @@ CREATE TABLE IF NOT EXISTS `twitter_tweets` (
 CREATE TABLE IF NOT EXISTS `phone_gallery` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `identifier` varchar(60) NOT NULL,
-  `image_url` text NOT NULL,
+  `image_url` longtext NOT NULL,
   `timestamp` timestamp NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id`),
   KEY `identifier` (`identifier`)

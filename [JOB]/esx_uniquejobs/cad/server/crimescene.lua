@@ -1,10 +1,10 @@
 --[[
-    Crime Scene Investigation -- merged into esx_uniquejobs alongside cad/.
-    Originally the standalone Unique_CrimeScene resource; the panel UI now
-    lives entirely inside the CAD tablet (cad/html + the CS_* bridge in
-    cad/client/main.lua, opened with /cad). This file only owns the actual
-    logic/DB/permission checks -- it doesn't know or care that CAD is what's
-    calling it, same as before.
+    Crime Scene Investigation -- physically merged into cad/ (this file
+    used to live at crimescene/server/main.lua). Originally the standalone
+    Unique_CrimeScene resource; the panel UI lives entirely inside the CAD
+    tablet (cad/html + the CS_* bridge in cad/client/main.lua, opened with
+    /cad). This file only owns the actual logic/DB/permission checks -- it
+    doesn't know or care that CAD is what's calling it, same as before.
 
     Hooks off Unique_AllRobs' 'Morphy_RobSystem:robberySuccess' event
     WITHOUT modifying that resource at all - it's just an extra

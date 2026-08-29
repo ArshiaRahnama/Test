@@ -34,19 +34,31 @@ AddEventHandler('esx:setJob', function(job)
 end)
 
 local function CheckPerm_cad()
+    -- BUG FIX: this used to only block a non-job player when
+    -- DuckMdt.BlockNuiDevTool was true -- if that flag were ever set to
+    -- false (its name suggests it's just about dev-tool detection/logging,
+    -- not about whether job-based access applies at all), ANY player with
+    -- no valid job could call every NUI callback below with zero
+    -- restriction. Job-based access is now unconditional; BlockNuiDevTool
+    -- only controls whether the log/announce side-effects fire.
     if PlayerData_cad.job == nil then return true end
 
-    if (PlayerData_cad.job.name ~= DuckMdt.PoliceJob and PlayerData_cad.job.name ~= 'sheriff' and PlayerData_cad.job.name ~= 'fbi' and PlayerData_cad.job.name ~= 'mt' and PlayerData_cad.job.name ~= 'cid' and PlayerData_cad.job.name ~= 'cia' and PlayerData_cad.job.name ~= 'marshal' and PlayerData_cad.job.name ~= 'judge' and PlayerData_cad.job.name ~= 'doa') and DuckMdt.BlockNuiDevTool then
+    local hasAccess = PlayerData_cad.job.name == DuckMdt.PoliceJob or PlayerData_cad.job.name == 'sheriff' or PlayerData_cad.job.name == 'fbi' or PlayerData_cad.job.name == 'mt' or PlayerData_cad.job.name == 'cid' or PlayerData_cad.job.name == 'cia' or PlayerData_cad.job.name == 'marshal' or PlayerData_cad.job.name == 'judge' or PlayerData_cad.job.name == 'doa'
+
+    if hasAccess then
+        return false
+    end
+
+    if DuckMdt.BlockNuiDevTool then
         if DuckMdt.LogUsingNuiDevTool then
             TriggerServerEvent('DuckMdt:PrintLog')
         end
         if DuckMdt.AnnouneAdminUsingNuiDevTool then
             TriggerServerEvent('DuckMdt:Announce')
         end
-        return true
-    else
-        return false
     end
+
+    return true
 end
 
 RegisterCommand(DuckMdt.Command, function()
@@ -195,7 +207,7 @@ RegisterNUICallback('LoadTenCodes', function()
     }))
 end)
 
--- Crime Scene Investigation bridge -- crimescene/server/main.lua owns the
+-- Crime Scene Investigation bridge -- cad/server/crimescene.lua owns the
 -- actual logic/DB/permission checks, this just relays the CS_ tab UI calls
 -- to it by event/callback name.
 

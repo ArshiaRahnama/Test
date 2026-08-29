@@ -1,14 +1,15 @@
 --[[
-    Unique_CrimeScene, merged into esx_uniquejobs -- world-interaction side.
+    Unique_CrimeScene -- world-interaction side. Physically merged into
+    cad/ (this file used to live at crimescene/client/main.lua).
 
     All the panel UI (case list, evidence, notes, BOLO, booking, records,
-    leaderboard) now lives entirely in cad/html + cad/client/main.lua's CS_*
-    bridge (opened with /cad). This file only handles things that happen in
+    leaderboard) lives in cad/html + cad/client/main.lua's CS_* bridge
+    (opened with /cad). This file only handles things that happen in
     the game world: blips, ox_target evidence zones, the scene lockdown
     zone, and spawning/driving the prisoner transport convoy. It talks to
-    crimescene/server/main.lua the same way it always did -- these are just
-    net events/callbacks, so which resource/file registers them on the
-    client side doesn't matter.
+    cad/server/crimescene.lua the same way it always did -- these are just
+    net events/callbacks, so which file registers them on the server side
+    doesn't matter.
 
     Locals here use the same file-scoping every other job module in this
     resource relies on (see the note at the top of fxmanifest.lua) --

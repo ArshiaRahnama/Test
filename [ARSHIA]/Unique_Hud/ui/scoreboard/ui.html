@@ -4,20 +4,20 @@
     <link rel="stylesheet" type="text/css" href="css/index.css" />
     <style>
       #wrap {
-        width: 560px !important;
+        width: 460px !important;
         height: auto !important;
-        max-height: 80vh;
+        max-height: 75vh;
         overflow-y: auto;
         padding-bottom: 10px;
       }
       .LogoBox img {
-        height: 90px !important;
+        height: 80px !important;
       }
       .InfoBox h1 {
-        font-size: 13px;
+        font-size: 12px;
       }
       .InfoBox h2 {
-        font-size: 26px;
+        font-size: 24px;
       }
       #close_btn {
         position: absolute;
@@ -26,25 +26,35 @@
         background: rgba(255, 255, 255, 0.08);
         color: #fff;
         border: none;
-        width: 28px;
-        height: 28px;
+        width: 26px;
+        height: 26px;
         border-radius: 50%;
         cursor: pointer;
-        font-size: 15px;
+        font-size: 14px;
         line-height: 1;
       }
       #close_btn:hover {
         background: #ff3547;
       }
 
+      .stats-row {
+        display: flex;
+        gap: 16px;
+      }
+      .stat-block {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
       .org-list {
         clear: both;
-        padding: 10px 25px 5px 25px;
+        padding: 10px 20px 5px 20px;
       }
       .org-card {
         background: var(--ColorThree);
         border-radius: 10px;
-        margin-bottom: 8px;
+        margin-bottom: 6px;
         overflow: hidden;
         transition: 300ms;
       }
@@ -52,22 +62,22 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 12px 16px;
+        padding: 10px 14px;
         cursor: pointer;
         font-family: 'Gluten', cursive;
       }
       .org-header .org-title {
-        font-size: 15px;
+        font-size: 13px;
         color: var(--textcolor);
       }
       .org-header .org-count {
-        font-size: 13px;
+        font-size: 12px;
         color: #c4a300;
         font-weight: bold;
       }
       .org-header .org-arrow {
         transition: 300ms;
-        margin-right: 8px;
+        margin-right: 6px;
         color: #9ca3af;
         display: inline-block;
       }
@@ -79,21 +89,23 @@
         overflow: hidden;
         transition: max-height 300ms ease;
       }
+      /* ✅ آکاردئون: فقط یه ارگان هم‌زمان باز می‌مونه (نه هر سه‌تا)، پس پنل
+         کشیده و بلند نمی‌شه، شکلش جمع‌وجورتر (نزدیک‌تر به مربع) می‌مونه. */
       .org-card.expanded .org-jobs {
-        max-height: 300px;
+        max-height: 260px;
       }
       .org-job-row {
         display: flex;
         justify-content: space-between;
-        padding: 8px 20px;
-        font-size: 12px;
+        padding: 6px 18px;
+        font-size: 11px;
         color: rgba(255, 255, 255, 0.8);
         border-top: 1px solid rgba(255, 255, 255, 0.06);
       }
       .org-job-row .count-badge {
         background: rgba(255, 255, 255, 0.08);
         border-radius: 10px;
-        padding: 1px 9px;
+        padding: 1px 8px;
         font-weight: bold;
       }
       .org-job-row.online .count-badge {
@@ -116,8 +128,16 @@
           </div>
 
           <div class="InfoBox">
-            <h1>Players</h1>
-            <h2><span id="playersnum">0</span></h2>
+            <div class="stats-row">
+              <div class="stat-block">
+                <h1>Players</h1>
+                <h2><span id="playersnum">0</span></h2>
+              </div>
+              <div class="stat-block">
+                <h1>Admins</h1>
+                <h2><span id="adminsnum">0</span></h2>
+              </div>
+            </div>
           </div>
 
         </div>
@@ -127,10 +147,6 @@
       </div>
     </div>
 
-    <!-- ✅ فیکس شد: اسکریپت آخرِ body قرار گرفت (نه تو head مثل قبل)، چون
-         document.getElementById('org-list') قبل از این‌که خودِ اون div لود
-         بشه صدا زده می‌شد و کرش می‌کرد (Cannot set properties of null) -
-         دقیقاً همون خطایی که می‌دیدی. -->
     <script src="js/main.js" type="text/javascript"></script>
   </body>
 </html>

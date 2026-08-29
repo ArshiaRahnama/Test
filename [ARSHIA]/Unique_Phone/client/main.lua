@@ -2778,33 +2778,55 @@ RegisterNUICallback("TakePhoto", function(data,cb)
             CellFrontCamActivate(frontCam)
             break
         elseif IsControlJustPressed(1, 176) then
-            if Config.webhooksscreenshot then
-                Citizen.SetTimeout(500,function()
-                    frontCam = false
-                    CellFrontCamActivate(frontCam)
-                    DestroyMobilePhone()
-                    CellCamActivate(false, false)
-                end)
-                -- pcall guard: if screenshot-basic is missing/broken (no
-                -- requestScreenshotUpload export), calling it directly
-                -- throws immediately and this whole NUI callback aborts
-                -- right there - cb() never fires, and the phone UI is left
-                -- waiting forever for a response. Catching it lets us tell
-                -- the player and still resolve the callback cleanly.
-                local ok, err = pcall(function()
-                    exports['screenshot-basic']:requestScreenshotUpload(tostring(Config.webhooksscreenshot), "files[]", function(data)
-                        local image = json.decode(data)
-                        TriggerServerEvent('Unique_Phone:server:addImageToGallery', image.attachments[1].proxy_url)
+            Citizen.SetTimeout(500,function()
+                frontCam = false
+                CellFrontCamActivate(frontCam)
+                DestroyMobilePhone()
+                CellCamActivate(false, false)
+            end)
+
+            -- responded guards against cb() firing twice (once from the
+            -- watchdog, once from the real callback landing late) - NUI
+            -- callbacks error if resolved more than once.
+            local responded = false
+            local function respondOnce(payload)
+                if responded then return end
+                responded = true
+                cb(payload)
+            end
+
+            -- Watchdog: guarantees the camera always recovers within a few
+            -- seconds even if something below never calls back.
+            Citizen.SetTimeout(5000, function()
+                if not responded then
+                    print("[Unique_Phone] screenshot capture timed out after 5s")
+                    TriggerEvent('esx:showNotification', "~r~Taking the photo timed out")
+                    respondOnce(json.encode({ url = nil }))
+                end
+            end)
+
+            -- requestScreenshot takes the photo locally and hands back a
+            -- base64 data URI directly - no external webhook/upload needed,
+            -- so this can't break due to a bad or unconfigured webhook URL.
+            local ok, err = pcall(function()
+                exports['screenshot-basic']:requestScreenshot({ encoding = 'jpg', quality = 0.7 }, function(dataUri)
+                    local saveOk, saveErr = pcall(function()
+                        TriggerServerEvent('Unique_Phone:server:addImageToGallery', dataUri)
                         Wait(1000)
                         TriggerServerEvent('Unique_Phone:server:getImageFromGallery')
-                        cb(json.encode(image.attachments[1].proxy_url))
+                        respondOnce(json.encode(dataUri))
                     end)
+                    if not saveOk then
+                        print("[Unique_Phone] failed to save the photo: " .. tostring(saveErr))
+                        TriggerEvent('esx:showNotification', "~r~Could not save the photo")
+                        respondOnce(json.encode({ url = nil }))
+                    end
                 end)
-                if not ok then
-                    print("[Unique_Phone] screenshot-basic export call failed: " .. tostring(err))
-                    TriggerEvent('esx:showNotification', "~r~Camera is unavailable right now (screenshot-basic error)")
-                    cb(json.encode({ url = nil }))
-                end
+            end)
+            if not ok then
+                print("[Unique_Phone] screenshot-basic export call failed: " .. tostring(err))
+                TriggerEvent('esx:showNotification', "~r~Camera is unavailable right now (screenshot-basic error)")
+                respondOnce(json.encode({ url = nil }))
             end
 
             takePhoto = false

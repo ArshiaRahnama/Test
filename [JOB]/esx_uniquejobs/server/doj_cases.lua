@@ -2,7 +2,7 @@
 -- DOJ Case Files (expanded, persistent)
 -- Replaces the old in-memory single-suspect case system that
 -- used to live in doj_manager.lua. Cases now:
---   - persist across restarts (doj_cases + 3 related tables)
+--   - persist across restarts (dept_cases + 3 related tables)
 --   - support multiple suspects, not just one
 --   - track charges filed against the case, pulled straight
 --     from the (now persistent, judge-editable) law codebook
@@ -66,8 +66,8 @@ ESX.RegisterServerCallback('esx_uniquejobs:dojGetCases', function(source, cb, fi
 
 	if searchSuspect and searchSuspect ~= '' then
 		MySQL.Async.fetchAll(
-			'SELECT DISTINCT c.id, c.title, c.status, c.priority, c.lead_officer_name, c.referred_to, c.created_at FROM doj_cases c ' ..
-			'JOIN doj_case_suspects s ON s.case_id = c.id WHERE s.name LIKE @name ORDER BY c.id DESC LIMIT 30',
+			'SELECT DISTINCT c.id, c.title, c.status, c.priority, c.lead_officer_name, c.referred_to, c.created_at FROM dept_cases c ' ..
+			'JOIN dept_case_suspects s ON s.case_id = c.id WHERE s.name LIKE @name ORDER BY c.id DESC LIMIT 30',
 			{ ['@name'] = '%' .. searchSuspect .. '%' },
 			function(rows) cb(rows) end
 		)
@@ -75,13 +75,13 @@ ESX.RegisterServerCallback('esx_uniquejobs:dojGetCases', function(source, cb, fi
 	end
 
 	if filterStatus and filterStatus ~= '' then
-		MySQL.Async.fetchAll('SELECT id, title, status, priority, lead_officer_name, referred_to, created_at FROM doj_cases WHERE status = @status ORDER BY id DESC LIMIT 30', {
+		MySQL.Async.fetchAll('SELECT id, title, status, priority, lead_officer_name, referred_to, created_at FROM dept_cases WHERE status = @status ORDER BY id DESC LIMIT 30', {
 			['@status'] = filterStatus,
 		}, function(rows) cb(rows) end)
 		return
 	end
 
-	MySQL.Async.fetchAll('SELECT id, title, status, priority, lead_officer_name, referred_to, created_at FROM doj_cases ORDER BY id DESC LIMIT 30', {}, function(rows)
+	MySQL.Async.fetchAll('SELECT id, title, status, priority, lead_officer_name, referred_to, created_at FROM dept_cases ORDER BY id DESC LIMIT 30', {}, function(rows)
 		cb(rows)
 	end)
 end)
@@ -90,13 +90,13 @@ ESX.RegisterServerCallback('esx_uniquejobs:dojGetCaseDetail', function(source, c
 	local xPlayer = ESX.GetPlayerFromId(source)
 	if not xPlayer or not isDoj(xPlayer.job.name) then cb(nil) return end
 
-	MySQL.Async.fetchAll('SELECT * FROM doj_cases WHERE id = @id', { ['@id'] = caseId }, function(caseRows)
+	MySQL.Async.fetchAll('SELECT * FROM dept_cases WHERE id = @id', { ['@id'] = caseId }, function(caseRows)
 		local case = caseRows[1]
 		if not case then cb(nil) return end
 
-		MySQL.Async.fetchAll('SELECT id, name FROM doj_case_suspects WHERE case_id = @id ORDER BY id', { ['@id'] = caseId }, function(suspects)
-			MySQL.Async.fetchAll('SELECT note_type, text, by_name, timestamp FROM doj_case_notes WHERE case_id = @id ORDER BY timestamp DESC', { ['@id'] = caseId }, function(notes)
-				MySQL.Async.fetchAll('SELECT id, law_code, law_title, fine, jail_minutes FROM doj_case_charges WHERE case_id = @id ORDER BY id', { ['@id'] = caseId }, function(charges)
+		MySQL.Async.fetchAll('SELECT id, name FROM dept_case_suspects WHERE case_id = @id ORDER BY id', { ['@id'] = caseId }, function(suspects)
+			MySQL.Async.fetchAll('SELECT note_type, text, by_name, timestamp FROM dept_case_notes WHERE case_id = @id ORDER BY timestamp DESC', { ['@id'] = caseId }, function(notes)
+				MySQL.Async.fetchAll('SELECT id, law_code, law_title, fine, jail_minutes FROM dept_case_charges WHERE case_id = @id ORDER BY id', { ['@id'] = caseId }, function(charges)
 					local totalFine, totalJail = 0, 0
 					for _, charge in ipairs(charges) do
 						totalFine = totalFine + charge.fine
@@ -146,7 +146,7 @@ AddEventHandler('esx_uniquejobs:dojOpenCase', function(title, priority, suspectQ
 	local now = os.time()
 
 	MySQL.Async.insert(
-		'INSERT INTO doj_cases (title, status, priority, opened_by_name, opened_by_job, lead_officer_name, created_at, updated_at) VALUES (@title, @status, @priority, @by, @byjob, @lead, @ts, @ts)',
+		'INSERT INTO dept_cases (title, status, priority, opened_by_name, opened_by_job, lead_officer_name, created_at, updated_at) VALUES (@title, @status, @priority, @by, @byjob, @lead, @ts, @ts)',
 		{
 			['@title'] = title,
 			['@status'] = 'open',
@@ -162,7 +162,7 @@ AddEventHandler('esx_uniquejobs:dojOpenCase', function(title, priority, suspectQ
 			if suspectQuery and suspectQuery ~= '' then
 				resolveIdentifier(suspectQuery, function(identifier, name)
 					if not name then return end
-					MySQL.Async.execute('INSERT INTO doj_case_suspects (case_id, identifier, name, added_by, timestamp) VALUES (@cid, @id, @name, @by, @ts)', {
+					MySQL.Async.execute('INSERT INTO dept_case_suspects (case_id, identifier, name, added_by, timestamp) VALUES (@cid, @id, @name, @by, @ts)', {
 						['@cid'] = caseId, ['@id'] = identifier, ['@name'] = name, ['@by'] = xPlayer.name, ['@ts'] = now,
 					})
 				end)
@@ -185,7 +185,7 @@ AddEventHandler('esx_uniquejobs:dojAddSuspect', function(caseId, suspectQuery)
 			return
 		end
 
-		MySQL.Async.execute('INSERT INTO doj_case_suspects (case_id, identifier, name, added_by, timestamp) VALUES (@cid, @id, @name, @by, @ts)', {
+		MySQL.Async.execute('INSERT INTO dept_case_suspects (case_id, identifier, name, added_by, timestamp) VALUES (@cid, @id, @name, @by, @ts)', {
 			['@cid'] = caseId, ['@id'] = identifier, ['@name'] = name, ['@by'] = xPlayer.name, ['@ts'] = os.time(),
 		}, function()
 			TriggerClientEvent('esx:showNotification', source, '~g~' .. name .. ' Be Parvande Ezafe Shod')
@@ -201,7 +201,7 @@ AddEventHandler('esx_uniquejobs:dojAddCaseNote', function(caseId, noteType, text
 
 	if not text or text == '' then return end
 
-	MySQL.Async.execute('INSERT INTO doj_case_notes (case_id, note_type, text, by_name, timestamp) VALUES (@cid, @type, @text, @by, @ts)', {
+	MySQL.Async.execute('INSERT INTO dept_case_notes (case_id, note_type, text, by_name, timestamp) VALUES (@cid, @type, @text, @by, @ts)', {
 		['@cid'] = caseId, ['@type'] = noteType or 'note', ['@text'] = text, ['@by'] = xPlayer.name, ['@ts'] = os.time(),
 	}, function()
 		TriggerClientEvent('esx:showNotification', source, '~g~Ezafe Shod Be Parvande #' .. caseId)
@@ -223,7 +223,7 @@ AddEventHandler('esx_uniquejobs:dojAddCharge', function(caseId, lawId)
 
 		-- Snapshot the law's current fine/jail at time of charging, so a
 		-- later edit to the codebook doesn't rewrite history on old cases
-		MySQL.Async.execute('INSERT INTO doj_case_charges (case_id, law_code, law_title, fine, jail_minutes, added_by, timestamp) VALUES (@cid, @code, @title, @fine, @jail, @by, @ts)', {
+		MySQL.Async.execute('INSERT INTO dept_case_charges (case_id, law_code, law_title, fine, jail_minutes, added_by, timestamp) VALUES (@cid, @code, @title, @fine, @jail, @by, @ts)', {
 			['@cid'] = caseId, ['@code'] = law.code, ['@title'] = law.title,
 			['@fine'] = law.fine, ['@jail'] = law.jail_minutes, ['@by'] = xPlayer.name, ['@ts'] = os.time(),
 		}, function()
@@ -240,7 +240,7 @@ AddEventHandler('esx_uniquejobs:dojSetCaseStatus', function(caseId, status)
 
 	if not STATUS_LABELS[status] then return end
 
-	MySQL.Async.execute('UPDATE doj_cases SET status = @status, updated_at = @ts WHERE id = @id', {
+	MySQL.Async.execute('UPDATE dept_cases SET status = @status, updated_at = @ts WHERE id = @id', {
 		['@id'] = caseId, ['@status'] = status, ['@ts'] = os.time(),
 	}, function()
 		TriggerClientEvent('esx:showNotification', source, '~g~Vaziat-e Parvande #' .. caseId .. ' Be "' .. STATUS_LABELS[status] .. '" Taghir Kard')
@@ -255,7 +255,7 @@ AddEventHandler('esx_uniquejobs:dojSetCasePriority', function(caseId, priority)
 
 	if not PRIORITY_LABELS[priority] then return end
 
-	MySQL.Async.execute('UPDATE doj_cases SET priority = @priority, updated_at = @ts WHERE id = @id', {
+	MySQL.Async.execute('UPDATE dept_cases SET priority = @priority, updated_at = @ts WHERE id = @id', {
 		['@id'] = caseId, ['@priority'] = priority, ['@ts'] = os.time(),
 	}, function()
 		TriggerClientEvent('esx:showNotification', source, '~g~Ahamiyat-e Parvande #' .. caseId .. ' Be "' .. PRIORITY_LABELS[priority] .. '" Taghir Kard')
@@ -268,7 +268,7 @@ AddEventHandler('esx_uniquejobs:dojAssignLead', function(caseId)
 	local xPlayer = ESX.GetPlayerFromId(source)
 	if not xPlayer or not isDoj(xPlayer.job.name) then return end
 
-	MySQL.Async.execute('UPDATE doj_cases SET lead_officer_name = @name, updated_at = @ts WHERE id = @id', {
+	MySQL.Async.execute('UPDATE dept_cases SET lead_officer_name = @name, updated_at = @ts WHERE id = @id', {
 		['@id'] = caseId, ['@name'] = xPlayer.name, ['@ts'] = os.time(),
 	}, function()
 		TriggerClientEvent('esx:showNotification', source, '~g~Shoma Massol-e Parvande #' .. caseId .. ' Shodid')
@@ -283,11 +283,11 @@ AddEventHandler('esx_uniquejobs:dojReferCase', function(caseId, targetJob)
 
 	if not targetJob or not DOJ_JOBS[targetJob] then return end
 
-	MySQL.Async.fetchAll('SELECT title FROM doj_cases WHERE id = @id', { ['@id'] = caseId }, function(rows)
+	MySQL.Async.fetchAll('SELECT title FROM dept_cases WHERE id = @id', { ['@id'] = caseId }, function(rows)
 		local case = rows[1]
 		if not case then return end
 
-		MySQL.Async.execute('UPDATE doj_cases SET referred_to = @job, updated_at = @ts WHERE id = @id', {
+		MySQL.Async.execute('UPDATE dept_cases SET referred_to = @job, updated_at = @ts WHERE id = @id', {
 			['@id'] = caseId, ['@job'] = string.upper(targetJob), ['@ts'] = os.time(),
 		}, function()
 			local xPlayers = ESX.GetPlayers()

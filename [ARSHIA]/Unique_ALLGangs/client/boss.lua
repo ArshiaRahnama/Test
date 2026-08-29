@@ -42,9 +42,15 @@ local function comma_value(amount)
     end
     return formatted
 end
-RegisterNUICallback('Uiloaded', function ()
+RegisterNUICallback('Uiloaded', function (data, cb)
+    -- FIX ("Uiloaded request FAILED" spam in F8, every attempt):
+    -- this never called cb(...), so the JS side never got a response
+    -- and treated every attempt as a failure/timeout - even though
+    -- `Uiloaded = true` genuinely ran correctly in Lua on the very
+    -- first try. Not a routing or race-condition bug after all, just
+    -- a missing acknowledgment.
     Uiloaded = true 
-
+    if cb then cb('ok') end
 end)
 
 RegisterNUICallback('close', function ()

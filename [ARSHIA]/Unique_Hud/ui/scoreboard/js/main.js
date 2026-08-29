@@ -52,8 +52,17 @@ function buildOrgList() {
       '<span class="org-title">' + org.label + '</span>' +
       '<span><span class="org-count" id="org-count-' + org.key + '">0</span> ' +
       '<span class="org-arrow">▶</span></span>';
+
+    // ✅ آکاردئون: کلیک روی یه ارگان، بقیه رو می‌بنده - پس همیشه حداکثر یکی
+    // باز می‌مونه و پنل کشیده/بلند نمی‌شه.
     header.addEventListener('click', function () {
-      card.classList.toggle('expanded');
+      var wasExpanded = card.classList.contains('expanded');
+      document.querySelectorAll('.org-card.expanded').forEach(function (c) {
+        c.classList.remove('expanded');
+      });
+      if (!wasExpanded) {
+        card.classList.add('expanded');
+      }
     });
 
     var jobsWrap = document.createElement('div');
@@ -77,6 +86,10 @@ function renderScoreboard(data) {
   var playersEl = document.getElementById('playersnum');
   if (playersEl) playersEl.textContent = data.total;
 
+  // ✅ اضافه شد: تعداد ادمین‌های آنلاین
+  var adminsEl = document.getElementById('adminsnum');
+  if (adminsEl) adminsEl.textContent = (data.admins && data.admins.length) || 0;
+
   organizations.forEach(function (org) {
     var orgTotal = 0;
     org.jobs.forEach(function (job) {
@@ -93,9 +106,6 @@ function renderScoreboard(data) {
   });
 }
 
-// ✅ فیکس شد: چون داخل این iframe تودرتو GetParentResourceName کار نمی‌کنه،
-// درخواست بستن رو به صفحه‌ی اصلی پاس می‌دیم که خودش fetch واقعی رو انجام بده
-// (دقیقاً همون الگویی که برای دکمه‌ی آپدیت قبلی درست کار می‌کرد).
 function requestClose() {
   window.parent.postMessage({ id: 'scoreboard', event: 'requestClose' }, '*');
 }

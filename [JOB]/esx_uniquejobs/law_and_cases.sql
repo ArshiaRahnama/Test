@@ -1,5 +1,11 @@
 -- Run this once against your database (essentialmode) before using the
 -- new Codebook editing (judge) and the expanded Case system in /doj and /law.
+-- NOTE: the case tables here (dept_cases, dept_case_suspects,
+-- dept_case_notes, dept_case_charges) are intentionally named differently
+-- from crimescene/cad's own doj_cases/doj_case_suspects/doj_case_notes --
+-- both systems independently used the "doj_" prefix for a case system with
+-- a different schema; these were renamed to dept_* to avoid a collision.
+-- The two case systems are separate and don't share data.
 
 CREATE TABLE IF NOT EXISTS `law_codebook` (
 	`id` INT(11) NOT NULL AUTO_INCREMENT,
@@ -13,7 +19,7 @@ CREATE TABLE IF NOT EXISTS `law_codebook` (
 	PRIMARY KEY (`id`)
 );
 
-CREATE TABLE IF NOT EXISTS `doj_cases` (
+CREATE TABLE IF NOT EXISTS `dept_cases` (
 	`id` INT(11) NOT NULL AUTO_INCREMENT,
 	`title` VARCHAR(255) NOT NULL,
 	`status` VARCHAR(20) NOT NULL DEFAULT 'open', -- open, investigating, trial, closed, dismissed
@@ -27,7 +33,7 @@ CREATE TABLE IF NOT EXISTS `doj_cases` (
 	PRIMARY KEY (`id`)
 );
 
-CREATE TABLE IF NOT EXISTS `doj_case_suspects` (
+CREATE TABLE IF NOT EXISTS `dept_case_suspects` (
 	`id` INT(11) NOT NULL AUTO_INCREMENT,
 	`case_id` INT(11) NOT NULL,
 	`identifier` VARCHAR(255) DEFAULT NULL,
@@ -38,7 +44,7 @@ CREATE TABLE IF NOT EXISTS `doj_case_suspects` (
 	KEY `case_id` (`case_id`)
 );
 
-CREATE TABLE IF NOT EXISTS `doj_case_notes` (
+CREATE TABLE IF NOT EXISTS `dept_case_notes` (
 	`id` INT(11) NOT NULL AUTO_INCREMENT,
 	`case_id` INT(11) NOT NULL,
 	`note_type` VARCHAR(20) NOT NULL DEFAULT 'note', -- note, evidence
@@ -49,7 +55,7 @@ CREATE TABLE IF NOT EXISTS `doj_case_notes` (
 	KEY `case_id` (`case_id`)
 );
 
-CREATE TABLE IF NOT EXISTS `doj_case_charges` (
+CREATE TABLE IF NOT EXISTS `dept_case_charges` (
 	`id` INT(11) NOT NULL AUTO_INCREMENT,
 	`case_id` INT(11) NOT NULL,
 	`law_code` VARCHAR(20) NOT NULL,
