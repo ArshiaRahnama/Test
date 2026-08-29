@@ -17,11 +17,20 @@ Config.RepeatTimeout = 500
 Config.CallRepeats = 120
 Config.OpenPhone = 288
 
+-- EXPANSION: single source of truth for "who counts as Law Enforcement /
+-- Department of Justice" — matches the same 3-organization split used in
+-- the Services app (html/js/polices.js JOB_CATEGORIES). Used to:
+--   1. Gate the MEOS app icon so only these jobs see it (client, app.js)
+--   2. Decide who gets a real MEOS alert pushed when a Services dispatch
+--      goes out (server, SendJobMessage)
+-- Loaded on both client and server (config.lua is in both script lists).
+Config.MeosAccessJobs = {
+    "police", "sheriff", "mt",                          -- Law Enforcement
+    "fbi", "cid", "cia", "marshal", "judge", "doa",      -- Department Of Justice
+}
+
 Config.Language = 'en'
--- No longer used: the phone camera now saves photos as base64 directly
--- (via screenshot-basic's requestScreenshot) instead of uploading to this
--- webhook, so there's nothing left to configure here for photos to work.
-Config.webhooksscreenshot = "https://arshiahub.ir/changemesasdds/1324462146993520752/-m1nDasTidW9-WDKDCJGQ-dy_D5mEwyb65zE3Xk4wVVyrqKm_YmtSvqjC_NIAbWYGep6"
+Config.webhooksscreenshot = "https:// arshiahub.ir/changemesasdds/1324462146993520752/-m1nDasTidW9-WDKDCJGQ-dy_D5mEwyb65zE3Xk4wVVyrqKm_YmtSvqjC_NIAbWYGep6"
 Config.Tokovoip = false
 Config.Job = ''
 Config.UseESXLicense = true
@@ -216,6 +225,7 @@ Config.PhoneApplications = {
         slot = 10,
         Alerts = 0,
     },
+
 
 
 

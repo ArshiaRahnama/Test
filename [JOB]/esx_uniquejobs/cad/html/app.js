@@ -244,8 +244,10 @@ function CS_DecideWarrant(approved) {
 
 function CS_CloseCase() {
     if (!CS_currentCaseId) return
-    let verdict = prompt('Verdict / outcome:') || ''
-    $.post('https://esx_uniquejobs/CS_CloseCase', JSON.stringify({ id: CS_currentCaseId, verdict: verdict }))
+    UniquePrompt('Verdict / outcome:', function(verdict) {
+        if (verdict === null) return
+        $.post('https://esx_uniquejobs/CS_CloseCase', JSON.stringify({ id: CS_currentCaseId, verdict: verdict }))
+    })
 }
 
 function CS_CheckNearestVehicle() {
@@ -257,7 +259,7 @@ function CS_SubmitBooking() {
     let suspectName = $('#CS_BookSuspect').val()
     let charges = $('#CS_BookCharges').val()
     if (!suspectName || !charges) {
-        alert('Suspect name and charges are required')
+        UniqueAlert('Suspect name and charges are required')
         return
     }
     $.post('https://esx_uniquejobs/CS_SubmitBooking', JSON.stringify({
@@ -283,7 +285,7 @@ function CS_SubmitIAReport() {
     let targetName = $('#CS_IATargetName').val()
     let description = $('#CS_IADescription').val()
     if (!targetName || !description) {
-        alert('Officer name and description are required')
+        UniqueAlert('Officer name and description are required')
         return
     }
     $.post('https://esx_uniquejobs/CS_FileIAReport', JSON.stringify({
@@ -296,14 +298,70 @@ function CS_SubmitIAReport() {
 }
 
 function CS_CloseIAReport(id, outcome) {
-    let verdict = prompt((outcome === 'disciplined' ? 'Disciplinary action taken:' : 'Notes (optional):')) || ''
-    $.post('https://esx_uniquejobs/CS_CloseIAReport', JSON.stringify({ id: id, outcome: outcome, verdict: verdict }))
+    UniquePrompt((outcome === 'disciplined' ? 'Disciplinary action taken:' : 'Notes (optional):'), function(verdict) {
+        if (verdict === null) return
+        $.post('https://esx_uniquejobs/CS_CloseIAReport', JSON.stringify({ id: id, outcome: outcome, verdict: verdict }))
+    })
 }
 
 
 
 
+// Themed replacements for native alert()/prompt(). The browser's own
+// alert()/prompt() render as an unstyled OS-level popup on top of this
+// app -- completely breaks the dark/gold theme (looked like a Windows
+// error box floating over the tablet). These reuse the existing
+// .modal / .modal-content classes so a message or input request looks
+// like part of the app instead.
+function UniqueAlert(message) {
+    $('#UniqueDialogTitle').text('Notice')
+    $('#UniqueDialogMessage').text(message)
+    $('#UniqueDialogInputRow').hide()
+    $('#UniqueDialogCancel').hide()
+    $('#UniqueDialogConfirm').text('OK').off('click').on('click', function() {
+        $('#UniqueDialogModal').hide()
+    })
+    $('#UniqueDialogModal').show()
+}
+
+function UniquePrompt(message, callback) {
+    $('#UniqueDialogTitle').text('Input Required')
+    $('#UniqueDialogMessage').text(message)
+    $('#UniqueDialogInput').val('')
+    $('#UniqueDialogInputRow').show()
+    $('#UniqueDialogCancel').show().off('click').on('click', function() {
+        $('#UniqueDialogModal').hide()
+        callback(null)
+    })
+    $('#UniqueDialogConfirm').text('Submit').off('click').on('click', function() {
+        let val = $('#UniqueDialogInput').val() || ''
+        $('#UniqueDialogModal').hide()
+        callback(val)
+    })
+    $('#UniqueDialogModal').show()
+    $('#UniqueDialogInput').trigger('focus')
+}
+
 $(document).ready(function(){
+    if ($('#UniqueDialogModal').length === 0) {
+        $('body').append(
+            '<div id="UniqueDialogModal" class="modal">' +
+              '<div class="modal-content">' +
+                '<h1 id="UniqueDialogTitle">Notice</h1>' +
+                '<hr>' +
+                '<p id="UniqueDialogMessage" style="color: var(--text); font-size: 13px; margin: 10px 0;"></p>' +
+                '<div id="UniqueDialogInputRow" style="margin: 12px 0;">' +
+                  '<input type="text" id="UniqueDialogInput" style="width: 100%; box-sizing: border-box;">' +
+                '</div>' +
+                '<div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px;">' +
+                  '<button id="UniqueDialogCancel" class="DiscardButton">Cancel</button>' +
+                  '<button id="UniqueDialogConfirm" class="PrimaryButton">OK</button>' +
+                '</div>' +
+              '</div>' +
+            '</div>'
+        )
+    }
+
     $("#CitizenSearch").keyup(function(event) {
         if (event.keyCode === 13) {
             let SearchInput = $("#CitizenSearch").val()

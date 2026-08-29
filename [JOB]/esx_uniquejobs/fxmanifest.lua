@@ -90,6 +90,7 @@ client_scripts {
 
 server_scripts {
 	'@oxmysql/lib/MySQL.lua',
+	'server/db_migrations.lua',
 
 	'server/unit_manager.lua',
 	'server/rob_manager.lua',

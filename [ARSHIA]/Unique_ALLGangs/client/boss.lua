@@ -199,7 +199,11 @@ RegisterNUICallback('fireplayer', function (data)
     OpenUi = false
     PlayerADDUI = {}
     SendNUIMessage({type = 'displaynone'})
-    TriggerServerEvent('FMGangsBoss:server:FireEmployee',GetPlayerServerId(PlayerId()) , data )
+    -- was sending GetPlayerServerId(PlayerId()) as an extra leading
+    -- argument, left over from the same parameter-shadowing confusion
+    -- fixed server-side (see server/boss.lua) - FireEmployee only
+    -- takes `target` now, so just send `data`.
+    TriggerServerEvent('FMGangsBoss:server:FireEmployee', data )
 end)
 
 

@@ -128,7 +128,11 @@ function LoadMyGangOptions()
         for k ,boss in pairs( MyGangData.boss ) do  
             boss.label = 'boss' 
             CreateMarker( 'boss' .. '-' .. k, boss  , function(KeyPressed)  
-                OpenBossMenu()
+                -- switched from the custom NUI panel (OpenBossMenu(),
+                -- still defined below / client/boss.lua) to the
+                -- ESX-default-menu boss actions (client/boss_esx_menu.lua),
+                -- matching the old Unique_Gangs style as requested.
+                OpenBossActionsMenu()
             end)
         end 
         ---------------------

@@ -35,7 +35,8 @@ client_scripts {
     'client/level.lua',
     'client/load.lua',
     'client/main.lua',      -- member panel (openpanel) + boss panel bridge
-    'client/boss.lua',      -- boss menu actions (was FMGangBoss/client.lua)
+    'client/boss.lua',      -- boss menu actions (was FMGangBoss/client.lua) - NUI panel, kept but no longer the default trigger (see client/boss_esx_menu.lua)
+    'client/boss_esx_menu.lua', -- boss actions via ESX default menu (top-left), styled like the old Unique_Gangs system - this is what the boss NPC opens now
 }
 
 ui_page 'web/ui.html'

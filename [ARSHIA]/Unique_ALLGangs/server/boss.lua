@@ -64,7 +64,11 @@ RegisterNetEvent('FMGangsBoss:server:GradeUpdate', function(data)
 
 	if data.grade <= 0 then
 		
-		TriggerEvent("FMGangsBoss:server:FireEmployee",source, data)
+		-- FireEmployee now takes a single `target` param (see its
+		-- definition below) - `source` doesn't need to be passed
+		-- here, it's a local TriggerEvent so the ambient `source`
+		-- from this same network event is already correct inside it.
+		TriggerEvent("FMGangsBoss:server:FireEmployee", data)
 
 	else
 		print( data.grade)
@@ -84,7 +88,19 @@ RegisterNetEvent('FMGangsBoss:server:GradeUpdate', function(data)
 end)
 
 -- Fire Employee
-RegisterNetEvent('FMGangsBoss:server:FireEmployee', function(source,target)
+-------------------------------------------------------------------
+-- FIX: this handler's first parameter used to be named "source",
+-- which SHADOWS the real global `source` FiveM sets for network
+-- events - Lua's normal scoping means a local parameter with that
+-- name takes over for the rest of the function, so `local src =
+-- source` was reading back whatever the CLIENT sent as its first
+-- argument (the target table), not the actual calling player. Worse,
+-- since only one argument was ever sent, the second parameter
+-- (`target`) was always nil, so `target.cid` below would have thrown
+-- immediately. Renamed to `target` (single param) - matches every
+-- other handler in this file, which correctly never shadows `source`.
+-------------------------------------------------------------------
+RegisterNetEvent('FMGangsBoss:server:FireEmployee', function(target)
 	local src = source
 	local Player = ESX.GetPlayerFromId(src)
 	local xPlayer = ESX.GetPlayerFromId(src)

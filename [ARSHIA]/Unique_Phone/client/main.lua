@@ -330,7 +330,9 @@ function LoadPhone()
             PlayerData   = PhoneData.PlayerData,
             PlayerJob    = PhoneData.PlayerData.job,
             applications = Config.PhoneApplications,
-            MetaData     = json.encode(pData.MetaData)
+            MetaData     = json.encode(pData.MetaData),
+            -- EXPANSION: restore the persisted Do Not Disturb preference.
+            doNotDisturb = GetResourceKvpString('unique_phone_dnd') == 'true',
         })
 
     end)
@@ -561,6 +563,15 @@ end)
 -- EXPANSION: Security app — recent-devices list + force-logout-everywhere.
 RegisterNUICallback('GetSecurityDevices', function(data, cb)
     ESX.TriggerServerCallback('Unique_Phone:server:GetSecurityDevices', cb)
+end)
+
+-- EXPANSION: Do Not Disturb toggle — purely client-side (a personal device
+-- preference, not something that needs a DB round trip). Persisted with a
+-- resource KVP so it survives relogs/restarts; read back in
+-- LoadPhoneData below on every phone load.
+RegisterNUICallback('ToggleDoNotDisturb', function(data, cb)
+    SetResourceKvp('unique_phone_dnd', data.enabled and 'true' or 'false')
+    cb('ok')
 end)
 
 -- EXPANSION: Job Manager (Services app, admin-only)
@@ -2372,7 +2383,19 @@ end)
 
 RegisterNetEvent('Unique_Phone:client:addPoliceAlert')
 AddEventHandler('Unique_Phone:client:addPoliceAlert', function(alertData)
-    if PlayerJob.name == 'police' or PlayerJob.name == 'sheriff' or PlayerJob.name == 'mt' or PlayerJob.name == 'fbi' or PlayerJob.name == 'cid' or PlayerJob.name == 'cia' or PlayerJob.name == 'marshal' or PlayerJob.name == 'judge' or PlayerJob.name == 'doa' then
+    -- FIX: was a hardcoded OR-chain repeating the same job list already
+    -- defined (separately) for the Services app's Law Enforcement +
+    -- Department Of Justice organizations. Now reads the one shared
+    -- Config.MeosAccessJobs list so both stay in sync automatically.
+    local isMeosJob = false
+    for _, jobName in ipairs(Config.MeosAccessJobs) do
+        if PlayerJob.name == jobName then
+            isMeosJob = true
+            break
+        end
+    end
+
+    if isMeosJob then
         SendNUIMessage({
             action = "AddPoliceAlert",
             alert = alertData,
@@ -2778,55 +2801,20 @@ RegisterNUICallback("TakePhoto", function(data,cb)
             CellFrontCamActivate(frontCam)
             break
         elseif IsControlJustPressed(1, 176) then
-            Citizen.SetTimeout(500,function()
-                frontCam = false
-                CellFrontCamActivate(frontCam)
-                DestroyMobilePhone()
-                CellCamActivate(false, false)
-            end)
-
-            -- responded guards against cb() firing twice (once from the
-            -- watchdog, once from the real callback landing late) - NUI
-            -- callbacks error if resolved more than once.
-            local responded = false
-            local function respondOnce(payload)
-                if responded then return end
-                responded = true
-                cb(payload)
-            end
-
-            -- Watchdog: guarantees the camera always recovers within a few
-            -- seconds even if something below never calls back.
-            Citizen.SetTimeout(5000, function()
-                if not responded then
-                    print("[Unique_Phone] screenshot capture timed out after 5s")
-                    TriggerEvent('esx:showNotification', "~r~Taking the photo timed out")
-                    respondOnce(json.encode({ url = nil }))
-                end
-            end)
-
-            -- requestScreenshot takes the photo locally and hands back a
-            -- base64 data URI directly - no external webhook/upload needed,
-            -- so this can't break due to a bad or unconfigured webhook URL.
-            local ok, err = pcall(function()
-                exports['screenshot-basic']:requestScreenshot({ encoding = 'jpg', quality = 0.7 }, function(dataUri)
-                    local saveOk, saveErr = pcall(function()
-                        TriggerServerEvent('Unique_Phone:server:addImageToGallery', dataUri)
-                        Wait(1000)
-                        TriggerServerEvent('Unique_Phone:server:getImageFromGallery')
-                        respondOnce(json.encode(dataUri))
-                    end)
-                    if not saveOk then
-                        print("[Unique_Phone] failed to save the photo: " .. tostring(saveErr))
-                        TriggerEvent('esx:showNotification', "~r~Could not save the photo")
-                        respondOnce(json.encode({ url = nil }))
-                    end
+            if Config.webhooksscreenshot then
+                Citizen.SetTimeout(500,function()
+                    frontCam = false
+                    CellFrontCamActivate(frontCam)
+                    DestroyMobilePhone()
+                    CellCamActivate(false, false)
                 end)
-            end)
-            if not ok then
-                print("[Unique_Phone] screenshot-basic export call failed: " .. tostring(err))
-                TriggerEvent('esx:showNotification', "~r~Camera is unavailable right now (screenshot-basic error)")
-                respondOnce(json.encode({ url = nil }))
+                exports['screenshot-basic']:requestScreenshotUpload(tostring(Config.webhooksscreenshot), "files[]", function(data)
+                    local image = json.decode(data)
+                    TriggerServerEvent('Unique_Phone:server:addImageToGallery', image.attachments[1].proxy_url)
+                    Wait(1000)
+                    TriggerServerEvent('Unique_Phone:server:getImageFromGallery')
+                    cb(json.encode(image.attachments[1].proxy_url))
+                end)
             end
 
             takePhoto = false

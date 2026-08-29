@@ -32,6 +32,15 @@ $(document).on('click', '.settings-app-tab', function(e){
         } else {
             $("#numberrecognition > p").html('On');
         }
+    } else if (PressedTab == "donotdisturb") {
+        // EXPANSION: Do Not Disturb — persisted client-side via a resource
+        // KVP (survives relogs/restarts, doesn't need a DB round trip for
+        // something this low-stakes). See client/main.lua ToggleDoNotDisturb.
+        var dndBoxes = $(".dnd-box");
+        PhoneDoNotDisturb = !dndBoxes.prop("checked");
+        dndBoxes.prop("checked", PhoneDoNotDisturb);
+        $("#donotdisturb > p").html(PhoneDoNotDisturb ? 'On' : 'Off');
+        $.post('http://Unique_Phone/ToggleDoNotDisturb', JSON.stringify({ enabled: PhoneDoNotDisturb }));
     }
 });
 

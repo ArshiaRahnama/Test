@@ -56,6 +56,18 @@ AddEventHandler('esx_blling:OpenMenuBlling', function()
 	ShowBillsMenu()
 end)
 
+-- F7 keybind to open the bills menu directly
+CreateThread(function()
+	while true do
+		Citizen.Wait(0)
+		if IsControlJustPressed(0, Keys["F7"]) then
+			if not isDead then
+				ShowBillsMenu()
+			end
+		end
+	end
+end)
+
 AddEventHandler('esx:onPlayerDeath', function(data)
 	isDead = true
 end)

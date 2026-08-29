@@ -44,6 +44,19 @@ function IsAppJobBlocked(joblist, myjob) {
     return retval;
 }
 
+// EXPANSION: `app.job` only ever supported ONE allowed job name. MEOS
+// needs to be visible to several (Police, Sheriff, MT, FBI, CID, CIA,
+// Marshal, Judge, DOA — see Config.MeosAccessJobs) at once, so this is a
+// new, separate check: if `allowedjobs` is set and non-empty, the icon
+// only shows for jobs in that list; if unset/empty, everyone can see it
+// (same as not having this field at all — existing apps are unaffected).
+function IsAppJobAllowed(allowedjobs, myjob) {
+    if (!allowedjobs || allowedjobs.length === 0) {
+        return true;
+    }
+    return allowedjobs.indexOf(myjob) !== -1;
+}
+
 
 
 
@@ -61,12 +74,9 @@ MI.Phone.Functions.SetupApplications = function(data) {
             $(applicationSlot).removeData('placement');
         }
 
-        if ((!app.job || app.job === MI.Phone.Data.PlayerJob.name) && !blockedapp) {
+        if ((!app.job || app.job === MI.Phone.Data.PlayerJob.name) && !blockedapp && IsAppJobAllowed(app.allowedjobs, MI.Phone.Data.PlayerJob.name)) {
             $(applicationSlot).css({"background-color":app.color});
             var icon = '<i class="ApplicationIcon '+app.icon+'" style="'+app.style+'"></i>';
-            if (app.app == "meos") {
-                icon = '<img src="./img/politie.png" class="police-icon">';
-            }
             $(applicationSlot).html(icon+'<div class="app-unread-alerts">0</div>');
 
            
@@ -381,6 +391,7 @@ MI.Phone.Animations.TopSlideUp = function(Object, Timeout, Percentage, cb) {
 }
 
 MI.Phone.Notifications.Add = function(icon, title, text, color, timeout) {
+    if (PhoneDoNotDisturb) return;
     $.post('http://Unique_Phone/HasPhone', JSON.stringify({}), function(HasPhone){
         if (HasPhone) {
             if (timeout == null && timeout == undefined) {
@@ -395,11 +406,13 @@ MI.Phone.Notifications.Add = function(icon, title, text, color, timeout) {
                     $(".notification-title").css({"color":"#e74c3c"});
                 }
                 MI.Phone.Animations.TopSlideDown(".phone-notification-container", 200, 8);
-                if (icon !== "politie") {
-                    $(".notification-icon").html('<i class="'+icon+'"></i>');
-                } else {
-                    $(".notification-icon").html('<img src="./img/politie.png" class="police-icon-notify">');
-                }
+                // FIX: was a special-case for icon === "politie" that
+                // rendered a missing image file (./img/politie.png,
+                // which never existed in this project — a leftover from
+                // the original Dutch-language template this phone was
+                // based on). meos.js now passes a real Font Awesome class
+                // like everything else, so this branch is gone entirely.
+                $(".notification-icon").html('<i class="'+icon+'"></i>');
                 $(".notification-title").html(title);
                 $(".notification-text").html(text);
                 if (MI.Phone.Notifications.Timeout !== undefined || MI.Phone.Notifications.Timeout !== null) {
@@ -438,6 +451,14 @@ MI.Phone.Functions.LoadPhoneData = function(data) {
     MI.Phone.Data.MetaData = data.PhoneData.MetaData;
     MI.Phone.Functions.LoadMetaData(data.PhoneData.MetaData);
     MI.Phone.Functions.LoadContacts(data.PhoneData.Contacts);
+
+    // EXPANSION: restore the persisted Do Not Disturb state so the toggle
+    // (and actual notification suppression) reflect what the player set
+    // last time, instead of always resetting to Off on relog.
+    PhoneDoNotDisturb = !!data.doNotDisturb;
+    $(".dnd-box").prop("checked", PhoneDoNotDisturb);
+    $("#donotdisturb > p").html(PhoneDoNotDisturb ? 'On' : 'Off');
+
     setTimeout(function() {
        
         MI.Phone.Functions.SetupApplications(data);
@@ -484,6 +505,14 @@ MI.Phone.Functions.UpdateTime = function(data) {
 
 var NotificationTimeout = null;
 
+// EXPANSION: Do Not Disturb — set from the persisted KVP in LoadPhoneData,
+// toggled live from Settings (see settings.js). When true, both
+// notification functions below skip showing anything (but MEOS alerts
+// still land inside the MEOS app itself — that path never goes through
+// either of these, so on-duty officers with DND on won't silently miss a
+// dispatch, only the passive slide-down popups for other stuff).
+var PhoneDoNotDisturb = false;
+
 // EXPANSION: purely cosmetic display formatter (0911XXXXXXX -> 0911-XXX-XXXX).
 // The underlying stored/looked-up value is never touched — see
 // copyMyPhoneNumber() for how the raw digits are preserved for copy/paste.
@@ -495,6 +524,7 @@ function formatPhoneDisplay(rawPhone) {
 }
 
 MI.Screen.Notification = function(title, content, icon, timeout, color) {
+    if (PhoneDoNotDisturb) return;
     $.post('http://Unique_Phone/HasPhone', JSON.stringify({}), function(HasPhone){
         if (HasPhone) {
             if (color != null && color != undefined) {

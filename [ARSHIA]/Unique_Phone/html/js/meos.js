@@ -173,12 +173,12 @@ $(document).on('click', '.confirm-search-person-test', function(e){
                     $("#person-"+i).data("PersonData", person);
                 });
             } else {
-                MI.Phone.Notifications.Add("politie", MI.Phone.Functions.Lang("MEOS_TITLE"), MI.Phone.Functions.Lang("MEOS_NORESULT"));
+                MI.Phone.Notifications.Add("fas fa-shield-halved", MI.Phone.Functions.Lang("MEOS_TITLE"), MI.Phone.Functions.Lang("MEOS_NORESULT"));
                 $(".person-search-results").html("");
             }
         });
     } else {
-        MI.Phone.Notifications.Add("politie", MI.Phone.Functions.Lang("MEOS_TITLE"), MI.Phone.Functions.Lang("MEOS_NORESULT"));
+        MI.Phone.Notifications.Add("fas fa-shield-halved", MI.Phone.Functions.Lang("MEOS_TITLE"), MI.Phone.Functions.Lang("MEOS_NORESULT"));
         $(".person-search-results").html("");
     }
 });
@@ -199,12 +199,12 @@ $(document).on('click', '.confirm-search-person-house', function(e){
                     $("#personhouse-"+i).data("HouseData", house);
                 });
             } else {
-                MI.Phone.Notifications.Add("politie", MI.Phone.Functions.Lang("MEOS_TITLE"), MI.Phone.Functions.Lang("MEOS_NORESULT"));
+                MI.Phone.Notifications.Add("fas fa-shield-halved", MI.Phone.Functions.Lang("MEOS_TITLE"), MI.Phone.Functions.Lang("MEOS_NORESULT"));
                 $(".person-search-results").html("");
             }
         });
     } else {
-        MI.Phone.Notifications.Add("politie", MI.Phone.Functions.Lang("MEOS_TITLE"), MI.Phone.Functions.Lang("MEOS_NORESULT"));
+        MI.Phone.Notifications.Add("fas fa-shield-halved", MI.Phone.Functions.Lang("MEOS_TITLE"), MI.Phone.Functions.Lang("MEOS_NORESULT"));
         $(".person-search-results").html("");
     }
 });
@@ -235,7 +235,7 @@ $(document).on('click', '.confirm-search-vehicle', function(e){
             }
         });
     } else {
-        MI.Phone.Notifications.Add("politie", MI.Phone.Functions.Lang("MEOS_TITLE"), MI.Phone.Functions.Lang("MEOS_NORESULT"));
+        MI.Phone.Notifications.Add("fas fa-shield-halved", MI.Phone.Functions.Lang("MEOS_TITLE"), MI.Phone.Functions.Lang("MEOS_NORESULT"));
         $(".vehicle-search-results").html("");
     }
 });
@@ -257,7 +257,7 @@ $(document).on('click', '.scan-search-vehicle', function(e){
             var VehicleElement = '<div class="vehicle-search-result"> <div class="vehicle-search-result-name">'+vehicle.label+'</div> <div class="vehicle-search-result-plate">Kenteken: '+vehicle.plate+'</div> <div class="vehicle-opensplit"></div> &nbsp; <div class="vehicle-search-result-owner">Eigenaar: '+vehicle.owner+'</div> &nbsp; <div class="vehicle-search-result-apk">APK: '+APK+'</div> <div class="vehicle-search-result-warrant">Gesignaleerd: '+Flagged+'</div> </div>'
             $(".vehicle-search-results").append(VehicleElement);
         } else {
-            MI.Phone.Notifications.Add("politie", MI.Phone.Functions.Lang("MEOS_TITLE"), MI.Phone.Functions.Lang("NO_VEHICLE"));
+            MI.Phone.Notifications.Add("fas fa-shield-halved", MI.Phone.Functions.Lang("MEOS_TITLE"), MI.Phone.Functions.Lang("NO_VEHICLE"));
             $(".vehicle-search-results").append("");
         }
     });
@@ -290,7 +290,7 @@ $(document).on('click', '.meos-recent-alert', function(e){
             alert: alertData,
         }));
     } else {
-        MI.Phone.Notifications.Add("politie", MI.Phone.Functions.Lang("MEOS_TITLE"), MI.Phone.Functions.Lang("MEOS_GPS"));
+        MI.Phone.Notifications.Add("fas fa-shield-halved", MI.Phone.Functions.Lang("MEOS_TITLE"), MI.Phone.Functions.Lang("MEOS_GPS"));
     }
 });
 
@@ -305,5 +305,5 @@ $(document).on('click', '.meos-location-button', function(e){
 $(document).on('click', '.meos-clear-alerts', function(e){
     $(".meos-alerts").html("");
     $(".meos-recent-alerts").html('<div class="meos-recent-alert"> <span class="meos-recent-alert-title">You have no notifications yet!</span></div>');
-    MI.Phone.Notifications.Add("politie", MI.Phone.Functions.Lang("MEOS_TITLE"), MI.Phone.Functions.Lang("MEOS_CLEARED"));
+    MI.Phone.Notifications.Add("fas fa-shield-halved", MI.Phone.Functions.Lang("MEOS_TITLE"), MI.Phone.Functions.Lang("MEOS_CLEARED"));
 });

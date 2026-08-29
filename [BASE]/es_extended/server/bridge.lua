@@ -227,7 +227,11 @@ local function setupESX()
     -- usable-item callback and things like wearing clothes silently did
     -- nothing. Always override it instead of only filling a gap.
     ESX.UseItem = function(source, item, slotData)
-        print(('^3[es_extended bridge DEBUG] ESX.UseItem called: source=%s item=%s hasSlotData=%s^0'):format(tostring(source), tostring(item), tostring(slotData ~= nil)))
+        local registeredCount = 0
+        if ESX.UsableItemsCallbacks then
+            for _ in pairs(ESX.UsableItemsCallbacks) do registeredCount = registeredCount + 1 end
+        end
+        print(('^3[es_extended bridge DEBUG] ESX.UseItem called: source=%s item=%s hasSlotData=%s totalRegisteredCallbacks=%d^0'):format(tostring(source), tostring(item), tostring(slotData ~= nil), registeredCount))
 
         local cb = ESX.UsableItemsCallbacks and ESX.UsableItemsCallbacks[item]
         if cb then

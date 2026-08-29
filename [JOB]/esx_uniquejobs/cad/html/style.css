@@ -726,6 +726,25 @@ html, body {
   color: var(--danger);
 }
 
+.PrimaryButton {
+  color: var(--bg-deep);
+  border-radius: 5px;
+  padding: 10px 18px;
+  width: auto;
+  border: none;
+  outline: none;
+  font-family: var(--font);
+  font-weight: 700;
+  font-size: 12px;
+  background-color: var(--gold);
+  cursor: pointer;
+  transition: 150ms ease;
+}
+
+.PrimaryButton:hover {
+  background-color: var(--gold-soft);
+}
+
 /* ==========================================================================
    Utility / legacy hooks
    ========================================================================== */

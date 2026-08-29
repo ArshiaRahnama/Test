@@ -582,6 +582,65 @@ don't take a `cb` param at all (fire-and-forget, matching how the UI
 updates via `SendNUIMessage` pushes rather than direct responses), so
 this was the only one that needed it.
 
+## 23) Boss actions now use ESX's default menu (like the old Unique_Gangs)
+
+New file: `client/boss_esx_menu.lua` - `OpenBossActionsMenu()` and its
+submenus (`OpenBossMoneyMenu`, `OpenBossEmployeesMenu`,
+`OpenBossEmployeeActionsMenu`), built with `ESX.UI.Menu.Open('default',
+...)` / `'list'` / `'dialog'`, `align = 'top-left'` - the exact same
+pattern the old Unique_Gangs system used (checked its
+`client/main.lua` directly to match the structure). The boss NPC /
+ox_target interaction in `client/load.lua` now calls
+`OpenBossActionsMenu()` instead of the old NUI-panel opener - that's
+the one line that changed the trigger.
+
+Wired to the SAME server-side data this whole resource already uses
+(`FMGangs:isBoss`, `FMGangs:GetRankAccess`, `FMGangsBoss:getmoney`,
+`FMGangs:GetGangsData`, `FMGangsBoss:server:depositMoney` /
+`withdrawMoney` / `GradeUpdate` / `FireEmployee`) - no server data
+model changes, just a different front end for the same actions
+(money management, employee list, promote/demote/fire).
+
+**The custom NUI panel (`client/boss.lua`, `html/`) is untouched and
+still in the resource** - it's just no longer what the boss NPC opens
+by default. If you want to switch back, that one line in
+`client/load.lua` (search `OpenBossActionsMenu()`) is all that needs
+to change.
+
+**Found and fixed a real bug while wiring this up**
+(`server/boss.lua`, `FireEmployee`): its first parameter was named
+`source`, which shadows FiveM's real global `source` for network
+events - so `local src = source` was reading back whatever the client
+sent as its first argument instead of the actual calling player, and
+since the client only ever sent one argument, the second parameter
+(`target`) was always `nil`, meaning `target.cid` would throw
+immediately the moment anyone tried to fire someone through the NUI
+panel. Renamed the parameter and fixed both call sites (the internal
+one in `GradeUpdate` and the client-side one in `client/boss.lua`) to
+match - this bug existed independently of anything I added and was
+never specific to the new ESX menu, so firing an employee through the
+old NUI panel is fixed by this too.
+
+## 24) Two more crashes in the new boss_esx_menu.lua, both fixed
+
+- **`attempt to index a nil value (field 'gang')`**: used
+  `ESX.PlayerData.gang.name`, assuming essentialmode's shape - but
+  this server's `es_extended_bridge` doesn't populate
+  `ESX.PlayerData.gang` at all. Every other file in this resource
+  avoids this by tracking gang info itself in a global `PlayerData`
+  variable (set in `client/boss.lua`, kept in sync via the `setGang`
+  event) - switched to using that instead, and added a nil-guard with
+  a friendly notification in case it's called before that data has
+  loaded yet.
+- **Missing `ESX` reference entirely**: every file in this resource
+  independently fetches its own `ESX` object (there's no shared global
+  one) - `client/boss_esx_menu.lua` never did this, so every
+  `ESX.TriggerServerCallback`/`ESX.ShowNotification`/`ESX.UI.Menu.Open`
+  call in it would have failed with "attempt to index a nil value
+  (global 'ESX')" the moment any of them actually ran. Added the same
+  `TriggerEvent(Config.ESX, ...)` initialization pattern used
+  everywhere else.
+
 ## Testing checklist before going live
 
 - [ ] `/openpanel` opens instantly even with several gang members online

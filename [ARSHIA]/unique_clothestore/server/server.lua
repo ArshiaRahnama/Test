@@ -21,7 +21,21 @@ end
 
 if Config.Core == "ESX" then
     ESX = nil
-    TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
+
+    -- Don't trust a single one-shot TriggerEvent to land — if essentialmode
+    -- (or the es_extended bridge) hasn't finished starting yet when this
+    -- resource loads, esx:getSharedObject has no handler yet and the
+    -- callback never fires, silently leaving ESX nil forever with nothing
+    -- ever getting registered (and no visible error). Retry until it works.
+    local attempts = 0
+    while not ESX do
+        TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
+        if not ESX then
+            attempts = attempts + 1
+            Wait(200)
+        end
+    end
+    print(('^2[unique_clothestore DEBUG] Got ESX after %d attempt(s).^0'):format(attempts + 1))
 
 
 
@@ -58,31 +72,43 @@ if Config.Core == "ESX" then
         })
     end
 
-    -- Wearing a clothing item: registered once per TYPE (not per item),
-    -- reading the actual drawable/texture from that specific slot's
-    -- metadata (passed through as the 3rd arg by the es_extended bridge).
-    -- Wearing a clothing item: registered once per TYPE (not per item),
-    -- reading the actual drawable/texture from that specific slot's
-    -- metadata (passed through as the 3rd arg by the es_extended bridge).
-    -- ox_inventory removes the `clothing_<type>` item itself afterwards
-    -- (consume defaults to 1) — we give a matching `worn_clothing_<type>`
-    -- placeholder back so there's something in the inventory to interact
-    -- with again in order to take it off.
-    for clotheType in pairs(ClotheTypeLabel) do
-        ESX.RegisterUsableItem('clothing_' .. clotheType, function(playerId, slotData)
-            print(('^3[unique_clothestore DEBUG] clothing_%s used by %s. slotData=%s^0'):format(clotheType, tostring(playerId), tostring(slotData and json.encode(slotData) or 'nil')))
+    -- Wearing/taking off clothing now goes through ox_inventory's own
+    -- native item-use mechanism (`server.export` in the item definition,
+    -- see data/items.lua) instead of essentialmode's ESX.RegisterUsableItem
+    -- chain — that chain depends on essentialmode's ESX.UsableItemsCallbacks
+    -- table actually being populated by the time ox_inventory calls
+    -- ESX.UseItem, which turned out to be unreliable across restarts.
+    -- This export is called directly by ox_inventory itself, no bridge
+    -- involved, so there's nothing else that has to be "ready" first.
+    local function handleClothingUse(itemName, inventory, slot)
+        local isWorn = itemName:sub(1, 13) == 'worn_clothing'
+        local clotheType = isWorn and itemName:sub(15) or itemName:sub(10)
 
-            local metadata = slotData and slotData.metadata
-            if not metadata or not metadata.drawable then
-                print('^1[unique_clothestore DEBUG] ABORTED: metadata or metadata.drawable missing — the slot data never arrived with real clothing info.^0')
-                return
-            end
+        if not KnownClotheTypes[clotheType] then return end
 
-            -- If a piece of the same type is already worn, take it off
-            -- (back into the inventory as a normal item) BEFORE putting the
-            -- new one on — otherwise you'd end up with two different
-            -- "worn_clothing_<type>" placeholders which makes no sense for
-            -- a single clothing slot on the ped.
+        local playerId = tonumber(inventory.id)
+        if not playerId then return end
+
+        local slotData = inventory.items and inventory.items[slot]
+        local metadata = slotData and slotData.metadata
+        if not metadata or not metadata.drawable then return end
+
+        if isWorn then
+            -- Taking it back off: remove the "(Worn)" placeholder and give
+            -- the real, original item back with its original metadata.
+            TriggerClientEvent('unique_clothestore:takeOffClotheItem', playerId, metadata.clotheType or clotheType)
+
+            exports.ox_inventory:AddItem(playerId, 'clothing_' .. clotheType, 1, {
+                label = metadata.label,
+                clotheType = metadata.clotheType or clotheType,
+                drawable = metadata.drawable,
+                texture = metadata.texture or 0
+            })
+        else
+            -- Wearing it: if a piece of the same type is already worn, take
+            -- it off first (back into the inventory) so you never end up
+            -- with two different "worn_clothing_<type>" placeholders for
+            -- the same clothing slot on the ped.
             local wornSlots = exports.ox_inventory:Search(playerId, 'slots', 'worn_clothing_' .. clotheType)
             local wornSlot = wornSlots and wornSlots['worn_clothing_' .. clotheType] and wornSlots['worn_clothing_' .. clotheType][1]
             if wornSlot then
@@ -97,7 +123,6 @@ if Config.Core == "ESX" then
             end
 
             TriggerClientEvent('unique_clothestore:wearClotheItem', playerId, metadata.clotheType or clotheType, metadata.drawable, metadata.texture or 0)
-            print(('^2[unique_clothestore DEBUG] Sent wearClotheItem to player %s: type=%s drawable=%s texture=%s^0'):format(tostring(playerId), tostring(metadata.clotheType or clotheType), tostring(metadata.drawable), tostring(metadata.texture or 0)))
 
             exports.ox_inventory:AddItem(playerId, 'worn_clothing_' .. clotheType, 1, {
                 label = metadata.label,
@@ -105,26 +130,13 @@ if Config.Core == "ESX" then
                 drawable = metadata.drawable,
                 texture = metadata.texture or 0
             })
-        end)
-
-        -- Taking it back off: using the "(Worn)" placeholder removes the
-        -- visual piece and gives the real, original item back (with its
-        -- original label/drawable/texture intact via its own metadata) —
-        -- ox_inventory removes the worn_clothing_<type> placeholder itself.
-        ESX.RegisterUsableItem('worn_clothing_' .. clotheType, function(playerId, slotData)
-            local metadata = slotData and slotData.metadata
-            if not metadata or not metadata.drawable then return end
-
-            TriggerClientEvent('unique_clothestore:takeOffClotheItem', playerId, metadata.clotheType or clotheType)
-
-            exports.ox_inventory:AddItem(playerId, 'clothing_' .. clotheType, 1, {
-                label = metadata.label,
-                clotheType = metadata.clotheType or clotheType,
-                drawable = metadata.drawable,
-                texture = metadata.texture or 0
-            })
-        end)
+        end
     end
+
+    exports('useClothingItem', function(_, event, item, inventory, slot)
+        if event ~= 'usingItem' then return end
+        handleClothingUse(item.name, inventory, slot)
+    end)
 
 
 
