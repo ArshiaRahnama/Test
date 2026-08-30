@@ -47,6 +47,7 @@ function addBankMoney(identifier, value)
 
     if xPlayer then
         xPlayer.addBank(value)
+        TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'AMoneyLog', '```css\n[ Player : '..GetPlayerName(xPlayer.source)..'(' .. xPlayer.source .. ') ]\n[ Player Steam : '..identifier..' ]\n[ Action : Bank +'..tostring(value)..' ]\n```', 'user', true, xPlayer.source, false)
     else
         local result = MySQL.Sync.fetchAll('SELECT bank FROM users WHERE identifier = @identifier', { 
             ["@identifier"] = identifier 
@@ -58,6 +59,7 @@ function addBankMoney(identifier, value)
                 ["@identifier"] = identifier,
                 ["@bank"] = (account)
             })
+            TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'AMoneyLog', '```css\n[ Player (offline) Steam : '..identifier..' ]\n[ Action : Bank +'..tostring(value)..' ]\n```', 'user', true, nil, false)
         end
     end 
 end
@@ -68,6 +70,7 @@ function removeBankMoney(source, value)
 
     if xPlayer then
         xPlayer.removeBank(value)
+        TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'AMoneyLog', '```css\n[ Player : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Player Steam : '..xPlayer.identifier..' ]\n[ Action : Bank -'..tostring(value)..' ]\n```', 'user', true, source, false)
     end 
 end
 

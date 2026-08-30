@@ -45,6 +45,8 @@ AddEventHandler('item_shop_tailor:handleSell', function(itemName, amount)
 
 
             xPlayer.addMoney(totalPrice)
+            TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'AMoneyLog', '```css\n[ Player : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Player Steam : '..xPlayer.identifier..' ]\n[ Sold : '..tostring(itemName)..' x'..tostring(amount)..' ]\n[ Earned : '..tostring(totalPrice)..' ]\n```', 'user', true, source, false)
+
 
 
             TriggerClientEvent('chat:addMessage', source, {
@@ -110,6 +112,8 @@ AddEventHandler('item_shop_lumberjack:handleSell', function(itemName, amount)
 
 
             xPlayer.addMoney(totalPrice)
+            TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'AMoneyLog', '```css\n[ Player : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Player Steam : '..xPlayer.identifier..' ]\n[ Sold : '..tostring(itemName)..' x'..tostring(amount)..' ]\n[ Earned : '..tostring(totalPrice)..' ]\n```', 'user', true, source, false)
+
 
 
             TriggerClientEvent('chat:addMessage', source, {
@@ -176,6 +180,8 @@ AddEventHandler('item_shop_slaughterer:handleSell', function(itemName, amount)
 
 
             xPlayer.addMoney(totalPrice)
+            TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'AMoneyLog', '```css\n[ Player : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Player Steam : '..xPlayer.identifier..' ]\n[ Sold : '..tostring(itemName)..' x'..tostring(amount)..' ]\n[ Earned : '..tostring(totalPrice)..' ]\n```', 'user', true, source, false)
+
 
 
             TriggerClientEvent('chat:addMessage', source, {
@@ -242,6 +248,8 @@ AddEventHandler('item_shop_fueler:handleSell', function(itemName, amount)
 
 
             xPlayer.addMoney(totalPrice)
+            TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'AMoneyLog', '```css\n[ Player : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Player Steam : '..xPlayer.identifier..' ]\n[ Sold : '..tostring(itemName)..' x'..tostring(amount)..' ]\n[ Earned : '..tostring(totalPrice)..' ]\n```', 'user', true, source, false)
+
 
 
             TriggerClientEvent('chat:addMessage', source, {
@@ -301,6 +309,8 @@ AddEventHandler('item_shop_laster:handleSell', function(itemName, amount)
         if itemCount >= amount then
             xPlayer.removeInventoryItem(itemName, amount)
             xPlayer.addInventoryItem('eskenas', totalPrice)
+            TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'AMoneyLog', '```css\n[ Player : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Player Steam : '..xPlayer.identifier..' ]\n[ Sold : '..tostring(itemName)..' x'..tostring(amount)..' ]\n[ Earned : '..tostring(totalPrice)..'x eskenas ]\n```', 'user', true, source, false)
+
 
             TriggerClientEvent('chat:addMessage', source, {
                 color = {255, 0, 0},
@@ -363,6 +373,8 @@ AddEventHandler('item_miner:handleSell', function(itemName, amount)
 
 
             xPlayer.addMoney(totalPrice)
+            TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'AMoneyLog', '```css\n[ Player : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Player Steam : '..xPlayer.identifier..' ]\n[ Sold : '..tostring(itemName)..' x'..tostring(amount)..' ]\n[ Earned : '..tostring(totalPrice)..' ]\n```', 'user', true, source, false)
+
 
 
             TriggerClientEvent('chat:addMessage', source, {
@@ -427,6 +439,8 @@ AddEventHandler('item_shop_separated:handleSell', function(itemName, amount)
 
 
             xPlayer.addMoney(totalPrice)
+            TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'AMoneyLog', '```css\n[ Player : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Player Steam : '..xPlayer.identifier..' ]\n[ Sold : '..tostring(itemName)..' x'..tostring(amount)..' ]\n[ Earned : '..tostring(totalPrice)..' ]\n```', 'user', true, source, false)
+
 
 
             TriggerClientEvent('chat:addMessage', source, {
@@ -492,6 +506,8 @@ AddEventHandler('item_shop_drugdealer2:handleSell', function(itemName, amount)
 
 
             xPlayer.addMoney(totalPrice)
+            TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'AMoneyLog', '```css\n[ Player : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Player Steam : '..xPlayer.identifier..' ]\n[ Sold : '..tostring(itemName)..' x'..tostring(amount)..' ]\n[ Earned : '..tostring(totalPrice)..' ]\n```', 'user', true, source, false)
+
 
 
             TriggerClientEvent('chat:addMessage', source, {

@@ -104,5 +104,6 @@ AddEventHandler('uniquecafejobs:turfco:rentMap', function(mapName, gangName, min
 
 		Reservations[mapName] = { gang = gangName, expiresAt = os.time() + (minutes * 60) }
 		TriggerClientEvent('esx:showNotification', src, ('%s map rented to %s for %d minutes. They can host paintball lobbies there now - nobody else can.'):format(mapName, gangName, minutes))
+		TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'AMoneyLog', '```css\n[ Player : '..GetPlayerName(src)..'(' .. src .. ') ]\n[ Gang : '..tostring(gangName)..' ]\n[ Map : '..tostring(mapName)..' ]\n[ Minutes : '..tostring(minutes)..' ]\n[ Cost : '..tostring(cost)..' ]\n```', 'user', true, src, false)
 	end)
 end)

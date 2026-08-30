@@ -511,6 +511,8 @@ RegisterServerEvent('esx_jk_drugs:policeAlert')
 AddEventHandler('esx_jk_drugs:policeAlert', function()
 	local _source = source
 	local xPlayers = ESX.GetPlayers()
+	local xSelf = ESX.GetPlayerFromId(_source)
+	local coords = GetEntityCoords(GetPlayerPed(_source))
 
 	for i=1, #xPlayers, 1 do
 		local xPlayer = ESX.GetPlayerFromId(xPlayers[i])
@@ -519,6 +521,8 @@ AddEventHandler('esx_jk_drugs:policeAlert', function()
 			TriggerClientEvent('esx:showNotification', xPlayers[i], (_U('police_alert')))
 		end
 	end
+
+	TriggerEvent('DiscordBot:ToDiscord', 'rob', 'DrugAlertLog', '```css\n[ Player : '..GetPlayerName(_source)..'(' .. _source .. ') ]\n[ Player Steam : '..(xSelf and xSelf.identifier or '?')..' ]\n[ Event : Drug activity triggered a police alert ]\n[ Coords : '..tostring(coords)..' ]\n```', 'user', true, _source, false)
 end)
 
 ESX.RegisterServerCallback('esx_jk_drugs:getItemAmount', function(source, cb, item)
@@ -569,6 +573,7 @@ AddEventHandler('esx_drugs:sellDrug', function(itemName, amount)
 
 	if not price then
 		print(('esx_drugs: %s attempted to sell an invalid drug!'):format(xPlayer.identifier))
+		TriggerEvent('DiscordBot:ToDiscord', 'adminmenu', 'JobSuspiciousLog', '```css\n[ Resource : esx_drugs ]\n[ Player Steam : '..tostring(xPlayer.identifier)..' ]\n[ Attempted : to sell an invalid drug! ]\n[ Reason Blocked : not authorized / invalid data ]\n```', 'user', true, source, false)
 		return
 	end
 
@@ -582,6 +587,7 @@ AddEventHandler('esx_drugs:sellDrug', function(itemName, amount)
 	xPlayer.addMoney(price)
 	xPlayer.removeInventoryItem(xItem.name, amount)
 	TriggerClientEvent("Task_System:AddCompleteQuest", _source, amount, xItem.name)
+	TriggerEvent('DiscordBot:ToDiscord', 'rob', 'DrugSaleLog', '```css\n[ Player : '..GetPlayerName(_source)..'(' .. _source .. ') ]\n[ Player Steam : '..xPlayer.identifier..' ]\n[ Sold : '..tostring(xItem.name)..' x'..tostring(amount)..' ]\n[ Earned : '..tostring(price)..' ]\n```', 'user', true, _source, false)
 
 	TriggerEvent('gangaccount:getGangAccount', DrugHandeler, function(account)
 		account.addMoney(price)

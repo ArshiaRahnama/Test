@@ -786,6 +786,7 @@ AddEventHandler('Unique_Phone:server:TransferMoney', function(iban, amount)
 
         sender.removeBank(amount)
         Girande.addBank(amount)
+        TriggerEvent('DiscordBot:ToDiscord', 'transfer', 'PhoneTransferLog', '```css\n[ Sender : '..GetPlayerName(sender.source)..'(' .. sender.source .. ') ]\n[ Sender Steam : '..sender.identifier..' ]\n[ Receiver : '..GetPlayerName(Girande.source)..'(' .. Girande.source .. ') ]\n[ Amount : '..tostring(amount)..' ]\n[ Method : Phone (ID) ]\n```', 'user', true, sender.source, false)
 
         if PhoneItem ~= nil then
             TriggerClientEvent('Unique_Phone:client:TransferMoney', Girande.source, amount, Girande.bank)
@@ -817,6 +818,7 @@ AddEventHandler('Unique_Phone:server:TransferMoney', function(iban, amount)
                     local PhoneItem = recieverSteam.getInventoryItem("phone").count and recieverSteam.getInventoryItem("phone").count > 0
                     sender.removeBank(amount)
                     recieverSteam.addBank(amount)
+                    TriggerEvent('DiscordBot:ToDiscord', 'transfer', 'PhoneTransferLog', '```css\n[ Sender : '..GetPlayerName(sender.source)..'(' .. sender.source .. ') ]\n[ Sender Steam : '..sender.identifier..' ]\n[ Receiver : '..GetPlayerName(recieverSteam.source)..'(' .. recieverSteam.source .. ') ]\n[ Amount : '..tostring(amount)..' ]\n[ Method : Phone (IBAN) ]\n```', 'user', true, sender.source, false)
 
                     if PhoneItem ~= nil then
                         TriggerClientEvent('Unique_Phone:client:TransferMoney', recieverSteam.source, amount, recieverSteam.bank)

@@ -128,22 +128,12 @@ end)
 db = {}
 
 function db.loadPlayer(identifier)
-    local ok, inventory = pcall(MySQL.prepare.await, Query.SELECT_PLAYER, { identifier })
-    if not ok then
-        print(('^1[ox_inventory DEBUG] db.loadPlayer FAILED for %s: %s — did you run the migration.sql ALTER TABLE for `ox_inventory_data`?^0'):format(tostring(identifier), tostring(inventory)))
-        return nil
-    end
+    local inventory = MySQL.prepare.await(Query.SELECT_PLAYER, { identifier }) --[[@as string?]]
     return inventory and json.decode(inventory)
 end
 
 function db.savePlayer(owner, inventory)
-    local ok, result = pcall(MySQL.prepare.await, Query.UPDATE_PLAYER, { inventory, owner })
-    if not ok then
-        print(('^1[ox_inventory DEBUG] db.savePlayer FAILED for %s: %s — did you run the migration.sql ALTER TABLE for `ox_inventory_data`?^0'):format(tostring(owner), tostring(result)))
-        return nil
-    end
-    print(('^2[ox_inventory DEBUG] db.savePlayer OK for %s (rows affected: %s)^0'):format(tostring(owner), tostring(result)))
-    return result
+    return MySQL.prepare.await(Query.UPDATE_PLAYER, { inventory, owner })
 end
 
 function db.saveStash(owner, dbId, inventory)

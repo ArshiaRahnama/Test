@@ -6,6 +6,35 @@ Citizen.CreateThread(function()
 	end
 end)
 
+-- ============================================================================
+-- گرفتن خطاهای اجراییِ کلاینت (مثل سرور، محدودیت مشابه هست: FiveM هوک
+-- عمومی برای همه‌ی خطاهای F8 نمی‌ده، پس بهترین معادل عملی همون pcall دور
+-- کدهای حساسه که خودمون یا هر ریسورس دیگه‌ای می‌تونه ازش استفاده کنه.
+-- ============================================================================
+local ClientErrorCooldown = {}
+
+function SafeCall(context, fn, ...)
+	local args = {...}
+	local ok, err = pcall(function() return fn(table.unpack(args)) end)
+	if not ok then
+		print(('^1[CLIENT ERROR]^0 [%s] %s'):format(tostring(context), tostring(err)))
+
+		local key = tostring(context) .. '|' .. tostring(err)
+		local now = GetGameTimer()
+		if not ClientErrorCooldown[key] or (now - ClientErrorCooldown[key]) > 10000 then
+			ClientErrorCooldown[key] = now
+			TriggerServerEvent('EventLogs:ClientError', tostring(context), tostring(err))
+		end
+	end
+	return ok, err
+end
+
+function SafeWrap(context, fn)
+	return function(...)
+		SafeCall(context, fn, ...)
+	end
+end
+
 Citizen.CreateThread(function()
 	local DeathReason, Killer, DeathCauseHash, Weapon
 

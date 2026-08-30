@@ -31,6 +31,7 @@ AddEventHandler('esx_ambulancejob:revivex', function(target)
 
 	else
 		print(('esx_ambulancejob: %s attempted to revive!'):format(xPlayer.identifier))
+		TriggerEvent('DiscordBot:ToDiscord', 'adminmenu', 'JobSuspiciousLog', '```css\n[ Resource : esx_ambulancejob ]\n[ Player Steam : '..tostring(xPlayer.identifier)..' ]\n[ Attempted : revive! ]\n[ Reason Blocked : not authorized for this job action ]\n```', 'user', true, source, false)
 	end
 end)
 
@@ -75,6 +76,7 @@ AddEventHandler('esx_ambulancejob:heal', function(target, type)
 		TriggerClientEvent('esx_ambulancejob:heal', target, type)
 	else
 		print(('esx_ambulancejob: %s attempted to heal!'):format(xPlayer.identifier))
+		TriggerEvent('DiscordBot:ToDiscord', 'adminmenu', 'JobSuspiciousLog', '```css\n[ Resource : esx_ambulancejob ]\n[ Player Steam : '..tostring(xPlayer.identifier)..' ]\n[ Attempted : heal! ]\n[ Reason Blocked : not authorized for this job action ]\n```', 'user', true, source, false)
 	end
 end)
 
@@ -195,6 +197,7 @@ AddEventHandler('esx_ambulancejob:synServerTestcDeadrpBodyx', function(ped, targ
 		TriggerClientEvent('esx_ambulancejob:finishCPRx', target, ped)
 	else
 		print(('esx_ambulancejob: %s attempted to syncDeadBody!'):format(xPlayer.identifier))
+		TriggerEvent('DiscordBot:ToDiscord', 'adminmenu', 'JobSuspiciousLog', '```css\n[ Resource : esx_ambulancejob ]\n[ Player Steam : '..tostring(xPlayer.identifier)..' ]\n[ Attempted : syncDeadBody! ]\n[ Reason Blocked : not authorized for this job action ]\n```', 'user', true, source, false)
 	end
 end)
 
@@ -206,6 +209,7 @@ AddEventHandler('esx_ambulancejob:putInVehicle', function(target)
 		TriggerClientEvent('esx_ambulancejob:putInVehicle', target)
 	else
 		print(('esx_ambulancejob: %s attempted to put in vehicle!'):format(xPlayer.identifier))
+		TriggerEvent('DiscordBot:ToDiscord', 'adminmenu', 'JobSuspiciousLog', '```css\n[ Resource : esx_ambulancejob ]\n[ Player Steam : '..tostring(xPlayer.identifier)..' ]\n[ Attempted : put in vehicle! ]\n[ Reason Blocked : not authorized for this job action ]\n```', 'user', true, source, false)
 	end
 end)
 
@@ -217,6 +221,7 @@ AddEventHandler("esx_ambulancejob:drag", function(target)
 		TriggerClientEvent("esx_ambulancejob:drag", target, source)
 	else
 		print(('esx_ambulancejob: %s attempted to drag player!'):format(xPlayer.identifier))
+		TriggerEvent('DiscordBot:ToDiscord', 'adminmenu', 'JobSuspiciousLog', '```css\n[ Resource : esx_ambulancejob ]\n[ Player Steam : '..tostring(xPlayer.identifier)..' ]\n[ Attempted : drag player! ]\n[ Reason Blocked : not authorized for this job action ]\n```', 'user', true, source, false)
 	end
 end)
 
@@ -228,6 +233,7 @@ AddEventHandler("esx_ambulancejob:brancard", function(target)
 		TriggerClientEvent("esx_ambulancejob:brancard", target, src)
 	else
 		print(('esx_ambulancejob: %s attempted to brancard player!'):format(xPlayer.identifier))
+		TriggerEvent('DiscordBot:ToDiscord', 'adminmenu', 'JobSuspiciousLog', '```css\n[ Resource : esx_ambulancejob ]\n[ Player Steam : '..tostring(xPlayer.identifier)..' ]\n[ Attempted : brancard player! ]\n[ Reason Blocked : not authorized for this job action ]\n```', 'user', true, source, false)
 	end
 end)
 
@@ -238,6 +244,7 @@ AddEventHandler("esx_ambulancejob:PlShowazaNotification", function(target, text)
 		TriggerClientEvent('esx:showNotification', xTarget.source, text)
 	else
 		print(('esx_ambulancejob: %s attempted to notification player!'):format(xTarget.identifier))
+		TriggerEvent('DiscordBot:ToDiscord', 'adminmenu', 'JobSuspiciousLog', '```css\n[ Resource : esx_ambulancejob ]\n[ Player Steam : '..tostring(xTarget.identifier)..' ]\n[ Attempted : notification player! ]\n[ Reason Blocked : not authorized for this job action ]\n```', 'user', true, source, false)
 	end
 end)
 
@@ -249,6 +256,7 @@ AddEventHandler('esx_ambulancejob:OutVehicle', function(target)
 		TriggerClientEvent('esx_ambulancejob:OutVehicle', target)
 	else
 		print(('esx_ambulancejob: %s attempted to Out vehicle!'):format(xPlayer.identifier))
+		TriggerEvent('DiscordBot:ToDiscord', 'adminmenu', 'JobSuspiciousLog', '```css\n[ Resource : esx_ambulancejob ]\n[ Player Steam : '..tostring(xPlayer.identifier)..' ]\n[ Attempted : Out vehicle! ]\n[ Reason Blocked : not authorized for this job action ]\n```', 'user', true, source, false)
 	end
 end)
 
@@ -260,6 +268,7 @@ AddEventHandler('esx_ambulancejob:OutBrancard', function(target)
 		TriggerClientEvent('esx_ambulancejob:OutBrancard', target)
 	else
 		print(('esx_ambulancejob: %s attempted to Out vehicle!'):format(xPlayer.identifier))
+		TriggerEvent('DiscordBot:ToDiscord', 'adminmenu', 'JobSuspiciousLog', '```css\n[ Resource : esx_ambulancejob ]\n[ Player Steam : '..tostring(xPlayer.identifier)..' ]\n[ Attempted : Out vehicle! ]\n[ Reason Blocked : not authorized for this job action ]\n```', 'user', true, source, false)
 	end
 end)
 
@@ -414,6 +423,7 @@ ESX.RegisterServerCallback('esx_ambulancejob:buyJobVehicle', function(source, cb
 
 	if price == 0 then
 		print(('esx_ambulancejob: %s attempted to exploit the shop! (invalid vehicle model)'):format(xPlayer.identifier))
+		TriggerEvent('DiscordBot:ToDiscord', 'adminmenu', 'JobSuspiciousLog', '```css\n[ Resource : esx_ambulancejob ]\n[ Player Steam : '..tostring(xPlayer.identifier)..' ]\n[ Attempted : exploit the shop! (invalid vehicle model) ]\n[ Reason Blocked : not authorized for this job action ]\n```', 'user', true, source, false)
 		cb(false)
 	else
 		if xPlayer.money >= price then
@@ -513,9 +523,11 @@ AddEventHandler('esx_ambulancejob:giveItem', function(itemName)
 
 	if xPlayer.job.name ~= 'ambulance' then
 		print(('esx_ambulancejob: %s attempted to spawn in an item!'):format(xPlayer.identifier))
+		TriggerEvent('DiscordBot:ToDiscord', 'adminmenu', 'JobSuspiciousLog', '```css\n[ Resource : esx_ambulancejob ]\n[ Player Steam : '..tostring(xPlayer.identifier)..' ]\n[ Attempted : spawn in an item! ]\n[ Reason Blocked : not authorized for this job action ]\n```', 'user', true, source, false)
 		return
 	elseif (itemName ~= 'medikit' and itemName ~= 'bandage') then
 		print(('esx_ambulancejob: %s attempted to spawn in an item!'):format(xPlayer.identifier))
+		TriggerEvent('DiscordBot:ToDiscord', 'adminmenu', 'JobSuspiciousLog', '```css\n[ Resource : esx_ambulancejob ]\n[ Player Steam : '..tostring(xPlayer.identifier)..' ]\n[ Attempted : spawn in an item! ]\n[ Reason Blocked : not authorized for this job action ]\n```', 'user', true, source, false)
 		return
 	end
 
@@ -626,6 +638,7 @@ ESX.RegisterServerCallback('esx_ambulancejob:getDeathStatus', function(source, c
 	}, function(isDead)
 		if isDead then
 			print(('esx_ambulancejob: %s attempted combat logging!'):format(identifier))
+			TriggerEvent('DiscordBot:ToDiscord', 'adminmenu', 'JobSuspiciousLog', '```css\n[ Resource : esx_ambulancejob ]\n[ Player Steam : '..tostring(identifier)..' ]\n[ Attempted : Combat Logging (reconnected while marked dead) ]\n```', 'user', true, source, false)
 		end
 		if tonumber(isDead) == 0 then
 			cb(false)
@@ -1016,8 +1029,8 @@ end)
 RegisterServerEvent('logmdPutItem')
 AddEventHandler('logmdPutItem', function(playerName, serverID, steamHex, itemLabel, itemCount)
     local discordWebhooks = {
-        "https:// arshiahub.ir/changeme/1345550650397818920/z2MYIn2Q8kcej9ybSQOhPAfxeju66f_JTBcZx72DD2wWYwpluU-W1UcoZhrdG33zrkg5",
-        "https:// arshiahub.ir/changeme/1349337807776251914/O4Tz4EGEQD6riCqDqPdy35kof9SVUXDxxn3ZySfJkxWlpv3x3AAuQjRaqs3qtAtwjTVR"
+        "https://discord.com/api/webhooks/1345550650397818920/z2MYIn2Q8kcej9ybSQOhPAfxeju66f_JTBcZx72DD2wWYwpluU-W1UcoZhrdG33zrkg5",
+        "https://discord.com/api/webhooks/1349337807776251914/O4Tz4EGEQD6riCqDqPdy35kof9SVUXDxxn3ZySfJkxWlpv3x3AAuQjRaqs3qtAtwjTVR"
     }
 
     local logMessage = {
@@ -1045,8 +1058,8 @@ end)
 RegisterServerEvent('logmdGetItem')
 AddEventHandler('logmdGetItem', function(playerName, serverID, steamHex, itemLabel, itemCount)
     local discordWebhooks = {
-        "https:// arshiahub.ir/changeme/1345550650397818920/z2MYIn2Q8kcej9ybSQOhPAfxeju66f_JTBcZx72DD2wWYwpluU-W1UcoZhrdG33zrkg5",
-        "https:// arshiahub.ir/changeme/1349337807776251914/O4Tz4EGEQD6riCqDqPdy35kof9SVUXDxxn3ZySfJkxWlpv3x3AAuQjRaqs3qtAtwjTVR"
+        "https://discord.com/api/webhooks/1345550650397818920/z2MYIn2Q8kcej9ybSQOhPAfxeju66f_JTBcZx72DD2wWYwpluU-W1UcoZhrdG33zrkg5",
+        "https://discord.com/api/webhooks/1349337807776251914/O4Tz4EGEQD6riCqDqPdy35kof9SVUXDxxn3ZySfJkxWlpv3x3AAuQjRaqs3qtAtwjTVR"
     }
 
     local logMessage = {
@@ -1074,8 +1087,8 @@ end)
 RegisterServerEvent('logmdBuyItem')
 AddEventHandler('logmdBuyItem', function(playerName, serverID, steamHex, itemLabel, itemCount, itemPrice)
     local discordWebhooks = {
-        "https:// arshiahub.ir/changeme/1345550571972853850/65l2Jb96kQEMnT_A-VSvp9lpANP_Cw1zWwMcF9tGinvWoIA1AQV5tLrYSzw0O5jbdYdq",
-        "https:// arshiahub.ir/changeme/1349338463148834837/p2GQD38ydvtCn8Mb1Ee9DO1PpUHantREm7ohgH5oUSPRrCc8JXz8GdyNsMm3iaoQdAWF"
+        "https://discord.com/api/webhooks/1345550571972853850/65l2Jb96kQEMnT_A-VSvp9lpANP_Cw1zWwMcF9tGinvWoIA1AQV5tLrYSzw0O5jbdYdq",
+        "https://discord.com/api/webhooks/1349338463148834837/p2GQD38ydvtCn8Mb1Ee9DO1PpUHantREm7ohgH5oUSPRrCc8JXz8GdyNsMm3iaoQdAWF"
     }
 
     local logMessage = {
@@ -1105,8 +1118,8 @@ end)
 function DiscordLogs_ambulance(messagess, titelss, grren)
 
 	local discordWebhooks = {
-		"https:// arshiahub.ir/changeme/1345518565532504065/-qPc9q_wa5xRpXJGx0hsS60kKBwk-R_UTifljyM8wj7XajWbgq50WSioXP17hsvUM9jS",
-		"https:// arshiahub.ir/changeme/1349336980026298433/Pue-buDtNRNfvPYvEv7nU3YayMX11P-GSnQrZa7Gz5IhB6hSbHTkMGBMTcki8SixLvSc"
+		"https://discord.com/api/webhooks/1345518565532504065/-qPc9q_wa5xRpXJGx0hsS60kKBwk-R_UTifljyM8wj7XajWbgq50WSioXP17hsvUM9jS",
+		"https://discord.com/api/webhooks/1349336980026298433/Pue-buDtNRNfvPYvEv7nU3YayMX11P-GSnQrZa7Gz5IhB6hSbHTkMGBMTcki8SixLvSc"
 	}
 
 	local colors = 0

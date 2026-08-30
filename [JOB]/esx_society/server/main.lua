@@ -130,6 +130,7 @@ AddEventHandler('esx_society:withdrawMoney', function(society, amount)
 
 	if xPlayer.job.name ~= society.name or xPlayer.job.grade_name ~= 'boss' then
 		print(('esx_society: %s attempted to call withdrawMoney without being boss!'):format(xPlayer.identifier))
+		TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'SocietySuspiciousLog', '```css\n[ Player : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Player Steam : '..xPlayer.identifier..' ]\n[ Attempted : withdrawMoney from "'..tostring(society.name)..'" ]\n[ Reason Blocked : not boss / wrong job ]\n```', 'user', true, source, false)
 		return
 	end
 
@@ -165,6 +166,7 @@ AddEventHandler('esx_society:depositMoney', function(society, amount)
 
 	if xPlayer.job.name ~= society.name then
 		print(('esx_society: %s attempted to call depositMoney!'):format(xPlayer.identifier))
+		TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'SocietySuspiciousLog', '```css\n[ Player : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Player Steam : '..xPlayer.identifier..' ]\n[ Attempted : depositMoney into "'..tostring(society.name)..'" ]\n[ Reason Blocked : not a member of that society ]\n```', 'user', true, source, false)
 		return
 	end
 
@@ -199,6 +201,7 @@ AddEventHandler('esx_society:depositMoney2', function(xPlayer2, society, account
 
 	if tonumber(xPlayer2) ~= tonumber(source) then
 		print(('esx_society: %s attempted to call depositMoney2 for another player (%s)!'):format(source, tostring(xPlayer2)))
+		TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'SocietySuspiciousLog', '```css\n[ Caller Source : '..tostring(source)..' ]\n[ Attempted To Act As Player : '..tostring(xPlayer2)..' ]\n[ ⚠ Possible spoofing attempt on depositMoney2 ]\n```', 'user', true, source, false)
 		return
 	end
 
@@ -214,6 +217,7 @@ AddEventHandler('esx_society:depositMoney2', function(xPlayer2, society, account
 			JobsLog('Deposit Money', true, xPlayer.job.name, 'money', {
 				{["name"] = "👤 Player", ["value"] = xPlayer.name, ["inline"] = false},
 				{["name"] = "🎮 Steam Hex", ["value"] = xPlayer.identifier, ["inline"] = false},
+				{["name"] = "🌍 Server ID", ["value"] = tostring(xPlayer.source), ["inline"] = false},
 				{["name"] = "💵 Amount", ["value"] = '$' .. amount, ["inline"] = false},
 				{["name"] = "🏦 Account", ["value"] = account.name or tostring(account), ["inline"] = false},
 			})
@@ -395,6 +399,7 @@ ESX.RegisterServerCallback('esx_society:setJobDivision', function(source, cb, id
 
 	if not isPlayerBoss(source, job) then
 		print(('esx_society: %s attempted to setJobDivision'):format(xPlayer.identifier))
+		TriggerEvent('DiscordBot:ToDiscord', 'manage', 'SocietySuspiciousLog', '```css\n[ Player Steam : '..tostring(xPlayer.identifier)..' ]\n[ Attempted : setJobDivision (target identifier: '..tostring(identifier)..', job: '..tostring(job)..') ]\n[ Reason Blocked : not authorized ]\n```', 'user', true, source, false)
 		cb(false)
 		return
 	end
@@ -581,6 +586,7 @@ ESX.RegisterServerCallback('esx_society:setJob', function(source, cb, identifier
 
 			if not isAuthorized then
 				print(('esx_society: %s attempted to setJob (%s) without being boss'):format(xPlayer.identifier, type or 'unknown'))
+				TriggerEvent('DiscordBot:ToDiscord', 'setjob', 'SocietySuspiciousLog', '```css\n[ Player : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Player Steam : '..xPlayer.identifier..' ]\n[ Attempted : setJob("'..tostring(type)..'") on '..(xTarget.name or identifier)..' ]\n[ Target Job : '..tostring(job)..' | Grade : '..tostring(grade)..' ]\n[ Reason Blocked : not boss of target job ]\n```', 'user', true, source, false)
 				cb()
 				return
 			end
@@ -611,6 +617,8 @@ ESX.RegisterServerCallback('esx_society:setJob', function(source, cb, identifier
 					{["name"] = "👤 **Target Name**", ["value"] = xPlayer.name, ["inline"] = false},
 					{["name"] = "🎮 **Steam Hex**", ["value"] = xPlayer.identifier, ["inline"] = false},
 					{["name"] = "🌍 **Server ID**", ["value"] = xPlayer.source, ["inline"] = false},
+					{["name"] = "🏷️ **Job**", ["value"] = tostring(job), ["inline"] = false},
+					{["name"] = "🔢 **Grade**", ["value"] = tostring(grade), ["inline"] = false},
 					{["name"] = "🔢 **Data**", ["value"] = 'Set Job Shod', ["inline"] = false},
 				}
 
@@ -627,6 +635,7 @@ ESX.RegisterServerCallback('esx_society:setJob', function(source, cb, identifier
 					{["name"] = "👤 **Target Name**", ["value"] = xPlayer.name, ["inline"] = false},
 					{["name"] = "🎮 **Steam Hex**", ["value"] = xPlayer.identifier, ["inline"] = false},
 					{["name"] = "🌍 **Server ID**", ["value"] = xPlayer.source, ["inline"] = false},
+					{["name"] = "🏷️ **Job**", ["value"] = tostring(job), ["inline"] = false},
 					{["name"] = "🔢 **Data**", ["value"] = 'Az Rank '..LastGrade..' Be Rank '..grade.." Tagir dad", ["inline"] = false},
 				}
 
@@ -685,6 +694,7 @@ ESX.RegisterServerCallback('esx_society:setJob', function(source, cb, identifier
 				{["name"] = "👤 **Target Name**", ["value"] = xPlayer.name, ["inline"] = false},
 				{["name"] = "🎮 **Steam Hex**", ["value"] = xPlayer.identifier, ["inline"] = false},
 				{["name"] = "🌍 **Server ID**", ["value"] = xPlayer.source, ["inline"] = false},
+				{["name"] = "🏷️ **Job**", ["value"] = tostring(job), ["inline"] = false},
 				{["name"] = "🔢 **Data**", ["value"] = 'Az Rank '..LastGrade..' Be Rank '..grade.." Tagir dad", ["inline"] = false},
 
 			}
@@ -812,6 +822,7 @@ ESX.RegisterServerCallback('esx_society:swapEmployeeJob', function(source, cb, i
 
 	if not isPlayerBoss(source, fromJob) then
 		print(('esx_society: %s attempted swapEmployeeJob without being boss of %s'):format(xPlayer.identifier, fromJob))
+		TriggerEvent('DiscordBot:ToDiscord', 'manage', 'SocietySuspiciousLog', '```css\n[ Player Steam : '..tostring(xPlayer.identifier)..' ]\n[ Attempted : swapEmployeeJob without being boss of '..tostring(fromJob)..' ]\n```', 'user', true, source, false)
 		cb(false)
 		return
 	end
@@ -824,6 +835,7 @@ ESX.RegisterServerCallback('esx_society:swapEmployeeJob', function(source, cb, i
 
 	if xTarget.job.name ~= fromJob then
 		print(('esx_society: %s attempted swapEmployeeJob on a target not in %s'):format(xPlayer.identifier, fromJob))
+		TriggerEvent('DiscordBot:ToDiscord', 'manage', 'SocietySuspiciousLog', '```css\n[ Player Steam : '..tostring(xPlayer.identifier)..' ]\n[ Attempted : swapEmployeeJob on a target not actually in '..tostring(fromJob)..' ]\n```', 'user', true, source, false)
 		cb(false)
 		return
 	end
@@ -844,6 +856,7 @@ ESX.RegisterServerCallback('esx_society:swapEmployeeJob', function(source, cb, i
 
 	if not sameGroup then
 		print(('esx_society: %s attempted swapEmployeeJob outside the branch (%s -> %s)'):format(xPlayer.identifier, fromJob, toJob))
+		TriggerEvent('DiscordBot:ToDiscord', 'manage', 'SocietySuspiciousLog', '```css\n[ Player Steam : '..tostring(xPlayer.identifier)..' ]\n[ Attempted : swapEmployeeJob outside the branch ('..tostring(fromJob)..' -> '..tostring(toJob)..') ]\n```', 'user', true, source, false)
 		cb(false)
 		return
 	end
@@ -867,6 +880,7 @@ ESX.RegisterServerCallback('esx_society:setJobSalary', function(source, cb, job,
 
 	if isBoss then
 		if salary <= Config.MaxSalary then
+			local oldSalary = Jobs[job] and Jobs[job].grades[tostring(grade)] and Jobs[job].grades[tostring(grade)].salary
 			MySQL.Async.execute('UPDATE job_grades SET salary = @salary WHERE job_name = @job_name AND grade = @grade', {
 				['@salary']   = salary,
 				['@job_name'] = job,
@@ -889,6 +903,7 @@ ESX.RegisterServerCallback('esx_society:setJobSalary', function(source, cb, job,
 						{["name"] = "👤 Player", ["value"] = editor.name, ["inline"] = false},
 						{["name"] = "🎮 Steam Hex", ["value"] = editor.identifier, ["inline"] = false},
 						{["name"] = "📊 Grade", ["value"] = tostring(grade), ["inline"] = false},
+						{["name"] = "💵 Old Salary", ["value"] = '$' .. tostring(oldSalary or '?'), ["inline"] = false},
 						{["name"] = "💵 New Salary", ["value"] = '$' .. salary, ["inline"] = false},
 					})
 				end
@@ -897,10 +912,12 @@ ESX.RegisterServerCallback('esx_society:setJobSalary', function(source, cb, job,
 			end)
 		else
 			print(('esx_society: %s attempted to setJobSalary over config limit!'):format(identifier))
+			TriggerEvent('DiscordBot:ToDiscord', 'manage', 'SocietySuspiciousLog', '```css\n[ Player Steam : '..tostring(identifier)..' ]\n[ Attempted : setJobSalary("'..tostring(job)..'", grade '..tostring(grade)..', $'..tostring(salary)..') ]\n[ Reason Blocked : over Config.MaxSalary limit ]\n```', 'user', true, source, false)
 			cb()
 		end
 	else
 		print(('esx_society: %s attempted to setJobSalary'):format(identifier))
+		TriggerEvent('DiscordBot:ToDiscord', 'manage', 'SocietySuspiciousLog', '```css\n[ Player Steam : '..tostring(identifier)..' ]\n[ Attempted : setJobSalary("'..tostring(job)..'", grade '..tostring(grade)..', $'..tostring(salary)..') ]\n[ Reason Blocked : not boss of that job ]\n```', 'user', true, source, false)
 		cb()
 	end
 end)
@@ -1101,6 +1118,7 @@ ESX.RegisterServerCallback('esx_society:setDivisionItemPerm', function(source, c
 
 	if not isPlayerBoss(source, job) then
 		print(('esx_society: %s attempted to setDivisionItemPerm'):format(identifier))
+		TriggerEvent('DiscordBot:ToDiscord', 'manage', 'SocietySuspiciousLog', '```css\n[ Player Steam : '..tostring(identifier)..' ]\n[ Attempted : setDivisionItemPerm ]\n[ Reason Blocked : not authorized ]\n```', 'user', true, source, false)
 		cb()
 		return
 	end
@@ -1200,6 +1218,7 @@ ESX.RegisterServerCallback('esx_society:setSocietyVehdivisionPerm', function(sou
 
 	if not isPlayerBoss(source, job) then
 		print(('esx_society: %s attempted to setSocietyVehdivisionPerm'):format(identifier))
+		TriggerEvent('DiscordBot:ToDiscord', 'manage', 'SocietySuspiciousLog', '```css\n[ Player Steam : '..tostring(identifier)..' ]\n[ Attempted : setSocietyVehdivisionPerm ]\n[ Reason Blocked : not authorized ]\n```', 'user', true, source, false)
 		cb()
 		return
 	end
@@ -1271,6 +1290,7 @@ ESX.RegisterServerCallback('esx_society:setSocietyHelidivisionPerm', function(so
 
 	if not isBoss then
 		print(('esx_society: %s attempted to setSocietyHelidivisionPerm'):format(identifier))
+		TriggerEvent('DiscordBot:ToDiscord', 'manage', 'SocietySuspiciousLog', '```css\n[ Player Steam : '..tostring(identifier)..' ]\n[ Attempted : setSocietyHelidivisionPerm ]\n[ Reason Blocked : not authorized ]\n```', 'user', true, source, false)
 		cb()
 		return
 	end
@@ -1339,6 +1359,7 @@ ESX.RegisterServerCallback('esx_society:setDivisionWeapPerm', function(source, c
 
 	if not isPlayerBoss(source, job) then
 		print(('esx_society: %s attempted to setDivisionWeapPerm'):format(identifier))
+		TriggerEvent('DiscordBot:ToDiscord', 'manage', 'SocietySuspiciousLog', '```css\n[ Player Steam : '..tostring(identifier)..' ]\n[ Attempted : setDivisionWeapPerm ]\n[ Reason Blocked : not authorized ]\n```', 'user', true, source, false)
 		cb()
 		return
 	end
@@ -1533,6 +1554,7 @@ ESX.RegisterServerCallback('esx_society:setSocietyItemPerm', function(source, cb
 		end)
 	else
 		print(('esx_society: %s attempted to setSocietyItemPerm'):format(identifier))
+		TriggerEvent('DiscordBot:ToDiscord', 'manage', 'SocietySuspiciousLog', '```css\n[ Player Steam : '..tostring(identifier)..' ]\n[ Attempted : setSocietyItemPerm ]\n[ Reason Blocked : not authorized ]\n```', 'user', true, source, false)
 		cb()
 	end
 end)
@@ -1606,6 +1628,7 @@ ESX.RegisterServerCallback('esx_society:setSocietyWeapPerm', function(source, cb
 		end)
 	else
 		print(('esx_society: %s attempted to setSocietyWeapPerm'):format(identifier))
+		TriggerEvent('DiscordBot:ToDiscord', 'manage', 'SocietySuspiciousLog', '```css\n[ Player Steam : '..tostring(identifier)..' ]\n[ Attempted : setSocietyWeapPerm ]\n[ Reason Blocked : not authorized ]\n```', 'user', true, source, false)
 		cb()
 	end
 end)
@@ -1679,6 +1702,7 @@ ESX.RegisterServerCallback('esx_society:setSocietyVehPerm', function(source, cb,
 		end)
 	else
 		print(('esx_society: %s attempted to setSocietyVehPerm'):format(identifier))
+		TriggerEvent('DiscordBot:ToDiscord', 'manage', 'SocietySuspiciousLog', '```css\n[ Player Steam : '..tostring(identifier)..' ]\n[ Attempted : setSocietyVehPerm ]\n[ Reason Blocked : not authorized ]\n```', 'user', true, source, false)
 		cb()
 	end
 end)
@@ -1753,6 +1777,7 @@ ESX.RegisterServerCallback('esx_society:setSocietyHeliPerm', function(source, cb
 		end)
 	else
 		print(('esx_society: %s attempted to setSocietyHeliPerm'):format(identifier))
+		TriggerEvent('DiscordBot:ToDiscord', 'manage', 'SocietySuspiciousLog', '```css\n[ Player Steam : '..tostring(identifier)..' ]\n[ Attempted : setSocietyHeliPerm ]\n[ Reason Blocked : not authorized ]\n```', 'user', true, source, false)
 		cb()
 	end
 end)
@@ -1763,6 +1788,7 @@ ESX.RegisterServerCallback('esx_society:setUniform', function(source, cb, job, r
 
 	if not isPlayerBoss(source, job) then
 		print(('esx_society: %s attempted to setUniform'):format(identifier))
+		TriggerEvent('DiscordBot:ToDiscord', 'manage', 'SocietySuspiciousLog', '```css\n[ Player Steam : '..tostring(identifier)..' ]\n[ Attempted : setUniform ]\n[ Reason Blocked : not authorized ]\n```', 'user', true, source, false)
 		cb()
 		return
 	end
@@ -1813,6 +1839,7 @@ ESX.RegisterServerCallback('esx_society:setUniformdivision', function(source, cb
 
 	if not isPlayerBoss(source, job) then
 		print(('esx_society: %s attempted to setUniformdivision'):format(identifier))
+		TriggerEvent('DiscordBot:ToDiscord', 'manage', 'SocietySuspiciousLog', '```css\n[ Player Steam : '..tostring(identifier)..' ]\n[ Attempted : setUniformdivision ]\n[ Reason Blocked : not authorized ]\n```', 'user', true, source, false)
 		cb()
 		return
 	end
@@ -1863,6 +1890,7 @@ ESX.RegisterServerCallback('esx_society:CreateDivision', function(source, cb, di
 
 	if not isPlayerBoss(source, playerjname) then
 		print(('esx_society: %s attempted to CreateDivision'):format(sPlayer.identifier))
+		TriggerEvent('DiscordBot:ToDiscord', 'manage', 'SocietySuspiciousLog', '```css\n[ Player Steam : '..tostring(sPlayer.identifier)..' ]\n[ Attempted : CreateDivision (job: '..tostring(playerjname)..') ]\n[ Reason Blocked : not authorized ]\n```', 'user', true, source, false)
 		cb(false)
 		return
 	end
@@ -1921,6 +1949,7 @@ ESX.RegisterServerCallback('esx_society:RemoveDivision', function(source, cb, di
 
     if not isPlayerBoss(source, playerjname) then
         print(('esx_society: %s attempted to RemoveDivision'):format(sPlayer.identifier))
+        TriggerEvent('DiscordBot:ToDiscord', 'manage', 'SocietySuspiciousLog', '```css\n[ Player Steam : '..tostring(sPlayer.identifier)..' ]\n[ Attempted : RemoveDivision ("'..tostring(divisionname)..'", job: '..tostring(playerjname)..') ]\n[ Reason Blocked : not authorized ]\n```', 'user', true, source, false)
         cb(false)
         return
     end
@@ -1997,6 +2026,7 @@ ESX.RegisterServerCallback('esx_society:ChangeDivision', function(source, cb, so
 
     if not isPlayerBoss(source, playerjname) then
         print(('esx_society: %s attempted to ChangeDivision'):format(sPlayer.identifier))
+        TriggerEvent('DiscordBot:ToDiscord', 'manage', 'SocietySuspiciousLog', '```css\n[ Player Steam : '..tostring(sPlayer.identifier)..' ]\n[ Attempted : ChangeDivision (society: '..tostring(society)..', id: '..tostring(dvisionid)..') ]\n[ Reason Blocked : not authorized ]\n```', 'user', true, source, false)
         cb(false)
         return
     end
@@ -2124,6 +2154,7 @@ AddEventHandler('esx_society:SetPermWash', function(JobName, Status)
 
 	if not isPlayerBoss(source, JobName) then
 		print(('esx_society: %s attempted to SetPermWash'):format(xPlayer.identifier))
+		TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'SocietySuspiciousLog', '```css\n[ Player : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Player Steam : '..xPlayer.identifier..' ]\n[ Attempted : SetPermWash("'..tostring(JobName)..'", '..tostring(Status)..') ]\n[ Reason Blocked : not boss of that job ]\n[ ⚠ This toggles money-laundering permission - high sensitivity ]\n```', 'user', true, source, false)
 		return
 	end
 
@@ -2234,5 +2265,14 @@ function JobsLog(titels, grren, job, logs, messagess)
 
 		PerformHttpRequest(WebHookLog, function(err, text, headers) end, "POST", json.encode({username = string.gsub(job, string.sub(job, 1, 1), string.upper(string.sub(job, 1, 1))) ..' Job', embeds = logMessage, avatar_url = tostring(Porof)}), {['Content-Type'] = 'application/json'})
 		PerformHttpRequest(WebHookAdmin, function(err, text, headers) end, "POST", json.encode({username = string.gsub(job, string.sub(job, 1, 1), string.upper(string.sub(job, 1, 1))) ..' Job', embeds = logMessage, avatar_url = tostring(Porof)}), {['Content-Type'] = 'application/json'})
+
+		-- همون لاگ عیناً به سایت خودمون هم فرستاده میشه تا هیچی گم نشه
+		local plainMessage = titels .. ' [' .. job .. '/' .. logs .. ']'
+		if messagess then
+			for _, field in ipairs(messagess) do
+				plainMessage = plainMessage .. ' | ' .. tostring(field["name"]) .. ': ' .. tostring(field["value"])
+			end
+		end
+		local ok = pcall(function() exports['logs']:SendToSite('society_' .. logs, job .. ' Job Log', plainMessage, nil) end)
 	end
 end

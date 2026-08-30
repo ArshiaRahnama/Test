@@ -641,54 +641,6 @@ old NUI panel is fixed by this too.
   `TriggerEvent(Config.ESX, ...)` initialization pattern used
   everywhere else.
 
-## 25) "Manage Gang Members" showed a blank search box with nothing in it
-
-Real bug in `client/boss_esx_menu.lua`, `OpenBossEmployeesMenu`: I
-assumed `FMGangs:GetGangsData`'s callback returned 6 values
-(`gangsCount, online, offline, total, top, allMembers`) - it actually
-only returns 4: `(Gangs, Expires, AllMembers, MyGangMembers)`, exactly
-matching how `client/boss.lua`'s working NUI panel already calls it.
-With the wrong signature, my `allMembers` was always `nil` (there is
-no 6th value), so the member list was always empty - the list menu's
-search bar rendered fine, just with zero rows under it, exactly what
-your screenshot showed. Fixed to use the real signature -
-`MyGangMembers` (the real 4th value) is already exactly this gang's
-member list, pre-filtered server-side, so no more indexing by gang
-name needed either.
-
-Also found and cleaned up, while re-checking every server callback
-this new menu touches: **`FMGangs:GetRankAccess` was registered
-twice** in `server/Gangs.lua` with two completely different, mutually
-incompatible behaviors (one returning a plain boolean, the other the
-real access table). `ESX.RegisterServerCallback` silently lets the
-later registration win, and the later one happened to already be the
-correct one - so this was never an active bug, but it was a landmine:
-reorder or split that file later and it could silently start returning
-the wrong thing. Removed the dead first one.
-
-## 26) Boss menu expanded: rank access (items/garage/etc.) + gang logo
-
-Added two more options to the main boss menu (`client/boss_esx_menu.lua`):
-
-- **Manage Rank Access**: pick a rank, then toggle each access flag
-  (Put/Take Items in the armory, Garage Access, Set Gang Clothes,
-  Heli/Boat Access, Boss Actions) on or off - wired to the same
-  `FMGangs:EditAccess` callback the old NUI panel's access editor
-  already used, so this is real, persisted access control, not a new
-  system.
-- **Gang Settings → Set Gang Logo**: wired to `FMGangs:UpdateGang`
-  (the same one the admin gang-edit page already used) - fetches the
-  gang's current label/expire/webhook first so only the logo actually
-  changes.
-
-**Also fixed a real security gap while wiring this up**:
-`FMGangs:EditAccess` had no permission check at all server-side - any
-client could call it directly (bypassing every menu) and grant
-itself or anyone armory/garage/boss access on any gang. It now
-requires the caller to actually be a boss (or have `bossaction`
-access) of the specific gang they're trying to edit, matching the
-same check every boss menu already gates behind.
-
 ## Testing checklist before going live
 
 - [ ] `/openpanel` opens instantly even with several gang members online

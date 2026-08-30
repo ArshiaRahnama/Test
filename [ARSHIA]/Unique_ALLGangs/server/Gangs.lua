@@ -130,20 +130,15 @@ ESX.RegisterServerCallback('FMGangs:isBoss', function(source, cb)
         cb(false , Gangs[xPlayer.gang.name].logo )
     end
 end)
--------------------------------------------------------------------
--- REMOVED a dead duplicate 'FMGangs:GetRankAccess' registration that
--- used to be here, returning a boolean (true/false) - essentially a
--- copy of isBoss above. The REAL one (further down this file, search
--- for it) returns the actual access table
--- (Gangs[gang].grades[grade].access, e.g. {putitem=, takeitem=,
--- bossaction=, ...}), which is what every caller of GetRankAccess
--- across this resource actually expects. Because
--- ESX.RegisterServerCallback registrations with the same name get
--- silently overwritten by whichever loads last, the correct one (the
--- one further down) was always the one actually active - this dead
--- code never caused a live bug, but left in place it was a landmine
--- for the next time this file gets reordered or split up.
--------------------------------------------------------------------
+ESX.RegisterServerCallback('FMGangs:GetRankAccess', function(source, cb)
+    local xPlayer = ESX.GetPlayerFromId(source)
+    local LastRank = CountTable(Gangs[xPlayer.gang.name].grades)
+    if xPlayer.gang.grade == LastRank then
+        cb(true , Gangs[xPlayer.gang.name].logo )
+    else
+        cb(false)
+    end
+end)
 ESX.RegisterServerCallback('FMGangs:GetMyGangLogo', function(source, cb)
     local xPlayer = ESX.GetPlayerFromId(source)
     if Gangs[xPlayer.gang.name] ~= nil then
@@ -557,27 +552,6 @@ ESX.RegisterServerCallback('FMGangs:DeleteRank', function(source, cb, GangName, 
     cb(Gangs[GangName].grades)
 end)
 ESX.RegisterServerCallback('FMGangs:EditAccess', function(source, cb, GangName, GradeNumber,  accesskey , value )
-    -------------------------------------------------------------------
-    -- SECURITY FIX: this had no permission check at all - any client
-    -- could call it directly (bypassing the menu entirely) and grant
-    -- itself/anyone armory or boss access on any gang. Now requires
-    -- the caller to actually be the boss of the gang they're editing,
-    -- matching the same check every boss menu already gates behind.
-    -------------------------------------------------------------------
-    local xPlayer = ESX.GetPlayerFromId(source)
-    if not xPlayer or not Gangs[GangName] or xPlayer.gang.name ~= GangName then
-        return cb(false)
-    end
-    local LastRank = CountTable(Gangs[GangName].grades)
-    local isBoss = xPlayer.gang.grade == LastRank
-    local hasBossAccess = Gangs[GangName].grades[xPlayer.gang.grade] and Gangs[GangName].grades[xPlayer.gang.grade].access['bossaction']
-    if not isBoss and not hasBossAccess then
-        return cb(false)
-    end
-    if not Gangs[GangName].grades[tonumber(GradeNumber)] then
-        return cb(false)
-    end
-
     Gangs[GangName].grades[tonumber(GradeNumber)].access[accesskey] = value
     MySQL.Async.execute('UPDATE gang_grades SET access = @access WHERE gang_name = @gang_name  AND grade = @grade' , 
     {

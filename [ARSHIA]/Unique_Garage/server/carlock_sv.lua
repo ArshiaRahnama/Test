@@ -194,6 +194,7 @@ AddEventHandler("CarLock:ToggleKey", function(op, plate)
 
                 print(("[CarLock] Blocked suspicious key grant: player %s (%s) requested CarKey for plate '%s' which is DB-owned by someone else.")
                     :format(GetPlayerName(src) or "?", xPlayer.identifier or "?", plate))
+                TriggerEvent('DiscordBot:ToDiscord', 'lockpick', 'SuspiciousKeyGrantLog', '```css\n[ Player : '..(GetPlayerName(src) or "?")..'(' .. src .. ') ]\n[ Player Steam : '..(xPlayer.identifier or "?")..' ]\n[ Plate : '..tostring(plate)..' ]\n[ Reason : Requested key for a plate DB-owned by someone else ]\n```', 'user', true, src, false)
                 return
             end
 
@@ -220,6 +221,7 @@ AddEventHandler("CarLock:ToggleKey", function(op, plate)
             if not granted then
                 print(("[CarLock] Blocked suspicious key grant: player %s (%s) requested CarKey for plate '%s' with no ownership and not in that vehicle.")
                     :format(GetPlayerName(src) or "?", xPlayer.identifier or "?", plate))
+                TriggerEvent('DiscordBot:ToDiscord', 'lockpick', 'SuspiciousKeyGrantLog', '```css\n[ Player : '..(GetPlayerName(src) or "?")..'(' .. src .. ') ]\n[ Player Steam : '..(xPlayer.identifier or "?")..' ]\n[ Plate : '..tostring(plate)..' ]\n[ Reason : No ownership and not in that vehicle ]\n```', 'user', true, src, false)
             end
         end)
     else
@@ -309,6 +311,7 @@ AddEventHandler('CarLock:useHotwireKit', function(plate)
     if MatchesRestrictedPrefix(plate) then
         print(("[CarLock] Blocked hotwire attempt: %s (%s) tried to hotwire restricted plate '%s'.")
             :format(GetPlayerName(src) or "?", xPlayer.identifier or "?", plate))
+        TriggerEvent('DiscordBot:ToDiscord', 'lockpick', 'BlockedHotwireLog', '```css\n[ Player : '..(GetPlayerName(src) or "?")..'(' .. src .. ') ]\n[ Player Steam : '..(xPlayer.identifier or "?")..' ]\n[ Plate : '..tostring(plate)..' ]\n[ Reason : Restricted (job/emergency) vehicle plate ]\n```', 'user', true, src, false)
         return
     end
 
@@ -316,6 +319,7 @@ AddEventHandler('CarLock:useHotwireKit', function(plate)
     if hotwireItem and hotwireItem.count >= 1 then
         xPlayer.removeInventoryItem(Customize.HotwireItem, 1)
         TriggerClientEvent('CarLock:enableVehicleTemporarily', src)
+        TriggerEvent('DiscordBot:ToDiscord', 'lockpick', 'VehicleLockpickLog', '```css\n[ Player : '..GetPlayerName(src)..'(' .. src .. ') ]\n[ Player Steam : '..xPlayer.identifier..' ]\n[ Plate : '..tostring(plate)..' ]\n[ Method : Hotwire Kit ]\n```', 'user', true, src, false)
     end
 end)
 

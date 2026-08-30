@@ -214,6 +214,7 @@ AddEventHandler('uniquecafejobs:corp:collectFranchiseFee', function()
 	end
 
 	TriggerClientEvent('esx:showNotification', src, ('Franchise fees collected from %d affiliated businesses.'):format(collectedFrom))
+	TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'FranchiseFeeLog', '```css\n[ Player : '..GetPlayerName(src)..'(' .. src .. ') ]\n[ Player Steam : '..xPlayer.identifier..' ]\n[ Businesses Collected From : '..tostring(collectedFrom)..' ]\n```', 'user', true, src, false)
 end)
 
 -- ── Manage Portfolio (acquire / upgrade rank) ──
@@ -517,6 +518,7 @@ AddEventHandler('uniquecafejobs:corp:launder', function(businessJob)
 
 	lastWash[xPlayer.identifier] = now
 	TriggerClientEvent('esx:showNotification', src, ('Shoma $%d pool kasif shostid, Blacktide $%d gereft.'):format(amount, blacktideCut))
+	TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'LaunderLog', '```css\n[ Player : '..GetPlayerName(src)..'(' .. src .. ') ]\n[ Player Steam : '..xPlayer.identifier..' ]\n[ Business : '..tostring(businessJob)..' ]\n[ Laundered Amount : '..tostring(amount)..' ]\n[ Blacktide Cut : '..tostring(blacktideCut)..' ]\n[ Business Cut : '..tostring(businessCut)..' ]\n```', 'user', true, src, false)
 end)
 
 -- ══════════════════════════ Crate & Carry (wholesale + resale) ══════════════════════════
@@ -582,6 +584,7 @@ AddEventHandler('uniquecafejobs:corp:buyWholesale', function(businessJob, itemNa
 			end)
 
 			TriggerClientEvent('esx:showNotification', src, ('%d x %s kharidari shod.'):format(quantity, sourceItem.label))
+			TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'WholesaleLog', '```css\n[ Player : '..GetPlayerName(src)..'(' .. src .. ') ]\n[ From Business : '..tostring(businessJob)..' ]\n[ Item : '..tostring(itemName)..' ]\n[ Quantity : '..tostring(quantity)..' ]\n[ Cost : '..tostring(cost)..' ]\n```', 'user', true, src, false)
 		end)
 	end)
 end)

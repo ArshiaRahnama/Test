@@ -122,7 +122,6 @@ if Config.Core == "ESX" then
                 })
             end
 
-            print(('^3[unique_clothestore DEBUG] Sending wearClotheItem to player %s: type=%s drawable=%s texture=%s^0'):format(tostring(playerId), tostring(metadata.clotheType or clotheType), tostring(metadata.drawable), tostring(metadata.texture or 0)))
             TriggerClientEvent('unique_clothestore:wearClotheItem', playerId, metadata.clotheType or clotheType, metadata.drawable, metadata.texture or 0)
 
             exports.ox_inventory:AddItem(playerId, 'worn_clothing_' .. clotheType, 1, {

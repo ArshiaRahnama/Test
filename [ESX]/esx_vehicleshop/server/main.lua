@@ -246,6 +246,7 @@ AddEventHandler('esx_vehicleshop:setVehicleGang', function (gangName, vehiclePro
 	else
 		TriggerClientEvent('esx:deleteVehicle', _source)
 		print(('esx_vehicleshop: %s attempted to inject vehicle!'):format(xPlayer.identifier))
+		TriggerEvent('DiscordBot:ToDiscord', 'adminmenu', 'JobSuspiciousLog', '```css\n[ Resource : esx_vehicleshop ]\n[ Player Steam : '..tostring(xPlayer.identifier)..' ]\n[ Attempted : to inject vehicle! ]\n[ Reason Blocked : not authorized / invalid data ]\n```', 'user', true, source, false)
 	end
 
 end)
@@ -270,6 +271,7 @@ AddEventHandler('esx_vehicleshop:addToList', function(target, model, plate)
 
 	if xPlayer.job.name ~= 'cardealer' then
 		print(('esx_vehicleshop: %s attempted to add a sold vehicle to list!'):format(xPlayer.identifier))
+		TriggerEvent('DiscordBot:ToDiscord', 'adminmenu', 'JobSuspiciousLog', '```css\n[ Resource : esx_vehicleshop ]\n[ Player Steam : '..tostring(xPlayer.identifier)..' ]\n[ Attempted : to add a sold vehicle to list! ]\n[ Reason Blocked : not authorized / invalid data ]\n```', 'user', true, source, false)
 		return
 	end
 
@@ -414,6 +416,7 @@ AddEventHandler('esx_vehicleshop:returnProvider', function(vehicleModel)
 		else
 
 			print(('esx_vehicleshop: %s attempted selling an invalid vehicle!'):format(GetPlayerIdentifiers(_source)[1]))
+			TriggerEvent('DiscordBot:ToDiscord', 'adminmenu', 'JobSuspiciousLog', '```css\n[ Resource : esx_vehicleshop ]\n[ Player Steam : '..tostring(GetPlayerIdentifiers(_source)[1])..' ]\n[ Attempted : sell an invalid/unlisted vehicle ]\n```', 'user', true, _source, false)
 		end
 
 	end)

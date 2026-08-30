@@ -114,6 +114,7 @@ AddEventHandler('mining:SellStone', function(plate)
 	xPlayer.addMoney(Tedad*500)
 	local poull = Tedad*500
 	TriggerClientEvent('esx:showNotification', source, 'Shoma ~g~'..poull..'~w~ Pool Az Frosh Ajor Daryaft Kardid')
+	TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'AMoneyLog', '```css\n[ Player : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Player Steam : '..xPlayer.identifier..' ]\n[ Job : Miner ]\n[ Sold Count : '..tostring(Tedad)..' ]\n[ Earned : '..tostring(poull)..' ]\n```', 'user', true, source, false)
 	TriggerEvent("esx_trunk:getSharedDataStore", plate, function(store)
 		local coffre = (store.get("coffre") or {})
 		for i = 1, #coffre, 1 do

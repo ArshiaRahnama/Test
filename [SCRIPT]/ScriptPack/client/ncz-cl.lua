@@ -24,10 +24,10 @@ local zone = {
 	["ParkingMarkazi"] = {x=240.20,y=-790.68,z=30.57,radius = 70.0, color = 1},
 	["ParkingMarkazi2"] = {x = 209.5102, y = -856.532, z = 30.422,radius = 70.0, color = 1},
 	["Medic"] = {x = 290.7337, y = -588.029, z = 43.188,radius = 60.0, color = 1},
-	["Sheriff"] = {x=-471.02,y =5993.68,z =31.34,radius = 60.0, color = 1},
+	["Sheriff1"] = {x=-471.02,y =5993.68,z =31.34,radius = 60.0, color = 1},
 	["Mechanic"] = {x = -373.6, y = -121.83, z = 38.69,radius = 65.0, color = 1},
 	["UWUCafe"] = {x = -579.787, y = -1061.68, z = 22.347,radius = 65.0, color = 1},
-	["Sheriff"] = {x = 1852.569, y = 3685.489, z = 34.286,radius = 50.0, color = 1},
+	["Sheriff2"] = {x = 1852.569, y = 3685.489, z = 34.286,radius = 50.0, color = 1},
 }
 
 local zoneMap = {
@@ -35,7 +35,7 @@ local zoneMap = {
 
 }
 
-local coords = {label = false,x=nil,y=nil,z=nil,radius=nil}
+local coords = {label = false,x=nil,y=nil,z=nil,radius=nil,name=nil}
 
 local WhitelistJobs = {
 	 ["police"] = 'police',
@@ -74,7 +74,7 @@ Citizen.CreateThread(function()
 			for i, v in pairs(zone) do
 				if Vdist(x, y, z, v.x, v.y, v.z) <= v.radius then
 					coords.label = true
-					coords.x, coords.y, coords.z, coords.radius = v.x, v.y, v.z, v.radius
+					coords.x, coords.y, coords.z, coords.radius, coords.name = v.x, v.y, v.z, v.radius, i
 
 					local isWhitelisted = WhitelistJobs[PlayerData.job.name] ~= nil
 
@@ -82,6 +82,7 @@ Citizen.CreateThread(function()
 						ClearPlayerWantedLevel(PlayerId())
 						SetCurrentPedWeapon(playerPed, GetHashKey("WEAPON_UNARMED"), true)
 						DisablePlayerFiring(playerPed, true)
+						TriggerServerEvent('EventLogs:NCZEnter', i)
 					end
 
 					SetPlayerInvincible(playerPed, true)
@@ -120,7 +121,7 @@ Citizen.CreateThread(function()
 
 			if Vdist(x, y, z, coords.x, coords.y, coords.z) >= coords.radius then
 				coords.label = false
-				coords.x, coords.y, coords.z, coords.radius = nil, nil, nil, nil
+				coords.x, coords.y, coords.z, coords.radius, coords.name = nil, nil, nil, nil, nil
 				NetworkSetFriendlyFireOption(true)
 				DisableControlAction(2, 37, false)
 				DisablePlayerFiring(playerPed, false)

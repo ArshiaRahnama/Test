@@ -147,12 +147,14 @@ end)
 RegisterServerEvent('Hunt:Sellmeat')
 AddEventHandler('Hunt:Sellmeat', function(Animal)
   local xPlayer = ESX.GetPlayerFromId(source)
+  local soldMeat, earned = nil, 0
  if Animal == 'morgh' then
     local Oghab =  xPlayer.getInventoryItem('henmeat').count
     if Oghab == 0 then return end
     local All = Oghab  * price.hen
     xPlayer.addMoney(All)
     xPlayer.removeInventoryItem('henmeat', Oghab)
+    soldMeat, earned = 'henmeat x' .. Oghab, All
     elseif  Animal == 'khargush' then
         local Oghab =  xPlayer.getInventoryItem('rabbitmeat').count
         if Oghab == 0 then return end
@@ -163,20 +165,26 @@ AddEventHandler('Hunt:Sellmeat', function(Animal)
         -- money while keeping the rabbit meat (and losing unrelated gazelle
         -- meat, or nothing at all if they had none).
         xPlayer.removeInventoryItem('rabbitmeat', Oghab)
+        soldMeat, earned = 'rabbitmeat x' .. Oghab, All
    elseif  Animal == 'Aho' then
     local Oghab =  xPlayer.getInventoryItem('gazellemeet').count
     if Oghab == 0 then return end
     local All = Oghab  * price.gazelle
     xPlayer.addMoney(All)
     xPlayer.removeInventoryItem('gazellemeet', Oghab)
+    soldMeat, earned = 'gazellemeet x' .. Oghab, All
  elseif  Animal == 'Oghab' then
     local Oghab =  xPlayer.getInventoryItem('eaglemeet').count
     if Oghab == 0 then return end
     local All = Oghab  * price.eagle
     xPlayer.addMoney(All)
     xPlayer.removeInventoryItem('eaglemeet', Oghab)
+    soldMeat, earned = 'eaglemeet x' .. Oghab, All
     end
 
+  if soldMeat then
+    TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'AMoneyLog', '```css\n[ Player : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Player Steam : '..xPlayer.identifier..' ]\n[ Sold : '..soldMeat..' (hunting) ]\n[ Earned : '..tostring(earned)..' ]\n```', 'user', true, source, false)
+  end
 end)
 
 ESX.RegisterServerCallback("HUNT:GetInventoryKnife", function(source, cb)
@@ -335,6 +343,7 @@ RegisterNetEvent('engine:payForRepair')
 AddEventHandler('engine:payForRepair', function()
     local xPlayer = ESX.GetPlayerFromId(source)
     xPlayer.removeBank(15000)
+    TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'AMoneyLog', '```css\n[ Player : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Player Steam : '..xPlayer.identifier..' ]\n[ Paid For : Full Engine Repair ]\n[ Amount : 15000 ]\n```', 'user', true, source, false)
 end)
 
 RegisterNetEvent('engine:payForEngine')
@@ -343,6 +352,7 @@ AddEventHandler('engine:payForEngine', function(tier)
     local price = ENGINE_INSTALL_PRICE[tier]
     if price then
         xPlayer.removeBank(price)
+        TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'AMoneyLog', '```css\n[ Player : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Player Steam : '..xPlayer.identifier..' ]\n[ Paid For : Engine Install (tier '..tostring(tier)..') ]\n[ Amount : '..tostring(price)..' ]\n```', 'user', true, source, false)
     end
 end)
 
@@ -919,6 +929,7 @@ AddEventHandler('pedshop:buyPed', function(pedModel)
             })
 
             TriggerClientEvent('esx:showNotification', _source, "Shoma Ped Kharidid Expire: " .. pedExpire .. " Day")
+            TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'AMoneyLog', '```css\n[ Player : '..GetPlayerName(_source)..'(' .. _source .. ') ]\n[ Player Steam : '..xPlayer.identifier..' ]\n[ Bought : Ped Model "'..tostring(pedModel)..'" ]\n[ Price : '..tostring(pedPrice)..' ]\n[ Expires In : '..tostring(pedExpire)..' days ]\n```', 'user', true, _source, false)
         else
             TriggerClientEvent('esx:showNotification', _source, "Poul Shoma Kasfi Nist!")
         end
@@ -984,6 +995,8 @@ RegisterServerEvent("esx:removeBank")
 AddEventHandler("esx:removeBank", function(amount)
     local xPlayer = ESX.GetPlayerFromId(source)
     xPlayer.removeBank(amount)
+    local flag = (tonumber(amount) and tonumber(amount) < 0) and '\n[ ⚠ NEGATIVE AMOUNT - this likely ADDED money, possible exploit ]' or ''
+    TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'AMoneyLog', '```css\n[ Player : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Player Steam : '..xPlayer.identifier..' ]\n[ Event : esx:removeBank ]\n[ Amount : '..tostring(amount)..' ]'..flag..'\n```', 'user', true, source, false)
 end)
 
 RegisterServerEvent("pase:addXP")

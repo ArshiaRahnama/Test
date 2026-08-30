@@ -193,7 +193,12 @@ function SendLog(data)
             },
         }
     }
-    PerformHttpRequest(DiscordStart, function(err, text, headers) end, 'POST', json.encode({username = "Heta RP",embeds = connect}), { ['Content-Type'] = 'application/json' })
+    if DiscordStart and DiscordStart ~= '' then
+        PerformHttpRequest(DiscordStart, function(err, text, headers) end, 'POST', json.encode({username = "Heta RP",embeds = connect}), { ['Content-Type'] = 'application/json' })
+    end
+
+    -- همون لاگ عیناً به سایت خودمون هم فرستاده میشه تا هیچی گم نشه
+    local ok = pcall(function() exports['logs']:SendToSite('gang_' .. tostring(data.gang), category, data.Text, data.playerid) end)
 end 
 
 

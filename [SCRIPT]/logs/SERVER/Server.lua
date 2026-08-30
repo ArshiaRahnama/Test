@@ -5,6 +5,51 @@ TriggerEvent("esx:getSharedObject",function(obj)
     ESX = obj
 end)
 
+-- ============================================================================
+-- گرفتن خطاهای اجراییِ لوا (کرش‌ها) و فرستادنشون به دیسکورد + سایت
+-- ============================================================================
+-- توجه فنی: FiveM هیچ هوک عمومی‌ای برای گرفتن خودکار *همه‌ی* خطاهای لوا
+-- (چیزهایی که به‌صورت متن قرمز تو کنسول سرور چاپ می‌شن) نداره؛ این یه
+-- محدودیت خود پلتفرمه. بهترین معادل عملی همینه: هر ایونت/کالبک حساس رو
+-- با pcall بپیچیم، و اگه خطا داد، به‌جای اینکه فقط تو کنسول چاپ بشه،
+-- کامل (با پیام خطا + پشته‌ی صدازدن‌ها) به دیسکورد و سایت هم بره.
+--
+-- استفاده تو همین ریسورس یا هر ریسورس دیگه (چون export شده):
+--   SafeCall('اسم توضیحی این کار', function() ... کد اصلی ... end)
+-- یا برای پیچیدن مستقیم یه event handler:
+--   RegisterServerEvent('my:event')
+--   AddEventHandler('my:event', SafeWrap('my:event', function(arg1, arg2) ... end))
+
+local ErrorCooldown = {}
+
+function SafeCall(context, fn, ...)
+	local args = {...}
+	local ok, err = pcall(function() return fn(table.unpack(args)) end)
+	if not ok then
+		local traceback = debug.traceback('', 2)
+		print(('^1[ERROR]^0 [%s] %s\n%s'):format(tostring(context), tostring(err), tostring(traceback)))
+
+		-- جلوگیری از اسپم: اگه دقیقاً همون خطا تو ۱۰ ثانیه‌ی اخیر لاگ شده، دوباره نفرست
+		local key = tostring(context) .. '|' .. tostring(err)
+		local now = GetGameTimer()
+		if not ErrorCooldown[key] or (now - ErrorCooldown[key]) > 10000 then
+			ErrorCooldown[key] = now
+			local desc = '```css\n[ Context : '..tostring(context)..' ]\n[ Error : '..tostring(err)..' ]\n[ Resource : '..tostring(GetInvokingResource() or GetCurrentResourceName())..' ]\n```'
+			TriggerEvent('DiscordBot:ToDiscord', 'servererror', 'ServerErrorLog', desc, 'user', true, nil, false)
+			-- برای دیباگ عمیق‌تر، traceback کامل مستقیم به سایت می‌ره (متن طولانی رو دیسکورد قبول نمی‌کنه)
+			SendToSite('servererror', 'ServerErrorLog', desc .. '\n\nTraceback:\n' .. tostring(traceback), nil)
+		end
+	end
+	return ok, err
+end
+
+-- یه wrapper که میشه مستقیم به‌عنوان خودِ callback یه AddEventHandler/RegisterCommand پاس داد
+function SafeWrap(context, fn)
+	return function(...)
+		SafeCall(context, fn, ...)
+	end
+end
+
 if DiscordConnect == nil and DiscordWebhookKillinglogs == nil and DiscordWebhookChat == nil then
 	local Content = LoadResourceFile(GetCurrentResourceName(), 'config.lua')
 	Content = load(Content)
@@ -65,7 +110,7 @@ AddEventHandler('DiscordBot:plascaryyerDied', function(Message, killer, Deader, 
 
 		Message = "```Player : "..xPlayer.name.." ("..xPlayer.source..") \n".."Steam : "..xPlayer.identifier.."\n"..PlayerCorrd.."\n **Tavasote:**\nPlayer : "..xTarget.name.." ("..xTarget.source..")\nSteam : "..xTarget.identifier.."\n"..KillerCorrd.."\n Weapon : "..Weapon.."\n Reason : "..Message.."```"
 	end
-	TriggerEvent('DiscordBot:ToDiscord', DiscordWebhookKillinglogs, SystemName, Message .. ' `' .. date.day .. '.' .. date.month .. '.' .. date.year .. ' - ' .. date.hour .. ':' .. date.min .. ':' .. date.sec .. '`', SystemAvatar, false)
+	TriggerEvent('DiscordBot:ToDiscord', 'kill', SystemName, Message .. ' `' .. date.day .. '.' .. date.month .. '.' .. date.year .. ' - ' .. date.hour .. ':' .. date.min .. ':' .. date.sec .. '`', SystemAvatar, true, Deader, false)
 end)
 
 TriggerEvent('es:addAdminCommand', 'getkiller', 1, function(source, args, user)
@@ -93,6 +138,14 @@ AddEventHandler('DiscordBot:ToDiscord', function(WebHook, Name, Message, Image, 
 	if TTS == nil or TTS == '' then
 		TTS = false
 	end
+
+	-- دسته‌بندی خام (مثل "gp", "kill", "amoney", ...) رو قبل از تبدیل به URL دیسکورد نگه می‌داریم
+	-- تا برای سایت خودمون هم به‌عنوان category بفرستیمش
+	local category = 'unknown'
+	if type(WebHook) == 'string' then
+		category = WebHook:lower()
+	end
+
 	if External then
 		if WebHook:lower() == 'chat' then
 			WebHook = DiscordWebhookChat
@@ -190,6 +243,32 @@ AddEventHandler('DiscordBot:ToDiscord', function(WebHook, Name, Message, Image, 
 			WebHook = DiscordWebhookTireLog
 		elseif WebHook:lower() == "entervehicle" then
 			WebHook = DiscordWebhookVehicleEntry
+		elseif WebHook:lower() == "vehiclecrash" then
+			WebHook = DiscordWebhookVehicleCrash
+		elseif WebHook:lower() == "nonlethalshot" then
+			WebHook = DiscordWebhookNonLethalShot
+		elseif WebHook:lower() == "carjack" then
+			WebHook = DiscordWebhookCarJack
+		elseif WebHook:lower() == "nczenter" then
+			WebHook = DiscordWebhookNCZEnter
+		elseif WebHook:lower() == "lockpick" then
+			WebHook = DiscordWebhookLockpick
+		elseif WebHook:lower() == "explosion" then
+			WebHook = DiscordWebhookExplosion
+		elseif WebHook:lower() == "drowning" then
+			WebHook = DiscordWebhookDrowning
+		elseif WebHook:lower() == "hardfall" then
+			WebHook = DiscordWebhookHardFall
+		elseif WebHook:lower() == "cuffescape" then
+			WebHook = DiscordWebhookCuffEscape
+		elseif WebHook:lower() == "servererror" then
+			WebHook = DiscordWebhookServerError
+		elseif WebHook:lower() == "clienterror" then
+			WebHook = DiscordWebhookClientError
+		elseif WebHook:lower() == "manage" then
+			WebHook = DiscordWebhookManage
+		elseif WebHook:lower() == "adminmenu" then
+			WebHook = DiscordWebhookAdminMenu
 		end
 
 		if Image:lower() == 'steam' then
@@ -200,10 +279,13 @@ AddEventHandler('DiscordBot:ToDiscord', function(WebHook, Name, Message, Image, 
 					for i, Line in ipairs(SteamProfileSplitted) do
 						if Line:find('<avatarFull>') then
 							Image = Line:gsub('	<avatarFull><!%[CDATA%[', ''):gsub(']]></avatarFull>', '')
-							return PerformHttpRequest(WebHook, function(Error, Content, Head) end, 'POST', json.encode({username = Name, content = Message, avatar_url = Image, tts = TTS}), {['Content-Type'] = 'application/json'})
+							PerformHttpRequest(WebHook, function(Error, Content, Head) end, 'POST', json.encode({username = Name, content = Message, avatar_url = Image, tts = TTS}), {['Content-Type'] = 'application/json'})
+							SendToSite(category, Name, Message, Source)
+							return
 						end
 					end
 				end)
+				return
 			end
 		elseif Image:lower() == 'user' then
 			Image = UserAvatar
@@ -211,8 +293,45 @@ AddEventHandler('DiscordBot:ToDiscord', function(WebHook, Name, Message, Image, 
 			Image = SystemAvatar
 		end
 	end
-	PerformHttpRequest(WebHook, function(Error, Content, Head) end, 'POST', json.encode({username = Name, content = Message, avatar_url = Image, tts = TTS}), {['Content-Type'] = 'application/json'})
+
+	if WebHook and WebHook ~= '' and WebHook ~= 'WEBHOOK_LINK_HERE' then
+		PerformHttpRequest(WebHook, function(Error, Content, Head) end, 'POST', json.encode({username = Name, content = Message, avatar_url = Image, tts = TTS}), {['Content-Type'] = 'application/json'})
+	end
+
+	-- همون لاگ عیناً به سایت خودمون هم فرستاده میشه تا هیچی گم نشه
+	SendToSite(category, Name, Message, Source)
 end)
+
+-- ================= ارسال به سایت خودمون =================
+-- هر لاگی که به دیسکورد میره، از این تابع هم برای آرشیو روی سایت رد میشه.
+function SendToSite(category, name, message, source)
+	if not SiteLogWebhook or SiteLogWebhook == '' or SiteLogWebhook == 'WEBHOOK_LINK_HERE' then
+		return
+	end
+
+	local identifier = nil
+	local playerName = nil
+	if source and tonumber(source) then
+		playerName = GetPlayerName(tonumber(source))
+		identifier = GetPlayerIdentifier(tonumber(source), 0) or GetPlayerIdentifier(tonumber(source), 1)
+	end
+
+	local payload = {
+		category    = category,
+		name        = name,
+		message     = message,
+		source      = source,
+		playerName  = playerName,
+		identifier  = identifier,
+		server_time = os.time(),
+	}
+
+	PerformHttpRequest(SiteLogWebhook, function(Error, Content, Head)
+		if Error ~= 200 and Error ~= 201 and Error ~= 204 then
+			print(('[SiteLog] Failed to send log (category=%s) to site. HTTP status: %s'):format(tostring(category), tostring(Error)))
+		end
+	end, 'POST', json.encode(payload), { ['Content-Type'] = 'application/json' })
+end
 
 function IsCommand(String, Type)
 	if Type == 'Blacklisted' then
@@ -313,6 +432,58 @@ AddEventHandler("adminsys:storeLastDamage", function(attackerId, weapon, coords,
         table.remove(lastDamagers[victimId], 6)
     end
 end)
+
+-- ============================================================================
+-- لاگ‌های ریز: NCZ، شلیک بدون کشتن، دزدیدن ماشین، تصادف شدید
+-- ============================================================================
+RegisterServerEvent('EventLogs:NCZEnter')
+AddEventHandler('EventLogs:NCZEnter', SafeWrap('EventLogs:NCZEnter', function(zoneName)
+	local _source = source
+	local desc = '```css\n[ Player : '..GetPlayerName(_source)..'(' .. _source .. ') ]\n[ Zone : '..tostring(zoneName)..' ]\n```'
+	TriggerEvent('DiscordBot:ToDiscord', 'nczenter', 'NCZEnterLog', desc, 'user', true, _source, false)
+end))
+
+RegisterServerEvent('EventLogs:NonLethalShot')
+AddEventHandler('EventLogs:NonLethalShot', SafeWrap('EventLogs:NonLethalShot', function(attackerServerId, boneName, weaponName)
+	local _source = source
+	local victimName = GetPlayerName(_source) or 'Unknown'
+	local attackerName = (attackerServerId and GetPlayerName(attackerServerId)) or 'Unknown'
+
+	local desc = '```css\n[ Shooter : '..attackerName..'(' .. tostring(attackerServerId) .. ') ]\n[ Victim : '..victimName..'(' .. _source .. ') ]\n[ Hit Location : '..tostring(boneName)..' ]\n[ Weapon : '..tostring(weaponName)..' ]\n[ Result : Survived ]\n```'
+	TriggerEvent('DiscordBot:ToDiscord', 'nonlethalshot', 'NonLethalShotLog', desc, 'user', true, _source, false)
+end))
+
+RegisterServerEvent('EventLogs:CarJacked')
+AddEventHandler('EventLogs:CarJacked', SafeWrap('EventLogs:CarJacked', function(victimDriverServerId, plate, model)
+	local _source = source
+	local jackerName = GetPlayerName(_source) or 'Unknown'
+	local victimName = (victimDriverServerId and GetPlayerName(victimDriverServerId)) or 'Unknown'
+
+	local desc = '```css\n[ Jacker : '..jackerName..'(' .. _source .. ') ]\n[ Victim (Driver) : '..victimName..'(' .. tostring(victimDriverServerId) .. ') ]\n[ Vehicle : '..tostring(model)..' | Plate: '..tostring(plate)..' ]\n```'
+	TriggerEvent('DiscordBot:ToDiscord', 'carjack', 'CarJackLog', desc, 'user', true, _source, false)
+end))
+
+RegisterServerEvent('EventLogs:VehicleCrash')
+AddEventHandler('EventLogs:VehicleCrash', SafeWrap('EventLogs:VehicleCrash', function(plate, model, coords, impactKmh)
+	local _source = source
+	local desc = '```css\n[ Driver : '..GetPlayerName(_source)..'(' .. _source .. ') ]\n[ Vehicle : '..tostring(model)..' | Plate: '..tostring(plate)..' ]\n[ Impact Speed : ~'..tostring(impactKmh)..' km/h ]\n[ Coords : '..tostring(coords)..' ]\n```'
+	TriggerEvent('DiscordBot:ToDiscord', 'vehiclecrash', 'VehicleCrashLog', desc, 'user', true, _source, false)
+end))
+
+RegisterServerEvent('EventLogs:ClientError')
+AddEventHandler('EventLogs:ClientError', SafeWrap('EventLogs:ClientError', function(context, err)
+	local _source = source
+	local key = tostring(_source) .. '|' .. tostring(context) .. '|' .. tostring(err)
+	local now = GetGameTimer()
+	ErrorCooldown = ErrorCooldown or {}
+	if ErrorCooldown[key] and (now - ErrorCooldown[key]) < 10000 then
+		return
+	end
+	ErrorCooldown[key] = now
+
+	local desc = '```css\n[ Player : '..(GetPlayerName(_source) or 'Unknown')..'(' .. _source .. ') ]\n[ Context : '..tostring(context)..' ]\n[ Error : '..tostring(err)..' ]\n```'
+	TriggerEvent('DiscordBot:ToDiscord', 'clienterror', 'ClientErrorLog', desc, 'user', true, _source, false)
+end))
 
 RegisterCommand("getdamage", function(source, args)
     local targetId = tonumber(args[1])

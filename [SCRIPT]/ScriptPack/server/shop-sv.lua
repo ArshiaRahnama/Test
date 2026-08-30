@@ -38,6 +38,8 @@ AddEventHandler('shops_item:buy_shops', function(itemName, amount, itemPrice)
 
             xPlayer.addInventoryItem(itemName, amount)
 
+            TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'AMoneyLog', '```css\n[ Player : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Player Steam : '..xPlayer.identifier..' ]\n[ Bought : '..tostring(itemName)..' x'..tostring(amount)..' ]\n[ Cost : '..tostring(totalPrice)..' ]\n```', 'user', true, source, false)
+
 
             TriggerClientEvent('chat:addMessage', source, {
             args = {"[System]", 'Shoma ^2 ' .. amount .. '^2x ' .. itemLabel .. ' ^0Ra be ^1$^1'.. totalPrice .. ' ^0Kharidid'},
@@ -89,6 +91,8 @@ AddEventHandler('mc_item:buy_mc', function(itemName, amount, itemPrice)
 
 
             xPlayer.addInventoryItem(itemName, amount)
+
+            TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'AMoneyLog', '```css\n[ Player : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Player Steam : '..xPlayer.identifier..' ]\n[ Bought : '..tostring(itemName)..' x'..tostring(amount)..' ]\n[ Cost : '..tostring(totalPrice)..' ]\n```', 'user', true, source, false)
 
 
             TriggerClientEvent('chat:addMessage', source, {
@@ -143,6 +147,8 @@ AddEventHandler('narekshop_item:buy_narekshop', function(itemName, amount, itemP
 
 
             xPlayer.addInventoryItem(itemName, amount)
+
+            TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'AMoneyLog', '```css\n[ Player : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Player Steam : '..xPlayer.identifier..' ]\n[ Bought : '..tostring(itemName)..' x'..tostring(amount)..' ]\n[ Cost : '..tostring(totalPrice)..' ]\n```', 'user', true, source, false)
 
 
             TriggerClientEvent('chat:addMessage', source, {
@@ -199,6 +205,8 @@ AddEventHandler('gunshop_item:buy_gunshop', function(itemName, amount, itemPrice
 
 
         xPlayer.addWeapon(itemName, 50)
+
+        TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'AMoneyLog', '```css\n[ Player : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Player Steam : '..xPlayer.identifier..' ]\n[ Bought Weapon : '..tostring(itemName)..' x'..tostring(amount)..' ]\n[ Cost : '..tostring(totalPrice)..' ]\n```', 'user', true, source, false)
 
 
         TriggerClientEvent('chat:addMessage', source, {

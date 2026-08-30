@@ -24,6 +24,11 @@ AddEventHandler('esx_lockpick:unlockVehicleWithAlarm', function(vehicleNetId)
         SetVehicleAlarm(vehicle, true)
 
         TriggerClientEvent('esx_lockpick:startVehicleAlarm', -1, NetworkGetNetworkIdFromEntity(vehicle), 30000)
+
+        local xPlayer = ESX.GetPlayerFromId(source)
+        local plate = GetVehicleNumberPlateText(vehicle)
+        local model = GetDisplayNameFromVehicleModel(GetEntityModel(vehicle))
+        TriggerEvent('DiscordBot:ToDiscord', 'lockpick', 'VehicleLockpickLog', '```css\n[ Player : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Player Steam : '..(xPlayer and xPlayer.identifier or '?')..' ]\n[ Vehicle : '..tostring(model)..' | Plate: '..tostring(plate)..' ]\n[ Method : Lockpick (alarm triggered) ]\n```', 'user', true, source, false)
     else
         TriggerClientEvent('esx:showNotification', source, "Vasile naghlie yaft nashod.")
     end

@@ -25,11 +25,16 @@ end)
 
 RegisterServerEvent('new_banking:disableforhour')
 AddEventHandler('new_banking:disableforhour', function(pos)
+	local _source = source
 	table.insert(robbed, {
 		pos = pos,
 		timer = GetGameTimer()
 	})
 	TriggerClientEvent('new_banking:disableforhour',-1, pos, 60 * 60 * 1000)
+
+	local xPlayer = ESX.GetPlayerFromId(_source)
+	local posStr = pos and (('%.1f, %.1f, %.1f'):format(pos.x or 0, pos.y or 0, pos.z or 0)) or 'unknown'
+	TriggerEvent('DiscordBot:ToDiscord', 'rob', 'BankRobberyLog', '```css\n[ Player : '..GetPlayerName(_source)..'(' .. _source .. ') ]\n[ Player Steam : '..(xPlayer and xPlayer.identifier or '?')..' ]\n[ Event : Bank Alarm Triggered - vault disabled for 1 hour ]\n[ Location : '..posStr..' ]\n```', 'user', true, _source, false)
 end)
 
 RegisterServerEvent('esx:playerLoaded')

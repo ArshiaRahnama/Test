@@ -13,3 +13,7 @@ client_script {
 	'CLIENT/*.lua',
 }
 
+server_export 'SendToSite'
+server_export 'SafeCall'
+server_export 'SafeWrap'
+

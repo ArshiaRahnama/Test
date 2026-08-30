@@ -151,8 +151,10 @@ AddEventHandler('arshia_jail:sendto',function (target, type, time, reason, unjai
 				TriggerClientEvent('chat:addMessage',xPlayers[i], {color = {0, 95, 254}, multiline = true ,args = {"[DISPATCH]", '^1'..yPlayer.name..'^0 tavasot ^2'..zPlayer.name..'^0 zendani shod be modat ^3'..tostring(time)..'^0 mah be dalile: ^3'..reason}})
 			end
 		end
+		TriggerEvent('DiscordBot:ToDiscord', 'jail', 'JailLog', '```css\n[ Officer : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Target : '..GetPlayerName(target)..'(' .. target .. ') ]\n[ Type : Faction Jail ]\n[ Duration : '..tostring(time)..' ]\n[ Reason : '..tostring(reason)..' ]\n```', 'user', true, source, false)
 	else
 		TriggerClientEvent('chatMessage', -1, "[Admin Jail]", {255, 0, 0}, "^1"..GetPlayerName(target).."^0 Tavasote ^2"..GetPlayerName(source).."^0 Be Modate ^2"..time.." ^0Daghighe Jail Shod be Dalile : ^1"..reason)
+		TriggerEvent('DiscordBot:ToDiscord', 'jail', 'JailLog', '```css\n[ Admin : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Target : '..GetPlayerName(target)..'(' .. target .. ') ]\n[ Type : Admin Jail ]\n[ Duration : '..tostring(time)..' ]\n[ Reason : '..tostring(reason)..' ]\n```', 'user', true, source, false)
 	end
 end)
 
@@ -191,6 +193,7 @@ AddEventHandler('arshia_jail:UpdateTime',function (time)
 			ClearJail(identifier)
 		else
 			print(('arshia_jail: %s attempted to self-release from jail early!'):format(identifier))
+			TriggerEvent('DiscordBot:ToDiscord', 'adminmenu', 'JobSuspiciousLog', '```css\n[ Resource : arshia_jail ]\n[ Player Steam : '..tostring(identifier)..' ]\n[ Attempted : to self-release from jail early! ]\n[ Reason Blocked : not authorized / invalid data ]\n```', 'user', true, source, false)
 		end
 	end
 end)
@@ -233,6 +236,7 @@ AddEventHandler("arshia_jail:UnjailPlayer", function(id)
 			TriggerClientEvent('chat:addMessage',xPlayers[i], {color = {0, 95, 254}, multiline = true ,args = {"[DISPATCH]", '^1'..yPlayer.name..'^0 tavasot ^2'..zPlayer.name..'^0 unjail shod !'}})
 		end
 	end
+	TriggerEvent('DiscordBot:ToDiscord', 'jail', 'JailLog', '```css\n[ Admin : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Target : '..GetPlayerName(id)..'(' .. id .. ') ]\n[ Action : Early Release / Unjail ]\n```', 'user', true, source, false)
     ExemptFromAntiCheat(id, 5000, { teleport = true, speed = true })
     TriggerClientEvent("arshia_jail:UnjailPlayer", id)
 end)

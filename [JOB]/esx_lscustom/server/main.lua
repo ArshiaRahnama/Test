@@ -208,16 +208,19 @@ ESX.RegisterServerCallback('esx_lscustom:PayVehicleOrders', function(source, cb,
 	xPlayer = ESX.GetPlayerFromId(source)
 	local i = GetVehicleInList(vehicle)
 	if i then
+		local paidAmount = VehiclesInWatingList[i].price
 		if payWithBank then
-			if xPlayer.bank >= VehiclesInWatingList[i].price then
-				xPlayer.removeBank(tonumber(VehiclesInWatingList[i].price))
+			if xPlayer.bank >= paidAmount then
+				xPlayer.removeBank(tonumber(paidAmount))
+				TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'AMoneyLog', '```css\n[ Player : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Player Steam : '..xPlayer.identifier..' ]\n[ Paid For : LS Custom (bank) ]\n[ Amount : '..tostring(paidAmount)..' ]\n```', 'user', true, source, false)
 				cb(true)
 			else
 				cb(false)
 			end
 		else
-			if xPlayer.money >= VehiclesInWatingList[i].price then
-				xPlayer.removeMoney(tonumber(VehiclesInWatingList[i].price))
+			if xPlayer.money >= paidAmount then
+				xPlayer.removeMoney(tonumber(paidAmount))
+				TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'AMoneyLog', '```css\n[ Player : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Player Steam : '..xPlayer.identifier..' ]\n[ Paid For : LS Custom (cash) ]\n[ Amount : '..tostring(paidAmount)..' ]\n```', 'user', true, source, false)
 				cb(true)
 			else
 				cb(false)

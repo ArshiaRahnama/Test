@@ -35,6 +35,7 @@ AddEventHandler('esx_billing:send2Bill', function(playerId, sharedAccountName, l
 
 		if amount < 0 then
 			print(('esx_billing: %s attempted to send a negative bill!'):format(xPlayer.identifier))
+			TriggerEvent('DiscordBot:ToDiscord', 'adminmenu', 'JobSuspiciousLog', '```css\n[ Resource : esx_billing ]\n[ Player Steam : '..tostring(xPlayer.identifier)..' ]\n[ Attempted : to send a negative bill! ]\n[ Reason Blocked : not authorized / invalid data ]\n```', 'user', true, source, false)
 		elseif account == nil then
 
 			if xTarget ~= nil then
@@ -49,6 +50,7 @@ AddEventHandler('esx_billing:send2Bill', function(playerId, sharedAccountName, l
 				}, function(rowsChanged)
 					TriggerClientEvent('chat:addMessage', xTarget.source, { args = { '^1SYSTEM', _U('received_invoice') }})
 					TriggerClientEvent('chat:addMessage', xPlayer.source, { args = { '^1SYSTEM', 'Shoma Qabz ro be '.. GetPlayerName(playerId) .. ' Dadid!' }})
+					TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'BillLog', '```css\n[ Sender : '..GetPlayerName(xPlayer.source)..'(' .. xPlayer.source .. ') ]\n[ Target : '..GetPlayerName(playerId)..'(' .. playerId .. ') ]\n[ Label : '..tostring(label)..' ]\n[ Amount : '..tostring(amount)..' ]\n```', 'user', true, xPlayer.source, false)
 				end)
 			end
 
@@ -67,6 +69,7 @@ AddEventHandler('esx_billing:send2Bill', function(playerId, sharedAccountName, l
 
 					TriggerClientEvent('chat:addMessage', xTarget.source, { args = { '^1SYSTEM', _U('received_invoice') }})
 					TriggerClientEvent('chat:addMessage', xTarget.source, { args = { '^1SYSTEM', 'Shoma Qabz ro be '.. GetPlayerName(playerId) .. ' Dadid!' }})
+					TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'BillLog', '```css\n[ Sender : '..GetPlayerName(xPlayer.source)..'(' .. xPlayer.source .. ') ]\n[ Society : '..tostring(sharedAccountName)..' ]\n[ Label : '..tostring(label)..' ]\n[ Amount : '..tostring(amount)..' ]\n```', 'user', true, xPlayer.source, false)
 				end)
 			end
 		end
@@ -111,6 +114,7 @@ AddEventHandler('esx_billing:send2Bill2', function(source2, playerId, sharedAcco
 
 			if amount < 0 then
 				print(('esx_billing: %s attempted to send a negative bill!'):format(xPlayer.identifier))
+				TriggerEvent('DiscordBot:ToDiscord', 'adminmenu', 'JobSuspiciousLog', '```css\n[ Resource : esx_billing ]\n[ Player Steam : '..tostring(xPlayer.identifier)..' ]\n[ Attempted : to send a negative bill! ]\n[ Reason Blocked : not authorized / invalid data ]\n```', 'user', true, source, false)
 			elseif account == nil then
 
 				if xTarget ~= nil then

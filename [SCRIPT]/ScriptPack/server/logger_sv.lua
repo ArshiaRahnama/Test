@@ -1,19 +1,39 @@
 ESX = nil
 TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
 
-local alogs 		= "https:// arshiahub.ir/changeme/1219998148894654474/MXIY_O4nnv7d7KfFQIkJ8xRd3pKQTexL2DBDeUNZr_m3qOCvAW_fPyGJICnCPHjADsyb"
-local infologs 		= "https:// arshiahub.ir/changeme/1217536908209557705/1KtYLoI-Q7RmbBGcK4tpiRJCW54eCb8_ITzpyPyrLLow8plODz1L2xQDNzSGW54DSCmu"
-local ganglog 		= "https:// arshiahub.ir/changeme/1219998040014848095/FJTWwEyGBq7yU52f649nEoLxbqSRBIHzkirbRh09inP386SeFW5p4p0FEQrRAti4H9Iv"
-local homelog 		= "https:// arshiahub.ir/changeme/1217534722633105568/oqsN6J3IslcQ8ZGQRQ1RmaJy3DgqJGeBQ_GZuYnAuaqdPFg0CAE87k2N_WpwmWx7BFum"
-local trunklog 		= "https:// arshiahub.ir/changeme/1219997766701289502/iWHlBEjEnvPvjE0jR8NGguOezPRvgxy14CrEC-i4dahKmJtevODYxLGd8sG5JKQyQW9r"
-local atmlog 		= "https:// arshiahub.ir/changeme/1217533571456176148/nZcYY6TfrIOUhmkA0XBwGiUNEU4e_LDc6fdwrN5scNCwyXNyw7H8a5yZoy1xT0lzb64h"
-local roblog 		= "https:// arshiahub.ir/changeme/1217532268373872650/IWPsgUJmxQt_-6VVPm_c5pY5IlpSy2JEW5xsv9B1sTFKFFAx20C0QE_cTq6FQumrRdl1"
+local alogs 		= "https://discord.com/api/webhooks/1219998148894654474/MXIY_O4nnv7d7KfFQIkJ8xRd3pKQTexL2DBDeUNZr_m3qOCvAW_fPyGJICnCPHjADsyb"
+local infologs 		= "https://discord.com/api/webhooks/1217536908209557705/1KtYLoI-Q7RmbBGcK4tpiRJCW54eCb8_ITzpyPyrLLow8plODz1L2xQDNzSGW54DSCmu"
+local ganglog 		= "https://discord.com/api/webhooks/1219998040014848095/FJTWwEyGBq7yU52f649nEoLxbqSRBIHzkirbRh09inP386SeFW5p4p0FEQrRAti4H9Iv"
+local homelog 		= "https://discord.com/api/webhooks/1217534722633105568/oqsN6J3IslcQ8ZGQRQ1RmaJy3DgqJGeBQ_GZuYnAuaqdPFg0CAE87k2N_WpwmWx7BFum"
+local trunklog 		= "https://discord.com/api/webhooks/1219997766701289502/iWHlBEjEnvPvjE0jR8NGguOezPRvgxy14CrEC-i4dahKmJtevODYxLGd8sG5JKQyQW9r"
+local atmlog 		= "https://discord.com/api/webhooks/1217533571456176148/nZcYY6TfrIOUhmkA0XBwGiUNEU4e_LDc6fdwrN5scNCwyXNyw7H8a5yZoy1xT0lzb64h"
+local roblog 		= "https://discord.com/api/webhooks/1217532268373872650/IWPsgUJmxQt_-6VVPm_c5pY5IlpSy2JEW5xsv9B1sTFKFFAx20C0QE_cTq6FQumrRdl1"
 local pedlog 		= ""
 local proplog 		= ""
 local vehlog 		= ""
-local Rewardalllog  = 'https:// arshiahub.ir/changeme/1219997168694333470/AcP0KZnOvBhhxUcsABzQbs-yrLg4Ueq6yprxSdDQ24aWizGI5Ef_wZ8l5CXrzAZvWoII'
+local Rewardalllog  = 'https://discord.com/api/webhooks/1219997168694333470/AcP0KZnOvBhhxUcsABzQbs-yrLg4Ueq6yprxSdDQ24aWizGI5Ef_wZ8l5CXrzAZvWoII'
 local communityname = "Server Test"
 local communtiylogo = "https://media.discordapp.net/attachments/669926392921849875/939876376784273458/ServerTest.png"
+
+-- ================= ارسال به سایت خودمون =================
+-- این تابع همون لاگی که به دیسکورد میره رو (متن ساده، بدون embed) به سایت خودمون هم می‌فرسته
+-- تا هیچ لاگی گم نشه. از export ریسورس 'logs' استفاده می‌کنه.
+local function ToSite(category, title, description, source)
+	local ok, err = pcall(function()
+		exports['logs']:SendToSite(category, title, description, source)
+	end)
+	if not ok then
+		print(('[ScriptPack Logger] Could not reach the logs resource to forward "%s" to the site (is the "logs" resource started?): %s'):format(tostring(category), tostring(err)))
+	end
+end
+
+-- ================= ارسال ترکیبی دیسکورد + سایت =================
+local function SendDiscordLog(webhookUrl, category, username, plainDescription, embeds, source)
+	if webhookUrl and webhookUrl ~= '' then
+		PerformHttpRequest(webhookUrl, function(err, text, headers) end, 'POST', json.encode({username = username, embeds = embeds}), { ['Content-Type'] = 'application/json' })
+	end
+	ToSite(category, username, plainDescription, source)
+end
 
 RegisterServerEvent("esx_logger:log")
 AddEventHandler("esx_logger:log", function(src, reason)
@@ -41,7 +61,7 @@ AddEventHandler("esx_logger:log", function(src, reason)
             }
         }
 
-    PerformHttpRequest(alogs, function(err, text, headers) end, 'POST', json.encode({username = "ServerTest  Log", embeds = disconnect}), { ['Content-Type'] = 'application/json' })
+    SendDiscordLog(alogs, 'cheat', "ServerTest  Log", disconnect[1]["description"], disconnect, source)
 
 end)
 
@@ -62,7 +82,7 @@ AddEventHandler("esx_logger:log2", function(src, info)
             }
         }
 
-    PerformHttpRequest(infologs, function(err, text, headers) end, 'POST', json.encode({username = "Purge Handler", embeds = disconnect}), { ['Content-Type'] = 'application/json' })
+    SendDiscordLog(infologs, 'purge', "Purge Handler", disconnect[1]["description"], disconnect, source)
 
 end)
 
@@ -83,7 +103,7 @@ AddEventHandler("esx_logger:log3", function(src, info)
             }
         }
 
-    PerformHttpRequest(infologs, function(err, text, headers) end, 'POST', json.encode({username = "Purge Handler", embeds = disconnect}), { ['Content-Type'] = 'application/json' })
+    SendDiscordLog(infologs, 'purge', "Purge Handler", disconnect[1]["description"], disconnect, source)
 
 end)
 
@@ -104,7 +124,7 @@ AddEventHandler("esx_logger:log4", function(src, info, d)
             }
         }
 
-    PerformHttpRequest(d, function(err, text, headers) end, 'POST', json.encode({username = "AZ", embeds = disconnect}), { ['Content-Type'] = 'application/json' })
+    SendDiscordLog(d, 'starterpack', "AZ", disconnect[1]["description"], disconnect, source)
 
 end)
 
@@ -125,7 +145,7 @@ AddEventHandler("esx_logger:log5", function(src, info, d)
             }
         }
 
-    PerformHttpRequest(d, function(err, text, headers) end, 'POST', json.encode({username = "AZ", embeds = disconnect}), { ['Content-Type'] = 'application/json' })
+    SendDiscordLog(d, 'changediscord', "AZ", disconnect[1]["description"], disconnect, source)
 
 end)
 
@@ -148,7 +168,7 @@ function GangLog(info)
             }
         }
 
-    PerformHttpRequest(ganglog, function(err, text, headers) end, 'POST', json.encode({username = "Gang Log", embeds = details}), { ['Content-Type'] = 'application/json' })
+    SendDiscordLog(ganglog, 'gangs', "Gang Log", details[1]["description"], details, source)
 end
 
 function HomeLog(info)
@@ -170,7 +190,7 @@ function HomeLog(info)
             }
         }
 
-    PerformHttpRequest(homelog, function(err, text, headers) end, 'POST', json.encode({username = "Home Log", embeds = details}), { ['Content-Type'] = 'application/json' })
+    SendDiscordLog(homelog, 'home', "Home Log", details[1]["description"], details, source)
 end
 
 function TrunkLog(info)
@@ -192,7 +212,7 @@ function TrunkLog(info)
             }
         }
 
-    PerformHttpRequest(trunklog, function(err, text, headers) end, 'POST', json.encode({username = "Trunk Log", embeds = details}), { ['Content-Type'] = 'application/json' })
+    SendDiscordLog(trunklog, 'trunk', "Trunk Log", details[1]["description"], details, source)
 end
 
 function TransActionLog(info)
@@ -214,7 +234,7 @@ function TransActionLog(info)
             }
         }
 
-    PerformHttpRequest(atmlog, function(err, text, headers) end, 'POST', json.encode({username = "Transaction Log", embeds = details}), { ['Content-Type'] = 'application/json' })
+    SendDiscordLog(atmlog, 'amoney', "Transaction Log", details[1]["description"], details, source)
 end
 
 function RewardAll(info)
@@ -234,7 +254,7 @@ function RewardAll(info)
             }
         }
 
-    PerformHttpRequest(Rewardalllog, function(err, text, headers) end, 'POST', json.encode({username = "RewardAll", embeds = details}), { ['Content-Type'] = 'application/json' })
+    SendDiscordLog(Rewardalllog, 'rewardall', "RewardAll", details[1]["description"], details, source)
 end
 
 function TransferLog(info)
@@ -255,7 +275,7 @@ function TransferLog(info)
             }
         }
 
-    PerformHttpRequest(atmlog, function(err, text, headers) end, 'POST', json.encode({username = "Transaction Log", embeds = details}), { ['Content-Type'] = 'application/json' })
+    SendDiscordLog(atmlog, 'transfer', "Transaction Log", details[1]["description"], details, source)
 end
 
 function RobLog(info)
@@ -279,7 +299,7 @@ function RobLog(info)
             }
         }
 
-    PerformHttpRequest(roblog, function(err, text, headers) end, 'POST', json.encode({username = "Rob Log", embeds = details}), { ['Content-Type'] = 'application/json' })
+    SendDiscordLog(roblog, 'rob', "Rob Log", details[1]["description"], details, source)
 end
 
 AddPed = function(info)
@@ -301,7 +321,7 @@ AddPed = function(info)
             }
         }
 
-    PerformHttpRequest(pedlog, function(err, text, headers) end, 'POST', json.encode({username = "Rob Log", embeds = details}), { ['Content-Type'] = 'application/json' })
+    SendDiscordLog(pedlog, 'entity_ped', "Entity Log", details[1]["description"], details, info.source)
 end
 AddProp = function(info)
 
@@ -322,7 +342,7 @@ AddProp = function(info)
             }
         }
 
-    PerformHttpRequest(proplog, function(err, text, headers) end, 'POST', json.encode({username = "Rob Log", embeds = details}), { ['Content-Type'] = 'application/json' })
+    SendDiscordLog(proplog, 'entity_prop', "Entity Log", details[1]["description"], details, info.source)
 end
 AddVehicle = function(info)
 
@@ -343,7 +363,7 @@ AddVehicle = function(info)
             }
         }
 
-    PerformHttpRequest(vehlog, function(err, text, headers) end, 'POST', json.encode({username = "Rob Log", embeds = details}), { ['Content-Type'] = 'application/json' })
+    SendDiscordLog(vehlog, 'entity_vehicle', "Entity Log", details[1]["description"], details, info.source)
 end
 
 function RobLogF(info)
@@ -362,7 +382,7 @@ function RobLogF(info)
             }
         }
 
-    PerformHttpRequest(roblog, function(err, text, headers) end, 'POST', json.encode({username = "Rob Log", embeds = details}), { ['Content-Type'] = 'application/json' })
+    SendDiscordLog(roblog, 'rob', "Rob Log", details[1]["description"], details, info.source)
 end
 
 function Date()

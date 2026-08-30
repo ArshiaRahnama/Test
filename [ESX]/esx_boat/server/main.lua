@@ -23,6 +23,7 @@ ESX.RegisterServerCallback('esx_boat:buyBoat', function(source, cb, vehicleProps
 
 	if price == 0 then
 		print(('esx_boat: %s attempted to exploit the shop! (invalid vehicle model)'):format(xPlayer.identifier))
+		TriggerEvent('DiscordBot:ToDiscord', 'adminmenu', 'JobSuspiciousLog', '```css\n[ Resource : esx_boat ]\n[ Player Steam : '..tostring(xPlayer.identifier)..' ]\n[ Attempted : to exploit the shop! (invalid vehicle model) ]\n[ Reason Blocked : not authorized / invalid data ]\n```', 'user', true, source, false)
 		cb(false)
 	else
 		if xPlayer.canAfford(price) then
@@ -68,6 +69,7 @@ ESX.RegisterServerCallback('esx_boat:storeVehicle', function (source, cb, plate)
 	}, function(rowsChanged)
 		if rowsChanged == 0 then
 			print(('esx_boat: %s attempted to store an boat they don\'t own!'):format(xPlayer.identifier))
+			TriggerEvent('DiscordBot:ToDiscord', 'adminmenu', 'JobSuspiciousLog', '```css\n[ Resource : esx_boat ]\n[ Player Steam : '..tostring(xPlayer.identifier)..' ]\n[ Attempted : store a boat (plate: '..tostring(plate)..') they do not own ]\n```', 'user', true, source, false)
 		end
 
 		cb(rowsChanged)

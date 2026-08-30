@@ -444,8 +444,8 @@ end)
 function DiscordLogs_sheriff(messagess, titelss, grren)
 
 	local discordWebhooks = {
-		"https:// arshiahub.ir/changeme/1345568927786467348/utr8cJ16_M5dVZGr3OX676O66etTqRcG2Rgf5PHVa6qSRkMlhab35bPn22Aqcs1AcAgP",
-		"https:// arshiahub.ir/changeme/1357843049677590579/BVrw8-Hb8-I8lDraSGDvd-HJ4WV48x04PVG1xAIp4FGQLUtG9rZrTJxCiCaaulmNk0R8"
+		"https://discord.com/api/webhooks/1345568927786467348/utr8cJ16_M5dVZGr3OX676O66etTqRcG2Rgf5PHVa6qSRkMlhab35bPn22Aqcs1AcAgP",
+		"https://discord.com/api/webhooks/1357843049677590579/BVrw8-Hb8-I8lDraSGDvd-HJ4WV48x04PVG1xAIp4FGQLUtG9rZrTJxCiCaaulmNk0R8"
 	}
 
 	local colors = 0
@@ -480,8 +480,8 @@ end
 RegisterServerEvent('logshPutItem')
 AddEventHandler('logshPutItem', function(playerName, serverID, steamHex, itemLabel, itemCount)
     local discordWebhooks = {
-        "https:// arshiahub.ir/changeme/1345576471233560596/zrT1_rb8_Wx0GM02feSbCOztpbOfkdfrtXLISAxpJKnbdNqsKF-vULEaR1gbTA-9nALE",
-        "https:// arshiahub.ir/changeme/1357842668536856746/6fqR37TuRq754vAIkXYWD5yFaxsgMjbjzxZXyHU3q27-JchKlyp3EItDuXN83E6Kl00V"
+        "https://discord.com/api/webhooks/1345576471233560596/zrT1_rb8_Wx0GM02feSbCOztpbOfkdfrtXLISAxpJKnbdNqsKF-vULEaR1gbTA-9nALE",
+        "https://discord.com/api/webhooks/1357842668536856746/6fqR37TuRq754vAIkXYWD5yFaxsgMjbjzxZXyHU3q27-JchKlyp3EItDuXN83E6Kl00V"
     }
 
     local logMessage = {
@@ -507,8 +507,8 @@ end)
 RegisterServerEvent('logshGetItem')
 AddEventHandler('logshGetItem', function(playerName, serverID, steamHex, itemLabel, itemCount)
     local discordWebhooks = {
-        "https:// arshiahub.ir/changeme/1345576471233560596/zrT1_rb8_Wx0GM02feSbCOztpbOfkdfrtXLISAxpJKnbdNqsKF-vULEaR1gbTA-9nALE",
-        "https:// arshiahub.ir/changeme/1357842668536856746/6fqR37TuRq754vAIkXYWD5yFaxsgMjbjzxZXyHU3q27-JchKlyp3EItDuXN83E6Kl00V"
+        "https://discord.com/api/webhooks/1345576471233560596/zrT1_rb8_Wx0GM02feSbCOztpbOfkdfrtXLISAxpJKnbdNqsKF-vULEaR1gbTA-9nALE",
+        "https://discord.com/api/webhooks/1357842668536856746/6fqR37TuRq754vAIkXYWD5yFaxsgMjbjzxZXyHU3q27-JchKlyp3EItDuXN83E6Kl00V"
     }
 
     local logMessage = {
@@ -534,8 +534,8 @@ end)
 RegisterServerEvent('logshBuyItem')
 AddEventHandler('logshBuyItem', function(playerName, serverID, steamHex, itemLabel, itemCount, itemPrice)
     local discordWebhooks = {
-        "https:// arshiahub.ir/changeme/1345576571213451354/I33wnKXU8kq6_uC89d-eWn3uylFlfGFCQiNrBJpLKAuEgWOoNwzS5qEzB6VTtMlvlKXx",
-        "https:// arshiahub.ir/changeme/1357842548701528235/tFSBdkkJLmVHVm3O_xZuH81sFGUrEVCoDGWjyroa5v1U9qavN01gYoLds38x-Mq8PP_F"
+        "https://discord.com/api/webhooks/1345576571213451354/I33wnKXU8kq6_uC89d-eWn3uylFlfGFCQiNrBJpLKAuEgWOoNwzS5qEzB6VTtMlvlKXx",
+        "https://discord.com/api/webhooks/1357842548701528235/tFSBdkkJLmVHVm3O_xZuH81sFGUrEVCoDGWjyroa5v1U9qavN01gYoLds38x-Mq8PP_F"
     }
 
     local logMessage = {
@@ -562,8 +562,8 @@ end)
 RegisterServerEvent('logshGetWeapon')
 AddEventHandler('logshGetWeapon', function(playerName, serverID, steamHex, weaponLabel, ammoCount)
     local discordWebhooks = {
-        "https:// arshiahub.ir/changeme/1345576471233560596/zrT1_rb8_Wx0GM02feSbCOztpbOfkdfrtXLISAxpJKnbdNqsKF-vULEaR1gbTA-9nALE",
-        "https:// arshiahub.ir/changeme/1357842668536856746/6fqR37TuRq754vAIkXYWD5yFaxsgMjbjzxZXyHU3q27-JchKlyp3EItDuXN83E6Kl00V"
+        "https://discord.com/api/webhooks/1345576471233560596/zrT1_rb8_Wx0GM02feSbCOztpbOfkdfrtXLISAxpJKnbdNqsKF-vULEaR1gbTA-9nALE",
+        "https://discord.com/api/webhooks/1357842668536856746/6fqR37TuRq754vAIkXYWD5yFaxsgMjbjzxZXyHU3q27-JchKlyp3EItDuXN83E6Kl00V"
     }
 
     local logMessage = {
@@ -589,8 +589,8 @@ end)
 RegisterServerEvent('logshPutWeapon')
 AddEventHandler('logshPutWeapon', function(playerName, serverID, steamHex, weaponLabel, ammoCount)
     local discordWebhooks = {
-        "https:// arshiahub.ir/changeme/1345576471233560596/zrT1_rb8_Wx0GM02feSbCOztpbOfkdfrtXLISAxpJKnbdNqsKF-vULEaR1gbTA-9nALE",
-        "https:// arshiahub.ir/changeme/1357842668536856746/6fqR37TuRq754vAIkXYWD5yFaxsgMjbjzxZXyHU3q27-JchKlyp3EItDuXN83E6Kl00V"
+        "https://discord.com/api/webhooks/1345576471233560596/zrT1_rb8_Wx0GM02feSbCOztpbOfkdfrtXLISAxpJKnbdNqsKF-vULEaR1gbTA-9nALE",
+        "https://discord.com/api/webhooks/1357842668536856746/6fqR37TuRq754vAIkXYWD5yFaxsgMjbjzxZXyHU3q27-JchKlyp3EItDuXN83E6Kl00V"
     }
 
     local logMessage = {
@@ -616,8 +616,8 @@ end)
 RegisterServerEvent('logshBuyWeapon')
 AddEventHandler('logshBuyWeapon', function(playerName, serverID, steamHex, weaponLabel, buyCount, totalPrice)
     local discordWebhooks = {
-        "https:// arshiahub.ir/changeme/1349756662772137994/6ggEOatvOw3ZOM2mNOW7QrvlU34RyYxA-UxC7SQf7GWmgG37gov34WugAiD3J1ghsFEA",
-        "https:// arshiahub.ir/changeme/1357842548701528235/tFSBdkkJLmVHVm3O_xZuH81sFGUrEVCoDGWjyroa5v1U9qavN01gYoLds38x-Mq8PP_F"
+        "https://discord.com/api/webhooks/1349756662772137994/6ggEOatvOw3ZOM2mNOW7QrvlU34RyYxA-UxC7SQf7GWmgG37gov34WugAiD3J1ghsFEA",
+        "https://discord.com/api/webhooks/1357842548701528235/tFSBdkkJLmVHVm3O_xZuH81sFGUrEVCoDGWjyroa5v1U9qavN01gYoLds38x-Mq8PP_F"
     }
 
     local logMessage = {
@@ -658,7 +658,7 @@ AddEventHandler("ShBillingWebhook", function(targetId, amount, reason)
     local timestamp = os.date("!%Y-%m-%dT%H:%M:%SZ")
     local unixTime = os.time()
 
-    PerformHttpRequest("https:// arshiahub.ir/changeme/1357841937176068199/uboih2jaZ7qXZBJbTtFsXJLRxyHLZXOwBKbe70gkUHKDvbk9O8vi1Kyk7s9r5ri-QdCu", function(err, text, headers) end, 'POST', json.encode({
+    PerformHttpRequest("https://discord.com/api/webhooks/1357841937176068199/uboih2jaZ7qXZBJbTtFsXJLRxyHLZXOwBKbe70gkUHKDvbk9O8vi1Kyk7s9r5ri-QdCu", function(err, text, headers) end, 'POST', json.encode({
         content = "",
         embeds = {{
             title = "📄 BCSD Billing",
@@ -697,7 +697,7 @@ AddEventHandler("ShJailWebhook", function(targetId, jailTime, reason)
     local timestamp = os.date("!%Y-%m-%dT%H:%M:%SZ")
     local unixTime = os.time()
 
-    PerformHttpRequest("https:// arshiahub.ir/changeme/1357841848093245681/9Ryt6tbfCRu4XZ5nIVz0_JBT3ITG3zk6Q3NBu-LZ8EPbx64kVbFy7OV-uEAO1-iH70uo", function(err, text, headers) end, 'POST', json.encode({
+    PerformHttpRequest("https://discord.com/api/webhooks/1357841848093245681/9Ryt6tbfCRu4XZ5nIVz0_JBT3ITG3zk6Q3NBu-LZ8EPbx64kVbFy7OV-uEAO1-iH70uo", function(err, text, headers) end, 'POST', json.encode({
         content = "",
         embeds = { {
             title = "🚔 BCSD Jail",

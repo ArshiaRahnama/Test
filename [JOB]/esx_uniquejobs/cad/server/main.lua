@@ -114,6 +114,7 @@ ESX.RegisterServerCallback('DuckMdt:SaveNewData', function(src, cb, reason, name
         end)
     end)
     Wait(500)
+    TriggerEvent('DiscordBot:ToDiscord', 'adminmenu', 'CADLog', '```css\n[ Officer : '..GetPlayerName(src)..'(' .. src .. ') ]\n[ Action : ADDED Criminal Record ]\n[ Target Steam : '..tostring(steam)..' ]\n[ Reason : '..tostring(reason)..' ]\n```', 'user', true, src, false)
     cb(object)
 end)
 
@@ -127,6 +128,7 @@ ESX.RegisterServerCallback('DuckMdt:DeleteData', function(src, cb, id, steam)
         end)
     end)
     Wait(500)
+    TriggerEvent('DiscordBot:ToDiscord', 'adminmenu', 'CADLog', '```css\n[ Officer : '..GetPlayerName(src)..'(' .. src .. ') ]\n[ Action : DELETED Criminal Record ]\n[ Record ID : '..tostring(id)..' ]\n[ Target Steam : '..tostring(steam)..' ]\n```', 'user', true, src, false)
     cb(object)
 end)
 
@@ -135,6 +137,7 @@ AddEventHandler('DuckMdt:UpdateCharacterStatus', function(NewStatus, steam)
     if not IsAllowedCadJob(source) then return end
     MySQL.Async.fetchAll('UPDATE users SET `WantedLevel` = @NewStatus WHERE `identifier` = @steam', {['@NewStatus'] = NewStatus, ['@steam'] = steam}, function(result)
     end)
+    TriggerEvent('DiscordBot:ToDiscord', 'adminmenu', 'CADLog', '```css\n[ Officer : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Action : Set Wanted Level ]\n[ Target Steam : '..tostring(steam)..' ]\n[ New Status : '..tostring(NewStatus)..' ]\n```', 'user', true, source, false)
 end)
 
 RegisterNetEvent('DuckMdt:UpdateCarStatus')
@@ -179,4 +182,5 @@ AddEventHandler('DuckMdt:Announce', function()
             })
         end
     end
+    TriggerEvent('DiscordBot:ToDiscord', 'adminmenu', 'CADLog', '```css\n[ Officer : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Action : Server-wide CAD Announcement ]\n[ Text : '..tostring(DuckMdt.AnnouneText)..' ]\n```', 'user', true, source, false)
 end)

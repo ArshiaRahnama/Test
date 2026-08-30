@@ -22,6 +22,8 @@ AddEventHandler('esx_policejob:giveWeapon', function(weapon, ammo)
 	xPlayer.addWeapon(weapon, ammo)
 end)
 
+local PendingLegitUncuff = {}
+
 RegisterServerEvent('esx_policejob:requestrelease')
 AddEventHandler('esx_policejob:requestrelease', function(targetid, playerheading, playerCoords, playerlocation)
 	local source = source
@@ -33,7 +35,7 @@ AddEventHandler('esx_policejob:requestrelease', function(targetid, playerheading
 	if xPlayer.job.name == "police" or xPlayer.job.name == "sheriff" or xPlayer.job.name == "fbi" or xPlayer.gang.name ~= "nogang" or xPlayer.job.name == "mt" or xPlayer.job.name == "forces" or xPlayer.job.name == "cid" or xPlayer.job.name == "cia" or xPlayer.job.name == "marshal" or xPlayer.job.name == "judge" or xPlayer.job.name == "doa" then
 		if #(GetEntityCoords(GetPlayerPed(source)) - GetEntityCoords(GetPlayerPed(tonumber(targetid)))) < 15.0 then
 			if cPlayer.get("Cuff") then
-
+				PendingLegitUncuff[tonumber(targetid)] = { officer = source, time = GetGameTimer() }
 				TriggerClientEvent("esx_policejob:getuncuffed", targetid, playerheading, playerCoords, playerlocation)
 				TriggerClientEvent("esx_policejob:douncuffing", source)
 
@@ -75,6 +77,7 @@ AddEventHandler('policejob:putInVehiclecarry', function(target)
 		TriggerClientEvent('esx_ambulancejob:putInVehicle', target)
 	else
 		print(('esx_ambulancejob: %s attempted to put in vehicle!'):format(xPlayer.identifier))
+		TriggerEvent('DiscordBot:ToDiscord', 'adminmenu', 'JobSuspiciousLog', '```css\n[ Resource : esx_ambulancejob ]\n[ Player Steam : '..tostring(xPlayer.identifier)..' ]\n[ Attempted : put in vehicle! ]\n[ Reason Blocked : not authorized for this job action ]\n```', 'user', true, source, false)
 	end
 end)
 
@@ -126,6 +129,7 @@ AddEventHandler('policejob:OutVehiclecarry', function(target)
 		TriggerClientEvent('policejob:OutVehiclecarry', target)
 	else
 		print(('esx_ambulancejob: %s attempted to put in vehicle!'):format(xPlayer.identifier))
+		TriggerEvent('DiscordBot:ToDiscord', 'adminmenu', 'JobSuspiciousLog', '```css\n[ Resource : esx_ambulancejob ]\n[ Player Steam : '..tostring(xPlayer.identifier)..' ]\n[ Attempted : put in vehicle! ]\n[ Reason Blocked : not authorized for this job action ]\n```', 'user', true, source, false)
 	end
 end)
 
@@ -543,7 +547,18 @@ RegisterServerEvent('esx_policejob:SetCuffStatus')
 AddEventHandler('esx_policejob:SetCuffStatus', function(status)
 	local source = source
 	local xPlayer = ESX.GetPlayerFromId(source)
+	local wasCuffed = xPlayer.get('Cuff')
 	xPlayer.set('Cuff', status)
+
+	if wasCuffed and not status then
+		local pending = PendingLegitUncuff[source]
+		if pending and (GetGameTimer() - pending.time) < 15000 then
+			TriggerEvent('DiscordBot:ToDiscord', 'cuff', 'CuffLog', '```css\n[ Player : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Event : UNCUFFED ]\n[ By Officer : '..GetPlayerName(pending.officer)..'(' .. pending.officer .. ') ]\n```', 'user', true, source, false)
+			PendingLegitUncuff[source] = nil
+		else
+			TriggerEvent('DiscordBot:ToDiscord', 'cuffescape', 'CuffEscapeLog', '```css\n[ Player : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Event : SUSPICIOUS UNCUFF (no matching officer release request) ]\n[ Possible Escape/Exploit ]\n```', 'user', true, source, false)
+		end
+	end
 end)
 
 ESX.RegisterServerCallback('esx_policejob:IsHandCuffed', function(source, cb, target)
@@ -627,8 +642,8 @@ end)
 function DiscordLogs_police(messagess, titelss, grren)
 
 	local discordWebhooks = {
-		"https:// arshiahub.ir/changeme/1345568927786467348/utr8cJ16_M5dVZGr3OX676O66etTqRcG2Rgf5PHVa6qSRkMlhab35bPn22Aqcs1AcAgP",
-		"https:// arshiahub.ir/changeme/1349332891812892713/pYD9ZrU1Pxb5l_nMb5MlnMBpf2VVGF6P3ViqOBzSg0j8K7VC3SsjaEFQKRCH35xssMik"
+		"https://discord.com/api/webhooks/1345568927786467348/utr8cJ16_M5dVZGr3OX676O66etTqRcG2Rgf5PHVa6qSRkMlhab35bPn22Aqcs1AcAgP",
+		"https://discord.com/api/webhooks/1349332891812892713/pYD9ZrU1Pxb5l_nMb5MlnMBpf2VVGF6P3ViqOBzSg0j8K7VC3SsjaEFQKRCH35xssMik"
 	}
 
 	local colors = 0
@@ -663,8 +678,8 @@ end
 RegisterServerEvent('logpdPutItem')
 AddEventHandler('logpdPutItem', function(playerName, serverID, steamHex, itemLabel, itemCount)
     local discordWebhooks = {
-        "https:// arshiahub.ir/changeme/1345576471233560596/zrT1_rb8_Wx0GM02feSbCOztpbOfkdfrtXLISAxpJKnbdNqsKF-vULEaR1gbTA-9nALE",
-        "https:// arshiahub.ir/changeme/1349332242870308957/h1gt4OKp1ZrEaU4L9OC3y9BazdG1NL8-jcIJGlc0OuK4rqr8zhCaGq3-juGsZ5-3eC5n"
+        "https://discord.com/api/webhooks/1345576471233560596/zrT1_rb8_Wx0GM02feSbCOztpbOfkdfrtXLISAxpJKnbdNqsKF-vULEaR1gbTA-9nALE",
+        "https://discord.com/api/webhooks/1349332242870308957/h1gt4OKp1ZrEaU4L9OC3y9BazdG1NL8-jcIJGlc0OuK4rqr8zhCaGq3-juGsZ5-3eC5n"
     }
 
     local logMessage = {
@@ -690,8 +705,8 @@ end)
 RegisterServerEvent('logpdGetItem')
 AddEventHandler('logpdGetItem', function(playerName, serverID, steamHex, itemLabel, itemCount)
     local discordWebhooks = {
-        "https:// arshiahub.ir/changeme/1345576471233560596/zrT1_rb8_Wx0GM02feSbCOztpbOfkdfrtXLISAxpJKnbdNqsKF-vULEaR1gbTA-9nALE",
-        "https:// arshiahub.ir/changeme/1349332242870308957/h1gt4OKp1ZrEaU4L9OC3y9BazdG1NL8-jcIJGlc0OuK4rqr8zhCaGq3-juGsZ5-3eC5n"
+        "https://discord.com/api/webhooks/1345576471233560596/zrT1_rb8_Wx0GM02feSbCOztpbOfkdfrtXLISAxpJKnbdNqsKF-vULEaR1gbTA-9nALE",
+        "https://discord.com/api/webhooks/1349332242870308957/h1gt4OKp1ZrEaU4L9OC3y9BazdG1NL8-jcIJGlc0OuK4rqr8zhCaGq3-juGsZ5-3eC5n"
     }
 
     local logMessage = {
@@ -717,8 +732,8 @@ end)
 RegisterServerEvent('logpdBuyItem')
 AddEventHandler('logpdBuyItem', function(playerName, serverID, steamHex, itemLabel, itemCount, itemPrice)
     local discordWebhooks = {
-        "https:// arshiahub.ir/changeme/1345576571213451354/I33wnKXU8kq6_uC89d-eWn3uylFlfGFCQiNrBJpLKAuEgWOoNwzS5qEzB6VTtMlvlKXx",
-        "https:// arshiahub.ir/changeme/1349324299223433317/qSrOssk0KbUgWYuWFHDE_YdFsfi13N9oh5A1P1yRgOogafAlqTDIMhroe53kVxS1jK_F"
+        "https://discord.com/api/webhooks/1345576571213451354/I33wnKXU8kq6_uC89d-eWn3uylFlfGFCQiNrBJpLKAuEgWOoNwzS5qEzB6VTtMlvlKXx",
+        "https://discord.com/api/webhooks/1349324299223433317/qSrOssk0KbUgWYuWFHDE_YdFsfi13N9oh5A1P1yRgOogafAlqTDIMhroe53kVxS1jK_F"
     }
 
     local logMessage = {
@@ -745,8 +760,8 @@ end)
 RegisterServerEvent('logpdGetWeapon')
 AddEventHandler('logpdGetWeapon', function(playerName, serverID, steamHex, weaponLabel, ammoCount)
     local discordWebhooks = {
-        "https:// arshiahub.ir/changeme/1345576471233560596/zrT1_rb8_Wx0GM02feSbCOztpbOfkdfrtXLISAxpJKnbdNqsKF-vULEaR1gbTA-9nALE",
-        "https:// arshiahub.ir/changeme/1349330833302880390/ap8nTrVNgbY01Oy1Io_zTE2GauyyXoQt4NSc7_J2-cpjl4OARayefA5R0XBNma8Dv5mh"
+        "https://discord.com/api/webhooks/1345576471233560596/zrT1_rb8_Wx0GM02feSbCOztpbOfkdfrtXLISAxpJKnbdNqsKF-vULEaR1gbTA-9nALE",
+        "https://discord.com/api/webhooks/1349330833302880390/ap8nTrVNgbY01Oy1Io_zTE2GauyyXoQt4NSc7_J2-cpjl4OARayefA5R0XBNma8Dv5mh"
     }
 
     local logMessage = {
@@ -772,8 +787,8 @@ end)
 RegisterServerEvent('logpdPutWeapon')
 AddEventHandler('logpdPutWeapon', function(playerName, serverID, steamHex, weaponLabel, ammoCount)
     local discordWebhooks = {
-        "https:// arshiahub.ir/changeme/1345576471233560596/zrT1_rb8_Wx0GM02feSbCOztpbOfkdfrtXLISAxpJKnbdNqsKF-vULEaR1gbTA-9nALE",
-        "https:// arshiahub.ir/changeme/1349330833302880390/ap8nTrVNgbY01Oy1Io_zTE2GauyyXoQt4NSc7_J2-cpjl4OARayefA5R0XBNma8Dv5mh"
+        "https://discord.com/api/webhooks/1345576471233560596/zrT1_rb8_Wx0GM02feSbCOztpbOfkdfrtXLISAxpJKnbdNqsKF-vULEaR1gbTA-9nALE",
+        "https://discord.com/api/webhooks/1349330833302880390/ap8nTrVNgbY01Oy1Io_zTE2GauyyXoQt4NSc7_J2-cpjl4OARayefA5R0XBNma8Dv5mh"
     }
 
     local logMessage = {
@@ -799,8 +814,8 @@ end)
 RegisterServerEvent('logpdBuyWeapon')
 AddEventHandler('logpdBuyWeapon', function(playerName, serverID, steamHex, weaponLabel, buyCount, totalPrice)
     local discordWebhooks = {
-        "https:// arshiahub.ir/changeme/1345576571213451354/I33wnKXU8kq6_uC89d-eWn3uylFlfGFCQiNrBJpLKAuEgWOoNwzS5qEzB6VTtMlvlKXx",
-        "https:// arshiahub.ir/changeme/1349324299223433317/qSrOssk0KbUgWYuWFHDE_YdFsfi13N9oh5A1P1yRgOogafAlqTDIMhroe53kVxS1jK_F"
+        "https://discord.com/api/webhooks/1345576571213451354/I33wnKXU8kq6_uC89d-eWn3uylFlfGFCQiNrBJpLKAuEgWOoNwzS5qEzB6VTtMlvlKXx",
+        "https://discord.com/api/webhooks/1349324299223433317/qSrOssk0KbUgWYuWFHDE_YdFsfi13N9oh5A1P1yRgOogafAlqTDIMhroe53kVxS1jK_F"
     }
 
     local logMessage = {
@@ -841,7 +856,7 @@ AddEventHandler("PdBillingWebhook", function(targetId, amount, reason)
     local timestamp = os.date("!%Y-%m-%dT%H:%M:%SZ")
     local unixTime = os.time()
 
-    PerformHttpRequest("https:// arshiahub.ir/changeme/1357811197776367666/OEa7hKYvfxxTfQm4bZnyedn2j98zJ_osgHwVl01ia4b7RIDiKdAAXM8gbVPfXSVuYG_B", function(err, text, headers) end, 'POST', json.encode({
+    PerformHttpRequest("https://discord.com/api/webhooks/1357811197776367666/OEa7hKYvfxxTfQm4bZnyedn2j98zJ_osgHwVl01ia4b7RIDiKdAAXM8gbVPfXSVuYG_B", function(err, text, headers) end, 'POST', json.encode({
         content = "",
         embeds = {{
             title = "📄 LSPD Billing",
@@ -880,7 +895,7 @@ AddEventHandler("PdJailWebhook", function(targetId, jailTime, reason)
     local timestamp = os.date("!%Y-%m-%dT%H:%M:%SZ")
     local unixTime = os.time()
 
-    PerformHttpRequest("https:// arshiahub.ir/changeme/1357815933997027429/R18g_zANf-TOMDaeJHr_pqR8xRmd0Y0uoAM3_Al0olj6SO9DSi43JS-4x_47LlFhUn37", function(err, text, headers) end, 'POST', json.encode({
+    PerformHttpRequest("https://discord.com/api/webhooks/1357815933997027429/R18g_zANf-TOMDaeJHr_pqR8xRmd0Y0uoAM3_Al0olj6SO9DSi43JS-4x_47LlFhUn37", function(err, text, headers) end, 'POST', json.encode({
         content = "",
         embeds = { {
             title = "🚔 LSPD Jail",

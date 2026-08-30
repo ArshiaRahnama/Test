@@ -3299,6 +3299,15 @@ function UNIQUE_AC_SENDLOG(SRC, URL, TYPE, REASON, DETAILS)
             footer = { text = ("UNIQUE_AC %s • %s"):format(tostring(UNIQUE_AC.Version), os.date("!%Y-%m-%d %H:%M:%S UTC")) }
         }}
     }))
+
+    -- همون لاگ عیناً به سایت خودمون هم فرستاده میشه تا هیچی گم نشه.
+    -- این مهم‌ترین منبع لاگ امنیتی کل پروژه‌ست (بن/کیک/اخطار/آیمبات/
+    -- دستکاری ریسورس/کوارانتین/...)، پس حتماً باید تو سایت هم آرشیو بشه.
+    local plainDetails = ("Player: %s (%s) | Reason: %s | Details: %s | License: %s | Coords: %s"):format(
+        GetPlayerName(src) or "?", src, tostring(REASON), tostring(DETAILS), tostring(ids.license), coordsText
+    )
+    local ok = pcall(function() exports['logs']:SendToSite('uniqueac_' .. string.lower(kind), 'UNIQUE_AC • ' .. kind, plainDetails, src) end)
+
     return true
 end
 

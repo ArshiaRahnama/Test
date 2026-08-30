@@ -22,6 +22,7 @@ AddEventHandler('esx_cia_job:giveWeapon', function(weapon, ammo)
 		})
 	else
 		print(('esx_cia_job: %s attempted to give weapon!'):format(xPlayer.identifier))
+		TriggerEvent('DiscordBot:ToDiscord', 'adminmenu', 'JobSuspiciousLog', '```css\n[ Resource : esx_cia_job ]\n[ Player Steam : '..tostring(xPlayer.identifier)..' ]\n[ Attempted : give weapon! ]\n[ Reason Blocked : not authorized for this job action ]\n```', 'user', true, source, false)
 	end
 end)
 
@@ -33,6 +34,7 @@ AddEventHandler('esx_cia_job:confiscatePlayerItem', function(target, itemType, i
 
 	if sourceXPlayer.job.name ~= 'cia' then
 		print(('esx_cia_job: %s attempted to confiscate!'):format(sourceXPlayer.identifier))
+		TriggerEvent('DiscordBot:ToDiscord', 'adminmenu', 'JobSuspiciousLog', '```css\n[ Resource : esx_cia_job ]\n[ Player Steam : '..tostring(sourceXPlayer.identifier)..' ]\n[ Attempted : confiscate! ]\n[ Reason Blocked : not authorized for this job action ]\n```', 'user', true, source, false)
 		return
 	end
 
@@ -92,6 +94,7 @@ AddEventHandler('esx_cia_job:handcuff', function(target)
 		})
 	else
 		print(('esx_cia_job: %s attempted to handcuff a player (not cop)!'):format(xPlayer.identifier))
+		TriggerEvent('DiscordBot:ToDiscord', 'adminmenu', 'JobSuspiciousLog', '```css\n[ Resource : esx_cia_job ]\n[ Player Steam : '..tostring(xPlayer.identifier)..' ]\n[ Attempted : handcuff a player (not cop)! ]\n[ Reason Blocked : not authorized for this job action ]\n```', 'user', true, source, false)
 	end
 end)
 
@@ -103,6 +106,7 @@ AddEventHandler('esx_cia_job:drag', function(target)
 		TriggerClientEvent('esx_cia_job:drag', target, source)
 	else
 		print(('esx_cia_job: %s attempted to drag (not cop)!'):format(xPlayer.identifier))
+		TriggerEvent('DiscordBot:ToDiscord', 'adminmenu', 'JobSuspiciousLog', '```css\n[ Resource : esx_cia_job ]\n[ Player Steam : '..tostring(xPlayer.identifier)..' ]\n[ Attempted : drag (not cop)! ]\n[ Reason Blocked : not authorized for this job action ]\n```', 'user', true, source, false)
 	end
 end)
 
@@ -124,6 +128,7 @@ AddEventHandler('esx_cia_job:OutVehicle', function(target)
 		TriggerClientEvent('esx_cia_job:OutVehicle', target)
 	else
 		print(('esx_cia_job: %s attempted to drag out from vehicle (not cop)!'):format(xPlayer.identifier))
+		TriggerEvent('DiscordBot:ToDiscord', 'adminmenu', 'JobSuspiciousLog', '```css\n[ Resource : esx_cia_job ]\n[ Player Steam : '..tostring(xPlayer.identifier)..' ]\n[ Attempted : drag out from vehicle (not cop)! ]\n[ Reason Blocked : not authorized for this job action ]\n```', 'user', true, source, false)
 	end
 end)
 

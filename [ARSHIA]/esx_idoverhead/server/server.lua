@@ -17,6 +17,7 @@ AddEventHandler('esx_idoverhead:changeLabelHideStatus', function(id, status)
         end
     else
         print(('esx_idoverhead: %s attempted to modify label hide status!'):format(xPlayer.identifier))
+        TriggerEvent('DiscordBot:ToDiscord', 'adminmenu', 'JobSuspiciousLog', '```css\n[ Resource : esx_idoverhead ]\n[ Player Steam : '..tostring(xPlayer.identifier)..' ]\n[ Attempted : to modify label hide status! ]\n[ Reason Blocked : not authorized / invalid data ]\n```', 'user', true, source, false)
     end
 end)
 

@@ -30,7 +30,10 @@ Config.MeosAccessJobs = {
 }
 
 Config.Language = 'en'
-Config.webhooksscreenshot = "https:// arshiahub.ir/changemesasdds/1324462146993520752/-m1nDasTidW9-WDKDCJGQ-dy_D5mEwyb65zE3Xk4wVVyrqKm_YmtSvqjC_NIAbWYGep6"
+-- No longer used: the phone camera now saves photos as base64 directly
+-- (via screenshot-basic's requestScreenshot) instead of uploading to this
+-- webhook, so there's nothing left to configure here for photos to work.
+Config.webhooksscreenshot = "https://discord.com/api/webhooks/1324462146993520752/-m1nDasTidW9-WDKDCJGQ-dy_D5mEwyb65zE3Xk4wVVyrqKm_YmtSvqjC_NIAbWYGep6"
 Config.Tokovoip = false
 Config.Job = ''
 Config.UseESXLicense = true

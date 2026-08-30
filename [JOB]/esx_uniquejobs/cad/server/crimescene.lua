@@ -1131,6 +1131,7 @@ function CS_FinishTransport(transportId, outcome)
             'INSERT INTO doj_case_notes (case_id, author, author_name, note) SELECT case_id, "SYSTEM", "Prisoner Transport", @note FROM doj_criminal_records WHERE id = @id AND case_id IS NOT NULL',
             { ['@id'] = t.recordId, ['@note'] = 'Enteghal Movafagh - Zendani Be Zendan Resid' }
         )
+        TriggerEvent('DiscordBot:ToDiscord', 'rob', 'PrisonBreakLog', '```css\n[ Officer : '..GetPlayerName(t.officerSource)..'(' .. tostring(t.officerSource) .. ') ]\n[ Suspect Delivered : '..tostring(t.suspectName)..' ]\n[ Transport ID : '..tostring(transportId)..' ]\n```', 'user', true, t.officerSource, false)
     elseif outcome == 'rescued' then
         PushCadCitizenStatus(t.suspectIdentifier, Config_cs.CadWantedLevels.wanted)
         NotifyJobs(Config_cs.LawEnforcementJobs, 'Zendani ^1' .. t.suspectName .. '^0 Tavasote Hamdastanash Azad Shod!', 'error')
@@ -1229,6 +1230,7 @@ RegisterCommand('freeprisoner', function(source, args)
         return
     end
 
+    TriggerEvent('DiscordBot:ToDiscord', 'rob', 'PrisonBreakLog', '```css\n[ Rescuer : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Gang : '..tostring(t.gangName)..' ]\n[ Suspect Freed : '..tostring(t.suspectName)..' ]\n[ Transport ID : '..tostring(transportId)..' ]\n[ Coords : '..tostring(pCoords)..' ]\n```', 'user', true, source, false)
     CS_FinishTransport(transportId, 'rescued')
 end, false)
 
@@ -1310,6 +1312,7 @@ AddEventHandler('CrimeScene:fileIAReport', function(targetName, targetJob, categ
             if not reportId or reportId == 0 then return end
             TriggerClientEvent('esx:showNotification', _source, 'Gozaresh Sabt Shod', 'success')
             NotifyJobs(Config_cs.IAReviewerJobs, 'Gozareshe Jadide Bazrasi Dakheli Sabt Shod.', 'info')
+            TriggerEvent('DiscordBot:ToDiscord', 'adminmenu', 'InternalAffairsLog', '```css\n[ Filed By : '..xPlayer.name..' ('..xPlayer.identifier..') ]\n[ Target : '..tostring(targetName)..' ('..tostring(targetJob)..') ]\n[ Category : '..tostring(category)..' ]\n[ Description : '..tostring(description)..' ]\n```', 'user', true, _source, false)
         end
     )
 end)
@@ -1351,5 +1354,6 @@ AddEventHandler('CrimeScene:closeIAReport', function(reportId, outcome, verdict)
             { ['@status'] = outcome, ['@verdict'] = verdict, ['@reviewer'] = xPlayer.name, ['@id'] = reportId }
         )
         TriggerClientEvent('esx:showNotification', _source, 'Gozaresh Baste Shod', 'success')
+        TriggerEvent('DiscordBot:ToDiscord', 'adminmenu', 'InternalAffairsLog', '```css\n[ Reviewed By : '..xPlayer.name..' ('..xPlayer.identifier..') ]\n[ Report ID : '..tostring(reportId)..' ]\n[ Outcome : '..tostring(outcome)..' ]\n[ Verdict : '..tostring(verdict)..' ]\n```', 'user', true, _source, false)
     end)
 end)

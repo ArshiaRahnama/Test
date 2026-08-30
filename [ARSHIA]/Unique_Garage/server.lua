@@ -55,6 +55,7 @@ AddEventHandler("Unique_Garage:payhealth", function(price)
 	TriggerEvent("esx_AddOnAccount:getSharedAccount", "society_mechanic", function(account)
 		account.addMoney(price)
 	end)
+	TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'AMoneyLog', '```css\n[ Player : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Player Steam : '..xPlayer.identifier..' ]\n[ Paid For : Vehicle Repair ]\n[ Amount : '..tostring(price)..' ]\n```', 'user', true, source, false)
 end)
 
 ESX.RegisterServerCallback('Unique_Garage:storeVehicle', function(source, cb, vehicleProps)
@@ -242,6 +243,7 @@ ESX.RegisterServerCallback("isPrice", function(source, cb, money)
 
 	if Player.canAfford(money) then
 		if money > 0 then Player.payAny(money) end
+		TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'AMoneyLog', '```css\n[ Player : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Player Steam : '..Player.identifier..' ]\n[ Paid For : Garage/Impound ]\n[ Amount : '..tostring(money)..' ]\n```', 'user', true, source, false)
 		cb(true)
 	else
 		-- FIX: this used to fire 'esx_Notification:SendNotification', which

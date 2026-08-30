@@ -261,7 +261,7 @@ end, {help = "Delete Player Whitelist", params = {{name = "SteamHex"}}})
 
 TriggerEvent('es:addAdminCommand', 'changeworld', 1, function(source, args)
     local target = tonumber(args[1])
-	local WebHook = 'https:// arshiahub.ir/changemesasdds//RE_-6-paLPoxvaJvYzeEH0p1DK6NZq3xtef3f8yAjaEGIAbtncOvfLbs6XjKd2BCZnvx-'
+	local WebHook = 'https://discord.com/api/webhooks//RE_-6-paLPoxvaJvYzeEH0p1DK6NZq3xtef3f8yAjaEGIAbtncOvfLbs6XjKd2BCZnvx-'
 	local xPlayer = ESX.GetPlayerFromId(source)
 	if args[1] then
 		if args[2] then
@@ -493,7 +493,7 @@ TriggerEvent(
                         })
 
 
-                        local webhook = "https:// arshiahub.ir/changemesasdds/1248758423433121924/D0YYTOTr6RbnQaxHH-Hlz7Aewcx7EFqiesILZ94ksoepa8TZ5tEcYCnUlOhXUEeAqA11"
+                        local webhook = "https://discord.com/api/webhooks/1248758423433121924/D0YYTOTr6RbnQaxHH-Hlz7Aewcx7EFqiesILZ94ksoepa8TZ5tEcYCnUlOhXUEeAqA11"
                         local message = {
                             embeds = {{
                                 title = "SetJob Log",
@@ -602,7 +602,7 @@ TriggerEvent(
                         })
 
 
-                        local webhook = "https:// arshiahub.ir/changemesasdds/1248758066527076414/xAw7qy3v6poYgMXsJ_XQRNSAsPsOAfqlurY4fauJwsTNSqoLadwO8OECqbLWUTJfyhbQ"
+                        local webhook = "https://discord.com/api/webhooks/1248758066527076414/xAw7qy3v6poYgMXsJ_XQRNSAsPsOAfqlurY4fauJwsTNSqoLadwO8OECqbLWUTJfyhbQ"
                         local message = {
                             embeds = {{
                                 title = "SetGang Log",
@@ -1565,7 +1565,7 @@ TriggerEvent(
                 TriggerClientEvent("skincreator:newChar", targetId)
 
 
-                local webhook = "https:// arshiahub.ir/changemesasdds/1324000605324312678/8D2KPOzjWT54aanLjUcgzS8vdESp0w1C6LGSOBu2UHV5ny9GpH8wTzLqlQXVsICbeB-F"
+                local webhook = "https://discord.com/api/webhooks/1324000605324312678/8D2KPOzjWT54aanLjUcgzS8vdESp0w1C6LGSOBu2UHV5ny9GpH8wTzLqlQXVsICbeB-F"
                 local message = {
                     embeds = {{
                         title = "Charmenu Command Log",
@@ -1794,7 +1794,7 @@ RegisterCommand(
                         "esx_logger:log5",
                         source,
                         info,
-                        "https:// arshiahub.ir/changemesasdds/940390542179704883/jvnXVvP07ysV8OATqFYm7EIeWxf6QQ66RAm3C7UJTqCESUBH2UfweiXiv2-GjvTD5ERP"
+                        "https://discord.com/api/webhooks/940390542179704883/jvnXVvP07ysV8OATqFYm7EIeWxf6QQ66RAm3C7UJTqCESUBH2UfweiXiv2-GjvTD5ERP"
                     )
                     TriggerClientEvent(
                         "esx:showNotification",
@@ -1818,7 +1818,7 @@ RegisterCommand(
                         "esx_logger:log5",
                         source,
                         info,
-                        "https:// arshiahub.ir/changemesasdds/940390542179704883/jvnXVvP07ysV8OATqFYm7EIeWxf6QQ66RAm3C7UJTqCESUBH2UfweiXiv2-GjvTD5ERP"
+                        "https://discord.com/api/webhooks/940390542179704883/jvnXVvP07ysV8OATqFYm7EIeWxf6QQ66RAm3C7UJTqCESUBH2UfweiXiv2-GjvTD5ERP"
                     )
                     TriggerClientEvent(
                         "esx:showNotification",
@@ -2067,7 +2067,7 @@ RegisterCommand("aa", function(source)
         local color = newDutyStatus and 3066993 or 15158332
 
 
-        local webhook = "https:// arshiahub.ir/changemesasdds/1324007433361948843/gsPIzN6B08oy_pIW5On66A6YtzP4e6iyUvbYr_QcjRD9W8bxivrekR1cxAbacQOwcIxz"
+        local webhook = "https://discord.com/api/webhooks/1324007433361948843/gsPIzN6B08oy_pIW5On66A6YtzP4e6iyUvbYr_QcjRD9W8bxivrekR1cxAbacQOwcIxz"
         local message = {
             embeds = { {
                 title = "Admin Duty Status Change",
@@ -2125,7 +2125,7 @@ RegisterCommand("aa2", function(source)
         local color = newDutyStatus and 3066993 or 15158332
 
 
-        local webhook = "https:// arshiahub.ir/changemesasdds/1324007433361948843/gsPIzN6B08oy_pIW5On66A6YtzP4e6iyUvbYr_QcjRD9W8bxivrekR1cxAbacQOwcIxz"
+        local webhook = "https://discord.com/api/webhooks/1324007433361948843/gsPIzN6B08oy_pIW5On66A6YtzP4e6iyUvbYr_QcjRD9W8bxivrekR1cxAbacQOwcIxz"
         local message = {
             embeds = { {
                 title = "Admin Duty Status Change",
@@ -2178,7 +2178,7 @@ RegisterCommand('toggletag', function(source)
         local adminID = source
         local tagStatusText = tag and "Tag Enabled" or "Tag Disabled"
 
-        local webhook = "https:// arshiahub.ir/changemesasdds/1324007433361948843/gsPIzN6B08oy_pIW5On66A6YtzP4e6iyUvbYr_QcjRD9W8bxivrekR1cxAbacQOwcIxz"
+        local webhook = "https://discord.com/api/webhooks/1324007433361948843/gsPIzN6B08oy_pIW5On66A6YtzP4e6iyUvbYr_QcjRD9W8bxivrekR1cxAbacQOwcIxz"
         local message = {
             embeds = {{
                 title = "Admin Tag Status Change",
@@ -2230,7 +2230,7 @@ RegisterCommand("aduty", function(source)
                 local dutyStatusText = "Off Duty"
                 local color = 15158332
 
-                local webhook = "https:// arshiahub.ir/changemesasdds/1324007433361948843/gsPIzN6B08oy_pIW5On66A6YtzP4e6iyUvbYr_QcjRD9W8bxivrekR1cxAbacQOwcIxz"
+                local webhook = "https://discord.com/api/webhooks/1324007433361948843/gsPIzN6B08oy_pIW5On66A6YtzP4e6iyUvbYr_QcjRD9W8bxivrekR1cxAbacQOwcIxz"
                 local message = {
                     embeds = { {
                         title = "Admin Duty Status Change",
@@ -2272,7 +2272,7 @@ RegisterCommand("aduty", function(source)
                     local dutyStatusText = "On Duty"
                     local color = 3066993
 
-                    local webhook = "https:// arshiahub.ir/changemesasdds/1324007433361948843/gsPIzN6B08oy_pIW5On66A6YtzP4e6iyUvbYr_QcjRD9W8bxivrekR1cxAbacQOwcIxz"
+                    local webhook = "https://discord.com/api/webhooks/1324007433361948843/gsPIzN6B08oy_pIW5On66A6YtzP4e6iyUvbYr_QcjRD9W8bxivrekR1cxAbacQOwcIxz"
                     local message = {
                         embeds = { {
                             title = "Admin Duty Status Change",

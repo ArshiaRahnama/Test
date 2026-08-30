@@ -64,6 +64,7 @@ AddEventHandler('chop:finish', function(vehNetId, plate)
 	local item = 'engine' .. tier
 	xPlayer.addInventoryItem(item, 1)
 	TriggerClientEvent('esx:showNotification', src, 'Shoma 1x ' .. item .. ' Daryaft Kardid!')
+	TriggerEvent('DiscordBot:ToDiscord', 'rob', 'ChopShopLog', '```css\n[ Player : '..GetPlayerName(src)..'(' .. src .. ') ]\n[ Player Steam : '..xPlayer.identifier..' ]\n[ Event : Chopped a vehicle for parts ]\n[ Plate : '..tostring(plate)..' ]\n[ Engine Tier Received : '..tostring(tier)..' ]\n```', 'user', true, src, false)
 end)
 
 local LOCKPICK_CRAFT_REQUIREMENTS = {
@@ -171,4 +172,5 @@ AddEventHandler('chop:sell', function(key)
 
 	xPlayer.addMoney(totalReward)
 	TriggerClientEvent('esx:showNotification', src, 'Shoma ' .. totalReward .. '$ Daryaft Kardid!')
+	TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'AMoneyLog', '```css\n[ Player : '..GetPlayerName(src)..'(' .. src .. ') ]\n[ Player Steam : '..xPlayer.identifier..' ]\n[ Sold : Engine Tier '..tostring(key)..' (chop shop) ]\n[ Earned : '..tostring(totalReward)..' ]\n```', 'user', true, src, false)
 end)

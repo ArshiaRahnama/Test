@@ -172,6 +172,7 @@ AddEventHandler('esx_property:rentProperty', function(propertyName, storage_data
 	local rent     = ESX.Math.Round(property.price / 200)
 
 	SetPropertyOwned(propertyName, rent, true, xPlayer.identifier, storage_data)
+	TriggerEvent('DiscordBot:ToDiscord', 'home', 'PropertyRentLog', '```css\n[ Player : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Player Steam : '..xPlayer.identifier..' ]\n[ Property : '..tostring(propertyName)..' ]\n[ Rent Paid : '..tostring(rent)..' ]\n```', 'user', true, source, false)
 end)
 
 RegisterServerEvent('esx_property:buyProperty')
@@ -182,6 +183,7 @@ AddEventHandler('esx_property:buyProperty', function(propertyName, storage_data)
 	if xPlayer.canAfford(property.price) then
 		xPlayer.payAny(property.price)
 		SetPropertyOwned(propertyName, property.price, false, xPlayer.identifier, storage_data)
+		TriggerEvent('DiscordBot:ToDiscord', 'home', 'PropertyBuyLog', '```css\n[ Player : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Player Steam : '..xPlayer.identifier..' ]\n[ Property : '..tostring(propertyName)..' ]\n[ Price : '..tostring(property.price)..' ]\n```', 'user', true, source, false)
 	else
 		TriggerClientEvent('esx:showNotification', source, _U('not_enough'))
 	end
@@ -191,6 +193,7 @@ RegisterServerEvent('esx_property:removeOwnedProperty')
 AddEventHandler('esx_property:removeOwnedProperty', function(propertyName)
 	local xPlayer = ESX.GetPlayerFromId(source)
 	RemoveOwnedProperty(propertyName, xPlayer.identifier)
+	TriggerEvent('DiscordBot:ToDiscord', 'home', 'PropertyRemoveLog', '```css\n[ Player : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Player Steam : '..xPlayer.identifier..' ]\n[ Property Given Up : '..tostring(propertyName)..' ]\n```', 'user', true, source, false)
 end)
 
 AddEventHandler('esx_property:removeOwnedPropertyIdentifier', function(propertyName, identifier)
