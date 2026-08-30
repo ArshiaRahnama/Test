@@ -226,7 +226,7 @@ function OpenManagedivisionMenu(society)
 
 	local elements = {
 
-		{label = 'Change Data Division', value = 'division_change_data'},
+		{label = 'Taghir Data Division', value = 'division_change_data'},
 		{label = _U('manage_division_option'), value = 'manage_division_option'},
 		{label = _U('divisionmember_management'), value = 'divisionmember_management'},
 
@@ -678,13 +678,13 @@ end
 function OpenManageDivisionMemberMenu(society)
 
 	ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'divisionmember_management' .. society, {
-		title    = 'Division Management',
+		title    = 'Modiriat A\'aza Division',
 		align    = 'top-left',
 		elements = {
 
 
-			{label = 'Set Division Employee', value = 'set_division'},
-			{label = 'Remove Division Employee', value = 'remove_division'}
+			{label = 'Set Kardan A\'za Division', value = 'set_division'},
+			{label = 'Hazf A\'za Division', value = 'remove_division'}
 		}
 	}, function(data, menu)
 
@@ -912,9 +912,9 @@ function OpenMenuDivisionChangeData(society)
 	end
 
 	local elements = {
-		{label = 'Create Division', value = 'crate_division'},
-		{label = 'Remove Division', value = 'remove_division'},
-		{label = 'Change Name Division', value = 'manage_division_edit'},
+		{label = 'Ezafe Kardan Division', value = 'crate_division'},
+		{label = 'Hazf Kardan Division', value = 'remove_division'},
+		{label = 'Taghir Esm Division', value = 'manage_division_edit'},
 	}
 
 	ESX.UI.Menu.CloseAll()
@@ -962,10 +962,10 @@ function OpenMenuEditDivision(society)
 
 			lib.registerContext({
 				id = 'change_menu',
-				title = 'Change Options',
+				title = 'Taghir Option',
 				options = {
 					{
-						title = 'Change Name',
+						title = 'Taghir Esm',
 						onSelect = function()
 							local newName = lib.inputDialog('Enter New Name', {'New Name'})
 							local newName1 = newName[1]
@@ -999,7 +999,7 @@ function OpenMenuEditDivision(society)
 
 					},
 					{
-						title = 'Change Label',
+						title = 'Taghir Label',
 						onSelect = function()
 							local inputLabel = lib.inputDialog('Enter New Label', {'New Label'})
 							local newLabel = inputLabel[1]
@@ -1049,7 +1049,7 @@ function OpenMenuRemoveDivision(society)
 			table.insert(elements, {label = '('..division[i].name..')  | '..divisionLabel, division = division[i].name, dvlabel = divisionLabel})
 		end
 		  ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'remove_division', {
-			title    = 'Remove Division',
+			title    = 'Hazf Kardan Division',
 			align    = 'top-left',
 			elements = elements
 		}, function(data, menu)
@@ -1087,7 +1087,7 @@ function checkinputuper(str)
 end
 
 function OpenMenuCreateDivision(society)
-	local input = lib.inputDialog('Add Division', {'Division Name', 'Division Label'})
+	local input = lib.inputDialog('Esm Division Ra Vared Konid', {'Esm Division', 'Label Division'})
 	local input1 = input[1]
 	local input2 = input[2]
 	if input[1] == "" then
