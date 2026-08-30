@@ -24,33 +24,57 @@ AddEventHandler('onResourceStart', function(resourceName)
 
 ESX.RegisterServerCallback("Unique_Garage:checkRepairCost", function(source, cb, fee)
 	local xPlayer = ESX.GetPlayerFromId(source)
+	if not xPlayer then
+		cb(false)
+		return
+	end
 	cb(xPlayer.canAfford(fee))
 end)
 
--- SECURITY FIX: `price` was accepted verbatim from the client with no
--- relation to the vehicle's actual damage/repair cost -- if this ever gets
--- wired up client-side, sending price = 1 would repair any vehicle for
--- almost nothing. Nothing calls this event yet, but it's hardened here:
--- price is validated as a positive integer and capped at a sane ceiling so
--- it can never be abused for a near-free repair even if connected later.
--- TODO if this is wired up: compute the real repair cost server-side from
--- the vehicle's actual engine/body health instead of trusting a client value.
+-- Repair cost is now computed server-side from the vehicle's actual
+-- engine/body health (via its network ID) instead of trusting a
+-- client-sent price -- this is what the previous TODO here asked for.
+-- The client only needs to send the vehicle's netId; a modified client
+-- can no longer claim "price = 1" for a wrecked car since the price is
+-- derived from real, server-read vehicle state.
 local MAX_REPAIR_PRICE = 20000
+local REPAIR_PRICE_PER_DAMAGE_POINT = 10 -- $ per point of (1000 - health), summed over engine+body
 
 RegisterServerEvent("Unique_Garage:payhealth")
-AddEventHandler("Unique_Garage:payhealth", function(price)
+AddEventHandler("Unique_Garage:payhealth", function(netId)
 	local xPlayer = ESX.GetPlayerFromId(source)
 	if not xPlayer then return end
 
-	price = tonumber(price)
-	if not price or price <= 0 or price ~= math.floor(price) or price > MAX_REPAIR_PRICE then
+	local vehicle = NetworkGetEntityFromNetworkId(tonumber(netId) or 0)
+	if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then
+		return
+	end
+
+	-- only the player currently driving the vehicle can pay to repair it
+	if GetPedInVehicleSeat(vehicle, -1) ~= GetPlayerPed(source) then
+		return
+	end
+
+	local engineDamage = math.max(0, 1000.0 - GetVehicleEngineHealth(vehicle))
+	local bodyDamage = math.max(0, 1000.0 - GetVehicleBodyHealth(vehicle))
+	local price = math.floor((engineDamage + bodyDamage) * REPAIR_PRICE_PER_DAMAGE_POINT / 100)
+	price = math.min(price, MAX_REPAIR_PRICE)
+
+	if price <= 0 then
+		TriggerClientEvent("esx_ShowNotification", source, "Vehicle nyaz be tamir nadarad.")
 		return
 	end
 
 	if not xPlayer.canAfford(price) then
+		TriggerClientEvent("esx_ShowNotification", source, "Pool Kafi Nadarid.")
 		return
 	end
+
 	xPlayer.payAny(price)
+	SetVehicleFixed(vehicle)
+	SetVehicleDeformationFixed(vehicle)
+	SetVehicleEngineHealth(vehicle, 1000.0)
+	SetVehicleBodyHealth(vehicle, 1000.0)
 	TriggerClientEvent("esx_ShowNotification", source, _U("you_paid") .. price)
 	TriggerEvent("esx_AddOnAccount:getSharedAccount", "society_mechanic", function(account)
 		account.addMoney(price)

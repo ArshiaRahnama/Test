@@ -84,14 +84,28 @@ if Config.Core == "ESX" then
         local isWorn = itemName:sub(1, 13) == 'worn_clothing'
         local clotheType = isWorn and itemName:sub(15) or itemName:sub(10)
 
-        if not KnownClotheTypes[clotheType] then return end
+        print(('^3[unique_clothestore DEBUG] handleClothingUse: itemName=%s isWorn=%s parsedClotheType=%s slot=%s inventoryId=%s^0'):format(
+            tostring(itemName), tostring(isWorn), tostring(clotheType), tostring(slot), tostring(inventory and inventory.id)))
+
+        if not KnownClotheTypes[clotheType] then
+            print(('^1[unique_clothestore DEBUG] ABORTED: "%s" is not a known clothing type (parsed from "%s").^0'):format(tostring(clotheType), tostring(itemName)))
+            return
+        end
 
         local playerId = tonumber(inventory.id)
-        if not playerId then return end
+        if not playerId then
+            print(('^1[unique_clothestore DEBUG] ABORTED: inventory.id (%s) is not a valid player id.^0'):format(tostring(inventory.id)))
+            return
+        end
 
         local slotData = inventory.items and inventory.items[slot]
         local metadata = slotData and slotData.metadata
-        if not metadata or not metadata.drawable then return end
+        if not metadata or not metadata.drawable then
+            print(('^1[unique_clothestore DEBUG] ABORTED: no metadata.drawable on slot %s. slotData=%s^0'):format(tostring(slot), tostring(slotData and json.encode(slotData) or 'nil')))
+            return
+        end
+
+        print(('^2[unique_clothestore DEBUG] All checks passed — proceeding to %s.^0'):format(isWorn and 'take off' or 'wear'))
 
         if isWorn then
             -- Taking it back off: remove the "(Worn)" placeholder and give
@@ -122,6 +136,7 @@ if Config.Core == "ESX" then
                 })
             end
 
+            print(('^3[unique_clothestore DEBUG] Sending wearClotheItem to player %s: type=%s drawable=%s texture=%s^0'):format(tostring(playerId), tostring(metadata.clotheType or clotheType), tostring(metadata.drawable), tostring(metadata.texture or 0)))
             TriggerClientEvent('unique_clothestore:wearClotheItem', playerId, metadata.clotheType or clotheType, metadata.drawable, metadata.texture or 0)
 
             exports.ox_inventory:AddItem(playerId, 'worn_clothing_' .. clotheType, 1, {
@@ -134,6 +149,7 @@ if Config.Core == "ESX" then
     end
 
     exports('useClothingItem', function(_, event, item, inventory, slot)
+        print(('^3[unique_clothestore DEBUG] useClothingItem export called: event=%s item=%s^0'):format(tostring(event), tostring(item and item.name)))
         if event ~= 'usingItem' then return end
         handleClothingUse(item.name, inventory, slot)
     end)

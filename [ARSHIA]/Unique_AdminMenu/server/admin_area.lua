@@ -25,6 +25,7 @@ end)
 RegisterCommand('rpp',function(e,f)
 
 local g=ESX.GetPlayerFromId(e)
+if not g then return end
 
 if g.permission_level >= 1 then
 

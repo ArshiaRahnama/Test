@@ -310,6 +310,10 @@ TriggerEvent('es:addAdminCommand', 'st', 2, function(source, args, user)
             elseif args[2] == 'g' then
 
                 local xPlayer = ESX.GetPlayerFromId(tonumber(args[1]))
+                if not xPlayer then
+                    TriggerClientEvent('chat:addMessage', source, {args = {'^1SYSTEM', 'Player not online / invalid ID.'}})
+                    return
+                end
                 local gang = xPlayer.gang.name
                 if xPlayer.gang.name ~= 'nogang' then
                     MySQL.Async.fetchAll('SELECT * FROM gangs_data WHERE gang_name = @gang_name AND `expire_time` > NOW()', {
@@ -673,7 +677,11 @@ TriggerEvent(
 )
 
 TriggerEvent('es:addAdminCommand', 'openproperty', 6, function(source, args, user)
-	local xPlayer    = ESX.GetPlayerFromId(args[1])
+	local xPlayer    = ESX.GetPlayerFromId(tonumber(args[1]))
+	if not xPlayer then
+		TriggerClientEvent('chat:addMessage', source, {args = {'^1SYSTEM', 'Player not online / invalid ID.'}})
+		return
+	end
 
 	TriggerClientEvent('ox_inventory:openInventory', source, 'stash', 'property_' .. xPlayer.identifier)
 
@@ -881,7 +889,11 @@ TriggerEvent(
         if xPlayer.get("aduty") then
             if tonumber(args[1]) and args[2] then
                 local _source = source
-                local xPlayer = ESX.GetPlayerFromId(args[1])
+                local xPlayer = ESX.GetPlayerFromId(tonumber(args[1]))
+                if not xPlayer then
+                    TriggerClientEvent("esx:showNotification", source, "Player not online / invalid ID")
+                    return
+                end
                 local item = args[2]
                 local count = (args[3] == nil and 1 or tonumber(args[3]))
 
@@ -1000,7 +1012,11 @@ TriggerEvent(
         local steamp = xPlayer.identifier
         if xPlayer.get("aduty") then
             if tonumber(args[1]) and args[2] then
-                local xPlayer = ESX.GetPlayerFromId(args[1])
+                local xPlayer = ESX.GetPlayerFromId(tonumber(args[1]))
+                if not xPlayer then
+                    TriggerClientEvent("esx:showNotification", source, "Player not online / invalid ID")
+                    return
+                end
                 local weaponName = string.upper(args[2])
 				local ammo = (args[3] == nil and 250 or tonumber(args[3]))
                 xPlayer.addWeapon("WEAPON_".. weaponName, ammo)
@@ -1549,6 +1565,7 @@ TriggerEvent(
             if type(targetId) == "number" then
 
                 local xAdmin = ESX.GetPlayerFromId(source)
+                if not xAdmin then return end
                 local adminSteamHex = GetPlayerIdentifiers(source)[1]
                 local adminSteamName = GetPlayerName(source)
                 local adminPlayerName = xAdmin.get('name')
@@ -1556,6 +1573,10 @@ TriggerEvent(
 
 
                 local xTarget = ESX.GetPlayerFromId(targetId)
+                if not xTarget then
+                    TriggerClientEvent('chat:addMessage', source, {args = {'^1SYSTEM', 'Player not online / invalid ID.'}})
+                    return
+                end
                 local targetSteamHex = GetPlayerIdentifiers(targetId)[1]
                 local targetSteamName = GetPlayerName(targetId)
                 local targetPlayerName = xTarget.get('name')

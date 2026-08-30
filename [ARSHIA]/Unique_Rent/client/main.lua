@@ -65,6 +65,20 @@ Citizen.CreateThread(function()
     end
 end)
 
+-- Server-triggered reset (see /rentreset) for when a rented vehicle is
+-- lost some other way and the normal return_vehicle() flow can't run.
+RegisterNetEvent('unique_rent:forceReset')
+AddEventHandler('unique_rent:forceReset', function()
+    if Options.vehicle.hash and DoesEntityExist(Options.vehicle.hash) then
+        delete_vehicle(Options.vehicle.hash)
+    end
+    Options.vehicle.hash = nil
+    Options.have_rented = false
+    set_blip(true)
+    SendNUIMessage({action = "hide_timer"})
+    Notification(Config.Options['return_success'])
+end)
+
 for k, v in pairs(Config.Locations) do
 	rent = AddBlipForCoord(v.coords.x, v.coords.y, v.coords.z)
 	SetBlipSprite (rent, v.blips.spawn.sprite)
