@@ -1,9 +1,6 @@
 ESX = nil
 local InBossMenu	= false
 local LastPosition		= nil
-local jobPermissions   = {}
-local CustomVehicles   = {}
-
 Citizen.CreateThread(function()
 	while ESX == nil do
 		TriggerEvent(Config.ESXtrigger, function(obj) ESX = obj end)
@@ -15,52 +12,11 @@ Citizen.CreateThread(function()
 	end
 
 	ESX.PlayerData = ESX.GetPlayerData()
-
-	ESX.TriggerServerCallback('esx_society:getJobPerm', function(perms)
-		jobPermissions = perms or {}
-	end)
-
-	ESX.TriggerServerCallback('esx_society:getCustomVehicles', function(list)
-		CustomVehicles = list or {}
-	end)
 end)
-
-exports('doesHavePerm', function(key)
-	return jobPermissions[key] == true
-end)
-
-RegisterNetEvent('society:updatePermissions')
-AddEventHandler('society:updatePermissions', function(perms)
-	jobPermissions = perms or {}
-end)
-
-RegisterNetEvent('society:customVehiclesUpdated')
-AddEventHandler('society:customVehiclesUpdated', function(list)
-	CustomVehicles = list or {}
-end)
-
--- Merges the static Config.Garage list for a job with any vehicles added live via /addcarjob.
-function GetMergedGarage(job)
-	local merged = {}
-
-	for _, v in ipairs(Config.Garage[job] or {}) do
-		table.insert(merged, v)
-	end
-
-	for _, v in ipairs(CustomVehicles[job] or {}) do
-		table.insert(merged, {name = v.model, label = v.label})
-	end
-
-	return merged
-end
 
 RegisterNetEvent('esx:setJob')
 AddEventHandler('esx:setJob', function(job)
 	ESX.PlayerData.job = job
-
-	ESX.TriggerServerCallback('esx_society:getJobPerm', function(perms)
-		jobPermissions = perms or {}
-	end)
 end)
 
 function OpenBossMenu(society, close, options)
@@ -653,7 +609,7 @@ function OpenDivisionVehiclesManagment(society)
 end
 
 function ChangeVehicledivisionPerm(society,DivisionName)
-	local authorizedVehicles = GetMergedGarage(society)
+	local authorizedVehicles = Config.Garage[society]
 	if authorizedVehicles then
 		ESX.TriggerServerCallback('esx_society:getVehiclesdivision', function(vehs)
 
@@ -1012,12 +968,6 @@ function OpenMenuEditDivision(society)
 						title = 'Taghir Esm',
 						onSelect = function()
 							local newName = lib.inputDialog('Enter New Name', {'New Name'})
-
-							if not newName then
-								lib.showContext('change_menu')
-								return
-							end
-
 							local newName1 = newName[1]
 							if newName1 ~= ""  then
 
@@ -1052,12 +1002,6 @@ function OpenMenuEditDivision(society)
 						title = 'Taghir Label',
 						onSelect = function()
 							local inputLabel = lib.inputDialog('Enter New Label', {'New Label'})
-
-							if not inputLabel then
-								lib.showContext('change_menu')
-								return
-							end
-
 							local newLabel = inputLabel[1]
 							if newLabel ~= "" then
 								if newLabel == "" then
@@ -1144,11 +1088,6 @@ end
 
 function OpenMenuCreateDivision(society)
 	local input = lib.inputDialog('Esm Division Ra Vared Konid', {'Esm Division', 'Label Division'})
-
-	if not input then
-		return
-	end
-
 	local input1 = input[1]
 	local input2 = input[2]
 	if input[1] == "" then
@@ -1408,7 +1347,7 @@ end
 
 function ChangeVehiclePerm(society,rank)
 
-	local authorizedVehicles = GetMergedGarage(society)
+	local authorizedVehicles = Config.Garage[society]
 	if authorizedVehicles then
 
 		if authorizedVehicles then
@@ -1699,7 +1638,6 @@ function OpenAdvancedGradeMenu(society)
 				name  = job.grades[i].name,
 				perm_employee_management = job.grades[i].perm_employee_management,
 				perm_vehicle_custom      = job.grades[i].perm_vehicle_custom,
-				permsTable               = job.grades[i].permsTable or {},
 			})
 		end
 
@@ -1733,7 +1671,6 @@ function OpenAdvancedGradeMenu(society)
 				{label = 'Boss : ' .. (isBoss and '✅' or '❌'), value = 'toggle_boss'},
 				{label = 'Employee Management : ' .. (data.current.perm_employee_management == 1 and '✅' or '❌'), value = 'toggle_employee'},
 				{label = 'Vehicle Custom : ' .. (data.current.perm_vehicle_custom == 1 and '✅' or '❌'), value = 'toggle_custom'},
-				{label = 'Modiriat Dastresi Vizhe', value = 'manage_perms'},
 				{label = 'Hazf Grade', value = 'delete_grade'},
 			}
 
@@ -1781,10 +1718,6 @@ function OpenAdvancedGradeMenu(society)
 					TriggerServerEvent('esx_society:toggleVehicleCustomPerm', grade, not (data.current.perm_vehicle_custom == 1))
 					Citizen.Wait(300)
 					OpenAdvancedGradeMenu(society)
-				elseif data2.current.value == 'manage_perms' then
-					menu2.close()
-					menu.close()
-					OpenGradePermissionsMenu(society, grade, data.current.permsTable)
 				elseif data2.current.value == 'delete_grade' then
 					local alert = lib.alertDialog({
 						header = 'Hazf Grade',
@@ -1810,49 +1743,6 @@ function OpenAdvancedGradeMenu(society)
 			OpenManageJobMenu(society)
 		end)
 	end, society)
-end
-
-function OpenGradePermissionsMenu(society, grade, permsTable)
-	permsTable = permsTable or {}
-
-	local allowedKeys = Config.PermissionGroups[society]
-	local elements = {}
-
-	if allowedKeys then
-		for _, key in ipairs(allowedKeys) do
-			if Config.PermissionKeys[key] then
-				table.insert(elements, {
-					label = Config.PermissionKeys[key] .. ' : ' .. (permsTable[key] and '✅' or '❌'),
-					key   = key,
-				})
-			end
-		end
-	else
-		for key, label in pairs(Config.PermissionKeys) do
-			table.insert(elements, {
-				label = label .. ' : ' .. (permsTable[key] and '✅' or '❌'),
-				key   = key,
-			})
-		end
-	end
-
-	ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'manage_grade_perms_' .. society, {
-		title    = 'Modiriat Dastresi Vizhe',
-		align    = 'top-left',
-		elements = elements
-	}, function(data, menu)
-		local key = data.current.key
-		local newState = not permsTable[key]
-
-		TriggerServerEvent('esx_society:togglePermKey', grade, key, newState)
-		permsTable[key] = newState and true or nil
-
-		menu.close()
-		OpenGradePermissionsMenu(society, grade, permsTable)
-	end, function(data, menu)
-		menu.close()
-		OpenAdvancedGradeMenu(society)
-	end)
 end
 
 function OpenSetOutfitMenu(society)
@@ -2463,7 +2353,7 @@ end
 
 function DoesHaveGarage(job)
 	local access = false
-		if Config.Garage[job] or (CustomVehicles[job] and #CustomVehicles[job] > 0) then
+		if Config.Garage[job] then
 			access = true
 		end
     return access
@@ -2533,76 +2423,3 @@ Citizen.CreateThread(function()
 	end
 
 end)
-
--- ===== /addcarjob and DeleteCar menu =====
--- Admin must be on-duty (aduty) with permission_level, sitting in the vehicle to add.
-RegisterCommand('addcarjob', function(source, args)
-	if not IsPedInAnyVehicle(PlayerPedId(), false) then
-		ESX.ShowNotification('Savar Mashin Nisti')
-		return
-	end
-
-	if not args[1] then
-		ESX.ShowNotification('Estefade: /addcarjob [jobname]')
-		return
-	end
-
-	local veh   = GetVehiclePedIsIn(PlayerPedId(), false)
-	local model = GetEntityModel(veh)
-	local modelName = GetDisplayNameFromVehicleModel(model)
-
-	local input = lib.inputDialog('Label Mashin Ra Vared Konid', {
-		{type = 'input', label = 'Label', required = true},
-		{type = 'checkbox', label = 'Helicopter'},
-	})
-
-	if not input or not input[1] or input[1] == '' then
-		return
-	end
-
-	TriggerServerEvent('esx_society:addCarJob', args[1], modelName, input[1], input[2] and true or false)
-end, false)
-
-RegisterNetEvent('DeleteCar:Open')
-AddEventHandler('DeleteCar:Open', function(data)
-	local List = {}
-
-	for job, vehicles in pairs(data) do
-		if not string.find(job, 'off') and #vehicles > 0 then
-			table.insert(List, {
-				img      = 'SS_gold.png',
-				text     = job,
-				text2    = job,
-				callBack = function()
-					exports.icon_menu:ForceCloseMenu()
-					OpenJobVehMenu(data, job)
-				end
-			})
-		end
-	end
-
-	exports.icon_menu:OpenMenu(List)
-end)
-
-function OpenJobVehMenu(data, job)
-	local List = {}
-	local jobVehicles = data[job]
-
-	for _, v in ipairs(jobVehicles) do
-		table.insert(List, {
-			img      = 'SS_gold.png',
-			text     = v.label,
-			text2    = v.model,
-			callBack = function()
-				TriggerServerEvent('esx_society:deleteCustomCarJob', v.id, job)
-				exports.icon_menu:ForceCloseMenu()
-			end
-		})
-	end
-
-	exports.icon_menu:OpenMenu(List)
-end
-
-RegisterCommand('deletecarjob', function()
-	TriggerEvent('DeleteCar:Open', CustomVehicles)
-end, false)

@@ -470,6 +470,13 @@ AddEventHandler('EventLogs:VehicleCrash', SafeWrap('EventLogs:VehicleCrash', fun
 	TriggerEvent('DiscordBot:ToDiscord', 'vehiclecrash', 'VehicleCrashLog', desc, 'user', true, _source, false)
 end))
 
+RegisterServerEvent('EventLogs:VehicleExploded')
+AddEventHandler('EventLogs:VehicleExploded', SafeWrap('EventLogs:VehicleExploded', function(plate, model, coords)
+	local _source = source
+	local desc = '```css\n[ Reported By : '..GetPlayerName(_source)..'(' .. _source .. ') ]\n[ Vehicle : '..tostring(model)..' | Plate: '..tostring(plate)..' ]\n[ Coords : '..tostring(coords)..' ]\n```'
+	TriggerEvent('DiscordBot:ToDiscord', 'vehiclecrash', 'VehicleExplosionLog', desc, 'user', true, _source, false)
+end))
+
 RegisterServerEvent('EventLogs:ClientError')
 AddEventHandler('EventLogs:ClientError', SafeWrap('EventLogs:ClientError', function(context, err)
 	local _source = source

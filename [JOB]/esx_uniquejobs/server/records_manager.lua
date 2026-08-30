@@ -38,6 +38,8 @@ function LogCriminalRecord(targetIdentifier, recordType, reason, officerName, of
 			['@timestamp'] = os.time(),
 		}
 	)
+
+	TriggerEvent('DiscordBot:ToDiscord', 'adminmenu', 'CriminalRecordLog', '```css\n[ Officer : '..tostring(officerName)..' ('..tostring(officerIdentifier)..') ]\n[ Target Steam : '..tostring(targetIdentifier)..' ]\n[ Type : '..tostring(recordType)..' ]\n[ Reason : '..tostring(reason)..' ]\n[ Jail Time : '..tostring(jailTime)..' ]\n```', 'user', true, nil, false)
 end
 
 -- Resolves a search query to an identifier + display name: a numeric
@@ -80,6 +82,8 @@ AddEventHandler('esx_uniquejobs:menuGetCriminalRecord', function(query)
 			TriggerClientEvent('esx_uniquejobs:criminalRecordResult', source, nil, query)
 			return
 		end
+
+		TriggerEvent('DiscordBot:ToDiscord', 'adminmenu', 'CriminalRecordLog', '```css\n[ Officer : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Action : Background Check Search ]\n[ Query : '..tostring(query)..' ]\n[ Matched : '..tostring(name)..' ]\n```', 'user', true, source, false)
 
 		MySQL.Async.fetchAll('SELECT type, reason, officer_name, jail_time, timestamp FROM criminal_records WHERE identifier = @identifier ORDER BY timestamp DESC LIMIT 15', {
 			['@identifier'] = identifier,

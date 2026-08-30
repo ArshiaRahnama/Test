@@ -260,6 +260,8 @@ AddEventHandler('esx_uniquejobs:forceDisbandUnit', function(ownerIdentifier)
 		return
 	end
 
+	local disbandedCallsign = Units[dept.id][ownerIdentifier].callsign
+	TriggerEvent('DiscordBot:ToDiscord', 'adminmenu', 'UnitLog', '```css\n[ Officer : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Action : FORCE DISBANDED UNIT ]\n[ Unit Callsign : '..tostring(disbandedCallsign)..' ]\n[ Owner Identifier : '..tostring(ownerIdentifier)..' ]\n```', 'user', true, source, false)
 	disbandUnit(dept.id, ownerIdentifier, cleanName(xPlayer.name))
 end)
 

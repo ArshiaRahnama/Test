@@ -413,24 +413,12 @@ local GetLocks = require 'modules.locks'
 lib.callback.register('ox_inventory:useItem', function(source, itemName, slot, metadata, noAnim)
     local inventory = Inventory(source)
 
-    print(('^3[ox_inventory CORE DEBUG] useItem called: itemName=%s slot=%s hasInventory=%s hasPlayer=%s^0'):format(
-        tostring(itemName), tostring(slot), tostring(inventory ~= nil), tostring(inventory and inventory.player)))
-
     if inventory and inventory.player then
         local item = Items(itemName)
-        print(('^3[ox_inventory CORE DEBUG] Items(%s) resolved to: %s (item.name=%s)^0'):format(
-            tostring(itemName), tostring(item ~= nil), tostring(item and item.name)))
-
         local data = item and
         (slot and inventory.items[slot] or Inventory.GetSlotWithItem(inventory, item.name, metadata, true))
 
-        print(('^3[ox_inventory CORE DEBUG] data resolved: %s (data.name=%s, data.count=%s)^0'):format(
-            tostring(data ~= nil), tostring(data and data.name), tostring(data and data.count)))
-
-        if not data then
-            print('^1[ox_inventory CORE DEBUG] ABORTED at "if not data then return end"^0')
-            return
-        end
+        if not data then return end
 
         slot = data.slot
         local durability = data.metadata.durability --[[@as number|boolean|nil]]
@@ -468,18 +456,12 @@ lib.callback.register('ox_inventory:useItem', function(source, itemName, slot, m
             end
         end
 
-        print(('^3[ox_inventory CORE DEBUG] Gate check: item=%s data=%s data.count=%s data.name=%s item.name=%s namesMatch=%s^0'):format(
-            tostring(item ~= nil), tostring(data ~= nil), tostring(data and data.count), tostring(data and data.name), tostring(item and item.name), tostring(data and item and data.name == item.name)))
-
         if item and data and data.count > 0 and data.name == item.name then
             local activeSlots <close> = GetLocks({
                 ('inventory-%s:slot-%s'):format(inventory.id, slot),
             })
 
-    		if not activeSlots then
-                print('^1[ox_inventory CORE DEBUG] ABORTED: could not acquire slot lock (activeSlots nil) — item may be locked/in-use.^0')
-                return
-            end
+    		if not activeSlots then return end
 
             data = { name = data.name, label = label, count = data.count, slot = slot, metadata = data.metadata, weight =
             data.weight }

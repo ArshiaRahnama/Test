@@ -17,54 +17,6 @@ end)
 
 TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
 
-----------------------------------------
-------- ANTI-EXPLOIT / HEAT HELPERS -----
-----------------------------------------
--- True if `source`'s ped is currently within `maxDistance` of `coords`. Used to reject
--- process/pickup/sell events fired from an unrealistic distance (menu exploits, teleport, etc).
-function IsPlayerNearCoords(source, coords, maxDistance)
-	local ped = GetPlayerPed(source)
-	if not ped or ped == 0 then return false end
-	local playerCoords = GetEntityCoords(ped)
-	return #(playerCoords - vector3(coords.x, coords.y, coords.z)) <= maxDistance
-end
-
--- Per-player "heat": rises on every dealer sale, decays over time. Used to scale down price,
--- scale up the police alert's odds/size, and rate-limit rapid-fire selling.
-local PlayerHeat = {}
-local LastSellAt = {}
-
-function GetPlayerHeat(source)
-	return PlayerHeat[source] or 0
-end
-
-function AddPlayerHeat(source, amount)
-	PlayerHeat[source] = math.min(Config.Heat.Max, GetPlayerHeat(source) + amount)
-	return PlayerHeat[source]
-end
-
-CreateThread(function()
-	while true do
-		Wait(Config.Heat.DecayInterval)
-
-		for src, heat in pairs(PlayerHeat) do
-			local newHeat = heat - Config.Heat.DecayAmount
-
-			if newHeat <= 0 then
-				PlayerHeat[src] = nil
-			else
-				PlayerHeat[src] = newHeat
-			end
-		end
-	end
-end)
-
-AddEventHandler('playerDropped', function()
-	local _source = source
-	PlayerHeat[_source] = nil
-	LastSellAt[_source] = nil
-end)
-
 function DrugsManager()
 	local self = {}
 	self.get = function(k)
@@ -283,11 +235,6 @@ AddEventHandler('esx_jk_drugs:processCannabis', function()
 
 	if xPlayer then
 
-		if not IsPlayerNearCoords(_source, Config.ProcessZones.WeedProcessing.coords, Config.MaxInteractDistance) then
-			TriggerClientEvent('esx:showNotification', _source, _U('too_far_process'))
-			return
-		end
-
 		if xPlayer.job.grade > 0 then
 			if xPlayer.job.name == 'ambulance' or xPlayer.job.name == 'taxi' or xPlayer.job.name == 'mechanic' or xPlayer.job.name == 'police' or xPlayer.job.name == 'mt' or xPlayer.job.name == 'sheriff' or xPlayer.job.name == 'fbi' or xPlayer.job.name == 'cid' or xPlayer.job.name == 'cia' or xPlayer.job.name == 'marshal' or xPlayer.job.name == 'judge' or xPlayer.job.name == 'doa' then
 				TriggerClientEvent('esx:showNotification', _source, 'Shoma nemitavanid On-Duty in kar ro anjam dahid!')
@@ -321,11 +268,6 @@ AddEventHandler('esx_jk_drugs:processCocaPlant', function()
 	local xPlayer = ESX.GetPlayerFromId(_source)
 	local xCocaPlant, xCocaine = xPlayer.getInventoryItem('coca'), xPlayer.getInventoryItem('cocaine')
 
-	if not IsPlayerNearCoords(_source, Config.ProcessZones.CocaineProcessing.coords, Config.MaxInteractDistance) then
-		TriggerClientEvent('esx:showNotification', _source, _U('too_far_process'))
-		return
-	end
-
 	if xPlayer.job.grade > 0 then
 		if xPlayer.job.name == 'ambulance' or xPlayer.job.name == 'taxi' or xPlayer.job.name == 'mechanic' or xPlayer.job.name == 'police' or xPlayer.job.name == 'mt' or xPlayer.job.name == 'sheriff' or xPlayer.job.name == 'fbi' or xPlayer.job.name == 'cid' or xPlayer.job.name == 'cia' or xPlayer.job.name == 'marshal' or xPlayer.job.name == 'judge' or xPlayer.job.name == 'doa' then
 			TriggerClientEvent('esx:showNotification', _source, 'Shoma nemitavanid On-Duty in kar ro anjam dahid!')
@@ -353,11 +295,6 @@ AddEventHandler('esx_jk_drugs:processEphedra', function()
 	local _source = source
 	local xPlayer = ESX.GetPlayerFromId(_source)
 	local xEphedra, xEphedrine = xPlayer.getInventoryItem('ephedra'), xPlayer.getInventoryItem('ephedrine')
-
-	if not IsPlayerNearCoords(_source, Config.ProcessZones.EphedrineProcessing.coords, Config.MaxInteractDistance) then
-		TriggerClientEvent('esx:showNotification', _source, _U('too_far_process'))
-		return
-	end
 
 	if xPlayer.job.grade > 0 then
 		if xPlayer.job.name == 'ambulance' or xPlayer.job.name == 'taxi' or xPlayer.job.name == 'mechanic' or xPlayer.job.name == 'police' or xPlayer.job.name == 'mt' or xPlayer.job.name == 'sheriff' or xPlayer.job.name == 'fbi' or xPlayer.job.name == 'cid' or xPlayer.job.name == 'cia' or xPlayer.job.name == 'marshal' or xPlayer.job.name == 'judge' or xPlayer.job.name == 'doa' then
@@ -388,11 +325,6 @@ AddEventHandler('esx_jk_drugs:processEphedrine', function()
 	local xPlayer = ESX.GetPlayerFromId(_source)
 	local xEphedrine, xMeth = xPlayer.getInventoryItem('ephedrine'), xPlayer.getInventoryItem('meth')
 
-	if not IsPlayerNearCoords(_source, Config.ProcessZones.MethProcessing.coords, Config.MaxInteractDistance) then
-		TriggerClientEvent('esx:showNotification', _source, _U('too_far_process'))
-		return
-	end
-
 	if xPlayer.job.grade > 0 then
 		if xPlayer.job.name == 'ambulance' or xPlayer.job.name == 'taxi' or xPlayer.job.name == 'mechanic' or xPlayer.job.name == 'police' or xPlayer.job.name == 'mt' or xPlayer.job.name == 'sheriff' or xPlayer.job.name == 'fbi' or xPlayer.job.name == 'cid' or xPlayer.job.name == 'cia' or xPlayer.job.name == 'marshal' or xPlayer.job.name == 'judge' or xPlayer.job.name == 'doa' then
 			TriggerClientEvent('esx:showNotification', _source, 'Shoma nemitavanid On-Duty in kar ro anjam dahid!')
@@ -420,11 +352,6 @@ AddEventHandler('esx_jk_drugs:processCoke', function()
 	local _source = source
 	local xPlayer = ESX.GetPlayerFromId(_source)
 	local xCocaine, xCrack = xPlayer.getInventoryItem('cocaine'), xPlayer.getInventoryItem('crack')
-
-	if not IsPlayerNearCoords(_source, Config.ProcessZones.CrackProcessing.coords, Config.MaxInteractDistance) then
-		TriggerClientEvent('esx:showNotification', _source, _U('too_far_process'))
-		return
-	end
 
 	if xPlayer.job.grade > 0 then
 		if xPlayer.job.name == 'ambulance' or xPlayer.job.name == 'taxi' or xPlayer.job.name == 'mechanic' or xPlayer.job.name == 'police' or xPlayer.job.name == 'mt' or xPlayer.job.name == 'sheriff' or xPlayer.job.name == 'fbi' or xPlayer.job.name == 'cid' or xPlayer.job.name == 'cia' or xPlayer.job.name == 'marshal' or xPlayer.job.name == 'judge' or xPlayer.job.name == 'doa' then
@@ -454,11 +381,6 @@ AddEventHandler('esx_jk_drugs:processPoppy', function()
 	local xPlayer = ESX.GetPlayerFromId(_source)
 	local xPoppy, xOpium = xPlayer.getInventoryItem('poppy'), xPlayer.getInventoryItem('opium')
 
-	if not IsPlayerNearCoords(_source, Config.ProcessZones.PoppyProcessing.coords, Config.MaxInteractDistance) then
-		TriggerClientEvent('esx:showNotification', _source, _U('too_far_process'))
-		return
-	end
-
 	if xPlayer.job.grade > 0 then
 		if xPlayer.job.name == 'ambulance' or xPlayer.job.name == 'taxi' or xPlayer.job.name == 'mechanic' or xPlayer.job.name == 'police' or xPlayer.job.name == 'mt' or xPlayer.job.name == 'sheriff' or xPlayer.job.name == 'fbi' or xPlayer.job.name == 'cid' or xPlayer.job.name == 'cia' or xPlayer.job.name == 'marshal' or xPlayer.job.name == 'judge' or xPlayer.job.name == 'doa' then
 			TriggerClientEvent('esx:showNotification', _source, 'Shoma nemitavanid On-Duty in kar ro anjam dahid!')
@@ -486,11 +408,6 @@ AddEventHandler('esx_jk_drugs:processOpium', function()
 	local _source = source
 	local xPlayer = ESX.GetPlayerFromId(_source)
 	local xOpium, xHeroine = xPlayer.getInventoryItem('opium'), xPlayer.getInventoryItem('heroine')
-
-	if not IsPlayerNearCoords(_source, Config.ProcessZones.HeroineProcessing.coords, Config.MaxInteractDistance) then
-		TriggerClientEvent('esx:showNotification', _source, _U('too_far_process'))
-		return
-	end
 
 	if xPlayer.job.grade > 0 then
 		if xPlayer.job.name == 'ambulance' or xPlayer.job.name == 'taxi' or xPlayer.job.name == 'mechanic' or xPlayer.job.name == 'police' or xPlayer.job.name == 'mt' or xPlayer.job.name == 'sheriff' or xPlayer.job.name == 'fbi' or xPlayer.job.name == 'cid' or xPlayer.job.name == 'cia' or xPlayer.job.name == 'marshal' or xPlayer.job.name == 'judge' or xPlayer.job.name == 'doa' then
@@ -590,22 +507,6 @@ local DrugAlertJobs = {
 	cid = true, cia = true, marshal = true, judge = true, doa = true,
 }
 
--- Called when a player sells to the generic drug dealer (Kharidare Mavad / Config.CircleZones.DrugDealer).
--- Delegates the blip + on-screen countdown to Unique_AllRobs's shared export, instead of esx_drugs
--- running its own copy of that logic (see fxmanifest.lua -> dependency 'Unique_AllRobs').
--- `heat` scales the alert up once it crosses Config.Heat.HighHeatThreshold (bigger radius, longer duration).
-function AlertCopsDealerSale(sellerSource, coords, heat)
-	local duration = Config.DealerAlertDuration
-	local radius = 60.0
-
-	if heat and heat >= Config.Heat.HighHeatThreshold then
-		duration = math.floor(duration * Config.Heat.HighHeatDurationMult)
-		radius = radius * Config.Heat.HighHeatRadiusMult
-	end
-
-	exports['Unique_AllRobs']:AlertPolice(coords, _U('dealer_alert_blip'), duration, radius)
-end
-
 RegisterServerEvent('esx_jk_drugs:policeAlert')
 AddEventHandler('esx_jk_drugs:policeAlert', function()
 	local _source = source
@@ -681,64 +582,18 @@ AddEventHandler('esx_drugs:sellDrug', function(itemName, amount)
 		return
 	end
 
-	-- Rate-limit: block rapid-fire selling from the same player (menu-exploit / macro spam)
-	local now = GetGameTimer()
-	if LastSellAt[_source] and (now - LastSellAt[_source]) < Config.SellCooldown then
-		TriggerClientEvent('esx:showNotification', _source, _U('dealer_cooldown'))
-		return
-	end
-	LastSellAt[_source] = now
+	price = ESX.Math.Round(price * amount)
 
-	-- Distance check: the sale must actually happen near the dealer, not from across the map
-	if not IsPlayerNearCoords(_source, Config.CircleZones.DrugDealer.coords, Config.CircleZones.DrugDealer.radius + 3.0) then
-		TriggerClientEvent('esx:showNotification', _source, _U('dealer_too_far'))
-		TriggerEvent('DiscordBot:ToDiscord', 'adminmenu', 'JobSuspiciousLog', '```css\n[ Resource : esx_drugs ]\n[ Player Steam : '..tostring(xPlayer.identifier)..' ]\n[ Attempted : to sell while too far from the dealer ]\n[ Reason Blocked : distance check failed - possible exploit ]\n```', 'user', true, source, false)
-		return
-	end
-
-	-- Heat: rises with every sale, decays over time. Higher heat = lower payout + bigger/likelier alert.
-	local heat = AddPlayerHeat(_source, Config.Heat.PerSale)
-	local heatPercent = heat / Config.Heat.Max
-	local priceMultiplier = 1 - (heatPercent * Config.Heat.MaxPriceDrop)
-
-	price = ESX.Math.Round(price * amount * Config.DealerSellBonus * priceMultiplier)
-
-	-- Gang tax: a cut of the seller's own earnings goes to their own gang's account (separate
-	-- from the drug-territory-controller bonus below, which is unrelated turf-control income)
-	local gangCut = 0
-	if Config.GangTaxPercent > 0 and xPlayer.gang and xPlayer.gang.name and xPlayer.gang.name ~= 'none' then
-		gangCut = ESX.Math.Round(price * (Config.GangTaxPercent / 100))
-	end
-	local netPrice = price - gangCut
-
-	xPlayer.addMoney(netPrice)
+	xPlayer.addMoney(price)
 	xPlayer.removeInventoryItem(xItem.name, amount)
 	TriggerClientEvent("Task_System:AddCompleteQuest", _source, amount, xItem.name)
-	TriggerEvent('DiscordBot:ToDiscord', 'rob', 'DrugSaleLog', '```css\n[ Player : '..GetPlayerName(_source)..'(' .. _source .. ') ]\n[ Player Steam : '..xPlayer.identifier..' ]\n[ Sold : '..tostring(xItem.name)..' x'..tostring(amount)..' ]\n[ Earned : '..tostring(netPrice)..' ]\n[ Heat : '..tostring(heat)..' ]\n```', 'user', true, _source, false)
+	TriggerEvent('DiscordBot:ToDiscord', 'rob', 'DrugSaleLog', '```css\n[ Player : '..GetPlayerName(_source)..'(' .. _source .. ') ]\n[ Player Steam : '..xPlayer.identifier..' ]\n[ Sold : '..tostring(xItem.name)..' x'..tostring(amount)..' ]\n[ Earned : '..tostring(price)..' ]\n```', 'user', true, _source, false)
 
 	TriggerEvent('gangaccount:getGangAccount', DrugHandeler, function(account)
 		account.addMoney(price)
 	end)
 
-	if gangCut > 0 then
-		TriggerEvent('gangaccount:getGangAccount', 'gang_' .. xPlayer.gang.name, function(account)
-			account.addMoney(gangCut)
-			TriggerClientEvent('esx:showNotification', _source, _U('dealer_gang_tax', Config.GangTaxPercent, ESX.Math.GroupDigits(gangCut)))
-		end)
-	end
-
-	-- Alert probability scales from Config.Heat.BaseAlertChance (at 0 heat) up to 100% (at max heat)
-	local alertChance = math.min(100, Config.Heat.BaseAlertChance + heat)
-	if math.random(1, 100) <= alertChance then
-		AlertCopsDealerSale(_source, GetEntityCoords(GetPlayerPed(_source)), heat)
-	end
-
-	if heat >= Config.Heat.HighHeatThreshold then
-		TriggerClientEvent('esx:showNotification', _source, _U('dealer_heat_high'))
-	end
-
-	TriggerClientEvent('esx:showNotification', _source, _U('dealer_sold', amount, xItem.label, ESX.Math.GroupDigits(netPrice)))
-	TriggerClientEvent('esx_drugs:updateHeat', _source, heat, Config.Heat.Max)
+	TriggerClientEvent('esx:showNotification', _source, _U('dealer_sold', amount, xItem.label, ESX.Math.GroupDigits(price)))
 end)
 
 ESX.RegisterUsableItem('marijuana', function(source)

@@ -1282,7 +1282,7 @@ ESX.RegisterServerCallback('CrimeScene:getOfficerActivity', function(source, cb)
 end)
 
 RegisterServerEvent('CrimeScene:fileIAReport')
-AddEventHandler('CrimeScene:fileIAReport', function(targetName, targetJob, category, description, targetIdentifier)
+AddEventHandler('CrimeScene:fileIAReport', function(targetName, targetJob, category, description)
     local _source = source
     local xPlayer = ESX.GetPlayerFromId(_source)
     if not xPlayer or not IsIAReporterJob(xPlayer.job.name) then return end
@@ -1299,9 +1299,8 @@ AddEventHandler('CrimeScene:fileIAReport', function(targetName, targetJob, categ
     if not validCategory then category = 'other' end
 
     MySQL.Async.insert(
-        'INSERT INTO doj_ia_reports (target_identifier, target_name, target_job, category, description, filed_by, filed_by_name) VALUES (@target_identifier, @target_name, @target_job, @category, @description, @filed_by, @filed_by_name)',
+        'INSERT INTO doj_ia_reports (target_name, target_job, category, description, filed_by, filed_by_name) VALUES (@target_name, @target_job, @category, @description, @filed_by, @filed_by_name)',
         {
-            ['@target_identifier'] = targetIdentifier,
             ['@target_name']    = targetName,
             ['@target_job']     = targetJob,
             ['@category']       = category,

@@ -1,7 +1,7 @@
 ESX                = nil
 local ads = {}
 local cads = 1
-local news = "https://discord.com/api/webhooks/945701270059098132/3mYhrX9Q7rK9elVPS-PFKi89FYwwSg6B8Guc1dTe8kuMxEmJdNkyXn0aiAMFum-EdCY3"
+local news = GetConvar('unique_weazel_main_news', '')
 local communtiylogo = "nil"
 local adcost = 50000
 

@@ -1,7 +1,29 @@
 -- ============================================================================
--- لاگ‌های ریز اضافی: شلیک بدون کشتن (با محل اصابت) + دزدیدن ماشین + NCZ
--- (VDM، پنچری، ورود به ماشین قبلاً در combat_vdm_client.lua پوشش داده شده)
+-- انفجار ماشین (نه از تصادف؛ آتیش‌گرفتن/بمب/راکت و غیره)
 -- ============================================================================
+Citizen.CreateThread(function()
+	local reportedExplosions = {}
+	while true do
+		Citizen.Wait(500)
+		local ped = PlayerPedId()
+		local coords = GetEntityCoords(ped)
+
+		-- فقط ماشین‌های نزدیک به خودمون رو چک می‌کنیم (برای پرفورمنس)
+		local vehicle = GetClosestVehicle(coords.x, coords.y, coords.z, 40.0, 0, 71)
+		if vehicle ~= 0 and DoesEntityExist(vehicle) and not reportedExplosions[vehicle] then
+			if IsEntityDead(vehicle) or GetVehicleEngineHealth(vehicle) <= 0 then
+				-- بررسی می‌کنیم که آیا واقعاً "منفجر" شده (نه فقط خاموش/داغون با برخورد معمولی)
+				if HasEntityBeenDamagedByAnyVehicle(vehicle) == false and IsEntityOnFire(vehicle) then
+					reportedExplosions[vehicle] = true
+					local plate = GetVehicleNumberPlateText(vehicle)
+					local model = GetDisplayNameFromVehicleModel(GetEntityModel(vehicle))
+					local vCoords = GetEntityCoords(vehicle)
+					TriggerServerEvent('EventLogs:VehicleExploded', plate, model, vCoords)
+				end
+			end
+		end
+	end
+end)
 
 local BoneNames = {
 	[31086] = 'سر', [39317] = 'گردن',

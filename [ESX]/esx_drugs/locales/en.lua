@@ -108,11 +108,6 @@ Locales ['en'] = {
   ['dealer_item'] = '$%s',
   ['dealer_notenough'] = 'Shoma be andaze kafi baraye forosh nadarid!',
   ['dealer_sold'] = 'Shoma be tedade ~b~%sx~s~ az ~y~%s~s~ be mablaqe ~g~$%s~s~ forokhtid',
-  ['dealer_too_far'] = 'Shoma kheyli az ~r~Kharidare Mavad~s~ door hastid.',
-  ['dealer_cooldown'] = 'Kheyli sari daste be dast mikoni, ~r~sabr kon~s~!',
-  ['dealer_gang_tax'] = 'Bekhatere ~y~mavad forooshi~s~, ~b~%s%%~s~ az sood be sandoughe gang vared shod: ~g~$%s~s~',
-  ['dealer_heat_high'] = '~r~Hoshdar:~s~ police shadidan mokhtaraghe to hastan, felan az in dor kenar bekesh!',
-  ['too_far_process'] = 'Shoma be andaze kafi be dastgahe pardazesh nazdik nistid.',
 
 
   ['blip_weedprocess'] = 'Hippy Hangout',
@@ -133,7 +128,6 @@ Locales ['en'] = {
   ['blip_poppyfield'] = 'Wong Property',
   ['blip_ephedrinefield'] = 'Restricted Area',
   ['blip_drugdealer'] = 'Kharidare Mavad',
-  ['dealer_alert_blip'] = 'Foroshe Mavad (Hoshdar)',
 
 
   ['not_needed'] = 'You shouldn\'t take drugs you don\'t need!',

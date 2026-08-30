@@ -88,79 +88,53 @@ end
 
 function OpenBossMoneyMenu(gang)
     ESX.TriggerServerCallback('FMGangsBoss:getmoney', function(money)
-        ESX.TriggerServerCallback('FMGangsBoss:getblackmoney', function(blackmoney)
-            local elements = {
-                {label = ('Clean balance: <span style="color:green;">$%s</span>'):format(ESX.Math.GroupDigits(money or 0)), value = 'none'},
-                {label = ('Dirty balance: <span style="color:salmon;">$%s</span>'):format(ESX.Math.GroupDigits(blackmoney or 0)), value = 'none2'},
-                {label = 'Deposit Money', value = 'deposit'},
-                {label = 'Withdraw Money', value = 'withdraw'},
-                {label = 'Wash Money', value = 'wash'},
-            }
+        local elements = {
+            {label = ('Current balance: <span style="color:green;">$%s</span>'):format(ESX.Math.GroupDigits(money or 0)), value = 'none'},
+            {label = 'Deposit Money', value = 'deposit'},
+            {label = 'Withdraw Money', value = 'withdraw'},
+        }
 
-            ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'boss_money_' .. gang, {
-                title    = 'MONEY MANAGEMENT',
-                align    = 'top-left',
-                elements = elements
-            }, function(data, menu)
-                if data.current.value == 'deposit' then
-                    menu.close()
-                    ESX.UI.Menu.Open('dialog', GetCurrentResourceName(), 'boss_deposit_amount_' .. gang, {
-                        title = 'Deposit amount'
-                    }, function(data2, menu2)
-                        local amount = tonumber(data2.value)
-                        if not amount or amount <= 0 then
-                            ESX.ShowNotification('Invalid amount')
-                        else
-                            menu2.close()
-                            TriggerServerEvent('FMGangsBoss:server:depositMoney', amount)
-                            OpenBossMoneyMenu(gang)
-                        end
-                    end, function(data2, menu2)
-                        menu2.close()
-                    end)
-                elseif data.current.value == 'withdraw' then
-                    menu.close()
-                    ESX.UI.Menu.Open('dialog', GetCurrentResourceName(), 'boss_withdraw_amount_' .. gang, {
-                        title = 'Withdraw amount'
-                    }, function(data2, menu2)
-                        local amount = tonumber(data2.value)
-                        if not amount or amount <= 0 then
-                            ESX.ShowNotification('Invalid amount')
-                        else
-                            menu2.close()
-                            TriggerServerEvent('FMGangsBoss:server:withdrawMoney', amount)
-                            OpenBossMoneyMenu(gang)
-                        end
-                    end, function(data2, menu2)
-                        menu2.close()
-                    end)
-                elseif data.current.value == 'wash' then
-                    menu.close()
-                    ESX.UI.Menu.Open('dialog', GetCurrentResourceName(), 'boss_wash_amount_' .. gang, {
-                        title = ('Amount to wash (%s%% cut)'):format(Config.WashMoneyCutPercent or 20)
-                    }, function(data2, menu2)
-                        local amount = tonumber(data2.value)
-                        if not amount or amount <= 0 then
-                            ESX.ShowNotification('Invalid amount')
-                        else
-                            menu2.close()
-                            ESX.TriggerServerCallback('FMGangsBoss:washMoney', function(success, resultOrMsg)
-                                if success then
-                                    ESX.ShowNotification(('Washed into $%s clean'):format(ESX.Math.GroupDigits(resultOrMsg)))
-                                else
-                                    ESX.ShowNotification(resultOrMsg or 'Could not wash money')
-                                end
-                                OpenBossMoneyMenu(gang)
-                            end, amount)
-                        end
-                    end, function(data2, menu2)
-                        menu2.close()
-                    end)
-                end
-            end, function(data, menu)
+        ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'boss_money_' .. gang, {
+            title    = 'MONEY MANAGEMENT',
+            align    = 'top-left',
+            elements = elements
+        }, function(data, menu)
+            if data.current.value == 'deposit' then
                 menu.close()
-                OpenBossActionsMenu()
-            end)
+                ESX.UI.Menu.Open('dialog', GetCurrentResourceName(), 'boss_deposit_amount_' .. gang, {
+                    title = 'Deposit amount'
+                }, function(data2, menu2)
+                    local amount = tonumber(data2.value)
+                    if not amount or amount <= 0 then
+                        ESX.ShowNotification('Invalid amount')
+                    else
+                        menu2.close()
+                        TriggerServerEvent('FMGangsBoss:server:depositMoney', amount)
+                        OpenBossMoneyMenu(gang)
+                    end
+                end, function(data2, menu2)
+                    menu2.close()
+                end)
+            elseif data.current.value == 'withdraw' then
+                menu.close()
+                ESX.UI.Menu.Open('dialog', GetCurrentResourceName(), 'boss_withdraw_amount_' .. gang, {
+                    title = 'Withdraw amount'
+                }, function(data2, menu2)
+                    local amount = tonumber(data2.value)
+                    if not amount or amount <= 0 then
+                        ESX.ShowNotification('Invalid amount')
+                    else
+                        menu2.close()
+                        TriggerServerEvent('FMGangsBoss:server:withdrawMoney', amount)
+                        OpenBossMoneyMenu(gang)
+                    end
+                end, function(data2, menu2)
+                    menu2.close()
+                end)
+            end
+        end, function(data, menu)
+            menu.close()
+            OpenBossActionsMenu()
         end)
     end)
 end

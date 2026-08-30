@@ -47,6 +47,7 @@ AddEventHandler('esx_uniquejobs:placeTracker', function(plate)
 	broadcastTrackedPlates()
 
 	TriggerClientEvent('esx:showNotification', source, "~g~Tracker Rooye Plaque " .. plate .. " Nasb Shod (30 Daghighe)")
+	TriggerEvent('DiscordBot:ToDiscord', 'adminmenu', 'TrackerLog', '```css\n[ Agent : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Job : '..xPlayer.job.name..' ]\n[ Action : PLACED GPS TRACKER ]\n[ Plate : '..tostring(plate)..' ]\n[ Duration : 30 min ]\n```', 'user', true, source, false)
 
 	SetTimeout(TRACKER_DURATION * 1000, function()
 		if trackers[plate] and trackers[plate].agentSource == source then
@@ -64,6 +65,7 @@ AddEventHandler('esx_uniquejobs:removeTracker', function(plate)
 		trackers[plate] = nil
 		broadcastTrackedPlates()
 		TriggerClientEvent('esx:showNotification', source, "~g~Tracker Hazf Shod")
+		TriggerEvent('DiscordBot:ToDiscord', 'adminmenu', 'TrackerLog', '```css\n[ Agent : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Action : REMOVED GPS TRACKER ]\n[ Plate : '..tostring(plate)..' ]\n```', 'user', true, source, false)
 	end
 end)
 

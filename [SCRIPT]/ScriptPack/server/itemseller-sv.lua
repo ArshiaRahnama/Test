@@ -38,13 +38,8 @@ AddEventHandler('item_shop_tailor:handleSell', function(itemName, amount)
         local itemLabel = xPlayer.getInventoryItem(itemName).label
 
 
-        -- FIX (اکسپلویت دوپلیکیت آیتم): amount قبلاً هیچ چک مثبت/صحیح‌بودن
-        -- نداشت؛ فرستادن یه amount منفی باعث می‌شد itemCount >= amount همیشه
-        -- true بشه، بعد removeInventoryItem با مقدار منفی عملاً آیتم اضافه
-        -- می‌کرد (نه کم) - یعنی می‌شد با "فروختن" مقدار منفی، آیتم مجانی گرفت.
-        amount = tonumber(amount)
-        local itemCount = amount and amount > 0 and amount == math.floor(amount) and xPlayer.getInventoryItem(itemName).count or -1
-        if amount and amount > 0 and itemCount >= amount then
+        local itemCount = xPlayer.getInventoryItem(itemName).count
+        if itemCount >= amount then
 
             xPlayer.removeInventoryItem(itemName, amount)
 
@@ -110,13 +105,8 @@ AddEventHandler('item_shop_lumberjack:handleSell', function(itemName, amount)
         local itemLabel = xPlayer.getInventoryItem(itemName).label
 
 
-        -- FIX (اکسپلویت دوپلیکیت آیتم): amount قبلاً هیچ چک مثبت/صحیح‌بودن
-        -- نداشت؛ فرستادن یه amount منفی باعث می‌شد itemCount >= amount همیشه
-        -- true بشه، بعد removeInventoryItem با مقدار منفی عملاً آیتم اضافه
-        -- می‌کرد (نه کم) - یعنی می‌شد با "فروختن" مقدار منفی، آیتم مجانی گرفت.
-        amount = tonumber(amount)
-        local itemCount = amount and amount > 0 and amount == math.floor(amount) and xPlayer.getInventoryItem(itemName).count or -1
-        if amount and amount > 0 and itemCount >= amount then
+        local itemCount = xPlayer.getInventoryItem(itemName).count
+        if itemCount >= amount then
 
             xPlayer.removeInventoryItem(itemName, amount)
 
@@ -183,13 +173,8 @@ AddEventHandler('item_shop_slaughterer:handleSell', function(itemName, amount)
         local itemLabel = xPlayer.getInventoryItem(itemName).label
 
 
-        -- FIX (اکسپلویت دوپلیکیت آیتم): amount قبلاً هیچ چک مثبت/صحیح‌بودن
-        -- نداشت؛ فرستادن یه amount منفی باعث می‌شد itemCount >= amount همیشه
-        -- true بشه، بعد removeInventoryItem با مقدار منفی عملاً آیتم اضافه
-        -- می‌کرد (نه کم) - یعنی می‌شد با "فروختن" مقدار منفی، آیتم مجانی گرفت.
-        amount = tonumber(amount)
-        local itemCount = amount and amount > 0 and amount == math.floor(amount) and xPlayer.getInventoryItem(itemName).count or -1
-        if amount and amount > 0 and itemCount >= amount then
+        local itemCount = xPlayer.getInventoryItem(itemName).count
+        if itemCount >= amount then
 
             xPlayer.removeInventoryItem(itemName, amount)
 
@@ -256,13 +241,8 @@ AddEventHandler('item_shop_fueler:handleSell', function(itemName, amount)
         local itemLabel = xPlayer.getInventoryItem(itemName).label
 
 
-        -- FIX (اکسپلویت دوپلیکیت آیتم): amount قبلاً هیچ چک مثبت/صحیح‌بودن
-        -- نداشت؛ فرستادن یه amount منفی باعث می‌شد itemCount >= amount همیشه
-        -- true بشه، بعد removeInventoryItem با مقدار منفی عملاً آیتم اضافه
-        -- می‌کرد (نه کم) - یعنی می‌شد با "فروختن" مقدار منفی، آیتم مجانی گرفت.
-        amount = tonumber(amount)
-        local itemCount = amount and amount > 0 and amount == math.floor(amount) and xPlayer.getInventoryItem(itemName).count or -1
-        if amount and amount > 0 and itemCount >= amount then
+        local itemCount = xPlayer.getInventoryItem(itemName).count
+        if itemCount >= amount then
 
             xPlayer.removeInventoryItem(itemName, amount)
 
@@ -324,11 +304,9 @@ AddEventHandler('item_shop_laster:handleSell', function(itemName, amount)
         local pricePerItem = SellerConfig.itemsForSaleLaster[itemName].price
         local totalPrice = pricePerItem * amount
         local itemLabel = xPlayer.getInventoryItem(itemName).label
-        -- FIX (اکسپلویت دوپلیکیت آیتم): همون مشکل amount منفی، این یکی جدا افتاده بود
-        amount = tonumber(amount)
-        local itemCount = amount and amount > 0 and amount == math.floor(amount) and xPlayer.getInventoryItem(itemName).count or -1
+        local itemCount = xPlayer.getInventoryItem(itemName).count
 
-        if amount and amount > 0 and itemCount >= amount then
+        if itemCount >= amount then
             xPlayer.removeInventoryItem(itemName, amount)
             xPlayer.addInventoryItem('eskenas', totalPrice)
             TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'AMoneyLog', '```css\n[ Player : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Player Steam : '..xPlayer.identifier..' ]\n[ Sold : '..tostring(itemName)..' x'..tostring(amount)..' ]\n[ Earned : '..tostring(totalPrice)..'x eskenas ]\n```', 'user', true, source, false)
@@ -388,13 +366,8 @@ AddEventHandler('item_miner:handleSell', function(itemName, amount)
         local totalPrice = pricePerItem * amount
         local itemLabel = xPlayer.getInventoryItem(itemName).label
 
-        -- FIX (اکسپلویت دوپلیکیت آیتم): amount قبلاً هیچ چک مثبت/صحیح‌بودن
-        -- نداشت؛ فرستادن یه amount منفی باعث می‌شد itemCount >= amount همیشه
-        -- true بشه، بعد removeInventoryItem با مقدار منفی عملاً آیتم اضافه
-        -- می‌کرد (نه کم) - یعنی می‌شد با "فروختن" مقدار منفی، آیتم مجانی گرفت.
-        amount = tonumber(amount)
-        local itemCount = amount and amount > 0 and amount == math.floor(amount) and xPlayer.getInventoryItem(itemName).count or -1
-        if amount and amount > 0 and itemCount >= amount then
+        local itemCount = xPlayer.getInventoryItem(itemName).count
+        if itemCount >= amount then
 
             xPlayer.removeInventoryItem(itemName, amount)
 
@@ -459,13 +432,8 @@ AddEventHandler('item_shop_separated:handleSell', function(itemName, amount)
         local itemLabel = xPlayer.getInventoryItem(itemName).label
 
 
-        -- FIX (اکسپلویت دوپلیکیت آیتم): amount قبلاً هیچ چک مثبت/صحیح‌بودن
-        -- نداشت؛ فرستادن یه amount منفی باعث می‌شد itemCount >= amount همیشه
-        -- true بشه، بعد removeInventoryItem با مقدار منفی عملاً آیتم اضافه
-        -- می‌کرد (نه کم) - یعنی می‌شد با "فروختن" مقدار منفی، آیتم مجانی گرفت.
-        amount = tonumber(amount)
-        local itemCount = amount and amount > 0 and amount == math.floor(amount) and xPlayer.getInventoryItem(itemName).count or -1
-        if amount and amount > 0 and itemCount >= amount then
+        local itemCount = xPlayer.getInventoryItem(itemName).count
+        if itemCount >= amount then
 
             xPlayer.removeInventoryItem(itemName, amount)
 
@@ -531,13 +499,8 @@ AddEventHandler('item_shop_drugdealer2:handleSell', function(itemName, amount)
         local itemLabel = xPlayer.getInventoryItem(itemName).label
 
 
-        -- FIX (اکسپلویت دوپلیکیت آیتم): amount قبلاً هیچ چک مثبت/صحیح‌بودن
-        -- نداشت؛ فرستادن یه amount منفی باعث می‌شد itemCount >= amount همیشه
-        -- true بشه، بعد removeInventoryItem با مقدار منفی عملاً آیتم اضافه
-        -- می‌کرد (نه کم) - یعنی می‌شد با "فروختن" مقدار منفی، آیتم مجانی گرفت.
-        amount = tonumber(amount)
-        local itemCount = amount and amount > 0 and amount == math.floor(amount) and xPlayer.getInventoryItem(itemName).count or -1
-        if amount and amount > 0 and itemCount >= amount then
+        local itemCount = xPlayer.getInventoryItem(itemName).count
+        if itemCount >= amount then
 
             xPlayer.removeInventoryItem(itemName, amount)
 

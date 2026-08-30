@@ -725,32 +725,6 @@ function SendMessage( src , msg )
     TriggerClientEvent('chat:addMessage', src , {template = template ,args = "."})
 end
 
-----------------------------------------
------------- SHARED EXPORT --------------
-----------------------------------------
--- Generic police alert, usable by ANY other resource (esx_drugs, esx_addons, etc.):
---   exports['Unique_AllRobs']:AlertPolice(coords, label, duration, radius)
--- coords   : vector3 / {x=,y=,z=} of the alert location
--- label    : text shown on the blip name + dispatch chat message + HUD timer (optional)
--- duration : how long the blip + on-screen countdown lasts in ms (optional, defaults to Config.Rob.PoliceAlertDuration)
--- radius   : radius (in game units) of the translucent alert circle on the map (optional, defaults to 60.0)
-function AlertPolice(coords, label, duration, radius)
-    local xPlayers = ESX.GetPlayers()
-    duration = duration or Config.Rob.PoliceAlertDuration or (4 * 60 * 1000)
-    label = label or 'Yek Faaliate Mashkook'
-    radius = radius or 60.0
-
-    for i=1, #xPlayers, 1 do
-        local xPlayer = ESX.GetPlayerFromId(xPlayers[i])
-        if IsPoliceJob(xPlayer.job.name) then
-            SendMessage(xPlayer.source, 'Az Dispatch be Tamai Vahed Ha ^1' .. label .. '^0 Gozarsh Shod')
-            TriggerClientEvent('Unique_AllRobs:policeAlert', xPlayers[i], coords, label, duration, radius)
-        end
-    end
-end
-
-exports('AlertPolice', AlertPolice)
-
 AddEventHandler('playerDropped', function(reason)
     local _source = source
     if RobsInProgress[_source] then

@@ -21,36 +21,6 @@ local function IsAllowedCadJob(source)
     return xPlayer and ALLOWED_CAD_JOBS[xPlayer.job.name] == true
 end
 
--- Officer picker for Internal Affairs (and anywhere else that needs to
--- target a real officer instead of a free-typed name). Searches every
--- LE/DOJ job holder in `users`, online or not, since IA reports are
--- often filed after the fact.
-ESX.RegisterServerCallback('DuckMdt:SearchOfficers', function(src, cb, Text)
-    if not IsAllowedCadJob(src) then cb({ Officers = {} }) return end
-
-    local object = {}
-    local text = "%"..(Text or "").."%"
-    local jobPlaceholders = {}
-    local params = { ['@name'] = text }
-    local i = 0
-    for job in pairs(ALLOWED_CAD_JOBS) do
-        i = i + 1
-        local key = '@job' .. i
-        jobPlaceholders[#jobPlaceholders + 1] = key
-        params[key] = job
-    end
-
-    MySQL.Async.fetchAll(
-        'SELECT `playerName`, `identifier`, `job` FROM users WHERE `playerName` LIKE @name AND `job` IN (' .. table.concat(jobPlaceholders, ', ') .. ') LIMIT 20',
-        params,
-        function(result)
-            object.Officers = result
-        end
-    )
-    Wait(500)
-    cb(object)
-end)
-
 ESX.RegisterServerCallback('DuckMdt:GetAllWanteds', function(src, cb)
     if not IsAllowedCadJob(src) then cb({ cars = {}, peoples = {} }) return end
 

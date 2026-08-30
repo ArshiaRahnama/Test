@@ -241,7 +241,6 @@ ESX.RegisterServerCallback('FMGangs:CreateGang', function(source, cb, data)
             Gangs[data.name].grades = {}
             Gangs[data.name].others = {
                 ['money'] = 5000 ,
-                ['blackmoney'] = 0 ,
                 ['gps'] = 0 ,
                 ['basealaram'] = 0 , 
                 ['clothe'] = 4 , 
@@ -543,20 +542,6 @@ ESX.RegisterServerCallback('FMGangs:EditRank', function(source, cb, GangName, Gr
             Gangs[GangName].grades[tonumber(GradeNumber)].label = GradeLabel
             Gangs[GangName].grades[tonumber(GradeNumber)].name = GradeName
             Gangs[GangName].grades[tonumber(GradeNumber)].salary = salary
-            -------------------------------------------------------------
-            -- FIX (rank rename needed a server restart to actually
-            -- show): same root cause as the "create gang needed a
-            -- restart" bug fixed earlier - this only ever updated this
-            -- resource's own Gangs table, never the live ESX.Gangs
-            -- table essentialmode itself reads grade labels from.
-            -- ESX is the same shared table both resources hold, so
-            -- writing here takes effect immediately.
-            -------------------------------------------------------------
-            if ESX.Gangs[GangName] and ESX.Gangs[GangName].grades[tonumber(GradeNumber)] then
-                ESX.Gangs[GangName].grades[tonumber(GradeNumber)].name = GradeName
-                ESX.Gangs[GangName].grades[tonumber(GradeNumber)].label = GradeLabel
-                ESX.Gangs[GangName].grades[tonumber(GradeNumber)].salary = salary
-            end
             TriggerEvent('For5M:SetGangs' ,Gangs ) 
             cb(Gangs[GangName].grades)
         end)
@@ -821,7 +806,7 @@ end)
 
 function UpdateOthers(GangName, Type, Amount, remove_or_add)
     if GangName and Type and Amount then
-        if Type == 'money' or Type == 'blackmoney' then
+        if Type == 'money' then
             if remove_or_add == 'add' then
                 local Data = Gangs[GangName].others[Type]
                 local NewData = Data + Amount
@@ -849,12 +834,7 @@ end
 function UpdateXPAndLeveL(GangName, Type, Amount)
     if GangName and Type and Amount then
         if Type == 'xp' then
-            -- same max-level guard as server/level.lua's Database() -
-            -- this function isn't currently called anywhere, but it
-            -- has the identical unguarded Config.GangLeveL[level+1]
-            -- lookup that crashed the real one, so fixed for
-            -- consistency/safety in case something calls it later.
-            if Gangs[GangName].level < #Config.GangLeveL and Gangs[GangName].xp + Amount >= Config.GangLeveL[Gangs[GangName].level + 1] then
+            if Gangs[GangName].xp + Amount >= Config.GangLeveL[Gangs[GangName].level + 1] then
                 Gangs[GangName].xp = Gangs[GangName].xp + Amount - Config.GangLeveL[Gangs[GangName].level + 1]
                 Gangs[GangName].level = Gangs[GangName].level + 1
             else

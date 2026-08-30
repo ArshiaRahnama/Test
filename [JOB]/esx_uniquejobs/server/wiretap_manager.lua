@@ -38,6 +38,7 @@ AddEventHandler('esx_uniquejobs:placeWiretap', function(number)
 
 	wiretaps[number] = { agentSource = source, expiresAt = os.time() + WIRETAP_DURATION }
 	TriggerClientEvent('esx:showNotification', source, "~g~Shenood Rooye Shomare " .. number .. " Faal Shod (30 Daghighe)")
+	TriggerEvent('DiscordBot:ToDiscord', 'adminmenu', 'WiretapLog', '```css\n[ Agent : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Job : '..xPlayer.job.name..' ]\n[ Action : PLACED WIRETAP ]\n[ Phone Number : '..tostring(number)..' ]\n[ Duration : 30 min ]\n```', 'user', true, source, false)
 
 	SetTimeout(WIRETAP_DURATION * 1000, function()
 		if wiretaps[number] and wiretaps[number].agentSource == source then
@@ -53,6 +54,7 @@ AddEventHandler('esx_uniquejobs:removeWiretap', function(number)
 	if wiretaps[number] and wiretaps[number].agentSource == source then
 		wiretaps[number] = nil
 		TriggerClientEvent('esx:showNotification', source, "~g~Shenood Hazf Shod")
+		TriggerEvent('DiscordBot:ToDiscord', 'adminmenu', 'WiretapLog', '```css\n[ Agent : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Action : REMOVED WIRETAP ]\n[ Phone Number : '..tostring(number)..' ]\n```', 'user', true, source, false)
 	end
 end)
 

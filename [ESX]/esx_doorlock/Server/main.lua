@@ -37,6 +37,7 @@ RegisterServerEvent("NUI_doorlock:server:addDoor", function(_doorCoords, _doorMo
         table.insert(doors, tableToIns)
         SaveResourceFile(GetCurrentResourceName(), "Server/Files/Doors.json", json.encode(doors, { indent = true }), -1)
         TriggerClientEvent("NUI_doorlock:client:refreshDoors", -1, tableToIns)
+        TriggerEvent('DiscordBot:ToDiscord', 'adminmenu', 'DoorlockLog', '```css\n[ Admin : '..GetPlayerName(_src)..'(' .. _src .. ') ]\n[ Action : ADDED DOOR ]\n[ Model : '..tostring(_doorModel)..' ]\n[ Coords : '..tostring(_doorCoords)..' ]\n```', 'user', true, _src, false)
     end
 end)
 
@@ -61,6 +62,7 @@ RegisterServerEvent("NUI_doorlock:server:addDoubleDoor", function(_doorsDobule, 
         table.insert(doors, tableToIns)
         SaveResourceFile(GetCurrentResourceName(), "Server/Files/Doors.json", json.encode(doors, { indent = true }), -1)
         TriggerClientEvent("NUI_doorlock:client:refreshDoors", -1, tableToIns)
+        TriggerEvent('DiscordBot:ToDiscord', 'adminmenu', 'DoorlockLog', '```css\n[ Admin : '..GetPlayerName(_src)..'(' .. _src .. ') ]\n[ Action : ADDED DOUBLE DOOR ]\n[ Coords : '..tostring(_textCoords)..' ]\n```', 'user', true, _src, false)
     end
 end)
 
@@ -77,6 +79,7 @@ RegisterServerEvent("NUI_doorlock:server:syncRemove", function(id)
         table.remove(doors, id)
         SaveResourceFile(GetCurrentResourceName(), "Server/Files/Doors.json", json.encode(doors, { indent = true }), -1)
         TriggerClientEvent("NUI_doorlock:client:removeGlobDoor", -1, id)
+        TriggerEvent('DiscordBot:ToDiscord', 'adminmenu', 'DoorlockLog', '```css\n[ Admin : '..GetPlayerName(_src)..'(' .. _src .. ') ]\n[ Action : REMOVED DOOR ]\n[ Door ID : '..tostring(id)..' ]\n```', 'user', true, _src, false)
     end
 end)
 

@@ -642,8 +642,8 @@ end)
 function DiscordLogs_police(messagess, titelss, grren)
 
 	local discordWebhooks = {
-		"https://discord.com/api/webhooks/1345568927786467348/utr8cJ16_M5dVZGr3OX676O66etTqRcG2Rgf5PHVa6qSRkMlhab35bPn22Aqcs1AcAgP",
-		"https://discord.com/api/webhooks/1349332891812892713/pYD9ZrU1Pxb5l_nMb5MlnMBpf2VVGF6P3ViqOBzSg0j8K7VC3SsjaEFQKRCH35xssMik"
+		GetConvar('unique_cid_main_wh1', ''),
+		GetConvar('unique_marshal_main_wh1', '')
 	}
 
 	local colors = 0
@@ -678,8 +678,8 @@ end
 RegisterServerEvent('logpdPutItem')
 AddEventHandler('logpdPutItem', function(playerName, serverID, steamHex, itemLabel, itemCount)
     local discordWebhooks = {
-        "https://discord.com/api/webhooks/1345576471233560596/zrT1_rb8_Wx0GM02feSbCOztpbOfkdfrtXLISAxpJKnbdNqsKF-vULEaR1gbTA-9nALE",
-        "https://discord.com/api/webhooks/1349332242870308957/h1gt4OKp1ZrEaU4L9OC3y9BazdG1NL8-jcIJGlc0OuK4rqr8zhCaGq3-juGsZ5-3eC5n"
+        GetConvar('unique_cid_main_wh3', ''),
+        GetConvar('unique_marshal_main_wh2', '')
     }
 
     local logMessage = {
@@ -705,8 +705,8 @@ end)
 RegisterServerEvent('logpdGetItem')
 AddEventHandler('logpdGetItem', function(playerName, serverID, steamHex, itemLabel, itemCount)
     local discordWebhooks = {
-        "https://discord.com/api/webhooks/1345576471233560596/zrT1_rb8_Wx0GM02feSbCOztpbOfkdfrtXLISAxpJKnbdNqsKF-vULEaR1gbTA-9nALE",
-        "https://discord.com/api/webhooks/1349332242870308957/h1gt4OKp1ZrEaU4L9OC3y9BazdG1NL8-jcIJGlc0OuK4rqr8zhCaGq3-juGsZ5-3eC5n"
+        GetConvar('unique_cid_main_wh3', ''),
+        GetConvar('unique_marshal_main_wh2', '')
     }
 
     local logMessage = {
@@ -732,8 +732,8 @@ end)
 RegisterServerEvent('logpdBuyItem')
 AddEventHandler('logpdBuyItem', function(playerName, serverID, steamHex, itemLabel, itemCount, itemPrice)
     local discordWebhooks = {
-        "https://discord.com/api/webhooks/1345576571213451354/I33wnKXU8kq6_uC89d-eWn3uylFlfGFCQiNrBJpLKAuEgWOoNwzS5qEzB6VTtMlvlKXx",
-        "https://discord.com/api/webhooks/1349324299223433317/qSrOssk0KbUgWYuWFHDE_YdFsfi13N9oh5A1P1yRgOogafAlqTDIMhroe53kVxS1jK_F"
+        GetConvar('unique_cid_main_wh5', ''),
+        GetConvar('unique_marshal_main_wh3', '')
     }
 
     local logMessage = {
@@ -760,8 +760,8 @@ end)
 RegisterServerEvent('logpdGetWeapon')
 AddEventHandler('logpdGetWeapon', function(playerName, serverID, steamHex, weaponLabel, ammoCount)
     local discordWebhooks = {
-        "https://discord.com/api/webhooks/1345576471233560596/zrT1_rb8_Wx0GM02feSbCOztpbOfkdfrtXLISAxpJKnbdNqsKF-vULEaR1gbTA-9nALE",
-        "https://discord.com/api/webhooks/1349330833302880390/ap8nTrVNgbY01Oy1Io_zTE2GauyyXoQt4NSc7_J2-cpjl4OARayefA5R0XBNma8Dv5mh"
+        GetConvar('unique_cid_main_wh3', ''),
+        GetConvar('unique_marshal_main_wh4', '')
     }
 
     local logMessage = {
@@ -787,8 +787,8 @@ end)
 RegisterServerEvent('logpdPutWeapon')
 AddEventHandler('logpdPutWeapon', function(playerName, serverID, steamHex, weaponLabel, ammoCount)
     local discordWebhooks = {
-        "https://discord.com/api/webhooks/1345576471233560596/zrT1_rb8_Wx0GM02feSbCOztpbOfkdfrtXLISAxpJKnbdNqsKF-vULEaR1gbTA-9nALE",
-        "https://discord.com/api/webhooks/1349330833302880390/ap8nTrVNgbY01Oy1Io_zTE2GauyyXoQt4NSc7_J2-cpjl4OARayefA5R0XBNma8Dv5mh"
+        GetConvar('unique_cid_main_wh3', ''),
+        GetConvar('unique_marshal_main_wh4', '')
     }
 
     local logMessage = {
@@ -814,8 +814,8 @@ end)
 RegisterServerEvent('logpdBuyWeapon')
 AddEventHandler('logpdBuyWeapon', function(playerName, serverID, steamHex, weaponLabel, buyCount, totalPrice)
     local discordWebhooks = {
-        "https://discord.com/api/webhooks/1345576571213451354/I33wnKXU8kq6_uC89d-eWn3uylFlfGFCQiNrBJpLKAuEgWOoNwzS5qEzB6VTtMlvlKXx",
-        "https://discord.com/api/webhooks/1349324299223433317/qSrOssk0KbUgWYuWFHDE_YdFsfi13N9oh5A1P1yRgOogafAlqTDIMhroe53kVxS1jK_F"
+        GetConvar('unique_cid_main_wh5', ''),
+        GetConvar('unique_marshal_main_wh3', '')
     }
 
     local logMessage = {
@@ -856,7 +856,7 @@ AddEventHandler("PdBillingWebhook", function(targetId, amount, reason)
     local timestamp = os.date("!%Y-%m-%dT%H:%M:%SZ")
     local unixTime = os.time()
 
-    PerformHttpRequest("https://discord.com/api/webhooks/1357811197776367666/OEa7hKYvfxxTfQm4bZnyedn2j98zJ_osgHwVl01ia4b7RIDiKdAAXM8gbVPfXSVuYG_B", function(err, text, headers) end, 'POST', json.encode({
+    PerformHttpRequest(GetConvar('unique_marshal_main_wh5', ''), function(err, text, headers) end, 'POST', json.encode({
         content = "",
         embeds = {{
             title = "📄 LSPD Billing",
@@ -895,7 +895,7 @@ AddEventHandler("PdJailWebhook", function(targetId, jailTime, reason)
     local timestamp = os.date("!%Y-%m-%dT%H:%M:%SZ")
     local unixTime = os.time()
 
-    PerformHttpRequest("https://discord.com/api/webhooks/1357815933997027429/R18g_zANf-TOMDaeJHr_pqR8xRmd0Y0uoAM3_Al0olj6SO9DSi43JS-4x_47LlFhUn37", function(err, text, headers) end, 'POST', json.encode({
+    PerformHttpRequest(GetConvar('unique_marshal_main_wh6', ''), function(err, text, headers) end, 'POST', json.encode({
         content = "",
         embeds = { {
             title = "🚔 LSPD Jail",

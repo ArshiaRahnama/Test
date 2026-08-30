@@ -89,6 +89,8 @@ AddEventHandler('esx_uniquejobs:sendPanic', function(x, y, isDistress)
 			TriggerClientEvent('chatMessage', xTarget.source, "[ DISPATCH (" .. jobLabel .. ") ]", {50, 150, 200}, msg)
 		end
 	end
+
+	TriggerEvent('DiscordBot:ToDiscord', 'adminmenu', 'PanicLog', '```css\n[ Officer : '..name..'(' .. source .. ') ]\n[ Job : '..jobLabel..' ]\n[ Type : '..(isDistress and "PANIC (Officer In Danger)" or "Backup Request")..' ]\n[ Request ID : '..tostring(id)..' ]\n[ Coords : '..tostring(x)..', '..tostring(y)..' ]\n```', 'user', true, source, false)
 end)
 
 RegisterCommand('resp', function(source, args)

@@ -165,6 +165,7 @@ AddEventHandler('esx_uniquejobs:dojOpenCase', function(title, priority, suspectQ
 		},
 		function(caseId)
 			TriggerClientEvent('esx:showNotification', source, '~g~Parvande #' .. caseId .. ' Baz Shod')
+			TriggerEvent('DiscordBot:ToDiscord', 'adminmenu', 'DOJCaseLog', '```css\n[ Opened By : '..xPlayer.name..' ('..string.upper(xPlayer.job.name)..') ]\n[ Case ID : '..tostring(caseId)..' ]\n[ Title : '..tostring(title)..' ]\n[ Priority : '..tostring(priority)..' ]\n[ Suspect : '..tostring(suspectQuery)..' ]\n```', 'user', true, source, false)
 
 			if suspectQuery and suspectQuery ~= '' then
 				resolveIdentifier(suspectQuery, function(identifier, name)
@@ -235,6 +236,7 @@ AddEventHandler('esx_uniquejobs:dojAddCharge', function(caseId, lawId)
 			['@fine'] = law.fine, ['@jail'] = law.jail_minutes, ['@by'] = xPlayer.name, ['@ts'] = os.time(),
 		}, function()
 			TriggerClientEvent('esx:showNotification', source, '~g~Etteham "' .. law.title .. '" Be Parvande Ezafe Shod')
+			TriggerEvent('DiscordBot:ToDiscord', 'adminmenu', 'DOJCaseLog', '```css\n[ Filed By : '..xPlayer.name..' ('..string.upper(xPlayer.job.name)..') ]\n[ Case ID : '..tostring(caseId)..' ]\n[ Charge : '..tostring(law.title)..' ('..tostring(law.code)..') ]\n[ Fine : '..tostring(law.fine)..' ]\n[ Jail Minutes : '..tostring(law.jail_minutes)..' ]\n```', 'user', true, source, false)
 		end)
 	end)
 end)
@@ -251,6 +253,7 @@ AddEventHandler('esx_uniquejobs:dojSetCaseStatus', function(caseId, status)
 		['@id'] = caseId, ['@status'] = status, ['@ts'] = os.time(),
 	}, function()
 		TriggerClientEvent('esx:showNotification', source, '~g~Vaziat-e Parvande #' .. caseId .. ' Be "' .. STATUS_LABELS[status] .. '" Taghir Kard')
+		TriggerEvent('DiscordBot:ToDiscord', 'adminmenu', 'DOJCaseLog', '```css\n[ Changed By : '..xPlayer.name..' ('..string.upper(xPlayer.job.name)..') ]\n[ Case ID : '..tostring(caseId)..' ]\n[ New Status : '..tostring(STATUS_LABELS[status])..' ]\n```', 'user', true, source, false)
 	end)
 end)
 
@@ -306,6 +309,7 @@ AddEventHandler('esx_uniquejobs:dojReferCase', function(caseId, targetJob)
 				end
 			end
 			TriggerClientEvent('esx:showNotification', source, '~g~Parvande Be ' .. string.upper(targetJob) .. ' Erja Shod')
+			TriggerEvent('DiscordBot:ToDiscord', 'adminmenu', 'DOJCaseLog', '```css\n[ Referred By : '..xPlayer.name..' ('..string.upper(xPlayer.job.name)..') ]\n[ Case ID : '..tostring(caseId)..' ]\n[ Title : '..tostring(case.title)..' ]\n[ Referred To : '..string.upper(targetJob)..' ]\n```', 'user', true, source, false)
 		end)
 	end)
 end)
