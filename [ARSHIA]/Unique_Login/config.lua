@@ -7,7 +7,7 @@ Config.SMS = {
 
 
 
-    ApiKey    = "v16gfSyyi7z23aw74j4GsQRrdgMvwVLUCepqyqBMPEGVQIIY",
+    ApiKey    = GetConvar('unique_login_sms_apikey', ""),
     TemplateId = 461982,
 }
 

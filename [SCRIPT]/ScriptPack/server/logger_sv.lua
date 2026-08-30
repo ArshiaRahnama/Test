@@ -1,17 +1,17 @@
 ESX = nil
 TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
 
-local alogs 		= "https://discord.com/api/webhooks/1219998148894654474/MXIY_O4nnv7d7KfFQIkJ8xRd3pKQTexL2DBDeUNZr_m3qOCvAW_fPyGJICnCPHjADsyb"
-local infologs 		= "https://discord.com/api/webhooks/1217536908209557705/1KtYLoI-Q7RmbBGcK4tpiRJCW54eCb8_ITzpyPyrLLow8plODz1L2xQDNzSGW54DSCmu"
-local ganglog 		= "https://discord.com/api/webhooks/1219998040014848095/FJTWwEyGBq7yU52f649nEoLxbqSRBIHzkirbRh09inP386SeFW5p4p0FEQrRAti4H9Iv"
-local homelog 		= "https://discord.com/api/webhooks/1217534722633105568/oqsN6J3IslcQ8ZGQRQ1RmaJy3DgqJGeBQ_GZuYnAuaqdPFg0CAE87k2N_WpwmWx7BFum"
-local trunklog 		= "https://discord.com/api/webhooks/1219997766701289502/iWHlBEjEnvPvjE0jR8NGguOezPRvgxy14CrEC-i4dahKmJtevODYxLGd8sG5JKQyQW9r"
-local atmlog 		= "https://discord.com/api/webhooks/1217533571456176148/nZcYY6TfrIOUhmkA0XBwGiUNEU4e_LDc6fdwrN5scNCwyXNyw7H8a5yZoy1xT0lzb64h"
-local roblog 		= "https://discord.com/api/webhooks/1217532268373872650/IWPsgUJmxQt_-6VVPm_c5pY5IlpSy2JEW5xsv9B1sTFKFFAx20C0QE_cTq6FQumrRdl1"
+local alogs 		= GetConvar('unique_logger_sv_alogs', '')
+local infologs 		= GetConvar('unique_logger_sv_infologs', '')
+local ganglog 		= GetConvar('unique_logger_sv_ganglog', '')
+local homelog 		= GetConvar('unique_logger_sv_homelog', '')
+local trunklog 		= GetConvar('unique_logger_sv_trunklog', '')
+local atmlog 		= GetConvar('unique_logger_sv_atmlog', '')
+local roblog 		= GetConvar('unique_logger_sv_roblog', '')
 local pedlog 		= ""
 local proplog 		= ""
 local vehlog 		= ""
-local Rewardalllog  = 'https://discord.com/api/webhooks/1219997168694333470/AcP0KZnOvBhhxUcsABzQbs-yrLg4Ueq6yprxSdDQ24aWizGI5Ef_wZ8l5CXrzAZvWoII'
+local Rewardalllog  = GetConvar('unique_logger_sv_rewardalllog', '')
 local communityname = "Server Test"
 local communtiylogo = "https://media.discordapp.net/attachments/669926392921849875/939876376784273458/ServerTest.png"
 

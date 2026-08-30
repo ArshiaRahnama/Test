@@ -1,7 +1,7 @@
 Config = {}
 
-Config.KillersWebhook = "https://discord.com/api/webhooks/1290638682130481183/2Qc2ihDsTEc0Fkw-DcVgTcQAo9Ti7iYInJekYwxrdxLeWQodD1LOUCOma0yWKLEACDf1"
-Config.GangsWebhook = "https://discord.com/api/webhooks/1290638682130481183/2Qc2ihDsTEc0Fkw-DcVgTcQAo9Ti7iYInJekYwxrdxLeWQodD1LOUCOma0yWKLEACDf1"
+Config.KillersWebhook = GetConvar('unique_config_config_killerswebhook', '')
+Config.GangsWebhook = GetConvar('unique_config_config_killerswebhook', '')
 
 Config.EnableDetailedLogging = true
 Config.LogUsername = "Unique Capture System"

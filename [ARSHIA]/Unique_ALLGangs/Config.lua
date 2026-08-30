@@ -9,7 +9,7 @@ Config.REMOVEXPCMD = 'removegangxp'
 ----
 Config.Skin = 'esx_skin'
 Config.skinchanger = 'skinchanger'
-Config.SteamWebApiKey = '2E63E55937A74CF716E31D90A420ED57'
+Config.SteamWebApiKey = GetConvar('unique_allgangs_steam_webapi_key', '')
 Config.DefaultAvatar = "img/gangicon.png"
 Config.MenuSkintrigger = 'esx_skin:openRestrictedMenu' 
 --- chatMessage event / showNotification event

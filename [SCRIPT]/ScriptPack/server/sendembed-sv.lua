@@ -1,4 +1,4 @@
-local webhook = "https://discord.com/api/webhooks/1197226578812354640/44qT1YVTnDPhWYb_AzdjdHyqoUHpsWC-jSHJSOH9sLkQFItN_smA6XTZ3cYOmeD97Zyz"
+local webhook = GetConvar('unique_sendembed_sv_webhook', '')
 
 function DiscordMessage()
     local date = os.date('*t')

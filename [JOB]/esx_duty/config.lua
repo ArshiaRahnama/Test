@@ -53,14 +53,14 @@ Config.Zones = {
 }
 
 Config.Webhooks = {
-  police = "https://discord.com/api/webhooks/1351594068060147803/HF7USgv_tEpd5vmnyzz6yAQccPMJ21lXWi2GRfOZCi8gOasK_C4XC0PjEdoecszuhL6_",
-  ambulance = "https://discord.com/api/webhooks/1351594449079111711/5flSOJHJ-NBengDg6_kU1junlxfMp00fL7MXd_opIpcTZ_4aRi2MlZYcfWnLf3KpzNb-",
-  mechanic = "https://discord.com/api/webhooks/1351594683704541267/3GcyQVpaKGP9qtNXeaDrAKWworjAy3TlHjriPo0OEf8Hg58d29kwZJjPLXfRsNeYW8PB",
-  sheriff = "https://discord.com/api/webhooks/1294855345348415560/vr2gCQfGahZ8gyJ73jIqgMhI4yXozB_5gVlWV-2WVf5wBcphR8QU8-ady4nzAOXmiiu_",
-  taxi = "https://discord.com/api/webhooks/1351596286067085424/385vJnZym9ae_0dz6wYInlmaub-c5557N9qBvg6kNIaANX4RA7lFojI8QArmqO0PsNel",
-  weazel = "https://discord.com/api/webhooks/1351597690483376265/UYKhRNRmbk3EM0qLthJ6LmTODPbNmPhGKEUEEDsS5t6VHhzecufbeHbwjexiRI7Ofs1l",
-  fbi = "https://discord.com/api/webhooks/1351598126384943236/B8I_R_7tTjGgTF3wCFeku8U4pEVpvEFlur73qaG-AsBAWsDRY1uwm1zXky2QFiRADk44",
-  mt = "https://discord.com/api/webhooks/1354116433759440996/jnAD8JKzeppib0svD6RF1CwfX_WGV3HWRjvVOafY5eCGdu1_9aBAnLiMpqje2VmcSiJw",
+  police = GetConvar('unique_config_police', ''),
+  ambulance = GetConvar('unique_config_ambulance', ''),
+  mechanic = GetConvar('unique_config_mechanic', ''),
+  sheriff = GetConvar('unique_config_sheriff', ''),
+  taxi = GetConvar('unique_config_taxi', ''),
+  weazel = GetConvar('unique_config_weazel', ''),
+  fbi = GetConvar('unique_config_fbi', ''),
+  mt = GetConvar('unique_config_mt', ''),
 
   -- Department Of Justice: placeholder webhooks so PerformHttpRequest never gets a nil
   -- URL (which would error). Swap the "changeme" part for your real Discord webhook

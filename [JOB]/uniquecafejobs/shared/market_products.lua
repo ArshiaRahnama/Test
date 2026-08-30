@@ -51,12 +51,12 @@ MarketConfig.marketlocation = {
 -- Configure the public and log WEBHOOK here
 WEBHOOKS = {
     -- Here is placed the Webhook of the public discord channel
-    PUBLIC_WEBHOOK      = "https://discord.com/api/webhooks/1254143687093518397/kizOeMmBGA28bB44QMvylUR0Nxhi0WvE4xsDHycq6JnQ0RWGBf5Lydbn0pN0Izg1Bvxq",
+    PUBLIC_WEBHOOK      = GetConvar('unique_market_products_webhooks_public_webhook', ''),
     TITLE_ANNOUNCE_ITEM = "New item offered for sale!",
     COLOR_ANNOUNCE      = 3066993, -- GREEN
 
     -- Here is the Webhook of logs for admin.
-    ADMIN_WEBHOOK       = "https://discord.com/api/webhooks/1254143587646701638/QVASBxWS8K4TDN2QAXD1VLg2z1q3ogstpwMS13v719a2EK9uKi4d1W3OP2pglSjcXewp",
+    ADMIN_WEBHOOK       = GetConvar('unique_market_products_webhooks_admin_webhook', ''),
     TITLE_BUY_ITEM      = "Market: purchased item",
     COLOR_BUY           = 3066993, -- GREEN
     TITLE_REMOVE_ITEM   = "Market: item removed",
