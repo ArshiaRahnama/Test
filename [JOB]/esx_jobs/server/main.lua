@@ -237,6 +237,34 @@ local function Work(source, item)
 	end)
 end
 
+-- SECURITY FIX: `item` in starServerTestprpWork below is the WHOLE reward
+-- table sent by the client (see client/main.lua: TriggerServerEvent(...,
+-- zone.Item)), and Work() grants inventory items straight from whatever is
+-- in it (xPlayer.addInventoryItem(item[i].db_name, item[i].add)) with no
+-- validation at all -- a modified client could submit an arbitrary
+-- db_name/add/max/time and get unlimited amounts of any item. The real
+-- per-job tables only exist in client_scripts (client/jobs/*.lua), so there
+-- isn't a server-side original to compare against here -- instead this
+-- checks every field is within the range every real job config actually
+-- uses (see client/jobs/fueler.lua etc: add is always 1-5, max is always
+-- <=100, time is always >=2500ms) and that db_name is a real ESX item.
+local function isValidJobItemTable(item)
+	if type(item) ~= "table" or type(item[1]) ~= "table" then return false end
+	if type(item[1].time) ~= "number" or item[1].time < 1000 or item[1].time > 60000 then return false end
+	if item[1].requires ~= "nothing" and type(item[1].requires) ~= "string" then return false end
+
+	for i = 1, #item, 1 do
+		local entry = item[i]
+		if type(entry) ~= "table" then return false end
+		if entry.name ~= _U('delivery') then
+			if type(entry.db_name) ~= "string" or not ESX.Items[entry.db_name] then return false end
+			if type(entry.add) ~= "number" or entry.add <= 0 or entry.add > 5 then return false end
+			if type(entry.max) ~= "number" or entry.max <= 0 or entry.max > 100 then return false end
+		end
+	end
+	return true
+end
+
 RegisterServerEvent('esx_jobs:startWork')
 AddEventHandler('esx_jobs:startWork', function(item)
 
@@ -245,7 +273,9 @@ end)
 RegisterServerEvent('esx_jobs:starServerTestprpWork')
 AddEventHandler('esx_jobs:starServerTestprpWork', function(item)
 	local xPlayer = ESX.GetPlayerFromId(source)
+	if not xPlayer then return end
 
+	if not isValidJobItemTable(item) then return end
 
 		if PlayersWorking[source] == false then
 			PlayersWorking[source] = true

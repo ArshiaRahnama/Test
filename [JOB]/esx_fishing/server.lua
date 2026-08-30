@@ -33,8 +33,22 @@ end)
 
 RegisterServerEvent('fishing:done')
 AddEventHandler('fishing:done', function(number)
-    local grab = grabitems[number]
     local xPlayer = ESX.GetPlayerFromId(source)
+    if not xPlayer then return end
+
+    -- SECURITY FIX: this used to trust `number` blindly (crashing on an
+    -- out-of-range value via grab.name below) and never checked the player
+    -- actually holds a fishing rod -- any client could call this event
+    -- directly, bypassing both the rod requirement and the fishing
+    -- minigame, for free fish every 20s.
+    local grab = grabitems[number]
+    if not grab then return end
+
+    local rodItem = xPlayer.getInventoryItem("fishingrod")
+    if not rodItem or rodItem.count < 1 then
+        return
+    end
+
     local xItem = xPlayer.getInventoryItem(grab.name)
     if xItem.count >= xItem.limit and xItem.limit ~= -1 then
         TriggerClientEvent('esx:showNotification', source, 'Shoma Fazaye khali baraye ' .. xItem.label .. ' ra nadarid')
