@@ -37,3 +37,7 @@ client_scripts {
 
 shared_script '@scoreboard/html/images/Assets/*.png'
 
+exports {
+	'doesHavePerm'
+}
+

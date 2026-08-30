@@ -181,10 +181,11 @@ function OpenDrugShop()
     for i=1, #price, 1 do
         for k, item in pairs(playerInventory) do
             if item.name == price[i].name and item.count > 0 then
+                local dealerPrice = ESX.Math.Round(price[i].price * Config.DealerSellBonus)
                 table.insert(elements, {
-                    label = ('%s - <span style="color:green;">%s</span>'):format(item.label, _U('dealer_item', ESX.Math.GroupDigits(price[i].price))),
+                    label = ('%s - <span style="color:green;">%s</span>'):format(item.label, _U('dealer_item', ESX.Math.GroupDigits(dealerPrice))),
                     name  = item.name,
-                    price = price[i].price,
+                    price = dealerPrice,
                     max   = item.count
                 })
             end
@@ -218,6 +219,21 @@ function OpenDrugShop()
         menuOpen = false
     end)
 end
+
+-- Shows the seller their current dealer "heat" level after every sale (server: Config.Heat)
+RegisterNetEvent('esx_drugs:updateHeat')
+AddEventHandler('esx_drugs:updateHeat', function(heat, maxHeat)
+    local percent = math.floor((heat / maxHeat) * 100)
+    local color = '~g~'
+
+    if percent >= 70 then
+        color = '~r~'
+    elseif percent >= 40 then
+        color = '~y~'
+    end
+
+    ESX.ShowNotification(('Garmiye Forosh: %s%s%%~s~'):format(color, percent))
+end)
 
 RegisterNetEvent('esx_drugs:Cartel')
 AddEventHandler('esx_drugs:Cartel', function(itemName)

@@ -148,10 +148,44 @@ if Config.Core == "ESX" then
         end
     end
 
-    exports('useClothingItem', function(_, event, item, inventory, slot)
-        print(('^3[unique_clothestore DEBUG] useClothingItem export called: event=%s item=%s^0'):format(tostring(event), tostring(item and item.name)))
-        if event ~= 'usingItem' then return end
-        handleClothingUse(item.name, inventory, slot)
+    exports('useClothingItem', function(...)
+        -- ox_inventory's own export-call chain shifts arguments around
+        -- unpredictably depending on how the export gets invoked (a known
+        -- FXServer export quirk) — the fixed-position (_, event, item,
+        -- inventory, slot) signature we tried before got the wrong values
+        -- in the wrong slots. Find each piece by its actual SHAPE instead
+        -- of assuming a position: `item` is a table with a .name string
+        -- but no .id, `inventory` is a table with an .id and .items table,
+        -- `slot` is the one plain number, and 'usingItem'/'usedItem' is
+        -- the one plain string.
+        local args = { ... }
+        local foundEvent, foundItem, foundInventory, foundSlot
+
+        for _, v in ipairs(args) do
+            local t = type(v)
+            if t == 'string' and (v == 'usingItem' or v == 'usedItem') then
+                foundEvent = v
+            elseif t == 'number' then
+                foundSlot = v
+            elseif t == 'table' then
+                if v.items and v.id ~= nil then
+                    foundInventory = v
+                elseif v.name and type(v.name) == 'string' then
+                    foundItem = v
+                end
+            end
+        end
+
+        print(('^3[unique_clothestore DEBUG] useClothingItem export called (shape-matched): event=%s item=%s inventoryId=%s slot=%s^0'):format(
+            tostring(foundEvent), tostring(foundItem and foundItem.name), tostring(foundInventory and foundInventory.id), tostring(foundSlot)))
+
+        if foundEvent ~= 'usingItem' then return end
+        if not foundItem or not foundInventory or not foundSlot then
+            print('^1[unique_clothestore DEBUG] ABORTED: could not identify item/inventory/slot from the export arguments.^0')
+            return
+        end
+
+        handleClothingUse(foundItem.name, foundInventory, foundSlot)
     end)
 
 

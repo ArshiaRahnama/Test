@@ -15,8 +15,6 @@ function OpenReportsMenu()
             local statusIcon = r.status == 'open' and 'circle-exclamation' or 'clock'
             local statusColor = r.status == 'open' and '#c85450' or '#d6a83a'
 
-
-
             lib.registerContext({
                 id = 'report_actions_' .. id,
                 title = ('Report #%s'):format(id),

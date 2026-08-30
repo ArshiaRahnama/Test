@@ -20,6 +20,32 @@ Config.RequiredCopsOpium = 1
 Config.RequiredCopsHerin = 1
 Config.RequiredCopsCrack = 1
 
+--Drug Dealer (Kharidare Mavad) Stuff--
+Config.DealerSellBonus     = 1.3            -- Sell to the dealer for 30% more than the base price
+Config.DealerAlertDuration = 4 * 60 * 1000  -- How long the police alert blip / on-screen timer lasts (ms)
+
+--Heat System--
+-- Every sale raises the seller's personal heat. Higher heat = more likely (and more severe) police
+-- alerts, and a temporarily lower payout, so camping one dealer spot stops being free money.
+Config.Heat = {
+	PerSale           = 18,   -- heat added per sale
+	DecayAmount       = 6,    -- heat removed...
+	DecayInterval     = 15 * 1000, -- ...every this many ms of not selling
+	Max               = 100,
+	BaseAlertChance   = 25,   -- % chance of an alert even at 0 heat (random patrol overhears you)
+	MaxPriceDrop      = 0.45, -- at max heat, price is reduced by up to 45%
+	HighHeatThreshold = 70,   -- at/above this heat, alerts get a bigger radius + longer duration, and the seller gets a warning
+	HighHeatRadiusMult    = 1.6, -- alert radius multiplier once HighHeatThreshold is reached
+	HighHeatDurationMult  = 1.5, -- alert duration multiplier once HighHeatThreshold is reached
+}
+
+--Gang Tax--
+Config.GangTaxPercent = 10 -- % of each dealer sale automatically deposited into the seller's own gang account (0 = disabled)
+
+--Anti-Exploit--
+Config.MaxInteractDistance = 5.0 -- max allowed distance (game units) between player and a processing zone/ped when the server receives a process event
+Config.SellCooldown        = 2500 -- minimum ms allowed between two sales from the same player
+
 Config.Locale = 'en'
 
 Config.Delays = {

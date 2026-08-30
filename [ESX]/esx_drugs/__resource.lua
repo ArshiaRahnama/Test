@@ -37,5 +37,6 @@ client_scripts {
 }
 
 dependencies {
-	'essentialmode'
+	'essentialmode',
+	'Unique_AllRobs'
 }

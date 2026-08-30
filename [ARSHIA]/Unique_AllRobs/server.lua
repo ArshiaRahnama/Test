@@ -616,16 +616,6 @@ end)
 RegisterServerEvent('Morphy_RobSystem:robberySuccess')
 AddEventHandler('Morphy_RobSystem:robberySuccess', function(robname,RobberyCode)
     local _source = source
-    -- FIX (اکسپلویت اقتصادی حیاتی): این هندلر قبلاً هیچ چکی نداشت که آیا
-    -- این پلیر اصلاً یه robbery واقعی رو شروع کرده یا نه! هرکسی می‌تونست
-    -- مستقیم TriggerServerEvent('Morphy_RobSystem:robberySuccess', 'هر
-    -- robname معتبری') رو صدا بزنه و بدون رد کردن cooldown، تعداد پلیس
-    -- لازم، یا مینی‌گیم هک، فوراً و به‌صورت نامحدود پاداش کامل (پول/آیتم)
-    -- بگیره. الان چک می‌کنیم که RobsInProgress[_source] واقعاً همون
-    -- robname باشه (که فقط تو مسیر قانونی robberyNeeds ست می‌شه).
-    if RobsInProgress[_source] ~= robname then
-        return
-    end
     RobsInProgress[_source] = nil
     local xPlayer  = ESX.GetPlayerFromId(_source)
     -- TEMP FIX (was crashing: exports["esx_policejob"] doesn't exist, that
@@ -734,6 +724,32 @@ function SendMessage( src , msg )
     template = '<div style="padding: 0.5vw; margin: 0.5vw; background-color:rgba(13, 196, 196, 0.4);  border-radius: 3px;">Dispatch   <br> '..msg..' <br> </div>'
     TriggerClientEvent('chat:addMessage', src , {template = template ,args = "."})
 end
+
+----------------------------------------
+------------ SHARED EXPORT --------------
+----------------------------------------
+-- Generic police alert, usable by ANY other resource (esx_drugs, esx_addons, etc.):
+--   exports['Unique_AllRobs']:AlertPolice(coords, label, duration, radius)
+-- coords   : vector3 / {x=,y=,z=} of the alert location
+-- label    : text shown on the blip name + dispatch chat message + HUD timer (optional)
+-- duration : how long the blip + on-screen countdown lasts in ms (optional, defaults to Config.Rob.PoliceAlertDuration)
+-- radius   : radius (in game units) of the translucent alert circle on the map (optional, defaults to 60.0)
+function AlertPolice(coords, label, duration, radius)
+    local xPlayers = ESX.GetPlayers()
+    duration = duration or Config.Rob.PoliceAlertDuration or (4 * 60 * 1000)
+    label = label or 'Yek Faaliate Mashkook'
+    radius = radius or 60.0
+
+    for i=1, #xPlayers, 1 do
+        local xPlayer = ESX.GetPlayerFromId(xPlayers[i])
+        if IsPoliceJob(xPlayer.job.name) then
+            SendMessage(xPlayer.source, 'Az Dispatch be Tamai Vahed Ha ^1' .. label .. '^0 Gozarsh Shod')
+            TriggerClientEvent('Unique_AllRobs:policeAlert', xPlayers[i], coords, label, duration, radius)
+        end
+    end
+end
+
+exports('AlertPolice', AlertPolice)
 
 AddEventHandler('playerDropped', function(reason)
     local _source = source
