@@ -2,6 +2,38 @@ Config = {}
 Config.ESX = 'esx:getSharedObject'
 Config.inventoryimg  = "nui://ox_inventory/web/images" -- ox_inventory item icon path (was esx_inventoryhud)
 Config.permission = 1
+-- Percentage cut taken when washing gang dirty money into clean gang
+-- money (see server/boss.lua, FMGangsBoss:washMoney). 20 means
+-- washing $1000 dirty yields $800 clean.
+Config.WashMoneyCutPercent = 20
+
+-------------------------------------------------------------------
+-- Vehicles selectable from the gang vehicle/heli/boat spawn points
+-- (see client/load.lua, OpenVehicleMenu/OpenHeliMenu/OpenBoatMenu).
+-- Uses ESX.Game.SpawnVehicleJobs, the same function the server's own
+-- police job (esx_uniquejobs) already uses for its vehicle spawner -
+-- add/remove models per category as needed.
+-------------------------------------------------------------------
+Config.GangVehicles = {
+    car  = { 'sultan', 'sultanrs', 'kuruma', 'issi2' },
+    heli = { 'maverick', 'buzzard2' },
+    boat = { 'jetmax', 'suntrap' },
+}
+
+-------------------------------------------------------------------
+-- Server-wide gang vest presets, selectable from the Clothes Menu's
+-- new "Gang Vest" option (client/load.lua, OpenLockerMenu) - applies
+-- ONLY the vest/bulletproof component (esx_skin's bproof_1/bproof_2),
+-- leaving the rest of whatever the player is currently wearing
+-- untouched. Confirmed this component naming against this server's
+-- actual skinchanger resource before using it. bproof_1 = 0 means no
+-- vest; the numbers below are placeholders - test in-game and adjust
+-- to match how you want each preset to actually look.
+-------------------------------------------------------------------
+Config.GangVests = {
+    { name = 'Light Vest', bproof_1 = 1, bproof_2 = 0 },
+    { name = 'Heavy Vest', bproof_1 = 2, bproof_2 = 0 },
+}
 ---
 Config.OPENPANELCMD = 'openpanel'
 Config.ADDXPCMD = 'addgangxp'

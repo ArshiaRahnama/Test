@@ -616,6 +616,16 @@ end)
 RegisterServerEvent('Morphy_RobSystem:robberySuccess')
 AddEventHandler('Morphy_RobSystem:robberySuccess', function(robname,RobberyCode)
     local _source = source
+    -- FIX (اکسپلویت اقتصادی حیاتی): این هندلر قبلاً هیچ چکی نداشت که آیا
+    -- این پلیر اصلاً یه robbery واقعی رو شروع کرده یا نه! هرکسی می‌تونست
+    -- مستقیم TriggerServerEvent('Morphy_RobSystem:robberySuccess', 'هر
+    -- robname معتبری') رو صدا بزنه و بدون رد کردن cooldown، تعداد پلیس
+    -- لازم، یا مینی‌گیم هک، فوراً و به‌صورت نامحدود پاداش کامل (پول/آیتم)
+    -- بگیره. الان چک می‌کنیم که RobsInProgress[_source] واقعاً همون
+    -- robname باشه (که فقط تو مسیر قانونی robberyNeeds ست می‌شه).
+    if RobsInProgress[_source] ~= robname then
+        return
+    end
     RobsInProgress[_source] = nil
     local xPlayer  = ESX.GetPlayerFromId(_source)
     -- TEMP FIX (was crashing: exports["esx_policejob"] doesn't exist, that

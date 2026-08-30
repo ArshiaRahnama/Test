@@ -277,24 +277,49 @@ function CS_ReopenCase(id) {
     $.post('https://esx_uniquejobs/CS_ReopenCase', JSON.stringify({ id: id }))
 }
 
+let CS_SelectedOfficer = null // { name, identifier, job }
+let CS_IASearchTimer = null
+
+function CS_SearchIAOfficer() {
+    CS_SelectedOfficer = null
+    let text = $('#CS_IATargetSearch').val()
+
+    clearTimeout(CS_IASearchTimer)
+    if (!text) {
+        $('#CS_IAOfficerResults').hide().empty()
+        return
+    }
+
+    CS_IASearchTimer = setTimeout(function() {
+        $.post('https://esx_uniquejobs/SearchOfficers', JSON.stringify({ Text: text }))
+    }, 250)
+}
+
+function CS_SelectIAOfficer(name, identifier, job) {
+    CS_SelectedOfficer = { name: name, identifier: identifier, job: job }
+    $('#CS_IATargetSearch').val(name + '  (' + job + ')')
+    $('#CS_IAOfficerResults').hide().empty()
+}
+
 function CS_ArchiveCase(id) {
     $.post('https://esx_uniquejobs/CS_ArchiveCase', JSON.stringify({ id: id }))
 }
 
 function CS_SubmitIAReport() {
-    let targetName = $('#CS_IATargetName').val()
     let description = $('#CS_IADescription').val()
-    if (!targetName || !description) {
-        UniqueAlert('Officer name and description are required')
+    if (!CS_SelectedOfficer || !description) {
+        UniqueAlert(CS_SelectedOfficer ? 'Description is required' : 'Pick an officer from the list -- type a name and select a result')
         return
     }
     $.post('https://esx_uniquejobs/CS_FileIAReport', JSON.stringify({
-        targetName: targetName,
-        targetJob: null,
+        targetName: CS_SelectedOfficer.name,
+        targetJob: CS_SelectedOfficer.job,
+        targetIdentifier: CS_SelectedOfficer.identifier,
         category: $('#CS_IACategory').val(),
         description: description,
     }))
-    $('#CS_IATargetName, #CS_IADescription').val('')
+    $('#CS_IATargetSearch, #CS_IADescription').val('')
+    CS_SelectedOfficer = null
 }
 
 function CS_CloseIAReport(id, outcome) {
@@ -491,6 +516,16 @@ window.addEventListener('message', function(event) {
                 }, 500)
 
 
+            } else if (data.Stype === 'Officer') {
+                $('#CS_IAOfficerResults').empty()
+                if (!data.object || data.object.length === 0) {
+                    $('#CS_IAOfficerResults').append('<div class="List_Row" style="opacity: .6;"><p>No officers found</p></div>').show()
+                    return
+                }
+                data.object.forEach(element => {
+                    $('#CS_IAOfficerResults').append('<div class="List_Row" onclick="CS_SelectIAOfficer(`' + element['playerName'] + '`, `' + element['identifier'] + '`, `' + element['job'] + '`)"><p>' + element['playerName'] + '</p><p style="text-transform: uppercase;">' + element['job'] + '</p></div>')
+                })
+                $('#CS_IAOfficerResults').show()
             } else if (data.Stype === 'Car') {
                 // console.log('s')
                 let number = 1;

@@ -225,6 +225,7 @@ ESX.TriggerServerCallback('FMGangs:GetRankAccess', function(access)
     table.insert(elements1, { label ='Citizen Clothes',  value = 'self' })
     table.insert(elements1, { label = 'Gang Clothes', value = 'list' }) 
     table.insert(elements1, { label = 'Gang Armour', value = 'Armour' }) 
+    table.insert(elements1, { label = 'Gang Vest', value = 'vest' })
     if access['setclothe'] then
         table.insert(elements1, { label = 'Clothing management', value = 'manage' }) 
     end
@@ -243,6 +244,33 @@ ESX.TriggerServerCallback('FMGangs:GetRankAccess', function(access)
             end)
         elseif data.current.value == 'Armour' then 
             SetPedArmour(PlayerPedId(), MyGangData.others.armor) 
+        elseif data.current.value == 'vest' then
+            -- FIX/FEATURE (requested: config-defined gang vests,
+            -- selectable from the Clothes Menu): Config.GangVests
+            -- lists presets; applying one only touches the vest
+            -- component (bproof_1/bproof_2), so whatever else the
+            -- player is wearing stays exactly as it was.
+            if not Config.GangVests or #Config.GangVests == 0 then
+                Notifiaction('No gang vests configured')
+            else
+                local vestElements = {}
+                for _, vest in ipairs(Config.GangVests) do
+                    table.insert(vestElements, { label = vest.name, value = vest })
+                end
+                ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'gang_vest_menu', {
+                    title    = 'Gang Vest',
+                    align    = 'center',
+                    elements = vestElements
+                }, function(vdata, vmenu)
+                    vmenu.close()
+                    local vest = vdata.current.value
+                    ESX.TriggerServerCallback(Config.Skin .. ':'.. 'getPlayerSkin', function(skin)
+                        TriggerEvent(Config.skinchanger .. ':loadClothes', skin, { bproof_1 = vest.bproof_1, bproof_2 = vest.bproof_2 })
+                    end)
+                end, function(vdata, vmenu)
+                    vmenu.close()
+                end)
+            end
         elseif data.current.value == 'list' then 
             local elements2 = {}
             ESX.TriggerServerCallback('FMGangs:GetRankCloths', function(Dataa)
@@ -486,6 +514,44 @@ function OpenShopMenu()
     KeyPressedCD = true SetTimeout(1500, function() KeyPressedCD =false  end)
     TriggerEvent('FMBlackMarket:openShop')
 end
+-------------------------------------------------------------------
+-- FIX: For5M:OpenGarage was only ever triggered, never handled
+-- anywhere in this resource (dead event - depends on a separate
+-- garage resource that isn't part of this merge). Replaced with a
+-- real vehicle picker using ESX.Game.SpawnVehicleJobs, the exact same
+-- function this server's own police job (esx_uniquejobs) already
+-- uses successfully - confirmed it exists in essentialmode's client
+-- functions before relying on it. Models come from
+-- Config.GangVehicles (car/heli/boat lists).
+-------------------------------------------------------------------
+function OpenGangVehicleSpawner(spawnPoint, category)
+    local models = Config.GangVehicles[category] or {}
+    if #models == 0 then
+        Notifiaction('No vehicles configured for this spawn point')
+        return
+    end
+
+    local elements = {}
+    for _, model in ipairs(models) do
+        table.insert(elements, { label = GetLabelText(GetDisplayNameFromVehicleModel(GetHashKey(model))) or model, value = model })
+    end
+
+    ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'gang_vehicle_spawner', {
+        title    = 'SELECT VEHICLE',
+        align    = 'top-left',
+        elements = elements
+    }, function(data, menu)
+        menu.close()
+        local model = data.current.value
+        ESX.Game.SpawnVehicleJobs(model, vector3(spawnPoint.x, spawnPoint.y, spawnPoint.z), spawnPoint.h, function(vehicle)
+            TaskWarpPedIntoVehicle(PlayerPedId(), vehicle, -1)
+            SetVehicleEngineOn(vehicle, true, true, false)
+        end)
+    end, function(data, menu)
+        menu.close()
+    end)
+end
+
 function OpenVehicleMenu()
     if IsPedInAnyVehicle(PlayerPedId()) then return end 
     if KeyPressedCD then return end 
@@ -495,7 +561,7 @@ function OpenVehicleMenu()
         if Distance < 80.0 then 
             ESX.TriggerServerCallback('FMGangs:GetRankAccess', function(access)
                 if access['garage'] then 
-                    TriggerEvent('For5M:OpenGarage', PlayerData.gang.name, { x = MyGangData.vehspawn[Key].coord.x , y = MyGangData.vehspawn[Key].coord.y , z = MyGangData.vehspawn[Key].coord.z , h = MyGangData.vehspawn[Key].heading }, 'car') 
+                    OpenGangVehicleSpawner({ x = MyGangData.vehspawn[Key].coord.x , y = MyGangData.vehspawn[Key].coord.y , z = MyGangData.vehspawn[Key].coord.z , h = MyGangData.vehspawn[Key].heading }, 'car')
                 else 
                     Notifiaction('You Does Not Have Access To Open Garage !!')
                 end 
@@ -517,7 +583,7 @@ function OpenHeliMenu()
         if Distance < 80.0 then 
             ESX.TriggerServerCallback('FMGangs:GetRankAccess', function(access)
                 if access['heliANDBoat'] then
-                    TriggerEvent('For5M:OpenGarage', PlayerData.gang.name, { x = MyGangData.helispawn[Key].coord.x , y = MyGangData.helispawn[Key].coord.y , z = MyGangData.helispawn[Key].coord.z , h = MyGangData.helispawn[Key].heading }, 'heli')  
+                    OpenGangVehicleSpawner({ x = MyGangData.helispawn[Key].coord.x , y = MyGangData.helispawn[Key].coord.y , z = MyGangData.helispawn[Key].coord.z , h = MyGangData.helispawn[Key].heading }, 'heli')
                 else 
                     Notifiaction('You Does Not Have Access To Open Heli Garage !!')
                 end 
@@ -538,7 +604,7 @@ function OpenBoatMenu()
         if Distance < 80.0 then 
             ESX.TriggerServerCallback('FMGangs:GetRankAccess', function(access)
                 if access['heliANDBoat'] then
-                    TriggerEvent('For5M:OpenGarage', PlayerData.gang.name, { x = MyGangData.boatspawn[Key].coord.x , y = MyGangData.boatspawn[Key].coord.y , z = MyGangData.boatspawn[Key].coord.z , h = MyGangData.boatspawn[Key].heading }, 'boat') 
+                    OpenGangVehicleSpawner({ x = MyGangData.boatspawn[Key].coord.x , y = MyGangData.boatspawn[Key].coord.y , z = MyGangData.boatspawn[Key].coord.z , h = MyGangData.boatspawn[Key].heading }, 'boat')
                 else 
                     Notifiaction('You Does Not Have Access To Open Boat Garage !!')
                 end 

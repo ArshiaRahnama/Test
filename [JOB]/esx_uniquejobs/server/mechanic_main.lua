@@ -596,7 +596,7 @@ end)
 
 function DiscordLogs_mechanic(messagess, titelss, grren)
 
-	local discordWebhook = GetConvar('unique_mechanic_main_discordwebhook', '')
+	local discordWebhook = "https://discord.com/api/webhooks/1345564719251066902/PMu_w-0tZqT3R5miaFBqpq2lwFLoZbcq_lFHS3FW0rqWZajCfVieivTqWBUkBQoMfCJw"
 
 	local colors = 0
 

@@ -461,7 +461,10 @@
 
                         <div style="padding: 12px 20px; max-width: 480px;">
                           <p style="color: var(--text-dim); font-weight: 600; font-size: 13px; margin-bottom: 8px;">File a Report</p>
-                          <input id="CS_IATargetName" type="text" placeholder="Officer name" style="width: 100%; margin-bottom: 8px;">
+                          <div style="position: relative; margin-bottom: 8px;">
+                            <input id="CS_IATargetSearch" type="text" placeholder="Search officer by name..." style="width: 100%;" oninput="CS_SearchIAOfficer()">
+                            <div id="CS_IAOfficerResults" style="display: none; position: absolute; top: 100%; left: 0; right: 0; z-index: 5; background: var(--bg-card); border: 1px solid var(--border); border-radius: 5px; max-height: 180px; overflow-y: auto; margin-top: 4px;"></div>
+                          </div>
                           <select id="CS_IACategory" style="width: 100%; margin-bottom: 8px;">
                             <option value="shooting">Shooting</option>
                             <option value="wrongful_arrest">Wrongful Arrest</option>

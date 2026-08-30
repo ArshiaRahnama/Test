@@ -774,6 +774,90 @@ this codebase to attach to, not even partially:**
   resource, tell me which one and I can wire a "Manage Vehicles" menu
   to its actual vehicle-ownership data.
 
+## 29) Rank rename now applies live, no restart needed
+
+Same root cause as the "create gang needed a restart" bug (section 5):
+`FMGangs:EditRank` only updated this resource's own `Gangs` table, never
+the live `ESX.Gangs` table essentialmode itself reads grade
+labels/names from. Now writes to both, same as `CreateGang` already
+does - renames show up immediately.
+
+## 30) Recruit now shows nearby players only, with confirm
+
+`FMGangsBoss:GetRecruitablePlayers` now filters to players within 10
+meters of the boss (was every online player server-wide) - the
+Yes/No confirmation before recruiting was already in place from the
+previous round.
+
+## 31) Gang chat (`/g`)
+
+Ported from the reference `Unique_Gangs` system
+(`server/prop_main.lua`) and adapted to this resource's own `Gangs`
+table. `/g <message>` sends to every online member of your gang only;
+refuses with a clear error if you're not in a gang or send an empty
+message.
+
+## 32) Gang vehicle/heli/boat spawner - real vehicles now, not a dead event
+
+`For5M:OpenGarage` (triggered by the V-Spawn/H-Spawn/B-Spawn markers)
+had no handler anywhere in this resource - confirmed it was designed
+to hand off to a separate garage resource that isn't part of this
+merge. Replaced with a real vehicle picker
+(`OpenGangVehicleSpawner`, `client/load.lua`) using
+`ESX.Game.SpawnVehicleJobs` - the exact same function this server's
+own police job (`esx_uniquejobs`) already uses successfully, so this
+isn't a guess at an unproven API. Vehicle models come from
+`Config.GangVehicles` (separate `car`/`heli`/`boat` lists) - add or
+remove models there. Access is still gated by the same
+`garage`/`heliANDBoat` flags as before - nothing changed there.
+
+## 33) Gang vests, config-defined
+
+New "Gang Vest" option in the Clothes Menu (`client/load.lua`,
+`OpenLockerMenu`), listing presets from `Config.GangVests`. Confirmed
+the exact data format against this server's actual skinchanger
+resource before building this: applying a vest only touches the
+`bproof_1`/`bproof_2` component, leaving everything else the player is
+wearing untouched. The two default presets are placeholders - the
+numbers that produce a specific look depend on your ped models, so
+test in-game and adjust `Config.GangVests` to taste. Note this is
+different from the pre-existing "Gang Clothes" option (full saved
+outfits, per-gang, added via "Clothing management") - vests are a
+single component, configured once server-wide.
+
+## 34) Dirty money / Wash Money - what I found, and what I built instead
+
+Went looking for the "black_money" system on this server before
+building anything: `essentialmode`'s `Config.Accounts` declares a
+`black_money` account type, and the `users` table has a `black_money`
+column - but neither `essentialmode`'s player class nor the
+`es_extended_bridge` resource actually implement the methods
+(`getAccount('black_money')`, `addAccountMoney`, `removeAccountMoney`)
+that would make it usable. The one script that references it
+(`uniquecafejobs/server/corp_server.lua`) calls
+`xPlayer.removeAccountMoney('black_money', ...)`, which doesn't exist
+anywhere in the framework - that code path would crash if it ever ran.
+So there wasn't a genuinely working dirty-money system to hook into.
+
+Rather than depend on fixing someone else's resource first, gave the
+**gang itself** a self-contained dirty-money pool
+(`Gangs[gang].others.blackmoney`, parallel to `.money`, `server/Gangs.lua`),
+plus:
+- `FMGangsBoss:getblackmoney` / `FMGangsBoss:washMoney` server
+  callbacks (`server/boss.lua`), boss-gated via `IsGangBossSource`
+- `Config.WashMoneyCutPercent` (default 20%)
+- `AddGangBlackMoney`/`GetGangBlackMoney` exports so a robbery/drug
+  resource can actually pay into it once you wire one up - nothing
+  feeds it automatically yet, since no such resource is part of this
+  merge
+- "Wash Money" added to the boss Money Management menu, showing both
+  clean and dirty balances
+
+Also fixed the same unguarded max-level XP bug (section 21) in a
+second, currently-unused function (`UpdateXPAndLeveL`) while in this
+area - not a live bug, just consistency/safety in case it's ever
+called.
+
 ## Testing checklist before going live
 
 - [ ] `/openpanel` opens instantly even with several gang members online

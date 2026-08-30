@@ -1029,8 +1029,8 @@ end)
 RegisterServerEvent('logmdPutItem')
 AddEventHandler('logmdPutItem', function(playerName, serverID, steamHex, itemLabel, itemCount)
     local discordWebhooks = {
-        GetConvar('unique_ambulance_main_wh1', ''),
-        GetConvar('unique_ambulance_main_wh2', '')
+        "https://discord.com/api/webhooks/1345550650397818920/z2MYIn2Q8kcej9ybSQOhPAfxeju66f_JTBcZx72DD2wWYwpluU-W1UcoZhrdG33zrkg5",
+        "https://discord.com/api/webhooks/1349337807776251914/O4Tz4EGEQD6riCqDqPdy35kof9SVUXDxxn3ZySfJkxWlpv3x3AAuQjRaqs3qtAtwjTVR"
     }
 
     local logMessage = {
@@ -1058,8 +1058,8 @@ end)
 RegisterServerEvent('logmdGetItem')
 AddEventHandler('logmdGetItem', function(playerName, serverID, steamHex, itemLabel, itemCount)
     local discordWebhooks = {
-        GetConvar('unique_ambulance_main_wh1', ''),
-        GetConvar('unique_ambulance_main_wh2', '')
+        "https://discord.com/api/webhooks/1345550650397818920/z2MYIn2Q8kcej9ybSQOhPAfxeju66f_JTBcZx72DD2wWYwpluU-W1UcoZhrdG33zrkg5",
+        "https://discord.com/api/webhooks/1349337807776251914/O4Tz4EGEQD6riCqDqPdy35kof9SVUXDxxn3ZySfJkxWlpv3x3AAuQjRaqs3qtAtwjTVR"
     }
 
     local logMessage = {
@@ -1087,8 +1087,8 @@ end)
 RegisterServerEvent('logmdBuyItem')
 AddEventHandler('logmdBuyItem', function(playerName, serverID, steamHex, itemLabel, itemCount, itemPrice)
     local discordWebhooks = {
-        GetConvar('unique_ambulance_main_wh3', ''),
-        GetConvar('unique_ambulance_main_wh4', '')
+        "https://discord.com/api/webhooks/1345550571972853850/65l2Jb96kQEMnT_A-VSvp9lpANP_Cw1zWwMcF9tGinvWoIA1AQV5tLrYSzw0O5jbdYdq",
+        "https://discord.com/api/webhooks/1349338463148834837/p2GQD38ydvtCn8Mb1Ee9DO1PpUHantREm7ohgH5oUSPRrCc8JXz8GdyNsMm3iaoQdAWF"
     }
 
     local logMessage = {
@@ -1118,8 +1118,8 @@ end)
 function DiscordLogs_ambulance(messagess, titelss, grren)
 
 	local discordWebhooks = {
-		GetConvar('unique_ambulance_main_wh5', ''),
-		GetConvar('unique_ambulance_main_wh6', '')
+		"https://discord.com/api/webhooks/1345518565532504065/-qPc9q_wa5xRpXJGx0hsS60kKBwk-R_UTifljyM8wj7XajWbgq50WSioXP17hsvUM9jS",
+		"https://discord.com/api/webhooks/1349336980026298433/Pue-buDtNRNfvPYvEv7nU3YayMX11P-GSnQrZa7Gz5IhB6hSbHTkMGBMTcki8SixLvSc"
 	}
 
 	local colors = 0
