@@ -1,9 +1,23 @@
 ESX = nil
 TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
 
+-- FIX (security): every buy_* handler below used to trust an `itemPrice`
+-- argument sent directly by the client, e.g.:
+--     AddEventHandler('shops_item:buy_shops', function(itemName, amount, itemPrice)
+--         local totalPrice = itemPrice * amount
+-- A modified client (trainer) could send itemPrice = 0 or a negative number
+-- to get items for free, or even to gain money (negative totalPrice -> payAny
+-- effectively adds funds). The fix below always looks the price up
+-- server-side from ShopConfig and ignores whatever price the client claims.
+-- `amount` is also now validated as a positive integer.
+
+local function isValidAmount(amount)
+    amount = tonumber(amount)
+    return amount ~= nil and amount > 0 and amount == math.floor(amount)
+end
+
 ESX.RegisterServerCallback('getitemsForSaleShops', function(source, cb)
     local itemsForSaleShops = {}
-
 
     for itemName, itemData in pairs(ShopConfig.itemsForSaleShops) do
         table.insert(itemsForSaleShops, {
@@ -18,35 +32,34 @@ ESX.RegisterServerCallback('getitemsForSaleShops', function(source, cb)
 end)
 
 RegisterServerEvent('shops_item:buy_shops')
-AddEventHandler('shops_item:buy_shops', function(itemName, amount, itemPrice)
+AddEventHandler('shops_item:buy_shops', function(itemName, amount)
+    local source = source
     local xPlayer = ESX.GetPlayerFromId(source)
+    if not xPlayer then return end
 
+    local itemData = ShopConfig.itemsForSaleShops[itemName]
+    if not itemData or not isValidAmount(amount) then return end
 
+    local itemPrice = itemData.price -- server-authoritative price, not client-supplied
     local totalPrice = itemPrice * amount
-
 
     if xPlayer.canAfford(totalPrice) then
 
         local item = xPlayer.getInventoryItem(itemName)
         local itemLabel = ESX.GetItemLabel(itemName)
 
-
-        if item.limit == -1 or (item.count + amount <= item.limit) then
+        if item and (item.limit == -1 or (item.count + amount <= item.limit)) then
 
             xPlayer.payAny(totalPrice)
-
 
             xPlayer.addInventoryItem(itemName, amount)
 
             TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'AMoneyLog', '```css\n[ Player : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Player Steam : '..xPlayer.identifier..' ]\n[ Bought : '..tostring(itemName)..' x'..tostring(amount)..' ]\n[ Cost : '..tostring(totalPrice)..' ]\n```', 'user', true, source, false)
 
-
             TriggerClientEvent('chat:addMessage', source, {
             args = {"[System]", 'Shoma ^2 ' .. amount .. '^2x ' .. itemLabel .. ' ^0Ra be ^1$^1'.. totalPrice .. ' ^0Kharidid'},
             color = {255, 0, 0}
             })
-
-
 
         end
     else
@@ -57,7 +70,6 @@ end)
 
 ESX.RegisterServerCallback('getitemsForSaleMC', function(source, cb)
     local itemsForSaleMC = {}
-
 
     for itemName, itemData in pairs(ShopConfig.itemsForSaleMC) do
         table.insert(itemsForSaleMC, {
@@ -72,35 +84,34 @@ ESX.RegisterServerCallback('getitemsForSaleMC', function(source, cb)
 end)
 
 RegisterServerEvent('mc_item:buy_mc')
-AddEventHandler('mc_item:buy_mc', function(itemName, amount, itemPrice)
+AddEventHandler('mc_item:buy_mc', function(itemName, amount)
+    local source = source
     local xPlayer = ESX.GetPlayerFromId(source)
+    if not xPlayer then return end
 
+    local itemData = ShopConfig.itemsForSaleMC[itemName]
+    if not itemData or not isValidAmount(amount) then return end
 
+    local itemPrice = itemData.price
     local totalPrice = itemPrice * amount
-
 
     if xPlayer.canAfford(totalPrice) then
 
         local item = xPlayer.getInventoryItem(itemName)
         local itemLabel = ESX.GetItemLabel(itemName)
 
-
-        if item.limit == -1 or (item.count + amount <= item.limit) then
+        if item and (item.limit == -1 or (item.count + amount <= item.limit)) then
 
             xPlayer.payAny(totalPrice)
-
 
             xPlayer.addInventoryItem(itemName, amount)
 
             TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'AMoneyLog', '```css\n[ Player : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Player Steam : '..xPlayer.identifier..' ]\n[ Bought : '..tostring(itemName)..' x'..tostring(amount)..' ]\n[ Cost : '..tostring(totalPrice)..' ]\n```', 'user', true, source, false)
 
-
             TriggerClientEvent('chat:addMessage', source, {
             args = {"[System]", 'Shoma ^2 ' .. amount .. '^2x ' .. itemLabel .. ' ^0Ra be ^1$^1'.. totalPrice .. ' ^0Kharidid'},
             color = {255, 0, 0}
             })
-
-
 
         end
     else
@@ -111,7 +122,6 @@ end)
 
 ESX.RegisterServerCallback('getitemsForSaleNarekshop', function(source, cb)
     local itemsForSaleNarekshop = {}
-
 
     for itemName, itemData in pairs(ShopConfig.itemsForSaleNarekshop) do
         table.insert(itemsForSaleNarekshop, {
@@ -126,37 +136,34 @@ ESX.RegisterServerCallback('getitemsForSaleNarekshop', function(source, cb)
 end)
 
 RegisterServerEvent('narekshop_item:buy_narekshop')
-AddEventHandler('narekshop_item:buy_narekshop', function(itemName, amount, itemPrice)
+AddEventHandler('narekshop_item:buy_narekshop', function(itemName, amount)
+    local source = source
     local xPlayer = ESX.GetPlayerFromId(source)
+    if not xPlayer then return end
 
+    local itemData = ShopConfig.itemsForSaleNarekshop[itemName]
+    if not itemData or not isValidAmount(amount) then return end
+
+    local itemPrice = itemData.price
     local totalPrice = itemPrice * amount
 
-
-
     if xPlayer.canAfford(totalPrice) then
-
-
 
         local item = xPlayer.getInventoryItem(itemName)
         local itemLabel = ESX.GetItemLabel(itemName)
 
-
-        if item.limit == -1 or (item.count + amount <= item.limit) then
+        if item and (item.limit == -1 or (item.count + amount <= item.limit)) then
 
             xPlayer.payAny(totalPrice)
-
 
             xPlayer.addInventoryItem(itemName, amount)
 
             TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'AMoneyLog', '```css\n[ Player : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Player Steam : '..xPlayer.identifier..' ]\n[ Bought : '..tostring(itemName)..' x'..tostring(amount)..' ]\n[ Cost : '..tostring(totalPrice)..' ]\n```', 'user', true, source, false)
 
-
             TriggerClientEvent('chat:addMessage', source, {
                 args = {"[System]", 'Shoma ^2 ' .. amount .. '^2x ' .. itemLabel .. ' ^0Ra be ^1$^1'.. totalPrice .. ' ^0Kharidid'},
                 color = {255, 0, 0}
             })
-
-
 
         end
     else
@@ -167,7 +174,6 @@ end)
 
 ESX.RegisterServerCallback('getitemsForSaleGunshop', function(source, cb)
     local itemsForSaleGunshop = {}
-
 
     for itemName, itemData in pairs(ShopConfig.itemsForSaleGunshop) do
         table.insert(itemsForSaleGunshop, {
@@ -182,32 +188,26 @@ ESX.RegisterServerCallback('getitemsForSaleGunshop', function(source, cb)
 end)
 
 RegisterServerEvent('gunshop_item:buy_gunshop')
-AddEventHandler('gunshop_item:buy_gunshop', function(itemName, amount, itemPrice)
-    -- NOTE: weapon purchases now flow through ox_inventory —
-    -- xPlayer.addWeapon() / hasWeapon() are bridged to it in
-    -- [BASE]/es_extended/server/bridge.lua (adds proper ammo,
-    -- a job/gang-based serial prefix, and puts it in a real slot).
+AddEventHandler('gunshop_item:buy_gunshop', function(itemName, amount)
+    local source = source
     local xPlayer = ESX.GetPlayerFromId(source)
+    if not xPlayer then return end
 
+    local itemData = ShopConfig.itemsForSaleGunshop[itemName]
+    if not itemData or not isValidAmount(amount) then return end
+
+    local itemPrice = itemData.price
     local totalPrice = itemPrice * amount
-
-
 
     if xPlayer.canAfford(totalPrice) then
 
-
         local itemLabel = ESX.GetWeaponLabel(itemName)
 
-        -- Buying a second (or third...) copy of the same weapon is allowed
-        -- now — ox_inventory gives every weapon its own serial/slot, so
-        -- owning duplicates is fine and no longer needs blocking here.
         xPlayer.payAny(totalPrice)
-
 
         xPlayer.addWeapon(itemName, 50)
 
         TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'AMoneyLog', '```css\n[ Player : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Player Steam : '..xPlayer.identifier..' ]\n[ Bought Weapon : '..tostring(itemName)..' x'..tostring(amount)..' ]\n[ Cost : '..tostring(totalPrice)..' ]\n```', 'user', true, source, false)
-
 
         TriggerClientEvent('chat:addMessage', source, {
             args = {"[System]", 'Shoma ^2 ' .. amount .. '^2x ' .. itemLabel .. ' ^0Ra be ^1$^1'.. totalPrice .. ' ^0Kharidid'},

@@ -725,7 +725,7 @@ window.addEventListener('message', function(event) {
 
     } else if (data.type === 'CS_Leaderboard') {
         $('#CS_LeaderInvestigators').empty()
-        (data.data.investigators || []).forEach((row, i) => {
+        ;(data.data.investigators || []).forEach((row, i) => {
             $('#CS_LeaderInvestigators').append('<div class="List_Row"><p>#' + (i + 1) + '</p><p>' + row.name + '</p><p>' + row.score + '</p></div>')
         })
         $('#CS_LeaderOfficers').empty()

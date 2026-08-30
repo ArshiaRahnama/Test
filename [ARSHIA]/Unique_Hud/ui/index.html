@@ -211,6 +211,19 @@
     integrity="sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44=" crossorigin="anonymous"></script>
   <script src="script.js" type="text/javascript"></script>
   <script>
+    // ✅ اضافه شد: چون پنل اسکوربورد تو یه iframe عمیقه، حتی وقتی کیبورد
+    // قبضه می‌شه، فوکوس واقعی رو همین صفحه‌ی اصلیه - Esc رو همینجا می‌گیریم.
+    var uhScoreboardIsOpen = false;
+    document.addEventListener('keyup', function (e) {
+      if (e.key === 'Escape' && uhScoreboardIsOpen) {
+        fetch('https://' + GetParentResourceName() + '/closeScoreboardUniqueHud', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({}),
+        }).catch(function () {});
+      }
+    });
+
     // پل بین صفحه‌ی اصلی و iframeهای ماژول‌های ادغام‌شده. SendNUIMessage فقط
     // به پنجره‌ی اصلی می‌رسه، پس هر پیام رو بر اساس شکلش به iframe درستش پاس می‌دیم.
     window.addEventListener('message', function (event) {
@@ -244,6 +257,9 @@
           body: JSON.stringify({}),
         }).catch(function () {});
       } else if (item.id === 'scoreboard') {
+        if (item.event === 'toggle') {
+          uhScoreboardIsOpen = !!item.open;
+        }
         var sbFrame = document.getElementById('scoreboard-frame');
         if (sbFrame && sbFrame.contentWindow) {
           sbFrame.contentWindow.postMessage(item, '*');

@@ -1,4 +1,4 @@
-local webhook = ""
+local webhook = GetConvar('unique_anticl_webhook', "")
 
 RegisterCommand("combat", function(source, args, rawcmd)
     TriggerClientEvent("pixel_antiCL:show", source)

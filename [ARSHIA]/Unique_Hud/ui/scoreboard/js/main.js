@@ -53,6 +53,8 @@ function buildOrgList() {
       '<span><span class="org-count" id="org-count-' + org.key + '">0</span> ' +
       '<span class="org-arrow">▶</span></span>';
 
+    // ✅ آکاردئون: کلیک روی یه ارگان، بقیه رو می‌بنده - پس همیشه حداکثر یکی
+    // باز می‌مونه و پنل کشیده/بلند نمی‌شه.
     header.addEventListener('click', function () {
       var wasExpanded = card.classList.contains('expanded');
       document.querySelectorAll('.org-card.expanded').forEach(function (c) {
@@ -84,6 +86,7 @@ function renderScoreboard(data) {
   var playersEl = document.getElementById('playersnum');
   if (playersEl) playersEl.textContent = data.total;
 
+  // ✅ اضافه شد: تعداد ادمین‌های آنلاین
   var adminsEl = document.getElementById('adminsnum');
   if (adminsEl) adminsEl.textContent = (data.admins && data.admins.length) || 0;
 
@@ -107,24 +110,26 @@ function requestClose() {
   window.parent.postMessage({ id: 'scoreboard', event: 'requestClose' }, '*');
 }
 
-// ✅ اضافه شد: بستن با Esc. چون وقتی SetNuiFocus(true,true) فعاله، کیبورد
-// دقیقاً به همین مرورگر NUI میره (خودِ تعریف "focus")، این keyup event واقعاً
-// دریافت میشه - برخلاف تلاش قبلی که سعی می‌کرد از سمت Lua با نیتیو بازی
-// چک کنه (که ممکنه وقتی NUI فوکوس داره اصلاً به‌روز نشه).
-document.addEventListener('keyup', function (e) {
-  if (e.key === 'Escape') {
-    requestClose();
-  }
-});
-
 window.addEventListener('message', function (event) {
   var item = event.data;
   if (!item || item.id !== 'scoreboard') return;
 
   if (item.event === 'toggle') {
-    var wrap = document.getElementById('uh-sb-wrap');
+    var wrap = document.getElementById('wrap');
     if (!wrap) return;
-    wrap.style.display = item.open ? 'block' : 'none';
+    if (item.open) {
+      wrap.style.display = 'block';
+      // یه فریم صبر می‌کنیم تا display:block واقعاً اعمال بشه، بعد کلاس رو
+      // اضافه می‌کنیم که transition (fade+scale) واقعاً پخش بشه.
+      requestAnimationFrame(function () {
+        wrap.classList.add('uh-visible');
+      });
+    } else {
+      wrap.classList.remove('uh-visible');
+      setTimeout(function () {
+        wrap.style.display = 'none';
+      }, 180);
+    }
   } else if (item.event === 'update') {
     if (item.data) renderScoreboard(item.data);
   }

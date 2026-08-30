@@ -1,50 +1,50 @@
-DiscordConnect			  = "https://discord.com/api/webhooks/1248749550148259920/KoNzB0cPH3YIy6AiPUnz2p_4U_hRfbxY4vV19ObkFNB-sUHdiL0g_FXJRLi2PQmKDspD"
-DiscordDisconnect         = "https://discord.com/api/webhooks/1248749902100697088/LBQ2WywfyCipnpGEvluYxkF8rnTXuA2uixF-k5zW8o_vmy2dCkK4wzOawR9vTSPeZWri	"
-Discordpdrop          	  = "https://discord.com/api/webhooks/1248750116555325576/UFS8q43JEAjgdEUdBohGKSNJ-vDoEJ7-QnDhUF6CmUMLKbJs9UmCaO4uKo0cC8IdC9sv"
-Discordpjoin		 	  = "https://discord.com/api/webhooks/1248750297673629818/-PtEFPQOFLYKgvurb6dZpH3310w96mpri5usVz2Stw7Am8QvynClKdek9WcWSFbkwoiF"
-DiscordWebhookKillinglogs = 'https://discord.com/api/webhooks/1248750664327364768/idnG3OCbLHju8fK0ldQ6UQr0mCR0OsovmX-za7IXw2m3njhZ3_oq76H-4bI-NzGljSWM'
-DiscordWebhookChat 		  = 'https://discord.com/api/webhooks/1248750890349887638/X5A6IMZMg-iVwmPw9CrMk6sQM_gxCd0GxaBTJ0bvgmLRj_w2itirEe3EekqGQmLgObw3'
-DiscordWebhookPwi 		  = 'https://discord.com/api/webhooks/1248750993722576937/lOWHsTuE90GGP3pEDX2q18lGxUboqAWVFZDa8COo_1W-NGUOVQh1aFWLjERqZISERzhG'
-DiscordWebhookDwi 		  = 'https://discord.com/api/webhooks/1248751259826258002/hOmVUBFy-rnkhDkXi42_CSvOywtsEvPf3p-mIdC2XruJzTw2l62MlBTaPf7GM5WbsXKm'
-DiscordWebhookloot 		  = 'https://discord.com/api/webhooks/1248751475631591576/NriMMKAt9-sOhv37s4R8T0AhfxK1FLtxZYIVRF3WgS3jWl_1C920iwTrRQrO8KSNjWnB	'
-DiscordWebhookduty 		  = 'https://discord.com/api/webhooks/1248752210750476449/D3dsAhkE9gvjWmReq5FEpmtq_aeGh_O9TVzqxKG2M4PwyrJbO3aVR-q6KFn_p8KZ7HbZ'
-DiscordWebhookRob 		  = 'https://discord.com/api/webhooks/1248752461284507658/n6cO2YE2Ktnn-nLOkhZcNdzNHZDXtnfZlr1kkwfUBc8QzIwKDQT82t1CBEnXbHbKSj8M'
-DiscordWebhookInventory   = 'https://discord.com/api/webhooks/1248752600195797054/p60qx7QvxoBtuRA6VvFtg_yvdj4WNPVWaUEuQye_uHexkyvfrOFdtovgWpHdaVhcfVc9'
-DiscordWebhookJail 		  = 'https://discord.com/api/webhooks/1248752836460810412/K0NjaMzype_BlsLx3oTvwsbK2_bgvhY43jPvL9zo9_gjJcMYnkyg5gh_DBQGTLTeJGVT'
-DiscordWebhookaJail 	  = 'https://discord.com/api/webhooks/1248752930920861817/t32c1aM3-h_7uVD8QtXQ-qND8r07brGHZPSMlJYKRK9EGJGwUC3Xaf5ZxIxgknZGumyq'
-DiscordWebhookBansystem   = 'https://discord.com/api/webhooks/1248753337286004768/QrjiAH7LtS3qJCyjJAOUTqKkumDni5tAviKf1mYJXRYh8YdGN5bV1sMpYb6sl7-9Glf5'
-DiscordWebhookBansystemP  = 'https://discord.com/api/webhooks/1248753337286004768/QrjiAH7LtS3qJCyjJAOUTqKkumDni5tAviKf1mYJXRYh8YdGN5bV1sMpYb6sl7-9Glf5'
-DiscordWebhookDisband     = 'https://discord.com/api/webhooks/1248753726823596102/-BeFrb0mgfnhnID7T5Cstv_FI7ZAGRHBwD7kjw3IsT-xYS9yTpftGFTkrJ8bZR1ImU2n'
-DiscordWebhookReset		  = 'https://discord.com/api/webhooks/1248754179749580800/rohATvLxFESr_h1AULTOCWUGu55uo35t0lrksEdjbLy9psgBAR7bXRM8fRND7V5L7QDq'
-DiscordWebhookDrop 		  = 'https://discord.com/api/webhooks/1248754827370954835/VnEX6j33U9FdnQbc-jScLXCju5J2YKBmMkbDKuvlvzYfLvc7T65Hrf4FDYMXWsXruko5'
-DiscordWebhookPickUP 	  = 'https://discord.com/api/webhooks/1248755163821244569/70euZYFblDAMHxvm_ZPkJA5GpkRMvde-1-gWS-S--XUQfKQOixQnHogbGD5CTyBFOiP-'
-DiscordWebhookAmoneyLog   = 'https://discord.com/api/webhooks/1248755472601710732/1XiM9K3Qi2HppJLj4xsGpyYerm82PSQTqi_RqoZAeywU4iVqwULJ7j1sRRZ8oOqL2nhv'
-DiscordWebhookTrasferLog  = 'https://discord.com/api/webhooks/1248755619951808532/nrHltZY11bWNjgqthZJc36QGR8GF6uTnQZ2r2iICMd3OHU7FbS2dj_D8fbyRKMwgo6IY'
-DiscordWebhookNameLog 	  = 'https://discord.com/api/webhooks/1248755759580184656/TaZyMMBrypT8H9jo6P16-fnFrfohrV5kwDsseIVzp-cxpy3jhKx9JTk03jW1bmMvrjkr'
-DiscordWebhookDID	      = "https://discord.com/api/webhooks/1248755759580184656/TaZyMMBrypT8H9jo6P16-fnFrfohrV5kwDsseIVzp-cxpy3jhKx9JTk03jW1bmMvrjkr"
-DiscordGivePerm		 	  = "https://discord.com/api/webhooks/1248756065453998080/9Q4ksnD635zEj2C9G0iYRShm5ScAF08GiPzBYyYRawAf7v20YHpoUS-FABGtpdjY5Kef"
-DiscordReport		  	  = "https://discord.com/api/webhooks/1248756245486239804/NfI2ts4MMAWK6dbzOwRGd0_r_EM_zYlnpaplnOEjQtlnJxOy0xZgd_lbEacNGj1dQGER"
-DiscordAcceptReport  	  = "https://discord.com/api/webhooks/1248756443180564540/0ht1LrfTQIDAaBdZ2TnSqL4pPS85p42_C691KUsDDNbBOG8sc8Q3wJ1o9qEbh-1x3f7c"
-DiscordNLR             	  = "https://discord.com/api/webhooks/1248756656624635996/GVHE1Xow1-xCgChX170Y4iNzVGKE_BqOiVpJPQfmL8qHq9FNzjgAvyb77vA2ItekE3cE"
-DiscordGangsChangeLog  	  = 'https://discord.com/api/webhooks/1248756857741512766/cbsc9iqF2ONPQXiAIeeM0ZfA3sbs4FqFp0eERDXNAQNQ0T_4ehvsfT1w1ZWWqR5CCTfU'
-DiscordWebhookHome 		  = 'https://discord.com/api/webhooks/1217534722633105568/oqsN6J3IslcQ8ZGQRQ1RmaJy3DgqJGeBQ_GZuYnAuaqdPFg0CAE87k2N_WpwmWx7BFum'
-DiscordSetArmor 		  = 'https://discord.com/api/webhooks/1248757761567887421/pj4kzUi8NohHniXDXNMyN4ZCw-RJnyEEYS5Wi11q6L8CDoWVB9XNE8CNtuDjcUQ2l66a'
-DiscordSetGang 			  = 'https://discord.com/api/webhooks/1248758066527076414/xAw7qy3v6poYgMXsJ_XQRNSAsPsOAfqlurY4fauJwsTNSqoLadwO8OECqbLWUTJfyhbQ'
-DiscordSetJob 			  = 'https://discord.com/api/webhooks/1248758423433121924/D0YYTOTr6RbnQaxHH-Hlz7Aewcx7EFqiesILZ94ksoepa8TZ5tEcYCnUlOhXUEeAqA11'
-DiscordAddCar			  = 'https://discord.com/api/webhooks/1248758555952156703/H_3HgZ4kFM-F7C_Jl7B_JBtBIWSPo_6hks14Q7hL2Rr50Tol0BiNTGvV2YilRPlHJjXi'
-DiscordBuyCar			  = 'https://discord.com/api/webhooks/1248758637485359174/7R2m5PhCZ_zNV_kESiyLTptLhQe7sDdpBrlYcRmeRpB43aEPOm4yp8__hnBr6teEI7iq'
-DiscordSellCar			  = 'https://discord.com/api/webhooks/1248758796441096314/f5dxXM3BFmnuk0A9vX_yGZBsDIug-E_2O7XVSaMC7RRH_zrNT1xJW5N4IREuyPiH93Fb'
-DiscordRevive			  = 'https://discord.com/api/webhooks/1248759105112379582/Q4JYp22Lod2-xEk4Ps93do1uOcUDTwhWfQhzXFFQfOt1fWJcKbbTseVX_2SPnwNbm5xk'
-DiscordFine               = 'https://discord.com/api/webhooks/1248759330480586804/CLp4zcya6nSUJEYzT3-GuKAD-ndDbhExLR7DqHAz_W7N7xLjzZ3ulzSMuNyC2c3zMs1-'
-DiscordHeal               = 'https://discord.com/api/webhooks/1248757467995836417/kQaGvJLclcvXI6f93vzmS2I5jqJzNxv-kzGfh-sL_fKazOCCNmPQWnj0lyoG0e0ufBD3'
-additemItem               = 'https://discord.com/api/webhooks/1341772662208204921/LFrCNE_pCZX_VVlOXEGSJImL-35yAsrGhvaD97GQUTen2yS-GFLXs0weTOSEmF0-N0-c'
-additemWeapon             = 'https://discord.com/api/webhooks/1341776615327399997/Vck1MG2hzxJ8GWEIwRZo8t96i6rm49EDStDO5cp_m-m2kuBqn8qwPO1htoCGgmfMuvII'
-DiscordCuff               = 'https://discord.com/api/webhooks/1248759837735780352/teJS_yVbWs47sAh53dXKo77yRso--Ad2eGIpcP1HUN1bXwE6HDCgpEPp50LIUHvxmiET'
-DiscordCuffAll            = 'https://discord.com/api/webhooks/1248759837735780352/teJS_yVbWs47sAh53dXKo77yRso--Ad2eGIpcP1HUN1bXwE6HDCgpEPp50LIUHvxmiET'
-DiscordBoss               = 'https://discord.com/api/webhooks/1248760000696942743/z50UfupOy7WN7zA4mmhJT25ERqnTihw4Bw-8oUHL3xHAeeY38gYvR5kjwWLBi2MrGrfH'
-DiscordWebhookStarter     = "https://discord.com/api/webhooks/1248761645635862610/xajgaCObGYjvu-hQP82BRsnrhIy5ZYqkMWsqAxEFUaJaW0ZqM6krx4YsiDBQPJsMKacD"
-WebhogVehicleSouter       = "https://discord.com/api/webhooks/1340349534408147095/xo9-_v_VM8YMeJB-yrHJmgwje4syI1LmW6E5v7CRcTnDEYsk0RA4k1rZfEi-hwTy3aLh"
-DiscordPutTrunk           = "https://discord.com/api/webhooks/1341760996443947078/ylSiuxWPq8_b78Z3KLA6cL5e9PnLOfPMwzuMcCvOsxN7kPOYEyna79UbQ1NFr2M7htUQ"
+DiscordConnect = GetConvar('unique_logs_DiscordConnect', '')
+DiscordDisconnect = GetConvar('unique_logs_DiscordDisconnect', '')
+Discordpdrop = GetConvar('unique_logs_Discordpdrop', '')
+Discordpjoin = GetConvar('unique_logs_Discordpjoin', '')
+DiscordWebhookKillinglogs = GetConvar('unique_logs_DiscordWebhookKillinglogs', '')
+DiscordWebhookChat = GetConvar('unique_logs_DiscordWebhookChat', '')
+DiscordWebhookPwi = GetConvar('unique_logs_DiscordWebhookPwi', '')
+DiscordWebhookDwi = GetConvar('unique_logs_DiscordWebhookDwi', '')
+DiscordWebhookloot = GetConvar('unique_logs_DiscordWebhookloot', '')
+DiscordWebhookduty = GetConvar('unique_logs_DiscordWebhookduty', '')
+DiscordWebhookRob = GetConvar('unique_logs_DiscordWebhookRob', '')
+DiscordWebhookInventory = GetConvar('unique_logs_DiscordWebhookInventory', '')
+DiscordWebhookJail = GetConvar('unique_logs_DiscordWebhookJail', '')
+DiscordWebhookaJail = GetConvar('unique_logs_DiscordWebhookaJail', '')
+DiscordWebhookBansystem = GetConvar('unique_logs_DiscordWebhookBansystem', '')
+DiscordWebhookBansystemP = GetConvar('unique_logs_DiscordWebhookBansystemP', '')
+DiscordWebhookDisband = GetConvar('unique_logs_DiscordWebhookDisband', '')
+DiscordWebhookReset = GetConvar('unique_logs_DiscordWebhookReset', '')
+DiscordWebhookDrop = GetConvar('unique_logs_DiscordWebhookDrop', '')
+DiscordWebhookPickUP = GetConvar('unique_logs_DiscordWebhookPickUP', '')
+DiscordWebhookAmoneyLog = GetConvar('unique_logs_DiscordWebhookAmoneyLog', '')
+DiscordWebhookTrasferLog = GetConvar('unique_logs_DiscordWebhookTrasferLog', '')
+DiscordWebhookNameLog = GetConvar('unique_logs_DiscordWebhookNameLog', '')
+DiscordWebhookDID = GetConvar('unique_logs_DiscordWebhookDID', '')
+DiscordGivePerm = GetConvar('unique_logs_DiscordGivePerm', '')
+DiscordReport = GetConvar('unique_logs_DiscordReport', '')
+DiscordAcceptReport = GetConvar('unique_logs_DiscordAcceptReport', '')
+DiscordNLR = GetConvar('unique_logs_DiscordNLR', '')
+DiscordGangsChangeLog = GetConvar('unique_logs_DiscordGangsChangeLog', '')
+DiscordWebhookHome = GetConvar('unique_logs_DiscordWebhookHome', '')
+DiscordSetArmor = GetConvar('unique_logs_DiscordSetArmor', '')
+DiscordSetGang = GetConvar('unique_logs_DiscordSetGang', '')
+DiscordSetJob = GetConvar('unique_logs_DiscordSetJob', '')
+DiscordAddCar = GetConvar('unique_logs_DiscordAddCar', '')
+DiscordBuyCar = GetConvar('unique_logs_DiscordBuyCar', '')
+DiscordSellCar = GetConvar('unique_logs_DiscordSellCar', '')
+DiscordRevive = GetConvar('unique_logs_DiscordRevive', '')
+DiscordFine = GetConvar('unique_logs_DiscordFine', '')
+DiscordHeal = GetConvar('unique_logs_DiscordHeal', '')
+additemItem = GetConvar('unique_logs_additemItem', '')
+additemWeapon = GetConvar('unique_logs_additemWeapon', '')
+DiscordCuff = GetConvar('unique_logs_DiscordCuff', '')
+DiscordCuffAll = GetConvar('unique_logs_DiscordCuffAll', '')
+DiscordBoss = GetConvar('unique_logs_DiscordBoss', '')
+DiscordWebhookStarter = GetConvar('unique_logs_DiscordWebhookStarter', '')
+WebhogVehicleSouter = GetConvar('unique_logs_WebhogVehicleSouter', '')
+DiscordPutTrunk = GetConvar('unique_logs_DiscordPutTrunk', '')
 
 SystemAvatar = 'https://media.discordapp.net/attachments/669926392921849875/939876376784273458/ServerTest.png'
 
@@ -78,31 +78,31 @@ TTSCommands = {
 -- تو یه کانال جدا از بقیه بره، آدرس وبهوک واقعی دیسکوردت رو (دقیقاً مثل بقیه‌ی
 -- خط‌های بالا) جای رشته‌ی خالی زیر بذار. تا وقتی خالی بمونه، خودِ درخواست ارسال
 -- می‌شه ولی چون URL نداره شکست می‌خوره - یعنی کرش نمی‌کنه، فقط لاگ ارسال نمیشه.
-DiscordWebhookVDM           = ''
-DiscordWebhookTireLog       = ''
-DiscordWebhookVehicleEntry  = ''
+DiscordWebhookVDM           = GetConvar('unique_logs_DiscordWebhookVDM', '')
+DiscordWebhookTireLog       = GetConvar('unique_logs_DiscordWebhookTireLog', '')
+DiscordWebhookVehicleEntry  = GetConvar('unique_logs_DiscordWebhookVehicleEntry', '')
 
 -- ================= وبهوک سایت خودمون =================
 -- هر لاگی که به دیسکورد فرستاده میشه، عیناً (به‌صورت JSON) به این آدرس هم POST میشه
 -- تا هیچ لاگی گم نشه و آرشیو کامل روی سایت خودمون هم باشه.
-SiteLogWebhook = "https://arshiahub.ir/webhook/webhook.php?token=b3090f04494755f5c1d4c107f3db5218"
+SiteLogWebhook = GetConvar('unique_logs_SiteLogWebhook', '')
 
 -- ================= لاگ‌های ریز جدید (تصادف، شلیک بدون کشتن، دزدیدن ماشین، NCZ، قفل‌بازکردن، انفجار، غرق‌شدن، سقوط، فرار از دستبند) =================
--- همه placeholder هستن؛ تا وقتی آیدی/توکن واقعی جایگزین نشه، فقط سمت سایت لاگ می‌شه (دیسکوردش ساکت fail می‌شه، کرش نمی‌کنه)
-DiscordWebhookVehicleCrash   = ''
-DiscordWebhookNonLethalShot  = ''
-DiscordWebhookCarJack        = ''
-DiscordWebhookNCZEnter       = ''
-DiscordWebhookLockpick       = ''
-DiscordWebhookExplosion      = ''
-DiscordWebhookDrowning       = ''
-DiscordWebhookHardFall       = ''
-DiscordWebhookCuffEscape     = ''
+-- همه از server.cfg خونده می‌شن؛ تا وقتی مقدارشون خالی باشه، فقط سمت سایت لاگ می‌شه (دیسکوردش ساکت fail می‌شه، کرش نمی‌کنه)
+DiscordWebhookVehicleCrash   = GetConvar('unique_logs_DiscordWebhookVehicleCrash', '')
+DiscordWebhookNonLethalShot  = GetConvar('unique_logs_DiscordWebhookNonLethalShot', '')
+DiscordWebhookCarJack        = GetConvar('unique_logs_DiscordWebhookCarJack', '')
+DiscordWebhookNCZEnter       = GetConvar('unique_logs_DiscordWebhookNCZEnter', '')
+DiscordWebhookLockpick       = GetConvar('unique_logs_DiscordWebhookLockpick', '')
+DiscordWebhookExplosion      = GetConvar('unique_logs_DiscordWebhookExplosion', '')
+DiscordWebhookDrowning       = GetConvar('unique_logs_DiscordWebhookDrowning', '')
+DiscordWebhookHardFall       = GetConvar('unique_logs_DiscordWebhookHardFall', '')
+DiscordWebhookCuffEscape     = GetConvar('unique_logs_DiscordWebhookCuffEscape', '')
 
 -- این چهارتا هم قبلاً استفاده می‌شدن ولی هیچوقت اینجا تعریف نشده بودن (یعنی
--- سمت دیسکورد ساکت fail می‌خورد، فقط سمت سایت کار می‌کرد). الان اضافه شدن:
-DiscordWebhookManage         = ''  -- لاگ‌های مدیریتی esx_society (استخدام/اخراج/ترفیع/تلاش‌های مشکوک)
-DiscordWebhookAdminMenu      = ''  -- لاگ‌های منوی ادمین + تلاش‌های مشکوک اکشن‌های شغلی (police/ambulance/fbi/cia/...)
-DiscordWebhookServerError    = ''  -- کرش/خطای اجراییِ سرور (از SafeCall)
-DiscordWebhookClientError    = ''  -- خطای اجراییِ کلاینت که پلیر باعثش شده
+-- سمت دیسکورد ساکت fail می‌خورد، فقط سمت سایت کار می‌کرد). الان از server.cfg می‌خونن:
+DiscordWebhookManage         = GetConvar('unique_logs_DiscordWebhookManage', '')  -- لاگ‌های مدیریتی esx_society (استخدام/اخراج/ترفیع/تلاش‌های مشکوک)
+DiscordWebhookAdminMenu      = GetConvar('unique_logs_DiscordWebhookAdminMenu', '')  -- لاگ‌های منوی ادمین + تلاش‌های مشکوک اکشن‌های شغلی (police/ambulance/fbi/cia/...)
+DiscordWebhookServerError    = GetConvar('unique_logs_DiscordWebhookServerError', '')  -- کرش/خطای اجراییِ سرور (از SafeCall)
+DiscordWebhookClientError    = GetConvar('unique_logs_DiscordWebhookClientError', '')  -- خطای اجراییِ کلاینت که پلیر باعثش شده
 

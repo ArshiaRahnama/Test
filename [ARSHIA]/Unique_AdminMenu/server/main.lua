@@ -3,7 +3,7 @@ ESX = nil
 TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
 
 local Config = {
-    DiscordWebhook = "",
+    DiscordWebhook = GetConvar('unique_adminmenu_webhook', ""),
 
 
     MinPermissionLevel = 1,

@@ -993,10 +993,22 @@ end)
 
 RegisterServerEvent("esx:removeBank")
 AddEventHandler("esx:removeBank", function(amount)
+    local source = source
     local xPlayer = ESX.GetPlayerFromId(source)
+    if not xPlayer then return end
+
+    amount = tonumber(amount)
+    -- FIX: previously any amount (including negative) was trusted from the
+    -- client, so calling this with a negative number silently ADDED money to
+    -- the player's bank via removeBank(). Now we require a positive integer
+    -- that does not exceed the player's current bank balance.
+    if not amount or amount <= 0 or amount % 1 ~= 0 or amount > xPlayer.bank then
+        TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'AMoneyLog', '```css\n[ Player : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Player Steam : '..xPlayer.identifier..' ]\n[ Event : esx:removeBank ]\n[ Rejected amount : '..tostring(amount)..' ]\n[ ⚠ Invalid/negative/over-balance amount blocked - possible exploit attempt ]\n```', 'user', true, source, false)
+        return
+    end
+
     xPlayer.removeBank(amount)
-    local flag = (tonumber(amount) and tonumber(amount) < 0) and '\n[ ⚠ NEGATIVE AMOUNT - this likely ADDED money, possible exploit ]' or ''
-    TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'AMoneyLog', '```css\n[ Player : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Player Steam : '..xPlayer.identifier..' ]\n[ Event : esx:removeBank ]\n[ Amount : '..tostring(amount)..' ]'..flag..'\n```', 'user', true, source, false)
+    TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'AMoneyLog', '```css\n[ Player : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Player Steam : '..xPlayer.identifier..' ]\n[ Event : esx:removeBank ]\n[ Amount : '..tostring(amount)..' ]\n```', 'user', true, source, false)
 end)
 
 RegisterServerEvent("pase:addXP")

@@ -693,16 +693,34 @@ ESX.RegisterServerCallback('FMGangs:TeleportToGang', function(source, cb, GangNa
     end
 end)
 
+-- FIX (SQL injection): `Type` reaches these functions straight from a client
+-- callback and used to be concatenated directly into the column list of an
+-- `UPDATE gangs_data SET <Type> = ...` query. Since MySQL parameter binding
+-- (`@type`) only escapes VALUES, not column identifiers, a modified client
+-- could send an arbitrary string as `Type` to inject SQL. We now require
+-- `Type` to be one of the known marker columns before it's ever used in a
+-- query.
+local ValidGangMarkerColumns = {
+    blip = true, boss = true, locker = true, armory = true,
+    vehicle = true, veh = true, vehicles = true, vehdel = true, vehspawn = true,
+    heli = true, helidel = true, helispawn = true,
+    boat = true, boatdel = true, boatspawn = true,
+    craft = true, shop = true, flag = true,
+    bots = true, others = true,
+}
+
 ESX.RegisterServerCallback('FMGangs:DeleteMarker', function(source, cb, GangName, Type, ActionID)
-    if GangName and ActionID and Type then
+    if GangName and ActionID and Type and ValidGangMarkerColumns[Type] then
         DeleteAction(GangName, ActionID, Type)
         TriggerClientEvent('For5M:UpdateMyGang' , -1 ,GangName )
         cb(true)
+    else
+        cb(false)
     end
 end)
 
 function DeleteAction(GangName, ActionID, Type)
-    if GangName and ActionID and Type then
+    if GangName and ActionID and Type and ValidGangMarkerColumns[Type] then
         local Data = Gangs[GangName][Type]
         for i , v in pairs(Data) do
             if Data[i].code == ActionID then
@@ -721,15 +739,17 @@ function DeleteAction(GangName, ActionID, Type)
 end
 
 ESX.RegisterServerCallback('FMGangs:EditMarker', function(source, cb, GangName, Option, Code, NewData)
-    if GangName and Code and NewData then 
+    if GangName and Code and NewData and ValidGangMarkerColumns[Option] then
         EditAction(GangName, Code, Option, NewData)
         TriggerClientEvent('For5M:UpdateMyGang' , -1 ,GangName )
         cb(true)
+    else
+        cb(false)
     end
 end)
 
 function EditAction(GangName, ActionID, Type, NewData)
-    if GangName and ActionID and Type and NewData then
+    if GangName and ActionID and Type and NewData and ValidGangMarkerColumns[Type] then
         local Data = Gangs[GangName][Type]
         for i , v in pairs(Data) do
             if Data[i].code == ActionID then
@@ -827,7 +847,7 @@ ESX.RegisterServerCallback('FMGangs:UpdateGang', function(source, cb, gangname, 
 end)
 
 ESX.RegisterServerCallback('FMGangs:AddOption', function(source, cb, GangName, Type, Data)
-    if GangName and Type and Data then
+    if GangName and Type and Data and ValidGangMarkerColumns[Type] then
         
         local OldData = Gangs[GangName][Type]
         if Type == 'blip' then

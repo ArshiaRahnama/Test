@@ -60,6 +60,13 @@ end
 -- List / detail
 -- ============================================================
 
+local function withAge(rows)
+	for _, row in ipairs(rows) do
+		row.ageMinutes = math.floor((os.time() - row.created_at) / 60)
+	end
+	return rows
+end
+
 ESX.RegisterServerCallback('esx_uniquejobs:dojGetCases', function(source, cb, filterStatus, searchSuspect)
 	local xPlayer = ESX.GetPlayerFromId(source)
 	if not xPlayer or not isDoj(xPlayer.job.name) then cb(nil) return end
@@ -69,7 +76,7 @@ ESX.RegisterServerCallback('esx_uniquejobs:dojGetCases', function(source, cb, fi
 			'SELECT DISTINCT c.id, c.title, c.status, c.priority, c.lead_officer_name, c.referred_to, c.created_at FROM dept_cases c ' ..
 			'JOIN dept_case_suspects s ON s.case_id = c.id WHERE s.name LIKE @name ORDER BY c.id DESC LIMIT 30',
 			{ ['@name'] = '%' .. searchSuspect .. '%' },
-			function(rows) cb(rows) end
+			function(rows) cb(withAge(rows)) end
 		)
 		return
 	end
@@ -77,12 +84,12 @@ ESX.RegisterServerCallback('esx_uniquejobs:dojGetCases', function(source, cb, fi
 	if filterStatus and filterStatus ~= '' then
 		MySQL.Async.fetchAll('SELECT id, title, status, priority, lead_officer_name, referred_to, created_at FROM dept_cases WHERE status = @status ORDER BY id DESC LIMIT 30', {
 			['@status'] = filterStatus,
-		}, function(rows) cb(rows) end)
+		}, function(rows) cb(withAge(rows)) end)
 		return
 	end
 
 	MySQL.Async.fetchAll('SELECT id, title, status, priority, lead_officer_name, referred_to, created_at FROM dept_cases ORDER BY id DESC LIMIT 30', {}, function(rows)
-		cb(rows)
+		cb(withAge(rows))
 	end)
 end)
 

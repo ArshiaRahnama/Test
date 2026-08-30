@@ -496,11 +496,10 @@ function OpenCasesMenu(evidenceMode, filterStatus, searchSuspect)
 		lib.registerContext({ id = 'doj_cases_filter', title = 'Filter', menu = 'doj_cases', options = filterOptions })
 
 		for _, case in ipairs(cases or {}) do
-			local ageMinutes = math.floor((os.time() - case.created_at) / 60)
 			options[#options + 1] = {
 				title = '#' .. case.id .. ' -- ' .. case.title,
 				description = 'Vaziat: ' .. statusLabelFor(case.status) .. ' | Massol: ' .. case.lead_officer_name
-					.. ' | ' .. ageMinutes .. ' Daghighe Pish'
+					.. ' | ' .. case.ageMinutes .. ' Daghighe Pish'
 					.. (case.referred_to and (' | Erja Shode Be ' .. case.referred_to) or ''),
 				icon = priorityIcon(case.priority),
 				onSelect = function()
