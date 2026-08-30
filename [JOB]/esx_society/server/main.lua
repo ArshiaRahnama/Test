@@ -1049,6 +1049,334 @@ ESX.RegisterServerCallback('esx_society:renameGrade', function(source, cb, grade
 
 end)
 
+-- ===== Advanced Grade Management (add/delete/reorder/boss/perm toggles) =====
+
+local function getOffJobName(job)
+	local offName = 'off' .. job
+	if Jobs[offName] then
+		return offName
+	end
+	return nil
+end
+
+ESX.RegisterServerCallback('esx_society:newGrade', function(source, cb, job)
+	local xPlayer = ESX.GetPlayerFromId(source)
+
+	if not isPlayerBoss(source, job) then
+		cb(false, 'not_boss')
+		return
+	end
+
+	local maxGrade = -1
+	for gradeKey, _ in pairs(Jobs[job].grades) do
+		local g = tonumber(gradeKey)
+		if g and g > maxGrade then
+			maxGrade = g
+		end
+	end
+
+	local newGrade = maxGrade + 1
+
+	if Config.JobMaxGrade and Config.JobMaxGrade[job] and newGrade > Config.JobMaxGrade[job] then
+		TriggerClientEvent('esx:showNotification', source, 'Config.JobMaxGrade limit reached for this job')
+		cb(false, 'max_grade')
+		return
+	end
+
+	local function insertGrade(jobName)
+		MySQL.Async.execute('INSERT INTO job_grades (job_name, grade, name, label, salary, skin_male, skin_female, vehicles, helis, weapons, items, perm_employee_management, perm_vehicle_custom) VALUES (@job_name, @grade, @name, @label, @salary, @skin_male, @skin_female, @vehicles, @helis, @weapons, @items, 0, 0)', {
+			['@job_name']    = jobName,
+			['@grade']       = newGrade,
+			['@name']        = 'employee',
+			['@label']       = 'New Grade',
+			['@salary']      = 0,
+			['@skin_male']   = '{}',
+			['@skin_female'] = '{}',
+			['@vehicles']    = '[]',
+			['@helis']       = '[]',
+			['@weapons']     = '[]',
+			['@items']       = '[]',
+		})
+	end
+
+	insertGrade(job)
+
+	local offJob = getOffJobName(job)
+	if offJob then
+		insertGrade(offJob)
+	end
+
+	local editor = ESX.GetPlayerFromId(source)
+	if editor then
+		JobsLog('New Grade', true, job, 'option', {
+			{["name"] = "👤 Player", ["value"] = editor.name, ["inline"] = false},
+			{["name"] = "🎮 Steam Hex", ["value"] = editor.identifier, ["inline"] = false},
+			{["name"] = "🔢 New Grade", ["value"] = tostring(newGrade), ["inline"] = false},
+		})
+	end
+
+	SetTimeout(300, function()
+		reloaddatabase()
+		cb(true, newGrade)
+	end)
+end)
+
+RegisterServerEvent('esx_society:deleteGrade')
+AddEventHandler('esx_society:deleteGrade', function(grade)
+	local source = source
+	local xPlayer = ESX.GetPlayerFromId(source)
+	local job = xPlayer.job.name
+
+	if not isPlayerBoss(source, job) then
+		print(('esx_society: %s attempted to deleteGrade without being boss!'):format(xPlayer.identifier))
+		return
+	end
+
+	if tostring(grade) == tostring(xPlayer.job.grade) then
+		TriggerClientEvent('esx:showNotification', source, 'You cannot delete the grade you are currently on')
+		return
+	end
+
+	MySQL.Async.fetchScalar('SELECT COUNT(*) FROM users WHERE job = @job AND job_grade = @grade', {
+		['@job']   = job,
+		['@grade'] = grade,
+	}, function(count)
+		if count and count > 0 then
+			TriggerClientEvent('esx:showNotification', source, 'There are still employees on that grade, move or fire them first')
+			return
+		end
+
+		MySQL.Async.execute('DELETE FROM job_grades WHERE job_name = @job_name AND grade = @grade', {
+			['@job_name'] = job,
+			['@grade']    = grade,
+		})
+
+		local offJob = getOffJobName(job)
+		if offJob then
+			MySQL.Async.execute('DELETE FROM job_grades WHERE job_name = @job_name AND grade = @grade', {
+				['@job_name'] = offJob,
+				['@grade']    = grade,
+			})
+		end
+
+		JobsLog('Delete Grade', false, job, 'option', {
+			{["name"] = "👤 Player", ["value"] = xPlayer.name, ["inline"] = false},
+			{["name"] = "🎮 Steam Hex", ["value"] = xPlayer.identifier, ["inline"] = false},
+			{["name"] = "🔢 Deleted Grade", ["value"] = tostring(grade), ["inline"] = false},
+		})
+
+		SetTimeout(300, function()
+			reloaddatabase()
+		end)
+	end)
+end)
+
+local function swapGradeContent(job, gradeA, gradeB, cb)
+	local rowA = Jobs[job] and Jobs[job].grades[tostring(gradeA)]
+	local rowB = Jobs[job] and Jobs[job].grades[tostring(gradeB)]
+
+	if not rowA or not rowB then
+		cb(false)
+		return
+	end
+
+	local function applyColumns(targetGrade, sourceRow, jobName)
+		MySQL.Async.execute('UPDATE job_grades SET name = @name, label = @label, salary = @salary, skin_male = @skin_male, skin_female = @skin_female, vehicles = @vehicles, helis = @helis, weapons = @weapons, items = @items, perm_employee_management = @perm_employee_management, perm_vehicle_custom = @perm_vehicle_custom WHERE job_name = @job_name AND grade = @grade', {
+			['@name']                      = sourceRow.name,
+			['@label']                     = sourceRow.label,
+			['@salary']                    = sourceRow.salary,
+			['@skin_male']                 = sourceRow.skin_male,
+			['@skin_female']               = sourceRow.skin_female,
+			['@vehicles']                  = sourceRow.vehicles,
+			['@helis']                     = sourceRow.helis,
+			['@weapons']                   = sourceRow.weapons,
+			['@items']                     = sourceRow.items,
+			['@perm_employee_management']  = sourceRow.perm_employee_management or 0,
+			['@perm_vehicle_custom']       = sourceRow.perm_vehicle_custom or 0,
+			['@job_name']                  = jobName,
+			['@grade']                     = targetGrade,
+		})
+	end
+
+	applyColumns(gradeA, rowB, job)
+	applyColumns(gradeB, rowA, job)
+
+	local offJob = getOffJobName(job)
+	if offJob then
+		local offRowA = Jobs[offJob] and Jobs[offJob].grades[tostring(gradeA)]
+		local offRowB = Jobs[offJob] and Jobs[offJob].grades[tostring(gradeB)]
+		if offRowA and offRowB then
+			applyColumns(gradeA, offRowB, offJob)
+			applyColumns(gradeB, offRowA, offJob)
+		end
+	end
+
+	cb(true)
+end
+
+RegisterServerEvent('esx_society:upgradeGrade')
+AddEventHandler('esx_society:upgradeGrade', function(grade)
+	local source = source
+	local xPlayer = ESX.GetPlayerFromId(source)
+	local job = xPlayer.job.name
+
+	if not isPlayerBoss(source, job) then
+		print(('esx_society: %s attempted to upgradeGrade without being boss!'):format(xPlayer.identifier))
+		return
+	end
+
+	local aboveGrade = tonumber(grade) + 1
+	if not Jobs[job].grades[tostring(aboveGrade)] then
+		TriggerClientEvent('esx:showNotification', source, 'This is already the highest grade')
+		return
+	end
+
+	swapGradeContent(job, grade, aboveGrade, function(ok)
+		if ok then
+			JobsLog('Upgrade Grade', true, job, 'option', {
+				{["name"] = "👤 Player", ["value"] = xPlayer.name, ["inline"] = false},
+				{["name"] = "🔁 Swapped", ["value"] = tostring(grade) .. ' <-> ' .. tostring(aboveGrade), ["inline"] = false},
+			})
+			SetTimeout(300, function() reloaddatabase() end)
+		end
+	end)
+end)
+
+RegisterServerEvent('esx_society:downgradeGrade')
+AddEventHandler('esx_society:downgradeGrade', function(grade)
+	local source = source
+	local xPlayer = ESX.GetPlayerFromId(source)
+	local job = xPlayer.job.name
+
+	if not isPlayerBoss(source, job) then
+		print(('esx_society: %s attempted to downgradeGrade without being boss!'):format(xPlayer.identifier))
+		return
+	end
+
+	local belowGrade = tonumber(grade) - 1
+	if belowGrade < 0 or not Jobs[job].grades[tostring(belowGrade)] then
+		TriggerClientEvent('esx:showNotification', source, 'This is already the lowest grade')
+		return
+	end
+
+	swapGradeContent(job, grade, belowGrade, function(ok)
+		if ok then
+			JobsLog('Downgrade Grade', false, job, 'option', {
+				{["name"] = "👤 Player", ["value"] = xPlayer.name, ["inline"] = false},
+				{["name"] = "🔁 Swapped", ["value"] = tostring(grade) .. ' <-> ' .. tostring(belowGrade), ["inline"] = false},
+			})
+			SetTimeout(300, function() reloaddatabase() end)
+		end
+	end)
+end)
+
+RegisterServerEvent('esx_society:toggleBoss')
+AddEventHandler('esx_society:toggleBoss', function(grade, makeBoss)
+	local source = source
+	local xPlayer = ESX.GetPlayerFromId(source)
+	local job = xPlayer.job.name
+
+	if not isPlayerBoss(source, job) then
+		print(('esx_society: %s attempted to toggleBoss without being boss!'):format(xPlayer.identifier))
+		return
+	end
+
+	local newName = makeBoss and 'boss' or 'employee'
+
+	-- Enforce a single boss grade per job: demote whichever grade currently holds it.
+	if makeBoss then
+		for gradeKey, gradeRow in pairs(Jobs[job].grades) do
+			if gradeRow.name == 'boss' and tostring(gradeKey) ~= tostring(grade) then
+				MySQL.Async.execute('UPDATE job_grades SET name = @name WHERE job_name = @job_name AND grade = @grade', {
+					['@name']     = 'employee',
+					['@job_name'] = job,
+					['@grade']    = gradeKey,
+				})
+				if ESX.Jobs[job] and ESX.Jobs[job].grades[gradeKey] then
+					ESX.Jobs[job].grades[gradeKey].name = 'employee'
+				end
+			end
+		end
+	end
+
+	MySQL.Async.execute('UPDATE job_grades SET name = @name WHERE job_name = @job_name AND grade = @grade', {
+		['@name']     = newName,
+		['@job_name'] = job,
+		['@grade']    = grade,
+	}, function()
+		if ESX.Jobs[job] and ESX.Jobs[job].grades[tostring(grade)] then
+			ESX.Jobs[job].grades[tostring(grade)].name = newName
+		end
+
+		-- Resync grade_name for anyone online on that job so the change applies without relog.
+		local xPlayers = ESX.GetPlayers()
+		for i = 1, #xPlayers do
+			local Member = ESX.GetPlayerFromId(xPlayers[i])
+			if Member.job.name == job then
+				Member.setJob(job, Member.job.grade)
+			end
+		end
+
+		JobsLog('Toggle Boss', makeBoss, job, 'option', {
+			{["name"] = "👤 Player", ["value"] = xPlayer.name, ["inline"] = false},
+			{["name"] = "🎮 Steam Hex", ["value"] = xPlayer.identifier, ["inline"] = false},
+			{["name"] = "🔢 Grade", ["value"] = tostring(grade), ["inline"] = false},
+			{["name"] = "👑 Boss", ["value"] = makeBoss and 'Yes' or 'No', ["inline"] = false},
+		})
+
+		reloaddatabase()
+	end)
+end)
+
+local function togglePermColumn(columnName, logTitle)
+	return function(grade, state)
+		local source = source
+		local xPlayer = ESX.GetPlayerFromId(source)
+		local job = xPlayer.job.name
+
+		if not isPlayerBoss(source, job) then
+			print(('esx_society: %s attempted to toggle %s without being boss!'):format(xPlayer.identifier, columnName))
+			return
+		end
+
+		local value = state and 1 or 0
+
+		MySQL.Async.execute('UPDATE job_grades SET ' .. columnName .. ' = @value WHERE job_name = @job_name AND grade = @grade', {
+			['@value']    = value,
+			['@job_name'] = job,
+			['@grade']    = grade,
+		}, function()
+			JobsLog(logTitle, state, job, 'option', {
+				{["name"] = "👤 Player", ["value"] = xPlayer.name, ["inline"] = false},
+				{["name"] = "🔢 Grade", ["value"] = tostring(grade), ["inline"] = false},
+				{["name"] = "Status", ["value"] = state and 'Enabled' or 'Disabled', ["inline"] = false},
+			})
+			reloaddatabase()
+		end)
+	end
+end
+
+RegisterServerEvent('esx_society:toggleEmployeeManagementPerm')
+AddEventHandler('esx_society:toggleEmployeeManagementPerm', togglePermColumn('perm_employee_management', 'Toggle Employee Management Perm'))
+
+RegisterServerEvent('esx_society:toggleVehicleCustomPerm')
+AddEventHandler('esx_society:toggleVehicleCustomPerm', togglePermColumn('perm_vehicle_custom', 'Toggle Vehicle Custom Perm'))
+
+ESX.RegisterServerCallback('esx_society:getGradePerm', function(source, cb, permKey)
+	local xPlayer = ESX.GetPlayerFromId(source)
+	local job = xPlayer.job.name
+	local grade = tostring(xPlayer.job.grade)
+	local row = Jobs[job] and Jobs[job].grades[grade]
+
+	if row and permKey == 'employeeManagement' then
+		cb(row.perm_employee_management == 1 or row.perm_employee_management == true)
+	elseif row and permKey == 'vehicleCustom' then
+		cb(row.perm_vehicle_custom == 1 or row.perm_vehicle_custom == true)
+	else
+		cb(false)
+	end
+end)
+
 ESX.RegisterServerCallback('esx_society:getUniforms', function(source, cb, rank, job)
 	local fskin = {}
 	local mskin = {}

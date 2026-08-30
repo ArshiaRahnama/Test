@@ -1128,6 +1128,7 @@ function OpenManageJobMenu(society)
 		end
 
 		table.insert(elements, {label = _U('manage_grades_name'), value = 'manage_grades_name'})
+		table.insert(elements, {label = 'Modiriat Grade (Advanced)', value = 'manage_grades_advanced'})
 		table.insert(elements, {label = _U('manage_grades_outfit'), value = 'manage_grades_outfit'})
 
 		if ESX.PlayerData.job.name ~= 'uwucafe' then
@@ -1162,6 +1163,10 @@ function OpenManageJobMenu(society)
 
 			if data.current.value == 'manage_grades_name' then
 				OpenGradeNames(society)
+			end
+
+			if data.current.value == 'manage_grades_advanced' then
+				OpenAdvancedGradeMenu(society)
 			end
 
 			if data.current.value == 'manage_grades_outfit' then
@@ -1617,6 +1622,125 @@ function OpenGradeNames(society)
 		end, function(data, menu)
 
 			menu.close()
+		end)
+	end, society)
+end
+
+function OpenAdvancedGradeMenu(society)
+	ESX.TriggerServerCallback('esx_society:getJob', function(job)
+		local elements = {}
+
+		for i=1, #job.grades, 1 do
+			local gradeLabel = (job.grades[i].label == '' and job.label or job.grades[i].label)
+			table.insert(elements, {
+				label = ('(%s) %s'):format(job.grades[i].grade, gradeLabel) .. (job.grades[i].name == 'boss' and ' 👑' or ''),
+				grade = job.grades[i].grade,
+				name  = job.grades[i].name,
+				perm_employee_management = job.grades[i].perm_employee_management,
+				perm_vehicle_custom      = job.grades[i].perm_vehicle_custom,
+			})
+		end
+
+		table.insert(elements, {label = 'Ezafe Kardan Grade', value = 'add_grade'})
+
+		ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'manage_grades_advanced_' .. society, {
+			title    = 'Modiriat Grade (Advanced)',
+			align    = 'top-left',
+			elements = elements
+		}, function(data, menu)
+
+			if data.current.value == 'add_grade' then
+				menu.close()
+				ESX.TriggerServerCallback('esx_society:newGrade', function(ok)
+					if ok then
+						ESX.ShowNotification('Grade Ezafe Shod')
+					else
+						ESX.ShowNotification('Khata dar Ezafe Kardan Grade')
+					end
+					OpenAdvancedGradeMenu(society)
+				end, society)
+				return
+			end
+
+			local grade = data.current.grade
+			local isBoss = data.current.name == 'boss'
+
+			local subElements = {
+				{label = 'Upgrade🔼', value = 'upgrade'},
+				{label = 'Downgrade🔽', value = 'downgrade'},
+				{label = 'Boss : ' .. (isBoss and '✅' or '❌'), value = 'toggle_boss'},
+				{label = 'Employee Management : ' .. (data.current.perm_employee_management == 1 and '✅' or '❌'), value = 'toggle_employee'},
+				{label = 'Vehicle Custom : ' .. (data.current.perm_vehicle_custom == 1 and '✅' or '❌'), value = 'toggle_custom'},
+				{label = 'Hazf Grade', value = 'delete_grade'},
+			}
+
+			ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'manage_grades_advanced_actions_' .. society, {
+				title    = ('Grade %s'):format(grade),
+				align    = 'top-left',
+				elements = subElements
+			}, function(data2, menu2)
+
+				if data2.current.value == 'upgrade' then
+					menu2.close()
+					menu.close()
+					TriggerServerEvent('esx_society:upgradeGrade', grade)
+					Citizen.Wait(300)
+					OpenAdvancedGradeMenu(society)
+				elseif data2.current.value == 'downgrade' then
+					menu2.close()
+					menu.close()
+					TriggerServerEvent('esx_society:downgradeGrade', grade)
+					Citizen.Wait(300)
+					OpenAdvancedGradeMenu(society)
+				elseif data2.current.value == 'toggle_boss' then
+					local alert = lib.alertDialog({
+						header = 'Boss',
+						content = isBoss and 'Aya mikhahid boss ra az in grade bardarid?' or 'Aya mikhahid in grade boss she? (boss ghabli demote mishe)',
+						centered = true,
+						cancel = true
+					})
+					if alert == 'confirm' then
+						menu2.close()
+						menu.close()
+						TriggerServerEvent('esx_society:toggleBoss', grade, not isBoss)
+						Citizen.Wait(300)
+						OpenAdvancedGradeMenu(society)
+					end
+				elseif data2.current.value == 'toggle_employee' then
+					menu2.close()
+					menu.close()
+					TriggerServerEvent('esx_society:toggleEmployeeManagementPerm', grade, not (data.current.perm_employee_management == 1))
+					Citizen.Wait(300)
+					OpenAdvancedGradeMenu(society)
+				elseif data2.current.value == 'toggle_custom' then
+					menu2.close()
+					menu.close()
+					TriggerServerEvent('esx_society:toggleVehicleCustomPerm', grade, not (data.current.perm_vehicle_custom == 1))
+					Citizen.Wait(300)
+					OpenAdvancedGradeMenu(society)
+				elseif data2.current.value == 'delete_grade' then
+					local alert = lib.alertDialog({
+						header = 'Hazf Grade',
+						content = ('Aya mayel be hazf grade %s hastid?'):format(grade),
+						centered = true,
+						cancel = true
+					})
+					if alert == 'confirm' then
+						menu2.close()
+						menu.close()
+						TriggerServerEvent('esx_society:deleteGrade', grade)
+						Citizen.Wait(300)
+						OpenAdvancedGradeMenu(society)
+					end
+				end
+
+			end, function(data2, menu2)
+				menu2.close()
+			end)
+
+		end, function(data, menu)
+			menu.close()
+			OpenManageJobMenu(society)
 		end)
 	end, society)
 end
