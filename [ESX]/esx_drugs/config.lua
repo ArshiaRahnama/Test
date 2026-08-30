@@ -55,7 +55,7 @@ Config.Peds = {
 	WeedProcess =		{ ped = -264140789, x = 2328.29, y = 2569.61,	z = 45.68, 	h = 325.04 },
 	CokeProcess =		{ ped = -264140789, x = -2084.48, y = -1011.68,	z = 4.88,	h = 252.42 },
 	EphedrineProcess =	{ ped = 516505552, x = -1079.49, y = -1679.92,	z = 3.58,	h = 181.96 },
-
+	MethProcess =		{ ped = 516505552, x = 1391.83, y = 3606.03,	z = 37.94,	h = 120.83 },
 	OpiumProcess =		{ ped = -730659924, x = 3559.03, y = 3674.78,	z = 27.12,	h = 224.32 },
 	CrackProcess =		{ ped = -264140789, x = 973.68, y = -100.35,	z = 73.85,	h = 277.73 },
 }
@@ -76,7 +76,7 @@ Config.Locations = {
 Config.Zones = {}
 
 Config.CircleZones = {
-
+	DrugDealer = {coords = vector3(-1221.33, -1487.33, 3.37), name = _U('blip_drugdealer'), color = 6, sprite = 378, radius = 15.0},
 }
 
 for i=1, #Config.Locations, 1 do

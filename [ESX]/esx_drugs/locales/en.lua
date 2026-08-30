@@ -127,6 +127,7 @@ Locales ['en'] = {
   ['blip_cokefield'] = 'Cotton Field',
   ['blip_poppyfield'] = 'Wong Property',
   ['blip_ephedrinefield'] = 'Restricted Area',
+  ['blip_drugdealer'] = 'Kharidare Mavad',
 
 
   ['not_needed'] = 'You shouldn\'t take drugs you don\'t need!',

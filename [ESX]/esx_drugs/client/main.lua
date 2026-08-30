@@ -36,6 +36,13 @@ Citizen.CreateThread(function()
     ESX.PlayerData = ESX.GetPlayerData()
 end)
 
+-- Server broadcasts new prices every 10 minutes (server/main.lua -> loop() -> DrugDealerItems.regen()).
+-- Keep the local price table in sync so the dealer menu always shows the current price.
+RegisterNetEvent('esx_jk_drugs:getPrice')
+AddEventHandler('esx_jk_drugs:getPrice', function(data)
+    price = data
+end)
+
 AddEventHandler('onResourceStop', function(resource)
     if resource == GetCurrentResourceName() then
         if menuOpen then
@@ -57,7 +64,7 @@ function CreateBlipCircle(coords, text, radius, color, sprite)
 
     SetBlipHighDetail(blip, true)
     SetBlipSprite (blip, sprite)
-    SetBlipScale(blip, 0.7)
+    SetBlipScale(blip, 1.0)
     SetBlipColour (blip, color)
     SetBlipAsShortRange(blip, true)
 
@@ -101,6 +108,9 @@ Citizen.CreateThread(function()
             CreateBlipCircle(v.coords, v.name, v.radius, v.color, v.sprite)
         end
 
+        if Config.CircleZones.DrugDealer then
+            CreateBlipCircle(Config.CircleZones.DrugDealer.coords, Config.CircleZones.DrugDealer.name, Config.CircleZones.DrugDealer.radius, Config.CircleZones.DrugDealer.color, Config.CircleZones.DrugDealer.sprite)
+        end
 
     end
 end)
@@ -123,6 +133,91 @@ Citizen.CreateThread(function()
         TaskStartScenarioInPlace(seller, "WORLD_HUMAN_CLIPBOARD", 0, true)
     end
 end)
+
+----------------------------------------
+----------- DRUG DEALER ----------------
+----------------------------------------
+-- Ground marker + interaction prompt for the generic drug dealer (Config.CircleZones.DrugDealer).
+-- Sells whatever the local `price` table lists, using the same 'esx_drugs:sellDrug' server event
+-- and DrugDealerItems pricing that server/main.lua already implements.
+Citizen.CreateThread(function()
+    local wait = 600
+    while true do
+        Citizen.Wait(wait)
+        local playerPed = PlayerPedId()
+        local coords = GetEntityCoords(playerPed)
+        local distance = #(coords - Config.CircleZones.DrugDealer.coords)
+
+        if not menuOpen and distance <= Config.CircleZones.DrugDealer.radius then
+            DrawMarker(1, Config.CircleZones.DrugDealer.coords, 0.0, 0.0, 0.0, 0, 0.0, 0.0, 1.5, 1.5, 1.5, 255, 0, 0, 100, false, true, 2, false, false, false, false)
+            wait = 5
+        end
+
+        if distance < 1.5 then
+            if not menuOpen then
+                ESX.ShowHelpNotification(_U('dealer_prompt'))
+
+                if IsControlJustReleased(0, Keys['E']) then
+                    OpenDrugShop()
+                end
+            end
+        else
+            if menuOpen then
+                menuOpen = false
+                ESX.UI.Menu.CloseAll()
+            end
+            wait = 600
+        end
+    end
+end)
+
+function OpenDrugShop()
+    ESX.UI.Menu.CloseAll()
+    local elements = {}
+    menuOpen = true
+
+    local playerInventory = ESX.GetPlayerData().inventory
+
+    for i=1, #price, 1 do
+        for k, item in pairs(playerInventory) do
+            if item.name == price[i].name and item.count > 0 then
+                table.insert(elements, {
+                    label = ('%s - <span style="color:green;">%s</span>'):format(item.label, _U('dealer_item', ESX.Math.GroupDigits(price[i].price))),
+                    name  = item.name,
+                    price = price[i].price,
+                    max   = item.count
+                })
+            end
+        end
+    end
+
+    ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'drug_shop', {
+        title    = _U('dealer_title'),
+        align    = 'top-left',
+        elements = elements
+    }, function(data, menu)
+        ESX.UI.Menu.Open('dialog', GetCurrentResourceName(), 'drug_shop_amount', {
+            title = _U('dealer_item', ESX.Math.GroupDigits(data.current.price))
+        }, function(data1, menu1)
+            menu1.close()
+            local amount = tonumber(data1.value)
+
+            if amount and amount > 0 then
+                if amount <= data.current.max then
+                    TriggerServerEvent('esx_drugs:sellDrug', data.current.name, amount)
+                    OpenDrugShop()
+                else
+                    ESX.ShowNotification(_U('dealer_notenough'))
+                end
+            end
+        end, function(data1, menu1)
+            menu1.close()
+        end)
+    end, function(data, menu)
+        menu.close()
+        menuOpen = false
+    end)
+end
 
 RegisterNetEvent('esx_drugs:Cartel')
 AddEventHandler('esx_drugs:Cartel', function(itemName)
