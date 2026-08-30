@@ -1,37 +1,48 @@
 <html>
   <head>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-    <link rel="stylesheet" type="text/css" href="css/index.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Gluten&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
     <style>
-      #wrap {
-        width: 460px !important;
-        height: auto !important;
-        max-height: 75vh;
-        overflow-y: auto;
-        padding-bottom: 10px;
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.55) !important;
-        opacity: 0;
+      /* ✅ کاملاً مستقل: هیچ کلاس/آیدی از css/index.css قدیمی (LogoBox/RightSide/
+         InfoBox/container/#wrap) استفاده نشده - اون‌ها یه انیمیشن+float داشتن
+         که هر بار به‌طرز عجیبی باعث یه فضای خالی بزرگ زیر پنل می‌شد. */
+      html, body {
+        margin: 0;
+        padding: 0;
+        background: transparent;
+        font-family: 'Quicksand', sans-serif;
+      }
+
+      #uh-sb-wrap {
+        display: none;
+        position: fixed;
+        top: 50%;
+        left: 50%;
         transform: translate(-50%, -50%) scale(0.96);
+        width: 420px;
+        max-height: 70vh;
+        overflow-y: auto;
+        background: #26222dcc;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 14px;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.55);
+        color: #fff;
+        opacity: 0;
         transition: opacity 180ms ease, transform 180ms ease;
       }
-      #wrap.uh-visible {
+      #uh-sb-wrap.uh-visible {
         opacity: 1;
         transform: translate(-50%, -50%) scale(1);
       }
-      .LogoBox img {
-        height: 80px !important;
+
+      #uh-sb-inner {
+        padding: 18px;
+        position: relative;
       }
-      .InfoBox h1 {
-        font-size: 12px;
-      }
-      .InfoBox h2 {
-        font-size: 24px;
-      }
-      #close_btn {
+
+      #uh-close-btn {
         position: absolute;
-        top: 10px;
-        left: 14px;
+        top: 8px;
+        left: 10px;
         background: #ff3547;
         color: #fff;
         border: none;
@@ -44,32 +55,47 @@
         box-shadow: 0 0 8px rgba(255, 53, 71, 0.5);
         transition: transform 150ms ease, box-shadow 150ms ease;
       }
-      #close_btn:hover {
+      #uh-close-btn:hover {
         transform: scale(1.12);
         box-shadow: 0 0 14px rgba(255, 53, 71, 0.8);
       }
 
-      .stats-row {
-        display: flex;
-        gap: 16px;
-      }
-      .stat-block {
+      #uh-sb-header {
         display: flex;
         flex-direction: column;
         align-items: center;
+        margin-bottom: 14px;
+      }
+      #uh-sb-header img {
+        height: 60px;
+        margin-bottom: 8px;
+      }
+      #uh-sb-stats {
+        display: flex;
+        gap: 26px;
+      }
+      .uh-stat {
+        text-align: center;
+      }
+      .uh-stat .uh-stat-label {
+        font-size: 11px;
+        color: #9ca3af;
+      }
+      .uh-stat .uh-stat-value {
+        font-size: 22px;
+        font-weight: 700;
       }
 
-      .org-list {
-        clear: both;
-        padding: 10px 20px 5px 20px;
-      }
       .org-card {
-        background: var(--ColorThree);
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid transparent;
         border-radius: 10px;
         margin-bottom: 6px;
         overflow: hidden;
-        transition: 300ms;
-        border: 1px solid transparent;
+        transition: border-color 200ms ease;
+      }
+      .org-card.expanded {
+        border-color: rgba(196, 163, 0, 0.35);
       }
       .org-header {
         display: flex;
@@ -83,12 +109,9 @@
       .org-header:hover {
         background: rgba(255, 255, 255, 0.05);
       }
-      .org-card.expanded {
-        border-color: rgba(196, 163, 0, 0.35);
-      }
       .org-header .org-title {
         font-size: 13px;
-        color: var(--textcolor);
+        color: #fff;
       }
       .org-header .org-count {
         font-size: 12px;
@@ -96,7 +119,7 @@
         font-weight: bold;
       }
       .org-header .org-arrow {
-        transition: 300ms;
+        transition: transform 200ms ease, color 200ms ease;
         margin-right: 6px;
         color: #9ca3af;
         display: inline-block;
@@ -110,8 +133,6 @@
         overflow: hidden;
         transition: max-height 300ms ease;
       }
-      /* ✅ آکاردئون: فقط یه ارگان هم‌زمان باز می‌مونه (نه هر سه‌تا)، پس پنل
-         کشیده و بلند نمی‌شه، شکلش جمع‌وجورتر (نزدیک‌تر به مربع) می‌مونه. */
       .org-card.expanded .org-jobs {
         max-height: 260px;
       }
@@ -143,33 +164,25 @@
   </head>
 
   <body>
-    <div style="display: none; position: relative;" id="wrap">
-      <button id="close_btn" onclick="requestClose()">✕</button>
+    <div id="uh-sb-wrap">
+      <div id="uh-sb-inner">
+        <button id="uh-close-btn" onclick="requestClose()">✕</button>
 
-      <div class="container" id="container">
-
-        <div class="RightSide">
-          <div class="LogoBox">
-            <img src="images/Assets/silver_logo.png">
-          </div>
-
-          <div class="InfoBox">
-            <div class="stats-row">
-              <div class="stat-block">
-                <h1>Players</h1>
-                <h2><span id="playersnum">0</span></h2>
-              </div>
-              <div class="stat-block">
-                <h1>Admins</h1>
-                <h2><span id="adminsnum">0</span></h2>
-              </div>
+        <div id="uh-sb-header">
+          <img src="images/Assets/silver_logo.png">
+          <div id="uh-sb-stats">
+            <div class="uh-stat">
+              <div class="uh-stat-label">Players</div>
+              <div class="uh-stat-value" id="playersnum">0</div>
+            </div>
+            <div class="uh-stat">
+              <div class="uh-stat-label">Admins</div>
+              <div class="uh-stat-value" id="adminsnum">0</div>
             </div>
           </div>
-
         </div>
 
-        <div class="org-list" id="org-list"></div>
-
+        <div id="org-list"></div>
       </div>
     </div>
 

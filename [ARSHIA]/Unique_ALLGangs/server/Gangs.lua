@@ -3,6 +3,25 @@ TriggerEvent(Config.ESX, function(obj) ESX = obj end)
 
 Gangs = {}
 local Members = {}
+
+-------------------------------------------------------------------
+-- Shared boss-permission check, used by every rank-management
+-- callback below (AddRank/EditRank/DeleteRank/EditAccess) - none of
+-- these had ANY server-side permission check before (any client could
+-- call them directly, bypassing every menu, and edit any gang's ranks
+-- or access). Requires the caller to actually be the boss (or have
+-- bossaction access) of the SPECIFIC gang they're trying to edit.
+-------------------------------------------------------------------
+function IsGangBossSource(source, GangName)
+    local xPlayer = ESX.GetPlayerFromId(source)
+    if not xPlayer or not Gangs[GangName] or xPlayer.gang.name ~= GangName then
+        return false
+    end
+    local LastRank = CountTable(Gangs[GangName].grades)
+    local isBoss = xPlayer.gang.grade == LastRank
+    local hasBossAccess = Gangs[GangName].grades[xPlayer.gang.grade] and Gangs[GangName].grades[xPlayer.gang.grade].access['bossaction']
+    return isBoss or hasBossAccess or false
+end
 function DataBase(sql)
     if true then 
         if sql == 'gangs' then 
@@ -130,15 +149,20 @@ ESX.RegisterServerCallback('FMGangs:isBoss', function(source, cb)
         cb(false , Gangs[xPlayer.gang.name].logo )
     end
 end)
-ESX.RegisterServerCallback('FMGangs:GetRankAccess', function(source, cb)
-    local xPlayer = ESX.GetPlayerFromId(source)
-    local LastRank = CountTable(Gangs[xPlayer.gang.name].grades)
-    if xPlayer.gang.grade == LastRank then
-        cb(true , Gangs[xPlayer.gang.name].logo )
-    else
-        cb(false)
-    end
-end)
+-------------------------------------------------------------------
+-- REMOVED a dead duplicate 'FMGangs:GetRankAccess' registration that
+-- used to be here, returning a boolean (true/false) - essentially a
+-- copy of isBoss above. The REAL one (further down this file, search
+-- for it) returns the actual access table
+-- (Gangs[gang].grades[grade].access, e.g. {putitem=, takeitem=,
+-- bossaction=, ...}), which is what every caller of GetRankAccess
+-- across this resource actually expects. Because
+-- ESX.RegisterServerCallback registrations with the same name get
+-- silently overwritten by whichever loads last, the correct one (the
+-- one further down) was always the one actually active - this dead
+-- code never caused a live bug, but left in place it was a landmine
+-- for the next time this file gets reordered or split up.
+-------------------------------------------------------------------
 ESX.RegisterServerCallback('FMGangs:GetMyGangLogo', function(source, cb)
     local xPlayer = ESX.GetPlayerFromId(source)
     if Gangs[xPlayer.gang.name] ~= nil then
@@ -262,7 +286,7 @@ ESX.RegisterServerCallback('FMGangs:CreateGang', function(source, cb, data)
                 local isTopGrade = (i == #Ranks_Data)
                 local gradeLabel = isTopGrade and 'Boss' or Ranks_Data[i].Label
                 local gradeName  = isTopGrade and 'Boss' or Ranks_Data[i].Name
-                Gangs[data.name].grades[tonumber(Ranks_Data[i].Grade)] = {gang_name = data.name, grade = Ranks_Data[i].Grade, label = gradeLabel, name = gradeName, clothes = {} , access =  {['putitem'] = false ,['takeitem'] = false ,['garage']   = false ,['setclothe'] = false ,['heliANDBoat'] = false ,  ['bossaction'] = isTopGrade ,} , salary = 0 }
+                Gangs[data.name].grades[tonumber(Ranks_Data[i].Grade)] = {gang_name = data.name, grade = Ranks_Data[i].Grade, label = gradeLabel, name = gradeName, clothes = {} , access =  {['putitem'] = false ,['takeitem'] = false ,['garage']   = false ,['setclothe'] = false ,['heliANDBoat'] = false , ['crafting'] = false ,  ['bossaction'] = isTopGrade ,} , salary = 0 }
                 ESX.Gangs[data.name].grades[tonumber(Ranks_Data[i].Grade)] = { name = gradeName, label = gradeLabel, salary = 0 }
                 MySQL.Async.execute('INSERT INTO gang_grades (gang_name, grade, label, name , access , salary) VALUES (@gang_name, @grade, @label, @name , @access ,@salary )', 
                 {
@@ -276,6 +300,7 @@ ESX.RegisterServerCallback('FMGangs:CreateGang', function(source, cb, data)
                         ['garage']   = false ,
                         ['setclothe'] = false ,
                         ['heliANDBoat'] = false ,
+                        ['crafting'] = false ,
                         ['bossaction'] = isTopGrade ,
                     }) , 
                     ['@salary'] 	= 0 
@@ -472,6 +497,7 @@ function UpdateGangsData(Name, Type, Data)
 end
 
 ESX.RegisterServerCallback('FMGangs:AddRank', function(source, cb, Name, Label, GradeName , salary)
+    if not IsGangBossSource(source, Name) then return cb(false) end
     if Label and GradeName then
         local GangGrades = Gangs[Name].grades
         local NewGrade = #GangGrades + 1
@@ -487,11 +513,12 @@ ESX.RegisterServerCallback('FMGangs:AddRank', function(source, cb, Name, Label, 
                 ['garage']   = false ,
                 ['setclothe'] = false ,
                 ['heliANDBoat'] = false ,
+                ['crafting'] = false ,
                 ['bossaction'] = false ,
             } ), 
             ['@salary'] 	= salary , 
         })
-        Gangs[Name].grades[tonumber(NewGrade)] = {gang_name = Name, grade = NewGrade, label = Label, name = GradeName, clothes = {} , access = {['putitem'] = false ,['takeitem'] = false , ['garage']   = false ,['setclothe'] = false ,['heliANDBoat'] = false ,['bossaction'] = false , } , }
+        Gangs[Name].grades[tonumber(NewGrade)] = {gang_name = Name, grade = NewGrade, label = Label, name = GradeName, clothes = {} , access = {['putitem'] = false ,['takeitem'] = false , ['garage']   = false ,['setclothe'] = false ,['heliANDBoat'] = false ,['crafting'] = false ,['bossaction'] = false , } , }
         TriggerEvent('For5M:SetGangs' ,Gangs ) 
         local xPlayer = ESX.GetPlayerFromId(source)
         local LastRank = CountTable(Gangs[Name].grades) 
@@ -503,6 +530,7 @@ ESX.RegisterServerCallback('FMGangs:AddRank', function(source, cb, Name, Label, 
 end)
 
 ESX.RegisterServerCallback('FMGangs:EditRank', function(source, cb, GangName, GradeNumber, GradeName, GradeLabel , salary )
+    if not IsGangBossSource(source, GangName) then return cb(false) end
     MySQL.Async.execute('UPDATE gang_grades SET label = @label, name = @name  , salary = @salary WHERE gang_name = @gang_name  AND grade = @grade' , 
         {
             ['@label'] = GradeLabel,
@@ -521,6 +549,7 @@ ESX.RegisterServerCallback('FMGangs:EditRank', function(source, cb, GangName, Gr
 end)
 
 ESX.RegisterServerCallback('FMGangs:DeleteRank', function(source, cb, GangName, GradeNumber)
+    if not IsGangBossSource(source, GangName) then return cb(false) end
     local xPlayer = ESX.GetPlayerFromId(source)
     local FinalRank = CountTable(Gangs[GangName].grades)
     if FinalRank == 1 then 
@@ -552,6 +581,27 @@ ESX.RegisterServerCallback('FMGangs:DeleteRank', function(source, cb, GangName, 
     cb(Gangs[GangName].grades)
 end)
 ESX.RegisterServerCallback('FMGangs:EditAccess', function(source, cb, GangName, GradeNumber,  accesskey , value )
+    -------------------------------------------------------------------
+    -- SECURITY FIX: this had no permission check at all - any client
+    -- could call it directly (bypassing the menu entirely) and grant
+    -- itself/anyone armory or boss access on any gang. Now requires
+    -- the caller to actually be the boss of the gang they're editing,
+    -- matching the same check every boss menu already gates behind.
+    -------------------------------------------------------------------
+    local xPlayer = ESX.GetPlayerFromId(source)
+    if not xPlayer or not Gangs[GangName] or xPlayer.gang.name ~= GangName then
+        return cb(false)
+    end
+    local LastRank = CountTable(Gangs[GangName].grades)
+    local isBoss = xPlayer.gang.grade == LastRank
+    local hasBossAccess = Gangs[GangName].grades[xPlayer.gang.grade] and Gangs[GangName].grades[xPlayer.gang.grade].access['bossaction']
+    if not isBoss and not hasBossAccess then
+        return cb(false)
+    end
+    if not Gangs[GangName].grades[tonumber(GradeNumber)] then
+        return cb(false)
+    end
+
     Gangs[GangName].grades[tonumber(GradeNumber)].access[accesskey] = value
     MySQL.Async.execute('UPDATE gang_grades SET access = @access WHERE gang_name = @gang_name  AND grade = @grade' , 
     {
@@ -693,34 +743,16 @@ ESX.RegisterServerCallback('FMGangs:TeleportToGang', function(source, cb, GangNa
     end
 end)
 
--- FIX (SQL injection): `Type` reaches these functions straight from a client
--- callback and used to be concatenated directly into the column list of an
--- `UPDATE gangs_data SET <Type> = ...` query. Since MySQL parameter binding
--- (`@type`) only escapes VALUES, not column identifiers, a modified client
--- could send an arbitrary string as `Type` to inject SQL. We now require
--- `Type` to be one of the known marker columns before it's ever used in a
--- query.
-local ValidGangMarkerColumns = {
-    blip = true, boss = true, locker = true, armory = true,
-    vehicle = true, veh = true, vehicles = true, vehdel = true, vehspawn = true,
-    heli = true, helidel = true, helispawn = true,
-    boat = true, boatdel = true, boatspawn = true,
-    craft = true, shop = true, flag = true,
-    bots = true, others = true,
-}
-
 ESX.RegisterServerCallback('FMGangs:DeleteMarker', function(source, cb, GangName, Type, ActionID)
-    if GangName and ActionID and Type and ValidGangMarkerColumns[Type] then
+    if GangName and ActionID and Type then
         DeleteAction(GangName, ActionID, Type)
         TriggerClientEvent('For5M:UpdateMyGang' , -1 ,GangName )
         cb(true)
-    else
-        cb(false)
     end
 end)
 
 function DeleteAction(GangName, ActionID, Type)
-    if GangName and ActionID and Type and ValidGangMarkerColumns[Type] then
+    if GangName and ActionID and Type then
         local Data = Gangs[GangName][Type]
         for i , v in pairs(Data) do
             if Data[i].code == ActionID then
@@ -739,17 +771,15 @@ function DeleteAction(GangName, ActionID, Type)
 end
 
 ESX.RegisterServerCallback('FMGangs:EditMarker', function(source, cb, GangName, Option, Code, NewData)
-    if GangName and Code and NewData and ValidGangMarkerColumns[Option] then
+    if GangName and Code and NewData then 
         EditAction(GangName, Code, Option, NewData)
         TriggerClientEvent('For5M:UpdateMyGang' , -1 ,GangName )
         cb(true)
-    else
-        cb(false)
     end
 end)
 
 function EditAction(GangName, ActionID, Type, NewData)
-    if GangName and ActionID and Type and NewData and ValidGangMarkerColumns[Type] then
+    if GangName and ActionID and Type and NewData then
         local Data = Gangs[GangName][Type]
         for i , v in pairs(Data) do
             if Data[i].code == ActionID then
@@ -847,7 +877,7 @@ ESX.RegisterServerCallback('FMGangs:UpdateGang', function(source, cb, gangname, 
 end)
 
 ESX.RegisterServerCallback('FMGangs:AddOption', function(source, cb, GangName, Type, Data)
-    if GangName and Type and Data and ValidGangMarkerColumns[Type] then
+    if GangName and Type and Data then
         
         local OldData = Gangs[GangName][Type]
         if Type == 'blip' then

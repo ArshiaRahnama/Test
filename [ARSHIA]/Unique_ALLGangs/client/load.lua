@@ -464,7 +464,22 @@ end
 function OpenCraftMenu()
     if KeyPressedCD then return end 
     KeyPressedCD = true SetTimeout(1500, function() KeyPressedCD =false  end)
-    TriggerEvent('For5M:OpenCraftMenu')
+    -------------------------------------------------------------------
+    -- Now gated behind a real access flag ('crafting'), matching the
+    -- same pattern already used for garage/heli/boat access. Note:
+    -- this only controls WHO can trigger 'For5M:OpenCraftMenu' - the
+    -- actual crafting UI/logic that event is meant to open isn't part
+    -- of this resource (no handler for it exists anywhere here), so
+    -- it depends on whatever separate crafting resource you pair this
+    -- with actually listening for that event.
+    -------------------------------------------------------------------
+    ESX.TriggerServerCallback('FMGangs:GetRankAccess', function(access)
+        if access['crafting'] then
+            TriggerEvent('For5M:OpenCraftMenu')
+        else
+            Notifiaction('You Dont Have Access To Crafting')
+        end
+    end)
 end 
 function OpenShopMenu()
     if KeyPressedCD then return end 

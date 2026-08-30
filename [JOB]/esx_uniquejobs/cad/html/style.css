@@ -726,6 +726,43 @@ html, body {
   color: var(--danger);
 }
 
+/* ==========================================================================
+   Global form controls
+   Any bare <input>/<select> not covered by a more specific rule (like
+   .modal-content input above) used to fall back to the browser's native
+   appearance -- a plain white box with light (--text) text color still
+   applied on top, which is illegible (this is what happened to the
+   Internal Affairs report form: white-on-white options in the category
+   dropdown). This is the dark-theme default for every form control in
+   the app; more specific selectors above/below still win where they exist.
+   ========================================================================== */
+
+input, select {
+  padding: 10px 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--text);
+  outline: none;
+  font-family: var(--font);
+  font-size: 13px;
+  transition: 150ms ease;
+}
+
+input:focus, select:focus {
+  border-color: var(--gold);
+}
+
+/* The dropdown's OPEN option list is a separate native-rendered popup in
+   FiveM's CEF -- it doesn't always inherit the select's own styling, so
+   it needs its own explicit background/color or it falls back to the
+   browser's native (light) popup with our light --text color on top,
+   same illegible-white-on-white problem as the select itself. */
+select option {
+  background: var(--bg-card);
+  color: var(--text);
+}
+
 .PrimaryButton {
   color: var(--bg-deep);
   border-radius: 5px;

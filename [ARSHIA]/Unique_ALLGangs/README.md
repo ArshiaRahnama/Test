@@ -641,6 +641,139 @@ old NUI panel is fixed by this too.
   `TriggerEvent(Config.ESX, ...)` initialization pattern used
   everywhere else.
 
+## 25) "Manage Gang Members" showed a blank search box with nothing in it
+
+Real bug in `client/boss_esx_menu.lua`, `OpenBossEmployeesMenu`: I
+assumed `FMGangs:GetGangsData`'s callback returned 6 values
+(`gangsCount, online, offline, total, top, allMembers`) - it actually
+only returns 4: `(Gangs, Expires, AllMembers, MyGangMembers)`, exactly
+matching how `client/boss.lua`'s working NUI panel already calls it.
+With the wrong signature, my `allMembers` was always `nil` (there is
+no 6th value), so the member list was always empty - the list menu's
+search bar rendered fine, just with zero rows under it, exactly what
+your screenshot showed. Fixed to use the real signature -
+`MyGangMembers` (the real 4th value) is already exactly this gang's
+member list, pre-filtered server-side, so no more indexing by gang
+name needed either.
+
+Also found and cleaned up, while re-checking every server callback
+this new menu touches: **`FMGangs:GetRankAccess` was registered
+twice** in `server/Gangs.lua` with two completely different, mutually
+incompatible behaviors (one returning a plain boolean, the other the
+real access table). `ESX.RegisterServerCallback` silently lets the
+later registration win, and the later one happened to already be the
+correct one - so this was never an active bug, but it was a landmine:
+reorder or split that file later and it could silently start returning
+the wrong thing. Removed the dead first one.
+
+## 26) Boss menu expanded: rank access (items/garage/etc.) + gang logo
+
+Added two more options to the main boss menu (`client/boss_esx_menu.lua`):
+
+- **Manage Rank Access**: pick a rank, then toggle each access flag
+  (Put/Take Items in the armory, Garage Access, Set Gang Clothes,
+  Heli/Boat Access, Boss Actions) on or off - wired to the same
+  `FMGangs:EditAccess` callback the old NUI panel's access editor
+  already used, so this is real, persisted access control, not a new
+  system.
+- **Gang Settings → Set Gang Logo**: wired to `FMGangs:UpdateGang`
+  (the same one the admin gang-edit page already used) - fetches the
+  gang's current label/expire/webhook first so only the logo actually
+  changes.
+
+**Also fixed a real security gap while wiring this up**:
+`FMGangs:EditAccess` had no permission check at all server-side - any
+client could call it directly (bypassing every menu) and grant
+itself or anyone armory/garage/boss access on any gang. It now
+requires the caller to actually be a boss (or have `bossaction`
+access) of the specific gang they're trying to edit, matching the
+same check every boss menu already gates behind.
+
+## 27) Boss menu expanded further, based on the reference gang system you shared
+
+Went through the uploaded system's full menu tree (`main.lua`/`ped.lua`)
+and ported everything that maps cleanly onto data this resource
+already has:
+
+- **Employee management restructured** to match its pattern: a
+  "Manage Gang Members" menu with **Employee List** and **Recruit**,
+  instead of jumping straight to the list.
+- **Recruit**: now a proper picker - lists online players not already
+  in your gang (new server callback,
+  `FMGangsBoss:GetRecruitablePlayers`) with a Yes/No confirm, instead
+  of the old NUI panel's "type in a server ID and hope" text box.
+- **Rename a Rank** and **Set Rank Salary**: added to Gang Settings -
+  both reuse `FMGangs:EditRank` (the same callback the old NUI rank
+  editor already used).
+- **Set Log Webhook**: added to Gang Settings, reusing `FMGangs:UpdateGang`
+  the same way Set Gang Logo already does.
+
+**What I did NOT port, and why**: the reference system also has
+Manage Vehicle Access, Manage Crafting Access, Money Laundering
+("wash money"), and owned-vehicle tracking/management. Every one of
+those depends on backend systems this resource simply doesn't have -
+a vehicle-ownership table, a crafting system, a laundering feature.
+Wiring UI buttons to those would either error out or silently do
+nothing, so I left them out rather than fake it. If you want any of
+these, they're real (if substantial) backend features to build from
+scratch on top of `Unique_ALLGangs`'s data model - happy to scope and
+build whichever ones matter most to you.
+
+**Security hardening while I was in this code**: `FMGangBoss:SetGang`
+(recruit), `FMGangs:AddRank`, `FMGangs:EditRank`, and
+`FMGangs:DeleteRank` all had **zero server-side permission checks** -
+same class of gap as `FMGangs:EditAccess` (fixed in section 26). Any
+client could call any of these directly and, for example, recruit
+themselves into any gang or rewrite any gang's ranks, bypassing every
+menu entirely. Added a shared `IsGangBossSource(source, gangName)`
+helper (`server/Gangs.lua`) and applied it to all four.
+
+## 28) Closing the gap further - what's really left after this round
+
+Went back through the reference system's full menu list against what
+this resource actually has under the hood (not just what I'd already
+wired a button to) - found some of the "missing" items were either
+already covered or genuinely buildable:
+
+- **Manage Vehicle Access - already existed**, just not labeled
+  clearly: `access['garage']` already gates the vehicle spawn menu and
+  `access['heliANDBoat']` gates heli/boat, both actively enforced in
+  `client/load.lua`. Relabeled "Garage Access" to "Garage / Vehicle
+  Access" in the Rank Access menu so this is obvious.
+- **Set Hud Icon - already covered** by "Set Gang Logo" (section 26) -
+  `Gangs[gang].logo` is the exact field `Unique_Hud` reads for the
+  gang icon (see section 4). Same feature, different name.
+- **Manage Crafting Access - now real**, not faked: found that
+  `client/load.lua` already has a crafting marker type and an
+  `OpenCraftMenu()` that fires `For5M:OpenCraftMenu` - but with zero
+  access gating, and no handler for that event anywhere in this
+  resource (crafting itself depends on a separate resource you'd pair
+  this with, same as the garage/`For5M:OpenGarage` situation below).
+  Added a real `crafting` access flag (grades table, default `false`,
+  same as every other access flag) and gated `OpenCraftMenu()` behind
+  it, matching the exact pattern already used for garage/heli. Added
+  it to the Rank Access toggle menu too.
+
+**Two items genuinely can't be ported - they don't exist anywhere in
+this codebase to attach to, not even partially:**
+
+- **Wash Money / money laundering**: zero trace anywhere - no dirty
+  money concept, no laundering table, nothing. This isn't a gap I can
+  close by wiring a button to something that already exists; it would
+  need a new feature designed from scratch (a dirty-money balance, a
+  timed laundering queue, a cut/fee rate). I don't want to guess at
+  those numbers and ship something that doesn't match what you
+  actually want - tell me the rate/timing you have in mind and I'll
+  build it.
+- **Manage Vehicles (owned gang vehicle list)**: the vehicle
+  spawn/garage flow (`For5M:OpenGarage`) has no handler anywhere in
+  this resource at all - it's designed to hand off to a separate
+  garage resource, which would be the one actually storing vehicle
+  ownership data. There's nothing in `Unique_ALLGangs`'s own tables to
+  list or manage. If you're pairing this with a specific garage
+  resource, tell me which one and I can wire a "Manage Vehicles" menu
+  to its actual vehicle-ownership data.
+
 ## Testing checklist before going live
 
 - [ ] `/openpanel` opens instantly even with several gang members online

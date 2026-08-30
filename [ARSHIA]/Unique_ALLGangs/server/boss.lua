@@ -152,6 +152,23 @@ RegisterNetEvent('FMGangBoss:SetGang', function(id)
 	local src = source
 	local Employee = ESX.GetPlayerFromId(id)
 	local Player = ESX.GetPlayerFromId(src)
+	-------------------------------------------------------------------
+	-- SECURITY FIX: no permission check at all before - any client
+	-- could call this directly and recruit ANY online player straight
+	-- into their own gang, bypassing every menu. Now requires the
+	-- caller to actually be a boss (or have bossaction access) of
+	-- their own gang, same check every other boss action already uses.
+	-------------------------------------------------------------------
+	if not Player or not Player.gang or Player.gang.name == 'nogang' or not Gangs[Player.gang.name] then
+		return TriggerClientEvent(Config.showNotification, src, "You're not in a gang.", "error")
+	end
+	local LastRank = CountTable(Gangs[Player.gang.name].grades)
+	local isBoss = Player.gang.grade == LastRank
+	local hasBossAccess = Gangs[Player.gang.name].grades[Player.gang.grade] and Gangs[Player.gang.name].grades[Player.gang.grade].access['bossaction']
+	if not isBoss and not hasBossAccess then
+		return TriggerClientEvent(Config.showNotification, src, "Insufficient authorization", "error")
+	end
+
 	if Employee then
 		TriggerEvent('For5M:SendLog', src , 'Boss Action' , 'Employee hired | +'..  Employee.name    )
 		Employee.setGang(Player.gang.name,1)
@@ -159,5 +176,26 @@ RegisterNetEvent('FMGangBoss:SetGang', function(id)
 	else
 		TriggerClientEvent(Config.showNotification, src, "Civilian not in city.", "error")
 	end
+end)
+
+-------------------------------------------------------------------
+-- Lists online players not currently in the calling player's gang -
+-- used by the "Recruit" menu (client/boss_esx_menu.lua) so the boss
+-- can pick from a list instead of typing a server ID blind.
+-------------------------------------------------------------------
+ESX.RegisterServerCallback('FMGangsBoss:GetRecruitablePlayers', function(source, cb)
+	local Player = ESX.GetPlayerFromId(source)
+	if not Player or not Player.gang then return cb({}) end
+
+	local myGang = Player.gang.name
+	local players = {}
+	local xPlayers = ESX.GetPlayers()
+	for i = 1, #xPlayers, 1 do
+		local xTarget = ESX.GetPlayerFromId(xPlayers[i])
+		if xTarget and xTarget.gang and xTarget.gang.name ~= myGang then
+			table.insert(players, { source = xTarget.source, name = xTarget.name })
+		end
+	end
+	cb(players)
 end)
 

@@ -68,21 +68,47 @@ end)
 
 RegisterNetEvent('unique_clothestore:wearClotheItem')
 AddEventHandler('unique_clothestore:wearClotheItem', function(clotheType, drawable, texture)
+    print(('^3[unique_clothestore CLIENT DEBUG] wearClotheItem received: clotheType=%s drawable=%s texture=%s^0'):format(tostring(clotheType), tostring(drawable), tostring(texture)))
+
     local slot
     for _, s in ipairs(ClotheItemSlots) do
         if s.type == clotheType then slot = s break end
     end
-    if not slot then return end
+    if not slot then
+        print(('^1[unique_clothestore CLIENT DEBUG] ABORTED: no matching slot found for clotheType "%s"^0'):format(tostring(clotheType)))
+        return
+    end
 
-    local ped = PlayerPedId()
     local componentIds = { tshirt = 8, torso = 11, arms = 3, decals = 10, pants = 4, shoes = 6, mask = 1, bproof = 9, chain = 7, bags = 5 }
     local propIds = { helmet = 0, glasses = 1, watches = 6, bracelets = 7, ears = 2 }
 
-    if slot.prop then
-        SetPedPropIndex(ped, propIds[clotheType], drawable, texture, true)
-    else
-        SetPedComponentVariation(ped, componentIds[clotheType], drawable, texture, 2)
+    -- Apply it now, and once more shortly after on the next tick. Some
+    -- other system (spawn/loading screen finishing, esx_skin re-syncing
+    -- right after a menu closes, etc.) can silently re-apply the ped's
+    -- last saved appearance a moment after this fires, which would make
+    -- a real, successful change look like "nothing happened". Re-applying
+    -- a beat later guards against that without hurting anything if it
+    -- wasn't actually needed.
+    local function apply()
+        local ped = PlayerPedId()
+        if slot.prop then
+            SetPedPropIndex(ped, propIds[clotheType], drawable, texture, true)
+        else
+            SetPedComponentVariation(ped, componentIds[clotheType], drawable, texture, 2)
+        end
+        return ped
     end
+
+    apply()
+
+    CreateThread(function()
+        Wait(500)
+        local ped = apply()
+        print(('^2[unique_clothestore CLIENT DEBUG] Re-applied after 500ms. Ped model: %s. Drawable now reads back as: %s^0'):format(
+            tostring(GetEntityModel(ped)),
+            tostring(slot.prop and GetPedPropIndex(ped, propIds[clotheType]) or GetPedDrawableVariation(ped, componentIds[clotheType]))
+        ))
+    end)
 
     if Config.SkinManager == 'esx_skin' then
         TriggerEvent('skinchanger:getSkin', function(skin)

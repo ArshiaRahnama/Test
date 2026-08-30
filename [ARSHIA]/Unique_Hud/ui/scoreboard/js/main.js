@@ -53,8 +53,6 @@ function buildOrgList() {
       '<span><span class="org-count" id="org-count-' + org.key + '">0</span> ' +
       '<span class="org-arrow">▶</span></span>';
 
-    // ✅ آکاردئون: کلیک روی یه ارگان، بقیه رو می‌بنده - پس همیشه حداکثر یکی
-    // باز می‌مونه و پنل کشیده/بلند نمی‌شه.
     header.addEventListener('click', function () {
       var wasExpanded = card.classList.contains('expanded');
       document.querySelectorAll('.org-card.expanded').forEach(function (c) {
@@ -86,7 +84,6 @@ function renderScoreboard(data) {
   var playersEl = document.getElementById('playersnum');
   if (playersEl) playersEl.textContent = data.total;
 
-  // ✅ اضافه شد: تعداد ادمین‌های آنلاین
   var adminsEl = document.getElementById('adminsnum');
   if (adminsEl) adminsEl.textContent = (data.admins && data.admins.length) || 0;
 
@@ -115,12 +112,10 @@ window.addEventListener('message', function (event) {
   if (!item || item.id !== 'scoreboard') return;
 
   if (item.event === 'toggle') {
-    var wrap = document.getElementById('wrap');
+    var wrap = document.getElementById('uh-sb-wrap');
     if (!wrap) return;
     if (item.open) {
       wrap.style.display = 'block';
-      // یه فریم صبر می‌کنیم تا display:block واقعاً اعمال بشه، بعد کلاس رو
-      // اضافه می‌کنیم که transition (fade+scale) واقعاً پخش بشه.
       requestAnimationFrame(function () {
         wrap.classList.add('uh-visible');
       });
