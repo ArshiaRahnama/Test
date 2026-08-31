@@ -95,25 +95,6 @@ Citizen.CreateThread(function()
 	AddEventHandler('society:customVehiclesUpdated', mergeCustomVehicles)
 end)
 
--- /dduty and /dlist (from esx_society) — only react if we're currently on the taxi job.
-RegisterNetEvent('esx_society:dutyToggleRequested')
-AddEventHandler('esx_society:dutyToggleRequested', function()
-	if ESX.PlayerData.job and ESX.PlayerData.job.name == 'taxi' then
-		if OnJob then
-			StopTaxiJob_taxi()
-		else
-			StartTaxiJob_taxi()
-		end
-	end
-end)
-
-RegisterNetEvent('esx_society:requestListRequested')
-AddEventHandler('esx_society:requestListRequested', function()
-	if ESX.PlayerData.job and ESX.PlayerData.job.name == 'taxi' then
-		OpenReqsList_taxi()
-	end
-end)
-
 RegisterNetEvent("esx:setJob")
 AddEventHandler("esx:setJob", function(job)
 	PlayerData.job = job

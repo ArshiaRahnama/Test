@@ -14,6 +14,15 @@ body {
   bottom: -70%;
   /* bottom: 0%; */
   right: 5vh;
+  /* EXPANSION: smoother open/close — fades alongside the existing
+     bottom-position slide (see MI.Phone.Animations.BottomSlideUp/Down
+     and Open()/Close() in app.js, which now toggle .phone-fade-out). */
+  opacity: 1;
+  transition: opacity .28s ease;
+}
+
+.container.phone-fade-out {
+  opacity: 0;
 }
 /*  */
 
@@ -111,17 +120,139 @@ body {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   EXPANSION: purely additive visual polish for the whole phone frame —
+   EXPANSION: lock screen (clock/date/weather widgets) — shown on top of
+   everything else every time the phone opens.
+   ═══════════════════════════════════════════════════════════ */
+
+.phone-lockscreen {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 600;
+    background:
+        linear-gradient(180deg, rgba(0,0,0,.35) 0%, rgba(0,0,0,.15) 40%, rgba(0,0,0,.55) 100%);
+    backdrop-filter: blur(.3vh);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: opacity .35s ease, transform .35s ease;
+}
+
+.phone-lockscreen.lockscreen-hidden {
+    opacity: 0;
+    transform: translateY(-100%);
+    pointer-events: none;
+}
+
+.lockscreen-datetime {
+    text-align: center;
+    color: white;
+    text-shadow: 0 .2vh 1vh rgba(0, 0, 0, 0.6);
+}
+
+.lockscreen-clock {
+    font-family: 'Samsung Sans Bold', sans-serif;
+    font-size: 6.5vh;
+    line-height: 1;
+    letter-spacing: .1vh;
+}
+
+.lockscreen-date {
+    font-family: 'Samsung Sans Regular', sans-serif;
+    font-size: 1.3vh;
+    margin-top: .6vh;
+    opacity: .85;
+}
+
+.lockscreen-weather {
+    display: flex;
+    align-items: center;
+    gap: .7vh;
+    margin-top: 2.2vh;
+    padding: .8vh 1.6vh;
+    border-radius: 3vh;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: white;
+}
+
+.lockscreen-weather i {
+    font-size: 1.4vh;
+    color: var(--phone-accent, #00c9a7);
+}
+
+.lockscreen-weather span {
+    font-family: 'Samsung Sans Regular', sans-serif;
+    font-size: 1.05vh;
+}
+
+.lockscreen-swipe-hint {
+    position: absolute;
+    bottom: 3vh;
+    left: 0;
+    width: 100%;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.65);
+    font-family: 'Samsung Sans Regular', sans-serif;
+    font-size: 0.95vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: .3vh;
+    animation: lockscreenBounce 1.8s ease-in-out infinite;
+}
+
+@keyframes lockscreenBounce {
+    0%, 100% { transform: translateY(0); opacity: .65; }
+    50% { transform: translateY(-.6vh); opacity: 1; }
+}
    no existing rule above is modified, so no app's layout/JS logic is
    touched. Just an ambient glow, a subtle glass bezel, and a nicer status
    bar, applied on top of what's already there.
    ═══════════════════════════════════════════════════════════ */
 
+:root {
+  /* EXPANSION: accent theme color, changed live by applyPhoneTheme() in
+     app.js. Only the OS-level chrome + lock screen + new components below
+     respond to this — the many individually-colored existing apps (Bank,
+     Security, Services, ...) keep their own established color schemes,
+     since re-theming every hardcoded color across the whole phone would
+     be a much bigger, riskier pass than this one. */
+  --phone-accent: #00c9a7;
+}
+
 .phone-container {
   box-shadow:
     0 0 4vh rgba(0, 0, 0, 0.5),
-    0 0 2.2vh rgba(80, 170, 255, 0.18);
+    0 0 2.2vh color-mix(in srgb, var(--phone-accent) 35%, transparent);
   border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: border-color .25s ease, border-width .25s ease,
+              transform .3s cubic-bezier(.34, 1.56, .64, 1);
+}
+
+/* EXPANSION: swappable phone case — border color/width set inline by
+   applyPhoneCase() in app.js; this just gives the change a nicer feel. */
+.phone-container.phone-has-case {
+  box-shadow:
+    0 0 4vh rgba(0, 0, 0, 0.55),
+    0 0 1.5vh rgba(0, 0, 0, 0.4),
+    0 0 2.2vh color-mix(in srgb, var(--phone-accent) 35%, transparent);
+}
+
+/* EXPANSION: One-Hand Mode — shrinks the phone and pulls it toward the
+   corner it's already anchored to (bottom-right), for quicker/easier use.
+   Uses transform:scale (NOT width/height) — every app in this phone sizes
+   itself with vh/vw units, which are relative to the browser VIEWPORT, not
+   to .phone-container. Shrinking via width/height alone would just clip
+   content instead of scaling it down; transform:scale visually shrinks
+   the whole already-rendered phone as one unit, so every app's layout
+   stays perfectly proportional with zero per-app changes needed. */
+.phone-container.phone-onehand {
+  transform: scale(0.72);
+  transform-origin: bottom right;
 }
 
 /* Subtle diagonal glass sheen across the whole screen — decorative only,

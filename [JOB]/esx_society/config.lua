@@ -821,7 +821,7 @@ Config.PermissionGroups = {
 -- request-list menu for each job's own resource. taxi/mechanic/ambulance already
 -- have full request systems in esx_uniquejobs; weazel has its own in esx_weazeljob.
 Config.DispatchJobs = {'taxi', 'mechanic', 'ambulance'}
--- Jobs that use a real FIFO duty queue (see esx_society server). New requests
--- created in esx_uniquejobs get offered to the front of this queue first.
--- taxi is NOT here: it already has its own local on/off flag (OnJob).
-Config.DispatchQueueJobs = {'mechanic', 'ambulance'}
+-- All three use the same real FIFO duty queue (see esx_society server). New
+-- requests get auto-accepted for whoever's been waiting longest in the queue.
+Config.DispatchQueueJobs = {'taxi', 'mechanic', 'ambulance'}
+Config.DispatchOfferTimeout = 15000 -- ms a queued worker has to accept/decline before it moves to the next person

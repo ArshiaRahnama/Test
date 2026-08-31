@@ -147,6 +147,12 @@ server_scripts {
 
 ui_page 'ui.html'
 
+server_exports {
+	'AcceptRequest_taxi',
+	'AcceptRequest_mechanic',
+	'AcceptRequest_ambulance',
+}
+
 files {
 	'ui.html',
 

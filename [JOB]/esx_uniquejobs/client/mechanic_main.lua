@@ -139,15 +139,6 @@ Citizen.CreateThread(function()
 	AddEventHandler('society:customVehiclesUpdated', mergeCustomVehicles)
 end)
 
--- /dlist (from esx_society) — only react if we're currently on the mechanic job.
--- Mechanic has no separate on/off duty toggle, so /dduty does nothing here.
-RegisterNetEvent('esx_society:requestListRequested')
-AddEventHandler('esx_society:requestListRequested', function()
-	if ESX.PlayerData.job and ESX.PlayerData.job.name == 'mechanic' then
-		OpenReqsList_mechanic()
-	end
-end)
-
 function OpenheliSpawnerMenu_mechanic(station)
 	local vehicles = Config_mechanic.Zones.MechanicActions.Helicopters
 	ESX.UI.Menu.CloseAll()

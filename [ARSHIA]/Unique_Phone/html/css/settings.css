@@ -641,3 +641,111 @@ input:checked + .sliderfly:before {
 .sliderfly.roundfly:before {
     border-radius: 50%;
 }
+
+/* ═══════════════════════════════════════════════════════════
+   EXPANSION: appearance section — accent theme + phone case pickers.
+   ═══════════════════════════════════════════════════════════ */
+
+.settings-appearance-section {
+    position: relative;
+    width: 90%;
+    margin: 2vh auto 0;
+    padding-bottom: 3vh;
+}
+
+.settings-section-title {
+    color: white;
+    font-family: 'Samsung Sans Bold', sans-serif;
+    font-size: 1.2vh;
+    margin: 2vh 0 1vh;
+    display: flex;
+    align-items: center;
+    gap: .6vh;
+}
+
+.settings-section-title i {
+    color: var(--phone-accent, #00c9a7);
+}
+
+.theme-swatch-row {
+    display: flex;
+    gap: 1.2vh;
+    flex-wrap: wrap;
+}
+
+.theme-swatch {
+    width: 4vh;
+    height: 4vh;
+    border-radius: 50%;
+    cursor: pointer;
+    border: .25vh solid transparent;
+    box-shadow: 0 .3vh 1vh rgba(0, 0, 0, 0.3);
+    transition: transform .12s ease, border-color .12s ease;
+}
+
+.theme-swatch:hover {
+    transform: scale(1.1);
+}
+
+.theme-swatch-active {
+    border-color: white;
+    transform: scale(1.12);
+}
+
+.case-swatch-row {
+    display: flex;
+    flex-direction: column;
+    gap: .8vh;
+}
+
+.case-swatch {
+    display: flex;
+    align-items: center;
+    gap: 1vh;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 1.2vh;
+    padding: .9vh 1.1vh;
+    cursor: pointer;
+    transition: border-color .12s ease, background .12s ease;
+}
+
+.case-swatch:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.case-swatch-active {
+    border-color: var(--phone-accent, #00c9a7);
+    background: rgba(255, 255, 255, 0.09);
+}
+
+.case-swatch-color {
+    width: 3vh;
+    height: 3vh;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    flex: 0 0 auto;
+}
+
+.case-swatch-label {
+    flex: 1;
+    color: white;
+    font-family: 'Samsung Sans Regular', sans-serif;
+    font-size: 1.05vh;
+}
+
+.case-price {
+    color: rgb(150, 150, 150);
+    font-family: 'Samsung Sans Bold', sans-serif;
+    font-size: 0.95vh;
+}
+
+.case-purchase-msg {
+    font-family: 'Samsung Sans Regular', sans-serif;
+    font-size: 0.95vh;
+    text-align: center;
+    margin-top: 1vh;
+}
+
+.case-msg-ok { color: #00e0bb; }
+.case-msg-error { color: #ff6b6b; }

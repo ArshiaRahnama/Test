@@ -307,7 +307,20 @@ $(document).on('click', '.phone-home-container', function(event){
 });
 
 MI.Phone.Functions.Open = function(data) {
+    // EXPANSION: show the lock screen fresh every time the phone opens.
+    $("#phone-lockscreen").removeClass("lockscreen-hidden");
+
+    // EXPANSION: smoother open — start invisible, then fade in while the
+    // existing slide-up runs (double rAF makes sure the browser paints the
+    // opacity:0 starting state before we transition it, otherwise the
+    // fade can get skipped/batched away).
+    $('.container').addClass('phone-fade-out');
     MI.Phone.Animations.BottomSlideUp('.container', 300, 0);
+    requestAnimationFrame(function() {
+        requestAnimationFrame(function() {
+            $('.container').removeClass('phone-fade-out');
+        });
+    });
     MI.Phone.Notifications.LoadTweets(data.Tweets);
     MI.Phone.Data.IsOpen = true;
 }
@@ -348,6 +361,10 @@ MI.Phone.Functions.Close = function() {
         $(".meos-recent-alert").css({"background-color":"#004682"}); 
     }
 
+    // EXPANSION: smoother close — fade out in parallel with the existing
+    // slide-down (the slide-down's own callback still hides display:none
+    // afterward, so nothing double-fires).
+    $('.container').addClass('phone-fade-out');
     MI.Phone.Animations.BottomSlideDown('.container', 300, -70);
     $.post('http://Unique_Phone/Close');
     MI.Phone.Data.IsOpen = false;
@@ -449,6 +466,15 @@ MI.Phone.Functions.LoadPhoneData = function(data) {
     MI.Phone.Data.PlayerData = data.PlayerData;
     MI.Phone.Data.PlayerJob = data.PlayerJob;
     MI.Phone.Data.MetaData = data.PhoneData.MetaData;
+
+    // EXPANSION: appearance option lists (rendered as pickers in Settings —
+    // see renderThemeAndCasePickers in settings.js) + persisted one-hand
+    // mode preference.
+    PhoneThemesConfig = data.phoneThemes || [];
+    PhoneCasesConfig = data.phoneCases || [];
+    applyOneHandMode(!!data.oneHandMode);
+    renderThemeAndCasePickers();
+
     MI.Phone.Functions.LoadMetaData(data.PhoneData.MetaData);
     MI.Phone.Functions.LoadContacts(data.PhoneData.Contacts);
 
@@ -458,6 +484,8 @@ MI.Phone.Functions.LoadPhoneData = function(data) {
     PhoneDoNotDisturb = !!data.doNotDisturb;
     $(".dnd-box").prop("checked", PhoneDoNotDisturb);
     $("#donotdisturb > p").html(PhoneDoNotDisturb ? 'On' : 'Off');
+    $(".onehand-box").prop("checked", PhoneOneHandMode);
+    $("#onehandmode > p").html(PhoneOneHandMode ? 'On' : 'Off');
 
     setTimeout(function() {
        
@@ -501,6 +529,14 @@ MI.Phone.Functions.UpdateTime = function(data) {
     
     var MessageTime = Hourssssss + ":" + Minutessss;
     $("#phone-time").html(MessageTime);
+
+    // EXPANSION: mirror the same clock onto the lock screen, and stamp a
+    // date alongside it (the date only really needs to change once a
+    // day, but re-setting it every tick is cheap and keeps this simple).
+    $("#lockscreen-clock").html(MessageTime);
+    var weekday = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][TehranTime.getUTCDay()];
+    var monthName = ["January","February","March","April","May","June","July","August","September","October","November","December"][TehranTime.getUTCMonth()];
+    $("#lockscreen-date").html(weekday + ", " + monthName + " " + TehranTime.getUTCDate());
 }
 
 var NotificationTimeout = null;
@@ -512,6 +548,48 @@ var NotificationTimeout = null;
 // either of these, so on-duty officers with DND on won't silently miss a
 // dispatch, only the passive slide-down popups for other stuff).
 var PhoneDoNotDisturb = false;
+
+// EXPANSION: appearance customization — accent theme, phone case, and
+// one-hand mode. Config lists come down once in LoadPhoneData; current
+// selections are applied via CSS classes/variables so no per-app CSS file
+// had to be touched to support them.
+var PhoneThemesConfig = [];
+var PhoneCasesConfig = [];
+var PhoneOneHandMode = false;
+
+function applyPhoneTheme(themeId) {
+    var theme = null;
+    $.each(PhoneThemesConfig, function(i, t) { if (t.id === themeId) theme = t; });
+    if (!theme) return;
+    document.documentElement.style.setProperty('--phone-accent', theme.color);
+    $(".theme-swatch").removeClass("theme-swatch-active");
+    $(".theme-swatch[data-theme='" + themeId + "']").addClass("theme-swatch-active");
+}
+
+function applyPhoneCase(caseId) {
+    var phoneCase = null;
+    $.each(PhoneCasesConfig, function(i, c) { if (c.id === caseId) phoneCase = c; });
+
+    if (phoneCase && phoneCase.color && phoneCase.color !== "transparent") {
+        $(".phone-container").css({
+            "border-color": phoneCase.color,
+            "border-width": "0.5vh"
+        }).addClass("phone-has-case");
+    } else {
+        // "None" (or unknown) case — remove the inline override so the
+        // subtle default glass border (set in the base .phone-container
+        // rule) shows through instead of a colored case frame.
+        $(".phone-container").css({ "border-color": "", "border-width": "" }).removeClass("phone-has-case");
+    }
+
+    $(".case-swatch").removeClass("case-swatch-active");
+    $(".case-swatch[data-case='" + caseId + "']").addClass("case-swatch-active");
+}
+
+function applyOneHandMode(enabled) {
+    PhoneOneHandMode = enabled;
+    $(".phone-container").toggleClass("phone-onehand", enabled);
+}
 
 // EXPANSION: purely cosmetic display formatter (0911XXXXXXX -> 0911-XXX-XXXX).
 // The underlying stored/looked-up value is never touched — see
@@ -685,6 +763,9 @@ $(document).ready(function(){
                 break;
             case "AddPoliceAlert":
                 AddPoliceAlert(event.data)
+                break;
+            case "UpdateWeather":
+                UpdateWeatherWidget(event.data.weather);
                 break;
             case "UpdateApplications":
                 
@@ -868,4 +949,38 @@ copyMyPhoneNumber = () =>{
     document.body.removeChild(elem);
   
     MI.Phone.Notifications.Add("fas fa-clipboard", "Copy Phone Number", "Success", "#93BFCF", 5000);
+}
+// EXPANSION: tap/click anywhere on the lock screen to dismiss it and
+// reveal the home screen underneath.
+$(document).on('click', '#phone-lockscreen', function() {
+    $(this).addClass('lockscreen-hidden');
+});
+
+// EXPANSION: weather widget (lock screen) — see client/main.lua, which
+// listens for vSync's own broadcast event and forwards it here. No
+// changes were made to vSync itself; this only listens to what it
+// already announces.
+var WEATHER_ICON_MAP = {
+    EXTRASUNNY: "fas fa-sun",
+    CLEAR:      "fas fa-sun",
+    CLEARING:   "fas fa-cloud-sun",
+    CLOUDS:     "fas fa-cloud",
+    OVERCAST:   "fas fa-cloud",
+    RAIN:       "fas fa-cloud-rain",
+    THUNDER:    "fas fa-bolt",
+    FOGGY:      "fas fa-smog",
+    SMOG:       "fas fa-smog",
+    SNOW:       "fas fa-snowflake",
+    BLIZZARD:   "fas fa-snowflake",
+    SNOWLIGHT:  "fas fa-snowflake",
+    XMAS:       "fas fa-snowflake",
+    HALLOWEEN:  "fas fa-cloud-moon",
+};
+
+function UpdateWeatherWidget(weatherType) {
+    var icon = WEATHER_ICON_MAP[weatherType] || "fas fa-cloud-sun";
+    var label = weatherType ? weatherType.charAt(0) + weatherType.slice(1).toLowerCase() : "Unknown";
+    $("#lockscreen-weather-icon").attr("class", icon);
+    $("#lockscreen-weather-label").text(label);
+    $("#lockscreen-weather").css("display", "flex");
 }

@@ -1445,14 +1445,24 @@ AddEventHandler('esx_society:togglePermKey', function(grade, key, state)
 	end)
 end)
 
--- ===== Dispatch Duty Queue (/dduty, /dlist) — mechanic/ambulance =====
+-- ===== Dispatch Duty Queue (/dduty, /dlist) — taxi/mechanic/ambulance =====
 -- Real FIFO queue: workers join via /dduty. When esx_uniquejobs creates a new
--- request (mechanic/ambulance), it calls exports.esx_society:popNextInQueue(job)
--- to get whoever's been waiting longest, pushes it straight into their F6
--- Request List, and requeues them at the back so the next request goes to
--- someone else. The request stays visible to everyone else too (unchanged),
--- this queue only controls who gets proactively notified/opened first.
+-- request, it calls exports.esx_society:offerToQueue(job, reqid) which offers
+-- the request to whoever's been waiting longest with a Yes/No prompt and a
+-- timeout. On accept, the matching AcceptRequest_<job> export in esx_uniquejobs
+-- is called for them. On decline OR no response (AFK), they're dropped from
+-- the queue entirely — they have to run /dduty again to rejoin — and the next
+-- person in line gets offered the same request. If the queue runs out, the
+-- caller's own offerToQueue return value is false so it can fall back to its
+-- normal broadcast-to-everyone flow.
 local DispatchQueue = {} -- [job] = { source1, source2, ... }
+local PendingOffer  = {} -- [job] = { worker = source, reqid = reqid }
+
+local AcceptExportName = {
+	['taxi']      = 'AcceptRequest_taxi',
+	['mechanic']  = 'AcceptRequest_mechanic',
+	['ambulance'] = 'AcceptRequest_ambulance',
+}
 
 local function isDispatchJob(job)
 	for _, j in ipairs(Config.DispatchQueueJobs) do
@@ -1484,6 +1494,11 @@ AddEventHandler('playerDropped', function()
 	local source = source
 	for job, _ in pairs(DispatchQueue) do
 		removeFromDispatchQueue(job, source)
+	end
+	for job, offer in pairs(PendingOffer) do
+		if offer.worker == source then
+			PendingOffer[job] = nil
+		end
 	end
 end)
 
@@ -1528,18 +1543,60 @@ ESX.RegisterServerCallback('esx_society:getDispatchList', function(source, cb)
 	})
 end)
 
--- Pops whoever's been waiting longest in that job's queue and puts them at the
--- back (so the next request rotates to someone else). Returns nil if nobody's
--- on duty — callers should fall back to their normal broadcast-to-everyone flow.
-exports('popNextInQueue', function(job)
-	if not DispatchQueue[job] or #DispatchQueue[job] == 0 then
-		return nil
+local offerNext -- forward declare
+
+offerNext = function(job, reqid)
+	DispatchQueue[job] = DispatchQueue[job] or {}
+	local worker = table.remove(DispatchQueue[job], 1)
+
+	if not worker then
+		PendingOffer[job] = nil
+		return false
 	end
 
-	local worker = table.remove(DispatchQueue[job], 1)
-	table.insert(DispatchQueue[job], worker) -- rotate to the back
+	PendingOffer[job] = { worker = worker, reqid = reqid }
+	TriggerClientEvent('esx_society:dispatchOffer', worker, job)
 
-	return worker
+	SetTimeout(Config.DispatchOfferTimeout, function()
+		local offer = PendingOffer[job]
+		if offer and offer.worker == worker and offer.reqid == reqid then
+			PendingOffer[job] = nil
+			TriggerClientEvent('esx:showNotification', worker, 'Dispatch: ~r~Timeout~s~ - Az Saf Kharej Shodid')
+			offerNext(job, reqid)
+		end
+	end)
+
+	return true
+end
+
+-- Called by esx_uniquejobs when a new request is created. Returns true if it
+-- was offered to someone (an accept/decline is now in flight), false if the
+-- queue was empty (caller should fall back to broadcasting to everyone).
+exports('offerToQueue', function(job, reqid)
+	return offerNext(job, reqid)
+end)
+
+RegisterServerEvent('esx_society:dispatchOfferRespond')
+AddEventHandler('esx_society:dispatchOfferRespond', function(job, accepted)
+	local source = source
+	local offer = PendingOffer[job]
+
+	if not offer or offer.worker ~= source then
+		return -- stale/duplicate response, ignore
+	end
+
+	local reqid = offer.reqid
+	PendingOffer[job] = nil
+
+	if accepted then
+		local fnName = AcceptExportName[job]
+		if fnName then
+			exports['esx_uniquejobs'][fnName](exports['esx_uniquejobs'], source, reqid)
+		end
+	else
+		TriggerClientEvent('esx:showNotification', source, 'Dispatch: ~r~Rad Shod~s~ - Az Saf Kharej Shodid')
+		offerNext(job, reqid)
+	end
 end)
 
 -- ===== Live job vehicle catalog (addcarjob / DeleteCar) =====

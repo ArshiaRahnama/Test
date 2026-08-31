@@ -688,7 +688,8 @@ AddEventHandler("esx_ambulancejob:addreq", function(reason)
 			return
 		end
 		local name = string.gsub(xPlayer.name, "_", " ")
-		reqs[tostring(rcount)] = {
+		local newReqId = tostring(rcount)
+		reqs[newReqId] = {
 			owner = {
 			identifier = identifier,
 			name = name,
@@ -706,14 +707,12 @@ AddEventHandler("esx_ambulancejob:addreq", function(reason)
 		rcount = rcount + 1
 		TriggerClientEvent('esx:showNotification', source, "Darkhast Shoma Baraye Ambulance Ersal Shod!")
 
-		-- Try the dispatch duty queue first (esx_society /dduty). If someone's
-		-- waiting, push the request straight into their F6 Request List.
-		local assignedWorker = exports['esx_society']:popNextInQueue('ambulance')
+		-- Try the dispatch duty queue first (esx_society /dduty). Offers the
+		-- request to whoever's been waiting longest with a Yes/No prompt; if
+		-- they decline or don't answer in time it moves to the next person.
+		local wasOffered = exports['esx_society']:offerToQueue('ambulance', newReqId)
 
-		if assignedWorker then
-			TriggerClientEvent('esx:showNotification', assignedWorker, "DarKhast Jadid Baraye Shoma Ersal Shod!")
-			TriggerClientEvent('esx_society:requestListRequested', assignedWorker)
-		else
+		if not wasOffered then
 			local xPlayers = ESX.GetPlayers()
 			for i=1, #xPlayers do
 				local xPlayer = ESX.GetPlayerFromId(xPlayers[i])
@@ -751,9 +750,7 @@ AddEventHandler("esx_ambulancejob:creqs", function(id)
 
 end)
 
-RegisterServerEvent("esx_ambulancejob:areqs")
-AddEventHandler("esx_ambulancejob:areqs", function(id)
-	local reqid = id
+function AcceptRequest_ambulance(source, reqid)
 	local xPlayer = ESX.GetPlayerFromId(source)
 	if xPlayer.job.name == "ambulance" then
 		local identifier = GetPlayerIdentifier(source)
@@ -798,6 +795,11 @@ AddEventHandler("esx_ambulancejob:areqs", function(id)
 	else
 		TriggerClientEvent('chatMessage', source, "[SYSTEM]", {255, 0, 0}, " ^0Shoma Dastresi Kafi Baraye Estefade Az In Dastor Ra Nadarid")
 	end
+end
+
+RegisterServerEvent("esx_ambulancejob:areqs")
+AddEventHandler("esx_ambulancejob:areqs", function(id)
+	AcceptRequest_ambulance(source, id)
 end)
 
 RegisterServerEvent("esx_ambulancejob:decline")

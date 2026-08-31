@@ -86,17 +86,20 @@ end)
 ---------- CID EVIDENCE REFERRAL --------
 ----------------------------------------
 -- One persistent evidence "case" per field zone (not one per harvest -- every pickup at the
--- same field just adds to the same case's count). The case stays on DOA's map, always visible,
--- until either DOA collects it (E) or it goes Config.Evidence.InactivityTimeout with no new
--- activity. First detection at a field fires a DOA-only siren-blip alert (Unique_AllRobs); later
--- pickups at that same field quietly bump the counter without re-alerting (no notification spam).
+-- same field just adds to the same case, tracking who did it, their gang, and how many times).
+-- The case stays open (visible to DOA via the field's investigator ped) until either DOA
+-- collects it or it goes Config.Evidence.InactivityTimeout with no new activity. First
+-- detection at a field fires a DOA-only siren-blip alert (Unique_AllRobs); later pickups at
+-- that same field quietly add to the case without re-alerting (no notification spam).
 -- Newly-connecting/newly-transferred DOA officers get synced with every currently open case.
-local EvidenceSites = {} -- [fieldKey] = { coords, label, count, lastActivity }
+local EvidenceSites = {} -- [fieldKey] = { coords, label, count, lastActivity, players = { [identifier] = {name, gang, count} } }
 
 function BroadcastEvidenceSite(fieldKey, targetSource)
 	local site = EvidenceSites[fieldKey]
 	if not site then return end
 
+	-- Only the summary (no suspect names) goes out to every DOA client for the map/ped state;
+	-- the full suspect breakdown is only ever sent to the officer who actually collects it.
 	local payload = {id = fieldKey, coords = site.coords, label = site.label, count = site.count}
 
 	if targetSource then
@@ -132,21 +135,36 @@ function SyncEvidenceToPlayer(targetSource)
 	end
 end
 
-function ReportEvidence(fieldKey, coords, drugLabel)
-	local site = EvidenceSites[fieldKey]
+function ReportEvidence(fieldKey, coords, drugLabel, xPlayer)
+	local identifier = xPlayer.identifier
+	local playerName = GetPlayerName(xPlayer.source)
+	local gangName = (xPlayer.gang and xPlayer.gang.name and xPlayer.gang.name ~= 'none') and xPlayer.gang.name or 'Bedoone Gang'
 
-	if site then
-		site.count = site.count + 1
-		site.lastActivity = GetGameTimer()
-		BroadcastEvidenceSite(fieldKey)
-	else
+	local isNewSite = EvidenceSites[fieldKey] == nil
+
+	if isNewSite then
 		EvidenceSites[fieldKey] = {
 			coords       = coords,
 			label        = drugLabel,
-			count        = 1,
+			count        = 0,
 			lastActivity = GetGameTimer(),
+			players      = {},
 		}
-		BroadcastEvidenceSite(fieldKey)
+	end
+
+	local site = EvidenceSites[fieldKey]
+	site.count = site.count + 1
+	site.lastActivity = GetGameTimer()
+
+	if site.players[identifier] then
+		site.players[identifier].count = site.players[identifier].count + 1
+	else
+		site.players[identifier] = {name = playerName, gang = gangName, count = 1}
+	end
+
+	BroadcastEvidenceSite(fieldKey)
+
+	if isNewSite then
 		exports['Unique_AllRobs']:AlertPolice(coords, ('Faaliate Mashkook: %s'):format(drugLabel), Config.Evidence.AlertDuration, Config.Evidence.AlertRadius, {'doa'})
 	end
 end
@@ -176,6 +194,9 @@ AddEventHandler('esx:setJob', function(playerId, job, lastJob)
 	end
 end)
 
+-- Triggered from the field investigator ped (client: ox_target option). Reveals the FULL
+-- suspect breakdown (name, gang, how many times each person farmed there, worst offender
+-- first) to the collecting officer, refers the same detail to CID, and logs it to Discord.
 RegisterServerEvent('esx_drugs:collectEvidence')
 AddEventHandler('esx_drugs:collectEvidence', function(fieldKey)
 	local _source = source
@@ -189,14 +210,21 @@ AddEventHandler('esx_drugs:collectEvidence', function(fieldKey)
 		return
 	end
 
-	if not IsPlayerNearCoords(_source, site.coords, Config.Evidence.CollectRadius) then
+	if not IsPlayerNearCoords(_source, site.coords, Config.Evidence.PedInteractRadius) then
 		return
 	end
+
+	local suspects = {}
+	for identifier, info in pairs(site.players) do
+		table.insert(suspects, {name = info.name, gang = info.gang, count = info.count})
+	end
+	table.sort(suspects, function(a, b) return a.count > b.count end)
 
 	RemoveEvidenceSite(fieldKey)
 
 	local streetHash = GetStreetNameAtCoord(site.coords.x, site.coords.y, site.coords.z)
 	local streetName = GetStreetNameFromHashKey(streetHash)
+	local topSuspect = suspects[1]
 
 	local xPlayers = ESX.GetPlayers()
 	for i=1, #xPlayers, 1 do
@@ -205,12 +233,30 @@ AddEventHandler('esx_drugs:collectEvidence', function(fieldKey)
 			TriggerClientEvent('chat:addMessage', xPlayers[i], {
 				color = {0, 95, 254},
 				multiline = true,
-				args = {'[ CID Referral ]', ('Parvandeye %s dar %s (%s bar bardasht shode) - jam-avari shode tavasote %s'):format(site.label, streetName, site.count, GetPlayerName(_source))}
+				args = {'[ CID Referral ]', ('Parvandeye %s dar %s (%s mored) - bishtarin farm: %s (Gang: %s, %s bar) - jam-avari tavasote %s'):format(
+					site.label, streetName, site.count,
+					topSuspect and topSuspect.name or 'Namoshakhas',
+					topSuspect and topSuspect.gang or 'N/A',
+					topSuspect and topSuspect.count or 0,
+					GetPlayerName(_source))}
 			})
 		end
 	end
 
-	TriggerEvent('DiscordBot:ToDiscord', 'adminmenu', 'CIDReferralLog', '```css\n[ DOA -> CID Evidence Referral ]\n[ Type : '..tostring(site.label)..' ]\n[ Location : '..tostring(streetName)..' ]\n[ Harvest Count : '..tostring(site.count)..' ]\n[ Collected By : '..GetPlayerName(_source)..' ]\n```', 'user', true, _source, false)
+	local reportLines = {}
+	for i, entry in ipairs(suspects) do
+		table.insert(reportLines, i..'. '..entry.name..' | Gang: '..entry.gang..' | Farm Count: '..entry.count)
+	end
+
+	TriggerEvent('DiscordBot:ToDiscord', 'adminmenu', 'CIDReferralLog', '```css\n[ DOA -> CID Evidence Referral ]\n[ Type : '..tostring(site.label)..' ]\n[ Location : '..tostring(streetName)..' ]\n[ Total Harvests : '..tostring(site.count)..' ]\n[ Collected By : '..GetPlayerName(_source)..' ]\n[ Suspects ]\n'..table.concat(reportLines, '\n')..'\n```', 'user', true, _source, false)
+
+	TriggerClientEvent('esx_drugs:showEvidenceReport', _source, {
+		label    = site.label,
+		street   = streetName,
+		total    = site.count,
+		suspects = suspects,
+	})
+
 	TriggerClientEvent('esx:showNotification', _source, _U('evidence_collected', site.count))
 end)
 
@@ -467,7 +513,7 @@ AddEventHandler('esx_jk_drugs:pickedUpCannabis', function()
 		else
 			xPlayer.addInventoryItem(xItem.name, picked)
 			SafeUpdateSkill(_source, "Marijuana", 0.006)
-			ReportEvidence('WeedField', Config.FieldZones.WeedField.coords, 'Shah Dane')
+			ReportEvidence('WeedField', Config.FieldZones.WeedField.coords, 'Shah Dane', xPlayer)
 		end
 	elseif xItem.limit ~= -1 and (xItem.count + 1) > xItem.limit then
 		TriggerClientEvent('esx:showNotification', _source, _U('weed_inventoryfull'))
@@ -475,7 +521,7 @@ AddEventHandler('esx_jk_drugs:pickedUpCannabis', function()
 		xPlayer.addInventoryItem(xItem.name, 1)
 		SafeUpdateSkill(_source, "Marijuana", 0.006)
 		TriggerClientEvent("Task_System:Shahdane", _source, amount, itemName)
-		ReportEvidence('WeedField', Config.FieldZones.WeedField.coords, 'Shah Dane')
+		ReportEvidence('WeedField', Config.FieldZones.WeedField.coords, 'Shah Dane', xPlayer)
 	end
 end)
 
@@ -511,13 +557,13 @@ AddEventHandler('esx_jk_drugs:pickedUpCocaPlant', function()
 		else
 			xPlayer.addInventoryItem(xItem.name, picked)
 			TriggerClientEvent("Task_System:Bardashtecocaine", _source, amount, itemName)
-			ReportEvidence('CocaineField', Config.FieldZones.CocaineField.coords, 'Giahe Coca')
+			ReportEvidence('CocaineField', Config.FieldZones.CocaineField.coords, 'Giahe Coca', xPlayer)
 		end
 	elseif xItem.limit ~= -1 and (xItem.count + 1) > xItem.limit then
 		TriggerClientEvent('esx:showNotification', _source, _U('cocaine_inventoryfull'))
 	else
 		xPlayer.addInventoryItem(xItem.name, 1)
-		ReportEvidence('CocaineField', Config.FieldZones.CocaineField.coords, 'Giahe Coca')
+		ReportEvidence('CocaineField', Config.FieldZones.CocaineField.coords, 'Giahe Coca', xPlayer)
 	end
 end)
 
@@ -540,7 +586,7 @@ AddEventHandler('esx_jk_drugs:pickedUpEphedra', function()
 			TriggerClientEvent('esx:showNotification', _source, _U('ephedra_inventoryfull'))
 		else
 			xPlayer.addInventoryItem(xItem.name, picked)
-			ReportEvidence('EphedrineField', Config.FieldZones.EphedrineField.coords, 'Ephedra')
+			ReportEvidence('EphedrineField', Config.FieldZones.EphedrineField.coords, 'Ephedra', xPlayer)
 		end
 	elseif xItem.limit ~= -1 and (xItem.count + 1) > xItem.limit then
 		TriggerClientEvent('esx:showNotification', _source, _U('ephedra_inventoryfull'))
@@ -548,7 +594,7 @@ AddEventHandler('esx_jk_drugs:pickedUpEphedra', function()
 		xPlayer.addInventoryItem(xItem.name, 1)
 		TriggerClientEvent("esx_drugs:WeedPickUp", source)
 		TriggerClientEvent("Task_System:BardashteEphedra", _source, amount, itemName)
-		ReportEvidence('EphedrineField', Config.FieldZones.EphedrineField.coords, 'Ephedra')
+		ReportEvidence('EphedrineField', Config.FieldZones.EphedrineField.coords, 'Ephedra', xPlayer)
 	end
 end)
 
@@ -571,14 +617,14 @@ AddEventHandler('esx_jk_drugs:pickedUpmushroom', function()
 			TriggerClientEvent('esx:showNotification', _source, _U('ephedra_inventoryfull'))
 		else
 			xPlayer.addInventoryItem(xItem.name, picked)
-			ReportEvidence('MushroomField', Config.FieldZones.MushroomField.coords, 'Mashroom')
+			ReportEvidence('MushroomField', Config.FieldZones.MushroomField.coords, 'Mashroom', xPlayer)
 		end
 	elseif xItem.limit ~= -1 and (xItem.count + 1) > xItem.limit then
 		TriggerClientEvent('esx:showNotification', _source, _U('ephedra_inventoryfull'))
 	else
 		xPlayer.addInventoryItem(xItem.name, 1)
 		TriggerClientEvent("esx_drugs:WeedPickUp", source)
-		ReportEvidence('MushroomField', Config.FieldZones.MushroomField.coords, 'Mashroom')
+		ReportEvidence('MushroomField', Config.FieldZones.MushroomField.coords, 'Mashroom', xPlayer)
 	end
 end)
 
@@ -601,7 +647,7 @@ AddEventHandler('esx_jk_drugs:pickedUpPoppy', function(hasSkill)
 			TriggerClientEvent('esx:showNotification', _source, _U('opium_inventoryfull'))
 		else
 			xPlayer.addInventoryItem(xItem.name, picked)
-			ReportEvidence('PoppyField', Config.FieldZones.PoppyField.coords, 'Khash-Khaash')
+			ReportEvidence('PoppyField', Config.FieldZones.PoppyField.coords, 'Khash-Khaash', xPlayer)
 		end
 	elseif xItem.limit ~= -1 and (xItem.count + 1) > xItem.limit then
 		TriggerClientEvent('esx:showNotification', _source, _U('opium_inventoryfull'))
@@ -609,7 +655,7 @@ AddEventHandler('esx_jk_drugs:pickedUpPoppy', function(hasSkill)
 		xPlayer.addInventoryItem(xItem.name, 1)
 		SafeUpdateSkill(_source, "Heroine", 0.004)
 		TriggerClientEvent("Task_System:BardashteKhashkhash", _source, amount, itemName)
-		ReportEvidence('PoppyField', Config.FieldZones.PoppyField.coords, 'Khash-Khaash')
+		ReportEvidence('PoppyField', Config.FieldZones.PoppyField.coords, 'Khash-Khaash', xPlayer)
 	end
 end)
 

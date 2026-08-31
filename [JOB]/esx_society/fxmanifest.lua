@@ -42,6 +42,6 @@ exports {
 }
 
 server_exports {
-	'popNextInQueue'
+	'offerToQueue'
 }
 

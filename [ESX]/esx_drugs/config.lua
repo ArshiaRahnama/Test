@@ -67,10 +67,24 @@ Config.Delivery = {
 
 --CID Evidence Referral (DOA collects physical clues at harvest sites and refers them to CID)--
 Config.Evidence = {
-	InactivityTimeout = 45 * 60 * 1000, -- if a site gets no new activity for this long, it clears itself uncollected (ms)
-	CollectRadius     = 6.0,            -- how close DOA must physically be to collect it (kept generous: the blip sits at the field's fixed center, not the exact plant, so a tight radius made it feel broken)
-	AlertDuration     = 5 * 60 * 1000,  -- how long the DOA-only siren blip / countdown lasts when a NEW site is first detected
-	AlertRadius       = 80.0,           -- radius of the translucent alert circle for that siren blip
+	InactivityTimeout  = 45 * 60 * 1000, -- if a site gets no new activity for this long, it clears itself uncollected (ms)
+	PedInteractRadius  = 8.0,            -- server-side anti-exploit distance check when collecting (covers the ped's offset from the field center)
+	AlertDuration      = 5 * 60 * 1000,  -- how long the DOA-only siren blip / countdown lasts when a NEW site is first detected
+	AlertRadius        = 80.0,           -- radius of the translucent alert circle for that siren blip
+	CollectAnimDuration = 4000,          -- ms spent playing the "documenting the scene" animation before evidence is actually collected
+}
+
+-- One permanent DOA "field investigator" ped per farm zone (Config.FieldZones), standing just
+-- off to the side. Regular players can target it but it has no options for them; DOA officers
+-- get a collect-evidence option here whenever that field has an open case.
+-- `offset` is added to the matching Config.FieldZones[key].coords -- adjust per-field if the
+-- ped ends up inside a bush/rock/fence for your map.
+Config.EvidencePeds = {
+	WeedField      = { model = 's_m_y_ranger_01', offset = vector3(3.0, 3.0, 0.0), heading = 0.0 },
+	CocaineField   = { model = 's_m_y_ranger_01', offset = vector3(3.0, 3.0, 0.0), heading = 0.0 },
+	EphedrineField = { model = 's_m_y_ranger_01', offset = vector3(3.0, 3.0, 0.0), heading = 0.0 },
+	PoppyField     = { model = 's_m_y_ranger_01', offset = vector3(3.0, 3.0, 0.0), heading = 0.0 },
+	MushroomField  = { model = 's_m_y_ranger_01', offset = vector3(3.0, 3.0, 0.0), heading = 0.0 },
 }
 
 Config.Locale = 'en'

@@ -41,6 +41,13 @@ $(document).on('click', '.settings-app-tab', function(e){
         dndBoxes.prop("checked", PhoneDoNotDisturb);
         $("#donotdisturb > p").html(PhoneDoNotDisturb ? 'On' : 'Off');
         $.post('http://Unique_Phone/ToggleDoNotDisturb', JSON.stringify({ enabled: PhoneDoNotDisturb }));
+    } else if (PressedTab == "onehandmode") {
+        var oneHandBoxes = $(".onehand-box");
+        var enabled = !oneHandBoxes.prop("checked");
+        applyOneHandMode(enabled);
+        oneHandBoxes.prop("checked", enabled);
+        $("#onehandmode > p").html(enabled ? 'On' : 'Off');
+        $.post('http://Unique_Phone/ToggleOneHandMode', JSON.stringify({ enabled: enabled }));
     }
 });
 
@@ -110,6 +117,10 @@ MI.Phone.Functions.LoadMetaData = function(MetaData) {
     } else {
         $("[data-settingstab='profilepicture']").find('.settings-tab-icon').html('<img src="'+MetaData.profilepicture+'">');
     }
+
+    // EXPANSION: restore saved accent theme + phone case.
+    applyPhoneTheme(MetaData.phone_accentcolor || "aqua");
+    applyPhoneCase(MetaData.phone_case || "none");
 }
 
 $(document).on('click', '#cancel-background', function(e){
@@ -227,4 +238,92 @@ $(document).on('click', '#cancel-profilepicture', function(e){
 $(document).on('click', '#cancel-custom-profilepicture', function(e){
     e.preventDefault();
     MI.Phone.Animations.TopSlideUp(".profilepicture-custom", 200, -23);
+});
+// ─────────────────────────────────────────────────────────
+// EXPANSION: accent theme + phone case pickers (Settings app).
+// ─────────────────────────────────────────────────────────
+
+function renderThemeAndCasePickers() {
+    var themeRow = $("#theme-swatch-row");
+    var caseRow = $("#case-swatch-row");
+    if (themeRow.length === 0 || caseRow.length === 0) return;
+
+    themeRow.html("");
+    $.each(PhoneThemesConfig, function(i, theme) {
+        themeRow.append(
+            '<div class="theme-swatch" data-theme="' + theme.id + '" title="' + theme.label + '" ' +
+                'style="background-color:' + theme.color + ';"></div>'
+        );
+    });
+
+    caseRow.html("");
+    $.each(PhoneCasesConfig, function(i, phoneCase) {
+        var priceTag = phoneCase.price > 0 ? '<span class="case-price">$' + phoneCase.price + '</span>' : '';
+        caseRow.append(
+            '<div class="case-swatch" data-case="' + phoneCase.id + '" data-price="' + (phoneCase.price || 0) + '" title="' + phoneCase.label + '">' +
+                '<div class="case-swatch-color" style="background-color:' + phoneCase.color + ';"></div>' +
+                '<span class="case-swatch-label">' + phoneCase.label + '</span>' +
+                priceTag +
+            '</div>'
+        );
+    });
+
+    // Re-apply active-state highlighting for whatever's currently selected
+    // (applyPhoneTheme/applyPhoneCase already ran once in LoadPhoneData
+    // before these rows existed, so their "active" class never landed —
+    // find the current CSS var/border instead of re-deriving state twice).
+    var currentAccent = getComputedStyle(document.documentElement).getPropertyValue('--phone-accent').trim();
+    $.each(PhoneThemesConfig, function(i, theme) {
+        if (theme.color.toLowerCase() === currentAccent.toLowerCase()) {
+            $(".theme-swatch[data-theme='" + theme.id + "']").addClass("theme-swatch-active");
+        }
+    });
+    if ($(".phone-container").hasClass("phone-has-case")) {
+        var currentBorder = $(".phone-container").css("border-color");
+        $.each(PhoneCasesConfig, function(i, c) {
+            // Cheap-but-good-enough match: compare against the swatch's own
+            // rendered color via a throwaway element (avoids needing a
+            // hex<->rgb conversion helper just for this highlight).
+            var probe = $('<div style="display:none;background-color:' + c.color + ';"></div>').appendTo('body');
+            var probeColor = probe.css('background-color');
+            probe.remove();
+            if (probeColor === currentBorder) {
+                $(".case-swatch[data-case='" + c.id + "']").addClass("case-swatch-active");
+            }
+        });
+    } else {
+        $(".case-swatch[data-case='none']").addClass("case-swatch-active");
+    }
+}
+
+$(document).on('click', '.theme-swatch', function() {
+    var themeId = $(this).data('theme');
+    applyPhoneTheme(themeId);
+    $.post('http://Unique_Phone/SaveMetaData', JSON.stringify({ column: 'phone_accentcolor', data: themeId }));
+});
+
+$(document).on('click', '.case-swatch', function() {
+    var caseId = $(this).data('case');
+    var price = parseInt($(this).data('price'), 10) || 0;
+    var msgEl = $("#case-purchase-msg");
+    msgEl.removeClass("case-msg-error case-msg-ok").text("");
+
+    if (price === 0) {
+        applyPhoneCase(caseId);
+        $.post('http://Unique_Phone/BuyPhoneCase', JSON.stringify({ caseId: caseId }));
+        return;
+    }
+
+    if (!confirm("خرید این کیس $" + price + " هزینه داره. مطمئنی؟")) return;
+
+    $.post('http://Unique_Phone/BuyPhoneCase', JSON.stringify({ caseId: caseId }), function(result) {
+        if (result && result.success) {
+            applyPhoneCase(caseId);
+            msgEl.addClass("case-msg-ok").text("کیس با موفقیت خریداری و اعمال شد ✅");
+        } else if (result && result.reason === "not_enough_money") {
+            msgEl.addClass("case-msg-error").text("پول کافی نداری.");
+        } else {
+            msgEl.addClass("case-msg-error").text("خطایی پیش اومد.");
+        }
+    });
 });

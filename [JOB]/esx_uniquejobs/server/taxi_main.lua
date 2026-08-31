@@ -218,48 +218,53 @@ end
 
 RegisterServerEvent("esx_taxijob:addreq")
 AddEventHandler("esx_taxijob:addreq", function(reason)
-
-
+	local source = source
 	local xPlayer = ESX.GetPlayerFromId(source)
-	local xPlayers = ESX.GetPlayers()
-	if xPlayer then
-		for i=1, #xPlayers, 1 do
+
+	if not xPlayer then return end
+
+	if xPlayer.job.name == "taxi" then
+		TriggerClientEvent('esx:showNotification', source, "Shoma Yek Taxi Run Hastid Nemitavnid Darkhast Taxi Konid!")
+		return
+	end
+
+	local identifier = GetPlayerIdentifier(source)
+	if doesHaveReq_taxi(identifier) then
+		TriggerClientEvent('esx:showNotification', source, "Shoma Az Qabl Darkhast Darid Lotfan Shakiba Bashid!")
+		return
+	end
+
+	local name = string.gsub(xPlayer.name, "_", " ")
+	local newReqId = tostring(rcount)
+	reqs[newReqId] = {
+		owner = {
+			identifier = identifier,
+			name = name,
+			id = source,
+			coord = GetEntityCoords(GetPlayerPed(source)),
+		},
+		respond = {
+			name = "none",
+			identifier = "none",
+		},
+		reason = reason,
+		status = "open",
+		time = os.time()
+	}
+	rcount = rcount + 1
+	TriggerClientEvent('esx:showNotification', source, "Darkhast Shoma Baraye Taxi Ersal Shod!")
+
+	-- Try the dispatch duty queue first (esx_society /dduty). Offers the
+	-- request to whoever's been waiting longest with a Yes/No prompt; if
+	-- they decline or don't answer in time it moves to the next person.
+	local wasOffered = exports['esx_society']:offerToQueue('taxi', newReqId)
+
+	if not wasOffered then
+		local xPlayers = ESX.GetPlayers()
+		for i=1, #xPlayers do
 			local xPlayer = ESX.GetPlayerFromId(xPlayers[i])
-			if xPlayer.job.name ~= "tax" then
-				if xPlayer then
-					local identifier = GetPlayerIdentifier(source)
-					if doesHaveReq_taxi(identifier) then
-							TriggerClientEvent('esx:showNotification', source, "Shoma Az Qabl Darkhast Darid Lotfan Shakiba Bashid!")
-						return
-					end
-					local name = string.gsub(xPlayer.name, "_", " ")
-					reqs[tostring(rcount)] = {
-						owner = {
-						identifier = identifier,
-						name = name,
-						id = source,
-						coord = GetEntityCoords(GetPlayerPed(source)),
-					},
-					respond = {
-						name = "none",
-						identifier = "none",
-					},
-						reason = reason,
-						status = "open",
-						time = os.time()
-					}
-					local xPlayers = ESX.GetPlayers()
-					for i=1, #xPlayers do
-						local xPlayer = ESX.GetPlayerFromId(xPlayers[i])
-						if xPlayer.job.name == 'taxi' then
-							TriggerClientEvent('esx:showNotification', xPlayer.source, "DarKhast Jadid Sabt Shod!")
-						end
-					end
-					rcount = rcount + 1
-					TriggerClientEvent('esx:showNotification', source, "Darkhast Shoma Baraye Taxi Ersal Shod!")
-				end
-			else
-				TriggerClientEvent('esx:showNotification', source, "Shoma Yek Taxi Run Hastid Nemitavnid Darkhast Taxi Konid!")
+			if xPlayer.job.name == 'taxi' then
+				TriggerClientEvent('esx:showNotification', xPlayer.source, "DarKhast Jadid Sabt Shod!")
 			end
 		end
 	end
@@ -291,9 +296,7 @@ AddEventHandler("esx_taxijob:creqs", function(id)
 	end
 end)
 
-RegisterServerEvent("esx_taxijob:areqs")
-AddEventHandler("esx_taxijob:areqs", function(id)
-	local reqid = id
+function AcceptRequest_taxi(source, reqid)
 	local xPlayer = ESX.GetPlayerFromId(source)
 	if xPlayer.job.name == "taxi" then
 		local identifier = GetPlayerIdentifier(source)
@@ -330,6 +333,11 @@ AddEventHandler("esx_taxijob:areqs", function(id)
 	else
 		TriggerClientEvent('chatMessage', source, "[SYSTEM]", {255, 0, 0}, " ^0Shoma Dastresi Kafi Baraye Estefade Az In Dastor Ra Nadarid")
 	end
+end
+
+RegisterServerEvent("esx_taxijob:areqs")
+AddEventHandler("esx_taxijob:areqs", function(id)
+	AcceptRequest_taxi(source, id)
 end)
 
 RegisterServerEvent("esx_taxijob:decline")

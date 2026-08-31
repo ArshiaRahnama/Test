@@ -404,11 +404,15 @@ end)
 ----------------------------------------
 ------- DOA: EVIDENCE COLLECTION --------
 ----------------------------------------
--- Persistent, aggregated per-field cases (server: EvidenceSites). The blip stays up and its
--- count keeps climbing with every harvest at that field until DOA collects it (E) or it times
--- out server-side. Newly-connecting/newly-transferred DOA get these synced automatically
--- (server: esx:playerLoaded / esx:setJob -> SyncEvidenceToPlayer), so nothing is ever missed.
-local evidenceBlips = {} -- [fieldKey] = {blip = ..., coords = ...}
+-- Persistent, aggregated per-field cases (server: EvidenceSites). The map blip's count keeps
+-- climbing with every harvest at that field until DOA collects it or it times out server-side.
+-- Newly-connecting/newly-transferred DOA get these synced automatically (server: esx:playerLoaded
+-- / esx:setJob -> SyncEvidenceToPlayer), so nothing is ever missed.
+--
+-- Collection itself happens at a permanent "field investigator" ped standing next to each farm
+-- (Config.EvidencePeds). Regular players can target the ped but get no options at all; DOA sees
+-- a collect-evidence option there. This replaces walking to an invisible spot and mashing E.
+local evidenceBlips = {} -- [fieldKey] = {blip = ..., coords = ..., label = ..., count = ...}
 
 RegisterNetEvent('esx_drugs:newEvidenceSite')
 AddEventHandler('esx_drugs:newEvidenceSite', function(data)
@@ -438,38 +442,112 @@ AddEventHandler('esx_drugs:removeEvidenceSite', function(fieldKey)
     end
 end)
 
+-- Spawns the permanent investigator ped for every field zone and wires ox_target to it.
+-- Each field is wrapped in pcall: if ox_target (or anything else) throws for one field, the
+-- other fields still get their ped + target registered instead of the whole thread dying
+-- silently on the first error (this bit us before with Unique_Skills -- same failure shape).
 Citizen.CreateThread(function()
-    local wait = 500
-    local markerRenderDistance = 30.0
+    while ESX == nil do Citizen.Wait(100) end
 
-    while true do
-        Citizen.Wait(wait)
-        wait = 500
+    for fieldKey, pedCfg in pairs(Config.EvidencePeds) do
+        local ok, err = pcall(function()
+            local fieldZone = Config.FieldZones[fieldKey]
+            if not fieldZone then return end
 
-        if ESX.PlayerData.job ~= nil and ESX.PlayerData.job.name == 'doa' then
-            local coords = GetEntityCoords(PlayerPedId())
+            local coords = fieldZone.coords + pedCfg.offset
+            local model = GetHashKey(pedCfg.model)
 
-            for fieldKey, site in pairs(evidenceBlips) do
-                local distance = #(coords - site.coords)
-
-                -- Visible in-world "evidence box" (not just a map blip) so it's actually
-                -- findable on foot, not just something you have to eyeball on the minimap.
-                if distance < markerRenderDistance then
-                    wait = 0
-                    DrawMarker(21, site.coords.x, site.coords.y, site.coords.z + 0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.6, 0.6, 0.6, 255, 220, 0, 200, true, true, 2, false, nil, nil, false)
-                end
-
-                if distance < Config.Evidence.CollectRadius then
-                    wait = 0
-                    ESX.ShowHelpNotification(_U('evidence_collect_prompt'))
-
-                    if IsControlJustReleased(0, Keys['E']) then
-                        TriggerServerEvent('esx_drugs:collectEvidence', fieldKey)
-                    end
-                end
+            RequestModel(model)
+            local attempts = 0
+            while not HasModelLoaded(model) and attempts < 100 do
+                Citizen.Wait(10)
+                attempts = attempts + 1
             end
+
+            if not HasModelLoaded(model) then
+                print(('[esx_drugs] Evidence ped for %s: model "%s" never loaded, skipping.'):format(fieldKey, pedCfg.model))
+                return
+            end
+
+            local ped = CreatePed(4, model, coords.x, coords.y, coords.z - 1.0, pedCfg.heading, false, true)
+            SetEntityHeading(ped, pedCfg.heading)
+            FreezeEntityPosition(ped, true)
+            SetEntityInvincible(ped, true)
+            SetBlockingOfNonTemporaryEvents(ped, true)
+            TaskStartScenarioInPlace(ped, "WORLD_HUMAN_BINOCULARS", 0, true)
+            SetModelAsNoLongerNeeded(model)
+
+            exports.ox_target:addLocalEntity(ped, {
+                {
+                    name = 'esx_drugs:collectEvidence_' .. fieldKey,
+                    icon = 'fa-solid fa-magnifying-glass',
+                    label = 'Barresi va Jam-avari Madarek',
+                    distance = 2.5,
+                    canInteract = function()
+                        return ESX.PlayerData.job ~= nil and ESX.PlayerData.job.name == 'doa'
+                    end,
+                    onSelect = function()
+                        if not evidenceBlips[fieldKey] then
+                            ESX.ShowNotification(_U('evidence_expired'))
+                            return
+                        end
+
+                        local playerPed = PlayerPedId()
+                        TaskStartScenarioInPlace(playerPed, "WORLD_HUMAN_CLIPBOARD", 0, true)
+
+                        TriggerEvent("mythic_progbar:client:progress", {
+                            name = "collect_evidence",
+                            duration = Config.Evidence.CollectAnimDuration,
+                            label = "Dar hale barresi va sabte madarek...",
+                            useWhileDead = false,
+                            canCancel = true,
+                            controlDisables = {
+                                disableMovement = true,
+                                disableCarMovement = true,
+                                disableMouse = false,
+                                disableCombat = true,
+                            },
+                        }, function(cancelled)
+                            ClearPedTasksImmediately(playerPed)
+                            if not cancelled then
+                                TriggerServerEvent('esx_drugs:collectEvidence', fieldKey)
+                            end
+                        end)
+                    end
+                }
+            })
+        end)
+
+        if not ok then
+            print(('[esx_drugs] Evidence ped/target setup failed for %s: %s'):format(fieldKey, tostring(err)))
         end
     end
+end)
+
+-- Full suspect breakdown for the officer who just collected a case: name, gang, and how many
+-- times each person farmed there, worst offender first.
+RegisterNetEvent('esx_drugs:showEvidenceReport')
+AddEventHandler('esx_drugs:showEvidenceReport', function(report)
+    local elements = {}
+
+    for i, suspect in ipairs(report.suspects) do
+        local tag = (i == 1) and '~r~[BISHTARIN]~s~ ' or ''
+        table.insert(elements, {
+            label = ('%s%s - Gang: %s - %sx'):format(tag, suspect.name, suspect.gang, suspect.count)
+        })
+    end
+
+    if #elements == 0 then
+        table.insert(elements, {label = 'Hich sarnakhi peida nashod.'})
+    end
+
+    ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'evidence_report', {
+        title    = ('Parvande: %s - %s (%sx)'):format(report.label, report.street, report.total),
+        align    = 'top-left',
+        elements = elements
+    }, function(data, menu) end, function(data, menu)
+        menu.close()
+    end)
 end)
 
 RegisterNetEvent('esx_drugs:Cartel')

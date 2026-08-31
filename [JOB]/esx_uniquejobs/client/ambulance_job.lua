@@ -88,15 +88,6 @@ Citizen.CreateThread(function()
 	AddEventHandler('society:customVehiclesUpdated', mergeCustomVehicles)
 end)
 
--- /dlist (from esx_society) — only react if we're currently on the ambulance job.
--- Ambulance has no separate on/off duty toggle, so /dduty does nothing here.
-RegisterNetEvent('esx_society:requestListRequested')
-AddEventHandler('esx_society:requestListRequested', function()
-	if ESX.PlayerData.job and ESX.PlayerData.job.name == 'ambulance' then
-		OpenReqsList_ambulance()
-	end
-end)
-
 -- This was referenced (as OpenReqsList()) but never implemented — built here
 -- to match the same request/accept/decline/finish flow as taxi and mechanic.
 function OpenReqsList_ambulance()

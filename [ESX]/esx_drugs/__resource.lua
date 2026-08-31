@@ -38,5 +38,6 @@ client_scripts {
 
 dependencies {
 	'essentialmode',
-	'Unique_AllRobs'
+	'Unique_AllRobs',
+	'ox_target'
 }

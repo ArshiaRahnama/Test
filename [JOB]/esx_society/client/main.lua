@@ -2590,11 +2590,10 @@ RegisterCommand('deletecarjob', function()
 end, false)
 
 -- ===== /dduty and /dlist =====
--- taxi has its own local on/off flag (OnJob) — esx_society just forwards the
--- request as an event and taxi_main.lua reacts if the job matches.
--- mechanic/ambulance use a real server-side FIFO queue (Config.DispatchQueueJobs):
--- /dduty joins/leaves it, /dlist shows your position AND still opens the F6
--- Request List so you can browse everything manually too.
+-- All jobs in Config.DispatchQueueJobs (taxi/mechanic/ambulance) share the same
+-- real server-side FIFO queue. /dduty joins/leaves it. /dlist ONLY reports your
+-- position — it does NOT open the F6 menu. New requests get auto-accepted for
+-- whoever's been waiting longest (handled entirely server-side in esx_uniquejobs).
 local function isInList(list, value)
 	for _, v in ipairs(list) do
 		if v == value then return true end
@@ -2605,16 +2604,12 @@ end
 RegisterCommand('dduty', function()
 	local job = ESX.PlayerData.job and ESX.PlayerData.job.name
 
-	if not job or not isInList(Config.DispatchJobs, job) then
+	if not job or not isInList(Config.DispatchQueueJobs, job) then
 		ESX.ShowNotification('Job Shoma Dispatch Duty Nadarad')
 		return
 	end
 
-	if isInList(Config.DispatchQueueJobs, job) then
-		TriggerServerEvent('esx_society:toggleDispatchDuty')
-	else
-		TriggerEvent('esx_society:dutyToggleRequested')
-	end
+	TriggerServerEvent('esx_society:toggleDispatchDuty')
 end, false)
 
 RegisterKeyMapping('dduty', 'Toggle Duty', 'keyboard', '')
@@ -2622,24 +2617,39 @@ RegisterKeyMapping('dduty', 'Toggle Duty', 'keyboard', '')
 RegisterCommand('dlist', function()
 	local job = ESX.PlayerData.job and ESX.PlayerData.job.name
 
-	if not job or not isInList(Config.DispatchJobs, job) then
-		ESX.ShowNotification('Job Shoma Request List Nadarad')
+	if not job or not isInList(Config.DispatchQueueJobs, job) then
+		ESX.ShowNotification('Job Shoma Dispatch Duty Nadarad')
 		return
 	end
 
-	if isInList(Config.DispatchQueueJobs, job) then
-		ESX.TriggerServerCallback('esx_society:getDispatchList', function(info)
-			if info then
-				if info.myPosition then
-					ESX.ShowNotification(('Jaygah Shoma Dar Saf: ~y~%s~s~ | Majmoo Saf: ~y~%s~s~'):format(info.myPosition, info.queueCount))
-				else
-					ESX.ShowNotification(('Shoma Dar Saf Dduty Nistid | Majmoo Saf: ~y~%s~s~'):format(info.queueCount))
-				end
-			end
-		end)
-	end
+	ESX.TriggerServerCallback('esx_society:getDispatchList', function(info)
+		if not info then return end
 
-	TriggerEvent('esx_society:requestListRequested')
+		if info.myPosition then
+			ESX.ShowNotification(('Jaygah Shoma Dar Saf: ~y~%s~s~ | Majmoo Saf: ~y~%s~s~'):format(info.myPosition, info.queueCount))
+		else
+			ESX.ShowNotification(('Shoma Dar Saf Dduty Nistid | Majmoo Saf: ~y~%s~s~'):format(info.queueCount))
+		end
+	end)
 end, false)
 
-RegisterKeyMapping('dlist', 'Open Request List', 'keyboard', '')
+RegisterKeyMapping('dlist', 'Show Dispatch Queue Position', 'keyboard', '')
+
+-- Fired when this player reaches the front of the queue and a request is
+-- offered to them. Same dialog regardless of job — the actual accept logic
+-- lives in esx_uniquejobs and runs server-side via export.
+RegisterNetEvent('esx_society:dispatchOffer')
+AddEventHandler('esx_society:dispatchOffer', function(job)
+	local alert = lib.alertDialog({
+		header   = 'Darkhast Jadid',
+		content  = 'Yek Darkhast Baraye Shoma Ersal Shod. Ghabul Mikonid?',
+		centered = true,
+		cancel   = true,
+		labels   = {
+			confirm = 'Bale',
+			cancel  = 'Kheir',
+		}
+	})
+
+	TriggerServerEvent('esx_society:dispatchOfferRespond', job, alert == 'confirm')
+end)
