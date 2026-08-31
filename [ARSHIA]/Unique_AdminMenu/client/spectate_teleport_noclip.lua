@@ -19,6 +19,7 @@ InSpectatorMode	= false
 TargetSpectate	= nil
 spec = {}
 local LastPosition		= nil
+local acceleration, acceleration2, accelerationUpdate = 0, 0, nil
 local polarAngleDeg		= 0;
 local azimuthAngleDeg	= 90;
 local radius			    = -3.5;
@@ -40,47 +41,61 @@ end
 
 function spectate(serverid)
 	if GetPlayerServerId(PlayerId()) == serverid then
-	  return
+	  return false
 	end
 
-  if not InSpectatorMode then
-    LastPosition = GetEntityCoords(PlayerPedId())
-    TriggerServerEvent('Admin_Menu:SpectStatus', true)
-    Wait(250)
-	else
-    NetworkSetInSpectatorMode(false, 0)
-    TargetSpectate = nil
-	  local playerPed = PlayerPedId()
-    DetachEntity(playerPed, true, true)
-	  SetEntityCompletelyDisableCollision(playerPed, true, true)
-  end
+  local p = promise.new()
 
-  ESX.TriggerServerCallback('Admin_Menu:GetTargetPosition', function(coords)
-    SetEntityVisible(PlayerPedId(), false)
-	  SetEntityCoords(PlayerPedId(), coords.x, coords.y, coords.z-50.0)
-    local Timer = GetGameTimer()
-	  while not ESX.Game.DoesPlayerExistInArea(serverid) or (GetGameTimer() - Timer > 10000)  do
-		  Wait(1)
-    end
-    if not ESX.Game.DoesPlayerExistInArea(serverid) then return end
-    local pl  = GetPlayerFromServerId(serverid)
-    local pl2 = GetPlayerPed(pl)
-
-    local Timer = GetGameTimer()
-    while not DoesEntityExist(pl2) or (GetGameTimer() - Timer > 5000) do
-      Wait(0)
-      pl2 = GetPlayerPed(pl)
+  ESX.TriggerServerCallback('esx_spectate:xPlayerServerSide', function(exists)
+    if not exists then
+      p:resolve(false)
+      return
     end
 
-    if DoesEntityExist(pl2) then
-      NetworkSetInSpectatorMode(true, pl2)
-      InSpectatorMode = true
-      TargetSpectate = serverid
-      DoSpecThread()
+    if not InSpectatorMode then
+      LastPosition = GetEntityCoords(PlayerPedId())
+      TriggerServerEvent('Admin_Menu:SpectStatus', true)
+      Wait(250)
     else
-      resetNormalCamera()
+      NetworkSetInSpectatorMode(false, 0)
+      TargetSpectate = nil
+      local playerPed = PlayerPedId()
+      DetachEntity(playerPed, true, true)
+      SetEntityCompletelyDisableCollision(playerPed, true, true)
     end
-	end, serverid)
+
+    ESX.TriggerServerCallback('Admin_Menu:GetTargetPosition', function(coords)
+      SetEntityVisible(PlayerPedId(), false)
+      SetEntityCoords(PlayerPedId(), coords.x, coords.y, coords.z-50.0)
+      local Timer = GetGameTimer()
+      while not ESX.Game.DoesPlayerExistInArea(serverid) or (GetGameTimer() - Timer > 10000)  do
+        Wait(1)
+      end
+      if not ESX.Game.DoesPlayerExistInArea(serverid) then p:resolve(false) return end
+      local pl  = GetPlayerFromServerId(serverid)
+      local pl2 = GetPlayerPed(pl)
+
+      local Timer = GetGameTimer()
+      while not DoesEntityExist(pl2) or (GetGameTimer() - Timer > 5000) do
+        Wait(0)
+        pl2 = GetPlayerPed(pl)
+      end
+
+      if DoesEntityExist(pl2) then
+        NetworkSetInSpectatorMode(true, pl2)
+        InSpectatorMode = true
+        TargetSpectate = serverid
+        acceleration, acceleration2 = 0, 0
+        DoSpecThread()
+        p:resolve(true)
+      else
+        resetNormalCamera()
+        p:resolve(false)
+      end
+    end, serverid)
+  end, serverid)
+
+  return Citizen.Await(p)
 end
 
 function resetNormalCamera()
@@ -191,15 +206,24 @@ function DoSpecThread()
       table.insert(text,"Health: ".. (GetEntityHealth(targetPed) - 100).."/".. (GetEntityMaxHealth(targetPed) - 100))
       table.insert(text,"Armor: "..GetPedArmour(targetPed))
       if IsPedInAnyVehicle(targetPed, false) then
-        table.insert(text,"Vehicle Speed: "..math.floor(GetEntitySpeed(GetVehiclePedIsIn(targetPed, false))*3.6))
+        local speed = math.floor(GetEntitySpeed(GetVehiclePedIsIn(targetPed, false))*3.6)
+        table.insert(text,"Vehicle Speed: "..speed)
         table.insert(text,"Vehicle Health: "..GetEntityHealth(GetVehiclePedIsIn(targetPed)))
         table.insert(text,"Vehicle Engine Health: "..GetVehicleEngineHealth(GetVehiclePedIsIn(targetPed)))
+        table.insert(text,"Vehicle Acceleration: "..acceleration2)
+        if not accelerationUpdate then
+          accelerationUpdate = true
+          SetTimeout(1000, function() accelerationUpdate = nil end)
+          acceleration2 = speed - acceleration
+          acceleration = speed
+        end
       end
       if NetworkIsPlayerTalking(targetPlayerId) then
         table.insert(text,"Talking: ~g~True")
       else
         table.insert(text,"Talking: ~r~False")
       end
+      table.insert(text,"~y~[E]~s~ Inspect Player  ~y~[F]~s~ Exit Spectate")
 
       for i, theText in pairs(text) do
         SetTextFont(0)
@@ -222,6 +246,16 @@ function DoSpecThread()
 
       if IsControlPressed(0, 47) then
 
+      elseif IsControlJustPressed(0, 51) then -- E: open full Inspect panel on the spectated player
+        ESX.TriggerServerCallback('Unique_AdminMenu:InspectPlayer', function(data)
+          if not data then
+            drawNotification("~r~Could not inspect that player")
+            return
+          end
+          SendNUIMessage({ type = 'inspect', data = data })
+          SetNuiFocus(true, true)
+          InAdminNui = true
+        end, TargetSpectate)
       elseif IsControlJustReleased(2, 73) then
         ESX.TriggerServerCallback('esx_aduty:checkAduty', function(isAduty)
           if isAduty then

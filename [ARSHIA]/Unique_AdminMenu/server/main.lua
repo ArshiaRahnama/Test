@@ -55,6 +55,12 @@ function LogAdminAction(source, action, details, targetIdentifier, targetName)
             { ['Content-Type'] = 'application/json' })
     end
 
+    -- Also mirror into the server's shared Discord logging resource (used
+    -- by jail.lua/cs.lua/etc. for their own DiscordBot:ToDiscord('adminmenu', ...)
+    -- calls), so everything lands in the same admin-log channel by default -
+    -- no separate webhook convar to configure.
+    TriggerEvent('DiscordBot:ToDiscord', 'adminmenu', name, line, 'user', true, source, false)
+
     if targetIdentifier then
         local xPlayer = ESX.GetPlayerFromId(source)
         MySQL.Async.execute(

@@ -1,6 +1,12 @@
 -- Run this once against your database before starting the updated
--- Unique_AdminMenu. Uses `banlist` / `banlisthistory` (already in your
--- database.sql) for bans - no new table needed for those.
+-- Unique_AdminMenu.
+--
+-- NOTE on bans: the old `banlist`/`banlisthistory` tables below are NOT
+-- checked anywhere at connect time (only `uniqueac_banlist`, owned by the
+-- UNIQUE_AC resource, is - see Unique_Login/server.lua's playerConnecting).
+-- /aban now calls exports.UNIQUE_AC:BanPlayer for permanent bans (real
+-- enforcement) and this new `unique_adminmenu_bans` table for temp bans
+-- (checked by our own playerConnecting handler below).
 
 CREATE TABLE IF NOT EXISTS `admin_warnings` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
@@ -58,4 +64,26 @@ CREATE TABLE IF NOT EXISTS `admin_ip_log` (
   `last_seen` DATETIME DEFAULT NULL,
   UNIQUE KEY `identifier_ip` (`identifier`, `ip`),
   INDEX (`ip`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Temp bans issued from Unique_AdminMenu (`/aban <id> <minutes> <reason>`).
+-- Permanent bans go through exports.UNIQUE_AC:BanPlayer instead (real
+-- enforcement via uniqueac_banlist) and are only mirrored here (external_ban_id
+-- set, expire_at NULL) so /aunban and ban-history search have one place to
+-- look.
+CREATE TABLE IF NOT EXISTS `unique_adminmenu_bans` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `identifier` VARCHAR(60) DEFAULT NULL,
+  `license` VARCHAR(60) DEFAULT NULL,
+  `ip` VARCHAR(64) DEFAULT NULL,
+  `playername` VARCHAR(100) DEFAULT NULL,
+  `admin_name` VARCHAR(100) DEFAULT NULL,
+  `reason` VARCHAR(255) DEFAULT NULL,
+  `banned_at` DATETIME DEFAULT NULL,
+  `expire_at` INT DEFAULT NULL COMMENT 'unix timestamp, NULL = permanent',
+  `external_ban_id` VARCHAR(60) DEFAULT NULL COMMENT 'UNIQUE_AC banId, only set for permanent bans',
+  `active` TINYINT(1) NOT NULL DEFAULT 1,
+  INDEX (`identifier`),
+  INDEX (`ip`),
+  INDEX (`active`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

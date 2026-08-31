@@ -10,6 +10,26 @@ Citizen.CreateThread(function()
 	end
 end)
 
+-- Was called in 3 places (hostage blip, pursuit blip, robbery blip) but never defined,
+-- which threw "attempt to call a nil value (global 'PulseBlip')" whenever those blips spawned.
+-- Gives the blip a soft breathing scale animation until it's removed.
+function PulseBlip(blip)
+	Citizen.CreateThread(function()
+		while blip and DoesBlipExist(blip) do
+			for i = 1, 20 do
+				if not DoesBlipExist(blip) then break end
+				SetBlipScale(blip, 0.6 + (i / 40))
+				Citizen.Wait(30)
+			end
+			for i = 20, 1, -1 do
+				if not DoesBlipExist(blip) then break end
+				SetBlipScale(blip, 0.6 + (i / 40))
+				Citizen.Wait(30)
+			end
+		end
+	end)
+end
+
 RegisterNetEvent('DarkPhone:OpenMenu')
 AddEventHandler('DarkPhone:OpenMenu', function()
 	ESX.UI.Menu.CloseAll()
@@ -353,6 +373,73 @@ AddEventHandler('Morphy_RobSystem:setBlip', function(name,position)
 	SetBlipColour(blipRobbery[name], 15)
 
 	PulseBlip(blipRobbery[name])
+end)
+
+----------------------------------------
+------- SHARED POLICE ALERT (export) ----
+----------------------------------------
+-- Fired by server.lua's AlertPolice() export -- callable from ANY resource, e.g.:
+--   exports['Unique_AllRobs']:AlertPolice(coords, 'Yek Nafar Dare Mavad Mifroshe', 4*60*1000)
+-- Shows a flashing red blip + a live on-screen countdown to whichever cop-job players receive it.
+local sharedAlertBlip, sharedAlertRadiusBlip
+
+RegisterNetEvent('Unique_AllRobs:policeAlert')
+AddEventHandler('Unique_AllRobs:policeAlert', function(coords, label, duration, radius)
+    coords   = vector3(coords.x, coords.y, coords.z)
+    duration = duration or (4 * 60 * 1000)
+    label    = label or 'Hoshdare Police'
+    radius   = radius or 60.0
+
+    if sharedAlertBlip then RemoveBlip(sharedAlertBlip) end
+    if sharedAlertRadiusBlip then RemoveBlip(sharedAlertRadiusBlip) end
+
+    sharedAlertRadiusBlip = AddBlipForRadius(coords, radius)
+    SetBlipColour(sharedAlertRadiusBlip, 1)
+    SetBlipAlpha(sharedAlertRadiusBlip, 90)
+    SetBlipAsShortRange(sharedAlertRadiusBlip, false)
+
+    sharedAlertBlip = AddBlipForCoord(coords)
+    SetBlipSprite(sharedAlertBlip, 161)
+    SetBlipScale(sharedAlertBlip, 1.2)
+    SetBlipColour(sharedAlertBlip, 1)
+    SetBlipAsShortRange(sharedAlertBlip, false)
+    SetBlipFlashes(sharedAlertBlip, true)
+    SetBlipFlashInterval(sharedAlertBlip, 300)
+    BeginTextCommandSetBlipName("STRING")
+    AddTextComponentString(label)
+    EndTextCommandSetBlipName(sharedAlertBlip)
+
+    PlaySoundFrontend(-1, "Text_Arrive_Tone", "Phone_SoundSet_Default", true)
+
+    local myBlip  = sharedAlertBlip
+    local endTime = GetGameTimer() + duration
+
+    Citizen.CreateThread(function()
+        while GetGameTimer() < endTime and sharedAlertBlip == myBlip do
+            Citizen.Wait(0)
+
+            local remaining = math.max(0, endTime - GetGameTimer())
+            local minutes   = math.floor(remaining / 60000)
+            local seconds   = math.floor((remaining % 60000) / 1000)
+            local pulse     = math.abs(math.sin(GetGameTimer() / 200.0))
+
+            DrawRect(0.5, 0.94, 0.17, 0.05, 100, 0, 0, 140 + math.floor(pulse * 80))
+            SetTextFont(4)
+            SetTextScale(0.5, 0.5)
+            SetTextColour(255, 255, 255, 255)
+            SetTextCentre(true)
+            SetTextOutline()
+            BeginTextCommandDisplayText("STRING")
+            AddTextComponentSubstringPlayerName(('%s ~r~~h~%02d:%02d~h~~s~'):format(label, minutes, seconds))
+            EndTextCommandDisplayText(0.5, 0.915)
+        end
+
+        if sharedAlertBlip == myBlip then
+            if sharedAlertBlip then RemoveBlip(sharedAlertBlip) end
+            if sharedAlertRadiusBlip then RemoveBlip(sharedAlertRadiusBlip) end
+            sharedAlertBlip, sharedAlertRadiusBlip = nil, nil
+        end
+    end)
 end)
 
 RegisterNetEvent('Morphy_RobSystem:StartProgressBar')

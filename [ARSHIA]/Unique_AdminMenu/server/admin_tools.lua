@@ -66,59 +66,121 @@ RegisterCommand('aban', function(source, args)
     local Target = ESX.GetPlayerFromId(targetId)
     if not Target then return end
 
-
     local durationArg = args[2]
     local reason = table.concat(args, ' ', 3)
     if reason == '' then reason = 'No reason specified' end
 
-    local permanent = (durationArg == 'perm' or durationArg == 'permanent') and 1 or 0
+    local permanent = (durationArg == 'perm' or durationArg == 'permanent')
     local minutes = tonumber(durationArg) or 0
-    local expiration = permanent == 1 and 0 or (os.time() + (minutes * 60))
 
     local identifier = Target.identifier
     local license = GetPlayerIdentifierByType(targetId, 'license') or 'no info'
-    local discord = GetPlayerIdentifierByType(targetId, 'discord') or 'no info'
     local playerip = GetPlayerEndpoint(targetId) or 'no info'
     local adminName = GetPlayerName(source)
     local targetName = GetPlayerName(targetId)
+    local issuer = ("Admin %s (%s)"):format(adminName, source)
 
-    MySQL.Async.execute(
-        "REPLACE INTO `banlist` (`identifier`,`license`,`liveid`,`xblid`,`discord`,`playerip`,`targetplayername`,`sourceplayername`,`reason`,`timeat`,`expiration`,`permanent`) VALUES (@identifier,@license,'no info','no info',@discord,@playerip,@targetplayername,@sourceplayername,@reason,@timeat,@expiration,@permanent)",
-        {
-            ['@identifier'] = identifier,
-            ['@license'] = license,
-            ['@discord'] = discord,
-            ['@playerip'] = playerip,
-            ['@targetplayername'] = targetName,
-            ['@sourceplayername'] = adminName,
-            ['@reason'] = reason,
-            ['@timeat'] = tostring(os.time()),
-            ['@expiration'] = tostring(expiration),
-            ['@permanent'] = permanent,
-        }
-    )
-    MySQL.Async.execute(
-        "INSERT INTO `banlisthistory` (`identifier`,`license`,`liveid`,`xblid`,`discord`,`playerip`,`targetplayername`,`sourceplayername`,`reason`,`timeat`,`added`,`expiration`,`permanent`) VALUES (@identifier,@license,'no info','no info',@discord,@playerip,@targetplayername,@sourceplayername,@reason,@timeat,@added,@expiration,@permanent)",
-        {
-            ['@identifier'] = identifier,
-            ['@license'] = license,
-            ['@discord'] = discord,
-            ['@playerip'] = playerip,
-            ['@targetplayername'] = targetName,
-            ['@sourceplayername'] = adminName,
-            ['@reason'] = reason,
-            ['@timeat'] = os.time(),
-            ['@added'] = os.date('%Y-%m-%d %H:%M:%S'),
-            ['@expiration'] = expiration,
-            ['@permanent'] = permanent,
-        }
-    )
-
-    LogAdminAction(source, "ban", ("target: %s | %s | reason: %s"):format(targetName, permanent == 1 and "PERMANENT" or (minutes .. " minutes"), reason), identifier, targetName)
-    DropPlayer(targetId, permanent == 1
-        and ("You have been permanently banned.\nReason: %s"):format(reason)
-        or ("You have been banned for %s minutes.\nReason: %s"):format(minutes, reason))
+    if permanent then
+        -- Real, enforced ban: Unique_Login's playerConnecting checks
+        -- uniqueac_banlist (owned by UNIQUE_AC), so this is what actually
+        -- keeps them out on reconnect - unlike the old banlist/banlisthistory
+        -- tables, which nothing checks at connect time.
+        if not exports.UNIQUE_AC then
+            TriggerClientEvent('esx:showNotification', source, "~r~UNIQUE_AC not found - cannot issue an enforced permanent ban.")
+            return
+        end
+        local ok, banId = exports.UNIQUE_AC:BanPlayer(targetId, reason, issuer)
+        if not ok then
+            TriggerClientEvent('esx:showNotification', source, "~r~Ban failed (player was kicked instead) - see server console.")
+        end
+        MySQL.Async.execute(
+            "INSERT INTO `unique_adminmenu_bans` (`identifier`, `license`, `ip`, `playername`, `admin_name`, `reason`, `banned_at`, `expire_at`, `external_ban_id`, `active`) VALUES (@identifier, @license, @ip, @playername, @adminname, @reason, @bannedat, NULL, @extid, 1)",
+            {
+                ['@identifier'] = identifier, ['@license'] = license, ['@ip'] = playerip,
+                ['@playername'] = targetName, ['@adminname'] = adminName, ['@reason'] = reason,
+                ['@bannedat'] = os.date('%Y-%m-%d %H:%M:%S'), ['@extid'] = ok and tostring(banId) or nil,
+            }
+        )
+        LogAdminAction(source, "ban", ("target: %s | PERMANENT | reason: %s"):format(targetName, reason), identifier, targetName)
+    else
+        if minutes <= 0 then
+            TriggerClientEvent('esx:showNotification', source, "~r~Usage: /aban <id> <minutes|perm> <reason>")
+            return
+        end
+        local expireAt = os.time() + (minutes * 60)
+        MySQL.Async.execute(
+            "INSERT INTO `unique_adminmenu_bans` (`identifier`, `license`, `ip`, `playername`, `admin_name`, `reason`, `banned_at`, `expire_at`, `active`) VALUES (@identifier, @license, @ip, @playername, @adminname, @reason, @bannedat, @expireat, 1)",
+            {
+                ['@identifier'] = identifier, ['@license'] = license, ['@ip'] = playerip,
+                ['@playername'] = targetName, ['@adminname'] = adminName, ['@reason'] = reason,
+                ['@bannedat'] = os.date('%Y-%m-%d %H:%M:%S'), ['@expireat'] = expireAt,
+            }
+        )
+        DropPlayer(targetId, ("You have been banned for %s minutes.\nReason: %s"):format(minutes, reason))
+        LogAdminAction(source, "ban", ("target: %s | %s minutes | reason: %s"):format(targetName, minutes, reason), identifier, targetName)
+    end
 end, false)
+
+RegisterCommand('aunban', function(source, args)
+    if not IsOnDutyAdmin(source) then return end
+    local recordId = tonumber(args[1])
+    if not recordId then
+        TriggerClientEvent('esx:showNotification', source, "~r~Usage: /aunban <record id> (see Ban History Search)")
+        return
+    end
+
+    MySQL.Async.fetchAll("SELECT * FROM `unique_adminmenu_bans` WHERE `id` = @id AND `active` = 1", { ['@id'] = recordId }, function(rows)
+        local row = rows and rows[1]
+        if not row then
+            TriggerClientEvent('esx:showNotification', source, "~r~No active ban with that record id.")
+            return
+        end
+
+        if row.external_ban_id and exports.UNIQUE_AC then
+            exports.UNIQUE_AC:UnbanPlayer(row.external_ban_id, ("Admin %s (%s)"):format(GetPlayerName(source), source))
+        end
+
+        MySQL.Async.execute("UPDATE `unique_adminmenu_bans` SET `active` = 0 WHERE `id` = @id", { ['@id'] = recordId })
+        LogAdminAction(source, "unban", ("record #%s | target: %s"):format(recordId, row.playername), row.identifier, row.playername)
+        TriggerClientEvent('esx:showNotification', source, ("~g~Unbanned %s (record #%s)"):format(row.playername or row.identifier, recordId))
+    end)
+end, false)
+
+ESX.RegisterServerCallback('Unique_AdminMenu:SearchBans', function(source, cb, query)
+    if not IsOnDutyAdmin(source) then cb({}) return end
+    query = tostring(query or ''):sub(1, 60)
+    MySQL.Async.fetchAll(
+        "SELECT * FROM `unique_adminmenu_bans` WHERE `active` = 1 AND (`playername` LIKE @q OR `identifier` LIKE @q) ORDER BY `id` DESC LIMIT 25",
+        { ['@q'] = '%' .. query .. '%' },
+        function(rows) cb(rows or {}) end
+    )
+end)
+
+-- Temp-ban enforcement: our own connect-time gate, independent of
+-- UNIQUE_AC/Unique_Login (those only ever see permanent bans, since
+-- exports.UNIQUE_AC:BanPlayer is only called for the permanent case above).
+AddEventHandler('playerConnecting', function(name, setKickReason, deferrals)
+    local src = source
+    deferrals.defer()
+    Citizen.Wait(0)
+
+    local license = GetPlayerIdentifierByType(src, 'license') or ''
+    local ip = GetPlayerEndpoint(src) or ''
+
+    MySQL.Async.fetchAll(
+        "SELECT * FROM `unique_adminmenu_bans` WHERE `active` = 1 AND `expire_at` IS NOT NULL AND `expire_at` > @now AND (`license` = @license OR `ip` = @ip) ORDER BY `expire_at` DESC LIMIT 1",
+        { ['@now'] = os.time(), ['@license'] = license, ['@ip'] = ip },
+        function(rows)
+            local row = rows and rows[1]
+            if row then
+                local minutesLeft = math.ceil((row.expire_at - os.time()) / 60)
+                deferrals.done(("You are temporarily banned for %s more minute(s).\nReason: %s"):format(minutesLeft, row.reason or ''))
+            else
+                deferrals.done()
+            end
+        end
+    )
+end)
 
 local Config_AutoActionAtWarnCount = 3
 

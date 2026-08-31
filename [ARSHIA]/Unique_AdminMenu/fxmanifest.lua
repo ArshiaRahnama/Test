@@ -16,6 +16,7 @@ client_scripts {
 	'client/admin_tools_menu.lua',
 	'client/nui_panel.lua',
 	'client/expansion.lua',
+	'client/admin_tag.lua',
 }
 
 server_scripts {
@@ -24,6 +25,7 @@ server_scripts {
 	'server/main.lua',
 	'server/admin_tools.lua',
 	'server/expansion.lua',
+	'server/admin_tag.lua',
 }
 
 ui_page('html/index.html')
@@ -34,3 +36,4 @@ files {
 }
 
 dependency 'esx_aduty'
+dependency 'Unique_Punishment'

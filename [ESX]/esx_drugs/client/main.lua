@@ -178,13 +178,21 @@ function OpenDrugShop()
 
     local playerInventory = ESX.GetPlayerData().inventory
 
+    if Config.Delivery.Enabled then
+        table.insert(elements, {
+            label = 'Mamoriate Mahmooleh (Delivery)',
+            action = 'delivery'
+        })
+    end
+
     for i=1, #price, 1 do
         for k, item in pairs(playerInventory) do
             if item.name == price[i].name and item.count > 0 then
+                local dealerPrice = ESX.Math.Round(price[i].price * Config.DealerSellBonus)
                 table.insert(elements, {
-                    label = ('%s - <span style="color:green;">%s</span>'):format(item.label, _U('dealer_item', ESX.Math.GroupDigits(price[i].price))),
+                    label = ('%s - <span style="color:green;">%s</span>'):format(item.label, _U('dealer_item', ESX.Math.GroupDigits(dealerPrice))),
                     name  = item.name,
-                    price = price[i].price,
+                    price = dealerPrice,
                     max   = item.count
                 })
             end
@@ -196,6 +204,13 @@ function OpenDrugShop()
         align    = 'top-left',
         elements = elements
     }, function(data, menu)
+        if data.current.action == 'delivery' then
+            menu.close()
+            menuOpen = false
+            TriggerServerEvent('esx_drugs:requestDelivery')
+            return
+        end
+
         ESX.UI.Menu.Open('dialog', GetCurrentResourceName(), 'drug_shop_amount', {
             title = _U('dealer_item', ESX.Math.GroupDigits(data.current.price))
         }, function(data1, menu1)
@@ -218,6 +233,223 @@ function OpenDrugShop()
         menuOpen = false
     end)
 end
+
+-- Shows the seller their current dealer "heat" level after every sale (server: Config.Heat)
+RegisterNetEvent('esx_drugs:updateHeat')
+AddEventHandler('esx_drugs:updateHeat', function(heat, maxHeat)
+    local percent = math.floor((heat / maxHeat) * 100)
+    local color = '~g~'
+
+    if percent >= 70 then
+        color = '~r~'
+    elseif percent >= 40 then
+        color = '~y~'
+    end
+
+    ESX.ShowNotification(('Garmiye Forosh: %s%s%%~s~'):format(color, percent))
+end)
+
+----------------------------------------
+------- DELIVERY / ESCORT (carrier) -----
+----------------------------------------
+local activeDelivery = nil -- {label, amount, reward, dropCoords, dropName, endTime}
+local deliveryBlip = nil
+
+RegisterNetEvent('esx_drugs:startDelivery')
+AddEventHandler('esx_drugs:startDelivery', function(data)
+    activeDelivery = {
+        label      = data.label,
+        amount     = data.amount,
+        reward     = data.reward,
+        dropCoords = vector3(data.dropCoords.x, data.dropCoords.y, data.dropCoords.z),
+        dropName   = data.dropName,
+        endTime    = GetGameTimer() + data.duration,
+    }
+
+    if deliveryBlip then RemoveBlip(deliveryBlip) end
+    deliveryBlip = AddBlipForCoord(activeDelivery.dropCoords)
+    SetBlipSprite(deliveryBlip, 1)
+    SetBlipColour(deliveryBlip, 5)
+    SetBlipRoute(deliveryBlip, true)
+    SetBlipRouteColour(deliveryBlip, 5)
+    BeginTextCommandSetBlipName("STRING")
+    AddTextComponentString(activeDelivery.dropName)
+    EndTextCommandSetBlipName(deliveryBlip)
+
+    ESX.ShowNotification(_U('delivery_started', data.amount, data.label, data.dropName))
+
+    Citizen.CreateThread(function()
+        local myDelivery = activeDelivery
+
+        while activeDelivery == myDelivery and GetGameTimer() < myDelivery.endTime do
+            Citizen.Wait(0)
+
+            local coords = GetEntityCoords(PlayerPedId())
+            local distance = #(coords - myDelivery.dropCoords)
+            local remaining = math.max(0, myDelivery.endTime - GetGameTimer())
+            local minutes = math.floor(remaining / 60000)
+            local seconds = math.floor((remaining % 60000) / 1000)
+
+            DrawRect(0.5, 0.88, 0.15, 0.045, 0, 60, 0, 160)
+            SetTextFont(4)
+            SetTextScale(0.45, 0.45)
+            SetTextColour(255, 255, 255, 255)
+            SetTextCentre(true)
+            SetTextOutline()
+            BeginTextCommandDisplayText("STRING")
+            AddTextComponentSubstringPlayerName(('Mahmooleh: ~g~~h~%02d:%02d~h~~s~'):format(minutes, seconds))
+            EndTextCommandDisplayText(0.5, 0.858)
+
+            if distance < 5.0 then
+                ESX.ShowHelpNotification(_U('delivery_pickup_prompt'))
+
+                if IsControlJustReleased(0, Keys['E']) then
+                    TriggerServerEvent('esx_drugs:completeDelivery')
+                end
+            end
+        end
+
+        if activeDelivery == myDelivery then
+            activeDelivery = nil
+            if deliveryBlip then RemoveBlip(deliveryBlip); deliveryBlip = nil end
+        end
+    end)
+end)
+
+RegisterNetEvent('esx_drugs:endDelivery')
+AddEventHandler('esx_drugs:endDelivery', function()
+    activeDelivery = nil
+    if deliveryBlip then RemoveBlip(deliveryBlip); deliveryBlip = nil end
+end)
+
+----------------------------------------
+------- DOA: DELIVERY INTEL (chaser) ----
+----------------------------------------
+-- Only meaningful for DOA (server only sends this to doa-job players), but harmless for anyone
+-- else since it just draws blips.
+local doaDeliveryBlips = {}
+
+RegisterNetEvent('esx_drugs:doaDeliveryIntel')
+AddEventHandler('esx_drugs:doaDeliveryIntel', function(startCoords, endCoords, waypoints, duration)
+    for i=1, #doaDeliveryBlips, 1 do
+        if DoesBlipExist(doaDeliveryBlips[i]) then RemoveBlip(doaDeliveryBlips[i]) end
+    end
+    doaDeliveryBlips = {}
+
+    local function addIntelBlip(coords, sprite, colour, label)
+        local blip = AddBlipForCoord(coords.x, coords.y, coords.z)
+        SetBlipSprite(blip, sprite)
+        SetBlipColour(blip, colour)
+        SetBlipScale(blip, 0.8)
+        SetBlipAsShortRange(blip, true)
+        BeginTextCommandSetBlipName("STRING")
+        AddTextComponentString(label)
+        EndTextCommandSetBlipName(blip)
+        table.insert(doaDeliveryBlips, blip)
+        return blip
+    end
+
+    addIntelBlip(startCoords, 1, 1, 'Mabda Ehtemali (Report)')
+    addIntelBlip(endCoords, 1, 1, 'Maghsad Ehtemali (Report)')
+
+    for i=1, #waypoints, 1 do
+        addIntelBlip(waypoints[i], 8, 46, 'Masire Ehtemali')
+    end
+
+    ESX.ShowNotification('~y~Gozareshe DOA:~s~ ye mahmooleh dar hale enteghal ast, masire ehtemali rooye naghshe eshareh shod.')
+
+    Citizen.SetTimeout(duration, function()
+        for i=1, #doaDeliveryBlips, 1 do
+            if DoesBlipExist(doaDeliveryBlips[i]) then RemoveBlip(doaDeliveryBlips[i]) end
+        end
+        doaDeliveryBlips = {}
+    end)
+end)
+
+-- DOA-only stop-and-search: press E near any other player to attempt a cargo seizure.
+-- DOA can't see who's actually carrying from range -- this is a bluffable stop, not a detector.
+Citizen.CreateThread(function()
+    while true do
+        Citizen.Wait(500)
+
+        if ESX.PlayerData.job ~= nil and ESX.PlayerData.job.name == 'doa' then
+            local playerPed = PlayerPedId()
+            local coords = GetEntityCoords(playerPed)
+            local closestPlayer, closestDistance = nil, Config.Delivery.InterceptRadius
+
+            for _, playerId in ipairs(GetActivePlayers()) do
+                local targetPed = GetPlayerPed(playerId)
+                if targetPed ~= playerPed then
+                    local dist = #(coords - GetEntityCoords(targetPed))
+                    if dist < closestDistance then
+                        closestPlayer, closestDistance = playerId, dist
+                    end
+                end
+            end
+
+            if closestPlayer then
+                Citizen.Wait(0)
+                ESX.ShowHelpNotification(_U('delivery_search_prompt'))
+
+                if IsControlJustReleased(0, Keys['E']) then
+                    TriggerServerEvent('esx_drugs:seizeDelivery', GetPlayerServerId(closestPlayer))
+                end
+            end
+        end
+    end
+end)
+
+----------------------------------------
+------- DOA: EVIDENCE COLLECTION --------
+----------------------------------------
+local evidenceBlips = {} -- [id] = {blip = ..., coords = ...}
+
+RegisterNetEvent('esx_drugs:newEvidenceSite')
+AddEventHandler('esx_drugs:newEvidenceSite', function(id, coords, drugLabel, lifespan)
+    coords = vector3(coords.x, coords.y, coords.z)
+
+    local blip = AddBlipForCoord(coords.x, coords.y, coords.z)
+    SetBlipSprite(blip, 501)
+    SetBlipColour(blip, 46)
+    SetBlipScale(blip, 0.7)
+    SetBlipAsShortRange(blip, true)
+    BeginTextCommandSetBlipName("STRING")
+    AddTextComponentString('Madrak: ' .. drugLabel)
+    EndTextCommandSetBlipName(blip)
+
+    evidenceBlips[id] = {blip = blip, coords = coords}
+
+    Citizen.SetTimeout(lifespan, function()
+        if evidenceBlips[id] then
+            if DoesBlipExist(evidenceBlips[id].blip) then RemoveBlip(evidenceBlips[id].blip) end
+            evidenceBlips[id] = nil
+        end
+    end)
+end)
+
+Citizen.CreateThread(function()
+    while true do
+        Citizen.Wait(500)
+
+        if ESX.PlayerData.job ~= nil and ESX.PlayerData.job.name == 'doa' then
+            local coords = GetEntityCoords(PlayerPedId())
+
+            for id, site in pairs(evidenceBlips) do
+                local distance = #(coords - site.coords)
+                if distance < Config.Evidence.CollectRadius then
+                    Citizen.Wait(0)
+                    ESX.ShowHelpNotification(_U('evidence_collect_prompt'))
+
+                    if IsControlJustReleased(0, Keys['E']) then
+                        TriggerServerEvent('esx_drugs:collectEvidence', id)
+                        if DoesBlipExist(site.blip) then RemoveBlip(site.blip) end
+                        evidenceBlips[id] = nil
+                    end
+                end
+            end
+        end
+    end
+end)
 
 RegisterNetEvent('esx_drugs:Cartel')
 AddEventHandler('esx_drugs:Cartel', function(itemName)

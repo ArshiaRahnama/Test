@@ -163,7 +163,11 @@ function AdminMenu()
           if spec[i] then
             spec[lastspec] = false
             lastspec = i
-            spectate(lastspec)
+            if not spectate(lastspec) then
+              drawNotification("~r~Fard mored nazar online nist.")
+              spec[i] = false
+              lastspec = 0
+            end
           else
             lastspec = 0
             resetNormalCamera()
@@ -200,7 +204,11 @@ RegisterNetEvent('Admin_Menu:spec')
 AddEventHandler('Admin_Menu:spec', function(id)
   if id and sp ~= id then
     sp = id
-    spectate(id)
+    if not spectate(id) then
+      drawNotification("~r~Fard mored nazar online nist.")
+      sp = 0
+      return
+    end
     TriggerEvent("Admin_Menu:SpectMenus", true)
   else
     sp = 0

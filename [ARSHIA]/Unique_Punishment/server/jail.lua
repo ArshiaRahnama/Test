@@ -108,7 +108,7 @@ AddEventHandler('arshia_jail:sendto',function (target, type, time, reason, unjai
 	-- below via IsJobAllowed).
 	if not xPlayer then return end
 	if type == 'admin' then
-		if not xPlayer.permission_level or xPlayer.permission_level < 2 then
+		if not xPlayer.permission_level or xPlayer.permission_level < (Config.AdminPermissionLevel or 2) then
 			if exports.UNIQUE_AC then
 				exports.UNIQUE_AC:BanPlayer(source, 'Cheat Lua Executer', 'Tried arshia_jail:sendto (admin) without permission')
 			end

@@ -93,11 +93,22 @@ AddEventHandler('esx_communityGGservice:inCommunityService', function(actions_re
                     TriggerServerEvent('Unique_Punishment:AntiCheatExempt', 4000, { teleport = true, speed = true })
                     exemptRefresh = GetGameTimer()
                 end
-                if GetDistanceBetweenCoords(GetEntityCoords(playerPed), Config.ServiceLocation.x, Config.ServiceLocation.y, Config.ServiceLocation.z,true) > Config.DistanceExtension then
+                -- Tight containment: checked ~4x/sec (was once a second) so a
+                -- vehicle can't cover much ground before getting snapped back,
+                -- and it explicitly pulls them out of any vehicle first so
+                -- they don't end up teleported-but-still-"in" a car that's
+                -- still sitting outside the zone.
+                if GetDistanceBetweenCoords(GetEntityCoords(playerPed), Config.ServiceLocation.x, Config.ServiceLocation.y, Config.ServiceLocation.z, true) > Config.DistanceExtension then
+                    if IsPedInAnyVehicle(playerPed, false) then
+                        TaskLeaveVehicle(playerPed, GetVehiclePedIsIn(playerPed, false), 16)
+                        Citizen.Wait(150)
+                        ClearPedTasksImmediately(playerPed)
+                    end
                     TriggerServerEvent('Unique_Punishment:AntiCheatExempt', 5000, { teleport = true, speed = true })
                     ESX.Game.Teleport(playerPed, Config.ServiceLocation)
+                    TriggerServerEvent('esx_communityGGservice:extendService')
                 end
-                Citizen.Wait(1000)
+                Citizen.Wait(250)
             end
         end)
     end
@@ -118,6 +129,9 @@ AddEventHandler('esx_communityGGservice:finishCommunityService', function(source
     actionsRemaining = 0
     TriggerServerEvent('Unique_Punishment:AntiCheatExempt', 5000, { teleport = true, speed = true })
     ESX.Game.Teleport(PlayerPedId(), Config.ReleaseLocation)
+    -- Tell the server we actually made it, so its retry/never-bug fallback
+    -- (server/cs.lua releaseFromCommunityService) knows not to resend this.
+    TriggerServerEvent('Unique_Punishment:CS_ReleaseAck')
 
     ESX.TriggerServerCallback('esx_skin:getPlayerSkin', function(skin)
         TriggerEvent('skinchanger:loadSkin', skin)
@@ -129,6 +143,21 @@ AddEventHandler('esx_communityGGservice:finishCommunityService', function(source
 
     end)
     deleteCSped()
+end)
+
+-- Server-side containment watchdog (server/cs.lua) fires this when it
+-- detects someone too far from Config.ServiceLocation on its own, regardless
+-- of whether the client-side loop above is even still running (killed
+-- thread, mod menu, lag spike, etc.). Same recovery either way.
+RegisterNetEvent('Unique_Punishment:CS_ForceReturn')
+AddEventHandler('Unique_Punishment:CS_ForceReturn', function()
+    local playerPed = PlayerPedId()
+    if IsPedInAnyVehicle(playerPed, false) then
+        TaskLeaveVehicle(playerPed, GetVehiclePedIsIn(playerPed, false), 16)
+        Citizen.Wait(150)
+        ClearPedTasksImmediately(playerPed)
+    end
+    ESX.Game.Teleport(playerPed, Config.ServiceLocation)
 end)
 
 function startThread()

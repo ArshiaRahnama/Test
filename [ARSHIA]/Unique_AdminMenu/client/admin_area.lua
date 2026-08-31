@@ -91,7 +91,6 @@ AddEventHandler("Fax:AdminAreaSet",function(v,w)
 	if w~=nil then
 	source=w
 	missionTextDisplay("~r~RP PAUSE ~o~| ~g~MANTAGHE: ADMIN AREA ("..tonumber(v.index)..") ~o~| ~r~ADMIN: "..GetPlayerName(GetPlayerFromServerId(source)),8000)
-	lib.notify({ position = 'center-right', description = "<b style='color:Black'>RP STOP </b> <br /><br /><b style='color:#00FF00'>MANTAGHE: ("..tonumber(v.index)..") </b><br /><br /> <b style='color:Black'>ADMIN NAZER: ("..GetPlayerName(GetPlayerFromServerId(source))..") </b><br /><br /><b style='color:yellow'>Az Mantaghe RP STOP Dor Shavid.</b>", type = "error", duration = 15000 })
 
 	end
 

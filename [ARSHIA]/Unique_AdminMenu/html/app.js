@@ -160,7 +160,12 @@ function drawOnlinePlayers(list) {
 // ============================================================================
 function renderDashboard(data) {
   openPanel('Server Dashboard', false);
-  let html = `<div class="sectionTitle">Top 10 Richest Players</div>`;
+  let html = `<div class="sectionTitle">Staff On Duty (${(data.staff || []).length})</div>`;
+  html += (data.staff && data.staff.length)
+    ? data.staff.map(s => `<div class="infoRow"><span>${escapeHtml(s.name)} (id: ${s.source})</span><span>${s.dutyMinutes}m on duty &middot; ${s.actions} actions</span></div>`).join('')
+    : `<div class="rMeta">No admins currently on duty</div>`;
+
+  html += `<div class="sectionTitle">Top 10 Richest Players</div>`;
   html += (data.richest && data.richest.length)
     ? data.richest.map((r, i) => `<div class="infoRow"><span>${i + 1}. ${escapeHtml((r.pname || '').trim() || r.identifier)}</span><span>$${Number(r.total || 0).toLocaleString()}</span></div>`).join('')
     : `<div class="rMeta">No data</div>`;

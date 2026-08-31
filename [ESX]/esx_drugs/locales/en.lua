@@ -42,6 +42,7 @@ Locales ['en'] = {
   ['ephedrine_field_close'] = '~r~Soma dar yek mantagheye mamnooe hastid!',
   ['ephedrine_process_close'] = 'Inja booye badi miad',
   ['ephedrine_inventoryfull'] = 'Shoma fazaye kafi baraye ~g~Ephedra~s~ nadarid.',
+  ['ephedra_inventoryfull'] = 'Shoma fazaye kafi baraye ~g~Ephedra~s~ nadarid.',
   ['ephedrine_processprompt'] = '~INPUT_CONTEXT~ ra feshar dahid ta ~g~tabdile Ephedra~s~ aghaz shavad.',
   ['ephedrine_processingstarted'] = 'Tabdile ~g~Ephedra~s~ be ~g~Ephedrine~s~...',
   ['ephedrine_processingfull'] = 'Tabdil ~r~Cancel Shod~s~ chon inventory por ast!',
@@ -108,6 +109,32 @@ Locales ['en'] = {
   ['dealer_item'] = '$%s',
   ['dealer_notenough'] = 'Shoma be andaze kafi baraye forosh nadarid!',
   ['dealer_sold'] = 'Shoma be tedade ~b~%sx~s~ az ~y~%s~s~ be mablaqe ~g~$%s~s~ forokhtid',
+  ['dealer_too_far'] = 'Shoma kheyli az ~r~Kharidare Mavad~s~ door hastid.',
+  ['dealer_cooldown'] = 'Kheyli sari daste be dast mikoni, ~r~sabr kon~s~!',
+  ['dealer_gang_tax'] = 'Bekhatere ~y~mavad forooshi~s~, ~b~%s%%~s~ az sood be sandoughe gang vared shod: ~g~$%s~s~',
+  ['dealer_heat_high'] = '~r~Hoshdar:~s~ police shadidan mokhtaraghe to hastan, felan az in dor kenar bekesh!',
+  ['too_far_process'] = 'Shoma be andaze kafi be dastgahe pardazesh nazdik nistid.',
+
+  -- delivery missions
+  ['delivery_already_active'] = 'Shoma alan ye mahmooleh ro hamin alan darid mibarid.',
+  ['delivery_cooldown'] = 'Bayad kami sabr konid ghabl az gereftane mamoriate badi.',
+  ['delivery_no_cargo'] = 'Shoma be andaze kafi mavad baraye in mamoriat nadarid.',
+  ['delivery_started'] = 'Mamoriate Mahmooleh shoro shod! ~b~%sx~s~ ~y~%s~s~ ro be ~g~%s~s~ beresoonid.',
+  ['delivery_no_active'] = 'Shoma mamoriate faali nadarid.',
+  ['delivery_expired'] = 'Vaghte mamoriat tamoom shod!',
+  ['delivery_not_at_drop'] = 'Shoma hanooz be noghteye tahvil naresidid.',
+  ['delivery_cargo_missing'] = 'Mahmooleh gom shode! (Ehtemalan tavasote DOA zabt shode)',
+  ['delivery_success'] = 'Mahmooleh ba movafaghiat tahvil shod! Paداsh: ~g~$%s~s~',
+  ['delivery_seized'] = '~r~Mahmooleye shoma tavasote DOA zabt shod!~s~',
+  ['delivery_seize_none'] = 'In fard mahmooleie hamrash nist.',
+  ['delivery_seize_success'] = 'Zabt shod: ~b~%sx~s~ ~y~%s~s~',
+  ['delivery_pickup_prompt'] = '  ~INPUT_CONTEXT~ bezanid ta ~g~Mahmooleh~s~ ro tahvil dahid.',
+  ['delivery_search_prompt'] = '  ~INPUT_CONTEXT~ bezanid ta in fard ro ~r~bazresi~s~ konid.',
+
+  -- evidence / CID referral
+  ['evidence_expired'] = 'In madrak digeh moatabar nist.',
+  ['evidence_collected'] = 'Madrak jam-avari va be CID ershja dade shod.',
+  ['evidence_collect_prompt'] = '  ~INPUT_CONTEXT~ bezanid ta ~y~Madrak~s~ ro jam-avari konid.',
 
 
   ['blip_weedprocess'] = 'Hippy Hangout',
@@ -128,6 +155,7 @@ Locales ['en'] = {
   ['blip_poppyfield'] = 'Wong Property',
   ['blip_ephedrinefield'] = 'Restricted Area',
   ['blip_drugdealer'] = 'Kharidare Mavad',
+  ['dealer_alert_blip'] = 'Foroshe Mavad (Hoshdar)',
 
 
   ['not_needed'] = 'You shouldn\'t take drugs you don\'t need!',

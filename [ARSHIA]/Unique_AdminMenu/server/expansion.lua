@@ -61,59 +61,33 @@ AddEventHandler('Unique_AdminMenu:ToggleCuff', function(targetId)
     LogAdminAction(source, "cuff-toggle", ("target: %s (id:%s)"):format(GetPlayerName(targetId), targetId), ESX.GetPlayerFromId(targetId).identifier, GetPlayerName(targetId))
 end)
 
--- Jail re-uses the exact same coordinates the existing /az command already
--- teleports on-duty admins to, so it lines up with whatever jail/holding
--- area this server already has set up. It also writes into `adminjaillog`,
--- the same table the offline /ajailoffline command uses, so both show up
--- in one place.
-local JailCoords = vector3(-425.507, 1123.468, 325.85)
-local PreJailCoords = {}
-
-RegisterServerEvent('Unique_AdminMenu:JailTarget')
-AddEventHandler('Unique_AdminMenu:JailTarget', function(targetId, minutes, reason)
+-- Real jail/unjail (movement lock + countdown) is handled by
+-- Unique_Punishment's arshia_jail:sendto / arshia_jail:UnjailPlayer, which
+-- do their own permission_level check. This just mirrors it into our own
+-- admin_action_log / Discord log for a unified history, without duplicating
+-- the fake teleport-only jail this used to be.
+AddEventHandler('arshia_jail:sendto', function(target, jailType, minutes, reason)
     local source = source
-    if not IsOnDutyAdmin(source) then return end
-    targetId = tonumber(targetId)
-    local Target = ESX.GetPlayerFromId(targetId)
+    if jailType ~= 'admin' or not IsOnDutyAdmin(source) then return end
+    local Target = ESX.GetPlayerFromId(tonumber(target))
     if not Target then return end
-    minutes = tonumber(minutes) or 0
-    reason = (type(reason) == 'string' and reason ~= '') and reason or 'No reason specified'
-
-    PreJailCoords[targetId] = GetEntityCoords(GetPlayerPed(targetId))
-    ExemptFromAntiCheat(targetId, 5000, { teleport = true, speed = true })
-    TriggerClientEvent('Unique_AdminMenu:ApplyTeleportCoords', targetId, JailCoords.x, JailCoords.y, JailCoords.z)
-    TriggerClientEvent('esx:showNotification', targetId, ("~r~You have been jailed for %s minutes: %s"):format(minutes, reason))
-
-    MySQL.Async.execute(
-        "INSERT INTO `adminjaillog` (`identifier`, `name`, `jailreason`, `jailtime`, `punisher`, `date`) VALUES (@identifier, @name, @reason, @jailtime, @punisher, @date)",
-        {
-            ['@identifier'] = Target.identifier,
-            ['@name'] = GetPlayerName(targetId),
-            ['@reason'] = reason,
-            ['@jailtime'] = minutes,
-            ['@punisher'] = GetPlayerName(source),
-            ['@date'] = tostring(os.time()),
-        }
-    )
-    LogAdminAction(source, "jail", ("target: %s | %s minutes | reason: %s"):format(GetPlayerName(targetId), minutes, reason), Target.identifier, GetPlayerName(targetId))
+    LogAdminAction(source, "jail", ("target: %s | %s minutes | reason: %s"):format(GetPlayerName(target), minutes, reason), Target.identifier, GetPlayerName(target))
 end)
 
-RegisterServerEvent('Unique_AdminMenu:UnjailTarget')
-AddEventHandler('Unique_AdminMenu:UnjailTarget', function(targetId)
+AddEventHandler('arshia_jail:UnjailPlayer', function(target)
     local source = source
     if not IsOnDutyAdmin(source) then return end
-    targetId = tonumber(targetId)
-    local Target = ESX.GetPlayerFromId(targetId)
+    local Target = ESX.GetPlayerFromId(tonumber(target))
     if not Target then return end
+    LogAdminAction(source, "unjail", ("target: %s"):format(GetPlayerName(target)), Target.identifier, GetPlayerName(target))
+end)
 
-    local back = PreJailCoords[targetId]
-    ExemptFromAntiCheat(targetId, 5000, { teleport = true, speed = true })
-    if back then
-        TriggerClientEvent('Unique_AdminMenu:ApplyTeleportCoords', targetId, back.x, back.y, back.z)
-        PreJailCoords[targetId] = nil
-    end
-    TriggerClientEvent('esx:showNotification', targetId, "~g~You have been released from jail")
-    LogAdminAction(source, "unjail", ("target: %s"):format(GetPlayerName(targetId)), Target.identifier, GetPlayerName(targetId))
+AddEventHandler('esx_communityGGservice:sendToCommunityService', function(target, count, reason)
+    local source = source
+    if not IsOnDutyAdmin(source) then return end
+    local Target = ESX.GetPlayerFromId(tonumber(target))
+    if not Target then return end
+    LogAdminAction(source, "community-service", ("target: %s | %s actions | reason: %s"):format(GetPlayerName(target), count, reason), Target.identifier, GetPlayerName(target))
 end)
 
 RegisterServerEvent('Unique_AdminMenu:WhisperTarget')
@@ -297,12 +271,62 @@ ESX.RegisterServerCallback('Unique_AdminMenu:GetDashboard', function(source, cb)
                 "SELECT `identifier`, MAX(`playername`) AS playername, COUNT(*) AS cnt FROM `admin_warnings` GROUP BY `identifier` ORDER BY cnt DESC LIMIT 10",
                 {},
                 function(warned)
-                    cb({
-                        richest = richest or {},
-                        mostWarned = warned or {},
-                        resources = resources,
-                        onlineCount = #ESX.GetPlayers(),
-                    })
+                    local onlineAdmins = {}
+                    for _, src in ipairs(ESX.GetPlayers()) do
+                        if IsOnDutyAdmin(src) then onlineAdmins[#onlineAdmins + 1] = src end
+                    end
+
+                    if #onlineAdmins == 0 then
+                        cb({
+                            richest = richest or {},
+                            mostWarned = warned or {},
+                            resources = resources,
+                            onlineCount = #ESX.GetPlayers(),
+                            staff = {},
+                        })
+                        return
+                    end
+
+                    -- One admin_name IN (...) query covering everyone on duty,
+                    -- instead of a round trip per admin.
+                    local names, placeholders = {}, {}
+                    for i, src in ipairs(onlineAdmins) do
+                        names[i] = GetPlayerName(src)
+                        placeholders[i] = '@n' .. i
+                    end
+                    local params = {}
+                    for i, n in ipairs(names) do params['@n' .. i] = n end
+
+                    MySQL.Async.fetchAll(
+                        ("SELECT `admin_name`, COUNT(*) AS cnt FROM `admin_action_log` WHERE `admin_name` IN (%s) GROUP BY `admin_name`"):format(table.concat(placeholders, ',')),
+                        params,
+                        function(actionRows)
+                            local actionsByName = {}
+                            for _, row in ipairs(actionRows or {}) do
+                                actionsByName[row.admin_name] = row.cnt
+                            end
+
+                            local staff = {}
+                            for i, src in ipairs(onlineAdmins) do
+                                local start = DutySessionStart and DutySessionStart[src]
+                                staff[#staff + 1] = {
+                                    name = names[i],
+                                    source = src,
+                                    dutyMinutes = start and math.floor((os.time() - start) / 60) or 0,
+                                    actions = actionsByName[names[i]] or 0,
+                                }
+                            end
+                            table.sort(staff, function(a, b) return a.dutyMinutes > b.dutyMinutes end)
+
+                            cb({
+                                richest = richest or {},
+                                mostWarned = warned or {},
+                                resources = resources,
+                                onlineCount = #ESX.GetPlayers(),
+                                staff = staff,
+                            })
+                        end
+                    )
                 end
             )
         end

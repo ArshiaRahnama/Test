@@ -15,8 +15,6 @@ function OpenReportsMenu()
             local statusIcon = r.status == 'open' and 'circle-exclamation' or 'clock'
             local statusColor = r.status == 'open' and '#c85450' or '#d6a83a'
 
-
-
             lib.registerContext({
                 id = 'report_actions_' .. id,
                 title = ('Report #%s'):format(id),
@@ -69,6 +67,57 @@ function OpenReportsMenu()
 end
 
 RegisterCommand('adminreports', OpenReportsMenu, false)
+
+-- Ban History Search + Unban, matching the OpenReportsMenu pattern above.
+-- Permanent bans (external_ban_id set) route the unban through
+-- exports.UNIQUE_AC:UnbanPlayer server-side; temp bans just get deactivated.
+function OpenBanSearch()
+    if not aduty then return end
+    local query = lib.inputDialog('Ban History Search', {
+        { type = 'input', label = 'Player name or identifier', description = 'Leave empty to show the 25 most recent active bans' },
+    })
+    if not query then return end
+
+    ESX.TriggerServerCallback('Unique_AdminMenu:SearchBans', function(rows)
+        rows = rows or {}
+        local options = {}
+
+        for _, r in ipairs(rows) do
+            local isPermanent = r.expire_at == nil
+            options[#options + 1] = {
+                title = ('%s (%s)'):format(r.playername or 'Unknown', isPermanent and 'PERMANENT' or 'temp'),
+                description = ('Reason: %s\nBy: %s\nRecord #%s'):format(r.reason or '', r.admin_name or '?', r.id),
+                icon = 'gavel',
+                iconColor = '#c85450',
+                onSelect = function()
+                    local alert = lib.alertDialog({
+                        header = 'Unban ' .. (r.playername or r.identifier or ''),
+                        content = 'This will lift the ban immediately. Continue?',
+                        centered = true,
+                        cancel = true,
+                    })
+                    if alert == 'confirm' then
+                        ExecuteCommand('aunban ' .. r.id)
+                        Citizen.SetTimeout(300, OpenBanSearch)
+                    end
+                end,
+            }
+        end
+
+        if #options == 0 then
+            options[1] = { title = 'No matching active bans', disabled = true }
+        end
+
+        lib.registerContext({
+            id = 'ban_search_menu',
+            title = ('Ban History (%s)'):format(#options),
+            options = options,
+        })
+        lib.showContext('ban_search_menu')
+    end, query[1] or '')
+end
+
+RegisterCommand('adminbans', OpenBanSearch, false)
 
 RegisterCommand('adminradial', function()
     if not aduty then return end

@@ -1,6 +1,9 @@
 -- Broadcasts the on-duty admin list so everyone's client can draw a floating
 -- name tag over their heads (client/admin_tag.lua). Reuses IsOnDutyAdmin
--- from server/main.lua.
+-- from server/main.lua. Also tracks duty-session start times for the Staff
+-- Dashboard (server/expansion.lua's GetDashboard callback reads this global).
+
+DutySessionStart = {} -- source -> os.time() when they went on duty (global, read by GetDashboard)
 
 local function BroadcastAdminTags()
     local tags = {}
@@ -9,6 +12,11 @@ local function BroadcastAdminTags()
         local src = players[i]
         if IsOnDutyAdmin(src) then
             tags[#tags + 1] = { source = src }
+            if not DutySessionStart[src] then
+                DutySessionStart[src] = os.time()
+            end
+        else
+            DutySessionStart[src] = nil
         end
     end
     TriggerClientEvent('Unique_AdminMenu:SyncAdminTags', -1, tags)
@@ -23,7 +31,17 @@ AddEventHandler('Unique_AdminMenu:UpdateAdminTag', function()
 end)
 
 AddEventHandler('playerDropped', function()
+    DutySessionStart[source] = nil
     Citizen.SetTimeout(0, BroadcastAdminTags)
+end)
+
+-- Also recompute periodically in case a duty toggle ever happens without
+-- going through Unique_AdminMenu:UpdateAdminTag (e.g. esx_aduty console command).
+Citizen.CreateThread(function()
+    while true do
+        Citizen.Wait(60000)
+        BroadcastAdminTags()
+    end
 end)
 
 AddEventHandler('esx:playerLoaded', function(playerId)

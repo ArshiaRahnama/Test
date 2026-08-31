@@ -2,6 +2,12 @@ ESX = nil
 
 TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
 
+-- Tracks who's currently serving CS (source -> true) so the containment
+-- watchdog below only checks players who are actually supposed to be at
+-- Config.ServiceLocation. Populated when a sentence starts/resumes, cleared
+-- on release or disconnect.
+ActiveCS = {}
+
 TriggerEvent('es:addAdminCommand', 'cs', 1, function(source, args, user)
     if args[1] and GetPlayerName(args[1]) ~= nil and tonumber(args[2]) then
         local targetId = tonumber(args[1])
@@ -137,37 +143,27 @@ AddEventHandler('esx_communityGGservice:completeService', function()
 	}, function(result)
 
 		if result[1] then
-			MySQL.Async.execute('UPDATE communityservice SET actions_remaining = actions_remaining - 1 WHERE identifier = @identifier', {
-				['@identifier'] = identifier
-			})
-		else
-
-		end
-	end)
-end)
-
-RegisterServerEvent('esx_communityGGservice:extendService')
-AddEventHandler('esx_communityGGservice:extendService', function()
-
-	local _source = source
-	local xPlayer = ESX.GetPlayerFromId(_source)
-	if not xPlayer then return end
-	local identifier = xPlayer.identifier
-
-	MySQL.Async.fetchAll('SELECT * FROM communityservice WHERE identifier = @identifier', {
-		['@identifier'] = identifier
-	}, function(result)
-
-		if result[1] then
-			MySQL.Async.execute('UPDATE communityservice SET actions_remaining = actions_remaining + @extension_value WHERE identifier = @identifier', {
+			local remaining = (result[1].actions_remaining or 0) - 1
+			MySQL.Async.execute('UPDATE communityservice SET actions_remaining = @remaining WHERE identifier = @identifier', {
 				['@identifier'] = identifier,
-				['@extension_value'] = Config.ServiceExtensionOnEscape
+				['@remaining'] = remaining,
 			})
+
+			-- SERVER decides when CS is actually finished, instead of trusting
+			-- the client's own local actionsRemaining count to fire
+			-- finishCommunityService itself (that was a free "instant complete"
+			-- for anyone willing to trigger the event directly).
+			if remaining <= 0 then
+				releaseFromCommunityService(_source)
+			end
 		else
 
 		end
 	end)
 end)
+
+-- (esx_communityGGservice:extendService is now handled further down,
+-- alongside the server-side containment watchdog - see PenalizeEscape.)
 
 -- SECURITY FIX: neither of these two events checked WHO was calling them --
 -- any connected player could TriggerServerEvent this directly with any
@@ -183,11 +179,23 @@ local function IsJobAllowed(jobname)
 	return false
 end
 
+-- EXPANSION: allow on-duty admins (ESX permission_level, e.g. from
+-- Unique_AdminMenu) to sentence players to community service too, not just
+-- the police/judge jobs above -- mirrors jail.lua's 'admin' vs 'faction'
+-- distinction for the exact same class of action. Config.AdminPermissionLevel
+-- defaults to 2 if not set.
+local function IsAllowedToSentence(xSender)
+	if not xSender then return false end
+	if IsJobAllowed(xSender.job.name) then return true end
+	local minLevel = Config.AdminPermissionLevel or 2
+	return xSender.permission_level ~= nil and xSender.permission_level >= minLevel
+end
+
 RegisterServerEvent('esx_communityGGservice:sendToCommunityService')
 AddEventHandler('esx_communityGGservice:sendToCommunityService', function(target, actions_count, reason)
 	local _source = source
 	local xSender = ESX.GetPlayerFromId(_source)
-	if not xSender or not IsJobAllowed(xSender.job.name) then
+	if not IsAllowedToSentence(xSender) then
 		if exports.UNIQUE_AC then
 			exports.UNIQUE_AC:BanPlayer(_source, 'Cheat Lua Executer', 'Tried esx_communityGGservice:sendToCommunityService without permission')
 		end
@@ -234,6 +242,7 @@ AddEventHandler('esx_communityGGservice:sendToCommunityService', function(target
 
 
 	TriggerClientEvent('esx_policejob:unrestrain', target)
+	ActiveCS[target] = true
 	TriggerClientEvent('esx_communityGGservice:inCommunityService', target, actions_count)
 	TriggerClientEvent('esx_communityGGservice:inCommunityService_reason', target, reason)
 end)
@@ -244,7 +253,7 @@ RegisterServerEvent('esx_communityGGservice:sendToCommunityServiceoffline')
 AddEventHandler('esx_communityGGservice:sendToCommunityServiceoffline', function(steamhex, actions_count, reason)
 	local _source = source
 	local xSender = ESX.GetPlayerFromId(_source)
-	if not xSender or not IsJobAllowed(xSender.job.name) then
+	if not IsAllowedToSentence(xSender) then
 		if exports.UNIQUE_AC then
 			exports.UNIQUE_AC:BanPlayer(_source, 'Cheat Lua Executer', 'Tried esx_communityGGservice:sendToCommunityServiceoffline without permission')
 		end
@@ -291,34 +300,33 @@ AddEventHandler('esx_communityGGservice:sendToCommunityServiceoffline', function
 
 end)
 
+-- BUG FIX: this used to ignore `source` and loop over EVERY online player
+-- every single time ANY player fired 'loading:Loaded' - meaning every new
+-- connection re-sent inCommunityService to every player already serving CS,
+-- interrupting their current action/animation and re-teleporting them for
+-- no reason. Now it only ever checks the player who actually just loaded.
 RegisterServerEvent('esx_communityGGservice:checkIfSentenced')
 AddEventHandler('esx_communityGGservice:checkIfSentenced', function()
-	local Players = ESX.GetPlayers()
-	for i=1, #Players do
+	local _source = source
+	local xPlayer = ESX.GetPlayerFromId(_source)
+	if not xPlayer then return end
+	local identifier = xPlayer.identifier
 
-		local _source = Players[i]
-		local xPlayer = ESX.GetPlayerFromId(_source)
-		if xPlayer then
-			local identifier = xPlayer.identifier
+	MySQL.Async.fetchAll('SELECT * FROM communityservice WHERE identifier = @identifier', {
+		['@identifier'] = identifier
+	}, function(result)
+		if result[1] ~= nil and result[1].actions_remaining > 0 then
+			ActiveCS[_source] = true
+			TriggerClientEvent('esx_communityGGservice:inCommunityService', _source, tonumber(result[1].actions_remaining))
+			TriggerClientEvent('esx_communityGGservice:inCommunityService_reason', _source, result[1].reason)
 
-			MySQL.Async.fetchAll('SELECT * FROM communityservice WHERE identifier = @identifier', {
-				['@identifier'] = identifier
-			}, function(result)
-				if result[1] ~= nil and result[1].actions_remaining > 0 then
-					TriggerClientEvent('esx_communityGGservice:inCommunityService', _source, tonumber(result[1].actions_remaining))
-					TriggerClientEvent('esx_communityGGservice:inCommunityService_reason', _source, result[1].reason)
-
-					local currentJob = xPlayer.job.name
-					if currentJob ~= "nojob"  then
-
-						xPlayer.setJob("off"..currentJob, xPlayer.job.grade)
-						TriggerClientEvent('esx:showNotification', _source, "Shoma Off Duty Shodid")
-					end
-				end
-			end)
+			local currentJob = xPlayer.job.name
+			if currentJob ~= "nojob"  then
+				xPlayer.setJob("off"..currentJob, xPlayer.job.grade)
+				TriggerClientEvent('esx:showNotification', _source, "Shoma Off Duty Shodid")
+			end
 		end
-		Wait(20)
-	end
+	end)
 end)
 
 function releaseFromCommunityService(target)
@@ -326,6 +334,8 @@ function releaseFromCommunityService(target)
 	local xTarget = ESX.GetPlayerFromId(target)
 	if not xTarget then return end
 	local identifier = xTarget.identifier
+	ActiveCS[target] = nil
+
 	MySQL.Async.fetchAll('SELECT * FROM communityservice WHERE identifier = @identifier', {
 		['@identifier'] = identifier
 	}, function(result)
@@ -333,17 +343,105 @@ function releaseFromCommunityService(target)
 			MySQL.Async.execute('DELETE from communityservice WHERE identifier = @identifier', {
 				['@identifier'] = identifier
 			})
-
-
-
-
-
-
 		end
 	end)
 	TriggerClientEvent('esx_dpemote:DisableEmotes', target, false)
 	TriggerClientEvent('esx_communityGGservice:finishCommunityService', target)
+
+	-- Never-bug guarantee: confirm the client actually landed at
+	-- Config.ReleaseLocation. If Unique_Punishment:CS_ReleaseAck hasn't come
+	-- back in 4s (dropped event, client hiccup, resource restart mid-release,
+	-- etc.), resend the release up to 3 times so nobody gets stuck.
+	local attempt = 0
+	local function confirmRelease()
+		attempt = attempt + 1
+		Citizen.SetTimeout(4000, function()
+			if ReleaseAcked[target] then
+				ReleaseAcked[target] = nil
+				return
+			end
+			if attempt >= 3 then return end
+			if GetPlayerName(target) == nil then return end -- disconnected, nothing to do
+			TriggerClientEvent('esx_dpemote:DisableEmotes', target, false)
+			TriggerClientEvent('esx_communityGGservice:finishCommunityService', target)
+			confirmRelease()
+		end)
+	end
+	confirmRelease()
 end
+
+ReleaseAcked = {}
+RegisterServerEvent('Unique_Punishment:CS_ReleaseAck')
+AddEventHandler('Unique_Punishment:CS_ReleaseAck', function()
+	ReleaseAcked[source] = true
+end)
+
+-- Escape containment. The client already teleports itself back the instant
+-- it notices it's too far (see client/cs.lua, checked several times a
+-- second) - this event is just how it reports that back so the server can
+-- apply the existing Config.ServiceExtensionOnEscape penalty and log it.
+-- Also backed by a server-side watchdog below that doesn't depend on the
+-- client cooperating at all (kills threads, mod menu, disconnect, etc. all
+-- still get caught).
+local LastEscapePenalty = {}
+local function PenalizeEscape(targetSource, identifier, detectedBy)
+	-- Debounce: don't stack a penalty more than once every 10s for the same
+	-- player, in case client+server both report the same escape.
+	local now = os.time()
+	if LastEscapePenalty[targetSource] and (now - LastEscapePenalty[targetSource]) < 10 then return end
+	LastEscapePenalty[targetSource] = now
+
+	MySQL.Async.execute('UPDATE communityservice SET actions_remaining = actions_remaining + @extension_value WHERE identifier = @identifier', {
+		['@identifier'] = identifier,
+		['@extension_value'] = Config.ServiceExtensionOnEscape,
+	})
+	TriggerClientEvent('esx:showNotification', targetSource, ("~r~Escape attempt detected - +%s actions added to your sentence."):format(Config.ServiceExtensionOnEscape))
+	if LogAdminAction then
+		LogAdminAction(targetSource, "cs-escape-attempt", ("detected by: %s | +%s actions"):format(detectedBy, Config.ServiceExtensionOnEscape))
+	else
+		print(("[Unique_Punishment] CS escape attempt: %s (id:%s) detected by %s, +%s actions"):format(GetPlayerName(targetSource) or '?', targetSource, detectedBy, Config.ServiceExtensionOnEscape))
+	end
+end
+
+RegisterServerEvent('esx_communityGGservice:extendService')
+AddEventHandler('esx_communityGGservice:extendService', function()
+	local _source = source
+	local xPlayer = ESX.GetPlayerFromId(_source)
+	if not xPlayer or not ActiveCS[_source] then return end
+	PenalizeEscape(_source, xPlayer.identifier, 'client')
+end)
+
+-- Server-side containment watchdog: authoritative, doesn't trust the client
+-- at all. Runs independently of whatever the client-side loop is (or isn't)
+-- doing, so a killed thread / mod menu / lagged-out client can't be used to
+-- just walk (or drive) away from CS.
+Citizen.CreateThread(function()
+	while true do
+		Citizen.Wait(2000)
+		for src in pairs(ActiveCS) do
+			local ped = GetPlayerPed(src)
+			if ped and ped ~= 0 then
+				local coords = GetEntityCoords(ped)
+				local dist = #(vector3(coords.x, coords.y, coords.z) - Config.ServiceLocation)
+				if dist > Config.DistanceExtension then
+					local xPlayer = ESX.GetPlayerFromId(src)
+					TriggerClientEvent('Unique_Punishment:CS_ForceReturn', src)
+					if xPlayer then
+						PenalizeEscape(src, xPlayer.identifier, 'server-watchdog')
+					end
+				end
+			else
+				ActiveCS[src] = nil -- disconnected or ped not streamed in; drop it, playerDropped also clears this
+			end
+		end
+	end
+end)
+
+AddEventHandler('playerDropped', function()
+	ActiveCS[source] = nil
+	ReleaseAcked[source] = nil
+	LastEscapePenalty[source] = nil
+end)
 
 RegisterServerEvent("checkCommunityService")
 AddEventHandler("checkCommunityService", function()
@@ -357,6 +455,7 @@ AddEventHandler("checkCommunityService", function()
 				['@identifier'] = steamhex
 			}, function(Ras)
 				if #Ras and Ras[1] then
+					ActiveCS[xPlayer.source] = true
 					TriggerClientEvent('esx_dpemote:DisableEmotes', xPlayer.source, true)
 					TriggerClientEvent('esx_policejob:unrestrain', xPlayer.source)
 					TriggerClientEvent('esx_communityGGservice:inCommunityService', xPlayer.source, tonumber(Ras[1].actions_remaining))

@@ -20,6 +20,57 @@ Config.RequiredCopsOpium = 1
 Config.RequiredCopsHerin = 1
 Config.RequiredCopsCrack = 1
 
+--Drug Dealer (Kharidare Mavad) Stuff--
+Config.DealerSellBonus     = 1.3            -- Sell to the dealer for 30% more than the base price
+Config.DealerAlertDuration = 4 * 60 * 1000  -- How long the police alert blip / on-screen timer lasts (ms)
+
+--Heat System--
+-- Every sale raises the seller's personal heat. Higher heat = more likely (and more severe) police
+-- alerts, and a temporarily lower payout, so camping one dealer spot stops being free money.
+Config.Heat = {
+	PerSale           = 18,   -- heat added per sale
+	DecayAmount       = 6,    -- heat removed...
+	DecayInterval     = 15 * 1000, -- ...every this many ms of not selling
+	Max               = 100,
+	BaseAlertChance   = 25,   -- % chance of an alert even at 0 heat (random patrol overhears you)
+	MaxPriceDrop      = 0.45, -- at max heat, price is reduced by up to 45%
+	HighHeatThreshold = 70,   -- at/above this heat, alerts get a bigger radius + longer duration, and the seller gets a warning
+	HighHeatRadiusMult    = 1.6, -- alert radius multiplier once HighHeatThreshold is reached
+	HighHeatDurationMult  = 1.5, -- alert duration multiplier once HighHeatThreshold is reached
+}
+
+--Gang Tax--
+Config.GangTaxPercent = 10 -- % of each dealer sale automatically deposited into the seller's own gang account (0 = disabled)
+
+--Anti-Exploit--
+Config.MaxInteractDistance = 5.0 -- max allowed distance (game units) between player and a processing zone/ped when the server receives a process event
+Config.SellCooldown        = 2500 -- minimum ms allowed between two sales from the same player
+
+--Escort / Delivery Missions (DOA can intercept)--
+Config.Delivery = {
+	Enabled          = true,
+	MinAmount        = 5,             -- min units of cargo required to start a delivery
+	MaxAmount        = 15,            -- max units taken as cargo
+	TimeLimit        = 6 * 60 * 1000, -- 6 minutes to reach the drop-off
+	RewardMultiplier = 1.6,           -- pays this x the normal dealer price per unit on success
+	InterceptRadius  = 3.0,           -- how close DOA must get to a carrier to attempt a seizure
+	Cooldown         = 8 * 60 * 1000, -- per-player cooldown between delivery missions
+	RouteHintPoints  = 3,             -- number of interpolated waypoints briefed to DOA along the route
+	-- Add/replace with real coordinates for your map. Needs at least 2.
+	DropZones = {
+		{coords = vector3(215.14, -800.85, 30.55),    name = 'Bandare Ghadimi'},
+		{coords = vector3(-1035.71, -2735.79, 20.17), name = 'Forudgahe Bari'},
+		{coords = vector3(2569.71, 4681.62, 34.13),   name = 'Anbare Sandy Shores'},
+		{coords = vector3(-3037.0, 84.0, 12.85),      name = 'Eskele Chumash'},
+	},
+}
+
+--CID Evidence Referral (DOA collects physical clues at harvest sites and refers them to CID)--
+Config.Evidence = {
+	Lifespan      = 12 * 60 * 1000, -- how long a harvest site remains a valid, collectible clue (ms)
+	CollectRadius = 4.0,            -- how close DOA must physically be to collect it
+}
+
 Config.Locale = 'en'
 
 Config.Delays = {

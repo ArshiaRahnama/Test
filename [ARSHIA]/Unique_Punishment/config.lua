@@ -1,6 +1,12 @@
 Config = {}
 Config.Locale = 'en'
 
+-- Minimum ESX permission_level allowed to jail ('admin' type) or sentence to
+-- community service from an admin menu, without needing one of the
+-- Config.AllowedJobs below. Mirrors Unique_AdminMenu's own
+-- Config.MinPermissionLevel gate.
+Config.AdminPermissionLevel = 2
+
 Config.AdminJail = {
 	unjail = vec(212.92, -845.81, 30.38)
 }

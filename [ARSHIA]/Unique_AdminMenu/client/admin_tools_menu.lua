@@ -135,13 +135,24 @@ local function DrawPlayerPunishMenu()
     end
 
     if WarMenu.Button("Send to Jail") then
-        local dur = GetUserInput("Minutes", "10") or ""
+        local dur = tonumber(GetUserInput("Minutes", "10")) or 10
         local reason = GetUserInput("Jail reason") or ""
-        TriggerServerEvent('Unique_AdminMenu:JailTarget', SelectedTargetId, dur, reason)
+        if reason == "" then reason = "No reason specified" end
+        -- Real jail (movement lock + countdown), not a fake teleport --
+        -- handled by Unique_Punishment's arshia_jail:sendto (permission_level
+        -- checked server-side there too).
+        TriggerServerEvent('arshia_jail:sendto', SelectedTargetId, 'admin', dur, reason)
     end
 
     if WarMenu.Button("Release from Jail") then
-        TriggerServerEvent('Unique_AdminMenu:UnjailTarget', SelectedTargetId)
+        TriggerServerEvent('arshia_jail:UnjailPlayer', SelectedTargetId)
+    end
+
+    if WarMenu.Button("Send to Community Service") then
+        local count = tonumber(GetUserInput("Actions Count", "10")) or 10
+        local reason = GetUserInput("Reason") or ""
+        if reason == "" then reason = "No reason specified" end
+        TriggerServerEvent('esx_communityGGservice:sendToCommunityService', SelectedTargetId, count, reason)
     end
 
     if WarMenu.Button("Impound Vehicle") then
@@ -424,6 +435,10 @@ local function DrawServerReportsMenu()
 
     if WarMenu.Button("Dashboard") then
         OpenDashboardPanel()
+    end
+
+    if WarMenu.Button("Ban History Search") then
+        OpenBanSearch()
     end
 end
 
