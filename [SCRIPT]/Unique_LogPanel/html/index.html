@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>Unique LogPanel</title>
+<style>
+	:root{
+		--bg:#0b0f17;
+		--panel:#11172457;
+		--panel-solid:#111724;
+		--border:#242c3d;
+		--accent:#6d5efc;
+		--accent2:#22d3ee;
+		--text:#e7ebf5;
+		--text-dim:#8a93a8;
+		--danger:#ef4444;
+		--warn:#f59e0b;
+		--ok:#22c55e;
+		--radius:14px;
+	}
+	*{ box-sizing:border-box; margin:0; padding:0; }
+	html,body{ width:100%; height:100%; background:transparent; overflow:hidden; }
+	body{
+		font-family:'Vazirmatn','Segoe UI',Tahoma,sans-serif;
+		color:var(--text);
+		user-select:none;
+	}
+	#root{ display:none; width:100%; height:100%; align-items:center; justify-content:center; }
+	#root.show{ display:flex; }
+
+	#overlay{
+		position:fixed; inset:0;
+		background:radial-gradient(ellipse at center, rgba(10,12,20,.55) 0%, rgba(6,8,14,.85) 100%);
+		backdrop-filter: blur(6px);
+	}
+
+	#panel{
+		position:relative;
+		width:min(1180px, 92vw);
+		height:min(760px, 88vh);
+		background:linear-gradient(180deg, #121826f2, #0d1220f2);
+		border:1px solid var(--border);
+		border-radius:var(--radius);
+		box-shadow:0 20px 60px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.02) inset;
+		display:flex;
+		flex-direction:column;
+		overflow:hidden;
+		animation:panelIn .22s cubic-bezier(.2,.9,.25,1);
+	}
+	@keyframes panelIn{ from{opacity:0; transform:scale(.96) translateY(10px);} to{opacity:1; transform:scale(1) translateY(0);} }
+
+	/* ---------- HEADER ---------- */
+	#header{
+		display:flex; align-items:center; justify-content:space-between;
+		padding:16px 20px;
+		border-bottom:1px solid var(--border);
+		background:linear-gradient(90deg, rgba(109,94,252,.12), rgba(34,211,238,.06));
+	}
+	#headerLeft{ display:flex; align-items:center; gap:12px; }
+	#logo{
+		width:38px; height:38px; border-radius:10px;
+		background:linear-gradient(135deg, var(--accent), var(--accent2));
+		display:flex; align-items:center; justify-content:center;
+		font-size:18px; box-shadow:0 4px 14px rgba(109,94,252,.35);
+	}
+	#titleBlock h1{ font-size:16px; font-weight:700; }
+	#titleBlock span{ font-size:12px; color:var(--text-dim); }
+	#modeBadge{
+		font-size:11px; padding:4px 10px; border-radius:999px;
+		border:1px solid var(--border); color:var(--text-dim);
+		margin-inline-start:10px;
+	}
+	#modeBadge.admin{ color:#c4b5fd; border-color:#6d5efc55; background:#6d5efc1a; }
+	#modeBadge.boss{ color:#67e8f9; border-color:#22d3ee55; background:#22d3ee1a; }
+
+	#closeBtn{
+		width:34px; height:34px; border-radius:10px; border:1px solid var(--border);
+		background:#ffffff08; color:var(--text-dim); cursor:pointer; font-size:16px;
+		display:flex; align-items:center; justify-content:center;
+		transition:.15s;
+	}
+	#closeBtn:hover{ background:var(--danger); color:#fff; border-color:var(--danger); }
+
+	/* ---------- BODY LAYOUT ---------- */
+	#body{ flex:1; display:flex; min-height:0; }
+
+	/* ---------- SIDEBAR ---------- */
+	#sidebar{
+		width:220px; flex-shrink:0;
+		border-inline-end:1px solid var(--border);
+		padding:14px 10px; overflow-y:auto;
+		background:#0000001f;
+	}
+	.sideSection{ margin-bottom:16px; }
+	.sideSectionTitle{
+		font-size:11px; color:var(--text-dim); padding:0 8px 6px;
+		text-transform:uppercase; letter-spacing:.5px;
+	}
+	.tabItem{
+		display:flex; align-items:center; gap:8px;
+		padding:9px 10px; border-radius:10px; cursor:pointer;
+		font-size:13px; color:var(--text-dim);
+		transition:.12s; margin-bottom:2px;
+	}
+	.tabItem:hover{ background:#ffffff0a; color:var(--text); }
+	.tabItem.active{
+		background:linear-gradient(90deg, #6d5efc26, #22d3ee12);
+		color:#fff; font-weight:600;
+		border:1px solid #6d5efc40;
+	}
+	.tabDot{ width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+	.tabCount{
+		margin-inline-start:auto; font-size:10px; color:var(--text-dim);
+		background:#ffffff0d; padding:1px 7px; border-radius:999px;
+	}
+
+	/* ---------- MAIN ---------- */
+	#main{ flex:1; display:flex; flex-direction:column; min-width:0; }
+
+	#toolbar{
+		display:flex; align-items:center; gap:10px;
+		padding:14px 18px; border-bottom:1px solid var(--border);
+	}
+	#searchBox{
+		flex:1; display:flex; align-items:center; gap:8px;
+		background:#ffffff08; border:1px solid var(--border); border-radius:10px;
+		padding:8px 12px;
+	}
+	#searchBox input{
+		flex:1; background:transparent; border:none; outline:none; color:var(--text); font-size:13px;
+		font-family:inherit;
+	}
+	#searchBox input::placeholder{ color:var(--text-dim); }
+	.toolBtn{
+		background:#ffffff08; border:1px solid var(--border); color:var(--text-dim);
+		padding:8px 14px; border-radius:10px; font-size:12px; cursor:pointer; transition:.12s;
+		display:flex; align-items:center; gap:6px; white-space:nowrap;
+	}
+	.toolBtn:hover{ background:#ffffff14; color:var(--text); }
+	.toolBtn.primary{
+		background:linear-gradient(90deg, var(--accent), #8b7bff);
+		color:#fff; border:none; font-weight:600;
+	}
+	.toolBtn.primary:hover{ filter:brightness(1.08); }
+
+	#jobFilterWrap select{
+		background:#ffffff08; border:1px solid var(--border); color:var(--text);
+		padding:8px 10px; border-radius:10px; font-size:12px; font-family:inherit; cursor:pointer;
+	}
+
+	/* ---------- TABLE ---------- */
+	#tableWrap{ flex:1; overflow-y:auto; padding:6px 18px; }
+	#logTable{ width:100%; border-collapse:separate; border-spacing:0 8px; }
+	#logTable thead th{
+		text-align:right; font-size:11px; color:var(--text-dim); font-weight:600;
+		padding:0 12px 4px; text-transform:uppercase; letter-spacing:.4px;
+	}
+	.logRow{
+		background:#ffffff06; border:1px solid var(--border); cursor:pointer;
+		transition:.12s;
+	}
+	.logRow:hover{ background:#ffffff0d; border-color:#6d5efc55; }
+	.logRow td{ padding:10px 12px; font-size:12.5px; vertical-align:top; }
+	.logRow td:first-child{ border-radius:10px 0 0 10px; }
+	.logRow td:last-child{ border-radius:0 10px 10px 0; }
+
+	.catBadge{
+		display:inline-flex; align-items:center; gap:5px;
+		font-size:11px; font-weight:600; padding:4px 9px; border-radius:999px;
+		white-space:nowrap;
+	}
+	.timeCell{ color:var(--text-dim); white-space:nowrap; font-size:11.5px; }
+	.playerCell{ font-weight:600; white-space:nowrap; }
+	.playerCell small{ display:block; color:var(--text-dim); font-weight:400; font-size:10.5px; }
+	.msgCell{
+		color:var(--text-dim); max-width:420px;
+		overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+	}
+	.jobCell{ color:var(--text-dim); font-size:11.5px; }
+
+	#emptyState, #loadingState{
+		display:none; flex-direction:column; align-items:center; justify-content:center;
+		height:100%; color:var(--text-dim); gap:8px; font-size:13px;
+	}
+	#emptyState.show, #loadingState.show{ display:flex; }
+
+	/* ---------- PAGINATION ---------- */
+	#pagination{
+		display:flex; align-items:center; justify-content:space-between;
+		padding:12px 18px; border-top:1px solid var(--border);
+		font-size:12px; color:var(--text-dim);
+	}
+	#pagination .pageBtns{ display:flex; gap:6px; }
+	.pageBtn{
+		width:30px; height:30px; border-radius:8px; border:1px solid var(--border);
+		background:#ffffff08; color:var(--text-dim); cursor:pointer; font-size:12px;
+		display:flex; align-items:center; justify-content:center; transition:.12s;
+	}
+	.pageBtn:hover:not(:disabled){ background:#ffffff14; color:#fff; }
+	.pageBtn:disabled{ opacity:.35; cursor:not-allowed; }
+
+	/* ---------- DETAIL MODAL ---------- */
+	#detailOverlay{
+		position:absolute; inset:0; background:rgba(6,8,14,.7); backdrop-filter:blur(4px);
+		display:none; align-items:center; justify-content:center; z-index:5;
+	}
+	#detailOverlay.show{ display:flex; }
+	#detailBox{
+		width:min(640px, 88%); max-height:80%; overflow-y:auto;
+		background:var(--panel-solid); border:1px solid var(--border); border-radius:var(--radius);
+		padding:20px; animation:panelIn .18s ease;
+	}
+	#detailBox h3{ font-size:14px; margin-bottom:10px; display:flex; align-items:center; gap:8px; }
+	#detailBox pre{
+		white-space:pre-wrap; word-break:break-word; font-family:'Consolas',monospace;
+		font-size:12.5px; color:#c9d1e0; background:#00000033; padding:14px; border-radius:10px;
+		border:1px solid var(--border); line-height:1.7;
+	}
+	#detailMeta{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px; }
+	#detailMeta span{
+		font-size:11px; color:var(--text-dim); background:#ffffff08; padding:5px 10px; border-radius:8px;
+	}
+	#detailCloseBtn{
+		margin-top:14px; width:100%; padding:10px; border-radius:10px; border:1px solid var(--border);
+		background:#ffffff08; color:var(--text); cursor:pointer; font-family:inherit; font-size:13px;
+	}
+	#detailCloseBtn:hover{ background:#ffffff14; }
+
+	/* scrollbar */
+	::-webkit-scrollbar{ width:8px; height:8px; }
+	::-webkit-scrollbar-track{ background:transparent; }
+	::-webkit-scrollbar-thumb{ background:#ffffff1a; border-radius:8px; }
+	::-webkit-scrollbar-thumb:hover{ background:#ffffff30; }
+</style>
+</head>
+<body>
+	<div id="root">
+		<div id="overlay"></div>
+		<div id="panel">
+			<div id="header">
+				<div id="headerLeft">
+					<div id="logo">🗂️</div>
+					<div id="titleBlock">
+						<h1>Unique LogPanel<span id="modeBadge">—</span></h1>
+						<span id="subtitle">آرشیو کامل رویدادهای سرور</span>
+					</div>
+				</div>
+				<div id="closeBtn" onclick="closePanel()">✕</div>
+			</div>
+
+			<div id="body">
+				<div id="sidebar">
+					<div class="sideSection">
+						<div class="sideSectionTitle">دسته‌بندی‌ها</div>
+						<div id="categoryTabs"></div>
+					</div>
+					<div class="sideSection" id="jobSection" style="display:none;">
+						<div class="sideSectionTitle">شغل‌ها</div>
+						<div id="jobTabs"></div>
+					</div>
+				</div>
+
+				<div id="main">
+					<div id="toolbar">
+						<div id="searchBox">
+							<span>🔍</span>
+							<input id="searchInput" type="text" placeholder="جست‌وجو تو پیام، اسم پلیر، استیم آیدی...">
+						</div>
+						<div class="toolBtn" onclick="refreshLogs()">↻ رفرش</div>
+					</div>
+
+					<div id="tableWrap">
+						<div id="loadingState">در حال بارگذاری...</div>
+						<div id="emptyState">
+							<div style="font-size:32px;">🗒️</div>
+							<div>هیچ لاگی با این فیلتر پیدا نشد</div>
+						</div>
+						<table id="logTable" style="display:none;">
+							<thead>
+								<tr>
+									<th style="width:110px;">زمان</th>
+									<th style="width:140px;">دسته</th>
+									<th style="width:130px;">شغل</th>
+									<th style="width:160px;">پلیر</th>
+									<th>پیام</th>
+								</tr>
+							</thead>
+							<tbody id="logTableBody"></tbody>
+						</table>
+					</div>
+
+					<div id="pagination">
+						<div id="pageInfo">—</div>
+						<div class="pageBtns">
+							<div class="pageBtn" id="prevBtn" onclick="changePage(-1)">‹</div>
+							<div class="pageBtn" id="nextBtn" onclick="changePage(1)">›</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div id="detailOverlay" onclick="if(event.target===this) closeDetail()">
+				<div id="detailBox">
+					<h3 id="detailTitle">جزئیات لاگ</h3>
+					<div id="detailMeta"></div>
+					<pre id="detailMessage"></pre>
+					<div id="detailCloseBtn" onclick="closeDetail()">بستن</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+<script>
+// ============================================================================
+// تنظیمات ظاهری هر دسته (اسم فارسی + رنگ + آیکون). دسته‌های ناشناخته هم
+// خودکار یه استایل خنثی می‌گیرن، پس هیچ‌وقت این لیست باعث باگ نمی‌شه.
+// ============================================================================
+const CATEGORY_META = {
+	amoney:        { label: 'مالی',              color: '#22c55e', icon: '💰' },
+	transfer:      { label: 'انتقال پول',         color: '#22c55e', icon: '💸' },
+	xp:            { label: 'تجربه/سکه',          color: '#eab308', icon: '⭐' },
+	rob:           { label: 'سرقت/جرم',           color: '#ef4444', icon: '🔫' },
+	kill:          { label: 'کشتن',               color: '#ef4444', icon: '💀' },
+	vdm:           { label: 'زیرگرفتن',            color: '#ef4444', icon: '🚗' },
+	vehiclecrash:  { label: 'تصادف',              color: '#f97316', icon: '💥' },
+	tirelog:       { label: 'پنچری',              color: '#f97316', icon: '🛞' },
+	nonlethalshot: { label: 'شلیک',               color: '#f97316', icon: '🎯' },
+	carjack:       { label: 'دزدیدن ماشین',        color: '#ef4444', icon: '🚙' },
+	lockpick:      { label: 'قفل‌بازکردن',          color: '#f97316', icon: '🔓' },
+	entervehicle:  { label: 'ورود به ماشین',       color: '#8a93a8', icon: '🚘' },
+	nczenter:      { label: 'ورود به NCZ',        color: '#22d3ee', icon: '🚧' },
+	jail:          { label: 'زندان',              color: '#ef4444', icon: '⛓️' },
+	cuff:          { label: 'دستبند',             color: '#f59e0b', icon: '🔗' },
+	cuffescape:    { label: 'فرار از دستبند',       color: '#ef4444', icon: '🏃' },
+	fine:          { label: 'جریمه',              color: '#f59e0b', icon: '📝' },
+	heal:          { label: 'درمان',              color: '#22c55e', icon: '💉' },
+	revive:        { label: 'ریوایو',             color: '#22c55e', icon: '❤️' },
+	home:          { label: 'خونه/ملک',           color: '#8b5cf6', icon: '🏠' },
+	gangs:         { label: 'گنگ',                color: '#a855f7', icon: '🏴' },
+	setjob:        { label: 'تغییر شغل',           color: '#3b82f6', icon: '💼' },
+	manage:        { label: 'مدیریت شغل',          color: '#3b82f6', icon: '📋' },
+	adminmenu:     { label: 'ادمین',              color: '#6d5efc', icon: '🛠️' },
+	admintime:     { label: 'زمان سرور',           color: '#6d5efc', icon: '🕐' },
+	setwarn:       { label: 'اخطار',              color: '#f59e0b', icon: '⚠️' },
+	whitelist:     { label: 'وایت‌لیست',           color: '#3b82f6', icon: '✅' },
+	license:       { label: 'مجوز',               color: '#3b82f6', icon: '🪪' },
+	components:    { label: 'اجزای اسلحه',         color: '#ef4444', icon: '🔧' },
+	drug:          { label: 'مواد',               color: '#ef4444', icon: '💊' },
+	report:        { label: 'ریپورت',             color: '#eab308', icon: '📣' },
+	reportaccept:  { label: 'تایید ریپورت',        color: '#22c55e', icon: '✔️' },
+	kick:          { label: 'کیک/بن',             color: '#ef4444', icon: '🚫' },
+	bansystem:     { label: 'بن',                 color: '#ef4444', icon: '🔨' },
+	servererror:   { label: 'خطای سرور',           color: '#ef4444', icon: '🐞' },
+	clienterror:   { label: 'خطای کلاینت',         color: '#ef4444', icon: '🐛' },
+	explosion:     { label: 'انفجار',              color: '#ef4444', icon: '💣' },
+	drowning:      { label: 'غرق‌شدن',             color: '#22d3ee', icon: '🌊' },
+	hardfall:      { label: 'سقوط',               color: '#f97316', icon: '🪂' },
+	kill_bounty:   { label: 'جایزه',               color: '#eab308', icon: '🎖️' },
+	pdrop:         { label: 'دراپ آیتم',           color: '#8a93a8', icon: '📦' },
+	co:            { label: 'اتصال',              color: '#22c55e', icon: '🔌' },
+	system:        { label: 'سیستم',              color: '#8a93a8', icon: '⚙️' },
+	chat:          { label: 'چت',                 color: '#8a93a8', icon: '💬' },
+};
+
+function getCatMeta(cat){
+	if (CATEGORY_META[cat]) return CATEGORY_META[cat];
+	// دسته‌های ترکیبی مثل society_xxx / uniqueac_xxx / gang_xxx / capture_xxx
+	if (cat && cat.indexOf('society_') === 0) return { label: 'خزانه‌ی شغل', color:'#3b82f6', icon:'🏦' };
+	if (cat && cat.indexOf('uniqueac_') === 0) return { label: 'امنیت (UNIQUE_AC)', color:'#ef4444', icon:'🛡️' };
+	if (cat && cat.indexOf('gang_') === 0) return { label: 'گنگ', color:'#a855f7', icon:'🏴' };
+	if (cat && cat.indexOf('capture_') === 0) return { label: 'کپچر', color:'#f97316', icon:'🚩' };
+	return { label: cat || 'نامشخص', color:'#8a93a8', icon:'📄' };
+}
+
+// ============================================================================
+// وضعیت
+// ============================================================================
+let state = {
+	mode: 'boss',      // 'admin' | 'boss'
+	job: null,
+	jobLabel: null,
+	category: 'all',
+	jobFilter: 'all',
+	search: '',
+	page: 1,
+	total: 0,
+	perPage: 50,
+	categories: [],
+	jobs: [],
+	searchDebounce: null,
+};
+
+function post(name, body){
+	return fetch(`https://${GetParentResourceName()}/${name}`, {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json; charset=UTF-8' },
+		body: JSON.stringify(body || {}),
+	}).then(r => r.json()).catch(() => ({}));
+}
+
+// ============================================================================
+// باز/بسته‌کردن پنل
+// ============================================================================
+window.addEventListener('message', (event) => {
+	const data = event.data;
+	if (!data || !data.action) return;
+
+	if (data.action === 'open'){
+		state.mode = data.mode || 'boss';
+		state.job = data.job || null;
+		state.jobLabel = data.jobLabel || data.job || null;
+		state.category = 'all';
+		state.jobFilter = 'all';
+		state.search = '';
+		state.page = 1;
+		document.getElementById('root').classList.add('show');
+		document.getElementById('searchInput').value = '';
+
+		const badge = document.getElementById('modeBadge');
+		badge.className = state.mode;
+		badge.textContent = state.mode === 'admin' ? 'دسترسی کامل ادمین' : ('باس ' + (state.jobLabel || state.job || ''));
+
+		document.getElementById('jobSection').style.display = state.mode === 'admin' ? 'block' : 'none';
+		document.getElementById('subtitle').textContent = state.mode === 'admin'
+			? 'آرشیو کامل رویدادهای سرور — همه‌ی دسته‌ها و شغل‌ها'
+			: 'لاگ‌های شغل ' + (state.jobLabel || state.job || '');
+
+		loadMeta();
+	}
+	if (data.action === 'close'){
+		document.getElementById('root').classList.remove('show');
+	}
+});
+
+function closePanel(){
+	post('close', {});
+	document.getElementById('root').classList.remove('show');
+}
+
+document.addEventListener('keydown', (e) => {
+	if (e.key === 'Escape'){
+		if (document.getElementById('detailOverlay').classList.contains('show')){
+			closeDetail();
+		} else {
+			closePanel();
+		}
+	}
+});
+
+// ============================================================================
+// بارگذاری متادیتا (لیست دسته‌ها/شغل‌ها برای تب‌ها)
+// ============================================================================
+async function loadMeta(){
+	const res = await post('fetchMeta', {});
+	if (res.error){
+		document.getElementById('categoryTabs').innerHTML = '<div style="color:var(--text-dim); font-size:12px; padding:8px;">دسترسی نداری یا دیتابیس آماده نیست.</div>';
+		return;
+	}
+	state.categories = (res.categories || []).map(r => r.category).filter(Boolean);
+	state.jobs = (res.jobs || []).map(r => r.job).filter(Boolean);
+	renderCategoryTabs();
+	renderJobTabs();
+	refreshLogs();
+}
+
+function renderCategoryTabs(){
+	const el = document.getElementById('categoryTabs');
+	let html = tabHTML('all', 'همه‌ی دسته‌ها', '#8a93a8', '🗂️', state.category === 'all');
+	state.categories.forEach(cat => {
+		const meta = getCatMeta(cat);
+		html += tabHTML(cat, meta.label, meta.color, meta.icon, state.category === cat);
+	});
+	el.innerHTML = html;
+	[...el.querySelectorAll('.tabItem')].forEach(elm => {
+		elm.addEventListener('click', () => {
+			state.category = elm.dataset.value;
+			state.page = 1;
+			renderCategoryTabs();
+			refreshLogs();
+		});
+	});
+}
+
+function renderJobTabs(){
+	const el = document.getElementById('jobTabs');
+	if (state.mode !== 'admin'){ el.innerHTML=''; return; }
+	let html = tabHTML('all', 'همه‌ی شغل‌ها', '#8a93a8', '👥', state.jobFilter === 'all');
+	state.jobs.forEach(job => {
+		html += tabHTML(job, job, '#3b82f6', '💼', state.jobFilter === job);
+	});
+	el.innerHTML = html;
+	[...el.querySelectorAll('.tabItem')].forEach(elm => {
+		elm.addEventListener('click', () => {
+			state.jobFilter = elm.dataset.value;
+			state.page = 1;
+			renderJobTabs();
+			refreshLogs();
+		});
+	});
+}
+
+function tabHTML(value, label, color, icon, active){
+	return `<div class="tabItem ${active ? 'active' : ''}" data-value="${escapeAttr(value)}">
+		<span class="tabDot" style="background:${color}"></span>
+		<span>${icon} ${escapeHTML(label)}</span>
+	</div>`;
+}
+
+// ============================================================================
+// بارگذاری لاگ‌ها
+// ============================================================================
+async function refreshLogs(){
+	document.getElementById('logTable').style.display = 'none';
+	document.getElementById('emptyState').classList.remove('show');
+	document.getElementById('loadingState').classList.add('show');
+
+	const res = await post('fetchLogs', {
+		category: state.category,
+		job: state.jobFilter,
+		search: state.search,
+		page: state.page,
+	});
+
+	document.getElementById('loadingState').classList.remove('show');
+
+	if (res.error || !res.logs){
+		document.getElementById('emptyState').classList.add('show');
+		document.getElementById('pageInfo').textContent = '—';
+		return;
+	}
+
+	state.total = res.total || 0;
+	state.perPage = res.perPage || 50;
+
+	if (res.logs.length === 0){
+		document.getElementById('emptyState').classList.add('show');
+	} else {
+		renderTable(res.logs);
+		document.getElementById('logTable').style.display = 'table';
+	}
+
+	const totalPages = Math.max(1, Math.ceil(state.total / state.perPage));
+	document.getElementById('pageInfo').textContent = `${state.total} لاگ — صفحه ${state.page} از ${totalPages}`;
+	document.getElementById('prevBtn').disabled = state.page <= 1;
+	document.getElementById('nextBtn').disabled = state.page >= totalPages;
+}
+
+function renderTable(logs){
+	const body = document.getElementById('logTableBody');
+	body.innerHTML = logs.map((row, idx) => {
+		const meta = getCatMeta(row.category);
+		return `<tr class="logRow" data-idx="${idx}">
+			<td class="timeCell">${formatTime(row.created_at)}</td>
+			<td><span class="catBadge" style="background:${meta.color}22; color:${meta.color};">${meta.icon} ${escapeHTML(meta.label)}</span></td>
+			<td class="jobCell">${escapeHTML(row.job || '—')}</td>
+			<td class="playerCell">${escapeHTML(row.player_name || '—')}<small>${escapeHTML(row.identifier || (row.source ? ('ID: ' + row.source) : ''))}</small></td>
+			<td class="msgCell">${escapeHTML(stripCodeBlock(row.message))}</td>
+		</tr>`;
+	}).join('');
+
+	window._currentLogs = logs;
+	[...body.querySelectorAll('.logRow')].forEach(tr => {
+		tr.addEventListener('click', () => openDetail(window._currentLogs[+tr.dataset.idx]));
+	});
+}
+
+function changePage(delta){
+	const totalPages = Math.max(1, Math.ceil(state.total / state.perPage));
+	const next = state.page + delta;
+	if (next < 1 || next > totalPages) return;
+	state.page = next;
+	refreshLogs();
+}
+
+// ============================================================================
+// جزئیات لاگ (مودال)
+// ============================================================================
+function openDetail(row){
+	if (!row) return;
+	const meta = getCatMeta(row.category);
+	document.getElementById('detailTitle').innerHTML = `${meta.icon} ${escapeHTML(row.title || meta.label)}`;
+	document.getElementById('detailMeta').innerHTML = `
+		<span>🕐 ${formatTime(row.created_at)}</span>
+		<span>📁 ${escapeHTML(meta.label)}</span>
+		${row.job ? `<span>💼 ${escapeHTML(row.job)}</span>` : ''}
+		${row.player_name ? `<span>👤 ${escapeHTML(row.player_name)}</span>` : ''}
+		${row.identifier ? `<span>🆔 ${escapeHTML(row.identifier)}</span>` : ''}
+		${row.source ? `<span>🎮 ServerID: ${escapeHTML(String(row.source))}</span>` : ''}
+	`;
+	document.getElementById('detailMessage').textContent = stripCodeBlock(row.message);
+	document.getElementById('detailOverlay').classList.add('show');
+}
+function closeDetail(){
+	document.getElementById('detailOverlay').classList.remove('show');
+}
+
+// ============================================================================
+// جست‌وجو (با debounce)
+// ============================================================================
+document.getElementById('searchInput').addEventListener('input', (e) => {
+	clearTimeout(state.searchDebounce);
+	const val = e.target.value;
+	state.searchDebounce = setTimeout(() => {
+		state.search = val;
+		state.page = 1;
+		refreshLogs();
+	}, 350);
+});
+
+// ============================================================================
+// ابزارها
+// ============================================================================
+function escapeHTML(str){
+	if (str === null || str === undefined) return '';
+	return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function escapeAttr(str){ return escapeHTML(str); }
+function stripCodeBlock(msg){
+	if (!msg) return '';
+	return String(msg).replace(/```css\n?/g, '').replace(/```/g, '').trim();
+}
+function formatTime(ts){
+	if (!ts) return '—';
+	try{
+		const d = new Date(ts.replace(' ', 'T'));
+		if (isNaN(d.getTime())) return ts;
+		return d.toLocaleString('fa-IR', { hour:'2-digit', minute:'2-digit', day:'2-digit', month:'2-digit' });
+	}catch(e){ return ts; }
+}
+</script>
+</body>
+</html>

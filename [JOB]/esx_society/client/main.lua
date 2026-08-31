@@ -125,6 +125,12 @@ function OpenBossMenu(society, close, options)
 		end
 	end
 
+	-- اتصال به Unique_LogPanel: یه گزینه‌ی «مشاهده لاگ‌ها» به منوی باس اضافه می‌شه
+	-- که وقتی کلیک بشه فقط لاگ‌های همون شغل رو نشون می‌ده (نه بقیه‌ی شغل‌ها).
+	if GetResourceState('Unique_LogPanel') == 'started' then
+		table.insert(elements, {label = '🗂️ Mosahede Logha (LogPanel)', value = 'view_job_logs'})
+	end
+
 	ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'boss_actions_' .. society, {
 		title    = _U('boss_menu'),
 		align    = 'top-left',
@@ -164,6 +170,9 @@ function OpenBossMenu(society, close, options)
 			OpenManagedivisionMenu(society)
 		elseif data.current.value == 'change_branch_job' then
 			OpenChangeBranchJobMenu(society, close, options)
+		elseif data.current.value == 'view_job_logs' then
+			menu.close()
+			TriggerServerEvent('LogPanel:OpenForJob')
 		end
 
 	end, function(data, menu)

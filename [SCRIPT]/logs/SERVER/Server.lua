@@ -305,15 +305,39 @@ end)
 -- ================= ارسال به سایت خودمون =================
 -- هر لاگی که به دیسکورد میره، از این تابع هم برای آرشیو روی سایت رد میشه.
 function SendToSite(category, name, message, source)
-	if not SiteLogWebhook or SiteLogWebhook == '' or SiteLogWebhook == 'WEBHOOK_LINK_HERE' then
-		return
-	end
-
 	local identifier = nil
 	local playerName = nil
+	local job = nil
 	if source and tonumber(source) then
 		playerName = GetPlayerName(tonumber(source))
 		identifier = GetPlayerIdentifier(tonumber(source), 0) or GetPlayerIdentifier(tonumber(source), 1)
+		if ESX then
+			local xPlayer = ESX.GetPlayerFromId(tonumber(source))
+			if xPlayer and xPlayer.job then
+				job = xPlayer.job.name
+			end
+		end
+	end
+
+	-- ================= ذخیره تو دیتابیس (منبع اصلی پنل ادمین/باس) =================
+	if MySQL and MySQL.Async then
+		MySQL.Async.execute(
+			'INSERT INTO unique_logpanel (category, job, title, message, source, identifier, player_name) VALUES (@category, @job, @title, @message, @source, @identifier, @player_name)',
+			{
+				['@category']    = tostring(category or 'unknown'),
+				['@job']         = job,
+				['@title']       = tostring(name or ''),
+				['@message']     = tostring(message or ''),
+				['@source']      = source and tonumber(source) or nil,
+				['@identifier']  = identifier,
+				['@player_name'] = playerName,
+			}
+		)
+	end
+
+	-- ================= ارسال به سایت خارجی (اختیاری) =================
+	if not SiteLogWebhook or SiteLogWebhook == '' or SiteLogWebhook == 'WEBHOOK_LINK_HERE' then
+		return
 	end
 
 	local payload = {

@@ -4,6 +4,7 @@ game 'gta5'
 description 'Discord Bot'
 
 server_script {
+	'@oxmysql/lib/MySQL.lua',
 	'shared/*.lua',
 	'SERVER/Server.lua',
 }
