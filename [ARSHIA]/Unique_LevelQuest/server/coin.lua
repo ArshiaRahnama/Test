@@ -117,8 +117,6 @@ RegisterServerEvent('Coin-System:AddCoin')
 AddEventHandler('Coin-System:AddCoin', function(playerId, coinAmount)
     if not isCoinAdmin(source) then return end
     GrantCoin(playerId, coinAmount)
-    local xTarget = ESX.GetPlayerFromId(tonumber(playerId))
-    TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'CoinLog', '```css\n[ Admin : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Target : '..(xTarget and GetPlayerName(xTarget.source) or tostring(playerId))..'(' .. tostring(playerId) .. ') ]\n[ Action : ADD ]\n[ Amount : '..tostring(coinAmount)..' ]\n```', 'user', true, source, false)
 end)
 
 -- Admin-only: remove coins from a player.
@@ -142,7 +140,6 @@ AddEventHandler('Coin-System:RemoveCoin', function(playerId, coinAmount)
                     ['@identifier'] = xPlayer.identifier,
                 })
                 TriggerEvent("Coin-System:LoadCoin2", xPlayer.source)
-                TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'CoinLog', '```css\n[ Admin : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Target : '..GetPlayerName(xPlayer.source)..'(' .. targetId .. ') ]\n[ Action : REMOVE ]\n[ Amount : '..tostring(coinAmount)..' ]\n```', 'user', true, source, false)
             end
         end)
     else
@@ -151,7 +148,6 @@ AddEventHandler('Coin-System:RemoveCoin', function(playerId, coinAmount)
         if item then
             TriggerClientEvent("CoinUpdate", xPlayer.source, item.count)
         end
-        TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'CoinLog', '```css\n[ Admin : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Target : '..GetPlayerName(xPlayer.source)..'(' .. targetId .. ') ]\n[ Action : REMOVE ]\n[ Amount : '..tostring(coinAmount)..' ]\n```', 'user', true, source, false)
     end
 end)
 
@@ -171,7 +167,6 @@ AddEventHandler('Coin-System:SetCoin', function(playerId, coinAmount)
             ['@identifier'] = xPlayer.identifier,
         })
         TriggerEvent("Coin-System:LoadCoin2", xPlayer.source)
-        TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'CoinLog', '```css\n[ Admin : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Target : '..GetPlayerName(xPlayer.source)..'(' .. targetId .. ') ]\n[ Action : SET ]\n[ New Value : '..tostring(coinAmount)..' ]\n```', 'user', true, source, false)
     end
 end)
 

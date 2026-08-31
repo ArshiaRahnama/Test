@@ -1977,3 +1977,45 @@ end)
 
 exports('OpenManage', OpenManage)
 exports('OpenWardrobe', OpenWardrobe)
+
+-- Wardrobe Remote menu: everything currently worn, each with its own
+-- take-off button, plus a one-click "Undress All".
+RegisterNetEvent('unique_clothestore:openWardrobeMenu')
+AddEventHandler('unique_clothestore:openWardrobeMenu', function(wornTypes)
+    local options = {}
+
+    if wornTypes and #wornTypes > 0 then
+        for _, entry in ipairs(wornTypes) do
+            options[#options + 1] = {
+                title = entry.label,
+                description = 'برای درآوردن بزن',
+                icon = 'shirt',
+                onSelect = function()
+                    TriggerServerEvent('unique_clothestore:takeOffFromMenu', entry.clotheType)
+                end
+            }
+        end
+
+        options[#options + 1] = {
+            title = 'لخت شو (همه چیز)',
+            icon = 'person',
+            iconColor = '#e74c3c',
+            onSelect = function()
+                TriggerServerEvent('unique_clothestore:takeOffFromMenu', '__all__')
+            end
+        }
+    else
+        options[#options + 1] = {
+            title = 'چیزی پوشیده نیستی',
+            description = 'یه لباس رو تو اینونتوری USE کن تا بپوشیش',
+            disabled = true
+        }
+    end
+
+    lib.registerContext({
+        id = 'wardrobe_remote_menu',
+        title = '🧥 کمد لباس',
+        options = options
+    })
+    lib.showContext('wardrobe_remote_menu')
+end)

@@ -35,6 +35,148 @@ local DragBrancard = false
 	  PlayerData = ESX.GetPlayerData()
   end)
 
+-- Vehicles added live via esx_society's /addcarjob command (job = ambulance) get merged
+-- into the static AuthorizedVehicles catalog, and their livery (captured at add-time)
+-- is always re-applied on spawn so it never changes.
+local CustomVehicleLiveries  = {}
+local InjectedVehicleEntries = {}
+local InjectedHeliEntries    = {}
+
+local function removeInjected_ambulance(list, injected)
+	for _, entry in ipairs(injected) do
+		for i = #list, 1, -1 do
+			if list[i] == entry then
+				table.remove(list, i)
+			end
+		end
+	end
+end
+
+Citizen.CreateThread(function()
+	while ESX == nil do Citizen.Wait(10) end
+
+	local function mergeCustomVehicles()
+		ESX.TriggerServerCallback('esx_society:getCustomVehicles', function(list)
+			removeInjected_ambulance(Config_ambulance.AuthorizedVehicles.Shared, InjectedVehicleEntries)
+			removeInjected_ambulance(Config_ambulance.AuthorizedVehicles.Sharedheli, InjectedHeliEntries)
+			InjectedVehicleEntries = {}
+			InjectedHeliEntries    = {}
+			CustomVehicleLiveries  = {}
+
+			local custom = list and list['ambulance']
+			if not custom then return end
+
+			for _, v in ipairs(custom) do
+				local entry = {label = v.label, model = v.model}
+
+				if v.is_heli == 1 then
+					table.insert(Config_ambulance.AuthorizedVehicles.Sharedheli, entry)
+					table.insert(InjectedHeliEntries, entry)
+				else
+					table.insert(Config_ambulance.AuthorizedVehicles.Shared, entry)
+					table.insert(InjectedVehicleEntries, entry)
+				end
+
+				CustomVehicleLiveries[v.model] = tonumber(v.livery) or 0
+			end
+		end)
+	end
+
+	mergeCustomVehicles()
+
+	RegisterNetEvent('society:customVehiclesUpdated')
+	AddEventHandler('society:customVehiclesUpdated', mergeCustomVehicles)
+end)
+
+-- /dlist (from esx_society) — only react if we're currently on the ambulance job.
+-- Ambulance has no separate on/off duty toggle, so /dduty does nothing here.
+RegisterNetEvent('esx_society:requestListRequested')
+AddEventHandler('esx_society:requestListRequested', function()
+	if ESX.PlayerData.job and ESX.PlayerData.job.name == 'ambulance' then
+		OpenReqsList_ambulance()
+	end
+end)
+
+-- This was referenced (as OpenReqsList()) but never implemented — built here
+-- to match the same request/accept/decline/finish flow as taxi and mechanic.
+function OpenReqsList_ambulance()
+	ESX.TriggerServerCallback('esx_ambulancejob:getReqs', function(reqs)
+		if not reqs then return end
+
+		local elements = {}
+		for i=1, #reqs, 1 do
+			table.insert(elements, {
+				label  = "Request Id : "..reqs[i].reqid.." | Accept : "..reqs[i].status.." | Distance : ".. ESX.Math.Round(GetDistanceBetweenCoords(GetEntityCoords(PlayerPedId()), reqs[i].coord)),
+				icname = reqs[i].name,
+				reqid  = reqs[i].reqid,
+				text   = reqs[i].reason,
+				status = reqs[i].status,
+				phone  = reqs[i].phone,
+				id     = reqs[i].id,
+				coord  = reqs[i].coord,
+				accept = reqs[i].accept,
+			})
+		end
+
+		ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'ambulance_reqs_list', {
+			title    = "Requests",
+			align    = 'bottom-right',
+			elements = elements
+		}, function(data, menu)
+
+			local elements = {}
+			ESX.TriggerServerCallback('esx_ambulancejob:acceptername', function(acceptername, accepterID)
+			ESX.TriggerServerCallback('esx_ambulancejob:icname', function(name)
+
+				table.insert(elements, {label = "RequestId : "..data.current.reqid, value = "nil"})
+				table.insert(elements, {label = "Accept status : "..data.current.status, value = "nil"})
+
+				if data.current.accept == "open" then
+					table.insert(elements, {label = "Accept", value = "yes"})
+					table.insert(elements, {label = "Request by : "..data.current.icname.." ("..data.current.id..")", value = "nil"})
+				else
+					table.insert(elements, {label = "Accepted by : "..acceptername.." ("..accepterID..")", value = "nil"})
+					table.insert(elements, {label = "Request by : "..data.current.icname.." ("..data.current.id..")", value = "nil"})
+				end
+
+				if acceptername == name then
+					table.insert(elements, {label = "Decline", value = "decline"})
+				end
+
+				table.insert(elements, {label = "Pin location", value = "loc"})
+				table.insert(elements, {label = "Call", value = "call"})
+
+				ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'ambulance_req', {
+					title    = "Request",
+					align    = 'bottom-right',
+					elements = elements
+				}, function(data2, menu2)
+					menu2.close()
+
+					if data2.current.value == 'yes' then
+						TriggerServerEvent('esx_ambulancejob:areqs', data.current.reqid)
+						menu.close()
+					elseif data2.current.value == 'call' then
+						TriggerEvent('Unique_Phone:Cleant:CallNumberr', data.current.id)
+					elseif data2.current.value == 'loc' then
+						SetNewWaypoint(data.current.coord.x, data.current.coord.y)
+					elseif data2.current.value == 'decline' then
+						TriggerServerEvent('esx_ambulancejob:decline', data.current.reqid)
+						menu.close()
+					end
+				end, function(data2, menu2)
+					menu2.close()
+				end)
+
+			end)
+			end, data.current.reqid)
+
+		end, function(data, menu)
+			menu.close()
+		end)
+	end)
+end
+
 RegisterNetEvent('esx:setJob')
 AddEventHandler('esx:setJob', function(job)
   PlayerData.job = job
@@ -975,7 +1117,7 @@ function OpenMobileAmbulanceActionsMenu_ambulance()
 				if IsBusy then return end
 				local closestPlayer, closestDistance = ESX.Game.GetClosestPlayer()
 				if data.current.value == 'requests' then
-					OpenReqsList()
+					OpenReqsList_ambulance()
 				elseif data.current.value == 'citizen_interactions' then
 					local elements = {
 						{label = 'Jerahat',   value = 'jrh'},
@@ -2122,6 +2264,10 @@ function spawnvehicles_ambulance(data, plate, vehicle, station, partNum)
             SetVehicleLivery(vehicle, 2)
             Citizen.Wait(500)
             SetVehicleLivery(vehicle, 2)
+
+            if CustomVehicleLiveries[data.current.model] then
+            	SetVehicleLivery(vehicle, CustomVehicleLiveries[data.current.model])
+            end
             TaskWarpPedIntoVehicle(playerPed, vehicle, -1)
             Citizen.Wait(500)
             SetVehicleFuelLevel(vehicle, 100.0)
@@ -2474,6 +2620,10 @@ function spawnheliss_ambulance(data, plate, vehicle, station, partNum)
 			SetVehicleLivery(vehicle, 2)
 			Citizen.Wait(500)
 			SetVehicleLivery(vehicle, 2)
+
+			if CustomVehicleLiveries[data.current.model] then
+				SetVehicleLivery(vehicle, CustomVehicleLiveries[data.current.model])
+			end
 			TaskWarpPedIntoVehicle(playerPed, vehicle, -1)
 			Citizen.Wait(500)
 			SetVehicleFuelLevel(vehicle, 100.0)

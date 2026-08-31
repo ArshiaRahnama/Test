@@ -70,3 +70,27 @@
 }
 
 .boardChip i { color: var(--orange2); font-size: 9.5px; }
+
+/* Rare avatar frames for the top 3 server players — shared classes
+   (.rareAvatar / .tier1/2/3) reused on the leaderboard row, the
+   header avatar (style.css), and the compare overlay (compare.css). */
+.rareAvatar {
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  color: #cfd2da;
+  font-size: 11px;
+}
+
+.tier1 { border: 2px solid #ffd76a; box-shadow: 0 0 10px rgba(255, 215, 106, 0.5); }
+.tier2 { border: 2px solid #d7dbe3; box-shadow: 0 0 10px rgba(215, 219, 227, 0.4); }
+.tier3 { border: 2px solid #d99a63; box-shadow: 0 0 10px rgba(217, 154, 99, 0.4); }
+
+.avatarWrap.tier1 { border: 2px solid #ffd76a; box-shadow: 0 0 14px rgba(255, 215, 106, 0.55); }
+.avatarWrap.tier2 { border: 2px solid #d7dbe3; box-shadow: 0 0 14px rgba(215, 219, 227, 0.45); }
+.avatarWrap.tier3 { border: 2px solid #d99a63; box-shadow: 0 0 14px rgba(217, 154, 99, 0.45); }

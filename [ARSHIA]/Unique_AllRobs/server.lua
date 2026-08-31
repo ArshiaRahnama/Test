@@ -729,20 +729,29 @@ end
 ------------ SHARED EXPORT --------------
 ----------------------------------------
 -- Generic police alert, usable by ANY other resource (esx_drugs, esx_addons, etc.):
---   exports['Unique_AllRobs']:AlertPolice(coords, label, duration, radius)
--- coords   : vector3 / {x=,y=,z=} of the alert location
--- label    : text shown on the blip name + dispatch chat message + HUD timer (optional)
--- duration : how long the blip + on-screen countdown lasts in ms (optional, defaults to Config.Rob.PoliceAlertDuration)
--- radius   : radius (in game units) of the translucent alert circle on the map (optional, defaults to 60.0)
-function AlertPolice(coords, label, duration, radius)
+--   exports['Unique_AllRobs']:AlertPolice(coords, label, duration, radius, jobFilter)
+-- coords    : vector3 / {x=,y=,z=} of the alert location
+-- label     : text shown on the blip name + dispatch chat message + HUD timer (optional)
+-- duration  : how long the blip + on-screen countdown lasts in ms (optional, defaults to Config.Rob.PoliceAlertDuration)
+-- radius    : radius (in game units) of the translucent alert circle on the map (optional, defaults to 60.0)
+-- jobFilter : optional array of job names (e.g. {'doa'}) to further restrict who gets it,
+--             on top of the usual Config.Rob.PoliceJobs check -- lets callers target just one
+--             department (DOA-only evidence alerts) instead of every cop-like job at once.
+function AlertPolice(coords, label, duration, radius, jobFilter)
     local xPlayers = ESX.GetPlayers()
     duration = duration or Config.Rob.PoliceAlertDuration or (4 * 60 * 1000)
     label = label or 'Yek Faaliate Mashkook'
     radius = radius or 60.0
 
+    local allowedJobs = nil
+    if jobFilter then
+        allowedJobs = {}
+        for _, j in ipairs(jobFilter) do allowedJobs[j] = true end
+    end
+
     for i=1, #xPlayers, 1 do
         local xPlayer = ESX.GetPlayerFromId(xPlayers[i])
-        if IsPoliceJob(xPlayer.job.name) then
+        if IsPoliceJob(xPlayer.job.name) and (not allowedJobs or allowedJobs[xPlayer.job.name]) then
             SendMessage(xPlayer.source, 'Az Dispatch be Tamai Vahed Ha ^1' .. label .. '^0 Gozarsh Shod')
             TriggerClientEvent('Unique_AllRobs:policeAlert', xPlayers[i], coords, label, duration, radius)
         end

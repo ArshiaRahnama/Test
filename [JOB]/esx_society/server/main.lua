@@ -15,6 +15,12 @@ function GetSociety(name)
 	end
 end
 
+local function decodeGradePerms(gradeRow)
+	local ok, decoded = pcall(json.decode, gradeRow.perms or '{}')
+	gradeRow.permsTable = (ok and type(decoded) == 'table') and decoded or {}
+	return gradeRow
+end
+
 MySQL.ready(function()
 	local result = MySQL.Sync.fetchAll('SELECT * FROM jobs', {})
 
@@ -27,7 +33,7 @@ MySQL.ready(function()
 
 	for i=tonumber(1), #result2, tonumber(1) do
 		if Jobs[result2[i].job_name] then
-			Jobs[result2[i].job_name].grades[tostring(result2[i].grade)] = result2[i]
+			Jobs[result2[i].job_name].grades[tostring(result2[i].grade)] = decodeGradePerms(result2[i])
 		else
 			print(('esx_society: skipping job_grades row with unknown job_name "%s"'):format(tostring(result2[i].job_name)))
 		end
@@ -64,7 +70,7 @@ function reloaddatabase()
 
 		for i=tonumber(1), #result2, tonumber(1) do
 			if Jobs[result2[i].job_name] then
-				Jobs[result2[i].job_name].grades[tostring(result2[i].grade)] = result2[i]
+				Jobs[result2[i].job_name].grades[tostring(result2[i].grade)] = decodeGradePerms(result2[i])
 			else
 				print(('esx_society: skipping job_grades row with unknown job_name "%s"'):format(tostring(result2[i].job_name)))
 			end
@@ -1375,6 +1381,276 @@ ESX.RegisterServerCallback('esx_society:getGradePerm', function(source, cb, perm
 	else
 		cb(false)
 	end
+end)
+
+-- ===== Generic Job Permission Keys (buyItem, findPlate, banBank, CAD, license, ...) =====
+-- Toggled per-grade by the boss; other resources read them via exports.esx_society:doesHavePerm
+
+local function getPermsTable(job, grade)
+	local row = Jobs[job] and Jobs[job].grades[tostring(grade)]
+	return row and row.permsTable or {}
+end
+
+ESX.RegisterServerCallback('esx_society:getJobPerm', function(source, cb)
+	local xPlayer = ESX.GetPlayerFromId(source)
+	cb(getPermsTable(xPlayer.job.name, xPlayer.job.grade))
+end)
+
+RegisterServerEvent('esx_society:togglePermKey')
+AddEventHandler('esx_society:togglePermKey', function(grade, key, state)
+	local source = source
+	local xPlayer = ESX.GetPlayerFromId(source)
+	local job = xPlayer.job.name
+
+	if not isPlayerBoss(source, job) then
+		print(('esx_society: %s attempted to togglePermKey without being boss!'):format(xPlayer.identifier))
+		return
+	end
+
+	if not Config.PermissionKeys[key] then
+		return
+	end
+
+	local row = Jobs[job] and Jobs[job].grades[tostring(grade)]
+	if not row then return end
+
+	local perms = row.permsTable or {}
+	perms[key] = state and true or nil
+
+	local encoded = json.encode(perms)
+
+	MySQL.Async.execute('UPDATE job_grades SET perms = @perms WHERE job_name = @job_name AND grade = @grade', {
+		['@perms']    = encoded,
+		['@job_name'] = job,
+		['@grade']    = grade,
+	}, function()
+		row.perms      = encoded
+		row.permsTable = perms
+
+		-- Push the update live to everyone currently on that exact job+grade.
+		local xPlayers = ESX.GetPlayers()
+		for i = 1, #xPlayers do
+			local Member = ESX.GetPlayerFromId(xPlayers[i])
+			if Member.job.name == job and tostring(Member.job.grade) == tostring(grade) then
+				TriggerClientEvent('society:updatePermissions', xPlayers[i], perms)
+			end
+		end
+
+		JobsLog('Toggle Permission', state, job, 'option', {
+			{["name"] = "👤 Player", ["value"] = xPlayer.name, ["inline"] = false},
+			{["name"] = "🔢 Grade", ["value"] = tostring(grade), ["inline"] = false},
+			{["name"] = "🔑 Key", ["value"] = key, ["inline"] = false},
+			{["name"] = "Status", ["value"] = state and 'Enabled' or 'Disabled', ["inline"] = false},
+		})
+	end)
+end)
+
+-- ===== Dispatch Duty Queue (/dduty, /dlist) — mechanic/ambulance =====
+-- Real FIFO queue: workers join via /dduty. When esx_uniquejobs creates a new
+-- request (mechanic/ambulance), it calls exports.esx_society:popNextInQueue(job)
+-- to get whoever's been waiting longest, pushes it straight into their F6
+-- Request List, and requeues them at the back so the next request goes to
+-- someone else. The request stays visible to everyone else too (unchanged),
+-- this queue only controls who gets proactively notified/opened first.
+local DispatchQueue = {} -- [job] = { source1, source2, ... }
+
+local function isDispatchJob(job)
+	for _, j in ipairs(Config.DispatchQueueJobs) do
+		if j == job then return true end
+	end
+	return false
+end
+
+local function removeFromDispatchQueue(job, src)
+	if not DispatchQueue[job] then return end
+	for i = #DispatchQueue[job], 1, -1 do
+		if DispatchQueue[job][i] == src then
+			table.remove(DispatchQueue[job], i)
+		end
+	end
+end
+
+local function getDispatchQueuePosition(job, src)
+	if not DispatchQueue[job] then return nil end
+	for i = 1, #DispatchQueue[job] do
+		if DispatchQueue[job][i] == src then
+			return i
+		end
+	end
+	return nil
+end
+
+AddEventHandler('playerDropped', function()
+	local source = source
+	for job, _ in pairs(DispatchQueue) do
+		removeFromDispatchQueue(job, source)
+	end
+end)
+
+RegisterServerEvent('esx_society:toggleDispatchDuty')
+AddEventHandler('esx_society:toggleDispatchDuty', function()
+	local source = source
+	local xPlayer = ESX.GetPlayerFromId(source)
+	if not xPlayer then return end
+
+	local job = xPlayer.job.name
+
+	if not isDispatchJob(job) then
+		TriggerClientEvent('esx:showNotification', source, 'Job Shoma Dispatch Duty Nadarad')
+		return
+	end
+
+	DispatchQueue[job] = DispatchQueue[job] or {}
+
+	if getDispatchQueuePosition(job, source) then
+		removeFromDispatchQueue(job, source)
+		TriggerClientEvent('esx:showNotification', source, 'Dispatch Duty: ~r~OFF~s~')
+	else
+		table.insert(DispatchQueue[job], source)
+		TriggerClientEvent('esx:showNotification', source, 'Dispatch Duty: ~g~ON~s~')
+	end
+end)
+
+ESX.RegisterServerCallback('esx_society:getDispatchList', function(source, cb)
+	local xPlayer = ESX.GetPlayerFromId(source)
+	if not xPlayer then cb(nil) return end
+
+	local job = xPlayer.job.name
+
+	if not isDispatchJob(job) then
+		cb(nil)
+		return
+	end
+
+	cb({
+		myPosition = getDispatchQueuePosition(job, source),
+		queueCount = DispatchQueue[job] and #DispatchQueue[job] or 0,
+	})
+end)
+
+-- Pops whoever's been waiting longest in that job's queue and puts them at the
+-- back (so the next request rotates to someone else). Returns nil if nobody's
+-- on duty — callers should fall back to their normal broadcast-to-everyone flow.
+exports('popNextInQueue', function(job)
+	if not DispatchQueue[job] or #DispatchQueue[job] == 0 then
+		return nil
+	end
+
+	local worker = table.remove(DispatchQueue[job], 1)
+	table.insert(DispatchQueue[job], worker) -- rotate to the back
+
+	return worker
+end)
+
+-- ===== Live job vehicle catalog (addcarjob / DeleteCar) =====
+-- Adds on top of the static Config.Garage list, without touching it.
+local CustomVehicles = {}
+
+local function loadCustomVehicles(cb)
+	MySQL.Async.fetchAll('SELECT * FROM job_vehicles_custom', {}, function(result)
+		CustomVehicles = {}
+		for i=1, #result, 1 do
+			local row = result[i]
+			CustomVehicles[row.job_name] = CustomVehicles[row.job_name] or {}
+			table.insert(CustomVehicles[row.job_name], row)
+		end
+		if cb then cb() end
+	end)
+end
+
+MySQL.ready(function()
+	loadCustomVehicles()
+end)
+
+local function isOnDutyAdmin(source)
+	local xPlayer = ESX.GetPlayerFromId(source)
+	if not xPlayer then return false end
+	if not xPlayer.permission_level or xPlayer.permission_level < 1 then return false end
+	if not xPlayer.get('aduty') then return false end
+	return true
+end
+
+ESX.RegisterServerCallback('esx_society:getCustomVehicles', function(source, cb)
+	cb(CustomVehicles)
+end)
+
+RegisterServerEvent('esx_society:addCarJob')
+AddEventHandler('esx_society:addCarJob', function(job, model, label, isHeli)
+	local source = source
+	local xPlayer = ESX.GetPlayerFromId(source)
+
+	if not isOnDutyAdmin(source) then
+		print(('esx_society: %s attempted addCarJob without admin/aduty!'):format(xPlayer and xPlayer.identifier or source))
+		return
+	end
+
+	if not Jobs[job] then
+		TriggerClientEvent('esx:showNotification', source, 'Job ' .. tostring(job) .. ' vojod nadarad')
+		return
+	end
+
+	-- Sanity check: the admin must actually be sitting in a vehicle of that model,
+	-- and we read the livery straight off that vehicle (never trust the client value).
+	local ped = GetPlayerPed(source)
+	local veh = GetVehiclePedIsIn(ped, false)
+	if veh == 0 or GetEntityModel(veh) ~= GetHashKey(model) then
+		TriggerClientEvent('esx:showNotification', source, 'Savar hamin mashin nisti')
+		return
+	end
+
+	local actualLivery = GetVehicleLivery(veh)
+
+	if type(label) ~= 'string' or #label == 0 or #label > 30 then
+		TriggerClientEvent('esx:showNotification', source, 'Label na motabar ast')
+		return
+	end
+
+	MySQL.Async.insert('INSERT INTO job_vehicles_custom (job_name, model, label, is_heli, livery) VALUES (@job_name, @model, @label, @is_heli, @livery)', {
+		['@job_name'] = job,
+		['@model']    = model,
+		['@label']    = label,
+		['@is_heli']  = isHeli and 1 or 0,
+		['@livery']   = actualLivery,
+	}, function()
+		loadCustomVehicles(function()
+			TriggerClientEvent('society:customVehiclesUpdated', -1, CustomVehicles)
+			TriggerClientEvent('esx:showNotification', source, 'Mashin be job ' .. job .. ' ezafe shod (Livery: ' .. actualLivery .. ')')
+		end)
+
+		JobsLog('Add Car Job', true, job, 'option', {
+			{["name"] = "👤 Admin", ["value"] = xPlayer.name, ["inline"] = false},
+			{["name"] = "🎮 Steam Hex", ["value"] = xPlayer.identifier, ["inline"] = false},
+			{["name"] = "🚗 Model", ["value"] = model, ["inline"] = false},
+			{["name"] = "🏷 Label", ["value"] = label, ["inline"] = false},
+			{["name"] = "🎨 Livery", ["value"] = tostring(actualLivery), ["inline"] = false},
+		})
+	end)
+end)
+
+RegisterServerEvent('esx_society:deleteCustomCarJob')
+AddEventHandler('esx_society:deleteCustomCarJob', function(id, job)
+	local source = source
+	local xPlayer = ESX.GetPlayerFromId(source)
+
+	local allowed = isOnDutyAdmin(source) or isPlayerBoss(source, job)
+	if not allowed then
+		print(('esx_society: %s attempted deleteCustomCarJob without permission!'):format(xPlayer and xPlayer.identifier or source))
+		return
+	end
+
+	MySQL.Async.execute('DELETE FROM job_vehicles_custom WHERE id = @id', {
+		['@id'] = id,
+	}, function()
+		loadCustomVehicles(function()
+			TriggerClientEvent('society:customVehiclesUpdated', -1, CustomVehicles)
+			TriggerClientEvent('esx:showNotification', source, 'Mashin hazf shod')
+		end)
+
+		JobsLog('Delete Car Job', false, job, 'option', {
+			{["name"] = "👤 Player", ["value"] = xPlayer.name, ["inline"] = false},
+			{["name"] = "🆔 Vehicle Id", ["value"] = tostring(id), ["inline"] = false},
+		})
+	end)
 end)
 
 ESX.RegisterServerCallback('esx_society:getUniforms', function(source, cb, rank, job)

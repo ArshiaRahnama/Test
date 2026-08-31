@@ -332,3 +332,128 @@ ESX.RegisterServerCallback('Unique_AdminMenu:GetDashboard', function(source, cb)
         end
     )
 end)
+
+-- ------------------------------------------------------ VOICE/CHAT MUTE ---
+-- Reuses esx_aduty's own client-side handlers (chat:setMuteStatus /
+-- aduty:setMuteStatus already exist there regardless of which resource
+-- triggers them), instead of re-implementing voice muting.
+
+RegisterServerEvent('Unique_AdminMenu:MuteTarget')
+AddEventHandler('Unique_AdminMenu:MuteTarget', function(targetId, muted)
+    local source = source
+    if not IsOnDutyAdmin(source) then return end
+    targetId = tonumber(targetId)
+    if not GetPlayerName(targetId) then return end
+    if targetId == source then
+        TriggerClientEvent('esx:showNotification', source, "~r~You can't mute yourself.")
+        return
+    end
+
+    TriggerClientEvent('chat:setMuteStatus', targetId, muted and true or false)
+    TriggerClientEvent('aduty:setMuteStatus', targetId, muted and true or false)
+    LogAdminAction(source, muted and "mute" or "unmute", ("target: %s"):format(GetPlayerName(targetId)))
+end)
+
+-- ------------------------------------------------- WEAPON / INVENTORY ---
+
+RegisterServerEvent('Unique_AdminMenu:GiveWeaponTarget')
+AddEventHandler('Unique_AdminMenu:GiveWeaponTarget', function(targetId, weapon, ammo)
+    local source = source
+    if not IsOnDutyAdmin(source) then return end
+    local Target = ESX.GetPlayerFromId(tonumber(targetId))
+    if not Target then return end
+    if type(weapon) ~= 'string' or weapon == '' then return end
+    ammo = tonumber(ammo) or 250
+
+    local weaponName = "WEAPON_" .. string.upper(weapon):gsub("^WEAPON_", "")
+    Target.addWeapon(weaponName, ammo)
+    LogAdminAction(source, "give-weapon", ("target: %s | %s (%s ammo)"):format(GetPlayerName(targetId), weaponName, ammo), Target.identifier, GetPlayerName(targetId))
+end)
+
+RegisterServerEvent('Unique_AdminMenu:RemoveWeaponTarget')
+AddEventHandler('Unique_AdminMenu:RemoveWeaponTarget', function(targetId, weapon)
+    local source = source
+    if not IsOnDutyAdmin(source) then return end
+    local Target = ESX.GetPlayerFromId(tonumber(targetId))
+    if not Target then return end
+    if type(weapon) ~= 'string' or weapon == '' then return end
+
+    local weaponName = "WEAPON_" .. string.upper(weapon):gsub("^WEAPON_", "")
+    Target.removeWeapon(weaponName)
+    LogAdminAction(source, "remove-weapon", ("target: %s | %s"):format(GetPlayerName(targetId), weaponName), Target.identifier, GetPlayerName(targetId))
+end)
+
+RegisterServerEvent('Unique_AdminMenu:ClearInventoryTarget')
+AddEventHandler('Unique_AdminMenu:ClearInventoryTarget', function(targetId)
+    local source = source
+    if not IsOnDutyAdmin(source) then return end
+    local Target = ESX.GetPlayerFromId(tonumber(targetId))
+    if not Target then return end
+
+    for i = 1, #Target.inventory do
+        if Target.inventory[i].count > 0 then
+            Target.setInventoryItem(Target.inventory[i].name, 0)
+        end
+    end
+    LogAdminAction(source, "clear-inventory", ("target: %s"):format(GetPlayerName(targetId)), Target.identifier, GetPlayerName(targetId))
+end)
+
+RegisterServerEvent('Unique_AdminMenu:ClearLoadoutTarget')
+AddEventHandler('Unique_AdminMenu:ClearLoadoutTarget', function(targetId)
+    local source = source
+    if not IsOnDutyAdmin(source) then return end
+    local Target = ESX.GetPlayerFromId(tonumber(targetId))
+    if not Target then return end
+
+    for i = #Target.loadout, 1, -1 do
+        Target.removeWeapon(Target.loadout[i].name)
+    end
+    LogAdminAction(source, "clear-loadout", ("target: %s"):format(GetPlayerName(targetId)), Target.identifier, GetPlayerName(targetId))
+end)
+
+-- ------------------------------------------------------- BULK ACTIONS ---
+-- Reuses the same framework-level client events esx_aduty's own bulk
+-- commands use (es_admin:freezePlayer / esx_basicneeds:healPlayer /
+-- esx_ambulancejob:revivexIfDead), so behavior matches exactly.
+
+local ServerFreezeState = false
+
+RegisterServerEvent('Unique_AdminMenu:BulkAction')
+AddEventHandler('Unique_AdminMenu:BulkAction', function(action, reason)
+    local source = source
+    if not IsOnDutyAdmin(source) then return end
+
+    if action == 'freezeall' then
+        ServerFreezeState = not ServerFreezeState
+        TriggerClientEvent('es_admin:freezePlayer', -1, ServerFreezeState)
+        LogAdminAction(source, "bulk-freeze", ServerFreezeState and "froze everyone" or "unfroze everyone")
+
+    elseif action == 'healall' then
+        TriggerClientEvent('esx_basicneeds:healPlayer', -1)
+        LogAdminAction(source, "bulk-heal", "healed everyone")
+
+    elseif action == 'reviveall' then
+        TriggerClientEvent('esx_ambulancejob:revivexIfDead', -1)
+        LogAdminAction(source, "bulk-revive", "revived everyone")
+
+    elseif action == 'kickall' then
+        reason = (type(reason) == 'string' and reason ~= '') and reason or 'Server maintenance'
+        LogAdminAction(source, "bulk-kick", ("reason: %s"):format(reason))
+        for _, id in ipairs(ESX.GetPlayers()) do
+            if id ~= source then
+                DropPlayer(id, reason)
+            end
+        end
+
+    elseif action == 'clearall' then
+        TriggerClientEvent('chat:clear', -1)
+        LogAdminAction(source, "bulk-clear-chat", "cleared chat for everyone")
+    end
+end)
+
+RegisterServerEvent('Unique_AdminMenu:LogClientAction')
+AddEventHandler('Unique_AdminMenu:LogClientAction', function(action, details)
+    local source = source
+    if not IsOnDutyAdmin(source) then return end
+    LogAdminAction(source, tostring(action), tostring(details or ''))
+end)

@@ -18,6 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (entry.position <= 3) row.classList.add(`top${entry.position}`);
 
       let statsHtml;
+      let avatarHtml = '';
       if (data.board === 'gangs') {
         statsHtml = `
           <span class="boardChip"><i class="fa-solid fa-bolt"></i>${entry.xp} XP</span>
@@ -30,10 +31,14 @@ document.addEventListener('DOMContentLoaded', () => {
           <span class="boardChip"><i class="fa-solid fa-coins"></i>${entry.coin}</span>
           <span class="boardChip"><i class="fa-solid fa-clock"></i>${entry.hours}h</span>
         `;
+        if (entry.tier) {
+          avatarHtml = `<div class="rareAvatar tier${entry.tier}"><i class="fa-solid fa-user"></i></div>`;
+        }
       }
 
       row.innerHTML = `
         <span class="boardPos">#${entry.position}</span>
+        ${avatarHtml}
         <span class="boardName">${entry.name}</span>
         <div class="boardStats">${statsHtml}</div>
       `;

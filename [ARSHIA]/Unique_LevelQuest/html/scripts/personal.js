@@ -45,7 +45,7 @@ window.addEventListener('message', (event) => {
     if (ibanElem) ibanElem.textContent = data.iban ? `IBAN ${data.iban}` : 'IBAN —';
     if (accountNumElem) accountNumElem.textContent = data.accountNum ? `ACC #${data.accountNum}` : 'ACC #—';
 
-    updatePaycheckCountdown(data.paycheckSeconds);
+    updatePaycheckCountdown(data.paycheckSeconds, data.hasJob);
 
     if (levelElem && data.level !== undefined) {
       levelElem.textContent = data.level;
@@ -55,6 +55,7 @@ window.addEventListener('message', (event) => {
         const lvBox = document.querySelector('.lvBox');
         if (typeof spawnConfetti === 'function') spawnConfetti(lvBox);
         if (typeof playChime === 'function') playChime();
+        if (typeof showPromotionCinematic === 'function') showPromotionCinematic(newLevel);
         if (lvBox) {
           lvBox.classList.add('levelUpFlash');
           setTimeout(() => lvBox.classList.remove('levelUpFlash'), 900);
@@ -99,6 +100,17 @@ function setImageOrFallback(el, url) {
   }
 }
 
+window.addEventListener('message', (event) => {
+  const data = event.data;
+  if (data.type !== 'myTier') return;
+
+  const avatarWrap = document.querySelector('.avatarWrap');
+  if (!avatarWrap) return;
+
+  avatarWrap.classList.remove('tier1', 'tier2', 'tier3');
+  if (data.tier) avatarWrap.classList.add(`tier${data.tier}`);
+});
+
 let paycheckSecondsLeft = null;
 let paycheckTickHandle = null;
 
@@ -108,13 +120,20 @@ function formatPaycheckTime(totalSeconds) {
   return `${m}:${s.toString().padStart(2, '0')} until paycheck`;
 }
 
-function updatePaycheckCountdown(secondsFromServer) {
+function updatePaycheckCountdown(secondsFromServer, hasJob) {
   const el = document.querySelector('.paycheck_span');
   if (!el) return;
 
   if (paycheckTickHandle) {
     clearInterval(paycheckTickHandle);
     paycheckTickHandle = null;
+  }
+
+  if (hasJob === false) {
+    // essentialmode never sends a paycheck tick to jobless players at
+    // all, so there's genuinely nothing to count down to here.
+    el.textContent = 'No paycheck (no job)';
+    return;
   }
 
   if (secondsFromServer === undefined || secondsFromServer === null) {

@@ -36,6 +36,7 @@ end
 local function grantQuestReward(xPlayer, quest)
     TriggerClientEvent('esx:showNotification', xPlayer.source, "Quest Completed !", "success", quest.name)
     TriggerClientEvent('esx:showNotification', xPlayer.source, "You Got " .. quest.XP .. " XP And " .. quest.coin .. " Coins", "success", "Quest Rewards")
+    TriggerClientEvent('hud:achievementToast', xPlayer.source, quest.name, ("+%s XP  •  +%s Coin"):format(quest.XP, quest.coin))
 
     GrantXP(xPlayer.source, quest.XP, nil)
 

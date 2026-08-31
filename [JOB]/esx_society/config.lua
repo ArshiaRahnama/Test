@@ -767,3 +767,61 @@ Config.JobMaxGrade = {
 }
 
 Config.ChangeBranchJobBossFloor = 10
+
+-- ===== Advanced Job Permissions (toggleable per grade from the boss menu) =====
+-- Other resources (fbi script, cad script, license script, etc.) can check these
+-- via: exports.esx_society:doesHavePerm('findPlate')
+Config.PermissionKeys = {
+    ['buyItem']          = 'Kharid Item',
+    ['buyWeapon']        = 'Kharid Aslahe',
+    ['updateSlot']       = 'Update Slot Mashin',
+    ['delivery']         = 'Delivery',
+    ['peyk']             = 'Peyk',
+    ['plasticSurgery']   = 'Jarahi Plastic',
+    ['edivision']        = 'Edivision',
+    ['findPlate']        = 'Find Plate (FBI)',
+    ['findNumber']       = 'Find Number (FBI)',
+    ['banBank']          = 'Ban Bank (FBI)',
+    ['banPlate']         = 'Ban Plate (FBI)',
+    ['fbiWarn']          = 'FBI Warn',
+    ['banParking']       = 'Ban Parking (FBI)',
+    ['checkacc']         = 'Check Account (FBI)',
+    ['regfbi']           = 'Register FBI',
+    ['ad']               = 'Advertisement (Taxi/Weazel)',
+    ['news']             = 'News (Weazel)',
+    ['craftWithLocker']  = 'Craft With Locker (Resturan)',
+    ['craftedItemLocker']= 'Crafted Item Locker (Resturan)',
+    ['openCAD']          = 'Open CAD',
+    ['addDataCAD']       = 'Add Data CAD',
+    ['removeDataCAD']    = 'Remove Data CAD',
+    ['viewLicense']      = 'View License',
+    ['addLicense']       = 'Add License',
+    ['removeLicense']    = 'Remove License',
+}
+
+-- Which of Config.PermissionKeys apply to which job. If a job isn't listed here,
+-- ALL keys are offered for it. Keep this list trimmed to what's relevant per job
+-- so the boss menu isn't cluttered with irrelevant toggles.
+Config.PermissionGroups = {
+    ['fbi']    = {'findPlate', 'findNumber', 'banBank', 'banPlate', 'fbiWarn', 'banParking', 'checkacc', 'regfbi', 'openCAD', 'addDataCAD', 'removeDataCAD', 'viewLicense', 'addLicense', 'removeLicense', 'buyWeapon'},
+    ['police']   = {'openCAD', 'addDataCAD', 'removeDataCAD', 'viewLicense', 'addLicense', 'removeLicense', 'buyWeapon', 'banPlate'},
+    ['sheriff']  = {'openCAD', 'addDataCAD', 'removeDataCAD', 'viewLicense', 'addLicense', 'removeLicense', 'buyWeapon', 'banPlate'},
+    ['mt']       = {'openCAD', 'addDataCAD', 'removeDataCAD', 'buyWeapon'},
+    ['marshal']  = {'openCAD', 'addDataCAD', 'removeDataCAD', 'buyWeapon'},
+    ['cid']      = {'openCAD', 'addDataCAD', 'removeDataCAD', 'buyWeapon'},
+    ['cia']      = {'openCAD', 'addDataCAD', 'removeDataCAD', 'buyWeapon'},
+    ['taxi']     = {'ad', 'delivery', 'peyk', 'updateSlot'},
+    ['mechanic'] = {'updateSlot', 'buyItem'},
+    ['ambulance']= {'buyItem', 'plasticSurgery'},
+    ['weazel']   = {'ad', 'news'},
+}
+
+-- ===== Dispatch Duty (/dduty, /dlist) =====
+-- Thin wrapper: just toggles the existing on-duty state and opens the existing
+-- request-list menu for each job's own resource. taxi/mechanic/ambulance already
+-- have full request systems in esx_uniquejobs; weazel has its own in esx_weazeljob.
+Config.DispatchJobs = {'taxi', 'mechanic', 'ambulance'}
+-- Jobs that use a real FIFO duty queue (see esx_society server). New requests
+-- created in esx_uniquejobs get offered to the front of this queue first.
+-- taxi is NOT here: it already has its own local on/off flag (OnJob).
+Config.DispatchQueueJobs = {'mechanic', 'ambulance'}

@@ -261,6 +261,18 @@ return {
 	-- this same item, distinguished by its own metadata.plate.
 	['vehicle_keys'] = { label = 'Vehicle Keys', weight = 50, stack = false, client = { image = 'vehicle_keys.png' } },
 
+	-- Permanent utility item: opens a menu to take off currently worn
+	-- clothing, one piece at a time or all at once. Given automatically
+	-- on first spawn, can't be dropped/sold/given away.
+	['wardrobe_remote'] = {
+		label = 'کمد لباس',
+		weight = 100,
+		stack = false,
+		consume = 0,
+		client = { image = 'wardrobe_remote.png' },
+		server = { export = 'unique_clothestore.useWardrobeRemote' },
+	},
+
 
 	['mastercard'] = {
 		label = 'Fleeca Card',

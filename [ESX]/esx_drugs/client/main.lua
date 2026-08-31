@@ -369,8 +369,10 @@ end)
 -- DOA-only stop-and-search: press E near any other player to attempt a cargo seizure.
 -- DOA can't see who's actually carrying from range -- this is a bluffable stop, not a detector.
 Citizen.CreateThread(function()
+    local wait = 500
     while true do
-        Citizen.Wait(500)
+        Citizen.Wait(wait)
+        wait = 500
 
         if ESX.PlayerData.job ~= nil and ESX.PlayerData.job.name == 'doa' then
             local playerPed = PlayerPedId()
@@ -388,7 +390,7 @@ Citizen.CreateThread(function()
             end
 
             if closestPlayer then
-                Citizen.Wait(0)
+                wait = 0
                 ESX.ShowHelpNotification(_U('delivery_search_prompt'))
 
                 if IsControlJustReleased(0, Keys['E']) then
@@ -402,48 +404,67 @@ end)
 ----------------------------------------
 ------- DOA: EVIDENCE COLLECTION --------
 ----------------------------------------
-local evidenceBlips = {} -- [id] = {blip = ..., coords = ...}
+-- Persistent, aggregated per-field cases (server: EvidenceSites). The blip stays up and its
+-- count keeps climbing with every harvest at that field until DOA collects it (E) or it times
+-- out server-side. Newly-connecting/newly-transferred DOA get these synced automatically
+-- (server: esx:playerLoaded / esx:setJob -> SyncEvidenceToPlayer), so nothing is ever missed.
+local evidenceBlips = {} -- [fieldKey] = {blip = ..., coords = ...}
 
 RegisterNetEvent('esx_drugs:newEvidenceSite')
-AddEventHandler('esx_drugs:newEvidenceSite', function(id, coords, drugLabel, lifespan)
-    coords = vector3(coords.x, coords.y, coords.z)
+AddEventHandler('esx_drugs:newEvidenceSite', function(data)
+    local coords = vector3(data.coords.x, data.coords.y, data.coords.z)
+
+    if evidenceBlips[data.id] and DoesBlipExist(evidenceBlips[data.id].blip) then
+        RemoveBlip(evidenceBlips[data.id].blip)
+    end
 
     local blip = AddBlipForCoord(coords.x, coords.y, coords.z)
     SetBlipSprite(blip, 501)
     SetBlipColour(blip, 46)
-    SetBlipScale(blip, 0.7)
-    SetBlipAsShortRange(blip, true)
+    SetBlipScale(blip, 0.85)
+    SetBlipAsShortRange(blip, false)
     BeginTextCommandSetBlipName("STRING")
-    AddTextComponentString('Madrak: ' .. drugLabel)
+    AddTextComponentString(('Madrak: %s (x%s)'):format(data.label, data.count))
     EndTextCommandSetBlipName(blip)
 
-    evidenceBlips[id] = {blip = blip, coords = coords}
+    evidenceBlips[data.id] = {blip = blip, coords = coords, label = data.label, count = data.count}
+end)
 
-    Citizen.SetTimeout(lifespan, function()
-        if evidenceBlips[id] then
-            if DoesBlipExist(evidenceBlips[id].blip) then RemoveBlip(evidenceBlips[id].blip) end
-            evidenceBlips[id] = nil
-        end
-    end)
+RegisterNetEvent('esx_drugs:removeEvidenceSite')
+AddEventHandler('esx_drugs:removeEvidenceSite', function(fieldKey)
+    if evidenceBlips[fieldKey] then
+        if DoesBlipExist(evidenceBlips[fieldKey].blip) then RemoveBlip(evidenceBlips[fieldKey].blip) end
+        evidenceBlips[fieldKey] = nil
+    end
 end)
 
 Citizen.CreateThread(function()
+    local wait = 500
+    local markerRenderDistance = 30.0
+
     while true do
-        Citizen.Wait(500)
+        Citizen.Wait(wait)
+        wait = 500
 
         if ESX.PlayerData.job ~= nil and ESX.PlayerData.job.name == 'doa' then
             local coords = GetEntityCoords(PlayerPedId())
 
-            for id, site in pairs(evidenceBlips) do
+            for fieldKey, site in pairs(evidenceBlips) do
                 local distance = #(coords - site.coords)
+
+                -- Visible in-world "evidence box" (not just a map blip) so it's actually
+                -- findable on foot, not just something you have to eyeball on the minimap.
+                if distance < markerRenderDistance then
+                    wait = 0
+                    DrawMarker(21, site.coords.x, site.coords.y, site.coords.z + 0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.6, 0.6, 0.6, 255, 220, 0, 200, true, true, 2, false, nil, nil, false)
+                end
+
                 if distance < Config.Evidence.CollectRadius then
-                    Citizen.Wait(0)
+                    wait = 0
                     ESX.ShowHelpNotification(_U('evidence_collect_prompt'))
 
                     if IsControlJustReleased(0, Keys['E']) then
-                        TriggerServerEvent('esx_drugs:collectEvidence', id)
-                        if DoesBlipExist(site.blip) then RemoveBlip(site.blip) end
-                        evidenceBlips[id] = nil
+                        TriggerServerEvent('esx_drugs:collectEvidence', fieldKey)
                     end
                 end
             end

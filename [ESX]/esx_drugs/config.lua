@@ -67,8 +67,10 @@ Config.Delivery = {
 
 --CID Evidence Referral (DOA collects physical clues at harvest sites and refers them to CID)--
 Config.Evidence = {
-	Lifespan      = 12 * 60 * 1000, -- how long a harvest site remains a valid, collectible clue (ms)
-	CollectRadius = 4.0,            -- how close DOA must physically be to collect it
+	InactivityTimeout = 45 * 60 * 1000, -- if a site gets no new activity for this long, it clears itself uncollected (ms)
+	CollectRadius     = 6.0,            -- how close DOA must physically be to collect it (kept generous: the blip sits at the field's fixed center, not the exact plant, so a tight radius made it feel broken)
+	AlertDuration     = 5 * 60 * 1000,  -- how long the DOA-only siren blip / countdown lasts when a NEW site is first detected
+	AlertRadius       = 80.0,           -- radius of the translucent alert circle for that siren blip
 }
 
 Config.Locale = 'en'

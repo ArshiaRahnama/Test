@@ -703,15 +703,25 @@ AddEventHandler("esx_ambulancejob:addreq", function(reason)
 			status = "open",
 			time = os.time()
 		}
-		local xPlayers = ESX.GetPlayers()
-		for i=1, #xPlayers do
-			local xPlayer = ESX.GetPlayerFromId(xPlayers[i])
-			if xPlayer.job.name == 'ambulance' then
-				TriggerClientEvent('esx:showNotification', xPlayer.source, "DarKhast Jadid Sabt Shod!")
-			end
-		end
 		rcount = rcount + 1
 		TriggerClientEvent('esx:showNotification', source, "Darkhast Shoma Baraye Ambulance Ersal Shod!")
+
+		-- Try the dispatch duty queue first (esx_society /dduty). If someone's
+		-- waiting, push the request straight into their F6 Request List.
+		local assignedWorker = exports['esx_society']:popNextInQueue('ambulance')
+
+		if assignedWorker then
+			TriggerClientEvent('esx:showNotification', assignedWorker, "DarKhast Jadid Baraye Shoma Ersal Shod!")
+			TriggerClientEvent('esx_society:requestListRequested', assignedWorker)
+		else
+			local xPlayers = ESX.GetPlayers()
+			for i=1, #xPlayers do
+				local xPlayer = ESX.GetPlayerFromId(xPlayers[i])
+				if xPlayer.job.name == 'ambulance' then
+					TriggerClientEvent('esx:showNotification', xPlayer.source, "DarKhast Jadid Sabt Shod!")
+				end
+			end
+		end
 	end
 end)
 

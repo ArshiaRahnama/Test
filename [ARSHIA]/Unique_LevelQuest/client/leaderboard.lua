@@ -6,9 +6,15 @@ Citizen.CreateThread(function()
     end
 end)
 
+-- Set whenever the leaderboard is fetched (menu open + 30s auto-refresh);
+-- read by client/menu.lua's UpdateProfile to flag the header avatar.
+MyLeaderboardTier = nil
+
 function UpdateLeaderboard()
-    ESX.TriggerServerCallback('HUD_Menu:GetLeaderboard', function(entries)
+    ESX.TriggerServerCallback('HUD_Menu:GetLeaderboard', function(entries, myTier)
+        MyLeaderboardTier = myTier
         SendNUIMessage({ type = "loadLeaderboard", board = "players", entries = entries })
+        SendNUIMessage({ type = "myTier", tier = myTier })
     end, 'players')
 
     ESX.TriggerServerCallback('HUD_Menu:GetLeaderboard', function(entries)

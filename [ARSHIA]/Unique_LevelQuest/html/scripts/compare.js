@@ -13,10 +13,12 @@ function fillCompareColumn(prefix, stats) {
   const xpEl = document.getElementById(`compare${prefix}Xp`);
   const coinEl = document.getElementById(`compare${prefix}Coin`);
   const hoursEl = document.getElementById(`compare${prefix}Hours`);
+  const avatarEl = document.getElementById(`compare${prefix}Avatar`);
 
   if (!stats) {
     if (nameEl) nameEl.textContent = 'Not found';
     [levelEl, xpEl, coinEl, hoursEl].forEach(el => { if (el) el.textContent = '-'; });
+    if (avatarEl) avatarEl.classList.remove('tier1', 'tier2', 'tier3');
     return;
   }
 
@@ -25,6 +27,10 @@ function fillCompareColumn(prefix, stats) {
   if (xpEl) xpEl.textContent = stats.xp ?? '-';
   if (coinEl) coinEl.textContent = stats.coin ?? '-';
   if (hoursEl) hoursEl.textContent = stats.hours !== undefined ? `${stats.hours}h` : '-';
+  if (avatarEl) {
+    avatarEl.classList.remove('tier1', 'tier2', 'tier3');
+    if (stats.tier) avatarEl.classList.add(`tier${stats.tier}`);
+  }
 }
 
 document.addEventListener('DOMContentLoaded', () => {

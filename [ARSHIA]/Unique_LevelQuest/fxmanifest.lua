@@ -30,6 +30,7 @@ client_scripts {
     'client/collections.lua',
     'client/skill.lua',
     'client/leaderboard.lua',
+    'client/toast.lua',
 }
 
 ui_page 'html/index.html'

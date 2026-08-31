@@ -40,3 +40,42 @@ function GetUserInput(windowTitle, defaultText, maxLength)
         end
     end
 end
+
+local function EnumerateNearbyVehicles()
+    return coroutine.wrap(function()
+        local handle, vehicle = FindFirstVehicle()
+        local finished = false
+        repeat
+            coroutine.yield(vehicle)
+            finished, vehicle = FindNextVehicle(handle)
+        until finished
+        EndFindVehicle(handle)
+    end)
+end
+
+-- Ported from esx_aduty's dvrange: deletes every vehicle within `range`
+-- meters of the ADMIN (not a target), so it works even on empty/unowned
+-- vehicles with no driver.
+function DeleteVehiclesInRange(range)
+    local playerCoords = GetEntityCoords(PlayerPedId())
+    local deleted = 0
+
+    for vehicle in EnumerateNearbyVehicles() do
+        if DoesEntityExist(vehicle) then
+            local vehicleCoords = GetEntityCoords(vehicle)
+            if #(playerCoords - vehicleCoords) <= range then
+                NetworkRequestControlOfEntity(vehicle)
+                Citizen.Wait(0)
+                ESX.Game.DeleteVehicle(vehicle)
+                deleted = deleted + 1
+            end
+        end
+    end
+
+    if deleted > 0 then
+        drawNotification(("~g~Deleted %s vehicle(s) within %sm"):format(deleted, range))
+    else
+        drawNotification("~y~No vehicles found in that range")
+    end
+    TriggerServerEvent('Unique_AdminMenu:LogClientAction', "dvrange", ("range: %s | deleted: %s"):format(range, deleted))
+end

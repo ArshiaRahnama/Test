@@ -44,6 +44,59 @@ Citizen.CreateThread(function()
   PlayerData = ESX.GetPlayerData()
 end)
 
+-- Vehicles added live via esx_society's /addcarjob command (job = weazel) get merged
+-- into the static AuthorizedVehicles catalog, and their livery (captured at add-time)
+-- is always re-applied on spawn so it never changes.
+local CustomVehicleLiveries  = {}
+local InjectedVehicleEntries = {}
+local InjectedHeliEntries    = {}
+
+local function removeInjected_weazel(list, injected)
+	for _, entry in ipairs(injected) do
+		for i = #list, 1, -1 do
+			if list[i] == entry then
+				table.remove(list, i)
+			end
+		end
+	end
+end
+
+Citizen.CreateThread(function()
+	while ESX == nil do Citizen.Wait(10) end
+
+	local function mergeCustomVehicles()
+		ESX.TriggerServerCallback('esx_society:getCustomVehicles', function(list)
+			removeInjected_weazel(Config_weazel.AuthorizedVehicles.Shared, InjectedVehicleEntries)
+			removeInjected_weazel(Config_weazel.AuthorizedVehicles.Sharedheli, InjectedHeliEntries)
+			InjectedVehicleEntries = {}
+			InjectedHeliEntries    = {}
+			CustomVehicleLiveries  = {}
+
+			local custom = list and list['weazel']
+			if not custom then return end
+
+			for _, v in ipairs(custom) do
+				local entry = {label = v.label, model = v.model}
+
+				if v.is_heli == 1 then
+					table.insert(Config_weazel.AuthorizedVehicles.Sharedheli, entry)
+					table.insert(InjectedHeliEntries, entry)
+				else
+					table.insert(Config_weazel.AuthorizedVehicles.Shared, entry)
+					table.insert(InjectedVehicleEntries, entry)
+				end
+
+				CustomVehicleLiveries[v.model] = tonumber(v.livery) or 0
+			end
+		end)
+	end
+
+	mergeCustomVehicles()
+
+	RegisterNetEvent('society:customVehiclesUpdated')
+	AddEventHandler('society:customVehiclesUpdated', mergeCustomVehicles)
+end)
+
 function SetVehicleMaxMods_weazel(vehicle)
 	local props = {
 		modEngine       = 5,
@@ -458,6 +511,10 @@ function spawnvehicles_weazel(data, plate, vehicle)
 			SetVehicleLivery(vehicle, 5)
 			Citizen.Wait(500)
 			SetVehicleLivery(vehicle, 5)
+
+			if CustomVehicleLiveries[data.current.model] then
+				SetVehicleLivery(vehicle, CustomVehicleLiveries[data.current.model])
+			end
 			TaskWarpPedIntoVehicle(playerPed, vehicle, -1)
 			Citizen.Wait(2000)
 			SetVehicleFuelLevel(vehicle, 100.0)
@@ -680,6 +737,10 @@ function spawnheliss_weazel(data, plate, vehicle)
 			SetVehicleLivery(vehicle, 5)
 			Citizen.Wait(500)
 			SetVehicleLivery(vehicle, 5)
+
+			if CustomVehicleLiveries[data.current.model] then
+				SetVehicleLivery(vehicle, CustomVehicleLiveries[data.current.model])
+			end
 			TaskWarpPedIntoVehicle(playerPed, vehicle, -1)
 			Citizen.Wait(2000)
 			SetVehicleFuelLevel(vehicle, 100.0)

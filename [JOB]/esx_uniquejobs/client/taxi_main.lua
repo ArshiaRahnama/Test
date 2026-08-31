@@ -42,6 +42,78 @@ Citizen.CreateThread(function()
 	ESX.PlayerData = ESX.GetPlayerData()
 end)
 
+-- Vehicles added live via esx_society's /addcarjob command (job = taxi) get merged
+-- into the static AuthorizedVehicles/AuthorizedHelis catalog, and their livery
+-- (captured at add-time) is always re-applied on spawn so it never changes.
+local CustomVehicleLiveries  = {}
+local InjectedVehicleEntries = {}
+local InjectedHeliEntries    = {}
+
+local function removeInjected_taxi(list, injected)
+	for _, entry in ipairs(injected) do
+		for i = #list, 1, -1 do
+			if list[i] == entry then
+				table.remove(list, i)
+			end
+		end
+	end
+end
+
+Citizen.CreateThread(function()
+	while ESX == nil do Citizen.Wait(10) end
+
+	local function mergeCustomVehicles()
+		ESX.TriggerServerCallback('esx_society:getCustomVehicles', function(list)
+			removeInjected_taxi(Config_taxi.AuthorizedVehicles.Shared, InjectedVehicleEntries)
+			removeInjected_taxi(Config_taxi.AuthorizedHelis.Shared, InjectedHeliEntries)
+			InjectedVehicleEntries = {}
+			InjectedHeliEntries    = {}
+			CustomVehicleLiveries  = {}
+
+			local taxiCustom = list and list['taxi']
+			if not taxiCustom then return end
+
+			for _, v in ipairs(taxiCustom) do
+				local entry = {label = v.label, model = v.model}
+
+				if v.is_heli == 1 then
+					table.insert(Config_taxi.AuthorizedHelis.Shared, entry)
+					table.insert(InjectedHeliEntries, entry)
+				else
+					table.insert(Config_taxi.AuthorizedVehicles.Shared, entry)
+					table.insert(InjectedVehicleEntries, entry)
+				end
+
+				CustomVehicleLiveries[v.model] = tonumber(v.livery) or 0
+			end
+		end)
+	end
+
+	mergeCustomVehicles()
+
+	RegisterNetEvent('society:customVehiclesUpdated')
+	AddEventHandler('society:customVehiclesUpdated', mergeCustomVehicles)
+end)
+
+-- /dduty and /dlist (from esx_society) — only react if we're currently on the taxi job.
+RegisterNetEvent('esx_society:dutyToggleRequested')
+AddEventHandler('esx_society:dutyToggleRequested', function()
+	if ESX.PlayerData.job and ESX.PlayerData.job.name == 'taxi' then
+		if OnJob then
+			StopTaxiJob_taxi()
+		else
+			StartTaxiJob_taxi()
+		end
+	end
+end)
+
+RegisterNetEvent('esx_society:requestListRequested')
+AddEventHandler('esx_society:requestListRequested', function()
+	if ESX.PlayerData.job and ESX.PlayerData.job.name == 'taxi' then
+		OpenReqsList_taxi()
+	end
+end)
+
 RegisterNetEvent("esx:setJob")
 AddEventHandler("esx:setJob", function(job)
 	PlayerData.job = job
@@ -570,6 +642,10 @@ function spawnheliss_taxi(data, plate, vehicle)
 			SetVehicleLivery(vehicle, 4)
 			Citizen.Wait(500)
 			SetVehicleLivery(vehicle, 4)
+
+			if CustomVehicleLiveries[data.current.model] then
+				SetVehicleLivery(vehicle, CustomVehicleLiveries[data.current.model])
+			end
 			TaskWarpPedIntoVehicle(playerPed, vehicle, -1)
 			Citizen.Wait(500)
 			SetVehicleFuelLevel(vehicle, 100.0)
@@ -625,6 +701,10 @@ function spawnvehicles_taxi(data, plate, vehicle)
 			Citizen.Wait(500)
 			SetVehicleFuelLevel(vehicle, 100.0)
 			SetVehicleLivery(vehicle, 4)
+
+			if CustomVehicleLiveries[data.current.model] then
+				SetVehicleLivery(vehicle, CustomVehicleLiveries[data.current.model])
+			end
 			SetVehicleExtra(vehicle, 1, 1)
 
 			TriggerEvent('chat:addMessage', {

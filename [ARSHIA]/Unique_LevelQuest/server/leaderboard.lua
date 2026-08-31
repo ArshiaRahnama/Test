@@ -12,6 +12,16 @@ local SCORE_RANK_WEIGHT     = 1000
 local SCORE_HOUR_WEIGHT     = 5
 local SCORE_COIN_WEIGHT     = 2
 
+-- Cached briefly so the "am I / are they top 3" check (used for the
+-- rare avatar frame) doesn't require its own extra query on every
+-- profile/compare fetch. Refreshed whenever the leaderboard itself is
+-- queried, which already happens on menu open + every 30s auto-refresh.
+local top3Identifiers = {} -- [identifier] = 1|2|3
+
+local function getPlayerTier(identifier)
+    return identifier and top3Identifiers[identifier] or nil
+end
+
 ESX.RegisterServerCallback('HUD_Menu:GetLeaderboard', function(source, cb, kind)
     if kind == 'gangs' then
         MySQL.Async.fetchAll([[
@@ -36,14 +46,18 @@ ESX.RegisterServerCallback('HUD_Menu:GetLeaderboard', function(source, cb, kind)
     end
 
     MySQL.Async.fetchAll(([[
-        SELECT playerName, rank, xp, coin, timePlay,
+        SELECT identifier, playerName, rank, xp, coin, timePlay,
                (rank * %d + xp + FLOOR(timePlay / 3600) * %d + coin * %d) AS score
         FROM users
         ORDER BY score DESC
         LIMIT 10
     ]]):format(SCORE_RANK_WEIGHT, SCORE_HOUR_WEIGHT, SCORE_COIN_WEIGHT), {}, function(result)
+        top3Identifiers = {}
         local entries = {}
         for i = 1, #result do
+            if i <= 3 then
+                top3Identifiers[result[i].identifier] = i
+            end
             table.insert(entries, {
                 position = i,
                 name     = result[i].playerName or 'Unknown',
@@ -51,9 +65,12 @@ ESX.RegisterServerCallback('HUD_Menu:GetLeaderboard', function(source, cb, kind)
                 xp       = result[i].xp or 0,
                 coin     = result[i].coin or 0,
                 hours    = math.floor((result[i].timePlay or 0) / 3600),
+                tier     = i <= 3 and i or nil,
             })
         end
-        cb(entries)
+
+        local xPlayer = ESX.GetPlayerFromId(source)
+        cb(entries, xPlayer and getPlayerTier(xPlayer.identifier) or nil)
     end)
 end)
 
@@ -63,16 +80,17 @@ end)
 ESX.RegisterServerCallback('HUD_Menu:GetPlayerStats', function(source, cb, playerName)
     if not playerName then return cb(nil) end
 
-    MySQL.Async.fetchAll('SELECT playerName, rank, xp, coin, timePlay FROM users WHERE playerName = @name LIMIT 1', {
+    MySQL.Async.fetchAll('SELECT identifier, playerName, rank, xp, coin, timePlay FROM users WHERE playerName = @name LIMIT 1', {
         ['@name'] = playerName
     }, function(result)
         if not result[1] then return cb(nil) end
         cb({
             name  = result[1].playerName,
-            rank  = result[1].rank or 1,
+            level = result[1].rank or 1,
             xp    = result[1].xp or 0,
             coin  = result[1].coin or 0,
             hours = math.floor((result[1].timePlay or 0) / 3600),
+            tier  = getPlayerTier(result[1].identifier),
         })
     end)
 end)

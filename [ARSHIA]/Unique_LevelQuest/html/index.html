@@ -13,10 +13,14 @@
   <link rel="stylesheet" href="styles/leaderboard.css" />
   <link rel="stylesheet" href="styles/compare.css" />
   <link rel="stylesheet" href="styles/confetti.css" />
+  <link rel="stylesheet" href="styles/promotion.css" />
+  <link rel="stylesheet" href="styles/toast.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
 </head>
 
 <body>
+  <div class="toastStack" id="toastStack"></div>
+
   <div class="container">
     <div class="window">
       <div class="compareOverlay hidden" id="compareOverlay">
@@ -35,6 +39,7 @@
             <div class="compareVs">VS</div>
             <div class="compareCol compareCol-them">
               <div class="compareColLabel">THEM</div>
+              <div class="rareAvatar" id="compareThemAvatar" style="margin: 0 auto 6px;"><i class="fa-solid fa-user"></i></div>
               <div class="compareName" id="compareThemName">-</div>
               <div class="compareStat"><span>Level</span><span id="compareThemLevel">-</span></div>
               <div class="compareStat"><span>XP</span><span id="compareThemXp">-</span></div>
@@ -183,6 +188,8 @@
 
   <script src="scripts/sound.js"></script>
   <script src="scripts/confetti.js"></script>
+  <script src="scripts/promotion.js"></script>
+  <script src="scripts/toast.js"></script>
   <script src="scripts/script.js"></script>
   <script src="scripts/personal.js"></script>
   <script src="scripts/quest.js"></script>

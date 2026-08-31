@@ -54,6 +54,8 @@ Citizen.CreateThread(function()
     ColorMenu('server_comms', 74, 144, 201)
     WarMenu.CreateSubMenu('server_reports', 'server_tools', 'Reports & Logs')
     ColorMenu('server_reports', 95, 170, 170)
+    WarMenu.CreateSubMenu('server_bulk', 'server_tools', 'Bulk Actions (All Players)')
+    ColorMenu('server_bulk', 200, 90, 90)
 end)
 
 local function OpenPlayerTools()
@@ -182,6 +184,43 @@ local function DrawPlayerControlMenu()
     if WarMenu.Button("Cuff / Uncuff") then
         TriggerServerEvent('Unique_AdminMenu:ToggleCuff', SelectedTargetId)
     end
+
+    if WarMenu.Button("Mute Voice/Chat") then
+        TriggerServerEvent('Unique_AdminMenu:MuteTarget', SelectedTargetId, true)
+    end
+
+    if WarMenu.Button("Unmute Voice/Chat") then
+        TriggerServerEvent('Unique_AdminMenu:MuteTarget', SelectedTargetId, false)
+    end
+
+    if WarMenu.Button("Give Weapon") then
+        local weapon = GetUserInput("Weapon name (without WEAPON_), e.g. PISTOL", "PISTOL") or ""
+        local ammo = tonumber(GetUserInput("Ammo", "250")) or 250
+        if weapon ~= "" then
+            TriggerServerEvent('Unique_AdminMenu:GiveWeaponTarget', SelectedTargetId, weapon, ammo)
+        end
+    end
+
+    if WarMenu.Button("Remove Weapon") then
+        local weapon = GetUserInput("Weapon name (without WEAPON_), e.g. PISTOL", "PISTOL") or ""
+        if weapon ~= "" then
+            TriggerServerEvent('Unique_AdminMenu:RemoveWeaponTarget', SelectedTargetId, weapon)
+        end
+    end
+
+    if WarMenu.Button("Clear Inventory") then
+        local alert = lib.alertDialog({ header = 'Clear Inventory', content = 'Remove all items from this player?', centered = true, cancel = true })
+        if alert == 'confirm' then
+            TriggerServerEvent('Unique_AdminMenu:ClearInventoryTarget', SelectedTargetId)
+        end
+    end
+
+    if WarMenu.Button("Clear Loadout (Weapons)") then
+        local alert = lib.alertDialog({ header = 'Clear Loadout', content = 'Remove all weapons from this player?', centered = true, cancel = true })
+        if alert == 'confirm' then
+            TriggerServerEvent('Unique_AdminMenu:ClearLoadoutTarget', SelectedTargetId)
+        end
+    end
 end
 
 local function DrawPlayerEconMenu()
@@ -292,6 +331,11 @@ local function DrawVehicleNearbyMenu()
     if WarMenu.Button("Delete nearest empty vehicle") then
         TriggerServerEvent('Unique_AdminMenu:VehicleAction', 'deletenearest')
     end
+
+    if WarMenu.Button("Delete Vehicles In Range") then
+        local range = tonumber(GetUserInput("Range (meters)", "50")) or 50
+        DeleteVehiclesInRange(range)
+    end
 end
 
 -- ----------------------------------------------------------- WORLD TOOLS ---
@@ -383,12 +427,42 @@ end
 local function DrawServerToolsMenu()
     WarMenu.MenuButton('» Communication', 'server_comms')
     WarMenu.MenuButton('» Reports & Logs', 'server_reports')
+    WarMenu.MenuButton('» Bulk Actions (All Players)', 'server_bulk')
 
     if WarMenu.Button("⚠ Restart Resource") then
         local res = GetUserInput("Resource to restart (requires ACE: command.arestart)") or ""
         if res ~= "" then
             ExecuteCommand('arestart ' .. res)
         end
+    end
+end
+
+local function DrawServerBulkMenu()
+    if WarMenu.Button("Freeze / Unfreeze ALL Players") then
+        local alert = lib.alertDialog({ header = 'Freeze/Unfreeze All', content = 'This toggles freeze for every player on the server. Continue?', centered = true, cancel = true })
+        if alert == 'confirm' then
+            TriggerServerEvent('Unique_AdminMenu:BulkAction', 'freezeall')
+        end
+    end
+
+    if WarMenu.Button("Heal ALL Players") then
+        TriggerServerEvent('Unique_AdminMenu:BulkAction', 'healall')
+    end
+
+    if WarMenu.Button("Revive ALL Players") then
+        TriggerServerEvent('Unique_AdminMenu:BulkAction', 'reviveall')
+    end
+
+    if WarMenu.Button("Kick ALL Players") then
+        local reason = GetUserInput("Kick reason for everyone", "Server maintenance") or "Server maintenance"
+        local alert = lib.alertDialog({ header = 'Kick Everyone', content = 'This disconnects every player currently online. Continue?', centered = true, cancel = true })
+        if alert == 'confirm' then
+            TriggerServerEvent('Unique_AdminMenu:BulkAction', 'kickall', reason)
+        end
+    end
+
+    if WarMenu.Button("Clear Chat For Everyone") then
+        TriggerServerEvent('Unique_AdminMenu:BulkAction', 'clearall')
     end
 end
 
@@ -462,6 +536,7 @@ local MenuDrawers = {
     server_tools          = DrawServerToolsMenu,
     server_comms            = DrawServerCommsMenu,
     server_reports           = DrawServerReportsMenu,
+    server_bulk               = DrawServerBulkMenu,
 }
 
 Citizen.CreateThread(function()

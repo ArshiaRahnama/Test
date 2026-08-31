@@ -413,17 +413,29 @@ AddEventHandler('Unique_AllRobs:policeAlert', function(coords, label, duration, 
 
     local myBlip  = sharedAlertBlip
     local endTime = GetGameTimer() + duration
+    local sirenToggle = false
+    local lastSirenSwitch = 0
 
     Citizen.CreateThread(function()
         while GetGameTimer() < endTime and sharedAlertBlip == myBlip do
             Citizen.Wait(0)
 
-            local remaining = math.max(0, endTime - GetGameTimer())
+            local now       = GetGameTimer()
+            local remaining = math.max(0, endTime - now)
             local minutes   = math.floor(remaining / 60000)
             local seconds   = math.floor((remaining % 60000) / 1000)
-            local pulse     = math.abs(math.sin(GetGameTimer() / 200.0))
+            local pulse     = math.abs(math.sin(now / 200.0))
 
-            DrawRect(0.5, 0.94, 0.17, 0.05, 100, 0, 0, 140 + math.floor(pulse * 80))
+            -- Red/blue siren flicker, like real police lights
+            if now - lastSirenSwitch > 350 then
+                sirenToggle = not sirenToggle
+                lastSirenSwitch = now
+                SetBlipColour(sharedAlertBlip, sirenToggle and 1 or 3)
+            end
+
+            local barR, barG, barB = sirenToggle and 100 or 0, 0, sirenToggle and 0 or 100
+
+            DrawRect(0.5, 0.94, 0.17, 0.05, barR, barG, barB, 140 + math.floor(pulse * 80))
             SetTextFont(4)
             SetTextScale(0.5, 0.5)
             SetTextColour(255, 255, 255, 255)

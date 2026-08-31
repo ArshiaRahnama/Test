@@ -57,6 +57,21 @@ if Config.Core == "ESX" then
     local KnownClotheTypes = {}
     for t in pairs(ClotheTypeLabel) do KnownClotheTypes[t] = true end
 
+    -- Give every player a permanent "Wardrobe Remote" the first time they
+    -- spawn — a nicer way to manage worn clothes than digging through the
+    -- inventory item by item. Non-consumable, can't be dropped/sold.
+    AddEventHandler('es:firstSpawn', function(source, player)
+        CreateThread(function()
+            while GetResourceState('ox_inventory') ~= 'started' do Wait(200) end
+            Wait(500)
+
+            local has = exports.ox_inventory:Search(source, 'count', 'wardrobe_remote') or 0
+            if has <= 0 then
+                exports.ox_inventory:AddItem(source, 'wardrobe_remote', 1)
+            end
+        end)
+    end)
+
     -- ox_inventory can't create a new item per drawable/texture at runtime,
     -- so each purchased piece becomes an instance of the matching
     -- clothing_<type> item (registered in ox_inventory/data/items.lua),
@@ -80,6 +95,23 @@ if Config.Core == "ESX" then
     -- ESX.UseItem, which turned out to be unreliable across restarts.
     -- This export is called directly by ox_inventory itself, no bridge
     -- involved, so there's nothing else that has to be "ready" first.
+    local function takeOffClothing(playerId, clotheType)
+        local wornSlots = exports.ox_inventory:Search(playerId, 'slots', 'worn_clothing_' .. clotheType)
+        local wornSlot = wornSlots and wornSlots['worn_clothing_' .. clotheType] and wornSlots['worn_clothing_' .. clotheType][1]
+        if not wornSlot then return false end
+
+        local wornMeta = wornSlot.metadata or {}
+        TriggerClientEvent('unique_clothestore:takeOffClotheItem', playerId, wornMeta.clotheType or clotheType)
+        exports.ox_inventory:RemoveItem(playerId, 'worn_clothing_' .. clotheType, 1, nil, wornSlot.slot)
+        exports.ox_inventory:AddItem(playerId, 'clothing_' .. clotheType, 1, {
+            label = wornMeta.label,
+            clotheType = wornMeta.clotheType or clotheType,
+            drawable = wornMeta.drawable,
+            texture = wornMeta.texture or 0
+        })
+        return true, wornMeta.label
+    end
+
     local function handleClothingUse(itemName, inventory, slot)
         local isWorn = itemName:sub(1, 13) == 'worn_clothing'
         local clotheType = isWorn and itemName:sub(15) or itemName:sub(10)
@@ -108,33 +140,16 @@ if Config.Core == "ESX" then
         print(('^2[unique_clothestore DEBUG] All checks passed — proceeding to %s.^0'):format(isWorn and 'take off' or 'wear'))
 
         if isWorn then
-            -- Taking it back off: remove the "(Worn)" placeholder and give
-            -- the real, original item back with its original metadata.
-            TriggerClientEvent('unique_clothestore:takeOffClotheItem', playerId, metadata.clotheType or clotheType)
-
-            exports.ox_inventory:AddItem(playerId, 'clothing_' .. clotheType, 1, {
-                label = metadata.label,
-                clotheType = metadata.clotheType or clotheType,
-                drawable = metadata.drawable,
-                texture = metadata.texture or 0
-            })
+            local ok, label = takeOffClothing(playerId, clotheType)
+            if ok then
+                TriggerClientEvent('ox_lib:notify', playerId, { description = ('درآوردی: %s'):format(label or clotheType), type = 'inform' })
+            end
         else
             -- Wearing it: if a piece of the same type is already worn, take
             -- it off first (back into the inventory) so you never end up
             -- with two different "worn_clothing_<type>" placeholders for
             -- the same clothing slot on the ped.
-            local wornSlots = exports.ox_inventory:Search(playerId, 'slots', 'worn_clothing_' .. clotheType)
-            local wornSlot = wornSlots and wornSlots['worn_clothing_' .. clotheType] and wornSlots['worn_clothing_' .. clotheType][1]
-            if wornSlot then
-                local wornMeta = wornSlot.metadata or {}
-                exports.ox_inventory:RemoveItem(playerId, 'worn_clothing_' .. clotheType, 1, nil, wornSlot.slot)
-                exports.ox_inventory:AddItem(playerId, 'clothing_' .. clotheType, 1, {
-                    label = wornMeta.label,
-                    clotheType = wornMeta.clotheType or clotheType,
-                    drawable = wornMeta.drawable,
-                    texture = wornMeta.texture or 0
-                })
-            end
+            takeOffClothing(playerId, clotheType)
 
             print(('^3[unique_clothestore DEBUG] Sending wearClotheItem to player %s: type=%s drawable=%s texture=%s^0'):format(tostring(playerId), tostring(metadata.clotheType or clotheType), tostring(metadata.drawable), tostring(metadata.texture or 0)))
             TriggerClientEvent('unique_clothestore:wearClotheItem', playerId, metadata.clotheType or clotheType, metadata.drawable, metadata.texture or 0)
@@ -145,13 +160,104 @@ if Config.Core == "ESX" then
                 drawable = metadata.drawable,
                 texture = metadata.texture or 0
             })
+
+            TriggerClientEvent('ox_lib:notify', playerId, { description = ('پوشیدی: %s'):format(metadata.label or clotheType), type = 'success' })
         end
     end
 
-    exports('useClothingItem', function(_, event, item, inventory, slot)
-        print(('^3[unique_clothestore DEBUG] useClothingItem export called: event=%s item=%s^0'):format(tostring(event), tostring(item and item.name)))
-        if event ~= 'usingItem' then return end
-        handleClothingUse(item.name, inventory, slot)
+    exports('useClothingItem', function(...)
+        -- ox_inventory's own export-call chain shifts arguments around
+        -- unpredictably depending on how the export gets invoked (a known
+        -- FXServer export quirk) — the fixed-position (_, event, item,
+        -- inventory, slot) signature we tried before got the wrong values
+        -- in the wrong slots. Find each piece by its actual SHAPE instead
+        -- of assuming a position: `item` is a table with a .name string
+        -- but no .id, `inventory` is a table with an .id and .items table,
+        -- `slot` is the one plain number, and 'usingItem'/'usedItem' is
+        -- the one plain string.
+        local args = { ... }
+        local foundEvent, foundItem, foundInventory, foundSlot
+
+        for _, v in ipairs(args) do
+            local t = type(v)
+            if t == 'string' and (v == 'usingItem' or v == 'usedItem') then
+                foundEvent = v
+            elseif t == 'number' then
+                foundSlot = v
+            elseif t == 'table' then
+                if v.items and v.id ~= nil then
+                    foundInventory = v
+                elseif v.name and type(v.name) == 'string' then
+                    foundItem = v
+                end
+            end
+        end
+
+        print(('^3[unique_clothestore DEBUG] useClothingItem export called (shape-matched): event=%s item=%s inventoryId=%s slot=%s^0'):format(
+            tostring(foundEvent), tostring(foundItem and foundItem.name), tostring(foundInventory and foundInventory.id), tostring(foundSlot)))
+
+        if foundEvent ~= 'usingItem' then return end
+        if not foundItem or not foundInventory or not foundSlot then
+            print('^1[unique_clothestore DEBUG] ABORTED: could not identify item/inventory/slot from the export arguments.^0')
+            return
+        end
+
+        handleClothingUse(foundItem.name, foundInventory, foundSlot)
+    end)
+
+    -- The "Wardrobe Remote" — a nicer way to manage worn clothes than
+    -- digging through the inventory item by item. Opens a menu listing
+    -- everything currently worn, each with its own take-off button, plus
+    -- an "Undress All" option.
+    exports('useWardrobeRemote', function(...)
+        local args = { ... }
+        local foundEvent, foundInventory
+
+        for _, v in ipairs(args) do
+            local t = type(v)
+            if t == 'string' and (v == 'usingItem' or v == 'usedItem') then
+                foundEvent = v
+            elseif t == 'table' and v.items and v.id ~= nil then
+                foundInventory = v
+            end
+        end
+
+        if foundEvent ~= 'usingItem' or not foundInventory then return end
+
+        local playerId = tonumber(foundInventory.id)
+        if not playerId then return end
+
+        local wornTypes = {}
+        for clotheType in pairs(ClotheTypeLabel) do
+            local wornSlots = exports.ox_inventory:Search(playerId, 'slots', 'worn_clothing_' .. clotheType)
+            local wornSlot = wornSlots and wornSlots['worn_clothing_' .. clotheType] and wornSlots['worn_clothing_' .. clotheType][1]
+            if wornSlot then
+                wornTypes[#wornTypes + 1] = { clotheType = clotheType, label = (wornSlot.metadata or {}).label or ClotheTypeLabel[clotheType] }
+            end
+        end
+
+        TriggerClientEvent('unique_clothestore:openWardrobeMenu', playerId, wornTypes)
+    end)
+
+    RegisterServerEvent('unique_clothestore:takeOffFromMenu')
+    AddEventHandler('unique_clothestore:takeOffFromMenu', function(clotheType)
+        local playerId = source
+        if clotheType == '__all__' then
+            local any = false
+            for t in pairs(ClotheTypeLabel) do
+                if takeOffClothing(playerId, t) then any = true end
+            end
+            if any then
+                TriggerClientEvent('ox_lib:notify', playerId, { description = 'کلاً لخت شدی', type = 'inform' })
+            end
+            return
+        end
+
+        if not KnownClotheTypes[clotheType] then return end
+        local ok, label = takeOffClothing(playerId, clotheType)
+        if ok then
+            TriggerClientEvent('ox_lib:notify', playerId, { description = ('درآوردی: %s'):format(label or clotheType), type = 'inform' })
+        end
     end)
 
 

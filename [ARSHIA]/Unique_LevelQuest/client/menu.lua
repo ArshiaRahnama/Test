@@ -51,6 +51,12 @@ function UpdateProfile()
                 paycheckSeconds = PaycheckSynced
                     and math.max(0, math.floor(((Config.PaycheckIntervalMinutes * 60000) - (GetGameTimer() - LastPaycheckTime)) / 1000))
                     or nil,
+                -- essentialmode's own paycheck.lua only fires 'esx:givesalary'
+                -- for employed players (job ~= 'nojob') — it never fires for
+                -- civilians at all. Without this flag the countdown would
+                -- just say "Syncing..." forever for anyone with no job,
+                -- which looks broken rather than explaining why.
+                hasJob = data.job and data.job.name ~= 'nojob',
             })
         end)
     end)

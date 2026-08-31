@@ -50,6 +50,9 @@ local function checkMilestones(xPlayer, job, minutes, paidCsv)
         TriggerClientEvent('esx:showNotification', xPlayer.source,
             ('%s Skill reached %d%%! +%s coin'):format(Config.TrackedJobs[job], milestone.percent, milestone.coin),
             'success', 'Skill Milestone')
+        TriggerClientEvent('hud:achievementToast', xPlayer.source,
+            ('%s Skill — %d%%'):format(Config.TrackedJobs[job], milestone.percent),
+            ('+%s Coin'):format(milestone.coin))
     end
 end
 
