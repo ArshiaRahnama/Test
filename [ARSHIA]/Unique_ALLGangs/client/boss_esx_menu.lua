@@ -47,7 +47,22 @@ function OpenBossActionsMenu()
 
     ESX.TriggerServerCallback('FMGangs:isBoss', function(isBoss, logo)
         ESX.TriggerServerCallback('FMGangs:GetRankAccess', function(access)
-            if not isBoss and not (access and access['bossaction']) then
+            local hasFullAccess = isBoss or (access and access['bossaction'])
+            local hasHireFireOnly = not hasFullAccess and access and access['hirefire']
+
+            -------------------------------------------------------------
+            -- FEATURE (requested: a rank that can ONLY hire/fire, not
+            -- full boss access): someone with just the 'hirefire' flag
+            -- (Manage Rank Access -> Hire / Fire Only) skips the full
+            -- BOSS MENU entirely and goes straight to a limited
+            -- Employee Management menu - no money, no rank editing,
+            -- no gang settings.
+            -------------------------------------------------------------
+            if hasHireFireOnly then
+                return OpenBossEmployeesMenu(gang)
+            end
+
+            if not hasFullAccess then
                 ESX.ShowNotification('Insufficient authorization')
                 return
             end
@@ -88,53 +103,79 @@ end
 
 function OpenBossMoneyMenu(gang)
     ESX.TriggerServerCallback('FMGangsBoss:getmoney', function(money)
-        local elements = {
-            {label = ('Current balance: <span style="color:green;">$%s</span>'):format(ESX.Math.GroupDigits(money or 0)), value = 'none'},
-            {label = 'Deposit Money', value = 'deposit'},
-            {label = 'Withdraw Money', value = 'withdraw'},
-        }
+        ESX.TriggerServerCallback('FMGangsBoss:getblackmoney', function(blackmoney)
+            local elements = {
+                {label = ('Clean balance: <span style="color:green;">$%s</span>'):format(ESX.Math.GroupDigits(money or 0)), value = 'none'},
+                {label = ('Dirty balance: <span style="color:salmon;">$%s</span>'):format(ESX.Math.GroupDigits(blackmoney or 0)), value = 'none2'},
+                {label = 'Deposit Money', value = 'deposit'},
+                {label = 'Withdraw Money', value = 'withdraw'},
+                {label = 'Wash Money', value = 'wash'},
+            }
 
-        ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'boss_money_' .. gang, {
-            title    = 'MONEY MANAGEMENT',
-            align    = 'top-left',
-            elements = elements
-        }, function(data, menu)
-            if data.current.value == 'deposit' then
-                menu.close()
-                ESX.UI.Menu.Open('dialog', GetCurrentResourceName(), 'boss_deposit_amount_' .. gang, {
-                    title = 'Deposit amount'
-                }, function(data2, menu2)
-                    local amount = tonumber(data2.value)
-                    if not amount or amount <= 0 then
-                        ESX.ShowNotification('Invalid amount')
-                    else
+            ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'boss_money_' .. gang, {
+                title    = 'MONEY MANAGEMENT',
+                align    = 'top-left',
+                elements = elements
+            }, function(data, menu)
+                if data.current.value == 'deposit' then
+                    menu.close()
+                    ESX.UI.Menu.Open('dialog', GetCurrentResourceName(), 'boss_deposit_amount_' .. gang, {
+                        title = 'Deposit amount'
+                    }, function(data2, menu2)
+                        local amount = tonumber(data2.value)
+                        if not amount or amount <= 0 then
+                            ESX.ShowNotification('Invalid amount')
+                        else
+                            menu2.close()
+                            TriggerServerEvent('FMGangsBoss:server:depositMoney', amount)
+                            OpenBossMoneyMenu(gang)
+                        end
+                    end, function(data2, menu2)
                         menu2.close()
-                        TriggerServerEvent('FMGangsBoss:server:depositMoney', amount)
-                        OpenBossMoneyMenu(gang)
-                    end
-                end, function(data2, menu2)
-                    menu2.close()
-                end)
-            elseif data.current.value == 'withdraw' then
-                menu.close()
-                ESX.UI.Menu.Open('dialog', GetCurrentResourceName(), 'boss_withdraw_amount_' .. gang, {
-                    title = 'Withdraw amount'
-                }, function(data2, menu2)
-                    local amount = tonumber(data2.value)
-                    if not amount or amount <= 0 then
-                        ESX.ShowNotification('Invalid amount')
-                    else
+                    end)
+                elseif data.current.value == 'withdraw' then
+                    menu.close()
+                    ESX.UI.Menu.Open('dialog', GetCurrentResourceName(), 'boss_withdraw_amount_' .. gang, {
+                        title = 'Withdraw amount'
+                    }, function(data2, menu2)
+                        local amount = tonumber(data2.value)
+                        if not amount or amount <= 0 then
+                            ESX.ShowNotification('Invalid amount')
+                        else
+                            menu2.close()
+                            TriggerServerEvent('FMGangsBoss:server:withdrawMoney', amount)
+                            OpenBossMoneyMenu(gang)
+                        end
+                    end, function(data2, menu2)
                         menu2.close()
-                        TriggerServerEvent('FMGangsBoss:server:withdrawMoney', amount)
-                        OpenBossMoneyMenu(gang)
-                    end
-                end, function(data2, menu2)
-                    menu2.close()
-                end)
-            end
-        end, function(data, menu)
-            menu.close()
-            OpenBossActionsMenu()
+                    end)
+                elseif data.current.value == 'wash' then
+                    menu.close()
+                    ESX.UI.Menu.Open('dialog', GetCurrentResourceName(), 'boss_wash_amount_' .. gang, {
+                        title = ('Amount to wash (%s%% cut)'):format(Config.WashMoneyCutPercent or 20)
+                    }, function(data2, menu2)
+                        local amount = tonumber(data2.value)
+                        if not amount or amount <= 0 then
+                            ESX.ShowNotification('Invalid amount')
+                        else
+                            menu2.close()
+                            ESX.TriggerServerCallback('FMGangsBoss:washMoney', function(success, resultOrMsg)
+                                if success then
+                                    ESX.ShowNotification(('Washed into $%s clean'):format(ESX.Math.GroupDigits(resultOrMsg)))
+                                else
+                                    ESX.ShowNotification(resultOrMsg or 'Could not wash money')
+                                end
+                                OpenBossMoneyMenu(gang)
+                            end, amount)
+                        end
+                    end, function(data2, menu2)
+                        menu2.close()
+                    end)
+                end
+            end, function(data, menu)
+                menu.close()
+                OpenBossActionsMenu()
+            end)
         end)
     end)
 end
@@ -318,12 +359,33 @@ function OpenBossRankAccessMenu(gang)
             elements = elements
         }, function(data, menu)
             menu.close()
-            OpenBossRankAccessToggleMenu(gang, tonumber(data.current.value))
+            OpenBossRankAccessCategoryMenu(gang, tonumber(data.current.value))
         end, function(data, menu)
             menu.close()
             OpenBossActionsMenu()
         end)
     end, gang)
+end
+
+function OpenBossRankAccessCategoryMenu(gang, gradeNumber)
+    ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'boss_rank_access_cat_' .. gang .. '_' .. gradeNumber, {
+        title    = 'ACCESS TYPE',
+        align    = 'top-left',
+        elements = {
+            { label = 'General Access', value = 'general' },
+            { label = 'Item Access (Armory)', value = 'items' },
+        }
+    }, function(data, menu)
+        menu.close()
+        if data.current.value == 'general' then
+            OpenBossRankAccessToggleMenu(gang, gradeNumber)
+        else
+            OpenBossItemAccessMenu(gang, gradeNumber)
+        end
+    end, function(data, menu)
+        menu.close()
+        OpenBossRankAccessMenu(gang)
+    end)
 end
 
 -- label/key pairs for every toggleable access flag on a grade
@@ -334,7 +396,8 @@ local RankAccessKeys = {
     { key = 'setclothe',   label = 'Set Gang Clothes' },
     { key = 'heliANDBoat', label = 'Heli / Boat Access' },
     { key = 'crafting',    label = 'Crafting Access' },
-    { key = 'bossaction',  label = 'Boss Actions' },
+    { key = 'hirefire',    label = 'Hire / Fire Only (no other boss actions)' },
+    { key = 'bossaction',  label = 'Full Boss Access' },
 }
 
 function OpenBossRankAccessToggleMenu(gang, gradeNumber)
@@ -366,7 +429,52 @@ function OpenBossRankAccessToggleMenu(gang, gradeNumber)
             end, gang, gradeNumber, key, newValue)
         end, function(data, menu)
             menu.close()
+            OpenBossRankAccessCategoryMenu(gang, gradeNumber)
+        end)
+    end, gang)
+end
+
+-------------------------------------------------------------------
+-- Per-item armory access (requested: restrict individual items, not
+-- just the whole armory) - toggles Config.ArmoryItems entries for a
+-- rank, wired to FMGangs:EditItemAccess (server/Gangs.lua) and
+-- enforced there via a real ox_inventory swapItems hook.
+-------------------------------------------------------------------
+function OpenBossItemAccessMenu(gang, gradeNumber)
+    ESX.TriggerServerCallback('FMGangs:GetGangDataFromName', function(gangData)
+        local gradeData = gangData and gangData.grades and gangData.grades[gradeNumber]
+        if not gradeData then
+            ESX.ShowNotification('Could not load that rank')
             OpenBossRankAccessMenu(gang)
+            return
+        end
+
+        local itemAccess = (gradeData.access and gradeData.access.itemAccess) or {}
+        local elements = {}
+        for _, item in ipairs(Config.ArmoryItems or {}) do
+            -- unset (nil) means "allowed" (backward compatible default)
+            local allowed = itemAccess[item] ~= false
+            local state = allowed and '<span style="color:lightgreen;">ALLOWED</span>' or '<span style="color:salmon;">BLOCKED</span>'
+            table.insert(elements, { label = item .. ': ' .. state, value = item })
+        end
+        if #elements == 0 then
+            ESX.ShowNotification('No items configured (Config.ArmoryItems is empty)')
+        end
+
+        ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'boss_item_access_' .. gang .. '_' .. gradeNumber, {
+            title    = (gradeData.label or ('Grade ' .. gradeNumber)) .. ' - Items',
+            align    = 'top-left',
+            elements = elements
+        }, function(data, menu)
+            local item = data.current.value
+            local currentlyAllowed = itemAccess[item] ~= false
+            ESX.TriggerServerCallback('FMGangs:EditItemAccess', function()
+                menu.close()
+                OpenBossItemAccessMenu(gang, gradeNumber)
+            end, gang, gradeNumber, item, not currentlyAllowed)
+        end, function(data, menu)
+            menu.close()
+            OpenBossRankAccessCategoryMenu(gang, gradeNumber)
         end)
     end, gang)
 end

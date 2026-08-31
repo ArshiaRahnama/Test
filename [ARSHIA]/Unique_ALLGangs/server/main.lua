@@ -231,3 +231,30 @@ function ExtractIdentifiers(id)
 
     return identifiers
 end
+
+-------------------------------------------------------------------
+-- Gang chat (/g) - ported from the reference Unique_Gangs system
+-- (server/prop_main.lua) and adapted to this resource's own gang
+-- lookups (Gangs[name] instead of that system's data model).
+-------------------------------------------------------------------
+RegisterCommand('g', function(source, args)
+    local zPlayer = ESX.GetPlayerFromId(source)
+    if not zPlayer then return end
+
+    local message = table.concat(args, " ")
+    if not args[1] or message == '' then
+        return TriggerClientEvent(Config.showNotification, source, "You can't send an empty message!", "error")
+    end
+    if not zPlayer.gang or zPlayer.gang.name == 'nogang' or not Gangs[zPlayer.gang.name] then
+        return TriggerClientEvent(Config.showNotification, source, "You can't use this command!", "error")
+    end
+
+    local xPlayers = ESX.GetPlayers()
+    for i = 1, #xPlayers, 1 do
+        local xPlayer = ESX.GetPlayerFromId(xPlayers[i])
+        if xPlayer and xPlayer.gang and xPlayer.gang.name == zPlayer.gang.name then
+            TriggerClientEvent('chatMessage', xPlayer.source, "^4[^1Gang Chat^4]", {255, 0, 0},
+                "^3( " .. zPlayer.gang.name .. " | " .. zPlayer.name .. " )^0: ^0^*" .. message .. "^4")
+        end
+    end
+end)

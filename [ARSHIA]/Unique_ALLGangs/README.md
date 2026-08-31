@@ -774,6 +774,142 @@ this codebase to attach to, not even partially:**
   resource, tell me which one and I can wire a "Manage Vehicles" menu
   to its actual vehicle-ownership data.
 
+## 29) Rank rename now applies live, no restart needed
+
+Same root cause as the "create gang needed a restart" bug (section 5):
+`FMGangs:EditRank` only updated this resource's own `Gangs` table, never
+the live `ESX.Gangs` table essentialmode itself reads grade
+labels/names from. Now writes to both, same as `CreateGang` already
+does - renames show up immediately.
+
+## 30) Recruit now shows nearby players only, with confirm
+
+`FMGangsBoss:GetRecruitablePlayers` now filters to players within 10
+meters of the boss (was every online player server-wide) - the
+Yes/No confirmation before recruiting was already in place from the
+previous round.
+
+## 31) Gang chat (`/g`)
+
+Ported from the reference `Unique_Gangs` system
+(`server/prop_main.lua`) and adapted to this resource's own `Gangs`
+table. `/g <message>` sends to every online member of your gang only;
+refuses with a clear error if you're not in a gang or send an empty
+message.
+
+## 32) Gang vehicle/heli/boat spawner - real vehicles now, not a dead event
+
+`For5M:OpenGarage` (triggered by the V-Spawn/H-Spawn/B-Spawn markers)
+had no handler anywhere in this resource - confirmed it was designed
+to hand off to a separate garage resource that isn't part of this
+merge. Replaced with a real vehicle picker
+(`OpenGangVehicleSpawner`, `client/load.lua`) using
+`ESX.Game.SpawnVehicleJobs` - the exact same function this server's
+own police job (`esx_uniquejobs`) already uses successfully, so this
+isn't a guess at an unproven API. Vehicle models come from
+`Config.GangVehicles` (separate `car`/`heli`/`boat` lists) - add or
+remove models there. Access is still gated by the same
+`garage`/`heliANDBoat` flags as before - nothing changed there.
+
+## 33) Gang vests, config-defined
+
+New "Gang Vest" option in the Clothes Menu (`client/load.lua`,
+`OpenLockerMenu`), listing presets from `Config.GangVests`. Confirmed
+the exact data format against this server's actual skinchanger
+resource before building this: applying a vest only touches the
+`bproof_1`/`bproof_2` component, leaving everything else the player is
+wearing untouched. The two default presets are placeholders - the
+numbers that produce a specific look depend on your ped models, so
+test in-game and adjust `Config.GangVests` to taste. Note this is
+different from the pre-existing "Gang Clothes" option (full saved
+outfits, per-gang, added via "Clothing management") - vests are a
+single component, configured once server-wide.
+
+## 34) Dirty money / Wash Money - what I found, and what I built instead
+
+Went looking for the "black_money" system on this server before
+building anything: `essentialmode`'s `Config.Accounts` declares a
+`black_money` account type, and the `users` table has a `black_money`
+column - but neither `essentialmode`'s player class nor the
+`es_extended_bridge` resource actually implement the methods
+(`getAccount('black_money')`, `addAccountMoney`, `removeAccountMoney`)
+that would make it usable. The one script that references it
+(`uniquecafejobs/server/corp_server.lua`) calls
+`xPlayer.removeAccountMoney('black_money', ...)`, which doesn't exist
+anywhere in the framework - that code path would crash if it ever ran.
+So there wasn't a genuinely working dirty-money system to hook into.
+
+Rather than depend on fixing someone else's resource first, gave the
+**gang itself** a self-contained dirty-money pool
+(`Gangs[gang].others.blackmoney`, parallel to `.money`, `server/Gangs.lua`),
+plus:
+- `FMGangsBoss:getblackmoney` / `FMGangsBoss:washMoney` server
+  callbacks (`server/boss.lua`), boss-gated via `IsGangBossSource`
+- `Config.WashMoneyCutPercent` (default 20%)
+- `AddGangBlackMoney`/`GetGangBlackMoney` exports so a robbery/drug
+  resource can actually pay into it once you wire one up - nothing
+  feeds it automatically yet, since no such resource is part of this
+  merge
+- "Wash Money" added to the boss Money Management menu, showing both
+  clean and dirty balances
+
+Also fixed the same unguarded max-level XP bug (section 21) in a
+second, currently-unused function (`UpdateXPAndLeveL`) while in this
+area - not a live bug, just consistency/safety in case it's ever
+called.
+
+## 35) ox_target crash fixed - and a real entity/marker leak found
+
+`attempt to call a nil value (upvalue 'cb')` traced to a deeper bug:
+**`RemoveAllMarkers()` never handled the `'ped'` type at all** (only
+`'object'`/`'marker'`) - every time gang data refreshed (5 call sites
+in `client/load.lua`), the boss NPC's entity was never deleted and its
+`ox_target` registration was never removed, leaking a stale target
+entry every refresh. If the game later reused that same entity handle
+number for something unrelated, `ox_target` could still fire the old,
+orphaned `onSelect` closure against it. Fixed both functions
+(`RemoveMarker`/`RemoveAllMarkers`, `client/lib.lua`) to properly
+delete ped entities and deregister their `ox_target` entries, and
+added a `cb` nil-guard as a safety net regardless.
+
+## 36) Per-item armory access - real, not a toy
+
+Confirmed via `ox_inventory`'s own docs before building this:
+`exports.ox_inventory:registerHook('swapItems', ...)` fires on every
+item move and can cancel it by returning `false`. Registered one
+(`server/Gangs.lua`), filtered to only gang armory stashes
+(`inventoryFilter = {'^gang_armory_'}`) so it never touches anything
+else. New "Item Access" option in Manage Rank Access lets a boss
+toggle individual items (from `Config.ArmoryItems` - match this to
+your real item names) per rank; blocked items are rejected server-side
+the moment someone tries to move them. Backward compatible on
+purpose: a grade with no item toggles configured behaves exactly as
+before (whole-armory access via `putitem`/`takeitem`) - blocking is
+opt-in per item, per rank.
+
+## 37) Hire/Fire-only access tier
+
+New `hirefire` access flag. Someone with just this flag (not full boss
+access) now skips the full BOSS MENU entirely and goes straight to a
+limited Employee Management menu (list + recruit + fire only) - no
+money, no rank editing, no gang settings. Full boss / `bossaction`
+still gets everything as before.
+
+## 38) "Set gang clothes for members" - already exists
+
+Went looking before building anything new: the Locker's "Gang
+Clothes" -> "Add Outfit" flow (`client/load.lua`, gated by the
+existing `setclothe` access flag) already does exactly this - a boss
+customizes their look, names it, and it saves per-rank
+(`FMGangs:SetClothRank`); any member of that rank can then pick it
+from "Gang Clothes" and wear it instantly. This has been in the
+resource all along, just reachable at the Locker marker rather than
+from the ESX boss menu - outfit editing needs the skin-menu/mirror
+flow to make sense visually, so that's the right place for it to
+live. If you specifically want a shortcut into this from the boss
+menu's Gang Settings (skipping the walk to the Locker), say so and
+I'll wire one in - it would reuse this exact same mechanism.
+
 ## Testing checklist before going live
 
 - [ ] `/openpanel` opens instantly even with several gang members online

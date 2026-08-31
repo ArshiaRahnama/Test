@@ -241,6 +241,7 @@ ESX.RegisterServerCallback('FMGangs:CreateGang', function(source, cb, data)
             Gangs[data.name].grades = {}
             Gangs[data.name].others = {
                 ['money'] = 5000 ,
+                ['blackmoney'] = 0 ,
                 ['gps'] = 0 ,
                 ['basealaram'] = 0 , 
                 ['clothe'] = 4 , 
@@ -286,7 +287,7 @@ ESX.RegisterServerCallback('FMGangs:CreateGang', function(source, cb, data)
                 local isTopGrade = (i == #Ranks_Data)
                 local gradeLabel = isTopGrade and 'Boss' or Ranks_Data[i].Label
                 local gradeName  = isTopGrade and 'Boss' or Ranks_Data[i].Name
-                Gangs[data.name].grades[tonumber(Ranks_Data[i].Grade)] = {gang_name = data.name, grade = Ranks_Data[i].Grade, label = gradeLabel, name = gradeName, clothes = {} , access =  {['putitem'] = false ,['takeitem'] = false ,['garage']   = false ,['setclothe'] = false ,['heliANDBoat'] = false , ['crafting'] = false ,  ['bossaction'] = isTopGrade ,} , salary = 0 }
+                Gangs[data.name].grades[tonumber(Ranks_Data[i].Grade)] = {gang_name = data.name, grade = Ranks_Data[i].Grade, label = gradeLabel, name = gradeName, clothes = {} , access =  {['putitem'] = false ,['takeitem'] = false ,['garage']   = false ,['setclothe'] = false ,['heliANDBoat'] = false , ['crafting'] = false , ['hirefire'] = false ,  ['bossaction'] = isTopGrade ,} , salary = 0 }
                 ESX.Gangs[data.name].grades[tonumber(Ranks_Data[i].Grade)] = { name = gradeName, label = gradeLabel, salary = 0 }
                 MySQL.Async.execute('INSERT INTO gang_grades (gang_name, grade, label, name , access , salary) VALUES (@gang_name, @grade, @label, @name , @access ,@salary )', 
                 {
@@ -301,6 +302,7 @@ ESX.RegisterServerCallback('FMGangs:CreateGang', function(source, cb, data)
                         ['setclothe'] = false ,
                         ['heliANDBoat'] = false ,
                         ['crafting'] = false ,
+                        ['hirefire'] = false ,
                         ['bossaction'] = isTopGrade ,
                     }) , 
                     ['@salary'] 	= 0 
@@ -514,11 +516,12 @@ ESX.RegisterServerCallback('FMGangs:AddRank', function(source, cb, Name, Label, 
                 ['setclothe'] = false ,
                 ['heliANDBoat'] = false ,
                 ['crafting'] = false ,
+                ['hirefire'] = false ,
                 ['bossaction'] = false ,
             } ), 
             ['@salary'] 	= salary , 
         })
-        Gangs[Name].grades[tonumber(NewGrade)] = {gang_name = Name, grade = NewGrade, label = Label, name = GradeName, clothes = {} , access = {['putitem'] = false ,['takeitem'] = false , ['garage']   = false ,['setclothe'] = false ,['heliANDBoat'] = false ,['crafting'] = false ,['bossaction'] = false , } , }
+        Gangs[Name].grades[tonumber(NewGrade)] = {gang_name = Name, grade = NewGrade, label = Label, name = GradeName, clothes = {} , access = {['putitem'] = false ,['takeitem'] = false , ['garage']   = false ,['setclothe'] = false ,['heliANDBoat'] = false ,['crafting'] = false ,['hirefire'] = false ,['bossaction'] = false , } , }
         TriggerEvent('For5M:SetGangs' ,Gangs ) 
         local xPlayer = ESX.GetPlayerFromId(source)
         local LastRank = CountTable(Gangs[Name].grades) 
@@ -542,6 +545,20 @@ ESX.RegisterServerCallback('FMGangs:EditRank', function(source, cb, GangName, Gr
             Gangs[GangName].grades[tonumber(GradeNumber)].label = GradeLabel
             Gangs[GangName].grades[tonumber(GradeNumber)].name = GradeName
             Gangs[GangName].grades[tonumber(GradeNumber)].salary = salary
+            -------------------------------------------------------------
+            -- FIX (rank rename needed a server restart to actually
+            -- show): same root cause as the "create gang needed a
+            -- restart" bug fixed earlier - this only ever updated this
+            -- resource's own Gangs table, never the live ESX.Gangs
+            -- table essentialmode itself reads grade labels from.
+            -- ESX is the same shared table both resources hold, so
+            -- writing here takes effect immediately.
+            -------------------------------------------------------------
+            if ESX.Gangs[GangName] and ESX.Gangs[GangName].grades[tonumber(GradeNumber)] then
+                ESX.Gangs[GangName].grades[tonumber(GradeNumber)].name = GradeName
+                ESX.Gangs[GangName].grades[tonumber(GradeNumber)].label = GradeLabel
+                ESX.Gangs[GangName].grades[tonumber(GradeNumber)].salary = salary
+            end
             TriggerEvent('For5M:SetGangs' ,Gangs ) 
             cb(Gangs[GangName].grades)
         end)
@@ -613,6 +630,31 @@ ESX.RegisterServerCallback('FMGangs:EditAccess', function(source, cb, GangName, 
         cb(value)
     end)
 end)
+
+-------------------------------------------------------------------
+-- Per-item armory access toggles (see the swapItems hook above).
+-- Stored nested inside the SAME `access` JSON blob each grade already
+-- has (access.itemAccess = {itemName = bool, ...}) - no DB schema
+-- change needed. Same permission check as EditAccess.
+-------------------------------------------------------------------
+ESX.RegisterServerCallback('FMGangs:EditItemAccess', function(source, cb, GangName, GradeNumber, itemName, value)
+    if not IsGangBossSource(source, GangName) then return cb(false) end
+    if not Gangs[GangName].grades[tonumber(GradeNumber)] then return cb(false) end
+
+    local grade = Gangs[GangName].grades[tonumber(GradeNumber)]
+    grade.access.itemAccess = grade.access.itemAccess or {}
+    grade.access.itemAccess[itemName] = value
+
+    MySQL.Async.execute('UPDATE gang_grades SET access = @access WHERE gang_name = @gang_name AND grade = @grade',
+    {
+        ['@gang_name'] = GangName,
+        ['@grade'] = GradeNumber,
+        ['@access'] = json.encode(grade.access),
+    }, function(result)
+        cb(value)
+    end)
+end)
+
 
 ESX.RegisterServerCallback('FMGangs:GetRankCloths', function(source, cb)
     local xPlayer = ESX.GetPlayerFromId(source)
@@ -806,7 +848,7 @@ end)
 
 function UpdateOthers(GangName, Type, Amount, remove_or_add)
     if GangName and Type and Amount then
-        if Type == 'money' then
+        if Type == 'money' or Type == 'blackmoney' then
             if remove_or_add == 'add' then
                 local Data = Gangs[GangName].others[Type]
                 local NewData = Data + Amount
@@ -834,7 +876,12 @@ end
 function UpdateXPAndLeveL(GangName, Type, Amount)
     if GangName and Type and Amount then
         if Type == 'xp' then
-            if Gangs[GangName].xp + Amount >= Config.GangLeveL[Gangs[GangName].level + 1] then
+            -- same max-level guard as server/level.lua's Database() -
+            -- this function isn't currently called anywhere, but it
+            -- has the identical unguarded Config.GangLeveL[level+1]
+            -- lookup that crashed the real one, so fixed for
+            -- consistency/safety in case something calls it later.
+            if Gangs[GangName].level < #Config.GangLeveL and Gangs[GangName].xp + Amount >= Config.GangLeveL[Gangs[GangName].level + 1] then
                 Gangs[GangName].xp = Gangs[GangName].xp + Amount - Config.GangLeveL[Gangs[GangName].level + 1]
                 Gangs[GangName].level = Gangs[GangName].level + 1
             else
@@ -1128,6 +1175,47 @@ end)
 -------------------------------------------------------------------
 local PlayersOGInventory = {}
 local RegisteredArmoryStashes = {}
+
+-------------------------------------------------------------------
+-- Per-item armory access (requested: restrict individual items, not
+-- just the whole armory). Real ox_inventory feature - confirmed via
+-- its own docs before building this: exports.ox_inventory:registerHook
+-- ('swapItems', ...) fires on every item move and can cancel it by
+-- returning false. Filtered to only gang armory stashes
+-- (inventoryFilter '^gang_armory_'), so it never touches anything
+-- else (player inventories, vehicle trunks, other stashes).
+--
+-- Backward compatible on purpose: a grade's itemAccess table (nested
+-- inside its existing `access` blob - no DB schema change needed) is
+-- nil until a boss actually configures it via the new "Item Access"
+-- rank-access submenu. Nil means "no per-item restriction configured"
+-- -> falls through to normal putitem/takeitem whole-armory access,
+-- exactly like every gang already had before this. Only once a boss
+-- explicitly toggles an item OFF for a grade does that specific item
+-- get blocked for that grade.
+-------------------------------------------------------------------
+exports.ox_inventory:registerHook('swapItems', function(payload)
+    local source = payload.source
+    if not source then return true end
+
+    local involvesArmory = (type(payload.fromInventory) == 'string' and payload.fromInventory:match('^gang_armory_'))
+        or (type(payload.toInventory) == 'string' and payload.toInventory:match('^gang_armory_'))
+    if not involvesArmory then return true end
+
+    local xPlayer = ESX.GetPlayerFromId(source)
+    if not xPlayer or not xPlayer.gang or xPlayer.gang.name == 'nogang' then return true end
+    local gradeData = Gangs[xPlayer.gang.name] and Gangs[xPlayer.gang.name].grades[xPlayer.gang.grade]
+    if not gradeData or not gradeData.access or not gradeData.access.itemAccess then return true end
+
+    local itemName = (payload.fromSlot and payload.fromSlot.name) or (payload.toSlot and payload.toSlot.name)
+    if not itemName then return true end
+
+    if gradeData.access.itemAccess[itemName] == false then
+        TriggerClientEvent(Config.showNotification, source, 'You do not have access to this item', 'error')
+        return false
+    end
+    return true
+end, { inventoryFilter = { '^gang_armory_' } })
 
 local function GetArmoryStashId(playergang, key)
     return ('gang_armory_%s_%s'):format(playergang, tostring(key))

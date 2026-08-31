@@ -57,6 +57,79 @@ ESX.RegisterServerCallback('FMGangsBoss:getmoney', function(source , cb)
 	cb(result)
 end)
 
+-------------------------------------------------------------------
+-- Dirty money / Wash Money
+-- -------------------------
+-- Went looking for the "black_money" system on this server before
+-- building this: essentialmode's Config.Accounts declares a
+-- black_money account type, and the `users` table has a black_money
+-- column, but neither essentialmode's player class nor the
+-- es_extended_bridge resource actually implement the methods
+-- (getAccount('black_money'), addAccountMoney, removeAccountMoney)
+-- that would make it usable - the one script that tries to use it
+-- (uniquecafejobs/server/corp_server.lua) would crash if that code
+-- path ever actually ran, since removeAccountMoney doesn't exist
+-- anywhere. So there wasn't a genuinely working dirty-money system to
+-- hook into.
+--
+-- Rather than depend on fixing someone else's resource first, this
+-- gives the GANG its own self-contained dirty-money pool
+-- (Gangs[gang].others.blackmoney, parallel to .money - see
+-- server/Gangs.lua) that lives entirely inside this resource. It
+-- starts at 0 for every gang and nothing feeds it automatically yet
+-- (no robbery/drug-sale resource pays into it) - AddGangBlackMoney
+-- below is exported specifically so another resource CAN pay into it
+-- once you wire one up.
+-------------------------------------------------------------------
+function GetGangBlackMoney(gang)
+    if Gangs[gang] ~= nil then
+        return Gangs[gang].others.blackmoney or 0
+    else
+        return 0
+    end
+end
+exports('GetGangBlackMoney', GetGangBlackMoney)
+
+function AddGangBlackMoney(gang, amount)
+    if Gangs[gang] ~= nil and tonumber(amount) and tonumber(amount) > 0 then
+        UpdateOthers(gang, 'blackmoney', tonumber(amount), 'add')
+        return true
+    end
+    return false
+end
+exports('AddGangBlackMoney', AddGangBlackMoney)
+
+ESX.RegisterServerCallback('FMGangsBoss:getblackmoney', function(source, cb)
+    local xPlayer = ESX.GetPlayerFromId(source)
+    if not xPlayer or not xPlayer.gang then return cb(0) end
+    cb(GetGangBlackMoney(xPlayer.gang.name))
+end)
+
+ESX.RegisterServerCallback('FMGangsBoss:washMoney', function(source, cb, amount)
+    local xPlayer = ESX.GetPlayerFromId(source)
+    amount = tonumber(amount)
+    if not xPlayer or not xPlayer.gang or xPlayer.gang.name == 'nogang' or not amount or amount <= 0 then
+        return cb(false, 'Invalid amount')
+    end
+    local gang = xPlayer.gang.name
+    if not IsGangBossSource(source, gang) then
+        return cb(false, 'Insufficient authorization')
+    end
+    local dirty = GetGangBlackMoney(gang)
+    if dirty < amount then
+        return cb(false, 'Not enough dirty money')
+    end
+
+    local cutPercent = Config.WashMoneyCutPercent or 20
+    local clean = math.floor(amount * (1 - (cutPercent / 100)))
+
+    UpdateOthers(gang, 'blackmoney', amount, 'remove')
+    UpdateOthers(gang, 'money', clean, 'add')
+    TriggerEvent('For5M:SendLog', source, 'Boss Action', ('Washed $%s dirty money for $%s clean (%s%% cut)'):format(amount, clean, cutPercent))
+
+    cb(true, clean)
+end)
+
 RegisterNetEvent('FMGangsBoss:server:GradeUpdate', function(data)
 	local src = source
 	local Player = ESX.GetPlayerFromId(src)
@@ -187,13 +260,25 @@ ESX.RegisterServerCallback('FMGangsBoss:GetRecruitablePlayers', function(source,
 	local Player = ESX.GetPlayerFromId(source)
 	if not Player or not Player.gang then return cb({}) end
 
+	-------------------------------------------------------------------
+	-- FIX (recruit showed every online player server-wide): now only
+	-- lists players within 10 meters of the boss, matching how
+	-- recruiting is meant to work (you walk up to someone and recruit
+	-- them, not pick anyone from across the map).
+	-------------------------------------------------------------------
 	local myGang = Player.gang.name
+	local myCoords = GetEntityCoords(GetPlayerPed(source))
 	local players = {}
 	local xPlayers = ESX.GetPlayers()
 	for i = 1, #xPlayers, 1 do
-		local xTarget = ESX.GetPlayerFromId(xPlayers[i])
-		if xTarget and xTarget.gang and xTarget.gang.name ~= myGang then
-			table.insert(players, { source = xTarget.source, name = xTarget.name })
+		if xPlayers[i] ~= source then
+			local xTarget = ESX.GetPlayerFromId(xPlayers[i])
+			if xTarget and xTarget.gang and xTarget.gang.name ~= myGang then
+				local targetCoords = GetEntityCoords(GetPlayerPed(xTarget.source))
+				if #(myCoords - targetCoords) <= 10.0 then
+					table.insert(players, { source = xTarget.source, name = xTarget.name })
+				end
+			end
 		end
 	end
 	cb(players)

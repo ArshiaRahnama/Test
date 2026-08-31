@@ -50,7 +50,7 @@ function CreateMarker( Name , data , cb)
 							label = 'Open ' .. string.upper(AllMarkers[Name].label or ''),
 							distance = (AllMarkers[Name].size and AllMarkers[Name].size.x or 2.0) + 0.5,
 							onSelect = function()
-								if AllMarkers[Name] then cb(true) end
+								if AllMarkers[Name] and cb then cb(true) end
 							end,
 						}
 					})
@@ -93,6 +93,15 @@ function RemoveMarker(Name)
 		DeleteObject(AllMarkers[Name].object)
 		DeleteObject(AllMarkers[Name].object2)
 	elseif AllMarkers[Name].type == 'ped' then 
+		-- FIX (attempt to call a nil value 'cb' / stale ox_target
+		-- entries): if this ped was registered with ox_target, its
+		-- target option needs explicit removal here - otherwise the
+		-- entity handle can get reused by the game for something
+		-- completely unrelated later, and ox_target would still fire
+		-- the OLD onSelect closure against it.
+		if AllMarkers[Name].usesOxTarget and AllMarkers[Name].ped and GetResourceState('ox_target') == 'started' then
+			exports.ox_target:removeLocalEntity(AllMarkers[Name].ped)
+		end
 		DeletePed(AllMarkers[Name].ped)
 	end 	
 	AllMarkers[Name] = nil 
@@ -103,6 +112,21 @@ function RemoveAllMarkers()
 			DeleteObject(AllMarkers[Name].object)
 			AllMarkers[Name] = nil 
 		elseif AllMarkers[Name].type == 'marker' then 
+			AllMarkers[Name] = nil 
+		elseif AllMarkers[Name].type == 'ped' then 
+			-- FIX: this branch didn't exist at all before - 'ped'
+			-- markers (like the boss NPC) were never cleaned up on a
+			-- bulk refresh, leaking the entity AND leaving a stale
+			-- ox_target registration behind every single time gang
+			-- data reloaded. Matches RemoveMarker's handling above.
+			if AllMarkers[Name].usesOxTarget and AllMarkers[Name].ped and GetResourceState('ox_target') == 'started' then
+				exports.ox_target:removeLocalEntity(AllMarkers[Name].ped)
+			end
+			if AllMarkers[Name].ped then DeletePed(AllMarkers[Name].ped) end
+			AllMarkers[Name] = nil 
+		elseif AllMarkers[Name].type == 'flag' then 
+			DeleteObject(AllMarkers[Name].object)
+			DeleteObject(AllMarkers[Name].object2)
 			AllMarkers[Name] = nil 
 		end 	
 	end 
