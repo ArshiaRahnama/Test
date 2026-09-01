@@ -78,7 +78,7 @@ Citizen.CreateThread(function()
 								ClearPedTasks(playerPed)
 								ESX.Game.DeleteObject(nearbyObject)
 
-								TriggerServerEvent('esx_jk_drugs:pickedUpCocaPlant')
+								TriggerServerEvent('esx_jk_drugs:pickedUpCocaPlant', GetForensicSnapshot())
 
 								isPickingUp = false
 

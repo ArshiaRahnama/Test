@@ -19,6 +19,61 @@ CurrentActionData       = {}
 HasAlreadyEnteredMarker = false
 local menuOpen = false
 
+-- Shared by weed.lua / meth.lua / crack.lua / heroine.lua / mushroom.lua (loaded after this
+-- file, so this is available to them as a global): captures a forensic snapshot of whoever is
+-- harvesting right now, sent along with the pickedUp* event so DOA's evidence report can show
+-- clothing, skin tone, and vehicle/plate -- not just a name and a count.
+function GetForensicSnapshot()
+    local playerPed = PlayerPedId()
+
+    local gender = 'Mard'
+    local okModel, model = pcall(GetEntityModel, playerPed)
+    if okModel and model == GetHashKey('mp_f_freemode_01') then
+        gender = 'Zan'
+    end
+
+    local skinTone = 'Namoshakhas'
+    -- GetPedHeadBlendData returns raw multi-values here (success, shapeFirst..., skinMix, ...),
+    -- not a table -- capture them positionally instead of indexing a table that doesn't exist.
+    local okBlend, success, _, _, _, _, _, _, _, skinMix = pcall(GetPedHeadBlendData, playerPed) -- success(1) shapeFirst(2) shapeSecond(3) shapeThird(4) skinFirst(5) skinSecond(6) skinThird(7) shapeMix(8) skinMix(9)
+    if okBlend and success and type(skinMix) == 'number' then
+        if skinMix < 0.33 then
+            skinTone = 'Roshan'
+        elseif skinMix < 0.66 then
+            skinTone = 'Motevaset'
+        else
+            skinTone = 'Tireh'
+        end
+    end
+
+    local top = GetPedDrawableVariation(playerPed, 11)
+    local legs = GetPedDrawableVariation(playerPed, 4)
+    local shoes = GetPedDrawableVariation(playerPed, 6)
+
+    local vehicleLabel = 'Piade (bedoone vasile naghlie)'
+    local plate = 'N/A'
+    if IsPedInAnyVehicle(playerPed, false) then
+        local veh = GetVehiclePedIsIn(playerPed, false)
+        local okLabel, label = pcall(function()
+            return GetLabelText(GetDisplayNameFromVehicleModel(GetEntityModel(veh)))
+        end)
+        if okLabel and label and label ~= 'NULL' and label ~= '' then
+            vehicleLabel = label
+        end
+        plate = GetVehicleNumberPlateText(veh)
+    end
+
+    return {
+        gender  = gender,
+        skin    = skinTone,
+        top     = top,
+        legs    = legs,
+        shoes   = shoes,
+        vehicle = vehicleLabel,
+        plate   = plate,
+    }
+end
+
 Citizen.CreateThread(function()
     while ESX == nil do
         TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
@@ -484,7 +539,12 @@ Citizen.CreateThread(function()
                     label = 'Barresi va Jam-avari Madarek',
                     distance = 2.5,
                     canInteract = function()
-                        return ESX.PlayerData.job ~= nil and ESX.PlayerData.job.name == 'doa'
+                        -- ESX.GetPlayerData() (a function call) instead of the cached
+                        -- ESX.PlayerData table, and pcall-guarded: if job is ever nil for a
+                        -- moment (job transition edge case), this must not silently error out
+                        -- inside ox_target and make the option just never render.
+                        local ok, jobName = pcall(function() return ESX.GetPlayerData().job.name end)
+                        return ok and jobName == 'doa'
                     end,
                     onSelect = function()
                         if not evidenceBlips[fieldKey] then
@@ -510,7 +570,12 @@ Citizen.CreateThread(function()
                         }, function(cancelled)
                             ClearPedTasksImmediately(playerPed)
                             if not cancelled then
-                                TriggerServerEvent('esx_drugs:collectEvidence', fieldKey)
+                                -- Street name has to be resolved client-side: GetStreetNameAtCoord /
+                                -- GetStreetNameFromHashKey are client-only natives, not available on the server.
+                                local pCoords = GetEntityCoords(playerPed)
+                                local streetHash = GetStreetNameAtCoord(pCoords.x, pCoords.y, pCoords.z)
+                                local streetName = GetStreetNameFromHashKey(streetHash)
+                                TriggerServerEvent('esx_drugs:collectEvidence', fieldKey, streetName)
                             end
                         end)
                     end
@@ -524,30 +589,51 @@ Citizen.CreateThread(function()
     end
 end)
 
--- Full suspect breakdown for the officer who just collected a case: name, gang, and how many
--- times each person farmed there, worst offender first.
+-- Full suspect breakdown for the officer who just collected a case: name, gang, how many times
+-- each person farmed there (worst offender first), plus a forensic snapshot per suspect
+-- (vehicle/plate, skin tone, rough clothing, last-seen time). Rendered with ox_lib's context
+-- menu so each entry gets a proper metadata card instead of a flat text list.
 RegisterNetEvent('esx_drugs:showEvidenceReport')
 AddEventHandler('esx_drugs:showEvidenceReport', function(report)
-    local elements = {}
+    local options = {}
 
     for i, suspect in ipairs(report.suspects) do
-        local tag = (i == 1) and '~r~[BISHTARIN]~s~ ' or ''
-        table.insert(elements, {
-            label = ('%s%s - Gang: %s - %sx'):format(tag, suspect.name, suspect.gang, suspect.count)
+        local f = suspect.forensics
+        local metadata = {
+            {label = 'Gang', value = suspect.gang},
+            {label = 'Tedade Farm', value = suspect.count},
+            {label = 'Akharin Roeyat', value = suspect.seenAt or 'Namoshakhas'},
+        }
+
+        if f then
+            table.insert(metadata, {label = 'Vasile Naghlie', value = f.vehicle or 'N/A'})
+            table.insert(metadata, {label = 'Pelak', value = f.plate or 'N/A'})
+            table.insert(metadata, {label = 'Jensiyat', value = f.gender or 'N/A'})
+            table.insert(metadata, {label = 'Range Poost', value = f.skin or 'Namoshakhas'})
+            table.insert(metadata, {label = 'Lebas (Bala/Payin/Kafsh)', value = ('%s / %s / %s'):format(f.top or '?', f.legs or '?', f.shoes or '?')})
+        end
+
+        table.insert(options, {
+            title       = (i == 1) and ('Bishtarin Mozanne: ' .. suspect.name) or suspect.name,
+            description = ('Gang: %s | %sx farm'):format(suspect.gang, suspect.count),
+            icon        = (i == 1) and 'skull-crossbones' or 'user',
+            iconColor   = (i == 1) and '#ff4d4d' or nil,
+            metadata    = metadata,
+            disabled    = true,
         })
     end
 
-    if #elements == 0 then
-        table.insert(elements, {label = 'Hich sarnakhi peida nashod.'})
+    if #options == 0 then
+        table.insert(options, {title = 'Hich sarnakhi peida nashod.', disabled = true})
     end
 
-    ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'evidence_report', {
-        title    = ('Parvande: %s - %s (%sx)'):format(report.label, report.street, report.total),
-        align    = 'top-left',
-        elements = elements
-    }, function(data, menu) end, function(data, menu)
-        menu.close()
-    end)
+    lib.registerContext({
+        id      = 'esx_drugs_evidence_report',
+        title   = ('Parvande: %s - %s (%sx)'):format(report.label, report.street, report.total),
+        options = options,
+    })
+
+    lib.showContext('esx_drugs_evidence_report')
 end)
 
 RegisterNetEvent('esx_drugs:Cartel')

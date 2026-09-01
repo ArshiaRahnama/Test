@@ -88,7 +88,7 @@ Citizen.CreateThread(function()
 								ClearPedTasks(playerPed)
 								ESX.Game.DeleteObject(nearbyObject)
 
-								TriggerServerEvent('esx_jk_drugs:pickedUpCannabis')
+								TriggerServerEvent('esx_jk_drugs:pickedUpCannabis', GetForensicSnapshot())
 
 								local amount = 1
 								local itemName = "cannabis"
