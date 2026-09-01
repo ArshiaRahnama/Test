@@ -1002,6 +1002,19 @@ This resource isn't currently running, so nothing needed here, but
 never merged into `Unique_ALLGangs` and shouldn't be `ensure`d as-is
 under any circumstances.
 
+## 42) Finished the store-vehicle fix (was only half-done last round)
+
+Last round only patched the client side of `DeleteTheVehicle`
+(`client/load.lua`) to call `FMGangs:GetGangVehicleByPlate` /
+`FMGangs:StoreGangVehicle` instead of the dead `For5mG-garage:*`
+callback - but never actually added those two callbacks server-side,
+so it would have just traded one "does not exist" error for another.
+Added both now (`server/boss.lua`): `GetGangVehicleByPlate` checks the
+real `owned_vehicles` table for a row matching the plate and the
+caller's own gang, `StoreGangVehicle` marks it stored there. Confirmed
+zero remaining functional references to `For5mG-garage` anywhere in
+this resource (only my own explanatory comments, which don't execute).
+
 ## Testing checklist before going live
 
 - [ ] `/openpanel` opens instantly even with several gang members online

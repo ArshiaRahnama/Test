@@ -300,6 +300,41 @@ ESX.RegisterServerCallback('FMGangs:RegisterGangVehicle', function(source, cb, v
     end)
 end)
 
+-------------------------------------------------------------------
+-- Completes the DeleteTheVehicle (store vehicle) fix in
+-- client/load.lua: checks ownership against the real owned_vehicles
+-- table this resource actually writes to (via
+-- FMGangs:RegisterGangVehicle above), instead of the dead
+-- For5mG-garage:getvehiclebyplate callback that never existed here.
+-------------------------------------------------------------------
+ESX.RegisterServerCallback('FMGangs:GetGangVehicleByPlate', function(source, cb, plate)
+    local xPlayer = ESX.GetPlayerFromId(source)
+    if not xPlayer or not xPlayer.gang or xPlayer.gang.name == 'nogang' or not plate then
+        return cb(false)
+    end
+    MySQL.Async.fetchAll('SELECT plate FROM owned_vehicles WHERE plate = @plate AND owner = @owner AND job = @job',
+    {
+        ['@plate'] = plate,
+        ['@owner'] = xPlayer.gang.name,
+        ['@job']   = 'gang',
+    }, function(result)
+        cb(result and result[1] ~= nil)
+    end)
+end)
+
+RegisterServerEvent('FMGangs:StoreGangVehicle')
+AddEventHandler('FMGangs:StoreGangVehicle', function(plate)
+    local source = source
+    local xPlayer = ESX.GetPlayerFromId(source)
+    if not xPlayer or not xPlayer.gang or xPlayer.gang.name == 'nogang' or not plate then return end
+    MySQL.Async.execute('UPDATE owned_vehicles SET stored = 1 WHERE plate = @plate AND owner = @owner AND job = @job',
+    {
+        ['@plate'] = plate,
+        ['@owner'] = xPlayer.gang.name,
+        ['@job']   = 'gang',
+    })
+end)
+
 ESX.RegisterServerCallback('FMGangsBoss:GetRecruitablePlayers', function(source, cb)
 	local Player = ESX.GetPlayerFromId(source)
 	if not Player or not Player.gang then return cb({}) end

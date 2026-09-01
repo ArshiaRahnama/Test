@@ -95,23 +95,29 @@ AddEventHandler('playerDropped', function(Reason)
 end)
 
 RegisterServerEvent('DiscordBot:plascaryyerDied')
-AddEventHandler('DiscordBot:plascaryyerDied', function(Message, killer, Deader, Weapon, KillerCorrd, PlayerCorrd)
+AddEventHandler('DiscordBot:plascaryyerDied', SafeWrap('DiscordBot:plascaryyerDied', function(Message, killer, Deader, Weapon, KillerCorrd, PlayerCorrd)
 	local date = os.date('*t')
 	local xPlayer = ESX.GetPlayerFromId(Deader)
-	local xTarget = ESX.GetPlayerFromId(killer)
+	local xTarget = killer and ESX.GetPlayerFromId(killer) or nil
 	local Wep = Weapon or 'Null'
-	getkillers[Deader] = killer.." ^0) Ba WEAPON :(^1"..Wep.."^0"
+	getkillers[Deader] = tostring(killer or 'N/A').." ^0) Ba WEAPON :(^1"..Wep.."^0"
 	if date.day < 10 then date.day = '0' .. tostring(date.day) end
 	if date.month < 10 then date.month = '0' .. tostring(date.month) end
 	if date.hour < 10 then date.hour = '0' .. tostring(date.hour) end
 	if date.min < 10 then date.min = '0' .. tostring(date.min) end
 	if date.sec < 10 then date.sec = '0' .. tostring(date.sec) end
 	if Weapon then
+		local killerName    = (xTarget and xTarget.name) or 'Unknown/Environment'
+		local killerSource   = (xTarget and xTarget.source) or tostring(killer or 'N/A')
+		local killerSteam    = (xTarget and xTarget.identifier) or 'N/A'
+		local deaderName     = (xPlayer and xPlayer.name) or 'Unknown'
+		local deaderSourceId = (xPlayer and xPlayer.source) or tostring(Deader)
+		local deaderSteam    = (xPlayer and xPlayer.identifier) or 'N/A'
 
-		Message = "```Player : "..xPlayer.name.." ("..xPlayer.source..") \n".."Steam : "..xPlayer.identifier.."\n"..PlayerCorrd.."\n **Tavasote:**\nPlayer : "..xTarget.name.." ("..xTarget.source..")\nSteam : "..xTarget.identifier.."\n"..KillerCorrd.."\n Weapon : "..Weapon.."\n Reason : "..Message.."```"
+		Message = "```Player : "..deaderName.." ("..deaderSourceId..") \n".."Steam : "..deaderSteam.."\n"..tostring(PlayerCorrd).."\n **Tavasote:**\nPlayer : "..killerName.." ("..killerSource..")\nSteam : "..killerSteam.."\n"..tostring(KillerCorrd).."\n Weapon : "..Weapon.."\n Reason : "..tostring(Message).."```"
 	end
 	TriggerEvent('DiscordBot:ToDiscord', 'kill', SystemName, Message .. ' `' .. date.day .. '.' .. date.month .. '.' .. date.year .. ' - ' .. date.hour .. ':' .. date.min .. ':' .. date.sec .. '`', SystemAvatar, true, Deader, false)
-end)
+end))
 
 TriggerEvent('es:addAdminCommand', 'getkiller', 1, function(source, args, user)
     if args[1] then
@@ -351,7 +357,12 @@ function SendToSite(category, name, message, source)
 	}
 
 	PerformHttpRequest(SiteLogWebhook, function(Error, Content, Head)
-		if Error ~= 200 and Error ~= 201 and Error ~= 204 then
+		-- توجه: از وقتی Unique_LogPanel اضافه شده، منبع اصلی لاگ‌ها همون جدول
+		-- دیتابیسه (بالاتر همین تابع) که پنل مستقیم ازش می‌خونه؛ این POST بیرونی
+		-- صرفاً یه کپی اضافیه برای سایت خودتونه. اگه اون سایت جواب خطا بده،
+		-- دیگه لازم نیست تو کنسول سرور اسپم بشه (SiteDebugMode رو تو Config.lua
+		-- می‌تونی true کنی اگه خواستی دوباره این خطاها رو ببینی).
+		if SiteDebugMode and Error ~= 200 and Error ~= 201 and Error ~= 204 then
 			print(('[SiteLog] Failed to send log (category=%s) to site. HTTP status: %s'):format(tostring(category), tostring(Error)))
 		end
 	end, 'POST', json.encode(payload), { ['Content-Type'] = 'application/json' })

@@ -662,15 +662,28 @@ function DeleteTheVehicle(type)
     if KeyPressedCD then return end 
     local Vehicle =  GetVehiclePedIsIn(PlayerPedId())
     if DoesEntityExist(Vehicle) then 
-        ESX.TriggerServerCallback('For5mG-garage:getvehiclebyplate', function(gangveh) 
+        -------------------------------------------------------------
+        -- FIX (essentialmode: TriggerServerCallback =>
+        -- [For5mG-garage:getvehiclebyplate] does not exist): this
+        -- called a callback that was only ever meant to be provided
+        -- by FMGangsGarage - a resource that was never merged in (and
+        -- turned out to contain a backdoor, see README - never merge
+        -- it). Now checks ownership directly against the real
+        -- owned_vehicles table (the same one
+        -- FMGangs:RegisterGangVehicle writes to when a gang vehicle
+        -- is spawned), and marks it stored there instead of the dead
+        -- 'For5mG-garage:stored' event.
+        -------------------------------------------------------------
+        local plate = GetVehicleNumberPlateText(Vehicle)
+        ESX.TriggerServerCallback('FMGangs:GetGangVehicleByPlate', function(gangveh) 
             if gangveh then 
                 TriggerServerEvent('For5M:SendLog', GetPlayerServerId(PlayerId()) , 'Garage' , 'stored Vehicle '  )
-                TriggerServerEvent('For5mG-garage:stored', GetVehicleNumberPlateText(GetVehiclePedIsIn(PlayerPedId())) , 1)
+                TriggerServerEvent('FMGangs:StoreGangVehicle', plate)
                 ESX.Game.DeleteVehicle(Vehicle)
             else 
                 Notifiaction(' This Vehicle Its Not For This Gang  !!')
             end 
-        end, GetVehicleNumberPlateText(GetVehiclePedIsIn(PlayerPedId())))
+        end, plate)
     end 
 end
 

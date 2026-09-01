@@ -44,6 +44,59 @@ Citizen.CreateThread(function()
 
 	PlayerData = ESX.GetPlayerData()
 end)
+-- Vehicles added live via esx_society's /addcarjob command (job = fbi) get merged
+-- into the static AuthorizedVehicles catalog, and their livery (captured at add-time)
+-- is always re-applied on spawn so it never changes.
+local CustomVehicleLiveries  = {}
+local InjectedVehicleEntries = {}
+local InjectedHeliEntries    = {}
+
+local function removeInjected_fbi(list, injected)
+	for _, entry in ipairs(injected) do
+		for i = #list, 1, -1 do
+			if list[i] == entry then
+				table.remove(list, i)
+			end
+		end
+	end
+end
+
+Citizen.CreateThread(function()
+	while ESX == nil do Citizen.Wait(10) end
+
+	local function mergeCustomVehicles()
+		ESX.TriggerServerCallback('esx_society:getCustomVehicles', function(list)
+			removeInjected_fbi(Config_fbi.AuthorizedVehicles.Shared, InjectedVehicleEntries)
+			removeInjected_fbi(Config_fbi.AuthorizedVehicles.Sharedheli, InjectedHeliEntries)
+			InjectedVehicleEntries = {}
+			InjectedHeliEntries    = {}
+			CustomVehicleLiveries  = {}
+
+			local custom = list and list['fbi']
+			if not custom then return end
+
+			for _, v in ipairs(custom) do
+				local entry = {label = v.label, model = v.model}
+
+				if v.is_heli == 1 then
+					table.insert(Config_fbi.AuthorizedVehicles.Sharedheli, entry)
+					table.insert(InjectedHeliEntries, entry)
+				else
+					table.insert(Config_fbi.AuthorizedVehicles.Shared, entry)
+					table.insert(InjectedVehicleEntries, entry)
+				end
+
+				CustomVehicleLiveries[v.model] = tonumber(v.livery) or 0
+			end
+		end)
+	end
+
+	mergeCustomVehicles()
+
+	RegisterNetEvent('society:customVehiclesUpdated')
+	AddEventHandler('society:customVehiclesUpdated', mergeCustomVehicles)
+end)
+
 
 function SetVehicleMaxMods_fbi(vehicle)
 	local props = {
@@ -517,6 +570,10 @@ function spawnvehicles_fbi(data, plate, vehicle, station, partNum, texchar)
 			end
 
 			SetVehicleMaxMods_fbi(vehicle)
+			if CustomVehicleLiveries[data.current.model] then
+				SetVehicleLivery(vehicle, CustomVehicleLiveries[data.current.model])
+			end
+
 			TaskWarpPedIntoVehicle(playerPed, vehicle, -1)
 			Citizen.Wait(500)
 			SetVehicleRadioEnabled(vehicle, false)
@@ -747,6 +804,10 @@ function spawnheliss_fbi(data, plate, vehicle, station, partNum, texchur)
 				SetVehicleLivery(vehicle, 7)
 			end
 
+
+			if CustomVehicleLiveries[data.current.model] then
+				SetVehicleLivery(vehicle, CustomVehicleLiveries[data.current.model])
+			end
 
 			TaskWarpPedIntoVehicle(playerPed, vehicle, -1)
 			Citizen.Wait(500)

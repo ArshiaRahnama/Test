@@ -16,6 +16,30 @@ Config.AdminPermissionLevel = 5  -- حداقل permission_level برای دست�
 Config.LogsPerPage = 50
 
 -- ============================================================================
+-- سازمان‌بندی شغل‌ها (همون گروه‌بندی esx_society/config.lua، اینجا هم تکرار
+-- شده که Unique_LogPanel وابستگی سختی به اون ریسورس نداشته باشه)
+-- ============================================================================
+Config.JobGroups = {
+	{ id = 'doj',         label = 'Department Of Justice', jobs = { 'cid', 'cia', 'marshal', 'fbi', 'judge', 'doa' } },
+	{ id = 'policejob',   label = 'Law Enforcement',        jobs = { 'police', 'sheriff', 'mt' } },
+	{ id = 'organserver', label = 'Organ Services',         jobs = { 'taxi', 'mechanic', 'ambulance', 'weazel' } },
+}
+Config.JobDisplayLabels = {
+	cid = 'CID', cia = 'CIA', marshal = 'Marshal', fbi = 'FBI', judge = 'Judge', doa = 'DOA',
+	police = 'Police', sheriff = 'Sheriff', mt = 'MT',
+	taxi = 'Taxi', mechanic = 'Mechanic', ambulance = 'Medic', weazel = 'Weazel',
+}
+
+local function getJobGroup(job)
+	for _, group in ipairs(Config.JobGroups) do
+		for _, j in ipairs(group.jobs) do
+			if j == job then return group.id, group.label end
+		end
+	end
+	return 'other', 'سایر'
+end
+
+-- ============================================================================
 -- توابع کمکی پرمیشن
 -- ============================================================================
 local function isAdmin(source)
@@ -127,7 +151,17 @@ ESX.RegisterServerCallback('LogPanel:GetMeta', function(source, cb)
 	if admin then
 		MySQL.Async.fetchAll('SELECT DISTINCT category FROM unique_logpanel ORDER BY category ASC', {}, function(cats)
 			MySQL.Async.fetchAll('SELECT DISTINCT job FROM unique_logpanel WHERE job IS NOT NULL AND job <> "" ORDER BY job ASC', {}, function(jobs)
-				cb({ categories = cats or {}, jobs = jobs or {}, isAdmin = true })
+				local jobList = {}
+				for _, row in ipairs(jobs or {}) do
+					local groupId, groupLabel = getJobGroup(row.job)
+					jobList[#jobList + 1] = {
+						job = row.job,
+						label = Config.JobDisplayLabels[row.job] or row.job,
+						groupId = groupId,
+						groupLabel = groupLabel,
+					}
+				end
+				cb({ categories = cats or {}, jobs = jobList, jobGroups = Config.JobGroups, isAdmin = true })
 			end)
 		end)
 	else

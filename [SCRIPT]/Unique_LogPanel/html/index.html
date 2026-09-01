@@ -113,6 +113,12 @@
 		margin-inline-start:auto; font-size:10px; color:var(--text-dim);
 		background:#ffffff0d; padding:1px 7px; border-radius:999px;
 	}
+	.orgGroupTitle{
+		font-size:10.5px; color:var(--accent2); font-weight:700;
+		padding:10px 8px 4px; text-transform:uppercase; letter-spacing:.4px;
+		border-top:1px solid var(--border); margin-top:6px;
+	}
+	.orgGroupTitle:first-child{ border-top:none; margin-top:0; }
 
 	/* ---------- MAIN ---------- */
 	#main{ flex:1; display:flex; flex-direction:column; min-width:0; }
@@ -457,7 +463,8 @@ async function loadMeta(){
 		return;
 	}
 	state.categories = (res.categories || []).map(r => r.category).filter(Boolean);
-	state.jobs = (res.jobs || []).map(r => r.job).filter(Boolean);
+	state.jobs = (res.jobs || []).filter(r => r && r.job);
+	state.jobGroups = res.jobGroups || [];
 	renderCategoryTabs();
 	renderJobTabs();
 	refreshLogs();
@@ -481,13 +488,39 @@ function renderCategoryTabs(){
 	});
 }
 
+const GROUP_ICONS = {
+	doj:         '⚖️',
+	policejob:   '🚔',
+	organserver: '🚑',
+	other:       '📁',
+};
+
 function renderJobTabs(){
 	const el = document.getElementById('jobTabs');
 	if (state.mode !== 'admin'){ el.innerHTML=''; return; }
+
 	let html = tabHTML('all', 'همه‌ی شغل‌ها', '#8a93a8', '👥', state.jobFilter === 'all');
-	state.jobs.forEach(job => {
-		html += tabHTML(job, job, '#3b82f6', '💼', state.jobFilter === job);
+
+	// شغل‌ها رو بر اساس سازمان (DOJ / Law Enforcement / Organ Services / سایر) گروه می‌کنیم
+	const byGroup = {};
+	const groupOrder = [];
+	state.jobs.forEach(j => {
+		const gid = j.groupId || 'other';
+		if (!byGroup[gid]){
+			byGroup[gid] = { label: j.groupLabel || 'سایر', items: [] };
+			groupOrder.push(gid);
+		}
+		byGroup[gid].items.push(j);
 	});
+
+	groupOrder.forEach(gid => {
+		const group = byGroup[gid];
+		html += `<div class="orgGroupTitle">${GROUP_ICONS[gid] || '📁'} ${escapeHTML(group.label)}</div>`;
+		group.items.forEach(j => {
+			html += tabHTML(j.job, j.label || j.job, '#3b82f6', '💼', state.jobFilter === j.job);
+		});
+	});
+
 	el.innerHTML = html;
 	[...el.querySelectorAll('.tabItem')].forEach(elm => {
 		elm.addEventListener('click', () => {

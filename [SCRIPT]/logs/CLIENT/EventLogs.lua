@@ -72,7 +72,7 @@ Citizen.CreateThread(function()
 	while true do
 		Citizen.Wait(150)
 		local ped = PlayerPedId()
-		local jacking = IsPedJackingVehicle(ped)
+		local jacking = IsPedJacking(ped)
 
 		if jacking and not wasJacking then
 			local vehicle = GetVehiclePedIsTryingToEnter(ped)

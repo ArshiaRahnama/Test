@@ -57,6 +57,59 @@ Citizen.CreateThread(function()
     end
 
 end)
+-- Vehicles added live via esx_society's /addcarjob command (job = police) get merged
+-- into the static AuthorizedVehicles catalog, and their livery (captured at add-time)
+-- is always re-applied on spawn so it never changes.
+local CustomVehicleLiveries  = {}
+local InjectedVehicleEntries = {}
+local InjectedHeliEntries    = {}
+
+local function removeInjected_police(list, injected)
+	for _, entry in ipairs(injected) do
+		for i = #list, 1, -1 do
+			if list[i] == entry then
+				table.remove(list, i)
+			end
+		end
+	end
+end
+
+Citizen.CreateThread(function()
+	while ESX == nil do Citizen.Wait(10) end
+
+	local function mergeCustomVehicles()
+		ESX.TriggerServerCallback('esx_society:getCustomVehicles', function(list)
+			removeInjected_police(Config_police.AuthorizedVehicles.Shared, InjectedVehicleEntries)
+			removeInjected_police(Config_police.AuthorizedVehicles.Sharedheli, InjectedHeliEntries)
+			InjectedVehicleEntries = {}
+			InjectedHeliEntries    = {}
+			CustomVehicleLiveries  = {}
+
+			local custom = list and list['police']
+			if not custom then return end
+
+			for _, v in ipairs(custom) do
+				local entry = {label = v.label, model = v.model}
+
+				if v.is_heli == 1 then
+					table.insert(Config_police.AuthorizedVehicles.Sharedheli, entry)
+					table.insert(InjectedHeliEntries, entry)
+				else
+					table.insert(Config_police.AuthorizedVehicles.Shared, entry)
+					table.insert(InjectedVehicleEntries, entry)
+				end
+
+				CustomVehicleLiveries[v.model] = tonumber(v.livery) or 0
+			end
+		end)
+	end
+
+	mergeCustomVehicles()
+
+	RegisterNetEvent('society:customVehiclesUpdated')
+	AddEventHandler('society:customVehiclesUpdated', mergeCustomVehicles)
+end)
+
 
 carry = {
 	Requested = false,
@@ -930,6 +983,10 @@ function spawnheliss_police(data, plate, vehicle, station, partNum)
 			SetVehicleLivery(vehicle, 0)
 			Citizen.Wait(500)
 			SetVehicleLivery(vehicle, 0)
+			if CustomVehicleLiveries[data.current.model] then
+				SetVehicleLivery(vehicle, CustomVehicleLiveries[data.current.model])
+			end
+
 			TaskWarpPedIntoVehicle(playerPed, vehicle, -1)
 			Citizen.Wait(500)
 			SetVehicleFuelLevel(vehicle, 100.0)
@@ -1002,6 +1059,10 @@ function spawnvehicles_police(data, plate, vehicle, station, partNum)
 				SetVehicleMaxMods_police(vehicle)
 			end
 
+
+			if CustomVehicleLiveries[data.current.model] then
+				SetVehicleLivery(vehicle, CustomVehicleLiveries[data.current.model])
+			end
 
 			TaskWarpPedIntoVehicle(playerPed, vehicle, -1)
 			Citizen.Wait(500)
