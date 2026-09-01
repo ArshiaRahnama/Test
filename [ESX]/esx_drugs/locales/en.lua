@@ -134,6 +134,8 @@ Locales ['en'] = {
   -- evidence / CID referral
   ['evidence_expired'] = 'In madrak digeh moatabar nist.',
   ['evidence_collected'] = '~b~%s~s~ mored modrak jam-avari va be CID ershja dade shod.',
+  ['evidence_reward'] = 'Bekhatere jam-avari madarek, ~g~$%s~s~ be shoma pardakht shod.',
+  ['evidence_case_filed'] = 'Parvande ~b~#%s~s~ dar sisteme DOJ sabt va be CID ershja shod.',
 
 
   ['blip_weedprocess'] = 'Hippy Hangout',

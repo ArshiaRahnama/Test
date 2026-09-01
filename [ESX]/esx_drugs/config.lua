@@ -72,6 +72,7 @@ Config.Evidence = {
 	AlertDuration      = 5 * 60 * 1000,  -- how long the DOA-only siren blip / countdown lasts when a NEW site is first detected
 	AlertRadius        = 80.0,           -- radius of the translucent alert circle for that siren blip
 	CollectAnimDuration = 4000,          -- ms spent playing the "documenting the scene" animation before evidence is actually collected
+	CollectReward       = 20000,         -- cash paid directly to the DOA officer who collects a case (separate from the case being filed with CID)
 }
 
 -- One permanent DOA "field investigator" ped per farm zone (Config.FieldZones), standing just

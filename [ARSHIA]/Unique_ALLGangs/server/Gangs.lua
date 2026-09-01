@@ -1194,28 +1194,48 @@ local RegisteredArmoryStashes = {}
 -- explicitly toggles an item OFF for a grade does that specific item
 -- get blocked for that grade.
 -------------------------------------------------------------------
-exports.ox_inventory:registerHook('swapItems', function(payload)
-    local source = payload.source
-    if not source then return true end
-
-    local involvesArmory = (type(payload.fromInventory) == 'string' and payload.fromInventory:match('^gang_armory_'))
-        or (type(payload.toInventory) == 'string' and payload.toInventory:match('^gang_armory_'))
-    if not involvesArmory then return true end
-
-    local xPlayer = ESX.GetPlayerFromId(source)
-    if not xPlayer or not xPlayer.gang or xPlayer.gang.name == 'nogang' then return true end
-    local gradeData = Gangs[xPlayer.gang.name] and Gangs[xPlayer.gang.name].grades[xPlayer.gang.grade]
-    if not gradeData or not gradeData.access or not gradeData.access.itemAccess then return true end
-
-    local itemName = (payload.fromSlot and payload.fromSlot.name) or (payload.toSlot and payload.toSlot.name)
-    if not itemName then return true end
-
-    if gradeData.access.itemAccess[itemName] == false then
-        TriggerClientEvent(Config.showNotification, source, 'You do not have access to this item', 'error')
-        return false
+-------------------------------------------------------------------
+-- FIX (essentialmode: TriggerServerCallback => [FMGangs:GetRankAccess]
+-- / [FMGangs:MyGangLevel] / [FMGangs:GetPlayerData] does not exist):
+-- this hook registration ran immediately at file-load time. If
+-- ox_inventory's export table wasn't fully ready in that exact
+-- instant (a real possibility even with correct `ensure` ordering -
+-- resource START order isn't the same guarantee as "every export is
+-- registered"), exports.ox_inventory:registerHook(...) would throw,
+-- and since this sits partway through the file, EVERYTHING below it
+-- - including GetRankAccess/MyGangLevel/GetPlayerData further down -
+-- would never register at all. Wrapped in a retry loop that waits
+-- for ox_inventory to actually be started before calling it, so a
+-- slow/late-starting ox_inventory can no longer take down the rest
+-- of this file.
+-------------------------------------------------------------------
+CreateThread(function()
+    while GetResourceState('ox_inventory') ~= 'started' do
+        Wait(200)
     end
-    return true
-end, { inventoryFilter = { '^gang_armory_' } })
+    exports.ox_inventory:registerHook('swapItems', function(payload)
+        local source = payload.source
+        if not source then return true end
+
+        local involvesArmory = (type(payload.fromInventory) == 'string' and payload.fromInventory:match('^gang_armory_'))
+            or (type(payload.toInventory) == 'string' and payload.toInventory:match('^gang_armory_'))
+        if not involvesArmory then return true end
+
+        local xPlayer = ESX.GetPlayerFromId(source)
+        if not xPlayer or not xPlayer.gang or xPlayer.gang.name == 'nogang' then return true end
+        local gradeData = Gangs[xPlayer.gang.name] and Gangs[xPlayer.gang.name].grades[xPlayer.gang.grade]
+        if not gradeData or not gradeData.access or not gradeData.access.itemAccess then return true end
+
+        local itemName = (payload.fromSlot and payload.fromSlot.name) or (payload.toSlot and payload.toSlot.name)
+        if not itemName then return true end
+
+        if gradeData.access.itemAccess[itemName] == false then
+            TriggerClientEvent(Config.showNotification, source, 'You do not have access to this item', 'error')
+            return false
+        end
+        return true
+    end, { inventoryFilter = { '^gang_armory_' } })
+end)
 
 local function GetArmoryStashId(playergang, key)
     return ('gang_armory_%s_%s'):format(playergang, tostring(key))

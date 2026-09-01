@@ -245,6 +245,7 @@ AddEventHandler('esx_drugs:collectEvidence', function(fieldKey, streetName)
 	local suspects = {}
 	for identifier, info in pairs(site.players) do
 		table.insert(suspects, {
+			identifier = identifier,
 			name      = info.name,
 			gang      = info.gang,
 			count     = info.count,
@@ -258,23 +259,11 @@ AddEventHandler('esx_drugs:collectEvidence', function(fieldKey, streetName)
 
 	streetName = streetName or 'Namoshakhas'
 	local topSuspect = suspects[1]
+	local officerName = GetCharacterName(xPlayer)
 
-	local xPlayers = ESX.GetPlayers()
-	for i=1, #xPlayers, 1 do
-		local cidPlayer = ESX.GetPlayerFromId(xPlayers[i])
-		if cidPlayer and cidPlayer.job.name == 'cid' then
-			TriggerClientEvent('chat:addMessage', xPlayers[i], {
-				color = {0, 95, 254},
-				multiline = true,
-				args = {'[ CID Referral ]', ('Parvandeye %s dar %s (%s mored) - bishtarin farm: %s (Gang: %s, %s bar) - jam-avari tavasote %s'):format(
-					site.label, streetName, site.count,
-					topSuspect and topSuspect.name or 'Namoshakhas',
-					topSuspect and topSuspect.gang or 'N/A',
-					topSuspect and topSuspect.count or 0,
-					GetPlayerName(_source))}
-			})
-		end
-	end
+	-- Cash reward straight to the collecting officer, on top of whatever the case itself does
+	xPlayer.addMoney(Config.Evidence.CollectReward)
+	TriggerClientEvent('esx:showNotification', _source, _U('evidence_reward', ESX.Math.GroupDigits(Config.Evidence.CollectReward)))
 
 	local reportLines = {}
 	for i, entry in ipairs(suspects) do
@@ -287,7 +276,34 @@ AddEventHandler('esx_drugs:collectEvidence', function(fieldKey, streetName)
 		table.insert(reportLines, i..'. '..entry.name..' | Gang: '..entry.gang..' | Farm Count: '..entry.count..forensicLine)
 	end
 
-	TriggerEvent('DiscordBot:ToDiscord', 'adminmenu', 'CIDReferralLog', '```css\n[ DOA -> CID Evidence Referral ]\n[ Type : '..tostring(site.label)..' ]\n[ Location : '..tostring(streetName)..' ]\n[ Total Harvests : '..tostring(site.count)..' ]\n[ Collected By : '..GetPlayerName(_source)..' ]\n[ Suspects ]\n'..table.concat(reportLines, '\n')..'\n```', 'user', true, _source, false)
+	TriggerEvent('DiscordBot:ToDiscord', 'adminmenu', 'CIDReferralLog', '```css\n[ DOA -> CID Evidence Referral ]\n[ Type : '..tostring(site.label)..' ]\n[ Location : '..tostring(streetName)..' ]\n[ Total Harvests : '..tostring(site.count)..' ]\n[ Collected By : '..officerName..' ]\n[ Suspects ]\n'..table.concat(reportLines, '\n')..'\n```', 'user', true, _source, false)
+
+	-- File this as a REAL, persistent case in the existing DOJ Cases system (/doj -> Parvande-ha),
+	-- not just a chat message -- so CID actually sees it in their case list, tagged as DOA's referral.
+	local ok, err = pcall(function()
+		exports['esx_uniquejobs']:CreateExternalCase({
+			title           = ('Faaliate Mashkook: %s - %s'):format(site.label, streetName),
+			priority        = 'high',
+			openedByName    = officerName,
+			openedByJob     = 'doa',
+			leadOfficerName = officerName,
+			referredTo      = 'cid',
+			evidenceText    = ('%s bar farm shode dar %s. Bishtarin mozanne: %s (Gang: %s, %s bar).'):format(
+				site.count, streetName,
+				topSuspect and topSuspect.name or 'Namoshakhas',
+				topSuspect and topSuspect.gang or 'N/A',
+				topSuspect and topSuspect.count or 0),
+			suspects = suspects,
+		}, function(caseId)
+			if caseId then
+				TriggerClientEvent('esx:showNotification', _source, _U('evidence_case_filed', caseId))
+			end
+		end)
+	end)
+
+	if not ok then
+		print(('[esx_drugs] Could not file DOJ case (is esx_uniquejobs running?): %s'):format(tostring(err)))
+	end
 
 	TriggerClientEvent('esx_drugs:showEvidenceReport', _source, {
 		label    = site.label,

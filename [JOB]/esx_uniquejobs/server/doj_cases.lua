@@ -309,3 +309,81 @@ AddEventHandler('esx_uniquejobs:dojReferCase', function(caseId, targetJob)
 		end)
 	end)
 end)
+
+-- ============================================================
+-- External export
+-- ============================================================
+-- Lets OTHER resources (e.g. esx_drugs) file a real, persistent case here instead of just
+-- sending a chat message -- so it actually shows up in /doj's "Parvande-ha" (Cases) list like
+-- any other case, with opened_by_job/referred_to properly set so it's clear which department
+-- filed it and who it went to. Uses explicit params instead of the implicit `source` the
+-- RegisterServerEvent handlers above rely on, since this can be called from server-side code
+-- that isn't a client-triggered event (so there's no real player `source` to use).
+--
+-- exports['esx_uniquejobs']:CreateExternalCase({
+--     title         = 'Case title',
+--     priority      = 'low' | 'medium' | 'high',       -- optional, defaults to 'medium'
+--     openedByName  = 'Officer Name',
+--     openedByJob   = 'doa',                            -- job name, will be upper-cased for display
+--     leadOfficerName = 'Officer Name',                  -- optional, defaults to openedByName
+--     referredTo    = 'cid',                             -- optional, one of DOJ_JOBS
+--     evidenceText  = 'Free-text evidence note',         -- optional, added as a note_type='evidence' note
+--     suspects      = { {identifier = '...', name = '...'}, ... }, -- optional
+-- }, function(caseId) ... end)  -- callback optional
+function CreateExternalCase(data, cb)
+	if not data or not data.title or data.title == '' then
+		if cb then cb(nil) end
+		return
+	end
+
+	local priority = PRIORITY_LABELS[data.priority] and data.priority or 'medium'
+	local openedByName = data.openedByName or 'Namoshakhas'
+	local openedByJob = string.upper(data.openedByJob or 'DOA')
+	local leadName = data.leadOfficerName or openedByName
+	local referredTo = (data.referredTo and DOJ_JOBS[data.referredTo]) and string.upper(data.referredTo) or nil
+	local now = os.time()
+
+	MySQL.Async.insert(
+		'INSERT INTO dept_cases (title, status, priority, opened_by_name, opened_by_job, lead_officer_name, referred_to, created_at, updated_at) VALUES (@title, @status, @priority, @by, @byjob, @lead, @referred, @ts, @ts)',
+		{
+			['@title'] = data.title,
+			['@status'] = 'open',
+			['@priority'] = priority,
+			['@by'] = openedByName,
+			['@byjob'] = openedByJob,
+			['@lead'] = leadName,
+			['@referred'] = referredTo,
+			['@ts'] = now,
+		},
+		function(caseId)
+			if data.evidenceText and data.evidenceText ~= '' then
+				MySQL.Async.execute('INSERT INTO dept_case_notes (case_id, note_type, text, by_name, timestamp) VALUES (@cid, @type, @text, @by, @ts)', {
+					['@cid'] = caseId, ['@type'] = 'evidence', ['@text'] = data.evidenceText, ['@by'] = openedByName, ['@ts'] = now,
+				})
+			end
+
+			if data.suspects then
+				for _, suspect in ipairs(data.suspects) do
+					MySQL.Async.execute('INSERT INTO dept_case_suspects (case_id, identifier, name, added_by, timestamp) VALUES (@cid, @id, @name, @by, @ts)', {
+						['@cid'] = caseId, ['@id'] = suspect.identifier, ['@name'] = suspect.name, ['@by'] = openedByName, ['@ts'] = now,
+					})
+				end
+			end
+
+			if referredTo then
+				local xPlayers = ESX.GetPlayers()
+				for i = 1, #xPlayers do
+					local xTarget = ESX.GetPlayerFromId(xPlayers[i])
+					if xTarget and string.upper(xTarget.job.name) == referredTo then
+						TriggerClientEvent('chatMessage', xTarget.source, "[ DOJ ]", {90, 30, 160},
+							"^7Parvande #" .. caseId .. " (" .. data.title .. ") Az Taraf ^3" .. openedByJob .. "^7 Be Shoma Erja Shod")
+					end
+				end
+			end
+
+			if cb then cb(caseId) end
+		end
+	)
+end
+
+exports('CreateExternalCase', CreateExternalCase)

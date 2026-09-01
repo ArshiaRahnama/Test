@@ -39,5 +39,6 @@ client_scripts {
 dependencies {
 	'essentialmode',
 	'Unique_AllRobs',
-	'ox_target'
+	'ox_target',
+	'esx_uniquejobs'
 }

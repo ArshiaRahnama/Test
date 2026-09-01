@@ -1015,6 +1015,28 @@ caller's own gang, `StoreGangVehicle` marks it stored there. Confirmed
 zero remaining functional references to `For5mG-garage` anywhere in
 this resource (only my own explanatory comments, which don't execute).
 
+## 43) The real cause of "GetRankAccess / MyGangLevel / GetPlayerData does not exist"
+
+Three seemingly unrelated callbacks failing at once was the tell:
+they're all defined **after** the `swapItems` hook registration
+(section 36) in `server/Gangs.lua`, and that call ran immediately at
+file-load time. If `ox_inventory`'s export table wasn't fully ready in
+that exact instant - a real possibility even with correct `ensure`
+ordering, since resource start order isn't the same guarantee as
+"every export is registered yet" -
+`exports.ox_inventory:registerHook(...)` would throw, and since Lua
+files execute top to bottom, **everything below that point in the
+file never ran at all**, including these three callbacks and
+potentially more. Wrapped the registration in a
+`CreateThread`/`GetResourceState` wait loop so it only fires once
+`ox_inventory` is confirmed started, instead of racing it - a slow or
+late-starting `ox_inventory` can no longer take down the rest of this
+file. Checked every other `exports.ox_inventory`/`exports.ox_target`
+call in this resource for the same risk - all of them are safely
+inside functions triggered during actual gameplay (armory open,
+marker create/remove), not at file-load time, so this was the only
+one.
+
 ## Testing checklist before going live
 
 - [ ] `/openpanel` opens instantly even with several gang members online

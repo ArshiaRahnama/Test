@@ -636,6 +636,44 @@ AddEventHandler('esx_drugs:showEvidenceReport', function(report)
     lib.showContext('esx_drugs_evidence_report')
 end)
 
+----------------------------------------
+------- DOA: FIELD INTERROGATION --------
+----------------------------------------
+-- General-purpose roleplay tool, not tied to any specific mechanic: lets a DOA officer engage
+-- with ANY nearby player instead of the job being just "walk to a spot, target it, get paid".
+-- Reuses this server's own /me convention (3dme:shareDisplay -> floating text + chat, see
+-- 3dme-cl.lua) so it looks and feels native, not like a bolted-on esx_drugs popup.
+Citizen.CreateThread(function()
+    while ESX == nil do Citizen.Wait(100) end
+
+    local ok, err = pcall(function()
+        exports.ox_target:addGlobalPlayer({
+            {
+                name = 'esx_drugs:interrogate',
+                icon = 'fa-solid fa-comments',
+                label = 'Bazjooyi (Soal Kardan)',
+                distance = 2.5,
+                canInteract = function()
+                    local okJob, jobName = pcall(function() return ESX.GetPlayerData().job.name end)
+                    return okJob and jobName == 'doa'
+                end,
+                onSelect = function()
+                    local playerPed = PlayerPedId()
+                    TaskStartScenarioInPlace(playerPed, "WORLD_HUMAN_COP_IDLES", 0, true)
+                    Citizen.SetTimeout(2500, function()
+                        ClearPedTasksImmediately(playerPed)
+                    end)
+                    TriggerServerEvent('3dme:shareDisplay', '*az in fard darbareye faaliat-haye akhirash soal mikonad*', true)
+                end
+            }
+        })
+    end)
+
+    if not ok then
+        print(('[esx_drugs] Interrogation target setup failed (is ox_target running?): %s'):format(tostring(err)))
+    end
+end)
+
 RegisterNetEvent('esx_drugs:Cartel')
 AddEventHandler('esx_drugs:Cartel', function(itemName)
 
