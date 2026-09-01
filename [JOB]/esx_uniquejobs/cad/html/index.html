@@ -101,7 +101,7 @@
 
                       <div id="Page_CitizensList" style="display: none;"> 
                         <div class="MainPage_Header">
-                          <p style="font-size: 2vw;">Citizens List</p>
+                          <p style="font-size: 2vw;">👤 Citizens List</p>
                           <input type="text" id="CitizenSearch" placeholder="Search">
                         </div>
 
@@ -255,7 +255,7 @@
 
                       <div id="Page_VehiclesList" style="display: none;">
                         <div class="MainPage_Header">
-                          <p style="font-size: 2vw;">Vehicles List</p>
+                          <p style="font-size: 2vw;">🚗 Vehicles List</p>
                           <input type="text" id="VehicleSearch" placeholder="Search">
                         </div>
                         
@@ -334,7 +334,7 @@
                       <!-- ===================== CrimeScene: Cases (DOJ) ===================== -->
                       <div id="Page_CS_Cases" style="display: none;">
                         <div class="MainPage_Header">
-                          <p style="font-size: 2vw;">DOJ Cases</p>
+                          <p style="font-size: 2vw;">📂 DOJ Cases</p>
                         </div>
                         <div id="CS_CasesList" class="MDT_List"></div>
                       </div>
@@ -387,7 +387,7 @@
                       <!-- ===================== CrimeScene: Cold Cases (DOJ) ===================== -->
                       <div id="Page_CS_ColdCases" style="display: none;">
                         <div class="MainPage_Header">
-                          <p style="font-size: 2vw;">Cold Cases</p>
+                          <p style="font-size: 2vw;">❄️ Cold Cases</p>
                         </div>
                         <div id="CS_ColdCasesList" class="MDT_List"></div>
                       </div>
@@ -395,7 +395,7 @@
                       <!-- ===================== CrimeScene: Wanted Board (DOJ) ===================== -->
                       <div id="Page_CS_Wanted" style="display: none;">
                         <div class="MainPage_Header">
-                          <p style="font-size: 2vw;">Wanted Board</p>
+                          <p style="font-size: 2vw;">🎯 Wanted Board</p>
                         </div>
                         <div id="CS_WantedList" class="MDT_List"></div>
                       </div>
@@ -403,7 +403,7 @@
                       <!-- ===================== CrimeScene: BOLO (Law) ===================== -->
                       <div id="Page_CS_Bolo" style="display: none;">
                         <div class="MainPage_Header">
-                          <p style="font-size: 2vw;">Active BOLOs</p>
+                          <p style="font-size: 2vw;">🚨 Active BOLOs</p>
                           <button class="ExitButton" onclick="CS_CheckNearestVehicle()">Check Nearest Vehicle</button>
                         </div>
                         <p id="CS_BoloResult" style="color: var(--danger); font-weight: 700; margin-bottom: 10px;"></p>
@@ -413,10 +413,11 @@
                       <!-- ===================== CrimeScene: Booking (Law) ===================== -->
                       <div id="Page_CS_Booking" style="display: none;">
                         <div class="MainPage_Header">
-                          <p style="font-size: 2vw;">New Booking</p>
+                          <p style="font-size: 2vw;">📋 New Booking</p>
                         </div>
                         <div style="max-width: 480px;">
-                          <input id="CS_BookTarget" type="number" placeholder="Player ID (optional, links to CAD)" style="width: 100%; margin-bottom: 10px;">
+                          <input id="CS_BookTarget" type="number" placeholder="Player ID (optional, links to CAD)" style="width: 100%; margin-bottom: 4px;" oninput="CS_PreviewBookTarget()">
+                          <p id="CS_BookTargetPreview" style="font-size: 12px; color: var(--text-dim); min-height: 16px; margin: 0 0 10px 2px;"></p>
                           <input id="CS_BookCase" type="number" placeholder="Case ID (optional, needs approved warrant)" style="width: 100%; margin-bottom: 10px;">
                           <input id="CS_BookSuspect" type="text" placeholder="Suspect name" style="width: 100%; margin-bottom: 10px;">
                           <input id="CS_BookCharges" type="text" placeholder="Charges" style="width: 100%; margin-bottom: 10px;">
@@ -431,7 +432,8 @@
                       <!-- ===================== CrimeScene: Records (DOJ + Law) ===================== -->
                       <div id="Page_CS_Records" style="display: none;">
                         <div class="MainPage_Header">
-                          <p style="font-size: 2vw;">Criminal Records</p>
+                          <p style="font-size: 2vw;">📁 Criminal Records</p>
+                          <input id="CS_RecordsSearch" type="text" placeholder="Search by suspect name..." style="width: 30%;" oninput="CS_SearchRecords()">
                         </div>
                         <div id="CS_RecordsList" class="MDT_List"></div>
                       </div>
@@ -439,15 +441,15 @@
                       <!-- ===================== CrimeScene: Leaderboard (DOJ + Law) ===================== -->
                       <div id="Page_CS_Leaderboard" style="display: none;">
                         <div class="MainPage_Header">
-                          <p style="font-size: 2vw;">Leaderboard</p>
+                          <p style="font-size: 2vw;">🏆 Leaderboard</p>
                         </div>
                         <div style="display: flex; gap: 24px;">
                           <div style="flex: 1;">
-                            <p style="color: var(--text-dim); font-weight: 600; font-size: 13px; margin-bottom: 10px;">Top Investigators (DOJ)</p>
+                            <p style="color: var(--text-dim); font-weight: 600; font-size: 13px; margin-bottom: 10px;">🔍 Top Investigators (DOJ)</p>
                             <div id="CS_LeaderInvestigators" class="MDT_List"></div>
                           </div>
                           <div style="flex: 1;">
-                            <p style="color: var(--text-dim); font-weight: 600; font-size: 13px; margin-bottom: 10px;">Top Officers (Law)</p>
+                            <p style="color: var(--text-dim); font-weight: 600; font-size: 13px; margin-bottom: 10px;">👮 Top Officers (Law)</p>
                             <div id="CS_LeaderOfficers" class="MDT_List"></div>
                           </div>
                         </div>
@@ -456,12 +458,15 @@
                       <!-- ===================== CrimeScene: Internal Affairs ===================== -->
                       <div id="Page_CS_IA" style="display: none;">
                         <div class="MainPage_Header">
-                          <p style="font-size: 2vw;">Internal Affairs</p>
+                          <p style="font-size: 2vw;">⚖️ Internal Affairs</p>
                         </div>
 
                         <div style="padding: 12px 20px; max-width: 480px;">
-                          <p style="color: var(--text-dim); font-weight: 600; font-size: 13px; margin-bottom: 8px;">File a Report</p>
-                          <input id="CS_IATargetName" type="text" placeholder="Officer name" style="width: 100%; margin-bottom: 8px;">
+                          <p style="color: var(--text-dim); font-weight: 600; font-size: 13px; margin-bottom: 8px;">📝 File a Report</p>
+                          <div style="position: relative; margin-bottom: 8px;">
+                            <input id="CS_IATargetSearch" type="text" placeholder="Search officer by name..." style="width: 100%;" oninput="CS_SearchIAOfficer()">
+                            <div id="CS_IAOfficerResults" style="display: none; position: absolute; top: 100%; left: 0; right: 0; z-index: 5; background: var(--bg-card); border: 1px solid var(--border); border-radius: 5px; max-height: 180px; overflow-y: auto; margin-top: 4px;"></div>
+                          </div>
                           <select id="CS_IACategory" style="width: 100%; margin-bottom: 8px;">
                             <option value="shooting">Shooting</option>
                             <option value="wrongful_arrest">Wrongful Arrest</option>
@@ -475,12 +480,12 @@
 
                         <div id="CS_IAReviewerSection" style="display: none;">
                           <div style="padding: 4px 20px;">
-                            <p style="color: var(--text-dim); font-weight: 600; font-size: 13px; margin-bottom: 8px;">Recent Officer Activity</p>
+                            <p style="color: var(--text-dim); font-weight: 600; font-size: 13px; margin-bottom: 8px;">🕒 Recent Officer Activity</p>
                           </div>
                           <div id="CS_OfficerActivityList" class="MDT_List"></div>
 
                           <div style="padding: 12px 20px 4px;">
-                            <p style="color: var(--text-dim); font-weight: 600; font-size: 13px; margin-bottom: 8px;">Reports</p>
+                            <p style="color: var(--text-dim); font-weight: 600; font-size: 13px; margin-bottom: 8px;">📄 Reports</p>
                           </div>
                           <div id="CS_IAReportsList" class="MDT_List"></div>
                         </div>

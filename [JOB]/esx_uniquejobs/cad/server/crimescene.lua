@@ -706,6 +706,19 @@ end)
 -- caught-red-handed arrest (no case) never needs one.
 -- ============================================================
 
+-- Live "you're about to book: <name>" preview while typing a Player ID,
+-- so a typo'd ID gets caught before submitting rather than after.
+ESX.RegisterServerCallback('CrimeScene:resolvePlayerName', function(source, cb, targetServerId)
+    local xPlayer = ESX.GetPlayerFromId(source)
+    if not xPlayer or not (IsDOJJob(xPlayer.job.name) or IsLawEnforcementJob(xPlayer.job.name)) then
+        cb(nil)
+        return
+    end
+
+    local xTarget = ESX.GetPlayerFromId(tonumber(targetServerId))
+    cb(xTarget and xTarget.name or nil)
+end)
+
 RegisterServerEvent('CrimeScene:createBooking')
 AddEventHandler('CrimeScene:createBooking', function(caseId, suspectName, charges, fine, jailMinutes, targetServerId)
     local _source = source
@@ -798,10 +811,19 @@ end)
 -- Criminal records -- shared "rap sheet" view for DOJ + Law Enforcement
 -- ============================================================
 
-ESX.RegisterServerCallback('CrimeScene:getRecords', function(source, cb)
+ESX.RegisterServerCallback('CrimeScene:getRecords', function(source, cb, searchText)
     local xPlayer = ESX.GetPlayerFromId(source)
     if not xPlayer or not (IsDOJJob(xPlayer.job.name) or IsLawEnforcementJob(xPlayer.job.name)) then
         cb({})
+        return
+    end
+
+    if searchText and searchText ~= '' then
+        MySQL.Async.fetchAll(
+            'SELECT * FROM doj_criminal_records WHERE suspect_name LIKE @name ORDER BY created_at DESC LIMIT 40',
+            { ['@name'] = '%' .. searchText .. '%' },
+            function(result) cb(result or {}) end
+        )
         return
     end
 
@@ -1282,7 +1304,7 @@ ESX.RegisterServerCallback('CrimeScene:getOfficerActivity', function(source, cb)
 end)
 
 RegisterServerEvent('CrimeScene:fileIAReport')
-AddEventHandler('CrimeScene:fileIAReport', function(targetName, targetJob, category, description)
+AddEventHandler('CrimeScene:fileIAReport', function(targetName, targetJob, category, description, targetIdentifier)
     local _source = source
     local xPlayer = ESX.GetPlayerFromId(_source)
     if not xPlayer or not IsIAReporterJob(xPlayer.job.name) then return end
@@ -1299,8 +1321,9 @@ AddEventHandler('CrimeScene:fileIAReport', function(targetName, targetJob, categ
     if not validCategory then category = 'other' end
 
     MySQL.Async.insert(
-        'INSERT INTO doj_ia_reports (target_name, target_job, category, description, filed_by, filed_by_name) VALUES (@target_name, @target_job, @category, @description, @filed_by, @filed_by_name)',
+        'INSERT INTO doj_ia_reports (target_identifier, target_name, target_job, category, description, filed_by, filed_by_name) VALUES (@target_identifier, @target_name, @target_job, @category, @description, @filed_by, @filed_by_name)',
         {
+            ['@target_identifier'] = targetIdentifier,
             ['@target_name']    = targetName,
             ['@target_job']     = targetJob,
             ['@category']       = category,

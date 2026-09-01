@@ -277,24 +277,81 @@ function CS_ReopenCase(id) {
     $.post('https://esx_uniquejobs/CS_ReopenCase', JSON.stringify({ id: id }))
 }
 
+let CS_SelectedOfficer = null // { name, identifier, job }
+let CS_IASearchTimer = null
+
+function CS_SearchIAOfficer() {
+    CS_SelectedOfficer = null
+    let text = $('#CS_IATargetSearch').val()
+
+    clearTimeout(CS_IASearchTimer)
+    if (!text) {
+        $('#CS_IAOfficerResults').hide().empty()
+        return
+    }
+
+    CS_IASearchTimer = setTimeout(function() {
+        $.post('https://esx_uniquejobs/SearchOfficers', JSON.stringify({ Text: text }))
+    }, 250)
+}
+
+function CS_SelectIAOfficer(name, identifier, job) {
+    CS_SelectedOfficer = { name: name, identifier: identifier, job: job }
+    $('#CS_IATargetSearch').val(name + '  (' + job + ')')
+    $('#CS_IAOfficerResults').hide().empty()
+}
+
+let CS_RecordsSearchTimer = null
+
+function CS_SearchRecords() {
+    clearTimeout(CS_RecordsSearchTimer)
+    CS_RecordsSearchTimer = setTimeout(function() {
+        $.post('https://esx_uniquejobs/CS_GetRecords', JSON.stringify({ search: $('#CS_RecordsSearch').val() }))
+    }, 250)
+}
+
+let CS_BookPreviewTimer = null
+
+function CS_PreviewBookTarget() {
+    clearTimeout(CS_BookPreviewTimer)
+    let id = $('#CS_BookTarget').val()
+    if (!id) {
+        $('#CS_BookTargetPreview').text('')
+        return
+    }
+    CS_BookPreviewTimer = setTimeout(function() {
+        $.post('https://esx_uniquejobs/CS_ResolvePlayerName', JSON.stringify({ targetServerId: id }))
+    }, 250)
+}
+
+function CS_TimeAgo(unixSeconds) {
+    let minutes = Math.floor((Date.now() / 1000 - unixSeconds) / 60)
+    if (minutes < 1) return 'just now'
+    if (minutes < 60) return minutes + 'm ago'
+    let hours = Math.floor(minutes / 60)
+    if (hours < 24) return hours + 'h ago'
+    return Math.floor(hours / 24) + 'd ago'
+}
+
 function CS_ArchiveCase(id) {
     $.post('https://esx_uniquejobs/CS_ArchiveCase', JSON.stringify({ id: id }))
 }
 
 function CS_SubmitIAReport() {
-    let targetName = $('#CS_IATargetName').val()
     let description = $('#CS_IADescription').val()
-    if (!targetName || !description) {
-        UniqueAlert('Officer name and description are required')
+    if (!CS_SelectedOfficer || !description) {
+        UniqueAlert(CS_SelectedOfficer ? 'Description is required' : 'Pick an officer from the list -- type a name and select a result')
         return
     }
     $.post('https://esx_uniquejobs/CS_FileIAReport', JSON.stringify({
-        targetName: targetName,
-        targetJob: null,
+        targetName: CS_SelectedOfficer.name,
+        targetJob: CS_SelectedOfficer.job,
+        targetIdentifier: CS_SelectedOfficer.identifier,
         category: $('#CS_IACategory').val(),
         description: description,
     }))
-    $('#CS_IATargetName, #CS_IADescription').val('')
+    $('#CS_IATargetSearch, #CS_IADescription').val('')
+    CS_SelectedOfficer = null
 }
 
 function CS_CloseIAReport(id, outcome) {
@@ -491,6 +548,16 @@ window.addEventListener('message', function(event) {
                 }, 500)
 
 
+            } else if (data.Stype === 'Officer') {
+                $('#CS_IAOfficerResults').empty()
+                if (!data.object || data.object.length === 0) {
+                    $('#CS_IAOfficerResults').append('<div class="List_Row" style="opacity: .6;"><p>No officers found</p></div>').show()
+                    return
+                }
+                data.object.forEach(element => {
+                    $('#CS_IAOfficerResults').append('<div class="List_Row" onclick="CS_SelectIAOfficer(`' + element['playerName'] + '`, `' + element['identifier'] + '`, `' + element['job'] + '`)"><p>' + element['playerName'] + '</p><p style="text-transform: uppercase;">' + element['job'] + '</p></div>')
+                })
+                $('#CS_IAOfficerResults').show()
             } else if (data.Stype === 'Car') {
                 // console.log('s')
                 let number = 1;
@@ -693,18 +760,26 @@ window.addEventListener('message', function(event) {
             currenttab = 'CS_CaseDetail'
         }
 
+    } else if (data.type === 'CS_PlayerNamePreview') {
+        if (data.name) {
+            $('#CS_BookTargetPreview').css('color', 'var(--ok)').text('✓ ' + data.name)
+        } else {
+            $('#CS_BookTargetPreview').css('color', 'var(--danger)').text('No player online with that ID')
+        }
+
     } else if (data.type === 'CS_Wanted') {
         $('#CS_WantedList').empty()
         if (!data.list.length) $('#CS_WantedList').append('<p style="color: var(--text-dim);">No repeat codes yet</p>')
         data.list.forEach(row => {
-            $('#CS_WantedList').append('<div class="List_Row List_Row_Wanted"><p>#' + row.suspect_hint_id + '</p><p>Hits: ' + row.hits + '</p><p>' + (row.last_seen || '') + '</p></div>')
+            let severity = row.hits >= 5 ? 'var(--danger)' : (row.hits >= 3 ? 'var(--gold)' : 'var(--text)')
+            $('#CS_WantedList').append('<div class="List_Row List_Row_Wanted"><p>#' + row.suspect_hint_id + '</p><p style="color: ' + severity + '; font-weight: 700;">🔥 ' + row.hits + ' Hits</p><p>Last Seen: ' + (row.last_seen || '?') + '</p></div>')
         })
 
     } else if (data.type === 'CS_Bolos') {
         $('#CS_BoloList').empty()
         if (!data.list.length) $('#CS_BoloList').append('<p style="color: var(--text-dim);">No active BOLOs</p>')
         data.list.forEach(row => {
-            $('#CS_BoloList').append('<div class="List_Row List_Row_Wanted"><p>' + row.plate + '</p><p>Case #' + row.caseId + '</p><p>' + (row.issuedBy || '') + '</p></div>')
+            $('#CS_BoloList').append('<div class="List_Row List_Row_Wanted"><p>🚔 ' + row.plate + '</p><p>Case #' + row.caseId + '</p><p>' + (row.issuedBy || '') + ' -- ' + CS_TimeAgo(row.issuedAt) + '</p></div>')
         })
 
     } else if (data.type === 'CS_PlateCheckResult') {
@@ -720,17 +795,24 @@ window.addEventListener('message', function(event) {
         $('#CS_RecordsList').empty()
         if (!data.list.length) $('#CS_RecordsList').append('<p style="color: var(--text-dim);">No records yet</p>')
         data.list.forEach(row => {
-            $('#CS_RecordsList').append('<div class="List_Row"><p>' + row.suspect_name + '</p><p>' + row.charges + '</p><p>$' + row.fine + ' / ' + row.jail_minutes + 'm</p></div>')
+            $('#CS_RecordsList').append(
+                '<div class="List_Row" style="flex-direction: column; align-items: flex-start; gap: 4px;">' +
+                  '<div style="display: flex; width: 100%; justify-content: space-between;"><p>' + row.suspect_name + '</p><p>' + row.charges + '</p><p>$' + row.fine + ' / ' + row.jail_minutes + 'm</p></div>' +
+                  '<p style="font-size: 11px; color: var(--text-dim);">Booked by ' + (row.booked_by_name || '?') + ' -- ' + (row.created_at || '') + '</p>' +
+                '</div>'
+            )
         })
 
     } else if (data.type === 'CS_Leaderboard') {
         $('#CS_LeaderInvestigators').empty()
         ;(data.data.investigators || []).forEach((row, i) => {
-            $('#CS_LeaderInvestigators').append('<div class="List_Row"><p>#' + (i + 1) + '</p><p>' + row.name + '</p><p>' + row.score + '</p></div>')
+            let rank = i === 0 ? '🥇' : (i === 1 ? '🥈' : (i === 2 ? '🥉' : '#' + (i + 1)))
+            $('#CS_LeaderInvestigators').append('<div class="List_Row"><p>' + rank + '</p><p>' + row.name + '</p><p>' + row.score + '</p></div>')
         })
         $('#CS_LeaderOfficers').empty()
         ;(data.data.officers || []).forEach((row, i) => {
-            $('#CS_LeaderOfficers').append('<div class="List_Row"><p>#' + (i + 1) + '</p><p>' + row.name + '</p><p>' + row.score + '</p></div>')
+            let rank = i === 0 ? '🥇' : (i === 1 ? '🥈' : (i === 2 ? '🥉' : '#' + (i + 1)))
+            $('#CS_LeaderOfficers').append('<div class="List_Row"><p>' + rank + '</p><p>' + row.name + '</p><p>' + row.score + '</p></div>')
         })
 
     } else if (data.type === 'CS_ColdCases') {
@@ -752,7 +834,10 @@ window.addEventListener('message', function(event) {
         if (!data.list.length) $('#CS_OfficerActivityList').append('<p style="color: var(--text-dim); padding: 10px;">No recent activity</p>')
         data.list.forEach(row => {
             $('#CS_OfficerActivityList').append(
-                '<div class="List_Row"><p>' + (row.booked_by_name || '?') + '</p><p>Booked ' + row.suspect_name + '</p><p>' + row.charges + '</p></div>'
+                '<div class="List_Row" style="flex-direction: column; align-items: flex-start; gap: 4px;">' +
+                  '<div style="display: flex; width: 100%; justify-content: space-between;"><p>👮 ' + (row.booked_by_name || '?') + '</p><p>Booked ' + row.suspect_name + '</p><p>' + row.charges + '</p></div>' +
+                  '<p style="font-size: 11px; color: var(--text-dim);">' + (row.created_at || '') + '</p>' +
+                '</div>'
             )
         })
 

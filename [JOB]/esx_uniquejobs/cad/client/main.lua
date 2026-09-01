@@ -109,6 +109,17 @@ RegisterNUICallback('SearchCitizen', function(data, cb)
     end, data.Text)
 end)
 
+RegisterNUICallback('SearchOfficers', function(data, cb)
+    if CheckPerm_cad() then return end
+    ESX.TriggerServerCallback('DuckMdt:SearchOfficers', function(obj)
+        SendNuiMessage(json.encode({
+            type = 'SearchResult',
+            Stype = 'Officer',
+            object = obj.Officers
+        }))
+    end, data.Text)
+end)
+
 RegisterNUICallback('SearchCars', function(data, cb)
     if CheckPerm_cad() then return end
     ESX.TriggerServerCallback('DuckMdt:SearchCars', function(obj)
@@ -308,10 +319,16 @@ RegisterNUICallback('CS_SubmitBooking', function(data)
     )
 end)
 
-RegisterNUICallback('CS_GetRecords', function()
+RegisterNUICallback('CS_ResolvePlayerName', function(data)
+    ESX.TriggerServerCallback('CrimeScene:resolvePlayerName', function(name)
+        SendNuiMessage(json.encode({ type = 'CS_PlayerNamePreview', name = name }))
+    end, data.targetServerId)
+end)
+
+RegisterNUICallback('CS_GetRecords', function(data)
     ESX.TriggerServerCallback('CrimeScene:getRecords', function(list)
         SendNuiMessage(json.encode({ type = 'CS_Records', list = list }))
-    end)
+    end, data and data.search or nil)
 end)
 
 RegisterNUICallback('CS_GetLeaderboard', function()
@@ -349,7 +366,7 @@ RegisterNUICallback('CS_GetOfficerActivity', function()
 end)
 
 RegisterNUICallback('CS_FileIAReport', function(data)
-    TriggerServerEvent('CrimeScene:fileIAReport', data.targetName, data.targetJob, data.category, data.description)
+    TriggerServerEvent('CrimeScene:fileIAReport', data.targetName, data.targetJob, data.category, data.description, data.targetIdentifier)
 end)
 
 RegisterNUICallback('CS_GetIAReports', function()
