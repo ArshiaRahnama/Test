@@ -1221,6 +1221,41 @@ local function GetArmoryStashId(playergang, key)
     return ('gang_armory_%s_%s'):format(playergang, tostring(key))
 end
 
+-------------------------------------------------------------------
+-- Supports the "Item Access" boss menu (client/boss_esx_menu.lua):
+-- lists a gang's armory keys, and lists the item names actually
+-- currently sitting inside a specific one (via ox_inventory's real
+-- GetInventoryItems export - confirmed via its own docs before using
+-- it), so newly-stocked items show up for access toggling
+-- automatically instead of relying on a hand-maintained config list.
+-------------------------------------------------------------------
+ESX.RegisterServerCallback('FMGangs:GetGangArmories', function(source, cb, gang)
+    local armory = Gangs[gang] and Gangs[gang].armory
+    if not armory then return cb({}) end
+    local list = {}
+    for key, _ in pairs(armory) do
+        table.insert(list, { key = key })
+    end
+    table.sort(list, function(a, b) return tostring(a.key) < tostring(b.key) end)
+    cb(list)
+end)
+
+ESX.RegisterServerCallback('FMGangs:GetArmoryStashItemNames', function(source, cb, gang, armoryKey)
+    local stashId = GetArmoryStashId(gang, armoryKey)
+    local items = exports.ox_inventory:GetInventoryItems(stashId)
+    local seen, names = {}, {}
+    if items then
+        for _, slot in pairs(items) do
+            if slot and slot.name and not seen[slot.name] then
+                seen[slot.name] = true
+                table.insert(names, slot.name)
+            end
+        end
+    end
+    table.sort(names)
+    cb(names)
+end)
+
 -- Seeds an ox_inventory stash from the legacy armory JSON the first
 -- time it's opened, then remembers not to do it again.
 local function EnsureArmoryStash(playergang, key, armory)

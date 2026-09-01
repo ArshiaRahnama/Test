@@ -1,14 +1,10 @@
 -- ============================================================
--- ریسورس "hud1" — کاملاً مستقل، هیچ وابستگی‌ای به Unique_Hud نداره
+-- Unique_Hud / client / hud2_client.lua
 -- ============================================================
--- خودش ui_page/index.html خودشو داره (تو ui/) و نشون میده:
--- هیل، آرمور، آب (thirst)، غذا (hunger)، میکروفون - همیشه.
--- استامینا و اکسیژن - اختیاری: فقط وقتی می‌دویی/شنا می‌کنی موقتاً ظاهر
--- میشن (دقیقاً منطق قبلی IsPedSprinting/IsPedSwimming) و بعد چند ثانیه
--- بی‌حرکتی خودکار محو میشن.
---
--- ✅ اسم ریسورس از "1" به "hud1" تغییر کرد چون همون علت اصلی نمایش داده نشدن
--- UI بود - اسم خالص عددی باعث میشد ui_page درست ساخته نشه.
+-- منبع: ریسورس جدای "hud2" که خودتون ساخته/تکمیل کرده بودید (هیل، آرمور،
+-- گرسنگی، تشنگی، میکروفون - همیشه؛ استامینا و اکسیژن - فقط موقع دویدن/شنا).
+-- عیناً و بدون تغییر منطقی به Unique_Hud منتقل شد، فقط دیگه ui_page/فایل‌های
+-- جدا نداره - همه‌چیز از طریق iframe مشترک همین ریسورس کار می‌کنه.
 
 local pauseMenu = false
 
@@ -82,9 +78,6 @@ local function handleStatusUpdate(data)
     }
     for k, v in pairs(data) do
         if v.name == 'thirst' then
-            -- ✅ فیکس شد: قبلاً وقتی درصد آب از ۸۰٪ بیشتر می‌شد (یعنی تازه آب
-            -- خورده بودی) دایره‌ش مخفی می‌شد -> همون "سریع برداشته میشه"ای که
-            -- گفتی. الان همیشه نمایش داده میشه، فقط عددش آپدیت میشه.
             sendData.thirst = v.val / 10000
         elseif v.name == 'hunger' then
             sendData.hunger = v.val / 10000
@@ -93,7 +86,9 @@ local function handleStatusUpdate(data)
     SendNUIMessage(sendData)
 end
 
--- ایونت واقعی esx_status: "esx_customui:updateStatus" (هر ۱ ثانیه، محلی، نه شبکه‌ای)
+-- ایونت واقعی esx_status: "esx_customui:updateStatus" (هر ۱ ثانیه، محلی، نه شبکه‌ای).
+-- توجه: client/main.lua هم به همین ایونت گوش میده (برای بخش دیگه‌ای از HUD) -
+-- چون FiveM چند AddEventHandler روی یه ایونت رو مشکلی نداره، هیچ تداخلی نیست.
 AddEventHandler('esx_customui:updateStatus', handleStatusUpdate)
 
 AddEventHandler('pma-voice:setTalkingMode', function(mode)

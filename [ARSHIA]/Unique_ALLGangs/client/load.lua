@@ -543,9 +543,51 @@ function OpenGangVehicleSpawner(spawnPoint, category)
     }, function(data, menu)
         menu.close()
         local model = data.current.value
+        -------------------------------------------------------------
+        -- Real integration with Unique_Garage (requested: "connect
+        -- it to the garage system, give them keys to their gang's
+        -- vehicle"). Confirmed the exact mechanism by reading
+        -- Unique_Garage/esx_vehicleshop's own code before wiring
+        -- this, the same way as everywhere else in this resource:
+        --   - exports.esx_vehicleshop:GeneratePlate() - the same
+        --     plate generator esx_vehicleshop itself uses
+        --   - ownership is stored in the shared `owned_vehicles`
+        --     table (owner = gang name, job = 'gang') - same shape
+        --     esx_vehicleshop's own admin /addcargang command uses,
+        --     via 'esx_vehicleshop:setVehicleGang'
+        --   - real keys via CarLock:ToggleKey (Unique_Garage's own
+        --     key item system, CarKey|<plate> in the player's
+        --     inventory) - not a fake/cosmetic key
+        --
+        -- 'esx_vehicleshop:setVehicleGang' itself is admin-only
+        -- server-side (permission_level >= 10) - a boss isn't
+        -- necessarily a server admin, so this doesn't route through
+        -- that event. Instead FMGangs:RegisterGangVehicle
+        -- (server/boss.lua) does the same INSERT directly, gated by
+        -- our own boss/access check instead of admin level - the
+        -- correct way to let a boss do this without needing admin
+        -- rights.
+        -------------------------------------------------------------
+        local plate = exports.esx_vehicleshop:GeneratePlate()
         ESX.Game.SpawnVehicleJobs(model, vector3(spawnPoint.x, spawnPoint.y, spawnPoint.z), spawnPoint.h, function(vehicle)
-            TaskWarpPedIntoVehicle(PlayerPedId(), vehicle, -1)
+            SetVehicleNumberPlateText(vehicle, plate)
+            SetVehicleEngineHealth(vehicle, 1000.0)
+            SetVehicleBodyHealth(vehicle, 1000.0)
+            SetVehicleFixed(vehicle)
+            SetVehicleDeformationFixed(vehicle)
             SetVehicleEngineOn(vehicle, true, true, false)
+            local vehicleProps = ESX.Game.GetVehicleProperties(vehicle)
+            vehicleProps.plate = plate
+
+            ESX.TriggerServerCallback('FMGangs:RegisterGangVehicle', function(success)
+                if success then
+                    TaskWarpPedIntoVehicle(PlayerPedId(), vehicle, -1)
+                    TriggerServerEvent('CarLock:ToggleKey', true, plate)
+                    Notifiaction('Vehicle registered to the gang - keys given')
+                else
+                    Notifiaction('Could not register this vehicle to the gang')
+                end
+            end, vehicleProps)
         end)
     end, function(data, menu)
         menu.close()

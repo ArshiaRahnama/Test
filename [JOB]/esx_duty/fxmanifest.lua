@@ -20,6 +20,7 @@ client_scripts {
   --'@essentialmode/locale.lua',
   --'translation/en.lua',
   '@oxmysql/lib/MySQL.lua',
+  '@ox_lib/init.lua',
   'config.lua',
   'client/main.lua',
 
@@ -28,6 +29,10 @@ client_scripts {
 }
 
 ui_page 'html/dutyjob.html'
+
+dependencies {
+  'ox_lib',
+}
 
 files {
   'html/dutyjob.html',  

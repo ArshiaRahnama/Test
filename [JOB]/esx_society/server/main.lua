@@ -1591,6 +1591,7 @@ AddEventHandler('esx_society:dispatchOfferRespond', function(job, accepted)
 	if accepted then
 		local fnName = AcceptExportName[job]
 		if fnName then
+			TriggerClientEvent('esx:showNotification', source, 'Dispatch: ~g~Ghabul Shod~s~ - Az Saf Kharej Shodid')
 			exports['esx_uniquejobs'][fnName](exports['esx_uniquejobs'], source, reqid)
 		end
 	else

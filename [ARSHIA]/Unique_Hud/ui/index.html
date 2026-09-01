@@ -269,6 +269,11 @@
         if (sbeltFrame && sbeltFrame.contentWindow) {
           sbeltFrame.contentWindow.postMessage(item, '*');
         }
+      } else if (item.id === 'hud') {
+        var hud2Frame = document.getElementById('hud2-frame');
+        if (hud2Frame && hud2Frame.contentWindow) {
+          hud2Frame.contentWindow.postMessage(item, '*');
+        }
       }
     });
   </script>
@@ -297,6 +302,11 @@
 <!-- Seatbelt warning (از carhud/seatbelt_client.lua سانست ادغام شد) -->
 <iframe id="seatbelt-frame" src="seatbelt/index.html"
   style="position:fixed;top:0;left:0;width:100%;height:100%;border:none;pointer-events:none;background:transparent;z-index:9997;">
+</iframe>
+
+<!-- hud2 (هیل/آرمور/گرسنگی/تشنگی/میکروفون/استامینا/اکسیژن - از ریسورس جدای hud2 ادغام شد) -->
+<iframe id="hud2-frame" src="hud2/index.html"
+  style="position:fixed;top:0;left:0;width:100%;height:100%;border:none;pointer-events:none;background:transparent;z-index:9994;">
 </iframe>
 
 </body>

@@ -256,6 +256,50 @@ end)
 -- used by the "Recruit" menu (client/boss_esx_menu.lua) so the boss
 -- can pick from a list instead of typing a server ID blind.
 -------------------------------------------------------------------
+-------------------------------------------------------------------
+-- Registers a gang vehicle into Unique_Garage/esx_vehicleshop's
+-- shared `owned_vehicles` table (owner = gang name, job = 'gang') -
+-- the exact same shape esx_vehicleshop's own admin
+-- 'esx_vehicleshop:setVehicleGang' event writes, confirmed by reading
+-- its source first. That event is hard-gated to server admins only
+-- (permission_level >= 10) though, so a regular gang boss can't use
+-- it - this does the same insert directly, gated by our own
+-- boss/garage-access check instead, so a boss can register a vehicle
+-- to their own gang without needing admin rights. Access is already
+-- checked client-side before the vehicle is even spawned (access['garage']),
+-- but checked again here too since this is the actual trust boundary.
+-------------------------------------------------------------------
+ESX.RegisterServerCallback('FMGangs:RegisterGangVehicle', function(source, cb, vehicleProps)
+    local xPlayer = ESX.GetPlayerFromId(source)
+    if not xPlayer or not xPlayer.gang or xPlayer.gang.name == 'nogang' or not Gangs[xPlayer.gang.name] then
+        return cb(false)
+    end
+    local gradeData = Gangs[xPlayer.gang.name].grades[xPlayer.gang.grade]
+    local LastRank = CountTable(Gangs[xPlayer.gang.name].grades)
+    local isBoss = xPlayer.gang.grade == LastRank
+    if not isBoss and not (gradeData and gradeData.access['garage']) then
+        return cb(false)
+    end
+    if not vehicleProps or not vehicleProps.plate then
+        return cb(false)
+    end
+
+    MySQL.Async.execute('INSERT IGNORE INTO owned_vehicles (owner, plate, vehicle, job, type, stored, engine, fuel, body) VALUES (@owner, @plate, @vehicle, @job, @type, @stored, @engine, @fuel, @body)',
+    {
+        ['@owner']   = xPlayer.gang.name,
+        ['@plate']   = vehicleProps.plate,
+        ['@vehicle'] = json.encode(vehicleProps),
+        ['@job']     = 'gang',
+        ['@type']    = 'car',
+        ['@stored']  = 0,
+        ['@engine']  = 1000,
+        ['@fuel']    = 100,
+        ['@body']    = 1000,
+    }, function(rowsChanged)
+        cb(rowsChanged and rowsChanged > 0)
+    end)
+end)
+
 ESX.RegisterServerCallback('FMGangsBoss:GetRecruitablePlayers', function(source, cb)
 	local Player = ESX.GetPlayerFromId(source)
 	if not Player or not Player.gang then return cb({}) end

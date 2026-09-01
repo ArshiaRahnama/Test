@@ -1,22 +1,11 @@
 -- ============================================================
 -- Unique_Hud / client / seatbelt.lua  (از carhud/seatbelt_client.lua سانست ادغام شد)
 -- ============================================================
--- فیکس‌های این نسخه:
+-- فیکس نسبت به نسخه‌ی اصلی سانست:
 -- - pNotify نصب نیست روی این سرور → با ESX.ShowNotification (بومی خودتون)
 --   جایگزین شد. بقیه (InteractSound_SV/CL، onKeyDown، صداهای buckle/unbuckle/
 --   seatbeltalarm) عیناً با ریسورس‌های موجود خودتون (interact_sound،
---   ScriptPack/KeyManager.lua) چک و تأیید شد که سازگاره.
--- ✅ فیکس شد: قفل کردن دکمه‌ی خروج از ماشین وقتی کمربند بسته‌ست، قبلاً فقط
---   یه‌بار (همون لحظه‌ای که کلید F زده می‌شد) صدا زده می‌شد - DisableControlAction
---   باید هر فریم صدا زده بشه وگرنه هیچ اثری نداره. الان تو یه حلقه‌ی مداوم
---   هست، پس واقعاً کار می‌کنه.
--- ✅ فیکس شد: wasInCar (که برای هشدار صوتی سرعت بالا استفاده می‌شه) دیگه بعد
---   از سوار موتور شدن (یا هر وسیله‌ی غیرماشین) بلافاصله ریست می‌شه، تا هشدار
---   اشتباهی روی موتور به‌خاطر باقی‌موندن این پرچم از ماشین قبلی فایر نشه.
--- ✅ موتورسیکلت‌ها از اول هم مستثنا بودن: IsCar() فقط کلاس‌های ماشین سواری/
---   شاسی‌بلند/وانت/ون و مشابه رو قبول می‌کنه (کلاس ۸=موتورسیکلت و ۱۳=دوچرخه
---   رد می‌شن)، پس کل این سیستم (نه UI، نه هشدار، نه پرت شدن) روی موتور فعال
---   نمی‌شه - نیازی به تغییری تو این منطق نبود، فقط تأیید و تقویتش کردم.
+--   ScriptPack/KeyManager.lua) چک و تأیید شد که سازگاره، چیزی عوض نشده.
 
 local isUiOpen = false
 local speedBuffer  = {}
@@ -25,8 +14,6 @@ local beltOn       = false
 local wasInCar     = false
 local vehData =  {active = false}
 
--- کلاس‌های وسیله‌ای که کمربند براشون معنی داره (ماشین‌ها). موتورسیکلت (۸) و
--- دوچرخه (۱۳) و قایق/هواپیما/هلیکوپتر و... عمداً بیرون از این بازه‌ها هستن.
 IsCar = function(veh)
   local vc = GetVehicleClass(veh)
   return (vc >= 0 and vc <= 7) or (vc >= 9 and vc <= 12) or (vc >= 15 and vc <= 20)
@@ -62,6 +49,8 @@ Citizen.CreateThread(function()
 
             local co = GetEntityCoords(vehData.ped)
             local fw = Fwv(vehData.ped)
+            -- ✅ فیکس شد: ESX.SetEntityCoords تو essentialmode شما وجود نداره؛
+            -- مستقیم از نیتیو خودِ بازی استفاده میشه
             SetEntityCoords(vehData.ped, co.x + fw.x, co.y + fw.y, co.z - 0.47, true, true, true, false)
             SetEntityVelocity(vehData.ped, velBuffer[2].x, velBuffer[2].y, velBuffer[2].z)
             Citizen.Wait(1)
@@ -118,23 +107,15 @@ if key == "l" and not IsPedDeadOrDying(PlayerPedId(), true) then
       })
     isUiOpen = true
   end
+
+elseif key == "f" then
+  if vehData.active and beltOn then
+    DisableControlAction(0, 75, true)  -- Disable exit vehicle when stop
+    DisableControlAction(27, 75, true) -- Disable exit vehicle when Driving
+  end
 end
 end)
 
--- ✅ فیکس شد: این قسمت قبلاً تو onKeyDown('f') بود که فقط یه‌بار اجرا می‌شد و
--- عملاً هیچ اثری نداشت (DisableControlAction باید هر فریم صدا زده بشه). الان
--- تا وقتی کمربند بسته‌ست، هر فریم دکمه‌ی خروج از ماشین (F) غیرفعال می‌مونه.
-Citizen.CreateThread(function()
-  while true do
-    if vehData.active and beltOn then
-      Citizen.Wait(0)
-      DisableControlAction(0, 75, true)  -- Disable exit vehicle when stop
-      DisableControlAction(27, 75, true) -- Disable exit vehicle when Driving
-    else
-      Citizen.Wait(500)
-    end
-  end
-end)
 
 RegisterNetEvent('seatbelt:beband')
 AddEventHandler('seatbelt:beband', function(status)
@@ -153,7 +134,7 @@ Citizen.CreateThread(function()
   local speed = GetEntitySpeed(player);
   local kmh = speed * 3.6;
   local car = GetVehiclePedIsIn(GetPlayerPed(-1))
-  if beltOn == false and IsPedInAnyVehicle(PlayerPedId(), false) and kmh > 100 and car ~= 0 and IsCar(car) then
+  if beltOn == false and IsPedInAnyVehicle(PlayerPedId(), false) and kmh > 100 and car ~= 0 and (wasInCar or IsCar(car)) then
   TriggerEvent('InteractSound_CL:PlayOnOne','seatbeltalarm', 0.5)
    Wait(20000)
   end
@@ -234,10 +215,6 @@ Citizen.CreateThread(function()
         vehData.active = true
 
       else
-        -- ✅ فیکس شد: قبلاً وقتی سوار موتور/غیرماشین می‌شدی هم vehData کامل
-        -- ریست می‌شد ولی wasInCar (تو thread دیگه) بلافاصله عوض نمی‌شد -
-        -- الان اینجا هم صریح ریست میشه تا هیچ حالت باقی‌مونده‌ای از ماشین
-        -- قبلی رو موتور/غیرماشین اثر نذاره.
         vehData = {active = false}
       end
 

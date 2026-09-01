@@ -17,6 +17,13 @@ version '1.0.0'
 -- GetResourceState), and fall back to the old press-E prompt if it
 -- isn't installed. Marker/object-type interactions (Locker, Armory,
 -- etc.) always stay on press-E regardless, unchanged.
+--
+-- Gang vehicle spawning (Config.GangVehicles, OpenGangVehicleSpawner
+-- in client/load.lua) requires esx_vehicleshop (for GeneratePlate and
+-- the shared owned_vehicles table) and Unique_Garage's CarLock system
+-- (for real vehicle keys) - both must be running for spawned gang
+-- vehicles to be properly owned and keyed. Do NOT install or start
+-- FMGangsGarage - it contains a confirmed backdoor (see README).
 
 shared_script 'Config.lua'
 

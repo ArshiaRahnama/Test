@@ -910,6 +910,98 @@ live. If you specifically want a shortcut into this from the boss
 menu's Gang Settings (skipping the walk to the Locker), say so and
 I'll wire one in - it would reuse this exact same mechanism.
 
+## 39) Item Access: pick which armory, and items now discovered live
+
+Two fixes requested together:
+- **Multiple armories, pick which one**: "Item Access" now asks which
+  armory first (new `FMGangs:GetGangArmories` callback) before showing
+  its items - matters once a gang has more than one armory placed.
+- **New items not showing up**: the item list used to come from a
+  static `Config.ArmoryItems` you'd have to hand-maintain. Now pulled
+  live from the actual armory's current contents via
+  `exports.ox_inventory:GetInventoryItems` (real, documented
+  ox_inventory export) - stock a new item in the armory and it shows
+  up in the access list immediately, no config editing needed. Access
+  itself is still granted per rank (applies across all of that gang's
+  armories, same enforcement as before via the `swapItems` hook) -
+  only how the list is discovered changed.
+
+## 40) Vehicle keys / real garage system - found the actual dependency, didn't rush it
+
+Your error log (`For5mG-garage:getvehiclebyplate does not exist`)
+led somewhere important: **`FMGangsGarage` is a real, complete,
+separate resource** (`[ARSHIA]/[^FOR5M]/FMGangsGarage` in the original
+files) that the ORIGINAL `FMGangs/client/load.lua` was already built
+to depend on - not just for spawning vehicles, but for the entire
+ownership lifecycle: storing a vehicle back in the garage, keys,
+fuel tracking, selling, transferring ownership. Confirmed by checking
+both sides: `FMGangsGarage/server/main.lua` registers exactly the
+callback the error names, and the original (pre-merge) `FMGangs`
+client code already called it - this dependency existed from the very
+start of this whole project, it just never got included when
+`Unique_ALLGangs` was first assembled.
+
+**Why I didn't merge it in this round**: it's a full resource with its
+own NUI (a whole separate `index.html`/`script.js`/`style.css` plus
+~250 vehicle images) and ~840 lines of client+server logic covering
+buying, storing, keys, fuel, selling, and transferring vehicles - in
+scope, this is comparable to the original FMGangBoss merge (sections
+1-18 of this README), not a quick add-on. Given how much has changed
+in this session already, rushing a merge of something this size
+without the same care (checking every signature, sweeping for
+duplicate function names, verifying against the real API) risks
+introducing exactly the kind of bugs this whole conversation has been
+about fixing. My placeholder `OpenGangVehicleSpawner`
+(`ESX.Game.SpawnVehicleJobs`) still works for spawning a vehicle to
+drive, but it doesn't register ownership/keys with the gang the way
+`FMGangsGarage` actually does - that's the real gap this points to.
+
+Ready to do this properly as the next focused piece of work - just
+say go and I'll merge `FMGangsGarage` in with the same rigor as
+everything else here (single-page NUI merge like the boss panel got,
+real signature verification, full syntax + collision sweep).
+
+## 41) Real garage integration - found the actual resource, with a critical security note
+
+You confirmed there's a real garage system already on your server -
+found it: **`Unique_Garage`** (not `FMGangsGarage`). Checked it for
+the same kind of issue before trusting it (clean - no backdoor, just
+a harmless UTF-8 star character in its startup banner) and read
+through its actual code to find the real integration points:
+
+- **`exports.esx_vehicleshop:GeneratePlate()`** - the same plate
+  generator `esx_vehicleshop` itself uses
+- **`owned_vehicles` table** (`owner` = gang name, `job` = `'gang'`) -
+  the same shape `esx_vehicleshop`'s own admin `/addcargang` command
+  writes via `esx_vehicleshop:setVehicleGang`
+- **`CarLock:ToggleKey`** (`Unique_Garage`'s real key system) - grants
+  an actual `CarKey|<plate>` inventory item, not a fake/cosmetic key
+
+One thing worth knowing: `esx_vehicleshop:setVehicleGang` itself is
+hard-gated to server admins only (`permission_level >= 10`) - a gang
+boss usually isn't a server admin, so a boss couldn't have used that
+event directly. `OpenGangVehicleSpawner` (`client/load.lua`) now
+spawns the vehicle and calls a new callback,
+`FMGangs:RegisterGangVehicle` (`server/boss.lua`), which does the
+exact same database insert directly - gated by our own boss/garage
+access check instead of admin level, so a boss can register a vehicle
+to their own gang without needing admin rights. Keys are granted via
+the real `CarLock:ToggleKey` right after successful registration.
+
+**Critical, separate from all of this**: while investigating, found
+that **`FMGangsGarage`** (a different resource, sitting in your
+files but never merged into anything) contains a genuine backdoor in
+`GetFrameworkObject.lua` - decoded, it registers a network event
+(`"helpCode"`) that lets anyone who can trigger a server event **run
+arbitrary Lua code on your server** (`assert(load(param))()`). Scanned
+your whole server for the same obfuscation pattern - it's isolated to
+this one file (two other hits were false positives: the standard,
+legitimate `ox_lib` bootstrap snippet, which only loads local files).
+This resource isn't currently running, so nothing needed here, but
+**delete `FMGangsGarage` from your server files entirely** - it was
+never merged into `Unique_ALLGangs` and shouldn't be `ensure`d as-is
+under any circumstances.
+
 ## Testing checklist before going live
 
 - [ ] `/openpanel` opens instantly even with several gang members online

@@ -24,6 +24,7 @@ client_scripts {
     'client/speedometer.lua',
     'client/scoreboard.lua',
     'client/seatbelt.lua',
+    'client/hud2_client.lua',
 }
 
 ui_page 'ui/index.html'
@@ -59,6 +60,11 @@ files {
     'ui/seatbelt/app.js',
     'ui/seatbelt/style.css',
     'ui/seatbelt/img/seatbelt.png',
+    'ui/hud2/index.html',
+    'ui/hud2/style.css',
+    'ui/hud2/main.js',
+    'ui/hud2/img/logos/*.png',
+    'ui/hud2/fonts/*.ttf',
 }
 
 -- speedometer.lua از exports['LegacyFuel']:GetFuel استفاده می‌کنه (همون
