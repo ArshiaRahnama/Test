@@ -180,7 +180,23 @@ ESX.RegisterServerCallback('getitemsForSaleGunshop', function(source, cb)
             name = itemName,
             label = ESX.GetWeaponLabel(itemName),
             price = itemData.price,
-            image = itemData.image
+            image = itemData.image,
+            itemType = 'weapon'
+        })
+    end
+
+    -- Ammo entries (see ShopConfig.itemsForSaleAmmoGunshop) merged into
+    -- the same list -- ESX.Items[name].label since these are regular
+    -- items, not weapons, so ESX.GetWeaponLabel doesn't apply to them.
+    for itemName, itemData in pairs(ShopConfig.itemsForSaleAmmoGunshop) do
+        local itemInfo = ESX.Items[itemName]
+        table.insert(itemsForSaleGunshop, {
+            name = itemName,
+            label = itemInfo and itemInfo.label or itemName,
+            price = itemData.price,
+            amount = itemData.amount or 1,
+            image = itemData.image,
+            itemType = 'ammo'
         })
     end
 
@@ -216,6 +232,41 @@ AddEventHandler('gunshop_item:buy_gunshop', function(itemName, amount)
 
     else
 
+        TriggerClientEvent('esx:showNotification', source, 'Shoma Pool Kafi Nadarid.')
+    end
+end)
+
+-- Buys a stack of ammo (a real item, xPlayer.addInventoryItem) rather
+-- than a weapon (xPlayer.addWeapon) -- see
+-- ShopConfig.itemsForSaleAmmoGunshop. `amount` here is how many stacks
+-- the player buys, each stack giving itemData.amount units of ammo.
+RegisterServerEvent('gunshop_item:buy_ammo')
+AddEventHandler('gunshop_item:buy_ammo', function(itemName, amount)
+    local source = source
+    local xPlayer = ESX.GetPlayerFromId(source)
+    if not xPlayer then return end
+
+    local itemData = ShopConfig.itemsForSaleAmmoGunshop[itemName]
+    if not itemData or not isValidAmount(amount) then return end
+
+    local itemPrice = itemData.price
+    local totalPrice = itemPrice * amount
+    local totalAmmo = (itemData.amount or 1) * amount
+
+    if xPlayer.canAfford(totalPrice) then
+        local itemInfo = ESX.Items[itemName]
+        local itemLabel = itemInfo and itemInfo.label or itemName
+
+        xPlayer.payAny(totalPrice)
+        xPlayer.addInventoryItem(itemName, totalAmmo)
+
+        TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'AMoneyLog', '```css\n[ Player : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Player Steam : '..xPlayer.identifier..' ]\n[ Bought Ammo : '..tostring(itemName)..' x'..tostring(totalAmmo)..' ]\n[ Cost : '..tostring(totalPrice)..' ]\n```', 'user', true, source, false)
+
+        TriggerClientEvent('chat:addMessage', source, {
+            args = {"[System]", 'Shoma ^2 ' .. totalAmmo .. '^2x ' .. itemLabel .. ' ^0Ra be ^1$^1'.. totalPrice .. ' ^0Kharidid'},
+            color = {255, 0, 0}
+        })
+    else
         TriggerClientEvent('esx:showNotification', source, 'Shoma Pool Kafi Nadarid.')
     end
 end)

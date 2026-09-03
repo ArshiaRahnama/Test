@@ -700,7 +700,12 @@ TriggerEvent('es:addAdminCommand', 'openproperty', 6, function(source, args, use
 		return
 	end
 
-	TriggerClientEvent('ox_inventory:openInventory', source, 'stash', 'property_' .. xPlayer.identifier)
+	-- Was TriggerClientEvent('ox_inventory:openInventory', source, 'stash', ...)
+	-- -- see esx_property/client/main.lua's OpenPropertyInventoryMenu for
+	-- the same IRV-inventory conversion. Handled by a small client event
+	-- (esx_aduty:openPlayerPropertyStash, added in Client/client.lua) since
+	-- IRV-inventory's stash export is client-side only.
+	TriggerClientEvent('esx_aduty:openPlayerPropertyStash', source, 'property_' .. xPlayer.identifier)
 
 end, function(source, args, user)
 	TriggerClientEvent('chat:addMessage', source, {'^1SYSTEM', 'Insufficient Permissions.' } )
@@ -1036,7 +1041,18 @@ TriggerEvent(
                 end
                 local weaponName = string.upper(args[2])
 				local ammo = (args[3] == nil and 250 or tonumber(args[3]))
-                xPlayer.addWeapon("WEAPON_".. weaponName, ammo)
+                -- BUG FIX: this always prepended "WEAPON_" without
+                -- checking whether the typed name already had it (e.g.
+                -- `/giveweapon 1 WEAPON_SMG` or `weapon_smg`, both very
+                -- natural things to type since that's the real GTA
+                -- weapon hash name) -- producing a broken
+                -- "WEAPON_WEAPON_SMG" item that ESX.Items/Config.Weapons
+                -- don't recognize at all. Only prepend it if it's not
+                -- already there.
+                if weaponName:sub(1, 7) ~= "WEAPON_" then
+                    weaponName = "WEAPON_" .. weaponName
+                end
+                xPlayer.addWeapon(weaponName, ammo)
                 TriggerEvent('DiscordBot:ToDiscord', 'addweapon', "Gived By Admin", "```css\nAdmin: "..namep.."("..source..")("..steamp.. ")\nBaraye: "..xPlayer.name.."("..tonumber(args[1])..")("..xPlayer.identifier..") \nWeapon : "..weaponName.." ("..ammo..") Add Kard \n```",'user', true, source, false)
             else
                 TriggerClientEvent("chat:addMessage", source, {args = {"^1SYSTEM", "Invalid Usage."}})

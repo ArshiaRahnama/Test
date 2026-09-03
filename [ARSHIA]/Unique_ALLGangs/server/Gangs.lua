@@ -1154,100 +1154,70 @@ AddEventHandler('For5MGBlip:toggleSiren', function(isOn)
     end
 end)
 -------------------------------------------------------------------
--- OX_INVENTORY CONVERSION (was esx_inventoryhud)
+-- IRV-inventory CONVERSION (was ox_inventory, converted from esx_inventoryhud)
 -- The old flow kept armory contents as a hand-rolled JSON blob on the
 -- gang record and pushed a custom NUI event (Config.OpenInventory =
 -- 'esx_inventoryhud:openGangInventory') that only worked because
--- esx_inventoryhud happened to be installed. That event doesn't exist
--- in ox_inventory, so it silently did nothing on an ox_inventory server.
+-- esx_inventoryhud happened to be installed.
 --
--- Each armory "station" (identified by its code) is now a real
--- ox_inventory stash, registered on demand. ox_inventory's own UI/
--- movement/weight/stacking/anti-dupe logic takes over from here, so
--- the old AddItemToInventory/TakeItemEvent handlers (which manually
--- mutated the JSON blob) are no longer needed and have been removed.
+-- Each armory "station" (identified by its code) is now backed by the
+-- SAME `stashs` SQL table IRV-inventory itself reads/writes (see
+-- IRV-inventory/server/main.lua's GetStash/SaveStash) -- so we seed it
+-- directly with SQL rather than through an ox_inventory-style stash
+-- registration API, which IRV-inventory doesn't have. Opening it for a
+-- player goes through IRV-inventory's own native gang-stash support
+-- (client export `stash(name, maxWeight, slot, label)`, wired up below
+-- via a small client event in Unique_ALLGangs/client/main.lua), since
+-- that's the only supported way to open one for a specific player --
+-- IRV-inventory's live stash cache is a `local` table inside its own
+-- resource and isn't reachable from here directly.
 --
--- Access: opening now requires putitem OR takeitem grade access (the
--- old code let anyone with the door code view it and only checked
--- access when clicking put/take). If you need put-only vs take-only
--- enforcement inside the stash UI itself, that requires a custom
--- ox_inventory `openInventory` hook - ask and it can be added.
+-- IMPORTANT - FEATURE LOST IN THIS CONVERSION: the old per-item access
+-- restriction (a boss could block a specific item, not just the whole
+-- armory, via ox_inventory's registerHook('swapItems', ...)) has NO
+-- IRV-inventory equivalent -- IRV-inventory has no hook/interceptor
+-- system for item movement at all, so there is no way to cancel a
+-- specific item's move out of a stash once the player has whole-armory
+-- access. That entire block has been removed rather than left as dead
+-- code that silently does nothing. Whole-armory putitem/takeitem access
+-- (checked below in For5M:OpenInventory) still works as before.
 -------------------------------------------------------------------
-local PlayersOGInventory = {}
 local RegisteredArmoryStashes = {}
-
--------------------------------------------------------------------
--- Per-item armory access (requested: restrict individual items, not
--- just the whole armory). Real ox_inventory feature - confirmed via
--- its own docs before building this: exports.ox_inventory:registerHook
--- ('swapItems', ...) fires on every item move and can cancel it by
--- returning false. Filtered to only gang armory stashes
--- (inventoryFilter '^gang_armory_'), so it never touches anything
--- else (player inventories, vehicle trunks, other stashes).
---
--- Backward compatible on purpose: a grade's itemAccess table (nested
--- inside its existing `access` blob - no DB schema change needed) is
--- nil until a boss actually configures it via the new "Item Access"
--- rank-access submenu. Nil means "no per-item restriction configured"
--- -> falls through to normal putitem/takeitem whole-armory access,
--- exactly like every gang already had before this. Only once a boss
--- explicitly toggles an item OFF for a grade does that specific item
--- get blocked for that grade.
--------------------------------------------------------------------
--------------------------------------------------------------------
--- FIX (essentialmode: TriggerServerCallback => [FMGangs:GetRankAccess]
--- / [FMGangs:MyGangLevel] / [FMGangs:GetPlayerData] does not exist):
--- this hook registration ran immediately at file-load time. If
--- ox_inventory's export table wasn't fully ready in that exact
--- instant (a real possibility even with correct `ensure` ordering -
--- resource START order isn't the same guarantee as "every export is
--- registered"), exports.ox_inventory:registerHook(...) would throw,
--- and since this sits partway through the file, EVERYTHING below it
--- - including GetRankAccess/MyGangLevel/GetPlayerData further down -
--- would never register at all. Wrapped in a retry loop that waits
--- for ox_inventory to actually be started before calling it, so a
--- slow/late-starting ox_inventory can no longer take down the rest
--- of this file.
--------------------------------------------------------------------
-CreateThread(function()
-    while GetResourceState('ox_inventory') ~= 'started' do
-        Wait(200)
-    end
-    exports.ox_inventory:registerHook('swapItems', function(payload)
-        local source = payload.source
-        if not source then return true end
-
-        local involvesArmory = (type(payload.fromInventory) == 'string' and payload.fromInventory:match('^gang_armory_'))
-            or (type(payload.toInventory) == 'string' and payload.toInventory:match('^gang_armory_'))
-        if not involvesArmory then return true end
-
-        local xPlayer = ESX.GetPlayerFromId(source)
-        if not xPlayer or not xPlayer.gang or xPlayer.gang.name == 'nogang' then return true end
-        local gradeData = Gangs[xPlayer.gang.name] and Gangs[xPlayer.gang.name].grades[xPlayer.gang.grade]
-        if not gradeData or not gradeData.access or not gradeData.access.itemAccess then return true end
-
-        local itemName = (payload.fromSlot and payload.fromSlot.name) or (payload.toSlot and payload.toSlot.name)
-        if not itemName then return true end
-
-        if gradeData.access.itemAccess[itemName] == false then
-            TriggerClientEvent(Config.showNotification, source, 'You do not have access to this item', 'error')
-            return false
-        end
-        return true
-    end, { inventoryFilter = { '^gang_armory_' } })
-end)
+local ARMORY_SLOTS = 50
+local ARMORY_MAX_WEIGHT = 100000
 
 local function GetArmoryStashId(playergang, key)
     return ('gang_armory_%s_%s'):format(playergang, tostring(key))
 end
 
+-- Mirrors IRV-inventory/server/main.lua's own GetStash, since that
+-- function isn't exported and IRV-inventory's in-memory Stashes cache
+-- is private to its own resource -- reading the same `stashs` row it
+-- reads is the only way to inspect stash contents from here.
+local function ReadArmoryStashItemNames(stashId)
+    local names, seen = {}, {}
+    local result = MySQL.Sync.fetchScalar('SELECT inventory FROM stashs WHERE stash = ?', { stashId })
+    if result then
+        local items = json.decode(result)
+        if items then
+            for _, item in pairs(items) do
+                if item and item.name and not seen[item.name] then
+                    seen[item.name] = true
+                    table.insert(names, item.name)
+                end
+            end
+        end
+    end
+    table.sort(names)
+    return names
+end
+
 -------------------------------------------------------------------
 -- Supports the "Item Access" boss menu (client/boss_esx_menu.lua):
 -- lists a gang's armory keys, and lists the item names actually
--- currently sitting inside a specific one (via ox_inventory's real
--- GetInventoryItems export - confirmed via its own docs before using
--- it), so newly-stocked items show up for access toggling
--- automatically instead of relying on a hand-maintained config list.
+-- currently sitting inside a specific one, so newly-stocked items show
+-- up for access toggling automatically instead of relying on a
+-- hand-maintained config list.
 -------------------------------------------------------------------
 ESX.RegisterServerCallback('FMGangs:GetGangArmories', function(source, cb, gang)
     local armory = Gangs[gang] and Gangs[gang].armory
@@ -1262,40 +1232,43 @@ end)
 
 ESX.RegisterServerCallback('FMGangs:GetArmoryStashItemNames', function(source, cb, gang, armoryKey)
     local stashId = GetArmoryStashId(gang, armoryKey)
-    local items = exports.ox_inventory:GetInventoryItems(stashId)
-    local seen, names = {}, {}
-    if items then
-        for _, slot in pairs(items) do
-            if slot and slot.name and not seen[slot.name] then
-                seen[slot.name] = true
-                table.insert(names, slot.name)
-            end
-        end
-    end
-    table.sort(names)
-    cb(names)
+    cb(ReadArmoryStashItemNames(stashId))
 end)
 
--- Seeds an ox_inventory stash from the legacy armory JSON the first
--- time it's opened, then remembers not to do it again.
+-- Seeds the `stashs` row from the legacy armory JSON the first time
+-- it's opened, then remembers not to do it again. Matches the exact
+-- shape IRV-inventory's own GetStash expects: a JSON object keyed by
+-- slot number, each entry {name, count, slot, info, weight}.
 local function EnsureArmoryStash(playergang, key, armory)
     local stashId = GetArmoryStashId(playergang, key)
     if RegisteredArmoryStashes[stashId] then return stashId end
 
-    local seedItems = {}
-    for _, v in pairs(armory.items or {}) do
-        seedItems[#seedItems + 1] = { v.name, v.count }
-    end
-    for _, v in pairs(armory.weapons or {}) do
-        seedItems[#seedItems + 1] = { v.name, 1 }
-    end
-
-    exports.ox_inventory:RegisterStash(stashId, playergang .. ' Armory', 50, 100000, false)
-
-    if #seedItems > 0 then
-        for _, item in ipairs(seedItems) do
-            exports.ox_inventory:AddItem(stashId, item[1], item[2])
+    local existing = MySQL.Sync.fetchScalar('SELECT 1 FROM stashs WHERE stash = ?', { stashId })
+    if not existing then
+        local seedItems, seedInventory, slot = {}, {}, 1
+        for _, v in pairs(armory.items or {}) do
+            seedItems[#seedItems + 1] = { v.name, v.count }
         end
+        for _, v in pairs(armory.weapons or {}) do
+            seedItems[#seedItems + 1] = { v.name, 1 }
+        end
+        for _, item in ipairs(seedItems) do
+            local itemInfo = ESX.Items[item[1]:lower()]
+            if itemInfo then
+                seedInventory[slot] = {
+                    name = item[1],
+                    count = item[2],
+                    slot = slot,
+                    info = {},
+                    weight = itemInfo.weight
+                }
+                slot = slot + 1
+            end
+        end
+        MySQL.Async.insert('INSERT INTO stashs (stash, inventory) VALUES (:stash, :inventory) ON DUPLICATE KEY UPDATE inventory = :inventory', {
+            ['stash'] = stashId,
+            ['inventory'] = json.encode(seedInventory)
+        })
     end
 
     RegisteredArmoryStashes[stashId] = true
@@ -1303,7 +1276,6 @@ local function EnsureArmoryStash(playergang, key, armory)
 end
 
 ESX.RegisterServerCallback('For5M:OpenInventory', function(source, cb, code)
-    PlayersOGInventory[source] = code
     local xPlayer = ESX.GetPlayerFromId(source)
     local playergang = xPlayer.gang.name
     local armory, key = GetArmoryByCode(playergang, code)
@@ -1316,7 +1288,7 @@ ESX.RegisterServerCallback('For5M:OpenInventory', function(source, cb, code)
     end
 
     local stashId = EnsureArmoryStash(playergang, key, armory)
-    TriggerClientEvent('ox_inventory:openInventory', source, 'stash', stashId)
+    TriggerClientEvent('For5MGangs:openArmoryStash', source, stashId, ARMORY_MAX_WEIGHT, ARMORY_SLOTS, playergang .. ' Armory')
     cb(true)
 end)
 RegisterNetEvent('For5M:itemPacks')

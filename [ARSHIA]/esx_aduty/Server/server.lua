@@ -96,8 +96,7 @@ AddEventHandler(
                 ["id"] = tonumber(source),
                 ["name"] = GetPlayerName(source),
                 ["timestamp"] = os.time(),
-                ["type"] = "Enter",
-                print(identifier, id, name, timestamp, type)
+                ["type"] = "Enter"
             },
             function(result)
                 if not result or result.affectedRows <= 0 then

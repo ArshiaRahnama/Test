@@ -67,6 +67,22 @@ local function CheckDbOwnership(xPlayer, plate, cb)
     end)
 end
 
+-- IRV-inventory replacement for ox_inventory's `Search(src, 'count', item,
+-- {plate=plate})`: essentialmode/IRV-inventory items don't support querying
+-- by metadata directly, so we scan the player's own inventory slots for a
+-- 'vehicle_keys' entry whose `.info.plate` matches. Returns the slot (item,
+-- index) or nil.
+local function FindKeySlot(xPlayer, plate)
+    if not xPlayer or not xPlayer.inventory then return nil end
+    for i = 1, #xPlayer.inventory, 1 do
+        local item = xPlayer.inventory[i]
+        if item.name == 'vehicle_keys' and item.count > 0 and item.info and item.info.plate == plate then
+            return item, i
+        end
+    end
+    return nil
+end
+
 ESX.RegisterServerCallback('CarLock:haskey', function(source, cb, plate)
     local xPlayer = ESX.GetPlayerFromId(source)
     if not xPlayer or not plate then cb(false) return end
@@ -78,8 +94,7 @@ ESX.RegisterServerCallback('CarLock:haskey', function(source, cb, plate)
         return
     end
 
-    local keyCount = exports.ox_inventory:Search(source, 'count', 'vehicle_keys', { plate = plate }) or 0
-    if keyCount >= 1 then
+    if FindKeySlot(xPlayer, plate) then
         cb(true)
         return
     end
@@ -154,26 +169,30 @@ AddEventHandler("CarLock:ToggleKey", function(op, plate)
     plate = ESX.Math.Trim(plate)
     if plate == "" or #plate > 12 then return end
 
-    -- ox_inventory has no per-vehicle dynamic item creation (unlike
-    -- essentialmode's old "CarKey|<plate>" trick, one unique item name per
-    -- plate — that's unbounded and can't be pre-registered). Every set of
-    -- keys is instead the SAME item, distinguished by its own metadata.plate.
+    -- IRV-inventory (like ox_inventory before it) has no per-vehicle dynamic
+    -- item creation (unlike essentialmode's old "CarKey|<plate>" trick, one
+    -- unique item name per plate -- that's unbounded and can't be
+    -- pre-registered). Every set of keys is instead the SAME item,
+    -- distinguished by its own slot-level `info.plate` (see the
+    -- addInventoryItem/getInventoryItem `info`/index support patched into
+    -- essentialmode's player class for this).
     local KEY_ITEM = "vehicle_keys"
 
     local function applyGrant()
-        local count = exports.ox_inventory:Search(src, 'count', KEY_ITEM, { plate = plate }) or 0
-        if count <= 0 then
-            exports.ox_inventory:AddItem(src, KEY_ITEM, 1, { plate = plate, label = 'Keys: ' .. plate })
+        if not FindKeySlot(xPlayer, plate) then
+            xPlayer.addInventoryItem(KEY_ITEM, 1, nil, { plate = plate, label = 'Keys: ' .. plate })
         end
     end
 
     local function applyRevoke()
-        local xPlayers = ESX.GetPlayers()
-        for i = 1, #xPlayers, 1 do
-            local otherSource = xPlayers[i]
-            local count = exports.ox_inventory:Search(otherSource, 'count', KEY_ITEM, { plate = plate }) or 0
-            if count > 0 then
-                exports.ox_inventory:RemoveItem(otherSource, KEY_ITEM, count, { plate = plate })
+        local sources = ESX.GetPlayers()
+        for i = 1, #sources, 1 do
+            local otherPlayer = ESX.GetPlayerFromId(sources[i])
+            if otherPlayer then
+                local item, idx = FindKeySlot(otherPlayer, plate)
+                if item then
+                    otherPlayer.removeInventoryItem(KEY_ITEM, item.count, idx)
+                end
             end
         end
     end
@@ -198,15 +217,6 @@ AddEventHandler("CarLock:ToggleKey", function(op, plate)
                 return
             end
 
-
-
-
-
-
-
-
-
-
             local granted = false
             for attempt = 1, 15 do
                 local ped = GetPlayerPed(src)
@@ -226,8 +236,7 @@ AddEventHandler("CarLock:ToggleKey", function(op, plate)
         end)
     else
 
-
-        if IsStaff(xPlayer) or (exports.ox_inventory:Search(src, 'count', KEY_ITEM, { plate = plate }) or 0) > 0 then
+        if IsStaff(xPlayer) or FindKeySlot(xPlayer, plate) ~= nil then
             applyRevoke()
         else
             CheckDbOwnership(xPlayer, plate, function(isOwner)
@@ -262,8 +271,7 @@ AddEventHandler("CarLock:ToggleKey2", function(op, plate, targetId)
 
     local function senderHasAccess(cb)
         if IsStaff(xPlayer) then cb(true) return end
-        local keyCount = exports.ox_inventory:Search(src, 'count', 'vehicle_keys', { plate = plate }) or 0
-        if keyCount > 0 then cb(true) return end
+        if FindKeySlot(xPlayer, plate) then cb(true) return end
         CheckDbOwnership(xPlayer, plate, function(isOwner) cb(isOwner) end)
     end
 
@@ -274,15 +282,15 @@ AddEventHandler("CarLock:ToggleKey2", function(op, plate, targetId)
             return
         end
 
-        local targetKeyCount = exports.ox_inventory:Search(targetId, 'count', 'vehicle_keys', { plate = plate }) or 0
+        local targetItem, targetIdx = FindKeySlot(xTarget, plate)
 
         if op then
-            if targetKeyCount <= 0 then
-                exports.ox_inventory:AddItem(targetId, 'vehicle_keys', 1, { plate = plate, label = 'Keys: ' .. plate })
+            if not targetItem then
+                xTarget.addInventoryItem('vehicle_keys', 1, nil, { plate = plate, label = 'Keys: ' .. plate })
             end
         else
-            if targetKeyCount > 0 then
-                exports.ox_inventory:RemoveItem(targetId, 'vehicle_keys', targetKeyCount, { plate = plate })
+            if targetItem then
+                xTarget.removeInventoryItem('vehicle_keys', targetItem.count, targetIdx)
             end
         end
     end)
@@ -328,7 +336,7 @@ ESX.RegisterServerCallback('CarLock:canHotwire', function(source, cb, plate)
     if not xPlayer or not plate then cb(false) return end
 
     plate = ESX.Math.Trim(plate)
-    local hasKey = (exports.ox_inventory:Search(source, 'count', 'vehicle_keys', { plate = plate }) or 0) >= 1
+    local hasKey = FindKeySlot(xPlayer, plate) ~= nil
 
     if hasKey then
         cb(false)

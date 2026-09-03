@@ -65,6 +65,23 @@ ShopConfig.itemsForSaleGunshop = {
 
 }
 
+-- Ammo (added so the ammo_* items essentialmode's weapon-in-inventory
+-- reload system needs -- see essentialmode/server/functions.lua and
+-- database.sql -- are actually purchasable somewhere). Sold from the
+-- same Gunshop peds/locations as the weapons above, just a separate
+-- config list since these are regular items (xPlayer.addInventoryItem),
+-- not weapons (xPlayer.addWeapon) -- see server/shop-sv.lua's
+-- gunshop_item:buy_ammo handler.
+ShopConfig.itemsForSaleAmmoGunshop = {
+    ammo_pistol = {price = 30, amount = 30, image = url.."weapon_pistol.png"},
+    ammo_smg = {price = 25, amount = 30, image = url.."weapon_smg.png"},
+    ammo_shotgun = {price = 40, amount = 12, image = url.."weapon_pumpshotgun.png"},
+    ammo_rifle = {price = 20, amount = 30, image = url.."weapon_carbinerifle.png"},
+    ammo_sniper = {price = 60, amount = 10, image = url.."weapon_sniperrifle.png"},
+    ammo_mg = {price = 15, amount = 50, image = url.."weapon_mg.png"},
+    ammo_heavy = {price = 200, amount = 5, image = url.."weapon_rpg.png"},
+}
+
 ShopConfig.sellingLocationGunshop = {
 
 }

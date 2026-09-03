@@ -34,6 +34,17 @@ AddEventHandler('For5M:OpenPanel', function(data)
 		Admin = data , 
 	})
 end) 
+-------------------------------------------------------------------
+-- IRV-inventory CONVERSION: the server can't open a stash for a
+-- specific player directly (IRV-inventory's live stash cache is
+-- private to its own resource), so it asks this client to do it via
+-- IRV-inventory's own exported client function -- the same one it
+-- uses internally for job/gang stashes.
+-------------------------------------------------------------------
+RegisterNetEvent('For5MGangs:openArmoryStash')
+AddEventHandler('For5MGangs:openArmoryStash', function(stashId, maxWeight, slot, label)
+	exports['IRV-inventory']:stash(stashId, maxWeight, slot, label)
+end)
 RegisterNetEvent('For5M:OpenBossPanel')
 AddEventHandler('For5M:OpenBossPanel', function(data , GangName )
 	InAdminPanel = true 

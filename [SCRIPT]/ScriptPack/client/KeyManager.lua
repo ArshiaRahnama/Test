@@ -115,7 +115,20 @@ function registerKey(key, type)
 
 	RegisterCommand('+' .. command, function()
 
-		if not IsPauseMenuActive() and not DisableControlAction(0, Keys[key], true) then
+		-- BUG FIX: `Keys` (top of this file) is keyed in UPPERCASE
+		-- ("F2" = 289), but every entry in `haveToRegister` below is
+		-- lowercase ("f2"), and `registerKey` gets called with that
+		-- lowercase key. So `Keys[key]` here was ALWAYS nil for every
+		-- single key this whole system handles -- DisableControlAction
+		-- got called with a nil control hash, which errors and aborts
+		-- this command before it ever reaches TriggerEvent("onKeyDown",
+		-- key) below. Net effect: `onKeyDown` never fired for ANY key,
+		-- for any player, ever -- which is what was blocking F2/the
+		-- inventory (and silently breaking every other script listening
+		-- for onKeyDown/onKeyUp/onMultiplePress across this server, e.g.
+		-- 'e' pickup/interact prompts). Uppercasing the lookup fixes all
+		-- of them at once.
+		if not IsPauseMenuActive() and not DisableControlAction(0, Keys[string.upper(key)], true) then
 
 			if shouldSendTheKey(key) then
 
@@ -143,7 +156,7 @@ function registerKey(key, type)
 
 	RegisterCommand('-' .. command, function()
 
-		if not IsPauseMenuActive() and not DisableControlAction(0, Keys[key], true) then
+		if not IsPauseMenuActive() and not DisableControlAction(0, Keys[string.upper(key)], true) then
 
 			TriggerEvent("onKeyUP", key)
 

@@ -300,14 +300,23 @@ function OpenBuyMenuGunshop()
     ESX.TriggerServerCallback('getitemsForSaleGunshop', function(itemsForSaleGunshop)
         for _, item in ipairs(itemsForSaleGunshop) do
 
+            -- Ammo entries (item.itemType == 'ammo', see
+            -- ShopConfig.itemsForSaleAmmoGunshop) buy a stack of the real
+            -- item via gunshop_item:buy_ammo; everything else keeps
+            -- buying a weapon via gunshop_item:buy_gunshop, unchanged.
+            local buyEvent = item.itemType == 'ammo' and 'gunshop_item:buy_ammo' or 'gunshop_item:buy_gunshop'
+            local title = item.itemType == 'ammo'
+                and ("%s x%s ($%s)"):format(item.label, item.amount, item.price)
+                or ("%s ($%s)"):format(item.label, item.price)
+
             table.insert(options, {
-                title = ("%s ($%s)"):format(item.label, item.price),
+                title = title,
                 description = 'Click to Buy',
                 icon = item.image,
                 image = item.image,
                 onSelect = function()
 
-                    TriggerServerEvent('gunshop_item:buy_gunshop', item.name, 1, item.price)
+                    TriggerServerEvent(buyEvent, item.name, 1, item.price)
                 end
             })
         end

@@ -1,5 +1,5 @@
 MarketConfig = {}
-local url = 'nui://ox_inventory/web/images/'
+local url = 'nui://IRV-inventory/ui/images/'
 
 list_products = {
     { label = 'Cake Bastani', name = 'cakebastani', img = url..'cakebastani.png', price_recommended = 10000, Had_AKSAR = 10000},

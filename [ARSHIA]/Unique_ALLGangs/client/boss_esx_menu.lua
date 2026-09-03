@@ -435,21 +435,25 @@ function OpenBossRankAccessToggleMenu(gang, gradeNumber)
 end
 
 -------------------------------------------------------------------
--- Per-item armory access (requested: restrict individual items, not
--- just the whole armory) - toggles Config.ArmoryItems entries for a
--- rank, wired to FMGangs:EditItemAccess (server/Gangs.lua) and
--- enforced there via a real ox_inventory swapItems hook.
+-- Per-item armory access (restrict individual items, not just the
+-- whole armory) - toggles Config.ArmoryItems entries for a rank via
+-- FMGangs:EditItemAccess (server/Gangs.lua).
 --
--- FIX (requested: pick WHICH armory when a gang has more than one,
--- and newly-added items not showing up in the list): the item list
--- used to come from a static Config.ArmoryItems, so anything you
--- physically stocked in an armory that wasn't already in that list
--- never appeared here. Now lists the items ACTUALLY sitting in the
--- specific armory you pick, pulled live from ox_inventory - add a new
--- item to the armory and it shows up here immediately, no config
--- editing needed. (Access is still granted per rank, applying across
--- all of that gang's armories, same as before - only the discovery
--- list is now per-armory.)
+-- NOTE: this is currently NON-FUNCTIONAL for actually blocking a move.
+-- It used to be enforced by a real ox_inventory swapItems hook that
+-- could cancel an item move server-side; IRV-inventory has no
+-- hook/interceptor system for item movement, so there is currently no
+-- way to enforce this. The toggles below still save (so the UI/data
+-- isn't lost if that gets built later), they just don't do anything
+-- yet.
+--
+-- The item list shown lists the items ACTUALLY sitting in the specific
+-- armory you pick, pulled live from the `stashs` table (see
+-- FMGangs:GetArmoryStashItemNames in server/Gangs.lua) - add a new item
+-- to the armory and it shows up here immediately, no config editing
+-- needed. (Access is still granted per rank, applying across all of
+-- that gang's armories, same as before - only the discovery list is
+-- now per-armory.)
 -------------------------------------------------------------------
 function OpenBossItemAccessArmoryMenu(gang, gradeNumber)
     ESX.TriggerServerCallback('FMGangs:GetGangArmories', function(armories)

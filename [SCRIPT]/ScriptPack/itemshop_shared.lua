@@ -1,3 +1,3 @@
 
 
-url = 'nui://ox_inventory/web/images/'
+url = 'nui://IRV-inventory/ui/images/'

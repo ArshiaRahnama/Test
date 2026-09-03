@@ -102,6 +102,15 @@ function ReadToPlay(x, y, z)
 	end
 	TriggerEvent('esx_status:setLastStats')
 	TriggerServerEvent('esx_rack:loaded')
+	-- Added: several other scripts (IRV-inventory, skincreator,
+	-- Unique_Punishment) all wait for this exact event before enabling
+	-- their own features (F2 inventory, character creation, etc.) --
+	-- it was never actually fired anywhere in this whole codebase, so
+	-- those stayed permanently locked for every player with no error at
+	-- all (they just quietly wait forever). This is the real "player is
+	-- fully spawned in" moment, same as the esx:playerSpawned trigger
+	-- right below, so it belongs here.
+	TriggerEvent('loading:Loaded')
 	Wait(500)
 	TriggerEvent('es_admin:freezePlayer', false)
 	TriggerEvent('esx:playerSpawned')

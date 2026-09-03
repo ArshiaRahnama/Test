@@ -535,7 +535,14 @@ function OpenRoomMenu(property, owner)
 end
 
 function OpenPropertyInventoryMenu(property, owner)
-	exports.ox_inventory:openInventory('stash', 'property_' .. owner)
+	-- Was ox_inventory's exports.ox_inventory:openInventory('stash', id).
+	-- IRV-inventory's client export does the equivalent (it internally
+	-- does TriggerServerEvent('IRV-inventory:openSide', 'stash', ...)),
+	-- just with maxWeight/slot/label params instead of an inventory id
+	-- string alone -- nil lets IRV-inventory fall back to its own
+	-- defaults (50 weight / 24 slots), same as any other unconfigured
+	-- IRV-inventory stash.
+	exports['IRV-inventory']:stash('property_' .. owner, nil, nil, property and property.label or ('Property ' .. owner))
 end
 
 function OpenRoomInventoryMenu(property, owner)
