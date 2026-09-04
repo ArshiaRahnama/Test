@@ -52,7 +52,11 @@ function closeInventory()
     if Inv.noPedInv == true then
         SetKeepInputMode(false)
     end
-    if Inv.isInTrunk then 
+    if CurrentStashId then
+        Inv.isInTrunk = false
+        TriggerServerEvent('lc-inventory:stashViewer', CurrentStashId, false)
+        CurrentStashId = nil
+    elseif Inv.isInTrunk then 
         Inv.isInTrunk = false
         TriggerServerEvent('lgd_inv:TableActuTrunk', dataVehicleIn.plate, false)
         FreezeEntityPosition(PlayerPedId(), false)
@@ -81,6 +85,22 @@ RegisterNUICallback('close', function(data)
             SetKeepInputMode(false)
         end
 
+        return
+    end
+    if CurrentStashId then
+        Inv.isInTrunk = false
+
+        DisplayRadar(true)
+        DeletePedScreen()
+        SetNuiFocus(false, false)
+        TriggerServerEvent('lc-inventory:stashViewer', CurrentStashId, false)
+        CurrentStashId = nil
+
+        ClearTimecycleModifier()
+        if Inv.noPedInv == true then
+            SetKeepInputMode(false)
+        end
+        TriggerScreenblurFadeOut(0)
         return
     end
     if Inv.isInTrunk then

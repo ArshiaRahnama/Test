@@ -1037,6 +1037,38 @@ inside functions triggered during actual gameplay (armory open,
 marker create/remove), not at file-load time, so this was the only
 one.
 
+## 44) Item Access labels, per-vehicle access, and a real Unique_Garage patch
+
+- **Item Access now shows real names**: was showing raw ox_inventory
+  item ids (`WEAPON_PISTOL`). Now pulls the actual display label via
+  `exports.ox_inventory:Items(name).label`, sorted alphabetically by
+  that label.
+- **New "Vehicle Access" category** in Manage Rank Access - toggle
+  which specific gang vehicle models (from `Config.GangVehicles`)
+  each rank can spawn, same pattern as Item Access. Enforced twice:
+  client-side in `OpenGangVehicleSpawner` (so blocked models don't
+  even show in the menu) and server-side in
+  `FMGangs:RegisterGangVehicle` (the real check - can't be bypassed by
+  calling the event directly). A grade with nothing configured
+  behaves exactly as before (every configured model allowed) - opt-in
+  restriction, same as item access.
+- **Unique_Garage integration patch**: see the separate
+  `Unique_Garage_GANG_PATCH.md` file (not part of this zip -
+  `Unique_Garage` is your own separate, already-running resource).
+  Read its actual server.lua/client.lua carefully before writing this -
+  its UI (`resources/build/`) is a compiled/minified React production
+  bundle, not editable source, so I can't merge or modify that part
+  directly, and couldn't run your live client to visually verify the
+  patch. What the patch does: adds a real "browse all my gang's
+  vehicles" view using Unique_Garage's own existing, working
+  rendering logic (mirrors its `"garage"` type exactly), pointed at a
+  new data source (your gang's `owned_vehicles` rows) instead of a
+  personal one. This is for *retrieving already-owned* gang vehicles
+  through Unique_Garage's real UI - a different use case from
+  `OpenGangVehicleSpawner` here, which handles *acquiring a new*
+  vehicle (registration + first spawn). Test the patch and let me know
+  if anything doesn't render right.
+
 ## Testing checklist before going live
 
 - [ ] `/openpanel` opens instantly even with several gang members online

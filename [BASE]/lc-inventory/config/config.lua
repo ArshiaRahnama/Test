@@ -14,7 +14,7 @@ Config = Config or {}
 --  ╚═════╝ ╚══════╝╚═╝  ╚═══╝╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝
                                                            
 
-Config.Language = "fr" -- Set your lang in locales folder (fr, en, es, ...)
+Config.Language = "en" -- Set your lang in locales folder (fr, en, es, ...)
 Config.Framework = "esx" -- esx or qb
 Config.Debug = true 
 Config.UseNPC = false

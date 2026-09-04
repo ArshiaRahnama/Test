@@ -23,3 +23,12 @@ ALTER TABLE `lc_trunk`
   ADD UNIQUE KEY `id` (`id`);
 COMMIT;
 
+-- Generic shared-storage container (server/apps/system/stash.lua),
+-- used e.g. by Unique_ALLGangs' gang armories via exports('stash', ...).
+CREATE TABLE IF NOT EXISTS `stashs` (
+  `stash` varchar(60) NOT NULL,
+  `inventory` longtext DEFAULT NULL,
+  PRIMARY KEY (`stash`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+COMMIT;
+

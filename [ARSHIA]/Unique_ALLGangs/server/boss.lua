@@ -269,7 +269,7 @@ end)
 -- checked client-side before the vehicle is even spawned (access['garage']),
 -- but checked again here too since this is the actual trust boundary.
 -------------------------------------------------------------------
-ESX.RegisterServerCallback('FMGangs:RegisterGangVehicle', function(source, cb, vehicleProps)
+ESX.RegisterServerCallback('FMGangs:RegisterGangVehicle', function(source, cb, vehicleProps, model)
     local xPlayer = ESX.GetPlayerFromId(source)
     if not xPlayer or not xPlayer.gang or xPlayer.gang.name == 'nogang' or not Gangs[xPlayer.gang.name] then
         return cb(false)
@@ -278,6 +278,15 @@ ESX.RegisterServerCallback('FMGangs:RegisterGangVehicle', function(source, cb, v
     local LastRank = CountTable(Gangs[xPlayer.gang.name].grades)
     local isBoss = xPlayer.gang.grade == LastRank
     if not isBoss and not (gradeData and gradeData.access['garage']) then
+        return cb(false)
+    end
+    -- FEATURE (per-vehicle-model access, not just a blanket garage
+    -- flag): real server-side enforcement, independent of the
+    -- client-side menu filter in OpenGangVehicleSpawner - a boss can
+    -- always register any model; everyone else needs the specific
+    -- model to not be explicitly blocked for their rank.
+    local vehicleAccess = gradeData and gradeData.access and gradeData.access.vehicleAccess
+    if not isBoss and vehicleAccess and model and vehicleAccess[model] == false then
         return cb(false)
     end
     if not vehicleProps or not vehicleProps.plate then

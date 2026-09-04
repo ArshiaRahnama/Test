@@ -205,6 +205,9 @@ RegisterNUICallback("PutIntoTrunk", function(data, cb)
         NotificationInInventory(Locales[Config.Language]['no_possible'], 'error')
         return
     end
+    if CurrentStashId then
+        return HandleStashPut(data, cb)
+    end
     if data.item.type == 'item_vetement' then
         dataClothe = {
             id = data.item.id,
@@ -284,6 +287,9 @@ RegisterNUICallback("TakeFromTrunk", function(data, cb)
     if IsPedRagdoll(PlayerPedId()) then
         NotificationInInventory(Locales[Config.Language]['no_possible'], 'error')
         return
+    end
+    if CurrentStashId then
+        return HandleStashTake(data, cb)
     end
     if data.item.type == 'item_vetement' then
         dataClothe = {
