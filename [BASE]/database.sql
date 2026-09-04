@@ -1531,21 +1531,6 @@ CREATE TABLE IF NOT EXISTS `items` (
   PRIMARY KEY (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Ammo items (required by IRV-inventory's reload-from-inventory flow --
--- ESX.Items[weaponName].ammo points at one of these, see
--- essentialmode/server/functions.lua). Give/sell these somewhere (a gun
--- shop, a job payout, etc.) or nobody will actually be able to reload a
--- weapon from the inventory UI -- that's a shop/economy decision, not
--- something this can decide for you.
-REPLACE INTO `items` (`name`, `label`, `limit`, `rare`, `can_remove`) VALUES
-	('ammo_pistol', 'Pistol Ammo', -1, 0, 1),
-	('ammo_smg', 'SMG Ammo', -1, 0, 1),
-	('ammo_shotgun', 'Shotgun Shells', -1, 0, 1),
-	('ammo_rifle', 'Rifle Ammo', -1, 0, 1),
-	('ammo_sniper', 'Sniper Ammo', -1, 0, 1),
-	('ammo_mg', 'MG Ammo', -1, 0, 1),
-	('ammo_heavy', 'Heavy Ammo', -1, 0, 1);
-
 -- Dumping data for table essentialmode.items: ~238 rows (approximately)
 REPLACE INTO `items` (`name`, `label`, `limit`, `rare`, `can_remove`) VALUES
 	('aard', 'Aard', 30, 0, 1),
@@ -3673,13 +3658,6 @@ CREATE TABLE IF NOT EXISTS `whitelist` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Dumping data for table essentialmode.whitelist: ~0 rows (approximately)
-
--- Table structure for table `stashs` (required by IRV-inventory)
-CREATE TABLE IF NOT EXISTS `stashs` (
-  `stash` varchar(50) NOT NULL,
-  `inventory` longtext DEFAULT NULL,
-  PRIMARY KEY (`stash`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 /*!40103 SET TIME_ZONE=IFNULL(@OLD_TIME_ZONE, 'system') */;
 /*!40101 SET SQL_MODE=IFNULL(@OLD_SQL_MODE, '') */;
