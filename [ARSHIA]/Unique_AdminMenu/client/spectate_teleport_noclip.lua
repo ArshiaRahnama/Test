@@ -252,7 +252,7 @@ function DoSpecThread()
             drawNotification("~r~Could not inspect that player")
             return
           end
-          SendNUIMessage({ type = 'inspect', data = data })
+          SendNUIMessage({ type = 'inspect', data = ResolveInspectVehicleLabels(data) })
           SetNuiFocus(true, true)
           InAdminNui = true
         end, TargetSpectate)

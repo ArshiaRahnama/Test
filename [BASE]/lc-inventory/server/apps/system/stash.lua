@@ -74,13 +74,43 @@ local function findItemSlot(stash, name)
     return nil
 end
 
-local function refreshStashViewers(stashId, exceptSource)
+local function refreshStashViewers(stashId)
     if not StashViewers[stashId] then return end
     for src in pairs(StashViewers[stashId]) do
-        if src ~= exceptSource then
-            TriggerClientEvent('lc-inventory:stashUpdated', src, stashId)
-        end
+        TriggerClientEvent('lc-inventory:stashUpdated', src, stashId)
     end
+end
+
+-------------------------------------------------------------------
+-- Item access control (rank/job-gated stashes)
+--
+-- Other resources register a checker function per stashId:
+--   exports['lc-inventory']:registerStashAccessCheck('gang_ballas_armory', function(source, itemName)
+--       -- return true if this player is allowed to take/see-unlocked this item
+--   end)
+-- If no checker is registered for a stashId, every item is accessible
+-- (unrestricted stash - the default/previous behaviour).
+-------------------------------------------------------------------
+
+local StashAccessCheckers = {}
+
+exports('registerStashAccessCheck', function(stashId, checkerFn)
+    if type(stashId) == 'string' and type(checkerFn) == 'function' then
+        StashAccessCheckers[stashId] = checkerFn
+    end
+end)
+
+exports('clearStashAccessCheck', function(stashId)
+    StashAccessCheckers[stashId] = nil
+end)
+
+local function canAccessStashItem(source, stashId, itemName)
+    local checker = StashAccessCheckers[stashId]
+    if not checker then return true end
+
+    local ok, result = pcall(checker, source, itemName)
+    if not ok then return true end -- a broken checker shouldn't lock the whole stash
+    return result and true or false
 end
 
 RegisterServerCallback('lc-inventory:getStash', function(source, cb, stashId, maxWeight, label)
@@ -95,6 +125,7 @@ RegisterServerCallback('lc-inventory:getStash', function(source, cb, stashId, ma
         local weapon = isWeaponName(item.name)
         local itemType = weapon and 'item_weapon' or 'item_standard'
         local itemLabel = weapon and ESX.GetWeaponLabel(item.name) or (GetItemLabel(item.name) or item.name)
+        local locked = not canAccessStashItem(source, stashId, item.name)
 
         table.insert(list, {
             label = itemLabel,
@@ -106,7 +137,8 @@ RegisterServerCallback('lc-inventory:getStash', function(source, cb, stashId, ma
             canRemove = false,
             usable = false,
             rare = false,
-            stash = stashId
+            stash = stashId,
+            locked = locked
         })
     end
 
@@ -190,7 +222,7 @@ AddEventHandler('lc-inventory:stashDeposit', function(stashId, itemType, name, c
     end
 
     saveStash(stashId)
-    refreshStashViewers(stashId, source)
+    refreshStashViewers(stashId)
 end)
 
 RegisterNetEvent('lc-inventory:stashWithdraw')
@@ -204,6 +236,11 @@ AddEventHandler('lc-inventory:stashWithdraw', function(stashId, itemType, name, 
     local stash = loadStash(stashId)
     local slot = findItemSlot(stash, name)
     if not slot then return end
+
+    if not canAccessStashItem(source, stashId, name) then
+        showNotification(xPlayer, Locales[Config.Language]['no_access_item'] or 'You do not have access to this item.', 'error')
+        return
+    end
 
     local item = stash.items[slot]
     count = math.min(tonumber(count) or 1, tonumber(item.count) or 1)
@@ -230,7 +267,7 @@ AddEventHandler('lc-inventory:stashWithdraw', function(stashId, itemType, name, 
     end
 
     saveStash(stashId)
-    refreshStashViewers(stashId, source)
+    refreshStashViewers(stashId)
 end)
 
 CreateThread(function()

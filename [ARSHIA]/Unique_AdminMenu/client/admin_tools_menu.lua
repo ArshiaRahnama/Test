@@ -117,18 +117,30 @@ local function DrawPlayerQuickMenu()
     if WarMenu.Button("Revive") then
         TriggerServerEvent('Unique_AdminMenu:RevivePlayer', SelectedTargetId)
     end
+
+    if WarMenu.Button("Launch Into Air") then
+        TriggerServerEvent('Unique_AdminMenu:LaunchTarget', SelectedTargetId)
+    end
 end
 
 local function DrawPlayerPunishMenu()
-    if WarMenu.Button("Kick") then
+    if AButton("btn_kick", "Kick") then
         local reason = GetUserInput("Kick reason") or ""
-        ExecuteCommand('akick ' .. SelectedTargetId .. ' ' .. reason)
+        ShowPunishmentConfirm(SelectedTargetId, "Kick", function()
+            ExecuteCommand('akick ' .. SelectedTargetId .. ' ' .. reason)
+        end)
     end
 
-    if WarMenu.Button("Ban (minutes)") then
+    if AButton("btn_ban", "Ban (minutes)") then
         local dur = GetUserInput("Minutes (or type perm)", "60") or ""
         local reason = GetUserInput("Ban reason") or ""
-        ExecuteCommand('aban ' .. SelectedTargetId .. ' ' .. dur .. ' ' .. reason)
+        ShowPunishmentConfirm(SelectedTargetId, "Ban", function()
+            ExecuteCommand('aban ' .. SelectedTargetId .. ' ' .. dur .. ' ' .. reason)
+        end)
+    end
+
+    if AButton("btn_ban_preset", "Ban (Common Reason)") then
+        OpenBanPresetMenu(SelectedTargetId)
     end
 
     if WarMenu.Button("Warn") then
@@ -136,29 +148,39 @@ local function DrawPlayerPunishMenu()
         ExecuteCommand('awarn ' .. SelectedTargetId .. ' ' .. reason)
     end
 
-    if WarMenu.Button("Send to Jail") then
+    if AButton("btn_jail", "Send to Jail") then
         local dur = tonumber(GetUserInput("Minutes", "10")) or 10
         local reason = GetUserInput("Jail reason") or ""
         if reason == "" then reason = "No reason specified" end
-        -- Real jail (movement lock + countdown), not a fake teleport --
-        -- handled by Unique_Punishment's arshia_jail:sendto (permission_level
-        -- checked server-side there too).
-        TriggerServerEvent('arshia_jail:sendto', SelectedTargetId, 'admin', dur, reason)
+        ShowPunishmentConfirm(SelectedTargetId, "Jail", function()
+            -- Real jail (movement lock + countdown), not a fake teleport - but
+            -- routed through our own server-side permission check first (see
+            -- Unique_AdminMenu:ProceedJail below), so btn_jail's level is
+            -- actually enforced, not just hidden client-side. Unique_Punishment
+            -- still does its own permission_level check too either way.
+            TriggerServerEvent('Unique_AdminMenu:RequestJail', SelectedTargetId, dur, reason)
+        end)
     end
 
     if WarMenu.Button("Release from Jail") then
         TriggerServerEvent('arshia_jail:UnjailPlayer', SelectedTargetId)
     end
 
-    if WarMenu.Button("Send to Community Service") then
+    if AButton("btn_cs", "Send to Community Service") then
         local count = tonumber(GetUserInput("Actions Count", "10")) or 10
         local reason = GetUserInput("Reason") or ""
         if reason == "" then reason = "No reason specified" end
-        TriggerServerEvent('esx_communityGGservice:sendToCommunityService', SelectedTargetId, count, reason)
+        TriggerServerEvent('Unique_AdminMenu:RequestCS', SelectedTargetId, count, reason)
     end
 
-    if WarMenu.Button("Impound Vehicle") then
-        TriggerServerEvent('Unique_AdminMenu:ImpoundTarget', SelectedTargetId)
+    if AButton("btn_impound", "Impound Vehicle") then
+        local reason = GetUserInput("Impound reason", "") or ""
+        if reason == "" then reason = "No reason specified" end
+        TriggerServerEvent('Unique_AdminMenu:ImpoundTarget', SelectedTargetId, reason)
+    end
+
+    if AButton("btn_impound_yard", "Impound Yard (Search / Release)") then
+        OpenImpoundYard()
     end
 end
 
@@ -177,7 +199,7 @@ local function DrawPlayerControlMenu()
         end
     end
 
-    if WarMenu.Button("Toggle God Mode (Target)") then
+    if AButton("btn_godmode", "Toggle God Mode (Target)") then
         TriggerServerEvent('Unique_AdminMenu:ToggleTargetGodmode', SelectedTargetId)
     end
 
@@ -208,7 +230,7 @@ local function DrawPlayerControlMenu()
         end
     end
 
-    if WarMenu.Button("Clear Inventory") then
+    if AButton("btn_clearinv", "Clear Inventory") then
         local alert = lib.alertDialog({ header = 'Clear Inventory', content = 'Remove all items from this player?', centered = true, cancel = true })
         if alert == 'confirm' then
             TriggerServerEvent('Unique_AdminMenu:ClearInventoryTarget', SelectedTargetId)
@@ -230,14 +252,14 @@ local function DrawPlayerEconMenu()
         ExecuteCommand('asetjob ' .. SelectedTargetId .. ' ' .. job .. ' ' .. grade)
     end
 
-    if WarMenu.Button("Give Money") then
+    if AButton("btn_givemoney", "Give Money") then
         local acc = GetUserInput("Account: money or bank", "money") or "money"
         local amt = GetUserInput("Amount", "1000") or "0"
         local reason = GetUserInput("Reason") or ""
         ExecuteCommand('agivemoney ' .. SelectedTargetId .. ' ' .. acc .. ' ' .. amt .. ' ' .. reason)
     end
 
-    if WarMenu.Button("Remove Money") then
+    if AButton("btn_setmoney", "Remove Money") then
         local acc = GetUserInput("Account: money or bank", "money") or "money"
         local amt = GetUserInput("Amount", "1000") or "0"
         local reason = GetUserInput("Reason") or ""
@@ -252,7 +274,7 @@ local function DrawPlayerInvestigateMenu()
                 drawNotification("~r~Could not inspect that player")
                 return
             end
-            SendNUIMessage({ type = 'inspect', data = data })
+            SendNUIMessage({ type = 'inspect', data = ResolveInspectVehicleLabels(data) })
             SetNuiFocus(true, true)
             InAdminNui = true
         end, SelectedTargetId)
@@ -277,6 +299,47 @@ local function DrawPlayerInvestigateMenu()
             TriggerServerEvent('Unique_AdminMenu:WhisperTarget', SelectedTargetId, msg)
         end
     end
+
+    if WarMenu.Button("Flag Player") then
+        local note = GetUserInput("Flag reason (reminds all on-duty admins while they're online)", "", 200) or ""
+        if note ~= "" then
+            TriggerServerEvent('Unique_AdminMenu:SetFlag', SelectedTargetId, note)
+        end
+    end
+
+    if WarMenu.Button("Unflag Player") then
+        TriggerServerEvent('Unique_AdminMenu:ClearFlag', SelectedTargetId)
+    end
+
+    if WarMenu.Button("Who Was In Voice Range?") then
+        local range = tonumber(GetUserInput("Range (meters)", "20")) or 20
+        ESX.TriggerServerCallback('Unique_AdminMenu:GetVoiceProximity', function(nearby)
+            if #nearby == 0 then
+                drawNotification("~y~No one else was tracked nearby (or no recent position data yet).")
+                return
+            end
+            local lines = {}
+            for _, p in ipairs(nearby) do
+                lines[#lines + 1] = ("[%s] %s - %sm (%ss ago)"):format(p.id, p.name, p.distance, p.ageSeconds)
+            end
+            SendNUIMessage({ type = 'proximity', data = { title = 'Voice Proximity Check', lines = lines } })
+            SetNuiFocus(true, true)
+            InAdminNui = true
+        end, SelectedTargetId, range)
+    end
+
+    if WarMenu.Button("Chat Archive (Search)") then
+        local query = GetUserInput("Search text (empty = show recent 200)", "") or ""
+        ESX.TriggerServerCallback('Unique_AdminMenu:GetPlayerChatArchive', function(rows)
+            local lines = {}
+            for _, r in ipairs(rows) do
+                lines[#lines + 1] = ("[%s] %s"):format(r.created_at, r.message)
+            end
+            SendNUIMessage({ type = 'proximity', data = { title = 'Chat Archive', lines = lines } })
+            SetNuiFocus(true, true)
+            InAdminNui = true
+        end, SelectedTargetId, query)
+    end
 end
 
 -- --------------------------------------------------------- VEHICLE TOOLS ---
@@ -284,10 +347,19 @@ end
 local function DrawVehicleToolsMenu()
     WarMenu.MenuButton('» Spawn & Give', 'vehicle_spawn')
     WarMenu.MenuButton('» Nearby Vehicle Actions', 'vehicle_nearby')
+
+    if WarMenu.Button("Get In Nearest Vehicle") then
+        GetIntoNearestVehicle()
+    end
+
+    if WarMenu.Button("Set Current Vehicle Livery") then
+        local livery = tonumber(GetUserInput("Livery number", "0")) or 0
+        SetCurrentVehicleLivery(livery)
+    end
 end
 
 local function DrawVehicleSpawnMenu()
-    if WarMenu.Button("Spawn Vehicle") then
+    if AButton("btn_spawnveh", "Spawn Vehicle") then
         local model = GetUserInput("Vehicle model name", "adder") or ""
         if model ~= "" then
             local plate = GetUserInput("Plate (optional)", "") or ""
@@ -348,14 +420,14 @@ local function DrawWorldToolsMenu()
 end
 
 local function DrawWorldWeatherMenu()
-    if WarMenu.Button("Set Weather") then
+    if AButton("btn_weather", "Set Weather") then
         local weather = GetUserInput(table.concat(WeatherPresets, "/"), "CLEAR") or ""
         if weather ~= "" then
             TriggerServerEvent('Unique_AdminMenu:SetWeather', weather:upper())
         end
     end
 
-    if WarMenu.Button("Set Time") then
+    if AButton("btn_time", "Set Time") then
         local hour = GetUserInput("Hour (0-23)", "12") or "12"
         local minute = GetUserInput("Minute (0-59)", "0") or "0"
         TriggerServerEvent('Unique_AdminMenu:SetTime', hour, minute)
@@ -427,9 +499,13 @@ end
 local function DrawServerToolsMenu()
     WarMenu.MenuButton('» Communication', 'server_comms')
     WarMenu.MenuButton('» Reports & Logs', 'server_reports')
-    WarMenu.MenuButton('» Bulk Actions (All Players)', 'server_bulk')
 
-    if WarMenu.Button("⚠ Restart Resource") then
+    local bulkRequired = ButtonPerms['btn_bulk']
+    if not bulkRequired or MyPermissionLevel >= bulkRequired then
+        WarMenu.MenuButton('» Bulk Actions (All Players)', 'server_bulk')
+    end
+
+    if AButton("btn_restart", "⚠ Restart Resource") then
         local res = GetUserInput("Resource to restart (requires ACE: command.arestart)") or ""
         if res ~= "" then
             ExecuteCommand('arestart ' .. res)
@@ -507,12 +583,40 @@ local function DrawServerReportsMenu()
         OpenOnlinePlayersPanel()
     end
 
+    if WarMenu.Button("New Players") then
+        OpenNewPlayersPanel()
+    end
+
     if WarMenu.Button("Dashboard") then
         OpenDashboardPanel()
     end
 
-    if WarMenu.Button("Ban History Search") then
+    if WarMenu.Button("Economy Health Chart") then
+        OpenEconomyChart()
+    end
+
+    if MyPermissionLevel >= 5 and WarMenu.Button("⚙ Button Permissions") then
+        OpenButtonPermsPanel()
+    end
+
+    if AButton("btn_unban", "Ban History Search") then
         OpenBanSearch()
+    end
+
+    if AButton("btn_dutyhist", "Duty History Search") then
+        OpenDutyHistory()
+    end
+
+    if AButton("btn_appeals", "Review Ban Appeals") then
+        OpenBanAppeals()
+    end
+
+    if AButton("btn_transfer", "⚠ Character Transfer (Support)") then
+        OpenCharacterTransfer()
+    end
+
+    if AButton("btn_faction", "Faction Treasury Audit") then
+        OpenFactionAudit()
     end
 end
 
@@ -628,12 +732,19 @@ AddEventHandler('Unique_AdminMenu:ApplyVehicleAction', function(action)
 end)
 
 RegisterNetEvent('Unique_AdminMenu:ApplyImpound')
-AddEventHandler('Unique_AdminMenu:ApplyImpound', function()
+AddEventHandler('Unique_AdminMenu:ApplyImpound', function(reason, adminName)
     local ped = PlayerPedId()
     if IsPedInAnyVehicle(ped, false) then
-        DeleteEntity(GetVehiclePedIsIn(ped, false))
+        local vehicle = GetVehiclePedIsIn(ped, false)
+        local plate = GetVehicleNumberPlateText(vehicle)
+        local internalName = GetDisplayNameFromVehicleModel(GetEntityModel(vehicle))
+        local label = GetLabelText(internalName)
+        local modelLabel = (label ~= 'NULL' and label ~= '') and label or internalName
+
+        DeleteEntity(vehicle)
+        TriggerServerEvent('Unique_AdminMenu:ImpoundRecorded', plate, modelLabel, reason, adminName)
     end
-    drawNotification("~b~Your vehicle has been impounded by an admin")
+    drawNotification("~b~Your vehicle has been impounded by an admin" .. (reason and (" - " .. reason) or ""))
 end)
 
 RegisterNetEvent('Unique_AdminMenu:ApplyWeather')

@@ -39,7 +39,7 @@ local TargetGodmode = {}
 RegisterServerEvent('Unique_AdminMenu:ToggleTargetGodmode')
 AddEventHandler('Unique_AdminMenu:ToggleTargetGodmode', function(targetId)
     local source = source
-    if not IsOnDutyAdmin(source) then return end
+    if not IsOnDutyAdminFor(source, 'btn_godmode') then DenyButtonAccess(source, 'btn_godmode') return end
     targetId = tonumber(targetId)
     if not targetId or not ESX.GetPlayerFromId(targetId) then return end
 
@@ -148,22 +148,75 @@ end)
 
 ESX.RegisterServerCallback('Unique_AdminMenu:GetOnlinePlayers', function(source, cb)
     if not IsOnDutyAdmin(source) then cb({}) return end
-    local list = {}
-    for _, playerId in ipairs(ESX.GetPlayers()) do
-        local xPlayer = ESX.GetPlayerFromId(playerId)
-        if xPlayer then
-            local sessionSeconds = SessionStart[playerId] and (os.time() - SessionStart[playerId]) or 0
-            list[#list + 1] = {
-                id = playerId,
-                name = GetPlayerName(playerId),
-                ping = GetPlayerPing(playerId),
-                job = xPlayer.job and (xPlayer.job.label or xPlayer.job.name) or 'n/a',
-                sessionMinutes = math.floor(sessionSeconds / 60),
-            }
+    MySQL.Async.fetchAll('SELECT identifier, note FROM admin_player_flags', {}, function(flagRows)
+        local flagged = {}
+        for _, f in ipairs(flagRows or {}) do flagged[f.identifier] = f.note end
+
+        local list, identifiers = {}, {}
+        for _, playerId in ipairs(ESX.GetPlayers()) do
+            local xPlayer = ESX.GetPlayerFromId(playerId)
+            if xPlayer then
+                local sessionSeconds = SessionStart[playerId] and (os.time() - SessionStart[playerId]) or 0
+                list[#list + 1] = {
+                    id = playerId,
+                    name = GetPlayerName(playerId),
+                    ping = GetPlayerPing(playerId),
+                    job = xPlayer.job and (xPlayer.job.label or xPlayer.job.name) or 'n/a',
+                    sessionMinutes = math.floor(sessionSeconds / 60),
+                    flagNote = flagged[xPlayer.identifier],
+                    identifier = xPlayer.identifier,
+                }
+                identifiers[#identifiers + 1] = xPlayer.identifier
+            end
         end
-    end
-    table.sort(list, function(a, b) return a.id < b.id end)
-    cb(list)
+        table.sort(list, function(a, b) return a.id < b.id end)
+
+        GetTrustScoresBatch(identifiers, function(scores)
+            for _, p in ipairs(list) do p.trustScore = scores[p.identifier] end
+            cb(list)
+        end)
+    end)
+end)
+
+-- Same data as GetOnlinePlayers, just sorted by most-recently-connected
+-- (SessionStart is already tracked for the online-playtime panel above).
+ESX.RegisterServerCallback('Unique_AdminMenu:GetNewPlayers', function(source, cb)
+    if not IsOnDutyAdmin(source) then cb({}) return end
+    MySQL.Async.fetchAll('SELECT identifier, note FROM admin_player_flags', {}, function(flagRows)
+        local flagged = {}
+        for _, f in ipairs(flagRows or {}) do flagged[f.identifier] = f.note end
+
+        local list, identifiers = {}, {}
+        for _, playerId in ipairs(ESX.GetPlayers()) do
+            local xPlayer = ESX.GetPlayerFromId(playerId)
+            if xPlayer then
+                local joinedAt = SessionStart[playerId] or 0
+                local sessionSeconds = joinedAt > 0 and (os.time() - joinedAt) or 0
+                list[#list + 1] = {
+                    id = playerId,
+                    name = GetPlayerName(playerId),
+                    ping = GetPlayerPing(playerId),
+                    job = xPlayer.job and (xPlayer.job.label or xPlayer.job.name) or 'n/a',
+                    sessionMinutes = math.floor(sessionSeconds / 60),
+                    joinedAt = joinedAt,
+                    flagNote = flagged[xPlayer.identifier],
+                    identifier = xPlayer.identifier,
+                }
+                identifiers[#identifiers + 1] = xPlayer.identifier
+            end
+        end
+        table.sort(list, function(a, b) return a.joinedAt > b.joinedAt end)
+        -- Most recent 20 joins only - this is meant for "who just connected",
+        -- not a full roster (that's what Online Players is for).
+        while #list > 20 do table.remove(list) end
+
+        local trimmedIds = {}
+        for _, p in ipairs(list) do trimmedIds[#trimmedIds + 1] = p.identifier end
+        GetTrustScoresBatch(trimmedIds, function(scores)
+            for _, p in ipairs(list) do p.trustScore = scores[p.identifier] end
+            cb(list)
+        end)
+    end)
 end)
 
 -- --------------------------------------------------------------- VEHICLE ---
@@ -306,25 +359,52 @@ ESX.RegisterServerCallback('Unique_AdminMenu:GetDashboard', function(source, cb)
                                 actionsByName[row.admin_name] = row.cnt
                             end
 
-                            local staff = {}
-                            for i, src in ipairs(onlineAdmins) do
-                                local start = DutySessionStart and DutySessionStart[src]
-                                staff[#staff + 1] = {
-                                    name = names[i],
-                                    source = src,
-                                    dutyMinutes = start and math.floor((os.time() - start) / 60) or 0,
-                                    actions = actionsByName[names[i]] or 0,
-                                }
-                            end
-                            table.sort(staff, function(a, b) return a.dutyMinutes > b.dutyMinutes end)
+                            MySQL.Async.fetchAll(
+                                ("SELECT `admin_name`, AVG(`rating`) AS avg_rating, COUNT(*) AS cnt FROM `admin_report_ratings` WHERE `admin_name` IN (%s) GROUP BY `admin_name`"):format(table.concat(placeholders, ',')),
+                                params,
+                                function(ratingRows)
+                                    local ratingByName = {}
+                                    for _, row in ipairs(ratingRows or {}) do
+                                        ratingByName[row.admin_name] = { avg = row.avg_rating, cnt = row.cnt }
+                                    end
 
-                            cb({
-                                richest = richest or {},
-                                mostWarned = warned or {},
-                                resources = resources,
-                                onlineCount = #ESX.GetPlayers(),
-                                staff = staff,
-                            })
+                                    MySQL.Async.fetchAll(
+                                        ("SELECT `admin_name`, AVG(`response_seconds`) AS avg_seconds, COUNT(*) AS cnt FROM `admin_report_response_times` WHERE `admin_name` IN (%s) GROUP BY `admin_name`"):format(table.concat(placeholders, ',')),
+                                        params,
+                                        function(responseRows)
+                                            local responseByName = {}
+                                            for _, row in ipairs(responseRows or {}) do
+                                                responseByName[row.admin_name] = { avgSeconds = row.avg_seconds, cnt = row.cnt }
+                                            end
+
+                                            local staff = {}
+                                            for i, src in ipairs(onlineAdmins) do
+                                                local start = DutySessionStart and DutySessionStart[src]
+                                                local r = ratingByName[names[i]]
+                                                local rt = responseByName[names[i]]
+                                                staff[#staff + 1] = {
+                                                    name = names[i],
+                                                    source = src,
+                                                    dutyMinutes = start and math.floor((os.time() - start) / 60) or 0,
+                                                    actions = actionsByName[names[i]] or 0,
+                                                    satisfaction = r and math.floor((r.avg / 3) * 100) or nil,
+                                                    ratingCount = r and r.cnt or 0,
+                                                    avgResponseMinutes = rt and math.floor(rt.avgSeconds / 60) or nil,
+                                                }
+                                            end
+                                            table.sort(staff, function(a, b) return a.dutyMinutes > b.dutyMinutes end)
+
+                                            cb({
+                                                richest = richest or {},
+                                                mostWarned = warned or {},
+                                                resources = resources,
+                                                onlineCount = #ESX.GetPlayers(),
+                                                staff = staff,
+                                            })
+                                        end
+                                    )
+                                end
+                            )
                         end
                     )
                 end
@@ -386,7 +466,7 @@ end)
 RegisterServerEvent('Unique_AdminMenu:ClearInventoryTarget')
 AddEventHandler('Unique_AdminMenu:ClearInventoryTarget', function(targetId)
     local source = source
-    if not IsOnDutyAdmin(source) then return end
+    if not IsOnDutyAdminFor(source, 'btn_clearinv') then DenyButtonAccess(source, 'btn_clearinv') return end
     local Target = ESX.GetPlayerFromId(tonumber(targetId))
     if not Target then return end
 
@@ -421,7 +501,7 @@ local ServerFreezeState = false
 RegisterServerEvent('Unique_AdminMenu:BulkAction')
 AddEventHandler('Unique_AdminMenu:BulkAction', function(action, reason)
     local source = source
-    if not IsOnDutyAdmin(source) then return end
+    if not IsOnDutyAdminFor(source, 'btn_bulk') then DenyButtonAccess(source, 'btn_bulk') return end
 
     if action == 'freezeall' then
         ServerFreezeState = not ServerFreezeState
@@ -456,4 +536,46 @@ AddEventHandler('Unique_AdminMenu:LogClientAction', function(action, details)
     local source = source
     if not IsOnDutyAdmin(source) then return end
     LogAdminAction(source, tostring(action), tostring(details or ''))
+end)
+
+-- --------------------------------------------------- JAIL / CS RELAY ---
+-- Real per-button enforcement for Jail/CS: check here (correct `source`,
+-- since this IS a genuine client->server trigger), then tell the SAME
+-- admin's client to fire the actual cross-resource event itself. We can't
+-- just re-fire arshia_jail:sendto / esx_communityGGservice:sendToCommunityService
+-- directly from here - those events expect `source` to be the real
+-- triggering client, which only holds if the trigger came from that
+-- client's own TriggerServerEvent call.
+
+RegisterServerEvent('Unique_AdminMenu:RequestJail')
+AddEventHandler('Unique_AdminMenu:RequestJail', function(targetId, minutes, reason)
+    local source = source
+    if not IsOnDutyAdminFor(source, 'btn_jail') then DenyButtonAccess(source, 'btn_jail') return end
+    if not ESX.GetPlayerFromId(tonumber(targetId)) then return end
+    TriggerClientEvent('Unique_AdminMenu:ProceedJail', source, targetId, minutes, reason)
+end)
+
+RegisterServerEvent('Unique_AdminMenu:RequestCS')
+AddEventHandler('Unique_AdminMenu:RequestCS', function(targetId, count, reason)
+    local source = source
+    if not IsOnDutyAdminFor(source, 'btn_cs') then DenyButtonAccess(source, 'btn_cs') return end
+    if not ESX.GetPlayerFromId(tonumber(targetId)) then return end
+    TriggerClientEvent('Unique_AdminMenu:ProceedCS', source, targetId, count, reason)
+end)
+
+-- ---------------------------------------------------------- LAUNCH ---
+-- Launches a TARGET player into the air. Ragdoll-slap (existing /slap
+-- command in main.lua) already covers the ragdoll+damage version; this is
+-- the separate "just launch them upward" one.
+
+RegisterServerEvent('Unique_AdminMenu:LaunchTarget')
+AddEventHandler('Unique_AdminMenu:LaunchTarget', function(targetId)
+    local source = source
+    if not IsOnDutyAdmin(source) then return end
+    targetId = tonumber(targetId)
+    local Target = ESX.GetPlayerFromId(targetId)
+    if not Target then return end
+
+    TriggerClientEvent('Unique_AdminMenu:ApplyLaunch', targetId)
+    LogAdminAction(source, "launch", ("target: %s"):format(GetPlayerName(targetId)), Target.identifier, GetPlayerName(targetId))
 end)

@@ -9,6 +9,71 @@ let totalSlots = 50;
 
 const maxWeightBarValue = 28.2;
 
+function filterInventoryItems(query) {
+    query = (query || '').trim().toLowerCase();
+
+    $("#left-inventory .item-info").each(function() {
+        var itemEl = $(this).find('.item');
+        var itemData = itemEl.data('item');
+
+        if (!itemData || !query) {
+            $(this).removeClass('search-hidden');
+            return;
+        }
+
+        var label = (itemData.label || itemData.name || '').toLowerCase();
+        if (label.indexOf(query) === -1) {
+            $(this).addClass('search-hidden');
+        } else {
+            $(this).removeClass('search-hidden');
+        }
+    });
+}
+
+$(document).on('input', '#itemSearch', function() {
+    filterInventoryItems($(this).val());
+});
+
+function initItemDraggable() {
+    $('.item').draggable({
+        helper: 'clone',
+        appendTo: 'body',
+        zIndex: 99999,
+        revert: 'invalid',
+        start: function(event, ui) {
+            if (disabled) {
+                return false;
+            }
+            if ($(this).hasClass('locked')) {
+                return false;
+            }
+            itemData = $(this).data("item");
+
+            if (itemData !== undefined) { 
+                $(this).css('background-image', 'none');
+                $("#drop").addClass("disabled");
+                $("#give").addClass("disabled");
+                $("#rename").addClass("disabled");
+                $("#use").addClass("disabled");
+            }
+        },
+        stop: function() {
+            itemData = $(this).data("item");
+
+            if (itemData !== undefined) { 
+                image = itemData.image;
+                $(this).css('background-image', 'url(' + image + ')');
+                // $(this).css('background-image', itemData.image);
+                $("#drop").removeClass("disabled");
+                $("#use").removeClass("disabled");
+                $("#rename").removeClass("disabled");
+                $("#give").removeClass("disabled");
+            }
+
+        }
+    });
+}
+
 window.addEventListener("message", function(event) {
     const weightBar = $('#weightBar')
     const weightText = $('#weight');
@@ -40,6 +105,7 @@ window.addEventListener("message", function(event) {
 
         $(".item").remove();
         $(".menu").hide();
+        $("#itemSearch").val('');
 
         
         weightBarCoffre.css("width", 0 + "vw");     
@@ -73,40 +139,8 @@ window.addEventListener("message", function(event) {
         });
 
         
-        $('.item').draggable({
-            helper: 'clone',
-            appendTo: 'body',
-            zIndex: 99999,
-            revert: 'invalid',
-            start: function(event, ui) {
-                if (disabled) {
-                    return false;
-                }
-                itemData = $(this).data("item");
-
-                if (itemData !== undefined) { 
-                    $(this).css('background-image', 'none');
-                    $("#drop").addClass("disabled");
-                    $("#give").addClass("disabled");
-                    $("#rename").addClass("disabled");
-                    $("#use").addClass("disabled");
-                }
-            },
-            stop: function() {
-                itemData = $(this).data("item");
-
-                if (itemData !== undefined) { 
-                    image = itemData.image;
-                    $(this).css('background-image', 'url(' + image + ')');
-                    // $(this).css('background-image', itemData.image);
-                    $("#drop").removeClass("disabled");
-                    $("#use").removeClass("disabled");
-                    $("#rename").removeClass("disabled");
-                    $("#give").removeClass("disabled");
-                }
-
-            }
-        }); 
+        initItemDraggable();
+        filterInventoryItems($('#itemSearch').val());
 
     } else if (event.data.action == "setSecondInventoryItems") {
 
@@ -366,7 +400,7 @@ function secondInventorySetup(items) {
             item.image = '';
           }
         
-          $("#right-inventory").append('<div class="item-info"><div id="itemOther-' + index + '" class="item" style = "background-image: url(' + item.image + ')"><div class="item-count">' + count + '</div><div class="item-name">' + item.label + '</div></div><div class="item-name-bg"></div></div>');
+          $("#right-inventory").append('<div class="item-info"><div id="itemOther-' + index + '" class="item' + (item.locked ? ' locked' : '') + '" style = "background-image: url(' + item.image + ')">' + (item.locked ? '<i class="fas fa-lock lock-icon"></i>' : '') + '<div class="item-count">' + count + '</div><div class="item-name">' + item.label + '</div></div><div class="item-name-bg"></div></div>');
 
           $('#itemOther-' + index).data('item', item);
           $('#itemOther-' + index).data('inventory', "second");
@@ -376,6 +410,8 @@ function secondInventorySetup(items) {
             let currentIndex = itemsCount + i;
             $("#right-inventory").append('<div class="item-info"><div id="itemOther-' + currentIndex + '" class="item"></div><div class="item-name-bg"></div></div>');
         }
+
+        initItemDraggable();
 
       } else {
         // Gérer le cas où items n'est pas un tableau

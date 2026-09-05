@@ -77,92 +77,108 @@ if Config.Core == "ESX" then
         end)
     end)
 
-    -- IRV-inventory (like ox_inventory before it) can't create a new item
-    -- per drawable/texture at runtime, so each purchased piece becomes an
-    -- instance of the matching clothing_<type> item, distinguished by its
-    -- own slot-level `info` metadata instead of its own item name (see the
-    -- info/index support patched into essentialmode's player class).
+    -- Each drawable/texture combo is its own real item (e.g.
+    -- "clothing_tshirt_5_2"), not one generic "clothing_tshirt" item with
+    -- per-instance metadata -- this essentialmode's addInventoryItem only
+    -- takes (name, count), it has no metadata/slot-info support at all, so
+    -- the metadata approach never actually worked (info was always nil).
+    --
+    -- ESX here is the actual shared object (same table essentialmode itself
+    -- uses - esx:getSharedObject passes a live reference, not a copy, for
+    -- same-side server events), so registering new entries directly into
+    -- ESX.Items from here makes them immediately valid for
+    -- addInventoryItem/getInventoryItem/GetItemLabel etc, exactly like any
+    -- item essentialmode loaded from the `items` table itself.
+    local function clotheItemName(clotheType, drawable, texture)
+        return ('clothing_%s_%d_%d'):format(clotheType, drawable, texture)
+    end
+
+    local function wornClotheItemName(clotheType, drawable, texture)
+        return ('worn_clothing_%s_%d_%d'):format(clotheType, drawable, texture)
+    end
+
+    -- Registers both the "wear" handler for clothing_<type>_<d>_<t> and the
+    -- matching "take off" handler for worn_clothing_<type>_<d>_<t>, and adds
+    -- both names to ESX.Items (in-memory) + the `items` table (persisted,
+    -- so they still exist after essentialmode restarts and reloads its
+    -- items from the DB). Safe to call repeatedly for the same variant -
+    -- guarded so it only does real work the first time.
+    local RegisteredClotheVariants = {}
+    local function ensureClotheVariantRegistered(clotheType, drawable, texture)
+        local key = clotheType .. '_' .. drawable .. '_' .. texture
+        if RegisteredClotheVariants[key] then return end
+        RegisteredClotheVariants[key] = true
+
+        local itemName = clotheItemName(clotheType, drawable, texture)
+        local wornItemName = wornClotheItemName(clotheType, drawable, texture)
+        local label = (ClotheTypeLabel[clotheType] or clotheType) .. (' #%d'):format(drawable)
+        local wornLabel = 'Worn: ' .. label
+
+        for _, def in ipairs({ { itemName, label }, { wornItemName, wornLabel } }) do
+            local name, itemLabel = def[1], def[2]
+            if not ESX.Items[name] then
+                ESX.Items[name] = { name = name, label = itemLabel, limit = -1, rare = false, canRemove = true }
+                MySQL.Async.execute('INSERT IGNORE INTO items (name, label, `limit`, rare, can_remove) VALUES (?, ?, -1, 0, 1)', { name, itemLabel })
+            end
+        end
+
+        ESX.RegisterUsableItem(wornItemName, function(source)
+            local xPlayer = ESX.GetPlayerFromId(source)
+            if not xPlayer then return end
+            if not xPlayer.getInventoryItem(wornItemName) or xPlayer.getInventoryItem(wornItemName).count <= 0 then return end
+
+            TriggerClientEvent('unique_clothestore:takeOffClotheItem', source, clotheType)
+            xPlayer.removeInventoryItem(wornItemName, 1)
+            xPlayer.addInventoryItem(itemName, 1)
+            TriggerClientEvent('ox_lib:notify', source, { description = ('درآوردی: %s'):format(label), type = 'inform' })
+        end)
+
+        ESX.RegisterUsableItem(itemName, function(source)
+            local xPlayer = ESX.GetPlayerFromId(source)
+            if not xPlayer then return end
+            if not xPlayer.getInventoryItem(itemName) or xPlayer.getInventoryItem(itemName).count <= 0 then return end
+
+            -- if a piece of the same type is already worn, take it off
+            -- first so you never end up with two worn items for one slot
+            for otherKey in pairs(RegisteredClotheVariants) do
+                local otherType = otherKey:match('^(.+)_%d+_%d+$')
+                if otherType == clotheType then
+                    local otherDrawable, otherTexture = otherKey:match('_(%d+)_(%d+)$')
+                    local otherWornName = wornClotheItemName(clotheType, tonumber(otherDrawable), tonumber(otherTexture))
+                    local wornItem = xPlayer.getInventoryItem(otherWornName)
+                    if wornItem and wornItem.count > 0 then
+                        xPlayer.removeInventoryItem(otherWornName, wornItem.count)
+                        xPlayer.addInventoryItem(clotheItemName(clotheType, tonumber(otherDrawable), tonumber(otherTexture)), wornItem.count)
+                    end
+                end
+            end
+
+            xPlayer.removeInventoryItem(itemName, 1)
+            xPlayer.addInventoryItem(wornItemName, 1)
+            TriggerClientEvent('unique_clothestore:wearClotheItem', source, clotheType, drawable, texture)
+            TriggerClientEvent('ox_lib:notify', source, { description = ('پوشیدی: %s'):format(label), type = 'success' })
+        end)
+    end
+
+    -- Re-register every variant this system has ever created (persisted in
+    -- the `items` table) so their usable-item handlers exist again after a
+    -- restart - ESX.UsableItemsCallbacks is in-memory only.
+    CreateThread(function()
+        local rows = MySQL.query.await("SELECT name FROM items WHERE name LIKE 'clothing\\_%'", {}) or {}
+        for _, row in ipairs(rows) do
+            local clotheType, drawable, texture = row.name:match('^clothing_([a-z]+)_(%d+)_(%d+)$')
+            if clotheType and KnownClotheTypes[clotheType] then
+                ensureClotheVariantRegistered(clotheType, tonumber(drawable), tonumber(texture))
+            end
+        end
+    end)
+
     local function giveClotheItem(source, clotheType, drawable, texture)
         local xPlayer = ESX.GetPlayerFromId(source)
         if not xPlayer then return end
-        local label = (ClotheTypeLabel[clotheType] or clotheType) .. (' #%d'):format(drawable)
 
-        xPlayer.addInventoryItem('clothing_' .. clotheType, 1, nil, {
-            label = label,
-            clotheType = clotheType,
-            drawable = drawable,
-            texture = texture
-        })
-    end
-
-    -- Wearing/taking off clothing now goes through essentialmode's own
-    -- ESX.RegisterUsableItem chain (patched to also receive the item's
-    -- slot index + `.info` metadata -- see essentialmode/server/main.lua's
-    -- esx:useItem and functions.lua's ESX.UseItem), since IRV-inventory's
-    -- "use" NUI action calls that same esx:useItem event under the hood
-    -- (sending the slot index, which the patched handler now resolves).
-    local function takeOffClothing(source, clotheType)
-        local xPlayer = ESX.GetPlayerFromId(source)
-        if not xPlayer then return false end
-
-        local wornItemName = 'worn_clothing_' .. clotheType
-        local item, index
-        for i = 1, #xPlayer.inventory, 1 do
-            if xPlayer.inventory[i].name == wornItemName then
-                item, index = xPlayer.inventory[i], i
-                break
-            end
-        end
-        if not item then return false end
-
-        local wornMeta = item.info or {}
-        TriggerClientEvent('unique_clothestore:takeOffClotheItem', source, wornMeta.clotheType or clotheType)
-        xPlayer.removeInventoryItem(wornItemName, item.count, index)
-        xPlayer.addInventoryItem('clothing_' .. clotheType, 1, nil, {
-            label = wornMeta.label,
-            clotheType = wornMeta.clotheType or clotheType,
-            drawable = wornMeta.drawable,
-            texture = wornMeta.texture or 0
-        })
-        return true, wornMeta.label
-    end
-
-    -- Registers each known clothing type's worn_clothing_<type> (take off)
-    -- and clothing_<type> (wear) as a proper usable item. The callback
-    -- gets (source, index, info) directly from the patched esx:useItem
-    -- chain -- no more guessing item/inventory/slot from shifting export
-    -- arguments the way the old ox_inventory export hack had to.
-    for clotheType in pairs(ClotheTypeLabel) do
-        ESX.RegisterUsableItem('worn_clothing_' .. clotheType, function(source)
-            local ok, label = takeOffClothing(source, clotheType)
-            if ok then
-                TriggerClientEvent('ox_lib:notify', source, { description = ('درآوردی: %s'):format(label or clotheType), type = 'inform' })
-            end
-        end)
-
-        ESX.RegisterUsableItem('clothing_' .. clotheType, function(source, index, info)
-            if not info or not info.drawable then return end
-
-            -- If a piece of the same type is already worn, take it off
-            -- first (back into the inventory) so you never end up with two
-            -- different "worn_clothing_<type>" placeholders for the same
-            -- clothing slot on the ped.
-            takeOffClothing(source, clotheType)
-
-            TriggerClientEvent('unique_clothestore:wearClotheItem', source, info.clotheType or clotheType, info.drawable, info.texture or 0)
-
-            local xPlayer = ESX.GetPlayerFromId(source)
-            if xPlayer then
-                xPlayer.addInventoryItem('worn_clothing_' .. clotheType, 1, nil, {
-                    label = info.label,
-                    clotheType = info.clotheType or clotheType,
-                    drawable = info.drawable,
-                    texture = info.texture or 0
-                })
-            end
-
-            TriggerClientEvent('ox_lib:notify', source, { description = ('پوشیدی: %s'):format(info.label or clotheType), type = 'success' })
-        end)
+        ensureClotheVariantRegistered(clotheType, drawable, texture)
+        xPlayer.addInventoryItem(clotheItemName(clotheType, drawable, texture), 1)
     end
 
     -- The "Wardrobe Remote" — a nicer way to manage worn clothes than

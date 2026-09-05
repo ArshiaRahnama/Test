@@ -10,10 +10,12 @@ AddEventHandler('Unique_AdminMenu:SyncAdminTags', function(tags)
 end)
 
 -- Tell the server whenever our own duty state flips, so it can recompute
--- and rebroadcast the list.
-AddEventHandler('esx_aduty:ChangeMenuStatus', function()
+-- and rebroadcast the list, and log the persistent duty session
+-- (server/duty_log.lua).
+AddEventHandler('esx_aduty:ChangeMenuStatus', function(isOnDuty)
     Citizen.SetTimeout(0, function()
         TriggerServerEvent('Unique_AdminMenu:UpdateAdminTag')
+        TriggerServerEvent('Unique_AdminMenu:DutyLogToggle', isOnDuty and true or false)
     end)
 end)
 

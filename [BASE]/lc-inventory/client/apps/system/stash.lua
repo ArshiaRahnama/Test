@@ -104,23 +104,17 @@ function HandleStashPut(data, cb)
                 SetCurrentPedWeapon(playerPed, 'WEAPON_UNARMED', true)
             end
             TriggerServerEvent('lc-inventory:stashDeposit', CurrentStashId, 'item_weapon', item.name, 1)
-            Wait(150)
-            LoadStashData(CurrentStashId, StashData.maxWeight, StashData.label)
         end
     elseif item.type == 'item_account' then
         KeyboardUtils.use(Locales[Config.Language]['quantite'], function(result)
             if result ~= nil and tonumber(result) then
                 TriggerServerEvent('lc-inventory:stashDeposit', CurrentStashId, 'item_account', item.name, tonumber(result))
-                Wait(150)
-                LoadStashData(CurrentStashId, StashData.maxWeight, StashData.label)
             end
         end)
     elseif item.type == 'item_standard' then
         KeyboardUtils.use(Locales[Config.Language]['quantite'], function(result)
             if result ~= nil and tonumber(result) then
                 TriggerServerEvent('lc-inventory:stashDeposit', CurrentStashId, 'item_standard', item.name, tonumber(result))
-                Wait(150)
-                LoadStashData(CurrentStashId, StashData.maxWeight, StashData.label)
             end
         end)
     end
@@ -134,23 +128,17 @@ function HandleStashTake(data, cb)
     if item.type == 'item_weapon' then
         if not Config.WeaponNoGive[item.name] then
             TriggerServerEvent('lc-inventory:stashWithdraw', CurrentStashId, 'item_weapon', item.name, 1)
-            Wait(150)
-            LoadStashData(CurrentStashId, StashData.maxWeight, StashData.label)
         end
     elseif item.type == 'item_account' then
         KeyboardUtils.use(Locales[Config.Language]['quantite'], function(result)
             if result ~= nil and tonumber(result) then
                 TriggerServerEvent('lc-inventory:stashWithdraw', CurrentStashId, 'item_account', item.name, tonumber(result))
-                Wait(150)
-                LoadStashData(CurrentStashId, StashData.maxWeight, StashData.label)
             end
         end)
     elseif item.type == 'item_standard' then
         KeyboardUtils.use(Locales[Config.Language]['quantite'], function(result)
             if result ~= nil and tonumber(result) then
                 TriggerServerEvent('lc-inventory:stashWithdraw', CurrentStashId, 'item_standard', item.name, tonumber(result))
-                Wait(150)
-                LoadStashData(CurrentStashId, StashData.maxWeight, StashData.label)
             end
         end)
     end

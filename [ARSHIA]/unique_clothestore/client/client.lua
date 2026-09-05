@@ -1948,13 +1948,10 @@ Citizen.CreateThread(function()
                     DrawMarker(1, v.coords.x, v.coords.y, v.coords.z, 0.0, 0.0, 0.0, 0, 0.0, 0.0, 2.0,2.0,0.3, 0, 213, 255, 100, false, false, 2, false, false, false, false)
                     Sleep = 5
                 end
-                if dst < 5 then
+                if dst < 3.0 then
                     ESX.ShowHelpNotification("Press ~INPUT_CONTEXT~ To Open ClotheShop")
-                end
-                if dst < 2 then
+
                     if IsControlJustReleased(0, 38) then
-
-
                         TriggerEvent('unique_clothestore:openMenu', v)
                     end
                 end

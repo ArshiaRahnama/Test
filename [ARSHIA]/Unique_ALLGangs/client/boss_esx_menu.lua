@@ -439,13 +439,12 @@ end
 -- whole armory) - toggles Config.ArmoryItems entries for a rank via
 -- FMGangs:EditItemAccess (server/Gangs.lua).
 --
--- NOTE: this is currently NON-FUNCTIONAL for actually blocking a move.
--- It used to be enforced by a real ox_inventory swapItems hook that
--- could cancel an item move server-side; IRV-inventory has no
--- hook/interceptor system for item movement, so there is currently no
--- way to enforce this. The toggles below still save (so the UI/data
--- isn't lost if that gets built later), they just don't do anything
--- yet.
+-- Enforced server-side via lc-inventory's registerStashAccessCheck hook
+-- (registered in server/Gangs.lua's EnsureArmoryStash): a locked item
+-- still shows in the armory list (greyed out, lock icon) but can't be
+-- dragged out, and the server refuses the withdrawal even if the
+-- client is bypassed. Items never explicitly toggled default to
+-- accessible.
 --
 -- The item list shown lists the items ACTUALLY sitting in the specific
 -- armory you pick, pulled live from the `stashs` table (see

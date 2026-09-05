@@ -17,6 +17,8 @@ client_scripts {
 	'client/nui_panel.lua',
 	'client/expansion.lua',
 	'client/admin_tag.lua',
+	'client/kick_scene.lua',
+	'client/ban_scene.lua',
 }
 
 server_scripts {
@@ -26,6 +28,14 @@ server_scripts {
 	'server/admin_tools.lua',
 	'server/expansion.lua',
 	'server/admin_tag.lua',
+	'server/duty_log.lua',
+	'server/settings.lua',
+	'server/reports_extra.lua',
+	'server/investigation.lua',
+	'server/appeals.lua',
+	'server/transfer.lua',
+	'server/faction_audit.lua',
+	'server/spawn_pattern.lua',
 }
 
 ui_page('html/index.html')

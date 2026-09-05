@@ -87,3 +87,125 @@ CREATE TABLE IF NOT EXISTS `unique_adminmenu_bans` (
   INDEX (`ip`),
   INDEX (`active`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Persistent duty log: one row per on-duty session, with a real start/end
+-- timestamp. This is separate from (and outlives) the in-memory
+-- DutySessionStart used for the live Staff Dashboard - restarting the
+-- resource or the player relogging doesn't lose this history.
+CREATE TABLE IF NOT EXISTS `admin_duty` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `name` VARCHAR(100) DEFAULT NULL,
+  `identifier` VARCHAR(60) NOT NULL,
+  `date` VARCHAR(20) DEFAULT NULL,
+  `onduty` INT NOT NULL,
+  `offduty` INT DEFAULT NULL,
+  `totaltime` INT DEFAULT NULL COMMENT 'minutes',
+  INDEX (`identifier`),
+  INDEX (`offduty`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Persistent player flags: unlike admin_player_notes (only shown when you
+-- Inspect someone), a flag actively reminds every on-duty admin in chat
+-- every few seconds for as long as the flagged player is online.
+CREATE TABLE IF NOT EXISTS `admin_player_flags` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `identifier` VARCHAR(60) NOT NULL UNIQUE,
+  `note` VARCHAR(255) DEFAULT NULL,
+  `admin_name` VARCHAR(100) DEFAULT NULL,
+  `created_at` DATETIME DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Periodic economy snapshots for the Dashboard's economy-health chart.
+CREATE TABLE IF NOT EXISTS `admin_economy_snapshots` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `taken_at` INT NOT NULL,
+  `total_cash` BIGINT NOT NULL DEFAULT 0,
+  `total_bank` BIGINT NOT NULL DEFAULT 0,
+  `player_count` INT NOT NULL DEFAULT 0,
+  INDEX (`taken_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Per-button minimum permission_level overrides (see AButton() in
+-- client/general_utils.lua). Missing rows fall back to
+-- Config.MinPermissionLevel, same as every other tool in this resource.
+CREATE TABLE IF NOT EXISTS `admin_button_perms` (
+  `button_id` VARCHAR(80) NOT NULL PRIMARY KEY,
+  `min_level` INT NOT NULL DEFAULT 1
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Reporter satisfaction ratings, collected right after a report is closed
+-- (see the TriggerEvent added to esx_aduty/Server/ReportMenu_sv.lua's `cr`
+-- command). rating: 1=unsatisfied, 2=neutral, 3=satisfied.
+CREATE TABLE IF NOT EXISTS `admin_report_ratings` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `report_id` VARCHAR(20) DEFAULT NULL,
+  `admin_name` VARCHAR(100) DEFAULT NULL,
+  `rating` TINYINT NOT NULL,
+  `created_at` DATETIME DEFAULT NULL,
+  INDEX (`admin_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Per-admin report response times (open -> close), fed by the same
+-- esx_aduty `cr` command hook as admin_report_ratings above.
+CREATE TABLE IF NOT EXISTS `admin_report_response_times` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `admin_name` VARCHAR(100) DEFAULT NULL,
+  `response_seconds` INT NOT NULL,
+  `created_at` DATETIME DEFAULT NULL,
+  INDEX (`admin_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Persistent per-player chat archive (the existing in-memory ChatLog in
+-- server/admin_tools.lua only keeps the last 500 messages server-wide and
+-- resets on restart - too small/short-lived for "search one player's full
+-- history"). Fed by the same chatMessage event, just also written here.
+CREATE TABLE IF NOT EXISTS `admin_chat_archive` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `identifier` VARCHAR(60) DEFAULT NULL,
+  `playername` VARCHAR(100) DEFAULT NULL,
+  `message` VARCHAR(500) DEFAULT NULL,
+  `created_at` DATETIME DEFAULT NULL,
+  INDEX (`identifier`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Impound yard: a real log of every impound (plate/model/reason/date),
+-- separate from the vehicle actually being deleted client-side, with a
+-- release button that restores it to the owner's garage (owned_vehicles).
+CREATE TABLE IF NOT EXISTS `admin_impound_yard` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `plate` VARCHAR(12) DEFAULT NULL,
+  `model_label` VARCHAR(60) DEFAULT NULL,
+  `owner_identifier` VARCHAR(60) DEFAULT NULL,
+  `owner_name` VARCHAR(100) DEFAULT NULL,
+  `impounded_by` VARCHAR(100) DEFAULT NULL,
+  `reason` VARCHAR(255) DEFAULT NULL,
+  `impounded_at` DATETIME DEFAULT NULL,
+  `released` TINYINT(1) NOT NULL DEFAULT 0,
+  `released_at` DATETIME DEFAULT NULL,
+  `released_by` VARCHAR(100) DEFAULT NULL,
+  INDEX (`plate`),
+  INDEX (`owner_identifier`),
+  INDEX (`released`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Snapshot of the destination account's `users` row right before a
+-- character transfer overwrites it, so a bad transfer is reversible.
+CREATE TABLE IF NOT EXISTS `admin_transfer_backups` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `source_identifier` VARCHAR(60) DEFAULT NULL,
+  `dest_identifier` VARCHAR(60) DEFAULT NULL,
+  `dest_snapshot_json` LONGTEXT DEFAULT NULL,
+  `admin_name` VARCHAR(100) DEFAULT NULL,
+  `created_at` DATETIME DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Periodic faction/society treasury snapshots (addon_account_data), used
+-- for the audit panel's history view and spike detection.
+CREATE TABLE IF NOT EXISTS `admin_faction_snapshots` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `account_name` VARCHAR(100) DEFAULT NULL,
+  `balance` INT NOT NULL DEFAULT 0,
+  `taken_at` INT NOT NULL,
+  INDEX (`account_name`),
+  INDEX (`taken_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

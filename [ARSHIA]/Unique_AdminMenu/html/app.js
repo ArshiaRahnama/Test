@@ -46,6 +46,20 @@ function closePanel() {
 
 function renderInspect(data) {
   openPanel(`Inspect: ${data.name} (id: ${data.source})`, false);
+
+  let html = '';
+  if (data.flag) {
+    html += `<div class="sectionTitle sectionWarn">🚩 FLAGGED - ${escapeHtml(data.flag.note)}</div>`;
+    html += `<div class="infoRow"><span>Flagged by ${escapeHtml(data.flag.admin_name || '?')}</span><span>${escapeHtml(data.flag.created_at || '')}</span></div>`;
+  }
+
+  if (data.trustScore !== undefined) {
+    const tColor = data.trustScore >= 80 ? '#5fae72' : data.trustScore >= 50 ? '#c9a24b' : '#c85450';
+    const b = data.trustBreakdown || {};
+    html += `<div class="infoRow"><span>Trust Score</span><span style="color:${tColor};font-weight:600;">${data.trustScore}/100</span></div>`;
+    html += `<div class="rMeta" style="padding:0 0 8px;">${b.warnings || 0} warnings &middot; ${b.bans || 0} bans &middot; ${b.punishments || 0} kicks/jails/CS</div>`;
+  }
+
   const rows = [
     ['Identifier', data.identifier],
     ['Job', data.job ? `${data.job.label || data.job.name} (grade ${data.job.grade})` : 'n/a'],
@@ -56,7 +70,7 @@ function renderInspect(data) {
     ['Inventory Items', data.inventory ? data.inventory.length : 'n/a'],
   ];
 
-  let html = rows.map(([k, v]) =>
+  html += rows.map(([k, v]) =>
     `<div class="infoRow"><span>${k}</span><span>${v}</span></div>`
   ).join('');
 
@@ -66,6 +80,13 @@ function renderInspect(data) {
       `<div class="infoRow"><span>${escapeHtml(a.playername || 'Unknown')}</span><span>${escapeHtml(a.identifier)}</span></div>`
     ).join('');
   }
+
+  html += `<div class="sectionTitle">Owned Vehicles (${(data.vehicles || []).length})</div>`;
+  html += (data.vehicles && data.vehicles.length)
+    ? data.vehicles.map(v =>
+        `<div class="infoRow"><span>${escapeHtml(v.modelLabel || v.plate)} <span class="rMeta">(${escapeHtml(v.plate)})</span></span><span>${v.stored ? 'In Garage' : 'Impound/Out'}${v.job ? ' - ' + escapeHtml(v.job) : ''}</span></div>`
+      ).join('')
+    : `<div class="rMeta">No owned vehicles found</div>`;
 
   html += `<div class="sectionTitle">Notes (${(data.notes || []).length})</div>`;
   html += (data.notes && data.notes.length)
@@ -137,8 +158,8 @@ function renderVehicleList(list) {
 // ============================================================================
 // PANEL: ONLINE PLAYERS
 // ============================================================================
-function renderOnlinePlayers(list) {
-  openPanel(`Online Players (${list.length})`, true);
+function renderOnlinePlayers(list, title) {
+  openPanel(`${title || 'Online Players'} (${list.length})`, true);
   drawOnlinePlayers(list);
   window._onlinePlayersCache = list;
 }
@@ -147,12 +168,19 @@ function drawOnlinePlayers(list) {
     document.getElementById('panelBody').innerHTML = '<div class="infoRow"><span>No players online</span></div>';
     return;
   }
-  document.getElementById('panelBody').innerHTML = list.map(p => `
-    <div class="infoRow">
-      <span>[${p.id}] ${escapeHtml(p.name)} <span class="rMeta">(${escapeHtml(p.job)})</span></span>
+  document.getElementById('panelBody').innerHTML = list.map(p => {
+    const t = p.trustScore;
+    const trustColor = t === undefined || t === null ? '#888' : t >= 80 ? '#5fae72' : t >= 50 ? '#c9a24b' : '#c85450';
+    const trustBadge = (t !== undefined && t !== null)
+      ? `<span title="Trust Score" style="display:inline-block;min-width:26px;padding:1px 5px;margin-right:6px;border-radius:4px;background:${trustColor};color:#111;font-weight:600;font-size:11px;text-align:center;">${t}</span>`
+      : '';
+    return `
+    <div class="infoRow"${p.flagNote ? ' style="border-left:3px solid #e08a3c;"' : ''}>
+      <span>${trustBadge}${p.flagNote ? '🚩 ' : ''}[${p.id}] ${escapeHtml(p.name)} <span class="rMeta">(${escapeHtml(p.job)})</span>${p.flagNote ? `<br><span class="rMeta">flag: ${escapeHtml(p.flagNote)}</span>` : ''}</span>
       <span>${p.ping}ms - ${p.sessionMinutes}m session</span>
     </div>
-  `).join('');
+  `;
+  }).join('');
 }
 
 // ============================================================================
@@ -162,7 +190,7 @@ function renderDashboard(data) {
   openPanel('Server Dashboard', false);
   let html = `<div class="sectionTitle">Staff On Duty (${(data.staff || []).length})</div>`;
   html += (data.staff && data.staff.length)
-    ? data.staff.map(s => `<div class="infoRow"><span>${escapeHtml(s.name)} (id: ${s.source})</span><span>${s.dutyMinutes}m on duty &middot; ${s.actions} actions</span></div>`).join('')
+    ? data.staff.map(s => `<div class="infoRow"><span>${escapeHtml(s.name)} (id: ${s.source})</span><span>${s.dutyMinutes}m on duty &middot; ${s.actions} actions${s.satisfaction !== undefined && s.satisfaction !== null ? ` &middot; ${s.satisfaction}% satisfaction (${s.ratingCount})` : ''}${s.avgResponseMinutes !== undefined && s.avgResponseMinutes !== null ? ` &middot; ~${s.avgResponseMinutes}m avg response` : ''}</span></div>`).join('')
     : `<div class="rMeta">No admins currently on duty</div>`;
 
   html += `<div class="sectionTitle">Top 10 Richest Players</div>`;
@@ -197,7 +225,7 @@ document.getElementById('panelSearch').addEventListener('input', (e) => {
     drawChatLog(currentChatLog.filter(m =>
       (m.message || '').toLowerCase().includes(q) || (m.name || '').toLowerCase().includes(q)
     ));
-  } else if (title.startsWith('Online Players')) {
+  } else if (title.startsWith('Online Players') || title.startsWith('New Players')) {
     drawOnlinePlayers((window._onlinePlayersCache || []).filter(p =>
       (p.name || '').toLowerCase().includes(q) || String(p.id).includes(q)
     ));
@@ -278,8 +306,12 @@ window.addEventListener('message', (event) => {
     case 'newReportAlert': showToast(count); break;
     case 'screenshot': renderScreenshot(data, name); break;
     case 'vehiclelist': renderVehicleList(data); break;
-    case 'onlineplayers': renderOnlinePlayers(data); break;
+    case 'onlineplayers': renderOnlinePlayers(data.list || data, data.title); break;
     case 'dashboard': renderDashboard(data); break;
+    case 'buttonperms': renderButtonPerms(data); break;
+    case 'proximity': renderProximity(data); break;
+    case 'economychart': renderEconomyChart(data); break;
+    case 'factionchart': renderFactionChart(data); break;
   }
 });
 
@@ -289,3 +321,104 @@ document.addEventListener('keyup', (e) => {
     hideRadial();
   }
 });
+
+// ============================================================================
+// PANEL: VOICE PROXIMITY
+// ============================================================================
+function renderProximity(data) {
+  openPanel(data.title || 'Voice Proximity Check', false);
+  const lines = data.lines || [];
+  document.getElementById('panelBody').innerHTML = lines.length
+    ? lines.map(l => `<div class="infoRow"><span>${escapeHtml(l)}</span></div>`).join('')
+    : '<div class="infoRow"><span>No one nearby.</span></div>';
+}
+
+// ============================================================================
+// PANEL: BUTTON PERMISSIONS
+// ============================================================================
+function renderButtonPerms(data) {
+  openPanel('Button Permissions', false);
+  const catalog = data.catalog || [];
+  const perms = data.perms || {};
+  const defaultLevel = data.defaultLevel ?? 1;
+
+  const byCategory = {};
+  catalog.forEach(b => {
+    (byCategory[b.category] ||= []).push(b);
+  });
+
+  let html = `<div class="rMeta" style="padding:0 0 8px;">Minimum permission_level required to SEE each button. Blank = uses the server default (${defaultLevel}).</div>`;
+  Object.keys(byCategory).forEach(cat => {
+    html += `<div class="sectionTitle">${escapeHtml(cat)}</div>`;
+    html += byCategory[cat].map(b => `
+      <div class="infoRow">
+        <span>${escapeHtml(b.label)}</span>
+        <input type="number" min="0" max="20" class="permInput" data-id="${b.id}"
+               value="${perms[b.id] ?? ''}" placeholder="${defaultLevel}"
+               style="width:60px;text-align:center;" />
+      </div>
+    `).join('');
+  });
+  document.getElementById('panelBody').innerHTML = html;
+
+  document.querySelectorAll('.permInput').forEach(input => {
+    input.addEventListener('change', () => {
+      const level = input.value === '' ? null : parseInt(input.value, 10);
+      post('setButtonPerm', { id: input.dataset.id, level: level ?? defaultLevel });
+    });
+  });
+}
+
+// ============================================================================
+// PANEL: ECONOMY CHART
+// ============================================================================
+function buildLineChartSVG(totals) {
+  const w = 600, h = 260, pad = 40;
+  const maxV = Math.max(...totals) * 1.1 || 1;
+  const minV = Math.min(0, Math.min(...totals));
+  const stepX = (w - pad * 2) / (totals.length - 1);
+  const scaleY = v => h - pad - ((v - minV) / (maxV - minV || 1)) * (h - pad * 2);
+
+  const path = totals.map((v, i) => `${i === 0 ? 'M' : 'L'} ${pad + i * stepX} ${scaleY(v)}`).join(' ');
+  const last = totals[totals.length - 1];
+  const first = totals[0];
+  const trendColor = last >= first ? '#5fae72' : '#c85450';
+
+  let svg = `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;background:rgba(255,255,255,0.03);border-radius:8px;">`;
+  svg += `<line x1="${pad}" y1="${h - pad}" x2="${w - pad}" y2="${h - pad}" stroke="rgba(255,255,255,0.2)" />`;
+  svg += `<line x1="${pad}" y1="${pad / 2}" x2="${pad}" y2="${h - pad}" stroke="rgba(255,255,255,0.2)" />`;
+  svg += `<path d="${path}" fill="none" stroke="${trendColor}" stroke-width="2.5" />`;
+  svg += `<text x="${pad}" y="${pad / 2 - 6}" fill="#ddd" font-size="12">Max: $${maxV.toLocaleString()}</text>`;
+  svg += `<text x="${w - pad}" y="${h - pad + 20}" fill="#ddd" font-size="11" text-anchor="end">Latest: $${last.toLocaleString()}</text>`;
+  svg += `<text x="${pad}" y="${h - pad + 20}" fill="#ddd" font-size="11">Oldest: $${first.toLocaleString()}</text>`;
+  svg += `</svg>`;
+  return svg;
+}
+
+function renderEconomyChart(data) {
+  openPanel('Economy Health (Total Cash + Bank)', false);
+  const points = data.points || [];
+
+  if (points.length < 2) {
+    document.getElementById('panelBody').innerHTML = '<div class="infoRow"><span>Not enough snapshots yet - check back later.</span></div>';
+    return;
+  }
+
+  const totals = points.map(p => p.total_cash + p.total_bank);
+  document.getElementById('panelBody').innerHTML = buildLineChartSVG(totals) +
+    `<div class="rMeta" style="padding-top:8px;">${points.length} snapshots &middot; latest player count: ${points[points.length - 1].player_count}</div>`;
+}
+
+function renderFactionChart(data) {
+  openPanel(`${data.accountName || 'Faction'} Treasury History`, false);
+  const points = data.points || [];
+
+  if (points.length < 2) {
+    document.getElementById('panelBody').innerHTML = '<div class="infoRow"><span>Not enough snapshots yet - check back later.</span></div>';
+    return;
+  }
+
+  const totals = points.map(p => p.balance);
+  document.getElementById('panelBody').innerHTML = buildLineChartSVG(totals) +
+    `<div class="rMeta" style="padding-top:8px;">${points.length} snapshots</div>`;
+}

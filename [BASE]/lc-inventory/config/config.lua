@@ -151,7 +151,7 @@ Config.Clothes = {
 -- ╚██████╗███████╗╚██████╔╝   ██║   ██║  ██║██║██║ ╚████║╚██████╔╝    ███████║   ██║   ╚██████╔╝██║  ██║███████╗
 --  ╚═════╝╚══════╝ ╚═════╝    ╚═╝   ╚═╝  ╚═╝╚═╝╚═╝  ╚═══╝ ╚═════╝     ╚══════╝   ╚═╝    ╚═════╝ ╚═╝  ╚═╝╚══════╝
         
-Config.ActiveClothShop = true
+Config.ActiveClothShop = false -- disabled: this server uses unique_clothestore as its dedicated clothing store instead
 
 Config.ClothMarkerDistance = 15
 Config.ClothMarkerType = 25

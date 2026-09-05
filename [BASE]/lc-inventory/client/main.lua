@@ -1225,6 +1225,7 @@ RegisterNUICallback('giveItem', function(data)
                                 TaskPlayAnim(playerPed, "mp_common", "givetake2_a", 2.0, -2.0, 2500, 49, 0, false, false, false)
                             end)
                             TriggerServerEvent('lgd:giveItem', GetPlayerServerId(closestPlayer), data.item.name, tonumber(result), "item_standard")
+                            Wait(150)
                             loadPlayerInventory('item', nil, true, true)
 
                         end
@@ -1266,6 +1267,7 @@ RegisterNUICallback('giveItem', function(data)
                             TaskPlayAnim(playerPed, "mp_common", "givetake2_a", 2.0, -2.0, 2500, 49, 0, false, false, false)
                         end)
                         TriggerServerEvent('lgd:giveItem', GetPlayerServerId(closestPlayer), data.item.name, tonumber(result), "item_account")
+                        Wait(150)
                         loadPlayerInventory('item', nil, true, true)
                     end
                 end

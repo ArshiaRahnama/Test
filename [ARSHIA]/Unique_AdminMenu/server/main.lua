@@ -2,7 +2,13 @@ ESX = nil
 
 TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
 
-local Config = {
+-- Global (not local) on purpose: server/settings.lua and
+-- server/investigation.lua also reference Config.MinPermissionLevel /
+-- Config.DiscordWebhook, and each .lua file in a resource is its own
+-- separate Lua chunk - a `local` here would only be visible within this
+-- file, not to the others (this was the exact bug behind the
+-- "attempt to index a nil value (global 'Config')" error).
+Config = {
     DiscordWebhook = GetConvar('unique_adminmenu_webhook', ""),
 
 
@@ -32,6 +38,55 @@ function IsOnDutyAdmin(source)
         return false
     end
     return true
+end
+
+-- ------------------------------------------------- BUTTON PERMISSIONS ---
+-- Real server-side enforcement for the per-button levels set in the
+-- Button Permissions NUI panel (client/general_utils.lua's AButton /
+-- server/settings.lua's admin_button_perms table) - not just hiding the
+-- button client-side. Every handler this applies to calls
+-- IsOnDutyAdminFor(source, buttonId) instead of plain IsOnDutyAdmin, so a
+-- rank-1 admin can't bypass a rank-5-only action by typing the command
+-- directly or editing their client.
+--
+-- Cached in memory (ButtonPermsCache) rather than hitting the DB on every
+-- single admin action - refreshed at startup and whenever
+-- Unique_AdminMenu:SetButtonPerm changes a value (see server/settings.lua).
+ButtonPermsCache = {}
+
+Citizen.CreateThread(function()
+    while ESX == nil do Citizen.Wait(50) end
+    MySQL.Async.fetchAll('SELECT button_id, min_level FROM admin_button_perms', {}, function(rows)
+        for _, r in ipairs(rows or {}) do
+            ButtonPermsCache[r.button_id] = r.min_level
+        end
+    end)
+end)
+
+-- buttonId may be nil (falls back to the plain Config.MinPermissionLevel
+-- gate, same as IsOnDutyAdmin) - lets every call site pass a catalog id
+-- without needing a special case for the ungated ones.
+function IsOnDutyAdminFor(source, buttonId)
+    local xPlayer = ESX.GetPlayerFromId(source)
+    if not xPlayer then return false end
+    if not xPlayer.get('aduty') then return false end
+
+    local required = (buttonId and ButtonPermsCache[buttonId]) or Config.MinPermissionLevel
+    if xPlayer.permission_level == nil or xPlayer.permission_level < required then
+        return false
+    end
+    return true
+end
+
+-- Denial gets its own log line (and Discord post, via LogAdminAction) so a
+-- rank trying to reach past their level shows up in the audit trail, not
+-- just a silent no-op.
+function DenyButtonAccess(source, buttonId)
+    local xPlayer = ESX.GetPlayerFromId(source)
+    local required = (buttonId and ButtonPermsCache[buttonId]) or Config.MinPermissionLevel
+    LogAdminAction(source, "denied-permission", ("button: %s | has: %s | needs: %s"):format(
+        buttonId or '?', xPlayer and xPlayer.permission_level or 'n/a', required))
+    TriggerClientEvent('esx:showNotification', source, "~r~You don't have permission for that.")
 end
 
 function LogAdminAction(source, action, details, targetIdentifier, targetName)
@@ -185,3 +240,36 @@ RegisterCommand('slap', function(source, args)
     TriggerClientEvent('AdminMenu:SlapPlayers', TargetId)
   end
 end)
+
+-- Batch trust-score computation (same formula as InspectPlayer's) for a
+-- list of identifiers at once - used by the Online/New Players badges so
+-- we're not running 3 queries per player in a loop.
+function GetTrustScoresBatch(identifiers, callback)
+    if not identifiers or #identifiers == 0 then callback({}) return end
+
+    local placeholders, params = {}, {}
+    for i, id in ipairs(identifiers) do
+        placeholders[i] = '@id' .. i
+        params['@id' .. i] = id
+    end
+    local inClause = table.concat(placeholders, ',')
+
+    MySQL.Async.fetchAll(("SELECT identifier, COUNT(*) AS cnt FROM admin_warnings WHERE identifier IN (%s) GROUP BY identifier"):format(inClause), params, function(warnRows)
+        MySQL.Async.fetchAll(("SELECT identifier, COUNT(*) AS cnt FROM unique_adminmenu_bans WHERE identifier IN (%s) GROUP BY identifier"):format(inClause), params, function(banRows)
+            MySQL.Async.fetchAll(("SELECT target_identifier AS identifier, COUNT(*) AS cnt FROM admin_action_log WHERE target_identifier IN (%s) AND action IN ('kick','jail','community-service') GROUP BY target_identifier"):format(inClause), params, function(punishRows)
+                local warnByI, banByI, punishByI = {}, {}, {}
+                for _, r in ipairs(warnRows or {}) do warnByI[r.identifier] = r.cnt end
+                for _, r in ipairs(banRows or {}) do banByI[r.identifier] = r.cnt end
+                for _, r in ipairs(punishRows or {}) do punishByI[r.identifier] = r.cnt end
+
+                local scores = {}
+                for _, id in ipairs(identifiers) do
+                    local score = 100 - ((warnByI[id] or 0) * 5) - ((banByI[id] or 0) * 25) - ((punishByI[id] or 0) * 3)
+                    if score < 0 then score = 0 end
+                    scores[id] = score
+                end
+                callback(scores)
+            end)
+        end)
+    end)
+end

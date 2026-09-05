@@ -163,6 +163,14 @@ function OpenOnlinePlayersPanel()
     end)
 end
 
+function OpenNewPlayersPanel()
+    ESX.TriggerServerCallback('Unique_AdminMenu:GetNewPlayers', function(list)
+        SendNUIMessage({ type = 'onlineplayers', data = { list = list, title = 'New Players' } })
+        SetNuiFocus(true, true)
+        InAdminNui = true
+    end)
+end
+
 function OpenDashboardPanel()
     ESX.TriggerServerCallback('Unique_AdminMenu:GetDashboard', function(data)
         if not data then
@@ -223,4 +231,72 @@ Citizen.CreateThread(function()
             SetScenarioPedDensityMultiplierThisFrame(mult, mult)
         end
     end
+end)
+
+-- ---------------------------------------------------------- LAUNCH ---
+
+RegisterNetEvent('Unique_AdminMenu:ApplyLaunch')
+AddEventHandler('Unique_AdminMenu:ApplyLaunch', function()
+    local ped = PlayerPedId()
+    ClearPedTasksImmediately(ped)
+    FreezeEntityPosition(ped, false)
+    SetEntityVelocity(ped, 0.0, 0.0, 15.0)
+    drawNotification("~r~An admin launched you into the air!")
+end)
+
+-- ------------------------------------------------------------ GET IN ---
+-- Warps the ADMIN into the nearest vehicle's driver seat, kicking out an
+-- NPC driver if there is one (never a real player).
+
+function GetIntoNearestVehicle()
+    local playerPed = PlayerPedId()
+    local playerCoords = GetEntityCoords(playerPed)
+    local closestVehicle = GetClosestVehicle(playerCoords.x, playerCoords.y, playerCoords.z, 10.0, 0, 70)
+
+    if not closestVehicle or closestVehicle == 0 then
+        drawNotification("~r~No vehicle nearby.")
+        return
+    end
+
+    local driverPed = GetPedInVehicleSeat(closestVehicle, -1)
+    if driverPed ~= 0 and driverPed ~= playerPed then
+        if IsPedAPlayer(driverPed) then
+            drawNotification("~r~The driver's seat is taken by a player.")
+            return
+        end
+        TaskLeaveVehicle(driverPed, closestVehicle, 0)
+        Citizen.Wait(1500)
+    end
+
+    TaskWarpPedIntoVehicle(playerPed, closestVehicle, -1)
+end
+
+-- --------------------------------------------------------- SET LIVERY ---
+
+function SetCurrentVehicleLivery(livery)
+    local vehicle = GetVehiclePedIsIn(PlayerPedId(), false)
+    if vehicle == 0 then
+        drawNotification("~r~You're not in a vehicle.")
+        return
+    end
+    SetVehicleLivery(vehicle, livery)
+    TriggerServerEvent('Unique_AdminMenu:LogClientAction', "set-livery", ("plate: %s | livery: %s"):format(GetVehicleNumberPlateText(vehicle), livery))
+end
+
+-- ------------------------------------------------ JAIL / CS PERMISSION ---
+-- The server already validated btn_jail/btn_cs (Unique_AdminMenu:RequestJail
+-- /RequestCS in server/admin_tools.lua) before sending this back - we still
+-- have to be the ones to actually fire arshia_jail:sendto /
+-- esx_communityGGservice:sendToCommunityService ourselves, since those
+-- events read `source` as "whoever's client triggered this", and only a
+-- genuine client->server trigger sets that correctly.
+
+RegisterNetEvent('Unique_AdminMenu:ProceedJail')
+AddEventHandler('Unique_AdminMenu:ProceedJail', function(targetId, minutes, reason)
+    TriggerServerEvent('arshia_jail:sendto', targetId, 'admin', minutes, reason)
+end)
+
+RegisterNetEvent('Unique_AdminMenu:ProceedCS')
+AddEventHandler('Unique_AdminMenu:ProceedCS', function(targetId, count, reason)
+    TriggerServerEvent('esx_communityGGservice:sendToCommunityService', targetId, count, reason)
 end)

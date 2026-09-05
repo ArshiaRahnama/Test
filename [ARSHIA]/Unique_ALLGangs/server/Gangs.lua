@@ -1271,6 +1271,23 @@ local function EnsureArmoryStash(playergang, key, armory)
         })
     end
 
+    -- Per-item, per-rank access: the boss menu's "Per-item armory access"
+    -- toggles (client/boss_esx_menu.lua) already save to
+    -- Gangs[gang].grades[grade].access.itemAccess[itemName] = true/false;
+    -- this is what was missing to actually enforce it. Items never
+    -- explicitly toggled default to accessible.
+    exports['lc-inventory']:registerStashAccessCheck(stashId, function(checkSource, itemName)
+        local xP = ESX.GetPlayerFromId(checkSource)
+        if not xP or not xP.gang or xP.gang.name ~= playergang then return true end
+
+        local grade = Gangs[playergang] and Gangs[playergang].grades[xP.gang.grade]
+        if not grade or not grade.access or not grade.access.itemAccess then return true end
+
+        local allowed = grade.access.itemAccess[itemName]
+        if allowed == nil then return true end
+        return allowed and true or false
+    end)
+
     RegisteredArmoryStashes[stashId] = true
     return stashId
 end

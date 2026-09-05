@@ -141,6 +141,16 @@ RegisterCommand('cr', function(source, args)
 						TriggerClientEvent('chatMessage', xPlayer, "[ Report ] : ", {255, 0, 0}, "Report Shoma Tavasot [ ^2" .. closer .. "^0 ] Ghabol Shod!")
 					end
 
+					-- EXPANSION: lets Unique_AdminMenu ask the reporter for a
+					-- satisfaction rating right after their report closes.
+					-- Doesn't touch anything below - report.owner.id is the
+					-- reporter's server id at report time, same one used
+					-- for the notification two lines up. report.time (set
+					-- when the report was created, a few lines up in
+					-- esx_Report:CreateReport) lets Unique_AdminMenu compute
+					-- a per-admin average response time.
+					TriggerEvent('Unique_AdminMenu:ReportClosed', report.owner.id, args[1], closer, report.time)
+
 					reports[args[1]] = nil
 				else
 					TriggerClientEvent('chatMessage', source, "[ Report ] : ", {255, 0, 0}, "Shoma Aval Bayad Report Ra Ba^1 /ar ^0bebandid!")

@@ -37,11 +37,10 @@ Config.GangVests = {
 
 -------------------------------------------------------------------
 -- Items selectable in the "Item Access" rank-access submenu (per-item
--- armory restriction). NOTE: this per-item restriction is currently
--- NON-FUNCTIONAL -- it relied on ox_inventory's registerHook, which
--- IRV-inventory has no equivalent for (see server/Gangs.lua). Left here
--- in case that gets built later; toggling these in the boss menu has no
--- effect on actual item movement right now.
+-- armory restriction). Enforced server-side via lc-inventory's
+-- registerStashAccessCheck hook, wired up in server/Gangs.lua's
+-- EnsureArmoryStash. Toggling these in the boss menu now actually
+-- locks/unlocks that item for that rank in-game.
 -------------------------------------------------------------------
 Config.ArmoryItems = {
     'WEAPON_PISTOL', 'WEAPON_COMBATPISTOL', 'WEAPON_SMG', 'WEAPON_MICROSMG',
