@@ -20,13 +20,15 @@ function CreatePlayer(
     starterpack,
     discordid,
     level,
-    respect)
+    respect,
+    black_money)
     local self = {}
 
     self.source = source
     self.permission_level = permission_level
     self.money = money
     self.bank = bank
+    self.black_money = black_money or 0
     self.identifier = identifier
     self.license = license
     self.group = group
@@ -320,6 +322,93 @@ function CreatePlayer(
             TriggerClientEvent("gcphone:setUiPhone", self.source, self.bank)
             TriggerClientEvent("bankUpdate", self.source, self.bank)
         end
+    end
+
+    self.addBlackMoney = function(m)
+        if type(m) == "number" and m > 0 then
+            self.black_money = self.black_money + m
+        end
+    end
+
+    self.setBlackMoney = function(m)
+        if type(m) == "number" then
+            self.black_money = m
+        end
+    end
+
+    self.removeBlackMoney = function(m)
+        if type(m) == "number" and m > 0 then
+            self.black_money = math.max(0, self.black_money - m)
+        end
+    end
+
+    -- Generic ESX-Legacy-style account API. This "old" essentialmode only
+    -- has money/bank/black_money as named fields (no arbitrary account
+    -- list), so these just route to whichever of the three matches.
+    local function resolveAccountField(accountName)
+        accountName = accountName and string.lower(accountName) or 'money'
+        if accountName == 'bank' then
+            return 'bank'
+        elseif accountName == 'black_money' or accountName == 'blackmoney' or accountName == 'dirtycash' or accountName == 'dirty_money' then
+            return 'black_money'
+        else
+            return 'money'
+        end
+    end
+
+    self.getAccount = function(accountName)
+        local field = resolveAccountField(accountName)
+        return { name = accountName, money = self[field] }
+    end
+
+    self.addAccountMoney = function(accountName, amount)
+        local field = resolveAccountField(accountName)
+        if field == 'bank' then
+            self.addBank(amount)
+        elseif field == 'black_money' then
+            self.addBlackMoney(amount)
+        else
+            self.addMoney(amount)
+        end
+    end
+
+    self.removeAccountMoney = function(accountName, amount)
+        local field = resolveAccountField(accountName)
+        if field == 'bank' then
+            self.removeBank(amount)
+        elseif field == 'black_money' then
+            self.removeBlackMoney(amount)
+        else
+            self.removeMoney(amount)
+        end
+    end
+
+    self.getAccounts = function()
+        return {
+            { name = 'money', money = self.money },
+            { name = 'bank', money = self.bank },
+            { name = 'black_money', money = self.black_money },
+        }
+    end
+
+    self.getInventory = function()
+        return self.inventory
+    end
+
+    self.getLoadout = function()
+        return self.loadout
+    end
+
+    self.getName = function()
+        return self.name
+    end
+
+    self.getGroup = function()
+        return self.group
+    end
+
+    self.getIdentifier = function()
+        return self.identifier
     end
 
     -- true if cash + bank together cover the amount, regardless of where it sits

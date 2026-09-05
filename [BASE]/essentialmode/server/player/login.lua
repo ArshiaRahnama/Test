@@ -91,7 +91,8 @@ function LoadUser(identifier, source, licenseNotRequired)
                         user.starterpack,
                         user.discordid,
                         user.level,
-                        user.R
+                        user.R,
+                        user.black_money
 
                     )
                     Identifiers[user.identifier] = source

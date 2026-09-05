@@ -2,14 +2,15 @@ fx_version 'cerulean'
 game 'gta5'
 lua54 'yes'
 
-author 'For5M (merged: FMGangs + FMGangBoss) - patched for ox_inventory + lag fix'
-description 'Unique_ALLGangs - merged FMGangs + FMGangBoss, ox_inventory, fixed openpanel lag'
+author 'For5M (merged: FMGangs + FMGangBoss) - patched for IRV-inventory + lag fix'
+description 'Unique_ALLGangs - merged FMGangs + FMGangBoss, IRV-inventory, fixed openpanel lag'
 version '1.0.0'
 
--- NOTE: ox_inventory (and its own dependencies, e.g. ox_lib) must be
--- started BEFORE this resource in your server.cfg:
---   ensure ox_lib
---   ensure ox_inventory
+-- NOTE: IRV-inventory (and its own dependency, oxmysql) must be started
+-- BEFORE this resource in your server.cfg:
+--   ensure oxmysql
+--   ensure essentialmode
+--   ensure IRV-inventory
 --   ensure Unique_ALLGangs
 --
 -- ox_target is OPTIONAL: ped interactions (e.g. the boss NPC) use it
@@ -32,7 +33,7 @@ server_scripts {
     'shared/config.lua',
     'server/main.lua',      -- avatar cache / admin panel / logging
     'server/level.lua',
-    'server/Gangs.lua',     -- core gang data, armory -> ox_inventory stashes
+    'server/Gangs.lua',     -- core gang data, armory -> IRV-inventory stashs table
     'server/boss.lua',      -- boss panel actions (was FMGangBoss/server.lua)
 }
 

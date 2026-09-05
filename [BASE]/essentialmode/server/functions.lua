@@ -56,10 +56,11 @@ ESX.SavePlayer = function(Source, cb)
         asyncTasks,
         function(cb)
             MySQL.Async.execute(
-                "UPDATE users SET `money` = @money, `bank` = @bank, `position` = @position, `inventory` = @inventory, `loadout` = @loadout WHERE identifier = @identifier",
+                "UPDATE users SET `money` = @money, `bank` = @bank, `black_money` = @black_money, `position` = @position, `inventory` = @inventory, `loadout` = @loadout WHERE identifier = @identifier",
                 {
                     ["@money"] = Users[Source].money,
                     ["@bank"] = Users[Source].bank,
+                    ["@black_money"] = Users[Source].black_money,
                     ["@position"] = json.encode(Users[Source].coords),
                     ["@inventory"] = json.encode(invent),
                     ["@loadout"] = json.encode(Users[Source].loadout),

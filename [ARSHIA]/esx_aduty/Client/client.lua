@@ -65,12 +65,14 @@ local block_singles = lookupify{0x000000A9, 0x000000AE, 0x0000203C, 0x00002049, 
 
 
 -- Was ox_inventory's client auto-handling 'ox_inventory:openInventory'.
--- IRV-inventory's stash export is client-side only, so the server asks
--- this client to open it directly (see esx_aduty:openPlayerPropertyStash
--- in Server/commands_1.lua's 'openproperty' admin command).
+-- lc-inventory's stash export (added specifically to support this kind of
+-- call - see server/apps/system/stash.lua + client/apps/system/stash.lua
+-- in lc-inventory) is client-side only, so the server asks this client to
+-- open it directly (see esx_aduty:openPlayerPropertyStash in
+-- Server/commands_1.lua's 'openproperty' admin command).
 RegisterNetEvent('esx_aduty:openPlayerPropertyStash')
 AddEventHandler('esx_aduty:openPlayerPropertyStash', function(stashId)
-	exports['IRV-inventory']:stash(stashId, nil, nil, 'Property Inventory')
+	exports['lc-inventory']:stash(stashId, nil, nil, 'Property Inventory')
 end)
 
 RegisterNetEvent('esx:ActiveAdminPerks')

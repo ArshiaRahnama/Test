@@ -12,6 +12,15 @@ ESX.Jobs = {}
 
 ESX.Gangs = {}
 
+-- see comment in this diff / chat for why these exist
+ESX.getItemWeight = function(name)
+    return 0
+end
+
+ESX.getWeaponWeight = function(name)
+    return 0
+end
+
 AddEventHandler(
     "esx:getSharedObject",
     function(cb)

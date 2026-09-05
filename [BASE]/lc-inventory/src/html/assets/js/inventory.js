@@ -274,7 +274,7 @@ function inventorySetup(items, fastItems, crMenu, itemTrunk) {
         count = setCount(item);
         
         if (item.image == undefined) {
-          item.image = 'https://cdn.discordapp.com/attachments/1008837979894198413/1129138995301994606/togo_box.png';
+          item.image = '';
         }
       
         $("#left-inventory").append('<div class="item-info"><div id="item-' + index + '" class="item" style="background-image: url(' + item.image + ')"><div class="item-count">' + count + '</div><div class="item-name">' + item.label + '</div></div><div class="item-name-bg"></div></div>');
@@ -305,7 +305,7 @@ function inventorySetup(items, fastItems, crMenu, itemTrunk) {
         if (crMenu == 'item') {
             $("#drop");
             var i;
-            image = 'https://cdn.discordapp.com/attachments/979486375218937946/1133070614022852608/image_2023-07-24_181738854-removebg-preview.png'
+            image = ''
 
             for (i = 1; i < 6; i++) {
                 $(".middle-bottom-slots").append(
@@ -324,7 +324,7 @@ function inventorySetup(items, fastItems, crMenu, itemTrunk) {
             $.each(fastItems, function(index, item) {
                 count = setCount(item);
                 if (item.image == undefined ) {
-                    item.image = 'https://cdn.discordapp.com/attachments/1008837979894198413/1129138995301994606/togo_box.png'
+                    item.image = ''
                 }
                 $('#itemFast-' + item.slot).html('<div class="slot-name">' + item.label + '</div>');
                 // $('#itemFast-' + item.slot).html('<div class="slot-name">' + item.label + '</div> <div class="item-name-bg"></div>');
@@ -363,7 +363,7 @@ function secondInventorySetup(items) {
           count = setCount(item);
           
           if (item.image == undefined) {
-            item.image = 'https://cdn.discordapp.com/attachments/1008837979894198413/1129138995301994606/togo_box.png';
+            item.image = '';
           }
         
           $("#right-inventory").append('<div class="item-info"><div id="itemOther-' + index + '" class="item" style = "background-image: url(' + item.image + ')"><div class="item-count">' + count + '</div><div class="item-name">' + item.label + '</div></div><div class="item-name-bg"></div></div>');
@@ -398,7 +398,7 @@ function updateSlot(fastItems, crMenu) {
     if (crMenu == 'item') {
         $("#drop");
         var i;
-        image = 'https://cdn.discordapp.com/attachments/979486375218937946/1133070614022852608/image_2023-07-24_181738854-removebg-preview.png'
+        image = ''
 
         for (i = 1; i < 6; i++) {
             $(".middle-bottom-slots").append(
@@ -418,7 +418,7 @@ function updateSlot(fastItems, crMenu) {
         $.each(fastItems, function(index, item) {
             count = setCount(item);
             if (item.image == undefined ) {
-                item.image = 'https://cdn.discordapp.com/attachments/1008837979894198413/1129138995301994606/togo_box.png'
+                item.image = ''
             }
             $('#itemFast-' + item.slot).html('<div class="slot-name">' + item.label + '</div>');
             // $('#itemFast-' + item.slot).html('<div class="slot-name">' + item.label + '</div> <div class="item-name-bg"></div>');
@@ -875,7 +875,7 @@ function NotifyItem(message, icon, number) {
     var count = 1;
 
     if (icon == undefined ) {
-        icon = 'https://cdn.discordapp.com/attachments/1008837979894198413/1129138995301994606/togo_box.png'
+        icon = ''
     }
 
     $(".iconNotif").prepend(`

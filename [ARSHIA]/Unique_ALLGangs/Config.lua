@@ -1,6 +1,6 @@
 Config = {}
 Config.ESX = 'esx:getSharedObject'
-Config.inventoryimg  = "nui://ox_inventory/web/images" -- ox_inventory item icon path (was esx_inventoryhud)
+Config.inventoryimg  = "nui://lc-inventory/src/html/assets/images" -- item icon path (was IRV-inventory, before that ox_inventory, before that esx_inventoryhud) -- NOTE: not actually referenced anywhere else in this resource right now
 Config.permission = 1
 -- Percentage cut taken when washing gang dirty money into clean gang
 -- money (see server/boss.lua, FMGangsBoss:washMoney). 20 means
@@ -37,9 +37,11 @@ Config.GangVests = {
 
 -------------------------------------------------------------------
 -- Items selectable in the "Item Access" rank-access submenu (per-item
--- armory restriction). These must match real ox_inventory item names
--- to actually mean anything when toggled - adjust this list to match
--- what you actually stock in gang armories.
+-- armory restriction). NOTE: this per-item restriction is currently
+-- NON-FUNCTIONAL -- it relied on ox_inventory's registerHook, which
+-- IRV-inventory has no equivalent for (see server/Gangs.lua). Left here
+-- in case that gets built later; toggling these in the boss menu has no
+-- effect on actual item movement right now.
 -------------------------------------------------------------------
 Config.ArmoryItems = {
     'WEAPON_PISTOL', 'WEAPON_COMBATPISTOL', 'WEAPON_SMG', 'WEAPON_MICROSMG',
@@ -60,10 +62,11 @@ Config.MenuSkintrigger = 'esx_skin:openRestrictedMenu'
 Config.chatMessage = 'chatMessage'
 Config.showNotification = 'esx:showNotification' 
 Config.showAdvancedNotification = 'esx:showAdvancedNotification'
----- inventory (converted to ox_inventory - see server/Gangs.lua EnsureArmoryStash)
+---- inventory (armory -> IRV-inventory `stashs` table, see server/Gangs.lua EnsureArmoryStash)
 -- Config.OpenInventory / TakeItemEvent / AddItemToInventory are no longer
--- used: ox_inventory's 'ox_inventory:openInventory' event + its own item
--- movement replace the old esx_inventoryhud custom NUI flow entirely.
+-- used: the armory now opens through IRV-inventory's own stash UI
+-- (client's exported `stash()` function), replacing the old
+-- esx_inventoryhud custom NUI flow entirely.
 ----
 Config.TimeToPay = 15 -- min 
 ----

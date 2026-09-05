@@ -34,6 +34,20 @@ AddEventHandler('For5M:OpenPanel', function(data)
 		Admin = data , 
 	})
 end) 
+-------------------------------------------------------------------
+-- lc-inventory CONVERSION (was IRV-inventory, before that ox_inventory):
+-- the server can't open a stash for a specific player directly (the
+-- inventory's live stash cache is private to its own resource), so it
+-- asks this client to do it via the inventory's own exported client
+-- function -- the same one it uses internally for job/gang stashes.
+-- lc-inventory didn't ship a stash system at all, so a small one
+-- (server/apps/system/stash.lua + client/apps/system/stash.lua) was
+-- added to it, exposing the same exports('stash', ...) interface.
+-------------------------------------------------------------------
+RegisterNetEvent('For5MGangs:openArmoryStash')
+AddEventHandler('For5MGangs:openArmoryStash', function(stashId, maxWeight, slot, label)
+	exports['lc-inventory']:stash(stashId, maxWeight, slot, label)
+end)
 RegisterNetEvent('For5M:OpenBossPanel')
 AddEventHandler('For5M:OpenBossPanel', function(data , GangName )
 	InAdminPanel = true 

@@ -37,19 +37,23 @@ function RegisterServerCallback(name, cb)
 end
 
 function GetPlayerInventory(player)
-    return player.getInventory()
+    return player.inventory
 end
 
 function GetPlayerWeapon(player)
-    return player.getLoadout()
+    return player.loadout
 end
 
 function GetPlayerMoney(player)
-    return player.getAccounts()
+    return {
+        { name = 'cash', money = player.money },
+        { name = 'bank', money = player.bank },
+        { name = 'black_money', money = player.black_money },
+    }
 end
 
 function GetPlayerWeight(player)
-    return player.getWeight()
+    return player.getUsedWeight()
 end
 
 function GetPlayerMaxWeight(player)
@@ -152,8 +156,8 @@ end
 
 -- money 
 
-function addMoney(player, item, count)
-	player.addAccountMoney(item, count)
+function addMoney(player, account, count)
+	player.addAccountMoney(account, count)
 end
 
 function removeMoney(player, account, count)

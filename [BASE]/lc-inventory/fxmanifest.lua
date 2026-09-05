@@ -55,6 +55,7 @@ files {
   'src/html/assets/css/*.css',
   
   'src/html/assets/images/*.png',
+  'src/html/assets/images/items/*.png',
   'src/html/assets/icons/*.png',
 
   'src/html/assets/fonts/*.ttf',

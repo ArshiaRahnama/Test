@@ -531,23 +531,10 @@ function OpenGangVehicleSpawner(spawnPoint, category)
         return
     end
 
-    -- FEATURE (requested: per-rank vehicle access, not just a
-    -- blanket garage flag): only list models this rank is actually
-    -- allowed to take. Real enforcement is server-side in
-    -- FMGangs:RegisterGangVehicle - this is just so the menu doesn't
-    -- even show what you can't have.
-    ESX.TriggerServerCallback('FMGangs:GetRankAccess', function(access)
-        local vehicleAccess = (access and access.vehicleAccess) or {}
-        local elements = {}
-        for _, model in ipairs(models) do
-            if vehicleAccess[model] ~= false then
-                table.insert(elements, { label = GetLabelText(GetDisplayNameFromVehicleModel(GetHashKey(model))) or model, value = model })
-            end
-        end
-        if #elements == 0 then
-            Notifiaction('You do not have access to any vehicles here')
-            return
-        end
+    local elements = {}
+    for _, model in ipairs(models) do
+        table.insert(elements, { label = GetLabelText(GetDisplayNameFromVehicleModel(GetHashKey(model))) or model, value = model })
+    end
 
     ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'gang_vehicle_spawner', {
         title    = 'SELECT VEHICLE',
@@ -600,11 +587,10 @@ function OpenGangVehicleSpawner(spawnPoint, category)
                 else
                     Notifiaction('Could not register this vehicle to the gang')
                 end
-            end, vehicleProps, model)
+            end, vehicleProps)
         end)
     end, function(data, menu)
         menu.close()
-    end)
     end)
 end
 

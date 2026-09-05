@@ -64,6 +64,7 @@
 	height: 5vw;
 	border: 0.052vw solid var(--border-color);
 	background-color: var(--background-color);
+	border-radius: 0.25vw;
 	margin-top: 0.104vw;
 	transition: all 0.1s ease;
 	cursor: pointer;

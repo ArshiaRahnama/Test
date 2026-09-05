@@ -374,68 +374,18 @@ function OpenBossRankAccessCategoryMenu(gang, gradeNumber)
         elements = {
             { label = 'General Access', value = 'general' },
             { label = 'Item Access (Armory)', value = 'items' },
-            { label = 'Vehicle Access', value = 'vehicles' },
         }
     }, function(data, menu)
         menu.close()
         if data.current.value == 'general' then
             OpenBossRankAccessToggleMenu(gang, gradeNumber)
-        elseif data.current.value == 'items' then
-            OpenBossItemAccessArmoryMenu(gang, gradeNumber)
         else
-            OpenBossVehicleAccessMenu(gang, gradeNumber)
+            OpenBossItemAccessArmoryMenu(gang, gradeNumber)
         end
     end, function(data, menu)
         menu.close()
         OpenBossRankAccessMenu(gang)
     end)
-end
-
--------------------------------------------------------------------
--- Per-vehicle-model access (requested: control which gang vehicles
--- each rank can spawn, not just a blanket garage flag). Mirrors the
--- item access pattern exactly - toggles stored in the same `access`
--- blob (access.vehicleAccess), enforced both here (so the spawn menu
--- only lists what a rank can actually take) and server-side in
--- FMGangs:RegisterGangVehicle (so it can't be bypassed by calling the
--- server event directly).
--------------------------------------------------------------------
-function OpenBossVehicleAccessMenu(gang, gradeNumber)
-    ESX.TriggerServerCallback('FMGangs:GetGangDataFromName', function(gangData)
-        local gradeData = gangData and gangData.grades and gangData.grades[gradeNumber]
-        if not gradeData then
-            ESX.ShowNotification('Could not load that rank')
-            OpenBossRankAccessMenu(gang)
-            return
-        end
-
-        local vehicleAccess = (gradeData.access and gradeData.access.vehicleAccess) or {}
-        local elements = {}
-        for category, models in pairs(Config.GangVehicles or {}) do
-            for _, model in ipairs(models) do
-                local allowed = vehicleAccess[model] ~= false
-                local state = allowed and '<span style="color:lightgreen;">ALLOWED</span>' or '<span style="color:salmon;">BLOCKED</span>'
-                local label = GetLabelText(GetDisplayNameFromVehicleModel(GetHashKey(model))) or model
-                table.insert(elements, { label = ('[%s] %s: %s'):format(category, label, state), value = model })
-            end
-        end
-
-        ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'boss_vehicle_access_' .. gang .. '_' .. gradeNumber, {
-            title    = (gradeData.label or ('Grade ' .. gradeNumber)) .. ' - Vehicles',
-            align    = 'top-left',
-            elements = elements
-        }, function(data, menu)
-            local model = data.current.value
-            local currentlyAllowed = vehicleAccess[model] ~= false
-            ESX.TriggerServerCallback('FMGangs:EditVehicleAccess', function()
-                menu.close()
-                OpenBossVehicleAccessMenu(gang, gradeNumber)
-            end, gang, gradeNumber, model, not currentlyAllowed)
-        end, function(data, menu)
-            menu.close()
-            OpenBossRankAccessCategoryMenu(gang, gradeNumber)
-        end)
-    end, gang)
 end
 
 -- label/key pairs for every toggleable access flag on a grade
@@ -485,21 +435,25 @@ function OpenBossRankAccessToggleMenu(gang, gradeNumber)
 end
 
 -------------------------------------------------------------------
--- Per-item armory access (requested: restrict individual items, not
--- just the whole armory) - toggles Config.ArmoryItems entries for a
--- rank, wired to FMGangs:EditItemAccess (server/Gangs.lua) and
--- enforced there via a real ox_inventory swapItems hook.
+-- Per-item armory access (restrict individual items, not just the
+-- whole armory) - toggles Config.ArmoryItems entries for a rank via
+-- FMGangs:EditItemAccess (server/Gangs.lua).
 --
--- FIX (requested: pick WHICH armory when a gang has more than one,
--- and newly-added items not showing up in the list): the item list
--- used to come from a static Config.ArmoryItems, so anything you
--- physically stocked in an armory that wasn't already in that list
--- never appeared here. Now lists the items ACTUALLY sitting in the
--- specific armory you pick, pulled live from ox_inventory - add a new
--- item to the armory and it shows up here immediately, no config
--- editing needed. (Access is still granted per rank, applying across
--- all of that gang's armories, same as before - only the discovery
--- list is now per-armory.)
+-- NOTE: this is currently NON-FUNCTIONAL for actually blocking a move.
+-- It used to be enforced by a real ox_inventory swapItems hook that
+-- could cancel an item move server-side; IRV-inventory has no
+-- hook/interceptor system for item movement, so there is currently no
+-- way to enforce this. The toggles below still save (so the UI/data
+-- isn't lost if that gets built later), they just don't do anything
+-- yet.
+--
+-- The item list shown lists the items ACTUALLY sitting in the specific
+-- armory you pick, pulled live from the `stashs` table (see
+-- FMGangs:GetArmoryStashItemNames in server/Gangs.lua) - add a new item
+-- to the armory and it shows up here immediately, no config editing
+-- needed. (Access is still granted per rank, applying across all of
+-- that gang's armories, same as before - only the discovery list is
+-- now per-armory.)
 -------------------------------------------------------------------
 function OpenBossItemAccessArmoryMenu(gang, gradeNumber)
     ESX.TriggerServerCallback('FMGangs:GetGangArmories', function(armories)
@@ -537,14 +491,14 @@ function OpenBossItemAccessMenu(gang, gradeNumber, armoryKey)
             return
         end
 
-        ESX.TriggerServerCallback('FMGangs:GetArmoryStashItemNames', function(items)
+        ESX.TriggerServerCallback('FMGangs:GetArmoryStashItemNames', function(itemNames)
             local itemAccess = (gradeData.access and gradeData.access.itemAccess) or {}
             local elements = {}
-            for _, item in ipairs(items or {}) do
+            for _, item in ipairs(itemNames or {}) do
                 -- unset (nil) means "allowed" (backward compatible default)
-                local allowed = itemAccess[item.name] ~= false
+                local allowed = itemAccess[item] ~= false
                 local state = allowed and '<span style="color:lightgreen;">ALLOWED</span>' or '<span style="color:salmon;">BLOCKED</span>'
-                table.insert(elements, { label = item.label .. ': ' .. state, value = item.name })
+                table.insert(elements, { label = item .. ': ' .. state, value = item })
             end
             if #elements == 0 then
                 ESX.ShowNotification('This armory is empty - add items to it first, then come back to set access')

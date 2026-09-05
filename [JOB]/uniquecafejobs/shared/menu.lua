@@ -1,5 +1,5 @@
 Config = Config or {}
-Config.itemIconsPath = "nui://IRV-inventory/ui/images/"
+Config.itemIconsPath = "nui://lc-inventory/src/html/assets/images/"
 
 -- Shared product catalog / shop stock - identical menu at every cafe.
 

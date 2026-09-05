@@ -34,7 +34,7 @@ Config.Trigger = {
 
 Config.KeyBinds = {
     -- Find keybinds here: https://docs.fivem.net/docs/game-references/input-mapper-parameter-ids/keyboard/
-    {Command = "inventory", Bind = "TAB", Description = "Open inventory"},-- toggle the inventaire
+    {Command = "inventory", Bind = "F2", Description = "Open inventory"},-- toggle the inventaire
     {Command = "keybind_1", Bind = "1", Description = "Slot weapon 1"},-- 
     {Command = "keybind_2", Bind = "2", Description = "Slot weapon 2"},-- 
     {Command = "keybind_3", Bind = "3", Description = "Slot weapon 3"},-- 
@@ -239,10 +239,11 @@ Config.PosClotheShop = {
 
 -- Display accounts in inventory
 Config.ActiveAccount = true
-Config.Account = {["dirtycash"] = true, ["cash"] = true} 
+Config.Account = {["bank"] = true, ["cash"] = true, ["black_money"] = true} 
 Config.AccountName = {
-    ["dirtycash"] = 'Black money', 
-    ["cash"] = 'Money'
+    ["bank"] = 'Bank', 
+    ["cash"] = 'Money',
+    ["black_money"] = 'Dirty Money'
 }
 
 --╚════════════════════════════════════════════════════════════════════════════════╝
@@ -258,7 +259,7 @@ Config.AccountName = {
 
 -- Display id card in inventory
 Config.ActiveIdCard = true -- just for ESX
-Config.ActiveMugShot = true -- https://github.com/BaziForYou/MugShotBase64
+Config.ActiveMugShot = false -- https://github.com/BaziForYou/MugShotBase64 -- disabled: that resource isn't installed on this server (was causing "No such export GetMugShotBase64" errors). Install it separately and flip this back to true if you want real player-face mugshots instead of the static PictureIdCard fallback below.
 Config.PictureIdCard = 'https://cdn.discordapp.com/attachments/979486375218937946/1135635765397823488/47848.png'  -- if ActiveMugShot == false
 Config.IdCardName = {
     ["id"] = {
@@ -362,7 +363,8 @@ Config.CommandDeleteTrunk = 'deleteTrunk'
 
 Config.AccountTrunkName = {
     ["cash"] = 'Money',
-    ["dirtycash"] = 'Black money', 
+    ["bank"] = 'Bank', 
+    ["black_money"] = 'Dirty Money',
 }
 
 Config.WeightVehicle = {

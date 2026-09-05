@@ -37,7 +37,7 @@ button:last-child {
 }
 
 button:hover {
-  background: rgba(223, 214, 218, 0.25);
+  background: var(--hover-color);
 }
 button:active {
   opacity: 1;

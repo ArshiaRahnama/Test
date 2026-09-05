@@ -27,8 +27,6 @@ server_scripts {
     'config.lua',
 }
 
-shared_script '@esx_inventoryhud/html/img/vehicle/*.png'
-
 ui_page "html/index.html"
 
 files {
@@ -42,5 +40,6 @@ files {
     'html/fonts/*.woff',
     'html/img/backgrounds/*.png',
     'html/img/apps/*.png',
+    'html/img/vehicle/*.png',
 }
 

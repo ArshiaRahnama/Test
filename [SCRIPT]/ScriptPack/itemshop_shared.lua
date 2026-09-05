@@ -1,3 +1,3 @@
 
 
-url = 'nui://IRV-inventory/ui/images/'
+url = 'nui://lc-inventory/src/html/assets/images/'
