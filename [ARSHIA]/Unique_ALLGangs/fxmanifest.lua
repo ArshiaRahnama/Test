@@ -2,8 +2,8 @@ fx_version 'cerulean'
 game 'gta5'
 lua54 'yes'
 
-author 'For5M (merged: FMGangs + FMGangBoss) - patched for IRV-inventory + lag fix'
-description 'Unique_ALLGangs - merged FMGangs + FMGangBoss, IRV-inventory, fixed openpanel lag'
+author 'For5M (merged: FMGangs + FMGangBoss) - patched for LS-inventory + lag fix'
+description 'Unique_ALLGangs - merged FMGangs + FMGangBoss, LS-inventory, fixed openpanel lag'
 version '1.0.0'
 
 -- NOTE: IRV-inventory (and its own dependency, oxmysql) must be started

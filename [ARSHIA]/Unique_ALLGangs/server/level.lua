@@ -39,6 +39,52 @@ function Database(source, XP, gang)
                         ganglevels[gang].Level = #Config.GangLeveL 
                         ganglevels[gang].XP    = Config.GangLeveL[#Config.GangLeveL]
                     end 
+                    -------------------------------------------------
+                    -- FEATURE (Config.LevelReward existed but was
+                    -- never actually paid out anywhere - confirmed by
+                    -- searching the whole codebase before adding
+                    -- this): pays the configured reward straight into
+                    -- the gang's own bank money the moment it
+                    -- actually reaches this new level. Runs once per
+                    -- level gained, so a big XP grant that jumps
+                    -- several levels at once pays out for each one.
+                    -------------------------------------------------
+                    local reward = Config.LevelReward[ganglevels[gang].Level]
+                    if reward and reward > 0 then
+                        UpdateOthers(gang, 'money', reward, 'add')
+                        -- Direct, clear notification instead of reusing
+                        -- UpdateXP (which is worded specifically around
+                        -- XP amounts - passing 0 there would have told
+                        -- players they "received 0 XP", which is
+                        -- confusing/wrong for what's actually a money
+                        -- reward).
+                        local xPlayers = ESX.GetPlayers()
+                        for k, v in pairs(xPlayers) do
+                            local xPlayer = ESX.GetPlayerFromId(v)
+                            if xPlayer and xPlayer.gang and xPlayer.gang.name == gang then
+                                TriggerClientEvent(Config.showNotification, xPlayer.source, ('~g~~h~Gang reached Level %s! ~y~~h~$%s~g~~h~ added to the gang bank.'):format(ganglevels[gang].Level, reward))
+                            end
+                        end
+                        -- NOT using For5M:SendLog here on purpose: its
+                        -- handler assumes a real player source
+                        -- (ESX.GetPlayerFromId(source).gang.name) - a
+                        -- level-up isn't triggered by any one player,
+                        -- so passing a fake source would crash inside
+                        -- that handler. Sending directly to whichever
+                        -- online gang member's webhook is configured
+                        -- instead, same request shape SendLog uses.
+                        if Gangs[gang].webhook and Gangs[gang].webhook ~= '' then
+                            PerformHttpRequest(Gangs[gang].webhook, function() end, 'POST', json.encode({
+                                username = 'Heta RP',
+                                embeds = {{
+                                    ['color'] = '65352',
+                                    ['title'] = 'Gang Level Up',
+                                    ['description'] = ('**Gang:** %s\n**New Level:** %s\n**Reward:** $%s'):format(gang, ganglevels[gang].Level, reward),
+                                    ['footer'] = { ['text'] = gang .. ' - Logs', ['icon_url'] = Gangs[gang].logo },
+                                }}
+                            }), { ['Content-Type'] = 'application/json' })
+                        end
+                    end
                 else 
                     break 
                 end 

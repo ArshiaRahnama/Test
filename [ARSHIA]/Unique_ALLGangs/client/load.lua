@@ -524,16 +524,27 @@ end
 -- functions before relying on it. Models come from
 -- Config.GangVehicles (car/heli/boat lists).
 -------------------------------------------------------------------
-function OpenGangVehicleSpawner(spawnPoint, category)
+function OpenGangVehicleSpawner(spawnPoint, category, vehicleAccess)
     local models = Config.GangVehicles[category] or {}
     if #models == 0 then
         Notifiaction('No vehicles configured for this spawn point')
         return
     end
 
+    vehicleAccess = vehicleAccess or {}
     local elements = {}
     for _, model in ipairs(models) do
-        table.insert(elements, { label = GetLabelText(GetDisplayNameFromVehicleModel(GetHashKey(model))) or model, value = model })
+        -- Per-rank vehicle access (client-side filter - not the real
+        -- trust boundary, see FMGangs:RegisterGangVehicle below/
+        -- server/boss.lua for the actual enforcement). unset (nil)
+        -- means "allowed", same default as itemAccess.
+        if vehicleAccess[model] ~= false then
+            table.insert(elements, { label = GetLabelText(GetDisplayNameFromVehicleModel(GetHashKey(model))) or model, value = model })
+        end
+    end
+    if #elements == 0 then
+        Notifiaction('Your rank does not have access to any vehicle in this category')
+        return
     end
 
     ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'gang_vehicle_spawner', {
@@ -587,8 +598,50 @@ function OpenGangVehicleSpawner(spawnPoint, category)
                 else
                     Notifiaction('Could not register this vehicle to the gang')
                 end
-            end, vehicleProps)
+            end, vehicleProps, model)
         end)
+    end, function(data, menu)
+        menu.close()
+    end)
+end
+
+-------------------------------------------------------------------
+-- FEATURE (requested: pull already-owned gang vehicles into the
+-- real Unique_Garage UI instead of only ever registering brand-new
+-- ones): Unique_Garage already ships a full 'gang' bridge for this
+-- (client.lua's OpenMenuG('gang', ...) + server.lua's GetVehicles/
+-- SetVehState 'Gang' branches, confirmed by reading both files
+-- first) but nothing in this resource ever called it - the gang
+-- garage markers only ever opened OpenGangVehicleSpawner, which
+-- spawns a brand-new vehicle and registers it, and has no way to
+-- bring back one that's already stored.
+--
+-- This just gives the player a choice at the same spawn point:
+--   - "Take Out Existing Vehicle": fires Unique_Garage's own
+--     'Unique_Garage:OpenGangGarage' event (gangName, coord, type),
+--     which opens its real React garage UI listing every vehicle in
+--     `owned_vehicles` owned by this gang (fetched server-side via
+--     Unique_Garage's own GetVehicles 'Gang' branch) - condition,
+--     fuel, stored state and all, exactly like a personal garage.
+--   - "Get New Vehicle": unchanged, still OpenGangVehicleSpawner.
+-- Storing back into that same pool already works via
+-- DeleteTheVehicle/FMGangs:StoreGangVehicle further down this file.
+-------------------------------------------------------------------
+function OpenGangGarageChoiceMenu(spawnPoint, category, vehicleAccess)
+    ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'gang_garage_choice', {
+        title    = 'GANG GARAGE',
+        align    = 'top-left',
+        elements = {
+            { label = 'Take Out Existing Vehicle', value = 'existing' },
+            { label = 'Get New Vehicle',            value = 'new' },
+        }
+    }, function(data, menu)
+        menu.close()
+        if data.current.value == 'existing' then
+            TriggerEvent('Unique_Garage:OpenGangGarage', PlayerData.gang.name, spawnPoint, category)
+        else
+            OpenGangVehicleSpawner(spawnPoint, category, vehicleAccess)
+        end
     end, function(data, menu)
         menu.close()
     end)
@@ -603,7 +656,7 @@ function OpenVehicleMenu()
         if Distance < 80.0 then 
             ESX.TriggerServerCallback('FMGangs:GetRankAccess', function(access)
                 if access['garage'] then 
-                    OpenGangVehicleSpawner({ x = MyGangData.vehspawn[Key].coord.x , y = MyGangData.vehspawn[Key].coord.y , z = MyGangData.vehspawn[Key].coord.z , h = MyGangData.vehspawn[Key].heading }, 'car')
+                    OpenGangGarageChoiceMenu({ x = MyGangData.vehspawn[Key].coord.x , y = MyGangData.vehspawn[Key].coord.y , z = MyGangData.vehspawn[Key].coord.z , h = MyGangData.vehspawn[Key].heading }, 'car', access.vehicleAccess)
                 else 
                     Notifiaction('You Does Not Have Access To Open Garage !!')
                 end 
@@ -625,7 +678,7 @@ function OpenHeliMenu()
         if Distance < 80.0 then 
             ESX.TriggerServerCallback('FMGangs:GetRankAccess', function(access)
                 if access['heliANDBoat'] then
-                    OpenGangVehicleSpawner({ x = MyGangData.helispawn[Key].coord.x , y = MyGangData.helispawn[Key].coord.y , z = MyGangData.helispawn[Key].coord.z , h = MyGangData.helispawn[Key].heading }, 'heli')
+                    OpenGangGarageChoiceMenu({ x = MyGangData.helispawn[Key].coord.x , y = MyGangData.helispawn[Key].coord.y , z = MyGangData.helispawn[Key].coord.z , h = MyGangData.helispawn[Key].heading }, 'heli', access.vehicleAccess)
                 else 
                     Notifiaction('You Does Not Have Access To Open Heli Garage !!')
                 end 
@@ -646,7 +699,7 @@ function OpenBoatMenu()
         if Distance < 80.0 then 
             ESX.TriggerServerCallback('FMGangs:GetRankAccess', function(access)
                 if access['heliANDBoat'] then
-                    OpenGangVehicleSpawner({ x = MyGangData.boatspawn[Key].coord.x , y = MyGangData.boatspawn[Key].coord.y , z = MyGangData.boatspawn[Key].coord.z , h = MyGangData.boatspawn[Key].heading }, 'boat')
+                    OpenGangGarageChoiceMenu({ x = MyGangData.boatspawn[Key].coord.x , y = MyGangData.boatspawn[Key].coord.y , z = MyGangData.boatspawn[Key].coord.z , h = MyGangData.boatspawn[Key].heading }, 'boat', access.vehicleAccess)
                 else 
                     Notifiaction('You Does Not Have Access To Open Boat Garage !!')
                 end 

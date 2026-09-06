@@ -655,6 +655,32 @@ ESX.RegisterServerCallback('FMGangs:EditItemAccess', function(source, cb, GangNa
     end)
 end)
 
+-------------------------------------------------------------------
+-- Per-vehicle-model rank access (see client/boss_esx_menu.lua's
+-- OpenBossVehicleAccessMenu) - same storage pattern as itemAccess
+-- just above: nested in the same access JSON blob
+-- (access.vehicleAccess = {model = bool, ...}), no DB schema change.
+-- Same permission check as EditAccess/EditItemAccess. The actual
+-- enforcement lives in FMGangs:RegisterGangVehicle (server/boss.lua).
+-------------------------------------------------------------------
+ESX.RegisterServerCallback('FMGangs:EditVehicleAccess', function(source, cb, GangName, GradeNumber, model, value)
+    if not IsGangBossSource(source, GangName) then return cb(false) end
+    if not Gangs[GangName].grades[tonumber(GradeNumber)] then return cb(false) end
+
+    local grade = Gangs[GangName].grades[tonumber(GradeNumber)]
+    grade.access.vehicleAccess = grade.access.vehicleAccess or {}
+    grade.access.vehicleAccess[model] = value
+
+    MySQL.Async.execute('UPDATE gang_grades SET access = @access WHERE gang_name = @gang_name AND grade = @grade',
+    {
+        ['@gang_name'] = GangName,
+        ['@grade'] = GradeNumber,
+        ['@access'] = json.encode(grade.access),
+    }, function(result)
+        cb(value)
+    end)
+end)
+
 
 ESX.RegisterServerCallback('FMGangs:GetRankCloths', function(source, cb)
     local xPlayer = ESX.GetPlayerFromId(source)

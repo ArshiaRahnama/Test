@@ -167,6 +167,10 @@ RegisterServerEvent('For5M:SendLog')
 AddEventHandler('For5M:SendLog', function(source , category , Text  )
     local identifierlist = ExtractIdentifiers(source) 
 	local xPlayer = ESX.GetPlayerFromId(source)
+    -- FIX: no guard here before - a bad/invalid source would crash on
+    -- xPlayer.gang.name below. Same class of bug as everywhere else
+    -- in this resource; cheap to close while touching this function.
+    if not xPlayer or not xPlayer.gang or not Gangs[xPlayer.gang.name] then return end
     local data = {}
     data.playerid = source 
     data.identifier = identifierlist.steam 
@@ -182,6 +186,11 @@ function SendLog(data)
 	local color = '65352'
 	local category = data.category
     local DiscordStart = data.Webhook
+    -- FIX: no guard here before - a gang that hasn't set a webhook
+    -- yet (Config.WebHook default / never configured via "Set Log
+    -- Webhook") would fire a PerformHttpRequest at an empty/invalid
+    -- URL for every single boss action, silently failing every time.
+    if not DiscordStart or DiscordStart == '' then return end
     local connect = {
         {
             ["color"] = color ,

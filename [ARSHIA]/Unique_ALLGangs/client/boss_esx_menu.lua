@@ -374,13 +374,16 @@ function OpenBossRankAccessCategoryMenu(gang, gradeNumber)
         elements = {
             { label = 'General Access', value = 'general' },
             { label = 'Item Access (Armory)', value = 'items' },
+            { label = 'Vehicle Access', value = 'vehicles' },
         }
     }, function(data, menu)
         menu.close()
         if data.current.value == 'general' then
             OpenBossRankAccessToggleMenu(gang, gradeNumber)
-        else
+        elseif data.current.value == 'items' then
             OpenBossItemAccessArmoryMenu(gang, gradeNumber)
+        else
+            OpenBossVehicleAccessCategoryMenu(gang, gradeNumber)
         end
     end, function(data, menu)
         menu.close()
@@ -519,6 +522,80 @@ function OpenBossItemAccessMenu(gang, gradeNumber, armoryKey)
                 OpenBossItemAccessArmoryMenu(gang, gradeNumber)
             end)
         end, gang, armoryKey)
+    end, gang)
+end
+
+-------------------------------------------------------------------
+-- Per-vehicle-model rank access (requested: "give each rank access
+-- to specific gang vehicles, e.g. only some ranks get the Neon") -
+-- same pattern as Item Access above, just keyed off Config.GangVehicles
+-- model names instead of armory item names, and stored in the same
+-- per-grade access blob (access.vehicleAccess = {model = bool, ...})
+-- via FMGangs:EditVehicleAccess (server/Gangs.lua). Enforced in two
+-- places: client/load.lua filters OpenGangVehicleSpawner's model list
+-- so a blocked model doesn't even show up in the menu, and
+-- FMGangs:RegisterGangVehicle (server/boss.lua) checks again
+-- server-side - the actual trust boundary, same as Item Access.
+-- Models never explicitly toggled default to accessible.
+-------------------------------------------------------------------
+function OpenBossVehicleAccessCategoryMenu(gang, gradeNumber)
+    local elements = {}
+    for category, _ in pairs(Config.GangVehicles or {}) do
+        table.insert(elements, { label = category, value = category })
+    end
+    table.sort(elements, function(a, b) return a.value < b.value end)
+
+    ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'boss_vehicle_access_cat_' .. gang .. '_' .. gradeNumber, {
+        title    = 'VEHICLE CATEGORY',
+        align    = 'top-left',
+        elements = elements
+    }, function(data, menu)
+        menu.close()
+        OpenBossVehicleAccessMenu(gang, gradeNumber, data.current.value)
+    end, function(data, menu)
+        menu.close()
+        OpenBossRankAccessCategoryMenu(gang, gradeNumber)
+    end)
+end
+
+function OpenBossVehicleAccessMenu(gang, gradeNumber, category)
+    ESX.TriggerServerCallback('FMGangs:GetGangDataFromName', function(gangData)
+        local gradeData = gangData and gangData.grades and gangData.grades[gradeNumber]
+        if not gradeData then
+            ESX.ShowNotification('Could not load that rank')
+            OpenBossRankAccessMenu(gang)
+            return
+        end
+
+        local vehicleAccess = (gradeData.access and gradeData.access.vehicleAccess) or {}
+        local models = Config.GangVehicles[category] or {}
+        local elements = {}
+        for _, model in ipairs(models) do
+            -- unset (nil) means "allowed" (backward compatible default)
+            local allowed = vehicleAccess[model] ~= false
+            local state = allowed and '<span style="color:lightgreen;">ALLOWED</span>' or '<span style="color:salmon;">BLOCKED</span>'
+            local displayName = GetLabelText(GetDisplayNameFromVehicleModel(GetHashKey(model))) or model
+            table.insert(elements, { label = displayName .. ': ' .. state, value = model })
+        end
+        if #elements == 0 then
+            ESX.ShowNotification('No vehicles configured for this category')
+        end
+
+        ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'boss_vehicle_access_' .. gang .. '_' .. gradeNumber .. '_' .. category, {
+            title    = (gradeData.label or ('Grade ' .. gradeNumber)) .. ' - ' .. category,
+            align    = 'top-left',
+            elements = elements
+        }, function(data, menu)
+            local model = data.current.value
+            local currentlyAllowed = vehicleAccess[model] ~= false
+            ESX.TriggerServerCallback('FMGangs:EditVehicleAccess', function()
+                menu.close()
+                OpenBossVehicleAccessMenu(gang, gradeNumber, category)
+            end, gang, gradeNumber, model, not currentlyAllowed)
+        end, function(data, menu)
+            menu.close()
+            OpenBossVehicleAccessCategoryMenu(gang, gradeNumber)
+        end)
     end, gang)
 end
 

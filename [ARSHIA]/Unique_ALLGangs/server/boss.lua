@@ -266,10 +266,11 @@ end)
 -- it - this does the same insert directly, gated by our own
 -- boss/garage-access check instead, so a boss can register a vehicle
 -- to their own gang without needing admin rights. Access is already
--- checked client-side before the vehicle is even spawned (access['garage']),
--- but checked again here too since this is the actual trust boundary.
+-- checked client-side before the vehicle is even spawned (access['garage']
+-- and, per-model, access.vehicleAccess), but checked again here too since
+-- this is the actual trust boundary.
 -------------------------------------------------------------------
-ESX.RegisterServerCallback('FMGangs:RegisterGangVehicle', function(source, cb, vehicleProps)
+ESX.RegisterServerCallback('FMGangs:RegisterGangVehicle', function(source, cb, vehicleProps, model)
     local xPlayer = ESX.GetPlayerFromId(source)
     if not xPlayer or not xPlayer.gang or xPlayer.gang.name == 'nogang' or not Gangs[xPlayer.gang.name] then
         return cb(false)
@@ -278,6 +279,14 @@ ESX.RegisterServerCallback('FMGangs:RegisterGangVehicle', function(source, cb, v
     local LastRank = CountTable(Gangs[xPlayer.gang.name].grades)
     local isBoss = xPlayer.gang.grade == LastRank
     if not isBoss and not (gradeData and gradeData.access['garage']) then
+        return cb(false)
+    end
+    -- Per-model rank access (see FMGangs:EditVehicleAccess in
+    -- server/Gangs.lua): models never explicitly toggled default to
+    -- accessible, same as itemAccess. Applies uniformly, same as
+    -- itemAccess (no boss bypass there either).
+    local vehicleAccess = gradeData and gradeData.access and gradeData.access.vehicleAccess
+    if model and vehicleAccess and vehicleAccess[model] == false then
         return cb(false)
     end
     if not vehicleProps or not vehicleProps.plate then
