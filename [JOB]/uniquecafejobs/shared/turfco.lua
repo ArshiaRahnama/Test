@@ -29,4 +29,6 @@ TurfCo = {
 
 	RentCostPerMinute = 500, -- what the renting gang pays Turf Wars, per minute requested
 	MaxRentMinutes    = 120,
+
+	CollectCooldownMins = 30,
 }

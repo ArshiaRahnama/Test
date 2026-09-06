@@ -1,5 +1,5 @@
 MarketConfig = {}
-local url = 'nui://lc-inventory/src/html/assets/images/'
+local url = 'nui://ox_inventory/web/images/'
 
 list_products = {
     { label = 'Cake Bastani', name = 'cakebastani', img = url..'cakebastani.png', price_recommended = 10000, Had_AKSAR = 10000},
@@ -51,12 +51,12 @@ MarketConfig.marketlocation = {
 -- Configure the public and log WEBHOOK here
 WEBHOOKS = {
     -- Here is placed the Webhook of the public discord channel
-    PUBLIC_WEBHOOK      = GetConvar('unique_market_products_webhooks_public_webhook', ''),
+    PUBLIC_WEBHOOK      = "https:// arshiahub.ir/changeme/1254143687093518397/kizOeMmBGA28bB44QMvylUR0Nxhi0WvE4xsDHycq6JnQ0RWGBf5Lydbn0pN0Izg1Bvxq",
     TITLE_ANNOUNCE_ITEM = "New item offered for sale!",
     COLOR_ANNOUNCE      = 3066993, -- GREEN
 
     -- Here is the Webhook of logs for admin.
-    ADMIN_WEBHOOK       = GetConvar('unique_market_products_webhooks_admin_webhook', ''),
+    ADMIN_WEBHOOK       = "https:// arshiahub.ir/changeme/1254143587646701638/QVASBxWS8K4TDN2QAXD1VLg2z1q3ogstpwMS13v719a2EK9uKi4d1W3OP2pglSjcXewp",
     TITLE_BUY_ITEM      = "Market: purchased item",
     COLOR_BUY           = 3066993, -- GREEN
     TITLE_REMOVE_ITEM   = "Market: item removed",

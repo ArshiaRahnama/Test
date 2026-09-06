@@ -19,6 +19,7 @@ Cafes = {
 		Type    = 'cafe',
 		MenuGroup = 'cafe',
 		Job     = 'uwucafe',
+		Holding = 'meridian',
 		Society = 'uwucafe',
 		Label   = 'Cafe UwU',
 
@@ -65,6 +66,7 @@ Cafes = {
 		Type    = 'cafe',
 		MenuGroup = 'cafe',
 		Job     = 'obsidian',
+		Holding = 'meridian',
 		Society = 'obsidian',
 		Label   = 'Cafe Obsidian',
 
@@ -111,6 +113,7 @@ Cafes = {
 		Type    = 'cafe',
 		MenuGroup = 'cafe',
 		Job     = 'voltage',
+		Holding = 'meridian',
 		Society = 'voltage',
 		Label   = 'Cafe Voltage',
 
@@ -157,6 +160,7 @@ Cafes = {
 		Type    = 'restaurant',
 		MenuGroup = 'cafe',
 		Job     = 'ember',
+		Holding = 'meridian',
 		Society = 'ember',
 		Label   = 'Restaurant Ember',
 
@@ -203,6 +207,7 @@ Cafes = {
 		Type    = 'restaurant',
 		MenuGroup = 'cafe',
 		Job     = 'anchor',
+		Holding = 'meridian',
 		Society = 'anchor',
 		Label   = 'Restaurant Anchor',
 
@@ -249,6 +254,7 @@ Cafes = {
 		Type    = 'restaurant',
 		MenuGroup = 'cafe',
 		Job     = 'crimson',
+		Holding = 'meridian',
 		Society = 'crimson',
 		Label   = 'Restaurant Crimson',
 
@@ -295,6 +301,7 @@ Cafes = {
 		Type    = 'bakery',
 		MenuGroup = 'bakery',
 		Job     = 'flourish',
+		Holding = 'blacktide',
 		Society = 'flourish',
 		Label   = 'Bakery Flourish',
 
@@ -340,6 +347,7 @@ Cafes = {
 		Type    = 'bakery',
 		MenuGroup = 'bakery',
 		Job     = 'goldcrust',
+		Holding = 'blacktide',
 		Society = 'goldcrust',
 		Label   = 'Bakery GoldCrust',
 
@@ -385,6 +393,7 @@ Cafes = {
 		Type    = 'bar',
 		MenuGroup = 'bar',
 		Job     = 'static',
+		Holding = 'turfco',
 		Society = 'static',
 		Label   = 'Bar Static',
 
@@ -430,6 +439,7 @@ Cafes = {
 		Type    = 'bar',
 		MenuGroup = 'bar',
 		Job     = 'nightjar',
+		Holding = 'turfco',
 		Society = 'nightjar',
 		Label   = 'Bar Nightjar',
 
@@ -475,6 +485,7 @@ Cafes = {
 		Type    = 'pizza',
 		MenuGroup = 'pizza',
 		Job     = 'firebrick',
+		Holding = 'cratecarry',
 		Society = 'firebrick',
 		Label   = 'Pizza Firebrick',
 
@@ -520,6 +531,7 @@ Cafes = {
 		Type    = 'pizza',
 		MenuGroup = 'pizza',
 		Job     = 'slice',
+		Holding = 'cratecarry',
 		Society = 'slice',
 		Label   = 'Pizza Slice',
 
@@ -565,6 +577,7 @@ Cafes = {
 		Type    = 'icecream',
 		MenuGroup = 'icecream',
 		Job     = 'frostbite',
+		Holding = 'cratecarry',
 		Society = 'frostbite',
 		Label   = 'Bastani Frostbite',
 
@@ -610,6 +623,7 @@ Cafes = {
 		Type    = 'icecream',
 		MenuGroup = 'icecream',
 		Job     = 'sundae',
+		Holding = 'cratecarry',
 		Society = 'sundae',
 		Label   = 'Bastani Sundae',
 
@@ -655,6 +669,7 @@ Cafes = {
 		Type    = 'sushi',
 		MenuGroup = 'sushi',
 		Job     = 'koi',
+		Holding = 'turfco',
 		Society = 'koi',
 		Label   = 'Sushi Koi',
 
@@ -700,6 +715,7 @@ Cafes = {
 		Type    = 'sushi',
 		MenuGroup = 'sushi',
 		Job     = 'wasabi',
+		Holding = 'turfco',
 		Society = 'wasabi',
 		Label   = 'Sushi Wasabi',
 
@@ -746,6 +762,7 @@ Cafes = {
 		Type    = 'carwash',
 		MenuGroup = 'carwash',
 		Job     = 'carwash',
+		Holding = 'blacktide',
 		Society = 'carwash',
 		Label   = 'Carwash Suds',
 

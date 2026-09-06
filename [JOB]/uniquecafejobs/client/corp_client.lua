@@ -1,8 +1,9 @@
 --[[
-	Client side for the 3 corp jobs. Reuses OpenCloakroomMenu() (from
-	functions.lua) and esx_society's boss menu event - only the physical
-	zones + a couple of bespoke menus (Portfolio / Launder / Wholesale) are
-	new here.
+	Client side for the 3 "corp.lua" holdings (Meridian/Blacktide/CrateCarry).
+	Turf Wars (turfco) has its own client/turfco_client.lua for its HQ +
+	paintball-map renting, but shares the SAME generic Boss Actions menu
+	(openHoldingBossMenu below) since Ranks/ownership/toggle are all generic
+	now - see server/corp_server.lua.
 ]]
 
 local function myCorpJob()
@@ -44,52 +45,63 @@ AddEventHandler('uniquecafejobs:corp:businessRenamed', function(job, newName)
 	CustomNames[job] = newName
 end)
 
--- ── Meridian: physical Boss Action access at EVERY business it owns ──
--- Whoever holds Meridian (Director+) can walk up to any acquired/partnered
--- business's own Boss Action marker and manage it directly, on top of the
--- remote "Manage Business Staff" menu at Meridian's own HQ.
-local MeridianOwnedJobs = {}
-
-CreateThread(function()
-	Citizen.Wait(2000)
-	TriggerServerEvent('uniquecafejobs:corp:requestMeridianOwnedJobs')
+RegisterNetEvent('uniquecafejobs:corp:openCloakroom')
+AddEventHandler('uniquecafejobs:corp:openCloakroom', function()
+	OpenCloakroomMenu()
 end)
 
-RegisterNetEvent('uniquecafejobs:corp:syncMeridianOwnedJobs')
-AddEventHandler('uniquecafejobs:corp:syncMeridianOwnedJobs', function(owned)
-	MeridianOwnedJobs = owned
-end)
-
-CreateThread(function()
-	while true do
-		Citizen.Wait(0)
-		if PlayerData and PlayerData.job and PlayerData.job.name == Corp.Meridian.Job and PlayerData.job.grade >= 5 then
-			local playerCoords = GetEntityCoords(PlayerPedId())
-
-			for _, cafe in pairs(Cafes) do
-				if MeridianOwnedJobs[cafe.Job] then
-					local dist = #(playerCoords - vector3(cafe.BossAction.Pos.x, cafe.BossAction.Pos.y, cafe.BossAction.Pos.z))
-					if dist < 10.0 then
-						DrawMarker(29, cafe.BossAction.Pos.x, cafe.BossAction.Pos.y, cafe.BossAction.Pos.z - 0.9, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.6, 0.6, 0.6, 0, 255, 120, 100, false, true, 2, false, nil, nil, false)
-						if dist < 1.5 then
-							ESX.ShowHelpNotification(("~INPUT_CONTEXT~ Manage %s (as Meridian)"):format(GetDisplayLabel(cafe.Job, cafe.Label)))
-							if IsControlJustPressed(0, 38) then
-								TriggerServerEvent('uniquecafejobs:corp:openBusinessBossMenuAsMeridian', cafe.Job)
-							end
-						end
-					end
-				end
+-- ── Generic Boss Actions menu - identical for all 4 holdings ──
+local function openHoldingBossMenu(job, label)
+	ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'holding_boss_root_' .. job, {
+		title    = GetDisplayLabel(job, label),
+		align    = 'top-left',
+		elements = {
+			{ label = 'Portfolio Dashboard', value = 'dashboard' },
+			{ label = 'Manage Portfolio (Rank Up)', value = 'portfolio' },
+			{ label = 'Manage Business Staff (Director+)', value = 'staff' },
+			{ label = 'Open/Close Businesses (Director+)', value = 'toggle' },
+			{ label = 'Rename Holding', value = 'rename' },
+		},
+	}, function(data, menu)
+		menu.close()
+		if data.current.value == 'dashboard' then
+			TriggerServerEvent('uniquecafejobs:corp:requestPortfolio')
+		elseif data.current.value == 'portfolio' then
+			TriggerServerEvent('uniquecafejobs:corp:requestManagePortfolio')
+		elseif data.current.value == 'staff' then
+			TriggerServerEvent('uniquecafejobs:corp:requestManageStaffList')
+		elseif data.current.value == 'toggle' then
+			TriggerServerEvent('uniquecafejobs:corp:requestToggleList')
+		elseif data.current.value == 'rename' then
+			local input = lib.inputDialog('Rename Holding', {
+				{ type = 'input', label = 'New name (3-30 chars)', required = true },
+			})
+			if input and input[1] then
+				TriggerServerEvent('uniquecafejobs:corp:renameHolding', input[1])
 			end
-		else
-			Citizen.Wait(1000)
 		end
-	end
+	end, function(data, menu)
+		menu.close()
+	end)
+end
+
+RegisterNetEvent('uniquecafejobs:corp:openMeridianBoss')
+AddEventHandler('uniquecafejobs:corp:openMeridianBoss', function()
+	openHoldingBossMenu(Corp.Meridian.Job, Corp.Meridian.Label)
+end)
+
+RegisterNetEvent('uniquecafejobs:corp:openBlacktideBoss')
+AddEventHandler('uniquecafejobs:corp:openBlacktideBoss', function()
+	openHoldingBossMenu(Corp.Blacktide.Job, Corp.Blacktide.Label)
+end)
+
+RegisterNetEvent('uniquecafejobs:corp:openCrateCarryBoss')
+AddEventHandler('uniquecafejobs:corp:openCrateCarryBoss', function()
+	openHoldingBossMenu(Corp.CrateCarry.Job, Corp.CrateCarry.Label)
 end)
 
 -- ── Boss Action / Cloakroom markers (Meridian + Blacktide + CrateCarry) ──
--- Classic DrawMarker + proximity style, same convention as esx_uniquejobs
--- (police_main.lua etc.) uses for its own Boss Action / Cloakroom markers -
--- no ox_target here on purpose.
+-- Classic DrawMarker + proximity style, same convention as esx_uniquejobs.
 local SimpleMarkers = {
 	{ pos = Corp.Meridian.BossAction.Pos,   job = Corp.Meridian.Job,   help = Corp.Meridian.BossAction.Name,   event = 'uniquecafejobs:corp:openMeridianBoss' },
 	{ pos = Corp.Meridian.CloackRoom.Pos,   job = Corp.Meridian.Job,   help = Corp.Meridian.CloackRoom.Name,   event = 'uniquecafejobs:corp:openCloakroom' },
@@ -120,7 +132,6 @@ CreateThread(function()
 			end
 		end
 
-		-- Resale counter - open to EVERYONE (public customers), not job gated
 		local resaleDist = #(playerCoords - vector3(Corp.CrateCarry.ResaleShop.Pos.x, Corp.CrateCarry.ResaleShop.Pos.y, Corp.CrateCarry.ResaleShop.Pos.z))
 		if resaleDist < 10.0 then
 			DrawMarker(29, Corp.CrateCarry.ResaleShop.Pos.x, Corp.CrateCarry.ResaleShop.Pos.y, Corp.CrateCarry.ResaleShop.Pos.z - 0.9, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.6, 0.6, 0.6, 0, 200, 255, 100, false, true, 2, false, nil, nil, false)
@@ -134,58 +145,15 @@ CreateThread(function()
 	end
 end)
 
-RegisterNetEvent('uniquecafejobs:corp:openCloakroom')
-AddEventHandler('uniquecafejobs:corp:openCloakroom', function()
-	OpenCloakroomMenu()
-end)
-
-RegisterNetEvent('uniquecafejobs:corp:openMeridianBoss')
-AddEventHandler('uniquecafejobs:corp:openMeridianBoss', function()
-	ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'meridian_boss_root', {
-		title    = GetDisplayLabel(Corp.Meridian.Job, Corp.Meridian.Label),
-		align    = 'top-left',
-		elements = {
-			{ label = 'Portfolio Dashboard', value = 'dashboard' },
-			{ label = 'Manage Portfolio (Acquire / Rank Up)', value = 'portfolio' },
-			{ label = 'VIP Partnerships', value = 'vip' },
-			{ label = 'Manage Business Staff (Director+)', value = 'staff' },
-			{ label = 'Open/Close Businesses (Director+)', value = 'toggle' },
-			{ label = 'Rename Holding', value = 'rename' },
-		},
-	}, function(data, menu)
-		menu.close()
-		if data.current.value == 'dashboard' then
-			TriggerServerEvent('uniquecafejobs:corp:requestPortfolio')
-		elseif data.current.value == 'portfolio' then
-			TriggerServerEvent('uniquecafejobs:corp:requestManagePortfolio')
-		elseif data.current.value == 'vip' then
-			TriggerServerEvent('uniquecafejobs:corp:requestVIPPartnerships')
-		elseif data.current.value == 'staff' then
-			TriggerServerEvent('uniquecafejobs:corp:requestManageStaffList')
-		elseif data.current.value == 'toggle' then
-			TriggerServerEvent('uniquecafejobs:corp:requestToggleList')
-		elseif data.current.value == 'rename' then
-			local input = lib.inputDialog('Rename Holding', {
-				{ type = 'input', label = 'New name (3-30 chars)', required = true },
-			})
-			if input and input[1] then
-				TriggerServerEvent('uniquecafejobs:corp:renameHolding', input[1])
-			end
-		end
-	end, function(data, menu)
-		menu.close()
-	end)
-end)
-
 RegisterNetEvent('uniquecafejobs:corp:showPortfolio')
-AddEventHandler('uniquecafejobs:corp:showPortfolio', function(rows, canCollect, meridianBalance)
-	local elements = { { label = ('Meridian Balance: $%d'):format(meridianBalance), value = 'noop', disabled = true } }
+AddEventHandler('uniquecafejobs:corp:showPortfolio', function(rows, canCollect, holdingBalance)
+	local elements = { { label = ('Holding Balance: $%d'):format(holdingBalance), value = 'noop', disabled = true } }
 	for _, row in ipairs(rows) do
 		table.insert(elements, { label = ('%s: $%d'):format(row.label, row.balance), value = 'noop', disabled = true })
 	end
-	table.insert(elements, { label = canCollect and 'Collect Franchise Fee (' .. Corp.Meridian.FranchiseFeePercent .. '%)' or 'Franchise fee already collected recently', value = 'collect', disabled = not canCollect })
+	table.insert(elements, { label = canCollect and 'Collect Franchise Fee' or 'Franchise fee already collected recently', value = 'collect', disabled = not canCollect })
 
-	ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'meridian_portfolio', {
+	ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'holding_portfolio', {
 		title    = 'Portfolio Dashboard',
 		align    = 'top-left',
 		elements = elements,
@@ -203,56 +171,23 @@ RegisterNetEvent('uniquecafejobs:corp:showManagePortfolio')
 AddEventHandler('uniquecafejobs:corp:showManagePortfolio', function(rows)
 	local elements = {}
 	for _, row in ipairs(rows) do
-		local label
-		if row.acquired then
-			local nextRankCost = nil
-			for i, r in ipairs(Corp.Meridian.Ranks) do
-				if r.id == row.rank and Corp.Meridian.Ranks[i + 1] then
-					nextRankCost = Corp.Meridian.Ranks[i + 1].label .. ' for $' .. Corp.Meridian.Ranks[i + 1].upgradeCost
-				end
+		local nextRankCost = nil
+		for i, r in ipairs(Ranks) do
+			if r.id == row.rank and Ranks[i + 1] then
+				nextRankCost = Ranks[i + 1].label .. ' for $' .. Ranks[i + 1].upgradeCost
 			end
-			label = ('%s - %s rank%s'):format(row.label, row.rank:gsub("^%l", string.upper), nextRankCost and (' (upgrade to ' .. nextRankCost .. ')') or ' (MAX)')
-		else
-			label = ('%s - not acquired ($%d to acquire)'):format(row.label, Corp.Meridian.AcquireCost)
 		end
-		table.insert(elements, { label = label, value = row.job, acquired = row.acquired, maxed = row.acquired and row.rank == 'gold' })
+		local label = ('%s - %s rank%s'):format(row.label, row.rank:gsub("^%l", string.upper), nextRankCost and (' (upgrade to ' .. nextRankCost .. ')') or ' (MAX)')
+		table.insert(elements, { label = label, value = row.job, maxed = row.rank == 'gold' })
 	end
 
-	ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'meridian_manage_portfolio', {
+	ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'holding_manage_portfolio', {
 		title    = 'Manage Portfolio',
 		align    = 'top-left',
 		elements = elements,
 	}, function(data, menu)
-		if data.current.acquired then
-			if not data.current.maxed then
-				TriggerServerEvent('uniquecafejobs:corp:upgradeBusiness', data.current.value)
-			end
-		else
-			TriggerServerEvent('uniquecafejobs:corp:acquireBusiness', data.current.value)
-		end
-		menu.close()
-	end, function(data, menu)
-		menu.close()
-	end)
-end)
-
-RegisterNetEvent('uniquecafejobs:corp:showVIPPartnerships')
-AddEventHandler('uniquecafejobs:corp:showVIPPartnerships', function(rows)
-	local elements = {}
-	for _, row in ipairs(rows) do
-		local label = row.partnered
-			and (row.label .. ' - VIP Partner (15% flat cut active)')
-			or (row.label .. (' - not partnered ($%d to sign)'):format(Corp.Meridian.VIPPartnershipCost))
-		table.insert(elements, { label = label, value = row.job, partnered = row.partnered })
-	end
-
-	ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'meridian_vip_partnerships', {
-		title    = 'VIP Partnerships',
-		align    = 'top-left',
-		elements = elements,
-	}, function(data, menu)
-		if not data.current.partnered then
-			TriggerServerEvent('uniquecafejobs:corp:signVIPPartnership', data.current.value)
+		if not data.current.maxed then
+			TriggerServerEvent('uniquecafejobs:corp:upgradeBusiness', data.current.value)
 		end
 		menu.close()
 	end, function(data, menu)
@@ -267,10 +202,10 @@ AddEventHandler('uniquecafejobs:corp:showManageStaffList', function(rows)
 		table.insert(elements, { label = row.label, value = row.job })
 	end
 	if #elements == 0 then
-		table.insert(elements, { label = 'No businesses acquired or partnered yet', value = 'noop', disabled = true })
+		table.insert(elements, { label = 'No businesses in this holding', value = 'noop', disabled = true })
 	end
 
-	ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'meridian_staff_list', {
+	ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'holding_staff_list', {
 		title    = 'Manage Business Staff',
 		align    = 'top-left',
 		elements = elements,
@@ -279,7 +214,7 @@ AddEventHandler('uniquecafejobs:corp:showManageStaffList', function(rows)
 		local chosenJob = data.current.value
 		menu.close()
 
-		ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'meridian_staff_actions', {
+		ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'holding_staff_actions', {
 			title    = 'Manage Staff',
 			align    = 'top-left',
 			elements = {
@@ -324,7 +259,7 @@ AddEventHandler('uniquecafejobs:corp:showToggleList', function(rows)
 		})
 	end
 
-	ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'meridian_toggle_list', {
+	ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'holding_toggle_list', {
 		title    = 'Open/Close Businesses',
 		align    = 'top-left',
 		elements = elements,
@@ -341,43 +276,37 @@ AddEventHandler('uniquecafejobs:corp:openRemoteBossMenu', function(job)
 	TriggerEvent('esx_society:openBosscarysMenu', job, function(data, menu) end, function(data, menu) end)
 end)
 
-local function openRenamableBossMenu(job, label)
-	ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'holding_boss_root_' .. job, {
-		title    = GetDisplayLabel(job, label),
-		align    = 'top-left',
-		elements = {
-			{ label = 'Open Boss Menu (hire / fire / grades)', value = 'boss' },
-			{ label = 'Rename Holding', value = 'rename' },
-		},
-	}, function(data, menu)
-		menu.close()
-		if data.current.value == 'boss' then
-			TriggerEvent('esx_society:openBosscarysMenu', job, function(d, m) end, function(d, m) end)
-		elseif data.current.value == 'rename' then
-			local input = lib.inputDialog('Rename Holding', {
-				{ type = 'input', label = 'New name (3-30 chars)', required = true },
-			})
-			if input and input[1] then
-				TriggerServerEvent('uniquecafejobs:corp:renameHolding', input[1])
+-- ── Any holding: physical Boss Action access at EVERY business it owns ──
+-- Ownership is fixed (cafe.Holding in shared/cafes.lua), so no server sync
+-- needed - Director+ (grade>=5) can walk up to any of their own businesses'
+-- Boss Action marker directly, on top of the remote "Manage Staff" menu.
+CreateThread(function()
+	while true do
+		Citizen.Wait(0)
+		if PlayerData and PlayerData.job and GetHoldingConfig(PlayerData.job.name) and PlayerData.job.grade >= 5 then
+			local playerCoords = GetEntityCoords(PlayerPedId())
+
+			for _, cafe in pairs(Cafes) do
+				if cafe.Holding == PlayerData.job.name then
+					local dist = #(playerCoords - vector3(cafe.BossAction.Pos.x, cafe.BossAction.Pos.y, cafe.BossAction.Pos.z))
+					if dist < 10.0 then
+						DrawMarker(29, cafe.BossAction.Pos.x, cafe.BossAction.Pos.y, cafe.BossAction.Pos.z - 0.9, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.6, 0.6, 0.6, 0, 255, 120, 100, false, true, 2, false, nil, nil, false)
+						if dist < 1.5 then
+							ESX.ShowHelpNotification(("~INPUT_CONTEXT~ Manage %s"):format(GetDisplayLabel(cafe.Job, cafe.Label)))
+							if IsControlJustPressed(0, 38) then
+								TriggerServerEvent('uniquecafejobs:corp:openBusinessBossMenuAsMeridian', cafe.Job)
+							end
+						end
+					end
+				end
 			end
+		else
+			Citizen.Wait(1000)
 		end
-	end, function(data, menu)
-		menu.close()
-	end)
-end
-
-RegisterNetEvent('uniquecafejobs:corp:openBlacktideBoss')
-AddEventHandler('uniquecafejobs:corp:openBlacktideBoss', function()
-	openRenamableBossMenu(Corp.Blacktide.Job, Corp.Blacktide.Label)
-end)
-
-RegisterNetEvent('uniquecafejobs:corp:openCrateCarryBoss')
-AddEventHandler('uniquecafejobs:corp:openCrateCarryBoss', function()
-	openRenamableBossMenu(Corp.CrateCarry.Job, Corp.CrateCarry.Label)
+	end
 end)
 
 -- ── Blacktide (launder) + CrateCarry (wholesale) markers at all 17 businesses ──
--- Same DrawMarker + proximity convention as the rest of this file.
 CreateThread(function()
 	while true do
 		Citizen.Wait(0)
@@ -468,7 +397,7 @@ AddEventHandler('uniquecafejobs:corp:showResaleShop', function(stock)
 	end)
 end)
 
--- ── Vehicle spawn/delete for the 3 corp jobs (same pattern as the 17 businesses) ──
+-- ── Vehicle spawn/delete for Meridian/Blacktide/CrateCarry ──
 CreateThread(function()
 	while true do
 		Citizen.Wait(0)

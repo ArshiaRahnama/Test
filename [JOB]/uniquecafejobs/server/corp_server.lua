@@ -1,10 +1,15 @@
 --[[
-	Server side for the 3 corp jobs sitting on top of the 17 businesses.
-	See shared/corp.lua for the numbers (cuts, cooldowns, markup).
+	Server side for the 4 holding jobs. Each of the 17 businesses has a fixed
+	owning holding (the `Holding` field on it in shared/cafes.lua). Every
+	holding gets the SAME generic management toolkit over ONLY the
+	businesses it owns - Portfolio Dashboard, Rank Up, Manage Staff,
+	Open/Close, Rename. Blacktide/CrateCarry additionally keep their own
+	special mechanic (laundering / wholesale) further down this file, which
+	works across all 17 businesses regardless of who owns them.
 ]]
 
-for _, corp in pairs({ Corp.Meridian, Corp.Blacktide, Corp.CrateCarry }) do
-	TriggerEvent('esx_society:registerSociety', corp.Job, corp.Label, 'society_' .. corp.Job, 'society_' .. corp.Job, 'society_' .. corp.Job, { type = 'public' })
+for _, holding in pairs({ Corp.Meridian, Corp.Blacktide, Corp.CrateCarry, TurfCo }) do
+	TriggerEvent('esx_society:registerSociety', holding.Job, holding.Label, 'society_' .. holding.Job, 'society_' .. holding.Job, 'society_' .. holding.Job, { type = 'public' })
 end
 
 CreateThread(function()
@@ -21,19 +26,13 @@ local function saveCustomName(entityJob, label)
 	})
 end
 
--- A holding's own top-grade Boss can rename their holding.
 RegisterNetEvent('uniquecafejobs:corp:renameHolding')
 AddEventHandler('uniquecafejobs:corp:renameHolding', function(newName)
 	local src = source
 	local xPlayer = ESX.GetPlayerFromId(src)
 	if not xPlayer then return end
 
-	local holding
-	if xPlayer.job.name == Corp.Meridian.Job then holding = Corp.Meridian
-	elseif xPlayer.job.name == Corp.Blacktide.Job then holding = Corp.Blacktide
-	elseif xPlayer.job.name == Corp.CrateCarry.Job then holding = Corp.CrateCarry
-	elseif xPlayer.job.name == TurfCo.Job then holding = TurfCo
-	end
+	local holding = GetHoldingConfig(xPlayer.job.name)
 	if not holding then return end
 	if xPlayer.job.grade_name ~= 'boss' then
 		TriggerClientEvent('esx:showNotification', src, 'Only the Boss can rename this holding.')
@@ -54,123 +53,84 @@ end)
 RegisterNetEvent('uniquecafejobs:corp:spawnVehicle')
 AddEventHandler('uniquecafejobs:corp:spawnVehicle', function(vehicleName)
 	local xPlayer = ESX.GetPlayerFromId(source)
-	if xPlayer.job.name == Corp.Meridian.Job and vehicleName == Corp.Meridian.SpawnVehicle then
-		TriggerClientEvent('spawnCarClientCorp', source, vehicleName)
-	elseif xPlayer.job.name == Corp.Blacktide.Job and vehicleName == Corp.Blacktide.SpawnVehicle then
-		TriggerClientEvent('spawnCarClientCorp', source, vehicleName)
-	elseif xPlayer.job.name == Corp.CrateCarry.Job and vehicleName == Corp.CrateCarry.SpawnVehicle then
+	local holding = GetHoldingConfig(xPlayer.job.name)
+	if holding and vehicleName == holding.SpawnVehicle then
 		TriggerClientEvent('spawnCarClientCorp', source, vehicleName)
 	end
 end)
 
--- ══════════════════════════ Meridian Holdings ══════════════════════════
+-- ══════════════════════════ Generic business ownership ══════════════════════════
 
-local lastFranchiseCollect = 0 -- os.time() of the last successful collection, server-wide
+local BusinessState = {}
+local lastCollect = {}
 
--- business_job -> { kind = 'portfolio'|'vip', status = 'acquired'|'partnered', rank = 'bronze'|'silver'|'gold' }
-local MeridianState = {}
+local function ownerOf(businessJob)
+	local cafe = GetCafeForJob(businessJob)
+	return cafe and cafe.Holding or nil
+end
+
+local function rankData(rankId)
+	for _, r in ipairs(Ranks) do
+		if r.id == rankId then return r end
+	end
+	return Ranks[1]
+end
 
 CreateThread(function()
 	local rows = MySQL.Sync.fetchAll('SELECT * FROM meridian_portfolio', {})
 	for _, row in ipairs(rows) do
-		MeridianState[row.business_job] = { kind = row.kind, status = row.status, rank = row.rank }
+		BusinessState[row.business_job] = { rank = row.rank or 'bronze' }
 	end
-
-	-- Holding 1 owns all 17 businesses by default - anything not already
-	-- saved (first run, or a business added after the fact) is seeded as an
-	-- acquired Bronze-rank subsidiary and persisted right away.
-	for _, job in ipairs(Corp.Meridian.PortfolioJobs) do
-		if not MeridianState[job] then
-			MeridianState[job] = { kind = 'portfolio', status = 'acquired', rank = 'bronze' }
+	for _, cafe in pairs(Cafes) do
+		if not BusinessState[cafe.Job] then
+			BusinessState[cafe.Job] = { rank = 'bronze' }
 			MySQL.Async.execute('REPLACE INTO meridian_portfolio (business_job, kind, status, rank) VALUES (@job, @kind, @status, @rank)', {
-				['@job'] = job, ['@kind'] = 'portfolio', ['@status'] = 'acquired', ['@rank'] = 'bronze',
+				['@job'] = cafe.Job, ['@kind'] = 'portfolio', ['@status'] = 'acquired', ['@rank'] = 'bronze',
 			})
 		end
 	end
-	for _, job in ipairs(Corp.Meridian.VIPJobs) do
-		if not MeridianState[job] then
-			MeridianState[job] = { kind = 'vip', status = 'partnered', rank = nil }
-			MySQL.Async.execute('REPLACE INTO meridian_portfolio (business_job, kind, status, rank) VALUES (@job, @kind, @status, @rank)', {
-				['@job'] = job, ['@kind'] = 'vip', ['@status'] = 'partnered', ['@rank'] = nil,
-			})
-		end
-	end
-
-	local owned = {}
-	for job, state in pairs(MeridianState) do
-		if state.status == 'acquired' or state.status == 'partnered' then
-			owned[job] = true
-		end
-	end
-	TriggerClientEvent('uniquecafejobs:corp:syncMeridianOwnedJobs', -1, owned)
 end)
 
-local function saveMeridianState(job)
-	local s = MeridianState[job]
+local function saveBusinessState(job)
+	local s = BusinessState[job]
 	MySQL.Async.execute('REPLACE INTO meridian_portfolio (business_job, kind, status, rank) VALUES (@job, @kind, @status, @rank)', {
-		['@job'] = job, ['@kind'] = s.kind, ['@status'] = s.status, ['@rank'] = s.rank,
+		['@job'] = job, ['@kind'] = 'portfolio', ['@status'] = 'acquired', ['@rank'] = s.rank,
 	})
-	broadcastMeridianOwnedJobs()
-end
-
--- Lets Meridian members physically walk up to ANY owned/partnered business's
--- own Boss Action marker and use it (see the extra markers added in
--- client/corp_client.lua) - not just remotely from Meridian's own HQ.
-function broadcastMeridianOwnedJobs()
-	local owned = {}
-	for job, state in pairs(MeridianState) do
-		if state.status == 'acquired' or state.status == 'partnered' then
-			owned[job] = true
-		end
-	end
-	TriggerClientEvent('uniquecafejobs:corp:syncMeridianOwnedJobs', -1, owned)
-end
-
-RegisterNetEvent('uniquecafejobs:corp:requestMeridianOwnedJobs')
-AddEventHandler('uniquecafejobs:corp:requestMeridianOwnedJobs', function()
-	local owned = {}
-	for job, state in pairs(MeridianState) do
-		if state.status == 'acquired' or state.status == 'partnered' then
-			owned[job] = true
-		end
-	end
-	TriggerClientEvent('uniquecafejobs:corp:syncMeridianOwnedJobs', source, owned)
-end)
-
-local function rankData(rankId)
-	for _, r in ipairs(Corp.Meridian.Ranks) do
-		if r.id == rankId then return r end
-	end
-	return Corp.Meridian.Ranks[1]
 end
 
 RegisterNetEvent('uniquecafejobs:corp:requestPortfolio')
 AddEventHandler('uniquecafejobs:corp:requestPortfolio', function()
 	local src = source
 	local xPlayer = ESX.GetPlayerFromId(src)
-	if not xPlayer or xPlayer.job.name ~= Corp.Meridian.Job then return end
+	local holding = xPlayer and GetHoldingConfig(xPlayer.job.name)
+	if not holding then return end
+
+	local myJobs = {}
+	for _, cafe in pairs(Cafes) do
+		if cafe.Holding == holding.Job then table.insert(myJobs, cafe) end
+	end
 
 	local rows = {}
-	local pending = 0
-	for _, cafe in pairs(Cafes) do pending = pending + 1 end
+	local pending = #myJobs
+	if pending == 0 then
+		TriggerEvent('esx_addonaccount:getSharedAccount', 'society_' .. holding.Job, function(mAccount)
+			TriggerClientEvent('uniquecafejobs:corp:showPortfolio', src, rows, false, mAccount.money)
+		end)
+		return
+	end
 
 	local function finish()
-		TriggerEvent('esx_addonaccount:getSharedAccount', 'society_' .. Corp.Meridian.Job, function(mAccount)
-			local canCollect = (os.time() - lastFranchiseCollect) >= (Corp.Meridian.CollectCooldownMins * 60)
+		TriggerEvent('esx_addonaccount:getSharedAccount', 'society_' .. holding.Job, function(mAccount)
+			local canCollect = (os.time() - (lastCollect[holding.Job] or 0)) >= (holding.CollectCooldownMins * 60)
 			table.sort(rows, function(a, b) return a.label < b.label end)
 			TriggerClientEvent('uniquecafejobs:corp:showPortfolio', src, rows, canCollect, mAccount.money)
 		end)
 	end
 
-	for _, cafe in pairs(Cafes) do
+	for _, cafe in ipairs(myJobs) do
 		TriggerEvent('esx_addonaccount:getSharedAccount', 'society_' .. cafe.Job, function(account)
-			local state = MeridianState[cafe.Job]
-			local tag = 'Unaffiliated'
-			if state and state.status == 'acquired' then
-				tag = rankData(state.rank).label .. ' Portfolio'
-			elseif state and state.status == 'partnered' then
-				tag = 'VIP Partner'
-			end
+			local state = BusinessState[cafe.Job]
+			local tag = rankData(state.rank).label
 			table.insert(rows, { label = ('%s [%s]'):format(GetDisplayLabel(cafe.Job, cafe.Label), tag), balance = account.money })
 			pending = pending - 1
 			if pending == 0 then finish() end
@@ -182,199 +142,113 @@ RegisterNetEvent('uniquecafejobs:corp:collectFranchiseFee')
 AddEventHandler('uniquecafejobs:corp:collectFranchiseFee', function()
 	local src = source
 	local xPlayer = ESX.GetPlayerFromId(src)
-	if not xPlayer or xPlayer.job.name ~= Corp.Meridian.Job then return end
+	local holding = xPlayer and GetHoldingConfig(xPlayer.job.name)
+	if not holding then return end
 
-	if (os.time() - lastFranchiseCollect) < (Corp.Meridian.CollectCooldownMins * 60) then
+	if (os.time() - (lastCollect[holding.Job] or 0)) < (holding.CollectCooldownMins * 60) then
 		TriggerClientEvent('esx:showNotification', src, 'Franchise fee already collected recently.')
 		return
 	end
-	lastFranchiseCollect = os.time()
+	lastCollect[holding.Job] = os.time()
 
 	local collectedFrom = 0
-	for job, state in pairs(MeridianState) do
-		local feePercent = nil
-		if state.status == 'acquired' then
-			feePercent = rankData(state.rank).feePercent
-		elseif state.status == 'partnered' then
-			feePercent = Corp.Meridian.VIPFeePercent
-		end
-
-		if feePercent then
+	for _, cafe in pairs(Cafes) do
+		if cafe.Holding == holding.Job then
 			collectedFrom = collectedFrom + 1
-			TriggerEvent('esx_addonaccount:getSharedAccount', 'society_' .. job, function(account)
+			local feePercent = rankData(BusinessState[cafe.Job].rank).feePercent
+			TriggerEvent('esx_addonaccount:getSharedAccount', 'society_' .. cafe.Job, function(account)
 				local fee = math.floor(account.money * feePercent / 100)
 				if fee > 0 then
 					account.removeMoney(fee)
-					TriggerEvent('esx_addonaccount:getSharedAccount', 'society_' .. Corp.Meridian.Job, function(mAccount)
-						mAccount.addMoney(fee)
+					TriggerEvent('esx_addonaccount:getSharedAccount', 'society_' .. holding.Job, function(hAccount)
+						hAccount.addMoney(fee)
 					end)
 				end
 			end)
 		end
 	end
 
-	TriggerClientEvent('esx:showNotification', src, ('Franchise fees collected from %d affiliated businesses.'):format(collectedFrom))
-	TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'FranchiseFeeLog', '```css\n[ Player : '..GetPlayerName(src)..'(' .. src .. ') ]\n[ Player Steam : '..xPlayer.identifier..' ]\n[ Businesses Collected From : '..tostring(collectedFrom)..' ]\n```', 'user', true, src, false)
+	TriggerClientEvent('esx:showNotification', src, ('Franchise fees collected from %d businesses.'):format(collectedFrom))
 end)
-
--- ── Manage Portfolio (acquire / upgrade rank) ──
 
 RegisterNetEvent('uniquecafejobs:corp:requestManagePortfolio')
 AddEventHandler('uniquecafejobs:corp:requestManagePortfolio', function()
 	local src = source
 	local xPlayer = ESX.GetPlayerFromId(src)
-	if not xPlayer or xPlayer.job.name ~= Corp.Meridian.Job then return end
+	local holding = xPlayer and GetHoldingConfig(xPlayer.job.name)
+	if not holding then return end
 
 	local rows = {}
-	for _, job in ipairs(Corp.Meridian.PortfolioJobs) do
-		local cafe = GetCafeForJob(job)
-		local state = MeridianState[job]
-		table.insert(rows, {
-			job = job,
-			label = cafe and GetDisplayLabel(cafe.Job, cafe.Label) or job,
-			acquired = state ~= nil and state.status == 'acquired',
-			rank = state and state.rank or nil,
-		})
-	end
-	TriggerClientEvent('uniquecafejobs:corp:showManagePortfolio', src, rows)
-end)
-
-RegisterNetEvent('uniquecafejobs:corp:acquireBusiness')
-AddEventHandler('uniquecafejobs:corp:acquireBusiness', function(job)
-	local src = source
-	local xPlayer = ESX.GetPlayerFromId(src)
-	if not xPlayer or xPlayer.job.name ~= Corp.Meridian.Job then return end
-	if not GetCafeForJob(job) then return end
-	local isPortfolioJob = false
-	for _, j in ipairs(Corp.Meridian.PortfolioJobs) do if j == job then isPortfolioJob = true end end
-	if not isPortfolioJob then return end
-	if MeridianState[job] and MeridianState[job].status == 'acquired' then return end
-
-	TriggerEvent('esx_addonaccount:getSharedAccount', 'society_' .. Corp.Meridian.Job, function(account)
-		if account.money < Corp.Meridian.AcquireCost then
-			TriggerClientEvent('esx:showNotification', src, 'Pool sosayeti Meridian kafi nist.')
-			return
+	for _, cafe in pairs(Cafes) do
+		if cafe.Holding == holding.Job then
+			table.insert(rows, {
+				job = cafe.Job,
+				label = GetDisplayLabel(cafe.Job, cafe.Label),
+				rank = BusinessState[cafe.Job].rank,
+			})
 		end
-		account.removeMoney(Corp.Meridian.AcquireCost)
-		MeridianState[job] = { kind = 'portfolio', status = 'acquired', rank = 'bronze' }
-		saveMeridianState(job)
-		TriggerClientEvent('esx:showNotification', src, 'Business acquired at Bronze rank.')
-	end)
+	end
+	table.sort(rows, function(a, b) return a.label < b.label end)
+	TriggerClientEvent('uniquecafejobs:corp:showManagePortfolio', src, rows)
 end)
 
 RegisterNetEvent('uniquecafejobs:corp:upgradeBusiness')
 AddEventHandler('uniquecafejobs:corp:upgradeBusiness', function(job)
 	local src = source
 	local xPlayer = ESX.GetPlayerFromId(src)
-	if not xPlayer or xPlayer.job.name ~= Corp.Meridian.Job then return end
+	if not xPlayer then return end
+	if ownerOf(job) ~= xPlayer.job.name then return end
 
-	local state = MeridianState[job]
-	if not state or state.status ~= 'acquired' then return end
-
+	local state = BusinessState[job]
 	local currentIndex
-	for i, r in ipairs(Corp.Meridian.Ranks) do
+	for i, r in ipairs(Ranks) do
 		if r.id == state.rank then currentIndex = i end
 	end
-	local nextRank = Corp.Meridian.Ranks[currentIndex + 1]
+	local nextRank = Ranks[currentIndex + 1]
 	if not nextRank then
 		TriggerClientEvent('esx:showNotification', src, 'Already at max rank (Gold).')
 		return
 	end
 
-	TriggerEvent('esx_addonaccount:getSharedAccount', 'society_' .. Corp.Meridian.Job, function(account)
+	TriggerEvent('esx_addonaccount:getSharedAccount', 'society_' .. xPlayer.job.name, function(account)
 		if account.money < nextRank.upgradeCost then
-			TriggerClientEvent('esx:showNotification', src, 'Pool sosayeti Meridian kafi nist.')
+			TriggerClientEvent('esx:showNotification', src, 'Not enough money in your holding account.')
 			return
 		end
 		account.removeMoney(nextRank.upgradeCost)
 		state.rank = nextRank.id
-		saveMeridianState(job)
+		saveBusinessState(job)
 		TriggerClientEvent('esx:showNotification', src, ('Upgraded to %s rank.'):format(nextRank.label))
 	end)
 end)
-
--- ── VIP Partnerships ──
-
-RegisterNetEvent('uniquecafejobs:corp:requestVIPPartnerships')
-AddEventHandler('uniquecafejobs:corp:requestVIPPartnerships', function()
-	local src = source
-	local xPlayer = ESX.GetPlayerFromId(src)
-	if not xPlayer or xPlayer.job.name ~= Corp.Meridian.Job then return end
-
-	local rows = {}
-	for _, job in ipairs(Corp.Meridian.VIPJobs) do
-		local cafe = GetCafeForJob(job)
-		local state = MeridianState[job]
-		table.insert(rows, {
-			job = job,
-			label = cafe and GetDisplayLabel(cafe.Job, cafe.Label) or job,
-			partnered = state ~= nil and state.status == 'partnered',
-		})
-	end
-	TriggerClientEvent('uniquecafejobs:corp:showVIPPartnerships', src, rows)
-end)
-
-RegisterNetEvent('uniquecafejobs:corp:signVIPPartnership')
-AddEventHandler('uniquecafejobs:corp:signVIPPartnership', function(job)
-	local src = source
-	local xPlayer = ESX.GetPlayerFromId(src)
-	if not xPlayer or xPlayer.job.name ~= Corp.Meridian.Job then return end
-	local isVIPJob = false
-	for _, j in ipairs(Corp.Meridian.VIPJobs) do if j == job then isVIPJob = true end end
-	if not isVIPJob then return end
-	if MeridianState[job] and MeridianState[job].status == 'partnered' then return end
-
-	TriggerEvent('esx_addonaccount:getSharedAccount', 'society_' .. Corp.Meridian.Job, function(account)
-		if account.money < Corp.Meridian.VIPPartnershipCost then
-			TriggerClientEvent('esx:showNotification', src, 'Pool sosayeti Meridian kafi nist.')
-			return
-		end
-		account.removeMoney(Corp.Meridian.VIPPartnershipCost)
-		MeridianState[job] = { kind = 'vip', status = 'partnered', rank = nil }
-		saveMeridianState(job)
-		TriggerClientEvent('esx:showNotification', src, 'VIP partnership signed - 15% flat cut from now on.')
-	end)
-end)
-
--- ── Manage Business Staff (Director+ only, i.e. grade >= 2) ──
--- Only businesses Meridian actually owns (acquired portfolio) or has a VIP
--- partnership with show up here - unaffiliated businesses are completely
--- off limits, their own Boss keeps 100% independent control.
-
-local function isMeridianAffiliated(job)
-	local s = MeridianState[job]
-	return s ~= nil and (s.status == 'acquired' or s.status == 'partnered')
-end
 
 RegisterNetEvent('uniquecafejobs:corp:requestManageStaffList')
 AddEventHandler('uniquecafejobs:corp:requestManageStaffList', function()
 	local src = source
 	local xPlayer = ESX.GetPlayerFromId(src)
-	if not xPlayer or xPlayer.job.name ~= Corp.Meridian.Job then return end
+	local holding = xPlayer and GetHoldingConfig(xPlayer.job.name)
+	if not holding then return end
 	if xPlayer.job.grade < 5 then
 		TriggerClientEvent('esx:showNotification', src, 'Director rank or higher required.')
 		return
 	end
 
 	local rows = {}
-	for job, state in pairs(MeridianState) do
-		if state.status == 'acquired' or state.status == 'partnered' then
-			local cafe = GetCafeForJob(job)
-			table.insert(rows, { job = job, label = cafe and GetDisplayLabel(cafe.Job, cafe.Label) or job })
+	for _, cafe in pairs(Cafes) do
+		if cafe.Holding == xPlayer.job.name then
+			table.insert(rows, { job = cafe.Job, label = GetDisplayLabel(cafe.Job, cafe.Label) })
 		end
 	end
+	table.sort(rows, function(a, b) return a.label < b.label end)
 	TriggerClientEvent('uniquecafejobs:corp:showManageStaffList', src, rows)
 end)
 
--- Opens that business's REAL boss menu (same hire/fire/grade/uniform/vehicle
--- system its own Boss uses) - Meridian is just a second entry point into the
--- exact same esx_society data, not a separate parallel system.
 RegisterNetEvent('uniquecafejobs:corp:openBusinessBossMenuAsMeridian')
 AddEventHandler('uniquecafejobs:corp:openBusinessBossMenuAsMeridian', function(job)
 	local src = source
 	local xPlayer = ESX.GetPlayerFromId(src)
-	if not xPlayer or xPlayer.job.name ~= Corp.Meridian.Job or xPlayer.job.grade < 5 then return end
-	if not isMeridianAffiliated(job) then return end
+	if not xPlayer or xPlayer.job.grade < 5 then return end
+	if ownerOf(job) ~= xPlayer.job.name then return end
 
 	TriggerClientEvent('uniquecafejobs:corp:openRemoteBossMenu', src, job)
 end)
@@ -383,8 +257,8 @@ RegisterNetEvent('uniquecafejobs:corp:appointManager')
 AddEventHandler('uniquecafejobs:corp:appointManager', function(job, targetId)
 	local src = source
 	local xPlayer = ESX.GetPlayerFromId(src)
-	if not xPlayer or xPlayer.job.name ~= Corp.Meridian.Job or xPlayer.job.grade < 5 then return end
-	if not isMeridianAffiliated(job) then return end
+	if not xPlayer or xPlayer.job.grade < 5 then return end
+	if ownerOf(job) ~= xPlayer.job.name then return end
 
 	local target = ESX.GetPlayerFromId(tonumber(targetId))
 	if not target then
@@ -392,19 +266,17 @@ AddEventHandler('uniquecafejobs:corp:appointManager', function(job, targetId)
 		return
 	end
 
-	-- Appoint them as that business's Boss (its own top grade), same as if
-	-- their own Boss had promoted them - Meridian is just doing the hiring.
 	target.setJob(job, 10)
 	TriggerClientEvent('esx:showNotification', src, ('%s appointed as Manager (Boss) of that business.'):format(target.name))
-	TriggerClientEvent('esx:showNotification', target.source, 'You have been appointed Manager (Boss) by Meridian Holdings.')
+	TriggerClientEvent('esx:showNotification', target.source, 'You have been appointed Manager (Boss) by your holding.')
 end)
 
 RegisterNetEvent('uniquecafejobs:corp:renameBusiness')
 AddEventHandler('uniquecafejobs:corp:renameBusiness', function(job, newName)
 	local src = source
 	local xPlayer = ESX.GetPlayerFromId(src)
-	if not xPlayer or xPlayer.job.name ~= Corp.Meridian.Job or xPlayer.job.grade < 5 then return end
-	if not isMeridianAffiliated(job) then return end
+	if not xPlayer or xPlayer.job.grade < 5 then return end
+	if ownerOf(job) ~= xPlayer.job.name then return end
 
 	newName = tostring(newName):sub(1, 40)
 	if #newName < 3 then
@@ -416,11 +288,6 @@ AddEventHandler('uniquecafejobs:corp:renameBusiness', function(job, newName)
 	TriggerClientEvent('uniquecafejobs:corp:businessRenamed', -1, job, newName)
 	TriggerClientEvent('esx:showNotification', src, ('Business renamed to "%s".'):format(newName))
 end)
-
--- ── Activate / Deactivate a business ──
--- Deactivated = its blip AND every physical marker (freezer/shop/boss
--- action/cloakroom/crafting/order counter) disappear for EVERYONE, not
--- just Meridian - it's effectively shut down until reactivated.
 
 ActiveBusinesses = {}
 
@@ -446,15 +313,19 @@ RegisterNetEvent('uniquecafejobs:corp:requestToggleList')
 AddEventHandler('uniquecafejobs:corp:requestToggleList', function()
 	local src = source
 	local xPlayer = ESX.GetPlayerFromId(src)
-	if not xPlayer or xPlayer.job.name ~= Corp.Meridian.Job or xPlayer.job.grade < 5 then return end
+	if not xPlayer or xPlayer.job.grade < 5 then return end
+	local holding = GetHoldingConfig(xPlayer.job.name)
+	if not holding then return end
 
 	local rows = {}
 	for _, cafe in pairs(Cafes) do
-		table.insert(rows, {
-			job = cafe.Job,
-			label = GetDisplayLabel(cafe.Job, cafe.Label),
-			active = ActiveBusinesses[cafe.Job] ~= false,
-		})
+		if cafe.Holding == xPlayer.job.name then
+			table.insert(rows, {
+				job = cafe.Job,
+				label = GetDisplayLabel(cafe.Job, cafe.Label),
+				active = ActiveBusinesses[cafe.Job] ~= false,
+			})
+		end
 	end
 	table.sort(rows, function(a, b) return a.label < b.label end)
 	TriggerClientEvent('uniquecafejobs:corp:showToggleList', src, rows)
@@ -464,8 +335,8 @@ RegisterNetEvent('uniquecafejobs:corp:toggleBusinessActive')
 AddEventHandler('uniquecafejobs:corp:toggleBusinessActive', function(job)
 	local src = source
 	local xPlayer = ESX.GetPlayerFromId(src)
-	if not xPlayer or xPlayer.job.name ~= Corp.Meridian.Job or xPlayer.job.grade < 5 then return end
-	if not GetCafeForJob(job) then return end
+	if not xPlayer or xPlayer.job.grade < 5 then return end
+	if ownerOf(job) ~= xPlayer.job.name then return end
 
 	local newState = not (ActiveBusinesses[job] ~= false)
 	ActiveBusinesses[job] = newState
@@ -478,7 +349,6 @@ AddEventHandler('uniquecafejobs:corp:toggleBusinessActive', function(job)
 	local label = GetDisplayLabel(job, GetCafeForJob(job).Label)
 	TriggerClientEvent('esx:showNotification', src, ('%s is now %s.'):format(label, newState and 'OPEN' or 'CLOSED'))
 end)
-
 -- ══════════════════════════ Blacktide Logistics (laundering) ══════════════════════════
 
 local lastWash = {} -- [identifier] = os.time()
@@ -518,7 +388,6 @@ AddEventHandler('uniquecafejobs:corp:launder', function(businessJob)
 
 	lastWash[xPlayer.identifier] = now
 	TriggerClientEvent('esx:showNotification', src, ('Shoma $%d pool kasif shostid, Blacktide $%d gereft.'):format(amount, blacktideCut))
-	TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'LaunderLog', '```css\n[ Player : '..GetPlayerName(src)..'(' .. src .. ') ]\n[ Player Steam : '..xPlayer.identifier..' ]\n[ Business : '..tostring(businessJob)..' ]\n[ Laundered Amount : '..tostring(amount)..' ]\n[ Blacktide Cut : '..tostring(blacktideCut)..' ]\n[ Business Cut : '..tostring(businessCut)..' ]\n```', 'user', true, src, false)
 end)
 
 -- ══════════════════════════ Crate & Carry (wholesale + resale) ══════════════════════════
@@ -584,7 +453,6 @@ AddEventHandler('uniquecafejobs:corp:buyWholesale', function(businessJob, itemNa
 			end)
 
 			TriggerClientEvent('esx:showNotification', src, ('%d x %s kharidari shod.'):format(quantity, sourceItem.label))
-			TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'WholesaleLog', '```css\n[ Player : '..GetPlayerName(src)..'(' .. src .. ') ]\n[ From Business : '..tostring(businessJob)..' ]\n[ Item : '..tostring(itemName)..' ]\n[ Quantity : '..tostring(quantity)..' ]\n[ Cost : '..tostring(cost)..' ]\n```', 'user', true, src, false)
 		end)
 	end)
 end)

@@ -1,5 +1,5 @@
 Config = Config or {}
-Config.itemIconsPath = "nui://lc-inventory/src/html/assets/images/"
+Config.itemIconsPath = "nui://ox_inventory/web/images/"
 
 -- Shared product catalog / shop stock - identical menu at every cafe.
 

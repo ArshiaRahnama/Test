@@ -46,12 +46,24 @@ CreateThread(function()
 						align    = 'top-left',
 						elements = {
 							{ label = 'Rent Paintball Map', value = 'rent' },
+							{ label = 'Portfolio Dashboard', value = 'dashboard' },
+							{ label = 'Manage Portfolio (Rank Up)', value = 'portfolio' },
+							{ label = 'Manage Business Staff (Director+)', value = 'staff' },
+							{ label = 'Open/Close Businesses (Director+)', value = 'toggle' },
 							{ label = 'Rename Holding', value = 'rename' },
 						},
 					}, function(data, menu)
 						menu.close()
 						if data.current.value == 'rent' then
 							TriggerServerEvent('uniquecafejobs:turfco:requestRentMenu')
+						elseif data.current.value == 'dashboard' then
+							TriggerServerEvent('uniquecafejobs:corp:requestPortfolio')
+						elseif data.current.value == 'portfolio' then
+							TriggerServerEvent('uniquecafejobs:corp:requestManagePortfolio')
+						elseif data.current.value == 'staff' then
+							TriggerServerEvent('uniquecafejobs:corp:requestManageStaffList')
+						elseif data.current.value == 'toggle' then
+							TriggerServerEvent('uniquecafejobs:corp:requestToggleList')
 						elseif data.current.value == 'rename' then
 							local input = lib.inputDialog('Rename Holding', {
 								{ type = 'input', label = 'New name (3-30 chars)', required = true },
