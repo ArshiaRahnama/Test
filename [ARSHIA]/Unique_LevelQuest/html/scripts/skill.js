@@ -46,14 +46,27 @@ document.addEventListener('DOMContentLoaded', () => {
       const masteredCount = sorted.filter(s => (Number(s.value) || 0) >= 1).length;
       if (skillSummary) {
         skillSummary.innerHTML = `
-          <span><i class="fa-solid fa-clock"></i> ${totalHours}h total on duty</span>
-          <span><i class="fa-solid fa-medal"></i> ${masteredCount}/${sorted.length} mastered</span>
+          <div class="summaryChip">
+            <i class="fa-solid fa-clock"></i>
+            <div class="summaryChipText">
+              <span class="summaryChipValue">${totalHours}h</span>
+              <span class="summaryChipLabel">total on duty</span>
+            </div>
+          </div>
+          <div class="summaryChip mastered">
+            <i class="fa-solid fa-medal"></i>
+            <div class="summaryChipText">
+              <span class="summaryChipValue">${masteredCount}/${sorted.length}</span>
+              <span class="summaryChipLabel">mastered</span>
+            </div>
+          </div>
         `;
       }
 
       sorted.forEach(s => {
         const pct = Math.max(0, Math.min(100, (Number(s.value) || 0) * 100));
         const tier = tierFor(pct);
+        const tierClass = tier.toLowerCase();
         const row = document.createElement('div');
         row.className = 'skillRow';
         if (s.isCurrent) row.classList.add('current');
@@ -66,11 +79,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         row.innerHTML = `
+          ${pct >= 100 ? '<div class="masteredRibbon"><i class="fa-solid fa-trophy"></i></div>' : ''}
           <div class="skillTop">
             <div class="skillIcon"><i class="fa-solid fa-briefcase"></i></div>
             <div class="skillTitleBlock">
               <span class="skillTitle">${s.title}${s.isCurrent ? '<span class="dutyBadge">ON DUTY</span>' : ''}</span>
-              <span class="skillTier">${tier}</span>
+              <span class="skillTier tier-${tierClass}">${tier}</span>
             </div>
             <span class="skillPct">${pct.toFixed(1)}%</span>
           </div>

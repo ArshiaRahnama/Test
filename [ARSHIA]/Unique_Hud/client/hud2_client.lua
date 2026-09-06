@@ -25,10 +25,19 @@ CreateThread(function()
             end
         elseif pauseMenu then
             pauseMenu = false
-            ClearPedTasks(ped)
-            ClearPedTasksImmediately(ped)
+            -- ✅ فیکس شد: باگ اصلی «پرت شدن/فریز شدن با Esc یا مپ» از همینجا
+            -- بود. ClearPedTasksImmediately همه‌ی تسک‌های پد رو پاک می‌کنه -
+            -- از جمله تسکِ «نشسته تو ماشین». یعنی هر بار پاز-منو (Esc یا مپ)
+            -- بسته می‌شد، این خط بی‌قید و شرط اجرا می‌شد و اگه بازیکن سوار
+            -- ماشین بود، بی‌دلیل از ماشین پرت می‌شد بیرون - و چون این یه
+            -- خروجِ زوری/غیرطبیعی بود (نه با کلید خروج معمولی)، صندلی هم تو
+            -- دیتای داخلی بازی گیج می‌موند و دیگه نمی‌شد سوارش شد. الان فقط
+            -- وقتی بازیکن سوار هیچ ماشینی نیست این پاکسازی انجام می‌شه.
+            if not IsPedInAnyVehicle(ped, false) then
+                ClearPedTasks(ped)
+                ClearPedTasksImmediately(ped)
+            end
         end
-
         local sendData = {
             id = 'hud',
             event = 'setData',

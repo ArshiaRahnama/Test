@@ -1439,45 +1439,6 @@ AddEventHandler('Unique_Phone:server:AddTransaction', function(data)
     ExecuteSql(false, "INSERT INTO `crypto_transactions` (`identifier`, `title`, `message`) VALUES (@p1, @p2, @p3)", {['@p1'] = Player.identifier, ['@p2'] = escape_sqli(data.TransactionTitle), ['@p3'] = escape_sqli(data.TransactionMessage)})
 end)
 
--- FIX: this used to hardcode a fixed list of job names directly in Lua
--- (ambulance/taxi/mechanic/weazel/police/sheriff/mt/fbi/cid/cia/marshal/
--- judge/doa/uwucafe) — any job added to the server later (like the newer
--- custom jobs) silently never showed up here, because the list was never
--- updated to match. `jobs.hasapp` already existed in the database schema
--- for exactly this purpose (mark a job as "should appear in the phone's
--- Services directory") but was never wired up (every job had it at 0).
--- Now this reads that column live, so adding a job to this directory going
--- forward is just:
---     UPDATE jobs SET hasapp = 1 WHERE name = 'yourjobname';
--- — no more code edits needed here ever again.
-ESX.RegisterServerCallback('Unique_Phone:server:GetCurrentpolices', function(source, cb)
-    MySQL.Async.fetchAll("SELECT name FROM jobs WHERE hasapp = 1", {}, function(jobRows)
-        local allowedJobs = {}
-        for _, row in ipairs(jobRows or {}) do
-            allowedJobs[row.name] = true
-        end
-
-        local polices = {}
-        for k, v in pairs(ESX.GetPlayers()) do
-            local Player = ESX.GetPlayerFromId(v)
-            local character = GetCharacter(v)
-
-            if Player ~= nil and allowedJobs[Player.job.name] then
-                table.insert(polices, {
-                    name = Player.name,
-                    phone = character.phone or 0,
-                    typejob = Player.job.name,
-                    -- EXPANSION: real, human-readable job name (e.g. "Judge"
-                    -- instead of "judge") for any job the client-side UI
-                    -- doesn't have a hardcoded label for — see polices.js.
-                    jobLabel = Player.job.label,
-                })
-            end
-        end
-        cb(polices)
-    end)
-end)
-
 -- ─────────────────────────────────────────────────────────
 -- EXPANSION: Job Manager — admin-only, single upsert form (see
 -- html/js/job-manager.js + the "⚙️" gear in the Services app header).
@@ -1602,24 +1563,6 @@ function Lang(item)
 
     return item
 end
-
-RegisterServerEvent('Unique_Phone:server:SendJobMessage')
-AddEventHandler('Unique_Phone:server:SendJobMessage', function(data, Pos)
-    local src = source
-    local players = GetPlayers()
-    local sender = string.gsub(ESX.GetPlayerFromId(src).name, "_", " ")
-    local xPlayer = ESX.GetPlayerFromId(src)
-
-    for _, playerId in ipairs(players) do
-        local xPlayer = ESX.GetPlayerFromId(playerId)
-        local date = os.date('%Y-%m-%d')
-
-        if xPlayer and xPlayer.job.name == string.lower(string.gsub(data.ChatNumber, " Deparment", "")) then
-
-            TriggerClientEvent('PX_phone_Clieant:AddMessagetoJobS', playerId, data, sender, Pos, xPlayer.source)
-        end
-    end
-end)
 
 RegisterServerEvent('Unique_Phone:server:addImageToGallery')
 AddEventHandler('Unique_Phone:server:addImageToGallery', function(imageUrl)

@@ -52,25 +52,26 @@ Citizen.CreateThread(function()
           speedBuffer[1], speedBuffer[2] = nil, nil
           velBuffer[1], velBuffer[2] = nil, nil
         else
-        speedBuffer[2] = speedBuffer[1]
-        speedBuffer[1] = GetEntitySpeed(vehData.vehicle)
-        if speedBuffer[2] ~= nil
-            and GetEntitySpeedVector(vehData.vehicle, true).y > 1.0
-            and speedBuffer[1] > 19.25
-            and (speedBuffer[2] - speedBuffer[1]) > (speedBuffer[1] * 0.255) then
+          speedBuffer[2] = speedBuffer[1]
+          speedBuffer[1] = GetEntitySpeed(vehData.vehicle)
+          if speedBuffer[2] ~= nil
+              and GetEntitySpeedVector(vehData.vehicle, true).y > 1.0
+              and speedBuffer[1] > 19.25
+              and (speedBuffer[2] - speedBuffer[1]) > (speedBuffer[1] * 0.255) then
 
-            local co = GetEntityCoords(vehData.ped)
-            local fw = Fwv(vehData.ped)
-            -- ✅ فیکس شد: ESX.SetEntityCoords تو essentialmode شما وجود نداره؛
-            -- مستقیم از نیتیو خودِ بازی استفاده میشه
-            SetEntityCoords(vehData.ped, co.x + fw.x, co.y + fw.y, co.z - 0.47, true, true, true, false)
-            SetEntityVelocity(vehData.ped, velBuffer[2].x, velBuffer[2].y, velBuffer[2].z)
-            Citizen.Wait(1)
-            SetPedToRagdoll(vehData.ped, 1000, 1000, 0, 0, 0, 0)
+              local co = GetEntityCoords(vehData.ped)
+              local fw = Fwv(vehData.ped)
+              -- ✅ فیکس شد: ESX.SetEntityCoords تو essentialmode شما وجود نداره؛
+              -- مستقیم از نیتیو خودِ بازی استفاده میشه
+              SetEntityCoords(vehData.ped, co.x + fw.x, co.y + fw.y, co.z - 0.47, true, true, true, false)
+              SetEntityVelocity(vehData.ped, velBuffer[2].x, velBuffer[2].y, velBuffer[2].z)
+              Citizen.Wait(1)
+              SetPedToRagdoll(vehData.ped, 1000, 1000, 0, 0, 0, 0)
+          end
+
+          velBuffer[2] = velBuffer[1]
+          velBuffer[1] = GetEntityVelocity(vehData.vehicle)
         end
-
-        velBuffer[2] = velBuffer[1]
-        velBuffer[1] = GetEntityVelocity(vehData.vehicle)
       else
         Citizen.Wait(500)
       end

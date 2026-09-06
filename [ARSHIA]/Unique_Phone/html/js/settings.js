@@ -1,7 +1,14 @@
+// EXPANSION: default wallpaper is now "background-sunset" (added below)
+// instead of the old "background-1" mountain-lake image — matches the
+// look requested to mirror sunset_phone's default. "background-1" is
+// kept as the "Standard" preset option for anyone who preferred it.
 MI.Phone.Settings = {};
-MI.Phone.Settings.Background = "background-1";
+MI.Phone.Settings.Background = "background-sunset";
 MI.Phone.Settings.OpenedTab = null;
 MI.Phone.Settings.Backgrounds = {
+    'background-sunset': {
+        label: "Sunset"
+    },
     'background-1': {
         label: "Standard"
     }
@@ -81,7 +88,7 @@ MI.Phone.Functions.LoadMetaData = function(MetaData) {
     if (MetaData.background !== null && MetaData.background !== undefined) {
         MI.Phone.Settings.Background = MetaData.background;
     } else {
-        MI.Phone.Settings.Background = "background-1";
+        MI.Phone.Settings.Background = "background-sunset";
     }
 
     var hasCustomBackground = MI.Phone.Functions.IsBackgroundCustom();

@@ -47,6 +47,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const vehEmpty = document.getElementById('veh_empty');
   const houseGrid = document.getElementById('house_grid');
   const houseEmpty = document.getElementById('house_empty');
+  const vehCount = document.getElementById('veh_count');
+  const houseCount = document.getElementById('house_count');
 
   window.addEventListener('message', (event) => {
     const data = event.data;
@@ -54,25 +56,32 @@ document.addEventListener('DOMContentLoaded', () => {
     if (data.type === 'loadVehicles' && Array.isArray(data.vehicles)) {
       vehGrid.innerHTML = '';
       vehEmpty.classList.toggle('hidden', data.vehicles.length > 0);
+      if (vehCount) vehCount.textContent = data.vehicles.length;
+
+      const statusMap = {
+        0: { label: 'OUT', cls: 'status-out' },
+        1: { label: 'IN GARAGE', cls: 'status-garage' },
+        2: { label: 'IMPOUNDED', cls: 'status-impound' },
+      };
 
       data.vehicles.forEach(v => {
         const card = document.createElement('div');
-        card.className = 'imgCard clickable';
-
-        const statusMap = {
-          0: { label: 'OUT', cls: 'status-out' },
-          1: { label: 'IN GARAGE', cls: 'status-garage' },
-          2: { label: 'IMPOUNDED', cls: 'status-impound' },
-        };
         const status = statusMap[v.stored] ?? statusMap[0];
+        card.className = `imgCard clickable ${status.cls}`;
+
         const fuelPct = Math.max(0, Math.min(100, Number(v.fuel) || 0));
 
         card.innerHTML = `
           <div class="cap">
             ${v.name}<br><small>${v.plate}</small>
             <span class="garageStatus ${status.cls}">${status.label}</span>
-            <div class="fuelBar"><div class="fuelFill" style="width:${fuelPct}%"></div></div>
+            <div class="fuelRow">
+              <i class="fa-solid fa-gas-pump"></i>
+              <div class="fuelBar"><div class="fuelFill" style="width:${fuelPct}%"></div></div>
+              <span class="fuelPct">${fuelPct}%</span>
+            </div>
           </div>
+          <div class="expandHint"><i class="fa-solid fa-chevron-down"></i></div>
           ${buildModDetails(v)}
         `;
 
@@ -84,22 +93,24 @@ document.addEventListener('DOMContentLoaded', () => {
         // in that database (custom/addon cars).
         let mediaEl;
         if (v.slug) {
+          const mediaWrap = document.createElement('div');
+          mediaWrap.className = 'cardMedia';
           mediaEl = document.createElement('img');
           mediaEl.className = 'cardImg';
           mediaEl.loading = 'lazy';
           mediaEl.src = `https://docs.fivem.net/vehicles/${v.slug}.webp`;
           mediaEl.addEventListener('error', () => {
-            const fallback = document.createElement('div');
-            fallback.className = 'cardIcon';
-            fallback.innerHTML = '<i class="fa-solid fa-car-side"></i>';
-            mediaEl.replaceWith(fallback);
+            mediaWrap.classList.add('cardIcon');
+            mediaWrap.innerHTML = '<i class="fa-solid fa-car-side"></i>';
           });
+          mediaWrap.appendChild(mediaEl);
+          card.prepend(mediaWrap);
         } else {
           mediaEl = document.createElement('div');
-          mediaEl.className = 'cardIcon';
+          mediaEl.className = 'cardMedia cardIcon';
           mediaEl.innerHTML = '<i class="fa-solid fa-car-side"></i>';
+          card.prepend(mediaEl);
         }
-        card.prepend(mediaEl);
 
         card.addEventListener('click', () => card.classList.toggle('expanded'));
 
@@ -110,14 +121,15 @@ document.addEventListener('DOMContentLoaded', () => {
     if (data.type === 'loadHouses' && Array.isArray(data.houses)) {
       houseGrid.innerHTML = '';
       houseEmpty.classList.toggle('hidden', data.houses.length > 0);
+      if (houseCount) houseCount.textContent = data.houses.length;
 
       data.houses.forEach(h => {
         const card = document.createElement('div');
-        card.className = 'imgCard';
+        card.className = 'imgCard houseCard';
 
         const hasCoords = h.x !== undefined && h.x !== null && h.y !== undefined && h.y !== null;
         card.innerHTML = `
-          <div class="cardIcon"><i class="fa-solid fa-house"></i></div>
+          <div class="cardMedia cardIcon houseIcon"><i class="fa-solid fa-house"></i></div>
           <div class="cap">
             ${h.name}
             ${hasCoords ? `<button class="waypointBtn"><i class="fa-solid fa-location-dot"></i> Show on Map</button>` : ''}
