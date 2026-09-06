@@ -9,10 +9,7 @@ local cooldown = {}
 ESX.RegisterServerCallback('AH_uwucafejob:getPropertyInventory', function(source, cb, station)
 	local xPlayer    = ESX.GetPlayerFromId(source)
 
-	local items      = {}
-	local weapons    = {}
-	local item = {}
-	local weapons = {}
+	local items = {}
 
 	
 	TriggerEvent('esx_addoninventory:getSharedInventory', 'society_'..xPlayer.job.name, function(inventory)
@@ -72,14 +69,14 @@ AddEventHandler('minijob:getFromInventory', function(type2, item, count)
             
                 -- can the player carry the said amount of x item?
                 if sourceItem.limit ~= -1 and (sourceItem.count + count) > sourceItem.limit then
-                    -- TriggerClientEvent('esx:showNotification', _source, _U('player_cannot_hold'))
+                    TriggerClientEvent('esx:showNotification', _source, 'Jib Shoma Fazae Kafi Nadarad')
                 else
                     inventory.removeItem(item, count)
                     xPlayer.addInventoryItem(item, count)
 
                 end
             else
-                -- TriggerClientEvent('esx:showNotification', _source, _U('not_enough_in_property'))
+                TriggerClientEvent('esx:showNotification', _source, 'In Meghdar Dar Anbar Mojood Nist')
             end
         end)
             

@@ -57,11 +57,23 @@ ESX.RegisterServerCallback("HUD_Menu:GetAcc", function(source, cb)
                 })
             end
 
+            -- GANG SYSTEM MIGRATION: gang logo used to live on
+            -- `gangs_data.logo`. Unique_ALLGangs moved it to
+            -- `gangs.logo` (column `name`, not `gang_name`) —
+            -- `gangs_data` no longer has a logo column at all under
+            -- the new system (see server/leaderboard.lua for the
+            -- full explanation). Also filtering out
+            -- Unique_ALLGangs' own local placeholder path
+            -- ("img/gangicon.png", its Config.DefaultAvatar) the
+            -- same way 'defaultlogo' was filtered before — that path
+            -- only resolves inside Unique_ALLGangs' own html folder,
+            -- not this HUD's, so showing it here would just be a
+            -- broken image.
             if xPlayer.gang and xPlayer.gang.name and xPlayer.gang.name ~= 'nogang' then
-                MySQL.Async.fetchScalar('SELECT logo FROM gangs_data WHERE gang_name = @name', {
+                MySQL.Async.fetchScalar('SELECT logo FROM gangs WHERE name = @name', {
                     ['@name'] = xPlayer.gang.name
                 }, function(logo)
-                    withGangLogo((logo ~= nil and logo ~= '' and logo ~= 'defaultlogo') and logo or nil)
+                    withGangLogo((logo ~= nil and logo ~= '' and logo ~= 'img/gangicon.png') and logo or nil)
                 end)
             else
                 withGangLogo(nil)

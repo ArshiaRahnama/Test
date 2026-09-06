@@ -93,7 +93,7 @@ Corp = {
 	},
 }
 
-CorpJobSet = { meridian = true, blacktide = true, cratecarry = true }
+CorpJobSet = { meridian = true, blacktide = true, cratecarry = true, turfco = true }
 
 function IsCorpJob(jobName)
 	return CorpJobSet[jobName] == true

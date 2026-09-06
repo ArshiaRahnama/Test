@@ -22,12 +22,30 @@ local function getPlayerTier(identifier)
     return identifier and top3Identifiers[identifier] or nil
 end
 
+-- ================================================================= --
+-- GANG SYSTEM MIGRATION (Unique_ALLGangs replaced the old gang
+-- resource): xp/level/logo used to live on `gangs_data` (gang_name,
+-- xp, rank, Level, logo). Unique_ALLGangs repurposes `gangs_data`
+-- entirely for gang assets (blip/boss/locker/armory/vehicles) — it no
+-- longer has xp/level/logo columns at all. Those now live on the
+-- `gangs` table instead, under different names: `name` (technical
+-- gang name, matches xPlayer.gang.name), `label` (display name),
+-- `level` (no more separate `rank`/`Level` split — just one level
+-- column, scale defined by Unique_ALLGangs' own Config.GangLeveL,
+-- currently 1-10), and `logo`. Querying the old table/columns here
+-- silently returned nothing (no error, just an always-empty gang
+-- leaderboard) rather than breaking loudly, which is why it went
+-- unnoticed. `label` is preferred for display since it's the
+-- human-readable gang name (e.g. "The Ballas") vs `name` being the
+-- internal/technical one; falls back to `name` if label is unset.
+-- ================================================================= --
+
 ESX.RegisterServerCallback('HUD_Menu:GetLeaderboard', function(source, cb, kind)
     if kind == 'gangs' then
         MySQL.Async.fetchAll([[
-            SELECT gang_name, xp, rank, Level
-            FROM gangs_data
-            WHERE gang_name IS NOT NULL
+            SELECT name, label, xp, level
+            FROM gangs
+            WHERE name IS NOT NULL AND name <> 'nogang'
             ORDER BY xp DESC
             LIMIT 10
         ]], {}, function(result)
@@ -35,9 +53,9 @@ ESX.RegisterServerCallback('HUD_Menu:GetLeaderboard', function(source, cb, kind)
             for i = 1, #result do
                 table.insert(entries, {
                     position = i,
-                    name     = result[i].gang_name,
+                    name     = (result[i].label and result[i].label ~= '') and result[i].label or result[i].name,
                     xp       = result[i].xp or 0,
-                    rank     = result[i].rank or 0,
+                    rank     = result[i].level or 0,
                 })
             end
             cb(entries)

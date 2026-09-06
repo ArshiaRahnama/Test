@@ -130,14 +130,25 @@ function updatePaycheckCountdown(secondsFromServer, hasJob) {
   }
 
   if (hasJob === false) {
-    // essentialmode never sends a paycheck tick to jobless players at
-    // all, so there's genuinely nothing to count down to here.
-    el.textContent = 'No paycheck (no job)';
+    // Covers two real cases: no job at all, OR a job whose current
+    // grade has 0 salary (essentialmode never fires 'esx:givesalary'
+    // for either — see client/menu.lua) so there's genuinely nothing
+    // to count down to here.
+    el.textContent = 'No paycheck (unpaid job)';
     return;
   }
 
   if (secondsFromServer === undefined || secondsFromServer === null) {
-    el.textContent = 'Syncing...';
+    // Genuinely not a bug: this waits for the FIRST real
+    // 'esx:givesalary' tick (client/bridges.lua), which follows
+    // essentialmode's own 15-minute payroll timer — one that started
+    // counting whenever essentialmode itself last started, NOT when
+    // this player joined or when this resource was last restarted.
+    // Restarting Unique_LevelQuest resets this client-side flag, so
+    // it will show this again for up to 15 minutes after every
+    // restart even for an already-paid job, until that independent
+    // timer comes back around.
+    el.textContent = 'Syncing (up to 15 min after restart)...';
     return;
   }
 

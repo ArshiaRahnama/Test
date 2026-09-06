@@ -288,10 +288,13 @@ end
 
 
 RegisterCommand('asdfghjkl;sfsdfsdfzxcvnads23adfghuwu', function(source, args)
-    xPlayer = ESX.GetPlayerFromId(source)
+    local xPlayer = ESX.GetPlayerFromId(source)
+    if not xPlayer or not IsCafeJob(xPlayer.job.name) then return end
+
+    local identifier = getIdentifier(source)
     MySQL.Async.fetchAll('SELECT * FROM uwumarket ORDER BY price',{
     }, function(result)
         TriggerClientEvent('lg: updatePlayeruwuMarket', source)
-        TriggerClientEvent('lg: loaduwuMarket', source, xPlayer.getIdentifier, result)
+        TriggerClientEvent('lg: loaduwuMarket', source, identifier, result)
     end)
-end)
+end, false)

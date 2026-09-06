@@ -51,12 +51,21 @@ function UpdateProfile()
                 paycheckSeconds = PaycheckSynced
                     and math.max(0, math.floor(((Config.PaycheckIntervalMinutes * 60000) - (GetGameTimer() - LastPaycheckTime)) / 1000))
                     or nil,
-                -- essentialmode's own paycheck.lua only fires 'esx:givesalary'
-                -- for employed players (job ~= 'nojob') — it never fires for
-                -- civilians at all. Without this flag the countdown would
-                -- just say "Syncing..." forever for anyone with no job,
-                -- which looks broken rather than explaining why.
-                hasJob = data.job and data.job.name ~= 'nojob',
+                -- FIX: essentialmode's server/paycheck.lua only fires
+                -- 'esx:givesalary' when the job's CURRENT GRADE has
+                -- grade_salary > 0 (see the `if jsalary > 0 then` gate
+                -- wrapping the whole TriggerClientEvent call). A job
+                -- assigned but with a 0-salary grade — a common setup
+                -- for jobs paid entirely some other way (quest/coin
+                -- rewards, business income, etc.) — will NEVER receive
+                -- that event, no matter how long you wait. The old
+                -- check here only looked at job.name ~= 'nojob', so
+                -- those players saw "Syncing..." forever instead of
+                -- an explanation — indistinguishable from "about to
+                -- get a real countdown any second now". Now also
+                -- requires grade_salary > 0 before promising a
+                -- countdown is coming.
+                hasJob = data.job and data.job.name ~= 'nojob' and (data.job.grade_salary or 0) > 0,
             })
         end)
     end)

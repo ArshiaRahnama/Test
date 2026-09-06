@@ -1,5 +1,17 @@
 ESX = nil
-local saff = 0
+-- Per-player crafting-queue slot count (was a single global counter shared by
+-- every player/business and never released on a failed craft - see the fix
+-- notes in craft() and AH_uwucafejob:itemCrafted below).
+local CraftQueueCount = {} -- [identifier] = number of pending queue slots (max 5)
+
+local function getQueueCount(identifier)
+	return CraftQueueCount[identifier] or 0
+end
+
+local function addQueueCount(identifier, delta)
+	CraftQueueCount[identifier] = math.max(0, getQueueCount(identifier) + delta)
+end
+
 TriggerEvent(
     "esx:getSharedObject",
     function(obj)
@@ -104,7 +116,7 @@ function craft(src, item, retrying)
 
 			-- if xItem.count + count <= xItem.limit then
 				if cancraft then
-                    if  saff <= 4 then
+                    if getQueueCount(xPlayer.identifier) <= 4 then
                         local Maliat = 2000
                         local RemoveMaliat = false
                         local xBank  = xPlayer.bank
@@ -125,13 +137,13 @@ function craft(src, item, retrying)
                                 end
 
                                 if RemoveMaliat then 
-                                    saff = saff + 1
+                                    addQueueCount(xPlayer.identifier, 1)
                                     for k, v in pairs(ConfigCrafting.Recipes[item].Ingredients) do
                                         xPlayer.removeInventoryItem(k, v)
                                     end
 
                                     TriggerClientEvent("AH_uwucafejob:craftStart", src, item, count)
-                                    PendingCrafts[src] = { item = item, expiresAt = os.time() + 120 }
+                                    PendingCrafts[src] = { item = item, expiresAt = os.time() + 120, identifier = xPlayer.identifier, queued = true }
                                 else
                                     TriggerClientEvent('esx:showNotification', src, 'Shoma Pol Kafi Nadarid')
                                 end
@@ -228,12 +240,12 @@ function(item, count)
                 if xItem.count + itemcount <= xItem.limit then
                     if not ConfigCrafting.Recipes[item].isGun then
                         xPlayer.addInventoryItem(item, ConfigCrafting.Recipes[item].Amount)
-                        saff = saff - 1
+                        addQueueCount(xPlayer.identifier, -1)
                     end
                     TriggerClientEvent('esx:showNotification', src, _U("item_crafted"))
                     -- giveCraftingLevel(xPlayer.identifier, ConfigCrafting.ExperiancePerCraft)
                 else
-                    saff = saff - 1
+                    addQueueCount(xPlayer.identifier, -1)
                     ESX.CreatePickup("item_standard", xItem.name, itemcount, xItem.label, source)
                     -- TriggerEvent("AH_uwucafejob:craft", item, nil, src)
                     TriggerClientEvent('esx:showNotification', src, _U("inv_limit_exceed"))
@@ -262,10 +274,31 @@ function(item, count)
             end
         end
     else
+        -- BUG FIX: a failed roll never released this player's queue slot
+        -- before, so repeated bad luck would permanently lock them (and,
+        -- since the counter used to be global, eventually everyone) out of
+        -- crafting until a server restart.
+        if ConfigCrafting.UseLimitSystem and not ConfigCrafting.Recipes[item].isGun then
+            addQueueCount(xPlayer.identifier, -1)
+        end
         TriggerClientEvent('esx:showNotification', src, _U("crafting_failed"))
     end
 end
 )
+
+-- BUG FIX: if a player disconnects mid-craft (after craft() reserved a queue
+-- slot but before the client ever sends back itemCrafted), that slot used to
+-- leak forever. Release it on disconnect. (identifier is read off the pending
+-- entry itself, not re-fetched from ESX, since the player object may already
+-- be gone by the time playerDropped fires.)
+AddEventHandler('playerDropped', function()
+    local src = source
+    local pending = PendingCrafts[src]
+    if pending and pending.queued and pending.identifier then
+        addQueueCount(pending.identifier, -1)
+    end
+    PendingCrafts[src] = nil
+end)
 
 RegisterServerEvent("AH_uwucafejob:craft")
 AddEventHandler(

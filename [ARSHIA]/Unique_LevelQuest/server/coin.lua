@@ -238,17 +238,52 @@ AddEventHandler("Coin-System:LoadCoin2", function(src)
     end
 end)
 
+-- FIX (script errors + slow queries under load, e.g. essentialmode's
+-- generic ESX.TriggerServerCallback request-id counter wrapping
+-- around and reusing a still-pending request's slot — see
+-- essentialmode/client/functions.lua:1538): this loop used to run
+-- ONE 'SELECT coin FROM users WHERE identifier = ...' query PER
+-- ONLINE PLAYER, every 5 seconds. With N players online that's N
+-- separate round trips competing for the same DB connection every
+-- tick, and under load individual queries in that burst can queue
+-- up and take well over a second each (exactly the
+-- "Unique_LevelQuest took 1000+ms to execute a query" warning) —
+-- which widens the window for that unrelated ESX request-id bug to
+-- bite. Now a single batched query fetches every online player's
+-- coin balance at once, cutting this from N queries every 5s down
+-- to 1.
 Citizen.CreateThread(function()
     while true do
         Wait(5000)
-        for _, v in pairs(ESX.GetPlayers()) do
-            local xPlayer = ESX.GetPlayerFromId(v)
-            if xPlayer and xPlayer.identifier and not Config.CoinItem then
-                MySQL.Async.fetchAll('SELECT coin FROM users WHERE identifier = @identifier', { ['@identifier'] = xPlayer.identifier }, function(result)
-                    if result and result[1] and result[1].coin then
-                        TriggerClientEvent("Coin-System:PlayerCoin", xPlayer.source, tonumber(result[1].coin) or 0)
+        if not Config.CoinItem then
+            local sourceByIdentifier = {}
+            local whereParams = {}
+            local paramNames = {}
+
+            for _, v in pairs(ESX.GetPlayers()) do
+                local xPlayer = ESX.GetPlayerFromId(v)
+                if xPlayer and xPlayer.identifier then
+                    sourceByIdentifier[xPlayer.identifier] = xPlayer.source
+                    local paramName = '@id' .. tostring(v)
+                    table.insert(paramNames, paramName)
+                    whereParams[paramName] = xPlayer.identifier
+                end
+            end
+
+            if #paramNames > 0 then
+                MySQL.Async.fetchAll(
+                    'SELECT identifier, coin FROM users WHERE identifier IN (' .. table.concat(paramNames, ', ') .. ')',
+                    whereParams,
+                    function(result)
+                        if not result then return end
+                        for i = 1, #result do
+                            local playerSource = sourceByIdentifier[result[i].identifier]
+                            if playerSource then
+                                TriggerClientEvent("Coin-System:PlayerCoin", playerSource, tonumber(result[i].coin) or 0)
+                            end
+                        end
                     end
-                end)
+                )
             end
         end
     end

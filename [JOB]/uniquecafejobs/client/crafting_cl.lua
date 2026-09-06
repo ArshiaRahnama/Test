@@ -252,46 +252,18 @@ end)
 
 RegisterNetEvent('AH_uwucafejob:OpenCraftingGhahvesaz')
 AddEventHandler('AH_uwucafejob:OpenCraftingGhahvesaz', function()
-    local Pcoords = GetEntityCoords(PlayerPedId())
-    local isOpen = true 
-
-    for k,v in pairs(Cafes) do 
-        local distance = GetDistanceBetweenCoords(v.Crafting_Ghahvesaz.Pos.x, v.Crafting_Ghahvesaz.Pos.y, v.Crafting_Ghahvesaz.Pos.z, Pcoords, false)
- 
-        if distance <= 1.2 then 
-            isOpen = true
-        else
-            isOpen = false
-        end
-    end
-    
     local myCafe = GetCafeForJob(PlayerData.job.name)
-    if isOpen and myCafe then 
+    if myCafe then
         openWorkbench(myCafe.MenuGroup .. 'Ghahvesaz')
     end
-    
 end)
 
 RegisterNetEvent('AH_uwucafejob:OpenCraftingZarfShoe')
 AddEventHandler('AH_uwucafejob:OpenCraftingZarfShoe', function()
-    local Pcoords2 = GetEntityCoords(PlayerPedId())
-    local isOpen2 = true 
-
-    for k,v in pairs(Cafes) do 
-        local distance2 = GetDistanceBetweenCoords(v.Crafting_ZarfShoe.Pos.x, v.Crafting_ZarfShoe.Pos.y, v.Crafting_ZarfShoe.Pos.z, Pcoords2, false)
-    
-        if distance2 <= 1.2 then 
-            isOpen2 = true
-        else
-            isOpen2 = false
-        end
-    end
-    
     local myCafe2 = GetCafeForJob(PlayerData.job.name)
-    if isOpen2 and myCafe2 then 
+    if myCafe2 then
         openWorkbench(myCafe2.MenuGroup .. 'ZarfShoe')
     end
-    
 end)
 
 RegisterNetEvent('AH_uwucafejob:OpenCraftingGaz')

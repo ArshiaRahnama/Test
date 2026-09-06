@@ -18,7 +18,7 @@ Citizen.CreateThread(function()
     while true do 
         Wait(1)
  
-        if IsControlJustPressed(0, 167) and IsCafeJob(PlayerData.job.name) then 
+        if IsControlJustPressed(0, 167) and (IsCafeJob(PlayerData.job.name) or IsCorpJob(PlayerData.job.name)) then 
             OpenMobileuwueActionsMenu()
         end
     end
@@ -72,17 +72,9 @@ end)
 
 
 function RemoveTarget()
-    local zoneName = nil
-    local zoneNum  = nil
-    local Ncount = #TargetNumber
-    while Ncount ~= 0 do 
-        for k,v in pairs(TargetNumber) do 
-            
-            exports.ox_target:removeZone(v.num)
-            table.remove(TargetNumber, k)
-            Citizen.Wait(20)
-            Ncount = Ncount - 1
-        end
+    for i = #TargetNumber, 1, -1 do
+        exports.ox_target:removeZone(TargetNumber[i].num)
+        table.remove(TargetNumber, i)
     end
 end
 
@@ -413,8 +405,17 @@ function OpenMobileuwueActionsMenu()
         {label = 'Ghabz ',   value = 'bling'},
     }
 
+    local menuTitle = "Ghabz Menu"
+    local myCafe = GetCafeForJob(PlayerData.job.name)
+    local myHolding = GetHoldingConfig(PlayerData.job.name)
+    if myCafe then
+        menuTitle = GetDisplayLabel(myCafe.Job, myCafe.Label)
+    elseif myHolding then
+        menuTitle = GetDisplayLabel(myHolding.Job, myHolding.Label)
+    end
+
     ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'citizen_interaction', {
-        title    = "UwU Cafe Menu",
+        title    = menuTitle,
         align    = 'bottom-right',
         elements = elements
     }, function(data, menu)

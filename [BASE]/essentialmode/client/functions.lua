@@ -1535,8 +1535,28 @@ RegisterNetEvent("esx:serverCallback")
 AddEventHandler(
     "esx:serverCallback",
     function(requestId, ...)
-        ESX.ServerCallbacks[requestId](...)
-        ESX.ServerCallbacks[requestId] = nil
+        -- FIX (SCRIPT ERROR: "Execution of function reference in
+        -- script host failed" at this line): ESX.CurrentRequestId
+        -- (client/functions.lua) only has 65536 possible values and
+        -- wraps back to 0 once it hits that ceiling. If a request
+        -- takes long enough to answer (a slow DB query somewhere,
+        -- server lag, etc.) while OTHER resources keep firing new
+        -- TriggerServerCallback calls in the meantime, the counter
+        -- can wrap all the way back around and reuse this exact
+        -- requestId for a DIFFERENT, unrelated call before the slow
+        -- one's answer arrives. That newer call resolves first and
+        -- clears ESX.ServerCallbacks[requestId] to nil below — so
+        -- when the original slow response finally shows up, this
+        -- line tried to call nil(...) and crashed. Guarding against
+        -- a missing/already-cleared slot turns that crash into a
+        -- silent no-op (the stale response is simply dropped, which
+        -- is correct — whatever code was waiting on it already
+        -- either got a different answer or timed out) instead of an
+        -- error that spams the console every time it happens.
+        if ESX.ServerCallbacks[requestId] then
+            ESX.ServerCallbacks[requestId](...)
+            ESX.ServerCallbacks[requestId] = nil
+        end
     end
 )
 
