@@ -103,7 +103,7 @@ function HandleStashPut(data, cb)
             if GetWeapontypeModel(weaponHash) == item.name then
                 SetCurrentPedWeapon(playerPed, 'WEAPON_UNARMED', true)
             end
-            TriggerServerEvent('lc-inventory:stashDeposit', CurrentStashId, 'item_weapon', item.name, 1)
+            TriggerServerEvent('lc-inventory:stashDeposit', CurrentStashId, 'item_weapon', item.name, 1, item.serial)
         end
     elseif item.type == 'item_account' then
         KeyboardUtils.use(Locales[Config.Language]['quantite'], function(result)
@@ -127,7 +127,7 @@ function HandleStashTake(data, cb)
 
     if item.type == 'item_weapon' then
         if not Config.WeaponNoGive[item.name] then
-            TriggerServerEvent('lc-inventory:stashWithdraw', CurrentStashId, 'item_weapon', item.name, 1)
+            TriggerServerEvent('lc-inventory:stashWithdraw', CurrentStashId, 'item_weapon', item.name, 1, item.serial)
         end
     elseif item.type == 'item_account' then
         KeyboardUtils.use(Locales[Config.Language]['quantite'], function(result)

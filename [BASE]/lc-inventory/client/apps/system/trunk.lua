@@ -241,7 +241,8 @@ RegisterNUICallback("PutIntoTrunk", function(data, cb)
             dataWeapon = {
                 name = data.item.name,
                 label = data.item.label,
-                amount = 255 -- todo: check amount
+                amount = 255, -- todo: check amount
+                serial = data.item.serial
             }
             TriggerServerEvent("lgdddd:actionsWeapon", "deposit", dataVehicleIn, dataWeapon)
             Wait(150)

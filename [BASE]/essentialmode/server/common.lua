@@ -21,6 +21,16 @@ ESX.getWeaponWeight = function(name)
     return 0
 end
 
+-- Categorized weapon serials: LAW- (default/regular sources), DOJ- (police
+-- armory), GANG- (gang armory) - see server/classes/player.lua's addWeapon
+-- (uses this as the default when no serial is given) and the DOJ-/GANG-
+-- call sites in esx_uniquejobs/server/police_main.lua and
+-- Unique_ALLGangs/server/apps/system/stash.lua (lc-inventory).
+ESX.GenerateWeaponSerial = function(prefix)
+    prefix = prefix or 'LAW'
+    return ('%s-%05d-%04d'):format(prefix, os.time() % 100000, math.random(1000, 9999))
+end
+
 AddEventHandler(
     "esx:getSharedObject",
     function(cb)

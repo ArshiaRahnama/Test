@@ -1,5 +1,6 @@
 
 .info_ui {
+  display: none;
     position: absolute;
     left: 3%;
     bottom: 5.53%;

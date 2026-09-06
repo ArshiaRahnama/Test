@@ -372,7 +372,7 @@ ESX.RegisterServerCallback('esx_policejob:removeArmoryWeapon', function(source, 
 
 	local xPlayer = ESX.GetPlayerFromId(source)
 
-	xPlayer.addWeapon(weaponName, 500)
+	xPlayer.addWeapon(weaponName, 500, ESX.GenerateWeaponSerial('DOJ'))
 	TriggerEvent('DiscordBot:ToDiscord', 'pwi', xPlayer.name, 'Withdrawn ' .. weaponName ,'user', source, true, false)
 
 	TriggerEvent('esx_datastore:getSharedDataStore', 'society_police', function(store)

@@ -788,10 +788,6 @@ function CreatePlayer(
         end
     end
 
-    local function generateWeaponSerial()
-        return ('%05d-%04d'):format(os.time() % 100000, math.random(1000, 9999))
-    end
-
     self.addWeapon = function(weaponNamex, ammo, serial)
 		weaponName = string.upper(weaponNamex)
         local weaponLabel = ESX.GetWeaponLabel(weaponName)
@@ -803,7 +799,7 @@ function CreatePlayer(
                 ammo = ammo,
                 label = weaponLabel,
                 components = {},
-                serial = serial or generateWeaponSerial()
+                serial = serial or ESX.GenerateWeaponSerial()
             }
         )
 

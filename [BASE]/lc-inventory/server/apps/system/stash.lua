@@ -67,9 +67,11 @@ local function findFreeSlot(stash)
     return slot
 end
 
-local function findItemSlot(stash, name)
+local function findItemSlot(stash, name, serial)
     for slot, item in pairs(stash.items) do
-        if item.name == name then return slot end
+        if item.name == name and (not serial or (item.info and item.info.serial == serial)) then
+            return slot
+        end
     end
     return nil
 end
@@ -125,6 +127,9 @@ RegisterServerCallback('lc-inventory:getStash', function(source, cb, stashId, ma
         local weapon = isWeaponName(item.name)
         local itemType = weapon and 'item_weapon' or 'item_standard'
         local itemLabel = weapon and ESX.GetWeaponLabel(item.name) or (GetItemLabel(item.name) or item.name)
+        if weapon and item.info and item.info.serial then
+            itemLabel = itemLabel .. ' #' .. item.info.serial
+        end
         local locked = not canAccessStashItem(source, stashId, item.name)
 
         table.insert(list, {
@@ -138,7 +143,8 @@ RegisterServerCallback('lc-inventory:getStash', function(source, cb, stashId, ma
             usable = false,
             rare = false,
             stash = stashId,
-            locked = locked
+            locked = locked,
+            serial = weapon and item.info and item.info.serial or nil
         })
     end
 
@@ -164,7 +170,7 @@ AddEventHandler('lc-inventory:stashViewer', function(stashId, opening)
 end)
 
 RegisterNetEvent('lc-inventory:stashDeposit')
-AddEventHandler('lc-inventory:stashDeposit', function(stashId, itemType, name, count)
+AddEventHandler('lc-inventory:stashDeposit', function(stashId, itemType, name, count, serial)
     local source = source
     if type(stashId) ~= 'string' or type(name) ~= 'string' then return end
 
@@ -176,7 +182,7 @@ AddEventHandler('lc-inventory:stashDeposit', function(stashId, itemType, name, c
     if count <= 0 then return end
 
     if itemType == 'item_weapon' then
-        if Config.WeaponNoGive[name] or not getWeapon(xPlayer, name) then return end
+        if Config.WeaponNoGive[name] or not getWeapon(xPlayer, name, serial) then return end
 
         local weight = Config.WeaponWeight[name] or Config.WeaponDefaultWeight
         if getStashWeight(stash) + weight > stash.maxWeight then
@@ -184,9 +190,11 @@ AddEventHandler('lc-inventory:stashDeposit', function(stashId, itemType, name, c
             return
         end
 
-        local slot = findItemSlot(stash, name) or findFreeSlot(stash)
-        stash.items[slot] = { name = name, count = 1, slot = slot, info = {}, weight = weight }
-        removeWeapon(xPlayer, name)
+        -- weapons always get their own slot (never merge by name) so each
+        -- instance's serial survives independently
+        local slot = findFreeSlot(stash)
+        stash.items[slot] = { name = name, count = 1, slot = slot, info = { serial = serial }, weight = weight }
+        removeWeapon(xPlayer, name, serial)
 
     elseif itemType == 'item_account' then
         if getAccount(xPlayer, name) < count then return end
@@ -226,7 +234,7 @@ AddEventHandler('lc-inventory:stashDeposit', function(stashId, itemType, name, c
 end)
 
 RegisterNetEvent('lc-inventory:stashWithdraw')
-AddEventHandler('lc-inventory:stashWithdraw', function(stashId, itemType, name, count)
+AddEventHandler('lc-inventory:stashWithdraw', function(stashId, itemType, name, count, serial)
     local source = source
     if type(stashId) ~= 'string' or type(name) ~= 'string' then return end
 
@@ -234,7 +242,7 @@ AddEventHandler('lc-inventory:stashWithdraw', function(stashId, itemType, name, 
     if not xPlayer then return end
 
     local stash = loadStash(stashId)
-    local slot = findItemSlot(stash, name)
+    local slot = findItemSlot(stash, name, itemType == 'item_weapon' and serial or nil)
     if not slot then return end
 
     if not canAccessStashItem(source, stashId, name) then
@@ -248,7 +256,11 @@ AddEventHandler('lc-inventory:stashWithdraw', function(stashId, itemType, name, 
 
     if itemType == 'item_weapon' then
         if Config.WeaponNoGive[name] then return end
-        addWeapon(xPlayer, name, 250)
+        local serial = item.info and item.info.serial
+        if not serial then
+            serial = stashId:match('^gang_armory_') and ESX.GenerateWeaponSerial('GANG') or ESX.GenerateWeaponSerial()
+        end
+        addWeapon(xPlayer, name, 250, serial)
         stash.items[slot] = nil
 
     elseif itemType == 'item_account' then

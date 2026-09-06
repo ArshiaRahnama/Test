@@ -459,9 +459,10 @@ RegisterNetEvent("lgdddd:actionsWeapon", function(action, vehicle, data)
                             VehCoffre[vehicle.plate].data["weapons"][data.name].label = data.label
                             VehCoffre[vehicle.plate].data["weapons"][data.name].weight = tonumber(Config.WeaponWeight[data.name])
                             VehCoffre[vehicle.plate].data["weapons"][data.name].count = 1
+                            VehCoffre[vehicle.plate].data["weapons"][data.name].serials = { data.serial }
                             VehCoffre[vehicle.plate].infos.weight = tonumber(VehCoffre[vehicle.plate].infos.weight) + tonumber(Config.WeaponWeight[data.name])
                         end
-                        removeWeapon(xPlayer, data.name)
+                        removeWeapon(xPlayer, data.name, data.serial)
                         showNotification(xPlayer, (Locales[Config.Language]['trunk_deposit_label']):format(data.label), 'success')
                     else
                         showNotification(xPlayer, Locales[Config.Language]['trunk_weight_max'], 'error')
@@ -476,6 +477,8 @@ RegisterNetEvent("lgdddd:actionsWeapon", function(action, vehicle, data)
                     if VehCoffre[vehicle.plate].data["weapons"][data.name] then
                         VehCoffre[vehicle.plate].data["weapons"][data.name].weight = VehCoffre[vehicle.plate].data["weapons"][data.name].weight + tonumber(Config.WeaponWeight[data.name])
                         VehCoffre[vehicle.plate].data["weapons"][data.name].count = VehCoffre[vehicle.plate].data["weapons"][data.name].count + 1
+                        VehCoffre[vehicle.plate].data["weapons"][data.name].serials = VehCoffre[vehicle.plate].data["weapons"][data.name].serials or {}
+                        table.insert(VehCoffre[vehicle.plate].data["weapons"][data.name].serials, data.serial)
                         VehCoffre[vehicle.plate].infos.weight = tonumber(VehCoffre[vehicle.plate].infos.weight) + tonumber(Config.WeaponWeight[data.name])
                     else
                         VehCoffre[vehicle.plate].data["weapons"][data.name] = {}
@@ -484,9 +487,10 @@ RegisterNetEvent("lgdddd:actionsWeapon", function(action, vehicle, data)
                         VehCoffre[vehicle.plate].data["weapons"][data.name].label = data.label
                         VehCoffre[vehicle.plate].data["weapons"][data.name].weight = tonumber(Config.WeaponWeight[data.name])
                         VehCoffre[vehicle.plate].data["weapons"][data.name].count = 1
+                        VehCoffre[vehicle.plate].data["weapons"][data.name].serials = { data.serial }
                         VehCoffre[vehicle.plate].infos.weight = tonumber(VehCoffre[vehicle.plate].infos.weight) + tonumber(Config.WeaponWeight[data.name])
                     end
-                    removeWeapon(xPlayer, data.name)
+                    removeWeapon(xPlayer, data.name, data.serial)
                     showNotification(xPlayer, (Locales[Config.Language]['trunk_deposit_label']):format(data.label), 'success')
                 else
                     showNotification(xPlayer, Locales[Config.Language]['trunk_weight_max'], 'error')
@@ -502,9 +506,15 @@ RegisterNetEvent("lgdddd:actionsWeapon", function(action, vehicle, data)
                 VehCoffre[vehicle.plate].data["weapons"][data.name].count = VehCoffre[vehicle.plate].data["weapons"][data.name].count - 1
                 VehCoffre[vehicle.plate].data["weapons"][data.name].weight = VehCoffre[vehicle.plate].data["weapons"][data.name].weight - tonumber(Config.WeaponWeight[data.name])
                 VehCoffre[vehicle.plate].infos.weight = tonumber(VehCoffre[vehicle.plate].infos.weight) - tonumber(Config.WeaponWeight[data.name])
-                addWeapon(xPlayer, data.name, VehCoffre[vehicle.plate].data["weapons"][data.name].ammo)
+
+                local serials = VehCoffre[vehicle.plate].data["weapons"][data.name].serials
+                local serial = serials and table.remove(serials) or ESX.GenerateWeaponSerial()
+
+                addWeapon(xPlayer, data.name, VehCoffre[vehicle.plate].data["weapons"][data.name].ammo, serial)
                 showNotification(xPlayer, (Locales[Config.Language]['trunk_remove_label']):format(data.label), 'success')
-                VehCoffre[vehicle.plate].data["weapons"][data.name] = nil
+                if VehCoffre[vehicle.plate].data["weapons"][data.name].count <= 0 then
+                    VehCoffre[vehicle.plate].data["weapons"][data.name] = nil
+                end
 
             else
                 debugprint("BAN " .. source)
