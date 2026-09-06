@@ -192,6 +192,21 @@ AddEventHandler('Status:radio', function(data)
 end)
 
 
+-- Fix: FiveM's pause menu control bug can leave the "exit vehicle" input active
+-- while Esc/pause menu is open, causing the player to fall out of the car.
+Citizen.CreateThread(function()
+  while true do
+    Wait(0)
+    if IsPauseMenuActive() then
+      local ped = PlayerPedId()
+      if IsPedInAnyVehicle(ped, false) then
+        DisableControlAction(0, 75, true) -- INPUT_VEH_EXIT
+        DisableControlAction(2, 75, true)
+      end
+    end
+  end
+end)
+
 local previousArmor = 0
 local previousHealth = 0
 RegisterNetEvent('showStatus')

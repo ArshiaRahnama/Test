@@ -244,12 +244,22 @@ RegisterNetEvent('ImpoundVehicle', function(vehicles)
     end
 end)
 
+-- ✅ فیکس شد: این ایونت قبلاً دوبار RegisterNetEvent/AddEventHandler شده بود -
+-- یه نسخه با ESX.Game.GetVehicles() و یه نسخه‌ی قدیمی‌تر با EnumerateVehicles()
+-- که روی *همه‌ی* ماشین‌های نقشه (نه فقط ماشین‌های گاراژ) می‌چرخید و هرچی NPC
+-- توش نبود رو حذف/ایمپوند می‌کرد. چون هر دو روی یه اسم ایونت رجیستر شده
+-- بودن، با هر بار فایر شدن این ایونت، هر دو با هم اجرا می‌شدن: بعضی
+-- ماشین‌ها دوبار ایمپوند/حذف می‌شدن و رفتار غیرقابل‌پیش‌بینی پیش می‌اومد.
+-- نسخه‌ی خطرناک‌تر (EnumerateVehicles) حذف شد. همچنین یه باگ کوچیک‌تر تو
+-- همین نسخه هم فیکس شد: قبلاً اگه فقط یکی از ماشین‌ها سرنشین داشت، کل حلقه
+-- با return قطع می‌شد و بقیه‌ی ماشین‌های خالی اصلاً پردازش نمی‌شدن؛ الان
+-- فقط همون ماشین رد میشه (goto continue) و بقیه normal پردازش میشن.
 RegisterNetEvent('Unique_Garage:DeleteAllVehicle')
 AddEventHandler('Unique_Garage:DeleteAllVehicle', function()
 	local vehicles = ESX.Game.GetVehicles()
 	for _,entity in ipairs(vehicles) do
 		if IsAnyPedInVehicle(entity) then
-			return
+			goto continue
 		end
 		NetworkRequestControlOfEntity(entity)
 		local timeout = 2000
@@ -267,28 +277,13 @@ AddEventHandler('Unique_Garage:DeleteAllVehicle', function()
 		if (DoesEntityExist(entity)) then
 			DeleteEntity(entity)
 		end
+		::continue::
 	end
 end)
 
 function IsAnyPedInVehicle(veh)
 	return (GetVehicleNumberOfPassengers(veh)+(IsVehicleSeatFree(veh,-1) and 0 or 1))>0
 end
-
-RegisterNetEvent("Unique_Garage:DeleteAllVehicle")
-AddEventHandler("Unique_Garage:DeleteAllVehicle", function()
-    for vehicle in EnumerateVehicles() do
-        if (not IsPedAPlayer(GetPedInVehicleSeat(vehicle, -1))) then
-            SetVehicleHasBeenOwnedByPlayer(vehicle, false)
-            SetEntityAsMissionEntity(vehicle, false, false)
-			TriggerEvent("ImpoundVehicle", vehicle)
-            ESX.Game.DeleteVehicle(vehicle)
-            DeleteVehicle(vehicle)
-            if (DoesEntityExist(vehicle)) then
-                DeleteVehicle(vehicle)
-            end
-        end
-    end
-end)
 
 local entityEnumerator = {
     __gc = function(enum)
@@ -578,6 +573,10 @@ OpenMenuG = function(type, extra)
 									vh.engine = tonumber(vh.engine) or 1000
 									vh.fuel = tonumber(vh.fuel) or 100
 									vh.body = tonumber(vh.body) or 1000
+									-- ✅ فیکس شد: این خط قبلاً اصلاً وجود نداشت، یعنی vehClass
+									-- تعریف‌نشده (nil) بود و فیلتر تایپ ماشین (car/air/sea) هیچ‌وقت
+									-- درست کار نمی‌کرد - هر ماشینی صرف‌نظر از کلاسش رد می‌شد.
+									local vehClass = GetVehicleClassFromName(veh)
 									local displaytext = string.gsub(GetDisplayNameFromVehicleModel(veh), "%s+", ""):lower();
 									vh["VehModel"] = displaytext
 									vh["VehText"] = GetLabelText(displaytext)
@@ -906,7 +905,10 @@ function AttachOwnCarBlip(vehicle)
     if ownCarBlips[vehicle] and DoesBlipExist(ownCarBlips[vehicle]) then return end
 
     local blip = AddBlipForEntity(vehicle)
-    SetBlipSprite(blip, 225)
+    -- ✅ فیکس شد: اسپرایت ۲۲۵ یه آیکون تک‌رنگه که رنگش با SetBlipColour عوض
+    -- نمی‌شه - همیشه سفید دیده می‌شه، صرف‌نظر از عددی که به SetBlipColour
+    -- می‌دیدیم. اسپرایت ۱ (دایره‌ی ساده) واقعاً رنگ رو قبول می‌کنه.
+    SetBlipSprite(blip, 1)
     SetBlipColour(blip, 3)
     SetBlipScale(blip, 0.7)
     SetBlipCategory(blip, 7)
