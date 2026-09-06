@@ -4,6 +4,10 @@
   height: 100%;
 }
 
+#hudSetting {
+  display: none;
+}
+
 .IconContainer {
   position: absolute;
   bottom: 5.8%;

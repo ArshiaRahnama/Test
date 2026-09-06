@@ -788,21 +788,24 @@ function CreatePlayer(
         end
     end
 
-    self.addWeapon = function(weaponNamex, ammo)
+    local function generateWeaponSerial()
+        return ('%05d-%04d'):format(os.time() % 100000, math.random(1000, 9999))
+    end
+
+    self.addWeapon = function(weaponNamex, ammo, serial)
 		weaponName = string.upper(weaponNamex)
         local weaponLabel = ESX.GetWeaponLabel(weaponName)
 
-        if not self.hasWeapon(weaponName) then
-            table.insert(
-                self.loadout,
-                {
-                    name = weaponName,
-                    ammo = ammo,
-                    label = weaponLabel,
-                    components = {}
-                }
-            )
-        end
+        table.insert(
+            self.loadout,
+            {
+                name = weaponName,
+                ammo = ammo,
+                label = weaponLabel,
+                components = {},
+                serial = serial or generateWeaponSerial()
+            }
+        )
 
         TriggerClientEvent("esx:addWeapon", self.source, weaponName, ammo)
 		if weaponLabel and weaponLabel ~= "undefind" then
@@ -823,25 +826,14 @@ function CreatePlayer(
         TriggerClientEvent("esx:addWeaponComponent", self.source, weaponName, weaponComponent)
     end
 
-    self.removeWeapon = function(weaponNamex, ammo)
+    self.removeWeapon = function(weaponNamex, ammo, serial)
 		weaponName = string.upper(weaponNamex)
         local weaponLabel
         ammo = tonumber(ammo) or 0
 
         for i = 1, #self.loadout, 1 do
-            if self.loadout[i].name == weaponName then
+            if self.loadout[i].name == weaponName and (not serial or self.loadout[i].serial == serial) then
                 weaponLabel = self.loadout[i].label
-
-
-
-
-
-
-
-
-
-
-
                 table.remove(self.loadout, i)
                 break
             end
@@ -906,21 +898,21 @@ function CreatePlayer(
         return false
     end
 
-    self.hasWeapon = function(weaponNamex)
+    self.hasWeapon = function(weaponNamex, serial)
 		weaponName = string.upper(weaponNamex)
         for i = 1, #self.loadout, 1 do
-            if self.loadout[i].name == weaponName then
-                return {ammo = self.loadout[i].ammo, components = self.loadout[i].components}
+            if self.loadout[i].name == weaponName and (not serial or self.loadout[i].serial == serial) then
+                return {ammo = self.loadout[i].ammo, components = self.loadout[i].components, serial = self.loadout[i].serial}
             end
         end
 
         return false
     end
 
-    self.getWeapon = function(weaponNamex)
+    self.getWeapon = function(weaponNamex, serial)
 		weaponName = string.upper(weaponNamex)
         for k, v in ipairs(self.loadout) do
-            if v.name == weaponName then
+            if v.name == weaponName and (not serial or v.serial == serial) then
                 return k, v
             end
         end

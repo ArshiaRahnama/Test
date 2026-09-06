@@ -133,20 +133,20 @@ end
 
 -- weapon
 
-function addWeapon(player, item, count)
-	player.addWeapon(item, count)
+function addWeapon(player, item, count, serial)
+	player.addWeapon(item, count, serial)
 end
 
-function removeWeapon(player, item)
-	player.removeWeapon(item)
+function removeWeapon(player, item, serial)
+	player.removeWeapon(item, nil, serial)
 end
 
-function getWeapon(player, weapon)
-	return player.hasWeapon(weapon)
+function getWeapon(player, weapon, serial)
+	return player.hasWeapon(weapon, serial)
 end
 
-function infoWeapon(player, weapon)
-	return player.getWeapon(weapon)
+function infoWeapon(player, weapon, serial)
+	return player.getWeapon(weapon, serial)
 end
 
 function addWeaponComponent(player, itemName, component)

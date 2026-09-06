@@ -66,7 +66,7 @@ end)
 
 
 RegisterNetEvent('lgd:removeItem')
-AddEventHandler('lgd:removeItem', function(info, name, count)
+AddEventHandler('lgd:removeItem', function(info, name, count, serial)
 	local source = source
 	local xPlayer = GetPlayerFromId(source)
 	if info == 'item_standard' then
@@ -75,8 +75,8 @@ AddEventHandler('lgd:removeItem', function(info, name, count)
 			RemoveItem(xPlayer, name, count)
 		end
 	elseif info == 'item_weapon' then
-		if getWeapon(xPlayer, name) then
-			removeWeapon(xPlayer, name)
+		if getWeapon(xPlayer, name, serial) then
+			removeWeapon(xPlayer, name, serial)
 		end
 	elseif info == 'item_account' then
 		if count > 0 and getAccount(xPlayer, name) >= count then
@@ -100,7 +100,7 @@ AddEventHandler('lgd:removeItem', function(info, name, count)
 end)
 
 RegisterNetEvent('lgd:giveItem')
-AddEventHandler('lgd:giveItem', function(target, name, count, type, label)
+AddEventHandler('lgd:giveItem', function(target, name, count, type, label, serial)
 	local source = source
 	local xPlayer = GetPlayerFromId(source)
 	local xTarget = GetPlayerFromId(target)
@@ -143,10 +143,10 @@ AddEventHandler('lgd:giveItem', function(target, name, count, type, label)
 		showNotification(xPlayer, (Locales[Config.Language]['give_from_phone']):format(formatPhoneNumber(name)), 'success')
 		showNotification(xTarget, (Locales[Config.Language]['give_target_phone']):format(formatPhoneNumber(name)), 'success')
 	elseif type == 'item_weapon' then
-		if not getWeapon(xTarget, name) then
-			removeWeapon(xPlayer, name)
+		if getWeapon(xPlayer, name, serial) then
+			removeWeapon(xPlayer, name, serial)
 			showNotification(xPlayer, (Locales[Config.Language]['give_from_weapon']):format(label), 'success')
-			addWeapon(xTarget, name, 255)
+			addWeapon(xTarget, name, 255, serial)
 			showNotification(xTarget, (Locales[Config.Language]['give_target_weapon']):format(label), 'success')
 		else
 			showNotification(xPlayer, Locales[Config.Language]['give_error_weapon'], 'error')

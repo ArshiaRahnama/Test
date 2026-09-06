@@ -23,7 +23,12 @@ function openInventory()
             loadPlayerInventory(currentMenu)
         end
 
-        SendNUIMessage({action = "open:Inv", type = "normal"})
+        SendNUIMessage({
+            action = "open:Inv",
+            type = "normal",
+            playerName = GetPlayerName(PlayerId()),
+            serverId = GetPlayerServerId(PlayerId())
+        })
         Inventaire:hideHUD()
         CreatePedScreen(true)
 
@@ -732,6 +737,9 @@ function loadPlayerInventory(result, coffre, category, poid)
                             dataInv.weapons[key].type = "item_weapon"
                             dataInv.weapons[key].usable = true
                             dataInv.weapons[key].image = Config.Pictures[dataInv.weapons[key].name]
+                            if dataInv.weapons[key].serial then
+                                dataInv.weapons[key].label = dataInv.weapons[key].label .. ' #' .. dataInv.weapons[key].serial
+                            end
                             table.insert(items, dataInv.weapons[key])
                         -- end
                     end
@@ -917,6 +925,9 @@ RegisterNUICallback('category', function(data)
                     dataInv.weapons[key].type = "item_weapon"
                     dataInv.weapons[key].usable = true
                     dataInv.weapons[key].image = Config.Pictures[dataInv.weapons[key].name]
+                    if dataInv.weapons[key].serial then
+                        dataInv.weapons[key].label = dataInv.weapons[key].label .. ' #' .. dataInv.weapons[key].serial
+                    end
                     table.insert(items, dataInv.weapons[key])
                 -- end
             end
@@ -1145,16 +1156,10 @@ Config.trashList = {
 
 RegisterNUICallback('deleteItem', function(data)
     local playerPed =  PlayerPedId()
-    local playerPosition = GetEntityCoords(playerPed)
-    local found = GetClosestObject(Config.trashList, playerPosition)
     if IsPedSittingInAnyVehicle(playerPed) then
         return
     end
 
-    if (not found) or #(GetEntityCoords(found)-playerPosition) >= 2 then
-        NotificationInInventory(Locales[Config.Language]['trash_distance'], 'error')
-        return
-    end
     if IsPedRagdoll(PlayerPedId())  then
         NotificationInInventory(Locales[Config.Language]['no_possible'], 'error')
         return
@@ -1173,7 +1178,7 @@ RegisterNUICallback('deleteItem', function(data)
 
     elseif data.item.type == "item_weapon" then
         if not Config.WeaponNoGive[data.item.name] then 
-            TriggerServerEvent('lgd:removeItem', data.item.type, data.item.name)
+            TriggerServerEvent('lgd:removeItem', data.item.type, data.item.name, nil, data.item.serial)
             loadPlayerInventory('item', nil, true, true)
         end
     elseif data.item.type == "item_account" then
@@ -1246,7 +1251,7 @@ RegisterNUICallback('giveItem', function(data)
                 function_inv:RequestAnimDict("mp_common", function()
                     TaskPlayAnim(playerPed, "mp_common", "givetake2_a", 2.0, -2.0, 2500, 49, 0, false, false, false)
                 end)
-                TriggerServerEvent('lgd:giveItem', GetPlayerServerId(closestPlayer), data.item.name, 255, "item_weapon", data.item.label)
+                TriggerServerEvent('lgd:giveItem', GetPlayerServerId(closestPlayer), data.item.name, 255, "item_weapon", data.item.label, data.item.serial)
                 Wait(150)
                 loadPlayerInventory('item', nil, true, true)
             else 

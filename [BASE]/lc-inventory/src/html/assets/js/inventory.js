@@ -96,6 +96,10 @@ window.addEventListener("message", function(event) {
         disabled = false;
         $(".form-inv").fadeIn();
         inventoryVisible = true;
+
+        if (type == "normal" && event.data.playerName) {
+            $("#translateInventory").text(event.data.playerName + ' [' + event.data.serverId + ']');
+        }
     } else if (event.data.action == "close:Inv") {
 
         $("#dialog").dialog("close");
@@ -1027,12 +1031,7 @@ function setCount(item) {
     }
 
     if (item.type === "item_weapon") {
-        count = "";
-        // if (count == 0) {
-        //     count = "";
-        // } else {
-        //     count = '<img src="img/bullet.png" class="ammoIcon"> ' + item.ammo;
-        // }
+        count = 1;
     }
     if (item.type === "item_idcard") {
         count = "";
