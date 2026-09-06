@@ -471,6 +471,13 @@ GetFieldValueFromName = function(stringName)
 	return data and json.decode(data) or {}
 end
 
+function FastWeaponBindMatches(bind, weaponEntry)
+    if type(bind) == 'table' then
+        return weaponEntry.name == bind.name and (not bind.serial or weaponEntry.serial == bind.serial)
+    end
+    return weaponEntry.name == bind
+end
+
 Inv.FastWeapons = GetFieldValueFromName('lc-inventory').name and GetFieldValueFromName('lc-inventory').name or {}
 
 
@@ -716,21 +723,19 @@ function loadPlayerInventory(result, coffre, category, poid)
                         --     weapons[key] = nil
                         -- else
                             if json.encode(Inv.FastWeapons) ~= "[]" then
-                                for k,v in pairs(Inv.FastWeapons) do 
-                                    for fast, bind in pairs(Inv.FastWeapons) do
-                                        if dataInv.weapons[key].name == bind then
-                                            table.insert(fastItems, {
-                                                label = dataInv.weapons[key].label,
-                                                count = 1,
-                                                limit = -1,
-                                                type = dataInv.weapons[key].type,
-                                                name = dataInv.weapons[key].name,
-                                                image = Config.Pictures[dataInv.weapons[key].name],
-                                                usable = true,
-                                                rare = false,
-                                                slot = fast
-                                            })
-                                        end
+                                for fast, bind in pairs(Inv.FastWeapons) do
+                                    if FastWeaponBindMatches(bind, dataInv.weapons[key]) then
+                                        table.insert(fastItems, {
+                                            label = dataInv.weapons[key].label,
+                                            count = 1,
+                                            limit = -1,
+                                            type = dataInv.weapons[key].type,
+                                            name = dataInv.weapons[key].name,
+                                            image = Config.Pictures[dataInv.weapons[key].name],
+                                            usable = true,
+                                            rare = false,
+                                            slot = fast
+                                        })
                                     end
                                 end
                             end
@@ -904,21 +909,19 @@ RegisterNUICallback('category', function(data)
                 --     weapons[key] = nil
                 -- else
                     if json.encode(Inv.FastWeapons) ~= "[]" then
-                        for k,v in pairs(Inv.FastWeapons) do 
-                            for fast, bind in pairs(Inv.FastWeapons) do
-                                if dataInv.weapons[key].name == bind then
-                                    table.insert(fastItems, {
-                                        label = dataInv.weapons[key].label,
-                                        count = 255,
-                                        limit = -1,
-                                        type = dataInv.weapons[key].type,
-                                        name = dataInv.weapons[key].name,
-                                        image = Config.Pictures[dataInv.weapons[key].name],
-                                        usable = true,
-                                        rare = false,
-                                        slot = fast
-                                    })
-                                end
+                        for fast, bind in pairs(Inv.FastWeapons) do
+                            if FastWeaponBindMatches(bind, dataInv.weapons[key]) then
+                                table.insert(fastItems, {
+                                    label = dataInv.weapons[key].label,
+                                    count = 255,
+                                    limit = -1,
+                                    type = dataInv.weapons[key].type,
+                                    name = dataInv.weapons[key].name,
+                                    image = Config.Pictures[dataInv.weapons[key].name],
+                                    usable = true,
+                                    rare = false,
+                                    slot = fast
+                                })
                             end
                         end
                     end

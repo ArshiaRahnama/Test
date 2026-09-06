@@ -7,12 +7,18 @@ local windowState4 = true
 Citizen.CreateThread(function()
     while true do
 		Citizen.Wait(0)
-		if LeaveRunning then
+		-- ✅ فیکس شد: باگ "با Esc از ماشین پرت می‌شم" واقعاً از همینجا میومد.
+		-- این ترد پاز-منو رو اصلاً چک نمی‌کرد، پس وقتی پاز باز می‌شد و کنترل
+		-- گروه ۲ / کد ۷۵ (خروج از ماشین) به هر دلیلی برای یه لحظه true
+		-- می‌خوند، این کد فکر می‌کرد بازیکن داره F رو نگه می‌داره و مستقیماً
+		-- TaskLeaveVehicle صدا می‌زد. حالا تا وقتی پاز-منو بازه این چک اصلاً
+		-- اجرا نمی‌شه.
+		if LeaveRunning and not IsPauseMenuActive() then
 			local playerPed = GetPlayerPed(-1)
 			local vehicle = GetVehiclePedIsIn(PlayerPedId(), false)
 			if IsPedInAnyVehicle(playerPed, false) and IsControlPressed(2, 75) and not IsEntityDead(playerPed) then
                 Citizen.Wait(150)
-				if IsPedInAnyVehicle(playerPed, false) and IsControlPressed(2, 75) and not IsEntityDead(playerPed) then
+				if IsPedInAnyVehicle(playerPed, false) and IsControlPressed(2, 75) and not IsEntityDead(playerPed) and not IsPauseMenuActive() then
 					SetVehicleEngineOn(vehicle, true, true, false)
 					TaskLeaveVehicle(playerPed, vehicle, 0)
 				end

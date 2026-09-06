@@ -163,6 +163,26 @@ AddEventHandler('For5M:OutVehicle', function(target)
     TriggerClientEvent('For5M:OutVehicle', target)
 end)
 
+-------------------------------------------------------------------
+-- FEATURE (requested: per-category webhooks instead of one URL for
+-- every log type): Gangs[gang].webhook stays the exact same DB
+-- column/string it always was - no schema change - but can now hold
+-- either a plain URL (legacy, used for every category, unchanged
+-- behavior) or a JSON object {category = url, default = url} set via
+-- FMGangs:SetCategoryWebhook (server/Gangs.lua). This is the single
+-- place that resolves which URL a given category actually uses.
+-------------------------------------------------------------------
+function GetCategoryWebhook(gangName, category)
+    local raw = Gangs[gangName] and Gangs[gangName].webhook
+    if not raw or raw == '' then return nil end
+    local ok, decoded = pcall(json.decode, raw)
+    if ok and type(decoded) == 'table' then
+        return decoded[category] or decoded['default']
+    end
+    -- legacy: still a plain URL string, not JSON - used for every category
+    return raw
+end
+
 RegisterServerEvent('For5M:SendLog')
 AddEventHandler('For5M:SendLog', function(source , category , Text  )
     local identifierlist = ExtractIdentifiers(source) 
@@ -179,7 +199,7 @@ AddEventHandler('For5M:SendLog', function(source , category , Text  )
     data.Text = Text 
     data.gang = xPlayer.gang.name 
     data.IconURL = Gangs[ xPlayer.gang.name ].logo  
-    data.Webhook = Gangs[ xPlayer.gang.name ].webhook   
+    data.Webhook = GetCategoryWebhook(xPlayer.gang.name, category)
     SendLog(data)
 end)
 function SendLog(data)

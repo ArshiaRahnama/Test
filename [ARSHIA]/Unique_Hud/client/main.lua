@@ -192,21 +192,6 @@ AddEventHandler('Status:radio', function(data)
 end)
 
 
--- Fix: FiveM's pause menu control bug can leave the "exit vehicle" input active
--- while Esc/pause menu is open, causing the player to fall out of the car.
-Citizen.CreateThread(function()
-  while true do
-    Wait(0)
-    if IsPauseMenuActive() then
-      local ped = PlayerPedId()
-      if IsPedInAnyVehicle(ped, false) then
-        DisableControlAction(0, 75, true) -- INPUT_VEH_EXIT
-        DisableControlAction(2, 75, true)
-      end
-    end
-  end
-end)
-
 local previousArmor = 0
 local previousHealth = 0
 RegisterNetEvent('showStatus')
@@ -353,3 +338,30 @@ function convertData(type, data)
 
     return newData
 end
+
+-- ✅ فیکس شد: باگ معروف "با Esc از ماشین پرت می‌شم".
+-- نسخه‌ی قبلی این ترد دو تا مشکل داشت:
+-- ۱) فقط گروه‌های ۰ و ۲۷ رو دیس‌ایبل می‌کرد، ولی اسکریپت جدا (vehcontrol)
+--    کنترل خروج از ماشین رو تو گروه ۲ می‌خوند - پس اصلاً روی اون اثر نداشت.
+-- ۲) وقتی پاز بسته بود، Wait(500) می‌کرد. یعنی درست همون لحظه‌ای که Esc زده
+--    می‌شه، ممکن بود ترد خواب باشه و با تاخیر بیدار بشه - همون بازه‌ی خطرناکی
+--    که باگ توش اتفاق می‌افته.
+-- الان: وقتی بازیکن سوار ماشینه، هر فریم چک می‌کنه (نه هر ۵۰۰ میلی‌ثانیه)
+-- تا لحظه‌ی باز شدن پاز رو از دست نده، و هر سه گروه ۰/۱/۲ رو دیس‌ایبل
+-- می‌کنه تا مطمئن باشیم هیچ اسکریپتی (حتی اونایی که گروه‌های دیگه می‌خونن)
+-- کنترل خروج از ماشین رو true نبینه.
+Citizen.CreateThread(function()
+    while true do
+        local ped = PlayerPedId()
+        if IsPedInAnyVehicle(ped, false) then
+            if IsPauseMenuActive() then
+                DisableControlAction(0, 75, true)  -- INPUT_VEH_EXIT
+                DisableControlAction(1, 75, true)
+                DisableControlAction(2, 75, true)
+            end
+            Citizen.Wait(0)
+        else
+            Citizen.Wait(500)
+        end
+    end
+end)

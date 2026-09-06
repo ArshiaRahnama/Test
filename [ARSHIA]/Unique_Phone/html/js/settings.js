@@ -36,18 +36,11 @@ $(document).on('click', '.settings-app-tab', function(e){
         // EXPANSION: Do Not Disturb — persisted client-side via a resource
         // KVP (survives relogs/restarts, doesn't need a DB round trip for
         // something this low-stakes). See client/main.lua ToggleDoNotDisturb.
-        var dndBoxes = $(".dnd-box");
-        PhoneDoNotDisturb = !dndBoxes.prop("checked");
-        dndBoxes.prop("checked", PhoneDoNotDisturb);
-        $("#donotdisturb > p").html(PhoneDoNotDisturb ? 'On' : 'Off');
-        $.post('http://Unique_Phone/ToggleDoNotDisturb', JSON.stringify({ enabled: PhoneDoNotDisturb }));
+        // Toggling calls the shared setDoNotDisturb() in app.js so this
+        // switch and the Quick Settings tile never disagree.
+        setDoNotDisturb(!$(".dnd-box").prop("checked"));
     } else if (PressedTab == "onehandmode") {
-        var oneHandBoxes = $(".onehand-box");
-        var enabled = !oneHandBoxes.prop("checked");
-        applyOneHandMode(enabled);
-        oneHandBoxes.prop("checked", enabled);
-        $("#onehandmode > p").html(enabled ? 'On' : 'Off');
-        $.post('http://Unique_Phone/ToggleOneHandMode', JSON.stringify({ enabled: enabled }));
+        setOneHandMode(!$(".onehand-box").prop("checked"));
     }
 });
 
@@ -56,25 +49,12 @@ $(document).on('click', '.settings-app-tabfly', function(e){
     var PressedTab = $(this).data("settingstab");
 
     if (PressedTab == "havapyma") {
-        var checkBoxesfly = $(".numberrec-boxfly");
-        MI.Phone.Data.fly = !checkBoxesfly.prop("checked");
-        checkBoxesfly.prop("checked", MI.Phone.Data.fly);
-
-
-
-        if (!MI.Phone.Data.fly) {
-            $("#havapyma > p").html('Off');
-            MI.Phone.Data.AnonymousCallfly = false
-            console.log(MI.Phone.Data.AnonymousCallfly)
-        } else {
-            $("#havapyma > p").html('On');
-            MI.Phone.Data.AnonymousCallfly = true
-            console.log(MI.Phone.Data.AnonymousCallfly)
-        }
-
-        $.post('https://Unique_Phone/SetFlyMode', JSON.stringify({
-            toggle:  MI.Phone.Data.AnonymousCallfly,
-        }))
+        // EXPANSION: Airplane Mode — now KVP-persisted and enforced
+        // server-side (see client/main.lua + server/main.lua's
+        // PhoneFlyMode), not just an in-memory popup filter. Routed
+        // through the shared setFlyMode() in app.js, same as the other
+        // two toggles above.
+        setFlyMode(!$(".numberrec-boxfly").prop("checked"));
     }
 });
 

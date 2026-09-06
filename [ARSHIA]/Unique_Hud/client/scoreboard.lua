@@ -59,13 +59,18 @@ RegisterNUICallback('closeScoreboardUniqueHud', function(data, cb)
     cb('ok')
 end)
 
--- Esc هم امتحان می‌کنیم (ممکنه بسته به تنظیمات بازی کار کنه)، ولی دکمه‌ی ✕
--- تضمینیه.
+-- ✅ فیکس شد: قبلاً اینجا مستقیم کنترل ۳۲۲ (Esc) خونده می‌شد - دقیقاً همون
+-- کنترلی که خودِ پاز-منوی اصلی بازی رو هم باز می‌کنه. یعنی با یه Esc، هم
+-- پاز-منوی اصلی باز می‌شد هم هم‌زمان اینجا SetNuiFocus(false,false) می‌زدیم؛
+-- این تغییر هم‌زمانِ فوکوس/پاز دقیقاً همون شرایطی بود که می‌تونست باعث بشه
+-- بازیکن از ماشین پرت بشه بیرون. الان به‌جای خوندن مستقیم کنترل، منتظر باز
+-- شدن واقعی پاز-منو می‌مونیم و همون فریم اسکوربورد رو می‌بندیم، تا این
+-- تداخل هم‌زمان اصلاً پیش نیاد.
 Citizen.CreateThread(function()
     while true do
         if scoreboardOpen then
             Citizen.Wait(0)
-            if IsControlJustPressed(0, 322) then -- INPUT_FRONTEND_PAUSE (Esc)
+            if IsPauseMenuActive() then
                 CloseScoreboard()
             end
         else

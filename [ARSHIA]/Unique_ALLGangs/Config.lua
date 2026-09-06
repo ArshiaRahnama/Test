@@ -305,3 +305,18 @@ function getVehicleCategory(vehicle)
         return "car" 
     end 
 end 
+-------------------------------------------------------------------
+-- Per-category Discord log webhooks (requested: "Set Log Webhook"
+-- should let a boss set a *separate* webhook per action type instead
+-- of every log going to one channel). Matches the `category` string
+-- each For5M:SendLog call already uses (client/load.lua, server/boss.lua)
+-- - 'default' is the fallback used for any category without its own
+-- webhook set, and for old gangs that only ever set a single URL the
+-- legacy way (kept fully backward compatible, see server/main.lua's
+-- GetCategoryWebhook).
+-------------------------------------------------------------------
+Config.LogCategories = {
+    'Boss Action',
+    'Garage',
+    'Locker',
+}

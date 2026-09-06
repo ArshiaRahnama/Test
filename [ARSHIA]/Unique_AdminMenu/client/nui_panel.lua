@@ -370,6 +370,13 @@ end
 RegisterCommand('adminduty', OpenDutyHistory, false)
 
 RegisterCommand('adminradial', function()
+    -- Both this admin radial AND the bills menu (esx_billing) are bound to
+    -- F7. RegisterKeyMapping wins the physical key over esx_billing's own
+    -- IsControlJustPressed poll, so that poll never sees the press - this
+    -- call is what actually opens the bills menu now, for every player
+    -- (admin or not), before the admin-only check below.
+    TriggerEvent('esx_blling:OpenMenuBlling')
+
     if not aduty then return end
     if InAdminNui then return end
     InAdminNui = true

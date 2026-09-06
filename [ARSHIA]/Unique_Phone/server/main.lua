@@ -44,6 +44,27 @@ local AppAlerts = {}
 local MentionedTweets = {}
 local Hashtags = {}
 local Calls = {}
+
+-- EXPANSION: Airplane Mode — authoritative, server-side state (keyed by
+-- identifier, same pattern as Calls above). This is what makes airplane
+-- mode a REAL disconnect instead of just a client-side popup filter: a
+-- caller trying to reach a player with this on gets treated exactly like
+-- reaching an offline player (see GetCallState / GetCallStateAdmin below),
+-- so they get an instant "person unavailable" instead of a call that rings
+-- out for the full timeout. Set from the client whenever the toggle
+-- changes (see 'Unique_Phone:server:SetFlyModeState') and also once at
+-- phone-load time, so a relog while airplane mode was left on is honored
+-- immediately rather than only after the next manual toggle.
+local PhoneFlyMode = {}
+
+RegisterServerEvent('Unique_Phone:server:SetFlyModeState')
+AddEventHandler('Unique_Phone:server:SetFlyModeState', function(enabled)
+    local src = source
+    local Ply = ESX.GetPlayerFromId(src)
+    if Ply == nil then return end
+
+    PhoneFlyMode[Ply.identifier] = enabled and true or nil
+end)
 local Adverts = {}
 local GeneratedPlates = {}
 
@@ -342,7 +363,13 @@ ESX.RegisterServerCallback('Unique_Phone:server:GetCallState', function(source, 
 
     local Target = GetPlayerFromPhone(ContactData)
 
-    if Target ~= nil then
+    -- EXPANSION: a target with airplane mode on is treated exactly like a
+    -- target that isn't online at all — cb(false, false) — so the caller
+    -- gets the existing "person unavailable" message instantly instead of
+    -- the phone ringing out with no answer. This is also what stops
+    -- CallContact() (the Lua function that actually rings the target) from
+    -- ever running for them: it's only invoked when CanCall is true.
+    if Target ~= nil and not PhoneFlyMode[Target.identifier] then
         if Calls[Target.identifier] ~= nil then
             if Calls[Target.identifier].inCall then
                 cb(false, true)
@@ -361,7 +388,8 @@ ESX.RegisterServerCallback('Unique_Phone:server:GetCallStateAdmin', function(sou
 
     local Target = ESX.GetPlayerFromId(ContactData)
 
-    if Target ~= nil then
+    -- EXPANSION: same airplane-mode short-circuit as GetCallState above.
+    if Target ~= nil and not PhoneFlyMode[Target.identifier] then
         if Calls[Target.identifier] ~= nil then
             if Calls[Target.identifier].inCall then
                 cb(false, true)
@@ -561,7 +589,11 @@ AddEventHandler('Unique_Phone:server:CallContact', function(TargetData, CallId, 
         PhoneNum = character.phone
     end
 
-    if Target ~= nil then
+    -- EXPANSION: defense-in-depth — GetCallState already stops a caller
+    -- from reaching this point for a fly-mode target, but this event is
+    -- also reachable directly, so re-check here rather than trusting the
+    -- client not to have raced the toggle.
+    if Target ~= nil and not PhoneFlyMode[Target.identifier] then
         TriggerClientEvent('Unique_Phone:client:GetCalled', Target.source, PhoneNum, CallId, AnonymousCall)
     end
 end)
@@ -1363,6 +1395,21 @@ ESX.RegisterServerCallback('Unique_Phone:server:HasPhone', function(source, cb)
         else
             cb(false)
         end
+    end
+end)
+
+-- EXPANSION: register 'phone' as a usable inventory item. Without this,
+-- double-clicking/using the item from the inventory hit essentialmode's
+-- "item has no usable handler registered" warning and silently did
+-- nothing — opening the phone only ever worked through the /phone command
+-- (or its keybind). This just re-checks ownership (same as HasPhone above
+-- — the item could in theory have been removed between the inventory
+-- click and this callback firing) and then tells the client to open up,
+-- mirroring exactly what RegisterCommand("phone", ...) already does.
+ESX.RegisterUsableItem('phone', function(source)
+    local xPlayer = ESX.GetPlayerFromId(source)
+    if xPlayer ~= nil and xPlayer.getInventoryItem("phone").count > 0 then
+        TriggerClientEvent('Unique_Phone:client:UseItem', source)
     end
 end)
 

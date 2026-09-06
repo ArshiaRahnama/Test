@@ -115,38 +115,34 @@ function registerKey(key, type)
 
 	RegisterCommand('+' .. command, function()
 
-		-- BUG FIX: `Keys` (top of this file) is keyed in UPPERCASE
-		-- ("F2" = 289), but every entry in `haveToRegister` below is
-		-- lowercase ("f2"), and `registerKey` gets called with that
-		-- lowercase key. So `Keys[key]` here was ALWAYS nil for every
-		-- single key this whole system handles -- DisableControlAction
-		-- got called with a nil control hash, which errors and aborts
-		-- this command before it ever reaches TriggerEvent("onKeyDown",
-		-- key) below. Net effect: `onKeyDown` never fired for ANY key,
-		-- for any player, ever -- which is what was blocking F2/the
-		-- inventory (and silently breaking every other script listening
-		-- for onKeyDown/onKeyUp/onMultiplePress across this server, e.g.
-		-- 'e' pickup/interact prompts). Uppercasing the lookup fixes all
-		-- of them at once.
-		if not IsPauseMenuActive() and not DisableControlAction(0, Keys[string.upper(key)], true) then
+		if IsPauseMenuActive() then return end
 
-			if shouldSendTheKey(key) then
+		-- best-effort only: some registered keys (numpad4-9, lmenu,
+		-- f4/f11, escape, oem_3/~, lcontrol, lshift, return, back, up,
+		-- mouse_left/right, end, i, capital) have no matching entry in
+		-- `Keys` above, so this can legitimately be nil. That must never
+		-- block onKeyDown below - it only used to because a nil hash
+		-- passed to DisableControlAction throws and aborts the command.
+		local controlHash = Keys[string.upper(key)]
+		if controlHash then
+			DisableControlAction(0, controlHash, true)
+		end
 
-				TriggerEvent("onKeyDown", key)
+		if shouldSendTheKey(key) then
 
-			end
+			TriggerEvent("onKeyDown", key)
+
+		end
 
 
 
-			table.insert(keysHolding, key)
+		table.insert(keysHolding, key)
 
-			currentKeysHolding[key] = true
+		currentKeysHolding[key] = true
 
-			if #keysHolding > 1 then
+		if #keysHolding > 1 then
 
-				TriggerEvent("onMultiplePress", currentKeysHolding)
-
-			end
+			TriggerEvent("onMultiplePress", currentKeysHolding)
 
 		end
 
@@ -156,7 +152,7 @@ function registerKey(key, type)
 
 	RegisterCommand('-' .. command, function()
 
-		if not IsPauseMenuActive() and not DisableControlAction(0, Keys[string.upper(key)], true) then
+		if not IsPauseMenuActive() then
 
 			TriggerEvent("onKeyUP", key)
 
@@ -181,6 +177,8 @@ function removeKey(key)
 		if currentKey == key then
 
 			table.remove(keysHolding, index)
+
+			break
 
 		end
 

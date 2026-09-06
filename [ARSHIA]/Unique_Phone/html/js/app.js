@@ -487,6 +487,14 @@ MI.Phone.Functions.LoadPhoneData = function(data) {
     $(".onehand-box").prop("checked", PhoneOneHandMode);
     $("#onehandmode > p").html(PhoneOneHandMode ? 'On' : 'Off');
 
+    // EXPANSION: restore the persisted Airplane Mode preference — same
+    // idea as Do Not Disturb above, now that it's actually persisted
+    // (see client/main.lua). Also syncs the Quick Settings tiles below.
+    PhoneFlyMode = !!data.flyMode;
+    $(".numberrec-boxfly").prop("checked", PhoneFlyMode);
+    $("#havapyma > p").html(PhoneFlyMode ? 'On' : 'Off');
+    updateQuickSettingsUI();
+
     setTimeout(function() {
        
         MI.Phone.Functions.SetupApplications(data);
@@ -589,6 +597,50 @@ function applyPhoneCase(caseId) {
 function applyOneHandMode(enabled) {
     PhoneOneHandMode = enabled;
     $(".phone-container").toggleClass("phone-onehand", enabled);
+}
+
+// EXPANSION: Airplane Mode state — mirrors PhoneDoNotDisturb/
+// PhoneOneHandMode above. See client/main.lua for the KVP persistence +
+// server-side (PhoneFlyMode in server/main.lua) enforcement that actually
+// makes this cut off calls/messages, not just this flag.
+var PhoneFlyMode = false;
+
+// ─────────────────────────────────────────────────────────
+// EXPANSION: shared setters for the three simple device-wide toggles (DND,
+// One-Hand, Airplane). Both the Settings app switches (settings.js) and
+// the new Quick Settings panel (quicksettings.js) call these instead of
+// each keeping their own copy of the toggle logic, so the two surfaces
+// can never show a different on/off state for the same setting.
+// ─────────────────────────────────────────────────────────
+
+function setDoNotDisturb(enabled) {
+    PhoneDoNotDisturb = enabled;
+    $(".dnd-box").prop("checked", enabled);
+    $("#donotdisturb > p").html(enabled ? 'On' : 'Off');
+    $.post('http://Unique_Phone/ToggleDoNotDisturb', JSON.stringify({ enabled: enabled }));
+    updateQuickSettingsUI();
+}
+
+function setOneHandMode(enabled) {
+    applyOneHandMode(enabled);
+    $(".onehand-box").prop("checked", enabled);
+    $("#onehandmode > p").html(enabled ? 'On' : 'Off');
+    $.post('http://Unique_Phone/ToggleOneHandMode', JSON.stringify({ enabled: enabled }));
+    updateQuickSettingsUI();
+}
+
+function setFlyMode(enabled) {
+    PhoneFlyMode = enabled;
+    $(".numberrec-boxfly").prop("checked", enabled);
+    $("#havapyma > p").html(enabled ? 'On' : 'Off');
+    $.post('http://Unique_Phone/ToggleFlyMode', JSON.stringify({ enabled: enabled }));
+    updateQuickSettingsUI();
+}
+
+function updateQuickSettingsUI() {
+    $(".qs-tile[data-qs='dnd']").toggleClass("qs-tile-active", !!PhoneDoNotDisturb);
+    $(".qs-tile[data-qs='onehand']").toggleClass("qs-tile-active", !!PhoneOneHandMode);
+    $(".qs-tile[data-qs='flymode']").toggleClass("qs-tile-active", !!PhoneFlyMode);
 }
 
 // EXPANSION: purely cosmetic display formatter (0911XXXXXXX -> 0911-XXX-XXXX).

@@ -949,6 +949,50 @@ ESX.RegisterServerCallback('FMGangs:UpdateGang', function(source, cb, gangname, 
     end
 end)
 
+-------------------------------------------------------------------
+-- FEATURE (requested: separate webhook per log category instead of
+-- one URL for everything) - reuses the exact same `gangs.webhook`
+-- column, just stores a JSON object in it instead of a bare URL:
+-- {category = url, ..., default = url}. A gang that never touches
+-- this keeps working exactly as before (GetCategoryWebhook in
+-- server/main.lua falls back to treating a non-JSON value as one URL
+-- for every category). Passing an empty url clears that category
+-- (falls back to 'default').
+-------------------------------------------------------------------
+ESX.RegisterServerCallback('FMGangs:SetCategoryWebhook', function(source, cb, gangname, category, url)
+    if not IsGangBossSource(source, gangname) then return cb(false) end
+    if not category or category == '' then return cb(false) end
+
+    local raw = Gangs[gangname] and Gangs[gangname].webhook
+    local webhooks = {}
+    if raw and raw ~= '' then
+        local ok, decoded = pcall(json.decode, raw)
+        if ok and type(decoded) == 'table' then
+            webhooks = decoded
+        else
+            -- legacy plain URL - carry it forward as the 'default' entry
+            -- so categories that aren't set yet keep working like before
+            webhooks['default'] = raw
+        end
+    end
+
+    if url and url ~= '' then
+        webhooks[category] = url
+    else
+        webhooks[category] = nil
+    end
+
+    local encoded = json.encode(webhooks)
+    MySQL.Async.execute('UPDATE gangs SET webhook = @webhook WHERE name = @name',
+    {
+        ['@webhook'] = encoded,
+        ['@name'] = gangname,
+    }, function(result)
+        Gangs[gangname].webhook = encoded
+        cb(true)
+    end)
+end)
+
 ESX.RegisterServerCallback('FMGangs:AddOption', function(source, cb, GangName, Type, Data)
     if GangName and Type and Data then
         
@@ -1256,7 +1300,26 @@ ESX.RegisterServerCallback('FMGangs:GetGangArmories', function(source, cb, gang)
     cb(list)
 end)
 
+-- Forward-declared so FMGangs:GetArmoryStashItemNames below (registered
+-- before the real definition further down this file) can call it too.
+local EnsureArmoryStash
+
+-------------------------------------------------------------------
+-- FIX (requested: a newly admin-set armory should show up in the
+-- boss's Item Access menu immediately, not just show "empty"): this
+-- previously only read the `stashs` table directly, which only ever
+-- gets a row once EnsureArmoryStash seeds it - and that only used to
+-- happen the first time a player physically opened that armory
+-- in-game (For5M:OpenInventory below). A brand-new armory the admin
+-- just stocked (e.g. via For5M:itemPacks) would show as empty in the
+-- boss menu until someone happened to open it first. Now seeds it
+-- right here too, so the boss sees real contents immediately.
+-------------------------------------------------------------------
 ESX.RegisterServerCallback('FMGangs:GetArmoryStashItemNames', function(source, cb, gang, armoryKey)
+    local armoryEntry = Gangs[gang] and Gangs[gang].armory and Gangs[gang].armory[tonumber(armoryKey) or armoryKey]
+    if armoryEntry then
+        EnsureArmoryStash(gang, tonumber(armoryKey) or armoryKey, armoryEntry)
+    end
     local stashId = GetArmoryStashId(gang, armoryKey)
     cb(ReadArmoryStashItemNames(stashId))
 end)
@@ -1265,7 +1328,7 @@ end)
 -- it's opened, then remembers not to do it again. Matches the exact
 -- shape IRV-inventory's own GetStash expects: a JSON object keyed by
 -- slot number, each entry {name, count, slot, info, weight}.
-local function EnsureArmoryStash(playergang, key, armory)
+EnsureArmoryStash = function(playergang, key, armory)
     local stashId = GetArmoryStashId(playergang, key)
     if RegisteredArmoryStashes[stashId] then return stashId end
 

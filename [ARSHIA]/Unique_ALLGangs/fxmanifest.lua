@@ -2,8 +2,8 @@ fx_version 'cerulean'
 game 'gta5'
 lua54 'yes'
 
-author 'For5M (merged: FMGangs + FMGangBoss) - patched for LS-inventory + lag fix'
-description 'Unique_ALLGangs - merged FMGangs + FMGangBoss, LS-inventory, fixed openpanel lag'
+author 'For5M (merged: FMGangs + FMGangBoss) - patched for IRV-inventory + lag fix'
+description 'Unique_ALLGangs - merged FMGangs + FMGangBoss, IRV-inventory, fixed openpanel lag'
 version '1.0.0'
 
 -- NOTE: IRV-inventory (and its own dependency, oxmysql) must be started
@@ -27,6 +27,11 @@ version '1.0.0'
 -- FMGangsGarage - it contains a confirmed backdoor (see README).
 
 shared_script 'Config.lua'
+shared_script '@ox_lib/init.lua' -- for the "Set Log Webhook" per-category context menu (client/boss_esx_menu.lua) - requires ox_lib to be running
+
+dependencies {
+    'ox_lib',
+}
 
 server_scripts {
     '@mysql-async/lib/MySQL.lua',

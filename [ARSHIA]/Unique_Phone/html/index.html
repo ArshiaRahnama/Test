@@ -30,6 +30,7 @@
     <link rel="stylesheet" href="./css/solitary.css">
     <link rel="stylesheet" href="./css/gallery.css">
     <link rel="stylesheet" href="./css/camera.css">
+    <link rel="stylesheet" href="./css/quicksettings.css">
 
     <!-- CDN's -->
 <link href="https://fonts.googleapis.com/css?family=Montserrat:400,600,700,800,900" rel="stylesheet">
@@ -80,7 +81,32 @@
                     <div class="notification-text"></div>
                 </div>  
 
-                
+                <!-- EXPANSION: Quick Settings panel — swipe down anywhere on
+                     the status bar above (.phone-header) to reveal instant
+                     toggles for Do Not Disturb, One-Hand Mode and Airplane
+                     Mode without opening the Settings app. A plain tap on
+                     the header (instead of a drag) toggles it too; tapping
+                     the backdrop or the handle below closes it. See
+                     js/quicksettings.js. -->
+                <div class="phone-quicksettings-backdrop" id="phone-quicksettings-backdrop"></div>
+                <div class="phone-quicksettings" id="phone-quicksettings">
+                    <div class="qs-tiles">
+                        <div class="qs-tile" data-qs="dnd">
+                            <div class="qs-tile-icon"><i class="fas fa-moon"></i></div>
+                            <div class="qs-tile-label">Do Not Disturb</div>
+                        </div>
+                        <div class="qs-tile" data-qs="onehand">
+                            <div class="qs-tile-icon"><i class="fas fa-hand"></i></div>
+                            <div class="qs-tile-label">One-Hand</div>
+                        </div>
+                        <div class="qs-tile" data-qs="flymode">
+                            <div class="qs-tile-icon"><i class="fas fa-plane"></i></div>
+                            <div class="qs-tile-label">Airplane Mode</div>
+                        </div>
+                    </div>
+                    <div class="phone-quicksettings-handle" id="phone-quicksettings-handle"><i class="fas fa-chevron-up"></i></div>
+                </div>
+
         <div class="device">
     <div class="device-viewport">
       <!-- Begin custom content -->
@@ -1427,6 +1453,7 @@
         <script src="./js/snake.js"></script>       
         <script src="./js/app.js"></script>
         <script src="./js/settings.js"></script>
+        <script src="./js/quicksettings.js"></script>
         <script src="./js/spotify.js"></script>     
         <script src="./js/phone.js"></script>
         <script src="./js/twitter.js"></script>

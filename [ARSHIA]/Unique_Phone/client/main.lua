@@ -27,6 +27,16 @@ local lastKnownWeather = nil
 
 phoneProp = 0
 local phoneModel = `prop_npc_phone_02`
+
+-- EXPANSION: Airplane Mode. Used to be a purely in-memory toggle (reset to
+-- Off on every relog, no server awareness at all) that only suppressed the
+-- INCOMING call/message popups — the call would still ring out normally on
+-- the caller's end, and nothing stopped this player from placing outgoing
+-- calls/messages themselves. Now: persisted via KVP like DND/One-Hand
+-- (restored below in LoadPhone), mirrored to the server on load and on
+-- every toggle (server/main.lua's PhoneFlyMode — see GetCallState) so
+-- callers get an instant "person unavailable" instead of a full ring-out,
+-- and also checked on the OUTGOING side in CallContact()/SendMessage below.
 local FlyMode = false
 
 PhoneData = {
@@ -162,6 +172,15 @@ end)
 RegisterCommand("phone", function()
 OpenPhone()
 newPhoneProp()
+end)
+
+-- EXPANSION: fired by server/main.lua's ESX.RegisterUsableItem('phone', ...)
+-- when the item is used/double-clicked from the inventory. Does exactly
+-- what the /phone command above does — same two calls, same order.
+RegisterNetEvent('Unique_Phone:client:UseItem')
+AddEventHandler('Unique_Phone:client:UseItem', function()
+    OpenPhone()
+    newPhoneProp()
 end)
 
 function CalculateTimeToDisplay()
@@ -329,6 +348,14 @@ function LoadPhone()
 
         Citizen.Wait(300)
 
+        -- EXPANSION: restore the persisted Airplane Mode preference and
+        -- immediately tell the server about it (see PhoneFlyMode in
+        -- server/main.lua) — if the player logged off with it on, callers
+        -- should get "unavailable" from the moment they're back, not only
+        -- after they open Settings and re-toggle it.
+        FlyMode = GetResourceKvpString('unique_phone_flymode') == 'true'
+        TriggerServerEvent('Unique_Phone:server:SetFlyModeState', FlyMode)
+
         SendNUIMessage({
             action       = "LoadPhoneData",
             PhoneData    = PhoneData,
@@ -342,6 +369,8 @@ function LoadPhone()
             phoneThemes  = Config.PhoneThemes,
             phoneCases   = Config.PhoneCases,
             oneHandMode  = GetResourceKvpString('unique_phone_onehand') == 'true',
+            -- EXPANSION: restore the persisted Airplane Mode preference.
+            flyMode      = FlyMode,
         })
 
     end)
@@ -715,6 +744,25 @@ function ReorganizeChats(key)
 end
 
 RegisterNUICallback('SendMessage', function(data, cb)
+    -- EXPANSION: Airplane Mode blocks outgoing messages too, not just
+    -- calls — a real airplane mode cuts off the whole connection, not one
+    -- app at a time. (cb is never invoked by the rest of this callback —
+    -- the NUI side fires this and updates its own local chat state instead
+    -- of waiting on a response — so returning here without calling it
+    -- matches the existing behavior for every other branch below.)
+    if FlyMode then
+        SendNUIMessage({
+            action = "PhoneNotification",
+            PhoneNotify = {
+                title = Lang("PHONE_TITLE"),
+                text = "حالت هواپیما روشنه، امکان ارسال پیام نیست",
+                icon = "fas fa-plane",
+                color = "#e84118",
+            },
+        })
+        return
+    end
+
     local ChatMessage = data.ChatMessage
     local ChatDate = data.ChatDate
     local ChatNumber = data.ChatNumber
@@ -2044,6 +2092,24 @@ function GenerateCallId(caller, target)
 end
 
 CallContact = function(CallData, AnonymousCall, Admins)
+    -- EXPANSION: this is the single choke point all three call-initiation
+    -- NUI callbacks (CallContact/CallContactJobs/CallContactAdmins) funnel
+    -- through, so checking Airplane Mode here blocks outgoing calls no
+    -- matter which one triggered it. (The target's own airplane mode is
+    -- handled separately, server-side, in GetCallState.)
+    if FlyMode then
+        SendNUIMessage({
+            action = "PhoneNotification",
+            PhoneNotify = {
+                title = Lang("PHONE_TITLE"),
+                text = "حالت هواپیما روشنه، امکان تماس گرفتن نیست",
+                icon = "fas fa-plane",
+                color = "#e84118",
+            },
+        })
+        return
+    end
+
     local RepeatCount = 0
     PhoneData.CallData.CallType = "outgoing"
     PhoneData.CallData.InCall = true
@@ -2938,8 +3004,24 @@ RegisterNUICallback('GetWhatsappChats', function(data, cb)
     end, PhoneData.Chats)
 end)
 
-RegisterNUICallback('SetFlyMode', function(data)
-    FlyMode = data.toggle
+-- EXPANSION: Airplane Mode toggle — replaces the old 'SetFlyMode' callback,
+-- which just flipped an in-memory flag with no persistence and no server
+-- awareness. Same KVP-persistence pattern as ToggleDoNotDisturb/
+-- ToggleOneHandMode above, plus mirroring the state to the server (so
+-- callers get treated as if this player were offline — see
+-- server/main.lua's PhoneFlyMode) and hanging up any call already in
+-- progress the moment airplane mode is switched on, since a real airplane
+-- mode wouldn't leave an existing call connected.
+RegisterNUICallback('ToggleFlyMode', function(data, cb)
+    FlyMode = data.enabled and true or false
+    SetResourceKvp('unique_phone_flymode', FlyMode and 'true' or 'false')
+    TriggerServerEvent('Unique_Phone:server:SetFlyModeState', FlyMode)
+
+    if FlyMode and PhoneData.CallData.InCall then
+        CancelCall()
+    end
+
+    if cb then cb('ok') end
 end)
 
 RegisterNUICallback('Delete_Message', function(data, cb)

@@ -40,6 +40,18 @@ Citizen.CreateThread(function()
       end
 
       if not beltOn then
+        -- ✅ فیکس شد: باگ «فریز/پرت شدن ناگهانی از ماشین با Esc» از همینجا
+        -- میومد. وقتی پاز-منو باز/بسته می‌شه، فیزیک ماشین یه لحظه فریز/گلیچ
+        -- می‌کنه و GetEntitySpeed ممکنه یه افت ناگهانیِ کاذب نشون بده. این
+        -- تیکه اون افت رو به اشتباه «تصادف شدید» تشخیص می‌داد و بازیکنِ
+        -- بدون‌کمربند رو با SetEntityCoords + SetPedToRagdoll پرت می‌کرد بیرون
+        -- - بدون اینکه واقعاً تصادفی شده باشه. الان تا وقتی پاز-منو بازه،
+        -- بافرهای سرعت/سرعت‌برداری صاف نگه داشته می‌شن و این مقایسه اصلاً
+        -- انجام نمی‌شه، تا گلیچِ لحظه‌ی پاز به‌عنوان تصادف حساب نشه.
+        if IsPauseMenuActive() then
+          speedBuffer[1], speedBuffer[2] = nil, nil
+          velBuffer[1], velBuffer[2] = nil, nil
+        else
         speedBuffer[2] = speedBuffer[1]
         speedBuffer[1] = GetEntitySpeed(vehData.vehicle)
         if speedBuffer[2] ~= nil

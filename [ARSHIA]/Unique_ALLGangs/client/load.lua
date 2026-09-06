@@ -595,6 +595,21 @@ function OpenGangVehicleSpawner(spawnPoint, category, vehicleAccess)
                     TaskWarpPedIntoVehicle(PlayerPedId(), vehicle, -1)
                     TriggerServerEvent('CarLock:ToggleKey', true, plate)
                     Notifiaction('Vehicle registered to the gang - keys given')
+                    -- FEATURE (requested: full detail on spawn logs too):
+                    -- same detail level as the store log below - model,
+                    -- plate, fuel/engine/body, since it's a brand-new
+                    -- vehicle these are always full/100% but logging the
+                    -- real read values (not just hardcoded "100%") keeps
+                    -- this consistent if SetVehicleFixed/EngineHealth
+                    -- above ever changes.
+                    local ok, fuel = pcall(function() return exports['LegacyFuel']:GetFuel(vehicle) end)
+                    local fuelPercent = (ok and fuel) and math.floor(fuel + 0.5) or math.floor(GetVehicleFuelLevel(vehicle) + 0.5)
+                    local engineHealth = GetVehicleEngineHealth(vehicle)
+                    local bodyPercent = math.floor((GetVehicleBodyHealth(vehicle) / 1000.0) * 100)
+                    local displayName = GetLabelText(GetDisplayNameFromVehicleModel(model)) or model
+                    TriggerServerEvent('For5M:SendLog', GetPlayerServerId(PlayerId()), 'Garage',
+                        ('Spawned New Vehicle | %s | Plate: %s | Fuel: %d%% | Engine: %s | Body: %d%%'):format(
+                            displayName, plate, fuelPercent, (engineHealth > 0 and 'Yes' or 'No'), bodyPercent))
                 else
                     Notifiaction('Could not register this vehicle to the gang')
                 end
@@ -728,10 +743,36 @@ function DeleteTheVehicle(type)
         -- 'For5mG-garage:stored' event.
         -------------------------------------------------------------
         local plate = GetVehicleNumberPlateText(Vehicle)
+        -------------------------------------------------------------
+        -- FEATURE (requested: full detail in the log when a vehicle is
+        -- parked - engine on/off, health %, all of it) + bonus fix:
+        -- read the real condition BEFORE the vehicle gets deleted below,
+        -- and persist it the same way Unique_Garage's own UI does
+        -- (SetVehState, job='Gang' branch, server.lua) instead of only
+        -- flipping `stored`. Previously FMGangs:StoreGangVehicle only
+        -- ever set stored=1 - fuel/engine/body were never saved, so a
+        -- vehicle always came back at whatever state it was created in
+        -- regardless of how it was actually left. SetVehState already
+        -- has the correct query for this (same table Unique_Garage's
+        -- own take-out flow reads/writes), so this reuses it instead of
+        -- reinventing another column update.
+        -------------------------------------------------------------
+        local vehicleProps = ESX.Game.GetVehicleProperties(Vehicle)
+        local ok, fuel = pcall(function() return exports['LegacyFuel']:GetFuel(Vehicle) end)
+        local fuelPercent = (ok and fuel) and math.floor(fuel + 0.5) or math.floor(GetVehicleFuelLevel(Vehicle) + 0.5)
+        local engineHealth = GetVehicleEngineHealth(Vehicle)
+        local bodyHealth = GetVehicleBodyHealth(Vehicle)
+        local bodyPercent = math.floor((bodyHealth / 1000.0) * 100)
+        if bodyPercent < 0 then bodyPercent = 0 end
+        if bodyPercent > 100 then bodyPercent = 100 end
+        local displayName = GetLabelText(GetDisplayNameFromVehicleModel(GetEntityModel(Vehicle))) or 'Unknown'
+
         ESX.TriggerServerCallback('FMGangs:GetGangVehicleByPlate', function(gangveh) 
             if gangveh then 
-                TriggerServerEvent('For5M:SendLog', GetPlayerServerId(PlayerId()) , 'Garage' , 'stored Vehicle '  )
-                TriggerServerEvent('FMGangs:StoreGangVehicle', plate)
+                TriggerServerEvent('For5M:SendLog', GetPlayerServerId(PlayerId()) , 'Garage' ,
+                    ('Stored Vehicle | %s | Plate: %s | Fuel: %d%% | Engine: %s | Body: %d%%'):format(
+                        displayName, plate, fuelPercent, (engineHealth > 0 and 'Yes' or 'No'), bodyPercent))
+                TriggerServerEvent('SetVehState', 1, plate, { fuel = fuelPercent, engine = engineHealth, body = bodyHealth, props = vehicleProps }, 'Gang', PlayerData.gang.name)
                 ESX.Game.DeleteVehicle(Vehicle)
             else 
                 Notifiaction(' This Vehicle Its Not For This Gang  !!')

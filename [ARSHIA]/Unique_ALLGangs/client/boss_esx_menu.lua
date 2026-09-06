@@ -648,33 +648,72 @@ function OpenBossGangSettingsMenu(gang)
             end)
         elseif data.current.value == 'webhook' then
             menu.close()
-            ESX.UI.Menu.Open('dialog', GetCurrentResourceName(), 'boss_set_webhook_' .. gang, {
-                title = 'Paste the new Discord webhook URL'
-            }, function(data2, menu2)
-                if not data2.value or data2.value == '' then
-                    ESX.ShowNotification('Invalid URL')
-                    return
-                end
-                menu2.close()
-                ESX.TriggerServerCallback('FMGangs:GetGangDataFromName', function(gangData)
-                    if not gangData then
-                        ESX.ShowNotification('Could not load gang data')
-                        OpenBossActionsMenu()
-                        return
-                    end
-                    ESX.TriggerServerCallback('FMGangs:UpdateGang', function(success)
-                        if success then
-                            ESX.ShowNotification('Webhook updated')
-                        else
-                            ESX.ShowNotification('Failed to update webhook')
+            -------------------------------------------------------------
+            -- FEATURE (requested: "منو ox بیاد" - an ox_lib menu letting
+            -- every log category get its own webhook instead of one URL
+            -- for the whole gang): picks a category via lib.registerContext
+            -- + lib.showContext, then lib.inputDialog for that category's
+            -- URL, saved via the new FMGangs:SetCategoryWebhook callback
+            -- (server/Gangs.lua) - separate from FMGangs:UpdateGang, which
+            -- still only handles label/expire/logo.
+            -------------------------------------------------------------
+            local function openWebhookCategoryMenu()
+                local contextOptions = {}
+                for _, category in ipairs(Config.LogCategories or {}) do
+                    table.insert(contextOptions, {
+                        title = category,
+                        description = 'Set the Discord webhook used for ' .. category .. ' logs',
+                        icon = 'webhook',
+                        onSelect = function()
+                            local input = lib.inputDialog('Webhook - ' .. category, {
+                                { type = 'input', label = 'Discord Webhook URL', description = 'Leave empty to clear this category (falls back to Default)' }
+                            })
+                            if not input then
+                                openWebhookCategoryMenu()
+                                return
+                            end
+                            ESX.TriggerServerCallback('FMGangs:SetCategoryWebhook', function(success)
+                                if success then
+                                    ESX.ShowNotification(category .. ' webhook updated')
+                                else
+                                    ESX.ShowNotification('Failed to update webhook')
+                                end
+                                openWebhookCategoryMenu()
+                            end, gang, category, input[1] or '')
                         end
-                        OpenBossActionsMenu()
-                    end, gang, gangData.label, gangData.expire_day, gangData.logo, data2.value)
-                end, gang)
-            end, function(data2, menu2)
-                menu2.close()
-                OpenBossGangSettingsMenu(gang)
-            end)
+                    })
+                end
+                table.insert(contextOptions, {
+                    title = 'Default (fallback)',
+                    description = 'Used for any log category above that has no webhook of its own set',
+                    icon = 'circle-question',
+                    onSelect = function()
+                        local input = lib.inputDialog('Webhook - Default', {
+                            { type = 'input', label = 'Discord Webhook URL', description = 'Leave empty to clear' }
+                        })
+                        if not input then
+                            openWebhookCategoryMenu()
+                            return
+                        end
+                        ESX.TriggerServerCallback('FMGangs:SetCategoryWebhook', function(success)
+                            if success then
+                                ESX.ShowNotification('Default webhook updated')
+                            else
+                                ESX.ShowNotification('Failed to update webhook')
+                            end
+                            openWebhookCategoryMenu()
+                        end, gang, 'default', input[1] or '')
+                    end
+                })
+
+                lib.registerContext({
+                    id = 'boss_webhook_categories_' .. gang,
+                    title = 'SET LOG WEBHOOK',
+                    options = contextOptions
+                })
+                lib.showContext('boss_webhook_categories_' .. gang)
+            end
+            openWebhookCategoryMenu()
         elseif data.current.value == 'rename_rank' then
             menu.close()
             OpenBossSelectRankMenu(gang, 'rename')
