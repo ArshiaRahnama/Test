@@ -189,6 +189,18 @@ Config.PhoneApplications = {
         slot = 5,
         Alerts = 0,
     },
+    ["polices"] = {
+        app = "polices",
+        color = "#00FF95",
+        icon = "fas fa-building",
+        tooltipText = "Services",
+        tooltipPos = "top",
+        job = false,
+        blockedjobs = {},
+        slot = 6,
+        Alerts = 0,
+    },
+
     ["gallery"] = {
         app = "gallery",
         color = "#AC1D2C",

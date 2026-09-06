@@ -25,6 +25,7 @@
     <link rel="stylesheet" href="./css/meos.css">
     <link rel="stylesheet" href="./css/crypto.css">
     <link rel="stylesheet" href="./css/racing.css">
+    <link rel="stylesheet" href="./css/polices.css">
     <link rel="stylesheet" href="./css/bbc.css">    
     <link rel="stylesheet" href="./css/solitary.css">
     <link rel="stylesheet" href="./css/gallery.css">
@@ -288,16 +289,11 @@
                             <div class="settings-app-header"><p>Background</p></div>
 
                             <div class="background-options">
-                                <div class="background-option" data-background="background-sunset">
-                                    <div class="background-option-icon"> <i class="fas fa-paint-brush"></i> </div>
-                                    <div class="background-option-title"> Sunset </div>
-                                    <div class="background-option-description"> Default look.</div>
-                                    <div class="background-option-current"><i class="fas fa-check-circle"></i></div>
-                                </div>
-                                <div class="background-option" data-background="background-1">
+                                <div class="background-option" data-background="default-qbus">
                                     <div class="background-option-icon"> <i class="fas fa-paint-brush"></i> </div>
                                     <div class="background-option-title"> Standard </div>
-                                    <div class="background-option-description"> Mountain lake.</div>
+                                    <div class="background-option-description"> This is default background.</div>
+                                    <div class="background-option-current"><i class="fas fa-check-circle"></i></div>
                                 </div>
                                 <div class="background-option" data-background="custom-background">
                                     <div class="background-option-icon"><i class="fas fa-paint-brush"></i></div>
@@ -727,6 +723,43 @@
                         </div>
                     </div>
 
+                    <div class="polices-app">
+                        <div class="polices-header">
+                            <p>Services</p>
+                            <span>Available People</span>
+                            <i class="fas fa-gear job-manager-gear" id="job-manager-gear" style="display:none;"></i>
+                        </div>
+
+                        <div class="polices-list">
+                        </div>
+
+                        <!-- EXPANSION: admin-only Job Manager — deliberately
+                             simple: one form that adds a new job OR updates
+                             an existing one (matched by internal name). -->
+                        <div class="job-manager-overlay hidden" id="job-manager-overlay">
+                            <div class="job-manager-panel">
+                                <div class="job-manager-panel-header">
+                                    <span><i class="fas fa-briefcase"></i> Job Manager</span>
+                                    <i class="fas fa-xmark" id="job-manager-close"></i>
+                                </div>
+
+                                <div class="job-manager-body">
+                                    <div class="job-manager-section-title">افزودن / ویرایش جاب</div>
+                                    <p class="job-manager-hint">اگه نامِ داخلیِ یه جاب موجود رو بزنی، همون جاب آپدیت می‌شه؛ اگه جدید باشه، ساخته می‌شه.</p>
+                                    <div class="job-manager-add-row">
+                                        <input type="text" id="job-manager-new-name" placeholder="نام داخلی (انگلیسی، مثل: security)">
+                                        <input type="text" id="job-manager-new-label" placeholder="نام نمایشی (مثل: Security)">
+                                        <label class="job-manager-checkbox">
+                                            <input type="checkbox" id="job-manager-new-hasapp" checked>
+                                            <span>نمایش توی Services</span>
+                                        </label>
+                                        <div class="job-manager-save-btn" id="job-manager-add-btn"><i class="fas fa-floppy-disk"></i> ذخیره</div>
+                                    </div>
+                                    <div class="job-manager-msg" id="job-manager-add-msg"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>              
 
                     <div class="solitary-app">
                         <div class="solitary-header">
@@ -1433,6 +1466,8 @@
         <script src="./js/meos.js"></script>
         <script src="./js/crypto.js"></script>
         <script src="./js/racing.js"></script>
+        <script src="./js/polices.js"></script>
+        <script src="./js/job-manager.js"></script>
         <script src="./js/camera.js"></script>
         <script src="./js/gallery.js"></script>
         <script src="./js/bbc.js"></script>         

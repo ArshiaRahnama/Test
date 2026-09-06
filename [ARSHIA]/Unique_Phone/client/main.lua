@@ -174,23 +174,6 @@ OpenPhone()
 newPhoneProp()
 end)
 
--- EXPANSION: F1 keybind for the /phone command above — same handler, so
--- it stays in sync with anything the command already does (HasPhone
--- check inside OpenPhone, prop spawn, etc.). RegisterKeyMapping (rather
--- than a raw key-down poll) means it also shows up in FiveM's own
--- Settings > Key Bindings > FiveM menu, so players can rebind it if F1
--- conflicts with something else they use.
-RegisterKeyMapping("phone", "Open Phone", "keyboard", "F1")
-
--- EXPANSION: fired by server/main.lua's ESX.RegisterUsableItem('phone', ...)
--- when the item is used/double-clicked from the inventory. Does exactly
--- what the /phone command above does — same two calls, same order.
-RegisterNetEvent('Unique_Phone:client:UseItem')
-AddEventHandler('Unique_Phone:client:UseItem', function()
-    OpenPhone()
-    newPhoneProp()
-end)
-
 function CalculateTimeToDisplay()
         hour = GetClockHours()
     minute = GetClockMinutes()
@@ -936,6 +919,12 @@ RegisterNUICallback('SendMessage', function(data, cb)
         })
     end,  PhoneData.Chats[GetKeyByNumber(ChatNumber)])
 
+end)
+
+RegisterNUICallback('SendMessageToJobs', function(data, cb)
+    local Pos = GetEntityCoords(PlayerPedId())
+    Wait(50)
+    TriggerServerEvent('Unique_Phone:server:SendJobMessage', data, Pos)
 end)
 
 RegisterNetEvent("PX_phone_Clieant:AddMessageOdther")
@@ -1996,7 +1985,97 @@ RegisterCommand("acall", function(source, args)
     end
 end)
 
+RegisterNUICallback("Unique_Phone:RequestToJobs", function(data, cb)
+    if data.contactData == "mechanic" then
+        cb(true)
+        MechanicRequests()
+        Wait(1000)
+        lib.showMenu('mechaic_menu')
+    elseif data.contactData == "taxi" then
+        cb(true)
+        TaxiRequests()
+        Wait(1000)
+        lib.showMenu('taxi_menu')
+    else
+        cb(false)
+    end
+end)
+
 local inputox = nil
+
+function MechanicRequests()
+    local options = {}
+    ESX.TriggerServerCallback('esx_mechanicjob:ChekRequest', function(ChekReq)
+        ESX.TriggerServerCallback("esx_mechanicjob:GetAccepterID", function(ID)
+
+            if ChekReq then
+                table.insert(options, {label = '🛠️ Ersal Darkhast', args = {value = 'Send_request'}})
+            else
+                if ID then
+                    table.insert(options,  {label = '📞 Call', args = {value = 'call'}})
+                end
+                table.insert(options,  {label = '❌ Cancel', args = {value = 'cancel'}})
+            end
+            Wait(100)
+            lib.registerMenu({
+                id = 'mechaic_menu',
+                title = 'Send Request Mechanic',
+                position = 'top-right',
+                options = options
+            }, function(selected, scrollIndex, args)
+                if args.value == "Send_request" then
+                    TriggerServerEvent('esx_mechanicjob:addreq', "I Need Mechanic (Phone)")
+                    TriggerEvent('chat:addMessage', {color = {255, 0, 0}, multiline = true ,args = {"[System]", "Darkhast Shoma Be Mechanic ^2Ersal ^0Shod!"}})
+                elseif args.value == "cancel" then
+                    TriggerServerEvent("esx_mechanincjob:CloseRequest", GetPlayerServerId(PlayerId()))
+                    TriggerEvent('chat:addMessage', {color = {255, 0, 0}, multiline = true ,args = {"[System]", "Darkhast Mechanic Shoma ^1Baste ^0Shod!"}})
+                elseif args.value == "call" then
+                    TriggerEvent('Unique_Phone:Cleant:CallNumberr', ID)
+                end
+                options = {}
+            end)
+            ESX.UI.Menu.CloseAll()
+        end)
+    end)
+end
+
+function TaxiRequests()
+    local options2 = {}
+
+    ESX.TriggerServerCallback('esx_taxijob:ChekRequest', function(ChekReq)
+        ESX.TriggerServerCallback("esx_taxijob:GetAccepterID", function(ID)
+
+            if ChekReq then
+                table.insert(options2, {label = '🚖 Ersal Darkhast', args = {value = 'Send_request'}})
+            else
+                if ID then
+                    table.insert(options2,  {label = '📞 Call', args = {value = 'call'}})
+                end
+                table.insert(options2,  {label = '❌ Cancel', args = {value = 'cancel'}})
+            end
+
+            lib.registerMenu({
+                id = 'taxi_menu',
+                title = 'Send Request Taxi',
+                position = 'top-right',
+                options = options2
+            }, function(selected, scrollIndex, args)
+                if args.value == "Send_request" then
+                    TriggerServerEvent('esx_taxijob:addreq', "I Need Taxi (Phone)")
+                    TriggerEvent('chat:addMessage', {color = {255, 0, 0}, multiline = true ,args = {"[System]", "Darkhast Shoma Be Taxi ^2Ersal ^0Shod!"}})
+                elseif args.value == "cancel" then
+
+                    TriggerServerEvent("esx_taxijob:CloseRequest", GetPlayerServerId(PlayerId()))
+                    TriggerEvent('chat:addMessage', {color = {255, 0, 0}, multiline = true ,args = {"[System]", "Darkhast Taxi Shoma ^1Baste ^0Shod!"}})
+                elseif args.value == "call" then
+                    TriggerEvent('Unique_Phone:Cleant:CallNumberr', ID)
+                end
+                options2 = {}
+            end)
+            ESX.UI.Menu.CloseAll()
+        end)
+    end)
+end
 
 function GenerateCallId(caller, target)
     local CallId = math.ceil(((tonumber(caller) + tonumber(target)) / 100 * 1))
@@ -2795,6 +2874,13 @@ RegisterNUICallback('SetApartmentLocation', function(data, cb)
 
     SetNewWaypoint(TypeData.coords.enter.x, TypeData.coords.enter.y)
     TriggerEvent('esx:showNotification', 'GPS is set!')
+end)
+
+RegisterNUICallback('GetCurrentpolices', function(data, cb)
+    ESX.TriggerServerCallback('Unique_Phone:server:GetCurrentpolices', function(polices)
+        cb(polices)
+    end)
+
 end)
 
 Lang = function(item)

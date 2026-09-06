@@ -217,7 +217,12 @@ $(document).on('click', '.phone-application', function(e){
                     });
                 } else if (PressedApplication == "meos") {
                     SetupMeosHome();
-                } else if (PressedApplication == "gallery") {
+                }  else if (PressedApplication == "polices") {
+                    $.post('http://Unique_Phone/GetCurrentpolices', JSON.stringify({}), function(data){
+                        Setuppolices(data);
+                    });
+                    jobManagerCheckAccess();
+                }else if (PressedApplication == "gallery") {
                     $.post('https://Unique_Phone/GetGalleryData', JSON.stringify({}), function(data){
                         setUpGalleryData(data);
                     });
