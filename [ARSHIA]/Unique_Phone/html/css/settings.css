@@ -2,13 +2,21 @@
 
 .settings-app {
     display: none;
+    /* FIX: this had no `position` at all (defaulted to static), so its
+       position:absolute children (.settings-app-tab-appereance,
+       .settings-app-tab-information, .settings-appearance-section) were
+       never actually positioned relative to THIS element — they skipped
+       past it to the nearest positioned ancestor (.phone-application-
+       container) instead. Visually that happened to look right (both
+       boxes occupy basically the same area), but it meant none of that
+       content counted toward .settings-app's own scrollable overflow,
+       so yesterday's overflow-y:auto had nothing to scroll. Now that
+       this establishes a real containing block, the same children stay
+       in the same visual spot but actually make .settings-app scrollable. */
+    position: relative;
     height: 100%;
     width: 100%;
     background: rgba(36, 36, 36, 90%);
-    /* FIX: was overflow:hidden. Total content height (7 tab rows +
-       Accent Theme + Phone Case) is taller than one screen — hidden
-       just clipped everything past ~66vh instead of letting the player
-       scroll down to it. */
     overflow-y: auto;
     overflow-x: hidden;
 }

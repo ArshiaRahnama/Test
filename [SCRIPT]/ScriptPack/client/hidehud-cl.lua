@@ -28,12 +28,22 @@ local HUD_ELEMENTS = {
 local HUD_HIDE_RADAR_ON_FOOT = true
 
 Citizen.CreateThread(function()
-	for key, val in pairs(HUD_ELEMENTS) do
-		if val.hidden then
-			HideHudComponentThisFrame(val.id)
-		else
-			ShowHudComponentThisFrame(val.id)
+	-- ✅ فیکس شد: HideHudComponentThisFrame/ShowHudComponentThisFrame فقط
+	-- یک فریم اثر دارن و باید هر فریم دوباره صدا زده بشن. قبلاً این حلقه
+	-- فقط یک‌بار اجرا می‌شد (بدون while true)، پس بعد از فریم اول بازی
+	-- خودش دوباره HUD_VEHICLE_NAME / HUD_VEHICLE_CLASS / HUD_AREA_NAME /
+	-- HUD_WANTED_STARS و... رو نشون می‌داد - دقیقاً همونایی که گوشه‌ی
+	-- پایین‌چپ (نزدیک مینی‌مپ) ظاهر می‌شن و باعث می‌شن موقع سوار شدن به
+	-- ماشین، آیکون‌های اضافه روی مینی‌مپ بیفتن.
+	while true do
+		for key, val in pairs(HUD_ELEMENTS) do
+			if val.hidden then
+				HideHudComponentThisFrame(val.id)s
+			else
+				ShowHudComponentThisFrame(val.id)
+			end
 		end
+		Citizen.Wait(0)
 	end
 end)
 
