@@ -116,13 +116,10 @@ if Config.Core == "ESX" then
 
         for _, def in ipairs({ { itemName, label }, { wornItemName, wornLabel } }) do
             local name, itemLabel = def[1], def[2]
-            if not ESX.Items[name] then
-                ESX.Items[name] = { name = name, label = itemLabel, limit = -1, rare = false, canRemove = true }
-                MySQL.Async.execute('INSERT IGNORE INTO items (name, label, `limit`, rare, can_remove) VALUES (?, ?, -1, 0, 1)', { name, itemLabel })
-            end
+            exports.essentialmode:RegisterItem(name, itemLabel)
         end
 
-        ESX.RegisterUsableItem(wornItemName, function(source)
+        exports.essentialmode:RegisterUsableItem(wornItemName, function(source)
             local xPlayer = ESX.GetPlayerFromId(source)
             if not xPlayer then return end
             if not xPlayer.getInventoryItem(wornItemName) or xPlayer.getInventoryItem(wornItemName).count <= 0 then return end
@@ -133,7 +130,7 @@ if Config.Core == "ESX" then
             TriggerClientEvent('ox_lib:notify', source, { description = ('درآوردی: %s'):format(label), type = 'inform' })
         end)
 
-        ESX.RegisterUsableItem(itemName, function(source)
+        exports.essentialmode:RegisterUsableItem(itemName, function(source)
             local xPlayer = ESX.GetPlayerFromId(source)
             if not xPlayer then return end
             if not xPlayer.getInventoryItem(itemName) or xPlayer.getInventoryItem(itemName).count <= 0 then return end
@@ -185,19 +182,20 @@ if Config.Core == "ESX" then
     -- digging through the inventory item by item. Opens a menu listing
     -- everything currently worn, each with its own take-off button, plus
     -- an "Undress All" option.
-    ESX.RegisterUsableItem('wardrobe_remote', function(source)
+    exports.essentialmode:RegisterUsableItem('wardrobe_remote', function(source)
         local xPlayer = ESX.GetPlayerFromId(source)
         if not xPlayer then return end
 
         local wornTypes = {}
-        for clotheType in pairs(ClotheTypeLabel) do
-            local wornItemName = 'worn_clothing_' .. clotheType
-            for i = 1, #xPlayer.inventory, 1 do
-                if xPlayer.inventory[i].name == wornItemName then
-                    local meta = xPlayer.inventory[i].info or {}
-                    wornTypes[#wornTypes + 1] = { clotheType = clotheType, label = meta.label or ClotheTypeLabel[clotheType] }
-                    break
-                end
+        for i = 1, #xPlayer.inventory, 1 do
+            local itemName = xPlayer.inventory[i].name
+            local clotheType = itemName:match('^worn_clothing_([a-z]+)_%d+_%d+$')
+            if clotheType and (xPlayer.inventory[i].count or 0) > 0 then
+                wornTypes[#wornTypes + 1] = {
+                    clotheType = clotheType,
+                    itemName = itemName,
+                    label = ESX.Items[itemName] and ESX.Items[itemName].label or ClotheTypeLabel[clotheType]
+                }
             end
         end
 
@@ -205,12 +203,22 @@ if Config.Core == "ESX" then
     end)
 
     RegisterServerEvent('unique_clothestore:takeOffFromMenu')
-    AddEventHandler('unique_clothestore:takeOffFromMenu', function(clotheType)
+    AddEventHandler('unique_clothestore:takeOffFromMenu', function(wornItemName)
         local playerId = source
-        if clotheType == '__all__' then
+        local xPlayer = ESX.GetPlayerFromId(playerId)
+        if not xPlayer then return end
+
+        if wornItemName == '__all__' then
             local any = false
-            for t in pairs(ClotheTypeLabel) do
-                if takeOffClothing(playerId, t) then any = true end
+            for i = #xPlayer.inventory, 1, -1 do
+                local itemName = xPlayer.inventory[i].name
+                local clotheType, drawable, texture = itemName:match('^worn_clothing_([a-z]+)_(%d+)_(%d+)$')
+                if clotheType then
+                    TriggerClientEvent('unique_clothestore:takeOffClotheItem', playerId, clotheType)
+                    xPlayer.removeInventoryItem(itemName, 1)
+                    xPlayer.addInventoryItem(clotheItemName(clotheType, tonumber(drawable), tonumber(texture)), 1)
+                    any = true
+                end
             end
             if any then
                 TriggerClientEvent('ox_lib:notify', playerId, { description = 'کلاً لخت شدی', type = 'inform' })
@@ -218,11 +226,13 @@ if Config.Core == "ESX" then
             return
         end
 
-        if not KnownClotheTypes[clotheType] then return end
-        local ok, label = takeOffClothing(playerId, clotheType)
-        if ok then
-            TriggerClientEvent('ox_lib:notify', playerId, { description = ('درآوردی: %s'):format(label or clotheType), type = 'inform' })
-        end
+        local clotheType, drawable, texture = wornItemName:match('^worn_clothing_([a-z]+)_(%d+)_(%d+)$')
+        if not clotheType or not xPlayer.getInventoryItem(wornItemName) or xPlayer.getInventoryItem(wornItemName).count <= 0 then return end
+
+        TriggerClientEvent('unique_clothestore:takeOffClotheItem', playerId, clotheType)
+        xPlayer.removeInventoryItem(wornItemName, 1)
+        xPlayer.addInventoryItem(clotheItemName(clotheType, tonumber(drawable), tonumber(texture)), 1)
+        TriggerClientEvent('ox_lib:notify', playerId, { description = 'درآوردی', type = 'inform' })
     end)
 
 

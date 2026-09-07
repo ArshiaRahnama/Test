@@ -1988,7 +1988,7 @@ AddEventHandler('unique_clothestore:openWardrobeMenu', function(wornTypes)
                 description = 'برای درآوردن بزن',
                 icon = 'shirt',
                 onSelect = function()
-                    TriggerServerEvent('unique_clothestore:takeOffFromMenu', entry.clotheType)
+                    TriggerServerEvent('unique_clothestore:takeOffFromMenu', entry.itemName)
                 end
             }
         end

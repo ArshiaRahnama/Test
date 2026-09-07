@@ -65,6 +65,8 @@ files {
 exports {
     "getUser",
     "GetPlayerICName",
+    "RegisterItem",
+    "RegisterUsableItem",
 }
 
 server_exports {

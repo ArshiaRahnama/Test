@@ -67,16 +67,36 @@ local function CheckDbOwnership(xPlayer, plate, cb)
     end)
 end
 
--- IRV-inventory replacement for ox_inventory's `Search(src, 'count', item,
--- {plate=plate})`: essentialmode/IRV-inventory items don't support querying
--- by metadata directly, so we scan the player's own inventory slots for a
--- 'vehicle_keys' entry whose `.info.plate` matches. Returns the slot (item,
--- index) or nil.
+local function sanitizePlateForItemName(plate)
+    return (plate:gsub('[^%w]', '')):lower()
+end
+
+local function KeyItemName(plate)
+    return 'vehicle_keys_' .. sanitizePlateForItemName(plate)
+end
+
+local RegisteredKeyItems = {}
+local function EnsureKeyItemRegistered(plate)
+    local itemName = KeyItemName(plate)
+    if not RegisteredKeyItems[itemName] then
+        RegisteredKeyItems[itemName] = true
+        exports.essentialmode:RegisterItem(itemName, 'Keys: ' .. plate)
+    end
+    return itemName
+end
+
+-- essentialmode's real addInventoryItem only takes (name, count) - no
+-- metadata/info support at all - so distinguishing "which car" by a
+-- shared 'vehicle_keys' item's info.plate never worked (the info/label
+-- arguments were silently dropped, and 'vehicle_keys' was never even a
+-- registered item to begin with, so the give did nothing). Each plate now
+-- gets its own real item instead, same fix as the clothing store.
 local function FindKeySlot(xPlayer, plate)
     if not xPlayer or not xPlayer.inventory then return nil end
+    local itemName = KeyItemName(plate)
     for i = 1, #xPlayer.inventory, 1 do
         local item = xPlayer.inventory[i]
-        if item.name == 'vehicle_keys' and item.count > 0 and item.info and item.info.plate == plate then
+        if item.name == itemName and item.count > 0 then
             return item, i
         end
     end
@@ -169,29 +189,22 @@ AddEventHandler("CarLock:ToggleKey", function(op, plate)
     plate = ESX.Math.Trim(plate)
     if plate == "" or #plate > 12 then return end
 
-    -- IRV-inventory (like ox_inventory before it) has no per-vehicle dynamic
-    -- item creation (unlike essentialmode's old "CarKey|<plate>" trick, one
-    -- unique item name per plate -- that's unbounded and can't be
-    -- pre-registered). Every set of keys is instead the SAME item,
-    -- distinguished by its own slot-level `info.plate` (see the
-    -- addInventoryItem/getInventoryItem `info`/index support patched into
-    -- essentialmode's player class for this).
-    local KEY_ITEM = "vehicle_keys"
-
     local function applyGrant()
         if not FindKeySlot(xPlayer, plate) then
-            xPlayer.addInventoryItem(KEY_ITEM, 1, nil, { plate = plate, label = 'Keys: ' .. plate })
+            local itemName = EnsureKeyItemRegistered(plate)
+            xPlayer.addInventoryItem(itemName, 1)
         end
     end
 
     local function applyRevoke()
         local sources = ESX.GetPlayers()
+        local itemName = KeyItemName(plate)
         for i = 1, #sources, 1 do
             local otherPlayer = ESX.GetPlayerFromId(sources[i])
             if otherPlayer then
                 local item, idx = FindKeySlot(otherPlayer, plate)
                 if item then
-                    otherPlayer.removeInventoryItem(KEY_ITEM, item.count, idx)
+                    otherPlayer.removeInventoryItem(itemName, item.count)
                 end
             end
         end
@@ -286,11 +299,12 @@ AddEventHandler("CarLock:ToggleKey2", function(op, plate, targetId)
 
         if op then
             if not targetItem then
-                xTarget.addInventoryItem('vehicle_keys', 1, nil, { plate = plate, label = 'Keys: ' .. plate })
+                local itemName = EnsureKeyItemRegistered(plate)
+                xTarget.addInventoryItem(itemName, 1)
             end
         else
             if targetItem then
-                xTarget.removeInventoryItem('vehicle_keys', targetItem.count, targetIdx)
+                xTarget.removeInventoryItem(KeyItemName(plate), targetItem.count)
             end
         end
     end)
