@@ -270,7 +270,7 @@ end)
 -- and, per-model, access.vehicleAccess), but checked again here too since
 -- this is the actual trust boundary.
 -------------------------------------------------------------------
-ESX.RegisterServerCallback('FMGangs:RegisterGangVehicle', function(source, cb, vehicleProps, model)
+ESX.RegisterServerCallback('FMGangs:RegisterGangVehicle', function(source, cb, vehicleProps, model, category)
     local xPlayer = ESX.GetPlayerFromId(source)
     if not xPlayer or not xPlayer.gang or xPlayer.gang.name == 'nogang' or not Gangs[xPlayer.gang.name] then
         return cb(false)
@@ -293,19 +293,108 @@ ESX.RegisterServerCallback('FMGangs:RegisterGangVehicle', function(source, cb, v
         return cb(false)
     end
 
+    -- FEATURE: stamps the real spawn-code model name into the stored
+    -- vehicle JSON (Config.GangVehicles already gives us this as a
+    -- plain string here, no native lookup needed) so
+    -- FMGangs:GetOwnedVehicleModels below can offer it in the boss's
+    -- Vehicle Access menu even though it's a real vehicle, not just a
+    -- Config.GangVehicles entry.
+    vehicleProps.modelName = model
+
+    -- FIX: `type` was always hardcoded 'car' regardless of what was
+    -- actually spawned, so a registered heli/boat would silently never
+    -- show up when browsing the 'heli'/'boat' tab in the real garage UI
+    -- (Unique_Garage's GetVehicles filters by this exact column). Uses
+    -- the real category passed in from client/load.lua now.
     MySQL.Async.execute('INSERT IGNORE INTO owned_vehicles (owner, plate, vehicle, job, type, stored, engine, fuel, body) VALUES (@owner, @plate, @vehicle, @job, @type, @stored, @engine, @fuel, @body)',
     {
         ['@owner']   = xPlayer.gang.name,
         ['@plate']   = vehicleProps.plate,
         ['@vehicle'] = json.encode(vehicleProps),
         ['@job']     = 'gang',
-        ['@type']    = 'car',
+        ['@type']    = category or 'car',
         ['@stored']  = 0,
         ['@engine']  = 1000,
         ['@fuel']    = 100,
         ['@body']    = 1000,
     }, function(rowsChanged)
         cb(rowsChanged and rowsChanged > 0)
+    end)
+end)
+
+-------------------------------------------------------------------
+-- FEATURE (requested: a gang member drives their OWN personal
+-- vehicle to the gang's spawn point, presses E while in it, gets a
+-- Yes/No confirmation, and on Yes it becomes the gang's - manageable
+-- from Boss Action's Vehicle Access afterwards same as any other gang
+-- vehicle). The actual ownership hand-off: flips the SAME
+-- owned_vehicles row from owner=<player identifier> to
+-- owner=<gang name>, job='gang' - exactly the shape
+-- FMGangs:RegisterGangVehicle above already writes, so it's
+-- immediately visible in the real garage UI and Vehicle Access.
+-- Trust boundary: verifies the plate is actually currently owned by
+-- THIS player before touching it - a parked vehicle sitting nearby
+-- that isn't even the caller's cannot be donated.
+-------------------------------------------------------------------
+ESX.RegisterServerCallback('FMGangs:DonateVehicleToGang', function(source, cb, gangName, plate, category, modelName)
+    local xPlayer = ESX.GetPlayerFromId(source)
+    if not xPlayer or not xPlayer.gang or xPlayer.gang.name ~= gangName or gangName == 'nogang' or not Gangs[gangName] then
+        return cb(false)
+    end
+    if not plate or plate == '' then return cb(false) end
+
+    MySQL.Async.fetchAll('SELECT owner, vehicle FROM owned_vehicles WHERE plate = @plate', { ['@plate'] = plate }, function(result)
+        local row = result and result[1]
+        if not row or row.owner ~= xPlayer.identifier then
+            -- not this player's vehicle (or not a tracked/owned vehicle at all)
+            return cb(false)
+        end
+        -- stamps modelName into the existing vehicle JSON the same way
+        -- RegisterGangVehicle does above, so a donated vehicle's model
+        -- is offerable in Vehicle Access too (see
+        -- FMGangs:GetOwnedVehicleModels).
+        local ok, decodedProps = pcall(json.decode, row.vehicle)
+        if ok and type(decodedProps) == 'table' and modelName then
+            decodedProps.modelName = modelName
+        end
+        MySQL.Async.execute('UPDATE owned_vehicles SET owner = @owner, job = @job, type = @type, stored = 1, vehicle = @vehicle WHERE plate = @plate',
+        {
+            ['@owner']   = gangName,
+            ['@job']     = 'gang',
+            ['@type']    = category or 'car',
+            ['@vehicle'] = (ok and type(decodedProps) == 'table') and json.encode(decodedProps) or row.vehicle,
+            ['@plate']   = plate,
+        }, function(rowsChanged)
+            cb(rowsChanged and rowsChanged > 0)
+        end)
+    end)
+end)
+
+-------------------------------------------------------------------
+-- Supports the boss's Vehicle Access menu (client/boss_esx_menu.lua):
+-- Config.GangVehicles is only a preset starter list, but a donated
+-- vehicle (FMGangs:DonateVehicleToGang above) can be any model a
+-- member happened to own - this returns the real, distinct model
+-- names actually sitting in the gang's garage for a category, read
+-- from the modelName stamp both registration paths write into the
+-- stored vehicle JSON, so those can be offered for per-rank access
+-- too instead of only the config presets.
+-------------------------------------------------------------------
+ESX.RegisterServerCallback('FMGangs:GetOwnedVehicleModels', function(source, cb, gang, category)
+    if type(gang) ~= 'string' or gang == '' then return cb({}) end
+    MySQL.Async.fetchAll('SELECT vehicle FROM owned_vehicles WHERE LOWER(owner) = @owner AND type = @type', {
+        ['@owner'] = string.lower(gang),
+        ['@type']  = category or 'car',
+    }, function(result)
+        local seen, models = {}, {}
+        for _, row in ipairs(result or {}) do
+            local ok, decoded = pcall(json.decode, row.vehicle)
+            if ok and type(decoded) == 'table' and decoded.modelName and not seen[decoded.modelName] then
+                seen[decoded.modelName] = true
+                table.insert(models, decoded.modelName)
+            end
+        end
+        cb(models)
     end)
 end)
 

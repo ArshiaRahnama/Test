@@ -18,6 +18,7 @@ server_scripts {
     'server/collections.lua',
     'server/skill.lua',
     'server/leaderboard.lua',
+    'server/duty.lua',
 }
 
 client_scripts {

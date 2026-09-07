@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="styles/style.css" />
   <link rel="stylesheet" href="styles/quest.css" />
   <link rel="stylesheet" href="styles/skill.css" />
+  <link rel="stylesheet" href="styles/duty.css" />
   <link rel="stylesheet" href="styles/collections.css" />
   <link rel="stylesheet" href="styles/leaderboard.css" />
   <link rel="stylesheet" href="styles/compare.css" />
@@ -131,6 +132,9 @@
         <button class="tab" data-tab="leaderboard">
           <i class="fa-solid fa-trophy"></i> LEADERBOARD
         </button>
+        <button class="tab hidden" data-tab="duty" id="dutyTabBtn">
+          <i class="fa-solid fa-clock"></i> DUTY
+        </button>
       </div>
 
       <div class="content">
@@ -141,6 +145,11 @@
         <div class="panel hidden" id="tab_skill">
           <div class="skill-summary"></div>
           <div class="skill-list"></div>
+        </div>
+
+        <div class="panel hidden" id="tab_duty">
+          <div class="duty-summary"></div>
+          <div class="duty-roster"></div>
         </div>
 
         <div class="panel hidden" id="tab_leaderboard">
@@ -200,6 +209,7 @@
   <script src="scripts/personal.js"></script>
   <script src="scripts/quest.js"></script>
   <script src="scripts/skill.js"></script>
+  <script src="scripts/duty.js"></script>
   <script src="scripts/collections.js"></script>
   <script src="scripts/leaderboard.js"></script>
   <script src="scripts/compare.js"></script>

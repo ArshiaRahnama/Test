@@ -139,10 +139,9 @@ RegisterNetEvent("NUI_doorlock:client:setUpDoor", function()
                 ExecuteCommand(Config.commands.CreateDoor)
             end)
         else
-            for key, val in pairs(allowedJobs) do
-                if k == tonumber(val) then
-                    table.remove(allowedJobs, k)
-                end
+            local jobIndex = tonumber(v)
+            if jobIndex and allowedJobs[jobIndex] then
+                table.remove(allowedJobs, jobIndex)
             end
             menu.close()
             ExecuteCommand(Config.commands.CreateDoor)

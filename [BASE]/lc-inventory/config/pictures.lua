@@ -12,13 +12,13 @@ Config.Pictures = {
     -- cash
     ['cash'] = 'nui://lc-inventory/src/html/assets/images/items/cash.png',
     ['dirtycash'] = 'nui://lc-inventory/src/html/assets/images/items/blackmoney.png',
-    ['bank'] = 'nui://lc-inventory/src/html/assets/images/items/c4_bank.png',
+    ['bank'] = 'nui://lc-inventory/src/html/assets/images/items/cash.png',
     ['black_money'] = 'nui://lc-inventory/src/html/assets/images/items/blackmoney.png',
     -- id card
-    ['id'] = 'https://cdn.discordapp.com/attachments/1125101438142533672/1129179825811247185/id_card.png',
-    ['weapon'] = 'https://cdn.discordapp.com/attachments/1008837979894198413/1135639276634247198/weaponlicense.png',
-    ['drive'] = 'https://cdn.discordapp.com/attachments/1008837979894198413/1135639315423166504/driver_license.png',
-    ['police'] = 'https://cdn.discordapp.com/attachments/1008837979894198413/1135639542163062825/badge-lspd2.png',
+    ['id'] = 'nui://lc-inventory/src/html/assets/icons/icon.png',
+    ['weapon'] = 'nui://lc-inventory/src/html/assets/icons/icon.png',
+    ['drive'] = 'nui://lc-inventory/src/html/assets/icons/permis.png',
+    ['police'] = 'nui://lc-inventory/src/html/assets/icons/police.png',
     -- food
     ['water'] = 'nui://lc-inventory/src/html/assets/images/items/water.png',
     ['coca'] = 'nui://lc-inventory/src/html/assets/images/items/seed_coca.png',

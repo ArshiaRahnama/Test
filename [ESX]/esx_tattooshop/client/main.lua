@@ -176,6 +176,7 @@ function RemoveTattoo(name, label)
 	for k, v in pairs(currentTattoos) do
 		if v.nameHash == name then
 			table.remove(currentTattoos, k)
+			break
 		end
 	end
 	TriggerServerEvent("SmallTattoos:RemoveTattoo", currentTattoos)

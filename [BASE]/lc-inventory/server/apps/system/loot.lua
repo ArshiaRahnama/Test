@@ -11,7 +11,13 @@ RegisterServerCallback("lgddddd:getPlayerOtherInventory", function(source, cb, t
 	-- 		dataPhone = phoneData
 	-- 	end)
 	-- end
-	local infoIdCard = GetInfoIdCard(identifier)
+	local infoIdCard = {{
+		firstname = xPlayer and xPlayer.getName() or 'Unknown',
+		lastname = xPlayer and ('#' .. xPlayer.source) or '',
+		dateofbirth = 'N/A',
+		sex = 'm',
+		height = 'N/A'
+	}}
 	if xPlayer ~= nil then
 
 		MySQL.Async.fetchAll('SELECT * FROM lc_clothes WHERE identifier = @identifier', {

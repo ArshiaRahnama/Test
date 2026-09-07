@@ -613,7 +613,7 @@ function OpenGangVehicleSpawner(spawnPoint, category, vehicleAccess)
                 else
                     Notifiaction('Could not register this vehicle to the gang')
                 end
-            end, vehicleProps, model)
+            end, vehicleProps, model, category)
         end)
     end, function(data, menu)
         menu.close()
@@ -621,57 +621,126 @@ function OpenGangVehicleSpawner(spawnPoint, category, vehicleAccess)
 end
 
 -------------------------------------------------------------------
--- FEATURE (requested: pull already-owned gang vehicles into the
--- real Unique_Garage UI instead of only ever registering brand-new
--- ones): Unique_Garage already ships a full 'gang' bridge for this
--- (client.lua's OpenMenuG('gang', ...) + server.lua's GetVehicles/
--- SetVehState 'Gang' branches, confirmed by reading both files
--- first) but nothing in this resource ever called it - the gang
--- garage markers only ever opened OpenGangVehicleSpawner, which
--- spawns a brand-new vehicle and registers it, and has no way to
--- bring back one that's already stored.
---
--- This just gives the player a choice at the same spawn point:
---   - "Take Out Existing Vehicle": fires Unique_Garage's own
---     'Unique_Garage:OpenGangGarage' event (gangName, coord, type),
---     which opens its real React garage UI listing every vehicle in
---     `owned_vehicles` owned by this gang (fetched server-side via
---     Unique_Garage's own GetVehicles 'Gang' branch) - condition,
---     fuel, stored state and all, exactly like a personal garage.
---   - "Get New Vehicle": unchanged, still OpenGangVehicleSpawner.
--- Storing back into that same pool already works via
--- DeleteTheVehicle/FMGangs:StoreGangVehicle further down this file.
+-- FIX (requested: "why do two things come up, it should just be with
+-- the garage look and show the car like the picture" - the popup
+-- asking existing-vs-new before every single garage visit): pressing
+-- E at a gang vehicle/heli/boat spawn point now goes straight into
+-- Unique_Garage's own real UI (client.lua's OpenMenuG('gang', ...)),
+-- exactly like a personal garage - no intermediate choice. Registering
+-- a brand-new vehicle (a rarer, higher-permission action - still uses
+-- OpenGangVehicleSpawner above, unchanged) moved to its own command,
+-- /getnewgangvehicle, below - reuses the exact same nearest-spawn-point
+-- + access-check logic as OpenVehicleMenu/OpenHeliMenu/OpenBoatMenu so
+-- it only works standing at one of those same spots.
 -------------------------------------------------------------------
-function OpenGangGarageChoiceMenu(spawnPoint, category, vehicleAccess)
-    ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'gang_garage_choice', {
-        title    = 'GANG GARAGE',
+RegisterCommand('getnewgangvehicle', function()
+    if not PlayerData.gang or PlayerData.gang.name == 'nogang' then return end
+    if IsPedInAnyVehicle(PlayerPedId()) then return end
+    if KeyPressedCD then return end
+    KeyPressedCD = true SetTimeout(1500, function() KeyPressedCD = false end)
+
+    local spawnGroups = {
+        { data = MyGangData.vehspawn,  category = 'car',  accessKey = 'garage' },
+        { data = MyGangData.helispawn, category = 'heli', accessKey = 'heliANDBoat' },
+        { data = MyGangData.boatspawn, category = 'boat', accessKey = 'heliANDBoat' },
+    }
+    local best = nil
+    for _, group in ipairs(spawnGroups) do
+        if group.data and next(group.data) then
+            local Distance, Key = GetNeaestrCoordsValueInTable(group.data)
+            if Distance < 80.0 and (not best or Distance < best.Distance) then
+                best = { Distance = Distance, Key = Key, data = group.data, category = group.category, accessKey = group.accessKey }
+            end
+        end
+    end
+    if not best then
+        Notifiaction('You are not near any gang vehicle spawn point')
+        return
+    end
+
+    ESX.TriggerServerCallback('FMGangs:GetRankAccess', function(access)
+        if access[best.accessKey] then
+            OpenGangVehicleSpawner({ x = best.data[best.Key].coord.x, y = best.data[best.Key].coord.y, z = best.data[best.Key].coord.z, h = best.data[best.Key].heading }, best.category, access.vehicleAccess)
+        else
+            Notifiaction('You do not have access to the garage here')
+        end
+    end)
+end, false)
+
+-------------------------------------------------------------------
+-- FEATURE (requested: gang member drives their own vehicle to the
+-- gang's spawn point, presses E while in it, gets an English Yes/No
+-- confirmation - "Are you sure you want to donate this vehicle to the
+-- gang?" - and on Yes it becomes the gang's, immediately manageable
+-- from Boss Action > Vehicle Access like any other gang vehicle).
+-- Real trust boundary is server-side (FMGangs:DonateVehicleToGang,
+-- server/boss.lua) - verifies the plate is actually this player's
+-- vehicle before touching ownership, not just whatever they're
+-- sitting in.
+-------------------------------------------------------------------
+function OfferDonateVehicleToGang(category)
+    if not PlayerData.gang or PlayerData.gang.name == 'nogang' then return end
+    local vehicle = GetVehiclePedIsIn(PlayerPedId(), false)
+    if not DoesEntityExist(vehicle) then return end
+    if GetPedInVehicleSeat(vehicle, -1) ~= PlayerPedId() then
+        Notifiaction('Only the driver can donate this vehicle')
+        return
+    end
+    local plate = GetVehicleNumberPlateText(vehicle)
+    ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'gang_donate_vehicle_confirm', {
+        title    = 'Are you sure you want to donate this vehicle to the gang?',
         align    = 'top-left',
         elements = {
-            { label = 'Take Out Existing Vehicle', value = 'existing' },
-            { label = 'Get New Vehicle',            value = 'new' },
+            { label = 'Yes', value = true },
+            { label = 'No',  value = false },
         }
     }, function(data, menu)
         menu.close()
-        if data.current.value == 'existing' then
-            TriggerEvent('Unique_Garage:OpenGangGarage', PlayerData.gang.name, spawnPoint, category)
-        else
-            OpenGangVehicleSpawner(spawnPoint, category, vehicleAccess)
-        end
+        if not data.current.value then return end
+        local model = GetEntityModel(vehicle)
+        local modelName = string.lower(GetDisplayNameFromVehicleModel(model) or '')
+        local displayName = GetLabelText(GetDisplayNameFromVehicleModel(model)) or 'Unknown'
+        ESX.TriggerServerCallback('FMGangs:DonateVehicleToGang', function(success)
+            if success then
+                Notifiaction('Vehicle donated to the gang')
+                TriggerServerEvent('For5M:SendLog', GetPlayerServerId(PlayerId()), 'Garage',
+                    ('Vehicle Donated To Gang | %s | Plate: %s'):format(displayName, plate))
+                ESX.Game.DeleteVehicle(vehicle)
+            else
+                Notifiaction('Could not donate this vehicle - is it actually registered to you?')
+            end
+        end, PlayerData.gang.name, plate, category, modelName)
     end, function(data, menu)
         menu.close()
     end)
 end
 
 function OpenVehicleMenu()
-    if IsPedInAnyVehicle(PlayerPedId()) then return end 
     if KeyPressedCD then return end 
     KeyPressedCD = true SetTimeout(1500, function() KeyPressedCD =false  end)
     if next(MyGangData.vehspawn) then 
         local Distance , Key = GetNeaestrCoordsValueInTable(MyGangData.vehspawn)
         if Distance < 80.0 then 
+            -------------------------------------------------------------
+            -- FEATURE (requested: a member drives their own car here,
+            -- presses E while in it, gets asked to confirm donating it
+            -- to the gang - see OfferDonateVehicleToGang below). Only
+            -- takes this branch when actually near a real gang spawn
+            -- point, same as everything else here.
+            -------------------------------------------------------------
+            if IsPedInAnyVehicle(PlayerPedId()) then
+                OfferDonateVehicleToGang('car')
+                return
+            end
             ESX.TriggerServerCallback('FMGangs:GetRankAccess', function(access)
                 if access['garage'] then 
-                    OpenGangGarageChoiceMenu({ x = MyGangData.vehspawn[Key].coord.x , y = MyGangData.vehspawn[Key].coord.y , z = MyGangData.vehspawn[Key].coord.z , h = MyGangData.vehspawn[Key].heading }, 'car', access.vehicleAccess)
+                    -------------------------------------------------
+                    -- FIX (requested: E should go straight into the
+                    -- real garage UI, not a plain popup asking
+                    -- existing/new first - see /getnewgangvehicle
+                    -- below for registering a brand-new vehicle)
+                    -------------------------------------------------
+                    TriggerEvent('Unique_Garage:OpenGangGarage', PlayerData.gang.name, { x = MyGangData.vehspawn[Key].coord.x , y = MyGangData.vehspawn[Key].coord.y , z = MyGangData.vehspawn[Key].coord.z , h = MyGangData.vehspawn[Key].heading }, 'car')
                 else 
                     Notifiaction('You Does Not Have Access To Open Garage !!')
                 end 
@@ -684,16 +753,19 @@ function OpenVehicleMenu()
     end 
 end
 function OpenHeliMenu()
-    if IsPedInAnyVehicle(PlayerPedId()) then return end 
     if KeyPressedCD then return end 
     KeyPressedCD = true SetTimeout(1500, function() KeyPressedCD =false  end)
     if next(MyGangData.helispawn) then 
         local Distance , Key = GetNeaestrCoordsValueInTable(MyGangData.helispawn)
 
         if Distance < 80.0 then 
+            if IsPedInAnyVehicle(PlayerPedId()) then
+                OfferDonateVehicleToGang('heli')
+                return
+            end
             ESX.TriggerServerCallback('FMGangs:GetRankAccess', function(access)
                 if access['heliANDBoat'] then
-                    OpenGangGarageChoiceMenu({ x = MyGangData.helispawn[Key].coord.x , y = MyGangData.helispawn[Key].coord.y , z = MyGangData.helispawn[Key].coord.z , h = MyGangData.helispawn[Key].heading }, 'heli', access.vehicleAccess)
+                    TriggerEvent('Unique_Garage:OpenGangGarage', PlayerData.gang.name, { x = MyGangData.helispawn[Key].coord.x , y = MyGangData.helispawn[Key].coord.y , z = MyGangData.helispawn[Key].coord.z , h = MyGangData.helispawn[Key].heading }, 'heli')
                 else 
                     Notifiaction('You Does Not Have Access To Open Heli Garage !!')
                 end 
@@ -706,15 +778,18 @@ function OpenHeliMenu()
     end 
 end
 function OpenBoatMenu()
-    if IsPedInAnyVehicle(PlayerPedId()) then return end 
     if KeyPressedCD then return end 
     KeyPressedCD = true SetTimeout(1500, function() KeyPressedCD =false  end)
     if next(MyGangData.boatspawn) then 
         local Distance , Key = GetNeaestrCoordsValueInTable(MyGangData.boatspawn)
         if Distance < 80.0 then 
+            if IsPedInAnyVehicle(PlayerPedId()) then
+                OfferDonateVehicleToGang('boat')
+                return
+            end
             ESX.TriggerServerCallback('FMGangs:GetRankAccess', function(access)
                 if access['heliANDBoat'] then
-                    OpenGangGarageChoiceMenu({ x = MyGangData.boatspawn[Key].coord.x , y = MyGangData.boatspawn[Key].coord.y , z = MyGangData.boatspawn[Key].coord.z , h = MyGangData.boatspawn[Key].heading }, 'boat', access.vehicleAccess)
+                    TriggerEvent('Unique_Garage:OpenGangGarage', PlayerData.gang.name, { x = MyGangData.boatspawn[Key].coord.x , y = MyGangData.boatspawn[Key].coord.y , z = MyGangData.boatspawn[Key].coord.z , h = MyGangData.boatspawn[Key].heading }, 'boat')
                 else 
                     Notifiaction('You Does Not Have Access To Open Boat Garage !!')
                 end 

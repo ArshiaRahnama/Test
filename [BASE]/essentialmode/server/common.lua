@@ -26,9 +26,11 @@ end
 -- (uses this as the default when no serial is given) and the DOJ-/GANG-
 -- call sites in esx_uniquejobs/server/police_main.lua and
 -- Unique_ALLGangs/server/apps/system/stash.lua (lc-inventory).
+local weaponSerialCounter = 0
 ESX.GenerateWeaponSerial = function(prefix)
     prefix = prefix or 'LAW'
-    return ('%s-%05d-%04d'):format(prefix, os.time() % 100000, math.random(1000, 9999))
+    weaponSerialCounter = weaponSerialCounter + 1
+    return ('%s-%05d-%04d'):format(prefix, os.time() % 100000, weaponSerialCounter % 10000)
 end
 
 AddEventHandler(

@@ -12,7 +12,7 @@ RegisterServerCallback("lgddddd:getPlayerInventory", function(source, cb)
 			end)
 		end
 		if Config.ActiveIdCard then
-			getCardInBDD(identifier, function(cardData)
+			getCardInBDD(identifier, xPlayer, function(cardData)
 				idcardData = cardData
 			end)
 		end

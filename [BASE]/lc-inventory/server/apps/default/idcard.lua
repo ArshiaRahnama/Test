@@ -8,9 +8,15 @@ end)
 
 
 
-function getCardInBDD(identifier, callback)
+function getCardInBDD(identifier, xPlayer, callback)
     local cardData = {}
-	local infoIdCard = GetInfoIdCard(identifier)
+    local info = {
+        firstname = xPlayer and xPlayer.getName() or 'Unknown',
+        lastname = xPlayer and ('#' .. xPlayer.source) or '',
+        dateofbirth = 'N/A',
+        sex = 'm',
+        height = 'N/A'
+    }
 
 	MySQL.Async.fetchAll('SELECT * FROM '..licenseTable..' WHERE '..idLicenseTable..' = @'..idLicenseTable..'', {
 		['@'..idLicenseTable] = identifier
@@ -19,7 +25,7 @@ function getCardInBDD(identifier, callback)
 			for k,v in pairs(card) do
 				table.insert(cardData, {
 					type = v[typeLicenseTable],
-					information = infoIdCard[1]
+					information = info
 				})
 			end
 			

@@ -1,5 +1,3 @@
-
-
 ESX = nil
 local robbed = {}
 
@@ -39,12 +37,13 @@ end)
 
 RegisterServerEvent('esx:playerLoaded')
 AddEventHandler('esx:playerLoaded', function(source)
-	for _,v in pairs(robbed) do
+	for i = #robbed, 1, -1 do
+		local v = robbed[i]
 		local timer = GetGameTimer() - v.timer
 		if timer < 3600000 then
 			TriggerClientEvent('new_banking:disableforhour', source, v.pos, timer)
 		else
-			table.remove(robbed, _)
+			table.remove(robbed, i)
 		end
 	end
 end)

@@ -567,35 +567,51 @@ function OpenBossVehicleAccessMenu(gang, gradeNumber, category)
             return
         end
 
-        local vehicleAccess = (gradeData.access and gradeData.access.vehicleAccess) or {}
-        local models = Config.GangVehicles[category] or {}
-        local elements = {}
-        for _, model in ipairs(models) do
-            -- unset (nil) means "allowed" (backward compatible default)
-            local allowed = vehicleAccess[model] ~= false
-            local state = allowed and '<span style="color:lightgreen;">ALLOWED</span>' or '<span style="color:salmon;">BLOCKED</span>'
-            local displayName = GetLabelText(GetDisplayNameFromVehicleModel(GetHashKey(model))) or model
-            table.insert(elements, { label = displayName .. ': ' .. state, value = model })
-        end
-        if #elements == 0 then
-            ESX.ShowNotification('No vehicles configured for this category')
-        end
+        -------------------------------------------------------------
+        -- FEATURE (requested: a donated vehicle's model should also be
+        -- toggleable here, not just Config.GangVehicles presets) -
+        -- merges the config list with whatever real models the gang
+        -- actually owns in this category (FMGangs:GetOwnedVehicleModels,
+        -- server/boss.lua), deduplicated.
+        -------------------------------------------------------------
+        ESX.TriggerServerCallback('FMGangs:GetOwnedVehicleModels', function(ownedModels)
+            local vehicleAccess = (gradeData.access and gradeData.access.vehicleAccess) or {}
+            local seen, models = {}, {}
+            for _, model in ipairs(Config.GangVehicles[category] or {}) do
+                if not seen[model] then seen[model] = true table.insert(models, model) end
+            end
+            for _, model in ipairs(ownedModels or {}) do
+                if not seen[model] then seen[model] = true table.insert(models, model) end
+            end
 
-        ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'boss_vehicle_access_' .. gang .. '_' .. gradeNumber .. '_' .. category, {
-            title    = (gradeData.label or ('Grade ' .. gradeNumber)) .. ' - ' .. category,
-            align    = 'top-left',
-            elements = elements
-        }, function(data, menu)
-            local model = data.current.value
-            local currentlyAllowed = vehicleAccess[model] ~= false
-            ESX.TriggerServerCallback('FMGangs:EditVehicleAccess', function()
+            local elements = {}
+            for _, model in ipairs(models) do
+                -- unset (nil) means "allowed" (backward compatible default)
+                local allowed = vehicleAccess[model] ~= false
+                local state = allowed and '<span style="color:lightgreen;">ALLOWED</span>' or '<span style="color:salmon;">BLOCKED</span>'
+                local displayName = GetLabelText(GetDisplayNameFromVehicleModel(GetHashKey(model))) or model
+                table.insert(elements, { label = displayName .. ': ' .. state, value = model })
+            end
+            if #elements == 0 then
+                ESX.ShowNotification('No vehicles configured for this category')
+            end
+
+            ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'boss_vehicle_access_' .. gang .. '_' .. gradeNumber .. '_' .. category, {
+                title    = (gradeData.label or ('Grade ' .. gradeNumber)) .. ' - ' .. category,
+                align    = 'top-left',
+                elements = elements
+            }, function(data, menu)
+                local model = data.current.value
+                local currentlyAllowed = vehicleAccess[model] ~= false
+                ESX.TriggerServerCallback('FMGangs:EditVehicleAccess', function()
+                    menu.close()
+                    OpenBossVehicleAccessMenu(gang, gradeNumber, category)
+                end, gang, gradeNumber, model, not currentlyAllowed)
+            end, function(data, menu)
                 menu.close()
-                OpenBossVehicleAccessMenu(gang, gradeNumber, category)
-            end, gang, gradeNumber, model, not currentlyAllowed)
-        end, function(data, menu)
-            menu.close()
-            OpenBossVehicleAccessCategoryMenu(gang, gradeNumber)
-        end)
+                OpenBossVehicleAccessCategoryMenu(gang, gradeNumber)
+            end)
+        end, gang, category)
     end, gang)
 end
 

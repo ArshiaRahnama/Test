@@ -118,6 +118,16 @@ function UpdateProfile()
     end)
 end
 
+-- DUTY tab data — separate from UpdateProfile since it's a distinct
+-- server callback (server/duty.lua) reading esx_duty's duty_logs
+-- table, not this resource's own tables.
+function UpdateDuty()
+    ESX.TriggerServerCallback('HUD_Menu:GetDuty', function(duty)
+        if not duty then return end
+        SendNUIMessage({ type = "loadDuty", duty = duty })
+    end)
+end
+
 local menuIsOpen = false
 
 RegisterCommand('menu', function()
@@ -127,6 +137,7 @@ RegisterCommand('menu', function()
     UpdateSkills()
     UpdateCollections()
     UpdateLeaderboard()
+    UpdateDuty()
     UiShow()
 
     -- esx_dpemote is a real resource on this server. Wrapped in pcall so
@@ -142,7 +153,9 @@ end, false)
 -- in the background, etc.). Collections is deliberately left out here:
 -- vehicle/house ownership rarely changes mid-session, and re-fetching
 -- would mean repeatedly re-requesting every vehicle image for no
--- reason.
+-- reason. Duty IS refreshed — esx_duty's own background thread adds
+-- to it every 5 minutes while you're on duty, so a stale "Today: 0m"
+-- would sit there the whole time the menu stays open otherwise.
 Citizen.CreateThread(function()
     while true do
         Citizen.Wait(30000)
@@ -150,6 +163,7 @@ Citizen.CreateThread(function()
             UpdateProfile()
             UpdateSkills()
             UpdateLeaderboard()
+            UpdateDuty()
         end
     end
 end)
