@@ -1176,3 +1176,166 @@ button:focus { outline: none; }
 	#newUser .btn_no {
 		grid-column: 3;
 	}
+/*-----------------------------------------------------------------------------------------
+	FEATURE ADDED: Pursuit Timer widget
+	Self-contained, doesn't touch any other rule above. Sits top-left, glass panel with
+	glowing cyan Seg-7 digits (same digital font already used by the radar speeds) so it
+	visually matches the rest of the HUD.
+-----------------------------------------------------------------------------------------*/
+#pursuitTimer {
+	width: 260px;
+
+	position: absolute;
+	top: 20px;
+	/* Centered horizontally using a fixed calc() instead of left:50% + transform,
+	   because a transform-based translateX would fight with the drag system
+	   below (which sets plain left/top percentages, the same way #rc and
+	   #radarFrame already do). */
+	left: calc( 50% - 130px );
+
+	background-color: rgba( 15, 17, 20, 0.85 );
+	border: 1px solid rgba( 84, 210, 255, 0.35 );
+	border-radius: 8px;
+
+	box-shadow: 0 0 18px rgba( 0, 0, 0, 0.55 ), inset 0 0 20px rgba( 84, 210, 255, 0.05 );
+
+	padding: 10px 14px 14px 14px;
+
+	opacity: 0;
+	pointer-events: none;
+	transform: translateY( -8px );
+	transition: opacity 0.25s, transform 0.25s;
+
+	z-index: 3;
+}
+
+	#pursuitTimer.pt_visible.pt_in_vehicle {
+		opacity: 1;
+		pointer-events: auto;
+		transform: translateY( 0 );
+	}
+
+	#pursuitTimer .pt_header {
+		cursor: move;
+	}
+
+	#pursuitTimer .pt_header {
+		display: flex;
+		align-items: center;
+		gap: 7px;
+
+		margin-bottom: 6px;
+	}
+
+		#pursuitTimer .pt_dot {
+			width: 8px;
+			height: 8px;
+			border-radius: 50%;
+
+			background-color: rgb( 90, 100, 110 );
+
+			transition: background-color 0.2s, box-shadow 0.2s;
+		}
+
+		#pursuitTimer .pt_dot.pt_running {
+			background-color: rgb( 15, 244, 57 );
+			box-shadow: 0 0 8px rgba( 15, 244, 57, 0.9 );
+			animation: pt_pulse 1s infinite;
+		}
+
+		#pursuitTimer .pt_dot.pt_paused {
+			background-color: rgb( 252, 176, 1 );
+			box-shadow: 0 0 8px rgba( 252, 176, 1, 0.9 );
+		}
+
+		#pursuitTimer .pt_title {
+			color: rgb( 200, 210, 220 );
+			font-size: 12px;
+			letter-spacing: 1.5px;
+		}
+
+	#pursuitTimer .pt_display_container {
+		position: relative;
+
+		background-color: rgb( 8, 9, 10 );
+		border-radius: 5px;
+
+		padding: 8px 0;
+		margin-bottom: 10px;
+
+		text-align: center;
+
+		box-shadow: inset 0 0 8px rgba( 0, 0, 0, 0.8 );
+	}
+
+		#pursuitTimer .pt_ghost,
+		#pursuitTimer .pt_display {
+			font-family: "Seg-7";
+			font-size: 34px;
+			letter-spacing: 2px;
+
+			position: absolute;
+			top: 50%;
+			left: 0;
+			right: 0;
+
+			transform: translateY( -50% );
+		}
+
+		#pursuitTimer .pt_ghost {
+			color: rgba( 84, 210, 255, 0.08 );
+		}
+
+		#pursuitTimer .pt_display {
+			position: relative;
+
+			color: rgb( 84, 210, 255 );
+			text-shadow: 0 0 10px rgba( 84, 210, 255, 0.85 ), 0 0 22px rgba( 84, 210, 255, 0.4 );
+		}
+
+	#pursuitTimer .pt_btns {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 8px;
+	}
+
+		#pursuitTimer .pt_btn {
+			height: 32px;
+
+			border: none;
+			border-radius: 5px;
+
+			font-size: 13px;
+			font-weight: bold;
+			letter-spacing: 1px;
+
+			color: rgb( 20, 22, 25 );
+			cursor: pointer;
+
+			transition: filter 0.15s;
+		}
+
+			#pursuitTimer .pt_btn:hover {
+				filter: brightness( 1.1 );
+			}
+
+			#pursuitTimer .pt_btn:active {
+				filter: brightness( 0.9 );
+			}
+
+		#pursuitTimer .pt_start {
+			background-color: rgb( 15, 244, 57 );
+		}
+
+		#pursuitTimer .pt_start.pt_is_paused {
+			background-color: rgb( 252, 176, 1 );
+		}
+
+		#pursuitTimer .pt_reset {
+			background-color: rgb( 84, 210, 255 );
+		}
+
+@keyframes pt_pulse {
+	0%, 100% { opacity: 1; }
+	50% { opacity: 0.4; }
+}

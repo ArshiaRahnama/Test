@@ -311,6 +311,15 @@ function OpenDojMenu()
 	}
 
 	options[#options + 1] = {
+		title = 'Baz Kardan CAD (MDT)',
+		description = 'Baz Kardan Panel-e CAD Baraye Parvande-haye Tahghigh-e Sahne-ye Jorm, BOLO Va IA',
+		icon = 'desktop',
+		onSelect = function()
+			ExecuteCommand('cad') -- matches cad/config_cad.lua's DuckMdt.Command
+		end,
+	}
+
+	options[#options + 1] = {
 		title = 'Taghvim-e Dadgah (Court Docket)',
 		description = 'Jalasat-e Zamanbandi Shode Va Hokm-haye Nahaee',
 		icon = 'calendar',

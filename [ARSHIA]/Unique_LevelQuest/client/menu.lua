@@ -131,7 +131,14 @@ end
 RegisterNUICallback('checkDutyDate', function(data, cb)
     ESX.TriggerServerCallback('HUD_Menu:GetDutyByDate', function(result)
         SendNUIMessage({ type = "dutyDateResult", result = result })
-    end, data.date)
+    end, data.startDate, data.endDate)
+    cb('ok')
+end)
+
+RegisterNUICallback('searchDutyRoster', function(data, cb)
+    ESX.TriggerServerCallback('HUD_Menu:SearchDutyRoster', function(result)
+        SendNUIMessage({ type = "dutySearchResult", result = result })
+    end, data.search)
     cb('ok')
 end)
 

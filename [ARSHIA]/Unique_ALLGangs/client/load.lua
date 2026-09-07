@@ -629,11 +629,11 @@ end
 -- exactly like a personal garage - no intermediate choice. Registering
 -- a brand-new vehicle (a rarer, higher-permission action - still uses
 -- OpenGangVehicleSpawner above, unchanged) moved to its own command,
--- /getnewgangvehicle, below - reuses the exact same nearest-spawn-point
+-- /getfreecargang, below - reuses the exact same nearest-spawn-point
 -- + access-check logic as OpenVehicleMenu/OpenHeliMenu/OpenBoatMenu so
 -- it only works standing at one of those same spots.
 -------------------------------------------------------------------
-RegisterCommand('getnewgangvehicle', function()
+RegisterCommand('getfreecargang', function()
     if not PlayerData.gang or PlayerData.gang.name == 'nogang' then return end
     if IsPedInAnyVehicle(PlayerPedId()) then return end
     if KeyPressedCD then return end
@@ -737,7 +737,7 @@ function OpenVehicleMenu()
                     -------------------------------------------------
                     -- FIX (requested: E should go straight into the
                     -- real garage UI, not a plain popup asking
-                    -- existing/new first - see /getnewgangvehicle
+                    -- existing/new first - see /getfreecargang
                     -- below for registering a brand-new vehicle)
                     -------------------------------------------------
                     TriggerEvent('Unique_Garage:OpenGangGarage', PlayerData.gang.name, { x = MyGangData.vehspawn[Key].coord.x , y = MyGangData.vehspawn[Key].coord.y , z = MyGangData.vehspawn[Key].coord.z , h = MyGangData.vehspawn[Key].heading }, 'car')

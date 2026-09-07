@@ -2,17 +2,14 @@
 
 .settings-app {
     display: none;
-    /* FIX: this had no `position` at all (defaulted to static), so its
+    /* FIX: pre-existing bug — this had no `position` at all, so its
        position:absolute children (.settings-app-tab-appereance,
-       .settings-app-tab-information, .settings-appearance-section) were
-       never actually positioned relative to THIS element — they skipped
-       past it to the nearest positioned ancestor (.phone-application-
-       container) instead. Visually that happened to look right (both
-       boxes occupy basically the same area), but it meant none of that
-       content counted toward .settings-app's own scrollable overflow,
-       so yesterday's overflow-y:auto had nothing to scroll. Now that
-       this establishes a real containing block, the same children stay
-       in the same visual spot but actually make .settings-app scrollable. */
+       .settings-app-tab-information) never actually counted as this
+       element's own content for overflow purposes (they were positioned
+       relative to a grandparent instead). `position: relative` makes
+       this the real containing block so the rows count toward its
+       scrollable content, and overflow-y:auto lets the list scroll if
+       it's ever taller than the ~60.7vh phone screen again. */
     position: relative;
     height: 100%;
     width: 100%;
@@ -666,124 +663,3 @@ input:checked + .sliderfly:before {
     border-radius: 50%;
 }
 
-/* ═══════════════════════════════════════════════════════════
-   EXPANSION: appearance section — accent theme + phone case pickers.
-   ═══════════════════════════════════════════════════════════ */
-
-.settings-appearance-section {
-    /* FIX: this used to be position:relative with `margin: 2vh auto 0`,
-       which put it in normal document flow. Every sibling around it
-       (.settings-app-tab-appereance, .settings-app-tab-information) is
-       position:absolute and therefore takes up NO space in that flow, so
-       this section rendered right at the top of .settings-app instead of
-       below the ~7 stacked tab rows above it — visually overlapping
-       "Background"/"Profile picture"/"My number"/etc. Now it's absolute
-       too, positioned below all of them (.settings-app-tab-information
-       starts at top:30vh and its 5 rows run to roughly 65vh), same
-       pattern as every other section in this file.
-    */
-    position: absolute;
-    top: 66vh;
-    left: 0;
-    right: 0;
-    width: 90%;
-    margin: 0 auto;
-    padding-bottom: 3vh;
-}
-
-.settings-section-title {
-    color: white;
-    font-family: 'Samsung Sans Bold', sans-serif;
-    font-size: 1.2vh;
-    margin: 2vh 0 1vh;
-    display: flex;
-    align-items: center;
-    gap: .6vh;
-}
-
-.settings-section-title i {
-    color: var(--phone-accent, #00c9a7);
-}
-
-.theme-swatch-row {
-    display: flex;
-    gap: 1.2vh;
-    flex-wrap: wrap;
-}
-
-.theme-swatch {
-    width: 4vh;
-    height: 4vh;
-    border-radius: 50%;
-    cursor: pointer;
-    border: .25vh solid transparent;
-    box-shadow: 0 .3vh 1vh rgba(0, 0, 0, 0.3);
-    transition: transform .12s ease, border-color .12s ease;
-}
-
-.theme-swatch:hover {
-    transform: scale(1.1);
-}
-
-.theme-swatch-active {
-    border-color: white;
-    transform: scale(1.12);
-}
-
-.case-swatch-row {
-    display: flex;
-    flex-direction: column;
-    gap: .8vh;
-}
-
-.case-swatch {
-    display: flex;
-    align-items: center;
-    gap: 1vh;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 1.2vh;
-    padding: .9vh 1.1vh;
-    cursor: pointer;
-    transition: border-color .12s ease, background .12s ease;
-}
-
-.case-swatch:hover {
-    background: rgba(255, 255, 255, 0.08);
-}
-
-.case-swatch-active {
-    border-color: var(--phone-accent, #00c9a7);
-    background: rgba(255, 255, 255, 0.09);
-}
-
-.case-swatch-color {
-    width: 3vh;
-    height: 3vh;
-    border-radius: 50%;
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    flex: 0 0 auto;
-}
-
-.case-swatch-label {
-    flex: 1;
-    color: white;
-    font-family: 'Samsung Sans Regular', sans-serif;
-    font-size: 1.05vh;
-}
-
-.case-price {
-    color: rgb(150, 150, 150);
-    font-family: 'Samsung Sans Bold', sans-serif;
-    font-size: 0.95vh;
-}
-
-.case-purchase-msg {
-    font-family: 'Samsung Sans Regular', sans-serif;
-    font-size: 0.95vh;
-    text-align: center;
-    margin-top: 1vh;
-}
-
-.case-msg-ok { color: #00e0bb; }
-.case-msg-error { color: #ff6b6b; }

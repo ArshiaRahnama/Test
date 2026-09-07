@@ -17,10 +17,6 @@ local function bar(value, maxValue, width)
 	return string.rep('█', filled) .. string.rep('░', width - filled)
 end
 
-local function dayLabel(unixDay)
-	return os.date('%m/%d', unixDay)
-end
-
 function OpenStatsDashboardMenu()
 	ESX.TriggerServerCallback('esx_uniquejobs:dojGetStats', function(stats)
 		if not stats then
@@ -63,7 +59,7 @@ function OpenStatsDashboardMenu()
 		else
 			for _, row in ipairs(stats.arrestsByDay) do
 				options[#options + 1] = {
-					title = dayLabel(row.day),
+					title = row.dayLabel,
 					description = bar(row.count, maxDay) .. '  ' .. row.count,
 					icon = 'handcuffs',
 					disabled = true,

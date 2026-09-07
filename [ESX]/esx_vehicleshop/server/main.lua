@@ -395,6 +395,9 @@ end)
 RegisterServerEvent('esx_vehicleshop:returnProvider')
 AddEventHandler('esx_vehicleshop:returnProvider', function(vehicleModel)
 	local _source = source
+	local xPlayer = ESX.GetPlayerFromId(_source)
+
+	if not xPlayer or xPlayer.job.name ~= 'cardealer' then return end
 
 	MySQL.Async.fetchAll('SELECT * FROM cardealer_vehicles WHERE vehicle = @vehicle LIMIT 1', {
 		['@vehicle'] = vehicleModel

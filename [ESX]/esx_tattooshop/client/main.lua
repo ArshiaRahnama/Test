@@ -208,6 +208,17 @@ Citizen.CreateThread(function()
         Citizen.Wait(1)
 		local CanSleep = true
 		if not IsMenuOpen() then
+			local pedCoords = GetEntityCoords(PlayerPedId())
+			for _, shopCoord in ipairs(Config.Shops) do
+				local dist = #(pedCoords - shopCoord)
+				if dist < Config.DrawDistance then
+					CanSleep = false
+					DrawMarker(Config.MarkerType, shopCoord.x, shopCoord.y, shopCoord.z - 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+						Config.MarkerSize.x, Config.MarkerSize.y, Config.MarkerSize.z,
+						Config.MarkerColor.r, Config.MarkerColor.g, Config.MarkerColor.b, 100, false, true, 2, false, nil, nil, false)
+				end
+			end
+
 			for _,interiorId in ipairs(Config.interiorIds) do
 				if GetInteriorFromEntity(PlayerPedId()) == interiorId then
 					CanSleep = false

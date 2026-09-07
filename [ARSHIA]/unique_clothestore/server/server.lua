@@ -279,7 +279,7 @@ if Config.Core == "ESX" then
         end
     end)
 
-    ESX.RegisterServerCallback('unique_clothestore:payForClothes', function(source, cb, price, type, number, pin)
+    exports.essentialmode:RegisterServerCallback('unique_clothestore:payForClothes', function(source, cb, price, type, number, pin)
         local xPlayer = ESX.GetPlayerFromId(source)
         if not xPlayer then cb(false) return end
 
@@ -315,7 +315,7 @@ if Config.Core == "ESX" then
         end
     end)
 
-    ESX.RegisterServerCallback('unique_clothestore:checkPropertyDataStore', function(source, cb)
+    exports.essentialmode:RegisterServerCallback('unique_clothestore:checkPropertyDataStore', function(source, cb)
         local xPlayer = ESX.GetPlayerFromId(source)
         local foundStore = false
         TriggerEvent('esx_datastore:getDataStore', 'property', xPlayer.identifier, function(store)
@@ -324,7 +324,7 @@ if Config.Core == "ESX" then
         cb(foundStore)
     end)
 
-    ESX.RegisterServerCallback('unique_clothestore:getPlayerDressing', function(source, cb)
+    exports.essentialmode:RegisterServerCallback('unique_clothestore:getPlayerDressing', function(source, cb)
         local xPlayer = ESX.GetPlayerFromId(source)
         if Config.SkinManager == "esx_skin" then
             TriggerEvent('esx_datastore:getDataStore', 'property', xPlayer.identifier, function(store)
@@ -369,7 +369,7 @@ if Config.Core == "ESX" then
         end
     end)
 
-    ESX.RegisterServerCallback('unique_clothestore:getPlayerOutfit', function(source, cb, num)
+    exports.essentialmode:RegisterServerCallback('unique_clothestore:getPlayerOutfit', function(source, cb, num)
         local xPlayer = ESX.GetPlayerFromId(source)
         TriggerEvent('esx_datastore:getDataStore', 'property', xPlayer.identifier, function(store)
             local outfit = store.get('dressing', num)

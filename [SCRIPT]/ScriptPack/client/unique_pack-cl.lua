@@ -1,5 +1,3 @@
-
-
 ESX = nil
 local PlayedData = nil
 
@@ -34,7 +32,11 @@ local blipinfo = {
 
         Coord = vector3(-567.811, 5253.099, 70.47766) ,
         Color =  46,
-        Sprite =  442 ,
+        -- ✅ فیکس شد: اسپرایت 442 = "Hunting Ground" ورنیلا که یه لکه‌ی
+        -- دایره‌ای رنگی (radius-style) روی مینی‌مپ می‌کشه و هرچی نزدیک‌تر
+        -- بشی پررنگ‌تر میشه. با 84 (Weapon Knife) عوض شد تا یه آیکون ساده‌ی
+        -- نقطه‌ای باشه، نه یه دایره‌ی زرد.
+        Sprite =  84 ,
 		Scale = 0.7 ,
 		BeginText = true ,
 
@@ -44,7 +46,9 @@ local blipinfo = {
 
         Coord = vector3(-96.81758, 6205.78, 31.01538)  ,
         Color =  1,
-        Sprite =  442 ,
+        -- ✅ فیکس شد: همون مشکل اسپرایت 442 (بی‌ربط به سلاخ‌خونه هم بود)،
+        -- با 68 (Chop Shop) جایگزین شد.
+        Sprite =  68 ,
 		Scale = 0.6 ,
 		BeginText = true ,
 
@@ -3640,4 +3644,3 @@ function DrawText3D(x, y, z, text)
         DrawText(_x, _y)
     end
 end
-

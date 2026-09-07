@@ -14,8 +14,13 @@ local TRANSFER_TARGET_JOBS = {
 	{ value = 'doa', label = 'DOA' },
 }
 
+local function safeNow()
+	if GetServerUnixTime then return GetServerUnixTime() end
+	return 0
+end
+
 local function timeAgo(ts)
-	local mins = math.floor((os.time() - ts) / 60)
+	local mins = math.floor((safeNow() - ts) / 60)
 	if mins < 1 then return 'Hamin Alan' end
 	if mins < 60 then return mins .. ' Daghighe Pish' end
 	local hours = math.floor(mins / 60)

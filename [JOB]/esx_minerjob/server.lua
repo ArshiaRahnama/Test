@@ -1,5 +1,19 @@
 ESX = nil
 TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
+
+local MinerTrunkStores = {}
+AddEventHandler("esx_trunk:getSharedDataStore", function(plate, cb)
+	if not MinerTrunkStores[plate] then
+		MinerTrunkStores[plate] = {}
+	end
+	local data = MinerTrunkStores[plate]
+	local store = {
+		get = function(key) return data[key] end,
+		set = function(key, value) data[key] = value end
+	}
+	cb(store)
+end)
+
 local PLayersOnduty = {}
 RegisterNetEvent('Miner:SetDuty')
 AddEventHandler('Miner:SetDuty',function(status)
@@ -399,6 +413,3 @@ AddEventHandler('mining:MeltItems', function(type)
         xPlayer.removeInventoryItem('iron_piece', 20)
     end
 end)
-
-
-

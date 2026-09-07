@@ -101,6 +101,7 @@ if Customize.ESX == 'ESX' then
         -- only runs for job/impound garages where a price is actually
         -- configured (Customize.JobGaragesPrice / ImpoundGaragesPrice);
         -- normal garage spawns skip straight to spawning, no charge.
+        local function proceedSpawn()
         if (tonumber(data.Price) or 0) > 0 then
             ESX.TriggerServerCallback('isPrice', function(istrue)
                 if istrue then
@@ -141,6 +142,36 @@ if Customize.ESX == 'ESX' then
 				Wait(100)
 				TriggerServerEvent("CarLock:ToggleKey", true, data.Table.plate)
             end, LastSpawnPos, true)
+        end
+        end
+
+        -------------------------------------------------------------
+        -- FEATURE (requested: a rank BLOCKED from a vehicle model via
+        -- Boss Action > Vehicle Access should not be able to take it
+        -- out of the garage either - it was previously only enforced
+        -- on registering a brand-new vehicle, not on taking an
+        -- already-owned one out). Only applies when this is a GANG
+        -- garage (LastGangJob set by OpenMenuG('gang', ...) above) -
+        -- personal/job/impound garages are completely untouched.
+        -- Derives the model key the exact same way this file already
+        -- does a few lines below for display (VehText: display name,
+        -- whitespace stripped, lowercased) so it matches
+        -- Unique_ALLGangs' vehicleAccess keys regardless of how the
+        -- vehicle was added (config spawn, /getfreecargang, or a
+        -- donated personal vehicle).
+        -------------------------------------------------------------
+        if LastGangJob then
+            local modelKey = string.gsub(GetDisplayNameFromVehicleModel(vehData.model), "%s+", ""):lower()
+            ESX.TriggerServerCallback('FMGangs:GetRankAccess', function(access)
+                local vehicleAccess = access and access.vehicleAccess
+                if vehicleAccess and vehicleAccess[modelKey] == false then
+                    SafeNotify('~r~Your rank does not have access to this vehicle')
+                    return
+                end
+                proceedSpawn()
+            end, LastGangJob)
+        else
+            proceedSpawn()
         end
     end)
 
@@ -244,22 +275,12 @@ RegisterNetEvent('ImpoundVehicle', function(vehicles)
     end
 end)
 
--- ✅ فیکس شد: این ایونت قبلاً دوبار RegisterNetEvent/AddEventHandler شده بود -
--- یه نسخه با ESX.Game.GetVehicles() و یه نسخه‌ی قدیمی‌تر با EnumerateVehicles()
--- که روی *همه‌ی* ماشین‌های نقشه (نه فقط ماشین‌های گاراژ) می‌چرخید و هرچی NPC
--- توش نبود رو حذف/ایمپوند می‌کرد. چون هر دو روی یه اسم ایونت رجیستر شده
--- بودن، با هر بار فایر شدن این ایونت، هر دو با هم اجرا می‌شدن: بعضی
--- ماشین‌ها دوبار ایمپوند/حذف می‌شدن و رفتار غیرقابل‌پیش‌بینی پیش می‌اومد.
--- نسخه‌ی خطرناک‌تر (EnumerateVehicles) حذف شد. همچنین یه باگ کوچیک‌تر تو
--- همین نسخه هم فیکس شد: قبلاً اگه فقط یکی از ماشین‌ها سرنشین داشت، کل حلقه
--- با return قطع می‌شد و بقیه‌ی ماشین‌های خالی اصلاً پردازش نمی‌شدن؛ الان
--- فقط همون ماشین رد میشه (goto continue) و بقیه normal پردازش میشن.
 RegisterNetEvent('Unique_Garage:DeleteAllVehicle')
 AddEventHandler('Unique_Garage:DeleteAllVehicle', function()
 	local vehicles = ESX.Game.GetVehicles()
 	for _,entity in ipairs(vehicles) do
 		if IsAnyPedInVehicle(entity) then
-			goto continue
+			return
 		end
 		NetworkRequestControlOfEntity(entity)
 		local timeout = 2000
@@ -277,13 +298,28 @@ AddEventHandler('Unique_Garage:DeleteAllVehicle', function()
 		if (DoesEntityExist(entity)) then
 			DeleteEntity(entity)
 		end
-		::continue::
 	end
 end)
 
 function IsAnyPedInVehicle(veh)
 	return (GetVehicleNumberOfPassengers(veh)+(IsVehicleSeatFree(veh,-1) and 0 or 1))>0
 end
+
+RegisterNetEvent("Unique_Garage:DeleteAllVehicle")
+AddEventHandler("Unique_Garage:DeleteAllVehicle", function()
+    for vehicle in EnumerateVehicles() do
+        if (not IsPedAPlayer(GetPedInVehicleSeat(vehicle, -1))) then
+            SetVehicleHasBeenOwnedByPlayer(vehicle, false)
+            SetEntityAsMissionEntity(vehicle, false, false)
+			TriggerEvent("ImpoundVehicle", vehicle)
+            ESX.Game.DeleteVehicle(vehicle)
+            DeleteVehicle(vehicle)
+            if (DoesEntityExist(vehicle)) then
+                DeleteVehicle(vehicle)
+            end
+        end
+    end
+end)
 
 local entityEnumerator = {
     __gc = function(enum)
@@ -470,39 +506,84 @@ OpenMenuG = function(type, extra)
 	local PlayerCoord = GetEntityCoords(PlayerPed)
 	local InVeh = GetVehiclePedIsIn(PlayerPed)
 	local Callback = ESX.TriggerServerCallback
+	-- FIX: LastGangJob only ever got *set* (line below, "gang" branch) and
+	-- never cleared elsewhere, so after visiting the gang garage once it
+	-- stayed set for every personal/job/impound garage opened afterwards -
+	-- SpawnVehicle's gang-access check below would then wrongly run (and
+	-- possibly block) a normal personal vehicle spawn. Reset it up front
+	-- every open; only the "gang" branch below sets it again.
+	LastGangJob = nil
 	if type == "gang" then
 		-- extra = { gangName = .., coord = {x,y,z,h}, vehType = 'car'|'heli'|'boat' }
 		-- Unlike "garage"/"job" this doesn't loop over a fixed Customize list --
 		-- FMGangs already does its own proximity/E-press detection at its own
 		-- gang-placed markers and just tells us to open here.
+		-- FIX (requested: should show the actual car from a proper
+		-- angle/distance, not just standing right on top of it - the
+		-- camera's posX/posY/posZ were literally the exact same point
+		-- as vehSpawn, i.e. the same spot the ghost preview vehicle
+		-- (VehicleInfo NUI callback below, currentVeh) spawns at. Every
+		-- other branch (garage/job/impound) uses a hand-placed camera
+		-- position genuinely offset away from the vehicle; this
+		-- computes that same kind of offset instead of reusing
+		-- extra.coord directly - a fixed distance/height/angle relative
+		-- to the marker's heading, so it's the exact same shot (car
+		-- seen from the same relative angle and distance) at every gang
+		-- location, and the camera actually looks back at the vehicle
+		-- instead of sitting inside it.
+		local heading = extra.coord.h or 0.0
+		local camAngleOffset = 40.0 -- degrees off the vehicle's own heading - fixed
+		local camDistance = 4.5
+		local camHeight = 1.3
+		local placeAngle = math.rad(heading + camAngleOffset)
 		LastCamera = {
 			vehSpawn = vector4(extra.coord.x, extra.coord.y, extra.coord.z, extra.coord.h),
 			location = {
-				posX = extra.coord.x, posY = extra.coord.y, posZ = extra.coord.z + 1.5,
-				rotX = -10.0, rotY = 0.0, rotZ = extra.coord.h - 180.0, fov = 50.0
+				posX = extra.coord.x + camDistance * -math.sin(placeAngle),
+				posY = extra.coord.y + camDistance * math.cos(placeAngle),
+				posZ = extra.coord.z + camHeight,
+				rotX = -8.0, rotY = 0.0, rotZ = heading + camAngleOffset + 180.0, fov = 45.0
 			}
 		}
 		LastSpawnPos = LastCamera.vehSpawn
 		LastGangJob = extra.gangName
-		Callback('GetVehicles', function(data)
-			if data ~= nil then
-				inGarage = 0
-				for index, vh in pairs(data) do
-					vh.stored = ToStoredNum(vh.stored)
-					vh.engine = tonumber(vh.engine) or 1000
-					vh.fuel = tonumber(vh.fuel) or 100
-					vh.body = tonumber(vh.body) or 1000
-					local displaytext = string.gsub(GetDisplayNameFromVehicleModel(json.decode(vh.vehicle).model), "%s+", ""):lower()
-					vh["VehModel"] = displaytext
-					vh["VehText"] = GetLabelText(displaytext)
+		-------------------------------------------------------------
+		-- FEATURE (requested: a vehicle model this rank is BLOCKED
+		-- from - Boss Action > Vehicle Access - should not even show
+		-- up in the garage list, not just refuse to spawn it after
+		-- the player already sees and picks it). Fetches the caller's
+		-- vehicleAccess first, then filters the vehicle list the same
+		-- way SpawnVehicle checks it (same VehModel key), using
+		-- NewTable like every other branch in this file already does
+		-- - which also fixes "IN GARAGE" always reading 0 here (it
+		-- was never actually incremented in this branch before).
+		-------------------------------------------------------------
+		Callback('FMGangs:GetRankAccess', function(access)
+			local vehicleAccess = access and access.vehicleAccess
+			Callback('GetVehicles', function(data)
+				if data ~= nil then
+					inGarage = 0
+					local newData = {}
+					for index, vh in pairs(data) do
+						vh.stored = ToStoredNum(vh.stored)
+						vh.engine = tonumber(vh.engine) or 1000
+						vh.fuel = tonumber(vh.fuel) or 100
+						vh.body = tonumber(vh.body) or 1000
+						local displaytext = string.gsub(GetDisplayNameFromVehicleModel(json.decode(vh.vehicle).model), "%s+", ""):lower()
+						vh["VehModel"] = displaytext
+						vh["VehText"] = GetLabelText(displaytext)
+						if not (vehicleAccess and vehicleAccess[displaytext] == false) then
+							NewTable(newData, vh)
+						end
+					end
+					Camera()
+					SendReactMessage('setOpen', { setVeh = newData, setName = extra.gangName .. ' Garage', inGarage = inGarage, Price = 0 })
+					SetNuiFocus(true, true)
+				else
+					SafeNotify("Shoma Hich Mashini Nadarid!")
 				end
-				Camera()
-				SendReactMessage('setOpen', { setVeh = data, setName = extra.gangName .. ' Garage', inGarage = inGarage, Price = 0 })
-				SetNuiFocus(true, true)
-			else
-				SafeNotify("Shoma Hich Mashini Nadarid!")
-			end
-		end, "Gang", extra.gangName, extra.vehType)
+			end, "Gang", extra.gangName, extra.vehType)
+		end, extra.gangName)
 	elseif type == "garage" then
 		for index_, esc in pairs(Customize.Garages) do
 			local NPCDistance = #(PlayerCoord - esc.Npc.Pos)
@@ -573,10 +654,6 @@ OpenMenuG = function(type, extra)
 									vh.engine = tonumber(vh.engine) or 1000
 									vh.fuel = tonumber(vh.fuel) or 100
 									vh.body = tonumber(vh.body) or 1000
-									-- ✅ فیکس شد: این خط قبلاً اصلاً وجود نداشت، یعنی vehClass
-									-- تعریف‌نشده (nil) بود و فیلتر تایپ ماشین (car/air/sea) هیچ‌وقت
-									-- درست کار نمی‌کرد - هر ماشینی صرف‌نظر از کلاسش رد می‌شد.
-									local vehClass = GetVehicleClassFromName(veh)
 									local displaytext = string.gsub(GetDisplayNameFromVehicleModel(veh), "%s+", ""):lower();
 									vh["VehModel"] = displaytext
 									vh["VehText"] = GetLabelText(displaytext)
@@ -905,10 +982,7 @@ function AttachOwnCarBlip(vehicle)
     if ownCarBlips[vehicle] and DoesBlipExist(ownCarBlips[vehicle]) then return end
 
     local blip = AddBlipForEntity(vehicle)
-    -- ✅ فیکس شد: اسپرایت ۲۲۵ یه آیکون تک‌رنگه که رنگش با SetBlipColour عوض
-    -- نمی‌شه - همیشه سفید دیده می‌شه، صرف‌نظر از عددی که به SetBlipColour
-    -- می‌دیدیم. اسپرایت ۱ (دایره‌ی ساده) واقعاً رنگ رو قبول می‌کنه.
-    SetBlipSprite(blip, 1)
+    SetBlipSprite(blip, 225)
     SetBlipColour(blip, 3)
     SetBlipScale(blip, 0.7)
     SetBlipCategory(blip, 7)

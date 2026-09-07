@@ -1041,9 +1041,6 @@ end)
 local SaveMetaData_AllowedColumns = {
     ['background']      = true,
     ['profilepicture']  = true,
-    -- EXPANSION: accent color theme + phone case (see html/js/settings.js)
-    ['phone_accentcolor'] = true,
-    ['phone_case']         = true,
 }
 
 RegisterServerEvent('Unique_Phone:server:SaveMetaData')
@@ -1067,40 +1064,6 @@ AddEventHandler('Unique_Phone:server:SaveMetaData', function(column, data)
 
 
     ExecuteSql(false, "UPDATE `users` SET `" .. column .. "` = @p1 WHERE `identifier` = @p2", {['@p1'] = value, ['@p2'] = Player.identifier})
-end)
-
--- EXPANSION: phone case shop (Settings → Phone Case). Prices/names are
--- defined server-side (never trust a price the client sends) — see
--- Config.PhoneCases in config.lua. Free cases (price 0, the default ones)
--- just apply directly with no charge.
-RegisterServerEvent('Unique_Phone:server:BuyPhoneCase')
-AddEventHandler('Unique_Phone:server:BuyPhoneCase', function(caseId)
-    local src = source
-    local xPlayer = ESX.GetPlayerFromId(src)
-    if not xPlayer then return end
-
-    local caseInfo = nil
-    for _, c in ipairs(Config.PhoneCases) do
-        if c.id == caseId then
-            caseInfo = c
-            break
-        end
-    end
-    if not caseInfo then return end
-
-    local price = caseInfo.price or 0
-    if price > 0 then
-        if xPlayer.money < price then
-            TriggerClientEvent('Unique_Phone:client:BuyPhoneCaseResult', src, { success = false, reason = "not_enough_money" })
-            return
-        end
-        xPlayer.removeMoney(price)
-    end
-
-    ExecuteSql(false, "UPDATE `users` SET `phone_case` = @p1 WHERE `identifier` = @p2",
-        { ['@p1'] = caseId, ['@p2'] = xPlayer.identifier })
-
-    TriggerClientEvent('Unique_Phone:client:BuyPhoneCaseResult', src, { success = true, caseId = caseId })
 end)
 
 function escape_sqli(source)

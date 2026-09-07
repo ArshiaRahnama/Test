@@ -1,34 +1,64 @@
 -- ============================================================
 -- Mugshot menu (feature #8)
 -- Reached from /law's main menu ("Mugshot"). If the screenshot-basic
--- resource is installed and running, "Sabt-e Aks" captures a live
--- screenshot of whoever the officer is aimed at/near and uploads it
--- automatically; otherwise it falls back to pasting a photo URL by
--- hand, so this still works on servers without that resource.
+-- resource is installed, running, AND the `mugshot_upload_url` convar
+-- is set (server.cfg: `setr mugshot_upload_url "https://..."`, e.g. a
+-- Discord webhook URL or any image-host upload endpoint), "Sabt-e Aks"
+-- captures a live screenshot of whoever the officer is aimed at/near
+-- and uploads it automatically. If ANY of those three things is
+-- missing, it falls back to pasting a photo URL by hand instead of
+-- silently doing nothing -- and says exactly which one is missing.
 -- ============================================================
 
 local function hasScreenshotBasic()
 	return GetResourceState('screenshot-basic') == 'started'
 end
 
-local function captureAndSave(query)
-	if hasScreenshotBasic() then
-		exports['screenshot-basic']:requestScreenshotUpload(GetConvar('mugshot_upload_url', ''), 'files[]', {}, function(data)
-			local ok, result = pcall(json.decode, data)
-			local url = (ok and result and (result.url or result.link)) or nil
-			if url then
-				TriggerServerEvent('esx_uniquejobs:dojSaveMugshot', query, url)
-			else
-				ESX.ShowNotification("~r~Upload-e Aks Shekast Khord -- Baraye Vared Kardan-e Dasti URL Talash Konid")
-			end
-		end)
-		return
+-- Pulls a usable image URL out of either response shape:
+--  - screenshot-basic's own upload.php-style response: { url: "..." } / { link: "..." }
+--  - a raw Discord webhook response (screenshot-basic just relays
+--    whatever the endpoint returns): { attachments: [ { url: "..." } ] }
+local function extractPhotoUrl(result)
+	if not result then return nil end
+	if result.url then return result.url end
+	if result.link then return result.link end
+	if result.attachments and result.attachments[1] and result.attachments[1].url then
+		return result.attachments[1].url
 	end
+	return nil
+end
 
+local function manualPhotoUrlPrompt(query)
 	local input = lib.inputDialog('Sabt-e Mugshot (Dasti)', { { type = 'input', label = 'URL-e Aks', required = true } })
 	if input and input[1] then
 		TriggerServerEvent('esx_uniquejobs:dojSaveMugshot', query, input[1])
 	end
+end
+
+local function captureAndSave(query)
+	if not hasScreenshotBasic() then
+		ESX.ShowNotification("~y~Resource-e screenshot-basic Nasb/Roshan Nist -- URL-e Aks Ra Dasti Vared Konid")
+		manualPhotoUrlPrompt(query)
+		return
+	end
+
+	local uploadUrl = GetConvar('mugshot_upload_url', '')
+	if uploadUrl == '' then
+		ESX.ShowNotification("~y~convar mugshot_upload_url Tanzim Nashode (server.cfg) -- URL-e Aks Ra Dasti Vared Konid")
+		manualPhotoUrlPrompt(query)
+		return
+	end
+
+	exports['screenshot-basic']:requestScreenshotUpload(uploadUrl, 'files[]', {}, function(data)
+		local ok, result = pcall(json.decode, data)
+		local url = ok and extractPhotoUrl(result) or nil
+		if url then
+			TriggerServerEvent('esx_uniquejobs:dojSaveMugshot', query, url)
+		else
+			ESX.ShowNotification("~r~Upload-e Aks Shekast Khord (Pasokh-e Server-e Upload Namotabar Bood) -- Baraye Vared Kardan-e Dasti URL Talash Konid")
+			manualPhotoUrlPrompt(query)
+		end
+	end)
 end
 
 function OpenMugshotMenu()
@@ -144,6 +174,34 @@ function OpenRapSheetMenu(query)
 			end
 		end
 
+		options[#options + 1] = { title = 'Parvande-haye CAD', icon = 'folder-open', disabled = true }
+		if #sheet.cadCases == 0 then
+			options[#options + 1] = { title = 'Parvande-i Dar CAD Nist', disabled = true, icon = 'circle-info' }
+		else
+			for _, c in ipairs(sheet.cadCases) do
+				options[#options + 1] = {
+					title = '#' .. c.id .. ' -- ' .. c.rob_name .. ' ' .. c.rob_family,
+					description = 'Vaziat: ' .. c.status,
+					icon = 'folder-open',
+					disabled = true,
+				}
+			end
+		end
+
+		options[#options + 1] = { title = 'Sabeghe-ye Booking-e CAD', icon = 'book', disabled = true }
+		if #sheet.cadRecords == 0 then
+			options[#options + 1] = { title = 'Booking-i Dar CAD Nist', disabled = true, icon = 'circle-info' }
+		else
+			for _, r in ipairs(sheet.cadRecords) do
+				options[#options + 1] = {
+					title = r.charges,
+					description = 'Jarime: $' .. r.fine .. ' | Zendan: ' .. r.jail_minutes .. ' Daghighe | Afsar: ' .. (r.booked_by_name or 'Namoshakhas'),
+					icon = 'handcuffs',
+					disabled = true,
+				}
+			end
+		end
+
 		options[#options + 1] = {
 			title = 'Namayesh-e Motn-e Kamel (Baraye Chap)',
 			icon = 'print',
@@ -166,6 +224,27 @@ function OpenRapSheetMenu(query)
 						lines[#lines + 1] = '- ' .. formatRecordLine(r)
 					end
 				end
+
+				lines[#lines + 1] = ''
+				lines[#lines + 1] = '## Parvande-haye CAD'
+				if #sheet.cadCases == 0 then
+					lines[#lines + 1] = '_Parvande-i Dar CAD Nist_'
+				else
+					for _, c in ipairs(sheet.cadCases) do
+						lines[#lines + 1] = '- #' .. c.id .. ' ' .. c.rob_name .. ' ' .. c.rob_family .. ' (' .. c.status .. ')'
+					end
+				end
+
+				lines[#lines + 1] = ''
+				lines[#lines + 1] = '## Sabeghe-ye Booking-e CAD'
+				if #sheet.cadRecords == 0 then
+					lines[#lines + 1] = '_Booking-i Dar CAD Nist_'
+				else
+					for _, r in ipairs(sheet.cadRecords) do
+						lines[#lines + 1] = '- ' .. r.charges .. ' -- $' .. r.fine .. ', ' .. r.jail_minutes .. ' Daghighe (Afsar: ' .. (r.booked_by_name or 'Namoshakhas') .. ')'
+					end
+				end
+
 				if sheet.photoUrl then
 					lines[#lines + 1] = ''
 					lines[#lines + 1] = ('![mugshot](%s)'):format(sheet.photoUrl)

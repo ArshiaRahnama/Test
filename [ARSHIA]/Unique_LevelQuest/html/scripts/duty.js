@@ -32,19 +32,38 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Self-contained calendar dropdown — NOT a native <input type="date">.
   // FiveM's NUI browser (CEF) is inconsistent about rendering the
-  // native calendar popup for date inputs across builds, so this
-  // draws its own month grid instead, guaranteed to work the same
-  // way everywhere. `onPick(isoDateString)` fires when a day is
-  // clicked; disables days after today.
-  function mountCalendar(popupEl, onPick) {
+  // native calendar popup across builds, so this draws its own month
+  // grid instead. It also forces LTR internally (see .calPopup CSS)
+  // regardless of the page's own dir="rtl" (html/index.html is a
+  // Persian-language page) — without that override, the browser
+  // mirrors the whole grid: weekday headers read "S F T W T M S"
+  // instead of "S M T W T F S", day numbers run right-to-left, and
+  // the prev/next month arrows swap sides, which is confusing for a
+  // calendar specifically (dates read most naturally left-to-right
+  // even inside an otherwise-RTL page).
+  //
+  // Supports RANGE selection: first click sets the start day, the
+  // next click sets the end day (or moves the start day earlier if
+  // you click before it) — matching how most calendar range pickers
+  // behave. `onApply(startIso, endIso)` fires only once both ends are
+  // picked and the Apply button is pressed, not on every click.
+  function mountCalendar(popupEl, onApply) {
     const today = new Date();
     let viewYear = today.getFullYear();
     let viewMonth = today.getMonth();
-    let selectedIso = null;
+    let rangeStart = null;
+    let rangeEnd = null;
 
     const pad = n => String(n).padStart(2, '0');
     const toIso = (y, m, d) => `${y}-${pad(m + 1)}-${pad(d)}`;
     const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+    function dayClass(iso) {
+      if (!iso) return '';
+      if (iso === rangeStart || iso === rangeEnd) return ' selected';
+      if (rangeStart && rangeEnd && iso > rangeStart && iso < rangeEnd) return ' in-range';
+      return '';
+    }
 
     function render() {
       const firstWeekday = new Date(viewYear, viewMonth, 1).getDay();
@@ -57,9 +76,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const iso = toIso(viewYear, viewMonth, d);
         const cellDate = new Date(viewYear, viewMonth, d);
         const isFuture = cellDate > today;
-        const isSelected = selectedIso === iso;
-        cells += `<span class="calDay${isFuture ? ' disabled' : ''}${isSelected ? ' selected' : ''}" data-date="${isFuture ? '' : iso}">${d}</span>`;
+        cells += `<span class="calDay${isFuture ? ' disabled' : dayClass(iso)}" data-date="${isFuture ? '' : iso}">${d}</span>`;
       }
+
+      const rangeLabel = rangeStart && rangeEnd
+        ? `${rangeStart} → ${rangeEnd}`
+        : rangeStart
+          ? `${rangeStart} → …`
+          : 'Pick a start and end day';
 
       popupEl.innerHTML = `
         <div class="calHeader">
@@ -69,6 +93,8 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
         <div class="calWeekdays">${['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(w => `<span>${w}</span>`).join('')}</div>
         <div class="calGrid">${cells}</div>
+        <div class="calRangeLabel">${rangeLabel}</div>
+        <button type="button" class="calApplyBtn" ${(rangeStart && rangeEnd) ? '' : 'disabled'}>Apply</button>
       `;
 
       popupEl.querySelectorAll('.calNav').forEach(btn => {
@@ -83,17 +109,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
       popupEl.querySelectorAll('.calDay:not(.empty):not(.disabled)').forEach(cell => {
         cell.addEventListener('click', () => {
-          selectedIso = cell.dataset.date;
+          const iso = cell.dataset.date;
+          if (!rangeStart || (rangeStart && rangeEnd)) {
+            // Starting a fresh range.
+            rangeStart = iso;
+            rangeEnd = null;
+          } else if (iso < rangeStart) {
+            // Clicked before the current start — that becomes the new start.
+            rangeStart = iso;
+          } else {
+            rangeEnd = iso;
+          }
           render();
-          onPick(selectedIso);
         });
+      });
+
+      const applyBtn = popupEl.querySelector('.calApplyBtn');
+      applyBtn.addEventListener('click', () => {
+        if (!rangeStart || !rangeEnd) return;
+        onApply(rangeStart, rangeEnd);
       });
     }
 
     render();
   }
 
-  function wireDatePicker(triggerBtn, popupEl, labelEl, onPick) {
+  function wireDatePicker(triggerBtn, popupEl, labelEl, onApply) {
     triggerBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       const willOpen = popupEl.classList.contains('hidden');
@@ -102,40 +143,45 @@ document.addEventListener('DOMContentLoaded', () => {
         popupEl.classList.remove('hidden');
         if (!popupEl.dataset.built) {
           popupEl.dataset.built = '1';
-          mountCalendar(popupEl, (iso) => {
-            labelEl.textContent = iso;
+          mountCalendar(popupEl, (startIso, endIso) => {
+            labelEl.textContent = startIso === endIso ? startIso : `${startIso} → ${endIso}`;
             popupEl.classList.add('hidden');
-            onPick(iso);
+            onApply(startIso, endIso);
           });
         }
       }
     });
+    popupEl.addEventListener('click', (e) => e.stopPropagation());
   }
 
   document.addEventListener('click', () => {
     document.querySelectorAll('.calPopup').forEach(p => p.classList.add('hidden'));
   });
 
-  function requestDate(iso) {
+  function requestRange(startIso, endIso) {
     const resourceName = window.GetParentResourceName ? window.GetParentResourceName() : 'unknown_resource';
     fetch(`https://${resourceName}/checkDutyDate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ date: iso }),
+      body: JSON.stringify({ startDate: startIso, endDate: endIso }),
     });
   }
 
   function renderLeadershipBlock(duty) {
     rosterEl.innerHTML = `
       <div class="dutyRosterHead">
-        <div class="dutyRosterTitle" id="dutyRosterTitle">${(duty.orgName || 'ORG').toUpperCase()} — ALL-TIME HOURS</div>
+        <div class="dutyRosterTitle" id="dutyRosterTitle">${(duty.orgName || 'ORG').toUpperCase()} — TOP 5 (ALL-TIME)</div>
         <div class="dutyDatePicker">
           <button type="button" class="calTrigger" id="dutyDateTrigger">
-            <i class="fa-solid fa-calendar-days"></i> <span id="dutyDateLabel">Pick a date</span>
+            <i class="fa-solid fa-calendar-days"></i> <span id="dutyDateLabel">Pick a range</span>
           </button>
-          <button type="button" id="dutyResetBtn" class="hidden" title="Back to all-time"><i class="fa-solid fa-rotate-left"></i></button>
+          <button type="button" id="dutyResetBtn" class="hidden" title="Back to top 5"><i class="fa-solid fa-rotate-left"></i></button>
           <div class="calPopup hidden" id="dutyCalPopup"></div>
         </div>
+      </div>
+      <div class="dutySearchRow">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" id="dutySearchInput" placeholder="Search an officer by name…" maxlength="50" />
       </div>
       <div id="dutyRosterBody">${renderRosterList(duty.roster, 'allSeconds')}</div>
     `;
@@ -143,18 +189,52 @@ document.addEventListener('DOMContentLoaded', () => {
     const titleEl = document.getElementById('dutyRosterTitle');
     const bodyEl = document.getElementById('dutyRosterBody');
     const resetBtn = document.getElementById('dutyResetBtn');
+    const searchInput = document.getElementById('dutySearchInput');
+
+    function showDefaultTop10() {
+      titleEl.textContent = `${(duty.orgName || 'ORG').toUpperCase()} — TOP 5 (ALL-TIME)`;
+      bodyEl.innerHTML = renderRosterList(duty.roster, 'allSeconds');
+    }
+
+    // Debounced search-as-you-type — the full org isn't loaded into
+    // the NUI up front (could be dozens of members), so every search
+    // is a fresh, small server query instead of filtering a giant
+    // preloaded list client-side.
+    let searchDebounce = null;
+    searchInput.addEventListener('input', () => {
+      clearTimeout(searchDebounce);
+      const term = searchInput.value.trim();
+      resetBtn.classList.add('hidden');
+      if (term.length === 0) {
+        showDefaultTop10();
+        return;
+      }
+      searchDebounce = setTimeout(() => {
+        titleEl.textContent = `SEARCHING "${term}"…`;
+        const resourceName = window.GetParentResourceName ? window.GetParentResourceName() : 'unknown_resource';
+        fetch(`https://${resourceName}/searchDutyRoster`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ search: term }),
+        });
+      }, 350);
+    });
 
     wireDatePicker(
       document.getElementById('dutyDateTrigger'),
       document.getElementById('dutyCalPopup'),
       document.getElementById('dutyDateLabel'),
-      requestDate
+      (startIso, endIso) => {
+        searchInput.value = '';
+        resetBtn.classList.remove('hidden');
+        requestRange(startIso, endIso);
+      }
     );
 
     resetBtn.addEventListener('click', () => {
-      titleEl.textContent = `${(duty.orgName || 'ORG').toUpperCase()} — ALL-TIME HOURS`;
-      bodyEl.innerHTML = renderRosterList(duty.roster, 'allSeconds');
-      document.getElementById('dutyDateLabel').textContent = 'Pick a date';
+      searchInput.value = '';
+      showDefaultTop10();
+      document.getElementById('dutyDateLabel').textContent = 'Pick a range';
       resetBtn.classList.add('hidden');
     });
   }
@@ -164,12 +244,12 @@ document.addEventListener('DOMContentLoaded', () => {
       <div class="dutyRosterHead">
         <div class="dutyRosterTitle">
           <i class="fa-solid fa-lock"></i>
-          Team totals are visible to ${duty.orgName ? duty.orgName + ' ' : ''}leadership only — check your own day below.
+          Team totals are visible to ${duty.orgName ? duty.orgName + ' ' : ''}leadership only — check your own range below.
         </div>
       </div>
       <div class="dutyDatePicker personal">
         <button type="button" class="calTrigger" id="dutyDateTrigger">
-          <i class="fa-solid fa-calendar-days"></i> <span id="dutyDateLabel">Pick a date</span>
+          <i class="fa-solid fa-calendar-days"></i> <span id="dutyDateLabel">Pick a range</span>
         </button>
         <div class="calPopup hidden" id="dutyCalPopup"></div>
       </div>
@@ -182,9 +262,9 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('dutyDateTrigger'),
       document.getElementById('dutyCalPopup'),
       document.getElementById('dutyDateLabel'),
-      (iso) => {
+      (startIso, endIso) => {
         resultEl.innerHTML = `<div class="dutyLeadershipHint"><i class="fa-solid fa-spinner fa-spin"></i> Loading…</div>`;
-        requestDate(iso);
+        requestRange(startIso, endIso);
       }
     );
   }
@@ -192,24 +272,41 @@ document.addEventListener('DOMContentLoaded', () => {
   window.addEventListener('message', (event) => {
     const data = event.data;
 
+    if (data.type === 'dutySearchResult') {
+      const result = data.result;
+      const titleEl = document.getElementById('dutyRosterTitle');
+      const bodyEl = document.getElementById('dutyRosterBody');
+      const searchInput = document.getElementById('dutySearchInput');
+      // Ignore a stale/late response if the search box was already
+      // cleared (or the tab moved on) by the time this came back.
+      if (!titleEl || !bodyEl || !searchInput || searchInput.value.trim().length === 0) return;
+      if (!result || !result.ok) {
+        titleEl.textContent = 'SEARCH FAILED';
+        return;
+      }
+      titleEl.textContent = `SEARCH: "${searchInput.value.trim()}"`;
+      bodyEl.innerHTML = renderRosterList(result.roster, 'allSeconds');
+      return;
+    }
+
     if (data.type === 'dutyDateResult') {
       const result = data.result;
       if (!result || !result.ok) return;
 
+      const rangeLabel = result.startDate === result.endDate ? result.startDate : `${result.startDate} → ${result.endDate}`;
+
       if (result.mode === 'roster') {
         const titleEl = document.getElementById('dutyRosterTitle');
         const bodyEl = document.getElementById('dutyRosterBody');
-        const resetBtn = document.getElementById('dutyResetBtn');
         if (!titleEl || !bodyEl) return;
-        titleEl.textContent = `${(result.orgName || 'ORG').toUpperCase()} — ${result.date}`;
+        titleEl.textContent = `${(result.orgName || 'ORG').toUpperCase()} — ${rangeLabel}`;
         bodyEl.innerHTML = renderRosterList(result.roster, 'seconds');
-        if (resetBtn) resetBtn.classList.remove('hidden');
       } else if (result.mode === 'personal') {
         const resultEl = document.getElementById('dutyPersonalResult');
         if (!resultEl) return;
         resultEl.innerHTML = `
           <div class="dutyPersonalResultBox">
-            <span class="dutyPersonalResultDate">${result.date}</span>
+            <span class="dutyPersonalResultDate">${rangeLabel}</span>
             <span class="dutyPersonalResultValue">${formatDuration(result.seconds)}</span>
           </div>
         `;

@@ -83,7 +83,7 @@
 
                 <!-- EXPANSION: Quick Settings panel — swipe down anywhere on
                      the status bar above (.phone-header) to reveal instant
-                     toggles for Do Not Disturb, One-Hand Mode and Airplane
+                     toggles for Do Not Disturb and Airplane
                      Mode without opening the Settings app. A plain tap on
                      the header (instead of a drag) toggles it too; tapping
                      the backdrop or the handle below closes it. See
@@ -94,10 +94,6 @@
                         <div class="qs-tile" data-qs="dnd">
                             <div class="qs-tile-icon"><i class="fas fa-moon"></i></div>
                             <div class="qs-tile-label">Do Not Disturb</div>
-                        </div>
-                        <div class="qs-tile" data-qs="onehand">
-                            <div class="qs-tile-icon"><i class="fas fa-hand"></i></div>
-                            <div class="qs-tile-label">One-Hand</div>
                         </div>
                         <div class="qs-tile" data-qs="flymode">
                             <div class="qs-tile-icon"><i class="fas fa-plane"></i></div>
@@ -254,35 +250,6 @@
                                 <div class="settings-tab-title"><p>Do Not Disturb</p></div>
                                 <div class="settings-tab-description" id="donotdisturb"><p>Off</p></div>
                             </div>
-
-                            <!-- EXPANSION: One-Hand Mode — shrinks the whole
-                                 phone and pulls it toward the corner. -->
-                            <div class="settings-app-tab secondTab" data-settingstab="onehandmode">
-                                <label class="switch">
-                                    <input class="onehand-box" type="checkbox">
-                                    <span class="slider round"></span>
-                                </label>
-
-                                <div class="settings-tab-icon"><i class="fas fa-hand" style="color: #e67e22;"></i></div>
-                                <div class="settings-tab-title"><p>One-Hand Mode</p></div>
-                                <div class="settings-tab-description" id="onehandmode"><p>Off</p></div>
-                            </div>
-                        </div>
-
-                        <!-- EXPANSION: appearance customization — accent theme
-                             + swappable phone case. Rendered by
-                             renderThemeAndCasePickers() in settings.js. -->
-                        <div class="settings-appearance-section">
-                            <div class="settings-section-title"><i class="fas fa-palette"></i> Accent Theme</div>
-                            <div class="theme-swatch-row" id="theme-swatch-row">
-                                <!-- filled by settings.js -->
-                            </div>
-
-                            <div class="settings-section-title"><i class="fas fa-mobile-screen"></i> Phone Case</div>
-                            <div class="case-swatch-row" id="case-swatch-row">
-                                <!-- filled by settings.js -->
-                            </div>
-                            <div class="case-purchase-msg" id="case-purchase-msg"></div>
                         </div>
 
                         <div class="settings-background-tab">

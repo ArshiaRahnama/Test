@@ -2,8 +2,8 @@
 // EXPANSION: Quick Settings panel.
 //
 // Dragging down on the status bar (.phone-header) reveals a small panel
-// with three tiles — Do Not Disturb, One-Hand Mode, Airplane Mode — that
-// toggle instantly via the shared setDoNotDisturb()/setOneHandMode()/
+// with two tiles — Do Not Disturb, Airplane Mode — that
+// toggle instantly via the shared setDoNotDisturb()/
 // setFlyMode() functions in app.js (the same ones the Settings app
 // switches use), so no trip into the Settings app is needed for a quick
 // toggle.
@@ -96,8 +96,6 @@ $(document).on('click', '.qs-tile', function(e) {
 
     if (which === 'dnd') {
         setDoNotDisturb(!PhoneDoNotDisturb);
-    } else if (which === 'onehand') {
-        setOneHandMode(!PhoneOneHandMode);
     } else if (which === 'flymode') {
         setFlyMode(!PhoneFlyMode);
     }

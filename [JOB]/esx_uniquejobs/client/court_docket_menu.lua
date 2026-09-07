@@ -8,6 +8,11 @@
 local dojJob = nil
 local DOJ_JOBS = { marshal = true, judge = true, cia = true, cid = true, fbi = true, doa = true }
 
+local function safeNow()
+	if GetServerUnixTime then return GetServerUnixTime() end
+	return 0
+end
+
 RegisterNetEvent('esx:setJob')
 AddEventHandler('esx:setJob', function(job)
 	dojJob = DOJ_JOBS[job.name] and job.name or nil
@@ -122,7 +127,7 @@ function OpenDocketMenu()
 			options[#options + 1] = { title = 'Hich Jalase-i Zamanbandi Nashode', disabled = true, icon = 'circle-info' }
 		else
 			for _, d in ipairs(docket) do
-				local minutesLeft = math.floor((d.scheduled_at - os.time()) / 60)
+				local minutesLeft = math.floor((d.scheduled_at - safeNow()) / 60)
 				options[#options + 1] = {
 					title = d.case_title .. ' -- ' .. d.statusLabel,
 					description = 'Parvande #' .. d.case_id .. (minutesLeft > 0 and (' | ' .. minutesLeft .. ' Daghighe Ta Shoroo') or ' | Zaman Resid')

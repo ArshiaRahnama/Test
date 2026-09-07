@@ -92,6 +92,12 @@
   align-items: center;
   gap: 6px;
   position: relative;
+  /* This whole widget (trigger, popup, calendar) is forced to LTR
+     regardless of the page's own dir="rtl" (html/index.html is a
+     Persian-language page) — a calendar reads most naturally
+     left-to-right (weekdays Sun→Sat, days ascending, prev/next
+     arrows on their usual sides) even inside an otherwise-RTL page. */
+  direction: ltr;
 }
 
 .dutyDatePicker.personal {
@@ -145,7 +151,7 @@
 .calPopup {
   position: absolute;
   top: calc(100% + 6px);
-  right: 0;
+  left: 0;
   z-index: 20;
   width: 220px;
   padding: 10px;
@@ -229,6 +235,42 @@
   color: #1a1005;
 }
 
+.calDay.in-range {
+  background: rgba(255, 140, 26, 0.16);
+  color: var(--orange2);
+  border-radius: 3px;
+}
+
+.calRangeLabel {
+  margin-top: 8px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--muted);
+  font-size: 9.5px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.calApplyBtn {
+  width: 100%;
+  margin-top: 8px;
+  padding: 7px 0;
+  border-radius: 8px;
+  border: none;
+  background: var(--orange);
+  color: #1a1005;
+  font-size: 10.5px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.calApplyBtn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
 .dutyPersonalResultBox {
   display: flex;
   align-items: center;
@@ -249,6 +291,40 @@
   font-size: 16px;
   font-weight: 900;
   color: var(--orange2);
+}
+
+.dutySearchRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  margin-bottom: 10px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.dutySearchRow i {
+  font-size: 11px;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+.dutySearchRow input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #eceef3;
+  font-size: 11.5px;
+  font-weight: 600;
+  direction: ltr;
+  text-align: left;
+}
+
+.dutySearchRow input::placeholder {
+  color: var(--muted);
+  font-weight: 500;
 }
 
 .dutyRosterList {

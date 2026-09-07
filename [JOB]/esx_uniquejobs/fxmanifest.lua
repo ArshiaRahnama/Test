@@ -44,6 +44,7 @@ client_scripts {
 	'client/doj_menu.lua',
 	'client/law_menu.lua',
 
+	'client/server_time.lua',
 	'client/court_docket_menu.lua',
 	'client/case_timeline_menu.lua',
 	'client/stats_dashboard_menu.lua',
@@ -112,6 +113,7 @@ server_scripts {
 	'server/doj_cases.lua',
 	'server/law_codebook.lua',
 
+	'server/server_time.lua',
 	'server/case_timeline.lua',
 	'server/court_docket.lua',
 	'server/stats_dashboard.lua',

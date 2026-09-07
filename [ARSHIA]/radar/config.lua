@@ -83,7 +83,15 @@ CONFIG.keyDefaults =
 	plate_front_lock = "numpad9",
 
 	-- Plate reader rear lock/unlock Key
-	plate_rear_lock = "numpad6"
+	plate_rear_lock = "numpad6",
+
+	-- FEATURE ADDED: Pursuit timer keybinds
+	-- Start/Pause the pursuit timer
+	pursuit_timer_toggle = "numpad1",
+	-- Reset the pursuit timer back to 00:00:00
+	pursuit_timer_reset = "numpad2",
+	-- Show/hide the pursuit timer widget
+	pursuit_timer_display = "numpad4"
 }
 
 -- Here you can change the default values for the operator menu, do note, if any of these values are not

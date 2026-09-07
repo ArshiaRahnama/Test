@@ -19,8 +19,16 @@ local TIMELINE_ICON = {
 	evidence_transfer = 'right-left',
 }
 
+-- Safety net: if client/server_time.lua somehow isn't loaded (missing
+-- file, fxmanifest not updated), degrade gracefully instead of a hard
+-- crash -- "X daghighe pish" just won't be accurate in that case.
+local function safeNow()
+	if GetServerUnixTime then return GetServerUnixTime() end
+	return 0
+end
+
 local function timeAgo(ts)
-	local mins = math.floor((os.time() - ts) / 60)
+	local mins = math.floor((safeNow() - ts) / 60)
 	if mins < 1 then return 'Hamin Alan' end
 	if mins < 60 then return mins .. ' Daghighe Pish' end
 	local hours = math.floor(mins / 60)

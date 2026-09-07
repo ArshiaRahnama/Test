@@ -14,3 +14,9 @@ server_scripts {
 
 file 'AllTattoos.json'
 
+files {
+	'data/*.xml',
+}
+
+data_file 'PED_OVERLAY_FILE' 'data/*.xml'
+

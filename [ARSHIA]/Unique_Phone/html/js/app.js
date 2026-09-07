@@ -469,14 +469,6 @@ MI.Phone.Functions.LoadPhoneData = function(data) {
     MI.Phone.Data.PlayerJob = data.PlayerJob;
     MI.Phone.Data.MetaData = data.PhoneData.MetaData;
 
-    // EXPANSION: appearance option lists (rendered as pickers in Settings —
-    // see renderThemeAndCasePickers in settings.js) + persisted one-hand
-    // mode preference.
-    PhoneThemesConfig = data.phoneThemes || [];
-    PhoneCasesConfig = data.phoneCases || [];
-    applyOneHandMode(!!data.oneHandMode);
-    renderThemeAndCasePickers();
-
     MI.Phone.Functions.LoadMetaData(data.PhoneData.MetaData);
     MI.Phone.Functions.LoadContacts(data.PhoneData.Contacts);
 
@@ -486,8 +478,6 @@ MI.Phone.Functions.LoadPhoneData = function(data) {
     PhoneDoNotDisturb = !!data.doNotDisturb;
     $(".dnd-box").prop("checked", PhoneDoNotDisturb);
     $("#donotdisturb > p").html(PhoneDoNotDisturb ? 'On' : 'Off');
-    $(".onehand-box").prop("checked", PhoneOneHandMode);
-    $("#onehandmode > p").html(PhoneOneHandMode ? 'On' : 'Off');
 
     // EXPANSION: restore the persisted Airplane Mode preference — same
     // idea as Do Not Disturb above, now that it's actually persisted
@@ -559,60 +549,18 @@ var NotificationTimeout = null;
 // dispatch, only the passive slide-down popups for other stuff).
 var PhoneDoNotDisturb = false;
 
-// EXPANSION: appearance customization — accent theme, phone case, and
-// one-hand mode. Config lists come down once in LoadPhoneData; current
-// selections are applied via CSS classes/variables so no per-app CSS file
-// had to be touched to support them.
-var PhoneThemesConfig = [];
-var PhoneCasesConfig = [];
-var PhoneOneHandMode = false;
-
-function applyPhoneTheme(themeId) {
-    var theme = null;
-    $.each(PhoneThemesConfig, function(i, t) { if (t.id === themeId) theme = t; });
-    if (!theme) return;
-    document.documentElement.style.setProperty('--phone-accent', theme.color);
-    $(".theme-swatch").removeClass("theme-swatch-active");
-    $(".theme-swatch[data-theme='" + themeId + "']").addClass("theme-swatch-active");
-}
-
-function applyPhoneCase(caseId) {
-    var phoneCase = null;
-    $.each(PhoneCasesConfig, function(i, c) { if (c.id === caseId) phoneCase = c; });
-
-    if (phoneCase && phoneCase.color && phoneCase.color !== "transparent") {
-        $(".phone-container").css({
-            "border-color": phoneCase.color,
-            "border-width": "0.5vh"
-        }).addClass("phone-has-case");
-    } else {
-        // "None" (or unknown) case — remove the inline override so the
-        // subtle default glass border (set in the base .phone-container
-        // rule) shows through instead of a colored case frame.
-        $(".phone-container").css({ "border-color": "", "border-width": "" }).removeClass("phone-has-case");
-    }
-
-    $(".case-swatch").removeClass("case-swatch-active");
-    $(".case-swatch[data-case='" + caseId + "']").addClass("case-swatch-active");
-}
-
-function applyOneHandMode(enabled) {
-    PhoneOneHandMode = enabled;
-    $(".phone-container").toggleClass("phone-onehand", enabled);
-}
-
-// EXPANSION: Airplane Mode state — mirrors PhoneDoNotDisturb/
-// PhoneOneHandMode above. See client/main.lua for the KVP persistence +
-// server-side (PhoneFlyMode in server/main.lua) enforcement that actually
-// makes this cut off calls/messages, not just this flag.
+// EXPANSION: Airplane Mode state — mirrors PhoneDoNotDisturb above. See
+// client/main.lua for the KVP persistence + server-side (PhoneFlyMode in
+// server/main.lua) enforcement that actually makes this cut off
+// calls/messages, not just this flag.
 var PhoneFlyMode = false;
 
 // ─────────────────────────────────────────────────────────
-// EXPANSION: shared setters for the three simple device-wide toggles (DND,
-// One-Hand, Airplane). Both the Settings app switches (settings.js) and
-// the new Quick Settings panel (quicksettings.js) call these instead of
-// each keeping their own copy of the toggle logic, so the two surfaces
-// can never show a different on/off state for the same setting.
+// EXPANSION: shared setters for the two simple device-wide toggles (DND,
+// Airplane). Both the Settings app switches (settings.js) and the new
+// Quick Settings panel (quicksettings.js) call these instead of each
+// keeping their own copy of the toggle logic, so the two surfaces can
+// never show a different on/off state for the same setting.
 // ─────────────────────────────────────────────────────────
 
 function setDoNotDisturb(enabled) {
@@ -620,14 +568,6 @@ function setDoNotDisturb(enabled) {
     $(".dnd-box").prop("checked", enabled);
     $("#donotdisturb > p").html(enabled ? 'On' : 'Off');
     $.post('http://Unique_Phone/ToggleDoNotDisturb', JSON.stringify({ enabled: enabled }));
-    updateQuickSettingsUI();
-}
-
-function setOneHandMode(enabled) {
-    applyOneHandMode(enabled);
-    $(".onehand-box").prop("checked", enabled);
-    $("#onehandmode > p").html(enabled ? 'On' : 'Off');
-    $.post('http://Unique_Phone/ToggleOneHandMode', JSON.stringify({ enabled: enabled }));
     updateQuickSettingsUI();
 }
 
@@ -641,7 +581,6 @@ function setFlyMode(enabled) {
 
 function updateQuickSettingsUI() {
     $(".qs-tile[data-qs='dnd']").toggleClass("qs-tile-active", !!PhoneDoNotDisturb);
-    $(".qs-tile[data-qs='onehand']").toggleClass("qs-tile-active", !!PhoneOneHandMode);
     $(".qs-tile[data-qs='flymode']").toggleClass("qs-tile-active", !!PhoneFlyMode);
 }
 

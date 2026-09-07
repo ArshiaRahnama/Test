@@ -121,6 +121,15 @@ function OpenLawMenu()
 		end
 
 		options[#options + 1] = {
+			title = 'Baz Kardan CAD (MDT)',
+			description = 'Baz Kardan Panel-e CAD Baraye BOLO, Parvande Va IA',
+			icon = 'desktop',
+			onSelect = function()
+				ExecuteCommand('cad') -- matches cad/config_cad.lua's DuckMdt.Command
+			end,
+		}
+
+		options[#options + 1] = {
 			title = 'Sabt-e Tavaghof (Traffic Stop)',
 			description = 'Sabt-e Sari Baraye Tavaghof-haye Ke Booking-e Kamel Nemikhahad',
 			icon = 'car-burst',

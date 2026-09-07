@@ -45,9 +45,16 @@ ESX.RegisterServerCallback('esx_uniquejobs:dojGetStats', function(source, cb)
 				ORDER BY count DESC
 				LIMIT 10
 			]], {}, function(byOfficer)
+				byDay = byDay or {}
+				-- client can't call os.date() (client Lua has no `os`
+				-- library in FiveM), so format the day label here
+				for _, row in ipairs(byDay) do
+					row.dayLabel = os.date('%m/%d', row.day)
+				end
+
 				cb({
 					crimesByType = byType or {},
-					arrestsByDay = byDay or {},
+					arrestsByDay = byDay,
 					topOfficers = byOfficer or {},
 				})
 			end)

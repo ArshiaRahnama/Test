@@ -85,8 +85,11 @@ end)
 -- `users` (esx_identity columns, already used elsewhere in this
 -- resource -- see server/cia_main.lua and server/fbi_main.lua),
 -- the mugshot photo from dept_mugshots, the citizen's last known
--- location from their most recent traffic stop, and a summary of
--- their criminal record from criminal_records.
+-- location from their most recent traffic stop, a summary of their
+-- /doj criminal record (criminal_records), AND a cross-reference
+-- into CAD's own case/booking tables (doj_cases, doj_case_suspects,
+-- doj_criminal_records) -- read-only, cad/server/crimescene.lua
+-- still owns writing to those.
 -- ============================================================
 
 ESX.RegisterServerCallback('esx_uniquejobs:dojGetRapSheet', function(source, cb, query)
@@ -122,21 +125,42 @@ ESX.RegisterServerCallback('esx_uniquejobs:dojGetRapSheet', function(source, cb,
 								'SELECT type, reason, officer_name, jail_time, timestamp FROM criminal_records WHERE identifier = @id ORDER BY timestamp DESC LIMIT 10',
 								{ ['@id'] = identifier },
 								function(recordRows)
-									cb({
-										identifier = identifier,
-										name = name,
-										firstname = user.firstname,
-										lastname = user.lastname,
-										sex = user.sex,
-										dateofbirth = user.dateofbirth,
-										height = user.height,
-										photoUrl = photoUrl,
-										lastLocation = lastLocation,
-										lastLocationAt = lastLocationAt,
-										arrests = arrests,
-										charges = charges,
-										records = recordRows or {},
-									})
+									-- Cross-reference CAD (cad/server/crimescene.lua's own
+									-- tables) so the Rap Sheet is genuinely complete: open
+									-- investigations naming this person as suspect/accomplice,
+									-- plus CAD's own booking log.
+									MySQL.Async.fetchAll([[
+										SELECT DISTINCT c.id, c.rob_name, c.rob_family, c.status, c.created_at
+										FROM doj_cases c
+										LEFT JOIN doj_case_suspects s ON s.case_id = c.id
+										WHERE c.suspect_identifier = @id OR s.suspect_identifier = @id
+										ORDER BY c.created_at DESC
+										LIMIT 5
+									]], { ['@id'] = identifier }, function(cadCases)
+										MySQL.Async.fetchAll(
+											'SELECT charges, fine, jail_minutes, booked_by_name, created_at FROM doj_criminal_records WHERE suspect_identifier = @id ORDER BY created_at DESC LIMIT 5',
+											{ ['@id'] = identifier },
+											function(cadRecords)
+												cb({
+													identifier = identifier,
+													name = name,
+													firstname = user.firstname,
+													lastname = user.lastname,
+													sex = user.sex,
+													dateofbirth = user.dateofbirth,
+													height = user.height,
+													photoUrl = photoUrl,
+													lastLocation = lastLocation,
+													lastLocationAt = lastLocationAt,
+													arrests = arrests,
+													charges = charges,
+													records = recordRows or {},
+													cadCases = cadCases or {},
+													cadRecords = cadRecords or {},
+												})
+											end
+										)
+									end)
 								end
 							)
 						end)

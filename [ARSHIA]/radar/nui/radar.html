@@ -191,7 +191,34 @@
 
 			<button id="uiSettings" class="rounded_btn light blue">UI SETTINGS</button>
 
+			<button id="pursuitTimerBtn" data-nuitype="togglePursuitTimerDisplay" class="rounded_btn light blue">PURSUIT TIMER</button>
+
 			<p class="logo"><span class="large">Wraith</span> ARS 2X</p>
+		</div>
+
+		<!--
+			FEATURE ADDED: Pursuit timer.
+			A stopwatch officers can start when a pursuit begins. It can be paused
+			(without losing/resetting the elapsed time - the whole point is that the
+			clock never "runs away" from them while they're mid-chase) and reset back
+			to zero once the pursuit is over. Purely a client-side UI utility, styled
+			to match the rest of the high-tech radar HUD (glowing Seg-7 digits).
+		-->
+		<div id="pursuitTimer">
+			<div class="pt_header">
+				<span class="pt_dot" id="ptDot"></span>
+				<p class="pt_title">PURSUIT TIMER</p>
+			</div>
+
+			<div class="pt_display_container">
+				<p class="pt_ghost">00:00:00</p>
+				<p class="pt_display" id="ptDisplay">00:00:00</p>
+			</div>
+
+			<div class="pt_btns">
+				<button id="ptStartPause" data-nuitype="pursuitTimerToggle" class="pt_btn pt_start">START</button>
+				<button id="ptReset" data-nuitype="pursuitTimerReset" class="pt_btn pt_reset">RESET</button>
+			</div>
 		</div>
 		
 		<div id="plateReaderFrame">

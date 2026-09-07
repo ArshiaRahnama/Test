@@ -1,5 +1,3 @@
-
-
 do
 
 ESX = nil
@@ -157,6 +155,7 @@ end)
 
 RegisterServerEvent('DarkPhone:SuccessPursuit')
 AddEventHandler('DarkPhone:SuccessPursuit', function()
+    if source ~= PursuitOwner then return end
     local xPlayer = ESX.GetPlayerFromId(source)
     local xPlayers = ESX.GetPlayers()
     for i=1, #xPlayers, 1 do
@@ -605,6 +604,7 @@ end)
 RegisterServerEvent('Morphy_RobSystem:robberyHackFail')
 AddEventHandler('Morphy_RobSystem:robberyHackFail', function(robname)
     local _source = source
+    if RobsInProgress[_source] ~= robname then return end
     Config.Rob.Robs[robname].someonerobbing = false
     RobsInProgress[_source] = nil
 
@@ -616,8 +616,14 @@ end)
 RegisterServerEvent('Morphy_RobSystem:robberySuccess')
 AddEventHandler('Morphy_RobSystem:robberySuccess', function(robname,RobberyCode)
     local _source = source
+    if RobsInProgress[_source] ~= robname then return end
     RobsInProgress[_source] = nil
     local xPlayer  = ESX.GetPlayerFromId(_source)
+
+    Config.Rob.Robs[robname].someonerobbing = false
+    Config.Rob.RobTypes[Config.Rob.Robs[robname].type].lastRobbed = os.time()
+    Config.Rob.Robs[robname].lastRobbed = os.time()
+
     -- TEMP FIX (was crashing: exports["esx_policejob"] doesn't exist, that
     -- resource is esx_uniquejobs now, and its real export is
     -- CheckRob_police/CheckRob_marshal not CheckRob). Always giving full
@@ -805,4 +811,3 @@ function GetRobStatusSummary()
 end
 exports('GetRobStatusSummary', GetRobStatusSummary)
 end
-

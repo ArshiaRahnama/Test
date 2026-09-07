@@ -1,4 +1,5 @@
 <head>
+	<meta charset="UTF-8">
 	<script src="nui://game/ui/jquery.js" type="text/javascript">
 	</script>
 	<script src="index.js" type="text/javascript"></script>
@@ -6,66 +7,81 @@
 </head>
 
 <body onload="reloadConfig()">
-  
+
 	<div class="metterContainer">
 		<div id="meter" style="display: none;">
-			<img src="assets/logo_zz.png" class="logo" />
 			<div class="boxMeter">
-				<div class="statusContainer">
-					<div class="status active" id="free">free</div>
-					<div class="status" id="occupied">occupied</div>
-					<div class="status" id="stopped">stopped</div>
-				</div>
-				<div class="numbersContainer">
-					<div class="rate">
-						<div class="numberList rateSel" id="rate"></div>
-						<div class="numberLabel">
-							<div class="titleNumber"></div>
-							<div class="peoplelable" id="rateLabel">rate</div>
+
+				<div class="tm-topbar">
+					<div class="tm-brand">
+						<img src="assets/logo_zz.png" class="logo" />
+						<div class="tm-brandText">
+							<span class="tm-brandTitle">TAXIMETER</span>
+							<span class="tm-brandModel">MDL&nbsp;07&nbsp;/&nbsp;CERTIFIED</span>
 						</div>
 					</div>
-					<div class="priceAmount">
-						<div class="numberList totalPrice" id="price"></div>
-						<div class="numberLabel">
-							<div class="titleNumber" id="currency">$</div>
-							<div class="subtitleLabel anothesColor" id="distance">MI</div>
+					<div class="statusContainer">
+						<div class="status active" id="free"><i class="led"></i>free</div>
+						<div class="status" id="occupied"><i class="led"></i>occupied</div>
+						<div class="status" id="stopped"><i class="led"></i>stopped</div>
+					</div>
+				</div>
+
+				<div class="tm-glass">
+					<div class="numbersContainer">
+						<div class="rate">
+							<div class="numberList rateSel" id="rate"></div>
+							<div class="numberLabel">
+								<div class="titleNumber"></div>
+								<div class="peoplelable" id="rateLabel">rate</div>
+							</div>
+						</div>
+						<div class="tm-divider"></div>
+						<div class="priceAmount">
+							<div class="numberList totalPrice" id="price"></div>
+							<div class="numberLabel">
+								<div class="titleNumber" id="currency">$</div>
+								<div class="subtitleLabel anothesColor" id="distance">MI</div>
+							</div>
 						</div>
 					</div>
 				</div>
+
 				<div class="buttonsContainer">
 					<div class="button">
-						<div class="labelBtn" id="labelBtn1">1</div>
 						<button class="circularBtn" id="btn1"></button>
+						<div class="labelBtn" id="labelBtn1">1</div>
 					</div>
 					<div class="button">
-						<div class="labelBtn" id="labelBtn2">2</div>
 						<button class="circularBtn" id="btn2"></button>
+						<div class="labelBtn" id="labelBtn2">2</div>
 					</div>
 					<div class="button">
-						<div class="labelBtn" id="labelBtn3">3</div>
 						<button class="circularBtn" id="btn3"></button>
+						<div class="labelBtn" id="labelBtn3">3</div>
 					</div>
 					<div class="button">
-						<div class="labelBtn" id="labelBtn4">4</div>
 						<button class="circularBtn" id="btn4"></button>
+						<div class="labelBtn" id="labelBtn4">4</div>
 					</div>
 					<div class="button">
-						<div class="labelBtn" id="labelBtn5">5</div>
 						<button class="circularBtn" id="btn5"></button>
+						<div class="labelBtn" id="labelBtn5">5</div>
 					</div>
 					<div class="button">
-						<div class="labelBtn" id="labelBtn6">6</div>
 						<button class="circularBtn" id="btn6"></button>
+						<div class="labelBtn" id="labelBtn6">6</div>
 					</div>
-					<div class="button">
-						<div class="labelBtn" id="labelBtn7">P</div>
+					<div class="button button--util">
 						<button class="circularBtn" id="btn7"></button>
+						<div class="labelBtn" id="labelBtn7">P</div>
 					</div>
-					<div class="button">
-						<div class="labelBtn" id="labelBtn8">R</div>
+					<div class="button button--util">
 						<button class="circularBtn" id="btn8"></button>
+						<div class="labelBtn" id="labelBtn8">R</div>
 					</div>
 				</div>
+
 			</div>
 		</div>
 	</div>

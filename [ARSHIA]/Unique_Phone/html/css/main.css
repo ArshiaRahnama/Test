@@ -215,12 +215,9 @@ body {
    ═══════════════════════════════════════════════════════════ */
 
 :root {
-  /* EXPANSION: accent theme color, changed live by applyPhoneTheme() in
-     app.js. Only the OS-level chrome + lock screen + new components below
-     respond to this — the many individually-colored existing apps (Bank,
-     Security, Services, ...) keep their own established color schemes,
-     since re-theming every hardcoded color across the whole phone would
-     be a much bigger, riskier pass than this one. */
+  /* Ambient phone glow color — used by the box-shadow below. Used to be
+     switchable via a Settings → Accent Theme picker; that picker (and
+     the Phone Case shop) was removed, so this is just a fixed constant now. */
   --phone-accent: #00c9a7;
 }
 
@@ -231,28 +228,6 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.08);
   transition: border-color .25s ease, border-width .25s ease,
               transform .3s cubic-bezier(.34, 1.56, .64, 1);
-}
-
-/* EXPANSION: swappable phone case — border color/width set inline by
-   applyPhoneCase() in app.js; this just gives the change a nicer feel. */
-.phone-container.phone-has-case {
-  box-shadow:
-    0 0 4vh rgba(0, 0, 0, 0.55),
-    0 0 1.5vh rgba(0, 0, 0, 0.4),
-    0 0 2.2vh color-mix(in srgb, var(--phone-accent) 35%, transparent);
-}
-
-/* EXPANSION: One-Hand Mode — shrinks the phone and pulls it toward the
-   corner it's already anchored to (bottom-right), for quicker/easier use.
-   Uses transform:scale (NOT width/height) — every app in this phone sizes
-   itself with vh/vw units, which are relative to the browser VIEWPORT, not
-   to .phone-container. Shrinking via width/height alone would just clip
-   content instead of scaling it down; transform:scale visually shrinks
-   the whole already-rendered phone as one unit, so every app's layout
-   stays perfectly proportional with zero per-app changes needed. */
-.phone-container.phone-onehand {
-  transform: scale(0.72);
-  transform-origin: bottom right;
 }
 
 /* Subtle diagonal glass sheen across the whole screen — decorative only,

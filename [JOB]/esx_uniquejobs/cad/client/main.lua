@@ -211,10 +211,10 @@ RegisterNUICallback('Exit', function(data)
     ClearPedTasks(PlayerPedId())
 end)
 
-RegisterNUICallback('LoadTenCodes', function()
+RegisterNUICallback('LoadTraining', function()
     SendNuiMessage(json.encode({
-        type = 'LoadTenCodes',
-        Codes = DuckMdt.TenCodes
+        type = 'LoadTraining',
+        Codes = DuckMdt.TrainingMaterial
     }))
 end)
 

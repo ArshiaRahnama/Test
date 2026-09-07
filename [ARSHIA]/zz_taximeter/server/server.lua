@@ -129,6 +129,10 @@ end)
 
 RegisterNetEvent('zz_taximeter:pause', function(vehNetId)
 	local veh = NetworkGetEntityFromNetworkId(vehNetId)
+
+	if not IsInAuthorizedVehicle(veh) then return end
+	if not isAlreadyTaxi(veh) then return end
+
 	local taxi = getTaxi(veh)
 	setPause(veh, not taxi.pause)
 	sendAllFromTaxi(veh, function(ply)
@@ -149,6 +153,13 @@ end)
 RegisterNetEvent('zz_taximeter:selectRate', function(vehNetId, rateSel)
 	local veh = NetworkGetEntityFromNetworkId(vehNetId)
 	rateSel = tonumber(rateSel)
+
+	if not IsInAuthorizedVehicle(veh) then return end
+
+	if not isAlreadyTaxi(veh) then
+		addTaxi(veh, source)
+	end
+
 	local taxi = getTaxi(veh)
 	setRate(veh, rateSel)
 	forcePause(veh, false)

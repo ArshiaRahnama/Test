@@ -32,7 +32,7 @@ local phoneModel = `prop_npc_phone_02`
 -- Off on every relog, no server awareness at all) that only suppressed the
 -- INCOMING call/message popups — the call would still ring out normally on
 -- the caller's end, and nothing stopped this player from placing outgoing
--- calls/messages themselves. Now: persisted via KVP like DND/One-Hand
+-- calls/messages themselves. Now: persisted via KVP like DND
 -- (restored below in LoadPhone), mirrored to the server on load and on
 -- every toggle (server/main.lua's PhoneFlyMode — see GetCallState) so
 -- callers get an instant "person unavailable" instead of a full ring-out,
@@ -364,10 +364,6 @@ function LoadPhone()
             MetaData     = json.encode(pData.MetaData),
             -- EXPANSION: restore the persisted Do Not Disturb preference.
             doNotDisturb = GetResourceKvpString('unique_phone_dnd') == 'true',
-            -- EXPANSION: appearance customization options + one-hand mode.
-            phoneThemes  = Config.PhoneThemes,
-            phoneCases   = Config.PhoneCases,
-            oneHandMode  = GetResourceKvpString('unique_phone_onehand') == 'true',
             -- EXPANSION: restore the persisted Airplane Mode preference.
             flyMode      = FlyMode,
         })
@@ -618,12 +614,6 @@ RegisterNUICallback('ToggleDoNotDisturb', function(data, cb)
     cb('ok')
 end)
 
--- EXPANSION: One-Hand Mode toggle — same client-KVP pattern as DND above.
-RegisterNUICallback('ToggleOneHandMode', function(data, cb)
-    SetResourceKvp('unique_phone_onehand', data.enabled and 'true' or 'false')
-    cb('ok')
-end)
-
 -- EXPANSION: generic bridge for the appearance settings that go through
 -- Unique_Phone:server:SaveMetaData — server-side already validates the
 -- column name against a whitelist (SaveMetaData_AllowedColumns), so this
@@ -631,26 +621,6 @@ end)
 RegisterNUICallback('SaveMetaData', function(data, cb)
     TriggerServerEvent('Unique_Phone:server:SaveMetaData', data.column, data.data)
     cb('ok')
-end)
-
-RegisterNUICallback('BuyPhoneCase', function(data, cb)
-    -- FIX: registering RegisterNetEvent/AddEventHandler INSIDE this
-    -- callback (as an earlier draft did) would stack up a new duplicate
-    -- handler on every single purchase click — a real leak, and it could
-    -- call `cb()` more than once. The handler is registered ONCE below,
-    -- outside this callback; this just stashes which `cb` is currently
-    -- waiting for a result.
-    pendingBuyPhoneCaseCb = cb
-    TriggerServerEvent('Unique_Phone:server:BuyPhoneCase', data.caseId)
-end)
-
-pendingBuyPhoneCaseCb = nil
-RegisterNetEvent('Unique_Phone:client:BuyPhoneCaseResult')
-AddEventHandler('Unique_Phone:client:BuyPhoneCaseResult', function(result)
-    if pendingBuyPhoneCaseCb then
-        pendingBuyPhoneCaseCb(result)
-        pendingBuyPhoneCaseCb = nil
-    end
 end)
 
 -- EXPANSION: lock screen weather widget — listens to vSync's own broadcast
@@ -3006,7 +2976,7 @@ end)
 -- EXPANSION: Airplane Mode toggle — replaces the old 'SetFlyMode' callback,
 -- which just flipped an in-memory flag with no persistence and no server
 -- awareness. Same KVP-persistence pattern as ToggleDoNotDisturb/
--- ToggleOneHandMode above, plus mirroring the state to the server (so
+-- ToggleDoNotDisturb above, plus mirroring the state to the server (so
 -- callers get treated as if this player were offline — see
 -- server/main.lua's PhoneFlyMode) and hanging up any call already in
 -- progress the moment airplane mode is switched on, since a real airplane

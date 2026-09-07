@@ -52,6 +52,19 @@ function RegisterUsableItem(name, callback)
     return true
 end
 
+-- Same reasoning again, for custom server callbacks. Any resource in this
+-- pack that does `ESX.RegisterServerCallback('myresource:something', fn)`
+-- from ITS OWN copy of ESX has the same silent-no-op problem - the client
+-- calling `ESX.TriggerServerCallback('myresource:something', ...)` reaches
+-- essentialmode's real dispatcher (see the "does not exist" print in
+-- ESX.TriggerServerCallback below), which never sees a registration that
+-- landed in some other resource's disconnected copy instead.
+function RegisterServerCallback(name, callback)
+    if type(name) ~= 'string' or type(callback) ~= 'function' then return false end
+    ESX.RegisterServerCallback(name, callback)
+    return true
+end
+
 -- Categorized weapon serials: LAW- (default/regular sources), DOJ- (police
 -- armory), GANG- (gang armory) - see server/classes/player.lua's addWeapon
 -- (uses this as the default when no serial is given) and the DOJ-/GANG-

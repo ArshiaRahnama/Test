@@ -42,6 +42,39 @@
 هیچ فایل دیگه‌ای (Inventory, Phone, Gang, و غیره) که در commit های
 اخیر شما تغییر کرده بودن، دست نخورده.
 
+## آپدیت -- رفع باگ + اتصال به BOLO سیستم CAD
+
+- **باگ رفع شد:** `os.time()`/`os.date()` سمت کلاینت توی FiveM اصلاً وجود
+  ندارن (`os` سمت کلاینت `nil` است) -- این باعث ارور
+  `attempt to index a nil value (global 'os')` توی چند تا از منوهای جدید
+  می‌شد (`court_docket_menu.lua`, `case_timeline_menu.lua`,
+  `evidence_custody_menu.lua`, `traffic_stop_menu.lua`,
+  `stats_dashboard_menu.lua`). راه‌حل: دو فایل جدید `server/server_time.lua`
+  + `client/server_time.lua` اضافه شد که یک‌بار زمان واقعی رو از سرور
+  می‌گیره و از اون به بعد با `GetGameTimer()` (native واقعی کلاینت) محاسبه
+  می‌کنه -- تابع `GetServerUnixTime()` رو همه‌جا به‌جای `os.time()` صدا
+  می‌زنیم. برای `stats_dashboard`، فرمت تاریخ (`os.date`) بردیم سمت سرور.
+- **اتصال به BOLO سیستم CAD:** `client/traffic_stop_menu.lua` کاملاً
+  بازنویسی شد تا مستقیم به `CrimeScene:checkPlate` /
+  `CrimeScene:getActiveBOLOs` (که خود CAD از قبل داره، بدون هیچ جدول یا
+  کد سروری جدید) وصل بشه:
+  - موقع ثبت تعقیب (Traffic Stop)، وارد کردن پلاک (اختیاری) خودکار پلاک
+    رو با BOLO های فعال CAD چک می‌کنه.
+  - گزینه‌ی جدید «Barresi Pelak (BOLO)» برای چک سریع یک پلاک بدون ثبت
+    تعقیب.
+  - گزینه‌ی جدید «BOLO-haye Active» فهرست تمام BOLO های فعلی رو نشون
+    می‌ده (همون داده‌ای که پنل `/cad` نشون می‌ده).
+  - یک هشدار صوتی + پنجره‌ی native (به‌جای فقط یک پیام چت) برای هر Hit
+    روی BOLO -- چه از این منو چک بشه، چه از پنل `/cad`.
+- **Rap Sheet کامل‌تر:** حالا علاوه بر `criminal_records`، مستقیم از خودِ
+  جدول‌های CAD هم می‌خونه (فقط خوندن، هیچی رو تغییر نمی‌ده):
+  `doj_cases`/`doj_case_suspects` (پرونده‌هایی که این شخص توشون مظنون یا
+  همدست بوده) و `doj_criminal_records` (سابقه‌ی Booking ثبت‌شده از خود CAD).
+  یعنی الان واقعاً هر دو سیستم پرونده (dept_cases و doj_cases) رو با هم
+  نشون می‌ده.
+- **میان‌بر CAD:** یک گزینه‌ی «Baz Kardan CAD (MDT)» به منوی اصلی `/doj` و
+  `/law` اضافه شد که مستقیم پنل `/cad` رو باز می‌کنه.
+
 ## نصب
 
 فقط **کافیه این پوشه رو جایگزین پوشه‌ی فعلی `[JOB]/esx_uniquejobs` روی

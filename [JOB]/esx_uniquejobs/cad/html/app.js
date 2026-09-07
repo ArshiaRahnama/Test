@@ -35,8 +35,8 @@ DuckMdt.PageSwitch = function(FirstPage, NextPage, Time) {
     $('#Page_Button_' + FirstPage).removeClass('MainPageTabActiveButton')
     $('#Page_Button_' + NextPage).addClass('MainPageTabActiveButton')
 
-    if (NextPage === 'TenCodes') {
-        $.post('https://esx_uniquejobs/LoadTenCodes', JSON.stringify({}));
+    if (NextPage === 'Training') {
+        $.post('https://esx_uniquejobs/LoadTraining', JSON.stringify({}));
     } else if (NextPage === 'LoginPage') {
         $("#MainPage").fadeOut()
         $("#LoginPage").fadeIn()
@@ -687,10 +687,10 @@ window.addEventListener('message', function(event) {
             }
         });
 
-    } else if (data.type === 'LoadTenCodes') {
-        $('#Page_TenCodes').empty()
+    } else if (data.type === 'LoadTraining') {
+        $('#Page_Training').empty()
         data.Codes.forEach(element => {
-            $('#Page_TenCodes').append('<span style="font-size: 1.5vw;">' + element + '</span><br>')
+            $('#Page_Training').append('<span style="font-size: 1.5vw;">' + element + '</span><br>')
         })
 
     } else if (data.type === 'CS_Cases') {

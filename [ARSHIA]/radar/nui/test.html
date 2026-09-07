@@ -1,0 +1,129 @@
+<!--
+	LOCAL PREVIEW ONLY - do not ship this file to the server / put it in the fxmanifest.
+	This exists only so you can open the radar's NUI in a normal desktop browser
+	(double-click it, or serve the folder locally) without needing to launch FiveM
+	just to check how something looks.
+
+	Differences from the real thing (both fixed below, harmlessly):
+	1. The real page loads jQuery from "nui://game/ui/jquery.js", a path that only
+	   exists inside the game's CEF browser. Here it's swapped for a CDN copy.
+	2. "GetParentResourceName()" is a function the game injects automatically into
+	   every NUI page. It doesn't exist in a normal browser, so it's stubbed here -
+	   button clicks will try to POST to a fake resource name and fail silently in
+	   the console, which is fine, it doesn't affect what you SEE.
+-->
+<!DOCTYPE html>
+<html>
+	<head>
+		<link href="radar.css" rel="stylesheet" type="text/css"/>
+		<script>
+			window.GetParentResourceName = function () { return "wk_wars2x_preview"; };
+		</script>
+	</head>
+
+	<body>
+		<div id="radarFrame" class="pt_visible" style="opacity:1;">
+			<div class="frame_border"></div>
+			<div class="radar_container">
+				<div class="panel_side panel_left"></div>
+				<div id="radar">
+					<div class="label label_top">FRONT ANTENNA</div>
+					<div class="pwr_button_container"><div id="pwrBtn" data-nuitype="togglePower" class="pwr_button">PWR</div></div>
+					<div class="modes_container">
+						<div class="modes"><p id="frontSame">SAME</p><p id="frontOpp">OPP</p><p id="frontXmit">XMIT</p></div>
+						<div class="modes"><p id="rearSame">SAME</p><p id="rearOpp">OPP</p><p id="rearXmit">XMIT</p></div>
+					</div>
+					<div class="speeds_container">
+						<div class="display"><p class="ghost_speed">888</p><p class="speed" id="frontSpeed">62</p></div>
+						<div class="display"><p class="ghost_speed">888</p><p class="speed" id="rearSpeed"></p></div>
+					</div>
+					<div class="speed_arrows_container">
+						<div class="speed_arrows"><div class="arrow" id="frontDirAway"></div><div class="arrow arrow_down" id="frontDirTowards"></div></div>
+						<div class="speed_arrows"><div class="arrow" id="rearDirTowards"></div><div class="arrow arrow_down" id="rearDirAway"></div></div>
+					</div>
+					<div class="modes_container">
+						<div class="modes fast_top"><p id="frontFastLabel">FAST</p><p id="frontFastLockLabel">LOCK</p></div>
+						<div class="modes fast_bottom"><p id="rearFastLabel">FAST</p><p id="rearFastLockLabel">LOCK</p></div>
+					</div>
+					<div class="speeds_container">
+						<div class="display fast fast_top"><p class="fast_ghost_speed">888</p><p class="fast_speed" id="frontFastSpeed"></p></div>
+						<div class="display fast fast_bottom"><p class="fast_ghost_speed">888</p><p class="fast_speed" id="rearFastSpeed"></p></div>
+					</div>
+					<div class="speed_arrows_container">
+						<div class="speed_arrows fast_top"><div class="arrow" id="frontFastDirAway"></div><div class="arrow arrow_down" id="frontFastDirTowards"></div></div>
+						<div class="speed_arrows fast_bottom"><div class="arrow" id="rearFastDirTowards"></div><div class="arrow arrow_down" id="rearFastDirAway"></div></div>
+					</div>
+					<div class="patrol_and_logo_container">
+						<div class="logo"><span class="name">Wraith</span> ARS 2X</div>
+						<div class="speeds_container"><div class="display fast"><p class="patrol_ghost_speed">888</p><p class="patrol_speed" id="patrolSpeed"></p></div></div>
+						<div class="speed_label">PATROL SPEED</div>
+					</div>
+					<div class="label label_bottom">REAR ANTENNA</div>
+				</div>
+				<div class="panel_side panel_right"></div>
+			</div>
+		</div>
+
+		<div id="rc" style="display:block;">
+			<button id="toggleDisplay" data-nuitype="toggleRadarDisplay" class="rounded_btn toggle_display">TOGGLE DISPLAY</button>
+			<p class="label">FRONT ANTENNA</p>
+			<div class="antenna_btns_container">
+				<div class="btns btns_top">
+					<button data-nuitype="setAntennaMode" class="zone_btn top_left">OPP LK/REL</button>
+					<div class="xmit_wrap"><div class="xmit_btn xmit_top"><div class="arrow"></div><button class="top_middle">XMIT HOLD</button></div></div>
+					<button data-nuitype="setAntennaMode" class="zone_btn top_right">SAME LK/REL</button>
+				</div>
+				<div class="breaker"></div>
+				<div class="btns btns_bottom">
+					<button data-nuitype="setAntennaMode" class="zone_btn bottom_left">LK/REL OPP</button>
+					<div class="xmit_wrap"><div class="xmit_btn xmit_bottom"><div class="arrow arrow_bottom"></div><button class="bottom_middle">HOLD XMIT</button></div></div>
+					<button data-nuitype="setAntennaMode" class="zone_btn bottom_right">LK/REL SAME</button>
+				</div>
+			</div>
+			<p class="label">REAR ANTENNA</p>
+			<button id="menuButton" class="circle_btn menu blue">MENU</button>
+			<div class="plate_reader_and_help_container">
+				<button id="plateReaderBtn" class="plate_reader blue">PLATE READER</button>
+				<button id="helpBtn" class="help blue">HELP</button>
+			</div>
+			<button id="uiSettings" class="rounded_btn light blue">UI SETTINGS</button>
+			<button id="pursuitTimerBtn" data-nuitype="togglePursuitTimerDisplay" class="rounded_btn light blue">PURSUIT TIMER</button>
+			<p class="logo"><span class="large">Wraith</span> ARS 2X</p>
+		</div>
+
+		<div id="pursuitTimer">
+			<div class="pt_header">
+				<span class="pt_dot" id="ptDot"></span>
+				<p class="pt_title">PURSUIT TIMER</p>
+			</div>
+			<div class="pt_display_container">
+				<p class="pt_ghost">00:00:00</p>
+				<p class="pt_display" id="ptDisplay">00:00:00</p>
+			</div>
+			<div class="pt_btns">
+				<button id="ptStartPause" data-nuitype="pursuitTimerToggle" class="pt_btn pt_start">START</button>
+				<button id="ptReset" data-nuitype="pursuitTimerReset" class="pt_btn pt_reset">RESET</button>
+			</div>
+		</div>
+
+		<p id="keyLockLabel">Radar key binds <span id="keyLockStateLabel"></span></p>
+
+		<!-- Minimal stand-ins so radar.js doesn't error looking for elements not included in this trimmed preview -->
+		<div id="plateReaderFrame" style="display:none"></div>
+		<div id="plateReaderBox" style="display:none"></div>
+		<div id="uiSettingsBox" style="display:none"></div>
+		<div id="helpWindow" style="display:none"></div>
+		<div id="newUser" style="display:none"></div>
+		<div id="quickStart" style="display:none"></div>
+
+		<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+		<script src="radar.js"></script>
+
+		<script>
+			// Auto-open the pursuit timer and pretend the radar is powered on, purely for preview convenience
+			$( function () {
+				$( "#pursuitTimer" ).addClass( "pt_visible" );
+			} );
+		</script>
+	</body>
+</html>

@@ -1,10 +1,10 @@
 /* ═══════════════════════════════════════════════════════════
    EXPANSION: Quick Settings panel — swipe down anywhere on the status bar
-   (.phone-header) to reveal instant toggles for Do Not Disturb, One-Hand
-   Mode and Airplane Mode, without opening the Settings app. A simple tap
+   (.phone-header) to reveal instant toggles for Do Not Disturb and
+   Airplane Mode, without opening the Settings app. A simple tap
    on the header (rather than a drag) toggles it open/closed too. See
    js/quicksettings.js for the drag logic and app.js for the shared
-   setDoNotDisturb/setOneHandMode/setFlyMode functions the tiles call —
+   setDoNotDisturb/setFlyMode functions the tiles call —
    the same functions the Settings app switches call, so both surfaces
    always agree on the current state.
 

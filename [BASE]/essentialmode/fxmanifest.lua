@@ -67,6 +67,7 @@ exports {
     "GetPlayerICName",
     "RegisterItem",
     "RegisterUsableItem",
+    "RegisterServerCallback",
 }
 
 server_exports {

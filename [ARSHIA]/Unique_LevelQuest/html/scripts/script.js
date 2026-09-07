@@ -82,7 +82,16 @@ document.addEventListener('DOMContentLoaded', function () {
     const container = document.querySelector('.container');
     if (!container) return;
 
-    if (event.key === 'Escape' || event.key === 'Backspace') {
+    // FIX: this used to close the menu on Backspace with no check on
+    // where the keypress came from — so typing in ANY text field
+    // inside the menu (the duty roster search box, the future ones)
+    // closed the whole menu the moment you tried to correct a typo.
+    // Escape still closes from anywhere (including while typing,
+    // which is the normal expectation for that key), but Backspace
+    // now only closes when focus isn't inside a text input/textarea.
+    const isTypingInField = event.target && (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA');
+
+    if (event.key === 'Escape' || (event.key === 'Backspace' && !isTypingInField)) {
       container.style.display = 'none';
 
       const resourceName = window.GetParentResourceName ? window.GetParentResourceName() : 'unknown_resource';

@@ -84,6 +84,15 @@ const elements =
 	uiSettingsBtn: $( "#uiSettings" ), 
 	uiSettingsBox: $( "#uiSettingsBox" ), 
 	closeUiBtn: $( "#closeUiSettings" ),
+
+	pursuitTimer: {
+		widget: $( "#pursuitTimer" ),
+		toggleBtn: $( "#pursuitTimerBtn" ),
+		dot: $( "#ptDot" ),
+		display: $( "#ptDisplay" ),
+		startPauseBtn: $( "#ptStartPause" ),
+		resetBtn: $( "#ptReset" )
+	},
 	
 	plateReaderBtn: $( "#plateReaderBtn" ), 
 	plateReaderBox: $( "#plateReaderBox" ), 
@@ -637,9 +646,15 @@ $.ajaxSetup({
     },
  });
 
-// This function is used to send data back through to the LUA side 
+// FIX (works regardless of what the resource folder is named):
+// This used to be hardcoded to "https://sun-radar/" + name, which meant every
+// single NUI button (power, antennas, plate reader, menu, and now the pursuit
+// timer) would silently fail to reach the Lua side unless the resource folder
+// was named exactly "sun-radar". GetParentResourceName() is a real global
+// that FiveM injects into every NUI page - it always returns whatever the
+// resource is actually named, so this now works no matter what you call it.
 function sendData( name, data ) {
-	$.post( "https://sun-radar/" + name, JSON.stringify( data ), function( datab ) {
+	$.post( "https://" + GetParentResourceName() + "/" + name, JSON.stringify( data ), function( datab ) {
 		if ( datab != "ok" ) {
 			console.log( datab );
 		}            
@@ -681,6 +696,12 @@ function sendSaveData()
 				left: elements.plateReader.css( "left" ),
 				top: elements.plateReader.css( "top" ),
 				scale: readerScale
+			},
+
+			// FEATURE ADDED: remember where the pursuit timer was dragged to
+			pursuitTimer: {
+				left: elements.pursuitTimer.widget.css( "left" ),
+				top: elements.pursuitTimer.widget.css( "top" )
 			},
 
 			safezone: safezone 
@@ -735,6 +756,14 @@ function loadUiSettings( data, isSave )
 					break;
 			}
 		}
+	}
+
+	// FEATURE ADDED: restore the pursuit timer's dragged position, if one was
+	// ever saved. On a fresh/first-ever load (isSave == false) there's nothing
+	// saved yet, so it just keeps its CSS default (top-center).
+	if ( isSave && data.pursuitTimer ) {
+		elements.pursuitTimer.widget.css( "left", data.pursuitTimer.left );
+		elements.pursuitTimer.widget.css( "top", data.pursuitTimer.top );
 	}
 
 	// Update the remote, radar and reader scale variables
@@ -832,6 +861,9 @@ var readerScale = 1.0;
 var readerMoving = false;
 var readerOffset = [ 0, 0 ]; 
 
+var ptMoving = false;
+var ptOffset = [ 0, 0 ];
+
 var windowWidth = 0; 
 var windowHeight = 0; 
 var safezone = 0; 
@@ -900,11 +932,23 @@ elements.plateReader.mousedown( function( event ) {
 	readerOffset = getOffset( offset, event.clientX, event.clientY );
 } )
 
+// FEATURE ADDED: Pursuit timer drag support (same system as the radar/remote/
+// reader above). Only the header bar is the drag handle so the START/RESET
+// buttons underneath stay clickable.
+$( "#pursuitTimer .pt_header" ).mousedown( function( event ) {
+	ptMoving = true;
+
+	let offset = elements.pursuitTimer.widget.offset();
+
+	ptOffset = getOffset( offset, event.clientX, event.clientY );
+} )
+
 $( document ).mouseup( function( event ) {
 	// Reset the remote and radar moving variables
 	remoteMoving = false; 
 	radarMoving = false; 
 	readerMoving = false;
+	ptMoving = false;
 } )
 
 $( document ).mousemove( function( event ) {
@@ -930,6 +974,13 @@ $( document ).mousemove( function( event ) {
 		event.preventDefault(); 
 
 		calculatePos( elements.plateReader, x, y, windowWidth, windowHeight, readerOffset, readerScale, safezone );
+	}
+
+	if ( ptMoving )
+	{
+		event.preventDefault();
+
+		calculatePos( elements.pursuitTimer.widget, x, y, windowWidth, windowHeight, ptOffset, 1, safezone );
 	}
 } )
 
@@ -1030,6 +1081,111 @@ function clamp( num, min, max )
 {
 	return num < min ? min : num > max ? max : num;
 }
+
+
+/*------------------------------------------------------------------------------------
+	FEATURE ADDED: Pursuit Timer logic
+
+	- Start/Pause NEVER resets the elapsed time. Pausing just stops the interval;
+	  the elapsed milliseconds already banked stay exactly where they were, so
+	  hitting start again resumes from that point instead of losing the clock.
+	- Reset is the only thing that zeroes it, and it also stops the timer.
+------------------------------------------------------------------------------------*/
+var ptInterval = null;
+var ptElapsedMs = 0;      // total time banked so far (survives pause)
+var ptSegmentStart = 0;   // Date.now() when the current running segment began
+var ptRunning = false;
+
+function ptFormat( ms )
+{
+	let totalSeconds = Math.floor( ms / 1000 );
+
+	let h = Math.floor( totalSeconds / 3600 );
+	let m = Math.floor( ( totalSeconds % 3600 ) / 60 );
+	let s = totalSeconds % 60;
+
+	let pad = ( n ) => n.toString().padStart( 2, "0" );
+
+	return pad( h ) + ":" + pad( m ) + ":" + pad( s );
+}
+
+function ptRender()
+{
+	let current = ptElapsedMs + ( ptRunning ? ( Date.now() - ptSegmentStart ) : 0 );
+	elements.pursuitTimer.display.text( ptFormat( current ) );
+}
+
+function ptStart()
+{
+	if ( ptRunning ) return;
+
+	ptRunning = true;
+	ptSegmentStart = Date.now();
+
+	elements.pursuitTimer.dot.removeClass( "pt_paused" ).addClass( "pt_running" );
+	elements.pursuitTimer.startPauseBtn.text( "PAUSE" ).removeClass( "pt_is_paused" );
+
+	ptInterval = setInterval( ptRender, 250 );
+}
+
+function ptPause()
+{
+	if ( !ptRunning ) return;
+
+	// Bank the time from this segment - nothing is lost or reset here
+	ptElapsedMs += Date.now() - ptSegmentStart;
+	ptRunning = false;
+
+	clearInterval( ptInterval );
+	ptInterval = null;
+
+	elements.pursuitTimer.dot.removeClass( "pt_running" ).addClass( "pt_paused" );
+	elements.pursuitTimer.startPauseBtn.text( "START" ).addClass( "pt_is_paused" );
+
+	ptRender();
+}
+
+function ptToggle()
+{
+	if ( ptRunning ) {
+		ptPause();
+	} else {
+		ptStart();
+	}
+}
+
+function ptReset()
+{
+	clearInterval( ptInterval );
+	ptInterval = null;
+
+	ptRunning = false;
+	ptElapsedMs = 0;
+
+	elements.pursuitTimer.dot.removeClass( "pt_running" ).removeClass( "pt_paused" );
+	elements.pursuitTimer.startPauseBtn.text( "START" ).addClass( "pt_is_paused" );
+
+	ptRender();
+}
+
+function ptToggleDisplay()
+{
+	elements.pursuitTimer.widget.toggleClass( "pt_visible" );
+}
+
+// FEATURE ADDED: like the main radar, the pursuit timer widget only actually
+// shows up while you're in a vehicle - hiding automatically the moment you
+// get out, and reappearing when you get back in IF it was toggled on.
+function ptSetInVehicle( state )
+{
+	elements.pursuitTimer.widget.toggleClass( "pt_in_vehicle", state );
+}
+
+elements.pursuitTimer.startPauseBtn.click( function() { ptToggle(); } );
+elements.pursuitTimer.resetBtn.click( function() { ptReset(); } );
+elements.pursuitTimer.toggleBtn.click( function() { ptToggleDisplay(); } );
+
+ptRender();
 
 
 /*------------------------------------------------------------------------------------
@@ -1140,6 +1296,20 @@ window.addEventListener( "message", function( event ) {
 		case "settingUpdate":
 			settingUpdate( item.antennaData ); 
 			break; 
+
+		// Pursuit timer events (triggered from the Lua keybinds)
+		case "pursuitTimerToggle":
+			ptToggle();
+			break;
+		case "pursuitTimerReset":
+			ptReset();
+			break;
+		case "togglePursuitTimerDisplay":
+			ptToggleDisplay();
+			break;
+		case "pursuitTimerVehicleState":
+			ptSetInVehicle( item.state );
+			break;
 
 		// Plate reader events
 		case "setReaderDisplayState":

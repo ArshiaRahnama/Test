@@ -129,6 +129,33 @@ local function RegisterKeyBinds()
 			UTIL:Notify( "Radar data deleted, please immediately restart your game without opening the radar's remote." )
 		end, false )
 		TriggerEvent( "chat:addSuggestion", "/reset_radar_data", "Resets the KVP data stored for the sun-rader resource." )
+
+		-- FEATURE ADDED: Pursuit timer keybinds
+		-- Start/Pause the pursuit timer (elapsed time is preserved on pause)
+		RegisterCommand( "radar_pursuit_toggle", function()
+			if ( not RADAR:GetKeyLockState() and PLY:CanControlRadar() ) then
+				SendNUIMessage( { _type = "pursuitTimerToggle" } )
+				SendNUIMessage( { _type = "audio", name = "beep", vol = RADAR:GetSettingValue( "beep" ) } )
+			end
+		end )
+		RegisterKeyMapping( "radar_pursuit_toggle", "Start/Pause Pursuit Timer", "keyboard", CONFIG.keyDefaults.pursuit_timer_toggle )
+
+		-- Resets the pursuit timer back to 00:00:00
+		RegisterCommand( "radar_pursuit_reset", function()
+			if ( not RADAR:GetKeyLockState() and PLY:CanControlRadar() ) then
+				SendNUIMessage( { _type = "pursuitTimerReset" } )
+				SendNUIMessage( { _type = "audio", name = "done", vol = RADAR:GetSettingValue( "beep" ) } )
+			end
+		end )
+		RegisterKeyMapping( "radar_pursuit_reset", "Reset Pursuit Timer", "keyboard", CONFIG.keyDefaults.pursuit_timer_reset )
+
+		-- Shows/hides the pursuit timer widget
+		RegisterCommand( "radar_pursuit_display", function()
+			if ( not RADAR:GetKeyLockState() and PLY:CanControlRadar() ) then
+				SendNUIMessage( { _type = "togglePursuitTimerDisplay" } )
+			end
+		end )
+		RegisterKeyMapping( "radar_pursuit_display", "Show/Hide Pursuit Timer", "keyboard", CONFIG.keyDefaults.pursuit_timer_display )
 	else
 		UTIL:Log( "ERROR: Resource name is not sun-rader. Key binds will not be registered for compatibility reasons. Contact the server owner and ask them to change the resource name back to wk_wars2x" )
 	end
@@ -1642,6 +1669,21 @@ RegisterNUICallback( "qsvWatched", function( data, cb )
 	cb( "ok" )
 end )
 
+-- FEATURE ADDED: Pursuit timer mouse-click callbacks (the widget's own buttons
+-- post here too, on top of the keybinds above - both paths drive the same JS
+-- functions client-side, this just acknowledges the NUI POST so it doesn't hang)
+RegisterNUICallback( "pursuitTimerToggle", function( data, cb )
+	cb( "ok" )
+end )
+
+RegisterNUICallback( "pursuitTimerReset", function( data, cb )
+	cb( "ok" )
+end )
+
+RegisterNUICallback( "togglePursuitTimerDisplay", function( data, cb )
+	cb( "ok" )
+end )
+
 
 --[[----------------------------------------------------------------------------------
 	Main threads
@@ -1825,7 +1867,12 @@ Citizen.CreateThread( function()
 	end
 
 	-- Register the key binds
-	--RegisterKeyBinds()
+	-- FIX: this call was commented out in the script, meaning RegisterKeyBinds()
+	-- (which registers EVERY keybind - remote control, antenna locks, key lock,
+	-- and the pursuit timer) never ran at all. That's why nothing showed up in
+	-- Settings -> Key Bindings -> FiveM/VMP no matter what job or resource name
+	-- was used - the commands were simply never created.
+	RegisterKeyBinds()
 
 	-- Wait a short period of time
 	Citizen.Wait( 1000 )

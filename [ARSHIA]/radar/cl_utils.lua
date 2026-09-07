@@ -151,9 +151,14 @@ function UTIL:DrawDebugText( x, y, scale, centre, text )
 	DrawText( x, y )
 end
 
--- Returns if the current resource name is valid
+-- FIX (works regardless of what the resource folder is named):
+-- This used to require the resource folder to be named exactly "sun-radar" or
+-- else NO keybinds would register at all (silently - the whole radar would
+-- appear completely dead). Combined with the same hardcoded name in radar.js,
+-- this was a leftover restriction from a previous rebrand of the script.
+-- Now always allowed, so it works under whatever folder name you use.
 function UTIL:IsResourceNameValid()
-	return GetCurrentResourceName() == "sun-radar"
+	return true
 end
 
 --[[The MIT License (MIT)
@@ -221,27 +226,20 @@ function UTIL:EnumerateVehicles()
 end
 
 --[[----------------------------------------------------------------------------------
-	FIX (Unique RP compatibility):
-	The original script hard-depended on an export from a resource called
-	'esx_vehiclecontrol' (exports['esx_vehiclecontrol']:HaveAccess(veh)) to decide
-	whether the vehicle the player is currently in is allowed to use the radar.
-	That resource does not exist on this server (the pack instead ships a
-	resource named "ScriptPack" under [SCRIPT], which does not export a
-	'HaveAccess' function at all) - so every call below threw a
-	"no such export" error client-side, PLY.vehClassValid stayed permanently
-	false/nil, and the whole radar/plate reader UI never worked no matter what.
-
-	Replaced with a self-contained check using the native vehicle class
-	(class 18 = "Emergency", which covers all police/sheriff/FBI/ambulance/
-	fire-truck style vehicles in GTA5's own classification) so the script no
-	longer depends on any other resource being installed.
+	FIX #2: the class-18 ("Emergency") check above breaks on custom/add-on police
+	vehicles whose vehicles.meta was never tagged as the Emergency class (very
+	common with reskinned/add-on cars). That made CanControlRadar() always false,
+	so the remote never opened no matter what key was pressed - even though the
+	job check passed. Job restriction (CONFIG.jobs) is already the real security
+	gate here, so the vehicle just needs to be an actual vehicle, not a specific
+	in-game class.
 ----------------------------------------------------------------------------------]]--
 local function IsValidRadarVehicle(veh)
 	if veh == nil or veh == 0 or not DoesEntityExist(veh) then
 		return false
 	end
 
-	return GetVehicleClass(veh) == 18
+	return true
 end
 
 function startThread()
@@ -344,6 +342,22 @@ function startThread()
 				RADAR:RunDisplayValidationCheck()
 		
 				-- Wait half a second
+				Citizen.Wait( 500 )
+			end
+		end )
+
+		-- FEATURE ADDED: hide/show the pursuit timer based on vehicle state,
+		-- same as the radar display itself does above.
+		local lastPtVehState = nil
+		Citizen.CreateThread( function()
+			while ( threadBool ) do
+				local inVeh = PLY.veh ~= nil and PLY.veh > 0
+
+				if ( inVeh ~= lastPtVehState ) then
+					lastPtVehState = inVeh
+					SendNUIMessage( { _type = "pursuitTimerVehicleState", state = inVeh } )
+				end
+
 				Citizen.Wait( 500 )
 			end
 		end )
