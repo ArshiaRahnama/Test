@@ -128,6 +128,13 @@ function UpdateDuty()
     end)
 end
 
+RegisterNUICallback('checkDutyDate', function(data, cb)
+    ESX.TriggerServerCallback('HUD_Menu:GetDutyByDate', function(result)
+        SendNUIMessage({ type = "dutyDateResult", result = result })
+    end, data.date)
+    cb('ok')
+end)
+
 local menuIsOpen = false
 
 RegisterCommand('menu', function()

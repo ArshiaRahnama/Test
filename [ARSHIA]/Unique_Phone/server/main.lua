@@ -819,7 +819,7 @@ AddEventHandler('Unique_Phone:server:TransferMoney', function(iban, amount)
         sender.removeBank(amount)
         Girande.addBank(amount)
 
-        if PhoneItem ~= nil then
+        if PhoneItem then
             TriggerClientEvent('Unique_Phone:client:TransferMoney', Girande.source, amount, Girande.bank)
 
             TriggerClientEvent('rp_notify:client:SendAlert', sender.source, { type = 'inform', text = 'Para transferi başarılı!'})
@@ -850,7 +850,7 @@ AddEventHandler('Unique_Phone:server:TransferMoney', function(iban, amount)
                     sender.removeBank(amount)
                     recieverSteam.addBank(amount)
 
-                    if PhoneItem ~= nil then
+                    if PhoneItem then
                         TriggerClientEvent('Unique_Phone:client:TransferMoney', recieverSteam.source, amount, recieverSteam.bank)
 
                         ExecuteSql(false, "SELECT * FROM `users` WHERE `identifier`=@p1", {['@p1'] = ESX.GetPlayerFromId(src).identifier}, function(result)
@@ -1395,6 +1395,13 @@ ESX.RegisterServerCallback('Unique_Phone:server:HasPhone', function(source, cb)
         else
             cb(false)
         end
+    end
+end)
+
+ESX.RegisterUsableItem('phone', function(source)
+    local xPlayer = ESX.GetPlayerFromId(source)
+    if xPlayer ~= nil and xPlayer.getInventoryItem("phone").count > 0 then
+        TriggerClientEvent('Unique_Phone:client:UseItem', source)
     end
 end)
 

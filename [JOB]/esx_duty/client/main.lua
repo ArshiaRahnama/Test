@@ -8,7 +8,6 @@ local notifyCooldown           = 5000
 ESX                           = nil
 
 Citizen.CreateThread(function ()
-    TriggerEvent('chat:addSuggestion', '/dutyjob', 'Open Menu Time Play jobs')
     while ESX == nil do
         TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
         Citizen.Wait(0)
@@ -115,39 +114,6 @@ Citizen.CreateThread(function ()
 end)
 
 
-RegisterNetEvent('esx_duty:openDutyJobMenu')
-AddEventHandler('esx_duty:openDutyJobMenu', function(players)
-   print(json.encode(players))
-    SendNUIMessage({
-        type = 'openMenu',
-        players = players,
-
-    })
-    SetNuiFocus(true, true) 
-end)
-
-
-RegisterNUICallback('closeMenu', function(data, cb)
-    SetNuiFocus(false, false) 
-    cb('ok')
-end)
-
-
-RegisterNUICallback('checkDutyTime', function(data, cb)
-    TriggerServerEvent('esx_duty:checkDutyTime', data.steamHex, data.startDate, data.endDate)
-    cb({ status = 'ok' })
-end)
-
-
-RegisterNetEvent('esx_duty:displayDutyResult')
-AddEventHandler('esx_duty:displayDutyResult', function(resultMessage)
-    print(json.encode(resultMessage))
-    SendNUIMessage({
-        type = 'dutyResult',
-        result = resultMessage
-    })
-end)
-
 -- ===== AFK check for on-duty organ jobs =====
 -- If you're on-duty (job doesn't start with "off") and don't move for 15
 -- minutes, you get a simple math question. Answer correctly in time and the
@@ -242,43 +208,4 @@ Citizen.CreateThread(function()
             afkLastMoveTime = GetGameTimer()
         end
     end
-end)
-
-RegisterNetEvent('esx_duty:checkDutyTime')
-AddEventHandler('esx_duty:checkDutyTime', function(steamHex, startDate, endDate)
-    local src = source
-    local xPlayer = ESX.GetPlayerFromId(src)  
-
- 
-    local playerJob = xPlayer.job.name
-
-    exports.oxmysql:execute('SELECT total_time, date, job_name FROM duty_logs WHERE steamhex = ? AND job_name = ? AND date BETWEEN ? AND ? ORDER BY date', 
-        { steamHex, playerJob, startDate, endDate }, function(results)
-            if results and #results > 0 then
-                local dutyResults = {}
-                for _, result in ipairs(results) do
-                    if playerJob == result.job_name then
-                        local totalTime = result.total_time
-                        local dateTimestamp = math.floor(result.date / 1000) 
-                        local formattedDate = os.date("%Y/%m/%d", dateTimestamp) 
-
-                        local hours = math.floor(totalTime / 3600)
-                        local minutes = math.floor((totalTime % 3600) / 60)
-                        local seconds = totalTime % 60
-
-                        table.insert(dutyResults, {
-                            name = xPlayer.getName(), 
-                            date = formattedDate,
-                            hours = hours,
-                            minutes = minutes,
-                            seconds = seconds
-                        })
-                    end
-                end
-
-                TriggerClientEvent('esx_duty:displayDutyResult', src, dutyResults)
-            else
-                TriggerClientEvent('esx_duty:displayDutyResult', src, { message = "هیچ تایمی پیدا نشد." })
-            end
-    end)
 end)

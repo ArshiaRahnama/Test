@@ -310,6 +310,33 @@ function OpenDojMenu()
 		end,
 	}
 
+	options[#options + 1] = {
+		title = 'Taghvim-e Dadgah (Court Docket)',
+		description = 'Jalasat-e Zamanbandi Shode Va Hokm-haye Nahaee',
+		icon = 'calendar',
+		onSelect = function()
+			OpenDocketMenu()
+		end,
+	}
+
+	options[#options + 1] = {
+		title = 'Dashboard-e Amari',
+		description = 'Jarayem Bar Asas-e No, Rond-e Dastgiri-ha, Faal-tarin Afsaran',
+		icon = 'chart-column',
+		onSelect = function()
+			OpenStatsDashboardMenu()
+		end,
+	}
+
+	options[#options + 1] = {
+		title = 'Barresi Amalkard Afsar',
+		description = 'Dastgiri-ha, Ettehamat, Rotbe Va Sabeghe-ye IA Dar Yek Profile',
+		icon = 'user-shield',
+		onSelect = function()
+			OpenOfficerProfileMenu()
+		end,
+	}
+
 	-- Job-specific
 	if dojJob == 'marshal' or dojJob == 'judge' then
 		options[#options + 1] = {
@@ -673,6 +700,32 @@ function OpenCaseDetailMenu(caseId, evidenceMode)
 			menu = 'doj_case_status_' .. caseId,
 		}
 		lib.registerContext({ id = 'doj_case_status_' .. caseId, title = 'Taghire Vaziat', menu = 'doj_case_detail_' .. caseId, options = statusOptions })
+
+		-- Timeline / Court Docket
+		options[#options + 1] = {
+			title = 'Timeline-e Parvande',
+			description = 'Tarikhche-ye Yekparche-ye Kol-e Parvande',
+			icon = 'timeline',
+			onSelect = function()
+				OpenCaseTimelineMenu(caseId)
+			end,
+		}
+		options[#options + 1] = {
+			title = 'Zamanbandi Jalase-ye Dadgah',
+			description = 'Ezafe Kardan-e In Parvande Be Taghvim-e Dadgah',
+			icon = 'calendar-plus',
+			onSelect = function()
+				OpenScheduleHearingForCase(caseId)
+			end,
+		}
+		options[#options + 1] = {
+			title = 'Zanjire-ye Negahdari-ye Madarek',
+			description = 'Zanjire-ye Tahvil-e Har Madrak (Chain of Custody)',
+			icon = 'boxes-stacked',
+			onSelect = function()
+				OpenEvidenceLockerMenu(caseId)
+			end,
+		}
 
 		-- Refer
 		options[#options + 1] = {

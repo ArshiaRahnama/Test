@@ -76,6 +76,7 @@ local Keys = {
 	["N9"] = 118
 }
 
+
 ESX = nil
 
 Citizen.CreateThread(function()
@@ -93,15 +94,20 @@ local KeysWhiteList = {["g"] = true, ["t"] = true}
 
 local currentKeysHolding = {}
 
+
+
 RegisterNetEvent("onKeyDown")
 
 RegisterNetEvent("onKeyUP")
 
 RegisterNetEvent("onMultiplePress")
 
+
+
 function registerKey(key, type)
 
 	local command = key .. "donttouch"
+
 
 	if not registeredKeys[key] then
 
@@ -111,52 +117,49 @@ function registerKey(key, type)
 
 	end
 
-
+        
 
 	RegisterCommand('+' .. command, function()
 
-		if IsPauseMenuActive() then return end
+		if not IsPauseMenuActive() and not DisableControlAction(0, Keys[key], true) then
 
-		-- best-effort only: some registered keys (numpad4-9, lmenu,
-		-- f4/f11, escape, oem_3/~, lcontrol, lshift, return, back, up,
-		-- mouse_left/right, end, i, capital) have no matching entry in
-		-- `Keys` above, so this can legitimately be nil. That must never
-		-- block onKeyDown below - it only used to because a nil hash
-		-- passed to DisableControlAction throws and aborts the command.
-		local controlHash = Keys[string.upper(key)]
-		if controlHash then
-			DisableControlAction(0, controlHash, true)
-		end
+			if shouldSendTheKey(key) then
 
-		if shouldSendTheKey(key) then
+				TriggerEvent("onKeyDown", key)
 
-			TriggerEvent("onKeyDown", key)
+			end
 
-		end
+			
+
+			table.insert(keysHolding, key)
+
+			currentKeysHolding[key] = true
 
 
 
-		table.insert(keysHolding, key)
+			if #keysHolding > 1 then
 
-		currentKeysHolding[key] = true
+				TriggerEvent("onMultiplePress", currentKeysHolding)
 
-		if #keysHolding > 1 then
+			end
 
-			TriggerEvent("onMultiplePress", currentKeysHolding)
+
 
 		end
 
 	end)
 
-
+	
 
 	RegisterCommand('-' .. command, function()
 
-		if not IsPauseMenuActive() then
+		if not IsPauseMenuActive() and not DisableControlAction(0, Keys[key], true) then
 
 			TriggerEvent("onKeyUP", key)
 
 		end
+
+
 
 		if currentKeysHolding[key] then
 
@@ -170,6 +173,8 @@ function registerKey(key, type)
 
 end
 
+
+
 function removeKey(key)
 
 	for index, currentKey in ipairs(keysHolding) do
@@ -178,13 +183,13 @@ function removeKey(key)
 
 			table.remove(keysHolding, index)
 
-			break
-
 		end
 
 	end
 
 end
+
+
 
 function shouldSendTheKey(key)
 
@@ -195,7 +200,7 @@ function shouldSendTheKey(key)
 	else
 
 		local data = ESX.GetPlayerData()
-
+		
 
 		if data.HandCuffed ~= 1 then
 
@@ -210,6 +215,8 @@ function shouldSendTheKey(key)
 	end
 
 end
+
+
 
 local haveToRegister = {
 
@@ -302,13 +309,15 @@ local haveToRegister = {
 	["end"] = "keyboard",
 
 	["u"] = "keyboard",
-
+	
 	["i"] = "keyboard",
 
 	["capital"] = "keyboard",
 
 	["tab"] = "keyboard",
 }
+
+
 
 for key, type in pairs(haveToRegister) do
 

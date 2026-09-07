@@ -174,6 +174,14 @@ OpenPhone()
 newPhoneProp()
 end)
 
+RegisterKeyMapping("phone", "Open Phone", "keyboard", "F1")
+
+RegisterNetEvent('Unique_Phone:client:UseItem')
+AddEventHandler('Unique_Phone:client:UseItem', function()
+    OpenPhone()
+    newPhoneProp()
+end)
+
 function CalculateTimeToDisplay()
         hour = GetClockHours()
     minute = GetClockMinutes()

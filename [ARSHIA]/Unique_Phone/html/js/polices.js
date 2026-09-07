@@ -1,3 +1,9 @@
+// EXPANSION: this used to power its own standalone "Services" app; that
+// app has been removed and this now renders straight into the Suggested
+// Contacts screen instead (into the .organs-in-suggested wrapper — see
+// index.html and app.js's "phone" branch). Everything else below is
+// unchanged.
+//
 // EXPANSION: rows are now one-per-JOB (not one-per-online-PERSON) — a
 // growing list of individual player names as the server fills up was
 // causing real lag in this app. Now the number of rows is always fixed
@@ -69,8 +75,8 @@ function jobIconHtml(jobName) {
     return '<i class="fas ' + icon + '" style="color:#fff; font-size:1.4vh;"></i>';
 }
 
-Setuppolices = function(data) {
-    $(".polices-list").html("");
+SetupOrgansInSuggested = function(data) {
+    $(".organs-in-suggested").html("");
     data = data || [];
 
     // Count online people + grab a real label per job (from whoever's
@@ -101,7 +107,7 @@ Setuppolices = function(data) {
                 '<div class="police-list-fullname">' + label + ' <span class="police-list-jobtag">(' + count + ' online)</span></div>' +
                 '<div class="police-list-call"><i class="fas fa-phone"></i></div>' +
             '</div>';
-        $(".polices-list").append(el);
+        $(".organs-in-suggested").append(el);
         // Representative object for the generic click handler below — it
         // only needs typejob (for routing) and jobLabel (for the
         // notification text), same shape as a real online-person entry.
@@ -115,20 +121,20 @@ Setuppolices = function(data) {
         var totalOnline = 0;
         $.each(onlineJobs, function(j, job) { totalOnline += countByJob[job.name]; });
 
-        $(".polices-list").append(
+        $(".organs-in-suggested").append(
             '<h1 class="police-section-header" style="background-color: ' + cat.color + ';">'
                 + '<span><i class="' + cat.icon + '"></i> ' + cat.title + '</span>'
                 + '<span>' + totalOnline + '</span></h1>'
         );
 
         if (onlineJobs.length === 0) {
-            $(".polices-list").append('<div class="police-list-empty-note">No one from ' + cat.title + ' is online.</div>');
+            $(".organs-in-suggested").append('<div class="police-list-empty-note">No one from ' + cat.title + ' is online.</div>');
         } else {
             $.each(onlineJobs, function(j, job) {
                 renderJobRow(job, cat.color);
             });
         }
-        $(".polices-list").append('<br>');
+        $(".organs-in-suggested").append('<br>');
     });
 
     // Anything with jobs.hasapp = 1 that isn't in one of the 3 categories
@@ -148,7 +154,7 @@ Setuppolices = function(data) {
 
     var otherJobNames = Object.keys(otherCounts);
     if (otherJobNames.length > 0) {
-        $(".polices-list").append(
+        $(".organs-in-suggested").append(
             '<h1 class="police-section-header" style="background-color: rgb(80, 90, 110);">'
                 + '<span><i class="fas fa-briefcase"></i> Other Services</span>'
                 + '<span>' + otherJobNames.length + '</span></h1>'
@@ -159,7 +165,8 @@ Setuppolices = function(data) {
     }
 }
 var lastRequestTime = 0;
-var cooldownTime = 5 * 60 * 1000; 
+var cooldownTime = 5 * 60 * 1000;
+var cooldownMinutesLabel = Math.round(cooldownTime / 60000);
 
 
 $(document).on('click', '.police-list-call', function(e) {
@@ -237,7 +244,7 @@ $(document).on('click', '.police-list-call', function(e) {
             
             }));
 
-            MI.Phone.Notifications.Add("fas fa-user", "Request Sended (" + displayLabel + ") Wait 15m", " ", "#93BFCF", 7000);
+            MI.Phone.Notifications.Add("fas fa-user", "Request Sended (" + displayLabel + ") Wait " + cooldownMinutesLabel + "m", " ", "#93BFCF", 7000);
         }
     }
 });

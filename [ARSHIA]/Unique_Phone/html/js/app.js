@@ -179,6 +179,13 @@ $(document).on('click', '.phone-application', function(e){
                     $.post('http://Unique_Phone/GetSuggestedContacts', JSON.stringify({}), function(suggested){
                         MI.Phone.Functions.SetupSuggestedContacts(suggested);
                     });
+                    // EXPANSION: organs/services (police, ambulance, taxi, mechanic, ...)
+                    // used to be their own "Services" app — now rendered straight into
+                    // the Suggested Contacts screen instead (see polices.js).
+                    $.post('http://Unique_Phone/GetCurrentpolices', JSON.stringify({}), function(data){
+                        SetupOrgansInSuggested(data);
+                    });
+                    jobManagerCheckAccess();
                     $.post('http://Unique_Phone/ClearGeneralAlerts', JSON.stringify({
                         app: "phone"
                     }));
@@ -217,11 +224,6 @@ $(document).on('click', '.phone-application', function(e){
                     });
                 } else if (PressedApplication == "meos") {
                     SetupMeosHome();
-                }  else if (PressedApplication == "polices") {
-                    $.post('http://Unique_Phone/GetCurrentpolices', JSON.stringify({}), function(data){
-                        Setuppolices(data);
-                    });
-                    jobManagerCheckAccess();
                 }else if (PressedApplication == "gallery") {
                     $.post('https://Unique_Phone/GetGalleryData', JSON.stringify({}), function(data){
                         setUpGalleryData(data);

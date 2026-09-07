@@ -71,13 +71,184 @@
   background: rgba(255, 255, 255, 0.015);
 }
 
+.dutyRosterHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
 .dutyRosterTitle {
   font-size: 10px;
   font-weight: 800;
   letter-spacing: 1px;
   color: var(--muted);
-  margin-bottom: 8px;
   padding-left: 2px;
+}
+
+.dutyDatePicker {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  position: relative;
+}
+
+.dutyDatePicker.personal {
+  margin-bottom: 14px;
+}
+
+.calTrigger {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 140, 26, 0.3);
+  background: rgba(255, 140, 26, 0.1);
+  color: var(--orange2);
+  font-size: 10.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.calTrigger:hover {
+  background: var(--orange);
+  color: #1a1005;
+}
+
+.dutyDatePicker button:not(.calTrigger) {
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--muted);
+  font-size: 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.dutyDatePicker button:not(.calTrigger):hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+/* Custom calendar dropdown — replaces the native <input type="date">
+   popup, which FiveM's CEF-based NUI browser doesn't reliably render
+   across builds. Positioned as a floating panel under its trigger. */
+.calPopup {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 20;
+  width: 220px;
+  padding: 10px;
+  background: #14171c;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.5);
+}
+
+.calHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.calTitle {
+  font-size: 11px;
+  font-weight: 800;
+  color: #eceef3;
+}
+
+.calNav {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  border: none;
+  background: rgba(255, 255, 255, 0.06);
+  color: #cfd2da;
+  font-size: 9px;
+  cursor: pointer;
+}
+
+.calNav:hover:not(:disabled) { background: rgba(255, 140, 26, 0.2); color: var(--orange2); }
+.calNav:disabled { opacity: 0.3; cursor: default; }
+
+.calWeekdays,
+.calGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+}
+
+.calWeekdays {
+  margin-bottom: 4px;
+  font-size: 8.5px;
+  font-weight: 800;
+  color: var(--muted);
+  text-align: center;
+}
+
+.calDay {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #d8dbe4;
+  cursor: pointer;
+}
+
+.calDay.empty { cursor: default; }
+
+.calDay:not(.empty):not(.disabled):hover {
+  background: rgba(255, 140, 26, 0.18);
+  color: var(--orange2);
+}
+
+.calDay.disabled {
+  color: #3d4048;
+  cursor: default;
+}
+
+.calDay.selected {
+  background: var(--orange);
+  color: #1a1005;
+}
+
+.dutyPersonalResultBox {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: rgba(255, 140, 26, 0.07);
+  border: 1px solid rgba(255, 140, 26, 0.25);
+}
+
+.dutyPersonalResultDate {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.dutyPersonalResultValue {
+  font-size: 16px;
+  font-weight: 900;
+  color: var(--orange2);
 }
 
 .dutyRosterList {

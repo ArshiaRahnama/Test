@@ -251,6 +251,78 @@ CreateThread(function()
 			KEY `idx_target_identifier` (`target_identifier`),
 			KEY `idx_status` (`status`)
 		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4]],
+
+		-- Court Docket / Case Timeline / Traffic Stop / Mugshot / Evidence
+		-- Custody -- the six /doj + /law extension features. All dept_*
+		-- to match the existing dept_cases family above; none of them
+		-- touch doj_cases/dept_cases rows, they only reference case_id.
+		[[CREATE TABLE IF NOT EXISTS `dept_case_docket` (
+			`id` INT(11) NOT NULL AUTO_INCREMENT,
+			`case_id` INT(11) NOT NULL,
+			`scheduled_at` INT(11) NOT NULL,
+			`status` VARCHAR(20) NOT NULL DEFAULT 'scheduled',
+			`verdict` VARCHAR(20) DEFAULT NULL,
+			`verdict_notes` VARCHAR(500) DEFAULT NULL,
+			`verdict_by_name` VARCHAR(255) DEFAULT NULL,
+			`verdict_at` INT(11) DEFAULT NULL,
+			`created_by_name` VARCHAR(255) NOT NULL,
+			`created_at` INT(11) NOT NULL,
+			`updated_at` INT(11) NOT NULL,
+			PRIMARY KEY (`id`),
+			KEY `case_id` (`case_id`)
+		)]],
+
+		[[CREATE TABLE IF NOT EXISTS `dept_case_events` (
+			`id` INT(11) NOT NULL AUTO_INCREMENT,
+			`case_id` INT(11) NOT NULL,
+			`event_type` VARCHAR(30) NOT NULL,
+			`text` VARCHAR(500) NOT NULL,
+			`by_name` VARCHAR(255) NOT NULL,
+			`timestamp` INT(11) NOT NULL,
+			PRIMARY KEY (`id`),
+			KEY `case_id` (`case_id`)
+		)]],
+
+		[[CREATE TABLE IF NOT EXISTS `dept_traffic_stops` (
+			`id` INT(11) NOT NULL AUTO_INCREMENT,
+			`officer_identifier` VARCHAR(255) NOT NULL,
+			`officer_name` VARCHAR(255) NOT NULL,
+			`officer_job` VARCHAR(20) NOT NULL,
+			`citizen_identifier` VARCHAR(255) DEFAULT NULL,
+			`citizen_name` VARCHAR(255) NOT NULL,
+			`reason` VARCHAR(255) NOT NULL,
+			`outcome` VARCHAR(20) NOT NULL DEFAULT 'warning',
+			`notes` VARCHAR(500) DEFAULT NULL,
+			`location` VARCHAR(255) DEFAULT NULL,
+			`timestamp` INT(11) NOT NULL,
+			PRIMARY KEY (`id`),
+			KEY `officer_identifier` (`officer_identifier`),
+			KEY `citizen_identifier` (`citizen_identifier`)
+		)]],
+
+		[[CREATE TABLE IF NOT EXISTS `dept_mugshots` (
+			`identifier` VARCHAR(255) NOT NULL,
+			`name` VARCHAR(255) NOT NULL,
+			`photo_url` VARCHAR(500) NOT NULL,
+			`taken_by_name` VARCHAR(255) NOT NULL,
+			`timestamp` INT(11) NOT NULL,
+			PRIMARY KEY (`identifier`)
+		)]],
+
+		[[CREATE TABLE IF NOT EXISTS `dept_evidence_custody` (
+			`id` INT(11) NOT NULL AUTO_INCREMENT,
+			`note_id` INT(11) NOT NULL,
+			`case_id` INT(11) NOT NULL,
+			`from_name` VARCHAR(255) NOT NULL,
+			`from_job` VARCHAR(20) NOT NULL,
+			`to_name` VARCHAR(255) NOT NULL,
+			`to_job` VARCHAR(20) NOT NULL,
+			`reason` VARCHAR(255) DEFAULT NULL,
+			`timestamp` INT(11) NOT NULL,
+			PRIMARY KEY (`id`),
+			KEY `note_id` (`note_id`),
+			KEY `case_id` (`case_id`)
+		)]],
 	}
 
 	for _, sql in ipairs(createStatements) do

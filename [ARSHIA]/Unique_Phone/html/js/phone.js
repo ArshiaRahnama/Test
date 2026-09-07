@@ -731,7 +731,15 @@ MI.Phone.Functions.AnswerCall = function(CallData) {
 }
 
 MI.Phone.Functions.SetupSuggestedContacts = function(Suggested) {
-    $(".suggested-contacts").html("");
+    // FIX: this used to be $(".suggested-contacts").html("") — wiped the
+    // ENTIRE container on every call, which also destroyed the
+    // .organs-in-suggested wrapper (added when the Services/polices app was
+    // merged into this screen) since it lives inside .suggested-contacts.
+    // Whichever of GetSuggestedContacts/GetCurrentpolices resolved last
+    // would erase the other's rows. Now only the person-suggestion rows
+    // themselves are removed, so the organs wrapper (and whatever's
+    // rendered inside it) survives.
+    $(".suggested-contacts .suggested-contact").remove();
     AmountOfSuggestions = Suggested.length;
     if (AmountOfSuggestions > 0) {
         $(".amount-of-suggested-contacts").html(AmountOfSuggestions + " Registered");

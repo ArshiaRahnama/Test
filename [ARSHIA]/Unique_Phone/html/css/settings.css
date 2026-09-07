@@ -5,7 +5,23 @@
     height: 100%;
     width: 100%;
     background: rgba(36, 36, 36, 90%);
-    overflow: hidden;
+    /* FIX: was overflow:hidden. Total content height (7 tab rows +
+       Accent Theme + Phone Case) is taller than one screen — hidden
+       just clipped everything past ~66vh instead of letting the player
+       scroll down to it. */
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.settings-app::-webkit-scrollbar {
+    width: .4vh;
+}
+.settings-app::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 1vh;
+}
+.settings-app::-webkit-scrollbar-track {
+    background: transparent;
 }
 
 .settings-app-header {
@@ -647,9 +663,23 @@ input:checked + .sliderfly:before {
    ═══════════════════════════════════════════════════════════ */
 
 .settings-appearance-section {
-    position: relative;
+    /* FIX: this used to be position:relative with `margin: 2vh auto 0`,
+       which put it in normal document flow. Every sibling around it
+       (.settings-app-tab-appereance, .settings-app-tab-information) is
+       position:absolute and therefore takes up NO space in that flow, so
+       this section rendered right at the top of .settings-app instead of
+       below the ~7 stacked tab rows above it — visually overlapping
+       "Background"/"Profile picture"/"My number"/etc. Now it's absolute
+       too, positioned below all of them (.settings-app-tab-information
+       starts at top:30vh and its 5 rows run to roughly 65vh), same
+       pattern as every other section in this file.
+    */
+    position: absolute;
+    top: 66vh;
+    left: 0;
+    right: 0;
     width: 90%;
-    margin: 2vh auto 0;
+    margin: 0 auto;
     padding-bottom: 3vh;
 }
 

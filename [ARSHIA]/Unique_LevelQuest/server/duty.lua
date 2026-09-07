@@ -96,3 +96,58 @@ ESX.RegisterServerCallback('HUD_Menu:GetDuty', function(source, cb)
         end)
     end)
 end)
+
+-- Used by the DUTY tab's calendar date picker. Leadership gets the
+-- whole org's roster for that day (like before); everyone else now
+-- gets their OWN total for that day instead of being rejected — any
+-- member should be able to check "how long was I on duty that day",
+-- not just leadership.
+ESX.RegisterServerCallback('HUD_Menu:GetDutyByDate', function(source, cb, dateStr)
+    local xPlayer = ESX.GetPlayerFromId(source)
+    if not xPlayer or not xPlayer.job or xPlayer.job.name == 'nojob' then
+        cb({ ok = false })
+        return
+    end
+    -- Expect exactly what the calendar widget sends (YYYY-MM-DD).
+    -- Anything else gets rejected rather than handed to the query
+    -- as-is.
+    if type(dateStr) ~= 'string' or not string.match(dateStr, '^%d%d%d%d%-%d%d%-%d%d$') then
+        cb({ ok = false })
+        return
+    end
+
+    local jobName = xPlayer.job.name
+    local orgName = (string.sub(jobName, 1, 3) == 'off') and string.sub(jobName, 4) or jobName
+    local isLeadership = xPlayer.job.grade > DUTY_LEADERSHIP_GRADE
+
+    if isLeadership then
+        MySQL.Async.fetchAll([[
+            SELECT ic_name, SUM(total_time) AS seconds
+            FROM duty_logs
+            WHERE job_name = @jobName AND date = @date
+            GROUP BY steamhex, ic_name
+            ORDER BY seconds DESC
+            LIMIT 20
+        ]], { ['@jobName'] = orgName, ['@date'] = dateStr }, function(result)
+            local roster = {}
+            for i = 1, #(result or {}) do
+                table.insert(roster, {
+                    name    = result[i].ic_name,
+                    seconds = tonumber(result[i].seconds) or 0,
+                })
+            end
+            cb({ ok = true, mode = 'roster', date = dateStr, orgName = orgName, roster = roster })
+        end)
+        return
+    end
+
+    local steamHex = GetPlayerIdentifiers(source)[1]
+    MySQL.Async.fetchAll([[
+        SELECT SUM(total_time) AS seconds
+        FROM duty_logs
+        WHERE steamhex = @steamHex AND job_name = @jobName AND date = @date
+    ]], { ['@steamHex'] = steamHex, ['@jobName'] = orgName, ['@date'] = dateStr }, function(result)
+        local seconds = (result and result[1] and tonumber(result[1].seconds)) or 0
+        cb({ ok = true, mode = 'personal', date = dateStr, orgName = orgName, seconds = seconds })
+    end)
+end)

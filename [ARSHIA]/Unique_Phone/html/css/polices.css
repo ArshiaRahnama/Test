@@ -213,9 +213,12 @@
    ═══════════════════════════════════════════════════════════ */
 
 .job-manager-gear {
+    /* EXPANSION: relocated from the old standalone Services app header
+       into .phone-suggestedcontacts-header — right-aligned so it doesn't
+       collide with the centered "Suggested Contacts" title/count. */
     position: absolute;
-    top: 4.5vh;
-    left: 2vh;
+    top: 1.2vh;
+    right: 2vh;
     color: rgba(255, 255, 255, 0.75);
     font-size: 1.6vh;
     cursor: pointer;

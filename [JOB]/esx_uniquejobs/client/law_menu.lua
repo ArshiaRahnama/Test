@@ -120,6 +120,24 @@ function OpenLawMenu()
 			options[#options + 1] = { title = 'Ghanoon-name Khali Ast', disabled = true, icon = 'circle-info' }
 		end
 
+		options[#options + 1] = {
+			title = 'Sabt-e Tavaghof (Traffic Stop)',
+			description = 'Sabt-e Sari Baraye Tavaghof-haye Ke Booking-e Kamel Nemikhahad',
+			icon = 'car-burst',
+			onSelect = function()
+				OpenTrafficStopMenu()
+			end,
+		}
+
+		options[#options + 1] = {
+			title = 'Mugshot',
+			description = 'Sabt Ya Namayesh-e Aks-e Shahrvand',
+			icon = 'camera',
+			onSelect = function()
+				OpenMugshotMenu()
+			end,
+		}
+
 		lib.registerContext({ id = 'law_main', title = 'Ghanoon-name', options = options })
 		lib.showContext('law_main')
 	end)
