@@ -509,7 +509,7 @@ AddEventHandler('Morphy_RobSystem:robberyNeeds', function(robname)
     end
 
     if Config.Rob.RobTypes[Config.Rob.Robs[robname].type].teammatesrequired ~= 0 then
-        local InTeam,PlayerTeam,TeamID = exports["PartySystem"]:IsInTeam(_source)
+        local InTeam,PlayerTeam,TeamID = exports[GetCurrentResourceName()]:IsInTeam(_source)
         if not InTeam then
             TriggerClientEvent('esx:showNotification', _source, "Baraye Starte In Robbery Shoma Bayad Dar Team Bashid! /party" )
             return
@@ -624,14 +624,14 @@ AddEventHandler('Morphy_RobSystem:robberySuccess', function(robname,RobberyCode)
     Config.Rob.RobTypes[Config.Rob.Robs[robname].type].lastRobbed = os.time()
     Config.Rob.Robs[robname].lastRobbed = os.time()
 
-    -- TEMP FIX (was crashing: exports["esx_policejob"] doesn't exist, that
-    -- resource is esx_uniquejobs now, and its real export is
-    -- CheckRob_police/CheckRob_marshal not CheckRob). Always giving full
-    -- reward for now until the final "who approves a rob" design is
-    -- decided (police-tier escalation vs PartySystem/TeamSystem -- this
-    -- file already uses exports["PartySystem"]:IsInTeam(...) elsewhere,
-    -- around line 461, for the teammatesrequired check at robbery start,
-    -- so a team-based accept flow here would follow the same pattern).
+    -- NOTE (design decision, not a bug): originally this called
+    -- exports["esx_policejob"]:CheckRob(...) to let police approve/deny
+    -- the payout, but that resource doesn't exist (renamed esx_uniquejobs,
+    -- with different export names: CheckRob_police / CheckRob_marshal).
+    -- Always giving full reward for now until a real "who approves a rob"
+    -- flow is designed (police-tier escalation vs. a TeamSystem-based
+    -- accept, using the same exports[GetCurrentResourceName()]:IsInTeam(...)
+    -- pattern used at robbery start for the teammatesrequired check).
     local accepted = true
     if accepted then
         for itemname,amount in pairs(Config.Rob.RobTypes[Config.Rob.Robs[robname].type].reward) do

@@ -514,35 +514,49 @@ AddEventHandler('Morphy_RobSystem:StartHack', function(robname,hacktype)
 
 end)
 
+-- Cheap outer scan: only figures out which (if any) single rob location the
+-- player is currently near. Runs at a relaxed interval since proximity to a
+-- fixed point doesn't need to be checked every frame.
 Citizen.CreateThread(function()
 	while true do
-		Citizen.Wait(1)
-		local playerPos = GetEntityCoords(PlayerPedId(), true)
+        local sleep = 500
+        local playerPos = GetEntityCoords(PlayerPedId(), true)
 
-		for k,v in pairs(Config.Rob.Robs) do
-			local robpos = v.position
-			local distance = Vdist(playerPos.x, playerPos.y, playerPos.z, robpos.x, robpos.y, robpos.z)
+        for k,v in pairs(Config.Rob.Robs) do
+            local robpos = v.position
+            local distance = Vdist(playerPos.x, playerPos.y, playerPos.z, robpos.x, robpos.y, robpos.z)
 
-			if distance < Config.Rob.Marker.DrawDistance then
-                if v.available then
-                    DrawMarker(Config.Rob.Marker.Type, robpos.x, robpos.y, robpos.z , 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, Config.Rob.Marker.x, Config.Rob.Marker.y, Config.Rob.Marker.z, Config.Rob.Marker.r, Config.Rob.Marker.g, Config.Rob.Marker.b, Config.Rob.Marker.a, false, true, 2, false, false, false, false)
-                else
-                    DrawMarker(Config.Rob.Marker.Type, robpos.x, robpos.y, robpos.z , 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, Config.Rob.Marker.x, Config.Rob.Marker.y, Config.Rob.Marker.z, 255, 0, 0, Config.Rob.Marker.a, false, true, 2, false, false, false, false)
-                end
-                if distance < 0.5 then
-                    ESX.ShowHelpNotification('Press ~INPUT_CONTEXT~ To ~o~Rob~s~ ~b~'..v.nameofrob..'~s~')
+            if distance < Config.Rob.Marker.DrawDistance then
+                sleep = 0 -- close to (or inside) a marker zone: switch to per-frame drawing below
+                DrawRobMarker(k, v, distance)
+            end
+        end
 
-                    if IsControlJustReleased(0, Keys['E']) then
-                        if IsPedArmed(PlayerPedId(), 4) then
-                            TriggerServerEvent('Morphy_RobSystem:robberyNeeds', k)
-                        else
-                            ESX.ShowNotification("Shoma Aslahe Dar Dast Nadarid !",'error')
-                        end
-                    end
-                end
-			end
-		end
+		Citizen.Wait(sleep)
 	end
 end)
+
+-- Per-frame drawing/interaction for a single nearby rob spot. Only ever does
+-- real work while the outer loop above has found the player within range,
+-- so it stays a no-op (and near-zero cost) the rest of the time.
+function DrawRobMarker(k, v, distance)
+    local robpos = v.position
+    if v.available then
+        DrawMarker(Config.Rob.Marker.Type, robpos.x, robpos.y, robpos.z , 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, Config.Rob.Marker.x, Config.Rob.Marker.y, Config.Rob.Marker.z, Config.Rob.Marker.r, Config.Rob.Marker.g, Config.Rob.Marker.b, Config.Rob.Marker.a, false, true, 2, false, false, false, false)
+    else
+        DrawMarker(Config.Rob.Marker.Type, robpos.x, robpos.y, robpos.z , 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, Config.Rob.Marker.x, Config.Rob.Marker.y, Config.Rob.Marker.z, 255, 0, 0, Config.Rob.Marker.a, false, true, 2, false, false, false, false)
+    end
+    if distance < 0.5 then
+        ESX.ShowHelpNotification('Press ~INPUT_CONTEXT~ To ~o~Rob~s~ ~b~'..v.nameofrob..'~s~')
+
+        if IsControlJustReleased(0, Keys['E']) then
+            if IsPedArmed(PlayerPedId(), 4) then
+                TriggerServerEvent('Morphy_RobSystem:robberyNeeds', k)
+            else
+                ESX.ShowNotification("Shoma Aslahe Dar Dast Nadarid !",'error')
+            end
+        end
+    end
+end
 end
 

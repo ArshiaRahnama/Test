@@ -1403,33 +1403,24 @@ EnsureArmoryStash = function(playergang, key, armory)
     -- Gangs[gang].grades[grade].access.itemAccess[itemName] = true/false;
     -- this is what was missing to actually enforce it. Items never
     -- explicitly toggled default to accessible.
-    -- Wrapped in pcall + logged either way: if lc-inventory is ever not
-    -- up yet (or the export name doesn't match), this used to error
+    -- Wrapped in pcall + logged on failure only: if lc-inventory is ever
+    -- not up yet (or the export name doesn't match), this used to error
     -- out of the whole function silently - now it's visible in console
-    -- instead of just quietly never protecting anything. Also logs
-    -- every single check it makes (item + result) so it's possible to
-    -- see directly in console whether this is even running at all when
-    -- an armory is opened, instead of guessing.
+    -- instead of just quietly never protecting anything.
     local regOk, regErr = pcall(function()
         exports['lc-inventory']:registerStashAccessCheck(stashId, function(checkSource, itemName)
             local xP = ESX.GetPlayerFromId(checkSource)
             if not xP or not xP.gang or xP.gang.name ~= playergang then return true end
 
             local grade = Gangs[playergang] and Gangs[playergang].grades[xP.gang.grade]
-            if not grade or not grade.access or not grade.access.itemAccess then
-                print('[Unique_ALLGangs] itemAccess check: ' .. stashId .. ' / ' .. tostring(itemName) .. ' -> ALLOWED (no itemAccess table set for grade ' .. tostring(xP.gang.grade) .. ')')
-                return true
-            end
+            if not grade or not grade.access or not grade.access.itemAccess then return true end
 
             local allowed = grade.access.itemAccess[itemName]
-            local result = (allowed == nil) or (allowed and true or false)
-            print('[Unique_ALLGangs] itemAccess check: ' .. stashId .. ' / ' .. tostring(itemName) .. ' -> ' .. (result and 'ALLOWED' or 'BLOCKED') .. ' (grade ' .. tostring(xP.gang.grade) .. ', stored value = ' .. tostring(allowed) .. ')')
-            return result
+            if allowed == nil then return true end
+            return allowed and true or false
         end)
     end)
-    if regOk then
-        print('[Unique_ALLGangs] EnsureArmoryStash: registered item access check for ' .. stashId)
-    else
+    if not regOk then
         print('[Unique_ALLGangs] EnsureArmoryStash: FAILED to register access check for ' .. stashId .. ' -> ' .. tostring(regErr) .. ' (item access will NOT be enforced for this armory until this succeeds)')
     end
 

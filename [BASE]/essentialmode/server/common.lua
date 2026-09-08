@@ -60,13 +60,8 @@ end
 -- ESX.TriggerServerCallback below), which never sees a registration that
 -- landed in some other resource's disconnected copy instead.
 function RegisterServerCallback(name, callback)
-    print(('[essentialmode DEBUG] RegisterServerCallback called: name=%s callback_type=%s'):format(tostring(name), type(callback)))
-    if type(name) ~= 'string' or type(callback) ~= 'function' then
-        print('[essentialmode DEBUG] RegisterServerCallback REJECTED - bad argument types')
-        return false
-    end
+    if type(name) ~= 'string' or type(callback) ~= 'function' then return false end
     ESX.RegisterServerCallback(name, callback)
-    print(('[essentialmode DEBUG] RegisterServerCallback OK - ESX.ServerCallbacks[%s] is now %s'):format(name, type(ESX.ServerCallbacks[name])))
     return true
 end
 

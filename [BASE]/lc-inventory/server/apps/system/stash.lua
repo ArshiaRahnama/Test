@@ -18,15 +18,6 @@ if Config.Framework ~= "esx" then
     return
 end
 
--- TEMP DIAGNOSTIC (added to catch a resource-restart race: registration
--- succeeds per Unique_ALLGangs' own log, but a getStash right after still
--- sees "checker registered: false" for the exact same stashId - only
--- possible if this file's StashAccessCheckers table got reset in between,
--- i.e. lc-inventory itself restarted. If a fresh "stash.lua loaded" line
--- appears between a "registered" print and the next "checker registered:
--- false" print, that confirms it. Remove once confirmed/fixed.
-print(('[lc-inventory] stash.lua loaded, StartedAt=%d'):format(os.time()))
-
 local Stashes = {}      -- [stashId] = { items = {[slot] = {...}}, maxWeight = n, label = "" }
 local StashViewers = {} -- [stashId] = { [source] = true }
 
@@ -153,7 +144,6 @@ RegisterServerCallback('lc-inventory:getStash', function(source, cb, stashId, ma
             itemLabel = itemLabel .. ' #' .. item.info.serial
         end
         local locked = not canAccessStashItem(source, stashId, item.name)
-        print('[lc-inventory] getStash: ' .. stashId .. ' item ' .. tostring(item.name) .. ' -> locked=' .. tostring(locked) .. ' (checker registered: ' .. tostring(StashAccessCheckers[stashId] ~= nil) .. ')')
 
         table.insert(list, {
             label = itemLabel,

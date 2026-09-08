@@ -33,7 +33,36 @@ idPhoneTable = 'id'
 numberTable = 'phone_number' 
 
 function RegisterServerCallback(name, cb)
-    ESX.RegisterServerCallback(name, cb)
+    -------------------------------------------------------------
+    -- FIX (real root cause of the item-access-never-enforced bug,
+    -- confirmed via essentialmode/server/common.lua's own diagnostic
+    -- work): `ESX` right above this is a DISCONNECTED SNAPSHOT, not
+    -- essentialmode's real internal object. TriggerEvent (old ESX's
+    -- getSharedObject pattern) serializes its arguments across the
+    -- resource boundary - it does NOT share a live table reference -
+    -- so `ESX.RegisterServerCallback(name, cb)` used to write into
+    -- THIS resource's own disconnected copy of ESX.ServerCallbacks,
+    -- which essentialmode's real relay handler
+    -- (RegisterServerEvent('esx:triggerServerCallback') in
+    -- essentialmode/server/common.lua, which always reads
+    -- essentialmode's OWN internal ESX.ServerCallbacks) never sees.
+    -- Every custom app callback registered this way - stash.lua's
+    -- 'lc-inventory:getStash' included - would silently never be
+    -- found, printing "essentialmode: TriggerServerCallback =>
+    -- [name] does not exist" server-side every time a client called
+    -- it.
+    -- essentialmode now exports a real RegisterServerCallback
+    -- (server/common.lua + fxmanifest.lua's server_exports) that runs
+    -- INSIDE its own resource, so it registers into the actual live
+    -- ESX.ServerCallbacks table instead. FiveM's export system
+    -- correctly marshals the function reference itself across the
+    -- resource boundary (unlike a plain data table), so this works.
+    -------------------------------------------------------------
+    if GetResourceState('essentialmode') == 'started' then
+        exports['essentialmode']:RegisterServerCallback(name, cb)
+    else
+        ESX.RegisterServerCallback(name, cb)
+    end
 end
 
 function GetPlayerInventory(player)

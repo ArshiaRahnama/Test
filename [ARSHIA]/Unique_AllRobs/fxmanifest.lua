@@ -6,6 +6,8 @@ description 'Unique_AllRobs - Merged: DarkPhone + PartySystem + Unique_RobSystem
 version '1.0.0'
 
 dependency 'icon_menu'
+dependency 'mythic_progbar'
+dependency 'ps-ui'
 
 client_script 'client.lua'
 
