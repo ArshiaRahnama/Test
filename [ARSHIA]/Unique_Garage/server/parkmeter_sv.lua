@@ -1,5 +1,20 @@
 local parkedVehicles = {}
 
+-- FIX: shared with getVehicleDatas/storeVehicle below - same check as
+-- carlock_sv.lua's FindKeySlot, so "do you have the key" means the same
+-- thing everywhere in the codebase instead of two different item systems
+-- disagreeing with each other.
+local function HasVehicleKeyItem(xPlayer, plate)
+    if not xPlayer or not xPlayer.inventory then return false end
+    for i = 1, #xPlayer.inventory, 1 do
+        local item = xPlayer.inventory[i]
+        if item.name == 'vehicle_keys' and item.count > 0 and item.info and item.info.plate == plate then
+            return true
+        end
+    end
+    return false
+end
+
 ESX.RegisterServerCallback('temporaryParking:getPlayerBucket', function(source, cb)
     local xPlayer = ESX.GetPlayerFromId(source)
     local playerBucket = GetPlayerRoutingBucket(source)
@@ -11,7 +26,6 @@ ESX.RegisterServerCallback('temporaryParking:getVehicleDatas', function(source, 
     local Gname   = xPlayer.gang.name
     local Jname   = xPlayer.job.name
     local playerBucket = GetPlayerRoutingBucket(source)
-    local ItemKey = xPlayer.getInventoryItem("CarKey|"..Plate)
     local SubPlate = string.sub(Plate, 1, 2)
     local SubPlateFBI = string.sub(Plate, 1, 3)
 
@@ -41,14 +55,17 @@ ESX.RegisterServerCallback('temporaryParking:getVehicleDatas', function(source, 
         return
     end
     if playerBucket ~= 0 then cb(false) return end
-    -- FIX: getInventoryItem returns nil when the player doesn't have this
-    -- item (or the per-plate "CarKey|<plate>" item was never registered),
-    -- and .count was read straight off it -- crashing this whole callback
-    -- with no cb() call, which is exactly why the client hung/did nothing
-    -- when you pressed E without a key item present. Every other
-    -- getInventoryItem() call in this resource already nil-checks first;
-    -- this one didn't.
-    if ItemKey and ItemKey.count and ItemKey.count >= 1 then cb(true) return end
+    -- FIX (the actual "Parking / Error!" bug from your screenshot): this
+    -- used to check for an old, dead per-plate item named
+    -- "CarKey|<plate>" (a naming scheme nothing in the codebase creates
+    -- anymore - everything now grants a single 'vehicle_keys' item per
+    -- slot with info.plate set, see CarLock:ToggleKey/FindKeySlot in
+    -- carlock_sv.lua). That old check could never pass anymore, so this
+    -- always fell through to the DB ownership query - which also fails
+    -- for any vehicle that was never inserted into owned_vehicles (e.g.
+    -- an admin-spawned /car test vehicle). Now checks the real,
+    -- current key item the same way carlock_sv.lua's FindKeySlot does.
+    if HasVehicleKeyItem(xPlayer, Plate) then cb(true) return end
 
     MySQL.Async.fetchAll("SELECT * FROM owned_vehicles WHERE (owner = @player OR LOWER(`owner`) = @gang) AND plate = @plate", {
         ['@player'] = xPlayer.identifier,
@@ -81,8 +98,13 @@ AddEventHandler('temporaryParking:storeVehicle', function(vehicleProps, markerIn
     local plate = vehicleProps.plate
     local hasKey = false
 
-    local keyItem = "CarKey|" .. ESX.Math.Trim(plate)
-    if xPlayer.getInventoryItem(keyItem) and xPlayer.getInventoryItem(keyItem).count >= 1 then
+    -- FIX: same old "CarKey|<plate>" item this whole file used to check -
+    -- replaced with the real, current key system (see HasVehicleKeyItem
+    -- above). This value only gets forwarded to the client on retrieve;
+    -- the actual re-grant on retrieve is handled server-side by
+    -- CarLock:ToggleKey (parkmeter_cl.lua), so this is just kept
+    -- consistent rather than left checking an item that can never exist.
+    if HasVehicleKeyItem(xPlayer, ESX.Math.Trim(plate)) then
         hasKey = true
     end
 

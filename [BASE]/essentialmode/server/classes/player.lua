@@ -596,8 +596,41 @@ function CreatePlayer(
         }
     end
 
-    self.addInventoryItem = function(name, count)
+    self.addInventoryItem = function(name, count, slot, info)
         count = tonumber(count) or 0
+
+        -- FIX: this used to only take (name, count) and silently drop any
+        -- extra arguments. Callers like Unique_Garage's
+        -- CarLock:ToggleKey grant per-vehicle keys as
+        -- addInventoryItem('vehicle_keys', 1, nil, {plate=plate, ...}) -
+        -- the metadata was never actually stored, so every "key" looked
+        -- identical and FindKeySlot's item.info.plate check could never
+        -- match anything. When a 4th `info` table is passed, this now
+        -- always creates its own distinct inventory entry carrying that
+        -- info (so two different plates' keys don't collapse into one
+        -- indistinguishable stack) instead of merging into the
+        -- name-keyed stack every other item uses. Every existing 2-arg
+        -- call (the vast majority of items) is completely unaffected.
+        if info ~= nil then
+            if not ESX.Items[name] then
+                return
+            end
+            local item = {
+                name = name,
+                count = count,
+                label = info.label or ESX.Items[name].label,
+                limit = ESX.Items[name].limit,
+                usable = ESX.UsableItemsCallbacks[name] ~= nil,
+                rare = ESX.Items[name].rare,
+                canRemove = ESX.Items[name].canRemove,
+                info = info,
+            }
+            table.insert(self.inventory, item)
+            TriggerEvent("esx:onaddInventoryItem", self.source, item, count)
+            TriggerClientEvent("esx:addInventoryItem", self.source, item, count)
+            return
+        end
+
         local item, i = self.getInventoryItem(name)
         if not item then
             return
@@ -610,7 +643,7 @@ function CreatePlayer(
         TriggerClientEvent("esx:addInventoryItem", self.source, item, count)
     end
 
-    self.removeInventoryItem = function(name, count)
+    self.removeInventoryItem = function(name, count, idx)
         -- SECURITY FIX: a negative (or non-numeric) `count` used to be
         -- subtracted straight from item.count, which for a negative value
         -- actually INCREASES it -- i.e. calling removeInventoryItem with a
@@ -621,7 +654,21 @@ function CreatePlayer(
         count = tonumber(count)
         if type(count) ~= "number" or count <= 0 then return end
 
-        local item, i = self.getInventoryItem(name)
+        -- FIX: paired with the addInventoryItem metadata support above -
+        -- when multiple entries share the same `name` (e.g. several
+        -- vehicle_keys, one per plate, each its own slot), the plain
+        -- name lookup below only ever finds the FIRST one. Callers that
+        -- already know exactly which slot to remove (Unique_Garage's
+        -- CarLock:ToggleKey passes the slot index it found via
+        -- FindKeySlot) can now pass it as a 3rd argument to target that
+        -- exact entry. Omitted/invalid idx falls back to the original
+        -- by-name lookup, so every existing 2-arg call is unaffected.
+        local item, i
+        if idx and self.inventory[idx] and self.inventory[idx].name == name then
+            item, i = self.inventory[idx], idx
+        else
+            item, i = self.getInventoryItem(name)
+        end
         if not item then return end
 
         local newCount = math.max(0, item.count - count)

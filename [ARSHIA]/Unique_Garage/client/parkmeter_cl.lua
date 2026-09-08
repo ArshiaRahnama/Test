@@ -1,4 +1,3 @@
-
 local vehsdamage = {}
 local vehsprop   = {}
 
@@ -298,6 +297,15 @@ AddEventHandler('temporaryParking:spawnVehicle', function(vehsprop, markerIndex)
                 setDamagesPM(vehicle, vehsdamage)
                 TaskWarpPedIntoVehicle(PlayerPedId(), vehicle, -1)
                 AttachOwnCarBlip(vehicle)
+                -- FIX: retrieving a vehicle from the parkmeter never gave
+                -- back a vehicle_keys item - this event had no
+                -- CarLock:ToggleKey call at all. Same pattern as every
+                -- other spawn point in the codebase: warp in first, then
+                -- ask the server for the key (server independently
+                -- verifies the player is actually sitting in this exact
+                -- plate before granting anything).
+                Wait(100)
+                TriggerServerEvent('CarLock:ToggleKey', true, vehsprop.plate)
             end)
         else
             ESX.Game.SpawnVehicle(vehsprop.model, coords, heading, function(vehicle)
@@ -305,6 +313,11 @@ AddEventHandler('temporaryParking:spawnVehicle', function(vehsprop, markerIndex)
                 setDamagesPM(vehicle, vehsdamage)
                 TaskWarpPedIntoVehicle(PlayerPedId(), vehicle, -1)
                 AttachOwnCarBlip(vehicle)
+                -- FIX: see comment above (job-vehicle branch) - same
+                -- missing key grant, same fix, for the normal/personal
+                -- vehicle branch.
+                Wait(100)
+                TriggerServerEvent('CarLock:ToggleKey', true, vehsprop.plate)
             end)
         end
         PlaySoundFrontend(-1, "CHECKPOINT_NORMAL", "HUD_MINI_GAME_SOUNDSET", true)
