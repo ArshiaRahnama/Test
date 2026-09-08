@@ -50,6 +50,17 @@ AddEventHandler('esx_uniquejobs:dojSaveMugshot', function(query, photoUrl)
 		return
 	end
 
+	-- Defense in depth: the client already blocks a hand-typed
+	-- non-link (like a pasted screenshot/base64 blob mistaken for a
+	-- URL), but never trust the client alone. `data:image/...;base64,`
+	-- IS legitimate here -- that's exactly what MugShotBase64
+	-- (client/mugshot_menu.lua) sends -- so only reject values that are
+	-- neither a real link nor a real base64 image data URI.
+	if not (photoUrl:find('^https?://') or photoUrl:find('^data:image/[^;]+;base64,')) then
+		TriggerClientEvent('esx:showNotification', source, '~r~Format-e Aks Namotabar (Na Link, Na Base64-ye Vaghei)')
+		return
+	end
+
 	resolveIdentifier(query, function(identifier, name)
 		if not identifier then
 			TriggerClientEvent('esx:showNotification', source, '~r~Shahrvand Peida Nashod')

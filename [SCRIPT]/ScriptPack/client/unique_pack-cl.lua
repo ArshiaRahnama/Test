@@ -314,7 +314,12 @@ function createAnimal()
 							TaskWanderStandard(Animal, true, true)
 							SetEntityAsMissionEntity(Animal, true, true)
 							local AnimalBlip = AddBlipForEntity(Animal)
-							SetBlipSprite (AnimalBlip,442)
+							-- FIX: sprite 442 renders as an area/radius-style patch on the
+							-- minimap that gets darker/more solid the closer the camera gets,
+							-- instead of a normal point icon. Every hunted animal (1-2 spawn
+							-- at a time) used this sprite, which is exactly the "yellow
+							-- circle(s)" reported. Switched to sprite 1 (plain Circle).
+							SetBlipSprite (AnimalBlip,1)
 							SetBlipDisplay(AnimalBlip, 2)
 							SetBlipScale(AnimalBlip, 0.7)
 							SetBlipColour (AnimalBlip,1)
@@ -716,6 +721,23 @@ local limite = 13.89
 local dirtSurfaces = {4, 5, 10}
 local noSpeedLimitSurfaces = {7, 8, 1, 4, 181, 15, 3, 13, 68, 0}
 
+-- STRONGER (debug helper): run /antipgsurface while driving over a given
+-- terrain to print its real surface material index in the console/chat.
+-- Use this to collect verified index numbers before adding them to
+-- dirtSurfaces above - don't guess numbers without testing them first.
+RegisterCommand('antipgsurface', function()
+    local ped = PlayerPedId()
+    if IsPedInAnyVehicle(ped, false) then
+        local veh = GetVehiclePedIsIn(ped, false)
+        local mat = GetVehicleWheelSurfaceMaterial(veh, 0)
+        local msg = ('[Antipg] surface material index = %s'):format(tostring(mat))
+        print(msg)
+        TriggerEvent('chat:addMessage', { args = { msg } })
+    else
+        print('[Antipg] you must be driving a vehicle to check the surface.')
+    end
+end, false)
+
 local blackListed = {
     788045382,
     -1453280962,
@@ -760,7 +782,7 @@ local classMod = {
     [5] = limite,
     [6] = limite,
     [7] = limite,
-    [8] = serverspeed,
+    [8] = 19.44, -- STRONGER: Motorcycles used to be fully exempt (serverspeed = no limit at all off-road). Now capped at ~70km/h instead of unlimited.
     [9] = 47.22,
     [10] = limite,
     [11] = limite,
@@ -826,15 +848,35 @@ Citizen.CreateThread(function()
     end
 end)
 
+-- STRONGER: when all 4 tyres are shot/burst, treat it like off-road and
+-- force the same speed cap (instead of letting the vehicle keep whatever
+-- speed a laggy/modded client reports on flat tyres).
+function areAllTyresBurst_Antipg(veh)
+    for wheel = 0, 3 do
+        if not IsVehicleTyreBurst(veh, wheel, false) then
+            return false
+        end
+    end
+    return true
+end
+
 Citizen.CreateThread(function()
     while true do
         if not isBlacklisted then
             if vehicle and isDriver then
                 local speed = GetEntitySpeed(vehicle)
                 local surfaceType = GetVehicleWheelSurfaceMaterial(vehicle, 0)
+                local allTyresBurst = areAllTyresBurst_Antipg(vehicle)
 
-                if isDirtOrGrassSurface_Antipg(surfaceType) then
-                    if not isModed and speed >= 8.5 then
+                if allTyresBurst then
+                    -- STRONGER: on 4 popped tyres the car shouldn't move at all,
+                    -- not just be slowed down. Kill speed every tick.
+                    SetVehicleMaxSpeed(vehicle, 0.0)
+                    SetVehicleForwardSpeed(vehicle, 0.0)
+                    isModed = true
+                elseif isDirtOrGrassSurface_Antipg(surfaceType) then
+                    -- STRONGER: engage sooner (was 8.5 m/s ~30km/h, now 3.0 m/s ~11km/h)
+                    if not isModed and speed >= 3.0 then
                         isModed = true
                         SetVehicleMaxSpeed(vehicle, classMod[class] or limite)
                     end
@@ -845,7 +887,7 @@ Citizen.CreateThread(function()
                     lllimit_Antipg(vehicle, limite, speed)
                 end
 
-                if isNoSpeedLimitSurface_Antipg(surfaceType) then
+                if isNoSpeedLimitSurface_Antipg(surfaceType) and not allTyresBurst then
                     SetVehicleMaxSpeed(vehicle, serverspeed)
                 end
             end
@@ -882,223 +924,18 @@ local llmitsss = {
     13.89,
 }
 
-local speed = GetEntitySpeed(vehicle)
 function lllimit_Antipg(vehicle, limite)
-    for i=1, tostring(#llmitsss), 1 do
-
-        if i <= 21 then
-
-            if not isNoSpeedLimitSurface_Antipg(GetVehicleWheelSurfaceMaterial(vehicle, 0)) then
-                if GetEntitySpeed(vehicle) >= llmitsss[1] then
-                    SetVehicleMaxSpeed(vehicle, llmitsss[1])
-                    Wait(100)
-                end
-            else
-                SetVehicleMaxSpeed(vehicle, serverspeed)
-
-            end
-
-            if not isNoSpeedLimitSurface_Antipg(GetVehicleWheelSurfaceMaterial(vehicle, 0)) then
-                if GetEntitySpeed(vehicle) >= llmitsss[2] then
-                    SetVehicleMaxSpeed(vehicle, llmitsss[2])
-                    Wait(100)
-                end
-            else
-                SetVehicleMaxSpeed(vehicle, serverspeed)
-
-            end
-
-            if not isNoSpeedLimitSurface_Antipg(GetVehicleWheelSurfaceMaterial(vehicle, 0)) then
-                if GetEntitySpeed(vehicle) >= llmitsss[3] then
-                    SetVehicleMaxSpeed(vehicle, llmitsss[3])
-                    Wait(100)
-                end
-            else
-                SetVehicleMaxSpeed(vehicle, serverspeed)
-
-            end
-
-            if not isNoSpeedLimitSurface_Antipg(GetVehicleWheelSurfaceMaterial(vehicle, 0)) then
-                if GetEntitySpeed(vehicle) >= llmitsss[4] then
-                    SetVehicleMaxSpeed(vehicle, llmitsss[4])
-                    Wait(100)
-                end
-            else
-                SetVehicleMaxSpeed(vehicle, serverspeed)
-
-            end
-
-            if not isNoSpeedLimitSurface_Antipg(GetVehicleWheelSurfaceMaterial(vehicle, 0)) then
-                if GetEntitySpeed(vehicle) >= llmitsss[5] then
-                    SetVehicleMaxSpeed(vehicle, llmitsss[5])
-                    Wait(100)
-                end
-            else
-                SetVehicleMaxSpeed(vehicle, serverspeed)
-
-            end
-
-            if not isNoSpeedLimitSurface_Antipg(GetVehicleWheelSurfaceMaterial(vehicle, 0)) then
-                if GetEntitySpeed(vehicle) >= llmitsss[6] then
-                    SetVehicleMaxSpeed(vehicle, llmitsss[6])
-                    Wait(100)
-                end
-            else
-                SetVehicleMaxSpeed(vehicle, serverspeed)
-
-            end
-
-            if not isNoSpeedLimitSurface_Antipg(GetVehicleWheelSurfaceMaterial(vehicle, 0)) then
-                if GetEntitySpeed(vehicle) >= llmitsss[7] then
-                    SetVehicleMaxSpeed(vehicle, llmitsss[7])
-                    Wait(100)
-                end
-            else
-                SetVehicleMaxSpeed(vehicle, serverspeed)
-
-            end
-
-            if not isNoSpeedLimitSurface_Antipg(GetVehicleWheelSurfaceMaterial(vehicle, 0)) then
-                if GetEntitySpeed(vehicle) >= llmitsss[8] then
-                    SetVehicleMaxSpeed(vehicle, llmitsss[8])
-                    Wait(100)
-                end
-            else
-                SetVehicleMaxSpeed(vehicle, serverspeed)
-
-            end
-
-            if not isNoSpeedLimitSurface_Antipg(GetVehicleWheelSurfaceMaterial(vehicle, 0)) then
-                if GetEntitySpeed(vehicle) >= llmitsss[9] then
-                    SetVehicleMaxSpeed(vehicle, llmitsss[9])
-                    Wait(100)
-                end
-            else
-                SetVehicleMaxSpeed(vehicle, serverspeed)
-
-            end
-
-            if not isNoSpeedLimitSurface_Antipg(GetVehicleWheelSurfaceMaterial(vehicle, 0)) then
-                if GetEntitySpeed(vehicle) >= llmitsss[10] then
-                    SetVehicleMaxSpeed(vehicle, llmitsss[10])
-                    Wait(100)
-                end
-            else
-                SetVehicleMaxSpeed(vehicle, serverspeed)
-
-            end
-
-            if not isNoSpeedLimitSurface_Antipg(GetVehicleWheelSurfaceMaterial(vehicle, 0)) then
-                if GetEntitySpeed(vehicle) >= llmitsss[11] then
-                    SetVehicleMaxSpeed(vehicle, llmitsss[11])
-                    Wait(100)
-                end
-            else
-                SetVehicleMaxSpeed(vehicle, serverspeed)
-
-            end
-
-            if not isNoSpeedLimitSurface_Antipg(GetVehicleWheelSurfaceMaterial(vehicle, 0)) then
-                if GetEntitySpeed(vehicle) >= llmitsss[12] then
-                    SetVehicleMaxSpeed(vehicle, llmitsss[12])
-                    Wait(100)
-                end
-            else
-                SetVehicleMaxSpeed(vehicle, serverspeed)
-
-            end
-
-            if not isNoSpeedLimitSurface_Antipg(GetVehicleWheelSurfaceMaterial(vehicle, 0)) then
-                if GetEntitySpeed(vehicle) >= llmitsss[13] then
-                    SetVehicleMaxSpeed(vehicle, llmitsss[13])
-                    Wait(100)
-                end
-            else
-                SetVehicleMaxSpeed(vehicle, serverspeed)
-
-            end
-
-            if not isNoSpeedLimitSurface_Antipg(GetVehicleWheelSurfaceMaterial(vehicle, 0)) then
-                if GetEntitySpeed(vehicle) >= llmitsss[14] then
-                    SetVehicleMaxSpeed(vehicle, llmitsss[14])
-                    Wait(100)
-                end
-            else
-                SetVehicleMaxSpeed(vehicle, serverspeed)
-
-            end
-
-            if not isNoSpeedLimitSurface_Antipg(GetVehicleWheelSurfaceMaterial(vehicle, 0)) then
-                if GetEntitySpeed(vehicle) >= llmitsss[15] then
-                    SetVehicleMaxSpeed(vehicle, llmitsss[15])
-                    Wait(100)
-                end
-            else
-                SetVehicleMaxSpeed(vehicle, serverspeed)
-
-            end
-
-            if not isNoSpeedLimitSurface_Antipg(GetVehicleWheelSurfaceMaterial(vehicle, 0)) then
-                if GetEntitySpeed(vehicle) >= llmitsss[16] then
-                    SetVehicleMaxSpeed(vehicle, llmitsss[16])
-                    Wait(100)
-                end
-            else
-                SetVehicleMaxSpeed(vehicle, serverspeed)
-
-            end
-
-            if not isNoSpeedLimitSurface_Antipg(GetVehicleWheelSurfaceMaterial(vehicle, 0)) then
-                if GetEntitySpeed(vehicle) >= llmitsss[17] then
-                    SetVehicleMaxSpeed(vehicle, llmitsss[17])
-                    Wait(100)
-                end
-            else
-                SetVehicleMaxSpeed(vehicle, serverspeed)
-
-            end
-
-            if not isNoSpeedLimitSurface_Antipg(GetVehicleWheelSurfaceMaterial(vehicle, 0)) then
-                if GetEntitySpeed(vehicle) >= llmitsss[18] then
-                    SetVehicleMaxSpeed(vehicle, llmitsss[18])
-                    Wait(100)
-                end
-            else
-                SetVehicleMaxSpeed(vehicle, serverspeed)
-
-            end
-
-            if not isNoSpeedLimitSurface_Antipg(GetVehicleWheelSurfaceMaterial(vehicle, 0)) then
-                if GetEntitySpeed(vehicle) >= llmitsss[19] then
-                    SetVehicleMaxSpeed(vehicle, llmitsss[19])
-                    Wait(100)
-                end
-            else
-                SetVehicleMaxSpeed(vehicle, serverspeed)
-
-            end
-
-            if not isNoSpeedLimitSurface_Antipg(GetVehicleWheelSurfaceMaterial(vehicle, 0)) then
-                if GetEntitySpeed(vehicle) >= llmitsss[20] then
-                    SetVehicleMaxSpeed(vehicle, llmitsss[20])
-                    Wait(100)
-                end
-            else
-                SetVehicleMaxSpeed(vehicle, serverspeed)
-
-            end
-
-            if not isNoSpeedLimitSurface_Antipg(GetVehicleWheelSurfaceMaterial(vehicle, 0)) then
-                if GetEntitySpeed(vehicle) >= llmitsss[21] then
-                    SetVehicleMaxSpeed(vehicle, llmitsss[21])
-                    Wait(100)
+    for i = 1, #llmitsss do
+        if not isNoSpeedLimitSurface_Antipg(GetVehicleWheelSurfaceMaterial(vehicle, 0)) then
+            if GetEntitySpeed(vehicle) >= llmitsss[i] then
+                SetVehicleMaxSpeed(vehicle, llmitsss[i])
+                Wait(100)
+                if i == #llmitsss then
                     return
                 end
-            else
-                SetVehicleMaxSpeed(vehicle, serverspeed)
-
             end
-
+        else
+            SetVehicleMaxSpeed(vehicle, serverspeed)
         end
     end
 end

@@ -651,6 +651,21 @@ ESX.RegisterServerCallback('FMGangs:EditItemAccess', function(source, cb, GangNa
         ['@grade'] = GradeNumber,
         ['@access'] = json.encode(grade.access),
     }, function(result)
+        -------------------------------------------------------------
+        -- FIX (requested: a rank whose access to an item just got
+        -- toggled should see the lock update live, not only after
+        -- closing and reopening the armory - the checker function
+        -- itself always reads live data, but lc-inventory only
+        -- recomputes/re-renders `locked` when it decides to push a
+        -- refresh, which it had no reason to do for an access change
+        -- happening in a completely different resource). Pushes that
+        -- refresh to every armory this gang has - itemAccess applies
+        -- to all of them, not just one specific stash.
+        -------------------------------------------------------------
+        for key, _ in pairs(Gangs[GangName].armory or {}) do
+            local stashId = ('gang_armory_%s_%s'):format(GangName, tostring(key))
+            pcall(function() exports['lc-inventory']:refreshStashViewers(stashId) end)
+        end
         cb(value)
     end)
 end)
@@ -1330,8 +1345,23 @@ end)
 -- slot number, each entry {name, count, slot, info, weight}.
 EnsureArmoryStash = function(playergang, key, armory)
     local stashId = GetArmoryStashId(playergang, key)
-    if RegisteredArmoryStashes[stashId] then return stashId end
 
+    -------------------------------------------------------------
+    -- FIX (real bug found - this is very likely why blocking an item
+    -- looked like it did nothing): RegisteredArmoryStashes used to
+    -- skip re-registering the access checker once it had been done
+    -- once, ever, for a given stashId. But that flag lives in
+    -- Unique_ALLGangs' own memory - if lc-inventory gets restarted on
+    -- its own (a completely normal, independent thing to do), its
+    -- StashAccessCheckers table is wiped clean along with it, while
+    -- this resource's flag stays `true` forever since IT didn't
+    -- restart. Every armory open after that point would silently skip
+    -- re-registering, so the checker would just never exist again
+    -- until Unique_ALLGangs itself also happened to restart - matching
+    -- exactly "blocked in the boss menu, but still takeable in game."
+    -- Re-registering every call is cheap (just overwrites a table
+    -- entry) so there's no real reason to guard it at all.
+    -------------------------------------------------------------
     local existing = MySQL.Sync.fetchScalar('SELECT 1 FROM stashs WHERE stash = ?', { stashId })
     if not existing then
         local seedItems, seedInventory, slot = {}, {}, 1
@@ -1365,19 +1395,37 @@ EnsureArmoryStash = function(playergang, key, armory)
     -- Gangs[gang].grades[grade].access.itemAccess[itemName] = true/false;
     -- this is what was missing to actually enforce it. Items never
     -- explicitly toggled default to accessible.
-    exports['lc-inventory']:registerStashAccessCheck(stashId, function(checkSource, itemName)
-        local xP = ESX.GetPlayerFromId(checkSource)
-        if not xP or not xP.gang or xP.gang.name ~= playergang then return true end
+    -- Wrapped in pcall + logged either way: if lc-inventory is ever not
+    -- up yet (or the export name doesn't match), this used to error
+    -- out of the whole function silently - now it's visible in console
+    -- instead of just quietly never protecting anything. Also logs
+    -- every single check it makes (item + result) so it's possible to
+    -- see directly in console whether this is even running at all when
+    -- an armory is opened, instead of guessing.
+    local regOk, regErr = pcall(function()
+        exports['lc-inventory']:registerStashAccessCheck(stashId, function(checkSource, itemName)
+            local xP = ESX.GetPlayerFromId(checkSource)
+            if not xP or not xP.gang or xP.gang.name ~= playergang then return true end
 
-        local grade = Gangs[playergang] and Gangs[playergang].grades[xP.gang.grade]
-        if not grade or not grade.access or not grade.access.itemAccess then return true end
+            local grade = Gangs[playergang] and Gangs[playergang].grades[xP.gang.grade]
+            if not grade or not grade.access or not grade.access.itemAccess then
+                print('[Unique_ALLGangs] itemAccess check: ' .. stashId .. ' / ' .. tostring(itemName) .. ' -> ALLOWED (no itemAccess table set for grade ' .. tostring(xP.gang.grade) .. ')')
+                return true
+            end
 
-        local allowed = grade.access.itemAccess[itemName]
-        if allowed == nil then return true end
-        return allowed and true or false
+            local allowed = grade.access.itemAccess[itemName]
+            local result = (allowed == nil) or (allowed and true or false)
+            print('[Unique_ALLGangs] itemAccess check: ' .. stashId .. ' / ' .. tostring(itemName) .. ' -> ' .. (result and 'ALLOWED' or 'BLOCKED') .. ' (grade ' .. tostring(xP.gang.grade) .. ', stored value = ' .. tostring(allowed) .. ')')
+            return result
+        end)
     end)
+    if regOk then
+        print('[Unique_ALLGangs] EnsureArmoryStash: registered item access check for ' .. stashId)
+    else
+        print('[Unique_ALLGangs] EnsureArmoryStash: FAILED to register access check for ' .. stashId .. ' -> ' .. tostring(regErr) .. ' (item access will NOT be enforced for this armory until this succeeds)')
+    end
 
-    RegisteredArmoryStashes[stashId] = true
+    RegisteredArmoryStashes[stashId] = true -- kept only as a diagnostic marker now, no longer gates anything
     return stashId
 end
 
@@ -1397,8 +1445,25 @@ ESX.RegisterServerCallback('For5M:OpenInventory', function(source, cb, code)
     TriggerClientEvent('For5MGangs:openArmoryStash', source, stashId, ARMORY_MAX_WEIGHT, ARMORY_SLOTS, playergang .. ' Armory')
     cb(true)
 end)
+-------------------------------------------------------------------
+-- FIX (found while auditing the same exploit class as
+-- FMGangsBoss:server:MoneyPack/For5M:AddGangXP): this had no access
+-- check either - any player could stock ANY gang's armory with a full
+-- weapon/item pack, repeatedly, without being an admin. The pack
+-- *contents* were already safely server-defined (Config.Packs[name]),
+-- so this couldn't mint arbitrary items, but it was still a free,
+-- unlimited, unauthenticated stocking exploit. Also guards against
+-- `name` being 'moneypack'/'xppack' (plain numbers in Config.Packs,
+-- not item tables) which would otherwise error out of pairs() below.
+-------------------------------------------------------------------
 RegisterNetEvent('For5M:itemPacks')
 AddEventHandler('For5M:itemPacks', function ( gang, name ) 
+    local src = source
+    if not IsPlayerCanOpenPanel(src) then
+        print('[Unique_ALLGangs] For5M:itemPacks: source ' .. tostring(src) .. ' is not an admin - denying')
+        return
+    end
+    if type(Config.Packs[name]) ~= 'table' then return end
     if type(Gangs[gang]) ~= 'table'or type(Gangs[gang]['armory']) ~= 'table' then return end 
     for k,v in pairs( Gangs[gang]['armory'] ) do 
         local items = v['items'] or {}

@@ -65,9 +65,6 @@ files {
 exports {
     "getUser",
     "GetPlayerICName",
-    "RegisterItem",
-    "RegisterUsableItem",
-    "RegisterServerCallback",
 }
 
 server_exports {
@@ -78,6 +75,9 @@ server_exports {
     "canGroupTarget",
     "log",
     "debugMsg",
-    "IcName"
+    "IcName",
+    "RegisterItem",
+    "RegisterUsableItem",
+    "RegisterServerCallback",
 }
 

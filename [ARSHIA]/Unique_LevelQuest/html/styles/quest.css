@@ -1,3 +1,28 @@
+.quests-summary {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.questSlotChip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  font-size: 11px;
+  font-weight: 800;
+  color: #d8dbe4;
+}
+
+.questSlotChip i { color: var(--steel); font-size: 11px; }
+.questSlotChip.full { border-color: rgba(255, 107, 107, 0.35); color: #ff8f8f; }
+.questSlotChip.full i { color: #ff6b6b; }
+.questSlotChip.done { color: #4ee08a; }
+.questSlotChip.done i { color: #4ee08a; }
+
 .quests-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
@@ -13,6 +38,25 @@
   text-align: center;
   transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
   animation: cardIn 0.35s ease backwards;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Three states — available (not yet accepted), active (accepted,
+   in progress), completed — get distinct treatments so it's obvious
+   at a glance which bucket a card is in without reading the button. */
+.achCard.is-available {
+  opacity: 0.68;
+}
+
+.achCard.is-active {
+  border-color: rgba(255, 140, 26, 0.4);
+  box-shadow: 0 0 0 1px rgba(255, 140, 26, 0.08);
+}
+
+.achCard.is-completed {
+  border-color: rgba(31, 211, 75, 0.35);
+  background: linear-gradient(165deg, rgba(31, 211, 75, 0.06), rgba(28, 28, 28, 0.92));
 }
 
 .quests-grid .achCard:nth-child(1) { animation-delay: 0.02s; }
@@ -123,4 +167,58 @@
   display: inline-block;
   background: radial-gradient(circle at 35% 35%, #ffe08a, var(--orange) 70%);
   border-radius: 50%;
+}
+
+.questBtn {
+  margin-top: auto;
+  padding: 8px 0;
+  border-radius: 9px;
+  border: none;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.questBtn:active { transform: scale(0.97); }
+.questBtn:disabled { opacity: 0.6; cursor: default; }
+
+.acceptBtn {
+  background: var(--orange);
+  color: #1a1005;
+}
+
+.acceptBtn:hover:not(:disabled) {
+  background: var(--orange2);
+}
+
+.cancelBtn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--muted);
+}
+
+.cancelBtn:hover:not(:disabled) {
+  background: rgba(226, 85, 78, 0.14);
+  border-color: rgba(226, 85, 78, 0.4);
+  color: #ff8f8f;
+}
+
+.questDoneBadge {
+  margin-top: auto;
+  padding: 8px 0;
+  border-radius: 9px;
+  background: rgba(31, 211, 75, 0.1);
+  border: 1px solid rgba(31, 211, 75, 0.3);
+  color: #4ee08a;
+  font-size: 11px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
 }

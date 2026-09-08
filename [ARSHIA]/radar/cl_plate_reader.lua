@@ -274,15 +274,33 @@ function READER:Main()
 						-- Set the plate index for the current reader
 						self:SetIndex( cam, index )
 
+						-- Send the plate information to the NUI side to update the UI. This
+						-- happens FIRST because it also clears any owner/BOLO/tracker info
+						-- from whatever plate was showing before (see setPlate() in radar.js) -
+						-- sending it after the checks below would wipe them right back out.
+						SendNUIMessage( { _type = "changePlate", cam = cam, plate = plate, index = index } )
+
 						-- Automatically lock the plate if the scanned plate matches the BOLO
-						if ( plate == self:GetBoloPlate() ) then
+						-- FEATURE ADDED: also matches against the live BOLO list pulled from
+						-- esx_uniquejobs' Crime Scene / DOJ system (see cl_plate_lookup.lua),
+						-- on top of the reader's own manually-typed BOLO plate.
+						local isLiveBolo = IsUniqueJobsBoloPlate( plate )
+
+						if ( plate == self:GetBoloPlate() or isLiveBolo ) then
 							self:LockCam( cam, false, true )
 
 							SYNC:LockReaderCam( cam, READER:GetCameraDataPacket( cam ) )
 						end
 
-						-- Send the plate information to the NUI side to update the UI
-						SendNUIMessage( { _type = "changePlate", cam = cam, plate = plate, index = index } )
+						if ( isLiveBolo ) then
+							SendNUIMessage( { _type = "plateBolo", cam = cam, state = true } )
+						end
+
+						-- FEATURE ADDED: live GPS-tracker indicator (esx_uniquejobs' own
+						-- tracker_manager.lua, placed via FBI/CIA's PLACE TRACKER button)
+						if ( IsUniqueJobsTrackedPlate( plate ) ) then
+							SendNUIMessage( { _type = "plateTracker", cam = cam, state = true } )
+						end
 
 						-- If we use Sonoran CAD, reduce the plate events to just player's vehicle, otherwise life as normal
 						if ( ( CONFIG.use_sonorancad and ( UTIL:IsPlayerInVeh( veh ) or IsVehiclePreviouslyOwnedByPlayer( veh ) ) and GetVehicleClass( veh ) ~= 18 ) or not CONFIG.use_sonorancad ) then

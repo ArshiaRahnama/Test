@@ -116,10 +116,26 @@ AddEventHandler('For5M:AddXP', function(amount)
     AddGangXP(source, amount)
 end)
 
+-------------------------------------------------------------------
+-- FIX (same exploit class as FMGangsBoss:server:MoneyPack in
+-- server/boss.lua - unlimited XP injection): no access check, amount
+-- taken straight from the client, for any gang. Now requires the same
+-- admin check as everywhere else, and ignores the client-sent amount
+-- entirely - uses the fixed Config.Packs['xppack'] value instead
+-- (the client already happened to send this correctly, but the raw
+-- event was still directly callable with any number).
+-------------------------------------------------------------------
 RegisterNetEvent('For5M:AddGangXP')
 AddEventHandler('For5M:AddGangXP', function(amount , gang )
-    UpdateXP(gang , amount , "XP PACK")
-    Database(0, amount ,gang )
+    local src = source
+    if not IsPlayerCanOpenPanel(src) then
+        print('[Unique_ALLGangs] For5M:AddGangXP: source ' .. tostring(src) .. ' is not an admin - denying')
+        return
+    end
+    if type(Gangs) ~= 'table' or not Gangs[gang] then return end
+    local xp = tonumber(Config.Packs['xppack']) or 0
+    UpdateXP(gang , xp , "XP PACK")
+    Database(0, xp ,gang )
 end)
 
 function UpdateXP(gang, Add, MT)

@@ -70,53 +70,60 @@ function UpdateProfile()
         end)
     end)
 
+    UpdateQuests()
+end
+
+-- Extracted out of UpdateProfile (used to be inlined here) so it can
+-- also be called on its own after QuestSystem:AcceptQuest /
+-- QuestSystem:CancelQuest, instead of re-fetching the whole profile
+-- (GetAcc + GetCC) just to refresh the quest list.
+function UpdateQuests()
     ESX.TriggerServerCallback('HUD_Menu:GetQuests', function(quests)
         if not quests then return end
 
+        local jobname = quests["Job"]
+        local pool = jobname and Config.JobQuests[jobname] or Config.DefaultQuest
+
         local myquests = {}
-        if quests["Job"] then
-            local jobname = quests["Job"]
-            quests["Job"] = nil
-            for id, prog in pairs(quests) do
-                local questDef = Config.JobQuests[jobname] and Config.JobQuests[jobname][tonumber(id)]
-                if questDef then
-                    local current = tonumber(prog) or 0
-                    table.insert(myquests, {
-                        id = id,
-                        title = questDef.name,
-                        description = questDef.description,
-                        progress = (current / questDef.requiredTrigger) * 100,
-                        current = current,
-                        required = questDef.requiredTrigger,
-                        xp = questDef.XP,
-                        coin = questDef.coin,
-                        icon = "fa-shield-halved",
-                    })
-                end
-            end
-        else
-            for id, prog in pairs(quests) do
-                local questDef = Config.DefaultQuest[tonumber(id)]
-                if questDef then
-                    local current = tonumber(prog) or 0
-                    table.insert(myquests, {
-                        id = id,
-                        title = questDef.name,
-                        description = questDef.description,
-                        progress = (current / questDef.requiredTrigger) * 100,
-                        current = current,
-                        required = questDef.requiredTrigger,
-                        xp = questDef.XP,
-                        coin = questDef.coin,
-                        icon = "fa-shield-halved",
-                    })
-                end
+        if pool then
+            for id, questDef in ipairs(pool) do
+                local idStr = tostring(id)
+                local accepted = quests[idStr] ~= nil
+                local current = accepted and (tonumber(quests[idStr]) or 0) or 0
+                table.insert(myquests, {
+                    id = idStr,
+                    title = questDef.name,
+                    description = questDef.description,
+                    progress = accepted and (current / questDef.requiredTrigger) * 100 or 0,
+                    current = current,
+                    required = questDef.requiredTrigger,
+                    xp = questDef.XP,
+                    coin = questDef.coin,
+                    icon = "fa-shield-halved",
+                    accepted = accepted,
+                    completed = accepted and current >= questDef.requiredTrigger,
+                })
             end
         end
 
-        SendNUIMessage({ type = "loadQuests", quests = myquests })
+        SendNUIMessage({ type = "loadQuests", quests = myquests, maxActive = Config.QuestsPerDay or 6 })
     end)
 end
+
+RegisterNUICallback('acceptQuest', function(data, cb)
+    TriggerServerEvent('QuestSystem:AcceptQuest', data.id)
+    cb('ok')
+end)
+
+RegisterNUICallback('cancelQuest', function(data, cb)
+    TriggerServerEvent('QuestSystem:CancelQuest', data.id)
+    cb('ok')
+end)
+
+RegisterNetEvent('QuestSystem:RefreshQuests')
+AddEventHandler('QuestSystem:RefreshQuests', function()
+    UpdateQuests()
+end)
 
 -- DUTY tab data — separate from UpdateProfile since it's a distinct
 -- server callback (server/duty.lua) reading esx_duty's duty_logs

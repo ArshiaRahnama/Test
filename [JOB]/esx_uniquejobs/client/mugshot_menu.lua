@@ -1,14 +1,22 @@
 -- ============================================================
 -- Mugshot menu (feature #8)
--- Reached from /law's main menu ("Mugshot"). If the screenshot-basic
--- resource is installed, running, AND the `mugshot_upload_url` convar
--- is set (server.cfg: `setr mugshot_upload_url "https://..."`, e.g. a
--- Discord webhook URL or any image-host upload endpoint), "Sabt-e Aks"
--- captures a live screenshot of whoever the officer is aimed at/near
--- and uploads it automatically. If ANY of those three things is
--- missing, it falls back to pasting a photo URL by hand instead of
--- silently doing nothing -- and says exactly which one is missing.
+-- Three ways "Sabt-e Aks" can get a photo, tried in order:
+--   1) MugShotBase64 (github.com/BaziForYou/MugShotBase64) -- if
+--      installed and the citizen is a currently online, nearby
+--      player, this renders their actual in-game face straight to
+--      a base64 image. No webhook, no upload URL, no server config
+--      at all -- just works. This is the preferred path.
+--   2) screenshot-basic + `mugshot_upload_url` convar -- a full
+--      screen capture uploaded to whatever URL you configured
+--      (e.g. a Discord webhook). Works for offline citizens too
+--      since it just captures whatever's on the officer's screen.
+--   3) Paste a photo URL by hand -- last resort if neither resource
+--      is installed/configured.
 -- ============================================================
+
+local function hasMugShotBase64()
+	return GetResourceState('MugShotBase64') == 'started'
+end
 
 local function hasScreenshotBasic()
 	return GetResourceState('screenshot-basic') == 'started'
@@ -29,15 +37,34 @@ local function extractPhotoUrl(result)
 end
 
 local function manualPhotoUrlPrompt(query)
-	local input = lib.inputDialog('Sabt-e Mugshot (Dasti)', { { type = 'input', label = 'URL-e Aks', required = true } })
-	if input and input[1] then
-		TriggerServerEvent('esx_uniquejobs:dojSaveMugshot', query, input[1])
+	local input = lib.inputDialog('Sabt-e Mugshot (Dasti)', { { type = 'input', label = 'URL-e Aks (bayad ba http:// ya https:// shoru shavad)', required = true } })
+	if not input or not input[1] then return end
+
+	local url = input[1]
+	if not (url:find('^https?://')) then
+		ESX.ShowNotification("~r~In Yek Link Nist -- URL-e Aks Bayad Ba http:// Ya https:// Shoru Shavad (Base64/Aks-e Kham Ra Paste Nakonid)")
+		return
 	end
+
+	TriggerServerEvent('esx_uniquejobs:dojSaveMugshot', query, url)
 end
 
-local function captureAndSave(query)
+-- Discord's webhook API returns an EMPTY response (HTTP 204, no body) after
+-- a file upload unless the URL has `?wait=true` -- without it, screenshot-basic
+-- gets nothing to parse, extractPhotoUrl() always fails, and the officer just
+-- sees "Upload Failed" with no real photo ever saved. Auto-append it here so
+-- this works even if `mugshot_upload_url` was configured without knowing about
+-- that quirk.
+local function withDiscordWait(url)
+	if not url:find('discord%.com/api/webhooks') then return url end
+	if url:find('wait=true') then return url end
+	local separator = url:find('?') and '&' or '?'
+	return url .. separator .. 'wait=true'
+end
+
+local function captureViaScreenshotBasic(query)
 	if not hasScreenshotBasic() then
-		ESX.ShowNotification("~y~Resource-e screenshot-basic Nasb/Roshan Nist -- URL-e Aks Ra Dasti Vared Konid")
+		ESX.ShowNotification("~y~Resource-e screenshot-basic Ham Nasb/Roshan Nist -- URL-e Aks Ra Dasti Vared Konid")
 		manualPhotoUrlPrompt(query)
 		return
 	end
@@ -49,7 +76,7 @@ local function captureAndSave(query)
 		return
 	end
 
-	exports['screenshot-basic']:requestScreenshotUpload(uploadUrl, 'files[]', {}, function(data)
+	exports['screenshot-basic']:requestScreenshotUpload(withDiscordWait(uploadUrl), 'files[]', {}, function(data)
 		local ok, result = pcall(json.decode, data)
 		local url = ok and extractPhotoUrl(result) or nil
 		if url then
@@ -59,6 +86,39 @@ local function captureAndSave(query)
 			manualPhotoUrlPrompt(query)
 		end
 	end)
+end
+
+local function captureAndSave(query)
+	-- Path 1: MugShotBase64 -- only possible if the citizen is a
+	-- currently online, streamed-in (nearby) player.
+	if hasMugShotBase64() then
+		local serverId = tonumber(query)
+		local ped = serverId and GetPlayerPed(GetPlayerFromServerId(serverId)) or nil
+
+		if ped and ped ~= 0 then
+			ESX.ShowNotification("~b~Dar Hale Gereftan-e Aks...")
+			local base64 = exports['MugShotBase64']:GetMugShotBase64(ped, false)
+			if base64 and base64 ~= '' then
+				TriggerServerEvent('esx_uniquejobs:dojSaveMugshot', query, base64)
+				return
+			end
+			-- fell through (resource errored) -- try the next method below
+		elseif serverId then
+			ESX.ShowNotification("~y~Shahrvand Online Nist Ya Nazdik Nist (MugShotBase64 Niaz Dare Nazdikesh Bashid) -- Ravesh-e Digar Emtehan Mishavad")
+		end
+	end
+
+	-- Path 2 / 3
+	captureViaScreenshotBasic(query)
+end
+
+-- A raw base64 image can be tens of thousands of characters -- fine to
+-- store and to render as an <img>, but useless (and ugly) to dump as
+-- visible text anywhere. Show the real link when it's a link; show a
+-- short placeholder instead when it's base64.
+local function photoUrlPreview(url)
+	if url and url:find('^https?://') then return url end
+	return '(Aks-e Base64 -- MugShotBase64)'
 end
 
 function OpenMugshotMenu()
@@ -84,10 +144,10 @@ function OpenMugshotMenu()
 		if record.photo_url then
 			options[#options + 1] = {
 				title = 'Namayesh-e Aks',
-				description = record.photo_url,
+				description = photoUrlPreview(record.photo_url),
 				icon = 'image',
 				onSelect = function()
-					lib.alertDialog({ header = record.name, content = ('![mugshot](%s)'):format(record.photo_url), centered = true })
+					lib.alertDialog({ header = record.name, content = ('![mugshot](%s)\n\n%s'):format(record.photo_url, photoUrlPreview(record.photo_url)), centered = true })
 				end,
 			}
 		end
@@ -161,7 +221,7 @@ function OpenRapSheetMenu(query)
 				title = 'Namayesh-e Aks',
 				icon = 'image',
 				onSelect = function()
-					lib.alertDialog({ header = sheet.name, content = ('![mugshot](%s)'):format(sheet.photoUrl), centered = true })
+					lib.alertDialog({ header = sheet.name, content = ('![mugshot](%s)\n\n%s'):format(sheet.photoUrl, photoUrlPreview(sheet.photoUrl)), centered = true })
 				end,
 			}
 		end

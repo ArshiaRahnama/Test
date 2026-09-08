@@ -493,6 +493,25 @@ function RADAR:OpenRemote()
 			-- Tell the NUI side to open the remote
 			SendNUIMessage( { _type = "openRemote" } )
 
+			-- FEATURE ADDED: pull the officer's unit callsign from esx_uniquejobs
+			-- (unit_manager.lua) and show/hide the agent-only tracker button,
+			-- both refreshed every time the remote opens.
+			if ( ESX ~= nil ) then
+				ESX.TriggerServerCallback( "esx_uniquejobs:getUnitMenu", function( data )
+					local callsign = nil
+
+					if ( data ~= nil and data.myUnit ~= nil ) then
+						callsign = data.myUnit.callsign
+					end
+
+					SendNUIMessage( { _type = "setUnitCallsign", callsign = callsign } )
+				end )
+
+				local job = ESX.GetPlayerData().job
+
+				SendNUIMessage( { _type = "setAgentAccess", state = ( job ~= nil and CONFIG.agentJobs[job.name] == true ) } )
+			end
+
 			SYNC:SetRemoteOpenState( true )
 
 			if ( CONFIG.allow_quick_start_video ) then
@@ -1681,6 +1700,68 @@ RegisterNUICallback( "pursuitTimerReset", function( data, cb )
 end )
 
 RegisterNUICallback( "togglePursuitTimerDisplay", function( data, cb )
+	cb( "ok" )
+end )
+
+-- FEATURE ADDED: Quick Actions panel - PANIC + PLACE TRACKER, both just call
+-- straight into esx_uniquejobs' own existing systems (panic_manager.lua /
+-- tracker_manager.lua). Nothing added over there.
+RegisterNUICallback( "sendPanic", function( data, cb )
+	if ( ESX ~= nil ) then
+		local coords = GetEntityCoords( PlayerPedId() )
+
+		TriggerServerEvent( "esx_uniquejobs:sendPanic", coords.x, coords.y, true )
+	end
+
+	cb( "ok" )
+end )
+
+RegisterNUICallback( "placeTracker", function( data, cb )
+	if ( ESX ~= nil ) then
+		local job = ESX.GetPlayerData().job
+
+		if ( job ~= nil and CONFIG.agentJobs[job.name] ) then
+			-- Use whichever camera has a plate actually locked right now -
+			-- front takes priority if both happen to be locked
+			local plate = nil
+
+			if ( READER:GetCamLocked( "front" ) ) then
+				plate = READER:GetPlate( "front" )
+			elseif ( READER:GetCamLocked( "rear" ) ) then
+				plate = READER:GetPlate( "rear" )
+			end
+
+			if ( plate ~= nil and plate ~= "" ) then
+				TriggerServerEvent( "esx_uniquejobs:placeTracker", plate )
+			else
+				UTIL:Notify( "Lock a plate on the reader first." )
+			end
+		end
+	end
+
+	cb( "ok" )
+end )
+
+-- FEATURE ADDED: quick traffic-stop log popup (shown after RESET on the
+-- pursuit timer) - calls straight into esx_uniquejobs' own
+-- traffic_stop_manager.lua (esx_uniquejobs:logTrafficStop). Nothing added
+-- over there either.
+RegisterNUICallback( "logTrafficStop", function( data, cb )
+	if ( ESX ~= nil ) then
+		local citizen = data.citizen
+		if ( citizen == "" ) then citizen = nil end
+
+		local location = nil
+		local coords = GetEntityCoords( PlayerPedId() )
+		local streetHash, crossHash = GetStreetNameAtCoord( coords.x, coords.y, coords.z )
+
+		if ( streetHash ~= nil ) then
+			location = GetStreetNameFromHashKey( streetHash )
+		end
+
+		TriggerServerEvent( "esx_uniquejobs:logTrafficStop", citizen, data.reason, data.outcome, nil, location )
+	end
+
 	cb( "ok" )
 end )
 

@@ -259,7 +259,7 @@ Config.AccountName = {
 
 -- Display id card in inventory
 Config.ActiveIdCard = true -- just for ESX
-Config.ActiveMugShot = false -- https://github.com/BaziForYou/MugShotBase64 -- disabled: that resource isn't installed on this server (was causing "No such export GetMugShotBase64" errors). Install it separately and flip this back to true if you want real player-face mugshots instead of the static PictureIdCard fallback below.
+Config.ActiveMugShot = false -- https://github.com/BaziForYou/MugShotBase64 -- reverted back to off at your request (removing the Mugshot feature); flip to true + ensure MugShotBase64 if you want it back later.
 Config.PictureIdCard = 'https://cdn.discordapp.com/attachments/979486375218937946/1135635765397823488/47848.png'  -- if ActiveMugShot == false
 Config.IdCardName = {
     ["id"] = {

@@ -1,13 +1,13 @@
 -- ================================================================= --
 -- Quest system (was QuestSystem)
 -- ================================================================= --
--- FIXES:
+-- FIXES (historical):
 --  1) GenerateQuests used to do `for i=1,6 do ... until not usedQuestIds[questid]`
---     with NO cap on retries. If a job's quest pool has fewer than 6
---     entries (several do, after trimming out unmapped quests — see
---     config.lua), every slot after the pool is exhausted retries
---     forever and hangs that coroutine. Now capped to pool size, with
---     a hard retry ceiling as a second safety net.
+--     with NO cap on retries. If a job's quest pool had fewer than 6
+--     entries, every slot after the pool was exhausted retried
+--     forever and hung that coroutine. Superseded below (see next
+--     point) rather than just capped, since the whole pre-assignment
+--     step this bug lived in no longer exists.
 --  2) Every quest trigger was a raw RegisterServerEvent with no rate
 --     limit, so a player could script-spam TriggerServerEvent(trigger)
 --     to instantly farm a full day's worth of quest rewards without
@@ -18,6 +18,18 @@
 --     'Coin-System:AddCoinCL'. Both are now granted directly, server
 --     side: GrantXP() and GrantCoin() are plain Lua calls (xp.lua and
 --     coin.lua, both in this same resource now).
+--
+-- ACCEPT / CANCEL: quests used to be auto-assigned — GenerateQuests
+-- picked Config.QuestsPerDay random ones from the pool at the start
+-- of each day and that was the whole selection, no player input. Now
+-- GenerateQuests just resets the day (empties the active list) and
+-- the FULL pool is shown in the Quests tab; the player accepts up to
+-- Config.QuestsPerDay of them (QuestSystem:AcceptQuest) and can cancel
+-- an unfinished one to free a slot for a different quest
+-- (QuestSystem:CancelQuest). A quest only tracks progress once
+-- accepted — the trigger handlers below already only bump progress
+-- for ids present in playerquests, which happens to be exactly
+-- "accepted" now, so no change was needed there.
 -- ================================================================= --
 
 local TRIGGER_COOLDOWN = 2 -- seconds; blocks raw event-spam farming
@@ -46,6 +58,15 @@ local function grantQuestReward(xPlayer, quest)
             print(('[Unique_LevelQuest] GrantCoin refused reward for %s (%s coin)'):format(xPlayer.identifier, tostring(quest.coin)))
         end
     end
+end
+
+-- Shared by AcceptQuest/CancelQuest: which pool (job-specific or
+-- default) applies to a given saved quests row.
+local function poolFor(playerquests)
+    if playerquests["Job"] then
+        return Config.JobQuests[playerquests["Job"]]
+    end
+    return Config.DefaultQuest
 end
 
 RegisterServerEvent("QuestSystem:InitializePlayer")
@@ -83,30 +104,95 @@ function GenerateQuests(xPlayer, identifier)
         end
     end
 
-    local pool = job and Config.JobQuests[job] or Config.DefaultQuest
     local quests = {}
     if job then quests["Job"] = job end
+    -- No pre-picked active quests anymore — the full pool shows up in
+    -- the Quests tab and the player accepts which ones they want (see
+    -- QuestSystem:AcceptQuest below).
 
-    if pool and #pool > 0 then
-        local usedQuestIds = {}
-        local questCount = math.min(Config.QuestsPerDay or 6, #pool)
-        for i = 1, questCount do
-            local questid, attempts = nil, 0
-            repeat
-                questid = math.random(1, #pool)
-                attempts = attempts + 1
-            until not usedQuestIds[questid] or attempts > 50
-            usedQuestIds[questid] = true
-            quests[tostring(questid)] = 0
-        end
-    end
-
-    Citizen.Wait(100)
     MySQL.Async.execute('UPDATE quest SET quests = @quests WHERE identifier = @identifier', {
         ['@identifier'] = identifier,
         ['@quests']     = json.encode(quests)
     })
 end
+
+RegisterServerEvent("QuestSystem:AcceptQuest")
+AddEventHandler("QuestSystem:AcceptQuest", function(questId)
+    local _source = source
+    local xPlayer = ESX.GetPlayerFromId(_source)
+    if not xPlayer then return end
+    questId = tostring(tonumber(questId)) -- normalize; also rejects non-numeric junk
+    if questId == "nil" then return end
+
+    MySQL.Async.fetchAll('SELECT * FROM quest WHERE identifier = @identifier', {
+        ['@identifier'] = xPlayer.identifier
+    }, function(result)
+        if not result[1] then return end
+        local playerquests = json.decode(result[1].quests)
+        local pool = poolFor(playerquests)
+        local questDef = pool and pool[tonumber(questId)]
+        if not questDef then return end -- id doesn't exist in this player's current pool
+
+        if playerquests[questId] ~= nil then return end -- already accepted (active or done)
+
+        -- Cap: only quests still IN PROGRESS count against the daily
+        -- slot limit, so finishing one frees a slot for another right
+        -- away instead of waiting for the next day.
+        local activeCount = 0
+        for k, v in pairs(playerquests) do
+            if k ~= "Job" then
+                local kDef = pool[tonumber(k)]
+                local req = kDef and kDef.requiredTrigger or 1
+                if (tonumber(v) or 0) < req then
+                    activeCount = activeCount + 1
+                end
+            end
+        end
+        if activeCount >= (Config.QuestsPerDay or 6) then
+            TriggerClientEvent('esx:showNotification', _source, "Quest slots full", "error", "Cancel an active quest first, or wait for tomorrow's reset.")
+            return
+        end
+
+        playerquests[questId] = 0
+        MySQL.Async.execute('UPDATE quest SET quests = @quests WHERE identifier = @identifier', {
+            ['@identifier'] = xPlayer.identifier,
+            ['@quests']     = json.encode(playerquests)
+        })
+        TriggerClientEvent('QuestSystem:RefreshQuests', _source)
+    end)
+end)
+
+RegisterServerEvent("QuestSystem:CancelQuest")
+AddEventHandler("QuestSystem:CancelQuest", function(questId)
+    local _source = source
+    local xPlayer = ESX.GetPlayerFromId(_source)
+    if not xPlayer then return end
+    questId = tostring(tonumber(questId))
+    if questId == "nil" then return end
+
+    MySQL.Async.fetchAll('SELECT * FROM quest WHERE identifier = @identifier', {
+        ['@identifier'] = xPlayer.identifier
+    }, function(result)
+        if not result[1] then return end
+        local playerquests = json.decode(result[1].quests)
+        if playerquests[questId] == nil then return end -- wasn't accepted, nothing to cancel
+
+        -- Can't cancel a finished quest — no reason to, and it'd let
+        -- someone quietly wipe a completed quest instead of it just
+        -- sitting there marked done.
+        local pool = poolFor(playerquests)
+        local questDef = pool and pool[tonumber(questId)]
+        local req = questDef and questDef.requiredTrigger or 1
+        if (tonumber(playerquests[questId]) or 0) >= req then return end
+
+        playerquests[questId] = nil
+        MySQL.Async.execute('UPDATE quest SET quests = @quests WHERE identifier = @identifier', {
+            ['@identifier'] = xPlayer.identifier,
+            ['@quests']     = json.encode(playerquests)
+        })
+        TriggerClientEvent('QuestSystem:RefreshQuests', _source)
+    end)
+end)
 
 for id, quest in ipairs(Config.DefaultQuest) do
     RegisterServerEvent(quest.trigger)

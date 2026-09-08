@@ -927,6 +927,8 @@ function OpenMobileTaxiActionsMenu_taxi()
 				{label = 'Request List ('..tedad..')',   value = 'requests'},
 				{label = _U('billing'),   value = 'billing'},
 				{label = 'Dastmal Keshidan',   value = 'clean_vehicle'},
+				{label = 'Taxi Meter',   value = 'taximeter'},
+				{label = 'Payan Krayeh (Taxi Meter)',   value = 'taximeter_stop'},
 
 
 			}
@@ -1005,13 +1007,64 @@ function OpenMobileTaxiActionsMenu_taxi()
 
 				OpendivisionsMenu_taxi()
 
+			elseif data.current.value == 'taximeter' then
 
+				OpenTaximeterPlayerMenu_taxi()
+
+			elseif data.current.value == 'taximeter_stop' then
+
+				local playerPed = PlayerPedId()
+				local vehicle   = GetVehiclePedIsIn(playerPed, false)
+				if IsPedInAnyVehicle(playerPed, false) and GetPedInVehicleSeat(vehicle, -1) == playerPed then
+					TriggerServerEvent('zz_taximeter:stopFromMenu', NetworkGetNetworkIdFromEntity(vehicle))
+				end
 
 			end
 		end, function(data, menu)
 			menu.close()
 		end)
 		end)
+	end)
+end
+
+function OpenTaximeterPlayerMenu_taxi()
+	local playerPed = PlayerPedId()
+	local vehicle   = GetVehiclePedIsIn(playerPed, false)
+
+	if not IsPedInAnyVehicle(playerPed, false) or GetPedInVehicleSeat(vehicle, -1) ~= playerPed then
+		ESX.ShowNotification('Bayad Ranande Taxi Bashid')
+		return
+	end
+
+	local elements = {}
+
+	for seat = 0, 6 do
+		local ped = GetPedInVehicleSeat(vehicle, seat)
+		if ped ~= 0 and ped ~= playerPed and DoesEntityExist(ped) and IsPedAPlayer(ped) then
+			local targetPlayer = NetworkGetPlayerIndexFromPed(ped)
+			if targetPlayer ~= -1 then
+				table.insert(elements, {
+					label = GetPlayerName(targetPlayer) .. ' (Sandali ' .. (seat + 1) .. ')',
+					value = GetPlayerServerId(targetPlayer)
+				})
+			end
+		end
+	end
+
+	if #elements == 0 then
+		ESX.ShowNotification('Hich Masaferi Dar Khodro Nist')
+		return
+	end
+
+	ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'zz_taximeter_players', {
+		title    = 'Entekhabe Masafer',
+		align    = 'top-left',
+		elements = elements
+	}, function(data, menu)
+		TriggerServerEvent('zz_taximeter:startForPlayer', NetworkGetNetworkIdFromEntity(vehicle), data.current.value)
+		menu.close()
+	end, function(data, menu)
+		menu.close()
 	end)
 end
 

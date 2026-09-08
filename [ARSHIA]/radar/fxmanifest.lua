@@ -55,16 +55,22 @@ files {
 -- Set the NUI page
 ui_page "nui/radar.html"
 
+-- FIX: config.lua needs to be shared now, not client-only - sv_plate_lookup.lua
+-- (new, for the plate owner lookup feature) checks CONFIG.jobs server-side to
+-- decide who's allowed to pull registration info off a scanned plate.
+shared_script "config.lua"
+
 -- Run the server scripts
 server_script "sv_version_check.lua"
 server_script "sv_exports.lua"
 server_script "sv_sync.lua"
+server_script "sv_plate_lookup.lua"
 server_export "TogglePlateLock"
 
 -- Run the client scripts
-client_script "config.lua"
 client_script "cl_utils.lua"
 client_script "cl_player.lua"
 client_script "cl_radar.lua"
 client_script "cl_plate_reader.lua"
+client_script "cl_plate_lookup.lua"
 client_script "cl_sync.lua"

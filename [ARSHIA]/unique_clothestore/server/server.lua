@@ -279,6 +279,7 @@ if Config.Core == "ESX" then
         end
     end)
 
+    print('[unique_clothestore DEBUG] About to register payForClothes callback')
     exports.essentialmode:RegisterServerCallback('unique_clothestore:payForClothes', function(source, cb, price, type, number, pin)
         local xPlayer = ESX.GetPlayerFromId(source)
         if not xPlayer then cb(false) return end

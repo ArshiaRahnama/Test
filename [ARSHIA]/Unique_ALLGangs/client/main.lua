@@ -316,7 +316,11 @@ RegisterNUICallback('GETOTHERS', function(data, cb)
 end)
 RegisterNUICallback('GIVEPACK', function(data, cb) 
 	if data.pack == 'moneypack' then 
-		TriggerServerEvent('FMGangsBoss:server:MoneyPack', data.gang_name ,  data.pack )
+		-- FIX: server no longer reads an amount from the client at all
+		-- (see server/boss.lua) - this used to send the pack's own name
+		-- string ('moneypack') as if it were the amount, which was never
+		-- a valid number anyway.
+		TriggerServerEvent('FMGangsBoss:server:MoneyPack', data.gang_name)
 	elseif data.pack == 'xppack' then 
 		TriggerServerEvent('For5M:AddGangXP', Config.Packs['xppack'], data.gang_name ) 
 	else 

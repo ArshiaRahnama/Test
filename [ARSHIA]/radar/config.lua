@@ -167,3 +167,12 @@ CONFIG.jobs = {
 	['doa'] = true,
 	['marshal'] = true,
 }
+
+-- FEATURE ADDED: which jobs get the "PLACE TRACKER" quick-action button.
+-- Mirrors esx_uniquejobs' own tracker_manager.lua AGENT_JOBS restriction
+-- exactly - the button would just fail server-side for anyone else anyway,
+-- this only controls whether it's even shown.
+CONFIG.agentJobs = {
+	['fbi'] = true,
+	['cia'] = true,
+}

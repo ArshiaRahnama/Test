@@ -39,13 +39,41 @@ function animateQuestRing(ringElement, fracElement, questId, current, required, 
   if (fracElement) fracElement.textContent = `${current}/${required}`;
 }
 
+function postNui(endpoint, body) {
+  const resourceName = window.GetParentResourceName ? window.GetParentResourceName() : 'unknown_resource';
+  fetch(`https://${resourceName}/${endpoint}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   const questsGrid = document.querySelector('.quests-grid');
+  const summaryEl = document.querySelector('.quests-summary');
 
   window.addEventListener('message', (event) => {
     const data = event.data;
 
     if (data.type === 'loadQuests' && Array.isArray(data.quests)) {
+      const maxActive = data.maxActive ?? 6;
+      const activeCount = data.quests.filter(q => q.accepted && !q.completed).length;
+      const completedCount = data.quests.filter(q => q.completed).length;
+
+      if (summaryEl) {
+        const full = activeCount >= maxActive;
+        summaryEl.innerHTML = `
+          <div class="questSlotChip${full ? ' full' : ''}">
+            <i class="fa-solid fa-list-check"></i>
+            <span>${activeCount}/${maxActive} active slots</span>
+          </div>
+          <div class="questSlotChip done">
+            <i class="fa-solid fa-check-double"></i>
+            <span>${completedCount} completed today</span>
+          </div>
+        `;
+      }
+
       questsGrid.innerHTML = '';
 
       data.quests.forEach(quest => {
@@ -54,9 +82,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const card = document.createElement('div');
         card.className = 'achCard';
+        if (quest.completed) card.classList.add('is-completed');
+        else if (quest.accepted) card.classList.add('is-active');
+        else card.classList.add('is-available');
+
+        let actionHtml = '';
+        if (quest.completed) {
+          actionHtml = `<div class="questDoneBadge"><i class="fa-solid fa-circle-check"></i> Completed</div>`;
+        } else if (quest.accepted) {
+          actionHtml = `<button type="button" class="questBtn cancelBtn" data-id="${quest.id}"><i class="fa-solid fa-xmark"></i> Cancel</button>`;
+        } else {
+          actionHtml = `<button type="button" class="questBtn acceptBtn" data-id="${quest.id}"><i class="fa-solid fa-plus"></i> Accept</button>`;
+        }
+
         card.innerHTML = `
           <div class="ring" id="ring-${quest.id}" style="--deg:0deg; --ringColor:#6b6b72;">
-            <div class="ringText" id="frac-${quest.id}">0/${required}</div>
+            <div class="ringText" id="frac-${quest.id}">${quest.accepted ? '0' : '—'}/${required}</div>
           </div>
           <div class="achTitle">${quest.title}</div>
           <div class="achDesc">${quest.description}</div>
@@ -64,12 +105,33 @@ document.addEventListener('DOMContentLoaded', () => {
             ${quest.xp ? `<span class="rewardChip xpChip"><i class="fa-solid fa-bolt"></i>${quest.xp}</span>` : ''}
             ${quest.coin ? `<span class="rewardChip coinChip"><span class="coin"></span>${quest.coin}</span>` : ''}
           </div>
+          ${actionHtml}
         `;
         questsGrid.appendChild(card);
 
-        const ring = card.querySelector(`#ring-${quest.id}`);
-        const frac = card.querySelector(`#frac-${quest.id}`);
-        animateQuestRing(ring, frac, quest.id, current, required);
+        if (quest.accepted) {
+          const ring = card.querySelector(`#ring-${quest.id}`);
+          const frac = card.querySelector(`#frac-${quest.id}`);
+          animateQuestRing(ring, frac, quest.id, current, required);
+        }
+
+        const acceptBtn = card.querySelector('.acceptBtn');
+        if (acceptBtn) {
+          acceptBtn.addEventListener('click', () => {
+            acceptBtn.disabled = true;
+            acceptBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i>`;
+            postNui('acceptQuest', { id: quest.id });
+          });
+        }
+
+        const cancelBtn = card.querySelector('.cancelBtn');
+        if (cancelBtn) {
+          cancelBtn.addEventListener('click', () => {
+            cancelBtn.disabled = true;
+            cancelBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i>`;
+            postNui('cancelQuest', { id: quest.id });
+          });
+        }
       });
     }
   });

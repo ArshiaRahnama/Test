@@ -91,7 +91,23 @@ const elements =
 		dot: $( "#ptDot" ),
 		display: $( "#ptDisplay" ),
 		startPauseBtn: $( "#ptStartPause" ),
-		resetBtn: $( "#ptReset" )
+		resetBtn: $( "#ptReset" ),
+		callsign: $( "#ptCallsign" )
+	},
+
+	quickActions: {
+		widget: $( "#quickActions" ),
+		panicBtn: $( "#panicBtn" ),
+		trackerBtn: $( "#placeTrackerBtn" )
+	},
+
+	trafficStopLog: {
+		box: $( "#trafficStopLog" ),
+		citizen: $( "#tslCitizen" ),
+		reason: $( "#tslReason" ),
+		outcome: $( "#tslOutcome" ),
+		submitBtn: $( "#tslSubmit" ),
+		skipBtn: $( "#tslSkip" )
 	},
 	
 	plateReaderBtn: $( "#plateReaderBtn" ), 
@@ -138,7 +154,10 @@ const elements =
 			fill: $( "#frontPlateTextFill" ),
 			lolite: $( "#frontPlateTextLolite" ),
 			img: $( "#frontPlateImg" ), 
-			lock: $( "#frontPlateLock" )
+			lock: $( "#frontPlateLock" ),
+			owner: $( "#frontPlateOwner" ),
+			bolo: $( "#frontPlateBolo" ),
+			tracker: $( "#frontPlateTracker" )
 		},
 
 		rear: {
@@ -147,7 +166,10 @@ const elements =
 			fill: $( "#rearPlateTextFill" ), 
 			lolite: $( "#rearPlateTextLolite" ),
 			img: $( "#rearPlateImg" ), 
-			lock: $( "#rearPlateLock" )
+			lock: $( "#rearPlateLock" ),
+			owner: $( "#rearPlateOwner" ),
+			bolo: $( "#rearPlateBolo" ),
+			tracker: $( "#rearPlateTracker" )
 		}
 	},
 
@@ -409,6 +431,38 @@ function setPlate( cam, plate, index )
 	pl.text.find( "p" ).each( function( i, obj ) {
 		$( this ).html( plate );
 	} );
+
+	// FEATURE ADDED: it's a new/different vehicle, so whatever owner name or
+	// BOLO ribbon was showing for the PREVIOUS plate no longer applies - clear
+	// them until the server tells us about this new plate.
+	pl.owner.removeClass( "po_visible" ).text( "" );
+	pl.bolo.removeClass( "bolo_visible" );
+	pl.tracker.removeClass( "tracker_visible" );
+}
+
+// FEATURE ADDED: shows the registered owner's name under a plate (or hides
+// the label if there isn't one on file).
+function setPlateOwner( cam, ownerName )
+{
+	let pl = elements.plates[cam];
+
+	if ( ownerName ) {
+		pl.owner.text( ownerName ).addClass( "po_visible" );
+	} else {
+		pl.owner.removeClass( "po_visible" ).text( "" );
+	}
+}
+
+// FEATURE ADDED: shows/hides the red "BOLO" ribbon on a plate
+function setPlateBolo( cam, state )
+{
+	elements.plates[cam].bolo.toggleClass( "bolo_visible", state );
+}
+
+// FEATURE ADDED: shows/hides the 📡 GPS-tracker icon on a plate
+function setPlateTracker( cam, state )
+{
+	elements.plates[cam].tracker.toggleClass( "tracker_visible", state );
 }
 
 
@@ -864,6 +918,9 @@ var readerOffset = [ 0, 0 ];
 var ptMoving = false;
 var ptOffset = [ 0, 0 ];
 
+var qaMoving = false;
+var qaOffset = [ 0, 0 ];
+
 var windowWidth = 0; 
 var windowHeight = 0; 
 var safezone = 0; 
@@ -943,12 +1000,22 @@ $( "#pursuitTimer .pt_header" ).mousedown( function( event ) {
 	ptOffset = getOffset( offset, event.clientX, event.clientY );
 } )
 
+// FEATURE ADDED: Quick Actions panel drag support (same system, same pattern)
+$( "#quickActions .qa_header" ).mousedown( function( event ) {
+	qaMoving = true;
+
+	let offset = elements.quickActions.widget.offset();
+
+	qaOffset = getOffset( offset, event.clientX, event.clientY );
+} )
+
 $( document ).mouseup( function( event ) {
 	// Reset the remote and radar moving variables
 	remoteMoving = false; 
 	radarMoving = false; 
 	readerMoving = false;
 	ptMoving = false;
+	qaMoving = false;
 } )
 
 $( document ).mousemove( function( event ) {
@@ -981,6 +1048,13 @@ $( document ).mousemove( function( event ) {
 		event.preventDefault();
 
 		calculatePos( elements.pursuitTimer.widget, x, y, windowWidth, windowHeight, ptOffset, 1, safezone );
+	}
+
+	if ( qaMoving )
+	{
+		event.preventDefault();
+
+		calculatePos( elements.quickActions.widget, x, y, windowWidth, windowHeight, qaOffset, 1, safezone );
 	}
 } )
 
@@ -1156,6 +1230,14 @@ function ptToggle()
 
 function ptReset()
 {
+	// FEATURE ADDED: capture how long the pursuit ran BEFORE zeroing it out,
+	// so the traffic-stop log popup below can prefill it. Only bother asking
+	// if there was an actual pursuit (more than a few seconds), not every
+	// time someone taps RESET on an untouched 00:00:00 timer.
+	let finalMs = ptElapsedMs + ( ptRunning ? ( Date.now() - ptSegmentStart ) : 0 );
+	let hadPursuit = finalMs > 3000;
+	let finalDuration = ptFormat( finalMs );
+
 	clearInterval( ptInterval );
 	ptInterval = null;
 
@@ -1166,6 +1248,10 @@ function ptReset()
 	elements.pursuitTimer.startPauseBtn.text( "START" ).addClass( "pt_is_paused" );
 
 	ptRender();
+
+	if ( hadPursuit ) {
+		showTrafficStopLog( finalDuration );
+	}
 }
 
 function ptToggleDisplay()
@@ -1180,6 +1266,73 @@ function ptSetInVehicle( state )
 {
 	elements.pursuitTimer.widget.toggleClass( "pt_in_vehicle", state );
 }
+
+// FEATURE ADDED: officer's unit callsign (esx_uniquejobs unit_manager.lua),
+// shown under the pursuit timer title. Empty/no callsign just hides the line.
+function setUnitCallsign( callsign )
+{
+	if ( callsign ) {
+		elements.pursuitTimer.callsign.text( callsign ).addClass( "pt_callsign_visible" );
+	} else {
+		elements.pursuitTimer.callsign.removeClass( "pt_callsign_visible" ).text( "" );
+	}
+}
+
+/*------------------------------------------------------------------------------------
+	FEATURE ADDED: Quick Actions panel (PANIC + PLACE TRACKER)
+------------------------------------------------------------------------------------*/
+function showQuickActions( state )
+{
+	elements.quickActions.widget.toggleClass( "qa_visible", state );
+}
+
+// Only FBI/CIA get the tracker button - esx_uniquejobs' own restriction,
+// mirrored here just to hide a button they couldn't use anyway
+function setAgentAccess( state )
+{
+	elements.quickActions.trackerBtn.toggleClass( "qa_visible_agent", state );
+}
+
+/*------------------------------------------------------------------------------------
+	FEATURE ADDED: Traffic-stop quick-log popup
+
+	Shown right after RESET on the pursuit timer, prefilled with the pursuit's
+	duration so the officer doesn't have to remember/retype it. SKIP just
+	closes it without logging anything - nothing is sent unless LOG IT is
+	pressed.
+------------------------------------------------------------------------------------*/
+function showTrafficStopLog( pursuitDuration )
+{
+	elements.trafficStopLog.citizen.val( "" );
+	elements.trafficStopLog.reason.val( pursuitDuration ? ( "Pursuit (" + pursuitDuration + ")" ) : "" );
+	elements.trafficStopLog.outcome.val( "warning" );
+
+	elements.trafficStopLog.box.addClass( "tsl_visible" );
+}
+
+function hideTrafficStopLog()
+{
+	elements.trafficStopLog.box.removeClass( "tsl_visible" );
+}
+
+elements.trafficStopLog.submitBtn.click( function() {
+	let citizen = elements.trafficStopLog.citizen.val().trim();
+	let reason = elements.trafficStopLog.reason.val().trim();
+	let outcome = elements.trafficStopLog.outcome.val();
+
+	if ( reason == "" ) {
+		elements.trafficStopLog.reason.focus();
+		return;
+	}
+
+	sendData( "logTrafficStop", { citizen: citizen, reason: reason, outcome: outcome } );
+
+	hideTrafficStopLog();
+} );
+
+elements.trafficStopLog.skipBtn.click( function() {
+	hideTrafficStopLog();
+} );
 
 elements.pursuitTimer.startPauseBtn.click( function() { ptToggle(); } );
 elements.pursuitTimer.resetBtn.click( function() { ptReset(); } );
@@ -1222,6 +1375,11 @@ function closeRemote()
 	loadQuickStartVideo( false );
 
 	setEleVisible( elements.remote, false );
+
+	// FEATURE ADDED: quick actions panel + traffic-stop popup only make sense
+	// while the remote is open
+	showQuickActions( false );
+	hideTrafficStopLog();
 	
 	sendSaveData(); 
 }
@@ -1265,6 +1423,7 @@ window.addEventListener( "message", function( event ) {
 		case "openRemote":
 			setEleVisible( elements.remote, true ); 
 			setUiHasBeenEdited( false ); 
+			showQuickActions( true );
 			break; 
 		case "setRadarDisplayState":
 			setEleVisible( elements.radar, item.state ); 
@@ -1309,6 +1468,25 @@ window.addEventListener( "message", function( event ) {
 			break;
 		case "pursuitTimerVehicleState":
 			ptSetInVehicle( item.state );
+			break;
+
+		// FEATURE ADDED: plate reader owner name + live BOLO ribbon + tracker icon
+		case "plateOwner":
+			setPlateOwner( item.cam, item.owner );
+			break;
+		case "plateBolo":
+			setPlateBolo( item.cam, item.state );
+			break;
+		case "plateTracker":
+			setPlateTracker( item.cam, item.state );
+			break;
+
+		// FEATURE ADDED: unit callsign + agent (FBI/CIA) access for the tracker button
+		case "setUnitCallsign":
+			setUnitCallsign( item.callsign );
+			break;
+		case "setAgentAccess":
+			setAgentAccess( item.state );
 			break;
 
 		// Plate reader events

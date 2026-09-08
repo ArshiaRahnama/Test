@@ -303,7 +303,7 @@ CreateThread(function()
 		[[CREATE TABLE IF NOT EXISTS `dept_mugshots` (
 			`identifier` VARCHAR(255) NOT NULL,
 			`name` VARCHAR(255) NOT NULL,
-			`photo_url` VARCHAR(500) NOT NULL,
+			`photo_url` MEDIUMTEXT NOT NULL,
 			`taken_by_name` VARCHAR(255) NOT NULL,
 			`timestamp` INT(11) NOT NULL,
 			PRIMARY KEY (`identifier`)
@@ -342,6 +342,15 @@ CreateThread(function()
 	EnsureColumn('doj_cases', 'archived_at', "`archived_at` DATETIME DEFAULT NULL AFTER `closed_by_name`")
 	EnsureColumn('doj_case_evidence', 'plate', "`plate` VARCHAR(10) DEFAULT NULL AFTER `suspect_hint_id`")
 	EnsureColumn('doj_criminal_records', 'suspect_identifier', "`suspect_identifier` VARCHAR(64) DEFAULT NULL AFTER `case_id`")
+
+	-- photo_url started as VARCHAR(500) -- way too short for a real
+	-- MugShotBase64 image (a full base64-encoded PNG face capture can
+	-- run tens of KB) or a screenshot URL with long signed query
+	-- params; silently truncates either into a corrupt, unrenderable
+	-- image instead of erroring. Widened to MEDIUMTEXT (up to 16MB) so
+	-- there's no realistic size this can't hold. Unconditional; MODIFY
+	-- to the same type is a harmless no-op on repeat runs.
+	MySQL.Sync.execute('ALTER TABLE `dept_mugshots` MODIFY COLUMN `photo_url` MEDIUMTEXT NOT NULL', {})
 
 	print('[esx_uniquejobs] Database migrations checked -- all tables/columns present.')
 end)

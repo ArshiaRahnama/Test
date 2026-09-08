@@ -106,6 +106,19 @@ exports('clearStashAccessCheck', function(stashId)
     StashAccessCheckers[stashId] = nil
 end)
 
+-------------------------------------------------------------------
+-- FEATURE (requested: a rank whose access to an item was just toggled
+-- should see the lock update immediately, not only after closing and
+-- reopening the stash): lets an external resource (Unique_ALLGangs'
+-- FMGangs:EditItemAccess) push a live refresh to whoever currently has
+-- this stash open, the same way stashDeposit/stashWithdraw already do
+-- for item add/remove - just exposed as an export since access
+-- changes happen from a different resource entirely.
+-------------------------------------------------------------------
+exports('refreshStashViewers', function(stashId)
+    refreshStashViewers(stashId)
+end)
+
 local function canAccessStashItem(source, stashId, itemName)
     local checker = StashAccessCheckers[stashId]
     if not checker then return true end
@@ -131,6 +144,7 @@ RegisterServerCallback('lc-inventory:getStash', function(source, cb, stashId, ma
             itemLabel = itemLabel .. ' #' .. item.info.serial
         end
         local locked = not canAccessStashItem(source, stashId, item.name)
+        print('[lc-inventory] getStash: ' .. stashId .. ' item ' .. tostring(item.name) .. ' -> locked=' .. tostring(locked) .. ' (checker registered: ' .. tostring(StashAccessCheckers[stashId] ~= nil) .. ')')
 
         table.insert(list, {
             label = itemLabel,

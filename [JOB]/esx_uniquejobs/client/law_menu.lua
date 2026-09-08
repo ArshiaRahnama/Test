@@ -138,15 +138,6 @@ function OpenLawMenu()
 			end,
 		}
 
-		options[#options + 1] = {
-			title = 'Mugshot',
-			description = 'Sabt Ya Namayesh-e Aks-e Shahrvand',
-			icon = 'camera',
-			onSelect = function()
-				OpenMugshotMenu()
-			end,
-		}
-
 		lib.registerContext({ id = 'law_main', title = 'Ghanoon-name', options = options })
 		lib.showContext('law_main')
 	end)

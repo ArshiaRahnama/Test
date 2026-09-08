@@ -33,8 +33,29 @@ RegisterNetEvent("FMGangsBoss:server:withdrawMoney", function(amount)
 		TriggerClientEvent(Config.showNotification, src, "You dont have enough money in the account!", "error")
 	end
 end)
-RegisterNetEvent("FMGangsBoss:server:MoneyPack", function(gang,  amount)
-	AddMoney(gang, tonumber(amount))
+-------------------------------------------------------------------
+-- FIX (real exploit found and confirmed - unlimited money/XP
+-- duplication): this had ZERO access check and took `amount` straight
+-- from the client - anyone could TriggerServerEvent this directly,
+-- for any gang, for any amount, and mint money from nothing (no
+-- deduction anywhere). The NUI flow that's supposed to call this is
+-- also broken on its own (client/main.lua sends the string
+-- 'moneypack' as the amount, not a number) - but that doesn't reduce
+-- the risk of the raw event still being callable directly.
+-- Now: requires the same admin check every other boss/admin action in
+-- this resource uses (IsPlayerCanOpenPanel), and the amount is no
+-- longer taken from the client at all - it's the fixed
+-- Config.Packs['moneypack'] value, exactly like itemPacks/weapon
+-- packs already do it below.
+-------------------------------------------------------------------
+RegisterNetEvent("FMGangsBoss:server:MoneyPack", function(gang)
+	local src = source
+	if not IsPlayerCanOpenPanel(src) then
+		print('[Unique_ALLGangs] FMGangsBoss:server:MoneyPack: source ' .. tostring(src) .. ' is not an admin - denying')
+		return
+	end
+	if not Gangs[gang] then return end
+	AddMoney(gang, tonumber(Config.Packs['moneypack']) or 0)
 end)
 
 RegisterNetEvent("FMGangsBoss:server:depositMoney", function(amount)

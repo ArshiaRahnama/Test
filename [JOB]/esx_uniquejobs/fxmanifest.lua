@@ -49,7 +49,6 @@ client_scripts {
 	'client/case_timeline_menu.lua',
 	'client/stats_dashboard_menu.lua',
 	'client/officer_performance_menu.lua',
-	'client/mugshot_menu.lua',
 	'client/traffic_stop_menu.lua',
 	'client/evidence_custody_menu.lua',
 
@@ -118,7 +117,6 @@ server_scripts {
 	'server/court_docket.lua',
 	'server/stats_dashboard.lua',
 	'server/officer_performance.lua',
-	'server/mugshot_manager.lua',
 	'server/traffic_stop_manager.lua',
 	'server/evidence_custody.lua',
 	'server/doa_manager.lua',

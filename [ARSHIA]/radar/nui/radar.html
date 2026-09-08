@@ -210,6 +210,11 @@
 				<p class="pt_title">PURSUIT TIMER</p>
 			</div>
 
+			<!-- FEATURE ADDED: officer's unit callsign, pulled from
+			     esx_uniquejobs' unit_manager.lua when the remote opens.
+			     Hidden (empty) if the officer isn't in a unit. -->
+			<p class="pt_callsign" id="ptCallsign"></p>
+
 			<div class="pt_display_container">
 				<p class="pt_ghost">00:00:00</p>
 				<p class="pt_display" id="ptDisplay">00:00:00</p>
@@ -218,6 +223,50 @@
 			<div class="pt_btns">
 				<button id="ptStartPause" data-nuitype="pursuitTimerToggle" class="pt_btn pt_start">START</button>
 				<button id="ptReset" data-nuitype="pursuitTimerReset" class="pt_btn pt_reset">RESET</button>
+			</div>
+		</div>
+
+		<!--
+			FEATURE ADDED: quick-actions dispatch panel. Only shown while the
+			remote is open (these are "in the moment" actions, like the remote
+			itself). Both buttons reuse esx_uniquejobs' own existing systems -
+			nothing new added over there, this just calls them.
+		-->
+		<div id="quickActions">
+			<div class="qa_header">
+				<span class="qa_dot"></span>
+				<p class="qa_title">QUICK ACTIONS</p>
+			</div>
+
+			<button id="panicBtn" data-nuitype="sendPanic" class="qa_btn qa_panic">🚨 PANIC</button>
+
+			<!-- FEATURE ADDED: FBI/CIA only (matches esx_uniquejobs' own
+			     tracker_manager.lua restriction) - hidden until Lua confirms
+			     the player's job qualifies, see "setAgentAccess" NUI message. -->
+			<button id="placeTrackerBtn" data-nuitype="placeTracker" class="qa_btn qa_tracker qa_agent_only">📡 PLACE TRACKER</button>
+		</div>
+
+		<!--
+			FEATURE ADDED: quick traffic-stop log, popped up when you hit RESET
+			on the pursuit timer. Reuses esx_uniquejobs' own traffic_stop_manager.lua
+			(esx_uniquejobs:logTrafficStop) - nothing added there either.
+		-->
+		<div id="trafficStopLog">
+			<p class="tsl_title">Log Traffic Stop?</p>
+
+			<input id="tslCitizen" type="text" placeholder="Citizen name/ID (optional)" autocomplete="off">
+			<input id="tslReason" type="text" placeholder="Reason">
+
+			<select id="tslOutcome">
+				<option value="warning">Warning</option>
+				<option value="citation">Citation</option>
+				<option value="search">Search</option>
+				<option value="escalated">Escalated to arrest</option>
+			</select>
+
+			<div class="tsl_btns">
+				<button id="tslSubmit" class="tsl_btn tsl_submit">LOG IT</button>
+				<button id="tslSkip" class="tsl_btn tsl_skip">SKIP</button>
 			</div>
 		</div>
 		
@@ -240,6 +289,11 @@
 							<p id="frontPlateTextLolite" class="lolite"></p>
 							<p class="shadow"></p>
 						</div>
+
+						<!-- FEATURE ADDED: registered owner name + BOLO ribbon -->
+						<p id="frontPlateOwner" class="plate_owner"></p>
+						<p id="frontPlateBolo" class="plate_bolo_ribbon">BOLO</p>
+						<p id="frontPlateTracker" class="plate_tracker_icon">📡</p>
 					</div>
 
 					<div id="rearPlate" class="plate_container">
@@ -251,6 +305,10 @@
 							<p id="rearPlateTextLolite" class="lolite"></p>
 							<p class="shadow"></p>
 						</div>
+
+						<p id="rearPlateOwner" class="plate_owner"></p>
+						<p id="rearPlateBolo" class="plate_bolo_ribbon">BOLO</p>
+						<p id="rearPlateTracker" class="plate_tracker_icon">📡</p>
 					</div>
 				</div>
 
