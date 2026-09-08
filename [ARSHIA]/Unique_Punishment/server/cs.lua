@@ -228,6 +228,19 @@ AddEventHandler('esx_communityGGservice:sendToCommunityService', function(target
 		end
 	end)
 
+	-- History log — see server/migrations.lua. communityservice's own
+	-- row gets DELETEd once the sentence is served (checkCommunityService
+	-- below), so without this there'd be no trace afterward that it
+	-- ever happened.
+	MySQL.Async.execute('INSERT INTO punishment_history (identifier, type, reason, duration, issued_by_name, issued_by_type) VALUES (@identifier, @type, @reason, @duration, @issued_by_name, @issued_by_type)', {
+		['@identifier']     = identifier,
+		['@type']           = 'community_service',
+		['@reason']         = reason,
+		['@duration']       = actions_count,
+		['@issued_by_name'] = GetPlayerName(_source),
+		['@issued_by_type'] = xSender.job and xSender.job.name or 'admin',
+	})
+
 	MySQL.Async.fetchAll('SELECT playerName FROM users WHERE identifier = @identifier',  {
 		['@identifier'] = identifier
 	}, function(result2)
@@ -281,6 +294,17 @@ AddEventHandler('esx_communityGGservice:sendToCommunityServiceoffline', function
 			})
 		end
 	end)
+
+	-- History log — see server/migrations.lua, and the note on the
+	-- online sendToCommunityService handler above.
+	MySQL.Async.execute('INSERT INTO punishment_history (identifier, type, reason, duration, issued_by_name, issued_by_type) VALUES (@identifier, @type, @reason, @duration, @issued_by_name, @issued_by_type)', {
+		['@identifier']     = steamhex,
+		['@type']           = 'community_service',
+		['@reason']         = reason,
+		['@duration']       = actions_count,
+		['@issued_by_name'] = GetPlayerName(_source),
+		['@issued_by_type'] = xSender.job and xSender.job.name or 'admin',
+	})
 
 	MySQL.Async.fetchAll('SELECT playerName FROM users WHERE identifier = @identifier',  {
 		['@identifier'] = steamhex

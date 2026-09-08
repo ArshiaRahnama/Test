@@ -149,6 +149,14 @@ RegisterNUICallback('searchDutyRoster', function(data, cb)
     cb('ok')
 end)
 
+-- RECORD tab data — read-only, see server/record.lua.
+function UpdateRecord()
+    ESX.TriggerServerCallback('HUD_Menu:GetRecord', function(record)
+        if not record then return end
+        SendNUIMessage({ type = "loadRecord", record = record })
+    end)
+end
+
 local menuIsOpen = false
 
 RegisterCommand('menu', function()
@@ -159,6 +167,7 @@ RegisterCommand('menu', function()
     UpdateCollections()
     UpdateLeaderboard()
     UpdateDuty()
+    UpdateRecord()
     UiShow()
 
     -- esx_dpemote is a real resource on this server. Wrapped in pcall so
@@ -185,6 +194,7 @@ Citizen.CreateThread(function()
             UpdateSkills()
             UpdateLeaderboard()
             UpdateDuty()
+            UpdateRecord()
         end
     end
 end)

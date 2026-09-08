@@ -137,6 +137,19 @@ AddEventHandler('arshia_jail:sendto',function (target, type, time, reason, unjai
 	local sentence = {type = type, time = time, unjail = unjail, reason = reason, startedAt = os.time()}
 	sentences[identifier] = sentence
 	PersistJail(identifier, sentence)
+
+	-- History log — see server/migrations.lua. Written once here at
+	-- sentencing time; never touched again by ClearJail/release, so it
+	-- survives past the sentence itself unlike `users.jail`.
+	MySQL.Async.execute('INSERT INTO punishment_history (identifier, type, reason, duration, issued_by_name, issued_by_type) VALUES (@identifier, @type, @reason, @duration, @issued_by_name, @issued_by_type)', {
+		['@identifier']     = identifier,
+		['@type']           = 'jail',
+		['@reason']         = reason,
+		['@duration']       = time,
+		['@issued_by_name'] = GetPlayerName(source),
+		['@issued_by_type'] = type,
+	})
+
 	ExemptFromAntiCheat(target, 12000, { teleport = true, speed = true, invisibility = true })
 	TriggerClientEvent('arshia_jail:SentencePlayer', target, type, time, unjail, false)
 	local yPlayer = ESX.GetPlayerFromId(target)

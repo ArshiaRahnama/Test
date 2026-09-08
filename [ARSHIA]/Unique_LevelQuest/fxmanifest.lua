@@ -19,6 +19,7 @@ server_scripts {
     'server/skill.lua',
     'server/leaderboard.lua',
     'server/duty.lua',
+    'server/record.lua',
 }
 
 client_scripts {

@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', function () {
     collections: document.getElementById('tab_collections'),
     leaderboard: document.getElementById('tab_leaderboard'),
     duty: document.getElementById('tab_duty'),
+    record: document.getElementById('tab_record'),
   };
 
   function activateTab(tabName) {

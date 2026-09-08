@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="styles/quest.css" />
   <link rel="stylesheet" href="styles/skill.css" />
   <link rel="stylesheet" href="styles/duty.css" />
+  <link rel="stylesheet" href="styles/record.css" />
   <link rel="stylesheet" href="styles/collections.css" />
   <link rel="stylesheet" href="styles/leaderboard.css" />
   <link rel="stylesheet" href="styles/compare.css" />
@@ -135,6 +136,9 @@
         <button class="tab hidden" data-tab="duty" id="dutyTabBtn">
           <i class="fa-solid fa-clock"></i> DUTY
         </button>
+        <button class="tab" data-tab="record">
+          <i class="fa-solid fa-file-lines"></i> RECORD
+        </button>
       </div>
 
       <div class="content">
@@ -151,6 +155,11 @@
         <div class="panel hidden" id="tab_duty">
           <div class="duty-summary"></div>
           <div class="duty-roster"></div>
+        </div>
+
+        <div class="panel hidden" id="tab_record">
+          <div class="record-current"></div>
+          <div class="record-history"></div>
         </div>
 
         <div class="panel hidden" id="tab_leaderboard">
@@ -211,6 +220,7 @@
   <script src="scripts/quest.js"></script>
   <script src="scripts/skill.js"></script>
   <script src="scripts/duty.js"></script>
+  <script src="scripts/record.js"></script>
   <script src="scripts/collections.js"></script>
   <script src="scripts/leaderboard.js"></script>
   <script src="scripts/compare.js"></script>
