@@ -1267,6 +1267,14 @@ end)
 -- code that silently does nothing. Whole-armory putitem/takeitem access
 -- (checked below in For5M:OpenInventory) still works as before.
 -------------------------------------------------------------------
+-- TEMP DIAGNOSTIC: paired with the "stash.lua loaded" print added in
+-- lc-inventory/server/apps/system/stash.lua - if lc-inventory restarts
+-- silently between our registerStashAccessCheck call and the next
+-- getStash, that print will appear in console between our "registered"
+-- line and the following "checker registered: false" line. Remove once
+-- confirmed/fixed.
+print(('[Unique_ALLGangs] Gangs.lua loaded, StartedAt=%d'):format(os.time()))
+
 local RegisteredArmoryStashes = {}
 local ARMORY_SLOTS = 50
 local ARMORY_MAX_WEIGHT = 100000

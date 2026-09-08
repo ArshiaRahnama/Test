@@ -38,11 +38,9 @@ DuckMdt.TrainingMaterial = {
     '2) Daste-bandi-haye Ghanoon (Ranandegi / Amval / Khoshoonat / Mavad-e Mokhader / Salah / Sayer) -- entekhab-e yek ghanoon + dadan-e ID bazikon = jarime khodkar sader mishavad.',
     '3) Baz Kardan CAD (MDT) -- mianbor-e mostaghim be hamin panel.',
     '4) Sabt-e Tavaghof (Traffic Stop) -- Sabt-e Tavaghof-e Jadid (dalil + pelak-e ekhtiari ke khodkar BOLO check mishavad + natije: Ekhtar/Jarime/Bazresi/Ershad Be Dastgiri), Barresi Pelak (BOLO) baraye check-e tanha, BOLO-haye Active baraye didan-e kol-e list, Tarikhche-ye Tavaghof-ha.',
-    '5) Mugshot -- gereftan/jaygozin kardan-e aks-e shahrvand, va Rap Sheet-e Kamel (mashakhasat-e zaheri + akharin makan-e shenakhte-shode + tamam-e sabeghe-ye keifari az har do sistem-e parvande).',
     '',
     '<b>=== NOKAT-E MOHEM ===</b>',
     '- Ghabl az har eghdam (bazdasht, jarime, tavaghof), hoviyat-e khodetan ra be onvan-e afsar-e ghanoon elam konid.',
-    '- Baraye sabt-e Mugshot-e vaghei (aks-e zende), resource-e screenshot-basic bayad nasb va roshan bashad va convar mugshot_upload_url tanzim shode bashad -- vagarna faghat URL-e dasti gerefte mishavad.',
     '- Har taghiiri dar yek parvande (Status, Priority, Charge, Evidence, Docket) khodkar dar Timeline-e hamun parvande sabt mishavad -- niazi nist jaye digar ham yaddasht bezanid.',
 }
 

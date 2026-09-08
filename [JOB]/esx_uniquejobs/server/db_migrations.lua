@@ -252,8 +252,8 @@ CreateThread(function()
 			KEY `idx_status` (`status`)
 		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4]],
 
-		-- Court Docket / Case Timeline / Traffic Stop / Mugshot / Evidence
-		-- Custody -- the six /doj + /law extension features. All dept_*
+		-- Court Docket / Case Timeline / Traffic Stop / Evidence
+		-- Custody -- the /doj + /law extension features. All dept_*
 		-- to match the existing dept_cases family above; none of them
 		-- touch doj_cases/dept_cases rows, they only reference case_id.
 		[[CREATE TABLE IF NOT EXISTS `dept_case_docket` (
@@ -300,15 +300,6 @@ CreateThread(function()
 			KEY `citizen_identifier` (`citizen_identifier`)
 		)]],
 
-		[[CREATE TABLE IF NOT EXISTS `dept_mugshots` (
-			`identifier` VARCHAR(255) NOT NULL,
-			`name` VARCHAR(255) NOT NULL,
-			`photo_url` MEDIUMTEXT NOT NULL,
-			`taken_by_name` VARCHAR(255) NOT NULL,
-			`timestamp` INT(11) NOT NULL,
-			PRIMARY KEY (`identifier`)
-		)]],
-
 		[[CREATE TABLE IF NOT EXISTS `dept_evidence_custody` (
 			`id` INT(11) NOT NULL AUTO_INCREMENT,
 			`note_id` INT(11) NOT NULL,
@@ -342,15 +333,6 @@ CreateThread(function()
 	EnsureColumn('doj_cases', 'archived_at', "`archived_at` DATETIME DEFAULT NULL AFTER `closed_by_name`")
 	EnsureColumn('doj_case_evidence', 'plate', "`plate` VARCHAR(10) DEFAULT NULL AFTER `suspect_hint_id`")
 	EnsureColumn('doj_criminal_records', 'suspect_identifier', "`suspect_identifier` VARCHAR(64) DEFAULT NULL AFTER `case_id`")
-
-	-- photo_url started as VARCHAR(500) -- way too short for a real
-	-- MugShotBase64 image (a full base64-encoded PNG face capture can
-	-- run tens of KB) or a screenshot URL with long signed query
-	-- params; silently truncates either into a corrupt, unrenderable
-	-- image instead of erroring. Widened to MEDIUMTEXT (up to 16MB) so
-	-- there's no realistic size this can't hold. Unconditional; MODIFY
-	-- to the same type is a harmless no-op on repeat runs.
-	MySQL.Sync.execute('ALTER TABLE `dept_mugshots` MODIFY COLUMN `photo_url` MEDIUMTEXT NOT NULL', {})
 
 	print('[esx_uniquejobs] Database migrations checked -- all tables/columns present.')
 end)

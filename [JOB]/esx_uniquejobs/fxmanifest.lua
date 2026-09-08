@@ -13,6 +13,15 @@ shared_scripts {
 	'shared/departments.lua',
 	'cad/config_cad.lua',
 	'cad/config_crimescene.lua',
+
+	-- radar (Wraith ARS 2X) -- shared because sv_plate_lookup.lua checks
+	-- CONFIG.jobs server-side too.
+	'radar/config.lua',
+
+	-- taximeter
+	'taximeter/config.lua',
+	'taximeter/shared/utils.lua',
+	'taximeter/shared/locales/*.lua',
 }
 
 client_scripts {
@@ -94,6 +103,18 @@ client_scripts {
 
 	'cad/client/main.lua',
 	'cad/client/crimescene.lua',
+
+	-- radar (Wraith ARS 2X)
+	'radar/cl_utils.lua',
+	'radar/cl_player.lua',
+	'radar/cl_radar.lua',
+	'radar/cl_plate_reader.lua',
+	'radar/cl_plate_lookup.lua',
+	'radar/cl_sync.lua',
+
+	-- taximeter
+	'taximeter/client/client.lua',
+	'taximeter/client/vehicleInteraction.lua',
 }
 
 server_scripts {
@@ -159,6 +180,16 @@ server_scripts {
 
 	'cad/server/main.lua',
 	'cad/server/crimescene.lua',
+
+	-- radar (Wraith ARS 2X)
+	'radar/sv_version_check.lua',
+	'radar/sv_exports.lua',
+	'radar/sv_sync.lua',
+	'radar/sv_plate_lookup.lua',
+
+	-- taximeter
+	'taximeter/server/taxi.lua',
+	'taximeter/server/server.lua',
 }
 
 ui_page 'ui.html'
@@ -167,6 +198,7 @@ server_exports {
 	'AcceptRequest_taxi',
 	'AcceptRequest_mechanic',
 	'AcceptRequest_ambulance',
+	'TogglePlateLock',
 }
 
 files {
@@ -196,6 +228,20 @@ files {
 	'cad/html/img/*',
 	'cad/html/fonts/*',
 	'cad/html/sounds/*',
+
+	-- radar (Wraith ARS 2X)
+	'radar/nui/radar.html',
+	'radar/nui/radar.css',
+	'radar/nui/radar.js',
+	'radar/nui/images/*.png',
+	'radar/nui/images/plates/*.png',
+	'radar/nui/fonts/*.ttf',
+	'radar/nui/fonts/Segment7Standard.otf',
+	'radar/nui/sounds/*.ogg',
+
+	-- taximeter
+	'taximeter/client/ui/*',
+	'taximeter/client/ui/**/*',
 }
 
 dependencies {

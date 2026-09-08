@@ -574,6 +574,20 @@ AddEventHandler('esx:spawnVehicle', function(model)
 	ESX.Game.SpawnVehicle(model, coords, 90.0, function(vehicle)
 		TaskWarpPedIntoVehicle(playerPed,  vehicle, -1)
 		SetVehicleFuelLevel(vehicle, 100.0)
+
+		-- FIX (reported: /car spawns the vehicle but never gives a
+		-- vehicle_keys item, so the player can't lock/unlock it and gets
+		-- treated as if they don't own it). This event is only ever
+		-- fired by the admin /car command (esx_aduty/Server/commands_1.lua)
+		-- - nothing else in the codebase triggers 'esx:spawnVehicle'. It
+		-- never asked Unique_Garage's key system for a key at all.
+		-- Goes through the SAME server-validated CarLock:ToggleKey path
+		-- every other key grant uses (not a raw addInventoryItem here) so
+		-- it stays consistent with that system's ownership/anti-cheat
+		-- checks - the server independently confirms the player is really
+		-- sitting in a vehicle with this plate before granting anything.
+		local plate = GetVehicleNumberPlateText(vehicle)
+		TriggerServerEvent('CarLock:ToggleKey', true, plate)
 	end)
 end)
 

@@ -6,13 +6,17 @@
     <style>
         /*
           FiveM only lets one resource have one ui_page (one NUI browser).
-          This resource bundles two independent NUI apps (the bodydamage HUD
-          and the CAD/MDT tablet), so instead of merging their HTML/CSS/JS by
-          hand (high risk of id/class/global collisions) each keeps its own
-          document in its own iframe, and this page just relays
-          SendNuiMessage() to both. Each iframe still receives the exact same
-          message shape it always did, so neither app's own code needed to
-          change its message-handling logic.
+          This resource bundles four independent NUI apps (the bodydamage
+          HUD, the CAD/MDT tablet, the Wraith radar, and the taximeter), so
+          instead of merging their HTML/CSS/JS by hand (high risk of
+          id/class/global collisions) each keeps its own document in its own
+          iframe, and this page just relays SendNuiMessage() to all of them.
+          Each iframe still receives the exact same message shape it always
+          did, so none of the apps' own code needed to change its
+          message-handling logic. Their NUI callbacks (the fetch()/$.post()
+          calls back to Lua) already target https://GetParentResourceName()
+          dynamically, so they keep working unchanged now that they live
+          inside esx_uniquejobs instead of their own resource.
         */
         html, body {
             margin: 0;
@@ -42,61 +46,69 @@
 <body>
     <iframe id="frame_bodydamage" src="bodydamage/html/index.html"></iframe>
     <iframe id="frame_cad" src="cad/html/index.html"></iframe>
+    <iframe id="frame_radar" src="radar/nui/radar.html"></iframe>
+    <iframe id="frame_taximeter" src="taximeter/client/ui/index.html"></iframe>
 
     <script>
-        var frameBodydamage = document.getElementById('frame_bodydamage');
-        var frameCad = document.getElementById('frame_cad');
+        var frames = {
+            bodydamage: document.getElementById('frame_bodydamage'),
+            cad: document.getElementById('frame_cad'),
+            radar: document.getElementById('frame_radar'),
+            taximeter: document.getElementById('frame_taximeter'),
+        };
 
-        var ready = { bodydamage: false, cad: false };
+        var ready = { bodydamage: false, cad: false, radar: false, taximeter: false };
         var pending = [];
 
+        function allReady() {
+            for (var key in ready) {
+                if (!ready[key]) return false;
+            }
+            return true;
+        }
+
         function relay(data) {
-            try {
-                if (frameBodydamage && frameBodydamage.contentWindow) {
-                    frameBodydamage.contentWindow.postMessage(data, '*');
-                }
-            } catch (e) {}
-            try {
-                if (frameCad && frameCad.contentWindow) {
-                    frameCad.contentWindow.postMessage(data, '*');
-                }
-            } catch (e) {}
+            for (var key in frames) {
+                try {
+                    if (frames[key] && frames[key].contentWindow) {
+                        frames[key].contentWindow.postMessage(data, '*');
+                    }
+                } catch (e) {}
+            }
         }
 
         function flushPending() {
-            if (!ready.bodydamage || !ready.cad) return;
+            if (!allReady()) return;
             while (pending.length) relay(pending.shift());
         }
 
-        // Don't relay until BOTH iframes have actually finished loading and
-        // attached their own message listeners - otherwise a message that
+        // Don't relay until every iframe has actually finished loading and
+        // attached its own message listener - otherwise a message that
         // arrives right after SetNuiFocus (e.g. the very first /cad press)
-        // can be sent before the cad iframe's app.js is ready to catch it,
+        // can be sent before that iframe's own script is ready to catch it,
         // and is lost for good (postMessage is not queued for late listeners).
-        frameBodydamage.addEventListener('load', function () {
-            ready.bodydamage = true;
-            flushPending();
-        });
-        frameCad.addEventListener('load', function () {
-            ready.cad = true;
-            flushPending();
+        Object.keys(frames).forEach(function (key) {
+            frames[key].addEventListener('load', function () {
+                ready[key] = true;
+                flushPending();
+            });
         });
 
         // Safety net: if a 'load' event never fires for some reason, don't
         // let queued messages get stuck forever - force a flush after 3s.
         setTimeout(function () {
-            ready.bodydamage = true;
-            ready.cad = true;
+            Object.keys(ready).forEach(function (key) { ready[key] = true; });
             flushPending();
         }, 3000);
 
         window.addEventListener('message', function (event) {
             // Ignore anything bounced back up from one of our own iframes -
             // only relay messages that actually came from the game (Lua).
-            if (frameBodydamage && event.source === frameBodydamage.contentWindow) return;
-            if (frameCad && event.source === frameCad.contentWindow) return;
+            for (var key in frames) {
+                if (frames[key] && event.source === frames[key].contentWindow) return;
+            }
 
-            if (ready.bodydamage && ready.cad) {
+            if (allReady()) {
                 relay(event.data);
             } else {
                 pending.push(event.data);
