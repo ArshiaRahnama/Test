@@ -1,30 +1,5 @@
-ESX = nil
-
-Citizen.CreateThread(function()
-	while ESX == nil do
-		TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
-		Citizen.Wait(0)
-	end
-end)
-
-function GettimeSkill(name, time)
-
-	local ChekSkills = 0
-	if GetResourceState('Unique_Skills') == 'started' then
-		local ok, result = pcall(function() return exports['Unique_Skills']:CheckSkill(name) end)
-		if ok then ChekSkills = result end
-	end
-	if ChekSkills == 100 then
-		local time2 = tonumber(time) / 2
-		return time2
-	else
-		return time
-	end
-end
-
 Config.Jobs.tailor = {
-	JobName = 'tailor',
-
+	pic = 'https://cdn.discordapp.com/attachments/819575527588757558/923019342235451402/Untitled.png',
 	BlipInfos = {
 		Sprite = 366,
 		Color = 4
@@ -34,7 +9,7 @@ Config.Jobs.tailor = {
 
 		Truck = {
 			Spawner = 1,
-			Hash = "youga2",
+			Hash = "pony2",
 			Trailer = "none",
 			HasCaution = true
 		}
@@ -67,13 +42,13 @@ Config.Jobs.tailor = {
 				{
 					name = _U("dd_wool"),
 					db_name = "wool",
-					time = GettimeSkill("Lebas", 5000),
+					time = 2000,
 					max = 80,
-					add = 5,
+					add = 1,
 					remove = 1,
 					requires = "nothing",
 					requires_name = "Nothing",
-					drop = 80
+					drop = 100
 				}
 			},
 			Hint = _U("dd_pickup"),
@@ -92,13 +67,13 @@ Config.Jobs.tailor = {
 				{
 					name = _U("dd_fabric"),
 					db_name = "fabric",
-					time = GettimeSkill("Lebas", 5000),
+					time = 5000,
 					max = 20,
 					add = 1,
 					remove = 4,
 					requires = "wool",
 					requires_name = _U("dd_wool"),
-					drop = 20
+					drop = 100
 				}
 			},
 			Hint = _U("dd_makefabric"),
@@ -117,13 +92,13 @@ Config.Jobs.tailor = {
 				{
 					name = _U("dd_clothing"),
 					db_name = "clothe",
-					time = GettimeSkill("Lebas", 4000),
+					time = 5000,
 					max = 10,
 					add = 1,
 					remove = 2,
 					requires = "fabric",
 					requires_name = _U("dd_fabric"),
-					drop = 10
+					drop = 100
 				}
 			},
 			Hint = _U("dd_makeclothing"),
@@ -140,7 +115,7 @@ Config.Jobs.tailor = {
 			Type = "vehspawner",
 			Spawner = 1,
 			Hint = _U("spawn_veh_button"),
-			Caution = 50000,
+			Caution = 2000,
 			GPS = {x = 1978.92, y = 5171.70, z = 46.63}
 		},
 
@@ -166,34 +141,34 @@ Config.Jobs.tailor = {
 			Type = "vehdelete",
 			Hint = _U("return_vh_button"),
 			Spawner = 1,
-			Caution = 50000,
+			Caution = 2000,
 			GPS = 0,
 			Teleport = 0
 		},
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+		Delivery = {
+			Pos = {x = 429.59, y = -807.34, z = 28.49},
+			Color = {r = 204, g = 204, b = 0},
+			Size = {x = 5.0, y = 5.0, z = 3.0},
+			Marker = 1,
+			Blip = true,
+			Name = _U("delivery_point"),
+			Type = "delivery",
+			Spawner = 1,
+			Item = {
+				{
+					name = _U("delivery"),
+					time = 5000,
+					remove = 1,
+					max = 100, -- if not present, probably an error at itemQtty >= item.max in esx_jobs_sv.lua
+					price = 2100,
+					requires = "clothe",
+					requires_name = _U("dd_clothing"),
+					drop = 100
+				}
+			},
+			Hint = _U("dd_deliver_clothes"),
+			GPS = {x = 1978.92, y = 5171.70, z = 46.63}
+		}
 	}
 }

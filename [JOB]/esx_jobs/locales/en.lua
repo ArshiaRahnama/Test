@@ -1,8 +1,8 @@
 Locales['en'] = {
-
+  -- Global menus
   ['cloakroom']                 = 'Locker Room',
   ['cloak_change']              = 'press ~INPUT_PICKUP~ to change clothes.',
-  ['citizen_wear']              = 'Lebas Shakhsi',
+  ['citizen_wear']              = 'Lebas Shahrvandi',
   ['job_wear']                  = 'Lebas Kar',
   ['bank_deposit_returned']     = 'a security deposit of ~g~$%s~s~ was returned to you.',
   ['bank_deposit_taken']        = 'a security deposit of ~r~$%s~s~ was taken from you.',
@@ -25,8 +25,8 @@ Locales['en'] = {
   ['public_enter']              = 'press ~INPUT_PICKUP~ to enter the building.',
   ['public_leave']              = 'press ~INPUT_PICKUP~ to go to the entrance of the building.',
 
-
-  ['lj_locker_room']            = 'Vasayel Najari',
+  -- Lumber Jack job
+  ['lj_locker_room']            = 'lumberjack\'s Locker Room',
   ['lj_mapblip']                = 'wood pile',
   ['lj_wood']                   = 'wood',
   ['lj_pickup']                 = 'press ~INPUT_PICKUP~ to retrieve wood.',
@@ -38,7 +38,7 @@ Locales['en'] = {
   ['lj_pick_boards']            = 'press ~INPUT_PICKUP~ to retrieve boards.',
   ['lj_deliver_button']         = 'press ~INPUT_PICKUP~ to deliver the boards.',
 
-
+  -- Fisherman
   ['fm_fish_locker']            = 'fishermen\'s Locker Room',
   ['fm_fish']                   = 'fish',
   ['fm_fish_area']              = 'fishing area',
@@ -50,8 +50,8 @@ Locales['en'] = {
   ['fm_boat_return_button']     = 'Press ~INPUT_PICKUP~ to return the boat.',
   ['fm_deliver_fish']           = 'press ~INPUT_PICKUP~ to deliver the fish.',
 
-
-  ['f_oil_refiner']             = 'Vasayle Sherkat Naft',
+  -- Fuel
+  ['f_oil_refiner']             = 'oil Refiner Locker Room',
   ['f_drill_oil']               = 'drill for oil',
   ['f_fuel']                    = 'oil',
   ['f_drillbutton']             = 'press ~INPUT_PICKUP~ to drill.',
@@ -63,7 +63,7 @@ Locales['en'] = {
   ['f_deliver_gas']             = 'deliver Gas',
   ['f_deliver_gas_button']      = 'press ~INPUT_PICKUP~ to deliver gasoline.',
 
-
+  -- Miner
   ['m_miner_locker']            = 'miner\'s Locker Room',
   ['m_rock']                    = 'rock',
   ['m_pickrocks']               = 'press ~INPUT_PICKUP~ to retrieve rocks.',
@@ -84,12 +84,12 @@ Locales['en'] = {
   ['m_deliver_diamond']         = 'press ~INPUT_PICKUP~ to deliver the diamonds.',
   ['m_melt_button']             = 'press ~INPUT_PICKUP~ to melt the rocks.',
 
-
+  -- Reporter
   ['reporter_name']             = 'san Andreas Times',
   ['reporter_garage']           = 'Press ~INPUT_PICKUP~ to go down to the garage.',
 
-
-  ['s_slaughter_locker']        = 'Vasayel Ghasabi',
+  -- Slaughterer
+  ['s_slaughter_locker']        = 'butcher\'s Locker Room',
   ['s_hen']                     = 'chicken coop',
   ['s_alive_chicken']           = 'live Chicken',
   ['s_catch_hen']               = 'press ~INPUT_PICKUP~ to catch live chickens.',
@@ -102,8 +102,8 @@ Locales['en'] = {
   ['s_unpackaged_button']       = 'press ~INPUT_PICKUP~ to set the chicken in a tray.',
   ['s_deliver']                 = 'press ~INPUT_PICKUP~ to deliver the chicken trays.',
 
-
-  ['dd_dress_locker']           = 'Vasayel Khayati',
+  -- Dress Designer
+  ['dd_dress_locker']           = 'dress Designer\'s Locker Room',
   ['dd_wool']                   = 'wool',
   ['dd_pickup']                 = 'press ~INPUT_PICKUP~ to retrieve wool.',
   ['dd_fabric']                 = 'fabric',

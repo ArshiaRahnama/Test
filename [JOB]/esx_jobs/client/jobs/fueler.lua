@@ -1,30 +1,5 @@
-ESX = nil
-
-Citizen.CreateThread(function()
-	while ESX == nil do
-		TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
-		Citizen.Wait(0)
-	end
-end)
-
-function GettimeSkill(name, time)
-
-	local ChekSkills = 0
-	if GetResourceState('Unique_Skills') == 'started' then
-		local ok, result = pcall(function() return exports['Unique_Skills']:CheckSkill(name) end)
-		if ok then ChekSkills = result end
-	end
-	if ChekSkills == 100 then
-		local time2 = tonumber(time) / 2
-		return time2
-	else
-		return time
-	end
-end
-
 Config.Jobs.fueler = {
-	JobName = 'fueler',
-
+	pic = 'https://cdn.discordapp.com/attachments/819575527588757558/923017641826861127/unknown.png',
 	BlipInfos = {
 		Sprite = 436,
 		Color = 5
@@ -67,13 +42,13 @@ Config.Jobs.fueler = {
 				{
 					name = _U("f_fuel"),
 					db_name = "petrol",
-					time = GettimeSkill("SherkatNaft", 2500),
+					time = 3000,
 					max = 25,
 					add = 1,
 					remove = 1,
 					requires = "nothing",
 					requires_name = "Nothing",
-					drop = 25
+					drop = 100
 				}
 			},
 			Hint = _U("f_drillbutton"),
@@ -92,13 +67,13 @@ Config.Jobs.fueler = {
 				{
 					name = _U("f_fuel_refine"),
 					db_name = "petrol_raffin",
-					time = GettimeSkill("SherkatNaft", 5000),
+					time = 3000,
 					max = 50,
 					add = 2,
 					remove = 1,
 					requires = "petrol",
 					requires_name = _U("f_fuel"),
-					drop = 50
+					drop = 100
 				}
 			},
 			Hint = _U("f_refine_fuel_button"),
@@ -117,7 +92,7 @@ Config.Jobs.fueler = {
 				{
 					name = _U("f_gas"),
 					db_name = "essence",
-					time = GettimeSkill("SherkatNaft", 5000),
+					time = 3000,
 					max = 100,
 					add = 2,
 					remove = 1,
@@ -140,7 +115,7 @@ Config.Jobs.fueler = {
 			Type = "vehspawner",
 			Spawner = 1,
 			Hint = _U("spawn_truck_button"),
-			Caution = 50000,
+			Caution = 2000,
 			GPS = {x = 602.25, y = 2926.62, z = 39.68}
 		},
 
@@ -157,7 +132,7 @@ Config.Jobs.fueler = {
 		},
 
 		VehicleDeletePoint = {
-			Pos = {x = 574.8255, y = -2328.69, z = 4.9072},
+			Pos = {x = 520.68, y = -2124.21, z = 4.98},
 			Size = {x = 5.0, y = 5.0, z = 1.0},
 			Color = {r = 255, g = 0, b = 0},
 			Marker = 1,
@@ -166,36 +141,36 @@ Config.Jobs.fueler = {
 			Type = "vehdelete",
 			Hint = _U("return_vh_button"),
 			Spawner = 1,
-			Caution = 50000,
+			Caution = 2000,
 			GPS = 0,
 			Teleport = 0
 		},
 
+		Delivery = {
+			Pos = {x = 491.40, y = -2163.37, z = 4.91},
+			Color = {r = 204, g = 204, b = 0},
+			Size = {x = 10.0, y = 10.0, z = 1.0},
+			Marker = 1,
+			Blip = true,
+			Name = _U("f_deliver_gas"),
+			Type = "delivery",
+			Spawner = 1,
+			Item = {
+				{
+					name = _U("delivery"),
+					time = 1000,
+					remove = 1,
+					max = 100, -- if not present, probably an error at itemQtty >= item.max in esx_jobs_sv.lua
+					price = 300,
+					requires = "essence",
+					requires_name = _U("f_gas"),
+					drop = 100
+				}
+			},
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+			Hint = _U("f_deliver_gas_button"),
+			GPS = {x = 609.58, y = 2856.74, z = 39.49}
+		}
 
 	}
 }

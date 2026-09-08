@@ -1,29 +1,5 @@
-ESX = nil
-
-Citizen.CreateThread(function()
-	while ESX == nil do
-		TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
-		Citizen.Wait(0)
-	end
-end)
-
-function GettimeSkill(name, time)
-
-	local ChekSkills = 0
-	if GetResourceState('Unique_Skills') == 'started' then
-		local ok, result = pcall(function() return exports['Unique_Skills']:CheckSkill(name) end)
-		if ok then ChekSkills = result end
-	end
-	if ChekSkills == 100 then
-		local time2 = tonumber(time) / 2
-		return time2
-	else
-		return time
-	end
-end
-
 Config.Jobs.slaughterer = {
-	JobName = 'slaughterer',
+	pic = 'https://cdn.discordapp.com/attachments/819575527588757558/923018960822231070/Untitled.png',
 	BlipInfos = {
 		Sprite = 256,
 		Color = 5
@@ -64,13 +40,13 @@ Config.Jobs.slaughterer = {
 				{
 					name = _U("s_alive_chicken"),
 					db_name = "alive_chicken",
-					time = GettimeSkill("Ghasab", 5000),
+					time = 5000,
 					max = 20,
 					add = 1,
 					remove = 1,
 					requires = "nothing",
 					requires_name = "Nothing",
-					drop = 20
+					drop = 100
 				}
 			},
 			Hint = _U("s_catch_hen")
@@ -88,13 +64,13 @@ Config.Jobs.slaughterer = {
 				{
 					name = _U("s_slaughtered_chicken"),
 					db_name = "slaughtered_chicken",
-					time = GettimeSkill("Ghasab", 5000),
+					time = 5000,
 					max = 20,
 					add = 1,
 					remove = 1,
 					requires = "alive_chicken",
 					requires_name = _U("s_alive_chicken"),
-					drop = 20
+					drop = 100
 				}
 			},
 			Hint = _U("s_chop_animal")
@@ -112,7 +88,7 @@ Config.Jobs.slaughterer = {
 				{
 					name = _U("s_packagechicken"),
 					db_name = "packaged_chicken",
-					time = GettimeSkill("Ghasab", 5000),
+					time = 5000,
 					max = 100,
 					add = 5,
 					remove = 1,
@@ -134,7 +110,7 @@ Config.Jobs.slaughterer = {
 			Type = "vehspawner",
 			Spawner = 1,
 			Hint = _U("spawn_veh_button"),
-			Caution = 50000
+			Caution = 2000
 		},
 
 		VehicleSpawnPoint = {
@@ -158,33 +134,33 @@ Config.Jobs.slaughterer = {
 			Type = "vehdelete",
 			Hint = _U("return_vh_button"),
 			Spawner = 1,
-			Caution = 50000,
+			Caution = 2000,
 			GPS = 0,
 			Teleport = 0
 		},
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+		Delivery = {
+			Pos = {x = -596.15, y = -889.32, z = 24.50},
+			Color = {r = 204, g = 204, b = 0},
+			Size = {x = 5.0, y = 5.0, z = 1.0},
+			Marker = 1,
+			Blip = true,
+			Name = _U("delivery_point"),
+			Type = "delivery",
+			Spawner = 1,
+			Item = {
+				{
+					name = _U("delivery"),
+					time = 1000,
+					remove = 1,
+					max = 100, -- if not present, probably an error at itemQtty >= item.max in esx_jobs_sv.lua
+					price = 250,
+					requires = "packaged_chicken",
+					requires_name = _U("s_packagechicken"),
+					drop = 100
+				}
+			},
+			Hint = _U("s_deliver")
+		}
 	}
 }
