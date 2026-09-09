@@ -83,26 +83,30 @@ function UpdateQuests()
 
         local jobname = quests["Job"]
         local pool = jobname and Config.JobQuests[jobname] or Config.DefaultQuest
+        local offered = quests["Offered"] or {}
 
         local myquests = {}
         if pool then
-            for id, questDef in ipairs(pool) do
-                local idStr = tostring(id)
-                local accepted = quests[idStr] ~= nil
-                local current = accepted and (tonumber(quests[idStr]) or 0) or 0
-                table.insert(myquests, {
-                    id = idStr,
-                    title = questDef.name,
-                    description = questDef.description,
-                    progress = accepted and (current / questDef.requiredTrigger) * 100 or 0,
-                    current = current,
-                    required = questDef.requiredTrigger,
-                    xp = questDef.XP,
-                    coin = questDef.coin,
-                    icon = "fa-shield-halved",
-                    accepted = accepted,
-                    completed = accepted and current >= questDef.requiredTrigger,
-                })
+            for _, id in ipairs(offered) do
+                local questDef = pool[tonumber(id)]
+                if questDef then
+                    local idStr = tostring(id)
+                    local accepted = quests[idStr] ~= nil
+                    local current = accepted and (tonumber(quests[idStr]) or 0) or 0
+                    table.insert(myquests, {
+                        id = idStr,
+                        title = questDef.name,
+                        description = questDef.description,
+                        progress = accepted and (current / questDef.requiredTrigger) * 100 or 0,
+                        current = current,
+                        required = questDef.requiredTrigger,
+                        xp = questDef.XP,
+                        coin = questDef.coin,
+                        icon = "fa-shield-halved",
+                        accepted = accepted,
+                        completed = accepted and current >= questDef.requiredTrigger,
+                    })
+                end
             end
         end
 

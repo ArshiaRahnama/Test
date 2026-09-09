@@ -93,7 +93,49 @@ function OpenInGame() {
 function CloseInGame() {
 
     document.getElementById('InGame').style.display = 'none'
+    HideSpectating()
 }
+function OpenAdminPanel(lobbyOpen, matchStarted) {
+    document.getElementById('AdminPanel').style.display = 'block'
+    if (matchStarted) {
+        document.getElementById('AdminPanelOpenLobby').style.display = 'none'
+        document.getElementById('AdminPanelStartForm').style.display = 'none'
+        document.getElementById('AdminPanelStatus').innerHTML = 'A match is already running.'
+    } else if (lobbyOpen) {
+        document.getElementById('AdminPanelOpenLobby').style.display = 'none'
+        document.getElementById('AdminPanelStartForm').style.display = 'block'
+        document.getElementById('AdminPanelStatus').innerHTML = 'Lobby is open — set up the match:'
+    } else {
+        document.getElementById('AdminPanelOpenLobby').style.display = 'block'
+        document.getElementById('AdminPanelStartForm').style.display = 'none'
+        document.getElementById('AdminPanelStatus').innerHTML = 'Lobby is closed.'
+    }
+}
+function CloseAdminPanel() {
+    document.getElementById('AdminPanel').style.display = 'none'
+    $.post('http://'+scriptName+'/adminPanelClose', JSON.stringify({}));
+}
+function ShowSpectating(name) {
+    document.getElementById('SpectatorBar').style.display = 'block'
+    document.getElementById('SpectatorName').innerHTML = name
+}
+function HideSpectating() {
+    document.getElementById('SpectatorBar').style.display = 'none'
+}
+document.getElementById('adminOpenLobbyBtn').addEventListener('click', function () {
+    $.post('http://'+scriptName+'/adminOpenLobby', JSON.stringify({}));
+})
+document.getElementById('adminStartBtn').addEventListener('click', function () {
+    var payload = {
+        blood: document.getElementById('apBlood').value,
+        time: document.getElementById('apTime').value,
+        map: document.getElementById('apMap').value,
+        team: document.getElementById('apTeam').value,
+    }
+    $.post('http://'+scriptName+'/adminStart', JSON.stringify(payload));
+    document.getElementById('AdminPanel').style.display = 'none'
+})
+document.getElementById('adminPanelCloseBtn').addEventListener('click', CloseAdminPanel);
 window.addEventListener('message', function (event) {
     var item = event.data;
     if (item.message == 'close' ) {
@@ -150,5 +192,11 @@ window.addEventListener('message', function (event) {
         document.getElementById("p3").innerHTML = ''
         document.getElementById("p4").innerHTML = ''
   }
+    else if ( item.message == 'openAdminPanel' ) {
+        OpenAdminPanel(item.lobbyOpen, item.matchStarted)
+    }
+    else if ( item.message == 'spectating' ) {
+        ShowSpectating(item.Name)
+    }
   })
 })

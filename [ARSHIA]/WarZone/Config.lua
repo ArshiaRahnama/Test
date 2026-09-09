@@ -8,8 +8,29 @@ Config.Startmatchcommend = "startmatch"
 Config.exitCommend = "exitwz"
 Config.closelobbey = "closelobbey"
 Config.endwarzoneCommend = 'endwarzone'
---- Admin --
-Config.permission = 16
+--- Auto-Queue ---
+Config.AutoQueue = {
+    enabled = true,
+    minPlayers = 4,      -- lobby auto-starts once this many players have joined
+    countdown = 30,      -- seconds of countdown before auto-start
+    defaultBlood = 3,
+    defaultTime = 8,      -- minutes per zone shrink
+    defaultMap = 'SANDY', -- 'SANDY' or 'ISLAND'
+    defaultTeam = 2,      -- squad size
+}
+--- Discord Webhook ---
+Config.DiscordWebhook = "" -- put your Discord webhook URL here (leave "" to disable)
+Config.DiscordWebhookName = "WarZone"
+--- Leaderboard / Season ---
+Config.Leaderboard = {
+    seasonRewardTop1 = 2000000, -- money paid to #1 on season reset
+    top = 10,                   -- how many rows /wztop shows
+}
+Config.wztopCommend = 'wztop'
+Config.seasonresetCommend = 'wzseasonreset' -- admin only
+Config.panelCommend = 'wzpanel' -- admin only, opens the graphical admin panel
+--- Admin ---
+Config.permission = 16 
 function IsPlayerCanStart(source) 
     local xPlayer = ESX.GetPlayerFromId(source) 
     -- Fix: xPlayer can be nil (e.g. command run from server console, or
