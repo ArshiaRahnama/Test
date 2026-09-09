@@ -157,6 +157,14 @@ function UpdateRecord()
     end)
 end
 
+-- CAPTURE tab data — proxies Unique_Capture's own dashboard callback,
+-- see server/capture.lua.
+function UpdateCapture()
+    ESX.TriggerServerCallback('HUD_Menu:GetCapture', function(dashboard)
+        SendNUIMessage({ type = "loadCapture", dashboard = dashboard })
+    end)
+end
+
 local menuIsOpen = false
 
 RegisterCommand('menu', function()
@@ -168,6 +176,7 @@ RegisterCommand('menu', function()
     UpdateLeaderboard()
     UpdateDuty()
     UpdateRecord()
+    UpdateCapture()
     UiShow()
 
     -- esx_dpemote is a real resource on this server. Wrapped in pcall so
@@ -195,6 +204,7 @@ Citizen.CreateThread(function()
             UpdateLeaderboard()
             UpdateDuty()
             UpdateRecord()
+            UpdateCapture()
         end
     end
 end)

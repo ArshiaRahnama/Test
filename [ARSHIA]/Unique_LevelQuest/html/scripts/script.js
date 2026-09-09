@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', function () {
     leaderboard: document.getElementById('tab_leaderboard'),
     duty: document.getElementById('tab_duty'),
     record: document.getElementById('tab_record'),
+    capture: document.getElementById('tab_capture'),
   };
 
   function activateTab(tabName) {

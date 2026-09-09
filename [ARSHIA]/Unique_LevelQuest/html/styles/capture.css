@@ -1,0 +1,222 @@
+.capture-unavailable {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 60px 20px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+  border: 1px dashed rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.015);
+}
+
+.capture-unavailable i {
+  font-size: 26px;
+  opacity: 0.5;
+}
+
+.capture-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 18px;
+  margin-bottom: 14px;
+  border-radius: 12px;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.015));
+  border: 1px solid rgba(255, 255, 255, 0.09);
+}
+
+.captureRankBadge {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 14px;
+  border-radius: 20px;
+  border: 1px solid;
+  font-weight: 900;
+  font-size: 12px;
+}
+
+.captureScoreBlock,
+.captureSeasonBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.captureScoreValue {
+  font-size: 17px;
+  font-weight: 900;
+  color: #fff;
+}
+
+.captureScoreLabel,
+.captureSeasonSub {
+  font-size: 9.5px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.captureSeasonTitle {
+  font-size: 12px;
+  font-weight: 800;
+  color: #eceef3;
+}
+
+.captureSeasonBlock {
+  margin-left: auto;
+  text-align: right;
+}
+
+.captureHofBadge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  background: rgba(255, 215, 106, 0.14);
+  border: 1px solid rgba(255, 215, 106, 0.4);
+  color: #ffd76a;
+  font-size: 10.5px;
+  font-weight: 800;
+}
+
+.capture-summary {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.captureChip {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 12px;
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.captureChip i {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  font-size: 12px;
+  color: var(--steel);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.captureChip.highlight i {
+  color: var(--orange2);
+  background: rgba(255, 140, 26, 0.14);
+}
+
+.captureChipText {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.captureChipValue {
+  font-size: 14px;
+  font-weight: 900;
+  color: #fff;
+  line-height: 1.15;
+}
+
+.captureChip.highlight .captureChipValue { color: var(--orange2); }
+
+.captureChipLabel {
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.capture-columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px;
+}
+
+.captureColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.captureColumnTitle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+.captureColumnTitle i { color: var(--orange2); font-size: 10px; }
+
+.captureListRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.captureListRow.top1,
+.captureListRow.top2,
+.captureListRow.top3 {
+  border-color: rgba(255, 215, 106, 0.3);
+  background: rgba(255, 215, 106, 0.04);
+}
+
+.captureListRank {
+  width: 18px;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 900;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+.captureListName {
+  flex: 1;
+  min-width: 0;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #eceef3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.captureListValue {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--orange2);
+  flex-shrink: 0;
+}
+
+.captureEmptyRow {
+  padding: 10px 12px;
+  border-radius: 9px;
+  border: 1px dashed rgba(255, 255, 255, 0.1);
+  color: var(--muted);
+  font-size: 10.5px;
+  font-weight: 600;
+  text-align: center;
+}

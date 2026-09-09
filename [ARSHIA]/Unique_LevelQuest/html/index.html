@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="styles/skill.css" />
   <link rel="stylesheet" href="styles/duty.css" />
   <link rel="stylesheet" href="styles/record.css" />
+  <link rel="stylesheet" href="styles/capture.css" />
   <link rel="stylesheet" href="styles/collections.css" />
   <link rel="stylesheet" href="styles/leaderboard.css" />
   <link rel="stylesheet" href="styles/compare.css" />
@@ -137,7 +138,10 @@
           <i class="fa-solid fa-clock"></i> DUTY
         </button>
         <button class="tab" data-tab="record">
-          <i class="fa-solid fa-file-lines"></i> RECORD
+          <i class="fa-solid fa-file-lines"></i> PUNISHMENT
+        </button>
+        <button class="tab" data-tab="capture">
+          <i class="fa-solid fa-flag"></i> CAPTURE
         </button>
       </div>
 
@@ -160,6 +164,18 @@
         <div class="panel hidden" id="tab_record">
           <div class="record-current"></div>
           <div class="record-history"></div>
+        </div>
+
+        <div class="panel hidden" id="tab_capture">
+          <div class="capture-unavailable hidden" id="capture_unavailable">
+            <i class="fa-solid fa-flag"></i>
+            <span>Capture system is not currently active on this server.</span>
+          </div>
+          <div class="capture-body" id="capture_body">
+            <div class="capture-header"></div>
+            <div class="capture-summary"></div>
+            <div class="capture-columns"></div>
+          </div>
         </div>
 
         <div class="panel hidden" id="tab_leaderboard">
@@ -221,6 +237,7 @@
   <script src="scripts/skill.js"></script>
   <script src="scripts/duty.js"></script>
   <script src="scripts/record.js"></script>
+  <script src="scripts/capture.js"></script>
   <script src="scripts/collections.js"></script>
   <script src="scripts/leaderboard.js"></script>
   <script src="scripts/compare.js"></script>

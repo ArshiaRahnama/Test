@@ -22,3 +22,7 @@ server_scripts {
 	'server/jail.lua',
 	'server/cs.lua'
 }
+
+dependencies {
+	'oxmysql'
+}
