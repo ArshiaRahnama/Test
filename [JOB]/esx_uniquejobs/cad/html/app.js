@@ -693,6 +693,20 @@ window.addEventListener('message', function(event) {
             $('#Page_Training').append('<span style="font-size: 1.5vw;">' + element + '</span><br>')
         })
 
+    } else if (data.type === 'OpenCaseFromRadar') {
+        // FEATURE ADDED: entry point for the radar's "click a BOLO ribbon to
+        // open its case" button (see radar/cl_radar.lua's openBoloCase NUI
+        // callback). Reuses the exact same login + CS_OpenCase flow a normal
+        // /cad user would go through by hand - if the tablet just opened
+        // straight to the login screen, log in first and then open the case
+        // once that finishes, otherwise open it immediately.
+        if ($('#LoginPage').is(':visible')) {
+            DuckMdt.Login()
+            setTimeout(function () { CS_OpenCase(data.id) }, 1100)
+        } else {
+            CS_OpenCase(data.id)
+        }
+
     } else if (data.type === 'CS_Cases') {
         $('#CS_CasesList').empty()
         if (!data.list.length) $('#CS_CasesList').append('<p style="color: var(--text-dim);">No cases</p>')

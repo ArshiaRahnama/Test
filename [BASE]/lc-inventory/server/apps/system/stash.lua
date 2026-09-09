@@ -144,6 +144,9 @@ RegisterServerCallback('lc-inventory:getStash', function(source, cb, stashId, ma
             itemLabel = itemLabel .. ' #' .. item.info.serial
         end
         local locked = not canAccessStashItem(source, stashId, item.name)
+        if StashAccessCheckers[stashId] then
+            print('[lc-inventory] getStash: ' .. stashId .. ' item ' .. tostring(item.name) .. ' -> locked=' .. tostring(locked))
+        end
 
         table.insert(list, {
             label = itemLabel,

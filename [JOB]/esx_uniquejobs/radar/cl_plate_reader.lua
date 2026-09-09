@@ -293,7 +293,7 @@ function READER:Main()
 						end
 
 						if ( isLiveBolo ) then
-							SendNUIMessage( { _type = "plateBolo", cam = cam, state = true } )
+							SendNUIMessage( { _type = "plateBolo", cam = cam, state = true, caseId = GetUniqueJobsBoloCaseId( plate ) } )
 						end
 
 						-- FEATURE ADDED: live GPS-tracker indicator (esx_uniquejobs' own

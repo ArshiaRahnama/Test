@@ -207,8 +207,8 @@ function OpenAgentMenu()
 		}
 
 		options[#options + 1] = {
-			title = 'Sabeghe-ye Kayfari (Background Check)',
-			description = 'Dastgiri-ha, Etteham-ha Va Jarayem-e Pardakht-Nashode',
+			title = 'Sabeghe-ye Kayfari (Rap Sheet)',
+			description = 'Dastgiri-ha, Booking-haye CAD, Jarayem-e Pardakht-Nashode Va Akharin Makan',
 			icon = 'file-shield',
 			onSelect = function()
 				local input = lib.inputDialog('Sabeghe-ye Kayfari', { { type = 'input', label = 'ID Ya Esm-e Bazikon', required = true } })
@@ -333,16 +333,33 @@ AddEventHandler('esx_uniquejobs:criminalRecordResult', function(data, failedQuer
 		return
 	end
 
+	-- FEATURE ADDED (Rap Sheet): last known location, from this person's
+	-- most recent traffic stop (client/traffic_stop_menu.lua or the radar's
+	-- own quick-log button - both now feed the same dept_traffic_stops row).
+	-- Uses GetServerUnixTime() (client/server_time.lua), NOT os.time() -
+	-- the FiveM client has no `os` library and this exact call previously
+	-- crashed several other menus with "attempt to index a nil value 'os'"
+	-- until that helper was added; this file never had the bug, kept it
+	-- that way.
+	local lastLocationDesc = 'Namoshakhas'
+	if data.lastKnownLocation then
+		lastLocationDesc = data.lastKnownLocation
+		if data.lastKnownTimestamp then
+			local minsAgo = math.floor((GetServerUnixTime() - data.lastKnownTimestamp) / 60)
+			lastLocationDesc = lastLocationDesc .. ' (' .. minsAgo .. ' Daghighe Pish)'
+		end
+	end
+
 	local options = {
 		{
 			title = string.gsub(data.name, "_", " "),
-			description = 'Jarayem-e Pardakht-Nashode: ' .. data.unpaidCount .. ' Mored ($' .. data.unpaidTotal .. ')',
+			description = 'Jarayem-e Pardakht-Nashode: ' .. data.unpaidCount .. ' Mored ($' .. data.unpaidTotal .. ') | Akharin Makan: ' .. lastLocationDesc,
 			icon = 'user',
 			disabled = true,
 		},
 	}
 
-	if #data.records == 0 then
+	if #data.records == 0 and (not data.bookings or #data.bookings == 0) then
 		options[#options + 1] = { title = 'Hich Sabegheh-i Sabt Nashode', disabled = true, icon = 'circle-check' }
 	else
 		for _, record in ipairs(data.records) do
@@ -354,9 +371,23 @@ AddEventHandler('esx_uniquejobs:criminalRecordResult', function(data, failedQuer
 				disabled = true,
 			}
 		end
+
+		-- FEATURE ADDED (Rap Sheet): bookings logged through the CAD/Crime
+		-- Scene panel's own case+booking flow (doj_criminal_records) - a
+		-- second, separate record system from criminal_records above, now
+		-- shown together so this is a genuinely combined rap sheet instead
+		-- of missing half a person's history.
+		for _, booking in ipairs(data.bookings or {}) do
+			options[#options + 1] = {
+				title = 'CAD Booking: ' .. booking.charges,
+				description = 'Sabt-Konande: ' .. (booking.booked_by_name or 'Namoshakhas') .. ' | Jarime: $' .. booking.fine .. ' | Zendan: ' .. booking.jail_minutes .. ' Daghighe',
+				icon = 'gavel',
+				disabled = true,
+			}
+		end
 	end
 
-	lib.registerContext({ id = 'agent_record_result', title = 'Sabeghe-ye Kayfari', menu = RecordSearchReturnMenu, options = options })
+	lib.registerContext({ id = 'agent_record_result', title = 'Sabeghe-ye Kayfari (Rap Sheet)', menu = RecordSearchReturnMenu, options = options })
 	lib.showContext('agent_record_result')
 end)
 

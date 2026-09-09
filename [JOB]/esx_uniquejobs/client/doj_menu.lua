@@ -257,8 +257,8 @@ function OpenDojMenu()
 
 	-- Shared, all DOJ jobs
 	options[#options + 1] = {
-		title = 'Sabeghe-ye Kayfari (Background Check)',
-		description = 'Dastgiri-ha, Etteham-ha Va Jarayem-e Pardakht-Nashode',
+		title = 'Sabeghe-ye Kayfari (Rap Sheet)',
+		description = 'Dastgiri-ha, Booking-haye CAD, Jarayem-e Pardakht-Nashode Va Akharin Makan',
 		icon = 'file-shield',
 		onSelect = function()
 			local input = lib.inputDialog('Sabeghe-ye Kayfari', { { type = 'input', label = 'ID Ya Esm-e Bazikon', required = true } })

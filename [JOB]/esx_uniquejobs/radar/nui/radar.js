@@ -436,8 +436,9 @@ function setPlate( cam, plate, index )
 	// BOLO ribbon was showing for the PREVIOUS plate no longer applies - clear
 	// them until the server tells us about this new plate.
 	pl.owner.removeClass( "po_visible" ).text( "" );
-	pl.bolo.removeClass( "bolo_visible" );
+	pl.bolo.removeClass( "bolo_visible bolo_has_case" );
 	pl.tracker.removeClass( "tracker_visible" );
+	plateBoloCaseId[cam] = null;
 }
 
 // FEATURE ADDED: shows the registered owner's name under a plate (or hides
@@ -453,10 +454,29 @@ function setPlateOwner( cam, ownerName )
 	}
 }
 
-// FEATURE ADDED: shows/hides the red "BOLO" ribbon on a plate
-function setPlateBolo( cam, state )
+// FEATURE ADDED (radar<->DOJ case link): shows/hides the red "BOLO" ribbon on
+// a plate. When the BOLO came from esx_uniquejobs' own Crime Scene/DOJ system
+// (as opposed to a plate typed by hand into the reader's own BOLO box) we also
+// get a caseId - remember it per-camera so a click on the ribbon can jump
+// straight to that case in /cad (see openBoloCaseClick() below).
+let plateBoloCaseId = { front: null, rear: null };
+
+function setPlateBolo( cam, state, caseId )
 {
+	plateBoloCaseId[cam] = caseId || null;
 	elements.plates[cam].bolo.toggleClass( "bolo_visible", state );
+	elements.plates[cam].bolo.toggleClass( "bolo_has_case", !!plateBoloCaseId[cam] );
+}
+
+// FEATURE ADDED: clicking a BOLO ribbon that came from a real DOJ case (i.e.
+// plateBoloCaseId[cam] is set, not just a manually-typed reader BOLO plate)
+// opens that case directly in the /cad tablet.
+function openBoloCaseClick( cam )
+{
+	let caseId = plateBoloCaseId[cam];
+	if ( caseId ) {
+		sendData( "openBoloCase", { caseId: caseId } );
+	}
 }
 
 // FEATURE ADDED: shows/hides the 📡 GPS-tracker icon on a plate
@@ -708,8 +728,7 @@ $.ajaxSetup({
 // that FiveM injects into every NUI page - it always returns whatever the
 // resource is actually named, so this now works no matter what you call it.
 function sendData( name, data ) {
-	var resourceName = (typeof GetParentResourceName === 'function') ? GetParentResourceName() : 'esx_uniquejobs';
-	$.post( "https://" + resourceName + "/" + name, JSON.stringify( data ), function( datab ) {
+	$.post( "https://" + GetParentResourceName() + "/" + name, JSON.stringify( data ), function( datab ) {
 		if ( datab != "ok" ) {
 			console.log( datab );
 		}            
@@ -1270,10 +1289,23 @@ function ptSetInVehicle( state )
 
 // FEATURE ADDED: officer's unit callsign (esx_uniquejobs unit_manager.lua),
 // shown under the pursuit timer title. Empty/no callsign just hides the line.
-function setUnitCallsign( callsign )
+function setUnitCallsign( callsign, roleLabel, memberCount )
 {
 	if ( callsign ) {
-		elements.pursuitTimer.callsign.text( callsign ).addClass( "pt_callsign_visible" );
+		let text = callsign;
+
+		// FEATURE ADDED: show role + unit size next to the callsign (e.g.
+		// "TAC-12 · Owner · 3") instead of just the bare callsign - pulled
+		// from the same esx_uniquejobs:getUnitMenu call, just no longer
+		// throwing away everything except the callsign string.
+		if ( roleLabel ) {
+			text += " \u00B7 " + roleLabel;
+		}
+		if ( memberCount != null && memberCount > 0 ) {
+			text += " \u00B7 " + memberCount;
+		}
+
+		elements.pursuitTimer.callsign.text( text ).addClass( "pt_callsign_visible" );
 	} else {
 		elements.pursuitTimer.callsign.removeClass( "pt_callsign_visible" ).text( "" );
 	}
@@ -1476,7 +1508,7 @@ window.addEventListener( "message", function( event ) {
 			setPlateOwner( item.cam, item.owner );
 			break;
 		case "plateBolo":
-			setPlateBolo( item.cam, item.state );
+			setPlateBolo( item.cam, item.state, item.caseId );
 			break;
 		case "plateTracker":
 			setPlateTracker( item.cam, item.state );
@@ -1484,7 +1516,7 @@ window.addEventListener( "message", function( event ) {
 
 		// FEATURE ADDED: unit callsign + agent (FBI/CIA) access for the tracker button
 		case "setUnitCallsign":
-			setUnitCallsign( item.callsign );
+			setUnitCallsign( item.callsign, item.roleLabel, item.memberCount );
 			break;
 		case "setAgentAccess":
 			setAgentAccess( item.state );

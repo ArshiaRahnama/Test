@@ -79,6 +79,34 @@ body {
 /* Removes the outline when buttons have been clicked */
 button:focus { outline: none; }
 
+/*-----------------------------------------------------------------------------------------
+	FIX: hide-on-load, in CSS, not just in JS.
+
+	This whole HUD sits inside an iframe that's now loaded for EVERY
+	connecting player (ui.html embeds it unconditionally, same as the CAD
+	tablet and bodydamage overlay) - not just police. Before this fix, these
+	panels only got hidden by radar.js calling elements.radar.hide() etc.,
+	which runs AFTER the page's HTML/CSS/fonts/images have already loaded and
+	painted. On a slower connection (loading screen, first few seconds after
+	joining) that gap was enough for the full radar remote/display/plate
+	reader to flash on screen for every single player, cop or not, before JS
+	caught up and hid it - looking broken/unprofessional exactly like this
+	was reported. Setting display:none here means the browser never paints
+	them in the first place; JS's own show()/fadeIn() calls later work
+	exactly as before; ptToggleDisplay / ptSetInVehicle / etc. are untouched
+	since jQuery's .show()/.fadeIn()/.toggleClass() switch this off cleanly.
+-----------------------------------------------------------------------------------------*/
+#radarFrame,
+#rc,
+#plateReaderFrame,
+#plateReaderBox,
+#uiSettingsBox,
+#helpWindow,
+#quickStart,
+#newUser {
+	display: none;
+}
+
 #radarFrame {
 	width: 715px;
 	height: 230px;
@@ -1405,6 +1433,19 @@ button:focus { outline: none; }
 		#plateReader .plates .plate_container .plate_bolo_ribbon.bolo_visible {
 			opacity: 1;
 			transform: scale( 1 );
+		}
+
+		/* FEATURE ADDED: only BOLOs that came from a real DOJ case (as opposed
+		   to a plate typed by hand into the reader's own BOLO box) are
+		   clickable - clicking jumps straight to that case in /cad. */
+		#plateReader .plates .plate_container .plate_bolo_ribbon.bolo_has_case {
+			pointer-events: auto;
+			cursor: pointer;
+		}
+
+		#plateReader .plates .plate_container .plate_bolo_ribbon.bolo_has_case:hover {
+			box-shadow: 0 0 14px rgba( 220, 30, 30, 1 );
+			text-decoration: underline;
 		}
 
 /*-----------------------------------------------------------------------------------------

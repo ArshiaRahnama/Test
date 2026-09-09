@@ -334,5 +334,13 @@ CreateThread(function()
 	EnsureColumn('doj_case_evidence', 'plate', "`plate` VARCHAR(10) DEFAULT NULL AFTER `suspect_hint_id`")
 	EnsureColumn('doj_criminal_records', 'suspect_identifier', "`suspect_identifier` VARCHAR(64) DEFAULT NULL AFTER `case_id`")
 
+	-- FEATURE ADDED (radar<->Traffic Stop link): dept_traffic_stops never
+	-- had a plate column - the manual /law form only used the plate you
+	-- typed in for a live BOLO check, never saved it, and the radar's own
+	-- quick-log button always sent a hardcoded nil. Both now pass through
+	-- whatever plate was actually involved (typed by hand, or locked on the
+	-- reader), so it shows up in the stop's history entry too.
+	EnsureColumn('dept_traffic_stops', 'plate', "`plate` VARCHAR(10) DEFAULT NULL AFTER `citizen_name`")
+
 	print('[esx_uniquejobs] Database migrations checked -- all tables/columns present.')
 end)

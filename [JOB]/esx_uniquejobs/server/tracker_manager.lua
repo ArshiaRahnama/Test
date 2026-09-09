@@ -11,7 +11,12 @@
 ESX = nil
 TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
 
-local AGENT_JOBS = { fbi = true, cia = true }
+-- FEATURE ADDED: now points at shared/departments.lua's AgentJobs (loaded
+-- before this server script since it's a shared_script) instead of its own
+-- separate copy of the same two jobs - radar/config.lua's CONFIG.agentJobs
+-- points at the exact same table, so the client-side "PLACE TRACKER" button
+-- visibility and this server-side check can no longer drift apart.
+local AGENT_JOBS = AgentJobs
 
 local function isAgent(jobname)
 	return AGENT_JOBS[jobname] == true

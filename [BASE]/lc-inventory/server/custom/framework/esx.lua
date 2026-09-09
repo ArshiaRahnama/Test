@@ -57,10 +57,37 @@ function RegisterServerCallback(name, cb)
     -- ESX.ServerCallbacks table instead. FiveM's export system
     -- correctly marshals the function reference itself across the
     -- resource boundary (unlike a plain data table), so this works.
+    --
+    -- FIX 2 (this was still broken after the above - real reason:
+    -- start-order race): every 'lc-inventory:getStash'-style
+    -- registration happens ONCE, at lc-inventory's own top-level
+    -- script load. If lc-inventory's resource starts even slightly
+    -- before essentialmode finishes starting, GetResourceState would
+    -- read something other than 'started' at that exact instant, this
+    -- would silently fall through to the broken disconnected-copy
+    -- path below - and since this only ever runs once, it stays
+    -- broken for the resource's entire uptime regardless of anything
+    -- happening later. Now actually waits (yields, does not block the
+    -- server - top-level server_script code runs in its own
+    -- coroutine) until essentialmode is confirmed started, with a
+    -- generous timeout and a loud console warning if that timeout is
+    -- ever actually hit.
     -------------------------------------------------------------
+    local waited = 0
+    while GetResourceState('essentialmode') ~= 'started' and waited < 30000 do
+        Wait(100)
+        waited = waited + 100
+    end
     if GetResourceState('essentialmode') == 'started' then
-        exports['essentialmode']:RegisterServerCallback(name, cb)
+        local ok, err = pcall(function() exports['essentialmode']:RegisterServerCallback(name, cb) end)
+        if ok then
+            print('[lc-inventory] RegisterServerCallback(' .. tostring(name) .. '): registered via essentialmode export - OK')
+        else
+            print('[lc-inventory] RegisterServerCallback(' .. tostring(name) .. '): exports call to essentialmode FAILED -> ' .. tostring(err) .. ' - falling back to the disconnected ESX copy (will NOT actually work, see comment above this function)')
+            ESX.RegisterServerCallback(name, cb)
+        end
     else
+        print('[lc-inventory] RegisterServerCallback(' .. tostring(name) .. '): essentialmode never reached "started" after 30s (currently: ' .. tostring(GetResourceState('essentialmode')) .. ') - falling back to the disconnected ESX copy (will NOT actually work)')
         ESX.RegisterServerCallback(name, cb)
     end
 end

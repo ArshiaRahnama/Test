@@ -81,7 +81,7 @@ function OpenTrafficStopMenu()
 							local coords = GetEntityCoords(PlayerPedId())
 							local streetHash = GetStreetNameAtCoord(coords.x, coords.y, coords.z)
 							local location = GetStreetNameFromHashKey(streetHash)
-							TriggerServerEvent('esx_uniquejobs:logTrafficStop', input[1], input[2], o.value, input[4], location)
+							TriggerServerEvent('esx_uniquejobs:logTrafficStop', input[1], input[2], o.value, input[4], location, input[3])
 						end,
 					}
 				end
@@ -168,7 +168,7 @@ function OpenTrafficStopHistory()
 			for _, s in ipairs(stops) do
 				options[#options + 1] = {
 					title = s.citizen_name .. ' -- ' .. s.outcomeLabel,
-					description = s.reason .. ' | Afsar: ' .. s.officer_name .. (s.location and (' | ' .. s.location) or '') .. (s.notes and s.notes ~= '' and (' | ' .. s.notes) or ''),
+					description = s.reason .. (s.plate and s.plate ~= '' and (' | Pelak: ' .. s.plate) or '') .. ' | Afsar: ' .. s.officer_name .. (s.location and (' | ' .. s.location) or '') .. (s.notes and s.notes ~= '' and (' | ' .. s.notes) or ''),
 					icon = 'car-burst',
 					disabled = true,
 				}

@@ -32,7 +32,17 @@ local TrackedPlates = {}
 function IsUniqueJobsBoloPlate( plate )
 	if ( plate == nil or plate == "" ) then return false end
 
-	return ActiveBoloPlates[plate] == true
+	return ActiveBoloPlates[plate] ~= nil
+end
+
+-- FEATURE ADDED (radar<->DOJ case link): the case ID a live BOLO plate came
+-- from, if any - nil for a plate typed by hand into the reader's own BOLO
+-- box, which never has a case behind it. Used by the NUI to make the BOLO
+-- ribbon clickable ("open this case in /cad").
+function GetUniqueJobsBoloCaseId( plate )
+	if ( plate == nil or plate == "" ) then return nil end
+
+	return ActiveBoloPlates[plate]
 end
 
 -- Exposed for cl_plate_reader.lua
@@ -80,7 +90,7 @@ Citizen.CreateThread( function()
 
 					if ( list ~= nil ) then
 						for i = 1, #list do
-							fresh[list[i].plate] = true
+							fresh[list[i].plate] = list[i].caseId
 						end
 					end
 

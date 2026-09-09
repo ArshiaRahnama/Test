@@ -157,22 +157,30 @@ CONFIG.uiDefaults =
 -- your database.sql dump). Add/remove keys below to match exactly which
 -- jobs should get radar access; the key must be the job's `name` column,
 -- not its label.
-CONFIG.jobs = {
-	['mt'] = true,
-	['police'] = true,
-	['sheriff'] = true,
-	['fbi'] = true,
-	['cia'] = true,
-	['cid'] = true,
-	['doa'] = true,
-	['marshal'] = true,
-}
+-- FEATURE ADDED: now built straight off shared/departments.lua (the DOJ +
+-- Law Enforcement departments) instead of a hardcoded copy of the same job
+-- list, so adding/removing/renaming a job in one place (e.g. through the
+-- CAD/DOJ admin tooling, if that's ever added) keeps radar access in sync
+-- automatically. 'judge' is the one DOJ job deliberately left out - judges
+-- aren't expected to be out driving a radar-equipped unit.
+CONFIG.jobs = {}
+
+for _, deptId in ipairs( { "le", "doj" } ) do
+	local set = GetJobSetForDepartment( deptId )
+
+	if ( set ~= nil ) then
+		for job in pairs( set ) do
+			CONFIG.jobs[job] = true
+		end
+	end
+end
+
+CONFIG.jobs["judge"] = nil
 
 -- FEATURE ADDED: which jobs get the "PLACE TRACKER" quick-action button.
--- Mirrors esx_uniquejobs' own tracker_manager.lua AGENT_JOBS restriction
--- exactly - the button would just fail server-side for anyone else anyway,
--- this only controls whether it's even shown.
-CONFIG.agentJobs = {
-	['fbi'] = true,
-	['cia'] = true,
-}
+-- Now points straight at shared/departments.lua's AgentJobs, the same table
+-- esx_uniquejobs' own server/tracker_manager.lua uses server-side to decide
+-- whether to actually honour the request - the button would just fail
+-- server-side for anyone else anyway, this only controls whether it's even
+-- shown, and both are now guaranteed to agree.
+CONFIG.agentJobs = AgentJobs

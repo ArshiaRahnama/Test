@@ -38,7 +38,7 @@
 	</head>
 
 	<body>
-		<div id="radarFrame">
+		<div id="radarFrame" style="display:none;">
 			<div class="frame_border"></div>
 
 			<div class="radar_container"> 
@@ -145,7 +145,7 @@
 			</div>
 		</div>
 
-		<div id="rc">
+		<div id="rc" style="display:none;">
 			<button id="toggleDisplay" data-nuitype="toggleRadarDisplay" class="rounded_btn toggle_display">TOGGLE DISPLAY</button>
 
 			<p class="label">FRONT ANTENNA</p>
@@ -270,7 +270,7 @@
 			</div>
 		</div>
 		
-		<div id="plateReaderFrame">
+		<div id="plateReaderFrame" style="display:none;">
 			<div class="frame_border"></div>
 
 			<div id="plateReader">
@@ -292,7 +292,7 @@
 
 						<!-- FEATURE ADDED: registered owner name + BOLO ribbon -->
 						<p id="frontPlateOwner" class="plate_owner"></p>
-						<p id="frontPlateBolo" class="plate_bolo_ribbon">BOLO</p>
+						<p id="frontPlateBolo" class="plate_bolo_ribbon" onclick="openBoloCaseClick('front')" title="If this BOLO came from a DOJ case, click to open it in /cad">BOLO</p>
 						<p id="frontPlateTracker" class="plate_tracker_icon">📡</p>
 					</div>
 
@@ -307,7 +307,7 @@
 						</div>
 
 						<p id="rearPlateOwner" class="plate_owner"></p>
-						<p id="rearPlateBolo" class="plate_bolo_ribbon">BOLO</p>
+						<p id="rearPlateBolo" class="plate_bolo_ribbon" onclick="openBoloCaseClick('rear')" title="If this BOLO came from a DOJ case, click to open it in /cad">BOLO</p>
 						<p id="rearPlateTracker" class="plate_tracker_icon">📡</p>
 					</div>
 				</div>
@@ -319,7 +319,7 @@
 			</div>
 		</div>
 
-		<div id="plateReaderBox">
+		<div id="plateReaderBox" style="display:none;">
 			<div class="header">
 				<p class="title">Plate Reader</p>
 			</div>
@@ -337,7 +337,7 @@
 			<button id="closePlateReaderSettings" class="close">CLOSE</button>
 		</div>
 
-		<div id="uiSettingsBox">
+		<div id="uiSettingsBox" style="display:none;">
 			<div class="header">
 				<p class="title">UI Settings</p>
 			</div>
@@ -387,18 +387,18 @@
 		
 		<p id="keyLockLabel">Radar key binds <span id="keyLockStateLabel"></span></p>
 
-		<div id="helpWindow">
+		<div id="helpWindow" style="display:none;">
 			<iframe id="helpWeb" src="about:blank"></iframe>
 			<button id="closeHelp" class="close">CLOSE HELP</button>
 		</div>
 
-		<div id="newUser">
+		<div id="newUser" style="display:none;">
 			<p class="msg">Hey, it appears this is your first time using the Wraith ARS 2X. Would you like to view the quick start video?</p>
 			<button id="showQuickStartVideo" class="btn_yes">Yes</button>
 			<button id="closeNewUserMsg" class="btn_no">No</button>
 		</div>
 
-		<div id="quickStart">
+		<div id="quickStart" style="display:none;">
 			<iframe id="quickStartVideo" src="about:blank" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"></iframe>
 			<button id="closeQuickStart" class="close">CLOSE VIDEO</button>
 		</div>

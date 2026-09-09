@@ -45,7 +45,7 @@ local function resolveIdentifier(query, cb)
 end
 
 RegisterServerEvent('esx_uniquejobs:logTrafficStop')
-AddEventHandler('esx_uniquejobs:logTrafficStop', function(citizenQuery, reason, outcome, notes, location)
+AddEventHandler('esx_uniquejobs:logTrafficStop', function(citizenQuery, reason, outcome, notes, location, plate)
 	local source = source
 	local xPlayer = ESX.GetPlayerFromId(source)
 	if not xPlayer or not isLe(xPlayer.job.name) then return end
@@ -55,14 +55,15 @@ AddEventHandler('esx_uniquejobs:logTrafficStop', function(citizenQuery, reason, 
 		return
 	end
 	if not OUTCOME_LABELS[outcome] then outcome = 'warning' end
+	if plate == '' then plate = nil end
 
 	resolveIdentifier(citizenQuery, function(identifier, name)
 		MySQL.Async.execute(
-			'INSERT INTO dept_traffic_stops (officer_identifier, officer_name, officer_job, citizen_identifier, citizen_name, reason, outcome, notes, location, timestamp) '
-			.. 'VALUES (@oid, @oname, @ojob, @cid, @cname, @reason, @outcome, @notes, @loc, @ts)',
+			'INSERT INTO dept_traffic_stops (officer_identifier, officer_name, officer_job, citizen_identifier, citizen_name, plate, reason, outcome, notes, location, timestamp) '
+			.. 'VALUES (@oid, @oname, @ojob, @cid, @cname, @plate, @reason, @outcome, @notes, @loc, @ts)',
 			{
 				['@oid'] = xPlayer.identifier, ['@oname'] = xPlayer.name, ['@ojob'] = xPlayer.job.name,
-				['@cid'] = identifier, ['@cname'] = name or citizenQuery or 'Namoshakhas',
+				['@cid'] = identifier, ['@cname'] = name or citizenQuery or 'Namoshakhas', ['@plate'] = plate,
 				['@reason'] = reason, ['@outcome'] = outcome, ['@notes'] = notes or '', ['@loc'] = location or nil, ['@ts'] = os.time(),
 			},
 			function()

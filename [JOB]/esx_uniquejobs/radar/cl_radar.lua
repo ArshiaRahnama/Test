@@ -499,12 +499,19 @@ function RADAR:OpenRemote()
 			if ( ESX ~= nil ) then
 				ESX.TriggerServerCallback( "esx_uniquejobs:getUnitMenu", function( data )
 					local callsign = nil
+					local roleLabel = nil
+					local memberCount = nil
 
+					-- FEATURE ADDED: show role + unit size, not just the bare
+					-- callsign (data.myUnit.members is the OTHER members list,
+					-- so total size is that + 1 for the officer themself).
 					if ( data ~= nil and data.myUnit ~= nil ) then
 						callsign = data.myUnit.callsign
+						roleLabel = data.myUnit.isOwner and "Owner" or "Member"
+						memberCount = #data.myUnit.members + 1
 					end
 
-					SendNUIMessage( { _type = "setUnitCallsign", callsign = callsign } )
+					SendNUIMessage( { _type = "setUnitCallsign", callsign = callsign, roleLabel = roleLabel, memberCount = memberCount } )
 				end )
 
 				local job = ESX.GetPlayerData().job
@@ -1759,7 +1766,37 @@ RegisterNUICallback( "logTrafficStop", function( data, cb )
 			location = GetStreetNameFromHashKey( streetHash )
 		end
 
-		TriggerServerEvent( "esx_uniquejobs:logTrafficStop", citizen, data.reason, data.outcome, nil, location )
+		-- FEATURE ADDED: send the plate actually involved in the stop, same
+		-- "front takes priority if both are locked" rule as placeTracker
+		-- above - was hardcoded nil before, dept_traffic_stops now has a
+		-- real plate column to hold it (server/db_migrations.lua).
+		local plate = nil
+
+		if ( READER:GetCamLocked( "front" ) ) then
+			plate = READER:GetPlate( "front" )
+		elseif ( READER:GetCamLocked( "rear" ) ) then
+			plate = READER:GetPlate( "rear" )
+		end
+
+		TriggerServerEvent( "esx_uniquejobs:logTrafficStop", citizen, data.reason, data.outcome, nil, location, plate )
+	end
+
+	cb( "ok" )
+end )
+
+-- FEATURE ADDED: clicking a plate reader BOLO ribbon that came from a real
+-- DOJ case (see cl_plate_lookup.lua / cl_plate_reader.lua) opens that case
+-- straight in /cad. This reuses the exact same 'cad' command doj_menu.lua
+-- and law_menu.lua's own "Baz Kardan CAD (MDT)" button already calls -
+-- nothing new is added to the CAD resource's own open/close logic, this
+-- just also tells it (once open) which case to jump to.
+RegisterNUICallback( "openBoloCase", function( data, cb )
+	if ( data ~= nil and data.caseId ~= nil ) then
+		ExecuteCommand( DuckMdt.Command )
+
+		Citizen.SetTimeout( 400, function()
+			SendNUIMessage( { type = "OpenCaseFromRadar", id = data.caseId } )
+		end )
 	end
 
 	cb( "ok" )

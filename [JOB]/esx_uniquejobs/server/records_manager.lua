@@ -96,12 +96,31 @@ AddEventHandler('esx_uniquejobs:menuGetCriminalRecord', function(query)
 					totalUnpaid = totalUnpaid + (b.amount or 0)
 				end
 
-				TriggerClientEvent('esx_uniquejobs:criminalRecordResult', source, {
-					name = name,
-					records = records,
-					unpaidCount = #bills,
-					unpaidTotal = totalUnpaid,
-				})
+				-- FEATURE ADDED (Rap Sheet, standalone from the removed Mugshot
+				-- system): also pull DOJ bookings logged through the CAD/Crime
+				-- Scene panel (doj_criminal_records - a separate table from
+				-- criminal_records above, populated by cad/server/crimescene.lua's
+				-- booking flow) and this person's last known location (their
+				-- most recent /law or radar traffic stop), the same two pieces
+				-- the old dead-code Mugshot menu's Rap Sheet promised but never
+				-- actually delivered since it was never wired into any menu.
+				MySQL.Async.fetchAll('SELECT charges, fine, jail_minutes, booked_by_name, created_at FROM doj_criminal_records WHERE suspect_identifier = @identifier ORDER BY created_at DESC LIMIT 15', {
+					['@identifier'] = identifier,
+				}, function(bookings)
+					MySQL.Async.fetchAll('SELECT location, timestamp FROM dept_traffic_stops WHERE citizen_identifier = @identifier AND location IS NOT NULL ORDER BY timestamp DESC LIMIT 1', {
+						['@identifier'] = identifier,
+					}, function(lastStop)
+						TriggerClientEvent('esx_uniquejobs:criminalRecordResult', source, {
+							name = name,
+							records = records,
+							bookings = bookings,
+							unpaidCount = #bills,
+							unpaidTotal = totalUnpaid,
+							lastKnownLocation = lastStop[1] and lastStop[1].location or nil,
+							lastKnownTimestamp = lastStop[1] and lastStop[1].timestamp or nil,
+						})
+					end)
+				end)
 			end)
 		end)
 	end)
