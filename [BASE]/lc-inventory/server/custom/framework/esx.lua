@@ -32,6 +32,69 @@ phoneTable = 'phone_phones'
 idPhoneTable = 'id'
 numberTable = 'phone_number' 
 
+-------------------------------------------------------------------
+-- FEATURE (new bug found: "essentialmode: TriggerServerCallback =>
+-- [lgddddd:getPlayerInventory] does not exist" appearing AFTER
+-- console already confirmed that exact callback registered
+-- successfully at startup). Same root cause as the
+-- RegisteredArmoryStashes bug fixed earlier in Unique_ALLGangs, just
+-- one layer down: every RegisterServerCallback call here only runs
+-- ONCE, at lc-inventory's own startup. If essentialmode itself ever
+-- restarts on its own afterwards (crash, manual restart, or a VPS
+-- freeze/lag spike forcing a restart - exactly what's in the reported
+-- console log right before this error appeared), its real
+-- ESX.ServerCallbacks table is wiped clean along with it. lc-inventory
+-- has no reason to know that happened, so it never re-registers -
+-- every custom callback (not just the stash one) breaks permanently
+-- until lc-inventory itself also restarts.
+-- Keeps a record of every callback ever registered through here, and
+-- replays all of them the moment essentialmode reports as started
+-- again - covering the very first start (the wait-loop below) AND any
+-- later independent restart.
+-------------------------------------------------------------------
+local AllRegisteredCallbacks = {}
+
+AddEventHandler('onResourceStart', function(resourceName)
+    if resourceName ~= 'essentialmode' then return end
+    -- fires on essentialmode's OWN startup too (first boot, in which
+    -- case AllRegisteredCallbacks is still empty and this is a no-op),
+    -- as well as any later restart of it while lc-inventory keeps running
+    for name, cb in pairs(AllRegisteredCallbacks) do
+        local ok, err = pcall(function() exports['essentialmode']:RegisterServerCallback(name, cb) end)
+        if ok then
+            print('[lc-inventory] essentialmode restarted - re-registered ' .. tostring(name))
+        else
+            print('[lc-inventory] essentialmode restarted - FAILED to re-register ' .. tostring(name) .. ' -> ' .. tostring(err))
+        end
+    end
+end)
+
+-------------------------------------------------------------------
+-- FIX 3 (onResourceStart alone wasn't enough - the reported console
+-- shows this breaking repeatedly alongside "Major VPS freeze/lag
+-- detected" firing every few seconds, meaning this VPS is under such
+-- severe, CONSTANT strain that essentialmode's callback table is
+-- getting disrupted without ever producing a clean, catchable
+-- resource-restart event for onResourceStart to react to - or it's
+-- being missed because so many things are happening in the same
+-- lag spike). Rather than depend on correctly detecting *why* or
+-- *when* it breaks, this just keeps quietly re-pushing every known
+-- callback on a short timer regardless - cheap (a handful of export
+-- calls every few seconds), and it makes the exact cause of any
+-- future disruption a non-issue: whatever knocks a registration out,
+-- it's back within one interval, no console-log-reading required.
+-------------------------------------------------------------------
+CreateThread(function()
+    while true do
+        Wait(3000) -- shortened from 15s: the reported failure reappears within seconds of a fresh successful registration, so 15s left too wide a window where real inventory opens could still hit it
+        if GetResourceState('essentialmode') == 'started' then
+            for name, cb in pairs(AllRegisteredCallbacks) do
+                pcall(function() exports['essentialmode']:RegisterServerCallback(name, cb) end)
+            end
+        end
+    end
+end)
+
 function RegisterServerCallback(name, cb)
     -------------------------------------------------------------
     -- FIX (real root cause of the item-access-never-enforced bug,
@@ -73,6 +136,8 @@ function RegisterServerCallback(name, cb)
     -- generous timeout and a loud console warning if that timeout is
     -- ever actually hit.
     -------------------------------------------------------------
+    AllRegisteredCallbacks[name] = cb -- see onResourceStart handler above
+
     local waited = 0
     while GetResourceState('essentialmode') ~= 'started' and waited < 30000 do
         Wait(100)

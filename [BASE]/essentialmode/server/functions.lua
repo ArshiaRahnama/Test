@@ -35,7 +35,26 @@ ESX.TriggerServerCallback = function(name, requestId, source, cb, ...)
     if ESX.ServerCallbacks[name] ~= nil then
         ESX.ServerCallbacks[name](source, cb, ...)
     else
-        print("essentialmode: TriggerServerCallback => [" .. name .. "] does not exist")
+        -------------------------------------------------------------
+        -- TEMP DIAGNOSTIC (chasing a callback that registers
+        -- successfully, per lc-inventory's own console confirmation,
+        -- then reports "does not exist" again within seconds - too
+        -- fast to be a normal independent restart of this resource).
+        -- Prints how many callbacks currently exist total, and lists
+        -- their names, at the exact moment one is missing - this
+        -- tells us whether the whole table just got wiped (a real
+        -- restart/reset of this resource) or only this one entry is
+        -- gone (which would point somewhere else entirely, e.g.
+        -- something explicitly overwriting it with nil, or two
+        -- different things registering under the same name and
+        -- racing each other). Remove once the cause is confirmed.
+        -------------------------------------------------------------
+        local count, names = 0, {}
+        for cbName in pairs(ESX.ServerCallbacks) do
+            count = count + 1
+            table.insert(names, cbName)
+        end
+        print("essentialmode: TriggerServerCallback => [" .. name .. "] does not exist (ESX.ServerCallbacks currently has " .. count .. " other entries: " .. table.concat(names, ', ') .. ")")
     end
 end
 
