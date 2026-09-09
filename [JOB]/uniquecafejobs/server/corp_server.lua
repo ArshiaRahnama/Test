@@ -26,6 +26,20 @@ local function saveCustomName(entityJob, label)
 	})
 end
 
+CreateThread(function()
+	local rows = MySQL.Sync.fetchAll('SELECT * FROM business_blips', {})
+	for _, row in ipairs(rows) do
+		CustomBlips[row.business_job] = { sprite = row.sprite, colour = row.colour }
+	end
+end)
+
+local function saveCustomBlip(entityJob, sprite, colour)
+	CustomBlips[entityJob] = { sprite = sprite, colour = colour }
+	MySQL.Async.execute('REPLACE INTO business_blips (business_job, sprite, colour) VALUES (@job, @sprite, @colour)', {
+		['@job'] = entityJob, ['@sprite'] = sprite, ['@colour'] = colour,
+	})
+end
+
 RegisterNetEvent('uniquecafejobs:corp:renameHolding')
 AddEventHandler('uniquecafejobs:corp:renameHolding', function(newName)
 	local src = source
@@ -250,6 +264,7 @@ AddEventHandler('uniquecafejobs:corp:openBusinessBossMenuAsMeridian', function(j
 	if not xPlayer or xPlayer.job.grade < 5 then return end
 	if ownerOf(job) ~= xPlayer.job.name then return end
 
+	exports['esx_society']:grantRemoteBossAccess(src, job)
 	TriggerClientEvent('uniquecafejobs:corp:openRemoteBossMenu', src, job)
 end)
 
@@ -289,6 +304,25 @@ AddEventHandler('uniquecafejobs:corp:renameBusiness', function(job, newName)
 	TriggerClientEvent('esx:showNotification', src, ('Business renamed to "%s".'):format(newName))
 end)
 
+RegisterNetEvent('uniquecafejobs:corp:changeBlip')
+AddEventHandler('uniquecafejobs:corp:changeBlip', function(job, sprite, colour)
+	local src = source
+	local xPlayer = ESX.GetPlayerFromId(src)
+	if not xPlayer or xPlayer.job.grade < 5 then return end
+	if ownerOf(job) ~= xPlayer.job.name then return end
+
+	sprite = tonumber(sprite)
+	colour = tonumber(colour)
+	if not sprite or not colour or sprite < 0 or colour < 0 then
+		TriggerClientEvent('esx:showNotification', src, 'Invalid sprite/colour ID.')
+		return
+	end
+
+	saveCustomBlip(job, sprite, colour)
+	TriggerClientEvent('uniquecafejobs:corp:businessBlipChanged', -1, job, sprite, colour)
+	TriggerClientEvent('esx:showNotification', src, 'Blip updated for that business.')
+end)
+
 ActiveBusinesses = {}
 
 CreateThread(function()
@@ -307,6 +341,11 @@ end)
 RegisterNetEvent('uniquecafejobs:corp:requestActiveBusinesses')
 AddEventHandler('uniquecafejobs:corp:requestActiveBusinesses', function()
 	TriggerClientEvent('uniquecafejobs:corp:syncActiveBusinesses', source, ActiveBusinesses)
+end)
+
+RegisterNetEvent('uniquecafejobs:corp:requestBlipOverrides')
+AddEventHandler('uniquecafejobs:corp:requestBlipOverrides', function()
+	TriggerClientEvent('uniquecafejobs:corp:syncBlipOverrides', source, CustomBlips)
 end)
 
 RegisterNetEvent('uniquecafejobs:corp:requestToggleList')

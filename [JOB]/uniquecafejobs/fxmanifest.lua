@@ -20,6 +20,7 @@ shared_scripts {
 	'shared/market_products.lua',
 	'shared/newbiz_items.lua',
 	'shared/customnames.lua',
+	'shared/customblips.lua',
 	'shared/corp.lua',
 	'shared/turfco.lua',
 }

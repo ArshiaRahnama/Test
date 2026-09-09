@@ -63,7 +63,6 @@ local function openHoldingBossMenu(job, label)
 			{ label = 'Rename Holding', value = 'rename' },
 		},
 	}, function(data, menu)
-		menu.close()
 		if data.current.value == 'dashboard' then
 			TriggerServerEvent('uniquecafejobs:corp:requestPortfolio')
 		elseif data.current.value == 'portfolio' then
@@ -212,7 +211,6 @@ AddEventHandler('uniquecafejobs:corp:showManageStaffList', function(rows)
 	}, function(data, menu)
 		if data.current.value == 'noop' then return end
 		local chosenJob = data.current.value
-		menu.close()
 
 		ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'holding_staff_actions', {
 			title    = 'Manage Staff',
@@ -221,10 +219,11 @@ AddEventHandler('uniquecafejobs:corp:showManageStaffList', function(rows)
 				{ label = 'Open Boss Menu (hire / fire / grades)', value = 'boss' },
 				{ label = 'Appoint Manager (make someone the Boss)', value = 'appoint' },
 				{ label = 'Rename Business', value = 'rename' },
+				{ label = 'Change Blip (icon / colour)', value = 'blip' },
 			},
 		}, function(data2, menu2)
-			menu2.close()
 			if data2.current.value == 'boss' then
+				menu2.close()
 				TriggerServerEvent('uniquecafejobs:corp:openBusinessBossMenuAsMeridian', chosenJob)
 			elseif data2.current.value == 'appoint' then
 				local input = lib.inputDialog('Appoint Manager', {
@@ -239,6 +238,15 @@ AddEventHandler('uniquecafejobs:corp:showManageStaffList', function(rows)
 				})
 				if input and input[1] then
 					TriggerServerEvent('uniquecafejobs:corp:renameBusiness', chosenJob, input[1])
+				end
+			elseif data2.current.value == 'blip' then
+				local cafe = GetCafeForJob(chosenJob)
+				local input = lib.inputDialog('Change Blip', {
+					{ type = 'number', label = 'Sprite ID', required = true, default = GetDisplaySprite(chosenJob, cafe.Blip.Sprite) },
+					{ type = 'number', label = 'Colour ID', required = true, default = GetDisplayColour(chosenJob, cafe.Blip.Colour) },
+				})
+				if input and input[1] and input[2] then
+					TriggerServerEvent('uniquecafejobs:corp:changeBlip', chosenJob, input[1], input[2])
 				end
 			end
 		end, function(data2, menu2)
@@ -273,7 +281,10 @@ end)
 
 RegisterNetEvent('uniquecafejobs:corp:openRemoteBossMenu')
 AddEventHandler('uniquecafejobs:corp:openRemoteBossMenu', function(job)
-	TriggerEvent('esx_society:openBosscarysMenu', job, function(data, menu) end, function(data, menu) end)
+	-- Only pass (society, close) - esx_society's OTHER handler on this same
+	-- event name treats a 3rd arg as the `options` table, and crashes
+	-- ("Cannot index a funcref") if it's a function instead.
+	TriggerEvent('esx_society:openBosscarysMenu', job, function(data, menu) end)
 end)
 
 -- ── Any holding: physical Boss Action access at EVERY business it owns ──

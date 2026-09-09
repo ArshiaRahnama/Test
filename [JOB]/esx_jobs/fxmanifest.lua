@@ -3,10 +3,13 @@ game 'gta5'
 
 
 server_scripts {
+	'@mysql-async/lib/MySQL.lua',
 	'@essentialmode/locale.lua',
 	'locales/en.lua',
 	'config.lua',
 	'server/main.lua',
+	'server/jobs/fishing.lua',
+	'server/jobs/minerjob.lua',
 	'client/jobs/fueler.lua',
 	'client/jobs/lumberjack.lua',
 	'client/jobs/slaughterer.lua',
@@ -21,6 +24,8 @@ client_scripts {
 	'client/jobs/lumberjack.lua',
 	'client/jobs/slaughterer.lua',
 	'client/jobs/tailor.lua',
+	'client/jobs/fishing.lua',
+	'client/jobs/minerjob.lua',
 	'client/main.lua'
 }
 

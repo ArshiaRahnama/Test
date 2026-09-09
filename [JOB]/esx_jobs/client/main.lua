@@ -38,6 +38,13 @@ local jobsplate = {
 	["tailor"] = "T"
 }
 
+-- ESX.GetPlayerData().rawid was a Sunset-only custom field. GetPlayerServerId
+-- is a plain native, always available, and gives the same thing we actually
+-- needed here: a short, unique-per-player number for the work-vehicle plate.
+local function GetPlateSuffix()
+	return tostring(GetPlayerServerId(PlayerId()))
+end
+
 
 ESX = nil
 
@@ -184,7 +191,7 @@ AddEventHandler('esx_jobs:action', function(job, zone)
 		if IsPedInAnyVehicle(playerPed, false) then
 			ESX.ShowNotification(_U('foot_work'))
 		else
-			ESX.TriggerServerEvent('esx_jobs:startWork', playerjob, zone.k)
+			TriggerServerEvent('esx_jobs:startWork', playerjob, zone.k)
 		end
 	elseif zone.Type == "vehspawner" then
 		local spawnPoint = nil
@@ -231,30 +238,28 @@ AddEventHandler('esx_jobs:action', function(job, zone)
 
 							if playerPed == driverPed then
 
-								--for i=1, #myPlate, 1 do
-									if jobsplate[playerjob] .. ESX.GetPlayerData().rawid == plate then
+								if jobsplate[playerjob] .. GetPlateSuffix() == plate then
 
-										--local vehicleHealth = GetVehicleEngineHealth(vehicleInCaseofDrop)
-										--local giveBack = ESX.Math.Round(vehicleHealth / vehicleMaxHealth, 2)
-
-										TriggerServerEvent('esx_jobs:cautionss', "give_back", giveBack, 0, 0)
-										--DeleteVehicle(GetVehiclePedIsIn(playerPed, false))
-										ESX.Game.DeleteVehicle(GetVehiclePedIsIn(playerPed, false))
-										if w.Teleport ~= 0 then
-											ESX.Game.Teleport(playerPed, w.Teleport)
-										end
-
-										table.remove(myPlate, i)
-
-										if vehicleObjInCaseofDrop.HasCaution then
-											vehicleInCaseofDrop = nil
-											vehicleObjInCaseofDrop = nil
-											vehicleMaxHealth = nil
-										end
-
-										break
+									TriggerServerEvent('esx_jobs:cautionss', "give_back", 0, 0, 0)
+									ESX.Game.DeleteVehicle(vehicle)
+									if w.Teleport ~= 0 then
+										ESX.Game.Teleport(playerPed, w.Teleport)
 									end
-								--end
+
+									for m=#myPlate, 1, -1 do
+										if myPlate[m] == plate then
+											table.remove(myPlate, m)
+										end
+									end
+
+									if vehicleObjInCaseofDrop and vehicleObjInCaseofDrop.HasCaution then
+										vehicleInCaseofDrop = nil
+										vehicleObjInCaseofDrop = nil
+										vehicleMaxHealth = nil
+									end
+
+									break
+								end
 
 							else
 								ESX.ShowNotification(_U('not_your_vehicle'))
@@ -283,7 +288,7 @@ AddEventHandler('esx_jobs:action', function(job, zone)
 
 		hintToDisplay = "no hint to display"
 		hintIsShowed = false
-		ESX.TriggerServerEvent('esx_jobs:startWork', playerjob, zone.k)
+		TriggerServerEvent('esx_jobs:startWork', playerjob, zone.k)
 	end
 	--nextStep(zone.GPS)
 end)
@@ -358,8 +363,22 @@ function refreshBlips()
 	end
 end
 
+-- ESX.getVehicleFromPlate was a Sunset-only custom function; stock ESX only
+-- gives you ESX.Game.GetVehicles(), so loop through those and match plates.
+local function GetVehicleFromPlate(plate)
+	for _, vehicle in pairs(ESX.Game.GetVehicles()) do
+		if DoesEntityExist(vehicle) then
+			local vehPlate = string.gsub(GetVehicleNumberPlateText(vehicle), " ", "")
+			if vehPlate == plate then
+				return vehicle
+			end
+		end
+	end
+	return nil
+end
+
 function spawnVehicle(spawnPoint, vehicle, vehicleCaution)
-	if not ESX.getVehicleFromPlate(jobsplate[playerjob] .. ESX.GetPlayerData().rawid) then
+	if not GetVehicleFromPlate(jobsplate[playerjob] .. GetPlateSuffix()) then
 		hintToDisplay = 'no hint to display'
 		hintIsShowed = false
 		TriggerServerEvent('esx_jobs:cautionss', 'take', vehicleCaution, spawnPoint, vehicle)
@@ -381,15 +400,13 @@ function Spawn(spawnPoint, vehicle)
 		-- end
 
 		-- save & set plate
-		--local plate = 'WORK' .. math.random(100, 900)
-		local plate = jobsplate[playerjob] .. ESX.GetPlayerData().rawid
+		local plate = jobsplate[playerjob] .. GetPlateSuffix()
 		TriggerEvent("jobcarlock:setplate",plate)
 		SetVehicleNumberPlateText(spawnedVehicle, plate)
 		table.insert(myPlate, plate)
 		plate = string.gsub(plate, " ", "")
           
 		TaskWarpPedIntoVehicle(playerPed, spawnedVehicle, -1)
-		ESX.TriggerServerEvent('setEntityState', NetworkGetNetworkIdFromEntity(spawnedVehicle), 'ownerLevel', ESX.GetPlayerData().SelfLevel)
 		if vehicle.HasCaution then
 			vehicleInCaseofDrop = spawnedVehicle
 			vehicleObjInCaseofDrop = vehicle
@@ -398,7 +415,7 @@ function Spawn(spawnPoint, vehicle)
 		TriggerEvent('esx:createvehiclekey')
 		Citizen.CreateThread(function()
 			Citizen.Wait(2000)
-			ESX.setVehicleFuel(GetVehiclePedIsIn(GetPlayerPed(-1)), 100.0)
+			SetVehicleFuelLevel(spawnedVehicle, 100.0)
 		end)
 	end)
 end
@@ -487,11 +504,15 @@ end)
 -- Activate menu when player is inside marker
 local zoneInfo = {active = false}
 
-AddEventHandler('KeyDown:e',function()
-	if not ESX.inRealWorld() then return end
-	if zoneInfo.active then
-		if zoneInfo then
-			TriggerEvent('esx_jobs:action', zoneInfo.job, zoneInfo.zone)
+-- native key poll instead of relying on some other resource firing a
+-- custom 'KeyDown:e' event -- this always works, no external dependency
+Citizen.CreateThread(function()
+	while true do
+		Citizen.Wait(0)
+		if IsControlJustReleased(0, 38) then -- INPUT_CONTEXT (E)
+			if zoneInfo.active then
+				TriggerEvent('esx_jobs:action', zoneInfo.job, zoneInfo.zone)
+			end
 		end
 	end
 end)
@@ -617,4 +638,81 @@ AddEventHandler('startJob',function(name)
 			SetBlipAsShortRange(v,true)
 		end
     end
+end)
+-- ===== Job Center (merged in from esx_joblisting) =====
+local jobCenterMenuIsShowed = false
+local jobCenterHasEnteredMarker = false
+local isInJobCenterMarker = false
+
+function ShowJobCenterMenu()
+	ESX.TriggerServerCallback('esx_jobs:getJobsList', function(jobs)
+		local elements = {}
+
+		for i=1, #jobs, 1 do
+			table.insert(elements, {
+				label = jobs[i].label,
+				job   = jobs[i].job
+			})
+		end
+
+		ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'job_center', {
+			title    = _U('job_center'),
+			align    = 'top-left',
+			elements = elements
+		}, function(data, menu)
+			TriggerServerEvent('esx_jobs:setJob', data.current.job)
+			ESX.ShowNotification(_U('new_job'))
+			jobCenterMenuIsShowed = false
+			menu.close()
+		end, function(data, menu)
+			jobCenterMenuIsShowed = false
+			menu.close()
+		end)
+	end)
+end
+
+-- Marker + blip + keypress for the job center, independent of the player's
+-- current job/duty (so it works even when Config.Jobs zones are hidden)
+Citizen.CreateThread(function()
+	local jc = Config.JobCenter
+	local blip = AddBlipForCoord(jc.Pos.x, jc.Pos.y, jc.Pos.z)
+	SetBlipSprite (blip, 498)
+	SetBlipDisplay(blip, 4)
+	SetBlipScale  (blip, 0.8)
+	SetBlipColour (blip, 60)
+	SetBlipAsShortRange(blip, true)
+	BeginTextCommandSetBlipName("STRING")
+	AddTextComponentSubstringPlayerName(_U('job_center'))
+	EndTextCommandSetBlipName(blip)
+
+	while true do
+		Citizen.Wait(1)
+
+		local coords = GetEntityCoords(PlayerPedId())
+		local distance = GetDistanceBetweenCoords(coords, jc.Pos.x, jc.Pos.y, jc.Pos.z, true)
+		isInJobCenterMarker = false
+
+		if distance < jc.DrawDistance then
+			DrawMarker(jc.MarkerType, jc.Pos.x, jc.Pos.y, jc.Pos.z, 0.0, 0.0, 0.0, 0, 0.0, 0.0, jc.Size.x, jc.Size.y, jc.Size.z, jc.MarkerColor.r, jc.MarkerColor.g, jc.MarkerColor.b, 100, false, true, 2, false, false, false, false)
+		end
+
+		if distance < (jc.Size.x / 2) then
+			isInJobCenterMarker = true
+			ESX.ShowHelpNotification(_U('access_job_center'))
+		end
+
+		if not isInJobCenterMarker and jobCenterHasEnteredMarker then
+			jobCenterHasEnteredMarker = false
+			ESX.UI.Menu.CloseAll()
+			jobCenterMenuIsShowed = false
+		elseif isInJobCenterMarker then
+			jobCenterHasEnteredMarker = true
+		end
+
+		if isInJobCenterMarker and IsControlJustReleased(0, 38) and not jobCenterMenuIsShowed then
+			jobCenterMenuIsShowed = true
+			ESX.UI.Menu.CloseAll()
+			ShowJobCenterMenu()
+		end
+	end
 end)

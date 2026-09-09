@@ -115,6 +115,42 @@ AddEventHandler('esx_jobs:stopWork', function()
 	PlayersWorking[source] = false
 end)
 
+-- ===== Job Center (merged in from esx_joblisting) =====
+-- Lists every job in allowedJobs. fueler/lumberjack/slaughterer/tailor are
+-- also in Config.Jobs (cloakroom + work zones); fisherman/miner are the
+-- open activities merged in from esx_fishing/esx_minerjob -- they don't
+-- gate on xPlayer.job.name, but holding the job title itself still matters
+-- (salary, job-based perms elsewhere, etc.), so it's worth being able to
+-- pick them here too.
+ESX.RegisterServerCallback('esx_jobs:getJobsList', function(source, cb)
+	local data = {}
+
+	for i=1, #allowedJobs, 1 do
+		local job = allowedJobs[i]
+		table.insert(data, {
+			job   = job,
+			label = Config.JobLabels[job] or job
+		})
+	end
+
+	cb(data)
+end)
+
+RegisterServerEvent('esx_jobs:setJob')
+AddEventHandler('esx_jobs:setJob', function(job)
+	local xPlayer = ESX.GetPlayerFromId(source)
+	if not xPlayer then return end
+
+	if type(job) ~= "string" or not IsAllowed(job) then
+		print(('esx_jobs: %s attempted to set a job outside allowedJobs! (lua injector)'):format(xPlayer.identifier))
+		return
+	end
+
+	xPlayer.setJob(job, 0)
+	TriggerClientEvent("esx:inJob", xPlayer.source, job)
+	TriggerClientEvent("startJob", xPlayer.source, job)
+end)
+
 RegisterServerEvent('esx_jobs:addVehicle')
 AddEventHandler('esx_jobs:addVehicle', function(netID)
 	local identifier = GetPlayerIdentifier(source)

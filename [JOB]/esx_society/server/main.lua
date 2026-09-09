@@ -5,6 +5,32 @@ local RegisteredSocieties = {}
 local WebHook
 local WebHookAdmin
 
+-- ── Remote boss access (e.g. a Holding managing a business it owns without
+-- literally being employed there) ─────────────────────────────────────────
+-- Granted ONLY via the exports below, which are server-side exports and so
+-- cannot be called by a client - only by another server resource that has
+-- already done its own ownership/grade checks (see uniquecafejobs's
+-- openBusinessBossMenuAsMeridian handler for the caller).
+local RemoteBossGrants = {} -- [source] = { society = 'jobname', expires = ostime }
+local REMOTE_BOSS_GRANT_SECONDS = 300
+
+local function hasRemoteBossAccess(src, societyName)
+	local g = RemoteBossGrants[src]
+	return g ~= nil and g.society == societyName and g.expires > os.time()
+end
+
+exports('grantRemoteBossAccess', function(src, societyName)
+	RemoteBossGrants[src] = { society = societyName, expires = os.time() + REMOTE_BOSS_GRANT_SECONDS }
+end)
+
+exports('revokeRemoteBossAccess', function(src)
+	RemoteBossGrants[src] = nil
+end)
+
+AddEventHandler('playerDropped', function()
+	RemoteBossGrants[source] = nil
+end)
+
 TriggerEvent(Config.ESXtrigger, function(obj) ESX = obj end)
 
 function GetSociety(name)
@@ -135,9 +161,11 @@ AddEventHandler('esx_society:withdrawMoney', function(society, amount)
 	amount = ESX.Math.Round(tonumber(amount))
 
 	if xPlayer.job.name ~= society.name or xPlayer.job.grade_name ~= 'boss' then
-		print(('esx_society: %s attempted to call withdrawMoney without being boss!'):format(xPlayer.identifier))
-		TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'SocietySuspiciousLog', '```css\n[ Player : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Player Steam : '..xPlayer.identifier..' ]\n[ Attempted : withdrawMoney from "'..tostring(society.name)..'" ]\n[ Reason Blocked : not boss / wrong job ]\n```', 'user', true, source, false)
-		return
+		if not hasRemoteBossAccess(source, society.name) then
+			print(('esx_society: %s attempted to call withdrawMoney without being boss!'):format(xPlayer.identifier))
+			TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'SocietySuspiciousLog', '```css\n[ Player : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Player Steam : '..xPlayer.identifier..' ]\n[ Attempted : withdrawMoney from "'..tostring(society.name)..'" ]\n[ Reason Blocked : not boss / wrong job ]\n```', 'user', true, source, false)
+			return
+		end
 	end
 
 	TriggerEvent('esx_addonaccount:getSharedAccount', society.account, function(account)
@@ -171,9 +199,11 @@ AddEventHandler('esx_society:depositMoney', function(society, amount)
 	amount = ESX.Math.Round(tonumber(amount))
 
 	if xPlayer.job.name ~= society.name then
-		print(('esx_society: %s attempted to call depositMoney!'):format(xPlayer.identifier))
-		TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'SocietySuspiciousLog', '```css\n[ Player : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Player Steam : '..xPlayer.identifier..' ]\n[ Attempted : depositMoney into "'..tostring(society.name)..'" ]\n[ Reason Blocked : not a member of that society ]\n```', 'user', true, source, false)
-		return
+		if not hasRemoteBossAccess(source, society.name) then
+			print(('esx_society: %s attempted to call depositMoney!'):format(xPlayer.identifier))
+			TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'SocietySuspiciousLog', '```css\n[ Player : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Player Steam : '..xPlayer.identifier..' ]\n[ Attempted : depositMoney into "'..tostring(society.name)..'" ]\n[ Reason Blocked : not a member of that society ]\n```', 'user', true, source, false)
+			return
+		end
 	end
 
 	if amount > 0 and xPlayer.money >= amount then

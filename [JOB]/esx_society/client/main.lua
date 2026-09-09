@@ -66,6 +66,7 @@ end)
 function OpenBossMenu(society, close, options)
 	local isBoss = nil
 	local options  = options or {}
+	if type(options) ~= 'table' then options = {} end -- defensive: a bad caller may pass a function here instead of a table
 	local elements = {}
 
 
@@ -108,7 +109,7 @@ function OpenBossMenu(society, close, options)
 			table.insert(elements ,{label = 'Society Money: <span style="color:green;">$'.. money .. '</span>', value = nil})
 		end
 		wait = false
-	end, ESX.PlayerData.job.name)
+	end, society)
 
 	while wait do
 		Citizen.Wait(tonumber(5))
@@ -276,7 +277,6 @@ function OpenManagedivisionMenu(society)
 
 	}
 
-	ESX.UI.Menu.CloseAll()
 	ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'manage_job_division' .. society, {
 		title    = _U('manage_job_division'),
 		align    = 'top-left',
@@ -315,7 +315,6 @@ function OpenMenuDivisionOption(society)
 		{label = _U('manage_division_item'), value = 'manage_division_item'},
 	}
 
-	ESX.UI.Menu.CloseAll()
 	ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'manage_division_option' .. society, {
 		title    = _U('manage_division_option'),
 		align    = 'top-left',
@@ -403,7 +402,6 @@ function ChangeItemDivisionPerm(society,DIVName)
 						table.insert(rows, { label = society_items.label .. " | [<font color=red>❌</font>]", name = society_items.name, Itemslabel = society_items.label, value = false })
 					end
 				end
-				ESX.UI.Menu.CloseAll()
 				ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'manage_grades_Items_' .. society .. '', {
 					title = "Manage Inventory",
 					align = 'top-left',
@@ -494,7 +492,6 @@ function ChangeWeaponDivisionPerm(society,DivisionName)
 					table.insert(rows, { label = GetModelLabel(society_weapons) .. " | [<font color=red>❌</font>]", model = society_weapons, value = false })
 				end
 			end
-			ESX.UI.Menu.CloseAll()
 			ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'manage_grades_weapons_' .. society .. '', {
 				title = "Manage Weapons",
 				align = 'top-left',
@@ -593,7 +590,6 @@ function ChangeHelidivisionPerm(society,DivisionName)
 					table.insert(rows, { label = society_Helis.label .. " | [<font color=red>❌</font>]", model = society_Helis.name, Helilabel = society_Helis.label, value = false })
 				end
 			end
-			ESX.UI.Menu.CloseAll()
 			ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'manage_grades_Helis_' .. society .. '', {
 				title = "Manage Helis Division",
 				align = 'top-left',
@@ -687,7 +683,6 @@ function ChangeVehicledivisionPerm(society,DivisionName)
 					table.insert(rows, { label = society_vehicles.label .. " | [<font color=red>❌</font>]", model = society_vehicles.name, Vehiclelabel = society_vehicles.label, value = false })
 				end
 			end
-			ESX.UI.Menu.CloseAll()
 			ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'manage_grades_vehicles_' .. society .. '', {
 				title = "Manage Vehicles Division",
 				align = 'top-left',
@@ -757,7 +752,6 @@ end
 function RemoveplayerDivision(society, identifier)
 	local dvelement = {}
 	local elementsender = {}
-	ESX.UI.Menu.CloseAll()
 	ESX.TriggerServerCallback('esx_society:getdivision', function(DVilist)
 		ESX.TriggerServerCallback('esx_society:GetDivisionsPlayer', function(checks)
 
@@ -888,7 +882,6 @@ end
 function SetplayerDivision(society, identifier)
 	local dvelement = {}
 	local elementsender = {}
-	ESX.UI.Menu.CloseAll()
 	ESX.TriggerServerCallback('esx_society:getdivision', function(DVilist)
 		ESX.TriggerServerCallback('esx_society:GetDivisionsPlayer', function(checks)
 
@@ -961,7 +954,6 @@ function OpenMenuDivisionChangeData(society)
 		{label = 'Taghir Esm Division', value = 'manage_division_edit'},
 	}
 
-	ESX.UI.Menu.CloseAll()
 	ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'division_change_data' .. society, {
 		title    = _U('edit_division'),
 		align    = 'top-left',
@@ -1012,6 +1004,10 @@ function OpenMenuEditDivision(society)
 						title = 'Taghir Esm',
 						onSelect = function()
 							local newName = lib.inputDialog('Enter New Name', {'New Name'})
+							if not newName then
+								lib.showContext('change_menu')
+								return
+							end
 							local newName1 = newName[1]
 							if newName1 ~= ""  then
 
@@ -1046,6 +1042,10 @@ function OpenMenuEditDivision(society)
 						title = 'Taghir Label',
 						onSelect = function()
 							local inputLabel = lib.inputDialog('Enter New Label', {'New Label'})
+							if not inputLabel then
+								lib.showContext('change_menu')
+								return
+							end
 							local newLabel = inputLabel[1]
 							if newLabel ~= "" then
 								if newLabel == "" then
@@ -1132,6 +1132,7 @@ end
 
 function OpenMenuCreateDivision(society)
 	local input = lib.inputDialog('Esm Division Ra Vared Konid', {'Esm Division', 'Label Division'})
+	if not input then return end -- player pressed Cancel
 	local input1 = input[1]
 	local input2 = input[2]
 	if input[1] == "" then
@@ -1194,7 +1195,6 @@ function OpenManageJobMenu(society)
 
 		end
 
-		ESX.UI.Menu.CloseAll()
 		ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'manage_job' .. society, {
 			title    = _U('manage_job'),
 			align    = 'top-left',
@@ -1308,7 +1308,6 @@ function ChangeInventoryPerm(society,rank)
 						table.insert(rows, { label = society_items.label .. " | [<font color=red>❌</font>]", name = society_items.name, Itemlabel = society_items.label, value = false })
 					end
 				end
-				ESX.UI.Menu.CloseAll()
 				ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'manage_grades_Items_' .. society .. '', {
 					title = "Manage Inventory",
 					align = 'top-left',
@@ -1425,7 +1424,6 @@ function ChangeVehiclePerm(society,rank)
 						table.insert(rows, { label = society_vehicles.label .. " | [<font color=red>❌</font>]", model = society_vehicles.name, labelVeh = society_vehicles.label, value = false })
 					end
 				end
-				ESX.UI.Menu.CloseAll()
 				ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'manage_grades_vehicles_' .. society .. '', {
 					title = "Manage Vehicles",
 					align = 'top-left',
@@ -1493,7 +1491,6 @@ function ChangeHeliPerm(society,rank)
 				end
 
 			end
-			ESX.UI.Menu.CloseAll()
 			ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'manage_grades_Helis_' .. society .. '', {
 				title = "Manage Helis",
 				align = 'top-left',
@@ -1579,7 +1576,6 @@ function ChangeWeaponPerm(society,rank)
 					table.insert(rows, { label = GetModelLabel(society_weapons) .. " | [<font color=red>❌</font>]", model = society_weapons, value = false })
 				end
 			end
-			ESX.UI.Menu.CloseAll()
 			ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'manage_grades_weapons_' .. society .. '', {
 				title = "Manage Weapons",
 				align = 'top-left',

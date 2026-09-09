@@ -89,6 +89,13 @@ CREATE TABLE IF NOT EXISTS `business_active` (
 	PRIMARY KEY (`business_job`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+CREATE TABLE IF NOT EXISTS `business_blips` (
+	`business_job` varchar(50) NOT NULL,
+	`sprite` int(11) NOT NULL,
+	`colour` int(11) NOT NULL,
+	PRIMARY KEY (`business_job`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 -- 36 finished items
 REPLACE INTO `items` (`name`, `label`, `limit`, `rare`, `can_remove`) VALUES
 	('croissant_kareii', 'Croissant Kareii', 10, 0, 1),

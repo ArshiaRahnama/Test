@@ -40,6 +40,7 @@ local CafeBlips = {}
 CreateThread(function()
     Citizen.Wait(2000)
     TriggerServerEvent('uniquecafejobs:corp:requestActiveBusinesses')
+    TriggerServerEvent('uniquecafejobs:corp:requestBlipOverrides')
 end)
 
 RegisterNetEvent('uniquecafejobs:corp:syncActiveBusinesses')
@@ -50,15 +51,37 @@ AddEventHandler('uniquecafejobs:corp:syncActiveBusinesses', function(active)
     end
 end)
 
+RegisterNetEvent('uniquecafejobs:corp:syncBlipOverrides')
+AddEventHandler('uniquecafejobs:corp:syncBlipOverrides', function(overrides)
+    for job, o in pairs(overrides) do
+        CustomBlips[job] = o
+        local blip = CafeBlips[job]
+        if blip then
+            SetBlipSprite(blip, o.sprite)
+            SetBlipColour(blip, o.colour)
+        end
+    end
+end)
+
+RegisterNetEvent('uniquecafejobs:corp:businessBlipChanged')
+AddEventHandler('uniquecafejobs:corp:businessBlipChanged', function(job, sprite, colour)
+	CustomBlips[job] = { sprite = sprite, colour = colour }
+	local blip = CafeBlips[job]
+	if blip then
+		SetBlipSprite(blip, sprite)
+		SetBlipColour(blip, colour)
+	end
+end)
+
 Citizen.CreateThread(function()
     for k,cafe in pairs(Cafes) do
 
         local blip = AddBlipForCoord(cafe.Blip.Pos.x, cafe.Blip.Pos.y, cafe.Blip.Pos.z)
 
-        SetBlipSprite (blip, cafe.Blip.Sprite)
+        SetBlipSprite (blip, GetDisplaySprite(cafe.Job, cafe.Blip.Sprite))
         SetBlipDisplay(blip, cafe.Blip.Display)
         SetBlipScale  (blip, cafe.Blip.Scale)
-        SetBlipColour (blip, cafe.Blip.Colour)
+        SetBlipColour (blip, GetDisplayColour(cafe.Job, cafe.Blip.Colour))
         SetBlipAsShortRange(blip, true)
         SetBlipAlpha(blip, (ActiveBusinesses[cafe.Job] ~= false) and 255 or 0)
         CafeBlips[cafe.Job] = blip

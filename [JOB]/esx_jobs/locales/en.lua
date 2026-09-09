@@ -25,6 +25,11 @@ Locales['en'] = {
   ['public_enter']              = 'press ~INPUT_PICKUP~ to enter the building.',
   ['public_leave']              = 'press ~INPUT_PICKUP~ to go to the entrance of the building.',
 
+  -- Job Center (merged in from esx_joblisting)
+  ['job_center']                = 'Job Center',
+  ['new_job']                   = 'you have a new job!',
+  ['access_job_center']         = 'press ~INPUT_PICKUP~ to access the ~b~job center~s~.',
+
   -- Lumber Jack job
   ['lj_locker_room']            = 'lumberjack\'s Locker Room',
   ['lj_mapblip']                = 'wood pile',

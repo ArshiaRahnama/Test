@@ -708,7 +708,8 @@ $.ajaxSetup({
 // that FiveM injects into every NUI page - it always returns whatever the
 // resource is actually named, so this now works no matter what you call it.
 function sendData( name, data ) {
-	$.post( "https://" + GetParentResourceName() + "/" + name, JSON.stringify( data ), function( datab ) {
+	var resourceName = (typeof GetParentResourceName === 'function') ? GetParentResourceName() : 'esx_uniquejobs';
+	$.post( "https://" + resourceName + "/" + name, JSON.stringify( data ), function( datab ) {
 		if ( datab != "ok" ) {
 			console.log( datab );
 		}            

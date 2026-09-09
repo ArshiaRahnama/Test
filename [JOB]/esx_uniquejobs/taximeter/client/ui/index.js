@@ -1,4 +1,4 @@
-const resource = GetParentResourceName();
+const resource = (typeof GetParentResourceName === 'function') ? GetParentResourceName() : 'esx_uniquejobs';
 var formatMoney = "es-ES"
 
 async function fetchNui(eventName, data) {
