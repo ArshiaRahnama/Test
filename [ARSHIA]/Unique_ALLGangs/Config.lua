@@ -8,6 +8,86 @@ Config.permission = 1
 Config.WashMoneyCutPercent = 20
 
 -------------------------------------------------------------------
+-- Federal Case integration (FBI/CIA) - see server/Gangs.lua,
+-- TryFileFederalCase/AddEvidenceToOpenCase, and their call sites in
+-- server/boss.lua (washMoney threshold, RegisterGangVehicle,
+-- GetRecruitablePlayers). Files/updates REAL, persistent DOJ cases
+-- through esx_uniquejobs's own public export
+-- (exports.esx_uniquejobs:CreateExternalCase, documented at the
+-- bottom of esx_uniquejobs/server/doj_cases.lua) and reads its
+-- dept_cases/dept_case_suspects tables directly for the recruit
+-- warning - nothing inside esx_uniquejobs itself is modified, this
+-- only calls/reads its existing public surface. Every hook checks
+-- GetResourceState('esx_uniquejobs') first and does nothing if it
+-- isn't running.
+-------------------------------------------------------------------
+Config.FederalCase = {
+    Enabled            = true,
+    ReferJob           = 'fbi',   -- 'fbi' or 'cia' - which department new auto-filed cases get referred to
+    WashMoneyThreshold = 50000,   -- cumulative $ washed (Gangs[gang].others.totalWashed) before a case auto-files; counter resets after filing
+
+    -- Task Force Escalation: if a gang racks up EscalationThreshold
+    -- federal cases within EscalationWindowSeconds of each other, the
+    -- one that crosses the threshold auto-escalates to 'critical'
+    -- priority and every online fbi/cia player gets a heads-up
+    -- notification (esx:showNotification - core ESX, not
+    -- esx_uniquejobs-specific). See TryFileFederalCase, server/Gangs.lua.
+    EscalationThreshold    = 2,
+    EscalationWindowSeconds = 1800, -- 30 minutes
+}
+
+-- Informant pipeline (see server/boss.lua, FireEmployee): chance (0-100)
+-- that firing a low-rank member (grade <= InformantMaxGrade) logs an
+-- anonymous tip into esx_uniquejobs's own doa_informants/doa_tips
+-- tables for DOA/FBI to work.
+Config.InformantChance  = 25
+Config.InformantMaxGrade = 2
+
+-------------------------------------------------------------------
+-- 45) Gang shootout detection -> live dispatch (FBI/CIA) - see
+-- client/gangwar.lua (detection) and server/Gangs.lua,
+-- FMGangs:ReportGangShotFired (clustering + dispatch). When enough
+-- DISTINCT members of the same gang are shooting near each other at
+-- once, this fires the same 'Unit:RobAlarm' event esx_uniquejobs's
+-- rob_manager.lua already listens for - no changes there needed - so
+-- it shows up live in police/FBI's /acceptrob queue, AND (since
+-- 'Unit:RobAlarm' responders don't include cia - that's fixed in
+-- esx_uniquejobs's own RESPONDER_JOBS table, out of scope here) also
+-- files a real federal case via TryFileFederalCase (see #44) so CIA
+-- gets a paper trail even when they don't see the live dispatch.
+-------------------------------------------------------------------
+Config.GangWar = {
+    Enabled           = true,
+    CheckIntervalMs   = 1000,  -- how often each client polls IsPedShooting
+    RadiusMeters      = 40.0,  -- how close shooters need to cluster to count as one incident
+    MinShooters       = 3,     -- distinct same-gang shooters required to trigger a dispatch
+    TimeWindowSeconds = 20,    -- how recent a shot must be to still count
+    CooldownSeconds   = 120,   -- per-gang cooldown between dispatches, so one firefight can't spam the queue
+
+    -- Vehicle trace: after a confirmed shootout, scans for the gang's
+    -- OWN registered vehicles (owned_vehicles, owner = gang name, set
+    -- by FMGangs:RegisterGangVehicle) that are physically within this
+    -- radius of the shooting right now, and logs their plates as
+    -- evidence on the case automatically - see
+    -- FMGangs:ReportGangShotFired, server/Gangs.lua.
+    VehicleTraceRadius = 60.0,
+}
+
+-------------------------------------------------------------------
+-- Wiretap bait: while a gang has an open federal case
+-- (Gangs[gang].others.openFederalCaseId), each /g gang-chat message
+-- has a small chance of being logged as a raw, anonymous intercept
+-- into esx_uniquejobs's own doa_tips table (under a per-gang
+-- "SIGNAL-<gang>" pseudo-informant, NOT the real sender's identity) -
+-- see server/main.lua, the 'g' command. The more active a gang is
+-- while under investigation, the more it leaks.
+-------------------------------------------------------------------
+Config.WiretapBait = {
+    Enabled       = true,
+    ChancePercent = 15,
+}
+
+-------------------------------------------------------------------
 -- Vehicles selectable from the gang vehicle/heli/boat spawn points
 -- (see client/load.lua, OpenVehicleMenu/OpenHeliMenu/OpenBoatMenu).
 -- Uses ESX.Game.SpawnVehicleJobs, the same function the server's own

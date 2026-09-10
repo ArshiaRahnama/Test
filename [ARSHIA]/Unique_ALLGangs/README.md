@@ -1037,6 +1037,134 @@ inside functions triggered during actual gameplay (armory open,
 marker create/remove), not at file-load time, so this was the only
 one.
 
+## 44) FBI/CIA federal-case integration (four connected loops)
+
+Wires this resource into `esx_uniquejobs`'s DOJ/CAD system using only
+its own public, documented surface - **zero changes made to
+esx_uniquejobs itself**:
+- `exports('CreateExternalCase', ...)` (`server/doj_cases.lua`) -
+  built by that resource specifically so other resources can file a
+  real, persistent `/doj` case without a DOJ-job player in context.
+- Direct reads/writes against its own DB tables (`dept_cases`,
+  `dept_case_notes`, `dept_case_suspects`, `doa_informants`,
+  `doa_tips`) - the same tables `CreateExternalCase` itself writes to.
+
+Every hook checks `GetResourceState('esx_uniquejobs')` first and is a
+silent no-op if it isn't running. New config: `Config.FederalCase`,
+`Config.InformantChance`, `Config.InformantMaxGrade` (`Config.lua`).
+
+1. **Wash Money threshold -> auto-filed case** (`server/boss.lua`,
+   `FMGangsBoss:washMoney`): tracks cumulative washed $
+   (`Gangs[gang].others.totalWashed`); crossing
+   `Config.FederalCase.WashMoneyThreshold` files a real case via
+   `TryFileFederalCase` (`server/Gangs.lua`), referred to
+   `Config.FederalCase.ReferJob` (`fbi`/`cia`), with the acting player
+   + up to 4 other online gang members auto-added as suspects. Counter
+   resets after filing.
+2. **New gang vehicle -> evidence on the open case**
+   (`FMGangs:RegisterGangVehicle`): if the gang has an open federal
+   case (set by #1), the new plate is logged as an evidence note via
+   `AddEvidenceToOpenCase` - gives FBI/CIA a real plate to run a
+   tracker/BOLO against. Self-cleans: checks the case's live `status`
+   first and clears the stale pointer if it's already
+   `closed`/`dismissed`.
+3. **Fired low-rank member -> informant tip** (`FireEmployee`): grabs
+   the member's grade before it's wiped by the fire itself (both the
+   online and offline branches), then `MaybeCreateInformantTip`
+   (`server/Gangs.lua`) rolls `Config.InformantChance` and, on a hit,
+   registers them under a generated `CI-XXX-###` codename in
+   `doa_informants` and logs a raw tip in `doa_tips` - their real name
+   is never handed over directly.
+4. **Recruit warning for the boss** (`GetRecruitablePlayers`): each
+   nearby recruit candidate is checked against `dept_cases` /
+   `dept_case_suspects` for any case not `closed`/`dismissed`; a hit
+   sets `underInvestigation = true`, shown in the Recruit menu
+   (`client/boss_esx_menu.lua`) as `[!! Under Federal Investigation]`
+   next to their name - real risk information before you recruit a
+   possible informant/suspect, not after.
+
+**Two ideas from the same brainstorm that were NOT built, and why**:
+armory break-in alerts and territory-war escalation. Checked the code
+first - `For5M:OpenInventory`'s door-code lookup (`GetArmoryByCode`)
+only ever searches the CALLER'S OWN gang's armory list, never a rival
+gang's, so there's no "enter a rival's code" path to hook an alarm
+onto; and the `flag` marker type is a cosmetic flagpole each gang
+places at its own HQ, not a capturable-territory system. Building
+either of these into something real would mean designing a genuine new
+gang-vs-gang mechanic (a break-in minigame, a capture-point system)
+from scratch, not just wiring an alert onto something that already
+exists - a real (if bigger) next task if you want it, not something to
+fake with a hook that doesn't correspond to an actual in-game action.
+
+## 45) Gang shootout detection -> live FBI/CIA dispatch
+
+Answers the request: "if a gang's members shoot a lot in one area,
+and enough of that gang are in that area, send it into `/acceptrob`
+for FBI/CIA." Built as a real detection loop, not a fake trigger -
+new files: `client/gangwar.lua` (detection) +
+`FMGangs:ReportGangShotFired` in `server/Gangs.lua` (clustering +
+dispatch). New config: `Config.GangWar` (`Config.lua`).
+
+- **Client** (`client/gangwar.lua`): while the local player is in a
+  real gang (`PlayerData.gang.name ~= 'nogang'`), polls
+  `IsPedShooting` every `Config.GangWar.CheckIntervalMs` and pings the
+  server with current coords on a hit. Pure detection - a single
+  client has no way to know who else is shooting nearby, so all the
+  actual decision-making happens server-side.
+- **Server** (`FMGangs:ReportGangShotFired`): buffers recent shot
+  pings per gang, drops anything older than
+  `Config.GangWar.TimeWindowSeconds`, then counts DISTINCT shooters
+  clustered within `Config.GangWar.RadiusMeters` of the latest shot.
+  Once that count reaches `Config.GangWar.MinShooters`, it:
+  1. Fires `TriggerEvent('Unit:RobAlarm', 'Gang Shootout - <gang> (<n> Shooters)')`
+     - the exact same event `esx_uniquejobs/server/rob_manager.lua`
+     already listens for, so it shows up live in `/acceptrob` for
+     police/sheriff/mt/marshal/**fbi**, with zero changes on that side.
+  2. Also calls `TryFileFederalCase` (#44) so a real case gets filed
+     too - **because `Unit:RobAlarm`'s responder list
+     (`RESPONDER_JOBS` in `esx_uniquejobs`) does not include `cia`**,
+     and that table lives inside esx_uniquejobs (out of scope to
+     edit). The live dispatch reaches fbi; the filed case is how cia
+     gets pulled in, as a paper trail to investigate instead of a
+     live alert. If you want cia added directly to the live
+     `/acceptrob` dispatch too, that specific one-line change has to
+     happen inside esx_uniquejobs's own `RESPONDER_JOBS` table.
+  A per-gang cooldown (`Config.GangWar.CooldownSeconds`) then blocks
+  further dispatches from the same gang until it expires, so one
+  ongoing firefight can't spam the queue.
+
+## 46) Wiretap Bait, Task Force Escalation, and Shootout Vehicle Trace
+
+Three more loops layered onto #44/#45, all still zero changes to
+`esx_uniquejobs`:
+
+- **Wiretap Bait** (`Config.WiretapBait`, `server/main.lua`'s `g`
+  command, `MaybeLeakGangChatTip` in `server/Gangs.lua`): while a gang
+  has an open federal case, each `/g` message has a
+  `Config.WiretapBait.ChancePercent` chance of being logged into
+  `doa_tips` as a raw intercept - under a per-gang `SIGNAL-<gang>`
+  pseudo-informant row, never the real sender's identifier. No open
+  case = no heat = nothing ever leaks. The more active a gang is while
+  under investigation, the more it bleeds intel.
+- **Task Force Escalation** (`Config.FederalCase.EscalationThreshold` /
+  `EscalationWindowSeconds`, `TryFileFederalCase` in
+  `server/Gangs.lua`): tracks when each gang's federal cases were
+  filed; once `EscalationThreshold` land within
+  `EscalationWindowSeconds` of each other, the one that crosses it
+  files as `priority = 'critical'` instead of `'high'`, and every
+  online `fbi`/`cia` player gets a
+  `TriggerClientEvent('esx:showNotification', ...)` heads-up ("Gang X
+  Marked As Active Federal Target") - `esx:showNotification` is a core
+  ESX event, not esx_uniquejobs code, so this still touches nothing
+  there.
+- **Shootout Vehicle Trace** (`Config.GangWar.VehicleTraceRadius`,
+  inside `FMGangs:ReportGangShotFired`): right after a shootout is
+  confirmed (#45), scans nearby vehicle ENTITIES with `GetAllVehicles`,
+  reads their plates, then confirms each one against `owned_vehicles`
+  (`owner = gang`, `job = 'gang'`) before ever naming it - only a
+  gang's own genuinely-registered vehicles that were physically on
+  scene get added to the case as evidence, nothing guessed.
+
 ## Testing checklist before going live
 
 - [ ] `/openpanel` opens instantly even with several gang members online

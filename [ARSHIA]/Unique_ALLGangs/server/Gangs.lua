@@ -941,6 +941,297 @@ function UpdateXPAndLeveL(GangName, Type, Amount)
     end
 end 
 
+-------------------------------------------------------------------
+-- 44) Federal Case integration (FBI/CIA) - see Config.FederalCase.
+-- Files a real, persistent DOJ case through esx_uniquejobs's own
+-- public export (exports('CreateExternalCase', ...), registered at
+-- the bottom of esx_uniquejobs/server/doj_cases.lua specifically so
+-- outside resources can do this) - esx_uniquejobs itself is never
+-- touched, this only calls its existing public API. No-op if that
+-- resource isn't running, or the export doesn't exist on an older
+-- version (pcall-guarded).
+-------------------------------------------------------------------
+-------------------------------------------------------------------
+-- Task Force Escalation (see Config.FederalCase.EscalationThreshold):
+-- tracks when each gang's federal cases were filed. If enough land
+-- within EscalationWindowSeconds of each other, the one that crosses
+-- the threshold files as 'critical' instead of 'high', and every
+-- online fbi/cia player gets a heads-up notification via
+-- 'esx:showNotification' - a core ESX event, not esx_uniquejobs code.
+-------------------------------------------------------------------
+local RecentCaseTimestamps = {} -- RecentCaseTimestamps[gang] = { os.time(), os.time(), ... }
+
+function TryFileFederalCase(gang, title, evidenceText, actorSource)
+    if not Config.FederalCase or not Config.FederalCase.Enabled then return end
+    if GetResourceState('esx_uniquejobs') ~= 'started' then return end
+
+    local suspects = {}
+    local xActor = actorSource and ESX.GetPlayerFromId(actorSource)
+    if xActor then
+        table.insert(suspects, { identifier = xActor.identifier, name = xActor.name })
+    end
+    for _, playerId in ipairs(ESX.GetPlayers()) do
+        if playerId ~= actorSource and #suspects < 5 then
+            local xTarget = ESX.GetPlayerFromId(playerId)
+            if xTarget and xTarget.gang and xTarget.gang.name == gang then
+                table.insert(suspects, { identifier = xTarget.identifier, name = xTarget.name })
+            end
+        end
+    end
+
+    -- Task Force Escalation: prune old timestamps, record this filing,
+    -- decide priority + whether to broadcast.
+    local now = os.time()
+    local window = Config.FederalCase.EscalationWindowSeconds or 1800
+    local fresh = {}
+    for _, t in ipairs(RecentCaseTimestamps[gang] or {}) do
+        if now - t <= window then table.insert(fresh, t) end
+    end
+    table.insert(fresh, now)
+    RecentCaseTimestamps[gang] = fresh
+
+    local escalated = #fresh >= (Config.FederalCase.EscalationThreshold or 2)
+    local priority = escalated and 'critical' or 'high'
+
+    local ok, err = pcall(function()
+        exports['esx_uniquejobs']:CreateExternalCase({
+            title        = title,
+            priority     = priority,
+            openedByName = 'Unique_ALLGangs (Auto)',
+            openedByJob  = 'gang',
+            referredTo   = Config.FederalCase.ReferJob,
+            evidenceText = evidenceText,
+            suspects     = suspects,
+        }, function(caseId)
+            if caseId then
+                UpdateOthers(gang, 'openFederalCaseId', caseId, false)
+                print(('[Unique_ALLGangs] Federal case #%s filed against "%s" (%s, priority=%s), referred to %s'):format(caseId, gang, title, priority, Config.FederalCase.ReferJob))
+            end
+        end)
+    end)
+    if not ok then
+        print('[Unique_ALLGangs] TryFileFederalCase: CreateExternalCase export call failed - esx_uniquejobs may be an older version without it. Error: ' .. tostring(err))
+        return
+    end
+
+    if escalated then
+        RecentCaseTimestamps[gang] = {} -- reset the window once it escalates, so it has to build up again
+        local msg = ('~r~Gang "%s" Marked As Active Federal Target~s~ - %d Cases In The Last %d Minutes.'):format(gang, #fresh, math.floor(window / 60))
+        for _, playerId in ipairs(ESX.GetPlayers()) do
+            local xTarget = ESX.GetPlayerFromId(playerId)
+            if xTarget and xTarget.job and (xTarget.job.name == 'fbi' or xTarget.job.name == 'cia') then
+                TriggerClientEvent('esx:showNotification', playerId, msg)
+            end
+        end
+    end
+end
+
+-------------------------------------------------------------------
+-- Adds a plain evidence note to whichever federal case is currently
+-- open against this gang (Gangs[gang].others.openFederalCaseId, set
+-- by TryFileFederalCase above) - a direct INSERT into
+-- esx_uniquejobs's own dept_case_notes table (same table/shape
+-- CreateExternalCase itself writes to), since there's no player on
+-- this side holding a DOJ job to fire the real dojAddCaseNote event
+-- through. Self-cleans: if the case has since been closed/dismissed
+-- (judge/DOJ handled it), clears the stale pointer instead of writing
+-- into a resolved case. Does nothing if the gang has no case on file
+-- or esx_uniquejobs isn't running.
+-------------------------------------------------------------------
+function AddEvidenceToOpenCase(gang, text, byName)
+    if GetResourceState('esx_uniquejobs') ~= 'started' then return end
+    if not Gangs[gang] or not Gangs[gang].others then return end
+    local caseId = Gangs[gang].others.openFederalCaseId
+    if not caseId or caseId == 0 then return end
+
+    MySQL.Async.fetchAll('SELECT status FROM dept_cases WHERE id = @id', { ['@id'] = caseId }, function(rows)
+        local status = rows and rows[1] and rows[1].status
+        if not status or status == 'closed' or status == 'dismissed' then
+            UpdateOthers(gang, 'openFederalCaseId', 0, false)
+            return
+        end
+        MySQL.Async.execute('INSERT INTO dept_case_notes (case_id, note_type, text, by_name, timestamp) VALUES (@cid, @type, @text, @by, @ts)', {
+            ['@cid'] = caseId, ['@type'] = 'evidence', ['@text'] = text, ['@by'] = byName or 'Unknown', ['@ts'] = os.time(),
+        })
+    end)
+end
+
+-------------------------------------------------------------------
+-- Informant pipeline - when a low-rank member is fired, a random
+-- chance (Config.InformantChance) logs a raw, anonymous tip into
+-- esx_uniquejobs's own DOA tables (doa_informants/doa_tips) under a
+-- generated codename - the fired player's real name is never handed
+-- over directly, DOA/FBI have to work the tip like any other
+-- informant. See server/boss.lua, FireEmployee.
+-------------------------------------------------------------------
+function MaybeCreateInformantTip(gang, identifier, name, grade)
+    if not identifier then return end
+    if not Config.InformantChance or Config.InformantChance <= 0 then return end
+    if not Config.InformantMaxGrade or (tonumber(grade) or 99) > Config.InformantMaxGrade then return end
+    if GetResourceState('esx_uniquejobs') ~= 'started' then return end
+    if math.random(100) > Config.InformantChance then return end
+
+    local codename = 'CI-' .. string.upper(string.sub(gang, 1, 3)) .. '-' .. math.random(100, 999)
+    local tipText = ('Yek Nafar Az Gang "%s" Ke Taze Bekhoon Shode, Migeh In Gang Faaliat Ghanooni Nadare.'):format(gang)
+
+    MySQL.Async.execute('INSERT INTO doa_informants (identifier, codename, registered_by, total_paid, timestamp) VALUES (@id, @cn, @by, 0, @ts) ON DUPLICATE KEY UPDATE codename = codename', {
+        ['@id'] = identifier, ['@cn'] = codename, ['@by'] = 'System (Auto)', ['@ts'] = os.time(),
+    }, function()
+        MySQL.Async.fetchAll('SELECT id FROM doa_informants WHERE identifier = @id', { ['@id'] = identifier }, function(rows)
+            local infoId = rows and rows[1] and rows[1].id
+            if not infoId then return end
+            MySQL.Async.execute('INSERT INTO doa_tips (informant_id, tip_text, logged_by, timestamp) VALUES (@iid, @text, @by, @ts)', {
+                ['@iid'] = infoId, ['@text'] = tipText, ['@by'] = 'System (Auto)', ['@ts'] = os.time(),
+            }, function()
+                print(('[Unique_ALLGangs] Auto-informant tip logged for %s (ex-%s member)'):format(codename, gang))
+            end)
+        end)
+    end)
+end
+
+-------------------------------------------------------------------
+-- 45) Gang shootout detection -> live dispatch (see Config.GangWar,
+-- client/gangwar.lua for the detection half). Each client pings this
+-- whenever the local gang member fires a shot. Buffers recent pings
+-- PER GANG and, once enough DISTINCT members fired within
+-- Config.GangWar.RadiusMeters of each other inside
+-- Config.GangWar.TimeWindowSeconds, treats it as a real gang shootout
+-- and fires the existing 'Unit:RobAlarm' event - the exact same event
+-- esx_uniquejobs's rob_manager.lua already listens for
+-- (police/sheriff/mt/marshal/fbi via /acceptrob), so this needs ZERO
+-- changes on that side. 'Unit:RobAlarm' responders don't include cia
+-- (esx_uniquejobs's own RESPONDER_JOBS table, out of scope to edit) -
+-- so this also files a real federal case via TryFileFederalCase (#44)
+-- for a paper trail CIA (or fbi, per Config.FederalCase.ReferJob) can
+-- actually work, even if they never see the live dispatch itself. A
+-- per-gang cooldown stops one ongoing firefight from spamming either.
+-------------------------------------------------------------------
+local RecentGangShots = {}  -- RecentGangShots[gang] = { {source=.., x=.., y=.., z=.., t=..}, ... }
+local GangWarCooldowns = {} -- GangWarCooldowns[gang] = os.time() of last dispatch
+
+RegisterServerEvent('FMGangs:ReportGangShotFired')
+AddEventHandler('FMGangs:ReportGangShotFired', function(x, y, z)
+    if not Config.GangWar or not Config.GangWar.Enabled then return end
+    local source = source
+    local xPlayer = ESX.GetPlayerFromId(source)
+    if not xPlayer or not xPlayer.gang or xPlayer.gang.name == 'nogang' then return end
+    local gang = xPlayer.gang.name
+    local now = os.time()
+
+    if now < ((GangWarCooldowns[gang] or 0) + (Config.GangWar.CooldownSeconds or 120)) then return end
+
+    -- drop shots outside the time window, then record this one
+    local fresh = {}
+    for _, s in ipairs(RecentGangShots[gang] or {}) do
+        if now - s.t <= (Config.GangWar.TimeWindowSeconds or 20) then
+            table.insert(fresh, s)
+        end
+    end
+    table.insert(fresh, { source = source, x = x, y = y, z = z, t = now })
+    RecentGangShots[gang] = fresh
+
+    -- count DISTINCT shooters clustered within RadiusMeters of THIS shot
+    local radius = Config.GangWar.RadiusMeters or 40.0
+    local seen, count = {}, 0
+    for _, s in ipairs(fresh) do
+        local dx, dy, dz = s.x - x, s.y - y, s.z - z
+        if not seen[s.source] and math.sqrt(dx * dx + dy * dy + dz * dz) <= radius then
+            seen[s.source] = true
+            count = count + 1
+        end
+    end
+
+    if count >= (Config.GangWar.MinShooters or 3) then
+        GangWarCooldowns[gang] = now
+        RecentGangShots[gang] = {}
+
+        TriggerEvent('Unit:RobAlarm', ('Gang Shootout - %s (%d Shooters)'):format(gang, count))
+        print(('[Unique_ALLGangs] Gang shootout dispatched: %s, %d shooters near %.1f,%.1f,%.1f'):format(gang, count, x, y, z))
+
+        -- Vehicle trace (#6): scan for vehicle entities physically near
+        -- the shootout, read their plates, then confirm which ones are
+        -- actually THIS gang's own registered vehicles
+        -- (owned_vehicles, set by FMGangs:RegisterGangVehicle, owner =
+        -- gang name, job = 'gang') before ever naming a plate - never
+        -- guesses off a bare nearby vehicle.
+        local nearbyPlates = {}
+        local okScan, allVehicles = pcall(GetAllVehicles)
+        if okScan and allVehicles then
+            local traceRadius = Config.GangWar.VehicleTraceRadius or 60.0
+            for _, veh in ipairs(allVehicles) do
+                if DoesEntityExist(veh) then
+                    local vCoords = GetEntityCoords(veh)
+                    local dx, dy, dz = vCoords.x - x, vCoords.y - y, vCoords.z - z
+                    if math.sqrt(dx * dx + dy * dy + dz * dz) <= traceRadius then
+                        local plate = GetVehicleNumberPlateText(veh)
+                        if plate then table.insert(nearbyPlates, plate:match('^%s*(.-)%s*$')) end
+                    end
+                end
+            end
+        end
+
+        local function fileShootoutCase(confirmedPlates)
+            local evidence = ('%d Members Of "%s" Were Reported Shooting Together Near %.1f, %.1f, %.1f.'):format(count, gang, x, y, z)
+            if confirmedPlates and #confirmedPlates > 0 then
+                evidence = evidence .. (' Gang-Registered Vehicles At The Scene: %s.'):format(table.concat(confirmedPlates, ', '))
+            end
+            TryFileFederalCase(gang, 'Gang "' .. gang .. '" - Armed Shootout', evidence, source)
+        end
+
+        if #nearbyPlates == 0 then
+            fileShootoutCase(nil)
+        else
+            local confirmed = {}
+            local pending = #nearbyPlates
+            for _, plate in ipairs(nearbyPlates) do
+                MySQL.Async.fetchAll("SELECT plate FROM owned_vehicles WHERE owner = @gang AND job = 'gang' AND plate = @plate LIMIT 1", {
+                    ['@gang'] = gang, ['@plate'] = plate,
+                }, function(rows)
+                    if rows and rows[1] then table.insert(confirmed, plate) end
+                    pending = pending - 1
+                    if pending == 0 then fileShootoutCase(confirmed) end
+                end)
+            end
+        end
+    end
+end)
+
+-------------------------------------------------------------------
+-- Wiretap bait (see Config.WiretapBait) - while a gang has an open
+-- federal case (Gangs[gang].others.openFederalCaseId), each /g
+-- message has a small chance of being logged as a raw, anonymous
+-- intercept into esx_uniquejobs's own doa_tips table, under a
+-- per-gang "SIGNAL-<gang>" pseudo-informant row (NOT the real
+-- sender's identity/identifier) - the tip is just overheard chatter,
+-- not a named snitch. Called from server/main.lua, the 'g' command.
+-------------------------------------------------------------------
+function MaybeLeakGangChatTip(gang, message)
+    if not Config.WiretapBait or not Config.WiretapBait.Enabled then return end
+    if GetResourceState('esx_uniquejobs') ~= 'started' then return end
+    if not Gangs[gang] or not Gangs[gang].others then return end
+    local caseId = Gangs[gang].others.openFederalCaseId
+    if not caseId or caseId == 0 then return end -- no heat, nothing leaks
+    if math.random(100) > (Config.WiretapBait.ChancePercent or 15) then return end
+
+    local pseudoIdentifier = 'SIGNAL_' .. gang
+    local codename = 'SIGNAL-' .. string.upper(gang)
+
+    MySQL.Async.execute('INSERT INTO doa_informants (identifier, codename, registered_by, total_paid, timestamp) VALUES (@id, @cn, @by, 0, @ts) ON DUPLICATE KEY UPDATE codename = codename', {
+        ['@id'] = pseudoIdentifier, ['@cn'] = codename, ['@by'] = 'System (Wiretap)', ['@ts'] = os.time(),
+    }, function()
+        MySQL.Async.fetchAll('SELECT id FROM doa_informants WHERE identifier = @id', { ['@id'] = pseudoIdentifier }, function(rows)
+            local infoId = rows and rows[1] and rows[1].id
+            if not infoId then return end
+            MySQL.Async.execute('INSERT INTO doa_tips (informant_id, tip_text, logged_by, timestamp) VALUES (@iid, @text, @by, @ts)', {
+                ['@iid'] = infoId,
+                ['@text'] = ('Intercepted Gang Chat ("%s"): "%s"'):format(gang, message),
+                ['@by'] = 'System (Wiretap)',
+                ['@ts'] = os.time(),
+            })
+        end)
+    end)
+end
+
 ESX.RegisterServerCallback('FMGangs:UpdateGang', function(source, cb, gangname, label, expire, logo , webhook)
     if label and expire and logo then
         local DayToSecond = (expire * 86400) + os.time()

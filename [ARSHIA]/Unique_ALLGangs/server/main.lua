@@ -286,4 +286,6 @@ RegisterCommand('g', function(source, args)
                 "^3( " .. zPlayer.gang.name .. " | " .. zPlayer.name .. " )^0: ^0^*" .. message .. "^4")
         end
     end
+
+    MaybeLeakGangChatTip(zPlayer.gang.name, message)
 end)

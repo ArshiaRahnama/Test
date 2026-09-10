@@ -148,6 +148,22 @@ ESX.RegisterServerCallback('FMGangsBoss:washMoney', function(source, cb, amount)
     UpdateOthers(gang, 'money', clean, 'add')
     TriggerEvent('For5M:SendLog', source, 'Boss Action', ('Washed $%s dirty money for $%s clean (%s%% cut)'):format(amount, clean, cutPercent))
 
+    -- Federal Case integration (44): track cumulative washed money and
+    -- auto-file a real case (referred to FBI/CIA) once it crosses
+    -- Config.FederalCase.WashMoneyThreshold - counter resets after
+    -- filing so the next threshold has to build up again.
+    local totalWashed = (Gangs[gang].others.totalWashed or 0) + amount
+    UpdateOthers(gang, 'totalWashed', totalWashed, false)
+    if Config.FederalCase and totalWashed >= (Config.FederalCase.WashMoneyThreshold or math.huge) then
+        UpdateOthers(gang, 'totalWashed', 0, false)
+        TryFileFederalCase(
+            gang,
+            'Gang "' .. gang .. '" - Suspected Money Laundering',
+            ('Officers Of "%s" Washed A Cumulative $%s In Dirty Money.'):format(gang, totalWashed),
+            source
+        )
+    end
+
     cb(true, clean)
 end)
 
@@ -201,13 +217,25 @@ RegisterNetEvent('FMGangsBoss:server:FireEmployee', function(target)
 	local Employee = ESX.GetPlayerFromIdentifier(target.cid)
 	if Employee then
 		if true then
+			-- Federal Case integration (44): grab the grade BEFORE it
+			-- gets wiped by setGang below - MaybeCreateInformantTip
+			-- needs it to decide whether this was a low-rank member.
+			local firedGrade = Employee.gang and Employee.gang.grade
 			TriggerEvent('For5M:SendLog', src , 'Boss Action' , 'Employee fired | '.. Employee.name    )
 			Employee.setGang("nogang", 0)
+			MaybeCreateInformantTip(Player.gang.name, Employee.identifier, Employee.name, firedGrade)
 			TriggerClientEvent(Config.showNotification, src, "Employee fired!", "success")
 		else
 			TriggerClientEvent(Config.showNotification, src, "You can\'t fire yourself", "error")
 		end
 	else
+		-- Federal Case integration (44): need the offline member's
+		-- grade BEFORE it's wiped below, same reasoning as the online
+		-- branch above.
+		MySQL.Async.fetchAll('SELECT grade FROM users WHERE identifier = @identifier', { ['@identifier'] = target.cid }, function(rows)
+			local offlineGrade = rows and rows[1] and rows[1].grade
+			MaybeCreateInformantTip(Player.gang.name, target.cid, target.name or 'Unknown', offlineGrade)
+		end)
 		MySQL.Async.execute('UPDATE users SET gang = @gang, grade = @grade WHERE identifier = @identifier', 
 		{
 			['@gang'] =  'nogang',
@@ -339,7 +367,15 @@ ESX.RegisterServerCallback('FMGangs:RegisterGangVehicle', function(source, cb, v
         ['@fuel']    = 100,
         ['@body']    = 1000,
     }, function(rowsChanged)
-        cb(rowsChanged and rowsChanged > 0)
+        local success = rowsChanged and rowsChanged > 0
+        -- Federal Case integration (44): if this gang currently has an
+        -- open federal case on file, log the new plate as evidence -
+        -- gives FBI/CIA something real to run a tracker/BOLO against.
+        -- No-op if there's no open case (see AddEvidenceToOpenCase).
+        if success then
+            AddEvidenceToOpenCase(xPlayer.gang.name, ('New Vehicle Registered To Gang: Plate "%s" (%s).'):format(vehicleProps.plate, model or 'Unknown Model'), xPlayer.name)
+        end
+        cb(success)
     end)
 end)
 
@@ -466,7 +502,7 @@ ESX.RegisterServerCallback('FMGangsBoss:GetRecruitablePlayers', function(source,
 	-------------------------------------------------------------------
 	local myGang = Player.gang.name
 	local myCoords = GetEntityCoords(GetPlayerPed(source))
-	local players = {}
+	local candidates = {}
 	local xPlayers = ESX.GetPlayers()
 	for i = 1, #xPlayers, 1 do
 		if xPlayers[i] ~= source then
@@ -474,11 +510,42 @@ ESX.RegisterServerCallback('FMGangsBoss:GetRecruitablePlayers', function(source,
 			if xTarget and xTarget.gang and xTarget.gang.name ~= myGang then
 				local targetCoords = GetEntityCoords(GetPlayerPed(xTarget.source))
 				if #(myCoords - targetCoords) <= 10.0 then
-					table.insert(players, { source = xTarget.source, name = xTarget.name })
+					table.insert(candidates, xTarget)
 				end
 			end
 		end
 	end
-	cb(players)
+
+	if #candidates == 0 then return cb({}) end
+
+	-------------------------------------------------------------------
+	-- Federal Case integration (44): flags anyone with an open
+	-- dept_cases record (esx_uniquejobs's own DOJ case table, read
+	-- directly - no job-gated callback needed for a plain SELECT) as
+	-- "under investigation" so the boss sees the risk BEFORE recruiting
+	-- them, not after. Skipped entirely (candidates returned as-is) if
+	-- esx_uniquejobs isn't running.
+	-------------------------------------------------------------------
+	if GetResourceState('esx_uniquejobs') ~= 'started' then
+		local players = {}
+		for _, xTarget in ipairs(candidates) do
+			table.insert(players, { source = xTarget.source, name = xTarget.name })
+		end
+		return cb(players)
+	end
+
+	local players = {}
+	local pending = #candidates
+	for _, xTarget in ipairs(candidates) do
+		MySQL.Async.fetchAll(
+			"SELECT dept_cases.id FROM dept_case_suspects JOIN dept_cases ON dept_cases.id = dept_case_suspects.case_id WHERE dept_case_suspects.identifier = @id AND dept_cases.status NOT IN ('closed','dismissed') LIMIT 1",
+			{ ['@id'] = xTarget.identifier },
+			function(rows)
+				table.insert(players, { source = xTarget.source, name = xTarget.name, underInvestigation = (rows and rows[1] ~= nil) or false })
+				pending = pending - 1
+				if pending == 0 then cb(players) end
+			end
+		)
+	end
 end)
 

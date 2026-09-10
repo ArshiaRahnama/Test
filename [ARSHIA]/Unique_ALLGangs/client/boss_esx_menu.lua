@@ -256,7 +256,11 @@ function OpenBossRecruitMenu(gang)
     ESX.TriggerServerCallback('FMGangsBoss:GetRecruitablePlayers', function(players)
         local elements = {}
         for _, p in ipairs(players or {}) do
-            table.insert(elements, { label = ('%s (ID: %s)'):format(p.name, p.source), value = tostring(p.source), name = p.name })
+            -- Federal Case integration (44): flags a candidate with an
+            -- open DOJ case (server/boss.lua, GetRecruitablePlayers) so
+            -- the boss can see the risk before confirming the recruit.
+            local tag = p.underInvestigation and ' [!! Under Federal Investigation]' or ''
+            table.insert(elements, { label = ('%s (ID: %s)%s'):format(p.name, p.source, tag), value = tostring(p.source), name = p.name })
         end
 
         if #elements == 0 then
