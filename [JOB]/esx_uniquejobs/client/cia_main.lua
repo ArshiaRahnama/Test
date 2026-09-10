@@ -2150,7 +2150,7 @@ Citizen.CreateThread(function()
 		SetBlipAsShortRange(blip, true)
 
 		BeginTextCommandSetBlipName("STRING")
-		AddTextComponentString(_U('map_blip'))
+		AddTextComponentString('cia')
 		EndTextCommandSetBlipName(blip)
 	end
 

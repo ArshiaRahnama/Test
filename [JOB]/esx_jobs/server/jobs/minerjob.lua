@@ -1,6 +1,19 @@
 ESX = nil
 TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
 
+local MinerTrunkStores = {}
+AddEventHandler("esx_trunk:getSharedDataStore", function(plate, cb)
+	if not MinerTrunkStores[plate] then
+		MinerTrunkStores[plate] = {}
+	end
+	local data = MinerTrunkStores[plate]
+	local store = {
+		get = function(key) return data[key] end,
+		set = function(key, value) data[key] = value end
+	}
+	cb(store)
+end)
+
 local PLayersOnduty = {}
 RegisterNetEvent('Miner:SetDuty')
 AddEventHandler('Miner:SetDuty',function(status)
@@ -29,88 +42,352 @@ function MineManager()
 	return self
 end
 
-RegisterServerEvent('mining:PutStoneInVehicle')
-AddEventHandler('mining:PutStoneInVehicle', function(plate, minerSkill, class)
-	local xPlayer = ESX.GetPlayerFromId(source)
-	if not xPlayer then return end
+function getInventoryWeight(inventory)
+  local weight = 0
+  local itemWeight = 0
+  if inventory ~= nil then
+    for i = 1, #inventory, 1 do
+      if inventory[i] ~= nil then
+        itemWeight = 1000
+        weight = weight + (itemWeight * (inventory[i].count or 1))
+      end
+    end
+  end
+  return weight
+end
 
+function getTotalInventoryWeight(plate)
+  local total
+  TriggerEvent(
+    "esx_trunk:getSharedDataStore",
+    plate,
+    function(store)
+      local W_coffre = getInventoryWeight(store.get("coffre") or {})
+     total = W_coffre
+    end)
+  return total
+end
+
+RegisterServerEvent('mining:PutStoneInVehicle')
+AddEventHandler('mining:PutStoneInVehicle', function(plate, minerSkill)
 	local count = 1
 	if minerSkill == 100 then
 		count = 2
 	end
 
-	-- lgdddd:actionItem (lc-inventory's real vehicle trunk) moves the item
-	-- OUT OF the player's own inventory and into the trunk, so give it to
-	-- the player first, then hand it straight over. lc-inventory shows its
-	-- own success/weight-limit notification, so nothing else needed here.
-	xPlayer.addInventoryItem("stone", count)
-	TriggerEvent("lgdddd:actionItem", plate, class, "deposit", count, "stone")
+	local item = "stone"
+	TriggerEvent("esx_trunk:getSharedDataStore", plate, function(store)
+		local found = false
+		local coffre = (store.get("coffre") or {})
+
+		for i = 1, #coffre, 1 do
+			if coffre[i].name == item then
+				coffre[i].count = coffre[i].count + count
+				found = true
+			end
+		end
+		if not found then
+			table.insert(coffre, {
+				name = item,
+				count = count
+			})
+		end
+
+		if (getTotalInventoryWeight(plate) + 1000 * count) > 300000 then
+			TriggerClientEvent('esx:showNotification', source, 'Kamion Por Shode Be Mahal ShosteShu Sang Beravid!')
+		else
+			store.set("coffre", coffre)
+			TriggerClientEvent('esx:showNotification', source,
+				'~b~' .. count .. ' ~w~Sang Dakhele Kamion Gozashte Shod | Sang Haye Dakhele Mashin : ~b~' ..
+				math.ceil(getTotalInventoryWeight(plate)/1000)
+			)
+			TriggerClientEvent("TaskSystem:FarmSang", source)
+		end
+	end)
 end)
 
 RegisterServerEvent('mining:SellStone')
-AddEventHandler('mining:SellStone', function(plate, class, count)
+AddEventHandler('mining:SellStone', function(plate)
+	local Tedad = 0
+	local Src = source
 	local xPlayer = ESX.GetPlayerFromId(source)
-	if not xPlayer then return end
+	TriggerEvent("esx_trunk:getSharedDataStore", plate, function(store)
+	local coffre = (store.get("coffre") or {})
+		for i = 1, #coffre, 1 do
+			if coffre[i].name == "stone_piece" then
+				if coffre[i].count ~= nil then
+					Tedad = coffre[i].count
+				end
+			end
+		end
+		if Tedad >= 20 then
+			TriggerClientEvent('TaskSystem:FroshAjor', Src)
+		end
+	end)
 
-	count = tonumber(count) or 0
-	if count <= 0 then return end
-
-	-- "remove" hands `count` stone_piece from the real trunk into the
-	-- player's own inventory (that's how lgdddd:actionItem works) -- take
-	-- it straight back off them since this is a sale, not a pickup.
-	TriggerEvent("lgdddd:actionItem", plate, class, "remove", count, "stone_piece")
-	xPlayer.removeInventoryItem('stone_piece', count)
-
-	local poull = count * 500
-	xPlayer.addMoney(poull)
+	xPlayer.addMoney(Tedad*500)
+	local poull = Tedad*500
 	TriggerClientEvent('esx:showNotification', source, 'Shoma ~g~'..poull..'~w~ Pool Az Frosh Ajor Daryaft Kardid')
-	TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'AMoneyLog', '```css\n[ Player : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Player Steam : '..xPlayer.identifier..' ]\n[ Job : Miner ]\n[ Sold Count : '..tostring(count)..' ]\n[ Earned : '..tostring(poull)..' ]\n```', 'user', true, source, false)
+	TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'AMoneyLog', '```css\n[ Player : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Player Steam : '..xPlayer.identifier..' ]\n[ Job : Miner ]\n[ Sold Count : '..tostring(Tedad)..' ]\n[ Earned : '..tostring(poull)..' ]\n```', 'user', true, source, false)
+	TriggerEvent("esx_trunk:getSharedDataStore", plate, function(store)
+		local coffre = (store.get("coffre") or {})
+		for i = 1, #coffre, 1 do
+		  if coffre[i].name == "stone_piece" then
+			if (coffre[i].count >= Tedad and Tedad > 0) then
+			  if (coffre[i].count - Tedad) == 0 then
+				table.remove(coffre, i)
+			  else
+				coffre[i].count = coffre[i].count - Tedad
+			  end
+
+			  break
+			end
+		  end
+		end
+		store.set("coffre", coffre)
+		local blackMoney = 0
+		local items = {}
+		local weapons = {}
+		weapons = {}
+		local coffre = (store.get("coffre") or {})
+		for i = 1, #coffre, 1 do
+		  table.insert(items, {name = coffre[i].name, count = coffre[i].count, label = ESX.GetItemLabel(coffre[i].name)})
+		end
+		local weight = getTotalInventoryWeight(plate)
+		text = "--"
+		data = {plate = plate, max = 300000, myVeh = 0, text = text}
+		TriggerClientEvent("esx_inventoryhud:refreshTrunkInventory", source, data, blackMoney, items, weapons)
+	  end
+	)
 end)
 
 RegisterServerEvent('mining:WashStonePieces')
-AddEventHandler('mining:WashStonePieces', function(plate, class, count)
-	local xPlayer = ESX.GetPlayerFromId(source)
-	if not xPlayer then return end
+AddEventHandler('mining:WashStonePieces', function(plate)
 
-	local Tedad = tonumber(count) or 0
-	if Tedad == 0 then return end
+	local Tedad = 0
+	local Src = source
+	TriggerEvent("esx_trunk:getSharedDataStore", plate, function(store)
+	local coffre = (store.get("coffre") or {})
 
-	if Tedad >= 290 then
-		TriggerClientEvent('TaskSystem:GharbaleSang', source)
+	for i = 1, #coffre, 1 do
+		if coffre[i].name == "stone" then
+			if coffre[i].count ~= nil then
+				Tedad = coffre[i].count
+			end
+		end
 	end
 
-	TriggerClientEvent('mining:WashStonePieces_cl', source)
-	TriggerClientEvent("esx_miner:Gharbale", source)
+	if Tedad >=290 then
+		TriggerClientEvent('TaskSystem:GharbaleSang', Src)
 
-	-- take the raw "stone" out of the real trunk (same give-then-take
-	-- pattern as above, since lgdddd:actionItem only moves things through
-	-- the player's own inventory)
-	TriggerEvent("lgdddd:actionItem", plate, class, "remove", Tedad, "stone")
-	xPlayer.removeInventoryItem('stone', Tedad)
+		exports['Unique_Skills']:UpdateSkill(Src, "Miner", 1.000)
+	end
 
-	-- NOTE: the original condition here ("Tedad >= 200 or Tedad <= 300")
-	-- was true for literally every number, so the original "else" branch
-	-- was unreachable dead code either way -- kept the reward math as-is.
+	end)
+	if Tedad == 0 then return end
+		TriggerClientEvent('mining:WashStonePieces_cl' , source )
+
+
+		TriggerClientEvent("esx_miner:Gharbale", source)
+	if Tedad >= 200 or Tedad <= 300 then
+        TriggerEvent("esx_trunk:getSharedDataStore", plate, function(store)
+            local coffre = (store.get("coffre") or {})
+            for i = 1, #coffre, 1 do
+              if coffre[i].name == "stone" then
+                if (coffre[i].count >= Tedad and Tedad > 0) then
+                  if (coffre[i].count - Tedad) == 0 then
+                    table.remove(coffre, i)
+                  else
+                    coffre[i].count = coffre[i].count - Tedad
+                  end
+
+                  break
+                end
+              end
+            end
+            store.set("coffre", coffre)
+            local blackMoney = 0
+            local items = {}
+            local weapons = {}
+            weapons = {}
+            local coffre = (store.get("coffre") or {})
+            for i = 1, #coffre, 1 do
+              table.insert(items, {name = coffre[i].name, count = coffre[i].count, label = ESX.GetItemLabel(coffre[i].name)})
+            end
+            local weight = getTotalInventoryWeight(plate)
+            text = "--"
+            data = {plate = plate, max = 300000, myVeh = 0, text = text}
+            TriggerClientEvent("esx_inventoryhud:refreshTrunkInventory", source, data, blackMoney, items, weapons)
+          end
+        )
+
 	local count1 = math.random(5, 60)
 	local count2 = math.random(5, 50)
 	local count3 = math.random(5, 40)
 	local count4 = math.random(0, 7)
+	local random = math.random(1, 20)
 
-	if count1 > 0 then
-		xPlayer.addInventoryItem('stone_piece', count1)
-		TriggerEvent("lgdddd:actionItem", plate, class, "deposit", count1, "stone_piece")
-	end
-	if count2 > 0 then
-		xPlayer.addInventoryItem('iron_piece', count2)
-		TriggerEvent("lgdddd:actionItem", plate, class, "deposit", count2, "iron_piece")
-	end
-	if count3 > 0 then
-		xPlayer.addInventoryItem('gold_piece', count3)
-		TriggerEvent("lgdddd:actionItem", plate, class, "deposit", count3, "gold_piece")
-	end
-	if count4 > 0 then
-		xPlayer.addInventoryItem('diamond', count4)
-		TriggerEvent("lgdddd:actionItem", plate, class, "deposit", count4, "diamond")
+	local item1 = "stone_piece"
+	local item2 = "iron_piece"
+	local item3 = "gold_piece"
+	local item4 = "diamond"
+
+	TriggerEvent("esx_trunk:getSharedDataStore", plate, function(store)
+		local found = false
+		local coffre = (store.get("coffre") or {})
+		for i = 1, #coffre, 1 do
+			if coffre[i].name == item1 then
+			coffre[i].count = coffre[i].count + count1
+			found = true
+			end
+			if coffre[i].name == item2 then
+			coffre[i].count = coffre[i].count + count2
+			found = true
+			end
+			if coffre[i].name == item3 then
+			coffre[i].count = coffre[i].count + count3
+			found = true
+			end
+
+			if coffre[i].name == item4 then
+			coffre[i].count = coffre[i].count + count4
+			found = true
+			end
+		end
+		if not found then
+		  table.insert(
+			coffre,
+			{
+			  name = item1,
+			  count = count1
+			}
+		  )
+		  table.insert(
+			coffre,
+			{
+			  name = item2,
+			  count = count2
+			}
+		  )
+		  table.insert(
+			coffre,
+			{
+			  name = item3,
+			  count = count3
+			}
+		  )
+
+			table.insert(
+			coffre,
+			{
+				name = item4,
+				count = count4
+			}
+			)
+
+		end
+
+		store.set("coffre", coffre)
+		MySQL.Async.execute("UPDATE trunk_inventory SET owned = @owned WHERE plate = @plate", {["@plate"] = plate, ["@owned"] = owned })
+
+    end)
+	TriggerClientEvent("esx_miner:Gharbale", source)
+
+
+	else
+		if Tedad ~= 0 then
+		TriggerEvent("esx_trunk:getSharedDataStore", plate, function(store)
+            local coffre = (store.get("coffre") or {})
+            for i = 1, #coffre, 1 do
+              if coffre[i].name == "stone" then
+                if (coffre[i].count >= Tedad and Tedad > 0) then
+                  if (coffre[i].count - Tedad) == 0 then
+                    table.remove(coffre, i)
+                  else
+                    coffre[i].count = coffre[i].count - Tedad
+                  end
+
+                  break
+                end
+              end
+            end
+            store.set("coffre", coffre)
+            local blackMoney = 0
+            local items = {}
+            local weapons = {}
+            weapons = {}
+            local coffre = (store.get("coffre") or {})
+            for i = 1, #coffre, 1 do
+              table.insert(items, {name = coffre[i].name, count = coffre[i].count, label = ESX.GetItemLabel(coffre[i].name)})
+            end
+            local weight = getTotalInventoryWeight(plate)
+            text = "--"
+            data = {plate = plate, max = 300000, myVeh = 0, text = text}
+            TriggerClientEvent("esx_inventoryhud:refreshTrunkInventory", source, data, blackMoney, items, weapons)
+          end
+        )
+
+	local count1 = math.random(5, 60)
+	local count2 = math.random(5, 35)
+	local count3 = math.random(5, 35)
+	local count4 = math.random(0, 7)
+
+
+
+	local item1 = "stone_piece"
+	local item2 = "iron_piece"
+	local item3 = "gold_piece"
+	local item4 = "diamond"
+
+	TriggerEvent("esx_trunk:getSharedDataStore", plate, function(store)
+		local found = false
+		local coffre = (store.get("coffre") or {})
+		for i = 1, #coffre, 1 do
+		  if coffre[i].name == item1 then
+			coffre[i].count = coffre[i].count + count1
+			found = true
+		  end
+		  if coffre[i].name == item2 then
+			coffre[i].count = coffre[i].count + count2
+			found = true
+		  end
+		  if coffre[i].name == item3 then
+			coffre[i].count = coffre[i].count + count3
+			found = true
+		  end
+		  if coffre[i].name == item4 then
+			coffre[i].count = coffre[i].count + count4
+			found = true
+		  end
+		end
+		if not found then
+		    table.insert(
+			coffre,
+			{
+			  name = item1,
+			  count = count1
+			}
+		  )
+		  table.insert(
+			coffre,
+			{
+			  name = item2,
+			  count = count2
+			}
+		  )
+		  table.insert(
+			coffre,
+			{
+			  name = item4,
+			  count = count4
+			}
+		  )
+		  table.insert(coffre, {name = item3, count = count3 })
+			end
+				store.set("coffre", coffre)
+				MySQL.Async.execute("UPDATE trunk_inventory SET owned = @owned WHERE plate = @plate", {["@plate"] = plate, ["@owned"] = owned })
+			end)
+		end
 	end
 end)
 

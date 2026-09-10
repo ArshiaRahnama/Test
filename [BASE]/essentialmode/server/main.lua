@@ -561,19 +561,7 @@ function addAdminCommand(command, perm, callback, callbackfailed, suggestion, ar
 
             if (source ~= 0) then
                 if Users[source].permission_level >= perm then
-                    -- FIX: esx_aduty's own /aduty command (server/commands_1.lua)
-                    -- deliberately exempts permission_level > 6 admins from
-                    -- ever needing to toggle aduty on — it refuses to even
-                    -- let them turn it on, telling them "you don't need
-                    -- Aduty!". This gate didn't know about that exemption
-                    -- and required Users[source].aduty regardless of rank,
-                    -- so those same admins got permanently locked out of
-                    -- every command registered through es:addAdminCommand
-                    -- (like /cs) — unable to satisfy a requirement the
-                    -- other system won't even let them meet. Mirrors the
-                    -- same ">6" threshold here so it can't ever contradict
-                    -- esx_aduty's own rule about who needs to be on duty.
-                    if Users[source].aduty or Users[source].permission_level > 6 then
+                    if Users[source].aduty then
                         if
                             ((#args <= commands[command].arguments and #args == commands[command].arguments) or
                                 commands[command].arguments == -1)

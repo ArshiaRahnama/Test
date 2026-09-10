@@ -60,11 +60,13 @@ AddEventHandler('fishing:start', function()
         return
       end
 
-      -- Unique_Skills doesn't exist on this server (no such resource in the
-      -- pack), and calling a missing resource's export throws a hard Lua
-      -- error -- so this always crashed the moment someone tried to fish.
-      -- Just use a flat random duration instead of a skill-based multiplier.
-      local duration = math.random(20000, 30000)
+      local ChekSkills = exports['Unique_Skills']:CheckSkill('Fishing')
+        local duration = 0
+        if ChekSkills == 100 then
+            duration = math.random(10000, 15000)
+        else
+            duration = math.random(20000, 30000)
+        end
 
         TaskStartScenarioInPlace(GetPlayerPed(-1), 'WORLD_HUMAN_STAND_FISHING', looped2, true)
         TriggerEvent("mythic_progbar:client:progress", {

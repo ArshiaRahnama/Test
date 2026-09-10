@@ -38,7 +38,6 @@ ActiveBusinesses = {}
 local CafeBlips = {}
 
 CreateThread(function()
-    Citizen.Wait(2000)
     TriggerServerEvent('uniquecafejobs:corp:requestActiveBusinesses')
     TriggerServerEvent('uniquecafejobs:corp:requestBlipOverrides')
 end)
@@ -83,7 +82,11 @@ Citizen.CreateThread(function()
         SetBlipScale  (blip, cafe.Blip.Scale)
         SetBlipColour (blip, GetDisplayColour(cafe.Job, cafe.Blip.Colour))
         SetBlipAsShortRange(blip, true)
-        SetBlipAlpha(blip, (ActiveBusinesses[cafe.Job] ~= false) and 255 or 0)
+        -- Start hidden: the real open/closed state hasn't arrived from the
+        -- server yet (see requestActiveBusinesses above), so don't assume
+        -- "open" here - that would flash the blip visible for a moment even
+        -- for a business that's actually saved as closed.
+        SetBlipAlpha(blip, 0)
         CafeBlips[cafe.Job] = blip
 
         BeginTextCommandSetBlipName("STRING")

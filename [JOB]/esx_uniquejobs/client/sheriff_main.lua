@@ -3623,7 +3623,7 @@ Citizen.CreateThread(function()
 		SetBlipAsShortRange(blip, true)
 
 		BeginTextCommandSetBlipName("STRING")
-		AddTextComponentString(_U('map_blip'))
+		AddTextComponentString('Sheriff Station')
 		EndTextCommandSetBlipName(blip)
 
 	end

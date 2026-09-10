@@ -62,8 +62,25 @@ AddEventHandler('fishing:done', function(number)
         end
     end
 
+    TriggerClientEvent("Task_System:MahiGiri", source)
+
+    if grab.name == "mahigoli" then
+        TriggerClientEvent("Task_System:Mahimahigoli", source)
+    elseif grab.name == "ghezelala" then
+        TriggerClientEvent("Task_System:Mahighezelala", source)
+    elseif grab.name == "hamoor" then
+        TriggerClientEvent("Task_System:Mahihamoor", source)
+    elseif grab.name == "salomon" then
+        TriggerClientEvent("Task_System:Mahisalomon", source)
+    elseif grab.name == "meygoo" then
+        TriggerClientEvent("Task_System:Mahimeygoo", source)
+    elseif grab.name == "jolbak" then
+        TriggerClientEvent("Task_System:Mahijolbak", source)
+    end
+
     fishingPlayers[source] = os.time()
     xPlayer.addInventoryItem(grab.name, 1)
+    exports['Unique_Skills']:UpdateSkill(source, "Fishing", 0.010)
 end)
 
 ESX.RegisterServerCallback('fishing:haveItem', function(source, cb)

@@ -197,9 +197,8 @@ function HitReward()
     if isVehicleKamy and DoesEntityExist(vehicle) then
         if GetDistanceBetweenCoords(GetEntityCoords(ped), GetEntityCoords(vehicle), true) < 60 then
             local plate = ESX.Math.Trim(GetVehicleNumberPlateText(vehicle))
-            local minerSkill = 0 -- Unique_Skills doesn't exist in this server's pack; was crashing every hit
-            local class = GetVehicleClass(vehicle)
-            TriggerServerEvent('mining:PutStoneInVehicle', plate, minerSkill, class)
+            local minerSkill = exports['Unique_Skills']:CheckSkill('Miner') or 0
+            TriggerServerEvent('mining:PutStoneInVehicle', plate, minerSkill)
         else
             ESX.ShowNotification('Lotfan Mashine Khodeton Ro Nazdik Tar Biyarid')
         end
@@ -413,21 +412,7 @@ Citizen.CreateThread(function()
 						ESX.ShowHelpNotification('~INPUT_CONTEXT~ Menu Forosh ')
 						if IsControlJustReleased(0, 38) then
 							local plate = ESX.Math.Trim(GetVehicleNumberPlateText(vehicle))
-							local class = GetVehicleClass(vehicle)
-							-- lgdddd:getChestVehicle is the real trunk (lc-inventory);
-							-- the server can't call this itself (it's a client->server
-							-- ESX callback), so read it here and pass the count along.
-							ESX.TriggerServerCallback('lgdddd:getChestVehicle', function(trunk)
-								local count = 0
-								if trunk ~= 'nil' and trunk.dataTrunk and trunk.dataTrunk.items and trunk.dataTrunk.items['stone_piece'] then
-									count = trunk.dataTrunk.items['stone_piece'].count
-								end
-								if count <= 0 then
-									ESX.ShowNotification('Kamion Ajor Khordshode Nadarad')
-									return
-								end
-								TriggerServerEvent('mining:SellStone', plate, class, count)
-							end, plate)
+							TriggerServerEvent('mining:SellStone', plate)
 						end
 					end
 				end
@@ -454,18 +439,10 @@ Citizen.CreateThread(function()
                                 ESX.ShowHelpNotification('Press ~INPUT_CONTEXT~ to start wash.')
                                 if IsControlJustReleased(0, 38) then
                                     local plate = ESX.Math.Trim(GetVehicleNumberPlateText(vehicle))
-                                    local class = GetVehicleClass(vehicle)
-                                    ESX.TriggerServerCallback('lgdddd:getChestVehicle', function(trunk)
-                                        local count = 0
-                                        if trunk ~= 'nil' and trunk.dataTrunk and trunk.dataTrunk.items and trunk.dataTrunk.items['stone'] then
-                                            count = trunk.dataTrunk.items['stone'].count
-                                        end
-                                        if count <= 0 then
-                                            ESX.ShowNotification('Kamion Sang Nadarad')
-                                            return
-                                        end
-                                        TriggerServerEvent('mining:WashStonePieces', plate, class, count)
-                                    end, plate)
+
+                                    TriggerServerEvent('mining:WashStonePieces', plate)
+
+
                                 end
                             end
                         end

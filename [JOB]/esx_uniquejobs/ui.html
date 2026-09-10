@@ -35,27 +35,10 @@
             border: none;
             background: transparent;
         }
-        /* The bodydamage HUD and taximeter meter are both passive
-           status overlays - neither has a single clickable element, so
-           they must never swallow clicks meant for CAD/radar (or the game)
-           when they overlap on screen. */
-        #frame_bodydamage,
-        #frame_taximeter {
-            pointer-events: none;
-        }
-
-        /* FIX: CAD and radar both DO need clicks sometimes (and neither
-           has clicks needed at all times) - default both to none, and let
-           the setUiFocusOwner message (sent by cad/client/main.lua and
-           radar/cl_radar.lua right next to each of their own SetNuiFocus()
-           calls) grant pointer-events:auto to exactly one of them at a
-           time via inline style (see the script below). Before this fix,
-           radar/taximeter being later in the DOM than cad meant they always
-           sat on top and ate every click meant for CAD - e.g. clicking
-           CAD's own Login button did nothing at all, even with the tablet
-           visibly open, because the click never reached its iframe. */
-        #frame_cad,
-        #frame_radar {
+        /* The bodydamage HUD is a passive status overlay - it never needs
+           mouse/keyboard input, so it must never swallow clicks meant for
+           the CAD tablet (or the game) when the two overlap on screen. */
+        #frame_bodydamage {
             pointer-events: none;
         }
     </style>
@@ -73,16 +56,6 @@
             radar: document.getElementById('frame_radar'),
             taximeter: document.getElementById('frame_taximeter'),
         };
-
-        // FIX: only these two ever need to receive clicks - see the CSS
-        // block above for the full explanation of why this exists.
-        var interactiveFrames = { cad: frames.cad, radar: frames.radar };
-
-        function setUiFocusOwner(owner) {
-            Object.keys(interactiveFrames).forEach(function (key) {
-                interactiveFrames[key].style.pointerEvents = (key === owner) ? 'auto' : 'none';
-            });
-        }
 
         var ready = { bodydamage: false, cad: false, radar: false, taximeter: false };
         var pending = [];
@@ -133,14 +106,6 @@
             // only relay messages that actually came from the game (Lua).
             for (var key in frames) {
                 if (frames[key] && event.source === frames[key].contentWindow) return;
-            }
-
-            // FIX: intercept the focus-owner signal here instead of just
-            // relaying it - none of the individual apps need to see it,
-            // it's purely for this top-level page's own iframe stacking.
-            if (event.data && event.data._type === 'setUiFocusOwner') {
-                setUiFocusOwner(event.data.owner);
-                return;
             }
 
             if (allReady()) {

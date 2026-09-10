@@ -24,11 +24,6 @@ local armoritem , bandageitem = 0 , 0
 -- true, so shop rotation (Sandy1->2->3) broke on the second match of a
 -- session. Declaring it once here fixes that.
 local ZoneOne = true
--- Spectator Mode state
-local InSpectator = false
-local SpectatorTargets = {}
-local SpectatorIndex = 1
-local SpectatorCam = nil
 local AllUav = 0 
 local UAVLine  = false 
 local solo = false 
@@ -148,12 +143,6 @@ AddEventHandler("AWZ:MyTeam",function( Myteam , Count , id , MyName  )
 end) 
 RegisterNetEvent("AWZ:ExitMision")
 AddEventHandler("AWZ:ExitMision",function()
-	-- Fix/feature: if this player was spectating (eliminated but their
-	-- squad was still alive), make sure the free-cam + invisibility state
-	-- gets torn down before the normal exit cleanup runs below.
-	if InSpectator then
-		StopSpectating()
-	end
 	TriggerServerEvent("AWZ:SetRBucket",0)
 	armoritem , bandageitem = 0 , 0 
 	ESX.TriggerServerCallback('AWZ:RemoveForSquad', function(remove) end)
@@ -216,82 +205,6 @@ AddEventHandler("AWZ:ExitMision",function()
 	SetPedArmour(PlayerPedId(),0)
 	SetPedSuffersCriticalHits(GetPlayerPed(-1), true)
 end)
--------------------------------------------------------------------
--- Spectator Mode: eliminated (lost the Gulag) but your squad is still
--- fighting, so instead of a full exit you get a free-cam following your
--- surviving teammates until either you leave (BACKSPACE) or the match ends.
--------------------------------------------------------------------
-RegisterNetEvent("AWZ:EnterSpectator")
-AddEventHandler("AWZ:EnterSpectator", function(mateIds)
-	SpectatorTargets = mateIds or {}
-	if #SpectatorTargets == 0 then
-		-- no one left to spectate, just exit normally
-		TriggerEvent("AWZ:ExitMision")
-		return
-	end
-	InSpectator = true
-	SpectatorIndex = 1
-	local ped = PlayerPedId()
-	FreezeEntityPosition(ped, true)
-	SetEntityVisible(ped, false, false)
-	SetEntityCollision(ped, false, false)
-	SetEntityInvincible(ped, true)
-	RemoveAllPedWeapons(ped, true)
-	SendNUIMessage({ message = "closeIngame" })
-	ESX.ShowNotification('You are eliminated — spectating your squad. [LEFT/RIGHT] to switch, [BACKSPACE] to leave.')
-	SpectatorCam = CreateCam("DEFAULT_SCRIPTED_CAMERA", true)
-	SetCamActive(SpectatorCam, true)
-	RenderScriptCams(true, true, 500, true, true)
-	CreateThread(function()
-		while InSpectator do
-			Wait(0)
-			local targetId = SpectatorTargets[SpectatorIndex]
-			local targetPed = targetId and GetPlayerPed(GetPlayerFromServerId(targetId))
-			if targetPed and targetPed ~= 0 and DoesEntityExist(targetPed) then
-				local coords = GetEntityCoords(targetPed)
-				local camCoords = coords + vector3(0.0, -4.0, 2.0)
-				SetCamCoord(SpectatorCam, camCoords.x, camCoords.y, camCoords.z)
-				PointCamAtEntity(SpectatorCam, targetPed, 0.0, 0.0, 0.6, true)
-				SendNUIMessage({ message = "spectating", Name = GetPlayerName(GetPlayerFromServerId(targetId)) })
-			else
-				-- this teammate is no longer valid (disconnected/invalid) --
-				-- drop them from the rotation
-				table.remove(SpectatorTargets, SpectatorIndex)
-				if #SpectatorTargets == 0 then
-					TriggerServerEvent("AWZ:LeaveSpectator")
-					break
-				end
-				if SpectatorIndex > #SpectatorTargets then SpectatorIndex = 1 end
-			end
-			if IsControlJustPressed(0, 175) and #SpectatorTargets > 0 then -- ARROW RIGHT
-				SpectatorIndex = SpectatorIndex + 1
-				if SpectatorIndex > #SpectatorTargets then SpectatorIndex = 1 end
-			elseif IsControlJustPressed(0, 174) and #SpectatorTargets > 0 then -- ARROW LEFT
-				SpectatorIndex = SpectatorIndex - 1
-				if SpectatorIndex < 1 then SpectatorIndex = #SpectatorTargets end
-			elseif IsControlJustPressed(0, 194) then -- BACKSPACE
-				TriggerServerEvent("AWZ:LeaveSpectator")
-				break
-			end
-		end
-	end)
-end)
-function StopSpectating()
-	InSpectator = false
-	SpectatorTargets = {}
-	SpectatorIndex = 1
-	if SpectatorCam then
-		RenderScriptCams(false, true, 500, true, true)
-		DestroyCam(SpectatorCam, false)
-		SpectatorCam = nil
-	end
-	SendNUIMessage({ message = "closeIngame" })
-	local ped = PlayerPedId()
-	FreezeEntityPosition(ped, false)
-	SetEntityVisible(ped, true, true)
-	SetEntityCollision(ped, true, true)
-	SetEntityInvincible(ped, false)
-end
 RegisterNetEvent("AWZ:respwan")
 AddEventHandler("AWZ:respwan",function(addkill , Killed , Killer)
 	if addkill then 
@@ -372,33 +285,6 @@ RegisterNUICallback('start', function(data, cb)
 end)
 RegisterNUICallback('exit', function(data, cb)
 	SetNuiFocus(false, false)
-end)
--------------------------------------------------------------------
--- Admin GUI panel: replaces typing /startmatch <blood> <time> <map> <team>
--- by hand (which is where the classic typo-crash used to come from).
--------------------------------------------------------------------
-RegisterNetEvent("AWZ:OpenAdminPanel")
-AddEventHandler("AWZ:OpenAdminPanel", function(lobbyOpen, matchStarted)
-	SetNuiFocus(true, true)
-	SendNUIMessage({
-		message = "openAdminPanel",
-		lobbyOpen = lobbyOpen,
-		matchStarted = matchStarted,
-		startCommend = Config.StartCommend,
-	})
-end)
-RegisterNUICallback('adminOpenLobby', function(data, cb)
-	TriggerServerEvent('AWZ:AdminOpenLobby')
-	cb('ok')
-end)
-RegisterNUICallback('adminStart', function(data, cb)
-	TriggerServerEvent('AWZ:AdminStart', data.blood, data.time, data.map, data.team)
-	SetNuiFocus(false, false)
-	cb('ok')
-end)
-RegisterNUICallback('adminPanelClose', function(data, cb)
-	SetNuiFocus(false, false)
-	cb('ok')
 end)
 -----------------------------------
 --function
@@ -1540,9 +1426,6 @@ CreateThread(function()
 	TriggerEvent('chat:addSuggestion', '/'.. Config.StartCommend..'', 'Jahate Start Lobbey Warozne', {})
 	TriggerEvent('chat:addSuggestion', '/'..Config.JoinLobbeyCommend..'', 'Jahate Join Warozne', {})
 	TriggerEvent('chat:addSuggestion', '/'..Config.Startmatchcommend..'', 'Jahate Start Match Warozne', {})
-	TriggerEvent('chat:addSuggestion', '/'..Config.panelCommend..'', 'Open the WarZone admin panel (GUI)', {})
-	TriggerEvent('chat:addSuggestion', '/'..Config.wztopCommend..'', 'Show the season leaderboard', {})
-	TriggerEvent('chat:addSuggestion', '/'..Config.seasonresetCommend..'', 'Admin: reset the WarZone season', {})
 end)
 RegisterNetEvent("AWZ:UpdateLoadout")
 AddEventHandler("AWZ:UpdateLoadout", function(loadout)

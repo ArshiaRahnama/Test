@@ -160,10 +160,10 @@ Citizen.CreateThread(function()
 		SetBlipAsShortRange(blip, true)
 
 		BeginTextCommandSetBlipName('STRING')
-		AddTextComponentSubstringPlayerName(_U('hospital'))
+		AddTextComponentSubstringPlayerName('Hospital')
 		EndTextCommandSetBlipName(blip)
 		BeginTextCommandSetBlipName('STRING')
-		AddTextComponentSubstringPlayerName(_U('hospital'))
+		AddTextComponentSubstringPlayerName('Hospital')
 		EndTextCommandSetBlipName(blip2)
 
 	end

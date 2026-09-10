@@ -83,36 +83,6 @@
 				<div class="health armor"><div id = 'myarmor'  class="MyArmor fas fa-shield-alt"  style="font-size: 65%;display: inline;text-align: center; color: white;"></div></div>
 			</div>
 			<div class="KilMassge" id ='KilMassge' style="display: none;"><p style="display:inline;" id = 'killer'> ... </p> <img src="img/killphoto.png"> <span class="killed" style="display:inline;" id = 'killed'> ... </span> </div>
-			<div class="SpectatorBar" id="SpectatorBar" style="display:none; position:fixed; top:20px; left:50%; transform:translate(-50%,0); background:rgba(0,0,0,0.72); color:#fff; padding:8px 22px; border-radius:8px; font-family:'Open Sans',sans-serif; font-size:14px; z-index:9998;">
-				Spectating: <b id="SpectatorName">-</b> &nbsp;|&nbsp; [←/→] switch &nbsp;|&nbsp; [Backspace] leave
-			</div>
-		</div>
-		<div class="AdminPanel" id="AdminPanel" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:rgba(15,15,18,0.96); padding:22px 26px; border-radius:10px; color:#fff; width:300px; font-family:'Open Sans',sans-serif; z-index:9999; box-shadow:0 0 25px rgba(0,0,0,0.6);">
-			<h2 style="margin:0 0 12px 0; font-size:18px;">🔫 WarZone Admin</h2>
-			<p id="AdminPanelStatus" style="font-size:13px; opacity:0.8; margin-bottom:14px;">Loading...</p>
-			<div id="AdminPanelOpenLobby" style="display:none;">
-				<button id="adminOpenLobbyBtn" style="width:100%; padding:10px; border:none; border-radius:6px; background:#0d57f7; color:#fff; font-weight:bold; cursor:pointer;">Open Lobby</button>
-			</div>
-			<div id="AdminPanelStartForm" style="display:none;">
-				<label style="font-size:12px; opacity:0.8;">Blood (lives)</label>
-				<input type="number" id="apBlood" value="3" min="1" max="10" style="width:100%; margin-bottom:8px; padding:6px; border-radius:4px; border:none;">
-				<label style="font-size:12px; opacity:0.8;">Zone time (minutes)</label>
-				<input type="number" id="apTime" value="8" min="1" max="30" style="width:100%; margin-bottom:8px; padding:6px; border-radius:4px; border:none;">
-				<label style="font-size:12px; opacity:0.8;">Map</label>
-				<select id="apMap" style="width:100%; margin-bottom:8px; padding:6px; border-radius:4px; border:none;">
-					<option value="SANDY">Sandy Shores</option>
-					<option value="ISLAND">Island</option>
-				</select>
-				<label style="font-size:12px; opacity:0.8;">Team size</label>
-				<select id="apTeam" style="width:100%; margin-bottom:10px; padding:6px; border-radius:4px; border:none;">
-					<option value="1">Solo</option>
-					<option value="2" selected>Duo</option>
-					<option value="3">Trio</option>
-					<option value="4">Squad</option>
-				</select>
-				<button id="adminStartBtn" style="width:100%; padding:10px; border:none; border-radius:6px; background:#c0392b; color:#fff; font-weight:bold; cursor:pointer;">Start Match</button>
-			</div>
-			<button id="adminPanelCloseBtn" style="width:100%; padding:8px; margin-top:12px; border:none; border-radius:6px; background:#333; color:#fff; cursor:pointer;">Close</button>
 		</div>
 	<script src="js/script.js" type="text/javascript"></script>
 </body>
