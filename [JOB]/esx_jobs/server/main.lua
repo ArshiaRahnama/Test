@@ -217,42 +217,95 @@ AddEventHandler('esx_jobs:cautionss', function(cautionType, cautionAmount, spawn
 end)
 
 -- ===== Admin uniform editor (pads next to each cloakroom, client-side via ox_target) =====
+-- Each job+gender keeps a history of saved outfits. One entry per
+-- job+gender is "active" -- that's the one Config[...].work_wear[gender]
+-- is set to, i.e. the one everyone actually gets from OpenMenu's "job_wear".
 local UNIFORM_FIELDS = {
 	'tshirt_1','tshirt_2','torso_1','torso_2','decals_1','decals_2','arms',
 	'pants_1','pants_2','shoes_1','shoes_2','helmet_1','helmet_2',
 	'glasses_1','glasses_2','chain_1','chain_2','ears_1','ears_2'
 }
 
+-- the true factory defaults from config.lua, captured before any save file
+-- can overwrite Config[...].work_wear -- used as the last-resort fallback
+-- if an admin deletes every history entry for a job+gender
+local FactoryDefaultWorkWear = {}
+for job, configKey in pairs(Config.UniformConfigKey) do
+	FactoryDefaultWorkWear[job] = {
+		male   = Config[configKey].work_wear.male,
+		female = Config[configKey].work_wear.female
+	}
+end
+
+-- UniformHistory[job][gender] = { active_id = "...", history = { {id=,label=,clothes=,savedAt=,savedBy=}, ... } }
+local UniformHistory = {}
+
+local function EnsureHistoryShape(job)
+	if not UniformHistory[job] then
+		UniformHistory[job] = {
+			male   = {active_id = nil, history = {}},
+			female = {active_id = nil, history = {}}
+		}
+	end
+end
+
+local function SaveUniformFile(job)
+	SaveResourceFile(GetCurrentResourceName(), 'uniform_' .. job .. '.json', json.encode(UniformHistory[job]), -1)
+end
+
+local function ApplyActiveToConfig(job)
+	local configKey = Config.UniformConfigKey[job]
+	if not configKey then return end
+
+	for _, gender in ipairs({'male', 'female'}) do
+		local g = UniformHistory[job][gender]
+		local activeEntry = nil
+		for i=1, #g.history, 1 do
+			if g.history[i].id == g.active_id then
+				activeEntry = g.history[i]
+				break
+			end
+		end
+		Config[configKey].work_wear[gender] = activeEntry and activeEntry.clothes or FactoryDefaultWorkWear[job][gender]
+	end
+end
+
 local function LoadSavedUniforms()
-	for job, configKey in pairs(Config.UniformConfigKey) do
+	for job in pairs(Config.UniformConfigKey) do
+		EnsureHistoryShape(job)
 		local raw = LoadResourceFile(GetCurrentResourceName(), 'uniform_' .. job .. '.json')
 		if raw then
 			local ok, saved = pcall(json.decode, raw)
-			if ok and type(saved) == "table" then
-				Config[configKey].work_wear = saved
+			if ok and type(saved) == "table" and saved.male and saved.female then
+				UniformHistory[job] = saved
 			else
-				print(('esx_jobs: failed to parse saved uniform for %s, keeping the config.lua default'):format(job))
+				print(('esx_jobs: failed to parse saved uniform history for %s, starting fresh'):format(job))
 			end
 		end
+		ApplyActiveToConfig(job)
 	end
 end
 LoadSavedUniforms()
 
-RegisterServerEvent('esx_jobs:adminSetUniform')
-AddEventHandler('esx_jobs:adminSetUniform', function(job, skin)
-	local xPlayer = ESX.GetPlayerFromId(source)
-	if not xPlayer then return end
-
-	-- this is the real security check -- the ox_target prompt showing up
-	-- client-side is just UI, not enforcement
+local function CheckAdminPermission(xPlayer)
+	if not xPlayer then return false end
 	if not xPlayer.permission_level or xPlayer.permission_level < Config.UniformEditorMinPermission then
-		TriggerClientEvent('esx:showNotification', source, ('~r~You need permission level %s+ to do this.'):format(Config.UniformEditorMinPermission))
+		TriggerClientEvent('esx:showNotification', xPlayer.source, ('~r~You need permission level %s+ to do this.'):format(Config.UniformEditorMinPermission))
 		print(('esx_jobs: %s (permission_level=%s) tried to use the uniform editor without permission'):format(xPlayer.identifier, tostring(xPlayer.permission_level)))
-		return
+		return false
 	end
+	return true
+end
 
-	local configKey = Config.UniformConfigKey[job]
-	if not configKey or type(skin) ~= "table" then return end
+-- Save the outfit the admin just built in the esx_skin menu as a NEW
+-- history entry, and make it the active one for that job+gender.
+RegisterServerEvent('esx_jobs:adminSaveUniform')
+AddEventHandler('esx_jobs:adminSaveUniform', function(job, skin, label)
+	local xPlayer = ESX.GetPlayerFromId(source)
+	if not CheckAdminPermission(xPlayer) then return end
+	if not Config.UniformConfigKey[job] or type(skin) ~= "table" then return end
+
+	EnsureHistoryShape(job)
 
 	-- only pull the specific clothing fields we actually use into a fresh
 	-- table -- never store/trust the raw client-supplied skin table as-is
@@ -263,13 +316,75 @@ AddEventHandler('esx_jobs:adminSetUniform', function(job, skin)
 	end
 
 	local genderKey = (skin.sex == 1) and 'female' or 'male'
-	Config[configKey].work_wear[genderKey] = clothes
+	label = (type(label) == "string" and label ~= "" and label) or ('Version ' .. (#UniformHistory[job][genderKey].history + 1))
 
-	local ok = SaveResourceFile(GetCurrentResourceName(), 'uniform_' .. job .. '.json', json.encode(Config[configKey].work_wear), -1)
+	local entry = {
+		id      = tostring(os.time()) .. '_' .. tostring(math.random(1000, 9999)),
+		label   = label,
+		clothes = clothes,
+		savedAt = os.date('%Y-%m-%d %H:%M'),
+		savedBy = xPlayer.identifier
+	}
 
-	if ok then
-		TriggerClientEvent('esx:showNotification', source, ('~g~Saved the %s uniform (%s).'):format(Config.JobLabels[job] or job, genderKey))
-	else
-		TriggerClientEvent('esx:showNotification', source, '~r~Could not save the uniform to disk.')
+	table.insert(UniformHistory[job][genderKey].history, entry)
+	UniformHistory[job][genderKey].active_id = entry.id
+
+	ApplyActiveToConfig(job)
+	SaveUniformFile(job)
+
+	TriggerClientEvent('esx:showNotification', source, ('~g~Saved "%s" as the active %s %s uniform.'):format(label, genderKey, Config.JobLabels[job] or job))
+end)
+
+-- Lets the client build its history-browser menu (ox_lib context)
+ESX.RegisterServerCallback('esx_jobs:getUniformHistory', function(source, cb, job)
+	if not Config.UniformConfigKey[job] then cb(nil) return end
+	EnsureHistoryShape(job)
+	cb(UniformHistory[job])
+end)
+
+RegisterServerEvent('esx_jobs:adminApplyUniformHistory')
+AddEventHandler('esx_jobs:adminApplyUniformHistory', function(job, gender, id)
+	local xPlayer = ESX.GetPlayerFromId(source)
+	if not CheckAdminPermission(xPlayer) then return end
+	if not Config.UniformConfigKey[job] or (gender ~= 'male' and gender ~= 'female') then return end
+
+	EnsureHistoryShape(job)
+	local g = UniformHistory[job][gender]
+	local found = false
+	for i=1, #g.history, 1 do
+		if g.history[i].id == id then found = true break end
 	end
+	if not found then return end
+
+	g.active_id = id
+	ApplyActiveToConfig(job)
+	SaveUniformFile(job)
+
+	TriggerClientEvent('esx:showNotification', source, ('~g~That version is now the active %s %s uniform.'):format(gender, Config.JobLabels[job] or job))
+end)
+
+RegisterServerEvent('esx_jobs:adminDeleteUniformHistory')
+AddEventHandler('esx_jobs:adminDeleteUniformHistory', function(job, gender, id)
+	local xPlayer = ESX.GetPlayerFromId(source)
+	if not CheckAdminPermission(xPlayer) then return end
+	if not Config.UniformConfigKey[job] or (gender ~= 'male' and gender ~= 'female') then return end
+
+	EnsureHistoryShape(job)
+	local g = UniformHistory[job][gender]
+	for i=#g.history, 1, -1 do
+		if g.history[i].id == id then
+			table.remove(g.history, i)
+		end
+	end
+
+	-- if we just deleted the active one, fall back to the most recently
+	-- saved remaining entry, or the factory default if none are left
+	if g.active_id == id then
+		g.active_id = (#g.history > 0) and g.history[#g.history].id or nil
+	end
+
+	ApplyActiveToConfig(job)
+	SaveUniformFile(job)
+
+	TriggerClientEvent('esx:showNotification', source, ('~y~Deleted that version from the %s %s history.'):format(gender, Config.JobLabels[job] or job))
 end)

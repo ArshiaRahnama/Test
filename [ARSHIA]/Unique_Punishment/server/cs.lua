@@ -33,7 +33,12 @@ TriggerEvent('es:addAdminCommand', 'cs', 1, function(source, args, user)
         local unixTimestamp = os.time()
 
 
-        TriggerEvent('esx_communityGGservice:sendToCommunityService', targetId, count, reason)
+        -- Call the sentencing logic directly with this admin's real `source`,
+        -- instead of TriggerEvent()'ing the network event name: an internally
+        -- triggered TriggerEvent has no network origin, so the global `source`
+        -- inside that handler would come back as 0 and fail the permission
+        -- check every time (see SendToCommunityService below).
+        SendToCommunityService(source, targetId, count, reason)
 
 
         local webhook = "PUT_YOUR_DISCORD_WEBHOOK_URL_HERE"
@@ -55,7 +60,8 @@ TriggerEvent('es:addAdminCommand', 'cs', 1, function(source, args, user)
 
         PerformHttpRequest(webhook, function(err, text, headers) end, 'POST', json.encode(message), { ['Content-Type'] = 'application/json' })
     elseif not tonumber(args[1]) and args[2] and table.concat(args, " ", 3) then
-        TriggerEvent('esx_communityGGservice:sendToCommunityServiceoffline', args[1], tonumber(args[2]), table.concat(args, " ", 3))
+        -- Same fix as above: call directly with the real admin source.
+        SendToCommunityServiceOffline(source, args[1], tonumber(args[2]), table.concat(args, " ", 3))
     else
         TriggerClientEvent('chat:addMessage', source, { args = { "System", "Id Vared Shode Ys Steam Hex Eshtebah Ast Ya Tedad Vared nakardid!" } })
     end
@@ -191,13 +197,18 @@ local function IsAllowedToSentence(xSender)
 	return xSender.permission_level ~= nil and xSender.permission_level >= minLevel
 end
 
-RegisterServerEvent('esx_communityGGservice:sendToCommunityService')
-AddEventHandler('esx_communityGGservice:sendToCommunityService', function(target, actions_count, reason)
-	local _source = source
-	local xSender = ESX.GetPlayerFromId(_source)
+-- Core sentencing logic, pulled out of the event handler so it has exactly
+-- one code path shared by both entry points:
+--   1) the RegisterServerEvent below - admin-menu path, TriggerServerEvent
+--      from the client, so `source` is set correctly by the network layer.
+--   2) the /cs command handler above, which now calls this function
+--      directly with its own (correct) `source` param, instead of
+--      TriggerEvent()'ing the event name and losing it.
+function SendToCommunityService(adminSource, target, actions_count, reason)
+	local xSender = ESX.GetPlayerFromId(adminSource)
 	if not IsAllowedToSentence(xSender) then
 		if exports.UNIQUE_AC then
-			exports.UNIQUE_AC:BanPlayer(_source, 'Cheat Lua Executer', 'Tried esx_communityGGservice:sendToCommunityService without permission')
+			exports.UNIQUE_AC:BanPlayer(adminSource, 'Cheat Lua Executer', 'Tried esx_communityGGservice:sendToCommunityService without permission')
 		end
 		return
 	end
@@ -237,7 +248,7 @@ AddEventHandler('esx_communityGGservice:sendToCommunityService', function(target
 		['@type']           = 'community_service',
 		['@reason']         = reason,
 		['@duration']       = actions_count,
-		['@issued_by_name'] = GetPlayerName(_source),
+		['@issued_by_name'] = GetPlayerName(adminSource),
 		['@issued_by_type'] = xSender.job and xSender.job.name or 'admin',
 	})
 
@@ -258,17 +269,25 @@ AddEventHandler('esx_communityGGservice:sendToCommunityService', function(target
 	ActiveCS[target] = true
 	TriggerClientEvent('esx_communityGGservice:inCommunityService', target, actions_count)
 	TriggerClientEvent('esx_communityGGservice:inCommunityService_reason', target, reason)
+end
+
+-- Thin network wrapper: this is the only place `source` is trusted directly,
+-- since RegisterServerEvent guarantees it was actually set by the FX network
+-- layer for whoever's client fired TriggerServerEvent (i.e. the admin menu).
+RegisterServerEvent('esx_communityGGservice:sendToCommunityService')
+AddEventHandler('esx_communityGGservice:sendToCommunityService', function(target, actions_count, reason)
+	SendToCommunityService(source, target, actions_count, reason)
 end)
 
 local playerNameVariable
 
-RegisterServerEvent('esx_communityGGservice:sendToCommunityServiceoffline')
-AddEventHandler('esx_communityGGservice:sendToCommunityServiceoffline', function(steamhex, actions_count, reason)
-	local _source = source
-	local xSender = ESX.GetPlayerFromId(_source)
+-- Same split as SendToCommunityService above, for the offline (steam-hex)
+-- variant, and for the same reason.
+function SendToCommunityServiceOffline(adminSource, steamhex, actions_count, reason)
+	local xSender = ESX.GetPlayerFromId(adminSource)
 	if not IsAllowedToSentence(xSender) then
 		if exports.UNIQUE_AC then
-			exports.UNIQUE_AC:BanPlayer(_source, 'Cheat Lua Executer', 'Tried esx_communityGGservice:sendToCommunityServiceoffline without permission')
+			exports.UNIQUE_AC:BanPlayer(adminSource, 'Cheat Lua Executer', 'Tried esx_communityGGservice:sendToCommunityServiceoffline without permission')
 		end
 		return
 	end
@@ -302,7 +321,7 @@ AddEventHandler('esx_communityGGservice:sendToCommunityServiceoffline', function
 		['@type']           = 'community_service',
 		['@reason']         = reason,
 		['@duration']       = actions_count,
-		['@issued_by_name'] = GetPlayerName(_source),
+		['@issued_by_name'] = GetPlayerName(adminSource),
 		['@issued_by_type'] = xSender.job and xSender.job.name or 'admin',
 	})
 
@@ -317,11 +336,12 @@ AddEventHandler('esx_communityGGservice:sendToCommunityServiceoffline', function
 
 	end)
 
+end
 
-
-
-
-
+-- Thin network wrapper, same reasoning as the online version above.
+RegisterServerEvent('esx_communityGGservice:sendToCommunityServiceoffline')
+AddEventHandler('esx_communityGGservice:sendToCommunityServiceoffline', function(steamhex, actions_count, reason)
+	SendToCommunityServiceOffline(source, steamhex, actions_count, reason)
 end)
 
 -- BUG FIX: this used to ignore `source` and loop over EVERY online player
@@ -489,4 +509,3 @@ AddEventHandler("checkCommunityService", function()
 		end
 	end
 end)
-

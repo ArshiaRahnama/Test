@@ -1,5 +1,6 @@
 fx_version 'adamant'
 game 'gta5'
+lua54 'yes'
 
 
 server_scripts {
@@ -17,6 +18,7 @@ server_scripts {
 }
 
 client_scripts {
+	'@ox_lib/init.lua',
 	'@essentialmode/locale.lua',
 	'locales/en.lua',
 	'config.lua',

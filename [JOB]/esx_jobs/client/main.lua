@@ -720,8 +720,55 @@ end)
 -- ===== Admin uniform-editor pads (ox_target) =====
 -- One pad next to each job's cloakroom. Admins (permission_level >= 15,
 -- checked again server-side -- this client-side zone is just where the
--- prompt shows up, not the actual security boundary) can interact wearing
--- whatever outfit they want, and it gets saved as that job's work-wear.
+-- prompt shows up, not the actual security boundary) get two options:
+-- open the real skin-editor menu to save a new labeled version, or browse
+-- the job's saved-uniform history to re-apply or delete an old one.
+local function ShowUniformHistoryMenu(job)
+	ESX.TriggerServerCallback('esx_jobs:getUniformHistory', function(data)
+		if not data then return end
+
+		local options = {}
+		for _, gender in ipairs({'male', 'female'}) do
+			local g = data[gender]
+			if #g.history == 0 then
+				table.insert(options, {
+					title = ('%s -- no saved versions yet'):format(gender),
+					disabled = true
+				})
+			else
+				for i=1, #g.history, 1 do
+					local entry = g.history[i]
+					local isActive = (entry.id == g.active_id)
+					table.insert(options, {
+						title = ('[%s] %s%s'):format(gender, entry.label, isActive and ' -- ACTIVE' or ''),
+						description = ('Saved %s'):format(entry.savedAt or '?'),
+						icon = isActive and 'fas fa-star' or 'fas fa-shirt',
+						disabled = isActive, -- already active, nothing to "apply"
+						onSelect = function()
+							TriggerServerEvent('esx_jobs:adminApplyUniformHistory', job, gender, entry.id)
+						end
+					})
+					table.insert(options, {
+						title = ('Delete "%s" [%s]'):format(entry.label, gender),
+						icon = 'fas fa-trash',
+						iconColor = '#ff4444',
+						onSelect = function()
+							TriggerServerEvent('esx_jobs:adminDeleteUniformHistory', job, gender, entry.id)
+						end
+					})
+				end
+			end
+		end
+
+		lib.registerContext({
+			id = 'esx_jobs_uniform_history',
+			title = (Config.JobLabels[job] or job) .. ' uniform history',
+			options = options
+		})
+		lib.showContext('esx_jobs_uniform_history')
+	end, job)
+end
+
 local uniformEditorPads = {}
 Citizen.CreateThread(function()
 	for job, jobData in pairs(Config.Jobs) do
@@ -737,12 +784,28 @@ Citizen.CreateThread(function()
 				debug = false,
 				options = {
 					{
-						label = 'Set ' .. (Config.JobLabels[job] or job) .. ' uniform (admin)',
+						label = 'Save new ' .. (Config.JobLabels[job] or job) .. ' uniform (admin)',
 						icon = 'fas fa-tshirt',
 						onSelect = function()
-							TriggerEvent('skinchanger:getSkin', function(skin)
-								TriggerServerEvent('esx_jobs:adminSetUniform', job, skin)
+							-- opens the real esx_skin clothing-editor camera/menu;
+							-- submitCb fires once the admin confirms their outfit
+							TriggerEvent('esx_skin:openMenu', function(_, menu)
+								menu.close()
+								TriggerEvent('skinchanger:getSkin', function(skin)
+									local input = lib.inputDialog(('Save %s uniform'):format(Config.JobLabels[job] or job), {
+										{type = 'input', label = 'Name for this version', required = true, default = 'Version'}
+									})
+									if not input or not input[1] then return end
+									TriggerServerEvent('esx_jobs:adminSaveUniform', job, skin, input[1])
+								end)
 							end)
+						end
+					},
+					{
+						label = 'Manage ' .. (Config.JobLabels[job] or job) .. ' uniform history (admin)',
+						icon = 'fas fa-clock-rotate-left',
+						onSelect = function()
+							ShowUniformHistoryMenu(job)
 						end
 					}
 				}
