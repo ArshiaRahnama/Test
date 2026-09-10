@@ -3,15 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Unique Cad</title>
+    <title>Unique CAD // Dispatch Terminal</title>
     <link rel="stylesheet" href="./style.css">
+    <!-- jQuery core is the only external dependency actually used anywhere in
+         app.js (every $(...) call). Bootstrap CSS/JS, jQuery UI and Howler
+         were loaded here but nothing in this app touches a single Bootstrap
+         class, a jQuery UI widget (draggable/sortable/etc), or the Howler
+         API -- pure dead weight, and the Bootstrap stylesheet in particular
+         loaded AFTER style.css, so its default input/button/heading rules
+         could silently outrank this app's own theme depending on selector
+         order. Removed rather than "modernized" since nothing used them. -->
     <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
-    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
-    <!-- bootstrap and compiled js -->
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.13.0/css/all.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.1.1/howler.min.js" type="text/javascript"></script>
     <script src="./app.js"></script>
 </head>
     <body style="background: none;">
@@ -28,7 +30,7 @@
 
             <div class="Login" id="LoginPage">
               <img style="border-radius: 100%; width: 100%; height: 100%;" src="img/military.png">
-              <h1>  Military CAD</h1>
+              <h1>🛡️ Military CAD</h1>
               <button onclick="DuckMdt.Login()">Login</button>
               <p style="text-align:center; opacity:0.55; font-size:11px; margin-top:10px;">Unique_Cad by Arshia | arshiahub.ir</p>
             </div>
@@ -37,6 +39,7 @@
               <div class="Header">
                 <img style="border-radius: 100%;" src="img/military.png">
                 <h2>Military Organs CAD</h2>
+                <span style="color: var(--ok); font-size: 11px; font-weight: 600; letter-spacing: 0.5px; margin-right: 14px; white-space: nowrap;">🟢 SYSTEM ONLINE</span>
                 <button class="ExitButton" onclick="ExitTablet()">Exit</button>
               </div>
 
@@ -49,26 +52,26 @@
                         <p style="font-size: 1.5vw; flex-basis: 100%; position: relative; left: 40%; color: blanchedalmond;" id="Rank_mdt">Chief</p>
                     </div>
                     <div class="MainPageTabButtons">
-                      <button class="MainPageTabButton MainPageTabActiveButton" id="Page_Button_MainPanel" onclick="DuckMdt.TabSelected('MainPanel')">Main panel</button>
-                      <button class="MainPageTabButton" id="Page_Button_CitizensList" onclick="DuckMdt.TabSelected('CitizensList')">List of citizens</button>
-                      <button class="MainPageTabButton" id="Page_Button_VehiclesList" onclick="DuckMdt.TabSelected('VehiclesList')">List of vehicles</button>
-                      <button class="MainPageTabButton" id="Page_Button_Training" onclick="DuckMdt.TabSelected('Training')">Amozesh</button>
+                      <button class="MainPageTabButton MainPageTabActiveButton" id="Page_Button_MainPanel" onclick="DuckMdt.TabSelected('MainPanel')">🖥️ Main panel</button>
+                      <button class="MainPageTabButton" id="Page_Button_CitizensList" onclick="DuckMdt.TabSelected('CitizensList')">👤 List of citizens</button>
+                      <button class="MainPageTabButton" id="Page_Button_VehiclesList" onclick="DuckMdt.TabSelected('VehiclesList')">🚗 List of vehicles</button>
+                      <button class="MainPageTabButton" id="Page_Button_Training" onclick="DuckMdt.TabSelected('Training')">🎓 Amozesh</button>
                       <!-- CrimeScene (Unique_CrimeScene) tabs -- hidden by default, CS_ApplyJobVisibility()
                            shows/hides the doj-tab / law-tab ones once we know the player's job group -->
-                      <button class="MainPageTabButton doj-tab" style="display:none;" id="Page_Button_CS_Cases" onclick="DuckMdt.TabSelected('CS_Cases')">Cases</button>
-                      <button class="MainPageTabButton doj-tab" style="display:none;" id="Page_Button_CS_ColdCases" onclick="DuckMdt.TabSelected('CS_ColdCases')">Cold Cases</button>
-                      <button class="MainPageTabButton doj-tab" style="display:none;" id="Page_Button_CS_Wanted" onclick="DuckMdt.TabSelected('CS_Wanted')">Wanted Board</button>
-                      <button class="MainPageTabButton law-tab" style="display:none;" id="Page_Button_CS_Bolo" onclick="DuckMdt.TabSelected('CS_Bolo')">BOLO</button>
-                      <button class="MainPageTabButton law-tab" style="display:none;" id="Page_Button_CS_Booking" onclick="DuckMdt.TabSelected('CS_Booking')">Booking</button>
-                      <button class="MainPageTabButton cs-tab" style="display:none;" id="Page_Button_CS_Records" onclick="DuckMdt.TabSelected('CS_Records')">Records</button>
-                      <button class="MainPageTabButton cs-tab" style="display:none;" id="Page_Button_CS_Leaderboard" onclick="DuckMdt.TabSelected('CS_Leaderboard')">Leaderboard</button>
-                      <button class="MainPageTabButton cs-tab" style="display:none;" id="Page_Button_CS_IA" onclick="DuckMdt.TabSelected('CS_IA')">Internal Affairs</button>
+                      <button class="MainPageTabButton doj-tab" style="display:none;" id="Page_Button_CS_Cases" onclick="DuckMdt.TabSelected('CS_Cases')">📂 Cases</button>
+                      <button class="MainPageTabButton doj-tab" style="display:none;" id="Page_Button_CS_ColdCases" onclick="DuckMdt.TabSelected('CS_ColdCases')">❄️ Cold Cases</button>
+                      <button class="MainPageTabButton doj-tab" style="display:none;" id="Page_Button_CS_Wanted" onclick="DuckMdt.TabSelected('CS_Wanted')">🎯 Wanted Board</button>
+                      <button class="MainPageTabButton law-tab" style="display:none;" id="Page_Button_CS_Bolo" onclick="DuckMdt.TabSelected('CS_Bolo')">🚨 BOLO</button>
+                      <button class="MainPageTabButton law-tab" style="display:none;" id="Page_Button_CS_Booking" onclick="DuckMdt.TabSelected('CS_Booking')">📋 Booking</button>
+                      <button class="MainPageTabButton cs-tab" style="display:none;" id="Page_Button_CS_Records" onclick="DuckMdt.TabSelected('CS_Records')">📁 Records</button>
+                      <button class="MainPageTabButton cs-tab" style="display:none;" id="Page_Button_CS_Leaderboard" onclick="DuckMdt.TabSelected('CS_Leaderboard')">🏆 Leaderboard</button>
+                      <button class="MainPageTabButton cs-tab" style="display:none;" id="Page_Button_CS_IA" onclick="DuckMdt.TabSelected('CS_IA')">⚖️ Internal Affairs</button>
                     </div>
                 </div>
 
                 <div class="MainPageTabContent" id="MainPageTabContent">
                       <div id="Page_MainPanel">
-                          <p style="font-size: 3vw;">Main panel</p>
+                          <p style="font-size: 3vw;">🖥️ Main panel</p>
                           <!--  -->
                           <div class="Main_Panel_Page_Lists">
 
@@ -156,11 +159,11 @@
                             <div class="Character_Info_Row">
                               <p>Status</p>
                               <Select class="Mdt_Select" id="Character_Profile_Select_Wanted">
-                                <option value="standard" style="color: white">Standard</option>
-                                <option value="arrested" style="color: rgb(201, 36, 36);">Arrested</option>
-                                <option value="wanted" style="color: rgb(201, 36, 36);">Wanted</option>
-                                <option value="in_prison" style="color: rgb(36, 74, 201);">In prison</option>
-                                <option value="special" style="color: rgb(36, 74, 201);">Special</option>
+                                <option value="standard" style="color: var(--text)">Standard</option>
+                                <option value="arrested" style="color: var(--danger);">Arrested</option>
+                                <option value="wanted" style="color: var(--danger);">Wanted</option>
+                                <option value="in_prison" style="color: var(--info);">In prison</option>
+                                <option value="special" style="color: var(--info);">Special</option>
                               </Select>
                             </div>
 
@@ -298,11 +301,11 @@
                             <div class="Character_Info_Row">
                               <p>Status</p>
                               <Select class="Mdt_Select" id="Car_Profile_Select_Wanted">
-                                <option value="standard" style="color: white">Standard</option>
-                                <option value="arrested" style="color: rgb(201, 36, 36);">Arrested</option>
-                                <option value="wanted" style="color: rgb(201, 36, 36);">Wanted</option>
-                                <option value="in_prison" style="color: rgb(36, 74, 201);">In prison</option>
-                                <option value="special" style="color: rgb(36, 74, 201);">Special</option>
+                                <option value="standard" style="color: var(--text)">Standard</option>
+                                <option value="arrested" style="color: var(--danger);">Arrested</option>
+                                <option value="wanted" style="color: var(--danger);">Wanted</option>
+                                <option value="in_prison" style="color: var(--info);">In prison</option>
+                                <option value="special" style="color: var(--info);">Special</option>
                               </Select>
                             </div>
 

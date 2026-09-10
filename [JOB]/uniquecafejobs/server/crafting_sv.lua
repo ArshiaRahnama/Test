@@ -252,6 +252,12 @@ function(item, count)
                 end
             end
         else
+            -- SECURITY FIX: ignore the client-sent `count` and always use the
+            -- server's own recipe amount, same as the UseLimitSystem branch
+            -- above (a raw TriggerServerEvent with a huge count used to grant
+            -- that many items/ammo since only `item` was checked).
+            local count = ConfigCrafting.Recipes[item].Amount
+
             if ConfigCrafting.Recipes[item].isGun then
 				local xItem = xPlayer.getInventoryItem(item)
 

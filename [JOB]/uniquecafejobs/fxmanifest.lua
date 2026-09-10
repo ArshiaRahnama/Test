@@ -38,7 +38,9 @@ client_scripts {
 }
 
 server_scripts {
-	'@mysql-async/lib/MySQL.lua',
+	'@oxmysql/lib/MySQL.lua', -- FIX: this base server runs oxmysql (see server.cfg), not mysql-async.
+	                          -- oxmysql ships a drop-in mysql-async-compatible MySQL.lua, so every
+	                          -- MySQL.Sync/MySQL.Async call elsewhere in this resource still works unchanged.
 	'server/main.lua',
 	'server/items.lua',
 	'server/newbiz_items.lua',
@@ -72,7 +74,7 @@ files {
 dependencies {
 	'essentialmode',
 	'esx_society',
-	'mysql-async',
+	'oxmysql',
 	'ox_lib',
 	'ox_target',
 	

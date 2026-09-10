@@ -339,7 +339,7 @@ ESX.RegisterUsableItem('suop', function(source)
 end)
 
 RegisterCommand('th2', function(source, args)
-	xPlayer = ESX.GetPlayerFromId(source)
+	local xPlayer = ESX.GetPlayerFromId(source)
 	if xPlayer.permission_level >= 1 then
 		if not args[2] then 
 			if args[1] == 'a' then 

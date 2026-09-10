@@ -1,15 +1,3 @@
-//Config !
-
-const backgrounds = {
-    ['Menu'] : 'https://idtop.ir/files/images/TblGalleryImage/2d1128da-48f3-414a-8d8d-ccb88bc657ac-upload-8.PNGipad.PNGx.PNG',
-    ['Setting'] : '#f7f7f7',
-    ['Contacts'] : '#f7f7f7',
-    ['Call'] : '#f7f7f7',
-    ['FaceTime'] : '#f7f7f7',
-    ['Tweeter'] : '#243f4b',
-    ['Message'] : '#f7f7f7',
-}
-
 let DuckMdt = {}
 let currenttab = 'MainPanel';
 let inswitchpage = false
@@ -442,23 +430,23 @@ $(document).ready(function(){
         // console.log(this.value)
         switch (this.value) {
             case 'standard':
-                $("#Character_Profile_Select_Wanted").css('color', 'white')
-                $("#WantedColor_Character").css('background-color', 'white')
+                $("#Character_Profile_Select_Wanted").css('color', 'var(--text)')
+                $("#WantedColor_Character").css('background-color', 'var(--text)')
                 $.post('https://esx_uniquejobs/UpdateCharacterStatus', JSON.stringify({NewStatus: this.value, steam: steam}));  
             break;
 
             case 'arrested':
             case 'wanted':
                 // console.log('its working')
-                $("#Character_Profile_Select_Wanted").css('color', 'rgb(201, 36, 36)')
-                $("#WantedColor_Character").css('background-color', 'rgb(201, 36, 36)')
+                $("#Character_Profile_Select_Wanted").css('color', 'var(--danger)')
+                $("#WantedColor_Character").css('background-color', 'var(--danger)')
                 $.post('https://esx_uniquejobs/UpdateCharacterStatus', JSON.stringify({NewStatus: this.value, steam: steam}));  
             break;
 
             case 'in_prison':
             case 'special':
-                $("#Character_Profile_Select_Wanted").css('color', 'rgb(36, 74, 201)')
-                $("#WantedColor_Character").css('background-color', 'rgb(36, 74, 201)')
+                $("#Character_Profile_Select_Wanted").css('color', 'var(--info)')
+                $("#WantedColor_Character").css('background-color', 'var(--info)')
                 $.post('https://esx_uniquejobs/UpdateCharacterStatus', JSON.stringify({NewStatus: this.value, steam: steam}));  
             break;
         }
@@ -468,23 +456,23 @@ $(document).ready(function(){
         // console.log(this.value)
         switch (this.value) {
             case 'standard':
-                $("#Car_Profile_Select_Wanted").css('color', 'white')
-                $("#WantedColor_Car").css('background-color', 'white')
+                $("#Car_Profile_Select_Wanted").css('color', 'var(--text)')
+                $("#WantedColor_Car").css('background-color', 'var(--text)')
                 $.post('https://esx_uniquejobs/UpdateCarStatus', JSON.stringify({NewStatus: this.value, plate: plate}));  
 
             break;
             
             case 'arrested':
             case 'wanted':
-                $("#Car_Profile_Select_Wanted").css('color', 'rgb(201, 36, 36)')
-                $("#WantedColor_Car").css('background-color', 'rgb(201, 36, 36)')
+                $("#Car_Profile_Select_Wanted").css('color', 'var(--danger)')
+                $("#WantedColor_Car").css('background-color', 'var(--danger)')
                 $.post('https://esx_uniquejobs/UpdateCarStatus', JSON.stringify({NewStatus: this.value, plate: plate}));  
             break;
 
             case 'in_prison':
             case 'special':
-                $("#Car_Profile_Select_Wanted").css('color', 'rgb(36, 74, 201)')
-                $("#WantedColor_Car").css('background-color', 'rgb(36, 74, 201)')
+                $("#Car_Profile_Select_Wanted").css('color', 'var(--info)')
+                $("#WantedColor_Car").css('background-color', 'var(--info)')
                 $.post('https://esx_uniquejobs/UpdateCarStatus', JSON.stringify({NewStatus: this.value, plate: plate}));  
             break;
         }
@@ -539,9 +527,9 @@ window.addEventListener('message', function(event) {
                     data.object.forEach(element => {
                         if (element['playerName'] != "") {
                             if (element['WantedLevel'] != 'standard') {
-                                $('#Citizens_List_Search_Resualts').append('<div class="List_Row List_Row_Wanted" id="Citizen_SearchResult_List"  style="padding-right: 120px;" onclick="Open_Citizen_Profile(`' + element['identifier'] + '`)"><p>' + number++ + '</p><p>' + element['playerName'] + '</p><p>' + element['phone'] + '</p><p style="color: rgb(255, 47, 47);">Wanted</p></div>')
+                                $('#Citizens_List_Search_Resualts').append('<div class="List_Row List_Row_Wanted"  style="padding-right: 120px;" onclick="Open_Citizen_Profile(`' + element['identifier'] + '`)"><p>' + number++ + '</p><p>' + element['playerName'] + '</p><p>' + element['phone'] + '</p><p style="color: var(--danger);">Wanted</p></div>')
                             } else {
-                                $('#Citizens_List_Search_Resualts').append('<div class="List_Row" id="Citizen_SearchResult_List"  style="padding-right: 265px; padding-left: 25px;" onclick="Open_Citizen_Profile(`' + element['identifier'] + '`)"><p>' + number++ + '</p><p>' + element['playerName'] + '</p><p>' + element['phone'] + '</p></div>')
+                                $('#Citizens_List_Search_Resualts').append('<div class="List_Row"  style="padding-right: 265px; padding-left: 25px;" onclick="Open_Citizen_Profile(`' + element['identifier'] + '`)"><p>' + number++ + '</p><p>' + element['playerName'] + '</p><p>' + element['phone'] + '</p></div>')
                             }
                         }
                     })
@@ -571,9 +559,9 @@ window.addEventListener('message', function(event) {
                                     status = 'Parking'
                                 }
                                 if (element['WantedLevel'] != 'standard') {
-                                    $('#Cars_List_Search_Resualts').append('<div class="List_Row List_Row_Wanted" id="Cars_SearchResult_List"  style="padding-right: 120px;" onclick="Open_Car_Profile(`' + element['plate'] + '`)" onclick="Open_Car_Profile(`' + element['owner'] + '`)"><p>' + number++ + '</p><p>' + element['plate'] + '</p><p>' + status + '</p><p style="color: rgb(255, 47, 47);">Wanted</p></div>')
+                                    $('#Cars_List_Search_Resualts').append('<div class="List_Row List_Row_Wanted"  style="padding-right: 120px;" onclick="Open_Car_Profile(`' + element['plate'] + '`)"><p>' + number++ + '</p><p>' + element['plate'] + '</p><p>' + status + '</p><p style="color: var(--danger);">Wanted</p></div>')
                                 } else {
-                                    $('#Cars_List_Search_Resualts').append('<div class="List_Row" id="Cars_SearchResult_List"  style="padding-right: 265px; padding-left: 25px;" onclick="Open_Car_Profile(`' + element['plate'] + '`)" onclick="Open_Car_Profile(`' + element['owner'] + '`)"><p>' + number++ + '</p><p>' + element['plate'] + '</p><p>' + status + '</p></div>')
+                                    $('#Cars_List_Search_Resualts').append('<div class="List_Row"  style="padding-right: 265px; padding-left: 25px;" onclick="Open_Car_Profile(`' + element['plate'] + '`)"><p>' + number++ + '</p><p>' + element['plate'] + '</p><p>' + status + '</p></div>')
                                 }
                             }
                         })
@@ -614,9 +602,9 @@ window.addEventListener('message', function(event) {
                     status = 'Parking'
                 }
                 if (element['WantedLevel'] != 'standard') {
-                    $('#Character_Profile_Cars_List').append('<div class="List_Row List_Row_Wanted" id="Cars_SearchResult_List"  style="padding-right: 120px;" onclick="Open_Car_Profile(`' + element['plate'] + '`)" onclick="Open_Car_Profile(`' + element['owner'] + '`)"><p>' + number++ + '</p><p>' + element['plate'] + '</p><p>' + status + '</p><p style="color: rgb(255, 47, 47);">Wanted</p></div>')
+                    $('#Character_Profile_Cars_List').append('<div class="List_Row List_Row_Wanted"  style="padding-right: 120px;" onclick="Open_Car_Profile(`' + element['plate'] + '`)"><p>' + number++ + '</p><p>' + element['plate'] + '</p><p>' + status + '</p><p style="color: var(--danger);">Wanted</p></div>')
                 } else {
-                    $('#Character_Profile_Cars_List').append('<div class="List_Row" id="Cars_SearchResult_List"  style="padding-right: 265px; padding-left: 25px;" onclick="Open_Car_Profile(`' + element['plate'] + '`)" onclick="Open_Car_Profile(`' + element['owner'] + '`)"><p>' + number++ + '</p><p>' + element['plate'] + '</p><p>' + status + '</p></div>')
+                    $('#Character_Profile_Cars_List').append('<div class="List_Row"  style="padding-right: 265px; padding-left: 25px;" onclick="Open_Car_Profile(`' + element['plate'] + '`)"><p>' + number++ + '</p><p>' + element['plate'] + '</p><p>' + status + '</p></div>')
                 }
             })
 
@@ -871,12 +859,3 @@ window.addEventListener('message', function(event) {
 
 
 });
-
-
-
-
-
-
-
-
-

@@ -6,6 +6,17 @@ end
 
 local cooldown = {}
 
+-- SECURITY FIX: the shop price must always come from this server-side lookup,
+-- never from a client-supplied value -- see AH_uwucafejob:BuyItems below.
+local function GetShopItemByArgs(itemArgs)
+	for _, v in pairs(Config.UwUShopItem) do
+		if v.args == itemArgs then
+			return v
+		end
+	end
+	return nil
+end
+
 ESX.RegisterServerCallback('AH_uwucafejob:getPropertyInventory', function(source, cb, station)
 	local xPlayer    = ESX.GetPlayerFromId(source)
 
@@ -41,7 +52,7 @@ end)
 
 AddEventHandler('playerDropped', function()
 
-    _source = source
+    local _source = source
 
     if cooldown[_source] then
       cooldown[_source] = nil
@@ -210,12 +221,32 @@ end)
 RegisterNetEvent('AH_uwucafejob:BuyItems')
 AddEventHandler('AH_uwucafejob:BuyItems', function(items, counts, prises)
 	local xPlayer = ESX.GetPlayerFromId(source)
+	if not xPlayer then return end
+
+	-- SECURITY FIX (was): `prises` came straight from the client and was
+	-- trusted as-is -- a modified client could send price = 0 (free items)
+	-- or a negative price (removeBank(negative) actually ADDS money). The
+	-- price is now always read server-side from Config.UwUShopItem by item
+	-- name; the client-sent `prises` is ignored entirely.
+	counts = tonumber(counts)
+	if not counts or counts <= 0 or counts ~= math.floor(counts) then
+		return
+	end
+
+	local shopItem = GetShopItemByArgs(items)
+	if not shopItem then
+		return
+	end
+
+	local price = shopItem.price
+	local total = price * counts
+
 	if xPlayer.getInventoryItem(items).limit >= (xPlayer.getInventoryItem(items).count + counts) then
-		if xPlayer.bank >= (prises*counts) then 
-			xPlayer.removeBank(prises*counts)
+		if xPlayer.bank >= total then
+			xPlayer.removeBank(total)
 			xPlayer.addInventoryItem(items, counts)
 
-			TriggerClientEvent('chat:addMessage', source, { args = { "^1[SYSTEM]: ^0Shoma ^2"..counts.."^0 Item Be Mablagh ^2"..prises*counts.." $ ^0Kharidid" } })
+			TriggerClientEvent('chat:addMessage', source, { args = { "^1[SYSTEM]: ^0Shoma ^2"..counts.."^0 Item Be Mablagh ^2"..total.." $ ^0Kharidid" } })
 		else
 			TriggerClientEvent('esx:showNotification', source, "Pool Bank Shoma Kafi Nist Baraye Kharid")
 		end

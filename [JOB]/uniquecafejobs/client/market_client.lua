@@ -105,29 +105,30 @@ RegisterNUICallback('close', function(data, cb)
 end)
 
 
--- Citizen.CreateThread(function()
--- 	for k,v in pairs(Config.marketlocation) do 
---         exports.ox_target:addBoxZone({
---             coords = vec3(v.x, v.y, v.z+1.1),
---             size = vec3(1.5, 1.5, 1.5),
---             rotation = 45,
---             debug = drawZones,
---             options = {
---                 {
---                     name = 'Market',
---                     event = 'ox:uwumarket',
---                     icon = 'fa-solid fa-cart-shopping',
---                     label = 'Market',
---                 }
---             }
---         })
---     end
--- end)
+Citizen.CreateThread(function()
+	for k,v in pairs(MarketConfig.marketlocation) do
+        exports.ox_target:addBoxZone({
+            coords = vec3(v.x, v.y, v.z+1.1),
+            size = vec3(1.5, 1.5, 1.5),
+            rotation = 45,
+            debug = false,
+            options = {
+                {
+                    name = 'Market',
+                    event = 'ox:uwumarket',
+                    icon = 'fa-solid fa-cart-shopping',
+                    label = 'Market',
+                }
+            }
+        })
+    end
+end)
 
 
 
 
 RegisterNetEvent("ox:uwumarket")
 AddEventHandler("ox:uwumarket", function()
-	ExecuteCommand('asdfghjkl;sfsdfsdfzxcvnads23adfghuwu')
+	TriggerServerEvent('lg: loaduwuMarket')
+	TriggerServerEvent('lg: loadPlayeruwuMarket')
 end)

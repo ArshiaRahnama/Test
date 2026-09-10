@@ -321,7 +321,7 @@ AddEventHandler('AH_uwucafejob:OpenMenuSefaresh', function()
         if tojob then 
             lib.showContext('uwu_menu')
         else
-            ExecuteCommand('asdfghjkl;sfsdfsdfzxcvnads23adfghuwu')
+            ESX.ShowNotification('در حال حاضر هیچ کارمند کافه‌ای آنلاین نیست.')
         end
     end)
 end)
