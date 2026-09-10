@@ -116,13 +116,13 @@
 				Bazgasht
 			</button>
 			<div class="subscreen-title">Enteghal vajh</div>
-			<div class="subscreen-sub">Send money to another player</div>
+			<div class="subscreen-sub">Send money by player ID or IBAN</div>
 			<div class="balance-pill">Mojoodi: $<span class="curbalance4">0</span></div>
 
 			<form id="form-transfer">
 				<div class="field-row">
-					<label class="field-label">Player ID</label>
-					<input id="to" type="text" inputmode="numeric" placeholder="e.g. 12" class="field-input" autocomplete="off">
+					<label class="field-label">Player ID or IBAN</label>
+					<input id="to" type="text" placeholder="e.g. 12  or  IR..." class="field-input" autocomplete="off">
 				</div>
 				<div class="field-row">
 					<label class="field-label">Meghdar (Amount)</label>
@@ -157,7 +157,7 @@
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json; charset=UTF-8' },
 				body: JSON.stringify(data || {})
-			});
+			}).catch(() => {});
 		}
 
 		function closeBank(){

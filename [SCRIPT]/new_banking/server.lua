@@ -72,31 +72,82 @@ RegisterServerEvent('bank:transferx')
 AddEventHandler('bank:transferx', function(to, amountt)
 	local _source = source
 	local xPlayer = ESX.GetPlayerFromId(_source)
-	local zPlayer = ESX.GetPlayerFromId(to)
-	local balance = 0
 	amountt = tonumber(amountt)
-	if not amountt then
+
+	if not amountt or amountt <= 0 then
 		TriggerClientEvent('esx:showAdvancedNotification', _source, 'Bank', 'Enteqale Vajh', 'Lotfan Faqat Adad Vared Konid', 'CHAR_BANK_MAZE', 9)
 		return
 	end
-	if not zPlayer then
-		TriggerClientEvent('esx:showAdvancedNotification', _source, 'Bank', 'Enteqale Vajh', 'Shenase Shakhs Morede Nazar Yaft nashod', 'CHAR_BANK_MAZE', 9)
+
+	if xPlayer.bank <= 0 or xPlayer.bank < amountt then
+		TriggerClientEvent('esx:showAdvancedNotification', _source, 'Bank', 'Enteqale Vajh', 'Mojodi Shoma Kafi nist', 'CHAR_BANK_MAZE', 9)
 		return
 	end
-	balance = xPlayer.bank
-	if tonumber(_source) == tonumber(to) then
-		TriggerClientEvent('esx:showAdvancedNotification', _source, 'Bank', 'Enteqale Vajh', 'Nemitavanid Be Khodetan Vajh Enteqal Dahid', 'CHAR_BANK_MAZE', 9)
-	else
-		if balance <= 0 or balance < tonumber(amountt) or tonumber(amountt) <= 0 then
-			TriggerClientEvent('esx:showAdvancedNotification', _source, 'Bank', 'Enteqale Vajh', 'Mojodi Shoma Kafi nist', 'CHAR_BANK_MAZE', 9)
-		else
-			xPlayer.removeBank(amountt)
-			zPlayer.addBank(amountt)
-			exports.ScriptPack:TransferLog({source = xPlayer.source, target = zPlayer.source, type = "transfer", amount = amountt})
-			TriggerClientEvent('esx:showAdvancedNotification', _source, 'Bank', 'Enteqale Vajh', 'Shoma ~r~$' .. amountt .. '~s~ Be ~r~' .. string.gsub(zPlayer.name, "_", " ") .. ' ~s~Enteqal Dadid.', 'CHAR_BANK_MAZE', 9)
-			TriggerClientEvent('esx:showAdvancedNotification', to, 'Bank', 'Enteqale Vajh', '~r~$' .. amountt .. '~s~ Az tarafe ~r~' .. string.gsub(xPlayer.name, "_", " ") .. ' ~s~Be hesabe Shoma Variz Shod.', 'CHAR_BANK_MAZE', 9)
+
+	to = tostring(to or ''):gsub('%s+', '')
+
+	-- This server's IBANs are plain 7-digit numbers (generated elsewhere, e.g.
+	-- Unique_Phone), which collide with numeric player IDs. Player server IDs
+	-- are realistically at most 4 digits, so use digit length to tell them apart:
+	-- 5+ digits => treat as IBAN, otherwise treat as a player ID.
+	local targetId = tonumber(to)
+	if targetId and #to <= 4 then
+		if tonumber(_source) == targetId then
+			TriggerClientEvent('esx:showAdvancedNotification', _source, 'Bank', 'Enteqale Vajh', 'Nemitavanid Be Khodetan Vajh Enteqal Dahid', 'CHAR_BANK_MAZE', 9)
+			return
 		end
+
+		local zPlayer = ESX.GetPlayerFromId(targetId)
+		if not zPlayer then
+			TriggerClientEvent('esx:showAdvancedNotification', _source, 'Bank', 'Enteqale Vajh', 'Shenase Shakhs Morede Nazar Yaft nashod', 'CHAR_BANK_MAZE', 9)
+			return
+		end
+
+		xPlayer.removeBank(amountt)
+		zPlayer.addBank(amountt)
+		exports.ScriptPack:TransferLog({source = xPlayer.source, target = zPlayer.source, type = "transfer", amount = amountt})
+		TriggerClientEvent('esx:showAdvancedNotification', _source, 'Bank', 'Enteqale Vajh', 'Shoma ~r~$' .. amountt .. '~s~ Be ~r~' .. string.gsub(zPlayer.name, "_", " ") .. ' ~s~Enteqal Dadid.', 'CHAR_BANK_MAZE', 9)
+		TriggerClientEvent('esx:showAdvancedNotification', zPlayer.source, 'Bank', 'Enteqale Vajh', '~r~$' .. amountt .. '~s~ Az tarafe ~r~' .. string.gsub(xPlayer.name, "_", " ") .. ' ~s~Be hesabe Shoma Variz Shod.', 'CHAR_BANK_MAZE', 9)
+		return
 	end
+
+	-- Case 2: "to" is an IBAN / card number (5+ digit numbers, or any non-numeric
+	-- code) — this works even if the recipient is offline
+	exports.oxmysql:single('SELECT identifier FROM users WHERE iban = ?', {to}, function(result)
+		if not result then
+			TriggerClientEvent('esx:showAdvancedNotification', _source, 'Bank', 'Enteqale Vajh', 'Shenase Shakhs Morede Nazar Yaft nashod', 'CHAR_BANK_MAZE', 9)
+			return
+		end
+
+		local targetIdentifier = result.identifier
+		if targetIdentifier == xPlayer.identifier then
+			TriggerClientEvent('esx:showAdvancedNotification', _source, 'Bank', 'Enteqale Vajh', 'Nemitavanid Be Khodetan Vajh Enteqal Dahid', 'CHAR_BANK_MAZE', 9)
+			return
+		end
+
+		-- re-check balance: the DB lookup above is async, so the sender's bank
+		-- balance could have changed in the meantime
+		if xPlayer.bank <= 0 or xPlayer.bank < amountt then
+			TriggerClientEvent('esx:showAdvancedNotification', _source, 'Bank', 'Enteqale Vajh', 'Mojodi Shoma Kafi nist', 'CHAR_BANK_MAZE', 9)
+			return
+		end
+
+		xPlayer.removeBank(amountt)
+
+		local zPlayer = ESX.GetPlayerFromIdentifier(targetIdentifier)
+		if zPlayer then
+			-- recipient is online
+			zPlayer.addBank(amountt)
+			TriggerClientEvent('esx:showAdvancedNotification', zPlayer.source, 'Bank', 'Enteqale Vajh', '~r~$' .. amountt .. '~s~ Az tarafe ~r~' .. string.gsub(xPlayer.name, "_", " ") .. ' ~s~Be hesabe Shoma Variz Shod.', 'CHAR_BANK_MAZE', 9)
+			exports.ScriptPack:TransferLog({source = xPlayer.source, target = zPlayer.source, type = "transfer", amount = amountt})
+		else
+			-- recipient is offline: update their bank balance directly in the database
+			exports.oxmysql:update('UPDATE users SET bank = bank + ? WHERE identifier = ?', {amountt, targetIdentifier})
+			exports.ScriptPack:TransferLog({source = xPlayer.source, target = targetIdentifier, type = "transfer_offline", amount = amountt})
+		end
+
+		TriggerClientEvent('esx:showAdvancedNotification', _source, 'Bank', 'Enteqale Vajh', 'Shoma ~r~$' .. amountt .. '~s~ Be IBAN ~r~' .. to .. ' ~s~Enteqal Dadid.', 'CHAR_BANK_MAZE', 9)
+	end)
 end)
 
 RegisterServerEvent('bank:balance')

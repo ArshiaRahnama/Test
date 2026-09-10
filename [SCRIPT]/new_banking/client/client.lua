@@ -139,16 +139,19 @@ function OpenBankAtm(atmEntity)
 	end)
 end
 
-RegisterNUICallback('deposit', function(data)
+RegisterNUICallback('deposit', function(data, cb)
 	TriggerServerEvent('bank:depositx', tonumber(data.amount))
+	cb('ok')
 end)
 
-RegisterNUICallback('withdrawl', function(data)
+RegisterNUICallback('withdrawl', function(data, cb)
 	TriggerServerEvent('bank:withdrawx', tonumber(data.amountw))
+	cb('ok')
 end)
 
-RegisterNUICallback('balance', function()
+RegisterNUICallback('balance', function(data, cb)
 	TriggerServerEvent('bank:balance')
+	cb('ok')
 end)
 
 RegisterNetEvent('balance:back')
@@ -158,15 +161,16 @@ AddEventHandler('balance:back', function(balance)
 
 end)
 
-RegisterNUICallback('transfer', function(data)
+RegisterNUICallback('transfer', function(data, cb)
 	TriggerServerEvent('bank:transferx', data.to, data.amountt)
-
+	cb('ok')
 end)
 
-RegisterNUICallback('NUIFocusOff', function()
+RegisterNUICallback('NUIFocusOff', function(data, cb)
   FreezeEntityPosition(PlayerPedId(), false)
   PlaySoundFrontend(-1, "ATM_WINDOW", "HUD_FRONTEND_DEFAULT_SOUNDSET", true)
   inMenu = false
   SetNuiFocus(false, false)
   SendNUIMessage({type = 'closeAll'})
+  cb('ok')
 end)

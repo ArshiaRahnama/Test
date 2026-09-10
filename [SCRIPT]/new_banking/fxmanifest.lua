@@ -8,9 +8,7 @@ ui_page('client/html/UI.html')
 
 files {
     'client/html/UI.html',
-    'client/html/style.css',
-	'client/html/img/*.png'
-
+    'client/html/style.css'
 }
 
 dependency 'ox_target'
