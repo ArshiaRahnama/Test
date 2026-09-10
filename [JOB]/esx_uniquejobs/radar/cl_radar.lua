@@ -532,6 +532,13 @@ function RADAR:OpenRemote()
 
 			-- Bring focus to the NUI side
 			SetNuiFocus( true, true )
+
+			-- FIX: tells ui.html which iframe should currently receive
+			-- clicks (see cad/client/main.lua's identical fix for exactly
+			-- why this is needed - the merged NUI page stacks CAD, radar,
+			-- and taximeter iframes on top of each other, and without this
+			-- signal whichever is on top eats every click for all of them).
+			SendNUIMessage( { _type = "setUiFocusOwner", owner = "radar" } )
 		else
 			UTIL:Notify( "Another player already has the remote open." )
 		end
@@ -1602,6 +1609,9 @@ RegisterNUICallback( "closeRemote", function( data, cb )
 	-- Remove focus to the NUI side
 	SetNuiFocus( false, false )
 
+	-- FIX: hand pointer-events back to nobody now that the remote is closed.
+	SendNUIMessage( { _type = "setUiFocusOwner", owner = false } )
+
 	if ( RADAR:IsMenuOpen() ) then
 		RADAR:CloseMenu( false )
 	end
@@ -1972,6 +1982,10 @@ end
 Citizen.CreateThread( function()
 	-- Remove the NUI focus just in case
 	SetNuiFocus( false, false )
+
+	-- FIX: matching safety reset for the pointer-events owner signal (see
+	-- the other two setUiFocusOwner call sites above for the full reason).
+	SendNUIMessage( { _type = "setUiFocusOwner", owner = false } )
 
 	-- Run the function to cache the number of rays, this way a hard coded number is never needed
 	RADAR:CacheNumRays()

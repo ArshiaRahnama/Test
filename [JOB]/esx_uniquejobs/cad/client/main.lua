@@ -80,6 +80,19 @@ RegisterCommand(DuckMdt.Command, function()
         end
         MdtDisplay_cad = not MdtDisplay_cad
         SetNuiFocus(MdtDisplay_cad, MdtDisplay_cad)
+
+        -- FIX: tells the top-level ui.html (see its <script>) which iframe
+        -- should currently receive mouse clicks. Needed since ui.html now
+        -- stacks the CAD, radar, and taximeter iframes on top of each other
+        -- to work around FiveM's one-ui_page-per-resource limit - without
+        -- this, whichever iframe is later in the page (radar) silently
+        -- swallowed every click meant for CAD (e.g. the Login button doing
+        -- nothing), because an iframe still captures clicks at its own
+        -- position even while everything drawn inside it is hidden.
+        SendNuiMessage(json.encode({
+            _type = 'setUiFocusOwner',
+            owner = MdtDisplay_cad and 'cad' or false,
+        }))
     end
 end, false)
 
@@ -209,6 +222,13 @@ RegisterNUICallback('Exit', function(data)
     MdtDisplay_cad = not MdtDisplay_cad
     SetNuiFocus(MdtDisplay_cad, MdtDisplay_cad)
     ClearPedTasks(PlayerPedId())
+
+    -- FIX: same reason as the /cad command above - hand pointer-events back
+    -- to nobody (the game) now that CAD no longer needs clicks.
+    SendNuiMessage(json.encode({
+        _type = 'setUiFocusOwner',
+        owner = false,
+    }))
 end)
 
 RegisterNUICallback('LoadTraining', function()

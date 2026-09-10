@@ -60,8 +60,28 @@ end
 -- ESX.TriggerServerCallback below), which never sees a registration that
 -- landed in some other resource's disconnected copy instead.
 function RegisterServerCallback(name, callback)
-    if type(name) ~= 'string' or type(callback) ~= 'function' then return false end
+    -------------------------------------------------------------
+    -- TEMP DIAGNOSTIC + relaxed guard: this used to hard-reject
+    -- (return false, no error) whenever type(callback) ~= 'function'.
+    -- Chasing a case where lc-inventory's own console confirms calling
+    -- this, yet the registered name never appears in
+    -- ESX.ServerCallbacks afterwards - if callback is arriving here as
+    -- something other than a plain 'function' (e.g. some other
+    -- callable/userdata shape after crossing the export boundary from
+    -- another resource), the old strict check would explain that
+    -- exactly, silently. Logs the real type either way instead of
+    -- guessing, and only rejects on a type that's outright unusable
+    -- (nil) rather than anything not literally 'function'.
+    -------------------------------------------------------------
+    if type(name) ~= 'string' or callback == nil then
+        print('[essentialmode] RegisterServerCallback(' .. tostring(name) .. '): rejected - name is ' .. type(name) .. ', callback is ' .. type(callback))
+        return false
+    end
+    if type(callback) ~= 'function' then
+        print('[essentialmode] RegisterServerCallback(' .. tostring(name) .. '): callback arrived as type "' .. type(callback) .. '", not "function" - registering anyway, but ESX.TriggerServerCallback will error when this actually gets invoked if it truly is not callable')
+    end
     ESX.RegisterServerCallback(name, callback)
+    print('[essentialmode] RegisterServerCallback(' .. tostring(name) .. '): stored - ESX.ServerCallbacks[' .. tostring(name) .. '] is now type ' .. type(ESX.ServerCallbacks[name]))
     return true
 end
 

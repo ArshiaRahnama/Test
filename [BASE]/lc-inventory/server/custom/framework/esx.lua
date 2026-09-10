@@ -144,11 +144,29 @@ function RegisterServerCallback(name, cb)
         waited = waited + 100
     end
     if GetResourceState('essentialmode') == 'started' then
-        local ok, err = pcall(function() exports['essentialmode']:RegisterServerCallback(name, cb) end)
-        if ok then
-            print('[lc-inventory] RegisterServerCallback(' .. tostring(name) .. '): registered via essentialmode export - OK')
+        local ok, result = pcall(function() return exports['essentialmode']:RegisterServerCallback(name, cb) end)
+        -------------------------------------------------------------
+        -- FIX (the real gap in the previous version of this fix): `ok`
+        -- here only ever told us whether the export CALL ITSELF threw
+        -- a Lua error - it says nothing about what the function
+        -- actually DID. essentialmode's RegisterServerCallback has its
+        -- own internal guard (`if type(name) ~= 'string' or
+        -- type(callback) ~= 'function' then return false end`) that
+        -- can reject silently, with no error thrown at all - which is
+        -- exactly what "OK" printed here every time while
+        -- ESX.ServerCallbacks on essentialmode's side never actually
+        -- gained a single lc-inventory entry (confirmed directly by
+        -- essentialmode's own diagnostic dump: 552 other callbacks
+        -- present, zero of ours). Now actually checks `result`, not
+        -- just `ok`.
+        -------------------------------------------------------------
+        if ok and result == true then
+            print('[lc-inventory] RegisterServerCallback(' .. tostring(name) .. '): registered via essentialmode export - CONFIRMED (returned true)')
+        elseif ok then
+            print('[lc-inventory] RegisterServerCallback(' .. tostring(name) .. '): essentialmode export ran without erroring but returned ' .. tostring(result) .. ' (its own type(name)/type(callback) guard likely rejected it) - falling back to the disconnected ESX copy (will NOT actually work either, but at least won\'t silently look successful)')
+            ESX.RegisterServerCallback(name, cb)
         else
-            print('[lc-inventory] RegisterServerCallback(' .. tostring(name) .. '): exports call to essentialmode FAILED -> ' .. tostring(err) .. ' - falling back to the disconnected ESX copy (will NOT actually work, see comment above this function)')
+            print('[lc-inventory] RegisterServerCallback(' .. tostring(name) .. '): exports call to essentialmode FAILED -> ' .. tostring(result) .. ' - falling back to the disconnected ESX copy (will NOT actually work, see comment above this function)')
             ESX.RegisterServerCallback(name, cb)
         end
     else
