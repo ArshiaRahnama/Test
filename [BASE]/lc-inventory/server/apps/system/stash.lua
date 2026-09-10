@@ -86,24 +86,49 @@ end
 -------------------------------------------------------------------
 -- Item access control (rank/job-gated stashes)
 --
--- Other resources register a checker function per stashId:
---   exports['lc-inventory']:registerStashAccessCheck('gang_ballas_armory', function(source, itemName)
---       -- return true if this player is allowed to take/see-unlocked this item
---   end)
--- If no checker is registered for a stashId, every item is accessible
+-- Other resources register a checker for a stashId:
+--   exports['lc-inventory']:registerStashAccessCheck('gang_ballas_armory')
+-- and listen for 'lc-inventory:relayStashAccessCheck:<their resource
+-- name>' to actually run the real check and reply on
+-- 'lc-inventory:relayStashAccessCheckReply'.
+-- If no owner is registered for a stashId, every item is accessible
 -- (unrestricted stash - the default/previous behaviour).
+--
+-- FIX (definitively confirmed via two-sided diagnostic logging, same
+-- root cause as essentialmode's RegisterServerCallback bug): passing
+-- the real checker FUNCTION through `exports` from another resource
+-- does not survive as a callable function here - it arrives as type
+-- "table" - so the original `type(checkerFn) == 'function'` guard
+-- below silently rejected every single registration, forever, with no
+-- error anywhere. This never stores a function received through
+-- exports at all anymore - only the calling resource's name
+-- (GetInvokingResource(), a real native, not something marshaled
+-- across the boundary), and relays actual checks back to it as a
+-- plain event with a request id instead.
 -------------------------------------------------------------------
 
-local StashAccessCheckers = {}
+local StashAccessCheckOwners = {} -- [stashId] = ownerResourceName
+local PendingAccessCheckReplies = {} -- [requestId] = resolver closure, kept 100% local to this resource
 
-exports('registerStashAccessCheck', function(stashId, checkerFn)
-    if type(stashId) == 'string' and type(checkerFn) == 'function' then
-        StashAccessCheckers[stashId] = checkerFn
-    end
+exports('registerStashAccessCheck', function(stashId)
+    if type(stashId) ~= 'string' then return false end
+    local owner = GetInvokingResource()
+    if not owner then return false end
+    StashAccessCheckOwners[stashId] = owner
+    return true
 end)
 
 exports('clearStashAccessCheck', function(stashId)
-    StashAccessCheckers[stashId] = nil
+    StashAccessCheckOwners[stashId] = nil
+end)
+
+RegisterServerEvent('lc-inventory:relayStashAccessCheckReply')
+AddEventHandler('lc-inventory:relayStashAccessCheckReply', function(requestId, allowed)
+    local resolve = PendingAccessCheckReplies[requestId]
+    if resolve then
+        PendingAccessCheckReplies[requestId] = nil
+        resolve(allowed)
+    end
 end)
 
 -------------------------------------------------------------------
@@ -120,12 +145,29 @@ exports('refreshStashViewers', function(stashId)
 end)
 
 local function canAccessStashItem(source, stashId, itemName)
-    local checker = StashAccessCheckers[stashId]
-    if not checker then return true end
+    local owner = StashAccessCheckOwners[stashId]
+    if not owner then return true end
 
-    local ok, result = pcall(checker, source, itemName)
-    if not ok then return true end -- a broken checker shouldn't lock the whole stash
-    return result and true or false
+    local requestId = stashId .. '#' .. tostring(itemName) .. '#' .. os.time() .. '#' .. math.random(100000, 999999)
+    local resolved, allowed = false, true
+    PendingAccessCheckReplies[requestId] = function(result)
+        resolved = true
+        allowed = result and true or false
+    end
+
+    TriggerEvent('lc-inventory:relayStashAccessCheck:' .. owner, stashId, itemName, source, requestId)
+
+    -- yields this getStash call briefly (it's already running in its
+    -- own coroutine) waiting for the owner resource's real reply;
+    -- fails open (allowed=true, matching the old "a broken checker
+    -- shouldn't lock the whole stash" behaviour) if it never answers
+    local waited = 0
+    while not resolved and waited < 1000 do
+        Wait(10)
+        waited = waited + 10
+    end
+    PendingAccessCheckReplies[requestId] = nil
+    return allowed
 end
 
 RegisterServerCallback('lc-inventory:getStash', function(source, cb, stashId, maxWeight, label)
@@ -144,9 +186,6 @@ RegisterServerCallback('lc-inventory:getStash', function(source, cb, stashId, ma
             itemLabel = itemLabel .. ' #' .. item.info.serial
         end
         local locked = not canAccessStashItem(source, stashId, item.name)
-        if StashAccessCheckers[stashId] then
-            print('[lc-inventory] getStash: ' .. stashId .. ' item ' .. tostring(item.name) .. ' -> locked=' .. tostring(locked))
-        end
 
         table.insert(list, {
             label = itemLabel,

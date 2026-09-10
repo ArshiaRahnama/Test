@@ -40,8 +40,15 @@ config.AdminXPPermission = 10
 Config = {}
 
 -- Minimum quests to try to generate per player (capped to pool size so it
--- can never infinite-loop when a pool has fewer options than this).
+-- can never infinite-loop when a pool has fewer options than this). This
+-- is only how many quests are OFFERED (shown in the Quests tab to choose
+-- from) — how many can be ACCEPTED at once is Config.MaxActiveQuests below.
 Config.QuestsPerDay = 6
+
+-- How many quests a player can have ACCEPTED (in progress) at the same
+-- time. Finishing or cancelling an accepted quest frees a slot right
+-- away — no need to wait for the next day's reset.
+Config.MaxActiveQuests = 1
 
 -- ===== Coin system (merged in from the standalone CoinSystem resource
 -- so it can be deleted; nothing else references it externally except

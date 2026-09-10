@@ -110,7 +110,7 @@ function UpdateQuests()
             end
         end
 
-        SendNUIMessage({ type = "loadQuests", quests = myquests, maxActive = Config.QuestsPerDay or 6 })
+        SendNUIMessage({ type = "loadQuests", quests = myquests, maxActive = Config.MaxActiveQuests or 1 })
     end)
 end
 

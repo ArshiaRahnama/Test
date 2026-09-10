@@ -1558,13 +1558,67 @@ end)
 -- code that silently does nothing. Whole-armory putitem/takeitem access
 -- (checked below in For5M:OpenInventory) still works as before.
 -------------------------------------------------------------------
--- TEMP DIAGNOSTIC: paired with the "stash.lua loaded" print added in
--- lc-inventory/server/apps/system/stash.lua - if lc-inventory restarts
--- silently between our registerStashAccessCheck call and the next
--- getStash, that print will appear in console between our "registered"
--- line and the following "checker registered: false" line. Remove once
--- confirmed/fixed.
-print(('[Unique_ALLGangs] Gangs.lua loaded, StartedAt=%d'):format(os.time()))
+-------------------------------------------------------------------
+-- FIX (real root cause, confirmed the same way the
+-- essentialmode<->lc-inventory callback bug was: a two-sided
+-- diagnostic dump showed the callback function arriving as type
+-- "table", not "function", after crossing an `exports` call between
+-- resources - a genuine FXServer limitation, not something either
+-- side's logic was doing wrong). registerStashAccessCheck has the
+-- EXACT same shape as essentialmode's RegisterServerCallback did -
+-- passing the real checker function through exports - so it has the
+-- exact same problem: lc-inventory's own registerStashAccessCheck
+-- explicitly checks `type(checkerFn) == 'function'` before storing
+-- anything, so every registration from here was silently rejected,
+-- every single time, regardless of any restart timing.
+-- Fixed the same way: the real checker function stays 100% local to
+-- this resource (never crosses any boundary). lc-inventory is only
+-- told the stash id + which resource owns it
+-- (GetInvokingResource() on lc-inventory's side), and relays actual
+-- checks back here as a plain event with a request id; this resource
+-- runs the real check and replies over a matching event. See
+-- lc-inventory/server/apps/system/stash.lua's matching half.
+-------------------------------------------------------------------
+local StashAccessCheckerFunctions = {} -- [stashId] = the REAL checker function - never leaves this resource
+
+AddEventHandler('lc-inventory:relayStashAccessCheck:Unique_ALLGangs', function(stashId, itemName, checkSource, requestId)
+    local checker = StashAccessCheckerFunctions[stashId]
+    local allowed = true
+    if checker then
+        local ok, result = pcall(checker, checkSource, itemName)
+        if ok then allowed = result and true or false end
+    end
+    TriggerEvent('lc-inventory:relayStashAccessCheckReply', requestId, allowed)
+end)
+
+local function registerStashAccessCheck(stashId, checkerFn)
+    StashAccessCheckerFunctions[stashId] = checkerFn
+    local ok, result = pcall(function() return exports['lc-inventory']:registerStashAccessCheck(stashId) end)
+    return ok and result == true
+end
+
+-- Resilient against lc-inventory itself restarting independently (this
+-- whole server is prone to VPS freeze/lag forcing exactly that, per
+-- earlier debugging in this same conversation) - re-establishes every
+-- known registration whenever lc-inventory (re)starts, and again on a
+-- short recurring timer as a belt-and-suspenders backstop.
+AddEventHandler('onResourceStart', function(resourceName)
+    if resourceName ~= 'lc-inventory' then return end
+    for stashId, checkerFn in pairs(StashAccessCheckerFunctions) do
+        registerStashAccessCheck(stashId, checkerFn)
+    end
+end)
+
+CreateThread(function()
+    while true do
+        Wait(3000)
+        if GetResourceState('lc-inventory') == 'started' then
+            for stashId, checkerFn in pairs(StashAccessCheckerFunctions) do
+                pcall(function() exports['lc-inventory']:registerStashAccessCheck(stashId) end)
+            end
+        end
+    end
+end)
 
 local RegisteredArmoryStashes = {}
 local ARMORY_SLOTS = 50
@@ -1694,25 +1748,18 @@ EnsureArmoryStash = function(playergang, key, armory)
     -- Gangs[gang].grades[grade].access.itemAccess[itemName] = true/false;
     -- this is what was missing to actually enforce it. Items never
     -- explicitly toggled default to accessible.
-    -- Wrapped in pcall + logged on failure only: if lc-inventory is ever
-    -- not up yet (or the export name doesn't match), this used to error
-    -- out of the whole function silently - now it's visible in console
-    -- instead of just quietly never protecting anything.
-    local regOk, regErr = pcall(function()
-        exports['lc-inventory']:registerStashAccessCheck(stashId, function(checkSource, itemName)
-            local xP = ESX.GetPlayerFromId(checkSource)
-            if not xP or not xP.gang or xP.gang.name ~= playergang then return true end
+    if not registerStashAccessCheck(stashId, function(checkSource, itemName)
+        local xP = ESX.GetPlayerFromId(checkSource)
+        if not xP or not xP.gang or xP.gang.name ~= playergang then return true end
 
-            local grade = Gangs[playergang] and Gangs[playergang].grades[xP.gang.grade]
-            if not grade or not grade.access or not grade.access.itemAccess then return true end
+        local grade = Gangs[playergang] and Gangs[playergang].grades[xP.gang.grade]
+        if not grade or not grade.access or not grade.access.itemAccess then return true end
 
-            local allowed = grade.access.itemAccess[itemName]
-            if allowed == nil then return true end
-            return allowed and true or false
-        end)
-    end)
-    if not regOk then
-        print('[Unique_ALLGangs] EnsureArmoryStash: FAILED to register access check for ' .. stashId .. ' -> ' .. tostring(regErr) .. ' (item access will NOT be enforced for this armory until this succeeds)')
+        local allowed = grade.access.itemAccess[itemName]
+        if allowed == nil then return true end
+        return allowed and true or false
+    end) then
+        print('[Unique_ALLGangs] EnsureArmoryStash: FAILED to register access check for ' .. stashId .. ' - will keep retrying on the recurring timer')
     end
 
     RegisteredArmoryStashes[stashId] = true -- kept only as a diagnostic marker now, no longer gates anything

@@ -97,7 +97,6 @@ function RegisterServerCallback(name, unusedCallbackArg)
         TriggerEvent('essentialmode:relayServerCallback:' .. owner, name, requestId, source, ...)
     end
 
-    print('[essentialmode] RegisterServerCallback(' .. tostring(name) .. '): relay registered for owner resource "' .. owner .. '"')
     return true
 end
 

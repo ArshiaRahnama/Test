@@ -73,7 +73,7 @@ AddEventHandler('onResourceStart', function(resourceName)
     -- case LocalCallbacks is still empty and this is a no-op), as well
     -- as any later restart of it while lc-inventory keeps running
     for name in pairs(LocalCallbacks) do
-        print('[lc-inventory] essentialmode (re)started - re-registered ' .. tostring(name) .. ': ' .. tostring(pushRegistration(name)))
+        pushRegistration(name)
     end
 end)
 
@@ -101,9 +101,7 @@ function RegisterServerCallback(name, cb)
         waited = waited + 100
     end
     if GetResourceState('essentialmode') == 'started' then
-        if pushRegistration(name) then
-            print('[lc-inventory] RegisterServerCallback(' .. tostring(name) .. '): relay registered with essentialmode - OK')
-        else
+        if not pushRegistration(name) then
             print('[lc-inventory] RegisterServerCallback(' .. tostring(name) .. '): essentialmode rejected the relay registration - will keep retrying on the recurring timer')
         end
     else

@@ -682,21 +682,35 @@ function loadPlayerInventory(result, coffre, category, poid)
                             dataInv.inventory[key] = nil
                         else
                             if json.encode(Inv.FastWeapons) ~= "[]" then
-                                for k,v in pairs(Inv.FastWeapons) do 
-                                    for fast, bind in pairs(Inv.FastWeapons) do
-                                        if dataInv.inventory[key].name == bind then
-                                            table.insert(fastItems, {
-                                                label = dataInv.inventory[key].label,
-                                                count = dataInv.inventory[key].count,
-                                                limit = -1,
-                                                type = dataInv.inventory[key].type,
-                                                name = dataInv.inventory[key].name,
-                                                image = Config.Pictures[dataInv.inventory[key].name],
-                                                usable = true,
-                                                rare = false,
-                                                slot = fast
-                                            })
-                                        end
+                                -------------------------------------------------
+                                -- FIX (real duplication bug found and confirmed:
+                                -- one physical item was showing up N times across
+                                -- the hotbar, N = total number of entries in
+                                -- Config.FastWeapons/Inv.FastWeapons, no matter
+                                -- what that one item actually was). This used to
+                                -- wrap the real check in a completely redundant
+                                -- outer loop over the exact same table
+                                -- (`for k,v in pairs(Inv.FastWeapons) do` with k/v
+                                -- never even used) - so every time the real inner
+                                -- check found a match, it ran once per entry in
+                                -- Inv.FastWeapons instead of once, inserting that
+                                -- many identical duplicate hotbar entries. Only
+                                -- the inner loop (the one that actually checks
+                                -- the binding) was ever needed.
+                                -------------------------------------------------
+                                for fast, bind in pairs(Inv.FastWeapons) do
+                                    if dataInv.inventory[key].name == bind then
+                                        table.insert(fastItems, {
+                                            label = dataInv.inventory[key].label,
+                                            count = dataInv.inventory[key].count,
+                                            limit = -1,
+                                            type = dataInv.inventory[key].type,
+                                            name = dataInv.inventory[key].name,
+                                            image = Config.Pictures[dataInv.inventory[key].name],
+                                            usable = true,
+                                            rare = false,
+                                            slot = fast
+                                        })
                                     end
                                 end
                             end
@@ -716,21 +730,25 @@ function loadPlayerInventory(result, coffre, category, poid)
                         --     weapons[key] = nil
                         -- else
                             if json.encode(Inv.FastWeapons) ~= "[]" then
-                                for k,v in pairs(Inv.FastWeapons) do 
-                                    for fast, bind in pairs(Inv.FastWeapons) do
-                                        if dataInv.weapons[key].name == bind then
-                                            table.insert(fastItems, {
-                                                label = dataInv.weapons[key].label,
-                                                count = 1,
-                                                limit = -1,
-                                                type = dataInv.weapons[key].type,
-                                                name = dataInv.weapons[key].name,
-                                                image = Config.Pictures[dataInv.weapons[key].name],
-                                                usable = true,
-                                                rare = false,
-                                                slot = fast
-                                            })
-                                        end
+                                -- FIX: see the identical fix + full explanation a
+                                -- few dozen lines above this, in the items block -
+                                -- this is the exact same redundant-outer-loop
+                                -- duplication bug, just for weapons. This is the
+                                -- one that was actually duplicating a withdrawn
+                                -- pistol across every hotbar slot.
+                                for fast, bind in pairs(Inv.FastWeapons) do
+                                    if dataInv.weapons[key].name == bind then
+                                        table.insert(fastItems, {
+                                            label = dataInv.weapons[key].label,
+                                            count = 1,
+                                            limit = -1,
+                                            type = dataInv.weapons[key].type,
+                                            name = dataInv.weapons[key].name,
+                                            image = Config.Pictures[dataInv.weapons[key].name],
+                                            usable = true,
+                                            rare = false,
+                                            slot = fast
+                                        })
                                     end
                                 end
                             end
@@ -795,21 +813,20 @@ function loadPlayerInventory(result, coffre, category, poid)
                             dataInv.inventory[key] = nil
                         else
                             if json.encode(Inv.FastWeapons) ~= "[]" then
-                                for k,v in pairs(Inv.FastWeapons) do 
-                                    for fast, bind in pairs(Inv.FastWeapons) do
-                                        if dataInv.inventory[key].name == bind then
-                                            table.insert(fastItems, {
-                                                label = dataInv.inventory[key].label,
-                                                count = dataInv.inventory[key].amount,
-                                                limit = -1,
-                                                type = dataInv.inventory[key].type,
-                                                name = dataInv.inventory[key].name,
-                                                image = Config.Pictures[dataInv.inventory[key].name],
-                                                usable = true,
-                                                rare = false,
-                                                slot = fast
-                                            })
-                                        end
+                                -- FIX: same redundant-outer-loop duplication bug as above
+                                for fast, bind in pairs(Inv.FastWeapons) do
+                                    if dataInv.inventory[key].name == bind then
+                                        table.insert(fastItems, {
+                                            label = dataInv.inventory[key].label,
+                                            count = dataInv.inventory[key].amount,
+                                            limit = -1,
+                                            type = dataInv.inventory[key].type,
+                                            name = dataInv.inventory[key].name,
+                                            image = Config.Pictures[dataInv.inventory[key].name],
+                                            usable = true,
+                                            rare = false,
+                                            slot = fast
+                                        })
                                     end
                                 end
                             end
@@ -870,21 +887,20 @@ RegisterNUICallback('category', function(data)
                     dataInv.inventory[key] = nil
                 else
                     if json.encode(Inv.FastWeapons) ~= "[]" then
-                        for k,v in pairs(Inv.FastWeapons) do 
-                            for fast, bind in pairs(Inv.FastWeapons) do
-                                if dataInv.inventory[key].name == bind then
-                                    table.insert(fastItems, {
-                                        label = dataInv.inventory[key].label,
-                                        count = dataInv.inventory[key].count,
-                                        limit = -1,
-                                        type = dataInv.inventory[key].type,
-                                        name = dataInv.inventory[key].name,
-                                        image = Config.Pictures[dataInv.inventory[key].name],
-                                        usable = true,
-                                        rare = false,
-                                        slot = fast
-                                    })
-                                end
+                        -- FIX: same redundant-outer-loop duplication bug as above
+                        for fast, bind in pairs(Inv.FastWeapons) do
+                            if dataInv.inventory[key].name == bind then
+                                table.insert(fastItems, {
+                                    label = dataInv.inventory[key].label,
+                                    count = dataInv.inventory[key].count,
+                                    limit = -1,
+                                    type = dataInv.inventory[key].type,
+                                    name = dataInv.inventory[key].name,
+                                    image = Config.Pictures[dataInv.inventory[key].name],
+                                    usable = true,
+                                    rare = false,
+                                    slot = fast
+                                })
                             end
                         end
                     end
@@ -904,21 +920,22 @@ RegisterNUICallback('category', function(data)
                 --     weapons[key] = nil
                 -- else
                     if json.encode(Inv.FastWeapons) ~= "[]" then
-                        for k,v in pairs(Inv.FastWeapons) do 
-                            for fast, bind in pairs(Inv.FastWeapons) do
-                                if dataInv.weapons[key].name == bind then
-                                    table.insert(fastItems, {
-                                        label = dataInv.weapons[key].label,
-                                        count = 255,
-                                        limit = -1,
-                                        type = dataInv.weapons[key].type,
-                                        name = dataInv.weapons[key].name,
-                                        image = Config.Pictures[dataInv.weapons[key].name],
-                                        usable = true,
-                                        rare = false,
-                                        slot = fast
-                                    })
-                                end
+                        -- FIX: same redundant-outer-loop duplication bug as above -
+                        -- this is the other one that could duplicate a weapon
+                        -- (this handler fires on the 'weapon' data type specifically)
+                        for fast, bind in pairs(Inv.FastWeapons) do
+                            if dataInv.weapons[key].name == bind then
+                                table.insert(fastItems, {
+                                    label = dataInv.weapons[key].label,
+                                    count = 255,
+                                    limit = -1,
+                                    type = dataInv.weapons[key].type,
+                                    name = dataInv.weapons[key].name,
+                                    image = Config.Pictures[dataInv.weapons[key].name],
+                                    usable = true,
+                                    rare = false,
+                                    slot = fast
+                                })
                             end
                         end
                     end

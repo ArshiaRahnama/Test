@@ -86,11 +86,19 @@ document.addEventListener('DOMContentLoaded', () => {
         else if (quest.accepted) card.classList.add('is-active');
         else card.classList.add('is-available');
 
+        // At the slot cap, grey out Accept on every quest that isn't
+        // already active — matches the server, which rejects Accept once
+        // activeCount >= Config.MaxActiveQuests anyway; this just avoids
+        // a pointless click + "slots full" notification round trip.
+        const slotsFull = activeCount >= maxActive;
+
         let actionHtml = '';
         if (quest.completed) {
           actionHtml = `<div class="questDoneBadge"><i class="fa-solid fa-circle-check"></i> Completed</div>`;
         } else if (quest.accepted) {
           actionHtml = `<button type="button" class="questBtn cancelBtn" data-id="${quest.id}"><i class="fa-solid fa-xmark"></i> Cancel</button>`;
+        } else if (slotsFull) {
+          actionHtml = `<button type="button" class="questBtn lockedBtn" disabled title="Finish or cancel your current quest first"><i class="fa-solid fa-lock"></i> Locked</button>`;
         } else {
           actionHtml = `<button type="button" class="questBtn acceptBtn" data-id="${quest.id}"><i class="fa-solid fa-plus"></i> Accept</button>`;
         }

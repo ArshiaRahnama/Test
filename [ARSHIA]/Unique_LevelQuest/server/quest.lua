@@ -23,13 +23,13 @@
 -- picked Config.QuestsPerDay random ones from the pool at the start
 -- of each day and that was the whole selection, no player input. Now
 -- GenerateQuests just resets the day (empties the active list) and
--- the FULL pool is shown in the Quests tab; the player accepts up to
--- Config.QuestsPerDay of them (QuestSystem:AcceptQuest) and can cancel
--- an unfinished one to free a slot for a different quest
--- (QuestSystem:CancelQuest). A quest only tracks progress once
--- accepted — the trigger handlers below already only bump progress
--- for ids present in playerquests, which happens to be exactly
--- "accepted" now, so no change was needed there.
+-- the day's Config.QuestsPerDay offered quests are shown in the Quests
+-- tab; the player accepts up to Config.MaxActiveQuests of them at once
+-- (QuestSystem:AcceptQuest) and can cancel an unfinished one to free
+-- that slot for a different quest (QuestSystem:CancelQuest). A quest
+-- only tracks progress once accepted — the trigger handlers below
+-- already only bump progress for ids present in playerquests, which
+-- happens to be exactly "accepted" now, so no change was needed there.
 -- ================================================================= --
 
 local TRIGGER_COOLDOWN = 2 -- seconds; blocks raw event-spam farming
@@ -198,8 +198,8 @@ AddEventHandler("QuestSystem:AcceptQuest", function(questId)
                 end
             end
         end
-        if activeCount >= (Config.QuestsPerDay or 6) then
-            TriggerClientEvent('esx:showNotification', _source, "Quest slots full", "error", "Cancel an active quest first, or wait for tomorrow's reset.")
+        if activeCount >= (Config.MaxActiveQuests or 1) then
+            TriggerClientEvent('esx:showNotification', _source, "Quest slots full", "error", "Finish or cancel your current quest first.")
             return
         end
 
