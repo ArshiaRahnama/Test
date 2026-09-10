@@ -2093,22 +2093,39 @@ local function uniqueacAdaptivePercent(step, total)
 end
 
 local UNIQUE_AC_CONNECT_STEP_LABELS = {
-    [1] = "Gateway initialization",
-    [2] = "Identity verification",
-    [3] = "Security validation",
-    [4] = "Connection result"
+    [1] = "Gateway",
+    [2] = "Identity",
+    [3] = "Security",
+    [4] = "Result"
 }
+
+-- Custom shield + bolt mark, embedded as a data URI so the card never depends on external hosting.
+local UNIQUE_AC_SHIELD_ICON =
+    "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTQwIiBoZWlnaHQ9IjE0MCIgdmlld0JveD0iMCAwIDE0MCAxNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPGRlZnM+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9InNoaWVsZEdyYWQiIHgxPSIwIiB5MT0iMCIgeDI9IjEiIHkyPSIxIj4KICAgICAgPHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjMzhFMEZGIi8+CiAgICAgIDxzdG9wIG9mZnNldD0iMC41NSIgc3RvcC1jb2xvcj0iIzBFQTVFOSIvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiMwQjYzQzciLz4KICAgIDwvbGluZWFyR3JhZGllbnQ+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImJvbHRHcmFkIiB4MT0iMCIgeTE9IjAiIHgyPSIwIiB5Mj0iMSI+CiAgICAgIDxzdG9wIG9mZnNldD0iMCIgc3RvcC1jb2xvcj0iI0ZGRTU4QSIvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiNGN0I3MzMiLz4KICAgIDwvbGluZWFyR3JhZGllbnQ+CiAgPC9kZWZzPgogIDxwYXRoIGQ9Ik03MCA2IEwxMjQgMjYgVjYwIEMxMjQgOTggMTAwIDEyMiA3MCAxMzQgQzQwIDEyMiAxNiA5OCAxNiA2MCBWMjYgWiIKICAgICAgICBmaWxsPSJ1cmwoI3NoaWVsZEdyYWQpIiBzdHJva2U9IiMwNDI2M0IiIHN0cm9rZS13aWR0aD0iNSIvPgogIDxwYXRoIGQ9Ik03MCAxNiBMMTE0IDMzIFY2MCBDMTE0IDkyIDk0IDExMiA3MCAxMjMgQzQ2IDExMiAyNiA5MiAyNiA2MCBWMzMgWiIKICAgICAgICBmaWxsPSJub25lIiBzdHJva2U9IiNCRkY2RkYiIHN0cm9rZS13aWR0aD0iMiIgb3BhY2l0eT0iMC41NSIvPgogIDxwYXRoIGQ9Ik03NiAzMiBMNDYgNzYgSDY0IEw1OCAxMDggTDk2IDYwIEg3OCBaIiBmaWxsPSJ1cmwoI2JvbHRHcmFkKSIgc3Ryb2tlPSIjN0E0QTAwIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPC9zdmc+Cg=="
+
+-- Map a semantic accent name to a Container "style" so each state gets its own tinted panel.
+local function uniqueacContainerStyle(color, isFinalGood, isFinalBad)
+    if isFinalBad then return "attention" end
+    if isFinalGood then return "good" end
+    if color == "Good" then return "good" end
+    if color == "Attention" then return "warning" end
+    return "accent"
+end
 
 local function uniqueacBuildConnectCard(step, total, title, detail, accent)
     local brand = uniqueacConnectBrand()
-    local percent = uniqueacAdaptivePercent(step, total)
+    local totalN = tonumber(total) or 4
+    local stepN = tonumber(step) or 1
+    local percent = uniqueacAdaptivePercent(stepN, totalN)
     local safeTitle = uniqueacText(title, "Checking connection", 70)
     local safeDetail = uniqueacText(detail, "Please wait", 120)
     local color = uniqueacText(accent, "Accent", 16)
+    local isFinalGood = stepN >= totalN and color == "Good"
+    local isFinalBad = stepN >= totalN and color == "Attention"
 
-
-    local barSlots = 12
-    local barFilled = math.floor((tonumber(step) or 1) / (tonumber(total) or 4) * barSlots + 0.5)
+    -- Segmented progress bar using rounded block glyphs, colored per host theme.
+    local barSlots = 16
+    local barFilled = math.floor((stepN / totalN) * barSlots + 0.5)
     if barFilled < 1 then barFilled = 1 end
     if barFilled > barSlots then barFilled = barSlots end
     local barColumns = {}
@@ -2116,12 +2133,12 @@ local function uniqueacBuildConnectCard(step, total, title, detail, accent)
         barColumns[#barColumns + 1] = {
             type = "Column",
             width = "stretch",
-            spacing = i == 1 and "None" or "Small",
+            spacing = "None",
             items = {
                 {
                     type = "TextBlock",
-                    text = "▬",
-                    size = "Large",
+                    text = i <= barFilled and "▰" or "▱",
+                    size = "Medium",
                     weight = "Bolder",
                     horizontalAlignment = "Center",
                     spacing = "None",
@@ -2132,48 +2149,124 @@ local function uniqueacBuildConnectCard(step, total, title, detail, accent)
         }
     end
 
+    -- Horizontal stepper track: icon-bubble columns separated by thin connector columns.
+    local stepperColumns = {}
+    for index = 1, totalN do
+        local isDone = index < stepN
+        local isLive = index == stepN
+        local bubble = isDone and "✅" or (isLive and "🔷" or "⚪")
+        local labelColor = isDone and "Good" or (isLive and color or "Default")
+        local label = uniqueacText(UNIQUE_AC_CONNECT_STEP_LABELS[index] or ("Step " .. tostring(index)), "Step", 20)
+
+        stepperColumns[#stepperColumns + 1] = {
+            type = "Column",
+            width = "auto",
+            items = {
+                { type = "TextBlock", text = bubble, size = "Medium", horizontalAlignment = "Center", spacing = "None" },
+                {
+                    type = "TextBlock",
+                    text = label,
+                    size = "Small",
+                    weight = isLive and "Bolder" or "Default",
+                    color = labelColor,
+                    isSubtle = not isDone and not isLive,
+                    horizontalAlignment = "Center",
+                    wrap = false,
+                    spacing = "None"
+                }
+            }
+        }
+
+        if index < totalN then
+            local connectorDone = index < stepN
+            stepperColumns[#stepperColumns + 1] = {
+                type = "Column",
+                width = "stretch",
+                verticalContentAlignment = "Top",
+                items = {
+                    {
+                        type = "TextBlock",
+                        text = connectorDone and "━━━" or "┄┄┄",
+                        color = connectorDone and "Good" or "Default",
+                        isSubtle = not connectorDone,
+                        horizontalAlignment = "Center",
+                        spacing = "None"
+                    }
+                }
+            }
+        end
+    end
+
     local body = {
+        -- Brand header: shield mark + gradient-style title + tagline
+        {
+            type = "ColumnSet",
+            spacing = "None",
+            columns = {
+                {
+                    type = "Column",
+                    width = "auto",
+                    verticalContentAlignment = "Center",
+                    items = {
+                        { type = "Image", url = UNIQUE_AC_SHIELD_ICON, width = "46px", height = "46px" }
+                    }
+                },
+                {
+                    type = "Column",
+                    width = "stretch",
+                    verticalContentAlignment = "Center",
+                    spacing = "Medium",
+                    items = {
+                        {
+                            type = "TextBlock",
+                            text = brand,
+                            weight = "Bolder",
+                            size = "ExtraLarge",
+                            color = "Accent",
+                            wrap = true,
+                            spacing = "None"
+                        },
+                        {
+                            type = "TextBlock",
+                            text = "ADVANCED CONNECTION PROTECTION",
+                            size = "Small",
+                            weight = "Bolder",
+                            isSubtle = true,
+                            spacing = "None",
+                            wrap = true
+                        }
+                    }
+                }
+            }
+        },
+        -- Tinted status panel for the current step
         {
             type = "Container",
-            style = "emphasis",
+            style = uniqueacContainerStyle(color, isFinalGood, isFinalBad),
+            spacing = "Medium",
+            separator = true,
+            bleed = true,
             items = {
                 {
                     type = "TextBlock",
-                    text = "🛡️ " .. brand,
+                    text = (isFinalBad and "⛔ " or (isFinalGood and "🎉 " or "🔷 ")) .. safeTitle,
                     weight = "Bolder",
-                    size = "Large",
-                    color = "Attention",
+                    size = "Medium",
+                    color = color,
                     horizontalAlignment = "Center",
                     wrap = true
                 },
                 {
                     type = "TextBlock",
-                    text = "Protected connection screening",
+                    text = safeDetail,
                     isSubtle = true,
-                    spacing = "None",
                     horizontalAlignment = "Center",
-                    wrap = true
+                    wrap = true,
+                    spacing = "Small"
                 }
             }
         },
-        {
-            type = "TextBlock",
-            text = safeTitle,
-            weight = "Bolder",
-            size = "Medium",
-            color = color,
-            horizontalAlignment = "Center",
-            wrap = true,
-            spacing = "Medium"
-        },
-        {
-            type = "TextBlock",
-            text = safeDetail,
-            isSubtle = true,
-            horizontalAlignment = "Center",
-            wrap = true,
-            spacing = "Small"
-        },
+        -- Progress bar + percentage
         {
             type = "ColumnSet",
             spacing = "Medium",
@@ -2181,72 +2274,64 @@ local function uniqueacBuildConnectCard(step, total, title, detail, accent)
         },
         {
             type = "TextBlock",
-            text = tostring(percent) .. "% complete",
+            text = "⚡ " .. tostring(percent) .. "% complete   ·   step " .. tostring(math.min(stepN, totalN)) .. "/" .. tostring(totalN),
             weight = "Bolder",
             size = "Small",
+            color = color,
             horizontalAlignment = "Center",
             wrap = true,
             spacing = "Small"
         },
+        -- Horizontal stepper
         {
             type = "TextBlock",
-            text = "Security pipeline",
+            text = "SECURITY PIPELINE",
             weight = "Bolder",
+            size = "Small",
             color = "Accent",
             spacing = "Medium",
             separator = true,
             wrap = true
+        },
+        {
+            type = "ColumnSet",
+            spacing = "Small",
+            columns = stepperColumns
         }
     }
 
-    for index = 1, total do
-        local isDone = index < step
-        local isLive = index == step
-        local icon = isDone and "✅" or (isLive and "🔷" or "⚪")
-        local rowColor = isDone and "Good" or (isLive and color or "Default")
-        local label = uniqueacText(UNIQUE_AC_CONNECT_STEP_LABELS[index] or ("Step " .. tostring(index)), "Step", 48)
-
-        body[#body + 1] = {
-            type = "ColumnSet",
-            spacing = index == 1 and "Small" or "None",
-            columns = {
-                {
-                    type = "Column",
-                    width = "auto",
-                    items = { { type = "TextBlock", text = icon, wrap = true, spacing = "None" } }
-                },
-                {
-                    type = "Column",
-                    width = "stretch",
-                    items = {
-                        {
-                            type = "TextBlock",
-                            text = label,
-                            color = rowColor,
-                            weight = isLive and "Bolder" or "Default",
-                            isSubtle = not isDone and not isLive,
-                            wrap = true,
-                            spacing = "None"
-                        }
+    body[#body + 1] = {
+        type = "ColumnSet",
+        spacing = "Medium",
+        separator = true,
+        columns = {
+            {
+                type = "Column",
+                width = "auto",
+                items = { { type = "TextBlock", text = "🔒", spacing = "None" } }
+            },
+            {
+                type = "Column",
+                width = "stretch",
+                verticalContentAlignment = "Center",
+                items = {
+                    {
+                        type = "TextBlock",
+                        text = "Keep this screen open — the connection is still being validated.",
+                        isSubtle = true,
+                        wrap = true,
+                        spacing = "None"
                     }
                 }
             }
         }
-    end
-
-    body[#body + 1] = {
-        type = "TextBlock",
-        text = "🔒 Please keep this screen open while the connection is being validated.",
-        isSubtle = true,
-        wrap = true,
-        separator = true,
-        spacing = "Medium"
     }
 
     body[#body + 1] = {
         type = "TextBlock",
-        text = "UNIQUE_AC  •  arshiahub.ir",
+        text = "UNIQUE_AC  ✦  arshiahub.ir",
         color = "Accent",
+        weight = "Bolder",
         isSubtle = true,
         size = "Small",
         horizontalAlignment = "Center",
@@ -2257,7 +2342,7 @@ local function uniqueacBuildConnectCard(step, total, title, detail, accent)
     return {
         ["$schema"] = "http://adaptivecards.io/schemas/adaptive-card.json",
         type = "AdaptiveCard",
-        version = "1.0",
+        version = "1.3",
         body = body
     }
 end
