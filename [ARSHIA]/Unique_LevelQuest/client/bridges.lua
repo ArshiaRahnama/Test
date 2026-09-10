@@ -20,6 +20,13 @@ local onDutyJobs = {
     ambulance = 'quest-ambulance:onduty',
     mechanic  = 'quest-mechanic:onduty',
     taxi      = 'quest-taxi:onduty',
+    cid       = 'quest-cid:onduty',
+    cia       = 'quest-cia:onduty',
+    marshal   = 'quest-marshal:onduty',
+    fbi       = 'quest-fbi:onduty',
+    judge     = 'quest-judge:onduty',
+    doa       = 'quest-doa:onduty',
+    weazel    = 'quest-weazel:onduty',
 }
 
 -- Tracked for the paycheck countdown in the header (client/menu.lua).

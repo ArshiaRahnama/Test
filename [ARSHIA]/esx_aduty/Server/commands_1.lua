@@ -1029,6 +1029,13 @@ TriggerEvent(
     "giveweapon",
     5,
     function(source, args, user)
+        -- TEMP DIAGNOSTIC (chasing a report of one /giveweapon call
+        -- producing 2-3 duplicate weapons in the target's inventory) -
+        -- prints every single time this handler actually runs, with
+        -- the exact args, so we can see directly whether ONE typed
+        -- command is somehow invoking this function more than once.
+        -- Remove once the cause is confirmed.
+        print(('[esx_aduty] giveweapon command handler invoked: admin_source=%s args=%s'):format(tostring(source), json.encode(args)))
         local xPlayer = ESX.GetPlayerFromId(source)
         local namep = xPlayer.name
         local steamp = xPlayer.identifier

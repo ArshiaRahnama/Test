@@ -76,6 +76,12 @@ RegisterNUICallback('deleteLog', function(data, cb)
 	end, data)
 end)
 
+RegisterNUICallback('togglePin', function(data, cb)
+	ESX.TriggerServerCallback('LogPanel:TogglePin', function(result)
+		cb(result)
+	end, data)
+end)
+
 -- ============================================================================
 -- کامندهای کلاینتی (میان‌بر مستقیم، جدا از کامند سروری که پرمیشن‌چک می‌کنه)
 -- ============================================================================
@@ -92,6 +98,17 @@ end, false)
 RegisterNetEvent('LogPanel:OpenBossPanel')
 AddEventHandler('LogPanel:OpenBossPanel', function()
 	TriggerServerEvent('LogPanel:OpenForJob')
+end)
+
+-- ============================================================================
+-- پاک‌کردن خودکار کیبایند F9 که تو نسخه‌ی قبلی این اسکریپت (با RegisterKeyMapping)
+-- ثبت شده بود. FiveM بایندها رو سمت کلاینت خودِ بازیکن ذخیره می‌کنه، پس فقط حذف‌کردن
+-- RegisterKeyMapping از کد کافی نیست — کسی که قبلاً وصل شده، F9 هنوز روش بایند مونده
+-- (چون کامند myjoblogs هنوز وجود داره). این خط، همون بایند قدیمی رو خودکار پاک می‌کنه.
+Citizen.CreateThread(function()
+	Citizen.Wait(1000) -- یه‌کم صبر تا سیستم کیبایند بازی کامل لود بشه
+	ExecuteCommand('unbind keyboard f9 myjoblogs')
+	ExecuteCommand('unbind keyboard F9 myjoblogs')
 end)
 
 -- بستن با ESC یا کلید بک‌اسپیس از داخل خودِ NUI مدیریت می‌شه (js)، ولی یه فال‌بک هم داریم:

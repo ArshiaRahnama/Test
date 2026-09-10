@@ -291,6 +291,13 @@ end)
 RegisterNetEvent('lc-inventory:stashWithdraw')
 AddEventHandler('lc-inventory:stashWithdraw', function(stashId, itemType, name, count, serial)
     local source = source
+    -- TEMP DIAGNOSTIC (chasing the same weapon-duplication report as
+    -- addWeapon's diagnostic in server/custom/framework/esx.lua) - if
+    -- one user action (one click on withdraw) fires this more than
+    -- once, that's the duplication source, upstream of addWeapon
+    -- entirely. Remove once the cause is confirmed.
+    print(('[lc-inventory] stashWithdraw called: source=%s stashId=%s itemType=%s name=%s count=%s serial=%s'):format(
+        tostring(source), tostring(stashId), tostring(itemType), tostring(name), tostring(count), tostring(serial)))
     if type(stashId) ~= 'string' or type(name) ~= 'string' then return end
 
     local xPlayer = GetPlayerFromId(source)

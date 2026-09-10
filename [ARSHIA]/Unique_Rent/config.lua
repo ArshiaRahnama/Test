@@ -1,8 +1,9 @@
 Config = {}
 
 Config.Options = {
-    ['time'] = false,
-    ['time_rent'] = 3600,
+    -- Turned on by default now: rentals are tracked with a countdown timer,
+    -- which is what actually makes the duration tiers below mean anything.
+    ['time'] = true,
     ['delete_vehicle'] = false,
     ['delete_time'] = 60,
 
@@ -12,6 +13,17 @@ Config.Options = {
     ['return_success'] = 'Successfully returned the vehicle, thank you!',
     ['return_error'] = 'You need to be in the vehicle you rented.',
     ['cant_rent'] = 'You already rented a vehicle',
+}
+
+-- Rental duration tiers, picked in the UI at rent time. `multiplier` is
+-- applied to each vehicle's base `price` in Config.Vehicles below (that
+-- base price represents the 1.0x / standard tier, i.e. the "1 Hour" one).
+-- This must stay a plain sequential array ([1], [2], [3], ...) since the
+-- order here is the order the tiers are shown in the UI.
+Config.Durations = {
+    [1] = { seconds = 1800, label = '30 Minutes', multiplier = 0.65 },
+    [2] = { seconds = 3600, label = '1 Hour',      multiplier = 1.0  },
+    [3] = { seconds = 7200, label = '2 Hours',     multiplier = 1.8  },
 }
 
 Config.Locations = {
@@ -54,22 +66,22 @@ Config.Locations = {
 
 }
 
+-- `price` below is the BASE price, for the 1 Hour / 1.0x duration tier.
+-- The actual charge is base price × the chosen duration's multiplier
+-- (see Config.Durations above), recomputed server-side.
 Config.Vehicles = {
     [1] = {
         model = 'neon',
         label = 'Neon',
-        description = 'For 60min',
+        description = 'Sleek city cruiser',
         image_name = 'neon',
-
-
-
         price = 7000,
         type = 'car'
     },
     [2] = {
         model = 'bf400',
         label = 'Bf400',
-        description = 'For 60min',
+        description = 'Off-road dirt bike',
         image_name = 'bf400',
         price = 5000,
         type = 'bike'
@@ -77,10 +89,9 @@ Config.Vehicles = {
     [3] = {
         model = 'bmx',
         label = 'BMX',
-        description = 'For 60min',
+        description = 'Eco-friendly pedal power',
         image_name = 'bmx',
         price = 5000,
         type = 'bicycle'
     },
 }
-

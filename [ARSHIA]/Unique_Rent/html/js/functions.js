@@ -10,6 +10,10 @@ const TYPE_ICONS = {
   bicycle: 'bi-bicycle'
 };
 
+var currentDurations = [];   // duration tiers sent from Lua on menu open
+var selectedDuration = null; // the tier currently highlighted in the UI
+var pendingRental = null;    // vehicle + duration waiting on the confirm modal
+
 function typeIcon(type) {
   return TYPE_ICONS[type] || 'bi-question-circle';
 }
@@ -19,13 +23,30 @@ function typeLabel(type) {
   return type.charAt(0).toUpperCase() + type.slice(1);
 }
 
-function main_menu(vehicles) {
+function formatPrice(amount) {
+  return Math.round(amount).toLocaleString('en-US') + Config.Currency;
+}
+
+// Applies the currently-selected duration's multiplier to a vehicle's base
+// price. This is DISPLAY ONLY -- the real charge is always recomputed
+// server-side from the model + duration id, never trusted from here.
+function priceFor(basePrice) {
+  var multiplier = selectedDuration ? selectedDuration.multiplier : 1;
+  return Math.round(basePrice * multiplier);
+}
+
+function main_menu(vehicles, durations) {
   $(".ui").fadeIn();
   $(".container-timer").css('display', 'none');
+  hideConfirm();
+
+  currentDurations = durations || [];
+  selectedDuration = currentDurations.find(function (d) { return d.multiplier === 1; }) || currentDurations[0] || null;
 
   if (!vehicles || vehicles.length === 0) {
     $(".vehicles").css('display', 'none').html('');
     $("#filters").css('display', 'none').html('');
+    $("#duration-bar").css('display', 'none').html('');
     $("#panel-empty").css('display', 'flex');
     return;
   }
@@ -33,6 +54,8 @@ function main_menu(vehicles) {
   $("#panel-empty").css('display', 'none');
   $(".vehicles").css('display', 'flex');
   $(".vehicles").html('');
+
+  renderDurationBar();
 
   // Build the filter tabs from whichever vehicle types are actually present.
   var types = [];
@@ -52,7 +75,7 @@ function main_menu(vehicles) {
 
   $.each(vehicles, function (index, vehicle) {
     $(".vehicles").append(`
-    <div class="vehicle" id="vehicle-${vehicle.id}" data-type="${vehicle.type}" style="animation-delay:${Math.min(index * 0.03, 0.3)}s">
+    <div class="vehicle" id="vehicle-${vehicle.id}" data-type="${vehicle.type}" data-base-price="${vehicle.price}" style="animation-delay:${Math.min(index * 0.03, 0.3)}s">
       <div class="header">
           <div class="header-title">${vehicle.label}</div>
           <div class="header-description">${vehicle.description}</div>
@@ -63,18 +86,13 @@ function main_menu(vehicles) {
       </div>
       <div class="footer">
           <div class="footer-type"><i class="${typeIcon(vehicle.type)}"></i> ${vehicle.type}</div>
-          <div class="footer-price">${vehicle.price}${Config.Currency}</div>
+          <div class="footer-price" id="price-${vehicle.id}">${formatPrice(priceFor(vehicle.price))}</div>
       </div>
     </div>
     `);
 
     $(`#vehicle-${vehicle.id}`).click(function () {
-      $.post('https://Unique_Rent/rent', JSON.stringify({
-        model: vehicle.model,
-        price: vehicle.price,
-        location: vehicle.location
-      }));
-      closeMenu();
+      openConfirm(vehicle);
     });
   });
 
@@ -95,6 +113,59 @@ function main_menu(vehicles) {
       });
     }
   });
+}
+
+function renderDurationBar() {
+  if (!currentDurations || currentDurations.length <= 1) {
+    $("#duration-bar").css('display', 'none').html('');
+    return;
+  }
+
+  var optionsHtml = '';
+  $.each(currentDurations, function (index, duration) {
+    var active = (selectedDuration && duration.id === selectedDuration.id) ? ' is-active' : '';
+    optionsHtml += `<button class="duration-tab${active}" data-id="${duration.id}">${duration.label}</button>`;
+  });
+
+  $("#duration-bar").html(`
+    <div class="duration-label"><i class="bi-clock-fill"></i> Duration</div>
+    <div class="duration-options">${optionsHtml}</div>
+  `).css('display', 'flex');
+
+  $(".duration-tab").off('click').on('click', function () {
+    var id = parseInt($(this).data('id'), 10);
+    selectedDuration = currentDurations.find(function (d) { return d.id === id; }) || selectedDuration;
+
+    $(".duration-tab").removeClass('is-active');
+    $(this).addClass('is-active');
+
+    // Live-update every visible vehicle card's price for the new duration.
+    $(".vehicle").each(function () {
+      var basePrice = parseFloat($(this).data('base-price'));
+      var vehicleId = $(this).attr('id').replace('vehicle-', '');
+      $(`#price-${vehicleId}`).html(formatPrice(priceFor(basePrice)));
+    });
+  });
+}
+
+function openConfirm(vehicle) {
+  pendingRental = { vehicle: vehicle, duration: selectedDuration };
+
+  $("#confirm-img").attr('src', `assets/${vehicle.image}.png`).attr('alt', vehicle.model);
+  $("#confirm-title").html(vehicle.label);
+  $("#confirm-duration").html(selectedDuration ? selectedDuration.label : '—');
+  $("#confirm-price").html(formatPrice(priceFor(vehicle.price)));
+
+  $("#modal-backdrop").css('display', 'flex');
+}
+
+function hideConfirm() {
+  pendingRental = null;
+  $("#modal-backdrop").css('display', 'none');
+}
+
+function confirmModalOpen() {
+  return $("#modal-backdrop").css('display') !== 'none';
 }
 
 function setRingProgress(fraction) {
@@ -149,5 +220,6 @@ function hide_timer_menu() {
 }
 
 function closeMenu() {
+  hideConfirm();
   $.post("https://Unique_Rent/CloseUI", JSON.stringify({}));
 }

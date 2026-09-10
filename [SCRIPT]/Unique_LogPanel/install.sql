@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS `unique_logpanel` (
   `source`      INT           DEFAULT NULL,
   `identifier`  VARCHAR(64)   DEFAULT NULL,
   `player_name` VARCHAR(191)  DEFAULT NULL,
+  `pinned`      TINYINT(1)    NOT NULL DEFAULT 0,
   `created_at`  DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `idx_category`    (`category`),
@@ -18,8 +19,14 @@ CREATE TABLE IF NOT EXISTS `unique_logpanel` (
   KEY `idx_identifier`  (`identifier`),
   KEY `idx_created_at`  (`created_at`),
   KEY `idx_player_name` (`player_name`),
-  KEY `idx_job_created` (`job`, `created_at`)
+  KEY `idx_job_created` (`job`, `created_at`),
+  KEY `idx_pinned`      (`pinned`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- اگه از نسخه‌ی قبلی آپدیت می‌کنی و جدول از قبل ساخته شده، این خط ستون pinned رو
+-- بدون از دست رفتن دیتا اضافه می‌کنه (اگه ستون از قبل باشه، فقط خطای بی‌ضرر می‌ده):
+ALTER TABLE `unique_logpanel` ADD COLUMN `pinned` TINYINT(1) NOT NULL DEFAULT 0 AFTER `player_name`;
+ALTER TABLE `unique_logpanel` ADD INDEX `idx_pinned` (`pinned`);
 
 -- توجه: پاک‌سازی خودکار لاگ‌های قدیمی از این به بعد داخل خودِ اسکریپت (server/main.lua)
 -- انجام می‌شه، با Config.RetentionDays. اگه ترجیح می‌دی این کار رو دیتابیس انجام بده

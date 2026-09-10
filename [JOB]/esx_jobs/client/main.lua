@@ -788,6 +788,24 @@ local function SpawnUniformEditorPed(job, jobData)
 		end
 		if not HasModelLoaded(model) then return end
 
+		-- snap to actual ground level -- a manually-reported or guessed Z
+		-- can easily end up slightly off and leave the ped floating/sunken.
+		-- Request collision first, otherwise GetGroundZFor_3dCoord can just
+		-- silently fail if this spot isn't streamed in yet.
+		RequestCollisionAtCoord(padPos.x, padPos.y, padPos.z)
+		local groundTimeout = 0
+		local foundGround, groundZ = false, padPos.z
+		while not foundGround and groundTimeout < 50 do
+			foundGround, groundZ = GetGroundZFor_3dCoord(padPos.x, padPos.y, padPos.z + 5.0, false)
+			if not foundGround then
+				Citizen.Wait(10)
+				groundTimeout = groundTimeout + 1
+			end
+		end
+		if foundGround then
+			padPos.z = groundZ
+		end
+
 		local ped = CreatePed(4, model, padPos.x, padPos.y, padPos.z, padHeading, false, false)
 		SetEntityInvincible(ped, true)
 		SetBlockingOfNonTemporaryEvents(ped, true)
@@ -828,4 +846,15 @@ Citizen.CreateThread(function()
 	for job, jobData in pairs(Config.Jobs) do
 		SpawnUniformEditorPed(job, jobData)
 	end
+
+	-- miner isn't part of Config.Jobs (it's a standalone system, not the
+	-- Zone-based cloakroom setup), but it has its own locker room at
+	-- Config.Miner.ClackLoc -- reuse the same pad function there too
+	SpawnUniformEditorPed('miner', {
+		Zones = {
+			CloakRoom = {
+				Pos = {x = Config.Miner.ClackLoc.x, y = Config.Miner.ClackLoc.y, z = Config.Miner.ClackLoc.z}
+			}
+		}
+	})
 end)

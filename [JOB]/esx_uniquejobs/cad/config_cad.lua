@@ -1,5 +1,3 @@
-
-
 DuckMdt = {}
 
 DuckMdt.Command = 'cad'
@@ -16,6 +14,19 @@ DuckMdt.MinRank = 1
 -- training material/SOPs, one line per entry. Rendered as-is (basic
 -- HTML like <b> works, no markdown) in the "Amozesh" tab of /cad.
 DuckMdt.TrainingMaterial = {
+    '<b>=== RAHNAMA-YE KHODE CAD (Tab be Tab) ===</b> (hameh)',
+    '',
+    '1) Safhe-ye Asli (Main Panel) -- khosh-amadgoo-ye shakhsi + saat-o-tarikh-e zende, 3 ta kart-e amar (tedad-e afrad-e tahte-taghib, tedad-e mashin-haye tahte-taghib, rotbe-ye shoma), va dokme-haye mianbor baraye jostoju-ye sari ya sabt-e BOLO/Booking.',
+    '2) List-e Shahrvandan -- jostoju bar asas-e esm; click rooye har radif profile-e kamel-e shakhs ro baz mikone: aks, vaziat (Standard/Wanted/Arrested/In Prison/Special), sabeghe-ye kamel, va madarek-e sabt-shode.',
+    '3) List-e Vasael-e Naghlieh -- hamun jostoju vali bar asas-e pelak; profile-e mashin shamel-e saheb, model, vaziat, va sabeghe.',
+    '4) Amozesh -- hamin safhe-i ke alan dari mikhouni, rahnama-ye kamel-e hame-ye ghesmat-ha va menu-haye takhassosi.',
+    '5) BOLO -- (faghat police/sheriff/mt) sabt-e hoshdar baraye yek pelak-e khas ke khodkar be hame-ye afsaran-e online ettela mide.',
+    '6) Booking -- (faghat police/sheriff/mt) sabt-e sari-e bazdasht: etteham + jarime ya zaman-e zendan, bedoon-e niaz be neveshtan-e dasti.',
+    '7) Records -- arshiv-e kamel-e zabti-ha va parvande-haye baste-shode baraye moroor-e sabegheh.',
+    '8) Leaderboard -- rank-bandi-e afsaran bar asas-e amalkard (tedad-e dastgiri, parvande-haye hal-shode) -- engize-ye khoobi baraye reghabat-e salem!',
+    '9) Internal Affairs -- (faghat afsaran-e DOJ/Law-e majaz) barresi-ye amalkard-e hamkaran va sabt-e gozaresh dar surat-e takhalof.',
+    '10) Baste Shodan -- rooye "Exit" click konid ya faghat Esc ro bezanid; age yek panjare/modal baz bashe Esc aval hamun ro mibande, bar-e badi kol-e CAD ro.',
+    '',
     '<b>=== AMOZESH-E MENU /doj ===</b> (marshal, judge, cia, cid, fbi, doa)',
     '',
     '1) Sabeghe-ye Kayfari (Background Check) -- ID ya esm vared konid, tamam-e dastgiri/etteham/jarime-ye pardakht-nashode-ye an shakhs miad.',

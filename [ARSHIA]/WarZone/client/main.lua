@@ -48,6 +48,7 @@ local Uniforms = {
 ------------------------------------ 
 RegisterNetEvent("AWZ:StartMatch")
 AddEventHandler("AWZ:StartMatch",function(Blood , DistanceZone , WzCoord , TimeMoveZone , Diff , Map )
+	print('[WZ DEBUG][client] AWZ:StartMatch RECEIVED. Blood='..tostring(Blood)..' Distance='..tostring(DistanceZone)..' Time='..tostring(TimeMoveZone)..' Map='..tostring(Map))
 	armoritem , bandageitem = 2 , 2
 	AllUav = 1 
 	---- Number ----
@@ -119,6 +120,7 @@ AddEventHandler("AWZ:StartMatch",function(Blood , DistanceZone , WzCoord , TimeM
 	SetTimeout(5* 1000, function()
 		SendNUIMessage({message	= "music",Name = 'joinbattle'}) 
 	end)
+	print('[WZ DEBUG][client] About to call WarZone(true), InWarzone='..tostring(InWarzone))
 	WarZone(true)
     Wait(Time * 60000)
     ZoneRuning()
@@ -151,6 +153,8 @@ AddEventHandler("AWZ:MyTeam",function( Myteam , Count , id , MyName  )
 end) 
 RegisterNetEvent("AWZ:ExitMision")
 AddEventHandler("AWZ:ExitMision",function()
+	print('[WZ DEBUG][client] AWZ:ExitMision FIRED. InWarzone='..tostring(InWarzone)..' inmatch='..tostring(inmatch)..' inLobby='..tostring(inLobby)..' ingulag='..tostring(ingulag)..' InSpectator='..tostring(InSpectator))
+	print('[WZ DEBUG][client] traceback: '..(debug and debug.traceback and debug.traceback() or 'n/a'))
 	-- Fix/feature: if this player was spectating (eliminated but their
 	-- squad was still alive), make sure the free-cam + invisibility state
 	-- gets torn down before the normal exit cleanup runs below.
@@ -371,6 +375,7 @@ end)
 RegisterNUICallback('start', function(data, cb)
 	SetNuiFocus(false, false)
 	ESX.TriggerServerCallback('AWZ:SetPlayerInWarZone', function(CanJoin) 
+		print('[WZ DEBUG][client] PLAY clicked -> AWZ:SetPlayerInWarZone returned CanJoin='..tostring(CanJoin))
 		if CanJoin then 
 			JoinLobbey()
 		end 
@@ -411,6 +416,7 @@ end)
 -----------------------------------
 function JoinLobbey()
 	CreateThread(function()
+		print('[WZ DEBUG][client] JoinLobbey() started')
 		BlackSceern(6000)
 		Wait(1500)
 		insertToJoinLobbey()
@@ -418,6 +424,7 @@ function JoinLobbey()
 		InWarzone = true 
 		inmatch = false 
 		inLobby = true 
+		print('[WZ DEBUG][client] JoinLobbey() InWarzone set to true')
 		SaveWeapons()
 		ESX.UI.Menu.CloseAll()
 		ClearPedBloodDamage(PlayerPedId())
@@ -775,7 +782,11 @@ end
 local dropcheack = false 
 function WarZone(loadHud)
 	CreateThread(function()
-    	if not InWarzone then   TriggerEvent("AWZ:ExitMision") return end 
+		print('[WZ DEBUG][client] WarZone() thread started. InWarzone='..tostring(InWarzone)..' inmatch='..tostring(inmatch)..' inLobby='..tostring(inLobby))
+    	if not InWarzone then   
+    		print('[WZ DEBUG][client] WarZone() ABORTING because InWarzone is false -- triggering ExitMision locally')
+    		TriggerEvent("AWZ:ExitMision") return 
+    	end 
 		armoritem , bandageitem = 2 , 2
 		MyCash = 0
 		SendNUIMessage({message	= "cash",MyCash =  MyCash ,}) 

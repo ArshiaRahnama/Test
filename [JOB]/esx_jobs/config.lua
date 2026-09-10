@@ -249,7 +249,8 @@ Config.UniformConfigKey = {
 	fueler      = 'Uniforms_Fueler',
 	lumberjack  = 'Uniforms_Lumberjack',
 	slaughterer = 'Uniforms_Slaughterer',
-	tailor      = 'Uniforms_Tailor'
+	tailor      = 'Uniforms_Tailor',
+	miner       = 'Uniforms_Miner'
 }
 
 -- Optional per-job pad position override. If a job isn't listed here, the
@@ -354,3 +355,8 @@ Config.Miner = {
         ['mining'] = 'Mine',
     }
 }
+
+-- Alias so the miner job uses the same admin uniform-editor system (pad +
+-- history + server-driven work_wear) as fueler/lumberjack/slaughterer/tailor.
+-- Same table reference as Config.Miner.Uniforms, so both stay in sync.
+Config.Uniforms_Miner = Config.Miner.Uniforms

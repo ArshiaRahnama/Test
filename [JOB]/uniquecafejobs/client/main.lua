@@ -182,11 +182,14 @@ end)
 
 local markerRadius = 2.0
 local canSpawn = true
+local spawnVehGen = 0
 
 function SpawnVeh()
+    spawnVehGen = spawnVehGen + 1
+    local myGen = spawnVehGen
 
     Citizen.Wait(2000)
-    while true do
+    while myGen == spawnVehGen do
         Citizen.Wait(0)
         local myCafe = GetCafeForJob(PlayerData.job.name)
         if not myCafe then return end

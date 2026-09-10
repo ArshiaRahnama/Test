@@ -33,6 +33,7 @@ Config.RetentionDays = 30
 -- امکانات اضافه
 Config.EnableExport      = true     -- خروجی CSV (ادمین کامل، باس فقط شغل خودش)
 Config.EnableDelete      = true     -- حذف تک‌لاگ توسط ادمین (با ثبت رخداد حذف)
+Config.EnablePinning     = true     -- پین‌کردن لاگ‌های مهم توسط ادمین (همیشه بالای لیست)
 Config.EnableLiveUpdates = true     -- اطلاع‌رسانی زنده‌ی لاگ جدید وقتی پنل بازه
 Config.LiveUpdateIntervalMs = 4000  -- هر چند وقت یه‌بار چک کنه لاگ جدید اومده یا نه
 Config.MaxExportRows     = 5000     -- سقف تعداد ردیف قابل‌خروجی در یک درخواست
@@ -159,6 +160,18 @@ local function buildWhere(source, filters, admin, bossJob)
 		params['@dateTo'] = tostring(filters.dateTo) .. ' 23:59:59'
 	end
 
+	-- فیلتر دقیق پلیر (drill-down از کلیک روی اسم پلیر تو UI) — بر خلاف "search" که فازی‌ه،
+	-- این دقیقاً همون identifier رو می‌خواد
+	if filters.identifierExact and tostring(filters.identifierExact) ~= '' then
+		where[#where + 1] = 'identifier = @identifierExact'
+		params['@identifierExact'] = tostring(filters.identifierExact)
+	end
+
+	-- فقط لاگ‌های پین‌شده
+	if filters.pinnedOnly then
+		where[#where + 1] = 'pinned = 1'
+	end
+
 	local whereClause = (#where > 0) and ('WHERE ' .. table.concat(where, ' AND ')) or ''
 	return whereClause, params
 end
@@ -207,8 +220,8 @@ ESX.RegisterServerCallback('LogPanel:GetLogs', function(source, cb, filters)
 		listParams['@offset'] = offset
 
 		MySQL.Async.fetchAll(
-			'SELECT id, category, job, title, message, source, identifier, player_name, created_at FROM unique_logpanel '
-			.. whereClause .. ' ORDER BY ' .. sortCol .. ' ' .. sortDir .. ' LIMIT @limit OFFSET @offset',
+			'SELECT id, category, job, title, message, source, identifier, player_name, pinned, created_at FROM unique_logpanel '
+			.. whereClause .. ' ORDER BY pinned DESC, ' .. sortCol .. ' ' .. sortDir .. ' LIMIT @limit OFFSET @offset',
 			listParams,
 			function(result)
 				-- ثبت این سشن به‌عنوان «پنل باز» برای لایو‌آپدیت
@@ -226,6 +239,7 @@ ESX.RegisterServerCallback('LogPanel:GetLogs', function(source, cb, filters)
 					job         = bossJob,
 					canExport   = Config.EnableExport,
 					canDelete   = Config.EnableDelete and admin,
+					canPin      = Config.EnablePinning and admin,
 				})
 			end
 		)
@@ -254,6 +268,7 @@ ESX.RegisterServerCallback('LogPanel:GetMeta', function(source, cb)
 		defaultPerPage = Config.LogsPerPage,
 		canExport      = Config.EnableExport,
 		canDelete      = Config.EnableDelete and admin,
+		canPin         = Config.EnablePinning and admin,
 		retentionDays  = Config.RetentionDays,
 	}
 
@@ -302,6 +317,17 @@ ESX.RegisterServerCallback('LogPanel:GetStats', function(source, cb, filters)
 	local whereClause, params = buildWhere(source, filters or {}, admin, bossJob)
 	local andOr = (whereClause == '') and 'WHERE' or (whereClause .. ' AND')
 
+	-- برای نمودار روند، فیلتر تاریخِ کاربر رو نادیده می‌گیریم و همیشه ۱۴ روز اخیر رو نشون می‌دیم
+	-- (ولی دسته/شغل/سرچ رو حفظ می‌کنیم)، چون هدف این نموداره که "روند اخیر" رو مستقل از بازه‌ی
+	-- انتخابی کاربر نشون بده.
+	local trendFilters = {}
+	for k, v in pairs(filters or {}) do trendFilters[k] = v end
+	trendFilters.dateFrom = nil
+	trendFilters.dateTo = nil
+	local trendWhere, trendParams = buildWhere(source, trendFilters, admin, bossJob)
+	local trendAndOr = (trendWhere == '') and 'WHERE' or (trendWhere .. ' AND')
+	trendParams['@trendDays'] = 13
+
 	MySQL.Async.fetchScalar('SELECT COUNT(*) FROM unique_logpanel ' .. whereClause, params, function(total)
 		MySQL.Async.fetchScalar(
 			'SELECT COUNT(*) FROM unique_logpanel ' .. andOr .. ' created_at >= CURDATE()',
@@ -309,26 +335,32 @@ ESX.RegisterServerCallback('LogPanel:GetStats', function(source, cb, filters)
 				MySQL.Async.fetchAll(
 					'SELECT category, COUNT(*) as cnt FROM unique_logpanel ' .. whereClause ..
 					' GROUP BY category ORDER BY cnt DESC LIMIT 6', params, function(topCats)
-						local function finish(topJobs)
-							cb({
-								total       = total or 0,
-								today       = today or 0,
-								topCategories = topCats or {},
-								topJobs     = topJobs or {},
-							})
-						end
-						if admin then
-							local jobFilterPart = "job IS NOT NULL AND job <> ''"
-							local jobWhere = (whereClause == '')
-								and ('WHERE ' .. jobFilterPart)
-								or (whereClause .. ' AND ' .. jobFilterPart)
-							MySQL.Async.fetchAll(
-								'SELECT job, COUNT(*) as cnt FROM unique_logpanel ' .. jobWhere ..
-								' GROUP BY job ORDER BY cnt DESC LIMIT 6',
-								params, finish)
-						else
-							finish({})
-						end
+						MySQL.Async.fetchAll(
+							"SELECT DATE(created_at) as d, COUNT(*) as cnt FROM unique_logpanel " .. trendAndOr ..
+							' created_at >= CURDATE() - INTERVAL @trendDays DAY GROUP BY DATE(created_at) ORDER BY d ASC',
+							trendParams, function(dailyRows)
+								local function finish(topJobs)
+									cb({
+										total       = total or 0,
+										today       = today or 0,
+										topCategories = topCats or {},
+										topJobs     = topJobs or {},
+										dailyActivity = dailyRows or {},
+									})
+								end
+								if admin then
+									local jobFilterPart = "job IS NOT NULL AND job <> ''"
+									local jobWhere = (whereClause == '')
+										and ('WHERE ' .. jobFilterPart)
+										or (whereClause .. ' AND ' .. jobFilterPart)
+									MySQL.Async.fetchAll(
+										'SELECT job, COUNT(*) as cnt FROM unique_logpanel ' .. jobWhere ..
+										' GROUP BY job ORDER BY cnt DESC LIMIT 6',
+										params, finish)
+								else
+									finish({})
+								end
+							end)
 					end)
 			end)
 	end)
@@ -365,19 +397,45 @@ ESX.RegisterServerCallback('LogPanel:ExportLogs', function(source, cb, filters)
 	params['@limit'] = Config.MaxExportRows
 
 	MySQL.Async.fetchAll(
-		'SELECT id, category, job, title, message, source, identifier, player_name, created_at FROM unique_logpanel '
-		.. whereClause .. ' ORDER BY id DESC LIMIT @limit', params, function(rows)
+		'SELECT id, category, job, title, message, source, identifier, player_name, pinned, created_at FROM unique_logpanel '
+		.. whereClause .. ' ORDER BY pinned DESC, id DESC LIMIT @limit', params, function(rows)
 			rows = rows or {}
-			local lines = { 'id,created_at,category,job,player_name,identifier,source,title,message' }
+			local lines = { 'id,created_at,category,job,player_name,identifier,source,title,message,pinned' }
 			for _, r in ipairs(rows) do
 				lines[#lines + 1] = table.concat({
 					csvEscape(r.id), csvEscape(formatDateValue(r.created_at)), csvEscape(r.category), csvEscape(r.job),
 					csvEscape(r.player_name), csvEscape(r.identifier), csvEscape(r.source),
-					csvEscape(r.title), csvEscape((r.message or ''):gsub('\n', ' '))
+					csvEscape(r.title), csvEscape((r.message or ''):gsub('\n', ' ')),
+					csvEscape((tonumber(r.pinned) == 1) and 'yes' or 'no')
 				}, ',')
 			end
 			cb({ csv = table.concat(lines, '\n'), count = #rows })
 		end)
+end)
+
+-- ============================================================================
+-- پین/آن‌پین کردن یه لاگ (فقط ادمین) — لاگ‌های پین‌شده همیشه بالای لیست می‌مونن
+-- ============================================================================
+ESX.RegisterServerCallback('LogPanel:TogglePin', function(source, cb, data)
+	if not Config.EnablePinning then cb({ error = 'disabled' }) return end
+	if not isAdmin(source) then cb({ error = 'no_access' }) return end
+	if not MySQL or not MySQL.Async then cb({ error = 'no_database' }) return end
+
+	local id = tonumber(data and data.id)
+	if not id then cb({ error = 'invalid_id' }) return end
+
+	MySQL.Async.fetchScalar('SELECT pinned FROM unique_logpanel WHERE id = @id', { ['@id'] = id }, function(current)
+		if current == nil then cb({ error = 'not_found' }) return end
+		local newValue = (tonumber(current) == 1) and 0 or 1
+
+		MySQL.Async.execute('UPDATE unique_logpanel SET pinned = @pinned WHERE id = @id', { ['@pinned'] = newValue, ['@id'] = id }, function(affected)
+			if affected and affected > 0 then
+				cb({ success = true, pinned = (newValue == 1) })
+			else
+				cb({ error = 'update_failed' })
+			end
+		end)
+	end)
 end)
 
 -- ============================================================================

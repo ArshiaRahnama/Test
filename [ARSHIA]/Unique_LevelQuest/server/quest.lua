@@ -165,6 +165,47 @@ function GenerateQuests(xPlayer, identifier, existingQuests)
     })
 end
 
+-- BUG FIX: the Quests tab only ever re-rolled Offered on first join or
+-- a new calendar day, keyed by whatever job pool applied at THAT
+-- moment (playerquests["Job"], read by poolFor() above). Changing jobs
+-- mid-day (e.g. nojob -> a Config.JobQuests job like cid, or one job
+-- to another) never re-ran GenerateQuests, so the tab kept showing
+-- the OLD job's (or the default drug/mining pool's) offered quests
+-- for the rest of the day, completely unrelated to the job actually
+-- being worked. essentialmode's xPlayer.setJob fires this with the
+-- real player source passed explicitly (self.source, not the ambient
+-- global) — see player.lua — so it's safe to read directly here.
+AddEventHandler('esx:setJob', function(playerSource, job)
+    local xPlayer = ESX.GetPlayerFromId(playerSource)
+    if not xPlayer or not job then return end
+
+    local newJobKey = nil
+    for jobname in pairs(Config.JobQuests) do
+        if job.name == jobname or job.name == ('off' .. jobname) then
+            newJobKey = jobname
+            break
+        end
+    end
+
+    MySQL.Async.fetchAll('SELECT quests FROM quest WHERE identifier = @identifier', {
+        ['@identifier'] = xPlayer.identifier
+    }, function(result)
+        if not result[1] then return end
+        local ok, decoded = pcall(json.decode, result[1].quests)
+        if not ok or type(decoded) ~= 'table' then return end
+
+        -- decoded["Job"] is nil when the default (non-job) pool applied.
+        if decoded["Job"] == newJobKey then return end -- same pool already, nothing to do
+
+        -- Pool actually changed -- re-roll today's Offered quests for
+        -- the new one. Same reset GenerateQuests already does for a
+        -- new day; there's no sensible way to keep progress toward a
+        -- pool the player can no longer act in after switching jobs.
+        GenerateQuests(xPlayer, xPlayer.identifier)
+        TriggerClientEvent('QuestSystem:RefreshQuests', playerSource)
+    end)
+end)
+
 RegisterServerEvent("QuestSystem:AcceptQuest")
 AddEventHandler("QuestSystem:AcceptQuest", function(questId)
     local _source = source
@@ -280,8 +321,18 @@ end
 for job, quests in pairs(Config.JobQuests) do
     for id, quest in ipairs(quests) do
         RegisterServerEvent(quest.trigger)
-        AddEventHandler(quest.trigger, function()
-            local _source = source
+        -- explicitSource: most bridges TriggerEvent() this trigger from
+        -- within a real network-dispatched chain, where the ambient
+        -- global `source` is already correct on its own (kept as the
+        -- fallback below for those, and for direct TriggerServerEvent
+        -- calls from the client, like the Onduty/acceptreq triggers).
+        -- But a trigger that ultimately traces back to a RegisterCommand
+        -- (e.g. Weazel's /cam -> quest-weazel:broadcast) has NO reliable
+        -- global `source` at all -- same bug class as the Unique_Punishment
+        -- /cs command fix -- so those bridges pass the real source
+        -- explicitly instead, and it's preferred here when present.
+        AddEventHandler(quest.trigger, function(explicitSource)
+            local _source = explicitSource or source
             if onCooldown(_source, quest.trigger) then return end
 
             local xPlayer = ESX.GetPlayerFromId(_source)

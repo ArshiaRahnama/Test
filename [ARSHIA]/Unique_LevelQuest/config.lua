@@ -96,6 +96,59 @@ Config.JobQuests = {
         -- copy-paste leftovers from another job) so taxi quests never
         -- worked at all before.
     },
+
+    -- ===== Department Of Justice (added alongside the rest of
+    -- Config.TrackedJobs — see server/bridges.lua for how each of these
+    -- triggers is wired to a REAL event, same rule as everything above:
+    -- only got a second quest here if a genuine, job-exclusive action
+    -- with a reliable server-side signal actually exists on this server.
+    -- CID/Marshal/DOA don't have one beyond generic armory/vehicle-lookup
+    -- tooling shared with other jobs, so they only get Onduty for now —
+    -- tell me if you want one wired to something specific. =====
+    ["cid"] = {
+        {name = "Onduty", description = "Daryaft Salary Onduty", trigger = "quest-cid:onduty", requiredTrigger = 6, XP = 10, coin = 0.04},
+    },
+
+    ["cia"] = {
+        {name = "Onduty",         description = "Daryaft Salary Onduty", trigger = "quest-cia:onduty", requiredTrigger = 6, XP = 10, coin = 0.04},
+        -- Real esx_cia_job:requestarrest action (server/cia_main.lua),
+        -- job-gated. Bridged via esx_society:logAction, same technique
+        -- already used for ambulance's Revive quest below.
+        {name = "Arrest Suspect", description = "Arrest 5 Suspect",   trigger = "quest-cia:arrest", requiredTrigger = 5, XP = 20, coin = 0.10},
+    },
+
+    ["marshal"] = {
+        {name = "Onduty", description = "Daryaft Salary Onduty", trigger = "quest-marshal:onduty", requiredTrigger = 6, XP = 10, coin = 0.04},
+    },
+
+    ["fbi"] = {
+        {name = "Onduty",         description = "Daryaft Salary Onduty", trigger = "quest-fbi:onduty", requiredTrigger = 6, XP = 10, coin = 0.04},
+        -- Real esx_fbi_job:requestarrest action (server/fbi_main.lua), same as CIA above.
+        {name = "Arrest Suspect", description = "Arrest 5 Suspect",   trigger = "quest-fbi:arrest", requiredTrigger = 5, XP = 20, coin = 0.10},
+    },
+
+    ["judge"] = {
+        {name = "Onduty",         description = "Daryaft Salary Onduty", trigger = "quest-judge:onduty", requiredTrigger = 6, XP = 10, coin = 0.04},
+        -- Real, judge-exclusive esx_uniquejobs:dojRecordVerdict action
+        -- (server/court_docket.lua) -- the ONLY job allowed to call it
+        -- (isJudge(...) check inside that handler rejects everyone else).
+        {name = "Record Verdict", description = "Record 3 Verdict",   trigger = "quest-judge:verdict", requiredTrigger = 3, XP = 20, coin = 0.10},
+    },
+
+    ["doa"] = {
+        {name = "Onduty", description = "Daryaft Salary Onduty", trigger = "quest-doa:onduty", requiredTrigger = 6, XP = 10, coin = 0.04},
+        -- doa_main.lua is a literal copy of judge_main.lua's generic
+        -- armory/vehicle-lookup boilerplate with no DOA-exclusive action
+        -- of its own on this server, so Onduty only for now.
+    },
+
+    -- ===== Organ Services (weazel; taxi/mechanic/ambulance already above) =====
+    ["weazel"] = {
+        {name = "Onduty",   description = "Daryaft Salary Onduty", trigger = "quest-weazel:onduty",   requiredTrigger = 6, XP = 10, coin = 0.04},
+        -- Real, job-gated esx_society:logAction('weazel', 'Camera Toggled')
+        -- from server/weazel_cam_server.lua (broadcast camera on/off).
+        {name = "Broadcast", description = "Estefade Az Camera 10 Bar", trigger = "quest-weazel:broadcast", requiredTrigger = 10, XP = 15, coin = 0.06},
+    },
 }
 
 --[[ ============ NOT WIRED — no real event exists for these =========

@@ -528,11 +528,20 @@ end)
 
 RegisterServerEvent('esx_cia_job:requestarrest')
 AddEventHandler('esx_cia_job:requestarrest', function(targetid, playerheading, playerCoords,  playerlocation)
-    _source = source
+    local _source = source
+    local xPlayer = ESX.GetPlayerFromId(_source)
+    -- SECURITY FIX: had NO job check at all (unlike the identical fbi_main.lua
+    -- handler, which already gates this) -- any player, any job, could
+    -- "arrest" any other player and have it logged as a CIA action.
+    if not xPlayer or xPlayer.job.name ~= 'cia' then
+        if exports.UNIQUE_AC then
+            exports.UNIQUE_AC:BanPlayer(_source, 'Cheat Lua Executer', 'Tried esx_cia_job:requestarrest without the cia job')
+        end
+        return
+    end
     TriggerClientEvent('esx_cia_job:getarrested', targetid, playerheading, playerCoords, playerlocation)
     TriggerClientEvent('esx_cia_job:doarrested', _source)
 
-    local xPlayer = ESX.GetPlayerFromId(_source)
     local xTarget = ESX.GetPlayerFromId(targetid)
     if xPlayer and xTarget then
         TriggerEvent('esx_society:logAction', 'cia', 'Player Arrested', {
@@ -544,11 +553,18 @@ end)
 
 RegisterServerEvent('esx_cia_job:requestrelease')
 AddEventHandler('esx_cia_job:requestrelease', function(targetid, playerheading, playerCoords,  playerlocation)
-    _source = source
+    local _source = source
+    local xPlayer = ESX.GetPlayerFromId(_source)
+    -- SECURITY FIX: same missing check as requestarrest above.
+    if not xPlayer or xPlayer.job.name ~= 'cia' then
+        if exports.UNIQUE_AC then
+            exports.UNIQUE_AC:BanPlayer(_source, 'Cheat Lua Executer', 'Tried esx_cia_job:requestrelease without the cia job')
+        end
+        return
+    end
     TriggerClientEvent('esx_cia_job:getuncuffed', targetid, playerheading, playerCoords, playerlocation)
     TriggerClientEvent('esx_cia_job:douncuffing', _source)
 
-    local xPlayer = ESX.GetPlayerFromId(_source)
     local xTarget = ESX.GetPlayerFromId(targetid)
     if xPlayer and xTarget then
         TriggerEvent('esx_society:logAction', 'cia', 'Player Released', {

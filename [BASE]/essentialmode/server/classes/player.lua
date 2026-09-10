@@ -839,6 +839,24 @@ function CreatePlayer(
 		weaponName = string.upper(weaponNamex)
         local weaponLabel = ESX.GetWeaponLabel(weaponName)
 
+        -- TEMP DIAGNOSTIC (chasing a real duplication report - a
+        -- weapon ending up 2-3x in a player's loadout from a single
+        -- action, regardless of which resource actually called this).
+        -- This is the one true convergence point for every possible
+        -- caller (lc-inventory's wrapper, esx_aduty's /giveweapon,
+        -- anything else) so it's the most reliable place to see
+        -- whether this is being invoked more than once for what should
+        -- be a single action. Prints the calling resource
+        -- (GetInvokingResource-equivalent isn't available for a plain
+        -- function call, so this logs source+weapon+existing count
+        -- instead) every time. Remove once the cause is confirmed.
+        local existingCount = 0
+        for _, w in ipairs(self.loadout) do
+            if w.name == weaponName then existingCount = existingCount + 1 end
+        end
+        print(('[essentialmode] player.addWeapon called: source=%s weapon=%s ammo=%s serial=%s (already has %d of this weapon before this call)'):format(
+            tostring(self.source), tostring(weaponName), tostring(ammo), tostring(serial), existingCount))
+
         table.insert(
             self.loadout,
             {

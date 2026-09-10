@@ -112,6 +112,21 @@ html, body {
   to   { opacity: 1; transform: translateY(0); }
 }
 
+/* Same fade, but for elements centered with top:50%/left:50% +
+   transform:translate(-50%,-50%) (.tablet, .Login). A CSS animation
+   replaces the element's transform for its whole duration, so reusing the
+   plain @keyframes fadeIn above on a centered element strips its
+   -50%/-50% centering offset while the animation plays -- the box renders
+   with its top-left corner at screen-center instead of its middle, i.e.
+   it visibly sits off to the right for ~200ms before snapping to center
+   the instant the animation ends. This keyframe re-applies the same
+   translate(-50%,-50%) on every frame so the element never leaves its
+   centered position, it only fades/settles in place. */
+@keyframes fadeInCentered {
+  from { opacity: 0; transform: translate(-50%, -50%) translateY(4px); }
+  to   { opacity: 1; transform: translate(-50%, -50%); }
+}
+
 /* Soft breathing glow, used on the "online" status dot and login avatar
    ring -- purely decorative, never on anything the player has to read
    quickly. */
@@ -160,7 +175,7 @@ html, body {
     0 0 55px var(--gold-glow),
     var(--shadow-lg);
   overflow: visible;
-  animation: fadeIn 220ms var(--ease);
+  animation: fadeInCentered 220ms var(--ease);
 }
 
 .bezel-camera {
@@ -224,7 +239,7 @@ html, body {
     linear-gradient(180deg, var(--bg-panel), var(--bg-deep));
   border: 1px solid var(--border-soft);
   box-shadow: var(--shadow-lg);
-  animation: fadeIn 220ms var(--ease);
+  animation: fadeInCentered 220ms var(--ease);
 }
 
 .Login img {
@@ -453,6 +468,14 @@ html, body {
   width: 76%;
   height: auto;
   overflow-y: auto;
+  /* Explicit rather than relying on the browser auto-converting this to
+     "auto" just because overflow-y is set (that conversion is spec'd, but
+     FiveM's in-game browser is a much older, fixed Chromium/CEF build and
+     can't be assumed to apply every modern layout quirk the same way).
+     Anything that overflows horizontally -- long dashboard text, a stray
+     wide element -- must always be clipped here rather than spilling out
+     past the tablet's rounded frame onto the game world behind it. */
+  overflow-x: hidden;
   padding: 26px 30px;
   color: var(--text);
   position: absolute;
@@ -486,6 +509,133 @@ html, body {
   letter-spacing: 0.3px;
 }
 
+/* ==========================================================================
+   Main panel dashboard (greeting/clock, stat cards, quick actions)
+   ========================================================================== */
+.Dashboard_Top {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 14px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.Dashboard_Greeting {
+  font-family: var(--font);
+  font-weight: 400;
+  font-size: 14px;
+  color: var(--text-dim);
+  /* Flex items default to min-width:auto, which floors their width at
+     their unbroken content size and can push them (or a sibling) past the
+     container's edge instead of wrapping. min-width:0 lets this item
+     actually shrink/wrap within .Dashboard_Top like flex-wrap intends. */
+  min-width: 0;
+}
+
+.Dashboard_Greeting span {
+  color: var(--gold);
+  font-weight: 600;
+}
+
+.Dashboard_Clock {
+  text-align: right;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.Dashboard_Clock p:first-child {
+  font-family: var(--font);
+  font-weight: 700;
+  font-size: 20px;
+  color: var(--text);
+  letter-spacing: 1px;
+  font-variant-numeric: tabular-nums;
+}
+
+.Dashboard_Clock p:last-child {
+  font-family: var(--font);
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+
+.Dashboard_Stats {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.Dashboard_StatCard {
+  flex: 1;
+  min-width: 150px;
+  background: linear-gradient(160deg, var(--bg-card), var(--bg-panel));
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  box-shadow: var(--shadow-sm);
+  transition: var(--ease);
+}
+
+.Dashboard_StatCard:hover {
+  border-color: var(--gold-soft);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.Dashboard_StatValue {
+  font-family: var(--font);
+  font-weight: 700;
+  font-size: 26px;
+  color: var(--gold);
+}
+
+.Dashboard_StatLabel {
+  font-family: var(--font);
+  font-weight: 600;
+  font-size: 11px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 4px;
+}
+
+.Dashboard_QuickActions {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 16px 0 22px;
+}
+
+.Dashboard_QuickAction {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: var(--font);
+  font-weight: 600;
+  font-size: 12.5px;
+  padding: 10px 16px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: var(--ease);
+}
+
+.Dashboard_QuickAction:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+  background: var(--bg-hover);
+  transform: translateY(-1px);
+}
+
+.Dashboard_QuickAction:active {
+  transform: translateY(0);
+}
+
 .Main_Panel_Page_WantedPeople,
 .Main_Panel_Page_WnatedCars {
   float: left;
@@ -508,8 +658,7 @@ html, body {
   width: 92%;
   min-height: 30px;
   margin-right: 25px;
-  background: var(--glass);
-  backdrop-filter: blur(6px);
+  background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 6px;
@@ -629,8 +778,7 @@ html, body {
 .Character_Details {
   width: 60%;
   height: auto;
-  background: var(--glass);
-  backdrop-filter: blur(6px);
+  background: var(--bg-card);
   border: 1px solid var(--border-soft);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-md);
@@ -647,7 +795,10 @@ html, body {
 
 .WantedColor {
   height: 3px;
-  width: 120%;
+  /* was 120% -- the strip was 1/5 wider than its own card, so it visibly
+     poked out past the right edge of .Character_Details on every citizen
+     and vehicle profile. */
+  width: 100%;
   margin-bottom: 4px;
   box-shadow: 0 0 10px currentColor;
 }
@@ -819,8 +970,7 @@ html, body {
   width: 100%;
   height: 100%;
   overflow: auto;
-  background-color: rgba(4, 7, 13, 0.75);
-  backdrop-filter: blur(4px);
+  background-color: rgba(4, 7, 13, 0.88);
 }
 
 .modal-content {
@@ -909,6 +1059,169 @@ html, body {
 .DiscardButton:hover {
   border-color: var(--danger);
   color: var(--danger);
+}
+
+/* ==========================================================================
+   Training / Amozesh tab -- was a flat list of same-size <span> lines at
+   1.5vw (so its text size literally depended on the player's screen width,
+   too big on some resolutions and too small on others). Parsed client-side
+   in app.js into a header banner, section dividers, numbered item cards
+   and note bullets, all on fixed px sizes so it reads the same everywhere.
+   ========================================================================== */
+.Training_Header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 16px;
+  background: linear-gradient(135deg, var(--bg-panel), var(--bg-card));
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+  padding: 18px 20px;
+  margin-top: 14px;
+  box-shadow: var(--shadow-sm);
+}
+
+.Training_HeaderIcon {
+  flex-shrink: 0;
+  width: 46px;
+  height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  background: var(--bg-active);
+  border: 1px solid var(--gold-glow);
+  border-radius: 50%;
+  box-shadow: 0 0 16px var(--gold-glow);
+}
+
+.Training_HeaderTitle {
+  font-family: var(--font);
+  font-weight: 700;
+  font-size: 17px;
+  color: var(--text);
+}
+
+.Training_HeaderSub {
+  font-family: var(--font);
+  font-weight: 400;
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 3px;
+}
+
+.Training_Section {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  margin: 26px 0 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.Training_Section:first-of-type {
+  margin-top: 20px;
+}
+
+.Training_SectionIcon {
+  font-size: 15px;
+}
+
+.Training_Section p {
+  font-family: var(--font);
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--gold);
+  letter-spacing: 0.3px;
+}
+
+.Training_SectionTag {
+  font-family: var(--font);
+  font-weight: 500;
+  font-size: 11px;
+  color: var(--text-dim);
+  font-style: normal;
+}
+
+.Training_Item {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  margin-top: 8px;
+  transition: var(--ease);
+}
+
+.Training_Item:hover {
+  border-color: var(--gold-soft);
+  transform: translateX(2px);
+}
+
+.Training_ItemNumber {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font);
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--bg-deep);
+  background: var(--gold);
+  border-radius: 50%;
+}
+
+.Training_ItemTitle {
+  font-family: var(--font);
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text);
+}
+
+.Training_ItemDesc {
+  font-family: var(--font);
+  font-weight: 400;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text-dim);
+  margin-top: 3px;
+}
+
+.Training_Note {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 6px 4px;
+}
+
+.Training_NoteIcon {
+  flex-shrink: 0;
+  color: var(--gold);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.Training_Note p {
+  font-family: var(--font);
+  font-weight: 400;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-dim);
+}
+
+.Training_Plain {
+  font-family: var(--font);
+  font-weight: 400;
+  font-size: 13px;
+  color: var(--text-dim);
+  margin-top: 6px;
 }
 
 /* ==========================================================================

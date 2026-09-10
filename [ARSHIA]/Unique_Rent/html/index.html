@@ -27,6 +27,8 @@
           <div class="panel-rule"></div>
         </div>
 
+        <div class="duration-bar" id="duration-bar" style="display: none;"></div>
+
         <div class="filters" id="filters" style="display: none;"></div>
 
         <div class="vehicles" style="display: none;"></div>
@@ -37,6 +39,31 @@
         </div>
 
         <div class="panel-credit">Arshia &nbsp;·&nbsp; arshiahub.ir</div>
+      </div>
+
+      <div class="modal-backdrop" id="modal-backdrop" style="display: none;">
+        <div class="confirm-modal">
+          <div class="confirm-image">
+            <img id="confirm-img" src="" alt="">
+          </div>
+          <div class="confirm-title" id="confirm-title">Vehicle</div>
+
+          <div class="confirm-row">
+            <span class="confirm-label">Duration</span>
+            <span class="confirm-value" id="confirm-duration">—</span>
+          </div>
+          <div class="confirm-row">
+            <span class="confirm-label">Total price</span>
+            <span class="confirm-value confirm-price" id="confirm-price">—</span>
+          </div>
+
+          <div class="confirm-note">The amount is deducted immediately on confirmation.</div>
+
+          <div class="confirm-actions">
+            <button class="btn-secondary" id="confirm-cancel">Cancel</button>
+            <button class="btn-primary" id="confirm-pay"><i class="bi-key-fill"></i> Confirm &amp; Pay</button>
+          </div>
+        </div>
       </div>
 
       <div class="container-timer" style="display: none;">

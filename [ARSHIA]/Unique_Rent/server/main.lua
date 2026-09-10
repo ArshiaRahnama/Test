@@ -1,41 +1,50 @@
 ESX = nil
 TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
 
--- SECURITY FIX: `amount` was accepted verbatim from the client with no
--- check that it actually matches the real price of the model they rented --
--- the server now recomputes the price itself from Config.Vehicles by
--- model, so the client-sent amount can no longer be lowered (or the pay
--- event fired standalone with an arbitrary amount).
-local function getConfigRentPrice(model)
+-- SECURITY: price is never trusted from the client. It's always
+-- recomputed here from Config.Vehicles (base price for the model) ×
+-- Config.Durations (multiplier for the chosen duration tier's id), so
+-- the client can't lower it by sending an arbitrary amount, model, or
+-- duration id.
+local function getConfigRentQuote(model, durationId)
     if type(model) ~= "string" then return nil end
+
+    local vehicleCfg = nil
     for _, veh in pairs(Config.Vehicles) do
         if veh.model == model then
-            return veh.price
+            vehicleCfg = veh
+            break
         end
     end
-    return nil
+    if not vehicleCfg then return nil end
+
+    local durationCfg = Config.Durations[tonumber(durationId)]
+    if not durationCfg then return nil end
+
+    local price = math.floor((vehicleCfg.price * durationCfg.multiplier) + 0.5)
+    return { price = price, seconds = durationCfg.seconds, label = durationCfg.label }
 end
 
 RegisterServerEvent("unique_rent:pay")
-AddEventHandler("unique_rent:pay", function(amount, model)
+AddEventHandler("unique_rent:pay", function(model, durationId)
     local _source = source
     local xPlayer = ESX.GetPlayerFromId(_source)
     if not xPlayer then return end
 
-    local realPrice = getConfigRentPrice(model)
-    if not realPrice then
+    local quote = getConfigRentQuote(model, durationId)
+    if not quote then
         return
     end
 
-    if xPlayer.canAfford(realPrice) then
-        xPlayer.payAny(realPrice)
-        TriggerClientEvent("esx:showNotification", source, "You paid ~g~" .. realPrice .. "~w~$ to rent the vehicle.")
+    if xPlayer.canAfford(quote.price) then
+        xPlayer.payAny(quote.price)
+        TriggerClientEvent("esx:showNotification", source, "You paid ~g~" .. quote.price .. "~w~$ to rent the vehicle.")
     else
         TriggerClientEvent("esx:showNotification", source, "You don't have enough money.")
     end
 end)
 
-ESX.RegisterServerCallback("unique_rent:check", function(source, cb, amount, model)
+ESX.RegisterServerCallback("unique_rent:check", function(source, cb, model, durationId)
     local _source = source
     local xPlayer = ESX.GetPlayerFromId(_source)
     if not xPlayer then cb(false) return end
@@ -43,14 +52,14 @@ ESX.RegisterServerCallback("unique_rent:check", function(source, cb, amount, mod
     -- SECURITY FIX: this used to fall back to the client-supplied `amount`
     -- whenever the model wasn't found in Config.Vehicles -- same class of
     -- bug as unique_rent:pay used to have. Now it just refuses to affirm
-    -- affordability for a model it doesn't recognize.
-    local realPrice = getConfigRentPrice(model)
-    if not realPrice then
+    -- affordability for a model/duration it doesn't recognize.
+    local quote = getConfigRentQuote(model, durationId)
+    if not quote then
         cb(false)
         return
     end
 
-    if xPlayer.canAfford(realPrice) then
+    if xPlayer.canAfford(quote.price) then
         cb(true)
     else
         cb(false)

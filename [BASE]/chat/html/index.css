@@ -5,8 +5,24 @@
 .color-4{color: #4b4845f8;}
 .color-5{color: #0059ff;}
 .color-6{color: #aa66cc;}
-.color-8{color: #cc0000;}
+.color-8{color: #cc0000;}س
 .color-9{color: #cc0068;}
+
+/* FIX: this resource's NUI page is composited full-screen like every other
+   resource's, even though the chat box itself only occupies a small
+   corner of it. Without this reset, the invisible/transparent rest of
+   the page still absorbs clicks whenever SetNuiFocus is active here,
+   which silently blocks clicks meant for OTHER resources' NUI (e.g.
+   esx_uniquejobs' radar PANIC button / pursuit timer) anywhere they
+   happen to be on screen. #app re-enables clicks only where the chat UI
+   actually is. */
+html, body {
+  pointer-events: none;
+  background: transparent;
+}
+#app {
+  pointer-events: auto;
+}
 
 * {
   font-family: 'Lato', sans-serif;

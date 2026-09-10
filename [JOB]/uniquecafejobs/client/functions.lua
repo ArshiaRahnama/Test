@@ -254,11 +254,7 @@ end
 
 
 function OpenCloakroomMenu()
-    local elements = {}
-    local nname = {}
     local playerPed = PlayerPedId()
-    local grade = PlayerData.job.grade_name
-    local dvisname
     local elements = {
         {label = "Lebas Kar", value = 'work_wear'},
         { label = _U('citizen_wear'), value = 'citizen_wear' },
@@ -458,8 +454,6 @@ end
 
 function PlayerBlingMenu()
 	ESX.UI.Menu.CloseAll()
-	dataplayer = {}
-	local elements = {}
 	local nearbyPlayers = getNearbyPlayers(3) 
 	local elements = {}
 	table.insert(elements, {label = "ID"  , value = " " })

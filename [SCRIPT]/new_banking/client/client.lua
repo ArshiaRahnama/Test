@@ -47,14 +47,15 @@ AddEventHandler('new_banking:disableforhour', function(pos, time)
 end)
 
 RegisterNetEvent('currentbalance1')
-AddEventHandler('currentbalance1', function(balance, iban)
+AddEventHandler('currentbalance1', function(balance, iban, cash)
     local id = PlayerId()
     local playerName = GetPlayerName(id)
     SendNUIMessage({
         type = "balanceHUD",
         balance = balance,
         player = playerName,
-        cardnumber = iban
+        cardnumber = iban,
+        cash = cash
     })
 end)
 
@@ -164,6 +165,41 @@ end)
 RegisterNUICallback('transfer', function(data, cb)
 	TriggerServerEvent('bank:transferx', data.to, data.amountt)
 	cb('ok')
+end)
+
+RegisterNUICallback('history', function(data, cb)
+	TriggerServerEvent('bank:history')
+	cb('ok')
+end)
+
+RegisterNetEvent('bank:historyBack')
+AddEventHandler('bank:historyBack', function(rows)
+	SendNUIMessage({type = 'historyData', rows = rows})
+end)
+
+RegisterNUICallback('getOnlinePlayers', function(data, cb)
+	TriggerServerEvent('bank:getOnlinePlayers')
+	cb('ok')
+end)
+
+RegisterNetEvent('bank:onlinePlayersBack')
+AddEventHandler('bank:onlinePlayersBack', function(list)
+	SendNUIMessage({type = 'onlinePlayers', players = list})
+end)
+
+RegisterNetEvent('bank:actionResult')
+AddEventHandler('bank:actionResult', function(result)
+	SendNUIMessage({type = 'actionResult', ok = result.ok, kind = result.kind, amount = result.amount})
+end)
+
+RegisterNUICallback('recentContacts', function(data, cb)
+	TriggerServerEvent('bank:recentContacts')
+	cb('ok')
+end)
+
+RegisterNetEvent('bank:recentContactsBack')
+AddEventHandler('bank:recentContactsBack', function(rows)
+	SendNUIMessage({type = 'recentContacts', rows = rows})
 end)
 
 RegisterNUICallback('NUIFocusOff', function(data, cb)

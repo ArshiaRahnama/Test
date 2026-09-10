@@ -355,3 +355,250 @@ body, html {
 	transition: color 0.2s ease;
 }
 .cancel-link:hover{ color: var(--text); }
+
+/* ===== Copy IBAN button ===== */
+.copy-btn{
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 22px;
+	height: 22px;
+	border: none;
+	background: rgba(255,255,255,0.1);
+	border-radius: 6px;
+	color: rgba(255,255,255,0.75);
+	cursor: pointer;
+	margin-left: 6px;
+	vertical-align: middle;
+	transition: background 0.2s ease;
+}
+.copy-btn:hover{ background: rgba(255,255,255,0.2); color: #fff; }
+.copy-btn svg{ width: 12px; height: 12px; }
+
+.copy-toast{
+	position: relative;
+	margin-left: 8px;
+	font-size: 11px;
+	color: var(--accent-2);
+	opacity: 0;
+	transition: opacity 0.2s ease;
+	vertical-align: middle;
+}
+.copy-toast.show{ opacity: 1; }
+
+/* ===== Transfer name-search suggestions ===== */
+.suggest-box{
+	display: none;
+	position: absolute;
+	top: 100%;
+	left: 0;
+	right: 0;
+	margin-top: 4px;
+	background: #17233f;
+	border: 1px solid var(--panel-border);
+	border-radius: 12px;
+	overflow: hidden;
+	z-index: 5;
+	box-shadow: 0 12px 24px rgba(0,0,0,0.4);
+}
+.suggest-item{
+	padding: 10px 14px;
+	font-size: 13.5px;
+	color: var(--text);
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	transition: background 0.15s ease;
+}
+.suggest-item:hover{ background: rgba(61, 139, 255, 0.15); }
+.suggest-id{ color: var(--text-dim); font-size: 11.5px; font-family: 'JetBrains Mono', monospace; }
+
+/* ===== Transaction history ===== */
+.history-list{
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	max-height: 360px;
+	overflow-y: auto;
+	padding-right: 2px;
+}
+.history-list::-webkit-scrollbar{ width: 4px; }
+.history-list::-webkit-scrollbar-thumb{ background: rgba(255,255,255,0.15); border-radius: 4px; }
+
+.history-empty{
+	text-align: center;
+	color: var(--text-dim);
+	font-size: 13px;
+	padding: 30px 0;
+}
+
+.history-item{
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	background: rgba(255,255,255,0.04);
+	border: 1px solid var(--panel-border);
+	border-radius: 12px;
+	padding: 11px 14px;
+}
+.history-icon{
+	width: 30px;
+	height: 30px;
+	min-width: 30px;
+	border-radius: 9px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-weight: 700;
+	font-size: 15px;
+}
+.history-icon.positive{ background: rgba(36, 217, 163, 0.15); color: var(--accent-2); }
+.history-icon.negative{ background: rgba(255, 93, 108, 0.15); color: var(--danger); }
+
+.history-main{ flex: 1; min-width: 0; }
+.history-sub{ font-size: 13px; font-weight: 500; color: var(--text); }
+.history-date{ font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+
+.history-amount{ font-weight: 700; font-size: 14px; white-space: nowrap; }
+.history-amount.positive{ color: var(--accent-2); }
+.history-amount.negative{ color: var(--danger); }
+
+/* ===== Confirmation modal ===== */
+.modal-overlay{
+	display: none;
+	position: fixed;
+	inset: 0;
+	background: rgba(5, 8, 18, 0.65);
+	align-items: center;
+	justify-content: center;
+	z-index: 20;
+}
+.modal-overlay.show{ display: flex; }
+
+.modal-box{
+	width: 320px;
+	background: linear-gradient(165deg, var(--bg-2), var(--bg-1));
+	border: 1px solid var(--panel-border);
+	border-radius: 18px;
+	padding: 22px;
+	box-shadow: 0 30px 60px rgba(0,0,0,0.55);
+	animation: rise 0.2s ease;
+}
+.modal-title{ font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 8px; }
+.modal-text{ font-size: 13px; color: var(--text-dim); line-height: 1.5; margin-bottom: 18px; }
+.modal-actions{ display: flex; flex-direction: column; gap: 6px; }
+
+/* ===== Confetti canvas ===== */
+#confettiCanvas{
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	pointer-events: none;
+	z-index: 30;
+}
+
+/* ===== Toast ===== */
+.toast{
+	position: absolute;
+	top: -60px;
+	left: 50%;
+	transform: translateX(-50%);
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	background: #131f3a;
+	border: 1px solid var(--panel-border);
+	border-radius: 12px;
+	padding: 10px 16px;
+	font-size: 13px;
+	font-weight: 500;
+	color: var(--text);
+	box-shadow: 0 14px 28px rgba(0,0,0,0.45);
+	opacity: 0;
+	transition: top 0.35s cubic-bezier(.34,1.56,.64,1), opacity 0.25s ease;
+	z-index: 40;
+	white-space: nowrap;
+}
+.toast.show{ top: 8px; opacity: 1; }
+.toast.ok{ border-color: rgba(36, 217, 163, 0.4); }
+.toast.ok .toast-icon{ color: var(--accent-2); }
+.toast.err{ border-color: rgba(255, 93, 108, 0.4); }
+.toast.err .toast-icon{ color: var(--danger); }
+.toast-icon{ display: flex; width: 16px; height: 16px; }
+.toast-icon svg{ width: 16px; height: 16px; }
+
+/* ===== Card tilt / shine ===== */
+.account-card{
+	transition: transform 0.15s ease-out;
+	transform-style: preserve-3d;
+}
+.card-shine{
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+	z-index: 2;
+	transition: background 0.08s ease-out;
+}
+
+/* ===== Quick amount buttons ===== */
+.quick-row{
+	display: flex;
+	gap: 8px;
+	margin: -8px 0 16px;
+}
+.quick-btn{
+	flex: 1;
+	background: rgba(255,255,255,0.05);
+	border: 1px solid var(--panel-border);
+	color: var(--text-dim);
+	font-family: 'Poppins', sans-serif;
+	font-size: 12px;
+	font-weight: 600;
+	padding: 7px 0;
+	border-radius: 9px;
+	cursor: pointer;
+	transition: all 0.15s ease;
+}
+.quick-btn:hover{
+	background: rgba(61, 139, 255, 0.15);
+	color: var(--text);
+	border-color: rgba(61, 139, 255, 0.35);
+}
+
+/* ===== Recent contacts chips ===== */
+.contacts-row{
+	display: none;
+	gap: 8px;
+	margin-bottom: 16px;
+	flex-wrap: wrap;
+}
+.contact-chip{
+	background: rgba(111, 91, 255, 0.14);
+	border: 1px solid rgba(111, 91, 255, 0.35);
+	color: var(--text);
+	font-size: 12px;
+	font-weight: 500;
+	padding: 6px 12px;
+	border-radius: 999px;
+	cursor: pointer;
+	transition: all 0.15s ease;
+}
+.contact-chip:hover{ background: rgba(111, 91, 255, 0.25); }
+
+/* ===== Ripple effect ===== */
+.ripple-target{ position: relative; overflow: hidden; }
+.ripple{
+	position: absolute;
+	border-radius: 50%;
+	background: rgba(255,255,255,0.35);
+	transform: scale(0);
+	animation: rippleAnim 0.6s ease-out;
+	pointer-events: none;
+}
+@keyframes rippleAnim{
+	from{ transform: scale(0); opacity: 0.6; }
+	to{ transform: scale(1); opacity: 0; }
+}

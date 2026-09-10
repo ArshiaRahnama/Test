@@ -1159,7 +1159,7 @@ ConfigCrafting = {
 		 ['aard'] = 1, 
 		 ['egg'] = 1, 
 		 ['shir'] = 1, 
-		 ['aard'] = 1, 
+		 ['bakingpowder'] = 1, 
 		 ['kare'] = 1, 
 		 ['shekar'] = 1, 
 	 	}

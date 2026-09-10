@@ -72,6 +72,38 @@
                 <div class="MainPageTabContent" id="MainPageTabContent">
                       <div id="Page_MainPanel">
                           <p style="font-size: 3vw;">🖥️ Main panel</p>
+
+                          <div class="Dashboard_Top">
+                            <p class="Dashboard_Greeting">Welcome back, <span id="MainPanel_Greeting_Rank">-</span> <span id="MainPanel_Greeting_Name">-</span></p>
+                            <div class="Dashboard_Clock">
+                              <p id="MainPanel_Clock_Time">--:--:--</p>
+                              <p id="MainPanel_Clock_Date">-</p>
+                            </div>
+                          </div>
+
+                          <div class="Dashboard_Stats">
+                            <div class="Dashboard_StatCard">
+                              <p class="Dashboard_StatValue" id="MainPanel_Stat_WantedPeople">0</p>
+                              <p class="Dashboard_StatLabel">🚨 Wanted Suspects</p>
+                            </div>
+                            <div class="Dashboard_StatCard">
+                              <p class="Dashboard_StatValue" id="MainPanel_Stat_WantedCars">0</p>
+                              <p class="Dashboard_StatLabel">🚗 Wanted Vehicles</p>
+                            </div>
+                            <div class="Dashboard_StatCard">
+                              <p class="Dashboard_StatValue" id="MainPanel_Stat_Rank">-</p>
+                              <p class="Dashboard_StatLabel">🎖️ Your Rank</p>
+                            </div>
+                          </div>
+
+                          <div class="Dashboard_QuickActions">
+                            <button class="Dashboard_QuickAction" onclick="DuckMdt.TabSelected('CitizensList')">👤 Search Citizen</button>
+                            <button class="Dashboard_QuickAction" onclick="DuckMdt.TabSelected('VehiclesList')">🚗 Search Vehicle</button>
+                            <button class="Dashboard_QuickAction law-tab" style="display:none;" onclick="DuckMdt.TabSelected('CS_Bolo')">🚨 Issue BOLO</button>
+                            <button class="Dashboard_QuickAction law-tab" style="display:none;" onclick="DuckMdt.TabSelected('CS_Booking')">📋 New Booking</button>
+                            <button class="Dashboard_QuickAction doj-tab" style="display:none;" onclick="DuckMdt.TabSelected('CS_Cases')">📂 Open Cases</button>
+                          </div>
+
                           <!--  -->
                           <div class="Main_Panel_Page_Lists">
 
@@ -87,10 +119,8 @@
                             <div class="Main_Panel_Page_WnatedCars">
                               <p>Cars Wanted</p>
                               <div class="Main_Panel_Page_List">
-                                <div class="Main_Panel_Page_List">
-                                  <div class="MDT_List" style="width: 125%;" id="Main_Page_CarsWanted_List">
+                                <div class="MDT_List" id="Main_Page_CarsWanted_List">
 
-                                  </div>
                                 </div>
                               </div>
                             </div>

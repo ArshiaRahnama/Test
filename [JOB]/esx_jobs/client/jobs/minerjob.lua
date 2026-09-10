@@ -259,7 +259,10 @@ Citizen.CreateThread(function()
 
 			if nearbyObject and IsPedOnFoot(playerPed) and not IsPedUsingAnyScenario(playerPed) then
 				ESX.ShowHelpNotification('Press ~INPUT_CONTEXT~ to start mine.')
-				if IsControlJustReleased(0, 38) then
+				if IsControlJustReleased(0, 38) and (not PlayerData.job or PlayerData.job.name ~= 'miner') then
+					ESX.ShowNotification('~r~You need to be a miner to do this.')
+				end
+				if IsControlJustReleased(0, 38) and PlayerData.job and PlayerData.job.name == 'miner' then
 					mining = true
 					TaskTurnPedToFaceEntity(PlayerPedId(), nearbyObject, 0.5)
 					FreezeEntityPosition(PlayerPedId(), true)
@@ -656,9 +659,15 @@ function OpenRakhtkanMenu()
 
                 menu.close()
             elseif data.current.value == 'work_wear' then
-                ESX.TriggerServerCallback('esx_skin:getPlayerSkin', function(skin, jobSkin)
+                -- same bug/fix as the other jobs' OpenMenu: the admin
+                -- uniform editor only updates Config server-side, so this
+                -- has to ask the server for the current work_wear instead
+                -- of reading this client's own stale local config.lua copy
+                ESX.TriggerServerCallback('esx_jobs:getActiveUniform', function(workWear)
+                    if not workWear then return end
+                    ESX.TriggerServerCallback('esx_skin:getPlayerSkin', function(skin, jobSkin)
 					if skin.sex == 0 then
-						TriggerEvent('skinchanger:loadClothes', skin, Config.Miner.Uniforms['work_wear'].male)
+						TriggerEvent('skinchanger:loadClothes', skin, workWear.male)
 
                         if amir == true then
                             for _, info in pairs(Config.Miner.Blips) do
@@ -677,7 +686,7 @@ function OpenRakhtkanMenu()
                         end
 
 					else
-						TriggerEvent('skinchanger:loadClothes', skin, Config.Miner.Uniforms['work_wear'].female)
+						TriggerEvent('skinchanger:loadClothes', skin, workWear.female)
 
                         if amir == true then
                             for _, info in pairs(Config.Miner.Blips) do
@@ -704,6 +713,7 @@ function OpenRakhtkanMenu()
 
 					menu.close()
 				end)
+                end, 'miner')
             end
         end,
     function(data, menu)

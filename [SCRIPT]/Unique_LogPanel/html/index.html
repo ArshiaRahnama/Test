@@ -197,8 +197,8 @@
 	#logTable{ width:100%; border-collapse:separate; border-spacing:0 8px; }
 	#logTable thead th{
 		text-align:right; font-size:11px; color:var(--text-dim); font-weight:600;
-		padding:0 12px 4px; text-transform:uppercase; letter-spacing:.4px; cursor:pointer;
-		user-select:none;
+		padding:8px 12px 4px; text-transform:uppercase; letter-spacing:.4px; cursor:pointer;
+		user-select:none; position:sticky; top:0; background:#0d1220; z-index:2;
 	}
 	#logTable thead th:hover{ color:var(--text); }
 	#logTable thead th.sortedCol{ color:var(--accent2); }
@@ -226,19 +226,51 @@
 	}
 	.jobCell{ color:var(--text-dim); font-size:11.5px; }
 	.rowActions{ text-align:left; white-space:nowrap; }
-	.rowDeleteBtn{
+	.rowActions{ display:flex; gap:5px; justify-content:flex-end; }
+	.rowDeleteBtn, .rowPinBtn{
 		width:26px; height:26px; border-radius:8px; border:1px solid var(--border);
 		background:#ffffff08; color:var(--text-dim); cursor:pointer; font-size:12px;
 		display:inline-flex; align-items:center; justify-content:center; transition:.12s;
 	}
 	.rowDeleteBtn:hover{ background:var(--danger); color:#fff; border-color:var(--danger); }
+	.rowPinBtn:hover{ background:var(--warn); color:#fff; border-color:var(--warn); }
+	.rowPinBtn.pinned{ background:#f59e0b26; color:var(--warn); border-color:#f59e0b55; }
 	mark{ background:#f59e0b55; color:#fff; border-radius:3px; padding:0 2px; }
 
-	#emptyState, #loadingState{
+	.logRow.pinnedRow{ background:#f59e0b14; border-color:#f59e0b40; }
+	.logRow.pinnedRow:hover{ background:#f59e0b22; }
+	.pinFlag{ margin-inline-end:4px; }
+
+	.avatar{
+		display:inline-flex; align-items:center; justify-content:center;
+		width:22px; height:22px; border-radius:7px; font-size:10.5px; font-weight:700;
+		color:#fff; flex-shrink:0; margin-inline-end:6px; vertical-align:middle;
+	}
+	.playerNameWrap{ display:flex; align-items:center; cursor:pointer; }
+	.playerNameWrap:hover .playerNameText{ text-decoration:underline; text-decoration-color:var(--accent2); }
+
+	/* ---------- ACTIVE FILTER CHIP ---------- */
+	.activeFilterChip{
+		display:inline-flex; align-items:center; gap:6px; font-size:11.5px;
+		background:#22d3ee1a; border:1px solid #22d3ee40; color:#a5f3fc;
+		padding:5px 10px; border-radius:999px; cursor:pointer;
+	}
+	.activeFilterChip:hover{ background:#22d3ee2a; }
+
+	/* ---------- SKELETON LOADING ---------- */
+	.skelBlock{
+		height:11px; border-radius:6px;
+		background:linear-gradient(90deg, #ffffff08 25%, #ffffff16 37%, #ffffff08 63%);
+		background-size:400% 100%; animation:shimmer 1.4s ease infinite;
+	}
+	@keyframes shimmer{ 0%{ background-position:100% 0; } 100%{ background-position:0 0; } }
+	.skelRow td{ padding:12px; }
+
+	#emptyState{
 		display:none; flex-direction:column; align-items:center; justify-content:center;
 		height:100%; color:var(--text-dim); gap:8px; font-size:13px;
 	}
-	#emptyState.show, #loadingState.show{ display:flex; }
+	#emptyState.show{ display:flex; }
 
 	/* ---------- PAGINATION ---------- */
 	#pagination{
@@ -387,14 +419,16 @@
 							<option value="player_name:ASC">پلیر (الفبا)</option>
 						</select>
 						<select class="miniSelect" id="perPageSelect" title="تعداد در صفحه"></select>
+						<div class="toolBtn" id="pinnedToggleBtn" onclick="togglePinnedOnly()" style="display:none;">📌 فقط پین‌شده‌ها</div>
 						<div class="toolBtn" onclick="refreshLogs()">↻ رفرش</div>
 						<div class="toolBtn" id="exportBtn" onclick="exportLogs()" style="display:none;">⬇️ خروجی CSV</div>
 					</div>
 
+					<div id="activeFilters" style="display:none; padding:0 18px 4px;"></div>
+
 					<div id="newLogsBanner" onclick="onBannerClick()">🔔 <span id="newLogsText">لاگ جدید ثبت شد</span> — برای بارگذاری کلیک کن</div>
 
 					<div id="tableWrap">
-						<div id="loadingState">در حال بارگذاری...</div>
 						<div id="emptyState">
 							<div style="font-size:32px;">🗒️</div>
 							<div>هیچ لاگی با این فیلتر پیدا نشد</div>
@@ -405,9 +439,9 @@
 									<th data-col="created_at" style="width:110px;">زمان</th>
 									<th data-col="category" style="width:140px;">دسته</th>
 									<th data-col="job" style="width:120px;">شغل</th>
-									<th data-col="player_name" style="width:150px;">پلیر</th>
+									<th data-col="player_name" style="width:160px;">پلیر</th>
 									<th>پیام</th>
-									<th id="actionsCol" style="width:44px; display:none;"></th>
+									<th id="actionsCol" style="width:64px; display:none;"></th>
 								</tr>
 							</thead>
 							<tbody id="logTableBody"></tbody>
@@ -428,6 +462,10 @@
 						<div class="statCards">
 							<div class="statCard"><div class="num" id="statTotal">—</div><div class="lbl">کل لاگ‌ها (با فیلتر فعلی)</div></div>
 							<div class="statCard"><div class="num" id="statToday">—</div><div class="lbl">لاگ‌های امروز</div></div>
+						</div>
+						<div class="statPanel" style="margin-bottom:16px;">
+							<h4>📈 روند ۱۴ روز اخیر</h4>
+							<div id="trendChart"></div>
 						</div>
 						<div class="statGrid">
 							<div class="statPanel">
@@ -450,6 +488,7 @@
 					<pre id="detailMessage"></pre>
 					<div id="detailActions">
 						<div class="toolBtn" onclick="copyDetail()">📋 کپی پیام</div>
+						<div class="toolBtn" id="detailPinBtn" style="display:none;" onclick="togglePinFromDetail()">📌 پین/آن‌پین</div>
 						<div class="toolBtn danger" id="detailDeleteBtn" style="display:none;" onclick="confirmDeleteCurrent()">🗑️ حذف لاگ</div>
 						<div class="toolBtn" onclick="closeDetail()">بستن</div>
 					</div>
@@ -556,6 +595,10 @@ let state = {
 	jobs: [],
 	canExport: false,
 	canDelete: false,
+	canPin: false,
+	pinnedOnly: false,
+	identifierExact: '',
+	identifierLabel: '',
 	searchDebounce: null,
 	pendingDeleteId: null,
 	newLogsCount: 0,
@@ -591,6 +634,9 @@ window.addEventListener('message', (event) => {
 		state.sortDir = 'DESC';
 		state.page = 1;
 		state.newLogsCount = 0;
+		state.pinnedOnly = false;
+		state.identifierExact = '';
+		state.identifierLabel = '';
 
 		document.getElementById('root').classList.add('show');
 		document.getElementById('searchInput').value = '';
@@ -598,6 +644,8 @@ window.addEventListener('message', (event) => {
 		document.getElementById('dateTo').value = '';
 		document.getElementById('sortSelect').value = 'id:DESC';
 		document.getElementById('newLogsBanner').classList.remove('show');
+		document.getElementById('pinnedToggleBtn').classList.remove('active');
+		renderActiveFilters();
 		[...document.querySelectorAll('#quickChips .chip')].forEach(c => c.classList.toggle('active', c.dataset.range === 'all'));
 		switchView('logs', true);
 
@@ -670,11 +718,13 @@ async function loadMeta(){
 	state.jobGroups = res.jobGroups || [];
 	state.canExport = !!res.canExport;
 	state.canDelete = !!res.canDelete;
+	state.canPin = !!res.canPin;
 	state.perPageOptions = res.perPageOptions || state.perPageOptions;
 	state.perPage = res.defaultPerPage || state.perPage;
 
 	document.getElementById('exportBtn').style.display = state.canExport ? 'flex' : 'none';
-	document.getElementById('actionsCol').style.display = state.canDelete ? 'table-cell' : 'none';
+	document.getElementById('actionsCol').style.display = (state.canDelete || state.canPin) ? 'table-cell' : 'none';
+	document.getElementById('pinnedToggleBtn').style.display = state.canPin ? 'flex' : 'none';
 
 	const ppSel = document.getElementById('perPageSelect');
 	ppSel.innerHTML = state.perPageOptions.map(n => `<option value="${n}">${n} در صفحه</option>`).join('');
@@ -768,22 +818,32 @@ function currentFilters(){
 		sortDir: state.sortDir,
 		page: state.page,
 		perPage: state.perPage,
+		pinnedOnly: state.pinnedOnly,
+		identifierExact: state.identifierExact,
 	};
 }
 
 // ============================================================================
 // بارگذاری لاگ‌ها
 // ============================================================================
+function renderSkeletonRows(n){
+	const widths = ['70%','60%','50%','80%','95%','30%'];
+	let html = '';
+	for (let i = 0; i < n; i++){
+		html += `<tr class="logRow skelRow">${widths.map(w => `<td><div class="skelBlock" style="width:${w};"></div></td>`).join('')}</tr>`;
+	}
+	return html;
+}
+
 async function refreshLogs(){
-	document.getElementById('logTable').style.display = 'none';
 	document.getElementById('emptyState').classList.remove('show');
-	document.getElementById('loadingState').classList.add('show');
+	document.getElementById('logTable').style.display = 'table';
+	document.getElementById('logTableBody').innerHTML = renderSkeletonRows(8);
 
 	const res = await post('fetchLogs', currentFilters());
 
-	document.getElementById('loadingState').classList.remove('show');
-
 	if (res.error || !res.logs){
+		document.getElementById('logTable').style.display = 'none';
 		document.getElementById('emptyState').classList.add('show');
 		document.getElementById('pageInfo').textContent = '—';
 		return;
@@ -793,9 +853,12 @@ async function refreshLogs(){
 	state.perPage = res.perPage || state.perPage;
 	state.canExport = !!res.canExport;
 	state.canDelete = !!res.canDelete;
-	document.getElementById('actionsCol').style.display = state.canDelete ? 'table-cell' : 'none';
+	state.canPin = !!res.canPin;
+	document.getElementById('actionsCol').style.display = (state.canDelete || state.canPin) ? 'table-cell' : 'none';
+	document.getElementById('pinnedToggleBtn').style.display = state.canPin ? 'flex' : 'none';
 
 	if (res.logs.length === 0){
+		document.getElementById('logTable').style.display = 'none';
 		document.getElementById('emptyState').classList.add('show');
 	} else {
 		renderTable(res.logs);
@@ -823,20 +886,32 @@ function renderTable(logs){
 	const body = document.getElementById('logTableBody');
 	body.innerHTML = logs.map((row, idx) => {
 		const meta = getCatMeta(row.category);
-		return `<tr class="logRow" data-idx="${idx}">
+		const isPinned = tonumber1(row.pinned);
+		const avatarKey = row.identifier || row.player_name || 'unknown';
+		const avatarColor = hashColor(avatarKey);
+		const initial = (row.player_name || '?').trim().charAt(0).toUpperCase() || '?';
+		return `<tr class="logRow ${isPinned ? 'pinnedRow' : ''}" data-idx="${idx}">
 			<td class="timeCell">${formatTime(row.created_at)}</td>
-			<td><span class="catBadge" style="background:${meta.color}22; color:${meta.color};">${meta.icon} ${escapeHTML(meta.label)}</span></td>
+			<td><span class="catBadge" style="background:${meta.color}22; color:${meta.color};">${isPinned ? '<span class="pinFlag">📌</span>' : ''}${meta.icon} ${escapeHTML(meta.label)}</span></td>
 			<td class="jobCell">${escapeHTML(row.job || '—')}</td>
-			<td class="playerCell">${highlightTerm(row.player_name || '—')}<small>${highlightTerm(row.identifier || (row.source ? ('ID: ' + row.source) : ''))}</small></td>
+			<td class="playerCell">
+				<div class="playerNameWrap" data-idx="${idx}" title="فقط لاگ‌های این پلیر">
+					<span class="avatar" style="background:${avatarColor};">${escapeHTML(initial)}</span>
+					<span><span class="playerNameText">${highlightTerm(row.player_name || '—')}</span><small>${highlightTerm(row.identifier || (row.source ? ('ID: ' + row.source) : ''))}</small></span>
+				</div>
+			</td>
 			<td class="msgCell">${highlightTerm(stripCodeBlock(row.message))}</td>
-			<td class="rowActions">${state.canDelete ? `<div class="rowDeleteBtn" data-id="${row.id}" title="حذف">🗑️</div>` : ''}</td>
+			<td class="rowActions">
+				${state.canPin ? `<div class="rowPinBtn ${isPinned ? 'pinned' : ''}" data-id="${row.id}" title="${isPinned ? 'آن‌پین' : 'پین'}">📌</div>` : ''}
+				${state.canDelete ? `<div class="rowDeleteBtn" data-id="${row.id}" title="حذف">🗑️</div>` : ''}
+			</td>
 		</tr>`;
 	}).join('');
 
 	window._currentLogs = logs;
 	[...body.querySelectorAll('.logRow')].forEach(tr => {
 		tr.addEventListener('click', (e) => {
-			if (e.target.closest('.rowDeleteBtn')) return;
+			if (e.target.closest('.rowDeleteBtn') || e.target.closest('.rowPinBtn') || e.target.closest('.playerNameWrap')) return;
 			openDetail(window._currentLogs[+tr.dataset.idx]);
 		});
 	});
@@ -847,6 +922,82 @@ function renderTable(logs){
 			document.getElementById('confirmOverlay').classList.add('show');
 		});
 	});
+	[...body.querySelectorAll('.rowPinBtn')].forEach(btn => {
+		btn.addEventListener('click', (e) => {
+			e.stopPropagation();
+			togglePin(+btn.dataset.id);
+		});
+	});
+	[...body.querySelectorAll('.playerNameWrap')].forEach(elm => {
+		elm.addEventListener('click', (e) => {
+			e.stopPropagation();
+			const row = window._currentLogs[+elm.dataset.idx];
+			filterByPlayer(row);
+		});
+	});
+}
+
+function tonumber1(v){ return Number(v) === 1; }
+
+// ============================================================================
+// آواتار رنگی خودکار بر اساس هش رشته (identifier/اسم پلیر)
+// ============================================================================
+function hashColor(str){
+	str = String(str || '');
+	let hash = 0;
+	for (let i = 0; i < str.length; i++){
+		hash = str.charCodeAt(i) + ((hash << 5) - hash);
+	}
+	const hue = Math.abs(hash) % 360;
+	return `hsl(${hue}, 60%, 45%)`;
+}
+
+// ============================================================================
+// دریل‌داون روی پلیر: کلیک روی اسم پلیر → فقط لاگ‌های همون پلیر
+// ============================================================================
+function filterByPlayer(row){
+	if (!row || !row.identifier) { showToast('این ردیف شناسه‌ی معتبری نداره', 'err'); return; }
+	state.identifierExact = row.identifier;
+	state.identifierLabel = row.player_name || row.identifier;
+	state.page = 1;
+	renderActiveFilters();
+	state.view === 'dashboard' ? loadStats() : refreshLogs();
+}
+function clearPlayerFilter(){
+	state.identifierExact = '';
+	state.identifierLabel = '';
+	state.page = 1;
+	renderActiveFilters();
+	state.view === 'dashboard' ? loadStats() : refreshLogs();
+}
+function renderActiveFilters(){
+	const el = document.getElementById('activeFilters');
+	if (state.identifierExact){
+		el.style.display = 'block';
+		el.innerHTML = `<span class="activeFilterChip" onclick="clearPlayerFilter()">👤 فیلتر روی: ${escapeHTML(state.identifierLabel)} <b>✕</b></span>`;
+	} else {
+		el.style.display = 'none';
+		el.innerHTML = '';
+	}
+}
+
+// ============================================================================
+// پین/آن‌پین کردن یه لاگ
+// ============================================================================
+async function togglePin(id){
+	const res = await post('togglePin', { id });
+	if (res && res.success){
+		showToast(res.pinned ? 'لاگ پین شد' : 'پین برداشته شد', 'ok');
+		state.view === 'dashboard' ? loadStats() : refreshLogs();
+	} else {
+		showToast('عملیات پین ناموفق بود', 'err');
+	}
+}
+function togglePinnedOnly(){
+	state.pinnedOnly = !state.pinnedOnly;
+	document.getElementById('pinnedToggleBtn').classList.toggle('active', state.pinnedOnly);
+	state.page = 1;
+	state.view === 'dashboard' ? loadStats() : refreshLogs();
 }
 
 function changePage(delta){
@@ -959,9 +1110,12 @@ function openDetail(row){
 		${row.player_name ? `<span>👤 ${escapeHTML(row.player_name)}</span>` : ''}
 		${row.identifier ? `<span>🆔 ${escapeHTML(row.identifier)}</span>` : ''}
 		${row.source ? `<span>🎮 ServerID: ${escapeHTML(String(row.source))}</span>` : ''}
+		${tonumber1(row.pinned) ? `<span>📌 پین‌شده</span>` : ''}
 	`;
 	document.getElementById('detailMessage').textContent = stripCodeBlock(row.message);
 	document.getElementById('detailDeleteBtn').style.display = state.canDelete ? 'flex' : 'none';
+	document.getElementById('detailPinBtn').style.display = state.canPin ? 'flex' : 'none';
+	document.getElementById('detailPinBtn').textContent = tonumber1(row.pinned) ? '📌 آن‌پین کن' : '📌 پین کن';
 	document.getElementById('detailOverlay').classList.add('show');
 }
 function closeDetail(){
@@ -971,6 +1125,11 @@ function copyDetail(){
 	if (!currentDetailRow) return;
 	const text = stripCodeBlock(currentDetailRow.message);
 	navigator.clipboard.writeText(text).then(() => showToast('پیام کپی شد', 'ok')).catch(() => showToast('کپی نشد', 'err'));
+}
+async function togglePinFromDetail(){
+	if (!currentDetailRow) return;
+	await togglePin(currentDetailRow.id);
+	closeDetail();
 }
 
 // ============================================================================
@@ -1053,6 +1212,65 @@ async function loadStats(){
 			</div>`;
 		}).join('') || '<div style="color:var(--text-dim); font-size:12px;">داده‌ای نیست</div>';
 	}
+
+	renderTrendChart(res.dailyActivity || []);
+}
+
+// ============================================================================
+// نمودار روند ۱۴ روز اخیر (SVG ساده، بدون کتابخانه‌ی جانبی)
+// ============================================================================
+function buildTrendDays(dailyRows){
+	const map = {};
+	(dailyRows || []).forEach(r => { map[r.d] = r.cnt; });
+	const days = [];
+	for (let i = 13; i >= 0; i--){
+		const d = new Date();
+		d.setDate(d.getDate() - i);
+		const iso = d.toISOString().slice(0, 10);
+		days.push({ date: iso, cnt: Number(map[iso] || 0), dayNum: d.getDate() });
+	}
+	return days;
+}
+
+function renderTrendChart(dailyRows){
+	const days = buildTrendDays(dailyRows);
+	const w = 680, h = 150, pad = 22;
+	const max = Math.max(1, ...days.map(d => d.cnt));
+	const stepX = (w - pad * 2) / (days.length - 1);
+
+	const points = days.map((d, i) => ({
+		x: pad + i * stepX,
+		y: h - pad - (d.cnt / max) * (h - pad * 2),
+		cnt: d.cnt,
+		dayNum: d.dayNum,
+	}));
+
+	const linePath = points.map((p, i) => (i === 0 ? 'M' : 'L') + p.x.toFixed(1) + ',' + p.y.toFixed(1)).join(' ');
+	const areaPath = linePath
+		+ ` L${points[points.length - 1].x.toFixed(1)},${h - pad}`
+		+ ` L${points[0].x.toFixed(1)},${h - pad} Z`;
+
+	const dots = points.map(p =>
+		`<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.2" fill="#8b7bff" stroke="#0d1220" stroke-width="1.5"><title>${p.cnt} لاگ</title></circle>`
+	).join('');
+
+	const labels = points.filter((_, i) => i % 2 === 0).map(p =>
+		`<text x="${p.x.toFixed(1)}" y="${h - 4}" font-size="9" fill="#8a93a8" text-anchor="middle">${p.dayNum}</text>`
+	).join('');
+
+	document.getElementById('trendChart').innerHTML = `
+		<svg viewBox="0 0 ${w} ${h}" style="width:100%; height:150px; display:block;">
+			<defs>
+				<linearGradient id="trendGrad" x1="0" y1="0" x2="0" y2="1">
+					<stop offset="0%" stop-color="#6d5efc" stop-opacity="0.35"/>
+					<stop offset="100%" stop-color="#6d5efc" stop-opacity="0"/>
+				</linearGradient>
+			</defs>
+			<path d="${areaPath}" fill="url(#trendGrad)" stroke="none"/>
+			<path d="${linePath}" fill="none" stroke="#8b7bff" stroke-width="2.2"/>
+			${dots}
+			${labels}
+		</svg>`;
 }
 
 // ============================================================================

@@ -207,7 +207,26 @@ end
 -- weapon
 
 function addWeapon(player, item, count, serial)
+	-------------------------------------------------------------
+	-- TEMP DIAGNOSTIC (chasing a real weapon-duplication report: one
+	-- withdrawn pistol showing up multiple times in the player's
+	-- weapon list/hotbar). Logs every single call to this function -
+	-- if withdrawing ONE weapon calls this more than once, the
+	-- duplication is happening upstream of here (e.g. the withdraw
+	-- event firing multiple times for one user action). If this only
+	-- ever logs once per withdrawal but the player still ends up with
+	-- multiple loadout entries, the duplication is happening inside
+	-- essentialmode's own player.addWeapon/player.loadout instead.
+	-- Remove once the cause is confirmed.
+	-------------------------------------------------------------
+	print(('[lc-inventory] addWeapon called: item=%s count=%s serial=%s identifier=%s source=%s'):format(
+		tostring(item), tostring(count), tostring(serial), tostring(player.identifier), tostring(player.source)))
 	player.addWeapon(item, count, serial)
+	local loadoutCount = 0
+	for _, w in ipairs(player.loadout or {}) do
+		if w.name == item then loadoutCount = loadoutCount + 1 end
+	end
+	print(('[lc-inventory] addWeapon result: player.loadout now has %d entries named %s'):format(loadoutCount, tostring(item)))
 end
 
 function removeWeapon(player, item, serial)

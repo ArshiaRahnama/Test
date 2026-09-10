@@ -4,6 +4,16 @@ let inswitchpage = false
 let steam =  null
 let plate = null
 
+// Main-panel dashboard clock -- purely client-side (new Date()), so it
+// keeps ticking regardless of which tab is open and never needs a server
+// round-trip; it's just cheap enough to run every second even while its
+// page is hidden.
+setInterval(function() {
+    var now = new Date()
+    $('#MainPanel_Clock_Time').text(now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }))
+    $('#MainPanel_Clock_Date').text(now.toLocaleDateString([], { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }))
+}, 1000)
+
 DuckMdt.Loading = function(firstpage, nextpage, time) {
     $("#" + firstpage).fadeOut()
     $("#LoadingPage").fadeIn()
@@ -172,6 +182,26 @@ function Car_SetNewProfilePic(plate) {
 function ExitTablet() {
     $.post('https://esx_uniquejobs/Exit', JSON.stringify({}));
 }
+
+// Esc closes things one layer at a time: if a dialog/modal is open (all of
+// them share class="modal" and are shown/hidden the same way, including
+// the dynamically-built UniqueDialogModal), Esc closes that first. Only
+// once nothing is open on top does Esc act like pressing Exit -- and only
+// while the tablet itself is actually visible, so this listener never does
+// anything while the CAD is closed.
+document.addEventListener('keydown', function(event) {
+    if (event.key !== 'Escape') return;
+
+    var openModal = $('.modal:visible').last();
+    if (openModal.length) {
+        openModal.hide();
+        return;
+    }
+
+    if ($('.tablet').is(':visible')) {
+        ExitTablet();
+    }
+});
 
 // ===================== Crime Scene Investigation (crimescene/) =====================
 // Bridges this NUI to crimescene/server/main.lua's callbacks/events through
@@ -507,6 +537,13 @@ window.addEventListener('message', function(event) {
         $('#Main_Page_CarsWanted_List').empty()
           $('#username_mdt').text(data.name)
           $('#Rank_mdt').text(data.rank)
+          // Same values already delivered to the sidebar -- mirrored onto
+          // the main-panel dashboard greeting/stat cards, no extra request.
+          $('#MainPanel_Greeting_Name').text(data.name)
+          $('#MainPanel_Greeting_Rank').text(data.rank)
+          $('#MainPanel_Stat_Rank').text(data.rank)
+          $('#MainPanel_Stat_WantedPeople').text(data.PeopleWanteds.length)
+          $('#MainPanel_Stat_WantedCars').text(data.WantedCars.length)
           CS_ApplyJobVisibility(data.job)
           data.PeopleWanteds.forEach(element =>
                 // $('#Main_Page_PeopleWanted_List').append('<div class="List_Row" style="border-top: 9px solid rgb(196, 0, 0);"><p>' + element['playerName'] + '</p><p>' + element['phone'] + '</p></div>')
@@ -677,8 +714,65 @@ window.addEventListener('message', function(event) {
 
     } else if (data.type === 'LoadTraining') {
         $('#Page_Training').empty()
+        $('#Page_Training').append(
+            '<div class="Training_Header">' +
+                '<span class="Training_HeaderIcon">🎓</span>' +
+                '<div>' +
+                    '<p class="Training_HeaderTitle">Training &amp; SOP Manual</p>' +
+                    '<p class="Training_HeaderSub">Department procedures and CAD reference guide</p>' +
+                '</div>' +
+            '</div>'
+        )
+
+        // Each line from DuckMdt.TrainingMaterial (config_cad.lua) is still
+        // just a plain string -- nothing changed server-side. This only
+        // recognizes the shapes already used in that config (a "=== title
+        // ===" header, an empty spacer line, an "N) title -- description"
+        // entry, or a "- note" bullet) and gives each its own look instead
+        // of every line rendering as identical unstyled text. Anything
+        // that doesn't match one of those shapes still renders, just as a
+        // plain paragraph, so custom lines never silently disappear.
         data.Codes.forEach(element => {
-            $('#Page_Training').append('<span style="font-size: 1.5vw;">' + element + '</span><br>')
+            let text = (element || '').trim()
+            if (text === '') return
+
+            let sectionMatch = text.match(/^<b>\s*===\s*(.*?)\s*===\s*<\/b>\s*(\(.*\))?$/i)
+            if (sectionMatch) {
+                $('#Page_Training').append(
+                    '<div class="Training_Section"><span class="Training_SectionIcon">📘</span><p>' +
+                    sectionMatch[1] +
+                    (sectionMatch[2] ? ' <span class="Training_SectionTag">' + sectionMatch[2] + '</span>' : '') +
+                    '</p></div>'
+                )
+                return
+            }
+
+            let itemMatch = text.match(/^(\d+)\)\s*(.*?)\s*--\s*(.*)$/)
+            if (itemMatch) {
+                $('#Page_Training').append(
+                    '<div class="Training_Item">' +
+                        '<span class="Training_ItemNumber">' + itemMatch[1] + '</span>' +
+                        '<div><p class="Training_ItemTitle">' + itemMatch[2] + '</p><p class="Training_ItemDesc">' + itemMatch[3] + '</p></div>' +
+                    '</div>'
+                )
+                return
+            }
+
+            if (text.indexOf('<b>') === 0) {
+                $('#Page_Training').append(
+                    '<div class="Training_Section"><span class="Training_SectionIcon">📘</span><p>' + text.replace(/<\/?b>/g, '') + '</p></div>'
+                )
+                return
+            }
+
+            if (text.indexOf('-') === 0) {
+                $('#Page_Training').append(
+                    '<div class="Training_Note"><span class="Training_NoteIcon">•</span><p>' + text.replace(/^-\s*/, '') + '</p></div>'
+                )
+                return
+            }
+
+            $('#Page_Training').append('<p class="Training_Plain">' + text + '</p>')
         })
 
     } else if (data.type === 'OpenCaseFromRadar') {

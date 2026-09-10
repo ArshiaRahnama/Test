@@ -9,11 +9,16 @@ function get_vehicle_info(model)
 	return nil
 end
 
-function rent_vehicle(model, price, location)
+function rent_vehicle(model, durationId, location)
 	for k,v in pairs(Config.Locations) do
 		if k == location then
 			local spawn_coords = v.spawn_coords
 			local vehicleInfo = get_vehicle_info(model)
+			local durationInfo = Config.Durations[tonumber(durationId)]
+
+			-- SECURITY: only `model` and `durationId` are sent to the server.
+			-- The price itself is always recomputed server-side from those
+			-- two, never trusted from the client (see server/main.lua).
 			ESX.TriggerServerCallback('unique_rent:check', function(can)
 				if can then
 					RequestModel(model)
@@ -28,15 +33,15 @@ function rent_vehicle(model, price, location)
 							Options.have_rented = true
 							set_blip(false)
 						end)
-						TriggerServerEvent('unique_rent:pay', price, model)
-						if Config.Options['time'] then
-							show_timer(vehicleInfo)
+						TriggerServerEvent('unique_rent:pay', model, durationId)
+						if Config.Options['time'] and durationInfo then
+							show_timer(vehicleInfo, durationInfo)
 						end
 					else
 						Notification(Config.Options['spawnpoint_blocked'])
 					end
 				end
-			end, price, model)
+			end, model, durationId)
 		end
 	end
 end
@@ -79,8 +84,9 @@ function set_blip(remove)
 	end
 end
 
-function show_timer(vehicleInfo)
-	SendNUIMessage({action = "show_timer", content = { time = Config.Options['time_rent'], vehicle = vehicleInfo }})
+function show_timer(vehicleInfo, durationInfo)
+	local seconds = durationInfo and durationInfo.seconds or 3600
+	SendNUIMessage({action = "show_timer", content = { time = seconds, vehicle = vehicleInfo, duration = durationInfo }})
 	SetNuiFocus(false, false)
 end
 
@@ -113,8 +119,15 @@ function open_ui(location)
 		table.insert(vehicles, {location = location, id= k,  model = v.model, label = v.label, description = v.description, price = v.price, type = v.type, image = v.image_name})
 	end
 
+	-- ipairs (not pairs) so the tiers arrive in the order they're defined
+	-- in Config.Durations -- that order is what the UI displays left-to-right.
+	local durations = {}
+	for k,v in ipairs(Config.Durations) do
+		table.insert(durations, {id = k, label = v.label, seconds = v.seconds, multiplier = v.multiplier})
+	end
+
 	TriggerScreenblurFadeIn(1)
-	SendNUIMessage({action = 'open', content = { vehicles = vehicles }})
+	SendNUIMessage({action = 'open', content = { vehicles = vehicles, durations = durations }})
 	SetNuiFocus(true, true)
 
 	InMenu = true

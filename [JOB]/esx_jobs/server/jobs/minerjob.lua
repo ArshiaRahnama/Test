@@ -33,6 +33,10 @@ RegisterServerEvent('mining:PutStoneInVehicle')
 AddEventHandler('mining:PutStoneInVehicle', function(plate, minerSkill, class)
 	local xPlayer = ESX.GetPlayerFromId(source)
 	if not xPlayer then return end
+	if xPlayer.job.name ~= 'miner' then
+		TriggerClientEvent('esx:showNotification', source, "~r~You need to be a miner to do this.")
+		return
+	end
 
 	local count = 1
 	if minerSkill == 100 then
@@ -51,6 +55,10 @@ RegisterServerEvent('mining:SellStone')
 AddEventHandler('mining:SellStone', function(plate, class, count)
 	local xPlayer = ESX.GetPlayerFromId(source)
 	if not xPlayer then return end
+	if xPlayer.job.name ~= 'miner' then
+		TriggerClientEvent('esx:showNotification', source, "~r~You need to be a miner to do this.")
+		return
+	end
 
 	count = tonumber(count) or 0
 	if count <= 0 then return end
@@ -71,6 +79,10 @@ RegisterServerEvent('mining:WashStonePieces')
 AddEventHandler('mining:WashStonePieces', function(plate, class, count)
 	local xPlayer = ESX.GetPlayerFromId(source)
 	if not xPlayer then return end
+	if xPlayer.job.name ~= 'miner' then
+		TriggerClientEvent('esx:showNotification', source, "~r~You need to be a miner to do this.")
+		return
+	end
 
 	local Tedad = tonumber(count) or 0
 	if Tedad == 0 then return end
@@ -118,6 +130,10 @@ RegisterServerEvent('mining:MeltItems')
 AddEventHandler('mining:MeltItems', function(type)
     local xPlayer = ESX.GetPlayerFromId(source)
     if not xPlayer then return end
+    if xPlayer.job.name ~= 'miner' then
+        TriggerClientEvent('esx:showNotification', source, "~r~You need to be a miner to do this.")
+        return
+    end
 
     -- SECURITY FIX: this used to unconditionally give the refined item and
     -- try to remove 20 raw pieces regardless of whether the player actually
