@@ -1410,9 +1410,14 @@ function closeRemote()
 
 	setEleVisible( elements.remote, false );
 
-	// FEATURE ADDED: quick actions panel + traffic-stop popup only make sense
-	// while the remote is open
-	showQuickActions( false );
+	// FIX: Quick Actions (PANIC + PLACE TRACKER) is an independent, always-on
+	// widget now - same as the pursuit timer - driven purely by vehicle+job
+	// state via radar/cl_utils.lua's thread (see "showQuickActions" in the
+	// message switch below). Closing the remote must NOT force it hidden
+	// here anymore, or it would disappear even while still legitimately
+	// showing (e.g. still in the vehicle with the right job). The
+	// traffic-stop popup IS still tied to the remote's own flow, so that
+	// one still closes with it.
 	hideTrafficStopLog();
 	
 	sendSaveData(); 
