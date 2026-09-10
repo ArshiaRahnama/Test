@@ -6,7 +6,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" type="text/css" href="css/index.css">
     <link rel="stylesheet" type="text/css" href="css/jquery-ui.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.3.0/font/bootstrap-icons.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"/>
 </head>
 
 <body>
@@ -19,12 +19,23 @@
 
     <div class="ui" style="display: none;">
       <div class="content">
+        <button class="panel-close" id="btn-close" title="Close (ESC)"><i class="bi-x-lg"></i></button>
+
         <div class="panel-header">
           <div class="panel-eyebrow">Unique Rent — Premium Fleet Access</div>
           <h1 class="panel-title">Rent a Vehicle</h1>
           <div class="panel-rule"></div>
         </div>
+
+        <div class="filters" id="filters" style="display: none;"></div>
+
         <div class="vehicles" style="display: none;"></div>
+
+        <div class="panel-empty" id="panel-empty" style="display: none;">
+          <i class="bi-emoji-frown"></i>
+          <p>No vehicles are available at this location right now.</p>
+        </div>
+
         <div class="panel-credit">Arshia &nbsp;·&nbsp; arshiahub.ir</div>
       </div>
 
@@ -40,7 +51,8 @@
           </div>
         </div>
         <div class="info">
-          <h1 class="info-title">Rental Active</h1>
+          <h1 class="info-title" id="timer-vehicle">Rental Active</h1>
+          <div class="info-sub" id="timer-sub">Return the vehicle to the red marker</div>
         </div>
       </div>
     </div>

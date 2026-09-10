@@ -4,6 +4,13 @@ UNIQUE_AC              = {}
 
 UNIQUE_AC.Version      = "9.6.0"
 
+-- When false (default), routine/high-frequency console lines (per-connection checks,
+-- trust-score adjustments, startup file listing, banner) are suppressed to keep the
+-- server console clean. Security events (bans, kicks, unbans, tamper alerts, resource
+-- conflicts, quarantine) always print regardless of this setting. Set to true while
+-- troubleshooting to see the full verbose output again.
+UNIQUE_AC.Debug        = false
+
 UNIQUE_AC.ServerConfig = {
     Name  = "YOUR SERVER NAME",
 

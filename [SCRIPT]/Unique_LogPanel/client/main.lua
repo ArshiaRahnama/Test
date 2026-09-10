@@ -29,7 +29,17 @@ local function ClosePanel()
 	isOpen = false
 	SetNuiFocus(false, false)
 	SendNUIMessage({ action = 'close' })
+	TriggerServerEvent('LogPanel:PanelClosed')
 end
+
+-- اطلاع‌رسانی زنده‌ی لاگ جدید (وقتی پنل بازه) — سرور بهمون میگه چندتا لاگ جدید اومده
+RegisterNetEvent('LogPanel:client:NewLogs')
+AddEventHandler('LogPanel:client:NewLogs', function(count)
+	if not isOpen then return end
+	SendNUIMessage({ action = 'newLogs', count = count })
+	-- یه بوق کوتاه UI به‌عنوان اعلان، بدون نیاز به فایل صوتی اضافه
+	PlaySoundFrontend(-1, 'CHAT_MESSAGE_RECEIVED', 'GTAO_FM_EVENTS_SOUNDSET', true)
+end)
 
 RegisterNUICallback('close', function(data, cb)
 	ClosePanel()
@@ -46,6 +56,24 @@ RegisterNUICallback('fetchMeta', function(data, cb)
 	ESX.TriggerServerCallback('LogPanel:GetMeta', function(result)
 		cb(result)
 	end)
+end)
+
+RegisterNUICallback('fetchStats', function(data, cb)
+	ESX.TriggerServerCallback('LogPanel:GetStats', function(result)
+		cb(result)
+	end, data)
+end)
+
+RegisterNUICallback('exportLogs', function(data, cb)
+	ESX.TriggerServerCallback('LogPanel:ExportLogs', function(result)
+		cb(result)
+	end, data)
+end)
+
+RegisterNUICallback('deleteLog', function(data, cb)
+	ESX.TriggerServerCallback('LogPanel:DeleteLog', function(result)
+		cb(result)
+	end, data)
 end)
 
 -- ============================================================================
@@ -77,5 +105,12 @@ Citizen.CreateThread(function()
 		else
 			Citizen.Wait(200)
 		end
+	end
+end)
+
+-- اگه ریسورس ری‌استارت/استاپ بشه درحالی‌که پنل بازه، فوکوس رو برگردون تا کاربر گیر نکنه
+AddEventHandler('onResourceStop', function(resourceName)
+	if resourceName == GetCurrentResourceName() and isOpen then
+		SetNuiFocus(false, false)
 	end
 end)

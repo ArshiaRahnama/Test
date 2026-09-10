@@ -1,230 +1,230 @@
-<html>
-    <head>
-        <link href="style.css" rel="stylesheet" type="text/css" />
-        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-        <style>
-            .general {display: none;}
-            .main {display: none;}
-            .deposit {display: none;}
-            .depositUI {display: none;} 
-            .withdrawUI {display: none;}
-            .balanceUI {display:none;}
-            .transferUI {display: none;}
-        </style>
-    </head>
-    <body>
-        <div class="general">
-            <h3 class="sans">Welcome: <span class="username1"></span></h3>
-            <div class="mjdiv">
-                <div class="cardsec">
-                    <img src="./img/credit-card-on-png-background-600nw-2259495135.png" alt="">
-                </div>
-                <h4 class="sans2">IBAN: <span class="cardnumber1"></span></h4>
-                <h4 class="mj1">Mojoodi: <span class="curbalance"></span></h4>
-            </div>
-            <div class="main">  
-                <div class="tt">
-                    <h2 id="closet">>></h2>
-                    <img src="./img/Untitled-1.png"  alt="">
-                </div>          
-                <button id="deposit" class="mainbt"> <img src="img/send-square--36250.png" width="20px" alt="elogo">  Variz</button>
-                <button id="withdraw" class="mainbt"><img src="img/wallet-passes-app--2504.png" width="20px" alt="elogo"> Bardasht</button>
-                <!-- <button id="balance" class="mainbt"> <img src="img/sack--15711.png" width="20px" alt="elogo"> Mojoodi</button> -->
-                <button id="transfer" class="mainbt"> <img src="img/document--rasanika.com.png" width="20px" alt="elogo"> Enteghal</button>
-            </div>
-            <button id="exitbank"> <img src="img/right-from-bracket--12507.png" width="20px" alt="elogo"> Khorooj</button>
-        </div>
-        <div class='depositUI'>
-            <form id="deposit1">
-                <h3 class="sans">Welcome: <span class="username1"></span></h3>
-                <h4 class="mj2">Mojoodi: <span class="curbalance2"></span></h4>
-                <input id="amount" type="text" placeholder="Meghdar Bardasht Pol" class="disinp"><br>
-                <button id="deposit1" type="submit" class="disbt"> <img src="img/send-square--36250.png" width="20px" alt="elogo"> Variz</button>
-                <button id="canceldeposit" type="button" class="disbt"> <img src="img/right-from-bracket--12507.png" width="20px" alt="elogo"> Bazgasht</button> 	
-            </form>
-        </div>
-        <div class='withdrawUI'>
-            <form id="withdraw1">
-                <h3 class="sans">Welcome: <span class="username1"></span></h3>
-                <h4 class="mj3">Mojoodi: <span class="curbalance3"></span></h4>
-                <input id="amountw" type="text" class="widinp" placeholder="Amount to withdraw"><br>
-                <button id="withdraw1" class="widbt" type="submit">Bardasht</button>
-                <button id="cancelwithdraw" class="widbt" type="button">Bazgasht</button> 	
-            </form>
-        </div>
-        <div class='transferUI'>
-            <form id="transfer1">
-                <h3 class="sans">Welcome: <span class="username1"></span></h3>
-                <h4 class="mj4">Mojoodi: <span class="curbalance"></span></h4>
-                <input id="to" type="text" placeholder="To Player ID" class="trinp"><br>
-                <input id="amountt" type="text" placeholder="Amount to transfer" class="trinp"><br>
-                <button id="transfer1" type="submit" class="trbt">Enteghal</button>
-                <button id="canceltransfer" type="button" class="trbt">Bazgasht</button> 	
-            </form>
-        </div>
-    </body>
-    <script type="text/javascript">
-        $(function() {
-            window.addEventListener('message', function(event) {
-                if (event.data.type == "openGeneral"){
-                    $('.main').css('display', 'block')
-                    $('.general').css('display', 'block')
-                    $('.deposit').css('display', 'none')
-                } else if(event.data.type == "balanceHUD") {
-                    $('.username1').html(event.data.player);
-                    $('.curbalance').html('<span style="color:green">' + '$' + '</span>' + event.data.balance)
-                    $('.cardnumber1').html(event.data.cardnumber);
-                } else if (event.data.type == "closeAll"){
-                    $('.main').css('display', 'none')
-                    $('.general').css('display', 'none')
-                    $('.deposit').css('display', 'none')
-                } 
-            });
-        });
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8" />
+	<title>Bank</title>
+	<link href="style.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
 
-        $('#exitbank').click(function(){
-            $('.general').css('display', 'none')
-            $('.main').css('display', 'none')
-            $.post('http://new_banking/NUIFocusOff', JSON.stringify({}));
-        });
+	<div class="app" id="app">
 
-        $('#deposit').click(function(){
-            $('.general').css('display', 'none')
-            $('.depositUI').css('display', 'block')
-            $('#deposit1').css('display', 'block')
-        });
+		<!-- ===== HOME ===== -->
+		<div class="panel" id="screen-home" style="display:block;">
+			<div class="panel-header">
+				<div class="brand">
+					<span class="brand-icon">
+						<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V10l7-6 7 6v11"/><path d="M9 21v-6h6v6"/></svg>
+					</span>
+					Fleeca Bank
+				</div>
+				<button class="icon-btn" id="exitbank" title="Exit">
+					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+				</button>
+			</div>
 
-        $('#cancelbalance').click(function(){
-            $('.general').css('display', 'block')
-            $('.balanceUI').css('display', 'none')
-        });
+			<div class="account-card">
+				<div class="card-top">
+					<div class="chip"></div>
+					<div class="card-network">FLEECA</div>
+				</div>
+				<div class="card-iban">IBAN <span class="cardnumber1">----</span></div>
+				<div class="card-bottom">
+					<div>
+						<div class="card-label">Account Holder</div>
+						<div class="card-value username1">—</div>
+					</div>
+					<div class="card-balance"><span class="cur-symbol">$</span><span class="curbalance">0</span></div>
+				</div>
+			</div>
 
-        $('#balance').click(function(){
-            $('.general').css('display', 'none')
-            $('.balanceUI').css('display', 'block')
-        });
+			<div class="actions-grid">
+				<button id="deposit" class="action-btn">
+					<span class="action-icon">
+						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>
+					</span>
+					Variz (Deposit)
+					<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+				</button>
+				<button id="withdraw" class="action-btn">
+					<span class="action-icon">
+						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M19 12l-7 7-7-7"/></svg>
+					</span>
+					Bardasht (Withdraw)
+					<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+				</button>
+				<button id="transfer" class="action-btn">
+					<span class="action-icon">
+						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3l4 4-4 4"/><path d="M21 7H9"/><path d="M7 21l-4-4 4-4"/><path d="M3 17h12"/></svg>
+					</span>
+					Enteghal (Transfer)
+					<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+				</button>
+			</div>
+		</div>
 
-        $('#withdraw').click(function(){
-            $('.general').css('display', 'none')
-            $('.withdrawUI').css('display', 'block')
-            $('#withdraw1').css('display', 'block')
-        });
+		<!-- ===== DEPOSIT ===== -->
+		<div class="panel" id="screen-deposit">
+			<button class="back-btn" data-cancel="deposit">
+				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+				Bazgasht
+			</button>
+			<div class="subscreen-title">Variz kardan</div>
+			<div class="subscreen-sub">Deposit cash into <span class="username1b">your</span> account</div>
+			<div class="balance-pill">Mojoodi: $<span class="curbalance2">0</span></div>
 
-        $('#canceldeposit').click(function(){
-            $('.general').css('display', 'block')
-            $('.depositUI').css('display', 'none')
-        });
+			<form id="form-deposit">
+				<div class="field-row">
+					<label class="field-label">Meghdar (Amount)</label>
+					<input id="amount" type="text" inputmode="numeric" placeholder="0" class="field-input" autocomplete="off">
+				</div>
+				<button type="submit" class="submit-btn">
+					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>
+					Variz
+				</button>
+				<button type="button" class="cancel-link" data-cancel="deposit">Enseraf</button>
+			</form>
+		</div>
 
-        $('#cancelwithdraw').click(function(){
-            $('.general').css('display', 'block')
-            $('.withdrawUI').css('display', 'none')
-        });
+		<!-- ===== WITHDRAW ===== -->
+		<div class="panel" id="screen-withdraw">
+			<button class="back-btn" data-cancel="withdraw">
+				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+				Bazgasht
+			</button>
+			<div class="subscreen-title">Bardasht kardan</div>
+			<div class="subscreen-sub">Withdraw cash from <span class="username1b">your</span> account</div>
+			<div class="balance-pill">Mojoodi: $<span class="curbalance3">0</span></div>
 
-        $("#deposit1").submit(function(e) {
-            e.preventDefault();
-            $.post('http://new_banking/deposit', JSON.stringify({
-                amount: $("#amount").val()
-            }));
-            $('.general').css('display', 'none')
-            $('.depositUI').css('display', 'none')
-            $('#deposit1').css('display', 'none')
-            $.post('http://new_banking/NUIFocusOff', JSON.stringify({}));
-        });
+			<form id="form-withdraw">
+				<div class="field-row">
+					<label class="field-label">Meghdar (Amount)</label>
+					<input id="amountw" type="text" inputmode="numeric" placeholder="0" class="field-input" autocomplete="off">
+				</div>
+				<button type="submit" class="submit-btn danger">
+					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M19 12l-7 7-7-7"/></svg>
+					Bardasht
+				</button>
+				<button type="button" class="cancel-link" data-cancel="withdraw">Enseraf</button>
+			</form>
+		</div>
 
-        $("#transfer1").submit(function(h) {
-            h.preventDefault();
-            $.post('http://new_banking/transfer', JSON.stringify({
-                to: $("#to").val(),
-                amountt: $("#amountt").val()
-            }));
-            $('.general').css('display', 'none')
-            $('.depositUI').css('display', 'none')
-            $('#deposit1').css('display', 'none')
-            $('.transferUI').css('display', 'none')
-            $('#transfer1').css('display', 'none')
-            $('.withdrawUI').css('display', 'none')
-            $('.withdraw11').css('display', 'none')
-            $.post('http://new_banking/NUIFocusOff', JSON.stringify({}));
-        });
+		<!-- ===== TRANSFER ===== -->
+		<div class="panel" id="screen-transfer">
+			<button class="back-btn" data-cancel="transfer">
+				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+				Bazgasht
+			</button>
+			<div class="subscreen-title">Enteghal vajh</div>
+			<div class="subscreen-sub">Send money to another player</div>
+			<div class="balance-pill">Mojoodi: $<span class="curbalance4">0</span></div>
 
-        $("#withdraw1").submit(function(g) {
-            g.preventDefault();
-            $.post('http://new_banking/withdrawl', JSON.stringify({
-                amountw: $("#amountw").val()
-            }));
-            $('.general').css('display', 'none')
-            $('.depositUI').css('display', 'none')
-            $('#deposit1').css('display', 'none')
-            $('.withdrawUI').css('display', 'none')
-            $('.withdraw11').css('display', 'none')
-            $.post('http://new_banking/NUIFocusOff', JSON.stringify({}));
-        });
+			<form id="form-transfer">
+				<div class="field-row">
+					<label class="field-label">Player ID</label>
+					<input id="to" type="text" inputmode="numeric" placeholder="e.g. 12" class="field-input" autocomplete="off">
+				</div>
+				<div class="field-row">
+					<label class="field-label">Meghdar (Amount)</label>
+					<input id="amountt" type="text" inputmode="numeric" placeholder="0" class="field-input" autocomplete="off">
+				</div>
+				<button type="submit" class="submit-btn">
+					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3l4 4-4 4"/><path d="M21 7H9"/><path d="M7 21l-4-4 4-4"/><path d="M3 17h12"/></svg>
+					Enteghal
+				</button>
+				<button type="button" class="cancel-link" data-cancel="transfer">Enseraf</button>
+			</form>
+		</div>
 
-        $('#balance').click(function(){
-            $('.general').css('display', 'none')
-            $('.balanceUI').css('display', 'none')
-            $.post('http://new_banking/balance', JSON.stringify({}));
-        });
+	</div>
 
-        $('#transfer').click(function(){
-            $('.general').css('display', 'none')
-            $('.transferUI').css('display', 'block')
-            $('#transfer1').css('display', 'block')
-        });
+	<script>
+		const app = document.getElementById('app');
+		const screens = {
+			home: document.getElementById('screen-home'),
+			deposit: document.getElementById('screen-deposit'),
+			withdraw: document.getElementById('screen-withdraw'),
+			transfer: document.getElementById('screen-transfer'),
+		};
 
-        $('#canceltransfer').click(function(){
-            $('.general').css('display', 'block')
-            $('.transferUI').css('display', 'none')
-        });
+		function showScreen(name){
+			Object.values(screens).forEach(s => s.style.display = 'none');
+			screens[name].style.display = 'block';
+		}
 
-        document.onkeyup = function(data){
-            if (data.which == 27){
-                $('.main').css('display', 'none')
-                $('.general').css('display', 'none')
-                $('.deposit').css('display', 'none')
-                $('.withdraw').css('display', 'none')
-                $('.transferUI').css('display', 'none')
-                $('.depositUI').css('display', 'none')
-                $('#deposit1').css('display', 'none')
-                $('.withdrawUI').css('display', 'none')
-                $('.withdraw11').css('display', 'none')
-                $.post('http://new_banking/NUIFocusOff', JSON.stringify({}));
-            }
-        }
+		function post(endpoint, data){
+			fetch(`http://new_banking/${endpoint}`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json; charset=UTF-8' },
+				body: JSON.stringify(data || {})
+			});
+		}
 
-        const closetButton = document.querySelector('.tt #closet');
-        const mainButtons = document.querySelectorAll('.main .mainbt');
-        const ttImage = document.querySelector('.tt img');
-        let isCollapsed = false;
-        const maini = document.querySelector('.main')
+		function closeBank(){
+			app.style.display = 'none';
+			post('NUIFocusOff');
+		}
 
-closetButton.addEventListener('click', () => {
-    if (isCollapsed) {
-        mainButtons.forEach(button => {
-            const img = button.querySelector('img');
-            const text = button.getAttribute('data-text');
-            button.innerHTML = ''; 
-            button.appendChild(img); 
-            button.appendChild(document.createTextNode(text)); 
-            button.style.width = '90%'; 
-            closetButton.style.right = "70%";
-            maini.style.left = '83%';
-        });
-        ttImage.style.width = '150px'; 
-        isCollapsed = false;
-    } else {
-        mainButtons.forEach(button => {
-            const img = button.querySelector('img');
-            button.setAttribute('data-text', button.textContent.trim());
-            button.innerHTML = ''; 
-            button.appendChild(img); 
-            maini.style.left = '95%';
-             closetButton.style.right = "40%"
-            button.style.width = '50px'; 
-        });
-        ttImage.style.width = '50px'; 
-        isCollapsed = true;
-    }
-});
-    </script>
+		function formatMoney(n){
+			const num = Number(n) || 0;
+			return num.toLocaleString('en-US');
+		}
+
+		window.addEventListener('message', function(event){
+			const data = event.data;
+			if (data.type === 'openGeneral'){
+				app.style.display = 'block';
+				showScreen('home');
+			} else if (data.type === 'balanceHUD'){
+				const formatted = formatMoney(data.balance);
+				document.querySelectorAll('.username1').forEach(el => el.textContent = data.player);
+				document.querySelectorAll('.username1b').forEach(el => el.textContent = data.player);
+				document.querySelectorAll('.cardnumber1').forEach(el => el.textContent = data.cardnumber);
+				document.querySelectorAll('.curbalance').forEach(el => el.textContent = formatted);
+				document.querySelectorAll('.curbalance2').forEach(el => el.textContent = formatted);
+				document.querySelectorAll('.curbalance3').forEach(el => el.textContent = formatted);
+				document.querySelectorAll('.curbalance4').forEach(el => el.textContent = formatted);
+			} else if (data.type === 'closeAll'){
+				app.style.display = 'none';
+			}
+		});
+
+		document.getElementById('exitbank').addEventListener('click', closeBank);
+
+		document.querySelectorAll('[data-cancel]').forEach(btn => {
+			btn.addEventListener('click', () => showScreen('home'));
+		});
+
+		document.getElementById('deposit').addEventListener('click', () => showScreen('deposit'));
+		document.getElementById('withdraw').addEventListener('click', () => showScreen('withdraw'));
+		document.getElementById('transfer').addEventListener('click', () => showScreen('transfer'));
+
+		document.getElementById('form-deposit').addEventListener('submit', function(e){
+			e.preventDefault();
+			post('deposit', { amount: document.getElementById('amount').value });
+			closeBank();
+		});
+
+		document.getElementById('form-withdraw').addEventListener('submit', function(e){
+			e.preventDefault();
+			post('withdrawl', { amountw: document.getElementById('amountw').value });
+			closeBank();
+		});
+
+		document.getElementById('form-transfer').addEventListener('submit', function(e){
+			e.preventDefault();
+			post('transfer', {
+				to: document.getElementById('to').value,
+				amountt: document.getElementById('amountt').value
+			});
+			closeBank();
+		});
+
+		document.addEventListener('keyup', function(e){
+			if (e.key === 'Escape'){
+				closeBank();
+			}
+		});
+	</script>
+</body>
 </html>

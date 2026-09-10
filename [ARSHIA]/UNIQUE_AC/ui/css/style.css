@@ -96,7 +96,6 @@ button { color: inherit; }
 .risk-badge.risk-low { color: var(--success); background: rgba(52, 211, 153,.12); border: 1px solid rgba(52, 211, 153,.3); }
 .risk-badge.risk-mid { color: var(--warning); background: rgba(245, 158, 11,.12); border: 1px solid rgba(245, 158, 11,.3); }
 .risk-badge.risk-high { color: var(--danger); background: rgba(239, 68, 68,.14); border: 1px solid rgba(239, 68, 68,.4); }
-.changelog-box { white-space: pre-wrap; word-break: break-word; font: 12px/1.7 var(--font-mono); color: var(--text); background: rgba(0,0,0,.25); border: 1px solid var(--line); border-radius: 4px; padding: 18px; max-height: 60vh; overflow-y: auto; }
 .action-panel { margin-top: 14px; padding: 16px; border: 1px solid var(--line); border-radius: 9px; background: rgba(255,255,255,.04); }
 .action-panel-head { min-height: 48px; display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; }
 .mini-back { height: 36px; padding: 0 14px; border: 1px solid var(--line); border-radius: 5px; background: rgba(255,255,255,.04); cursor: pointer; }
@@ -453,4 +452,92 @@ input:focus { border-color: var(--line-hot); box-shadow: 0 0 0 3px rgba(91, 140,
 }
 .uniqueac-body {
   touch-action: pan-y;
+}
+
+/* ---------- Visual polish pass ---------- */
+
+.uniqueac-panel {
+  box-shadow:
+    0 30px 90px rgba(0,0,0,.6),
+    0 0 0 1px rgba(255,255,255,.03) inset,
+    0 1px 0 rgba(255,255,255,.06) inset;
+  animation: uniqueacPanelIn .28s cubic-bezier(.2,.8,.25,1) both;
+}
+@keyframes uniqueacPanelIn {
+  from { opacity: 0; transform: translateY(14px) scale(.985); }
+  to { opacity: 1; transform: none; }
+}
+
+.uniqueac-header {
+  background: linear-gradient(180deg, rgba(255,255,255,.03), transparent);
+}
+.brand-mark {
+  background: linear-gradient(135deg, rgba(91, 140, 255,.14), rgba(91, 140, 255,.02));
+  box-shadow: 0 0 0 1px rgba(91, 140, 255,.10) inset, 0 8px 18px rgba(91, 140, 255,.12);
+  transition: box-shadow .2s ease;
+}
+
+.status-pill {
+  box-shadow: 0 0 22px rgba(52, 211, 153,.16);
+}
+
+/* Tabs: animated underline + a touch more lift on the active tab */
+.tab-button { position: relative; }
+.tab-button.is-active {
+  box-shadow: 0 -10px 22px -14px rgba(91, 140, 255,.65);
+}
+.tab-button.is-active::after {
+  content: "";
+  position: absolute;
+  left: 14px; right: 14px; bottom: -2px;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  box-shadow: 0 0 10px rgba(91, 140, 255,.8);
+}
+
+/* Card lift-on-hover, applied broadly and consistently */
+.dash-card,
+.tool-card,
+.player-row, .record-row,
+.form-card,
+.access-player-row,
+.overview-card,
+.quarantine-row {
+  transition: transform .16s ease, border-color .16s ease, background .16s ease, box-shadow .16s ease;
+}
+.dash-card:hover,
+.tool-card:hover,
+.player-row:hover, .record-row:hover,
+.access-player-row:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 30px -18px rgba(0,0,0,.65);
+}
+.dash-card.danger:hover { box-shadow: 0 14px 30px -18px rgba(239, 68, 68,.45); }
+.tool-card.danger:hover { box-shadow: 0 14px 30px -18px rgba(239, 68, 68,.45); }
+
+/* Buttons: subtle press feedback everywhere */
+button { transition: transform .12s ease, filter .12s ease, border-color .16s ease, background .16s ease, box-shadow .16s ease; }
+button:active { transform: translateY(0) scale(.97); }
+.form-card button:hover, .pager button:not(:disabled):hover, .access-picker-head button:hover, .access-player-row button:hover {
+  filter: brightness(1.1);
+  box-shadow: 0 10px 22px -14px rgba(91, 140, 255,.6);
+}
+.danger-btn:hover { filter: brightness(1.12); box-shadow: 0 10px 22px -14px rgba(239, 68, 68,.65); }
+
+/* Keyboard accessibility: visible focus ring that matches the theme */
+button:focus-visible, input:focus-visible {
+  outline: 2px solid rgba(91, 140, 255,.75);
+  outline-offset: 2px;
+}
+
+/* Slightly richer risk / status color states */
+.risk-badge { transition: filter .16s ease; }
+.record-row:hover .risk-badge { filter: brightness(1.15); }
+
+@media (prefers-reduced-motion: reduce) {
+  .uniqueac-panel, .view, .dash-card, .tool-card, .player-row, .record-row, .access-player-row, button {
+    animation: none !important;
+    transition: none !important;
+  }
 }

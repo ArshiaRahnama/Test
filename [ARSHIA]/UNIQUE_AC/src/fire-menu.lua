@@ -1,5 +1,3 @@
-
-
 local isAdmin = false
 local pendingAdminMenuOpen = false
 local playerLocations = { coords = nil, heading = nil }
@@ -158,12 +156,6 @@ RegisterNetEvent("UNIQUE_AC:updateAppeals")
 AddEventHandler("UNIQUE_AC:updateAppeals", function(appeals)
     if not isAdmin then return end
     SendNUIMessage({ action = "updateAppeals", appeals = appeals or {} })
-end)
-
-RegisterNetEvent("UNIQUE_AC:updateChangelog")
-AddEventHandler("UNIQUE_AC:updateChangelog", function(content)
-    if not isAdmin then return end
-    SendNUIMessage({ action = "updateChangelog", content = content or "" })
 end)
 
 RegisterNetEvent("UNIQUE_AC:updateBranding")
@@ -769,12 +761,6 @@ end)
 RegisterNUICallback("getAppeals", function(data, cb)
     if not requireAdmin(cb) then return end
     TriggerServerEvent("UNIQUE_AC:getAppeals")
-    cb("ok")
-end)
-
-RegisterNUICallback("getChangelog", function(data, cb)
-    if not requireAdmin(cb) then return end
-    TriggerServerEvent("UNIQUE_AC:getChangelog")
     cb("ok")
 end)
 

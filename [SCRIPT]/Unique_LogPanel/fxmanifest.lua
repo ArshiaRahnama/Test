@@ -1,9 +1,10 @@
 fx_version 'bodacious'
 game 'gta5'
+lua54 'yes'
 
-description 'Unique LogPanel - پنل لاگ ادمین/باس با تب‌بندی دسته و شغل'
+description 'Unique LogPanel - پنل لاگ ادمین/باس با تب‌بندی دسته و شغل، آمار، خروجی CSV، حذف و لایو‌آپدیت'
 author 'Arshia'
-version '1.0.0'
+version '2.0.0'
 
 server_script {
 	'@oxmysql/lib/MySQL.lua',

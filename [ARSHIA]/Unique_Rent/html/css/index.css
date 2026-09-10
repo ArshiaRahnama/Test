@@ -62,6 +62,8 @@ body, input, button {
 .content {
   width: 1360px;
   max-height: 82vh;
+  display: flex;
+  flex-direction: column;
   background:
     radial-gradient(120% 140% at 50% -10%, rgba(232, 183, 60, 0.10), transparent 55%),
     var(--panel);
@@ -94,11 +96,42 @@ body, input, button {
 }
 
 /* ---------------------------------------------------------------
+   Close button
+--------------------------------------------------------------- */
+
+.panel-close {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  z-index: 5;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 50%;
+  color: var(--muted);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.panel-close:hover {
+  background: rgba(255, 90, 78, 0.12);
+  border-color: rgba(255, 90, 78, 0.4);
+  color: var(--danger);
+  transform: rotate(90deg);
+}
+
+/* ---------------------------------------------------------------
    Header
 --------------------------------------------------------------- */
 
 .panel-header {
-  padding: 30px 44px 18px;
+  flex: 0 0 auto;
+  padding: 30px 60px 18px 44px;
 }
 
 .panel-eyebrow {
@@ -129,15 +162,65 @@ body, input, button {
 }
 
 /* ---------------------------------------------------------------
+   Filter tabs
+--------------------------------------------------------------- */
+
+.filters {
+  flex: 0 0 auto;
+  padding: 0 34px 18px;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.filter-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'Manrope', sans-serif;
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 100px;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.15s ease;
+}
+
+.filter-tab i {
+  font-size: 12px;
+}
+
+.filter-tab:hover {
+  color: var(--cream);
+  border-color: rgba(232, 183, 60, 0.35);
+}
+
+.filter-tab:active {
+  transform: scale(0.96);
+}
+
+.filter-tab.is-active {
+  color: #1c1508;
+  background: linear-gradient(135deg, var(--gold-1), var(--gold-2));
+  border-color: transparent;
+  box-shadow: 0 6px 16px rgba(232, 183, 60, 0.25);
+}
+
+/* ---------------------------------------------------------------
    Vehicle grid
 --------------------------------------------------------------- */
 
 .vehicles {
   width: 100%;
-  max-height: 62vh;
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
   scroll-behavior: smooth;
-  padding: 22px 34px 34px;
+  padding: 4px 34px 34px;
   display: flex;
   flex-wrap: wrap;
   gap: 18px;
@@ -194,6 +277,7 @@ body, input, button {
 }
 
 .vehicle .image {
+  position: relative;
   width: 100%;
   height: 108px;
   display: flex;
@@ -207,11 +291,41 @@ body, input, button {
   max-height: 100%;
   object-fit: contain;
   filter: drop-shadow(0 10px 14px rgba(0, 0, 0, 0.55));
-  transition: transform 0.25s ease;
+  transition: transform 0.25s ease, opacity 0.25s ease;
 }
 
 .vehicle:hover .image img {
-  transform: scale(1.05) translateY(-2px);
+  transform: scale(1.05) translateY(-6px);
+  opacity: 0.35;
+}
+
+.rent-cta {
+  position: absolute;
+  left: 50%;
+  bottom: 6px;
+  transform: translate(-50%, 6px);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'Manrope', sans-serif;
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #1c1508;
+  background: linear-gradient(135deg, var(--gold-1), var(--gold-2));
+  padding: 7px 16px;
+  border-radius: 100px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  box-shadow: 0 8px 18px rgba(232, 183, 60, 0.3);
+  transition: opacity 0.22s ease, transform 0.22s ease;
+}
+
+.vehicle:hover .rent-cta {
+  opacity: 1;
+  transform: translate(-50%, 0);
 }
 
 .vehicle .footer {
@@ -223,11 +337,19 @@ body, input, button {
 }
 
 .vehicle .footer .footer-type {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   font-weight: 600;
   font-size: 10px;
   letter-spacing: 1.6px;
   text-transform: uppercase;
   color: var(--muted);
+}
+
+.vehicle .footer .footer-type i {
+  font-size: 11px;
+  color: var(--gold-2);
 }
 
 .vehicle .footer .footer-price {
@@ -240,6 +362,32 @@ body, input, button {
   border: 1px solid rgba(232, 183, 60, 0.3);
   padding: 4px 12px;
   border-radius: 100px;
+}
+
+/* ---------------------------------------------------------------
+   Empty state
+--------------------------------------------------------------- */
+
+.panel-empty {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 40px 34px 60px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.panel-empty i {
+  font-size: 30px;
+  color: var(--gold-3);
+}
+
+.panel-empty p {
+  font-size: 13px;
+  max-width: 320px;
 }
 
 /* Scrollbar */
@@ -324,9 +472,18 @@ body, input, button {
 
 .info-title {
   font-family: 'Manrope', sans-serif;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
-  letter-spacing: 2px;
+  letter-spacing: 0.5px;
+  color: var(--cream);
+}
+
+.info-sub {
+  margin-top: 3px;
+  font-family: 'Manrope', sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1px;
   text-transform: uppercase;
   color: var(--muted);
 }
@@ -340,6 +497,7 @@ body, input, button {
 .ring-progress.is-critical { stroke: var(--danger); }
 
 .panel-credit {
+  flex: 0 0 auto;
   text-align: right;
   padding: 0 34px 16px;
   font-family: 'Manrope', sans-serif;

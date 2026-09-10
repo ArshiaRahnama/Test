@@ -156,7 +156,6 @@ const pageLoaders = {
   quarantine: getQuarantineList,
   adminlog: getAdminLog,
   appeals: getAppeals,
-  changelog: getChangelog,
 };
 
 $(function () {
@@ -198,7 +197,6 @@ $(function () {
     else if (data.action === "updatePlayerProfile") updatePlayerProfile(data.profile || null);
     else if (data.action === "updateAdminLog") updateAdminLog(data.log || []);
     else if (data.action === "updateAppeals") updateAppeals(data.appeals || []);
-    else if (data.action === "updateChangelog") updateChangelog(data.content || "");
     else if (data.action === "updateBranding") updateBranding(data.branding || {});
     else if (data.action === "updateAccessPlayers") updateAccessPlayers(data.scope, data.players || []);
     else if (data.action === "updateDashboardStats") updateDashboardStats(data.stats || {});
@@ -251,7 +249,6 @@ function getWhitelistData() { nuiPost("getWhitelistData", listPayload("whitelist
 function getQuarantineList() { nuiPost("getQuarantineList"); }
 function getAdminLog() { nuiPost("getAdminLog"); }
 function getAppeals() { nuiPost("getAppeals"); }
-function getChangelog() { nuiPost("getChangelog"); }
 
 function primaryName(row, fallback) {
   return row?.PLAYER_NAME || row?.player_name || row?.name || fallback || "Unknown";
@@ -656,10 +653,6 @@ function updateAppeals(list) {
       </div>
     `);
   });
-}
-
-function updateChangelog(content) {
-  document.getElementById("changelog-box").textContent = content || "No changelog available.";
 }
 
 function updateBranding(branding) {

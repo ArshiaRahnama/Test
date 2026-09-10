@@ -1,7 +1,19 @@
+-- Looks up a vehicle's config entry (label/type/etc.) by its model name,
+-- used to show the vehicle's name on the rental timer panel.
+function get_vehicle_info(model)
+	for k, v in pairs(Config.Vehicles) do
+		if v.model == model then
+			return v
+		end
+	end
+	return nil
+end
+
 function rent_vehicle(model, price, location)
 	for k,v in pairs(Config.Locations) do
 		if k == location then
 			local spawn_coords = v.spawn_coords
+			local vehicleInfo = get_vehicle_info(model)
 			ESX.TriggerServerCallback('unique_rent:check', function(can)
 				if can then
 					RequestModel(model)
@@ -18,7 +30,7 @@ function rent_vehicle(model, price, location)
 						end)
 						TriggerServerEvent('unique_rent:pay', price, model)
 						if Config.Options['time'] then
-							show_timer()
+							show_timer(vehicleInfo)
 						end
 					else
 						Notification(Config.Options['spawnpoint_blocked'])
@@ -67,8 +79,8 @@ function set_blip(remove)
 	end
 end
 
-function show_timer()
-	SendNUIMessage({action = "show_timer", content = { time = Config.Options['time_rent'] }})
+function show_timer(vehicleInfo)
+	SendNUIMessage({action = "show_timer", content = { time = Config.Options['time_rent'], vehicle = vehicleInfo }})
 	SetNuiFocus(false, false)
 end
 

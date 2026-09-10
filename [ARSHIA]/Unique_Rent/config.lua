@@ -25,7 +25,6 @@ Config.Locations = {
                 type = 2,
                 size  = {x = 0.3, y = 0.3, z = 0.3},
                 color = {r = 255, g = 255, b = 255},
-                text = '[ ~g~E~w~ ] Rent Vehicle',
                 text = '[ ~g~E~w~ ] Rent Vehicle'
             },
             return_spot = {

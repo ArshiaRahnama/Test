@@ -1,5 +1,3 @@
-
-
 do
     local versionFile = LoadResourceFile(GetCurrentResourceName(), "VERSION")
     if versionFile then
@@ -11,6 +9,16 @@ do
 end
 
 local COLORS = math.random(1, 9)
+
+-- Routine/high-frequency console output (per-connection checks, trust-score churn,
+-- startup file listing) only prints when UNIQUE_AC.Debug is true. Security-relevant
+-- events (bans, kicks, unbans, tamper alerts, resource conflicts, quarantine) use
+-- plain print(...) directly further down and are never suppressed.
+local function DebugPrint(msg)
+    if UNIQUE_AC.Debug then
+        print(msg)
+    end
+end
 
 local HEALTH_SAMPLES = {}
 local HEALTH_START_TIME = GetGameTimer()
@@ -171,7 +179,7 @@ local function UNIQUE_AC_PostConnectValidation(src, playerName)
         DropPlayer(src, ("\n[UNIQUE_AC]\nYou are banned from this server.\nReason: %s\nBan ID: #%s"):format(reason, banId))
         return
     elseif not okBan then
-        print("^1[UNIQUE_AC]^0 Ban-list lookup failed during post-connect validation; player was allowed fail-open.")
+        DebugPrint("^1[UNIQUE_AC]^0 Ban-list lookup failed during post-connect validation; player was allowed fail-open.")
     end
 
     if UNIQUE_AC.Connection and UNIQUE_AC.Connection.AntiBlackListName and type(Names) == "table" then
@@ -574,7 +582,7 @@ function UNIQUE_AC_ENFORCE(src, action, reason, details)
     end
 
     if st.trust > 0 then
-        print(("^3[UNIQUE_AC]^0 Trust score for ^3%s^0 now %d/100 | %s"):format(GetPlayerName(src) or src, st.trust, reason))
+        DebugPrint(("^3[UNIQUE_AC]^0 Trust score for ^3%s^0 now %d/100 | %s"):format(GetPlayerName(src) or src, st.trust, reason))
         return
     end
 
@@ -739,14 +747,6 @@ AddEventHandler("UNIQUE_AC:getAdminLog", function()
     MySQL.Async.fetchAll("SELECT admin_name, action, target_name, reason, UNIX_TIMESTAMP(created_at) AS at FROM uniqueac_admin_log ORDER BY id DESC LIMIT " .. limit, {}, function(rows)
         TriggerClientEvent("UNIQUE_AC:updateAdminLog", src, rows or {})
     end)
-end)
-
-RegisterNetEvent("UNIQUE_AC:getChangelog")
-AddEventHandler("UNIQUE_AC:getChangelog", function()
-    local src = tonumber(source)
-    if not src or not UNIQUE_AC_GETADMINS(src) then return end
-    local content = LoadResourceFile(GetCurrentResourceName(), "update.txt") or "update.txt not found."
-    TriggerClientEvent("UNIQUE_AC:updateChangelog", src, content)
 end)
 
 RegisterNetEvent("UNIQUE_AC:getBranding")
@@ -2393,7 +2393,7 @@ AddEventHandler("playerConnecting", function(playerName, setKickReason, deferral
     end
 
     local name = uniqueacText(playerName or GetPlayerName(src) or ("ID " .. tostring(src)), "Player", 64)
-    print(("^%sUNIQUE_AC^0: ^2Player ^3%s ^2Connecting ...^0"):format(COLORS, name))
+    DebugPrint(("^%sUNIQUE_AC^0: ^2Player ^3%s ^2Connecting ...^0"):format(COLORS, name))
 
     local hasDeferral = deferrals and deferrals.defer and deferrals.update and deferrals.done
     if not hasDeferral then
@@ -2444,7 +2444,7 @@ AddEventHandler("playerConnecting", function(playerName, setKickReason, deferral
         finish(("\n[UNIQUE_AC]\nYou are banned from this server.\nReason: %s\nBan ID: #%s"):format(reason, banId))
         return
     elseif not okBan then
-        print("^3[UNIQUE_AC]^0 Ban-list lookup failed during connection; allowing player fail-open.")
+        DebugPrint("^3[UNIQUE_AC]^0 Ban-list lookup failed during connection; allowing player fail-open.")
     end
 
     if UNIQUE_AC.Connection and UNIQUE_AC.Connection.AntiBlackListName and type(Names) == "table" then
@@ -2485,13 +2485,13 @@ AddEventHandler("playerConnecting", function(playerName, setKickReason, deferral
             if finished then return end
             finished = true
             if statusCode ~= 200 or not body or body == "" then
-                print("^3[UNIQUE_AC]^0 VPN lookup unavailable; allowing player fail-open.")
+                DebugPrint("^3[UNIQUE_AC]^0 VPN lookup unavailable; allowing player fail-open.")
                 allow("VPN lookup unavailable")
                 return
             end
             local ok, data = pcall(json.decode, body)
             if not ok or type(data) ~= "table" or data.status == "fail" then
-                print("^3[UNIQUE_AC]^0 Invalid VPN lookup response; allowing player fail-open.")
+                DebugPrint("^3[UNIQUE_AC]^0 Invalid VPN lookup response; allowing player fail-open.")
                 allow("VPN lookup invalid")
                 return
             end
@@ -2513,7 +2513,7 @@ AddEventHandler("playerConnecting", function(playerName, setKickReason, deferral
             Wait(8000)
             if not finished then
                 finished = true
-                print("^3[UNIQUE_AC]^0 VPN lookup timed out; allowing player fail-open.")
+                DebugPrint("^3[UNIQUE_AC]^0 VPN lookup timed out; allowing player fail-open.")
                 allow("VPN lookup timed out")
             end
         end)
@@ -2654,7 +2654,7 @@ function StartAntiCheat()
     }
     for tableName, sql in pairs(newTables) do
         MySQL.Async.execute(sql, {}, function()
-            print(("^2[UNIQUE_AC]^0 Table `%s` ready."):format(tableName))
+            DebugPrint(("^2[UNIQUE_AC]^0 Table `%s` ready."):format(tableName))
         end)
     end
 
@@ -2667,9 +2667,11 @@ function StartAntiCheat()
     }
 
     local missing = {}
+    local loadedCount = 0
     for _, resource in ipairs(resources) do
         if LoadResourceFile(GetCurrentResourceName(), resource) then
-            print("^" .. COLORS .. "[UNIQUE_AC]^0: ^2" .. resource .. " LOADED !^0")
+            loadedCount = loadedCount + 1
+            DebugPrint("^" .. COLORS .. "[UNIQUE_AC]^0: ^2" .. resource .. " LOADED !^0")
         else
             missing[#missing + 1] = resource
         end
@@ -2681,8 +2683,12 @@ function StartAntiCheat()
         return false
     end
 
-    print("^" .. COLORS .. "")
-    print([[
+    DebugPrint("^" .. COLORS .. "[UNIQUE_AC]^0: ^2" .. loadedCount .. "/" .. #resources .. " data files loaded.^0")
+
+    -- Full ASCII banner + links only in Debug mode, to keep a normal restart to one line.
+    if UNIQUE_AC.Debug then
+        print("^" .. COLORS .. "")
+        print([[
     #   # #   # #####  ###  #   # #####        ###   ####
     #   # ##  #   #   #   # #   # #           #   # #
     #   # # # #   #   #   # #   # #           #   # #
@@ -2691,19 +2697,20 @@ function StartAntiCheat()
     #   # #   #   #   #  ## #   # #           #   # #
      ###  #   # #####  ####  ###  ##### ##### #   #  ####
                     ]])
+        print("^3═════════════════════════════════════════════════════════════════════════════════")
+        print("^1★ ^3Arshia ^1-> ^5arshiahub.ir")
+        print("^1★ ^3Payamresan ^1-> ^5arshiahub.ir/payamresan")
+        print("^1★ ^3Derive ^1-> ^5arshiahub.ir/derive")
+        print("^1★ ^3Mail ^1-> ^5arshiahub.ir/mail")
+        print("^1★ ^3Music ^1-> ^5arshiahub.ir/music")
+        print("^3═════════════════════════════════════════════════════════════════════════════════")
+        print("^6This resource is Owner by ^5arshiahub.ir^6!")
+    end
 
     local configuredPort = tostring(UNIQUE_AC.ServerConfig.Port or "auto")
     local actualPort = GetConvar("netPort", configuredPort)
     local artifact = GetConvar("version", "unknown build")
 
-    print("^3═════════════════════════════════════════════════════════════════════════════════")
-    print("^1★ ^3Arshia ^1-> ^5arshiahub.ir")
-    print("^1★ ^3Payamresan ^1-> ^5arshiahub.ir/payamresan")
-    print("^1★ ^3Derive ^1-> ^5arshiahub.ir/derive")
-    print("^1★ ^3Mail ^1-> ^5arshiahub.ir/mail")
-    print("^1★ ^3Music ^1-> ^5arshiahub.ir/music")
-    print("^3═════════════════════════════════════════════════════════════════════════════════")
-    print("^6This resource is Owner by ^5arshiahub.ir^6!")
     print("^" .. COLORS .. "[UNIQUE_AC]^0: ^3Server Build : " .. tostring(artifact))
     print("^" .. COLORS .. "[UNIQUE_AC]^0: ^2Version " .. tostring(UNIQUE_AC.Version) .. " started successfully on port " .. tostring(actualPort) .. ".^0")
 

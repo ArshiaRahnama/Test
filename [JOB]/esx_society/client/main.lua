@@ -170,6 +170,14 @@ function OpenBossMenu(society, close, options)
 		end
 	end
 
+	-- Unique_LogPanel: فقط برای باس واقعی شغل (grade_name == 'boss') نشون داده می‌شه،
+	-- مستقل از شرط‌های عددی grade بالا، چون خودِ Unique_LogPanel هم سمت سرور دقیقاً
+	-- همین چک (grade_name == 'boss') رو انجام می‌ده. اگه ریسورس نصب نباشه، دکمه بی‌اثره
+	-- (سرور با یه نوتیفیکیشن جواب می‌ده، نه کرش).
+	if ESX.PlayerData.job.grade_name == 'boss' then
+		table.insert(elements, {label = '🗂️ Mosahede Logha (LogPanel)', value = 'open_logpanel'})
+	end
+
 	ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'boss_actions_' .. society, {
 		title    = _U('boss_menu'),
 		align    = 'top-left',
@@ -209,6 +217,9 @@ function OpenBossMenu(society, close, options)
 			OpenManagedivisionMenu(society)
 		elseif data.current.value == 'change_branch_job' then
 			OpenChangeBranchJobMenu(society, close, options)
+		elseif data.current.value == 'open_logpanel' then
+			menu.close()
+			TriggerEvent('LogPanel:OpenBossPanel')
 		end
 
 	end, function(data, menu)
