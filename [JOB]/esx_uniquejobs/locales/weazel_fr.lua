@@ -1,4 +1,4 @@
-Locales['fr'] = Locales['fr'] or {}
+Locales['fr_weazel'] = Locales['fr_weazel'] or {}
 for k, v in pairs({
 
 	['cloakroom'] = 'Vestiaire',
@@ -61,4 +61,4 @@ for k, v in pairs({
     ['billing_amount']           = 'Montant de la facture',
     ['amount_invalid']           = 'Montant invalide',
 
-}) do Locales['fr'][k] = v end
+}) do Locales['fr_weazel'][k] = v end

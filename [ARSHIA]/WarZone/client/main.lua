@@ -1373,7 +1373,14 @@ CreateThread(function()
 						if v.CanUse  then 
 							local elements = {}
 							table.insert(elements, {label = ("[------- WarZone Shop -------]"), value = 'BP'})
-							table.insert(elements, {label = ("Your WzCash : "..MyCash), value = 'vest50'})
+							-- Fix: this row's `value` was 'vest50' -- the exact
+							-- same value as the real "Armor [2] 300$" purchase
+							-- row below it. Selecting this info-only balance
+							-- display would silently charge 300$ for armor the
+							-- player never meant to buy. Given the same inert
+							-- value the separator rows use, so selecting it
+							-- does nothing.
+							table.insert(elements, {label = ("Your WzCash : "..MyCash), value = 'BP'})
 							table.insert(elements, {label = ("Armor [2]  300$"), value = 'vest50'})
 							table.insert(elements, {label = ("Bandage [2]  300$"), value = 'heal50'})
 							table.insert(elements, {label = ("Armor Pack [4] 500$"), value = 'vest100'})
@@ -1514,8 +1521,21 @@ function UpdateStatus (Count ,
 			MyArmor = GetPedArmour(Ped)  
 			for k,v in pairs( MyPlayersID ) do 
 				if v ~= 0 then 
-					PStatus[k].Heal  =  GetEntityHealth(NetworkGetPlayerIndexFromPed(GetPlayerPed(GetPlayerFromServerId(v))))
-					PStatus[k].Armor =  GetPedArmour(NetworkGetPlayerIndexFromPed(GetPlayerPed(GetPlayerFromServerId(v))))
+					-- Fix: NetworkGetPlayerIndexFromPed() converts a PED into a
+					-- PLAYER INDEX -- the opposite of what's needed here. Calling
+					-- GetEntityHealth/GetPedArmour on that player index (not a
+					-- ped) silently reads the wrong handle table, so teammate
+					-- health/armor on the HUD always showed wrong/default
+					-- numbers. GetPlayerPed(...) already returns the ped -- use
+					-- it directly.
+					local teammatePed = GetPlayerPed(GetPlayerFromServerId(v))
+					if teammatePed ~= 0 then
+						PStatus[k].Heal  =  GetEntityHealth(teammatePed)
+						PStatus[k].Armor =  GetPedArmour(teammatePed)
+					else
+						PStatus[k].Heal  =  0
+						PStatus[k].Armor =  0
+					end
 					
 				else 
 				

@@ -1,4 +1,4 @@
-Locales['fi'] = Locales['fi'] or {}
+Locales['fi_mechanic'] = Locales['fi_mechanic'] or {}
 for k, v in pairs({
   ['mechanic']                  = 'mekaanikko',
   ['drive_to_indicated']        = '~y~Aja~s~ merkattuun pisteeseen.',
@@ -83,4 +83,4 @@ for k, v in pairs({
   ['have_withdrawn']            = 'sinä nostit ~y~x%s~s~ ~b~%s~s~',
   ['have_deposited']            = 'sinä talletit ~y~x%s~s~ ~b~%s~s~',
   ['player_cannot_hold']        = 'sinulla ~r~ei ole~w~ tarpeeksi ~y~vapaata tilaa~w~ repussasi!',
-}) do Locales['fi'][k] = v end
+}) do Locales['fi_mechanic'][k] = v end

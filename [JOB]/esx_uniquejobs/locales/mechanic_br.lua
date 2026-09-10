@@ -1,4 +1,4 @@
-Locales['br'] = Locales['br'] or {}
+Locales['br_mechanic'] = Locales['br_mechanic'] or {}
 for k, v in pairs({
   ['mechanic']                  = 'Mecânico',
   ['drive_to_indicated']        = '~y~Dirija~s~ para a localização indicada.',
@@ -83,4 +83,4 @@ for k, v in pairs({
   ['have_withdrawn']            = 'você retirou ~y~x%s~s~ ~b~%s~s~',
   ['have_deposited']            = 'você depositou ~y~x%s~s~ ~b~%s~s~',
   ['player_cannot_hold']        = 'you do ~r~not~w~ have enough ~y~free space~w~ in your inventory!',
-}) do Locales['br'][k] = v end
+}) do Locales['br_mechanic'][k] = v end

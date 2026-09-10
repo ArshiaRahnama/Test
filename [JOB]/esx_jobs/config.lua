@@ -252,6 +252,12 @@ Config.UniformConfigKey = {
 	tailor      = 'Uniforms_Tailor'
 }
 
+-- Optional per-job pad position override. If a job isn't listed here, the
+-- pad falls back to the auto-computed spot (1m beside the cloakroom).
+Config.UniformEditorPadOverride = {
+	fueler = {x = 558.36, y = -2330.46, z = 5.82, heading = 296.97}
+}
+
 -- ===== Miner job (merged in from esx_minerjob) =====
 -- Namespaced under Config.Miner so it can't clobber the Config table above
 -- (the original esx_minerjob/config.lua did `Config = {...}` as a *global*,

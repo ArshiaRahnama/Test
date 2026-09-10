@@ -1,3 +1,21 @@
+-- FIX: this job now reads ONLY from its own isolated locale namespace
+-- (Locales['en_weazel']) instead of the old shared global Locales['en'] table
+-- every job's locale file (across all 13 jobs in this resource) used to
+-- dump into - see the LE/DOJ jobs' identical fix for the full reason
+-- (key collisions silently let one job's locale file override another's
+-- for any key name they both happened to use). This local override only
+-- affects _U() calls inside THIS file (Lua locals are per-chunk).
+local function _U(str, ...)
+	local tbl = Locales['en_weazel']
+	local v = tbl and tbl[str]
+
+	if ( v == nil ) then
+		return "Error [en_weazel][" .. tostring(str) .. "] Be Developer Elam Konid"
+	end
+
+	return tostring(string.format(v, ...):gsub("^%l", string.upper))
+end
+
 local Keys = {
   ["ESC"] = 322, ["F1"] = 288, ["F2"] = 289, ["F3"] = 170, ["F5"] = 166, ["F6"] = 167, ["F7"] = 168, ["F8"] = 169, ["F9"] = 56, ["F10"] = 57,
   ["~"] = 243, ["1"] = 157, ["2"] = 158, ["3"] = 160, ["4"] = 164, ["5"] = 165, ["6"] = 159, ["7"] = 161, ["8"] = 162, ["9"] = 163, ["-"] = 84, ["="] = 83, ["BACKSPACE"] = 177,

@@ -1,4 +1,4 @@
-Locales['en'] = Locales['en'] or {}
+Locales['en_mechanic'] = Locales['en_mechanic'] or {}
 for k, v in pairs({
   ['mechanic']                  = 'Mechanic',
   ['drive_to_indicated']        = '~y~Drive~s~ to the indicated location.',
@@ -102,4 +102,4 @@ for k, v in pairs({
   ['store_vehicle'] = 'press ~INPUT_CONTEXT~ to store the vehicle',
 
   ['extra_division'] = 'Extera Division',
-}) do Locales['en'][k] = v end
+}) do Locales['en_mechanic'][k] = v end

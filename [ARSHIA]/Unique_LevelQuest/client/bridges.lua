@@ -14,12 +14,12 @@ Citizen.CreateThread(function()
 end)
 
 local onDutyJobs = {
-    police       = 'quest-police:onduty',
-    sheriff      = 'quest-sheriff:onduty',
-    metropolitan = 'quest-metropolitan:onduty',
-    ambulance    = 'quest-ambulance:onduty',
-    mechanic     = 'quest-mechanic:onduty',
-    taxi         = 'quest-taxi:onduty',
+    police    = 'quest-police:onduty',
+    sheriff   = 'quest-sheriff:onduty',
+    mt        = 'quest-metropolitan:onduty', -- internal job name is `mt`; event name kept as-is, just an identifier
+    ambulance = 'quest-ambulance:onduty',
+    mechanic  = 'quest-mechanic:onduty',
+    taxi      = 'quest-taxi:onduty',
 }
 
 -- Tracked for the paycheck countdown in the header (client/menu.lua).

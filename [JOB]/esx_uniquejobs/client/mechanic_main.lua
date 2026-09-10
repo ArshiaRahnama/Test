@@ -1,3 +1,21 @@
+-- FIX: this job now reads ONLY from its own isolated locale namespace
+-- (Locales['en_mechanic']) instead of the old shared global Locales['en'] table
+-- every job's locale file (across all 13 jobs in this resource) used to
+-- dump into - see the LE/DOJ jobs' identical fix for the full reason
+-- (key collisions silently let one job's locale file override another's
+-- for any key name they both happened to use). This local override only
+-- affects _U() calls inside THIS file (Lua locals are per-chunk).
+local function _U(str, ...)
+	local tbl = Locales['en_mechanic']
+	local v = tbl and tbl[str]
+
+	if ( v == nil ) then
+		return "Error [en_mechanic][" .. tostring(str) .. "] Be Developer Elam Konid"
+	end
+
+	return tostring(string.format(v, ...):gsub("^%l", string.upper))
+end
+
 
 
 local Keys = {

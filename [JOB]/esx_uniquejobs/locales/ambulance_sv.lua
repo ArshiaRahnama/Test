@@ -1,4 +1,4 @@
-Locales['sv'] = Locales['sv'] or {}
+Locales['sv_ambulance'] = Locales['sv_ambulance'] or {}
 for k, v in pairs({
 
   ['cloakroom'] = 'omklädnignsrum',
@@ -88,4 +88,4 @@ for k, v in pairs({
   ['not_enough_medikit'] = 'du har inget ~b~Medecinkit~s~.',
   ['not_enough_bandage'] = 'du har inget ~b~Bandage~s~.',
   ['healed'] = 'dina skador har blivit behandlade.',
-}) do Locales['sv'][k] = v end
+}) do Locales['sv_ambulance'][k] = v end

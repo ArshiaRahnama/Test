@@ -67,7 +67,13 @@ Config.JobQuests = {
         {name = "Onduty", description = "Daryaft Salary Onduty", trigger = "quest-sheriff:onduty", requiredTrigger = 6, XP = 10, coin = 0.04},
     },
 
-    ["metropolitan"] = {
+    -- NOTE: table key here is xPlayer.job.name, and Metropolitan's real
+    -- internal job name is `mt` (see `[BASE]/database.sql`'s `jobs`
+    -- table — label "Metropolitan"), not "metropolitan". Was wrong
+    -- before, which meant this quest could never be assigned to any
+    -- Metropolitan officer (GenerateQuests below never found a matching
+    -- pool for job.name == "mt").
+    ["mt"] = {
         {name = "Onduty", description = "Daryaft Salary Onduty", trigger = "quest-metropolitan:onduty", requiredTrigger = 6, XP = 10, coin = 0.04},
     },
 
@@ -175,19 +181,38 @@ Config.GangQuest = {
     -- exists anywhere in this server's resources, so left disabled.
 }
 
--- ===== Skill tab ===== --
+-- ===== Skill tab (also drives which jobs get a Duty tab — server/duty.lua) ===== --
 -- Real, honest tracking: every ~15 minutes a player spends ON DUTY in
 -- one of these jobs (driven by the same esx:givesalary tick already
 -- used for the Onduty quest — essentialmode's own paycheck interval is
 -- 15 minutes), that job's skill minutes go up. No fake/instant progress.
 Config.SkillTargetMinutes = 3000 -- 50 hours of on-duty time = 100%
+
+-- Keys MUST be the job's internal `name` (jobs.name / xPlayer.job.name),
+-- not its display label — checked against `[BASE]/database.sql`'s
+-- `jobs` table. `metropolitan` here used to be wrong (the real internal
+-- name is `mt` — label "Metropolitan") which meant Metropolitan never
+-- actually got Skill tracking, fixed below alongside adding the rest of
+-- DOJ/LAW/Organ Services.
 Config.TrackedJobs = {
-    police       = "Police",
-    sheriff      = "Sheriff",
-    metropolitan = "Metropolitan",
-    ambulance    = "Ambulance",
-    mechanic     = "Mechanic",
-    taxi         = "Taxi",
+    -- Department Of Justice
+    cid     = "CID",
+    cia     = "CIA",
+    marshal = "Marshal",
+    fbi     = "FBI",
+    judge   = "Judge",
+    doa     = "DOA",
+
+    -- Law Enforcement
+    police  = "Police",
+    sheriff = "Sheriff",
+    mt      = "Metropolitan",
+
+    -- Organ Services
+    taxi      = "Taxi",
+    mechanic  = "Mechanic",
+    ambulance = "Medic", -- internal job name is `ambulance`; label shown is "Medic" per notejobserver.txt
+    weazel    = "Weazel",
 }
 
 -- Coin rewards paid once when a skill first crosses each threshold —

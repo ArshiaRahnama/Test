@@ -133,17 +133,8 @@ AddEventHandler('esx:playerLoaded', function(xPlayer)
 end)
 
 
--- job name -> male/female work-wear ids, same lookup your original OpenMenu used
-local UniformsByJob = {
-	fueler      = Config.Uniforms_Fueler,
-	lumberjack  = Config.Uniforms_Lumberjack,
-	slaughterer = Config.Uniforms_Slaughterer,
-	tailor      = Config.Uniforms_Tailor
-}
-
 function OpenMenu(job)
 	ESX.UI.Menu.CloseAll()
-	local lebasmenu = UniformsByJob[job]
 
 	ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'cloakroom',
 	{
@@ -157,14 +148,21 @@ function OpenMenu(job)
 			ESX.TriggerServerCallback('esx_skin:getPlayerSkin', function(skin)
 				TriggerEvent('skinchanger:loadSkin', skin)
 			end)
-		elseif data.current.value == 'job_wear' and lebasmenu then
-			TriggerEvent('skinchanger:getSkin', function(skin)
-				if skin.sex == 0 then
-					TriggerEvent('skinchanger:loadClothes', skin, lebasmenu.work_wear.male)
-				else
-					TriggerEvent('skinchanger:loadClothes', skin, lebasmenu.work_wear.female)
-				end
-			end)
+		elseif data.current.value == 'job_wear' then
+			-- the admin uniform editor only updates Config server-side (it's
+			-- a different Lua VM than the client's), so this has to ask the
+			-- server for the current work_wear every time rather than
+			-- reading this client's own local, never-updated config.lua copy
+			ESX.TriggerServerCallback('esx_jobs:getActiveUniform', function(workWear)
+				if not workWear then return end
+				TriggerEvent('skinchanger:getSkin', function(skin)
+					if skin.sex == 0 then
+						TriggerEvent('skinchanger:loadClothes', skin, workWear.male)
+					else
+						TriggerEvent('skinchanger:loadClothes', skin, workWear.female)
+					end
+				end)
+			end, job)
 		end
 		menu.close()
 	end, function(data, menu)
@@ -628,6 +626,7 @@ Citizen.CreateThread(function()
 	RequestIpl("id2_14_during_door")
 	RequestIpl("id2_14_during1")
 end)
+RegisterNetEvent('startJob')
 AddEventHandler('startJob',function(name)
     if firstLocationBlip[name] then
         SetNewWaypoint(GetBlipCoords(firstLocationBlip[name]).xy)
@@ -769,64 +768,64 @@ local function ShowUniformHistoryMenu(job)
 	end, job)
 end
 
-local uniformEditorPads = {}
+local function SpawnUniformEditorPed(job, jobData)
+	local cloak = jobData.Zones and jobData.Zones.CloakRoom
+	if not cloak then return end
+
+	local override = Config.UniformEditorPadOverride and Config.UniformEditorPadOverride[job]
+	local padPos = override
+		and {x = override.x, y = override.y, z = override.z}
+		or {x = cloak.Pos.x + 1.0, y = cloak.Pos.y, z = cloak.Pos.z - 1.0}
+	local padHeading = (override and override.heading) or 0.0
+	local model = GetHashKey('a_m_y_business_01')
+
+	Citizen.CreateThread(function()
+		RequestModel(model)
+		local timeout = 0
+		while not HasModelLoaded(model) and timeout < 500 do
+			Citizen.Wait(10)
+			timeout = timeout + 1
+		end
+		if not HasModelLoaded(model) then return end
+
+		local ped = CreatePed(4, model, padPos.x, padPos.y, padPos.z, padHeading, false, false)
+		SetEntityInvincible(ped, true)
+		SetBlockingOfNonTemporaryEvents(ped, true)
+		FreezeEntityPosition(ped, true)
+		SetEntityAsMissionEntity(ped, true, true)
+		TaskStartScenarioInPlace(ped, 'WORLD_HUMAN_CLIPBOARD', 0, true)
+		SetModelAsNoLongerNeeded(model)
+
+		exports.ox_target:addLocalEntity(ped, {
+			{
+				label = 'Save new ' .. (Config.JobLabels[job] or job) .. ' uniform (admin)',
+				icon = 'fas fa-tshirt',
+				onSelect = function()
+					TriggerEvent('esx_skin:openMenu', function(_, menu)
+						menu.close()
+						TriggerEvent('skinchanger:getSkin', function(skin)
+							local input = lib.inputDialog(('Save %s uniform'):format(Config.JobLabels[job] or job), {
+								{type = 'input', label = 'Name for this version', required = true, default = 'Version'}
+							})
+							if not input or not input[1] then return end
+							TriggerServerEvent('esx_jobs:adminSaveUniform', job, skin, input[1])
+						end)
+					end)
+				end
+			},
+			{
+				label = 'Manage ' .. (Config.JobLabels[job] or job) .. ' uniform history (admin)',
+				icon = 'fas fa-clock-rotate-left',
+				onSelect = function()
+					ShowUniformHistoryMenu(job)
+				end
+			}
+		})
+	end)
+end
+
 Citizen.CreateThread(function()
 	for job, jobData in pairs(Config.Jobs) do
-		local cloak = jobData.Zones and jobData.Zones.CloakRoom
-		if cloak then
-			local padPos = {x = cloak.Pos.x + 1.0, y = cloak.Pos.y, z = cloak.Pos.z}
-			table.insert(uniformEditorPads, padPos)
-
-			exports.ox_target:addBoxZone({
-				coords = vector3(padPos.x, padPos.y, padPos.z),
-				size = vector3(0.6, 0.6, 1.0),
-				rotation = 0,
-				debug = false,
-				options = {
-					{
-						label = 'Save new ' .. (Config.JobLabels[job] or job) .. ' uniform (admin)',
-						icon = 'fas fa-tshirt',
-						onSelect = function()
-							-- opens the real esx_skin clothing-editor camera/menu;
-							-- submitCb fires once the admin confirms their outfit
-							TriggerEvent('esx_skin:openMenu', function(_, menu)
-								menu.close()
-								TriggerEvent('skinchanger:getSkin', function(skin)
-									local input = lib.inputDialog(('Save %s uniform'):format(Config.JobLabels[job] or job), {
-										{type = 'input', label = 'Name for this version', required = true, default = 'Version'}
-									})
-									if not input or not input[1] then return end
-									TriggerServerEvent('esx_jobs:adminSaveUniform', job, skin, input[1])
-								end)
-							end)
-						end
-					},
-					{
-						label = 'Manage ' .. (Config.JobLabels[job] or job) .. ' uniform history (admin)',
-						icon = 'fas fa-clock-rotate-left',
-						onSelect = function()
-							ShowUniformHistoryMenu(job)
-						end
-					}
-				}
-			})
-		end
-	end
-end)
-
--- draws an actual visible marker on the ground for each pad above -- the
--- ox_target zone alone has no visual, so without this it just looks like
--- plain ground (purple/distinct from the regular green cloakroom marker,
--- so it reads as "this one's different / admin-only")
-Citizen.CreateThread(function()
-	while true do
-		Citizen.Wait(0)
-		local coords = GetEntityCoords(PlayerPedId())
-		for i=1, #uniformEditorPads, 1 do
-			local pad = uniformEditorPads[i]
-			if Vdist(coords, pad.x, pad.y, pad.z) < Config.DrawDistance then
-				DrawMarker(1, pad.x, pad.y, pad.z + 0.1, 0.0, 0.0, 0.0, 0, 0.0, 0.0, 0.8, 0.8, 0.8, 150, 0, 255, 150, false, true, 2, false, false, false, false)
-			end
-		end
+		SpawnUniformEditorPed(job, jobData)
 	end
 end)

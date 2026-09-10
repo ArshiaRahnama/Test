@@ -2,13 +2,18 @@ fx_version 'bodacious'
 game 'gta5'
 
 author 'arshiahub.ir'
--- Leaderboard uses oxmysql's MySQL.Async compatibility layer (same as the
--- rest of this server); make sure it's ready before this resource starts.
+-- Fix: `dependency 'oxmysql'` only guarantees load ORDER -- it does not
+-- inject oxmysql's globals into this resource's own isolated Lua state
+-- (each resource has its own). The leaderboard code uses the `MySQL.Async.*`
+-- compatibility API (same as the rest of this server, e.g. Unique_AdminMenu),
+-- which requires actually importing oxmysql's compat script as a
+-- server_script, same path this server's own oxmysql resource provides it at.
 dependency 'oxmysql'
 shared_scripts {
 	'Config.lua'	
 }
 server_scripts {
+    '@oxmysql/lib/MySQL.lua',
     -- 'server/temp.lua',
     'server/main.lua',
    

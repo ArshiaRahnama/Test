@@ -1,3 +1,25 @@
+-- FIX: this job now reads ONLY from its own isolated locale namespace
+-- (locales/judge_en.lua -> Locales['en_judge']) instead of the old shared global
+-- Locales['en'] table every job's locale file used to dump into. That was
+-- a real bug: since all 9 LE/DOJ jobs' locale files defined many of the
+-- SAME key names (citizen_interaction, search, handcuff, etc.) into that
+-- one shared table, whichever file happened to load last (locales/*.lua
+-- glob order) silently won that key for EVERY job, not just its own -
+-- "each organization reads from its own locale" wasn't actually true.
+-- This local override only affects _U() calls inside THIS file (Lua
+-- locals are per-chunk, not resource-wide), so every other job keeps
+-- using its own equivalent override and its own namespace untouched.
+local function _U(str, ...)
+	local tbl = Locales['en_judge']
+	local v = tbl and tbl[str]
+
+	if ( v == nil ) then
+		return "Error [en_judge][" .. tostring(str) .. "] Be Developer Elam Konid"
+	end
+
+	return tostring(string.format(v, ...):gsub("^%l", string.upper))
+end
+
 local ekhtarcool = false
 local dakhelheli = false
 local Keys = {
@@ -1137,11 +1159,11 @@ function OpenjudgeActionsMenu_judge()
 		end
 
 		elements = {
-			{label = 'Amaliat Rooye Shahrvand',	value = 'citizen_interaction'},
+			{label = _U('citizen_interaction'),	value = 'citizen_interaction'},
 
 
-			{label = 'Amaliat Rooye Vasile',	value = 'vehicle_interaction'},
-			{label = 'Object Spawner',		value = 'object_spawner'},
+			{label = _U('vehicle_interaction'),	value = 'vehicle_interaction'},
+			{label = _U('object_spawner'),		value = 'object_spawner'},
 		}
 
 		if isdivision then
@@ -1162,23 +1184,23 @@ function OpenjudgeActionsMenu_judge()
 
 			if data.current.value == 'citizen_interaction' then
 				local elements = {
-					{label = 'ID Card',			value = 'identity_card'},
-					{label = 'Bazrasi Badani',			value = 'body_search'},
-					{label = 'Dastband Zadan',		value = 'handcuff'},
-					{label = 'Baz Kardan Dastband',			value = 'uncuff'},
-					{label = 'Keshidan',			value = 'drag'},
-					{label = 'Gozashtan Dar Vasile',	value = 'put_in_vehicle'},
-					{label = 'Biroon Avordan Az Vasile',	value = 'out_the_vehicle'},
+					{label = _U('id_card'),			value = 'identity_card'},
+					{label = _U('search'),			value = 'body_search'},
+					{label = _U('handcuff'),		value = 'handcuff'},
+					{label = _U('uncuff'),			value = 'uncuff'},
+					{label = _U('drag'),			value = 'drag'},
+					{label = _U('put_in_vehicle'),	value = 'put_in_vehicle'},
+					{label = _U('out_the_vehicle'),	value = 'out_the_vehicle'},
 					{label = 'Jarime Kardan',			value = 'finev2'},
-					{label = 'Jarayem-e Pardakht Nashode',	value = 'unpaid_bills'},
-					{label = 'Check Kardan Govahiname', 	value = 'license' },
-					{label = 'Menu Zendan', 	value = 'jail_menu' }
+					{label = _U('unpaid_bills'),	value = 'unpaid_bills'},
+					{label = _U('license_check'), 	value = 'license' },
+					{label = _U('jail_menu'), 	value = 'jail_menu' }
 				}
 
 				ESX.UI.Menu.Open(
 				'default', GetCurrentResourceName(), 'citizen_interaction',
 				{
-					title    = 'Amaliat Rooye Shahrvand',
+					title    = _U('citizen_interaction'),
 					align    = 'left',
 					elements = elements
 				}, function(data2, menu2)
@@ -1499,7 +1521,7 @@ function OpenjudgeActionsMenu_judge()
 				ESX.UI.Menu.Open(
 				'default', GetCurrentResourceName(), 'vehicle_interaction',
 				{
-					title    = 'Amaliat Rooye Vasile',
+					title    = _U('vehicle_interaction'),
 					align    = 'left',
 					elements = elements
 				}, function(data2, menu2)
@@ -2395,7 +2417,7 @@ function OpenIdentityCardMenu_judge(player)
 
 		ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'citizen_interaction',
 		{
-			title    = 'Amaliat Rooye Shahrvand',
+			title    = _U('citizen_interaction'),
 			align    = 'left',
 			elements = elements,
 		}, function(data, menu)
@@ -2451,7 +2473,7 @@ function OpenBodySearchMenu_judge(player)
 
 		ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'body_search',
 		{
-			title    = 'Bazrasi Badani',
+			title    = _U('search'),
 			align    = 'left',
 			elements = elements,
 		},
@@ -2663,7 +2685,7 @@ function OpenUnpaidBillsMenu_judge(player)
 
 		ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'billing',
 		{
-			title    = 'Jarayem-e Pardakht Nashode',
+			title    = _U('unpaid_bills'),
 			align    = 'left',
 			elements = elements
 		}, function(data, menu)

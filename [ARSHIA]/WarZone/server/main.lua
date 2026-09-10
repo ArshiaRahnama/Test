@@ -322,17 +322,52 @@ end)
 function StartWarZone( Blood , Time , Coord , Team , Map) 
     SendMessage(Config.StartMatchNotify) 
     CreateThread(function()
+        -- Fix: this loop used to read the live `Players` table across
+        -- Wait(5) yields, so a player disconnecting/leaving mid-loop (still
+        -- possible: StartMatch is already true, and playerDropped/exitwz
+        -- both still remove from Players once it is) could shift indices
+        -- out from under it, or shrink Players below `KeyNumber` --
+        -- crashing this thread on `Players[KeyNumber].ID` being nil and
+        -- leaving squads only half-assigned for the whole match. Snapshot
+        -- the roster synchronously (no yields) first, then build squads
+        -- from the stable copy.
+        local PlayersSnapshot = {}
+        for _, p in ipairs(Players) do
+            table.insert(PlayersSnapshot, p)
+        end
         local KeyNumber = 0 
         SquadCount = 1
-        while #Players > KeyNumber do 
+        while #PlayersSnapshot > KeyNumber do 
             Wait(5)
             KeyNumber = KeyNumber + 1 
             if type( Squads[SquadCount] ) ~= 'table'  then Squads[SquadCount] = {} end 
-            table.insert( Squads[SquadCount] , Players[KeyNumber].ID )
+            table.insert( Squads[SquadCount] , PlayersSnapshot[KeyNumber].ID )
             if #Squads[SquadCount] == Team  then 
                 SquadCount = SquadCount + 1
             end     
         end 
+        -- Defensive: a player could still disconnect during the snapshot
+        -- window above (or the Wait(5) ticks while squads are built). Drop
+        -- any squad member no longer in the live Players table so they
+        -- can't linger as a "ghost" member -- which CountSquads()/the win
+        -- check would otherwise never be able to clear, since a departed
+        -- player never triggers their own squad cleanup twice.
+        for i, squad in pairs(Squads) do
+            if type(squad) == 'table' then
+                for k = #squad, 1, -1 do
+                    local stillHere = false
+                    for _, p in ipairs(Players) do
+                        if p.ID == squad[k] then stillHere = true break end
+                    end
+                    if not stillHere then
+                        table.remove(squad, k)
+                    end
+                end
+                if #squad == 0 then
+                    Squads[i] = nil
+                end
+            end
+        end
         InsertTeam ()
         Wait(1000)
         for k,v in pairs(Players) do 

@@ -92,9 +92,15 @@ end
 Config.StartNotify = '^1 /wz  ^7 To Join Lobbey '
 Config.StartMatchNotify = '^1 Match Started'
 --- WarZone --- 
-Config.FightWorld = 50
+-- Fix: these three used to all be the same bucket number (50), meaning the
+-- lobby, the live battlefield, and the Gulag were never actually isolated
+-- from each other as separate network instances -- it likely went unnoticed
+-- because they're also far apart on the map, but any resource or check that
+-- relies on bucket membership (not just distance) would treat them as one
+-- world. Given each its own bucket now for real isolation.
+Config.FightWorld = 51
 Config.LobbeyWorld = 50 
-Config.Gulagworld = 50 
+Config.Gulagworld = 52 
 Config.DistanceZone = 1000.0 
 Config.airplane = 'mammatus'
 Config.ShowKillFeed = true 
@@ -119,7 +125,13 @@ Config.shops = {
     ['SANDY1'] = { -- SandyShopCoordsInZoneOne 
     vector3(533.84,2372.82,48.37), 
     vector3(562.16 , 2736.25 , 42.06), 
-    vector3(5332.03 , 3086.49 , 40.47), 
+    -- Fix: this entry was vector3(5332.03, 3086.49, 40.47) -- an x of 5332
+    -- is nowhere near Sandy Shores (every other point here is x:0-950),
+    -- it's actually in the Island's coordinate range. Almost certainly a
+    -- copy-paste/typo (likely meant ~533.03, matching the pattern of the
+    -- point above it), so a shop could spawn kilometers away and be
+    -- unreachable. Removed rather than guess the exact intended spot --
+    -- the other 8 points in this list still give full rotation coverage.
     vector3(525.84 , 3577.49 , 32.8), 
     vector3(545.71 , 3365.43 , 99.99), 
     vector3(22.43 , 3321.2 , 38.49), 

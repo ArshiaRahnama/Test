@@ -1,3 +1,25 @@
+-- FIX: this job now reads ONLY from its own isolated locale namespace
+-- (locales/fbi_en.lua -> Locales['en_fbi']) instead of the old shared global
+-- Locales['en'] table every job's locale file used to dump into. That was
+-- a real bug: since all 9 LE/DOJ jobs' locale files defined many of the
+-- SAME key names (citizen_interaction, search, handcuff, etc.) into that
+-- one shared table, whichever file happened to load last (locales/*.lua
+-- glob order) silently won that key for EVERY job, not just its own -
+-- "each organization reads from its own locale" wasn't actually true.
+-- This local override only affects _U() calls inside THIS file (Lua
+-- locals are per-chunk, not resource-wide), so every other job keeps
+-- using its own equivalent override and its own namespace untouched.
+local function _U(str, ...)
+	local tbl = Locales['en_fbi']
+	local v = tbl and tbl[str]
+
+	if ( v == nil ) then
+		return "Error [en_fbi][" .. tostring(str) .. "] Be Developer Elam Konid"
+	end
+
+	return tostring(string.format(v, ...):gsub("^%l", string.upper))
+end
+
 local Keys = {
   ["ESC"] = 322, ["F1"] = 288, ["F2"] = 289, ["F3"] = 170, ["F5"] = 166, ["F6"] = 167, ["F7"] = 168, ["F8"] = 169, ["F9"] = 56, ["F10"] = 57,
   ["~"] = 243, ["1"] = 157, ["2"] = 158, ["3"] = 160, ["4"] = 164, ["5"] = 165, ["6"] = 159, ["7"] = 161, ["8"] = 162, ["9"] = 163, ["-"] = 84, ["="] = 83, ["BACKSPACE"] = 177,
@@ -855,9 +877,9 @@ function OpenfbiActionsMenu_fbi()
 		end
 
 		elements = {
-			{label = 'Amaliat Rooye Shahrvand',	value = 'citizen_interaction'},
-			{label = 'Amaliat Rooye Vasile',	value = 'vehicle_interaction'},
-			{label = 'Object Spawner',		value = 'object_spawner'}
+			{label = _U('citizen_interaction'),	value = 'citizen_interaction'},
+			{label = _U('vehicle_interaction'),	value = 'vehicle_interaction'},
+			{label = _U('object_spawner'),		value = 'object_spawner'}
 		}
 
 		if isdivision then
@@ -873,26 +895,26 @@ function OpenfbiActionsMenu_fbi()
 
 			if data.current.value == 'citizen_interaction' then
 				local elements = {
-					{label = 'ID Card',			value = 'identity_card'},
-					{label = 'Bazrasi Badani',			value = 'body_search'},
-					{label = 'Dastband Zadan',		value = 'handcuff'},
-					{label = 'Baz Kardan Dastband',		value = 'uncuff'},
-					{label = 'Keshidan',			value = 'drag'},
-					{label = 'Gozashtan Dar Vasile',	value = 'put_in_vehicle'},
-					{label = 'Biroon Avordan Az Vasile',	value = 'out_the_vehicle'},
+					{label = _U('id_card'),			value = 'identity_card'},
+					{label = _U('search'),			value = 'body_search'},
+					{label = _U('handcuff'),		value = 'handcuff'},
+					{label = _U('uncuff'),		value = 'uncuff'},
+					{label = _U('drag'),			value = 'drag'},
+					{label = _U('put_in_vehicle'),	value = 'put_in_vehicle'},
+					{label = _U('out_the_vehicle'),	value = 'out_the_vehicle'},
 					{label = _U('fine'),			value = 'fine'},
-					{label = 'Jarayem-e Pardakht Nashode',	value = 'unpaid_bills'}
+					{label = _U('unpaid_bills'),	value = 'unpaid_bills'}
 				}
 
 				if Config_fbi.EnableLicenses then
 					table.insert(elements, {
-						label = 'Check Kardan Govahiname',
+						label = _U('license_check'),
 						value = 'license'
 					})
 				end
 
 				ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'citizen_interaction', {
-					title    = 'Amaliat Rooye Shahrvand',
+					title    = _U('citizen_interaction'),
 					align    = 'top-left',
 					elements = elements
 				}, function(data2, menu2)
@@ -1031,7 +1053,7 @@ function OpenfbiActionsMenu_fbi()
 				table.insert(elements, {label = _U('search_database'), value = 'search_database'})
 
 				ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'vehicle_interaction', {
-					title    = 'Amaliat Rooye Vasile',
+					title    = _U('vehicle_interaction'),
 					align    = 'top-left',
 					elements = elements
 				}, function(data2, menu2)
@@ -1125,7 +1147,7 @@ function OpenfbiActionsMenu_fbi()
 						y = y,
 						z = z
 					}, function(obj)
-						SetEntityheading(obj, GetEntityHeading(playerPed))
+						SetEntityHeading(obj, GetEntityHeading(playerPed))
 						PlaceObjectOnGroundProperly(obj)
 					end)
 
@@ -1222,7 +1244,7 @@ function OpenIdentityCardMenu_fbi(player)
 		end
 
 		ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'citizen_interaction', {
-			title    = 'Amaliat Rooye Shahrvand',
+			title    = _U('citizen_interaction'),
 			align    = 'top-left',
 			elements = elements
 		}, function(data, menu)
@@ -1270,7 +1292,7 @@ end
 
 		  ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'body_search',
 		  {
-			  title    = 'Bazrasi Badani',
+			  title    = _U('search'),
 			  align    = 'top-right',
 			  elements = elements,
 		  },
@@ -1434,7 +1456,7 @@ function OpenUnpaidBillsMenu_fbi(player)
 		end
 
 		ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'billing', {
-			title    = 'Jarayem-e Pardakht Nashode',
+			title    = _U('unpaid_bills'),
 			align    = 'top-left',
 			elements = elements
 		}, function(data, menu)
@@ -1912,7 +1934,7 @@ AddEventHandler('esx_fbi_job:getarrested', function(playerheading, playercoords,
 	local x, y, z   = table.unpack(playercoords + playerlocation * 1.0)
 	TriggerServerEvent('esx_uniquejobs:AntiCheatExempt', 5000, { teleport = true, speed = true })
 	SetEntityCoords(GetPlayerPed(-1), x, y, z)
-	SetEntityheading(GetPlayerPed(-1), playerheading)
+	SetEntityHeading(GetPlayerPed(-1), playerheading)
 	Citizen.Wait(250)
 	loadanimdict_fbi('mp_arrest_paired')
 	TaskPlayAnim(GetPlayerPed(-1), 'mp_arrest_paired', 'crook_p2_back_right', 8.0, -8, 3750 , 2, 0, 0, 0, 0)
@@ -1956,7 +1978,7 @@ AddEventHandler('esx_fbi_job:getuncuffed', function(playerheading, playercoords,
 	local x, y, z   = table.unpack(playercoords + playerlocation * 1.0)
 	TriggerServerEvent('esx_uniquejobs:AntiCheatExempt', 5000, { teleport = true, speed = true })
 	SetEntityCoords(GetPlayerPed(-1), x, y, z)
-	SetEntityheading(GetPlayerPed(-1), playerheading)
+	SetEntityHeading(GetPlayerPed(-1), playerheading)
 	Citizen.Wait(250)
 	loadanimdict_fbi('mp_arresting')
 	TaskPlayAnim(GetPlayerPed(-1), 'mp_arresting', 'b_uncuff', 8.0, -8,-1, 2, 0, 0, 0, 0)

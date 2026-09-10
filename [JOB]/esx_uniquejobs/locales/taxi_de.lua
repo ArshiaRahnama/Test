@@ -1,4 +1,4 @@
-Locales['de'] = Locales['de'] or {}
+Locales['de_taxi'] = Locales['de_taxi'] or {}
 for k, v in pairs({
 
   ['cloakroom_menu'] = 'cloakroom',
@@ -47,4 +47,4 @@ for k, v in pairs({
   ['player_cannot_hold'] = 'you do ~r~not~s~ have enough ~y~free space~s~ in your inventory!',
   ['blip_taxi'] = 'taxi',
   ['phone_taxi'] = 'taxi',
-}) do Locales['de'][k] = v end
+}) do Locales['de_taxi'][k] = v end

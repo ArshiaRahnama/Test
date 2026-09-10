@@ -1,4 +1,4 @@
-Locales['en'] = Locales['en'] or {}
+Locales['en_cid'] = Locales['en_cid'] or {}
 for k, v in pairs({
 
   ['cloakroom'] = 'locker room',
@@ -152,4 +152,8 @@ for k, v in pairs({
 
   ['bazdashtgah'] = 'Zendan dar bazdashtgah',
   ['markazi'] = 'Zendan dar zendan Markazi',
-}) do Locales['en'][k] = v end
+
+  ['message_title'] = 'Vehicle',
+  ['message_locked'] = 'the vehicle has been ~r~locked~s~',
+  ['message_unlocked'] = 'the vehicle has been ~g~unlocked~s~',
+}) do Locales['en_cid'][k] = v end

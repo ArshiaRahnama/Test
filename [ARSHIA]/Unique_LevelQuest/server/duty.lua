@@ -39,6 +39,18 @@ ESX.RegisterServerCallback('HUD_Menu:GetDuty', function(source, cb)
     -- the moment they clock off.
     local jobName = xPlayer.job.name
     local orgName = (string.sub(jobName, 1, 3) == 'off') and string.sub(jobName, 4) or jobName
+
+    -- Only the orgs this actually tracks (DOJ/LAW jobs + esx_organserver
+    -- jobs — the same set already defined for the Skill tab) get a Duty
+    -- tab. A player-run company like an oil company was never clocked
+    -- by esx_duty in the first place, so it never has rows in
+    -- `duty_logs` — showing the tab for it was just an empty/misleading
+    -- "Syncing..." state that never resolves.
+    if not Config.TrackedJobs[orgName] then
+        cb({ isMember = false })
+        return
+    end
+
     local steamHex = GetPlayerIdentifiers(source)[1]
     local isLeadership = xPlayer.job.grade > DUTY_LEADERSHIP_GRADE
 
@@ -132,6 +144,10 @@ ESX.RegisterServerCallback('HUD_Menu:GetDutyByDate', function(source, cb, startD
 
     local jobName = xPlayer.job.name
     local orgName = (string.sub(jobName, 1, 3) == 'off') and string.sub(jobName, 4) or jobName
+    if not Config.TrackedJobs[orgName] then
+        cb({ ok = false })
+        return
+    end
     local isLeadership = xPlayer.job.grade > DUTY_LEADERSHIP_GRADE
 
     if isLeadership then
@@ -189,6 +205,10 @@ ESX.RegisterServerCallback('HUD_Menu:SearchDutyRoster', function(source, cb, sea
 
     local jobName = xPlayer.job.name
     local orgName = (string.sub(jobName, 1, 3) == 'off') and string.sub(jobName, 4) or jobName
+    if not Config.TrackedJobs[orgName] then
+        cb({ ok = false })
+        return
+    end
 
     -- Names are stored with underscores ("Sohrab_Qaderi") and only
     -- turned into spaces for display client-side, so a search typed

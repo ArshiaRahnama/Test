@@ -1,4 +1,4 @@
-Locales['en'] = Locales['en'] or {}
+Locales['en_fbi'] = Locales['en_fbi'] or {}
 for k, v in pairs({
 
   ['cloakroom'] = 'cloakroom',
@@ -27,6 +27,7 @@ for k, v in pairs({
 
   ['vehicle_menu'] = 'vehicle',
   ['vehicle_blocked'] = 'there is already a vehicle out',
+  ['vehicle_out'] = 'there is already a car out of the garage',
   ['vehicle_spawner'] = 'press ~INPUT_CONTEXT~ to take out a vehicle',
   ['heli_spawner'] = 'press ~INPUT_CONTEXT~ to take out a heli',
   ['store_vehicle'] = 'press ~INPUT_CONTEXT~ to store the vehicle',
@@ -151,4 +152,4 @@ for k, v in pairs({
 
   ['alert_fbi'] = 'fbi alert',
   ['phone_fbi'] = 'fbi',
-}) do Locales['en'][k] = v end
+}) do Locales['en_fbi'][k] = v end

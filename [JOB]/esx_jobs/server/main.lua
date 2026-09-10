@@ -220,13 +220,16 @@ end)
 -- Each job+gender keeps a history of saved outfits. One entry per
 -- job+gender is "active" -- that's the one Config[...].work_wear[gender]
 -- is set to, i.e. the one everyone actually gets from OpenMenu's "job_wear".
+-- Persisted in the DB (esx_jobs_uniforms table, see esx_jobs.sql), NOT a
+-- resource file -- a file inside the resource folder gets wiped out any
+-- time the resource is redeployed/updated; a DB table doesn't.
 local UNIFORM_FIELDS = {
 	'tshirt_1','tshirt_2','torso_1','torso_2','decals_1','decals_2','arms',
 	'pants_1','pants_2','shoes_1','shoes_2','helmet_1','helmet_2',
 	'glasses_1','glasses_2','chain_1','chain_2','ears_1','ears_2'
 }
 
--- the true factory defaults from config.lua, captured before any save file
+-- the true factory defaults from config.lua, captured before anything saved
 -- can overwrite Config[...].work_wear -- used as the last-resort fallback
 -- if an admin deletes every history entry for a job+gender
 local FactoryDefaultWorkWear = {}
@@ -249,8 +252,18 @@ local function EnsureHistoryShape(job)
 	end
 end
 
-local function SaveUniformFile(job)
-	SaveResourceFile(GetCurrentResourceName(), 'uniform_' .. job .. '.json', json.encode(UniformHistory[job]), -1)
+local function SaveUniformRow(job, gender)
+	local g = UniformHistory[job][gender]
+	MySQL.Async.execute([[
+		INSERT INTO esx_jobs_uniforms (job, gender, active_id, history)
+		VALUES (@job, @gender, @active_id, @history)
+		ON DUPLICATE KEY UPDATE active_id = @active_id, history = @history
+	]], {
+		['@job'] = job,
+		['@gender'] = gender,
+		['@active_id'] = g.active_id,
+		['@history'] = json.encode(g.history)
+	})
 end
 
 local function ApplyActiveToConfig(job)
@@ -273,15 +286,28 @@ end
 local function LoadSavedUniforms()
 	for job in pairs(Config.UniformConfigKey) do
 		EnsureHistoryShape(job)
-		local raw = LoadResourceFile(GetCurrentResourceName(), 'uniform_' .. job .. '.json')
-		if raw then
-			local ok, saved = pcall(json.decode, raw)
-			if ok and type(saved) == "table" and saved.male and saved.female then
-				UniformHistory[job] = saved
-			else
-				print(('esx_jobs: failed to parse saved uniform history for %s, starting fresh'):format(job))
+	end
+
+	local ok, rows = pcall(function()
+		return MySQL.Sync.fetchAll('SELECT job, gender, active_id, history FROM esx_jobs_uniforms', {})
+	end)
+
+	if ok and type(rows) == "table" then
+		for i=1, #rows, 1 do
+			local row = rows[i]
+			if UniformHistory[row.job] and (row.gender == 'male' or row.gender == 'female') then
+				local decodeOk, history = pcall(json.decode, row.history)
+				UniformHistory[row.job][row.gender] = {
+					active_id = row.active_id,
+					history   = (decodeOk and type(history) == "table") and history or {}
+				}
 			end
 		end
+	else
+		print('esx_jobs: could not load esx_jobs_uniforms from the DB (table missing? run esx_jobs.sql) -- using config.lua defaults for now')
+	end
+
+	for job in pairs(Config.UniformConfigKey) do
 		ApplyActiveToConfig(job)
 	end
 end
@@ -330,9 +356,20 @@ AddEventHandler('esx_jobs:adminSaveUniform', function(job, skin, label)
 	UniformHistory[job][genderKey].active_id = entry.id
 
 	ApplyActiveToConfig(job)
-	SaveUniformFile(job)
+	SaveUniformRow(job, genderKey)
 
 	TriggerClientEvent('esx:showNotification', source, ('~g~Saved "%s" as the active %s %s uniform.'):format(label, genderKey, Config.JobLabels[job] or job))
+end)
+
+-- OpenMenu (client) calls this every time "job_wear" is picked, since the
+-- admin uniform editor above only ever updates Config on the SERVER side --
+-- the client has its own separate copy of config.lua that never changes,
+-- so without this callback workers would always get the config.lua default
+-- no matter what an admin saved/activated.
+ESX.RegisterServerCallback('esx_jobs:getActiveUniform', function(source, cb, job)
+	local configKey = Config.UniformConfigKey[job]
+	if not configKey then cb(nil) return end
+	cb(Config[configKey].work_wear)
 end)
 
 -- Lets the client build its history-browser menu (ox_lib context)
@@ -358,7 +395,7 @@ AddEventHandler('esx_jobs:adminApplyUniformHistory', function(job, gender, id)
 
 	g.active_id = id
 	ApplyActiveToConfig(job)
-	SaveUniformFile(job)
+	SaveUniformRow(job, gender)
 
 	TriggerClientEvent('esx:showNotification', source, ('~g~That version is now the active %s %s uniform.'):format(gender, Config.JobLabels[job] or job))
 end)
@@ -384,7 +421,7 @@ AddEventHandler('esx_jobs:adminDeleteUniformHistory', function(job, gender, id)
 	end
 
 	ApplyActiveToConfig(job)
-	SaveUniformFile(job)
+	SaveUniformRow(job, gender)
 
 	TriggerClientEvent('esx:showNotification', source, ('~y~Deleted that version from the %s %s history.'):format(gender, Config.JobLabels[job] or job))
 end)
