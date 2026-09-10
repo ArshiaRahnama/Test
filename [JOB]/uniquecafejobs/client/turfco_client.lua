@@ -47,7 +47,7 @@ CreateThread(function()
 						elements = {
 							{ label = 'Rent Paintball Map', value = 'rent' },
 							{ label = 'Portfolio Dashboard', value = 'dashboard' },
-							{ label = 'Manage Portfolio (Rank Up)', value = 'portfolio' },
+							{ label = 'Manage Portfolio (Rank Up) (Director+)', value = 'portfolio' },
 							{ label = 'Manage Business Staff (Director+)', value = 'staff' },
 							{ label = 'Open/Close Businesses (Director+)', value = 'toggle' },
 							{ label = 'Rename Holding', value = 'rename' },

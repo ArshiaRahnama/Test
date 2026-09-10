@@ -30,6 +30,7 @@ end)
 RegisterNetEvent('uniquecafejobs:turfco:spawnVehicle')
 AddEventHandler('uniquecafejobs:turfco:spawnVehicle', function(vehicleName)
 	local xPlayer = ESX.GetPlayerFromId(source)
+	if not xPlayer then return end
 	if xPlayer.job.name == TurfCo.Job and vehicleName == TurfCo.SpawnVehicle then
 		TriggerClientEvent('spawnCarClientTurfco', source, vehicleName)
 	end

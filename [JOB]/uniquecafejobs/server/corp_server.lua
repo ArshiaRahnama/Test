@@ -67,6 +67,7 @@ end)
 RegisterNetEvent('uniquecafejobs:corp:spawnVehicle')
 AddEventHandler('uniquecafejobs:corp:spawnVehicle', function(vehicleName)
 	local xPlayer = ESX.GetPlayerFromId(source)
+	if not xPlayer then return end
 	local holding = GetHoldingConfig(xPlayer.job.name)
 	if holding and vehicleName == holding.SpawnVehicle then
 		TriggerClientEvent('spawnCarClientCorp', source, vehicleName)
@@ -211,6 +212,10 @@ AddEventHandler('uniquecafejobs:corp:upgradeBusiness', function(job)
 	local src = source
 	local xPlayer = ESX.GetPlayerFromId(src)
 	if not xPlayer then return end
+	if xPlayer.job.grade < 5 then
+		TriggerClientEvent('esx:showNotification', src, 'Director rank or higher required.')
+		return
+	end
 	if ownerOf(job) ~= xPlayer.job.name then return end
 
 	local state = BusinessState[job]
