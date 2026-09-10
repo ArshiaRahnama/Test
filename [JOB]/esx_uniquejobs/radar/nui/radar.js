@@ -1459,6 +1459,14 @@ window.addEventListener( "message", function( event ) {
 			setUiHasBeenEdited( false ); 
 			showQuickActions( true );
 			break; 
+
+		// FIX: Quick Actions is now also driven live by vehicle+job state
+		// (radar/cl_utils.lua), independent of the remote being open - see
+		// that file for why. openRemote above still forces it on too, in
+		// case the two ever briefly disagree (e.g. right at spawn).
+		case "showQuickActions":
+			showQuickActions( item.state );
+			break;
 		case "setRadarDisplayState":
 			setEleVisible( elements.radar, item.state ); 
 			break; 

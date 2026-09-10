@@ -1137,11 +1137,11 @@ function OpenMTActionsMenu_mt()
 		end
 
 		elements = {
-			{label = _U('citizen_interaction'),	value = 'citizen_interaction'},
+			{label = 'Amaliat Rooye Shahrvand',	value = 'citizen_interaction'},
 
 
-			{label = _U('vehicle_interaction'),	value = 'vehicle_interaction'},
-			{label = _U('object_spawner'),		value = 'object_spawner'},
+			{label = 'Amaliat Rooye Vasile',	value = 'vehicle_interaction'},
+			{label = 'Object Spawner',		value = 'object_spawner'},
 		}
 
 		if isdivision then
@@ -1162,23 +1162,23 @@ function OpenMTActionsMenu_mt()
 
 			if data.current.value == 'citizen_interaction' then
 				local elements = {
-					{label = _U('id_card'),			value = 'identity_card'},
-					{label = _U('search'),			value = 'body_search'},
-					{label = _U('handcuff'),		value = 'handcuff'},
-					{label = _U('uncuff'),			value = 'uncuff'},
-					{label = _U('drag'),			value = 'drag'},
-					{label = _U('put_in_vehicle'),	value = 'put_in_vehicle'},
-					{label = _U('out_the_vehicle'),	value = 'out_the_vehicle'},
+					{label = 'ID Card',			value = 'identity_card'},
+					{label = 'Bazrasi Badani',			value = 'body_search'},
+					{label = 'Dastband Zadan',		value = 'handcuff'},
+					{label = 'Baz Kardan Dastband',			value = 'uncuff'},
+					{label = 'Keshidan',			value = 'drag'},
+					{label = 'Gozashtan Dar Vasile',	value = 'put_in_vehicle'},
+					{label = 'Biroon Avordan Az Vasile',	value = 'out_the_vehicle'},
 					{label = 'Jarime Kardan',			value = 'finev2'},
-					{label = _U('unpaid_bills'),	value = 'unpaid_bills'},
-					{label = _U('license_check'), 	value = 'license' },
-					{label = _U('jail_menu'), 	value = 'jail_menu' }
+					{label = 'Jarayem-e Pardakht Nashode',	value = 'unpaid_bills'},
+					{label = 'Check Kardan Govahiname', 	value = 'license' },
+					{label = 'Menu Zendan', 	value = 'jail_menu' }
 				}
 
 				ESX.UI.Menu.Open(
 				'default', GetCurrentResourceName(), 'citizen_interaction',
 				{
-					title    = _U('citizen_interaction'),
+					title    = 'Amaliat Rooye Shahrvand',
 					align    = 'left',
 					elements = elements
 				}, function(data2, menu2)
@@ -1511,7 +1511,7 @@ function OpenMTActionsMenu_mt()
 				ESX.UI.Menu.Open(
 				'default', GetCurrentResourceName(), 'vehicle_interaction',
 				{
-					title    = _U('vehicle_interaction'),
+					title    = 'Amaliat Rooye Vasile',
 					align    = 'left',
 					elements = elements
 				}, function(data2, menu2)
@@ -2407,7 +2407,7 @@ function OpenIdentityCardMenu_mt(player)
 
 		ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'citizen_interaction',
 		{
-			title    = _U('citizen_interaction'),
+			title    = 'Amaliat Rooye Shahrvand',
 			align    = 'left',
 			elements = elements,
 		}, function(data, menu)
@@ -2463,7 +2463,7 @@ function OpenBodySearchMenu_mt(player)
 
 		ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'body_search',
 		{
-			title    = _U('search'),
+			title    = 'Bazrasi Badani',
 			align    = 'left',
 			elements = elements,
 		},
@@ -2675,7 +2675,7 @@ function OpenUnpaidBillsMenu_mt(player)
 
 		ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'billing',
 		{
-			title    = _U('unpaid_bills'),
+			title    = 'Jarayem-e Pardakht Nashode',
 			align    = 'left',
 			elements = elements
 		}, function(data, menu)

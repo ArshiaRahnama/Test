@@ -44,19 +44,25 @@
             pointer-events: none;
         }
 
-        /* FIX: CAD and radar both DO need clicks sometimes (and neither
-           has clicks needed at all times) - default both to none, and let
-           the setUiFocusOwner message (sent by cad/client/main.lua and
-           radar/cl_radar.lua right next to each of their own SetNuiFocus()
-           calls) grant pointer-events:auto to exactly one of them at a
-           time via inline style (see the script below). Before this fix,
-           radar/taximeter being later in the DOM than cad meant they always
-           sat on top and ate every click meant for CAD - e.g. clicking
-           CAD's own Login button did nothing at all, even with the tablet
-           visibly open, because the click never reached its iframe. */
-        #frame_cad,
+        /* FIX: radar defaults to pointer-events:auto, NOT none. Radar's own
+           clickable widgets (Quick Actions/PANIC, the plate reader BOLO
+           ribbon, etc.) are meant to be usable any time the mouse happens
+           to be free for ANY reason - the remote's own open button, or some
+           unrelated resource's generic "free the cursor" keybind - not only
+           after formally opening the full remote panel. CAD is the one
+           exception: it's later... no, EARLIER than radar in the DOM above,
+           so radar (being on top) would otherwise always eat CAD's clicks
+           even while CAD is the one actually open (that was the original
+           Login-button-does-nothing bug). So radar only ever drops to
+           pointer-events:none for the one specific moment CAD says it's
+           open (via the setUiFocusOwner message cad/client/main.lua sends
+           right next to its own SetNuiFocus() calls) - everywhere else,
+           radar stays clickable by default. */
+        #frame_cad {
+            pointer-events: auto;
+        }
         #frame_radar {
-            pointer-events: none;
+            pointer-events: auto;
         }
     </style>
 </head>
@@ -74,14 +80,14 @@
             taximeter: document.getElementById('frame_taximeter'),
         };
 
-        // FIX: only these two ever need to receive clicks - see the CSS
-        // block above for the full explanation of why this exists.
-        var interactiveFrames = { cad: frames.cad, radar: frames.radar };
-
+        // FIX: radar is auto by default (see the CSS comment above for why)
+        // and only ever forced to 'none' for as long as CAD is the current
+        // owner - that's the one real conflict, since radar sits on top of
+        // CAD in the DOM. Any other owner value (radar itself, or nobody)
+        // just means "radar goes back to its normal, always-clickable
+        // default".
         function setUiFocusOwner(owner) {
-            Object.keys(interactiveFrames).forEach(function (key) {
-                interactiveFrames[key].style.pointerEvents = (key === owner) ? 'auto' : 'none';
-            });
+            frames.radar.style.pointerEvents = (owner === 'cad') ? 'none' : 'auto';
         }
 
         var ready = { bodydamage: false, cad: false, radar: false, taximeter: false };
