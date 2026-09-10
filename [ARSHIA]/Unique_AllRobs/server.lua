@@ -476,6 +476,13 @@ end)
 RegisterServerEvent('Morphy_RobSystem:robberyNeeds')
 AddEventHandler('Morphy_RobSystem:robberyNeeds', function(robname)
     local _source = source
+    -- BUGFIX: robname used to be indexed into Config.Rob.Robs with no
+    -- existence check anywhere in this file. A client sending a bogus
+    -- name (e.g. via a direct TriggerServerEvent) threw a Lua error
+    -- ("attempt to index a nil value") instead of being rejected.
+    if not Config.Rob.Robs[robname] then
+        return
+    end
     if GetPlayerRoutingBucket(_source) ~= 0 then
         TriggerClientEvent('esx:showNotification', _source, "Shoma Dar Worlde Asli Nistid !!",'error')
 		return
@@ -580,10 +587,22 @@ end)
 
 RegisterServerEvent('Morphy_RobSystem:robberyStarted')
 AddEventHandler('Morphy_RobSystem:robberyStarted', function(robname)
-    Config.Rob.Robs[robname].someonerobbing = false
     local _source = source
+
+    -- CRITICAL BUGFIX (money exploit): this handler used to trust
+    -- `robname` unconditionally. Because it's a RegisterServerEvent, any
+    -- client could call it directly -- skipping every check in
+    -- robberyNeeds (police-job check, off-duty check, cops-required,
+    -- team-required, item-required, cooldown, location) -- and then
+    -- immediately fire robberySuccess to collect the reward for free.
+    -- robberyNeeds is the ONLY place that sets RobsInProgress[_source]
+    -- BEFORE the hack starts, so requiring it to already equal `robname`
+    -- here proves the player actually passed those checks.
+    if not Config.Rob.Robs[robname] or RobsInProgress[_source] ~= robname then
+        return
+    end
+
     local xPlayer  = ESX.GetPlayerFromId(_source)
-    RobsInProgress[_source] = robname
 	local xPlayers = ESX.GetPlayers()
     SetAlarmPolice(robname , "start",_source)
     RobberyCode = RobberyCode + 1
@@ -625,7 +644,7 @@ end)
 RegisterServerEvent('Morphy_RobSystem:robberyHackFail')
 AddEventHandler('Morphy_RobSystem:robberyHackFail', function(robname)
     local _source = source
-    if RobsInProgress[_source] ~= robname then return end
+    if not Config.Rob.Robs[robname] or RobsInProgress[_source] ~= robname then return end
     Config.Rob.Robs[robname].someonerobbing = false
     RobsInProgress[_source] = nil
 
@@ -637,7 +656,7 @@ end)
 RegisterServerEvent('Morphy_RobSystem:robberySuccess')
 AddEventHandler('Morphy_RobSystem:robberySuccess', function(robname,RobberyCode)
     local _source = source
-    if RobsInProgress[_source] ~= robname then return end
+    if not Config.Rob.Robs[robname] or RobsInProgress[_source] ~= robname then return end
     RobsInProgress[_source] = nil
     local xPlayer  = ESX.GetPlayerFromId(_source)
 
@@ -784,7 +803,22 @@ end)
 RegisterServerEvent('Morphy_RobSystem:robberyCancel')
 AddEventHandler('Morphy_RobSystem:robberyCancel', function(robname)
     local _source = source
+
+    -- BUGFIX: this handler used to have no ownership/validity check at
+    -- all -- any client could send an arbitrary/unowned robname and
+    -- generate a fake "Canceled" Discord log + fake police notification
+    -- for a robbery that never happened.
+    if not Config.Rob.Robs[robname] or RobsInProgress[_source] ~= robname then
+        return
+    end
     RobsInProgress[_source] = nil
+
+    -- BUGFIX: someonerobbing was never reset back to false here, so any
+    -- cancelled robbery (player walks too far away) permanently soft-locked
+    -- that location -- robberyNeeds would refuse everyone forever with
+    -- "Fardi Dar Hale Hack Ast" until the resource restarted.
+    Config.Rob.Robs[robname].someonerobbing = false
+
     local xPlayer  = ESX.GetPlayerFromId(_source)
     TriggerClientEvent('esx:showNotification', _source, "Be Dalile Door Shodan Az Robbery , Robery Shoma Cancel Shod !")
     local xPlayers, yPlayer = ESX.GetPlayers(), nil
@@ -813,6 +847,7 @@ AddEventHandler('Morphy_RobSystem:robberyCancel', function(robname)
 end)
 
 function SetAlarmPolice(Name ,  typ , source )
+    if not Config.Rob.Robs[Name] then return end
     local xPlayers = ESX.GetPlayers()
     if typ == 'start' then
 
@@ -914,6 +949,11 @@ AddEventHandler('playerDropped', function(reason)
             local xPlayers, yPlayer = ESX.GetPlayers(), nil
             TriggerEvent('DiscordBot:ToDiscord', 'rob', "Robbery System", "```css\n[ID] : ".._source.."\n[IC Name] : "..xPlayer.name.."\n[Steam Name] : "..GetPlayerName(source).."\n[Gang Name] : "..xPlayer.gang.name.."\n[Gang Grade] : "..xPlayer.gang.grade.."\n[Steam Hex] : "..xPlayer.identifier.."\n[Rob Name] : "..RobsInProgress[_source].."\n[Status] : Canceled\n```",'user', _source, true, false)
             SetAlarmPolice(RobsInProgress[_source] , "cancel",_source)
+            -- BUGFIX: same as robberyCancel -- free the location instead of
+            -- leaving it permanently marked as "someone is robbing it".
+            if Config.Rob.Robs[RobsInProgress[_source]] then
+                Config.Rob.Robs[RobsInProgress[_source]].someonerobbing = false
+            end
             for i=1, #xPlayers, 1 do
                 yPlayer = ESX.GetPlayerFromId(xPlayers[i])
 
