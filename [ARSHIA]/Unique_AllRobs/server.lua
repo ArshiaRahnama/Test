@@ -72,6 +72,10 @@ RegisterServerEvent('DarkPhone:CancelHostage')
 AddEventHandler('DarkPhone:CancelHostage', function()
 	local xPlayer = ESX.GetPlayerFromId(source)
     local _source = source
+    -- BUGFIX: no ownership check -- any player (not just the one running
+    -- the hostage situation) could cancel an active hostage event for
+    -- everyone else, just by firing this event.
+    if _source ~= HostageOwner then return end
     TriggerClientEvent('chat:addMessage', _source, { args = { '^1[Gerogan Giri] ', '^1Gerogan Giri^0 Be Dalile Door Shodan Az Mahale Start Cancel Shod !' } })
     local xPlayers = ESX.GetPlayers()
     for i=1, #xPlayers, 1 do
@@ -86,6 +90,9 @@ end)
 
 RegisterServerEvent('DarkPhone:SuccessHostage')
 AddEventHandler('DarkPhone:SuccessHostage', function()
+    -- BUGFIX: same missing ownership check as CancelHostage -- any player
+    -- could prematurely end someone else's hostage situation for free.
+    if source ~= HostageOwner then return end
     local xPlayers = ESX.GetPlayers()
     for i=1, #xPlayers, 1 do
         local yPlayer = ESX.GetPlayerFromId(xPlayers[i])
@@ -236,6 +243,13 @@ end
 
 do
 local Teams = {}
+-- BUGFIX: Teams used to be built with table.insert (array semantics).
+-- Deleting a team (Teams[Teamid] = nil in DeleteTeam) leaves a hole in
+-- the array, and Lua's # operator (which table.insert relies on) has
+-- UNDEFINED behavior once a table has holes -- the next team's id could
+-- collide with an existing one or jump unpredictably. A dedicated
+-- monotonically-increasing counter avoids that entirely.
+local NextTeamId = 0
 
 local ESX = nil
 
@@ -274,7 +288,19 @@ RegisterServerEvent('TeamSystem:CreateTeam')
 AddEventHandler('TeamSystem:CreateTeam', function()
     local _source = source
     local xPlayer = ESX.GetPlayerFromId(_source)
-    table.insert(Teams,{[_source] = {name = xPlayer.name , rank = "Leader"}})
+
+    -- BUGFIX: no check that the player wasn't already in a team, so
+    -- spamming /party -> Create Team repeatedly made them Leader of
+    -- several teams at once (and each one held a stale reference to
+    -- the same player).
+    local InTeam = IsInTeam(_source)
+    if InTeam then
+        TriggerClientEvent('esx:showNotification', _source, "Shoma Ghablan Ozve Yek Team Hastid")
+        return
+    end
+
+    NextTeamId = NextTeamId + 1
+    Teams[NextTeamId] = {[_source] = {name = xPlayer.name , rank = "Leader"}}
 
 end)
 
@@ -288,6 +314,23 @@ RegisterServerEvent('TeamSystem:InvitePlayer')
 AddEventHandler('TeamSystem:InvitePlayer', function(InvitedId,InvitedTeamID)
     local _source = source
     local xPlayer = ESX.GetPlayerFromId(_source)
+
+    -- SECURITY FIX: this event is reachable directly via TriggerServerEvent
+    -- from any client, bypassing the leader check that RequestInvite did
+    -- before calling it. That let any player (even one with no team) send
+    -- themselves a "pending invite" to any existing team and then JoinToTeam
+    -- it, defeating the JoinToTeam fix above entirely. Now InvitePlayer
+    -- itself verifies the caller is actually that team's Leader.
+    if not Teams[InvitedTeamID] then
+        TriggerClientEvent('esx:showNotification', _source, "Team Vojod Nadarad")
+        return
+    end
+    local caller = Teams[InvitedTeamID][_source]
+    if not caller or caller.rank ~= "Leader" then
+        TriggerClientEvent('esx:showNotification', _source, "Faghat Leader Mitavanad Da'vat Konad")
+        return
+    end
+
     local yPlayer = ESX.GetPlayerFromId(InvitedId)
     if yPlayer then
         local InTeam,Team,teamid = IsInTeam(InvitedId)
