@@ -39,6 +39,70 @@ function GetCharacterName(xPlayer)
 	return GetPlayerName(xPlayer.source)
 end
 
+----------------------------------------
+------- DEPARTMENT-AWARE DUTY CHECK -----
+----------------------------------------
+-- Every farm/process/sell handler in this file blocks on-duty responder jobs from doing drug
+-- work. Instead of this file keeping its own hardcoded OR-chain of job names (which used to be
+-- copy-pasted ~13 times and would silently drift out of sync with esx_uniquejobs' own job list),
+-- ask esx_uniquejobs which department (if any) a job belongs to. Any job in a department
+-- (Law Enforcement / DOJ / Organ Services) counts as "on duty, can't farm drugs".
+-- Falls back to the old static list if esx_uniquejobs isn't running (missing export), so a
+-- restart-order hiccup can't silently disable this check.
+local FallbackRestrictedJobs = {
+	ambulance = true, taxi = true, mechanic = true, police = true, mt = true,
+	sheriff = true, fbi = true, cid = true, cia = true, marshal = true, judge = true, doa = true,
+}
+
+function IsRestrictedJob(xPlayer)
+	if not xPlayer or not xPlayer.job then return false end
+
+	local ok, dept = pcall(function()
+		return exports['esx_uniquejobs']:GetDepartmentForJob(xPlayer.job.name)
+	end)
+
+	if ok then
+		return dept ~= nil
+	end
+
+	return FallbackRestrictedJobs[xPlayer.job.name] == true
+end
+
+----------------------------------------
+---------- GRADE-SCALED PAYOUTS ---------
+----------------------------------------
+-- Returns a multiplier (e.g. 1.15 for +15%) based on the player's ESX job grade, capped at
+-- Config.GradeBonus.Max percent. Used for Evidence.CollectReward and the delivery-seizure cash
+-- bonus, so higher-ranked DOA officers earn a bit more for the same action. Pure ESX (job.grade
+-- is core, not from esx_uniquejobs), so this has no external dependency to fall back on.
+function GetGradeBonusMultiplier(xPlayer)
+	if not Config.GradeBonus.Enabled or not xPlayer or not xPlayer.job then return 1.0 end
+
+	local percent = math.min(Config.GradeBonus.Max, (xPlayer.job.grade or 0) * Config.GradeBonus.PerGradePercent)
+	return 1.0 + (percent / 100)
+end
+
+----------------------------------------
+------- UNIT CALLSIGN TAGGING -----------
+----------------------------------------
+-- Best-effort lookup of the acting officer's esx_uniquejobs unit callsign (from the /unit
+-- system), so DOA-side Discord logs show which unit responded instead of just a player name.
+-- Returns '' (not nil) when there's no callsign or the export/resource isn't available, so it's
+-- always safe to concatenate straight into a log string.
+function GetUnitCallsignTag(xPlayer)
+	if not xPlayer then return '' end
+
+	local ok, callsign = pcall(function()
+		return exports['esx_uniquejobs']:GetPlayerUnitCallsign(xPlayer.identifier)
+	end)
+
+	if ok and callsign and callsign ~= '' then
+		return (' [%s]'):format(callsign)
+	end
+
+	return ''
+end
+
 exports.oxmysql:execute('SELECT * FROM capture WHERE name = "drug"', {} , function(drug)
 	if drug then
 		DrugHandeler = 'gang_' .. string.lower(drug[1].handeler)
@@ -261,9 +325,11 @@ AddEventHandler('esx_drugs:collectEvidence', function(fieldKey, streetName)
 	local topSuspect = suspects[1]
 	local officerName = GetCharacterName(xPlayer)
 
-	-- Cash reward straight to the collecting officer, on top of whatever the case itself does
-	xPlayer.addMoney(Config.Evidence.CollectReward)
-	TriggerClientEvent('esx:showNotification', _source, _U('evidence_reward', ESX.Math.GroupDigits(Config.Evidence.CollectReward)))
+	-- Cash reward straight to the collecting officer, on top of whatever the case itself does.
+	-- Scaled up by job grade (Config.GradeBonus) so higher-ranked officers earn a bit more.
+	local reward = ESX.Math.Round(Config.Evidence.CollectReward * GetGradeBonusMultiplier(xPlayer))
+	xPlayer.addMoney(reward)
+	TriggerClientEvent('esx:showNotification', _source, _U('evidence_reward', ESX.Math.GroupDigits(reward)))
 
 	local reportLines = {}
 	for i, entry in ipairs(suspects) do
@@ -276,14 +342,18 @@ AddEventHandler('esx_drugs:collectEvidence', function(fieldKey, streetName)
 		table.insert(reportLines, i..'. '..entry.name..' | Gang: '..entry.gang..' | Farm Count: '..entry.count..forensicLine)
 	end
 
-	TriggerEvent('DiscordBot:ToDiscord', 'adminmenu', 'CIDReferralLog', '```css\n[ DOA -> CID Evidence Referral ]\n[ Type : '..tostring(site.label)..' ]\n[ Location : '..tostring(streetName)..' ]\n[ Total Harvests : '..tostring(site.count)..' ]\n[ Collected By : '..officerName..' ]\n[ Suspects ]\n'..table.concat(reportLines, '\n')..'\n```', 'user', true, _source, false)
+	TriggerEvent('DiscordBot:ToDiscord', 'adminmenu', 'CIDReferralLog', '```css\n[ DOA -> CID Evidence Referral ]\n[ Type : '..tostring(site.label)..' ]\n[ Location : '..tostring(streetName)..' ]\n[ Total Harvests : '..tostring(site.count)..' ]\n[ Collected By : '..officerName..GetUnitCallsignTag(xPlayer)..' ]\n[ Suspects ]\n'..table.concat(reportLines, '\n')..'\n```', 'user', true, _source, false)
 
 	-- File this as a REAL, persistent case in the existing DOJ Cases system (/doj -> Parvande-ha),
 	-- not just a chat message -- so CID actually sees it in their case list, tagged as DOA's referral.
+	-- Priority is picked from Config.CasePriority by drug type (heroine-chain fields run 'high',
+	-- weed/mushroom 'low', everything else in between) instead of always being hardcoded 'high'.
+	local casePriority = Config.CasePriority[site.label] or 'medium'
+
 	local ok, err = pcall(function()
 		exports['esx_uniquejobs']:CreateExternalCase({
 			title           = ('Faaliate Mashkook: %s - %s'):format(site.label, streetName),
-			priority        = 'high',
+			priority        = casePriority,
 			openedByName    = officerName,
 			openedByJob     = 'doa',
 			leadOfficerName = officerName,
@@ -303,6 +373,25 @@ AddEventHandler('esx_drugs:collectEvidence', function(fieldKey, streetName)
 
 	if not ok then
 		print(('[esx_drugs] Could not file DOJ case (is esx_uniquejobs running?): %s'):format(tostring(err)))
+	end
+
+	-- Also log a criminal record against the top suspect (esx_uniquejobs' own criminal_records
+	-- table -- separate from, and in addition to, the DOJ case filed above).
+	if Config.UniqueJobs.LogCriminalRecord and topSuspect then
+		local okRec, errRec = pcall(function()
+			exports['esx_uniquejobs']:LogCriminalRecord(
+				topSuspect.identifier,
+				'Faaliate Mavad Mokhader',
+				('%s (%s bar dar %s)'):format(site.label, topSuspect.count, streetName),
+				officerName,
+				xPlayer.identifier,
+				nil
+			)
+		end)
+
+		if not okRec then
+			print(('[esx_drugs] Could not log criminal record (is esx_uniquejobs running?): %s'):format(tostring(errRec)))
+		end
 	end
 
 	TriggerClientEvent('esx_drugs:showEvidenceReport', _source, {
@@ -372,6 +461,12 @@ AddEventHandler('esx_drugs:requestDelivery', function()
 	local now = GetGameTimer()
 	if DeliveryCooldown[_source] and (now - DeliveryCooldown[_source]) < Config.Delivery.Cooldown then
 		TriggerClientEvent('esx:showNotification', _source, _U('delivery_cooldown'))
+		return
+	end
+
+	local requireDOA = Config.UniqueJobs.Delivery.RequireDOA or 0
+	if requireDOA > 0 and CountOnlineJob('doa') < requireDOA then
+		TriggerClientEvent('esx:showNotification', _source, _U('delivery_no_doa'))
 		return
 	end
 
@@ -488,7 +583,35 @@ AddEventHandler('esx_drugs:seizeDelivery', function(targetId)
 	TriggerClientEvent('esx:showNotification', targetId, _U('delivery_seized'))
 	TriggerClientEvent('esx:showNotification', _source, _U('delivery_seize_success', mission.amount, mission.label))
 
-	TriggerEvent('DiscordBot:ToDiscord', 'adminmenu', 'JobSuspiciousLog', '```css\n[ DOA Seizure ]\n[ Officer : '..GetPlayerName(_source)..' ]\n[ Target : '..GetPlayerName(targetId)..' ]\n[ Seized : '..tostring(mission.amount)..'x '..tostring(mission.item)..' ]\n```', 'user', true, _source, false)
+	TriggerEvent('DiscordBot:ToDiscord', 'adminmenu', 'JobSuspiciousLog', '```css\n[ DOA Seizure ]\n[ Officer : '..GetPlayerName(_source)..GetUnitCallsignTag(xPlayer)..' ]\n[ Target : '..GetPlayerName(targetId)..' ]\n[ Seized : '..tostring(mission.amount)..'x '..tostring(mission.item)..' ]\n```', 'user', true, _source, false)
+
+	-- Log the seizure into esx_uniquejobs' own DOA seizure ledger (visible in /doj), on top of
+	-- the Discord line above, plus a grade-scaled cash bonus for the seizing officer.
+	if Config.UniqueJobs.LogSeizures then
+		local estValue = DrugDealerItems.get(mission.item)
+		estValue = estValue and ESX.Math.Round(estValue * mission.amount) or 0
+
+		local okSeize, errSeize = pcall(function()
+			exports['esx_uniquejobs']:LogSeizure(
+				mission.label,
+				mission.amount,
+				estValue,
+				targetPlayer.identifier,
+				GetCharacterName(targetPlayer),
+				GetCharacterName(xPlayer)
+			)
+		end)
+
+		if not okSeize then
+			print(('[esx_drugs] Could not log seizure (is esx_uniquejobs running?): %s'):format(tostring(errSeize)))
+		end
+	end
+
+	if Config.GradeBonus.Enabled and Config.GradeBonus.SeizureCashBase > 0 then
+		local seizureCash = ESX.Math.Round(Config.GradeBonus.SeizureCashBase * GetGradeBonusMultiplier(xPlayer))
+		xPlayer.addMoney(seizureCash)
+		TriggerClientEvent('esx:showNotification', _source, _U('delivery_seize_cash', ESX.Math.GroupDigits(seizureCash)))
+	end
 end)
 
 function DrugsManager()
@@ -548,6 +671,22 @@ function CountCops()
 	SetTimeout(120 * 1000, CountCops)
 end
 
+-- Generic version of CountCops() for any single job name -- used by the delivery-mission gate
+-- (Config.UniqueJobs.Delivery.RequireDOA) instead of a second copy-pasted counter.
+function CountOnlineJob(jobName)
+	local xPlayers = ESX.GetPlayers()
+	local total = 0
+
+	for i=1, #xPlayers, 1 do
+		local xPlayer = ESX.GetPlayerFromId(xPlayers[i])
+		if xPlayer and xPlayer.job.name == jobName then
+			total = total + 1
+		end
+	end
+
+	return total
+end
+
 RegisterServerEvent('esx_jk_drugs:pickedUpCannabis')
 AddEventHandler('esx_jk_drugs:pickedUpCannabis', function(forensics)
 	local _source = source
@@ -555,7 +694,7 @@ AddEventHandler('esx_jk_drugs:pickedUpCannabis', function(forensics)
 	local xItem = xPlayer.getInventoryItem('cannabis')
 
 	if xPlayer.job.grade > 0 then
-		if xPlayer.job.name == 'ambulance' or xPlayer.job.name == 'taxi' or xPlayer.job.name == 'mechanic' or xPlayer.job.name == 'police' or xPlayer.job.name == 'mt' or xPlayer.job.name == 'sheriff' or xPlayer.job.name == 'fbi' or xPlayer.job.name == 'cid' or xPlayer.job.name == 'cia' or xPlayer.job.name == 'marshal' or xPlayer.job.name == 'judge' or xPlayer.job.name == 'doa' then
+		if IsRestrictedJob(xPlayer) then
 			TriggerClientEvent('esx:showNotification', _source, 'Shoma nemitavanid On-Duty in kar ro anjam dahid!')
 			return
 		end
@@ -599,7 +738,7 @@ AddEventHandler('esx_jk_drugs:pickedUpCocaPlant', function(forensics)
 	local multi = true
 
 	if xPlayer.job.grade > 0 then
-		if xPlayer.job.name == 'ambulance' or xPlayer.job.name == 'taxi' or xPlayer.job.name == 'mechanic' or xPlayer.job.name == 'police' or xPlayer.job.name == 'mt' or xPlayer.job.name == 'sheriff' or xPlayer.job.name == 'fbi' or xPlayer.job.name == 'cid' or xPlayer.job.name == 'cia' or xPlayer.job.name == 'marshal' or xPlayer.job.name == 'judge' or xPlayer.job.name == 'doa' then
+		if IsRestrictedJob(xPlayer) then
 			TriggerClientEvent('esx:showNotification', _source, 'Shoma nemitavanid On-Duty in kar ro anjam dahid!')
 			return
 		end
@@ -629,7 +768,7 @@ AddEventHandler('esx_jk_drugs:pickedUpEphedra', function(forensics)
 	local xItem = xPlayer.getInventoryItem('ephedra')
 
 	if xPlayer.job.grade > 0 then
-		if xPlayer.job.name == 'ambulance' or xPlayer.job.name == 'taxi' or xPlayer.job.name == 'mechanic' or xPlayer.job.name == 'police' or xPlayer.job.name == 'mt' or xPlayer.job.name == 'sheriff' or xPlayer.job.name == 'fbi' or xPlayer.job.name == 'cid' or xPlayer.job.name == 'cia' or xPlayer.job.name == 'marshal' or xPlayer.job.name == 'judge' or xPlayer.job.name == 'doa' then
+		if IsRestrictedJob(xPlayer) then
 			TriggerClientEvent('esx:showNotification', _source, 'Shoma nemitavanid On-Duty in kar ro anjam dahid!')
 			return
 		end
@@ -660,7 +799,7 @@ AddEventHandler('esx_jk_drugs:pickedUpmushroom', function(forensics)
 	local xItem = xPlayer.getInventoryItem('mushroom')
 
 	if xPlayer.job.grade > 0 then
-		if xPlayer.job.name == 'ambulance' or xPlayer.job.name == 'taxi' or xPlayer.job.name == 'mechanic' or xPlayer.job.name == 'police' or xPlayer.job.name == 'mt' or xPlayer.job.name == 'sheriff' or xPlayer.job.name == 'fbi' or xPlayer.job.name == 'cid' or xPlayer.job.name == 'cia' or xPlayer.job.name == 'marshal' or xPlayer.job.name == 'judge' or xPlayer.job.name == 'doa' then
+		if IsRestrictedJob(xPlayer) then
 			TriggerClientEvent('esx:showNotification', _source, 'Shoma nemitavanid On-Duty in kar ro anjam dahid!')
 			return
 		end
@@ -690,7 +829,7 @@ AddEventHandler('esx_jk_drugs:pickedUpPoppy', function(forensics)
 	local xItem = xPlayer.getInventoryItem('poppy')
 
 	if xPlayer.job.grade > 0 then
-		if xPlayer.job.name == 'ambulance' or xPlayer.job.name == 'taxi' or xPlayer.job.name == 'mechanic' or xPlayer.job.name == 'police' or xPlayer.job.name == 'mt' or xPlayer.job.name == 'sheriff' or xPlayer.job.name == 'fbi' or xPlayer.job.name == 'cid' or xPlayer.job.name == 'cia' or xPlayer.job.name == 'marshal' or xPlayer.job.name == 'judge' or xPlayer.job.name == 'doa' then
+		if IsRestrictedJob(xPlayer) then
 			TriggerClientEvent('esx:showNotification', _source, 'Shoma nemitavanid On-Duty in kar ro anjam dahid!')
 			return
 		end
@@ -727,7 +866,7 @@ AddEventHandler('esx_jk_drugs:processCannabis', function()
 		end
 
 		if xPlayer.job.grade > 0 then
-			if xPlayer.job.name == 'ambulance' or xPlayer.job.name == 'taxi' or xPlayer.job.name == 'mechanic' or xPlayer.job.name == 'police' or xPlayer.job.name == 'mt' or xPlayer.job.name == 'sheriff' or xPlayer.job.name == 'fbi' or xPlayer.job.name == 'cid' or xPlayer.job.name == 'cia' or xPlayer.job.name == 'marshal' or xPlayer.job.name == 'judge' or xPlayer.job.name == 'doa' then
+			if IsRestrictedJob(xPlayer) then
 				TriggerClientEvent('esx:showNotification', _source, 'Shoma nemitavanid On-Duty in kar ro anjam dahid!')
 				return
 			end
@@ -765,7 +904,7 @@ AddEventHandler('esx_jk_drugs:processCocaPlant', function()
 	end
 
 	if xPlayer.job.grade > 0 then
-		if xPlayer.job.name == 'ambulance' or xPlayer.job.name == 'taxi' or xPlayer.job.name == 'mechanic' or xPlayer.job.name == 'police' or xPlayer.job.name == 'mt' or xPlayer.job.name == 'sheriff' or xPlayer.job.name == 'fbi' or xPlayer.job.name == 'cid' or xPlayer.job.name == 'cia' or xPlayer.job.name == 'marshal' or xPlayer.job.name == 'judge' or xPlayer.job.name == 'doa' then
+		if IsRestrictedJob(xPlayer) then
 			TriggerClientEvent('esx:showNotification', _source, 'Shoma nemitavanid On-Duty in kar ro anjam dahid!')
 			return
 		end
@@ -798,7 +937,7 @@ AddEventHandler('esx_jk_drugs:processEphedra', function()
 	end
 
 	if xPlayer.job.grade > 0 then
-		if xPlayer.job.name == 'ambulance' or xPlayer.job.name == 'taxi' or xPlayer.job.name == 'mechanic' or xPlayer.job.name == 'police' or xPlayer.job.name == 'mt' or xPlayer.job.name == 'sheriff' or xPlayer.job.name == 'fbi' or xPlayer.job.name == 'cid' or xPlayer.job.name == 'cia' or xPlayer.job.name == 'marshal' or xPlayer.job.name == 'judge' or xPlayer.job.name == 'doa' then
+		if IsRestrictedJob(xPlayer) then
 			TriggerClientEvent('esx:showNotification', _source, 'Shoma nemitavanid On-Duty in kar ro anjam dahid!')
 			return
 		end
@@ -832,7 +971,7 @@ AddEventHandler('esx_jk_drugs:processEphedrine', function()
 	end
 
 	if xPlayer.job.grade > 0 then
-		if xPlayer.job.name == 'ambulance' or xPlayer.job.name == 'taxi' or xPlayer.job.name == 'mechanic' or xPlayer.job.name == 'police' or xPlayer.job.name == 'mt' or xPlayer.job.name == 'sheriff' or xPlayer.job.name == 'fbi' or xPlayer.job.name == 'cid' or xPlayer.job.name == 'cia' or xPlayer.job.name == 'marshal' or xPlayer.job.name == 'judge' or xPlayer.job.name == 'doa' then
+		if IsRestrictedJob(xPlayer) then
 			TriggerClientEvent('esx:showNotification', _source, 'Shoma nemitavanid On-Duty in kar ro anjam dahid!')
 			return
 		end
@@ -865,7 +1004,7 @@ AddEventHandler('esx_jk_drugs:processCoke', function()
 	end
 
 	if xPlayer.job.grade > 0 then
-		if xPlayer.job.name == 'ambulance' or xPlayer.job.name == 'taxi' or xPlayer.job.name == 'mechanic' or xPlayer.job.name == 'police' or xPlayer.job.name == 'mt' or xPlayer.job.name == 'sheriff' or xPlayer.job.name == 'fbi' or xPlayer.job.name == 'cid' or xPlayer.job.name == 'cia' or xPlayer.job.name == 'marshal' or xPlayer.job.name == 'judge' or xPlayer.job.name == 'doa' then
+		if IsRestrictedJob(xPlayer) then
 			TriggerClientEvent('esx:showNotification', _source, 'Shoma nemitavanid On-Duty in kar ro anjam dahid!')
 			return
 		end
@@ -898,7 +1037,7 @@ AddEventHandler('esx_jk_drugs:processPoppy', function()
 	end
 
 	if xPlayer.job.grade > 0 then
-		if xPlayer.job.name == 'ambulance' or xPlayer.job.name == 'taxi' or xPlayer.job.name == 'mechanic' or xPlayer.job.name == 'police' or xPlayer.job.name == 'mt' or xPlayer.job.name == 'sheriff' or xPlayer.job.name == 'fbi' or xPlayer.job.name == 'cid' or xPlayer.job.name == 'cia' or xPlayer.job.name == 'marshal' or xPlayer.job.name == 'judge' or xPlayer.job.name == 'doa' then
+		if IsRestrictedJob(xPlayer) then
 			TriggerClientEvent('esx:showNotification', _source, 'Shoma nemitavanid On-Duty in kar ro anjam dahid!')
 			return
 		end
@@ -931,7 +1070,7 @@ AddEventHandler('esx_jk_drugs:processOpium', function()
 	end
 
 	if xPlayer.job.grade > 0 then
-		if xPlayer.job.name == 'ambulance' or xPlayer.job.name == 'taxi' or xPlayer.job.name == 'mechanic' or xPlayer.job.name == 'police' or xPlayer.job.name == 'mt' or xPlayer.job.name == 'sheriff' or xPlayer.job.name == 'fbi' or xPlayer.job.name == 'cid' or xPlayer.job.name == 'cia' or xPlayer.job.name == 'marshal' or xPlayer.job.name == 'judge' or xPlayer.job.name == 'doa' then
+		if IsRestrictedJob(xPlayer) then
 			TriggerClientEvent('esx:showNotification', _source, 'Shoma nemitavanid On-Duty in kar ro anjam dahid!')
 			return
 		end
@@ -1102,7 +1241,7 @@ AddEventHandler('esx_drugs:sellDrug', function(itemName, amount)
 	local xItem = xPlayer.getInventoryItem(itemName)
 
 	if xPlayer.job.grade > 0 then
-		if xPlayer.job.name == 'ambulance' or xPlayer.job.name == 'taxi' or xPlayer.job.name == 'mechanic' or xPlayer.job.name == 'police' or xPlayer.job.name == 'mt' or xPlayer.job.name == 'sheriff' or xPlayer.job.name == 'fbi' or xPlayer.job.name == 'cid' or xPlayer.job.name == 'cia' or xPlayer.job.name == 'marshal' or xPlayer.job.name == 'judge' or xPlayer.job.name == 'doa' then
+		if IsRestrictedJob(xPlayer) then
 			TriggerClientEvent('esx:showNotification', _source, 'Shoma nemitavanid On-Duty in kar ro anjam dahid!')
 			return
 		end

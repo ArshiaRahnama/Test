@@ -48,3 +48,9 @@ function GetJobSetForDepartment(id)
 	for _, j in ipairs(dept.jobs) do set[j] = true end
 	return set
 end
+
+-- Exported so other resources (e.g. esx_drugs' on-duty restriction check) can ask "is this job
+-- part of any department?" without keeping their own separate hardcoded copy of the job list in
+-- sync by hand. Shared script, so this registers on whichever side loads it; esx_drugs only
+-- calls it server-side.
+exports('GetDepartmentForJob', GetDepartmentForJob)

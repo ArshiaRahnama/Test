@@ -57,7 +57,8 @@ end
 
 -- ============================================================
 -- External export: same lookup as above, for other resources
--- (e.g. Unique_AllRobs' dispatch alert) that want to only ping
+-- (e.g. Unique_AllRobs' dispatch alert, or esx_drugs tagging its own
+-- DOA logs with the officer's callsign) that want to only ping
 -- players who are actually in an active unit, and show their
 -- real callsign instead of just a name.
 -- exports['esx_uniquejobs']:GetPlayerUnitCallsign(identifier) -> callsign | nil

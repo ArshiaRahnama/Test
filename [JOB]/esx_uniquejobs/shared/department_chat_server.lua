@@ -1,6 +1,13 @@
 ESX = nil
 TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
 
+-- The old '/mp' command that used to live in this file is gone -- '[SCRIPT]/ScriptPack/server/rpchat-sv.lua'
+-- already registers its own '/mp' (proximity-based, covers the same jobs), and two resources
+-- registering the same command silently shadow each other (whichever loads last wins), so this
+-- was a straight duplicate, not a second feature. sendToSet/SendDeptMessage below are kept --
+-- they're a different thing: a server-side export other resources call directly (no slash
+-- command, no player typing anything), used e.g. by esx_drugs to post a convoy/raid alert
+-- straight into DOA's in-game chat instead of only Discord.
 local function sendToSet(jobSet, tag, color, senderName, senderGradeLabel, message)
 	local xPlayers = ESX.GetPlayers()
 	for i = 1, #xPlayers do
@@ -12,17 +19,8 @@ local function sendToSet(jobSet, tag, color, senderName, senderGradeLabel, messa
 	end
 end
 
-RegisterCommand('mp', function(source, args)
-	local xPlayer = ESX.GetPlayerFromId(source)
-	if not xPlayer then return end
+function SendDeptMessage(jobName, tag, color, senderName, senderGradeLabel, message)
+	sendToSet({ [jobName] = true }, tag, color, senderName, senderGradeLabel or '-', message)
+end
 
-	if not GetDepartmentForJob(xPlayer.job.name) then
-		TriggerClientEvent('esx:showNotification', source, 'You are not on a department job.')
-		return
-	end
-
-	local message = table.concat(args, ' ')
-	if message == '' then return end
-
-	sendToSet({ [xPlayer.job.name] = true }, 'MP', { 0, 200, 120 }, xPlayer.name, xPlayer.job.grade_label, message)
-end, false)
+exports('SendDeptMessage', SendDeptMessage)

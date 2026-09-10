@@ -65,6 +65,37 @@ Config.Delivery = {
 	},
 }
 
+--Drug Convoy Event (server-wide PvP: an NPC cargo van hauls a big shipment between two of the
+--Delivery DropZones below; ANY player/gang can attack and stop it to loot the cargo -- no
+--paperwork, just a fight. Reuses Config.Delivery.DropZones as route endpoints. DOA gets an
+--in-game heads-up via esx_uniquejobs' department chat, and if a DOA officer is the one who stops
+--it, it's logged as a real seizure instead of handing them raw drugs -- see Config.UniqueJobs.Convoy)--
+Config.Convoy = {
+	Enabled        = true,
+	MinInterval    = 45 * 60 * 1000, -- min time between convoys (ms)
+	MaxInterval    = 90 * 60 * 1000, -- max time between convoys (ms)
+	VehicleModel   = 'burrito3',
+	DriverModel    = 'g_m_importexport_01',
+	GuardModel     = 'g_m_importexport_01',
+	GuardCount     = 2,               -- armed passengers who bail out and fight once the van is attacked
+	GuardWeapon    = 'WEAPON_CARBINERIFLE',
+	GuardHealth    = 250,
+	GuardAccuracy  = 40,
+	Speed          = 20.0,            -- driving speed along the route
+	BlipSprite     = 380,
+	BlipColor      = 1,
+	StoppedRadius  = 15.0,            -- how close a player must be to loot once the van is stopped
+	DespawnTimeout = 15 * 60 * 1000,  -- auto-cleanup if nobody stops it in time
+	CargoCash      = { min = 15000, max = 30000 }, -- cash in the loot, on top of item cargo
+	CargoItems = { -- each rolled independently against its own chance (%)
+		{ item = 'cocaine',   label = 'Cocaine',   min = 15, max = 30, chance = 70 },
+		{ item = 'marijuana', label = 'Marijuana', min = 20, max = 40, chance = 70 },
+		{ item = 'meth',      label = 'Meth',      min = 10, max = 20, chance = 40 },
+		{ item = 'heroine',   label = 'Heroine',   min = 8,  max = 15, chance = 30 },
+	},
+	DOASeizureCash = 25000, -- flat cash (before Config.GradeBonus scaling) if DOA is who stops it, instead of raw drugs
+}
+
 --CID Evidence Referral (DOA collects physical clues at harvest sites and refers them to CID)--
 Config.Evidence = {
 	InactivityTimeout  = 45 * 60 * 1000, -- if a site gets no new activity for this long, it clears itself uncollected (ms)
@@ -72,7 +103,44 @@ Config.Evidence = {
 	AlertDuration      = 5 * 60 * 1000,  -- how long the DOA-only siren blip / countdown lasts when a NEW site is first detected
 	AlertRadius        = 80.0,           -- radius of the translucent alert circle for that siren blip
 	CollectAnimDuration = 4000,          -- ms spent playing the "documenting the scene" animation before evidence is actually collected
-	CollectReward       = 20000,         -- cash paid directly to the DOA officer who collects a case (separate from the case being filed with CID)
+	CollectReward       = 20000,         -- base cash paid directly to the DOA officer who collects a case (see Config.GradeBonus -- scales up with grade)
+}
+
+--esx_uniquejobs Integration--
+-- Everything here is optional/best-effort: every call into esx_uniquejobs is pcall-wrapped
+-- (see server/main.lua), so if esx_uniquejobs isn't running, esx_drugs keeps working exactly
+-- as before -- it just skips the extra logging/records.
+Config.UniqueJobs = {
+	-- When DOA collects an evidence case (esx_drugs:collectEvidence), also file a criminal
+	-- record (exports['esx_uniquejobs']:LogCriminalRecord) against the top suspect, on top of
+	-- the DOJ case that already gets created.
+	LogCriminalRecord = true,
+
+	-- When DOA seizes an active delivery's cargo (esx_drugs:seizeDelivery), also log it to
+	-- esx_uniquejobs' DOA seizure ledger (exports['esx_uniquejobs']:LogSeizure) instead of only
+	-- a Discord line, so it shows up in the /doj DOA seizures list.
+	LogSeizures = true,
+
+	-- Minimum number of on-duty DOA officers online before a delivery mission can be requested.
+	-- 0 disables this requirement. Checked the same way Config.RequiredCops* already is.
+	Delivery = {
+		RequireDOA    = 1,
+	},
+
+	-- Convoy event (Config.Convoy above)
+	Convoy = {
+		AnnounceToDOA = true, -- send an in-game department-chat message to DOA when a convoy spawns/stops (exports['esx_uniquejobs']:SendDeptMessage)
+	},
+}
+
+-- Cash/reward scaling by ESX job grade (xPlayer.job.grade) for DOA-side payouts. Doesn't require
+-- esx_uniquejobs at all (job.grade is core ESX) -- kept alongside Config.UniqueJobs since it's
+-- part of the same "make DOA work feel tied to rank/department" pass.
+Config.GradeBonus = {
+	Enabled          = true,
+	PerGradePercent  = 5,   -- +5% to Evidence.CollectReward and delivery-seizure cash bonus per job grade level
+	Max              = 50,  -- hard cap on the total % bonus regardless of grade
+	SeizureCashBase  = 5000, -- base cash paid to the officer for a successful delivery seizure (0 = no direct cash, only the ledger entry)
 }
 
 -- One permanent DOA "field investigator" ped per farm zone (Config.FieldZones), standing just
@@ -86,6 +154,19 @@ Config.EvidencePeds = {
 	EphedrineField = { model = 's_m_y_ranger_01', offset = vector3(3.0, 3.0, 0.0), heading = 0.0 },
 	PoppyField     = { model = 's_m_y_ranger_01', offset = vector3(3.0, 3.0, 0.0), heading = 0.0 },
 	MushroomField  = { model = 's_m_y_ranger_01', offset = vector3(3.0, 3.0, 0.0), heading = 0.0 },
+}
+
+-- Priority assigned to the DOJ case esx_uniquejobs files when DOA refers a collected evidence
+-- site to CID (exports['esx_uniquejobs']:CreateExternalCase). Keyed by the drugLabel passed into
+-- ReportEvidence() for each field (server/main.lua). Anything not listed here defaults to
+-- 'medium'. Valid values: 'low', 'medium', 'high' (whatever esx_uniquejobs' PRIORITY_LABELS
+-- accepts -- unrecognized values fall back to 'medium' on that side too).
+Config.CasePriority = {
+	['Shah Dane']    = 'low',    -- weed
+	['Mashroom']     = 'low',
+	['Giahe Coca']   = 'medium', -- cocaine plant
+	['Ephedra']      = 'medium',
+	['Khash-Khaash'] = 'high',   -- poppy -> opium -> heroine chain
 }
 
 Config.Locale = 'en'

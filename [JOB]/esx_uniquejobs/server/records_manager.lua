@@ -8,6 +8,10 @@
 -- existing CidBillingWebhook/CidJailWebhook handlers call it
 -- alongside their Discord webhook so every arrest and charge is
 -- also logged here, without duplicating any of that logic.
+--
+-- Also exported (see bottom of file) so OTHER resources (e.g. esx_drugs'
+-- evidence-collection flow) can log a record without a full arrest/booking
+-- ever happening through this resource's own menus.
 -- ============================================================
 
 ESX = nil
@@ -44,10 +48,10 @@ end
 
 -- ============================================================
 -- External export: same function as above, for other resources
--- (e.g. Unique_AllRobs on a successful/charged robbery) to log a
--- real entry -- this also automatically feeds officer_performance.lua's
--- arrest/charge counts when officerIdentifier is set, with no
--- extra wiring needed there.
+-- (e.g. Unique_AllRobs on a successful/charged robbery, or esx_drugs'
+-- evidence-collection flow) to log a real entry -- this also
+-- automatically feeds officer_performance.lua's arrest/charge counts
+-- when officerIdentifier is set, with no extra wiring needed there.
 -- exports['esx_uniquejobs']:LogCriminalRecord(targetIdentifier, recordType, reason, officerName, officerIdentifier, jailTime)
 -- ============================================================
 exports('LogCriminalRecord', LogCriminalRecord)

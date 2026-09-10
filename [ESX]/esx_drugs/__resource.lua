@@ -18,6 +18,7 @@ server_scripts {
 	'locales/sv.lua',
 	'config.lua',
 	'server/main.lua',
+	'server/convoy.lua',
 
 }
 
@@ -33,6 +34,7 @@ client_scripts {
 	'client/crack.lua',
 	'client/heroine.lua',
 	'client/mushroom.lua',
+	'client/convoy.lua',
 
 }
 

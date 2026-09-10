@@ -37,6 +37,29 @@ end
 -- Seizure log
 -- ============================================================
 
+-- Actual insert, factored out of the client-menu event handler below so it
+-- can also be called directly (server-side, no `source`/menu involved) by
+-- other resources -- e.g. esx_drugs logging a delivery interception the
+-- instant it happens, instead of only what an officer manually types into
+-- the /doj menu. suspectIdentifier/suspectName are optional (nil = unknown
+-- suspect, still logged). Global + exported (see bottom of file).
+function LogSeizure(itemLabel, quantity, estValue, suspectIdentifier, suspectName, officerName)
+	if not itemLabel or itemLabel == '' then return end
+
+	MySQL.Async.execute(
+		'INSERT INTO doa_seizures (item_label, quantity, est_value, suspect_identifier, suspect_name, officer_name, timestamp) VALUES (@item, @qty, @val, @sid, @sname, @officer, @ts)',
+		{
+			['@item'] = itemLabel,
+			['@qty'] = tonumber(quantity) or 1,
+			['@val'] = tonumber(estValue) or 0,
+			['@sid'] = suspectIdentifier,
+			['@sname'] = suspectName,
+			['@officer'] = officerName or 'Namoshakhas',
+			['@ts'] = os.time(),
+		}
+	)
+end
+
 RegisterServerEvent('esx_uniquejobs:doaLogSeizure')
 AddEventHandler('esx_uniquejobs:doaLogSeizure', function(itemLabel, quantity, estValue, suspectQuery)
 	local source = source
@@ -48,31 +71,14 @@ AddEventHandler('esx_uniquejobs:doaLogSeizure', function(itemLabel, quantity, es
 		return
 	end
 
-	quantity = tonumber(quantity) or 1
-	estValue = tonumber(estValue) or 0
-
-	local function insert(suspectIdentifier, suspectName)
-		MySQL.Async.execute(
-			'INSERT INTO doa_seizures (item_label, quantity, est_value, suspect_identifier, suspect_name, officer_name, timestamp) VALUES (@item, @qty, @val, @sid, @sname, @officer, @ts)',
-			{
-				['@item'] = itemLabel,
-				['@qty'] = quantity,
-				['@val'] = estValue,
-				['@sid'] = suspectIdentifier,
-				['@sname'] = suspectName,
-				['@officer'] = xPlayer.name,
-				['@ts'] = os.time(),
-			}
-		)
-		TriggerClientEvent('esx:showNotification', source, '~g~Zabti Sabt Shod')
-	end
-
 	if suspectQuery and suspectQuery ~= '' then
 		resolveIdentifier(suspectQuery, function(identifier, name)
-			insert(identifier, name)
+			LogSeizure(itemLabel, quantity, estValue, identifier, name, xPlayer.name)
+			TriggerClientEvent('esx:showNotification', source, '~g~Zabti Sabt Shod')
 		end)
 	else
-		insert(nil, nil)
+		LogSeizure(itemLabel, quantity, estValue, nil, nil, xPlayer.name)
+		TriggerClientEvent('esx:showNotification', source, '~g~Zabti Sabt Shod')
 	end
 end)
 
@@ -207,3 +213,5 @@ AddEventHandler('esx_uniquejobs:doaPayInformant', function(informantId, amount)
 		end)
 	end)
 end)
+
+exports('LogSeizure', LogSeizure)

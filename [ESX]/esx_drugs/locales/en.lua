@@ -128,6 +128,17 @@ Locales ['en'] = {
   ['delivery_seized'] = '~r~Mahmooleye shoma tavasote DOA zabt shod!~s~',
   ['delivery_seize_none'] = 'In fard mahmooleie hamrash nist.',
   ['delivery_seize_success'] = 'Zabt shod: ~b~%sx~s~ ~y~%s~s~',
+  ['delivery_seize_cash'] = '~g~Padashe Zabt: $%s~s~',
+  ['delivery_no_doa'] = 'Be andaze kafi afsare DOA online nist baraye in mamoriat.',
+
+  -- Convoy event
+  ['convoy_incoming'] = '~r~Convoy-e Mavad~s~ dar harekat ast! Blip-esh ro roye naghshe bebin.',
+  ['convoy_stopped_notify'] = '~y~Convoy motevaghef shod!~s~ Boro nazdik va mahmule ro bardar.',
+  ['convoy_loot_prompt'] = 'Bardashtan-e Mahmule',
+  ['convoy_gone'] = 'In convoy digar vojud nadarad.',
+  ['convoy_already_looted'] = 'Mahmule ghablan bardashte shode.',
+  ['convoy_looted'] = '~g~$%s~s~ va ~b~%s~s~ az mahmule gereftid.',
+  ['convoy_doa_secured'] = '~g~Mahmule Zabt Shod~s~ - Padash: $%s',
   ['delivery_pickup_prompt'] = '  ~INPUT_CONTEXT~ bezanid ta ~g~Mahmooleh~s~ ro tahvil dahid.',
   ['delivery_search_prompt'] = '  ~INPUT_CONTEXT~ bezanid ta in fard ro ~r~bazresi~s~ konid.',
 
