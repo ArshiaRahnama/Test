@@ -42,6 +42,16 @@ function LogCriminalRecord(targetIdentifier, recordType, reason, officerName, of
 	TriggerEvent('DiscordBot:ToDiscord', 'adminmenu', 'CriminalRecordLog', '```css\n[ Officer : '..tostring(officerName)..' ('..tostring(officerIdentifier)..') ]\n[ Target Steam : '..tostring(targetIdentifier)..' ]\n[ Type : '..tostring(recordType)..' ]\n[ Reason : '..tostring(reason)..' ]\n[ Jail Time : '..tostring(jailTime)..' ]\n```', 'user', true, nil, false)
 end
 
+-- ============================================================
+-- External export: same function as above, for other resources
+-- (e.g. Unique_AllRobs on a successful/charged robbery) to log a
+-- real entry -- this also automatically feeds officer_performance.lua's
+-- arrest/charge counts when officerIdentifier is set, with no
+-- extra wiring needed there.
+-- exports['esx_uniquejobs']:LogCriminalRecord(targetIdentifier, recordType, reason, officerName, officerIdentifier, jailTime)
+-- ============================================================
+exports('LogCriminalRecord', LogCriminalRecord)
+
 -- Resolves a search query to an identifier + display name: a numeric
 -- query that matches a currently-online player id wins; otherwise it's
 -- treated as a (partial) character name search.

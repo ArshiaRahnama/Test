@@ -446,6 +446,8 @@ ESX = nil
 local RobberyCode = 0
 local Robs ={}
 local RobsInProgress = {}
+local RobCases = {}      -- [_source] = esx_uniquejobs DOJ case id opened for the current robbery
+local DispatchCode = {}  -- [_source] = esx_uniquejobs rob_manager.lua dispatch/accept code
 TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
 
 local function IsPoliceJob(jobname)
@@ -596,6 +598,25 @@ AddEventHandler('Morphy_RobSystem:robberyStarted', function(robname)
     TriggerClientEvent('esx:showNotification', _source, "Robbery Start Shod !",'success')
     TriggerClientEvent('Morphy_RobSystem:StartProgressBar', _source, robname, RobberyCode)
 
+    -- Open a real, persistent case on esx_uniquejobs' /doj board for this
+    -- attempt, with the robber pre-filled as a suspect. robberySuccess
+    -- files the charge on it later; robberyCancel/playerDropped dismiss
+    -- it if the attempt never resolves.
+    pcall(function()
+        exports['esx_uniquejobs']:CreateExternalCase({
+            title = Config.Rob.Robs[robname].nameofrob .. " (Rob Code #" .. RobberyCode .. ")",
+            priority = 'medium',
+            openedByName = 'Sisteme Dispatch',
+            openedByJob = 'police',
+            evidenceText = 'Alarm-e Dozdi Be Sorate Automatic Az Tarighe Unique_AllRobs Sabt Shod. Rob Code: ' .. RobberyCode,
+            suspects = { { identifier = xPlayer.identifier, name = xPlayer.name } },
+        }, function(caseId)
+            if caseId then
+                RobCases[_source] = caseId
+            end
+        end)
+    end)
+
     Config.Rob.RobTypes[Config.Rob.Robs[robname].type].lastRobbed = os.time()
     Config.Rob.Robs[robname].lastRobbed = os.time()
 
@@ -624,15 +645,32 @@ AddEventHandler('Morphy_RobSystem:robberySuccess', function(robname,RobberyCode)
     Config.Rob.RobTypes[Config.Rob.Robs[robname].type].lastRobbed = os.time()
     Config.Rob.Robs[robname].lastRobbed = os.time()
 
-    -- NOTE (design decision, not a bug): originally this called
-    -- exports["esx_policejob"]:CheckRob(...) to let police approve/deny
-    -- the payout, but that resource doesn't exist (renamed esx_uniquejobs,
-    -- with different export names: CheckRob_police / CheckRob_marshal).
-    -- Always giving full reward for now until a real "who approves a rob"
-    -- flow is designed (police-tier escalation vs. a TeamSystem-based
-    -- accept, using the same exports[GetCurrentResourceName()]:IsInTeam(...)
-    -- pattern used at robbery start for the teammatesrequired check).
+    -- Real DOJ/dispatch check: exports["esx_policejob"]:CheckRob(...) never
+    -- existed under that name -- the actual resource is esx_uniquejobs,
+    -- exporting CheckRob_police / CheckRob_marshal (both the same underlying
+    -- check, kept as two names for back-compat callers). dispatchCode is the
+    -- code esx_uniquejobs handed back when this robbery's alert was raised
+    -- in SetAlarmPolice('start'); if a unit ran /acceptrob on it, full
+    -- reward is paid, otherwise the pre-existing (previously dead) lessreward
+    -- table is used instead. If esx_uniquejobs is unreachable for any reason
+    -- this fails safe to the old always-full-reward behavior.
     local accepted = true
+    local dispatchCode = DispatchCode[_source]
+    local acceptInfo = nil
+    if dispatchCode then
+        local ok, isAccepted = pcall(function()
+            return exports['esx_uniquejobs']:CheckRob_police(dispatchCode)
+        end)
+        if ok then
+            accepted = isAccepted and true or false
+        end
+        if accepted then
+            local infoOk, info = pcall(function()
+                return exports['esx_uniquejobs']:GetRobAcceptInfo(dispatchCode)
+            end)
+            if infoOk then acceptInfo = info end
+        end
+    end
     if accepted then
         for itemname,amount in pairs(Config.Rob.RobTypes[Config.Rob.Robs[robname].type].reward) do
             if type(amount) == "table" then
@@ -664,6 +702,71 @@ AddEventHandler('Morphy_RobSystem:robberySuccess', function(robname,RobberyCode)
             end
         end
     end
+
+    -- File the matching charge on the case opened at robberyStarted, and
+    -- move it to "investigating" if a unit engaged, or leave it "open" for
+    -- someone to pick up later.
+    local caseId = RobCases[_source]
+    local lawCode = Config.Rob.LawCode[Config.Rob.Robs[robname].type]
+    local officerName = acceptInfo and acceptInfo.acceptedByName or 'Sisteme Dispatch (Automatic)'
+    if caseId then
+        if lawCode then
+            pcall(function()
+                exports['esx_uniquejobs']:AddExternalCharge(caseId, lawCode, officerName)
+            end)
+        end
+        pcall(function()
+            exports['esx_uniquejobs']:SetExternalCaseStatus(caseId, accepted and 'investigating' or 'open')
+        end)
+
+        -- Heavy robberies (bank / Life Invader): if a unit actually engaged,
+        -- put it on the /doj court docket automatically instead of relying
+        -- on someone remembering to schedule it by hand.
+        if accepted and Config.Rob.CourtHearingTypes[Config.Rob.Robs[robname].type] then
+            pcall(function()
+                exports['esx_uniquejobs']:ScheduleExternalHearing(caseId, Config.Rob.CourtHearingMinutes, officerName)
+            end)
+        end
+    end
+
+    -- Real criminal-record entry (separate from the case charge above) --
+    -- this is what powers /agent Background Check and, when an officer
+    -- identifier is attached, officer_performance.lua's arrest/charge
+    -- counts. No unit ever engaging still logs it under the dispatch
+    -- system itself so the suspect's rap sheet isn't empty.
+    if lawCode then
+        pcall(function()
+            exports['esx_uniquejobs']:LogCriminalRecord(
+                xPlayer.identifier, 'charge',
+                Config.Rob.Robs[robname].nameofrob .. ' (' .. lawCode .. ')',
+                officerName,
+                acceptInfo and acceptInfo.acceptedBy or nil,
+                nil
+            )
+        end)
+    end
+
+    -- Nobody ever engaged: the suspect walked away clean with the case
+    -- still open. Ping online CID/Marshal directly (their job, per DOJ_JOBS
+    -- in doj_manager.lua) so they can pull the case from /doj and put in a
+    -- warrant request (esx_uniquejobs:dojRequestWarrant) against the named
+    -- suspect -- the same flow used for any other manual warrant, just
+    -- with the legwork of opening the case and naming the suspect already
+    -- done for them.
+    if not accepted and caseId then
+        local investigators = ESX.GetPlayers()
+        for i = 1, #investigators, 1 do
+            local yPlayer = ESX.GetPlayerFromId(investigators[i])
+            if yPlayer and (yPlayer.job.name == 'cid' or yPlayer.job.name == 'marshal') then
+                TriggerClientEvent('chatMessage', yPlayer.source, "[ TAHGHIGHAT ]", {200, 30, 30},
+                    "^7Mozanne-e Parvande #" .. caseId .. " (" .. Config.Rob.Robs[robname].nameofrob .. ") Farar Kard -- Mozanne: ^3" .. xPlayer.name .. "^7 -- Az /doj Barresi Konid Va Hokm Bekhahid")
+            end
+        end
+    end
+
+    RobCases[_source] = nil
+    DispatchCode[_source] = nil
+
     TriggerEvent('DiscordBot:ToDiscord', 'rob', "Robbery System", "```css\n[ID] : ".._source.."\n[IC Name] : "..xPlayer.name.."\n[Steam Name] : "..GetPlayerName(source).."\n[Gang Name] : "..xPlayer.gang.name.."\n[Gang Grade] : "..xPlayer.gang.grade.."\n[Steam Hex] : "..xPlayer.identifier.."\n[Rob Name] : "..robname.."\n[Rob Code] : "..RobberyCode.."\n[Status] : Success".."\n[Is Accepted] : "..tostring(accepted).."\n```",'user', _source, true, false)
     local xPlayers, yPlayer = ESX.GetPlayers(), nil
     SetAlarmPolice(robname , "end",_source)
@@ -687,6 +790,17 @@ AddEventHandler('Morphy_RobSystem:robberyCancel', function(robname)
     local xPlayers, yPlayer = ESX.GetPlayers(), nil
     TriggerEvent('DiscordBot:ToDiscord', 'rob', "Robbery System", "```css\n[ID] : ".._source.."\n[IC Name] : "..xPlayer.name.."\n[Steam Name] : "..GetPlayerName(source).."\n[Gang Name] : "..xPlayer.gang.name.."\n[Gang Grade] : "..xPlayer.gang.grade.."\n[Steam Hex] : "..xPlayer.identifier.."\n[Rob Name] : "..robname.."\n[Status] : Canceled\n```",'user', _source, true, false)
     SetAlarmPolice(robname , "cancel",_source)
+
+    -- The case opened at robberyStarted never reached a success/hackfail
+    -- resolution -- dismiss it instead of leaving a dangling open case.
+    if RobCases[_source] then
+        pcall(function()
+            exports['esx_uniquejobs']:SetExternalCaseStatus(RobCases[_source], 'dismissed')
+        end)
+        RobCases[_source] = nil
+    end
+    DispatchCode[_source] = nil
+
     for i=1, #xPlayers, 1 do
         yPlayer = ESX.GetPlayerFromId(xPlayers[i])
 
@@ -705,10 +819,36 @@ function SetAlarmPolice(Name ,  typ , source )
         for i=1, #xPlayers, 1 do
             local xPlayer = ESX.GetPlayerFromId(xPlayers[i])
             if IsPoliceJob(xPlayer.job.name)  then
-             SendMessage( xPlayer.source , 'Az Dispatch be Tamai Vahed Ha Az ^1' ..Config.Rob.Robs[Name].nameofrob .. '^0 Gozarsh Dozdi Reside')
+                -- Unit-aware dispatch: esx_uniquejobs' unit_manager only
+                -- gives a player a callsign while they're in an active
+                -- unit, so this is exactly "on an active unit right now"
+                -- without needing a separate duty-status system. Officers
+                -- with no unit are skipped instead of getting pinged for
+                -- every single robbery in the city.
+                local ok, callsign = pcall(function()
+                    return exports['esx_uniquejobs']:GetPlayerUnitCallsign(xPlayer.identifier)
+                end)
+                if not ok or callsign then
+                    local unitTag = (ok and callsign) and ('Vahed ^3' .. callsign .. '^0 : ') or ''
+                    SendMessage( xPlayer.source , unitTag .. 'Az Dispatch be Tamai Vahed Ha Az ^1' ..Config.Rob.Robs[Name].nameofrob .. '^0 Gozarsh Dozdi Reside')
+                end
             end
         end
-        TriggerEvent('Unit:RobAlarm' , Name )
+
+        -- Route through esx_uniquejobs' real /acceptrob dispatch queue and
+        -- keep the code it hands back, so robberySuccess can later check
+        -- whether a unit actually accepted before paying full reward.
+        -- CreateRob already broadcasts the dispatch chat alert itself, so
+        -- we only fall back to the old bare event if the export call fails
+        -- (e.g. esx_uniquejobs isn't running for some reason).
+        local ok, dispatchCode = pcall(function()
+            return exports['esx_uniquejobs']:CreateRob(Name)
+        end)
+        if ok and dispatchCode and source then
+            DispatchCode[source] = dispatchCode
+        elseif not ok then
+            TriggerEvent('Unit:RobAlarm' , Name )
+        end
     elseif typ  == 'end' then
         for i=1, #xPlayers, 1 do
             local xPlayer = ESX.GetPlayerFromId(xPlayers[i])
@@ -785,6 +925,14 @@ AddEventHandler('playerDropped', function(reason)
         end
     end
     RobsInProgress[_source] = nil
+
+    if RobCases[_source] then
+        pcall(function()
+            exports['esx_uniquejobs']:SetExternalCaseStatus(RobCases[_source], 'dismissed')
+        end)
+        RobCases[_source] = nil
+    end
+    DispatchCode[_source] = nil
 
 end)
 

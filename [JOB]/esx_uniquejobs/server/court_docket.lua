@@ -70,6 +70,31 @@ end)
 -- Mutate
 -- ============================================================
 
+local function scheduleHearing(caseId, minutesFromNow, createdByName, cb)
+	local now = os.time()
+	local scheduledAt = now + (minutesFromNow * 60)
+
+	MySQL.Async.insert(
+		'INSERT INTO dept_case_docket (case_id, scheduled_at, status, created_by_name, created_at, updated_at) VALUES (@cid, @sched, @status, @by, @ts, @ts)',
+		{ ['@cid'] = caseId, ['@sched'] = scheduledAt, ['@status'] = 'scheduled', ['@by'] = createdByName, ['@ts'] = now },
+		function(docketId)
+			LogCaseEvent(caseId, 'docket', 'Jalase-ye Dadgah Baraye ' .. minutesFromNow .. ' Daghighe Digar Zamanbandi Shod', createdByName)
+
+			-- Notify online DOJ so a judge knows to show up
+			local xPlayers = ESX.GetPlayers()
+			for i = 1, #xPlayers do
+				local xTarget = ESX.GetPlayerFromId(xPlayers[i])
+				if xTarget and isDoj(xTarget.job.name) then
+					TriggerClientEvent('chatMessage', xTarget.source, "[ DADGAH ]", {90, 30, 160},
+						"^7Parvande #" .. caseId .. " Baraye ^3" .. minutesFromNow .. " Daghighe Digar^7 Dar Dadgah Zamanbandi Shod")
+				end
+			end
+
+			if cb then cb(docketId) end
+		end
+	)
+end
+
 RegisterServerEvent('esx_uniquejobs:dojScheduleHearing')
 AddEventHandler('esx_uniquejobs:dojScheduleHearing', function(caseId, minutesFromNow)
 	local source = source
@@ -82,27 +107,25 @@ AddEventHandler('esx_uniquejobs:dojScheduleHearing', function(caseId, minutesFro
 		return
 	end
 
-	local now = os.time()
-	local scheduledAt = now + (minutesFromNow * 60)
+	scheduleHearing(caseId, minutesFromNow, xPlayer.name, function(docketId)
+		TriggerClientEvent('esx:showNotification', source, '~g~Jalase-ye Dadgah Zamanbandi Shod (#' .. docketId .. ')')
+	end)
+end)
 
-	MySQL.Async.insert(
-		'INSERT INTO dept_case_docket (case_id, scheduled_at, status, created_by_name, created_at, updated_at) VALUES (@cid, @sched, @status, @by, @ts, @ts)',
-		{ ['@cid'] = caseId, ['@sched'] = scheduledAt, ['@status'] = 'scheduled', ['@by'] = xPlayer.name, ['@ts'] = now },
-		function(docketId)
-			LogCaseEvent(caseId, 'docket', 'Jalase-ye Dadgah Baraye ' .. minutesFromNow .. ' Daghighe Digar Zamanbandi Shod', xPlayer.name)
-			TriggerClientEvent('esx:showNotification', source, '~g~Jalase-ye Dadgah Zamanbandi Shod (#' .. docketId .. ')')
-
-			-- Notify online DOJ so a judge knows to show up
-			local xPlayers = ESX.GetPlayers()
-			for i = 1, #xPlayers do
-				local xTarget = ESX.GetPlayerFromId(xPlayers[i])
-				if xTarget and isDoj(xTarget.job.name) then
-					TriggerClientEvent('chatMessage', xTarget.source, "[ DADGAH ]", {90, 30, 160},
-						"^7Parvande #" .. caseId .. " Baraye ^3" .. minutesFromNow .. " Daghighe Digar^7 Dar Dadgah Zamanbandi Shod")
-				end
-			end
-		end
-	)
+-- ============================================================
+-- External export: same as 'esx_uniquejobs:dojScheduleHearing'
+-- above, but callable without a DOJ-job player as the triggering
+-- source -- e.g. Unique_AllRobs auto-scheduling a hearing for a
+-- heavy robbery (bank/Life Invader) the moment a unit engages.
+-- exports['esx_uniquejobs']:ScheduleExternalHearing(caseId, minutesFromNow, createdByName, cb)
+-- ============================================================
+exports('ScheduleExternalHearing', function(caseId, minutesFromNow, createdByName, cb)
+	minutesFromNow = tonumber(minutesFromNow)
+	if not caseId or not minutesFromNow or minutesFromNow <= 0 then
+		if cb then cb(nil) end
+		return
+	end
+	scheduleHearing(caseId, minutesFromNow, createdByName or 'Sisteme Dispatch', cb)
 end)
 
 RegisterServerEvent('esx_uniquejobs:dojRescheduleHearing')

@@ -55,6 +55,15 @@ AddEventHandler('Unit:RobAlarm', function(name)
 	createRob(name)
 end)
 
+-- ============================================================
+-- External export: same as the 'Unit:RobAlarm' event above, but
+-- returns the dispatch code synchronously so the caller (e.g.
+-- Unique_AllRobs) can later check exports.esx_uniquejobs:CheckRob_police(code)
+-- to see whether a unit actually accepted the alert via /acceptrob.
+-- exports['esx_uniquejobs']:CreateRob(name) -> code
+-- ============================================================
+exports('CreateRob', createRob)
+
 -- Back-compat, in case anything still fires the old suffixed events
 RegisterNetEvent('Unit:RobAlarm_police')
 AddEventHandler('Unit:RobAlarm_police', function(name)
@@ -109,9 +118,10 @@ AddEventHandler('esx_uniquejobs:acceptRob', function(code)
 
 	rob.accepted = true
 	rob.acceptedBy = xPlayer.identifier
+	rob.acceptedByName = string.gsub(xPlayer.name, "_", " ")
 	rob.acceptedByJob = xPlayer.job.name
 
-	TriggerClientEvent('esx_uniquejobs:robAccepted', -1, rob.name, string.gsub(xPlayer.name, "_", " "), string.upper(xPlayer.job.name))
+	TriggerClientEvent('esx_uniquejobs:robAccepted', -1, rob.name, rob.acceptedByName, string.upper(xPlayer.job.name))
 end)
 
 -- ============================================================
@@ -125,3 +135,23 @@ end
 
 exports('CheckRob_police', checkRob)
 exports('CheckRob_marshal', checkRob)
+
+-- ============================================================
+-- External export: full accept info for a dispatch code, so a
+-- caller (e.g. Unique_AllRobs) can attribute a charge/criminal
+-- record entry to the real officer who accepted, instead of a
+-- generic system name.
+-- exports['esx_uniquejobs']:GetRobAcceptInfo(code)
+--   -> { accepted, acceptedBy, acceptedByName, acceptedByJob } | nil
+-- ============================================================
+local function getRobAcceptInfo(code)
+	local rob = Robs[code]
+	if not rob then return nil end
+	return {
+		accepted = rob.accepted,
+		acceptedBy = rob.acceptedBy,
+		acceptedByName = rob.acceptedByName,
+		acceptedByJob = rob.acceptedByJob,
+	}
+end
+exports('GetRobAcceptInfo', getRobAcceptInfo)

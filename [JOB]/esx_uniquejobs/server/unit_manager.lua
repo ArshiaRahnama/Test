@@ -55,6 +55,15 @@ function GetPlayerUnitCallsign(identifier)
 	return nil
 end
 
+-- ============================================================
+-- External export: same lookup as above, for other resources
+-- (e.g. Unique_AllRobs' dispatch alert) that want to only ping
+-- players who are actually in an active unit, and show their
+-- real callsign instead of just a name.
+-- exports['esx_uniquejobs']:GetPlayerUnitCallsign(identifier) -> callsign | nil
+-- ============================================================
+exports('GetPlayerUnitCallsign', GetPlayerUnitCallsign)
+
 local function setCallsignForIdentifier(identifier, callsign)
 	local xTarget = ESX.GetPlayerFromIdentifier(identifier)
 	if xTarget then

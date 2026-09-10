@@ -387,3 +387,59 @@ function CreateExternalCase(data, cb)
 end
 
 exports('CreateExternalCase', CreateExternalCase)
+
+-- ============================================================
+-- External export: add a charge to an existing case by law CODE
+-- (e.g. '§9'), without needing a DOJ-job player as the triggering
+-- source -- mirrors dojAddCharge's snapshot-at-charge-time behavior,
+-- but looks the law up by `code` instead of `id` since an external
+-- caller (e.g. Unique_AllRobs) knows the human-readable code, not
+-- the codebook's internal row id.
+-- exports['esx_uniquejobs']:AddExternalCharge(caseId, lawCode, addedByName, cb)
+-- cb(true, law) on success, cb(false) if the case/law isn't found.
+-- ============================================================
+function AddExternalCharge(caseId, lawCode, addedByName, cb)
+	if not caseId or not lawCode then
+		if cb then cb(false) end
+		return
+	end
+
+	MySQL.Async.fetchAll('SELECT code, title, fine, jail_minutes FROM law_codebook WHERE code = @code', { ['@code'] = lawCode }, function(rows)
+		local law = rows[1]
+		if not law then
+			if cb then cb(false) end
+			return
+		end
+
+		MySQL.Async.execute('INSERT INTO dept_case_charges (case_id, law_code, law_title, fine, jail_minutes, added_by, timestamp) VALUES (@cid, @code, @title, @fine, @jail, @by, @ts)', {
+			['@cid'] = caseId, ['@code'] = law.code, ['@title'] = law.title,
+			['@fine'] = law.fine, ['@jail'] = law.jail_minutes, ['@by'] = addedByName or 'System', ['@ts'] = os.time(),
+		}, function()
+			LogCaseEvent(caseId, 'charge', 'Etteham Ezafe Shod: ' .. law.code .. ' -- ' .. law.title, addedByName or 'System')
+			if cb then cb(true, law) end
+		end)
+	end)
+end
+exports('AddExternalCharge', AddExternalCharge)
+
+-- ============================================================
+-- External export: change a case's status without a DOJ-job
+-- player as the source -- e.g. auto-dismiss the case opened for a
+-- robbery attempt that got cancelled or lost its suspect before a
+-- unit ever engaged.
+-- exports['esx_uniquejobs']:SetExternalCaseStatus(caseId, status, cb)
+-- ============================================================
+function SetExternalCaseStatus(caseId, status, cb)
+	if not caseId or not STATUS_LABELS[status] then
+		if cb then cb(false) end
+		return
+	end
+
+	MySQL.Async.execute('UPDATE dept_cases SET status = @status, updated_at = @ts WHERE id = @id', {
+		['@id'] = caseId, ['@status'] = status, ['@ts'] = os.time(),
+	}, function()
+		LogCaseEvent(caseId, 'status', 'Vaziat-e Parvande Be "' .. tostring(status) .. '" Taghir Kard', 'Sisteme Dispatch')
+		if cb then cb(true) end
+	end)
+end
+exports('SetExternalCaseStatus', SetExternalCaseStatus)

@@ -246,6 +246,28 @@ Config.Rob.Robs = {
 
 }
 
+-- Maps each Config.Rob.Robs[x].type to a code from esx_uniquejobs'
+-- law codebook (server/law_codebook.lua), so a successful robbery
+-- auto-files the matching charge on the DOJ case opened for it.
+-- §7 = Sereghat (Theft), §8 = Sereghat-e Mosallahane (Armed Theft),
+-- §9 = Hamle-ye Dozdi / Grand Theft Auto.
+Config.Rob.LawCode = {
+    ["Shop"] = "§7",
+    ["Minibank"] = "§8",
+    ["Jewerlly"] = "§8",
+    ["Life_Invader"] = "§9",
+    ["Palateo_Bank"] = "§9",
+}
+
+-- Rob types serious enough that catching the suspect auto-schedules a
+-- /doj court hearing on the case (judge still runs it manually, this
+-- just puts it on the docket instead of relying on someone remembering).
+Config.Rob.CourtHearingTypes = {
+    ["Life_Invader"] = true,
+    ["Palateo_Bank"] = true,
+}
+Config.Rob.CourtHearingMinutes = 45
+
 Config.Rob.RobTypes ={
     ["Shop"] ={
         reward = {
