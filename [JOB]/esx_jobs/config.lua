@@ -239,6 +239,19 @@ Config.JobLabels = {
 	miner       = 'Miner'
 }
 
+-- Admin uniform-editor pads: stand at the pad next to a job's cloakroom
+-- wearing the outfit you want, interact (ox_target), and it's saved as that
+-- job's work-wear. xPlayer.permission_level is the real field used by
+-- Unique_AdminMenu on this server, so we reuse it instead of inventing a
+-- separate permission system.
+Config.UniformEditorMinPermission = 15
+Config.UniformConfigKey = {
+	fueler      = 'Uniforms_Fueler',
+	lumberjack  = 'Uniforms_Lumberjack',
+	slaughterer = 'Uniforms_Slaughterer',
+	tailor      = 'Uniforms_Tailor'
+}
+
 -- ===== Miner job (merged in from esx_minerjob) =====
 -- Namespaced under Config.Miner so it can't clobber the Config table above
 -- (the original esx_minerjob/config.lua did `Config = {...}` as a *global*,

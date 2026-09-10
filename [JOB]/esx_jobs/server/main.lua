@@ -215,3 +215,61 @@ AddEventHandler('esx_jobs:cautionss', function(cautionType, cautionAmount, spawn
 		end)
 	end
 end)
+
+-- ===== Admin uniform editor (pads next to each cloakroom, client-side via ox_target) =====
+local UNIFORM_FIELDS = {
+	'tshirt_1','tshirt_2','torso_1','torso_2','decals_1','decals_2','arms',
+	'pants_1','pants_2','shoes_1','shoes_2','helmet_1','helmet_2',
+	'glasses_1','glasses_2','chain_1','chain_2','ears_1','ears_2'
+}
+
+local function LoadSavedUniforms()
+	for job, configKey in pairs(Config.UniformConfigKey) do
+		local raw = LoadResourceFile(GetCurrentResourceName(), 'uniform_' .. job .. '.json')
+		if raw then
+			local ok, saved = pcall(json.decode, raw)
+			if ok and type(saved) == "table" then
+				Config[configKey].work_wear = saved
+			else
+				print(('esx_jobs: failed to parse saved uniform for %s, keeping the config.lua default'):format(job))
+			end
+		end
+	end
+end
+LoadSavedUniforms()
+
+RegisterServerEvent('esx_jobs:adminSetUniform')
+AddEventHandler('esx_jobs:adminSetUniform', function(job, skin)
+	local xPlayer = ESX.GetPlayerFromId(source)
+	if not xPlayer then return end
+
+	-- this is the real security check -- the ox_target prompt showing up
+	-- client-side is just UI, not enforcement
+	if not xPlayer.permission_level or xPlayer.permission_level < Config.UniformEditorMinPermission then
+		TriggerClientEvent('esx:showNotification', source, ('~r~You need permission level %s+ to do this.'):format(Config.UniformEditorMinPermission))
+		print(('esx_jobs: %s (permission_level=%s) tried to use the uniform editor without permission'):format(xPlayer.identifier, tostring(xPlayer.permission_level)))
+		return
+	end
+
+	local configKey = Config.UniformConfigKey[job]
+	if not configKey or type(skin) ~= "table" then return end
+
+	-- only pull the specific clothing fields we actually use into a fresh
+	-- table -- never store/trust the raw client-supplied skin table as-is
+	local clothes = {}
+	for i=1, #UNIFORM_FIELDS, 1 do
+		local field = UNIFORM_FIELDS[i]
+		clothes[field] = tonumber(skin[field]) or 0
+	end
+
+	local genderKey = (skin.sex == 1) and 'female' or 'male'
+	Config[configKey].work_wear[genderKey] = clothes
+
+	local ok = SaveResourceFile(GetCurrentResourceName(), 'uniform_' .. job .. '.json', json.encode(Config[configKey].work_wear), -1)
+
+	if ok then
+		TriggerClientEvent('esx:showNotification', source, ('~g~Saved the %s uniform (%s).'):format(Config.JobLabels[job] or job, genderKey))
+	else
+		TriggerClientEvent('esx:showNotification', source, '~r~Could not save the uniform to disk.')
+	end
+end)

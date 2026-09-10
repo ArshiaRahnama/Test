@@ -69,6 +69,18 @@ local function poolFor(playerquests)
     return Config.DefaultQuest
 end
 
+-- Is this quest id one of today's offered ones? (see "Offered" in
+-- GenerateQuests above)
+local function isOffered(playerquests, questId)
+    local offered = playerquests["Offered"]
+    if not offered then return false end
+    local numId = tonumber(questId)
+    for i = 1, #offered do
+        if tonumber(offered[i]) == numId then return true end
+    end
+    return false
+end
+
 RegisterServerEvent("QuestSystem:InitializePlayer")
 AddEventHandler("QuestSystem:InitializePlayer", function()
     local xPlayer = ESX.GetPlayerFromId(source)
@@ -91,11 +103,22 @@ AddEventHandler("QuestSystem:InitializePlayer", function()
                 ['@quests']     = "{}"
             })
             GenerateQuests(xPlayer, xPlayer.identifier)
+        else
+            -- One-time backfill: a row saved before the "Offered" list
+            -- existed (today's random 6, added instead of showing the
+            -- whole pool) would otherwise show an empty Quests tab
+            -- until tomorrow's natural reset. Same-day, so this only
+            -- fills in Offered — it doesn't touch any already-accepted
+            -- quest's progress.
+            local ok, decoded = pcall(json.decode, result[1].quests)
+            if ok and type(decoded) == 'table' and decoded["Offered"] == nil then
+                GenerateQuests(xPlayer, xPlayer.identifier, decoded)
+            end
         end
     end)
 end)
 
-function GenerateQuests(xPlayer, identifier)
+function GenerateQuests(xPlayer, identifier, existingQuests)
     local job = nil
     for jobname, _ in pairs(Config.JobQuests) do
         if xPlayer.job.name == jobname or xPlayer.job.name == ('off' .. jobname) then
@@ -104,11 +127,37 @@ function GenerateQuests(xPlayer, identifier)
         end
     end
 
-    local quests = {}
+    local pool = job and Config.JobQuests[job] or Config.DefaultQuest
+    -- existingQuests is only passed by the same-day "Offered" backfill
+    -- above — reuse it (keeping any already-accepted progress) instead
+    -- of wiping the day, like the normal new-day path below does.
+    local quests = existingQuests or {}
     if job then quests["Job"] = job end
     -- No pre-picked active quests anymore — the full pool shows up in
     -- the Quests tab and the player accepts which ones they want (see
     -- QuestSystem:AcceptQuest below).
+
+    -- "Offered" = today's random draw of Config.QuestsPerDay quest ids
+    -- from the pool — shown in the Quests tab instead of the WHOLE
+    -- pool (which for some jobs/the default pool can be dozens of
+    -- entries, way more than fits nicely on one screen). Re-rolled
+    -- once per day on the date-change check above. The player still
+    -- accepts/cancels individually among just these, same as before.
+    if pool and #pool > 0 then
+        local offerCount = math.min(Config.QuestsPerDay or 6, #pool)
+        local usedIndexes = {}
+        local offered = {}
+        for i = 1, offerCount do
+            local idx, attempts = nil, 0
+            repeat
+                idx = math.random(1, #pool)
+                attempts = attempts + 1
+            until not usedIndexes[idx] or attempts > 50
+            usedIndexes[idx] = true
+            table.insert(offered, idx)
+        end
+        quests["Offered"] = offered
+    end
 
     MySQL.Async.execute('UPDATE quest SET quests = @quests WHERE identifier = @identifier', {
         ['@identifier'] = identifier,
@@ -132,6 +181,7 @@ AddEventHandler("QuestSystem:AcceptQuest", function(questId)
         local pool = poolFor(playerquests)
         local questDef = pool and pool[tonumber(questId)]
         if not questDef then return end -- id doesn't exist in this player's current pool
+        if not isOffered(playerquests, questId) then return end -- not one of today's 6 offered quests
 
         if playerquests[questId] ~= nil then return end -- already accepted (active or done)
 
@@ -140,7 +190,7 @@ AddEventHandler("QuestSystem:AcceptQuest", function(questId)
         -- away instead of waiting for the next day.
         local activeCount = 0
         for k, v in pairs(playerquests) do
-            if k ~= "Job" then
+            if k ~= "Job" and k ~= "Offered" then
                 local kDef = pool[tonumber(k)]
                 local req = kDef and kDef.requiredTrigger or 1
                 if (tonumber(v) or 0) < req then

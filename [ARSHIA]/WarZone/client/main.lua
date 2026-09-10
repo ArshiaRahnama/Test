@@ -24,6 +24,14 @@ local armoritem , bandageitem = 0 , 0
 -- true, so shop rotation (Sandy1->2->3) broke on the second match of a
 -- session. Declaring it once here fixes that.
 local ZoneOne = true
+-- Spectator Mode state
+local InSpectator = false
+local SpectatorTargets = {}
+local SpectatorIndex = 1
+local SpectatorCam = nil
+-- Private Loadout (shop item) state -- see PrivteLoadout() fix notes
+local LoadoutCharges = 0
+local UsingLoadout = false
 local AllUav = 0 
 local UAVLine  = false 
 local solo = false 
@@ -143,6 +151,12 @@ AddEventHandler("AWZ:MyTeam",function( Myteam , Count , id , MyName  )
 end) 
 RegisterNetEvent("AWZ:ExitMision")
 AddEventHandler("AWZ:ExitMision",function()
+	-- Fix/feature: if this player was spectating (eliminated but their
+	-- squad was still alive), make sure the free-cam + invisibility state
+	-- gets torn down before the normal exit cleanup runs below.
+	if InSpectator then
+		StopSpectating()
+	end
 	TriggerServerEvent("AWZ:SetRBucket",0)
 	armoritem , bandageitem = 0 , 0 
 	ESX.TriggerServerCallback('AWZ:RemoveForSquad', function(remove) end)
@@ -205,6 +219,82 @@ AddEventHandler("AWZ:ExitMision",function()
 	SetPedArmour(PlayerPedId(),0)
 	SetPedSuffersCriticalHits(GetPlayerPed(-1), true)
 end)
+-------------------------------------------------------------------
+-- Spectator Mode: eliminated (lost the Gulag) but your squad is still
+-- fighting, so instead of a full exit you get a free-cam following your
+-- surviving teammates until either you leave (BACKSPACE) or the match ends.
+-------------------------------------------------------------------
+RegisterNetEvent("AWZ:EnterSpectator")
+AddEventHandler("AWZ:EnterSpectator", function(mateIds)
+	SpectatorTargets = mateIds or {}
+	if #SpectatorTargets == 0 then
+		-- no one left to spectate, just exit normally
+		TriggerEvent("AWZ:ExitMision")
+		return
+	end
+	InSpectator = true
+	SpectatorIndex = 1
+	local ped = PlayerPedId()
+	FreezeEntityPosition(ped, true)
+	SetEntityVisible(ped, false, false)
+	SetEntityCollision(ped, false, false)
+	SetEntityInvincible(ped, true)
+	RemoveAllPedWeapons(ped, true)
+	SendNUIMessage({ message = "closeIngame" })
+	ESX.ShowNotification('You are eliminated — spectating your squad. [LEFT/RIGHT] to switch, [BACKSPACE] to leave.')
+	SpectatorCam = CreateCam("DEFAULT_SCRIPTED_CAMERA", true)
+	SetCamActive(SpectatorCam, true)
+	RenderScriptCams(true, true, 500, true, true)
+	CreateThread(function()
+		while InSpectator do
+			Wait(0)
+			local targetId = SpectatorTargets[SpectatorIndex]
+			local targetPed = targetId and GetPlayerPed(GetPlayerFromServerId(targetId))
+			if targetPed and targetPed ~= 0 and DoesEntityExist(targetPed) then
+				local coords = GetEntityCoords(targetPed)
+				local camCoords = coords + vector3(0.0, -4.0, 2.0)
+				SetCamCoord(SpectatorCam, camCoords.x, camCoords.y, camCoords.z)
+				PointCamAtEntity(SpectatorCam, targetPed, 0.0, 0.0, 0.6, true)
+				SendNUIMessage({ message = "spectating", Name = GetPlayerName(GetPlayerFromServerId(targetId)) })
+			else
+				-- this teammate is no longer valid (disconnected/invalid) --
+				-- drop them from the rotation
+				table.remove(SpectatorTargets, SpectatorIndex)
+				if #SpectatorTargets == 0 then
+					TriggerServerEvent("AWZ:LeaveSpectator")
+					break
+				end
+				if SpectatorIndex > #SpectatorTargets then SpectatorIndex = 1 end
+			end
+			if IsControlJustPressed(0, 175) and #SpectatorTargets > 0 then -- ARROW RIGHT
+				SpectatorIndex = SpectatorIndex + 1
+				if SpectatorIndex > #SpectatorTargets then SpectatorIndex = 1 end
+			elseif IsControlJustPressed(0, 174) and #SpectatorTargets > 0 then -- ARROW LEFT
+				SpectatorIndex = SpectatorIndex - 1
+				if SpectatorIndex < 1 then SpectatorIndex = #SpectatorTargets end
+			elseif IsControlJustPressed(0, 194) then -- BACKSPACE
+				TriggerServerEvent("AWZ:LeaveSpectator")
+				break
+			end
+		end
+	end)
+end)
+function StopSpectating()
+	InSpectator = false
+	SpectatorTargets = {}
+	SpectatorIndex = 1
+	if SpectatorCam then
+		RenderScriptCams(false, true, 500, true, true)
+		DestroyCam(SpectatorCam, false)
+		SpectatorCam = nil
+	end
+	SendNUIMessage({ message = "closeIngame" })
+	local ped = PlayerPedId()
+	FreezeEntityPosition(ped, false)
+	SetEntityVisible(ped, true, true)
+	SetEntityCollision(ped, true, true)
+	SetEntityInvincible(ped, false)
+end
 RegisterNetEvent("AWZ:respwan")
 AddEventHandler("AWZ:respwan",function(addkill , Killed , Killer)
 	if addkill then 
@@ -228,17 +318,20 @@ AddEventHandler("AWZ:respwan",function(addkill , Killed , Killer)
 			SetEntityVisible(PlayerPedId(), true ,true)
 			FreezeEntityPosition( PlayerPedId() , true )
 			SetPlayerCanRevive()
-		elseif MySelf == 0 then 
-			--if not GulagTime  then 
-				--GulagTime = true 
-			 --	SetPLayerInGulag() 
-			--else  
+		else 
+			-- Fix: this branch used to be commented out entirely, which made
+			-- SetPLayerInGulag() -- a fully built and working feature, both
+			-- here and on the server -- permanently unreachable dead code.
+			-- Running out of redeploys used to just revive the player in
+			-- place and immediately exit them from the match instead of
+			-- giving them their one shot at fighting back in via the Gulag.
+			if not GulagTime  then 
+				GulagTime = true 
+				SetPLayerInGulag() 
+			else  
 				Revive()
 				TriggerEvent("AWZ:ExitMision")
-			--end 
-		else 
-		Revive()
-		TriggerEvent("AWZ:ExitMision")
+			end 
 		end 
 	end
 
@@ -285,6 +378,33 @@ RegisterNUICallback('start', function(data, cb)
 end)
 RegisterNUICallback('exit', function(data, cb)
 	SetNuiFocus(false, false)
+end)
+-------------------------------------------------------------------
+-- Admin GUI panel: replaces typing /startmatch <blood> <time> <map> <team>
+-- by hand (which is where the classic typo-crash used to come from).
+-------------------------------------------------------------------
+RegisterNetEvent("AWZ:OpenAdminPanel")
+AddEventHandler("AWZ:OpenAdminPanel", function(lobbyOpen, matchStarted)
+	SetNuiFocus(true, true)
+	SendNUIMessage({
+		message = "openAdminPanel",
+		lobbyOpen = lobbyOpen,
+		matchStarted = matchStarted,
+		startCommend = Config.StartCommend,
+	})
+end)
+RegisterNUICallback('adminOpenLobby', function(data, cb)
+	TriggerServerEvent('AWZ:AdminOpenLobby')
+	cb('ok')
+end)
+RegisterNUICallback('adminStart', function(data, cb)
+	TriggerServerEvent('AWZ:AdminStart', data.blood, data.time, data.map, data.team)
+	SetNuiFocus(false, false)
+	cb('ok')
+end)
+RegisterNUICallback('adminPanelClose', function(data, cb)
+	SetNuiFocus(false, false)
+	cb('ok')
 end)
 -----------------------------------
 --function
@@ -591,8 +711,6 @@ function ShowZone()
 			if  ingulag then
 				DrawMarker(28,GulagCoord , 0.0, 0.0, 0.0, 0.0, 180.0, 0.0, 50 + 0.0, 50 +0.0, 50 +0.0, 255, 128, 0, 50, false, true, 2, nil, nil, false)
             	if GetDistanceBetweenCoords(GetEntityCoords(PlayerPedId()), GulagCoord , false ) > 50.0 then 
-					print(SetEntityHealth(PlayerPedId(),GetEntityHealth(PlayerPedId()) - 3 ))
-					print(GetEntityHealth(PlayerPedId()) - 3)
             		SetEntityHealth(PlayerPedId(),GetEntityHealth(PlayerPedId()) - 3 )
             	end 
 			else 
@@ -717,15 +835,13 @@ function WarZone(loadHud)
 		SetMaxHealth()
 		jump = false
 		inheli = true
-		AddEventHandler('onKeyDown',function(key)
-			if  key == 'f' then 
-				if inheli == true  then 
-					PlayerDead , inheli  = false  , false
-					jump = true
-					JumpNow()
-				end
-			end 
-		end)
+		-- Fix: this used to AddEventHandler('onKeyDown', ...) here, and
+		-- WarZone() runs again on every redeploy/Gulag win -- so after a few
+		-- deaths each 'f' press would call JumpNow() once per stacked
+		-- handler (duplicate weapon grants, redundant plane/pilot deletes).
+		-- The jump key is now registered exactly once, outside this
+		-- function (see the one-time onKeyDown block below), guarded by the
+		-- same `inheli` flag this used to check.
 		local Time = 27 
 		while inheli do 
 			Wait(3000)
@@ -798,47 +914,14 @@ function PlayNowSound(audioName, audioRef)
 	end)
 end
 function PrivteLoadout()
-	local shoot = false  
+	-- Fix: this used to AddEventHandler('onKeyDown', ...) on every call, and
+	-- this function runs once per "loadout" shop purchase (repeatable) --
+	-- so buying it twice stacked two handlers, and a single click could
+	-- fire two airdrops for the price of two separate future clicks. The
+	-- actual key handler is now registered once (see the one-time
+	-- onKeyDown block below); this just banks a use.
+	LoadoutCharges = LoadoutCharges + 1
 	SendNotifyToPlayer('Bray Estfade Az Loadout Ba FlayerGun Tir Bezanid' , 'info')
-	AddEventHandler('onKeyDown', function(key)
-		if key == 'mouse_left' then   
-			if not InWarzone then return end 
-			if  not shoot then
-				if GetSelectedPedWeapon(PlayerPedId()) == GetHashKey('WEAPON_FLARE')  then 
-					shoot = true 
-					if not InWarzone then return end 
-					local Sploot  = nil 
-					local NumerofLoot = math.random(1,5)
-					for k,v in pairs(AirDrops) do 
-						if NumerofLoot == k then 
-							Sploot  = v 
-						end 
-					end
-					SendNotifyToPlayer('Loadout Kamtar Az 10s Dar Makan ke Istadeid Miresad', 'info')
-					CreateThread(function()
-						local crateSpawn = vector3(GetEntityCoords(PlayerPedId()).x, GetEntityCoords(PlayerPedId()).y, GetEntityCoords(PlayerPedId()).z + 100)
-						local	objLootBox = 	CreateObject(GetHashKey("prop_box_wood05a"), crateSpawn, true, true, true) 
-						SetEntityLodDist(objLootBox, 2000) 
-						ActivatePhysics(objLootBox)
-						SetDamping(objLootBox, 2, 0.1) 
-						SetEntityVelocity(objLootBox, 0.0, 0.0, -0.2)
-						local parachute = CreateObject(GetHashKey("p_cargo_chute_s"), crateSpawn, true, true, true) 
-					SetEntityLodDist(parachute, 2000)
-					SetEntityVelocity(parachute, 0.0, 0.0, -0.2)
-					AttachEntityToEntity(parachute, objLootBox, 0, 0.0, 0.0, 0.3, 0.0, 0.0, 0.0, false, false, true, false, 2, true) 
-					table.insert(AirDropGetLoot ,  {Box = objLootBox ,  Chatr = parachute , weapon = Sploot , Heal = true  , Vest = true  , Code = 'Privte' } )
-					TriggerServerEvent('AWZ:Loadout', {Box = objLootBox ,  Chatr = parachute , weapon = Sploot , Heal = true  , Vest = true  , Code = 'Privte' } ) 
-					while not IsEntityAttached(parachute) do
-						Wait(0)
-						AttachEntityToEntity(parachute, objLootBox, 0, 5, 0, 7.0, 0, 0, 0, true, true, false, true, 0, false)	
-					end
-					end)
-					Wait(3000)
-					RemoveWeaponFromPed(PlayerPedId(), 'WEAPON_FLARE')
-				end 
-			end 
-		end 
-	end )
 end 
 function ZoneRuning()
 	if not InWarzone  then return end 
@@ -1111,6 +1194,58 @@ AddEventHandler("WarZone:clSyncDelBox",function( CodePrivteBox )
 end) 
 local inUseitem = false 
 CreateThread(function() 
+	AddEventHandler('onKeyDown',function(key)
+		if  key == 'f' then 
+			if inheli == true  then 
+				PlayerDead , inheli  = false  , false
+				jump = true
+				JumpNow()
+			end
+		end 
+	end)
+	-------------
+	-- Private Loadout airdrop (bought from the shop, see PrivteLoadout()).
+	-- Registered once here instead of once per purchase (see fix notes).
+	AddEventHandler('onKeyDown', function(key)
+		if key == 'mouse_left' then
+			if not InWarzone then return end
+			if UsingLoadout or LoadoutCharges <= 0 then return end
+			if GetSelectedPedWeapon(PlayerPedId()) == GetHashKey('WEAPON_FLARE') then
+				UsingLoadout = true
+				LoadoutCharges = LoadoutCharges - 1
+				local Sploot = nil
+				local NumerofLoot = math.random(1,5)
+				for k,v in pairs(AirDrops) do
+					if NumerofLoot == k then
+						Sploot = v
+					end
+				end
+				SendNotifyToPlayer('Loadout Kamtar Az 10s Dar Makan ke Istadeid Miresad', 'info')
+				CreateThread(function()
+					local crateSpawn = vector3(GetEntityCoords(PlayerPedId()).x, GetEntityCoords(PlayerPedId()).y, GetEntityCoords(PlayerPedId()).z + 100)
+					local objLootBox = CreateObject(GetHashKey("prop_box_wood05a"), crateSpawn, true, true, true)
+					SetEntityLodDist(objLootBox, 2000)
+					ActivatePhysics(objLootBox)
+					SetDamping(objLootBox, 2, 0.1)
+					SetEntityVelocity(objLootBox, 0.0, 0.0, -0.2)
+					local parachute = CreateObject(GetHashKey("p_cargo_chute_s"), crateSpawn, true, true, true)
+					SetEntityLodDist(parachute, 2000)
+					SetEntityVelocity(parachute, 0.0, 0.0, -0.2)
+					AttachEntityToEntity(parachute, objLootBox, 0, 0.0, 0.0, 0.3, 0.0, 0.0, 0.0, false, false, true, false, 2, true)
+					table.insert(AirDropGetLoot, {Box = objLootBox, Chatr = parachute, weapon = Sploot, Heal = true, Vest = true, Code = 'Privte'})
+					TriggerServerEvent('AWZ:Loadout', {Box = objLootBox, Chatr = parachute, weapon = Sploot, Heal = true, Vest = true, Code = 'Privte'})
+					while not IsEntityAttached(parachute) do
+						Wait(0)
+						AttachEntityToEntity(parachute, objLootBox, 0, 5, 0, 7.0, 0, 0, 0, true, true, false, true, 0, false)
+					end
+				end)
+				Wait(3000)
+				RemoveWeaponFromPed(PlayerPedId(), 'WEAPON_FLARE')
+				UsingLoadout = false
+			end
+		end
+	end)
+	-------------
 	AddEventHandler('onKeyDown',function(key)
 		if InWarzone and not inheli and  not PlayerDead and not inUseitem then 
 			if key == 'y' then 
@@ -1426,6 +1561,9 @@ CreateThread(function()
 	TriggerEvent('chat:addSuggestion', '/'.. Config.StartCommend..'', 'Jahate Start Lobbey Warozne', {})
 	TriggerEvent('chat:addSuggestion', '/'..Config.JoinLobbeyCommend..'', 'Jahate Join Warozne', {})
 	TriggerEvent('chat:addSuggestion', '/'..Config.Startmatchcommend..'', 'Jahate Start Match Warozne', {})
+	TriggerEvent('chat:addSuggestion', '/'..Config.panelCommend..'', 'Open the WarZone admin panel (GUI)', {})
+	TriggerEvent('chat:addSuggestion', '/'..Config.wztopCommend..'', 'Show the season leaderboard', {})
+	TriggerEvent('chat:addSuggestion', '/'..Config.seasonresetCommend..'', 'Admin: reset the WarZone season', {})
 end)
 RegisterNetEvent("AWZ:UpdateLoadout")
 AddEventHandler("AWZ:UpdateLoadout", function(loadout)

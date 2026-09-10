@@ -716,3 +716,54 @@ Citizen.CreateThread(function()
 		end
 	end
 end)
+
+-- ===== Admin uniform-editor pads (ox_target) =====
+-- One pad next to each job's cloakroom. Admins (permission_level >= 15,
+-- checked again server-side -- this client-side zone is just where the
+-- prompt shows up, not the actual security boundary) can interact wearing
+-- whatever outfit they want, and it gets saved as that job's work-wear.
+local uniformEditorPads = {}
+Citizen.CreateThread(function()
+	for job, jobData in pairs(Config.Jobs) do
+		local cloak = jobData.Zones and jobData.Zones.CloakRoom
+		if cloak then
+			local padPos = {x = cloak.Pos.x + 1.0, y = cloak.Pos.y, z = cloak.Pos.z}
+			table.insert(uniformEditorPads, padPos)
+
+			exports.ox_target:addBoxZone({
+				coords = vector3(padPos.x, padPos.y, padPos.z),
+				size = vector3(0.6, 0.6, 1.0),
+				rotation = 0,
+				debug = false,
+				options = {
+					{
+						label = 'Set ' .. (Config.JobLabels[job] or job) .. ' uniform (admin)',
+						icon = 'fas fa-tshirt',
+						onSelect = function()
+							TriggerEvent('skinchanger:getSkin', function(skin)
+								TriggerServerEvent('esx_jobs:adminSetUniform', job, skin)
+							end)
+						end
+					}
+				}
+			})
+		end
+	end
+end)
+
+-- draws an actual visible marker on the ground for each pad above -- the
+-- ox_target zone alone has no visual, so without this it just looks like
+-- plain ground (purple/distinct from the regular green cloakroom marker,
+-- so it reads as "this one's different / admin-only")
+Citizen.CreateThread(function()
+	while true do
+		Citizen.Wait(0)
+		local coords = GetEntityCoords(PlayerPedId())
+		for i=1, #uniformEditorPads, 1 do
+			local pad = uniformEditorPads[i]
+			if Vdist(coords, pad.x, pad.y, pad.z) < Config.DrawDistance then
+				DrawMarker(1, pad.x, pad.y, pad.z + 0.1, 0.0, 0.0, 0.0, 0, 0.0, 0.0, 0.8, 0.8, 0.8, 150, 0, 255, 150, false, true, 2, false, false, false, false)
+			end
+		end
+	end
+end)

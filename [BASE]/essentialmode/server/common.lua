@@ -59,31 +59,55 @@ end
 -- essentialmode's real dispatcher (see the "does not exist" print in
 -- ESX.TriggerServerCallback below), which never sees a registration that
 -- landed in some other resource's disconnected copy instead.
-function RegisterServerCallback(name, callback)
-    -------------------------------------------------------------
-    -- TEMP DIAGNOSTIC + relaxed guard: this used to hard-reject
-    -- (return false, no error) whenever type(callback) ~= 'function'.
-    -- Chasing a case where lc-inventory's own console confirms calling
-    -- this, yet the registered name never appears in
-    -- ESX.ServerCallbacks afterwards - if callback is arriving here as
-    -- something other than a plain 'function' (e.g. some other
-    -- callable/userdata shape after crossing the export boundary from
-    -- another resource), the old strict check would explain that
-    -- exactly, silently. Logs the real type either way instead of
-    -- guessing, and only rejects on a type that's outright unusable
-    -- (nil) rather than anything not literally 'function'.
-    -------------------------------------------------------------
-    if type(name) ~= 'string' or callback == nil then
-        print('[essentialmode] RegisterServerCallback(' .. tostring(name) .. '): rejected - name is ' .. type(name) .. ', callback is ' .. type(callback))
+--
+-- FIX (definitively confirmed via diagnostic logging, both sides):
+-- passing the actual callback function through `exports` from another
+-- resource does NOT survive as a callable function here - it arrives
+-- as type "table". Storing that directly in ESX.ServerCallbacks and
+-- later calling it as ESX.ServerCallbacks[name](source, cb, ...) is
+-- exactly why every custom cross-resource callback (lc-inventory's
+-- getStash/getPlayerInventory/etc.) kept reporting "does not exist"
+-- even right after a registration that looked successful.
+-- Instead of ever storing that broken reference, this stores a RELAY:
+-- essentialmode fires a same-process event back at whichever resource
+-- originally called this export (GetInvokingResource(), reliable -
+-- it's a real native, not something marshaled across the boundary),
+-- and that resource actually runs its own real, 100%-local callback
+-- function and reports the result back over a matching reply event.
+-- This is the exact same request/reply-by-ID shape ESX's own
+-- client<->server TriggerServerCallback already uses (see
+-- RegisterServerEvent('esx:triggerServerCallback') further down this
+-- file) - just one hop further out, resource<->resource instead of
+-- client<->server. Only plain, serializable data (name, a request id,
+-- source, and the call's own args) ever crosses an event boundary now;
+-- no function reference is ever marshaled anywhere.
+local PendingServerCallbackReplies = {}
+
+function RegisterServerCallback(name, unusedCallbackArg)
+    if type(name) ~= 'string' then return false end
+    local owner = GetInvokingResource()
+    if not owner then
+        print('[essentialmode] RegisterServerCallback(' .. tostring(name) .. '): GetInvokingResource() returned nothing - cannot set up the relay, refusing')
         return false
     end
-    if type(callback) ~= 'function' then
-        print('[essentialmode] RegisterServerCallback(' .. tostring(name) .. '): callback arrived as type "' .. type(callback) .. '", not "function" - registering anyway, but ESX.TriggerServerCallback will error when this actually gets invoked if it truly is not callable')
+
+    ESX.ServerCallbacks[name] = function(source, cb, ...)
+        local requestId = name .. '#' .. tostring(source) .. '#' .. os.time() .. '#' .. math.random(100000, 999999)
+        PendingServerCallbackReplies[requestId] = cb
+        TriggerEvent('essentialmode:relayServerCallback:' .. owner, name, requestId, source, ...)
     end
-    ESX.RegisterServerCallback(name, callback)
-    print('[essentialmode] RegisterServerCallback(' .. tostring(name) .. '): stored - ESX.ServerCallbacks[' .. tostring(name) .. '] is now type ' .. type(ESX.ServerCallbacks[name]))
+
+    print('[essentialmode] RegisterServerCallback(' .. tostring(name) .. '): relay registered for owner resource "' .. owner .. '"')
     return true
 end
+
+RegisterServerEvent('essentialmode:relayServerCallbackReply')
+AddEventHandler('essentialmode:relayServerCallbackReply', function(requestId, ...)
+    local cb = PendingServerCallbackReplies[requestId]
+    if not cb then return end
+    PendingServerCallbackReplies[requestId] = nil
+    cb(...)
+end)
 
 -- Categorized weapon serials: LAW- (default/regular sources), DOJ- (police
 -- armory), GANG- (gang armory) - see server/classes/player.lua's addWeapon
