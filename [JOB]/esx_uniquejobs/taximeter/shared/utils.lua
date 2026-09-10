@@ -1,4 +1,4 @@
-Locales = {}
+Locales = Locales or {}
 
 function translate(str, ...)  -- Translate string
 

@@ -19,7 +19,12 @@ local function _U(str, ...)
 
 	return tostring(string.format(v, ...):gsub("^%l", string.upper))
 end
-
+CreateThread(function()
+	Wait(3000)
+	local n = 0
+	if Locales['en_police'] then for _ in pairs(Locales['en_police']) do n = n + 1 end end
+	print(("^3[uniquejobs-debug] police_main.lua sees en_police with %d keys, citizen_interaction=%s^0"):format(n, tostring(Locales['en_police'] and Locales['en_police']['citizen_interaction'])))
+end)
 local ekhtarcool = false
 local dakhelheli = false
 local Keys = {

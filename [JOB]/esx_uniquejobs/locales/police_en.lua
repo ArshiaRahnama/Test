@@ -157,3 +157,6 @@ for k, v in pairs({
   ['message_locked'] = 'the vehicle has been ~r~locked~s~',
   ['message_unlocked'] = 'the vehicle has been ~g~unlocked~s~',
 }) do Locales['en_police'][k] = v end
+local _n = 0
+for _ in pairs(Locales['en_police']) do _n = _n + 1 end
+print(("^2[uniquejobs-debug] police_en.lua loaded, en_police has %d keys^0"):format(_n))
