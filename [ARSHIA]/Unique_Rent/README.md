@@ -6,6 +6,7 @@ Redesigned & maintained by **Arshia** — arshiahub.ir
 
 - The resource folder must be named exactly `Unique_Rent` (matches the NUI callback URLs and fxmanifest) or the menu won't work.
 - For best results use 310x250 pixel vehicle images in `html/assets/`.
+- Depends on **essentialmode** (this base's ESX-compatible framework, not `es_extended`) — see `dependencies` in `fxmanifest.lua`. Make sure `essentialmode` is `ensure`d before `Unique_Rent` in `server.cfg`.
 
 **Rental duration tiers**
 

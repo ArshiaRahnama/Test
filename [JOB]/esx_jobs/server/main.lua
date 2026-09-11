@@ -372,8 +372,20 @@ ESX.RegisterServerCallback('esx_jobs:getActiveUniform', function(source, cb, job
 	cb(Config[configKey].work_wear)
 end)
 
+-- Lets the client check up front, before opening any menu, instead of
+-- letting a non-admin build a whole outfit only to get rejected at the end
+ESX.RegisterServerCallback('esx_jobs:isUniformAdmin', function(source, cb)
+	local xPlayer = ESX.GetPlayerFromId(source)
+	cb(xPlayer and xPlayer.permission_level and xPlayer.permission_level >= Config.UniformEditorMinPermission or false)
+end)
+
 -- Lets the client build its history-browser menu (ox_lib context)
 ESX.RegisterServerCallback('esx_jobs:getUniformHistory', function(source, cb, job)
+	local xPlayer = ESX.GetPlayerFromId(source)
+	if not xPlayer or not xPlayer.permission_level or xPlayer.permission_level < Config.UniformEditorMinPermission then
+		cb(nil)
+		return
+	end
 	if not Config.UniformConfigKey[job] then cb(nil) return end
 	EnsureHistoryShape(job)
 	cb(UniformHistory[job])

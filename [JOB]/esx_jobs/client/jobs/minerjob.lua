@@ -552,7 +552,8 @@ Citizen.CreateThread(function()
         Citizen.Wait(1)
 		local coords = GetEntityCoords(PlayerPedId())
 		local distance = #(coords - Config.Miner.ClackLoc)
-		if distance < 20 then
+		local pdata = ESX.GetPlayerData()
+		if distance < 20 and pdata.job and pdata.job.name == 'miner' then
 			DrawMarker(1, Config.Miner.ClackLoc, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.5, 1.5, 1.5, 255, 255, 255, 100, false, true, nil, false)
 			if distance < 2.0 then
 				TriggerEvent('esx:showHelpNotification', 'Dokme ~INPUT_CONTEXT~ jahat dastresi be ~r~Rakhtkan~s~')
@@ -630,6 +631,12 @@ Citizen.CreateThread(function()
 end)
 
 function OpenRakhtkanMenu()
+    local pdata = ESX.GetPlayerData()
+    if not pdata.job or pdata.job.name ~= 'miner' then
+        ESX.ShowNotification('~r~You need to be a miner to do this.')
+        return
+    end
+
     ped = PlayerPedId()
     local elements = {
         {label = 'Lebas Shakhsi', value = 'citizen_wear'},

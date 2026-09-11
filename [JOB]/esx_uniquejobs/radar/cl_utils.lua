@@ -350,38 +350,6 @@ function startThread()
 		-- same as the radar display itself does above.
 		local lastPtVehState = nil
 
-		-- FIX: Quick Actions (PANIC + PLACE TRACKER) used to only appear
-		-- after manually opening the full radar remote (item interact),
-		-- unlike every other always-on HUD widget in this resource. Now
-		-- it follows the same "in a vehicle + right job" rule as the
-		-- pursuit timer above, live, with no remote-opening required -
-		-- matching how the rest of the server's Insert-menu HUD toggles
-		-- behave (always there, just needs the mouse free to click).
-		local lastQaState = nil
-		local lastQaAgentState = nil
-
-		Citizen.CreateThread( function()
-			while ( threadBool ) do
-				local inVeh = PLY.veh ~= nil and PLY.veh > 0
-				local job = ( ESX ~= nil and ESX.GetPlayerData() ~= nil ) and ESX.GetPlayerData().job or nil
-				local hasAccess = job ~= nil and CONFIG.jobs[job.name] == true
-				local qaState = inVeh and hasAccess
-				local agentState = qaState and CONFIG.agentJobs[job.name] == true
-
-				if ( qaState ~= lastQaState ) then
-					lastQaState = qaState
-					SendNUIMessage( { _type = "showQuickActions", state = qaState } )
-				end
-
-				if ( agentState ~= lastQaAgentState ) then
-					lastQaAgentState = agentState
-					SendNUIMessage( { _type = "setAgentAccess", state = agentState } )
-				end
-
-				Citizen.Wait( 500 )
-			end
-		end )
-
 		Citizen.CreateThread( function()
 			while ( threadBool ) do
 				local inVeh = PLY.veh ~= nil and PLY.veh > 0

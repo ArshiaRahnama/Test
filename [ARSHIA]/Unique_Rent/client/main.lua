@@ -12,6 +12,7 @@ Options = {
     vehicle = {hash = 0},
     last_location = '',
     have_rented = false,
+    processing_rent = false,
     blips = {}
 }
 
@@ -22,7 +23,12 @@ Citizen.CreateThread(function()
 		local playerPed = PlayerPedId()
 		local coords = GetEntityCoords(playerPed)
         for k,v in pairs(Config.Locations) do
-            if not InMenu then
+            -- Also gated on processing_rent: the menu closes as soon as a
+            -- rent is confirmed, but the actual server check / spawn is
+            -- still in flight for a moment after that. Without this, the
+            -- E-key prompt could reappear and let a second rent_vehicle()
+            -- start during that window.
+            if not InMenu and not Options.processing_rent then
                 local distance = #(coords - v.coords)
                 local return_distance = #(coords - v.return_coords)
 
@@ -80,7 +86,7 @@ AddEventHandler('unique_rent:forceReset', function()
 end)
 
 for k, v in pairs(Config.Locations) do
-	rent = AddBlipForCoord(v.coords.x, v.coords.y, v.coords.z)
+	local rent = AddBlipForCoord(v.coords.x, v.coords.y, v.coords.z)
 	SetBlipSprite (rent, v.blips.spawn.sprite)
 	SetBlipDisplay(rent, 4)
 	SetBlipScale(rent, 0.7)

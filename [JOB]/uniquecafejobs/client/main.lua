@@ -99,9 +99,35 @@ end)
 RegisterNetEvent('AH_uwucafejob:OpenBossMenus')
 AddEventHandler('AH_uwucafejob:OpenBossMenus', function()
     ESX.UI.Menu.CloseAll()
-    TriggerEvent('esx_society:openBosscarysMenu', PlayerData.job.name, function(data, menu)
+
+    local elements = {
+        { label = 'Manage Business', value = 'manage_business' },
+    }
+    if PlayerData.job.grade_name == 'boss' then
+        table.insert(elements, { label = 'Set Work Uniform', value = 'set_uniform' })
+        table.insert(elements, { label = 'Manage Vehicles', value = 'manage_vehicles' })
+    end
+
+    ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'uwu_boss_action', {
+        title    = GetDisplayLabel(PlayerData.job.name, GetCafeForJob(PlayerData.job.name) and GetCafeForJob(PlayerData.job.name).Label or PlayerData.job.label),
+        align    = 'top-left',
+        elements = elements,
+    }, function(data, menu)
+        if data.current.value == 'manage_business' then
+            menu.close()
+            TriggerEvent('esx_society:openBosscarysMenu', PlayerData.job.name, function(data2, menu2)
+                menu2.close()
+            end, { wash = false })
+        elseif data.current.value == 'set_uniform' then
+            menu.close()
+            OpenSetCafeUniformMenu()
+        elseif data.current.value == 'manage_vehicles' then
+            menu.close()
+            OpenManageJobVehiclesMenu(PlayerData.job.name)
+        end
+    end, function(data, menu)
         menu.close()
-    end, { wash = false })
+    end)
 end)
 
 RegisterNetEvent('AH_uwucafejob:OpenCloakroomMenu')

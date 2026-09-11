@@ -37,6 +37,9 @@ function priceFor(basePrice) {
 
 function main_menu(vehicles, durations) {
   $(".ui").fadeIn();
+  // Explicitly restore .content (timer_menu() hides it -- see the bugfix
+  // note there), so switching back to browsing after a rental works too.
+  $(".content").css('display', 'flex');
   $(".container-timer").css('display', 'none');
   hideConfirm();
 
@@ -176,11 +179,19 @@ function setRingProgress(fraction) {
 function timer_menu(time, vehicle) {
   $(".ui").fadeIn();
 
-  $(".vehicles").css('display', 'none');
+  // BUGFIX: only `.vehicles` (inside `.content`) was ever hidden here --
+  // `.content` itself (title, duration/filter bars, credit line) stayed
+  // on screen the whole time the player was out driving, floating behind
+  // the small corner timer pill. Hide the whole panel instead.
+  $(".content").css('display', 'none');
   $(".container-timer").css('display', 'flex');
 
   $("#timer").html('');
   $("#ring-progress").removeClass('is-critical');
+
+  // Defensive: clear any interval from a previous timer_menu() call so
+  // two countdowns can never run stacked on top of each other.
+  clearInterval(time_function);
 
   if (vehicle && vehicle.label) {
     $("#timer-vehicle").html(vehicle.label);

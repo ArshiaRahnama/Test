@@ -52,16 +52,22 @@ end)
 
 -- ── Generic Boss Actions menu - identical for all 4 holdings ──
 local function openHoldingBossMenu(job, label)
+	local elements = {
+		{ label = 'Portfolio Dashboard', value = 'dashboard' },
+		{ label = 'Manage Portfolio (Rank Up) (Director+)', value = 'portfolio' },
+		{ label = 'Manage Business Staff (Director+)', value = 'staff' },
+		{ label = 'Open/Close Businesses (Director+)', value = 'toggle' },
+		{ label = 'Rename Holding', value = 'rename' },
+	}
+	if PlayerData.job.grade_name == 'boss' then
+		table.insert(elements, { label = 'Set Work Uniform', value = 'set_uniform' })
+		table.insert(elements, { label = 'Manage Vehicles', value = 'manage_vehicles' })
+	end
+
 	ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'holding_boss_root_' .. job, {
 		title    = GetDisplayLabel(job, label),
 		align    = 'top-left',
-		elements = {
-			{ label = 'Portfolio Dashboard', value = 'dashboard' },
-			{ label = 'Manage Portfolio (Rank Up) (Director+)', value = 'portfolio' },
-			{ label = 'Manage Business Staff (Director+)', value = 'staff' },
-			{ label = 'Open/Close Businesses (Director+)', value = 'toggle' },
-			{ label = 'Rename Holding', value = 'rename' },
-		},
+		elements = elements,
 	}, function(data, menu)
 		if data.current.value == 'dashboard' then
 			TriggerServerEvent('uniquecafejobs:corp:requestPortfolio')
@@ -78,6 +84,12 @@ local function openHoldingBossMenu(job, label)
 			if input and input[1] then
 				TriggerServerEvent('uniquecafejobs:corp:renameHolding', input[1])
 			end
+		elseif data.current.value == 'set_uniform' then
+			menu.close()
+			OpenSetCafeUniformMenu()
+		elseif data.current.value == 'manage_vehicles' then
+			menu.close()
+			OpenManageJobVehiclesMenu(job)
 		end
 	end, function(data, menu)
 		menu.close()

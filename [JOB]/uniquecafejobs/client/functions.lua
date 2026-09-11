@@ -46,7 +46,10 @@ RegisterNetEvent('uniquecafejobs:corp:syncActiveBusinesses')
 AddEventHandler('uniquecafejobs:corp:syncActiveBusinesses', function(active)
     ActiveBusinesses = active
     for job, blip in pairs(CafeBlips) do
-        SetBlipAlpha(blip, (ActiveBusinesses[job] ~= false) and 255 or 0)
+        local isActive = (ActiveBusinesses[job] ~= false)
+        local cafe = GetCafeForJob(job)
+        SetBlipAlpha(blip, isActive and 255 or 0)
+        SetBlipDisplay(blip, isActive and (cafe and cafe.Blip.Display or 4) or 0)
     end
 end)
 
@@ -82,11 +85,13 @@ Citizen.CreateThread(function()
         SetBlipScale  (blip, cafe.Blip.Scale)
         SetBlipColour (blip, GetDisplayColour(cafe.Job, cafe.Blip.Colour))
         SetBlipAsShortRange(blip, true)
-        -- Start hidden: the real open/closed state hasn't arrived from the
-        -- server yet (see requestActiveBusinesses above), so don't assume
-        -- "open" here - that would flash the blip visible for a moment even
-        -- for a business that's actually saved as closed.
+        -- Start fully hidden (both the icon AND the side-list entry): the
+        -- real open/closed state hasn't arrived from the server yet (see
+        -- requestActiveBusinesses above), so don't assume "open" here -
+        -- that would flash the blip visible for a moment even for a
+        -- business that's actually saved as closed.
         SetBlipAlpha(blip, 0)
+        SetBlipDisplay(blip, 0)
         CafeBlips[cafe.Job] = blip
 
         BeginTextCommandSetBlipName("STRING")
@@ -250,6 +255,128 @@ end)
 
 function OpendMenuShops()
     lib.showMenu('shop_menu_uwu')
+end
+
+function OpenManageJobVehiclesMenu(job)
+    ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'uwu_manage_vehicles', {
+        title    = 'Manage Vehicles',
+        align    = 'top-left',
+        elements = {
+            { label = 'Add Current Vehicle (Admin)', value = 'add' },
+            { label = 'Remove a Vehicle', value = 'remove' },
+        },
+    }, function(data, menu)
+        menu.close()
+
+        if data.current.value == 'add' then
+            if not IsPedInAnyVehicle(PlayerPedId(), false) then
+                ESX.ShowNotification('Bayad savare mashin bashid.')
+                return
+            end
+
+            local veh = GetVehiclePedIsIn(PlayerPedId(), false)
+            local modelName = GetDisplayNameFromVehicleModel(GetEntityModel(veh))
+
+            local input = lib.inputDialog('Add Vehicle to ' .. job, {
+                { type = 'input', label = 'Label', required = true },
+                { type = 'checkbox', label = 'Helicopter' },
+            })
+            if not input or not input[1] or input[1] == '' then return end
+
+            TriggerServerEvent('esx_society:addCarJob', job, modelName, input[1], input[2] and true or false)
+
+        elseif data.current.value == 'remove' then
+            ESX.TriggerServerCallback('esx_society:getCustomVehicles', function(list)
+                local jobVehicles = list[job] or {}
+                if #jobVehicles == 0 then
+                    ESX.ShowNotification('Hich mashini baraye in job save nashode.')
+                    return
+                end
+
+                local List = {}
+                for _, v in ipairs(jobVehicles) do
+                    table.insert(List, {
+                        img      = 'SS_gold.png',
+                        text     = v.label,
+                        text2    = v.model,
+                        callBack = function()
+                            TriggerServerEvent('esx_society:deleteCustomCarJob', v.id, job)
+                            exports.icon_menu:ForceCloseMenu()
+                        end,
+                    })
+                end
+
+                exports.icon_menu:OpenMenu(List)
+            end)
+        end
+    end, function(data, menu)
+        menu.close()
+    end)
+end
+
+function OpenSetCafeUniformMenu()
+    local job = PlayerData.job.name
+
+    ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'uwu_set_uniform_gender', {
+        title    = 'Set Work Uniform',
+        align    = 'top-left',
+        elements = {
+            { label = 'Men',   value = 'male' },
+            { label = 'Women', value = 'female' },
+        },
+    }, function(data, menu)
+        local gender = data.current.value
+        menu.close()
+
+        ESX.TriggerServerCallback('esx_society:getJob', function(jobData)
+            local elements = {}
+            for i = 1, #jobData.grades do
+                local g = jobData.grades[i]
+                if g.grade <= PlayerData.job.grade then
+                    table.insert(elements, {
+                        label = ('(%s) | %s'):format(g.grade, (g.label ~= '' and g.label or jobData.label)),
+                        grade = g.grade,
+                    })
+                end
+            end
+
+            ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'uwu_set_uniform_grade', {
+                title    = 'Choose Grade',
+                align    = 'top-left',
+                elements = elements,
+            }, function(data2, menu2)
+                local grade = tonumber(data2.current.grade)
+                menu2.close()
+
+                ESX.TriggerServerCallback('esx_skin:getPlayerSkin', function(myskin)
+                    TriggerEvent('skinchanger:loadSkin', myskin)
+                    Citizen.Wait(100)
+                    TriggerEvent('esx_skin:openSaveableMenu')
+
+                    Citizen.CreateThread(function()
+                        while ESX.UI.Menu.IsOpen('default', 'esx_skin', 'skin') do
+                            Citizen.Wait(500)
+                        end
+
+                        TriggerEvent('skinchanger:getSkin', function(skin)
+                            ESX.TriggerServerCallback('esx_society:setUniform', function()
+                                ESX.ShowNotification('Work uniform updated.')
+                            end, job, grade, gender, skin)
+                        end)
+
+                        Citizen.Wait(100)
+                        TriggerEvent('skinchanger:loadSkin', myskin)
+                        Citizen.Wait(100)
+                        TriggerServerEvent('esx_skin:save', myskin)
+                    end)
+                end)
+            end, function(data2, menu2)
+                menu2.close()
+            end)
+        end, job)
+    end, function(data, menu)
+        menu.close()
+    end)
 end
 
 

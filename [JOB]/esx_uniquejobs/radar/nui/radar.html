@@ -227,26 +227,6 @@
 		</div>
 
 		<!--
-			FEATURE ADDED: quick-actions dispatch panel. Only shown while the
-			remote is open (these are "in the moment" actions, like the remote
-			itself). Both buttons reuse esx_uniquejobs' own existing systems -
-			nothing new added over there, this just calls them.
-		-->
-		<div id="quickActions">
-			<div class="qa_header">
-				<span class="qa_dot"></span>
-				<p class="qa_title">QUICK ACTIONS</p>
-			</div>
-
-			<button id="panicBtn" data-nuitype="sendPanic" class="qa_btn qa_panic">🚨 PANIC</button>
-
-			<!-- FEATURE ADDED: FBI/CIA only (matches esx_uniquejobs' own
-			     tracker_manager.lua restriction) - hidden until Lua confirms
-			     the player's job qualifies, see "setAgentAccess" NUI message. -->
-			<button id="placeTrackerBtn" data-nuitype="placeTracker" class="qa_btn qa_tracker qa_agent_only">📡 PLACE TRACKER</button>
-		</div>
-
-		<!--
 			FEATURE ADDED: quick traffic-stop log, popped up when you hit RESET
 			on the pursuit timer. Reuses esx_uniquejobs' own traffic_stop_manager.lua
 			(esx_uniquejobs:logTrafficStop) - nothing added there either.

@@ -60,8 +60,8 @@ body, input, button {
 --------------------------------------------------------------- */
 
 .content {
-  width: 1360px;
-  max-height: 82vh;
+  width: min(400px, 90vw);
+  max-height: 48vh;
   display: flex;
   flex-direction: column;
   background:
@@ -74,16 +74,15 @@ body, input, button {
     0 0 0 1px rgba(0, 0, 0, 0.3),
     inset 0 1px 0 rgba(255, 255, 255, 0.04);
   position: fixed;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
+  right: 30px;
+  top: 30vh;
   overflow: hidden;
   animation: panel-in 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @keyframes panel-in {
-  from { opacity: 0; transform: translate(-50%, -46%) scale(0.97); }
-  to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  from { opacity: 0; transform: translateX(16px); }
+  to   { opacity: 1; transform: translateX(0); }
 }
 
 .content::before {
@@ -131,7 +130,7 @@ body, input, button {
 
 .panel-header {
   flex: 0 0 auto;
-  padding: 30px 60px 18px 44px;
+  padding: 22px 54px 14px 26px;
 }
 
 .panel-eyebrow {
@@ -147,7 +146,7 @@ body, input, button {
 .panel-title {
   font-family: 'Cinzel', serif;
   font-weight: 600;
-  font-size: 32px;
+  font-size: 26px;
   letter-spacing: 1px;
   background: linear-gradient(180deg, var(--gold-1) 0%, var(--gold-2) 55%, var(--gold-3) 100%);
   -webkit-background-clip: text;
@@ -156,7 +155,7 @@ body, input, button {
 }
 
 .panel-rule {
-  margin-top: 18px;
+  margin-top: 14px;
   height: 1px;
   background: linear-gradient(90deg, var(--gold-2) 0%, rgba(232, 183, 60, 0.06) 60%, transparent 100%);
 }
@@ -167,9 +166,10 @@ body, input, button {
 
 .duration-bar {
   flex: 0 0 auto;
+  display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 0 34px 18px;
+  gap: 12px;
+  padding: 0 26px 14px;
   flex-wrap: wrap;
 }
 
@@ -233,7 +233,8 @@ body, input, button {
 
 .filters {
   flex: 0 0 auto;
-  padding: 0 34px 18px;
+  display: flex;
+  padding: 0 26px 14px;
   gap: 8px;
   flex-wrap: wrap;
 }
@@ -286,20 +287,20 @@ body, input, button {
   min-height: 0;
   overflow-y: auto;
   scroll-behavior: smooth;
-  padding: 4px 34px 34px;
+  padding: 4px 26px 26px;
   display: flex;
   flex-wrap: wrap;
-  gap: 18px;
+  gap: 14px;
   align-content: flex-start;
 }
 
 .vehicle {
   cursor: pointer;
-  width: calc(25% - 14px);
+  width: 100%;
   background: var(--card);
   border: 1px solid rgba(255, 255, 255, 0.05);
   border-radius: 10px;
-  padding: 18px 18px 16px;
+  padding: 14px 14px 12px;
   transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
               background 0.22s ease,
               border-color 0.22s ease,
@@ -441,7 +442,7 @@ body, input, button {
   align-items: center;
   justify-content: center;
   gap: 12px;
-  padding: 40px 34px 60px;
+  padding: 30px 26px 44px;
   color: var(--muted);
   text-align: center;
 }
@@ -480,7 +481,19 @@ body, input, button {
   border-radius: 100px;
   padding: 10px 26px 10px 10px;
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
-  animation: panel-in 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: timer-in 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* BUGFIX: this used to share @keyframes panel-in with .content, whose
+   "to" state is transform: translate(-50%,-50%) -- correct for .content
+   (that's also its normal resting transform, via left/top 50%), but
+   .container-timer is positioned with plain left/bottom, so it has no
+   such base transform. Borrowing those keyframes made it visibly jump
+   from a shifted position to its real spot the instant the animation
+   ended. This uses a small self-relative transform instead. */
+@keyframes timer-in {
+  from { opacity: 0; transform: scale(0.92) translateY(10px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
 }
 
 .ring-wrap {
@@ -504,11 +517,10 @@ body, input, button {
 
 .ring-progress {
   fill: none;
-  stroke: url(#none);
   stroke: var(--gold-2);
   stroke-width: 8;
   stroke-linecap: round;
-  stroke-dasharray: 327;
+  stroke-dasharray: 326.726; /* 2 * PI * r(52), matches RING_CIRCUMFERENCE in functions.js */
   stroke-dashoffset: 0;
   transition: stroke-dashoffset 1s linear, stroke 0.3s ease;
 }
@@ -592,7 +604,16 @@ body, input, button {
   border-radius: 14px;
   padding: 26px 26px 22px;
   box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
-  animation: panel-in 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: modal-in 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Same class of bug as .container-timer above: .confirm-modal is centered
+   by its parent's flexbox (display:flex + align/justify-content:center),
+   not by translate(-50%,-50%), so it needs its own small self-relative
+   entrance transform rather than panel-in's absolute-centering one. */
+@keyframes modal-in {
+  from { opacity: 0; transform: scale(0.95) translateY(8px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
 }
 
 .confirm-image {
@@ -626,11 +647,17 @@ body, input, button {
   align-items: center;
   justify-content: space-between;
   padding: 10px 0;
-  border-top: 1px solid rgba(255, 255, 255, 0.07);
 }
 
-.confirm-row:first-of-type {
-  border-top: none;
+/* BUGFIX: this was previously `.confirm-row:first-of-type { border-top:
+   none }` with border-top on the base rule -- but :first-of-type matches
+   the first *div* among siblings regardless of class, and .confirm-image
+   (also a div) comes before any .confirm-row, so that selector never
+   matched anything and every row silently kept its border-top, including
+   the one right under the title. The adjacent-sibling combinator below
+   correctly puts the divider only *between* two rows. */
+.confirm-row + .confirm-row {
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
 }
 
 .confirm-label {
@@ -714,7 +741,7 @@ body, input, button {
 .panel-credit {
   flex: 0 0 auto;
   text-align: right;
-  padding: 0 34px 16px;
+  padding: 0 26px 14px;
   font-family: 'Manrope', sans-serif;
   font-size: 10px;
   font-weight: 600;

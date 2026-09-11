@@ -256,7 +256,11 @@ Config.UniformConfigKey = {
 -- Optional per-job pad position override. If a job isn't listed here, the
 -- pad falls back to the auto-computed spot (1m beside the cloakroom).
 Config.UniformEditorPadOverride = {
-	fueler = {x = 558.36, y = -2330.46, z = 5.82, heading = 296.97}
+	fueler      = {x = -441.45, y = 1116.74, z = 325.91, heading = 345.0},
+	lumberjack  = {x = -443.17, y = 1116.96, z = 325.91, heading = 345.0},
+	slaughterer = {x = -445.43, y = 1117.43, z = 325.90, heading = 345.0},
+	tailor      = {x = -447.42, y = 1117.78, z = 325.90, heading = 345.0},
+	miner       = {x = -449.41, y = 1118.12, z = 325.89, heading = 345.0}
 }
 
 -- ===== Miner job (merged in from esx_minerjob) =====

@@ -41,17 +41,23 @@ CreateThread(function()
 					return PlayerData and PlayerData.job and PlayerData.job.name == TurfCo.Job
 				end,
 				onSelect = function()
+					local elements = {
+						{ label = 'Rent Paintball Map', value = 'rent' },
+						{ label = 'Portfolio Dashboard', value = 'dashboard' },
+						{ label = 'Manage Portfolio (Rank Up) (Director+)', value = 'portfolio' },
+						{ label = 'Manage Business Staff (Director+)', value = 'staff' },
+						{ label = 'Open/Close Businesses (Director+)', value = 'toggle' },
+						{ label = 'Rename Holding', value = 'rename' },
+					}
+					if PlayerData.job.grade_name == 'boss' then
+						table.insert(elements, { label = 'Set Work Uniform', value = 'set_uniform' })
+						table.insert(elements, { label = 'Manage Vehicles', value = 'manage_vehicles' })
+					end
+
 					ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'turfco_boss_root', {
 						title    = GetDisplayLabel(TurfCo.Job, TurfCo.Label),
 						align    = 'top-left',
-						elements = {
-							{ label = 'Rent Paintball Map', value = 'rent' },
-							{ label = 'Portfolio Dashboard', value = 'dashboard' },
-							{ label = 'Manage Portfolio (Rank Up) (Director+)', value = 'portfolio' },
-							{ label = 'Manage Business Staff (Director+)', value = 'staff' },
-							{ label = 'Open/Close Businesses (Director+)', value = 'toggle' },
-							{ label = 'Rename Holding', value = 'rename' },
-						},
+						elements = elements,
 					}, function(data, menu)
 						menu.close()
 						if data.current.value == 'rent' then
@@ -71,6 +77,10 @@ CreateThread(function()
 							if input and input[1] then
 								TriggerServerEvent('uniquecafejobs:corp:renameHolding', input[1])
 							end
+						elseif data.current.value == 'set_uniform' then
+							OpenSetCafeUniformMenu()
+						elseif data.current.value == 'manage_vehicles' then
+							OpenManageJobVehiclesMenu(TurfCo.Job)
 						end
 					end, function(data, menu)
 						menu.close()

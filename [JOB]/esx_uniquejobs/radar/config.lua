@@ -176,11 +176,3 @@ for _, deptId in ipairs( { "le", "doj" } ) do
 end
 
 CONFIG.jobs["judge"] = nil
-
--- FEATURE ADDED: which jobs get the "PLACE TRACKER" quick-action button.
--- Now points straight at shared/departments.lua's AgentJobs, the same table
--- esx_uniquejobs' own server/tracker_manager.lua uses server-side to decide
--- whether to actually honour the request - the button would just fail
--- server-side for anyone else anyway, this only controls whether it's even
--- shown, and both are now guaranteed to agree.
-CONFIG.agentJobs = AgentJobs

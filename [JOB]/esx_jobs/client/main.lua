@@ -768,6 +768,42 @@ local function ShowUniformHistoryMenu(job)
 	end, job)
 end
 
+-- Clean, self-contained 3D floating text (drop shadow + outline reads well
+-- at any distance/background -- doesn't rely on minerjob.lua's DrawTexet3D,
+-- which calls DrawTexet/DrawRecet, two functions that don't exist anywhere
+-- in this server's pack and would just error if it were ever actually used).
+local function Draw3DText(x, y, z, text)
+	local onScreen, sx, sy = World3dToScreen2d(x, y, z)
+	if not onScreen then return end
+
+	SetTextScale(0.35, 0.35)
+	SetTextFont(4)
+	SetTextProportional(1)
+	SetTextColour(255, 255, 255, 255)
+	SetTextDropshadow(0, 0, 0, 0, 255)
+	SetTextEdge(2, 0, 0, 0, 200)
+	SetTextOutline()
+	SetTextCentre(true)
+	SetTextEntry("STRING")
+	AddTextComponentString(text)
+	DrawText(sx, sy)
+end
+
+local uniformEditorLabels = {}
+
+Citizen.CreateThread(function()
+	while true do
+		Citizen.Wait(0)
+		local coords = GetEntityCoords(PlayerPedId())
+		for i=1, #uniformEditorLabels, 1 do
+			local pad = uniformEditorLabels[i]
+			if #(coords - vector3(pad.x, pad.y, pad.z)) < 15.0 then
+				Draw3DText(pad.x, pad.y, pad.z + 2.2, pad.text)
+			end
+		end
+	end
+end)
+
 local function SpawnUniformEditorPed(job, jobData)
 	local cloak = jobData.Zones and jobData.Zones.CloakRoom
 	if not cloak then return end
@@ -811,22 +847,35 @@ local function SpawnUniformEditorPed(job, jobData)
 		SetBlockingOfNonTemporaryEvents(ped, true)
 		FreezeEntityPosition(ped, true)
 		SetEntityAsMissionEntity(ped, true, true)
-		TaskStartScenarioInPlace(ped, 'WORLD_HUMAN_CLIPBOARD', 0, true)
+		-- no scenario task: WORLD_HUMAN_CLIPBOARD can visually sink/sit
+		-- depending on nearby world geometry it tries to anchor to. Plain
+		-- idle stand has no such risk.
 		SetModelAsNoLongerNeeded(model)
+
+		table.insert(uniformEditorLabels, {
+			x = padPos.x, y = padPos.y, z = padPos.z,
+			text = 'Job: ' .. (Config.JobLabels[job] or job)
+		})
 
 		exports.ox_target:addLocalEntity(ped, {
 			{
 				label = 'Save new ' .. (Config.JobLabels[job] or job) .. ' uniform (admin)',
 				icon = 'fas fa-tshirt',
 				onSelect = function()
-					TriggerEvent('esx_skin:openMenu', function(_, menu)
-						menu.close()
-						TriggerEvent('skinchanger:getSkin', function(skin)
-							local input = lib.inputDialog(('Save %s uniform'):format(Config.JobLabels[job] or job), {
-								{type = 'input', label = 'Name for this version', required = true, default = 'Version'}
-							})
-							if not input or not input[1] then return end
-							TriggerServerEvent('esx_jobs:adminSaveUniform', job, skin, input[1])
+					ESX.TriggerServerCallback('esx_jobs:isUniformAdmin', function(isAdmin)
+						if not isAdmin then
+							ESX.ShowNotification('~r~You don\'t have access to this.')
+							return
+						end
+						TriggerEvent('esx_skin:openMenu', function(_, menu)
+							menu.close()
+							TriggerEvent('skinchanger:getSkin', function(skin)
+								local input = lib.inputDialog(('Save %s uniform'):format(Config.JobLabels[job] or job), {
+									{type = 'input', label = 'Name for this version', required = true, default = 'Version'}
+								})
+								if not input or not input[1] then return end
+								TriggerServerEvent('esx_jobs:adminSaveUniform', job, skin, input[1])
+							end)
 						end)
 					end)
 				end
@@ -835,7 +884,13 @@ local function SpawnUniformEditorPed(job, jobData)
 				label = 'Manage ' .. (Config.JobLabels[job] or job) .. ' uniform history (admin)',
 				icon = 'fas fa-clock-rotate-left',
 				onSelect = function()
-					ShowUniformHistoryMenu(job)
+					ESX.TriggerServerCallback('esx_jobs:isUniformAdmin', function(isAdmin)
+						if not isAdmin then
+							ESX.ShowNotification('~r~You don\'t have access to this.')
+							return
+						end
+						ShowUniformHistoryMenu(job)
+					end)
 				end
 			}
 		})

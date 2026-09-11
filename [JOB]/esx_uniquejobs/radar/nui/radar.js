@@ -95,12 +95,6 @@ const elements =
 		callsign: $( "#ptCallsign" )
 	},
 
-	quickActions: {
-		widget: $( "#quickActions" ),
-		panicBtn: $( "#panicBtn" ),
-		trackerBtn: $( "#placeTrackerBtn" )
-	},
-
 	trafficStopLog: {
 		box: $( "#trafficStopLog" ),
 		citizen: $( "#tslCitizen" ),
@@ -939,9 +933,6 @@ var readerOffset = [ 0, 0 ];
 var ptMoving = false;
 var ptOffset = [ 0, 0 ];
 
-var qaMoving = false;
-var qaOffset = [ 0, 0 ];
-
 var windowWidth = 0; 
 var windowHeight = 0; 
 var safezone = 0; 
@@ -1021,22 +1012,12 @@ $( "#pursuitTimer .pt_header" ).mousedown( function( event ) {
 	ptOffset = getOffset( offset, event.clientX, event.clientY );
 } )
 
-// FEATURE ADDED: Quick Actions panel drag support (same system, same pattern)
-$( "#quickActions .qa_header" ).mousedown( function( event ) {
-	qaMoving = true;
-
-	let offset = elements.quickActions.widget.offset();
-
-	qaOffset = getOffset( offset, event.clientX, event.clientY );
-} )
-
 $( document ).mouseup( function( event ) {
 	// Reset the remote and radar moving variables
 	remoteMoving = false; 
 	radarMoving = false; 
 	readerMoving = false;
 	ptMoving = false;
-	qaMoving = false;
 } )
 
 $( document ).mousemove( function( event ) {
@@ -1069,13 +1050,6 @@ $( document ).mousemove( function( event ) {
 		event.preventDefault();
 
 		calculatePos( elements.pursuitTimer.widget, x, y, windowWidth, windowHeight, ptOffset, 1, safezone );
-	}
-
-	if ( qaMoving )
-	{
-		event.preventDefault();
-
-		calculatePos( elements.quickActions.widget, x, y, windowWidth, windowHeight, qaOffset, 1, safezone );
 	}
 } )
 
@@ -1313,21 +1287,6 @@ function setUnitCallsign( callsign, roleLabel, memberCount )
 }
 
 /*------------------------------------------------------------------------------------
-	FEATURE ADDED: Quick Actions panel (PANIC + PLACE TRACKER)
-------------------------------------------------------------------------------------*/
-function showQuickActions( state )
-{
-	elements.quickActions.widget.toggleClass( "qa_visible", state );
-}
-
-// Only FBI/CIA get the tracker button - esx_uniquejobs' own restriction,
-// mirrored here just to hide a button they couldn't use anyway
-function setAgentAccess( state )
-{
-	elements.quickActions.trackerBtn.toggleClass( "qa_visible_agent", state );
-}
-
-/*------------------------------------------------------------------------------------
 	FEATURE ADDED: Traffic-stop quick-log popup
 
 	Shown right after RESET on the pursuit timer, prefilled with the pursuit's
@@ -1410,14 +1369,6 @@ function closeRemote()
 
 	setEleVisible( elements.remote, false );
 
-	// FIX: Quick Actions (PANIC + PLACE TRACKER) is an independent, always-on
-	// widget now - same as the pursuit timer - driven purely by vehicle+job
-	// state via radar/cl_utils.lua's thread (see "showQuickActions" in the
-	// message switch below). Closing the remote must NOT force it hidden
-	// here anymore, or it would disappear even while still legitimately
-	// showing (e.g. still in the vehicle with the right job). The
-	// traffic-stop popup IS still tied to the remote's own flow, so that
-	// one still closes with it.
 	hideTrafficStopLog();
 	
 	sendSaveData(); 
@@ -1462,16 +1413,8 @@ window.addEventListener( "message", function( event ) {
 		case "openRemote":
 			setEleVisible( elements.remote, true ); 
 			setUiHasBeenEdited( false ); 
-			showQuickActions( true );
 			break; 
 
-		// FIX: Quick Actions is now also driven live by vehicle+job state
-		// (radar/cl_utils.lua), independent of the remote being open - see
-		// that file for why. openRemote above still forces it on too, in
-		// case the two ever briefly disagree (e.g. right at spawn).
-		case "showQuickActions":
-			showQuickActions( item.state );
-			break;
 		case "setRadarDisplayState":
 			setEleVisible( elements.radar, item.state ); 
 			break; 
@@ -1528,12 +1471,9 @@ window.addEventListener( "message", function( event ) {
 			setPlateTracker( item.cam, item.state );
 			break;
 
-		// FEATURE ADDED: unit callsign + agent (FBI/CIA) access for the tracker button
+		// FEATURE ADDED: unit callsign for the pursuit timer widget
 		case "setUnitCallsign":
 			setUnitCallsign( item.callsign, item.roleLabel, item.memberCount );
-			break;
-		case "setAgentAccess":
-			setAgentAccess( item.state );
 			break;
 
 		// Plate reader events

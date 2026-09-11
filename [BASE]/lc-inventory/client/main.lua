@@ -473,6 +473,42 @@ end
 
 Inv.FastWeapons = GetFieldValueFromName('lc-inventory').name and GetFieldValueFromName('lc-inventory').name or {}
 
+-------------------------------------------------------------------
+-- FIX (requested: automatically clean up stale hotbar bindings
+-- instead of requiring the player to manually drag each duplicate
+-- slot out) - this saved KVP data can end up with the same item name
+-- bound to more than one slot (e.g. dragged onto several slots during
+-- earlier testing while the duplicate-display bug above was still
+-- active and each duplicate looked like a separate real item to drag).
+-- Once that happens, EVERY slot bound to that name is legitimately
+-- populated, so the "fixed" duplicate-loop code was correctly showing
+-- real bindings - it just looked identical to the original bug.
+-- Keeps only the first (lowest-numbered) slot for any item name and
+-- clears the rest, then re-saves the cleaned-up result so this only
+-- ever needs to run once per stale save.
+-------------------------------------------------------------------
+do
+    local seenNames, cleaned, changed = {}, {}, false
+    -- iterate slots in a stable, numeric order so the "first" occurrence is
+    -- always the lowest slot number, not whatever order pairs() happens to give
+    local slots = {}
+    for slot in pairs(Inv.FastWeapons) do table.insert(slots, slot) end
+    table.sort(slots, function(a, b) return tostring(a) < tostring(b) end)
+    for _, slot in ipairs(slots) do
+        local name = Inv.FastWeapons[slot]
+        if name and not seenNames[name] then
+            seenNames[name] = true
+            cleaned[slot] = name
+        else
+            changed = true
+        end
+    end
+    if changed then
+        Inv.FastWeapons = cleaned
+        SetFieldValueFromNameEncode('lc-inventory', { name = Inv.FastWeapons })
+    end
+end
+
 
 -----------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -1369,3 +1405,4 @@ end
 --         Wait(time)
 --     end
 -- end)
+

@@ -509,10 +509,14 @@ RegisterCommand('adminlogs', function(source)
 	OpenAdminPanel(source)
 end, false)
 
-RegisterCommand('myjoblogs', function(source)
+RegisterCommand('joblogs', function(source)
 	if source == 0 then return end
 	OpenBossPanel(source)
 end, false)
+-- توجه: عمداً «joblogs» نه «myjoblogs» — چون نسخه‌ی قبلی روی «myjoblogs» یه کیبایند
+-- پیش‌فرض F9 ثبت کرده بود و کنسول‌کامند unbind تو پروداکشن FiveM غیرفعاله، پس تنها
+-- راه تضمینی برای بی‌اثر کردن اون بایند قدیمی، عوض‌کردن اسم خودِ کامنده (توضیح کامل
+-- تو client/main.lua هست).
 
 -- ============================================================================
 -- اتصال از بیرون (دکمه‌ی باس‌منوی هر جاب، یا هر ریسورس دیگه)

@@ -4,19 +4,27 @@
 <meta charset="UTF-8">
 <title>Unique LogPanel</title>
 <style>
+	@import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800;900&display=swap');
+
 	:root{
-		--bg:#0b0f17;
-		--panel:#11172457;
-		--panel-solid:#111724;
-		--border:#242c3d;
-		--accent:#6d5efc;
-		--accent2:#22d3ee;
-		--text:#e7ebf5;
-		--text-dim:#8a93a8;
-		--danger:#ef4444;
-		--warn:#f59e0b;
-		--ok:#22c55e;
-		--radius:14px;
+		--bg:#0a0c11;
+		--panel:#0f121957;
+		--panel-solid:#12151d;
+		--panel-alt:#161a24;
+		--border:#232833;
+		--border-soft:#1a1e28;
+		--accent:#3b6fe0;
+		--accent-soft:#5b8def;
+		--gold:#c9a35d;
+		--text:#e9ebf0;
+		--text-dim:#8891a0;
+		--text-faint:#5c6577;
+		--danger:#e5484d;
+		--warn:#d69a3a;
+		--ok:#3fae6a;
+		--radius:10px;
+		--radius-lg:12px;
+		--glow: 0 0 0 1px rgba(59,111,224,.12), 0 8px 28px rgba(0,0,0,.35);
 	}
 	*{ box-sizing:border-box; margin:0; padding:0; }
 	html,body{ width:100%; height:100%; background:transparent; overflow:hidden; }
@@ -38,59 +46,83 @@
 		position:relative;
 		width:min(1280px, 94vw);
 		height:min(800px, 90vh);
-		background:linear-gradient(180deg, #121826f2, #0d1220f2);
+		background:linear-gradient(180deg, #13161ef7, #0e1015f7);
 		border:1px solid var(--border);
-		border-radius:var(--radius);
-		box-shadow:0 20px 60px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.02) inset;
+		border-radius:var(--radius-lg);
+		box-shadow:0 30px 80px rgba(0,0,0,.55), var(--glow);
 		display:flex;
 		flex-direction:column;
 		overflow:hidden;
-		animation:panelIn .22s cubic-bezier(.2,.9,.25,1);
+		animation:panelIn .25s cubic-bezier(.2,.9,.25,1);
 	}
-	@keyframes panelIn{ from{opacity:0; transform:scale(.96) translateY(10px);} to{opacity:1; transform:scale(1) translateY(0);} }
+	#panel::before{
+		content:''; position:absolute; top:0; left:0; right:0; height:2px;
+		background:linear-gradient(90deg, transparent, var(--accent-soft) 35%, var(--gold) 65%, transparent);
+		opacity:.7; z-index:3;
+	}
+	#panel::after{
+		content:''; position:absolute; inset:0; pointer-events:none; z-index:0;
+		background:
+			radial-gradient(680px 300px at 15% -8%, rgba(59,111,224,.09), transparent 62%),
+			radial-gradient(520px 260px at 100% 105%, rgba(201,163,93,.06), transparent 62%);
+	}
+	@keyframes panelIn{ from{opacity:0; transform:scale(.97) translateY(8px);} to{opacity:1; transform:scale(1) translateY(0);} }
 	@keyframes toastIn{ from{opacity:0; transform:translateY(-8px);} to{opacity:1; transform:translateY(0);} }
-	@keyframes pulse{ 0%,100%{opacity:1;} 50%{opacity:.45;} }
+	@keyframes pulse{ 0%,100%{opacity:1;} 50%{opacity:.4;} }
+	@keyframes rowFadeIn{ from{opacity:0; transform:translateY(3px);} to{opacity:1; transform:translateY(0);} }
+	@keyframes floatGlow{ 0%,100%{ transform:translateY(0);} 50%{ transform:translateY(-3px);} }
 
 	/* ---------- HEADER ---------- */
 	#header{
+		position:relative; z-index:1;
 		display:flex; align-items:center; justify-content:space-between;
-		padding:16px 20px;
+		padding:18px 24px;
 		border-bottom:1px solid var(--border);
-		background:linear-gradient(90deg, rgba(109,94,252,.12), rgba(34,211,238,.06));
+		background:#ffffff02;
 	}
-	#headerLeft{ display:flex; align-items:center; gap:12px; }
+	#headerLeft{ display:flex; align-items:center; gap:14px; }
+	#logoRing{
+		position:relative; width:42px; height:42px; border-radius:11px;
+		display:flex; align-items:center; justify-content:center; flex-shrink:0;
+	}
 	#logo{
-		width:38px; height:38px; border-radius:10px;
-		background:linear-gradient(135deg, var(--accent), var(--accent2));
+		position:relative; z-index:1;
+		width:42px; height:42px; border-radius:11px;
+		background:linear-gradient(160deg, #1c2029, #14171f);
+		border:1px solid #ffffff12;
 		display:flex; align-items:center; justify-content:center;
-		font-size:18px; box-shadow:0 4px 14px rgba(109,94,252,.35);
+		font-size:18px;
 	}
-	#titleBlock h1{ font-size:16px; font-weight:700; display:flex; align-items:center; }
-	#titleBlock span#subtitle{ font-size:12px; color:var(--text-dim); }
+	#titleBlock h1{
+		font-size:16px; font-weight:700; display:flex; align-items:center;
+		color:var(--text);
+		letter-spacing:.15px;
+	}
+	#titleBlock span#subtitle{ font-size:11.5px; color:var(--text-faint); margin-top:1px; display:block; }
 	#modeBadge{
-		font-size:11px; padding:4px 10px; border-radius:999px;
+		font-size:10.5px; padding:4px 11px; border-radius:6px;
 		border:1px solid var(--border); color:var(--text-dim);
-		margin-inline-start:10px;
+		margin-inline-start:12px; font-weight:600; letter-spacing:.2px;
 	}
-	#modeBadge.admin{ color:#c4b5fd; border-color:#6d5efc55; background:#6d5efc1a; }
-	#modeBadge.boss{ color:#67e8f9; border-color:#22d3ee55; background:#22d3ee1a; }
+	#modeBadge.admin{ color:var(--accent-soft); border-color:#3b6fe04d; background:#3b6fe012; }
+	#modeBadge.boss{ color:var(--gold); border-color:#c9a35d4d; background:#c9a35d12; }
 
 	#liveDot{
-		width:8px; height:8px; border-radius:50%; background:var(--ok);
-		display:inline-block; margin-inline-end:6px; animation:pulse 1.6s infinite;
+		width:6px; height:6px; border-radius:50%; background:var(--ok);
+		display:inline-block; margin-inline-end:6px; animation:pulse 1.8s infinite;
 	}
 	#headerRight{ display:flex; align-items:center; gap:10px; }
 
 	#closeBtn{
-		width:34px; height:34px; border-radius:10px; border:1px solid var(--border);
-		background:#ffffff08; color:var(--text-dim); cursor:pointer; font-size:16px;
+		width:32px; height:32px; border-radius:8px; border:1px solid var(--border);
+		background:#ffffff05; color:var(--text-dim); cursor:pointer; font-size:14px;
 		display:flex; align-items:center; justify-content:center;
-		transition:.15s;
+		transition:.15s cubic-bezier(.2,.8,.3,1);
 	}
-	#closeBtn:hover{ background:var(--danger); color:#fff; border-color:var(--danger); }
+	#closeBtn:hover{ background:var(--danger); color:#fff; border-color:var(--danger); transform:rotate(90deg); }
 
 	/* ---------- BODY LAYOUT ---------- */
-	#body{ flex:1; display:flex; min-height:0; }
+	#body{ flex:1; display:flex; min-height:0; position:relative; z-index:1; }
 
 	/* ---------- SIDEBAR ---------- */
 	#sidebar{
@@ -109,21 +141,35 @@
 		display:flex; align-items:center; gap:8px;
 		padding:9px 10px; border-radius:10px; cursor:pointer;
 		font-size:13px; color:var(--text-dim);
-		transition:.12s; margin-bottom:2px;
+		transition:.16s cubic-bezier(.2,.8,.3,1); margin-bottom:2px;
+		position:relative; border:1px solid transparent;
 	}
-	.tabItem:hover{ background:#ffffff0a; color:var(--text); }
+	.tabItem:hover{ background:#ffffff0a; color:var(--text); transform:translateX(-2px); }
 	.tabItem.active{
-		background:linear-gradient(90deg, #6d5efc26, #22d3ee12);
+		background:linear-gradient(90deg, #3b6fe02e, #5b8def14);
 		color:#fff; font-weight:600;
-		border:1px solid #6d5efc40;
+		border:1px solid #3b6fe04d;
+		box-shadow:0 4px 14px rgba(59,111,224,.15);
 	}
-	.tabDot{ width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+	.tabItem.active::before{
+		content:''; position:absolute; right:-10px; top:50%; transform:translateY(-50%);
+		width:3px; height:60%; border-radius:3px;
+		background:linear-gradient(180deg, var(--accent), var(--accent-soft));
+	}
+	.tabDot{ width:8px; height:8px; border-radius:50%; flex-shrink:0; box-shadow:0 0 6px currentColor; }
+	.tabIconBubble{
+		width:24px; height:24px; border-radius:8px; flex-shrink:0;
+		display:flex; align-items:center; justify-content:center;
+		font-size:12px; transition:.15s;
+	}
+	.tabItem.active .tabIconBubble{ transform:scale(1.08); }
+	.tabLabelText{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 	.tabCount{
 		margin-inline-start:auto; font-size:10px; color:var(--text-dim);
-		background:#ffffff0d; padding:1px 7px; border-radius:999px;
+		background:#ffffff0d; padding:1px 7px; border-radius:5px;
 	}
 	.orgGroupTitle{
-		font-size:10.5px; color:var(--accent2); font-weight:700;
+		font-size:10.5px; color:var(--accent-soft); font-weight:700;
 		padding:10px 8px 4px; text-transform:uppercase; letter-spacing:.4px;
 		border-top:1px solid var(--border); margin-top:6px;
 	}
@@ -133,9 +179,10 @@
 	.viewBtn{
 		flex:1; text-align:center; padding:8px 6px; border-radius:10px; font-size:12px;
 		cursor:pointer; border:1px solid var(--border); color:var(--text-dim); background:#ffffff06;
-		transition:.12s;
+		transition:.15s cubic-bezier(.2,.8,.3,1);
 	}
-	.viewBtn.active{ background:linear-gradient(90deg, var(--accent), #8b7bff); color:#fff; border-color:transparent; font-weight:600; }
+	.viewBtn:hover{ background:#ffffff10; color:var(--text); }
+	.viewBtn.active{ background:linear-gradient(90deg, var(--accent), #5b8def); color:#fff; border-color:transparent; font-weight:600; box-shadow:0 4px 14px rgba(59,111,224,.3); }
 
 	/* ---------- MAIN ---------- */
 	#main{ flex:1; display:flex; flex-direction:column; min-width:0; }
@@ -147,8 +194,9 @@
 	#searchBox{
 		flex:1 1 200px; display:flex; align-items:center; gap:8px;
 		background:#ffffff08; border:1px solid var(--border); border-radius:10px;
-		padding:8px 12px; min-width:160px;
+		padding:8px 12px; min-width:160px; transition:.2s;
 	}
+	#searchBox:focus-within{ border-color:#3b6fe070; box-shadow:0 0 0 3px rgba(59,111,224,.14); background:#ffffff0c; }
 	#searchBox input{
 		flex:1; background:transparent; border:none; outline:none; color:var(--text); font-size:13px;
 		font-family:inherit;
@@ -156,15 +204,28 @@
 	#searchBox input::placeholder{ color:var(--text-dim); }
 	.toolBtn{
 		background:#ffffff08; border:1px solid var(--border); color:var(--text-dim);
-		padding:8px 14px; border-radius:10px; font-size:12px; cursor:pointer; transition:.12s;
+		padding:8px 14px; border-radius:10px; font-size:12px; cursor:pointer;
+		transition:.15s cubic-bezier(.2,.8,.3,1);
 		display:flex; align-items:center; gap:6px; white-space:nowrap;
 	}
-	.toolBtn:hover{ background:#ffffff14; color:var(--text); }
+	.toolBtn:hover{ background:#ffffff14; color:var(--text); transform:translateY(-1px); box-shadow:0 4px 12px rgba(0,0,0,.25); }
+	.toolBtn:active{ transform:translateY(0) scale(.96); }
 	.toolBtn.primary{
-		background:linear-gradient(90deg, var(--accent), #8b7bff);
+		background:linear-gradient(90deg, var(--accent), #5b8def);
 		color:#fff; border:none; font-weight:600;
+		box-shadow:0 4px 16px rgba(59,111,224,.3);
+		position:relative; overflow:hidden;
 	}
-	.toolBtn.primary:hover{ filter:brightness(1.08); }
+	.toolBtn.primary::after{
+		content:''; position:absolute; top:0; bottom:0; left:-60%; width:40%;
+		background:linear-gradient(90deg, transparent, rgba(255,255,255,.35), transparent);
+		transform:skewX(-20deg); transition:.5s;
+	}
+	.toolBtn.primary:hover::after{ left:130%; }
+	.toolBtn.primary:hover{ filter:brightness(1.1); box-shadow:0 6px 20px rgba(59,111,224,.42); }
+	.toolBtn#pinnedToggleBtn.active{
+		background:linear-gradient(90deg, #c9a35d33, #c9a35d1a); color:var(--warn); border-color:#c9a35d55;
+	}
 	.toolBtn.danger{ color:#fca5a5; }
 	.toolBtn.danger:hover{ background:var(--danger); color:#fff; }
 	.toolBtn:disabled{ opacity:.4; cursor:not-allowed; }
@@ -172,24 +233,29 @@
 	#jobFilterWrap select, .miniSelect, .dateInput{
 		background:#ffffff08; border:1px solid var(--border); color:var(--text);
 		padding:8px 10px; border-radius:10px; font-size:12px; font-family:inherit; cursor:pointer;
+		transition:.15s;
 	}
+	#jobFilterWrap select:hover, .miniSelect:hover, .dateInput:hover{ background:#ffffff0e; border-color:#3b6fe055; }
+	#jobFilterWrap select:focus, .miniSelect:focus, .dateInput:focus{ outline:none; border-color:#3b6fe070; box-shadow:0 0 0 3px rgba(59,111,224,.14); }
 	.dateInput{ cursor:text; color-scheme: dark; width:130px; }
 	.toolbarDivider{ width:1px; align-self:stretch; background:var(--border); margin:0 2px; }
 	.quickChips{ display:flex; gap:6px; }
 	.chip{
-		font-size:11px; padding:6px 10px; border-radius:999px; border:1px solid var(--border);
-		background:#ffffff06; color:var(--text-dim); cursor:pointer; transition:.12s;
+		font-size:11px; padding:6px 12px; border-radius:6px; border:1px solid var(--border);
+		background:#ffffff05; color:var(--text-dim); cursor:pointer; transition:.15s;
 	}
-	.chip:hover{ background:#ffffff10; color:var(--text); }
-	.chip.active{ background:#6d5efc26; border-color:#6d5efc55; color:#c4b5fd; }
+	.chip:hover{ background:#ffffff0c; color:var(--text); }
+	.chip.active{ background:linear-gradient(90deg, #3b6fe033, #5b8def1a); border-color:#3b6fe066; color:#cfe0ff; box-shadow:0 3px 10px rgba(59,111,224,.2); }
 
 	/* ---------- NEW LOGS BANNER ---------- */
 	#newLogsBanner{
 		display:none; align-items:center; justify-content:center; gap:8px;
-		margin:8px 18px 0; padding:8px 12px; border-radius:10px; cursor:pointer;
-		background:linear-gradient(90deg, #22d3ee26, #6d5efc1a); border:1px solid #22d3ee40;
-		font-size:12.5px; color:#a5f3fc; animation:toastIn .2s ease;
+		margin:8px 18px 0; padding:10px 14px; border-radius:8px; cursor:pointer;
+		background:linear-gradient(90deg, #c9a35d22, #c9a35d0d); border:1px solid #c9a35d4d;
+		font-size:12.5px; color:#e3cd94; animation:toastIn .25s cubic-bezier(.2,.9,.3,1);
+		transition:.15s;
 	}
+	#newLogsBanner:hover{ background:linear-gradient(90deg, #c9a35d33, #c9a35d18); }
 	#newLogsBanner.show{ display:flex; }
 
 	/* ---------- TABLE ---------- */
@@ -201,21 +267,29 @@
 		user-select:none; position:sticky; top:0; background:#0d1220; z-index:2;
 	}
 	#logTable thead th:hover{ color:var(--text); }
-	#logTable thead th.sortedCol{ color:var(--accent2); }
+	#logTable thead th.sortedCol{ color:var(--accent-soft); }
 	.sortArrow{ font-size:9px; margin-inline-start:2px; }
 	.logRow{
 		background:#ffffff06; border:1px solid var(--border); cursor:pointer;
-		transition:.12s;
+		transition:.15s cubic-bezier(.2,.8,.3,1);
+		animation:rowFadeIn .25s ease backwards;
+		position:relative;
 	}
-	.logRow:hover{ background:#ffffff0d; border-color:#6d5efc55; }
+	.logRow::before{
+		content:''; position:absolute; top:8%; bottom:8%; right:0; width:3px; border-radius:3px;
+		background:var(--cat-color, transparent); opacity:0; transition:.15s;
+	}
+	.logRow:hover::before{ opacity:.9; }
+	.logRow:hover{ background:#ffffff0d; border-color:#3b6fe055; transform:translateX(-2px); box-shadow:0 4px 16px rgba(0,0,0,.2); }
 	.logRow td{ padding:10px 12px; font-size:12.5px; vertical-align:top; }
 	.logRow td:first-child{ border-radius:10px 0 0 10px; }
 	.logRow td:last-child{ border-radius:0 10px 10px 0; }
 
 	.catBadge{
 		display:inline-flex; align-items:center; gap:5px;
-		font-size:11px; font-weight:600; padding:4px 9px; border-radius:999px;
-		white-space:nowrap;
+		font-size:11px; font-weight:600; padding:4px 9px; border-radius:6px;
+		white-space:nowrap; box-shadow:0 0 0 1px currentColor inset;
+		filter:saturate(.85);
 	}
 	.timeCell{ color:var(--text-dim); white-space:nowrap; font-size:11.5px; }
 	.playerCell{ font-weight:600; white-space:nowrap; }
@@ -227,35 +301,38 @@
 	.jobCell{ color:var(--text-dim); font-size:11.5px; }
 	.rowActions{ text-align:left; white-space:nowrap; }
 	.rowActions{ display:flex; gap:5px; justify-content:flex-end; }
-	.rowDeleteBtn, .rowPinBtn{
+	.rowDeleteBtn, .rowPinBtn, .rowCoordBtn{
 		width:26px; height:26px; border-radius:8px; border:1px solid var(--border);
 		background:#ffffff08; color:var(--text-dim); cursor:pointer; font-size:12px;
 		display:inline-flex; align-items:center; justify-content:center; transition:.12s;
 	}
 	.rowDeleteBtn:hover{ background:var(--danger); color:#fff; border-color:var(--danger); }
+	.rowCoordBtn:hover{ background:#3b6fe0; color:#fff; border-color:#3b6fe0; }
 	.rowPinBtn:hover{ background:var(--warn); color:#fff; border-color:var(--warn); }
-	.rowPinBtn.pinned{ background:#f59e0b26; color:var(--warn); border-color:#f59e0b55; }
-	mark{ background:#f59e0b55; color:#fff; border-radius:3px; padding:0 2px; }
+	.rowPinBtn.pinned{ background:#c9a35d26; color:var(--warn); border-color:#c9a35d55; }
+	mark{ background:#c9a35d55; color:#fff; border-radius:3px; padding:0 2px; }
 
-	.logRow.pinnedRow{ background:#f59e0b14; border-color:#f59e0b40; }
-	.logRow.pinnedRow:hover{ background:#f59e0b22; }
+	.logRow.pinnedRow{ background:#c9a35d14; border-color:#c9a35d40; }
+	.logRow.pinnedRow:hover{ background:#c9a35d22; }
 	.pinFlag{ margin-inline-end:4px; }
 
 	.avatar{
 		display:inline-flex; align-items:center; justify-content:center;
-		width:22px; height:22px; border-radius:7px; font-size:10.5px; font-weight:700;
-		color:#fff; flex-shrink:0; margin-inline-end:6px; vertical-align:middle;
+		width:23px; height:23px; border-radius:8px; font-size:10.5px; font-weight:700;
+		color:#fff; flex-shrink:0; margin-inline-end:7px; vertical-align:middle;
+		box-shadow:0 2px 8px rgba(0,0,0,.35), 0 0 0 1px rgba(255,255,255,.08) inset;
 	}
-	.playerNameWrap{ display:flex; align-items:center; cursor:pointer; }
-	.playerNameWrap:hover .playerNameText{ text-decoration:underline; text-decoration-color:var(--accent2); }
+	.playerNameWrap{ display:flex; align-items:center; cursor:pointer; padding:2px 4px; margin:-2px -4px; border-radius:8px; transition:.15s; }
+	.playerNameWrap:hover{ background:#5b8def0f; }
+	.playerNameWrap:hover .playerNameText{ text-decoration:underline; text-decoration-color:var(--accent-soft); }
 
 	/* ---------- ACTIVE FILTER CHIP ---------- */
 	.activeFilterChip{
 		display:inline-flex; align-items:center; gap:6px; font-size:11.5px;
-		background:#22d3ee1a; border:1px solid #22d3ee40; color:#a5f3fc;
-		padding:5px 10px; border-radius:999px; cursor:pointer;
+		background:#c9a35d1a; border:1px solid #c9a35d40; color:#e3cd94;
+		padding:5px 10px; border-radius:6px; cursor:pointer;
 	}
-	.activeFilterChip:hover{ background:#22d3ee2a; }
+	.activeFilterChip:hover{ background:#c9a35d2a; }
 
 	/* ---------- SKELETON LOADING ---------- */
 	.skelBlock{
@@ -268,9 +345,10 @@
 
 	#emptyState{
 		display:none; flex-direction:column; align-items:center; justify-content:center;
-		height:100%; color:var(--text-dim); gap:8px; font-size:13px;
+		height:100%; color:var(--text-dim); gap:10px; font-size:13px;
 	}
 	#emptyState.show{ display:flex; }
+	#emptyState div:first-child{ animation:floatGlow 2.4s ease-in-out infinite; }
 
 	/* ---------- PAGINATION ---------- */
 	#pagination{
@@ -282,9 +360,9 @@
 	.pageBtn{
 		width:30px; height:30px; border-radius:8px; border:1px solid var(--border);
 		background:#ffffff08; color:var(--text-dim); cursor:pointer; font-size:12px;
-		display:flex; align-items:center; justify-content:center; transition:.12s;
+		display:flex; align-items:center; justify-content:center; transition:.15s;
 	}
-	.pageBtn:hover:not(:disabled){ background:#ffffff14; color:#fff; }
+	.pageBtn:hover:not(:disabled){ background:linear-gradient(90deg, var(--accent), #5b8def); color:#fff; border-color:transparent; transform:translateY(-1px); }
 	.pageBtn:disabled{ opacity:.35; cursor:not-allowed; }
 
 	/* ---------- DASHBOARD ---------- */
@@ -293,8 +371,17 @@
 	.statCards{ display:grid; grid-template-columns:repeat(auto-fit, minmax(160px,1fr)); gap:12px; margin-bottom:20px; }
 	.statCard{
 		background:#ffffff06; border:1px solid var(--border); border-radius:12px; padding:16px;
+		transition:.18s cubic-bezier(.2,.8,.3,1);
 	}
-	.statCard .num{ font-size:26px; font-weight:700; }
+	.statCard:hover{ transform:translateY(-3px); border-color:#3b6fe055; box-shadow:0 10px 26px rgba(59,111,224,.15); }
+	.statIconBubble{
+		width:38px; height:38px; border-radius:11px; display:flex; align-items:center; justify-content:center;
+		font-size:17px; margin-bottom:10px;
+	}
+	.statCard .num{
+		font-size:28px; font-weight:800;
+		background:linear-gradient(90deg,#fff,#dbe3f0); -webkit-background-clip:text; background-clip:text; color:transparent;
+	}
 	.statCard .lbl{ font-size:12px; color:var(--text-dim); margin-top:4px; }
 	.statGrid{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
 	@media (max-width:760px){ .statGrid{ grid-template-columns:1fr; } }
@@ -303,7 +390,7 @@
 	.barRow{ display:flex; align-items:center; gap:8px; margin-bottom:10px; font-size:12px; }
 	.barRow .barLbl{ width:110px; flex-shrink:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 	.barTrack{ flex:1; height:8px; border-radius:6px; background:#ffffff0a; overflow:hidden; }
-	.barFill{ height:100%; border-radius:6px; background:linear-gradient(90deg, var(--accent), var(--accent2)); }
+	.barFill{ height:100%; border-radius:6px; background:linear-gradient(90deg, var(--accent), var(--accent-soft)); }
 	.barCnt{ width:36px; text-align:left; color:var(--text-dim); font-size:11px; }
 
 	/* ---------- DETAIL MODAL ---------- */
@@ -314,10 +401,12 @@
 	#detailOverlay.show{ display:flex; }
 	#detailBox{
 		width:min(640px, 88%); max-height:80%; overflow-y:auto;
-		background:var(--panel-solid); border:1px solid var(--border); border-radius:var(--radius);
-		padding:20px; animation:panelIn .18s ease;
+		background:linear-gradient(180deg, #131a2a, var(--panel-solid));
+		border:1px solid var(--border); border-radius:var(--radius);
+		padding:22px; animation:panelIn .2s cubic-bezier(.2,.9,.3,1);
+		box-shadow:0 20px 60px rgba(0,0,0,.5), 0 0 0 1px rgba(255,255,255,.03) inset;
 	}
-	#detailBox h3{ font-size:14px; margin-bottom:10px; display:flex; align-items:center; gap:8px; }
+	#detailBox h3{ font-size:14.5px; margin-bottom:12px; display:flex; align-items:center; gap:8px; font-weight:700; }
 	#detailBox pre{
 		white-space:pre-wrap; word-break:break-word; font-family:'Consolas',monospace;
 		font-size:12.5px; color:#c9d1e0; background:#00000033; padding:14px; border-radius:10px;
@@ -327,6 +416,17 @@
 	#detailMeta span{
 		font-size:11px; color:var(--text-dim); background:#ffffff08; padding:5px 10px; border-radius:8px;
 	}
+	#detailFacts{ display:none; flex-wrap:wrap; gap:8px; margin-bottom:14px; }
+	.factChip{
+		display:flex; align-items:center; gap:6px; font-size:11.5px;
+		background:#ffffff06; border:1px solid var(--border); border-radius:8px;
+		padding:6px 10px; color:var(--text);
+	}
+	.factChip .factLabel{ color:var(--text-faint); }
+	.factChip .factValue{ font-weight:600; font-family:'Consolas',monospace; }
+	.factChip.copyable{ cursor:pointer; transition:.15s; }
+	.factChip.copyable:hover{ background:#3b6fe014; border-color:#3b6fe04d; }
+	.factChip .factCopyIcon{ opacity:.6; font-size:10px; }
 	#detailActions{ display:flex; gap:8px; margin-top:14px; }
 	#detailActions .toolBtn{ flex:1; justify-content:center; padding:10px; }
 
@@ -337,8 +437,11 @@
 	}
 	#confirmOverlay.show{ display:flex; }
 	#confirmBox{
-		width:min(360px, 85%); background:var(--panel-solid); border:1px solid var(--border);
-		border-radius:var(--radius); padding:20px; text-align:center; animation:panelIn .15s ease;
+		width:min(360px, 85%); background:linear-gradient(180deg, #131a2a, var(--panel-solid));
+		border:1px solid #ef444433;
+		border-radius:var(--radius); padding:22px; text-align:center;
+		animation:panelIn .18s cubic-bezier(.2,.9,.3,1);
+		box-shadow:0 20px 50px rgba(239,68,68,.12);
 	}
 	#confirmBox p{ font-size:13px; margin:10px 0 16px; color:var(--text-dim); }
 	#confirmBox .row{ display:flex; gap:8px; }
@@ -348,17 +451,21 @@
 	#toastWrap{ position:absolute; top:16px; left:50%; transform:translateX(-50%); z-index:20; display:flex; flex-direction:column; gap:8px; }
 	.toast{
 		background:var(--panel-solid); border:1px solid var(--border); border-radius:10px;
-		padding:10px 16px; font-size:12.5px; box-shadow:0 8px 24px rgba(0,0,0,.4);
-		animation:toastIn .18s ease;
+		padding:10px 16px; font-size:12.5px; box-shadow:0 10px 30px rgba(0,0,0,.45);
+		animation:toastIn .2s cubic-bezier(.2,.9,.3,1);
+		display:flex; align-items:center; gap:8px;
 	}
-	.toast.ok{ border-color:#22c55e55; color:#86efac; }
+	.toast.ok{ border-color:#22c55e55; color:#86efac; box-shadow:0 10px 30px rgba(34,197,94,.15); }
 	.toast.err{ border-color:#ef444455; color:#fca5a5; }
 
 	/* scrollbar */
-	::-webkit-scrollbar{ width:8px; height:8px; }
+	::-webkit-scrollbar{ width:9px; height:9px; }
 	::-webkit-scrollbar-track{ background:transparent; }
-	::-webkit-scrollbar-thumb{ background:#ffffff1a; border-radius:8px; }
-	::-webkit-scrollbar-thumb:hover{ background:#ffffff30; }
+	::-webkit-scrollbar-thumb{
+		background:linear-gradient(180deg, #3b6fe080, #5b8def60);
+		border-radius:8px; border:2px solid transparent; background-clip:padding-box;
+	}
+	::-webkit-scrollbar-thumb:hover{ background:linear-gradient(180deg, #3b6fe0, #5b8def); background-clip:padding-box; }
 </style>
 </head>
 <body>
@@ -368,7 +475,7 @@
 			<div id="toastWrap"></div>
 			<div id="header">
 				<div id="headerLeft">
-					<div id="logo">🗂️</div>
+					<div id="logoRing"><div id="logo">🗂️</div></div>
 					<div id="titleBlock">
 						<h1>Unique LogPanel<span id="modeBadge">—</span></h1>
 						<span id="subtitle">آرشیو کامل رویدادهای سرور</span>
@@ -421,7 +528,7 @@
 						<select class="miniSelect" id="perPageSelect" title="تعداد در صفحه"></select>
 						<div class="toolBtn" id="pinnedToggleBtn" onclick="togglePinnedOnly()" style="display:none;">📌 فقط پین‌شده‌ها</div>
 						<div class="toolBtn" onclick="refreshLogs()">↻ رفرش</div>
-						<div class="toolBtn" id="exportBtn" onclick="exportLogs()" style="display:none;">⬇️ خروجی CSV</div>
+						<div class="toolBtn primary" id="exportBtn" onclick="exportLogs()" style="display:none;">⬇️ خروجی CSV</div>
 					</div>
 
 					<div id="activeFilters" style="display:none; padding:0 18px 4px;"></div>
@@ -441,7 +548,7 @@
 									<th data-col="job" style="width:120px;">شغل</th>
 									<th data-col="player_name" style="width:160px;">پلیر</th>
 									<th>پیام</th>
-									<th id="actionsCol" style="width:64px; display:none;"></th>
+									<th id="actionsCol" style="width:92px; display:none;"></th>
 								</tr>
 							</thead>
 							<tbody id="logTableBody"></tbody>
@@ -460,8 +567,14 @@
 
 					<div id="dashboardView">
 						<div class="statCards">
-							<div class="statCard"><div class="num" id="statTotal">—</div><div class="lbl">کل لاگ‌ها (با فیلتر فعلی)</div></div>
-							<div class="statCard"><div class="num" id="statToday">—</div><div class="lbl">لاگ‌های امروز</div></div>
+							<div class="statCard">
+								<div class="statIconBubble" style="background:linear-gradient(135deg,#3b6fe033,#3b6fe00d); color:#b9cdf0;">🗂️</div>
+								<div class="num" id="statTotal">0</div><div class="lbl">کل لاگ‌ها (با فیلتر فعلی)</div>
+							</div>
+							<div class="statCard">
+								<div class="statIconBubble" style="background:linear-gradient(135deg,#5b8def33,#5b8def0d); color:#e3cd94;">📅</div>
+								<div class="num" id="statToday">0</div><div class="lbl">لاگ‌های امروز</div>
+							</div>
 						</div>
 						<div class="statPanel" style="margin-bottom:16px;">
 							<h4>📈 روند ۱۴ روز اخیر</h4>
@@ -485,6 +598,7 @@
 				<div id="detailBox">
 					<h3 id="detailTitle">جزئیات لاگ</h3>
 					<div id="detailMeta"></div>
+					<div id="detailFacts"></div>
 					<pre id="detailMessage"></pre>
 					<div id="detailActions">
 						<div class="toolBtn" onclick="copyDetail()">📋 کپی پیام</div>
@@ -526,20 +640,20 @@ const CATEGORY_META = {
 	carjack:       { label: 'دزدیدن ماشین',        color: '#ef4444', icon: '🚙' },
 	lockpick:      { label: 'قفل‌بازکردن',          color: '#f97316', icon: '🔓' },
 	entervehicle:  { label: 'ورود به ماشین',       color: '#8a93a8', icon: '🚘' },
-	nczenter:      { label: 'ورود به NCZ',        color: '#22d3ee', icon: '🚧' },
+	nczenter:      { label: 'ورود به NCZ',        color: '#5b8def', icon: '🚧' },
 	jail:          { label: 'زندان',              color: '#ef4444', icon: '⛓️' },
-	cuff:          { label: 'دستبند',             color: '#f59e0b', icon: '🔗' },
+	cuff:          { label: 'دستبند',             color: '#c9a35d', icon: '🔗' },
 	cuffescape:    { label: 'فرار از دستبند',       color: '#ef4444', icon: '🏃' },
-	fine:          { label: 'جریمه',              color: '#f59e0b', icon: '📝' },
+	fine:          { label: 'جریمه',              color: '#c9a35d', icon: '📝' },
 	heal:          { label: 'درمان',              color: '#22c55e', icon: '💉' },
 	revive:        { label: 'ریوایو',             color: '#22c55e', icon: '❤️' },
 	home:          { label: 'خونه/ملک',           color: '#8b5cf6', icon: '🏠' },
 	gangs:         { label: 'گنگ',                color: '#a855f7', icon: '🏴' },
 	setjob:        { label: 'تغییر شغل',           color: '#3b82f6', icon: '💼' },
 	manage:        { label: 'مدیریت شغل',          color: '#3b82f6', icon: '📋' },
-	adminmenu:     { label: 'ادمین',              color: '#6d5efc', icon: '🛠️' },
-	admintime:     { label: 'زمان سرور',           color: '#6d5efc', icon: '🕐' },
-	setwarn:       { label: 'اخطار',              color: '#f59e0b', icon: '⚠️' },
+	adminmenu:     { label: 'ادمین',              color: '#3b6fe0', icon: '🛠️' },
+	admintime:     { label: 'زمان سرور',           color: '#3b6fe0', icon: '🕐' },
+	setwarn:       { label: 'اخطار',              color: '#c9a35d', icon: '⚠️' },
 	whitelist:     { label: 'وایت‌لیست',           color: '#3b82f6', icon: '✅' },
 	license:       { label: 'مجوز',               color: '#3b82f6', icon: '🪪' },
 	components:    { label: 'اجزای اسلحه',         color: '#ef4444', icon: '🔧' },
@@ -551,7 +665,7 @@ const CATEGORY_META = {
 	servererror:   { label: 'خطای سرور',           color: '#ef4444', icon: '🐞' },
 	clienterror:   { label: 'خطای کلاینت',         color: '#ef4444', icon: '🐛' },
 	explosion:     { label: 'انفجار',              color: '#ef4444', icon: '💣' },
-	drowning:      { label: 'غرق‌شدن',             color: '#22d3ee', icon: '🌊' },
+	drowning:      { label: 'غرق‌شدن',             color: '#5b8def', icon: '🌊' },
 	hardfall:      { label: 'سقوط',               color: '#f97316', icon: '🪂' },
 	kill_bounty:   { label: 'جایزه',               color: '#eab308', icon: '🎖️' },
 	pdrop:         { label: 'دراپ آیتم',           color: '#8a93a8', icon: '📦' },
@@ -799,8 +913,8 @@ function renderJobTabs(){
 
 function tabHTML(value, label, color, icon, active){
 	return `<div class="tabItem ${active ? 'active' : ''}" data-value="${escapeAttr(value)}">
-		<span class="tabDot" style="background:${color}"></span>
-		<span>${icon} ${escapeHTML(label)}</span>
+		<span class="tabIconBubble" style="background:${color}22; box-shadow:inset 0 0 0 1px ${color}40;">${icon}</span>
+		<span class="tabLabelText">${escapeHTML(label)}</span>
 	</div>`;
 }
 
@@ -830,7 +944,7 @@ function renderSkeletonRows(n){
 	const widths = ['70%','60%','50%','80%','95%','30%'];
 	let html = '';
 	for (let i = 0; i < n; i++){
-		html += `<tr class="logRow skelRow">${widths.map(w => `<td><div class="skelBlock" style="width:${w};"></div></td>`).join('')}</tr>`;
+		html += `<tr class="logRow skelRow" style="animation-delay:${i*35}ms;">${widths.map(w => `<td><div class="skelBlock" style="width:${w};"></div></td>`).join('')}</tr>`;
 	}
 	return html;
 }
@@ -890,8 +1004,7 @@ function renderTable(logs){
 		const avatarKey = row.identifier || row.player_name || 'unknown';
 		const avatarColor = hashColor(avatarKey);
 		const initial = (row.player_name || '?').trim().charAt(0).toUpperCase() || '?';
-		return `<tr class="logRow ${isPinned ? 'pinnedRow' : ''}" data-idx="${idx}">
-			<td class="timeCell">${formatTime(row.created_at)}</td>
+		return `<tr class="logRow ${isPinned ? 'pinnedRow' : ''}" data-idx="${idx}" style="animation-delay:${Math.min(idx,10)*28}ms; --cat-color:${meta.color};">			<td class="timeCell">${formatTime(row.created_at)}</td>
 			<td><span class="catBadge" style="background:${meta.color}22; color:${meta.color};">${isPinned ? '<span class="pinFlag">📌</span>' : ''}${meta.icon} ${escapeHTML(meta.label)}</span></td>
 			<td class="jobCell">${escapeHTML(row.job || '—')}</td>
 			<td class="playerCell">
@@ -902,6 +1015,7 @@ function renderTable(logs){
 			</td>
 			<td class="msgCell">${highlightTerm(stripCodeBlock(row.message))}</td>
 			<td class="rowActions">
+				${(() => { const c = extractCoordsCopyValue(row.message); return c ? `<div class="rowCoordBtn" data-coords="${escapeAttr(c)}" title="کپی مختصات">📍</div>` : ''; })()}
 				${state.canPin ? `<div class="rowPinBtn ${isPinned ? 'pinned' : ''}" data-id="${row.id}" title="${isPinned ? 'آن‌پین' : 'پین'}">📌</div>` : ''}
 				${state.canDelete ? `<div class="rowDeleteBtn" data-id="${row.id}" title="حذف">🗑️</div>` : ''}
 			</td>
@@ -911,8 +1025,14 @@ function renderTable(logs){
 	window._currentLogs = logs;
 	[...body.querySelectorAll('.logRow')].forEach(tr => {
 		tr.addEventListener('click', (e) => {
-			if (e.target.closest('.rowDeleteBtn') || e.target.closest('.rowPinBtn') || e.target.closest('.playerNameWrap')) return;
+			if (e.target.closest('.rowDeleteBtn') || e.target.closest('.rowPinBtn') || e.target.closest('.rowCoordBtn') || e.target.closest('.playerNameWrap')) return;
 			openDetail(window._currentLogs[+tr.dataset.idx]);
+		});
+	});
+	[...body.querySelectorAll('.rowCoordBtn')].forEach(btn => {
+		btn.addEventListener('click', (e) => {
+			e.stopPropagation();
+			copyToClipboard(btn.dataset.coords, 'مختصات کپی شد');
 		});
 	});
 	[...body.querySelectorAll('.rowDeleteBtn')].forEach(btn => {
@@ -949,7 +1069,7 @@ function hashColor(str){
 		hash = str.charCodeAt(i) + ((hash << 5) - hash);
 	}
 	const hue = Math.abs(hash) % 360;
-	return `hsl(${hue}, 60%, 45%)`;
+	return `hsl(${hue}, 42%, 42%)`;
 }
 
 // ============================================================================
@@ -1113,18 +1233,40 @@ function openDetail(row){
 		${tonumber1(row.pinned) ? `<span>📌 پین‌شده</span>` : ''}
 	`;
 	document.getElementById('detailMessage').textContent = stripCodeBlock(row.message);
+	renderDetailFacts(row.message);
 	document.getElementById('detailDeleteBtn').style.display = state.canDelete ? 'flex' : 'none';
 	document.getElementById('detailPinBtn').style.display = state.canPin ? 'flex' : 'none';
 	document.getElementById('detailPinBtn').textContent = tonumber1(row.pinned) ? '📌 آن‌پین کن' : '📌 پین کن';
 	document.getElementById('detailOverlay').classList.add('show');
 }
+function renderDetailFacts(message){
+	const wrap = document.getElementById('detailFacts');
+	const facts = extractQuickFacts(message);
+	if (!facts.length){ wrap.style.display = 'none'; wrap.innerHTML = ''; return; }
+	wrap.style.display = 'flex';
+	wrap.innerHTML = facts.map(f => `
+		<div class="factChip ${f.copy ? 'copyable' : ''}" ${f.copy ? `data-copy="${escapeAttr(f.copy)}"` : ''} title="${f.copy ? 'کلیک برای کپی' : ''}">
+			<span class="factIcon">${f.icon}</span>
+			<span class="factLabel">${escapeHTML(f.label)}</span>
+			<span class="factValue">${escapeHTML(f.value)}</span>
+			${f.copy ? '<span class="factCopyIcon">📋</span>' : ''}
+		</div>
+	`).join('');
+	[...wrap.querySelectorAll('.factChip.copyable')].forEach(chip => {
+		chip.addEventListener('click', () => copyToClipboard(chip.dataset.copy, 'کپی شد'));
+	});
+}
 function closeDetail(){
 	document.getElementById('detailOverlay').classList.remove('show');
 }
+function copyToClipboard(text, successMsg){
+	navigator.clipboard.writeText(text)
+		.then(() => showToast(successMsg || 'کپی شد', 'ok'))
+		.catch(() => showToast('کپی نشد', 'err'));
+}
 function copyDetail(){
 	if (!currentDetailRow) return;
-	const text = stripCodeBlock(currentDetailRow.message);
-	navigator.clipboard.writeText(text).then(() => showToast('پیام کپی شد', 'ok')).catch(() => showToast('کپی نشد', 'err'));
+	copyToClipboard(stripCodeBlock(currentDetailRow.message), 'پیام کپی شد');
 }
 async function togglePinFromDetail(){
 	if (!currentDetailRow) return;
@@ -1187,8 +1329,8 @@ async function exportLogs(){
 async function loadStats(){
 	const res = await post('fetchStats', currentFilters());
 	if (res.error) return;
-	document.getElementById('statTotal').textContent = res.total ?? '—';
-	document.getElementById('statToday').textContent = res.today ?? '—';
+	animateCount('statTotal', res.total || 0);
+	animateCount('statToday', res.today || 0);
 
 	const maxCat = Math.max(1, ...(res.topCategories || []).map(r => r.cnt));
 	document.getElementById('statCatsList').innerHTML = (res.topCategories || []).map(r => {
@@ -1251,7 +1393,7 @@ function renderTrendChart(dailyRows){
 		+ ` L${points[0].x.toFixed(1)},${h - pad} Z`;
 
 	const dots = points.map(p =>
-		`<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.2" fill="#8b7bff" stroke="#0d1220" stroke-width="1.5"><title>${p.cnt} لاگ</title></circle>`
+		`<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.2" fill="#5b8def" stroke="#0d1220" stroke-width="1.5"><title>${p.cnt} لاگ</title></circle>`
 	).join('');
 
 	const labels = points.filter((_, i) => i % 2 === 0).map(p =>
@@ -1262,12 +1404,12 @@ function renderTrendChart(dailyRows){
 		<svg viewBox="0 0 ${w} ${h}" style="width:100%; height:150px; display:block;">
 			<defs>
 				<linearGradient id="trendGrad" x1="0" y1="0" x2="0" y2="1">
-					<stop offset="0%" stop-color="#6d5efc" stop-opacity="0.35"/>
-					<stop offset="100%" stop-color="#6d5efc" stop-opacity="0"/>
+					<stop offset="0%" stop-color="#3b6fe0" stop-opacity="0.35"/>
+					<stop offset="100%" stop-color="#3b6fe0" stop-opacity="0"/>
 				</linearGradient>
 			</defs>
 			<path d="${areaPath}" fill="url(#trendGrad)" stroke="none"/>
-			<path d="${linePath}" fill="none" stroke="#8b7bff" stroke-width="2.2"/>
+			<path d="${linePath}" fill="none" stroke="#5b8def" stroke-width="2.2"/>
 			${dots}
 			${labels}
 		</svg>`;
@@ -1293,9 +1435,30 @@ function showToast(msg, type){
 	const wrap = document.getElementById('toastWrap');
 	const el = document.createElement('div');
 	el.className = `toast ${type === 'ok' ? 'ok' : (type === 'err' ? 'err' : '')}`;
-	el.textContent = msg;
+	const icon = type === 'ok' ? '✅' : (type === 'err' ? '⚠️' : 'ℹ️');
+	el.innerHTML = `<span>${icon}</span><span>${escapeHTML(msg)}</span>`;
 	wrap.appendChild(el);
-	setTimeout(() => el.remove(), 2800);
+	setTimeout(() => { el.style.transition = '.2s'; el.style.opacity = '0'; el.style.transform = 'translateY(-6px)'; setTimeout(() => el.remove(), 200); }, 2600);
+}
+
+// ============================================================================
+// انیمیشن شمارش نرم برای اعداد داشبورد
+// ============================================================================
+function animateCount(elId, target){
+	const el = document.getElementById(elId);
+	const start = parseInt(el.textContent, 10) || 0;
+	target = Number(target) || 0;
+	if (start === target){ el.textContent = target; return; }
+	const duration = 500;
+	const t0 = performance.now();
+	function tick(now){
+		const p = Math.min(1, (now - t0) / duration);
+		const eased = 1 - Math.pow(1 - p, 3);
+		el.textContent = Math.round(start + (target - start) * eased);
+		if (p < 1) requestAnimationFrame(tick);
+		else el.textContent = target;
+	}
+	requestAnimationFrame(tick);
 }
 
 // ============================================================================
@@ -1309,6 +1472,52 @@ function escapeAttr(str){ return escapeHTML(str); }
 function stripCodeBlock(msg){
 	if (!msg) return '';
 	return String(msg).replace(/```css\n?/g, '').replace(/```/g, '').trim();
+}
+
+// ============================================================================
+// پارس خودکار پیام‌های لاگ: خیلی از لاگ‌ها (اسپاون ماشین، ورود به NCZ، سرقت و...)
+// اطلاعات ساختاریافته‌ای مثل Zone/Player/Plate/Vehicle/مختصات رو داخل متن خام
+// دارن. این تابع اون‌ها رو تشخیص می‌ده تا به‌جای یه بلوک متن خام، فیلد به فیلد و
+// تمیز نشون داده بشن (بدون این‌که خودِ متن خام هم حذف بشه).
+// ============================================================================
+function extractQuickFacts(message){
+	const facts = [];
+	if (!message) return facts;
+	const msg = stripCodeBlock(String(message));
+
+	// فرمت [ Key : Value ] — مثل NCZEnterLog: [ Zone : X ] [ Player : Y ]
+	const bracketRe = /\[\s*([^:\[\]]{1,30}?)\s*:\s*([^\[\]]{1,120}?)\s*\]/g;
+	let m;
+	while ((m = bracketRe.exec(msg)) !== null){
+		const label = m[1].trim();
+		const value = m[2].trim();
+		if (label && value) facts.push({ label, value, icon: '🏷️' });
+	}
+
+	// پلاک ماشین
+	const plateM = msg.match(/Plate\s*:\s*([A-Za-z0-9]+)/i);
+	if (plateM) facts.push({ label: 'پلاک', value: plateM[1], icon: '🚙', copy: plateM[1] });
+
+	// اسم ماشین (تا قبل از X: یا کاما یا آخر رشته)
+	const vehM = msg.match(/Vehicle\s*name\s*:\s*([^,\[\]]+?)(?=\s*(?:X\s*:|$))/i);
+	if (vehM){
+		const v = vehM[1].trim();
+		if (v) facts.push({ label: 'ماشین', value: v, icon: '🚗' });
+	}
+
+	// مختصات X/Y/Z
+	const coordM = msg.match(/X\s*:\s*(-?[\d.]+)\s*,?\s*Y\s*:\s*(-?[\d.]+)\s*,?\s*Z\s*:\s*(-?[\d.]+)/i);
+	if (coordM){
+		const x = coordM[1], y = coordM[2], z = coordM[3];
+		facts.push({ label: 'مختصات', value: `${x}, ${y}, ${z}`, icon: '📍', copy: `${x}, ${y}, ${z}`, isCoords: true });
+	}
+
+	return facts;
+}
+function extractCoordsCopyValue(message){
+	if (!message) return null;
+	const m = String(message).match(/X\s*:\s*(-?[\d.]+)\s*,?\s*Y\s*:\s*(-?[\d.]+)\s*,?\s*Z\s*:\s*(-?[\d.]+)/i);
+	return m ? `${m[1]}, ${m[2]}, ${m[3]}` : null;
 }
 function formatTime(ts){
 	if (ts === null || ts === undefined || ts === '') return '—';

@@ -10,40 +10,62 @@ function get_vehicle_info(model)
 end
 
 function rent_vehicle(model, durationId, location)
-	for k,v in pairs(Config.Locations) do
-		if k == location then
-			local spawn_coords = v.spawn_coords
-			local vehicleInfo = get_vehicle_info(model)
-			local durationInfo = Config.Durations[tonumber(durationId)]
-
-			-- SECURITY: only `model` and `durationId` are sent to the server.
-			-- The price itself is always recomputed server-side from those
-			-- two, never trusted from the client (see server/main.lua).
-			ESX.TriggerServerCallback('unique_rent:check', function(can)
-				if can then
-					RequestModel(model)
-					while not HasModelLoaded(model) do
-						Citizen.Wait(10)
-					end
-					if ESX.Game.IsSpawnPointClear(spawn_coords, 5) then
-						ESX.Game.SpawnVehicle(model, spawn_coords, spawn_coords.h, function(vehicle)
-							SetEntityAsMissionEntity(vehicle, true, true)
-							TaskWarpPedIntoVehicle(GetPlayerPed(-1), vehicle, -1)
-							Options.vehicle.hash = vehicle
-							Options.have_rented = true
-							set_blip(false)
-						end)
-						TriggerServerEvent('unique_rent:pay', model, durationId)
-						if Config.Options['time'] and durationInfo then
-							show_timer(vehicleInfo, durationInfo)
-						end
-					else
-						Notification(Config.Options['spawnpoint_blocked'])
-					end
-				end
-			end, model, durationId)
-		end
+	-- BUGFIX: previously nothing stopped rent_vehicle() from being called
+	-- again while a previous call was still mid-flight (waiting on the
+	-- server check / model load / spawn). Since the UI closes as soon as
+	-- the request is sent -- well before the vehicle actually spawns --
+	-- there was a real window where a second confirm click (or a fast
+	-- double relog into the E-key prompt) could trigger a second rent +
+	-- a second charge for what the player would see as one rental.
+	if Options.processing_rent or Options.have_rented then
+		return
 	end
+
+	local locationCfg = Config.Locations[location]
+	if not locationCfg then
+		return
+	end
+
+	local spawn_coords = locationCfg.spawn_coords
+	local vehicleInfo = get_vehicle_info(model)
+	local durationInfo = Config.Durations[tonumber(durationId)]
+
+	Options.processing_rent = true
+
+	-- SECURITY: only `model` and `durationId` are sent to the server.
+	-- The price itself is always recomputed server-side from those
+	-- two, never trusted from the client (see server/main.lua).
+	ESX.TriggerServerCallback('unique_rent:check', function(can)
+		if can then
+			RequestModel(model)
+			while not HasModelLoaded(model) do
+				Citizen.Wait(10)
+			end
+			if ESX.Game.IsSpawnPointClear(spawn_coords, 5) then
+				ESX.Game.SpawnVehicle(model, spawn_coords, spawn_coords.h, function(vehicle)
+					SetEntityAsMissionEntity(vehicle, true, true)
+					TaskWarpPedIntoVehicle(GetPlayerPed(-1), vehicle, -1)
+					Options.vehicle.hash = vehicle
+					Options.have_rented = true
+					-- Only release the lock once have_rented is actually
+					-- true, in the same step -- so there's no in-between
+					-- tick where both flags are false while the vehicle is
+					-- still mid-spawn (SpawnVehicle's own callback is async).
+					Options.processing_rent = false
+					set_blip(false)
+				end)
+				TriggerServerEvent('unique_rent:pay', model, durationId)
+				if Config.Options['time'] and durationInfo then
+					show_timer(vehicleInfo, durationInfo)
+				end
+			else
+				Notification(Config.Options['spawnpoint_blocked'])
+				Options.processing_rent = false
+			end
+		else
+			Options.processing_rent = false
+		end
+	end, model, durationId)
 end
 
 function return_vehicle()
@@ -63,8 +85,17 @@ end
 
 function set_blip(remove)
 	if remove then
-		RemoveBlip(Options.blips['return'])
-		Options.blips['return'] = nil
+		-- BUGFIX: RemoveBlip(nil) throws a runtime error and aborts whatever
+		-- called set_blip(true) partway through. That mattered for
+		-- unique_rent:forceReset (used by /rentreset): an admin can run it
+		-- on a player who never actually rented anything (no blip was ever
+		-- created), and the error used to silently swallow the "hide_timer"
+		-- NUI message and the notification that were supposed to run right
+		-- after it.
+		if Options.blips['return'] then
+			RemoveBlip(Options.blips['return'])
+			Options.blips['return'] = nil
+		end
 	else
 		for k, v in pairs(Config.Locations) do
 			if k == Options.last_location then
@@ -115,7 +146,10 @@ end
 function open_ui(location)
 	local vehicles = {}
 
-	for k,v in pairs(Config.Vehicles) do
+	-- ipairs (not pairs), same reasoning as Config.Durations below: this
+	-- guarantees the vehicle cards render in the order they're defined in
+	-- config.lua instead of an unspecified table-iteration order.
+	for k,v in ipairs(Config.Vehicles) do
 		table.insert(vehicles, {location = location, id= k,  model = v.model, label = v.label, description = v.description, price = v.price, type = v.type, image = v.image_name})
 	end
 

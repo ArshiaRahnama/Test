@@ -3,6 +3,16 @@ RegisterNUICallback("PutIntoFast", function(data, cb)
 	    if data.item.slot ~= nil then
 		    Inv.FastWeapons[data.item.slot] = nil
 	    end
+        -- FIX (prevents the same item ending up bound to multiple
+        -- hotbar slots again - see the one-time cleanup in
+        -- client/main.lua for the historical case): clear any OTHER
+        -- slot already holding this exact item name before binding it
+        -- to the new one, so an item only ever occupies one slot.
+        for existingSlot, existingName in pairs(Inv.FastWeapons) do
+            if existingName == data.item.name and existingSlot ~= data.slot then
+                Inv.FastWeapons[existingSlot] = nil
+            end
+        end
 	    Inv.FastWeapons[data.slot] = data.item.name
         SetFieldValueFromNameEncode('lc-inventory', {name = Inv.FastWeapons})
 	    loadPlayerInventory('slot', nil, true, true)
