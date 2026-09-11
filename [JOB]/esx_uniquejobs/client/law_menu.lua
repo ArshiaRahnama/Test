@@ -138,6 +138,15 @@ function OpenLawMenu()
 			end,
 		}
 
+		options[#options + 1] = {
+			title = 'Mugshot',
+			description = 'Gereftan-e Aks, Tarikhche-ye Aks-ha Va Rap Sheet-e Kamel',
+			icon = 'camera',
+			onSelect = function()
+				OpenMugshotMenu()
+			end,
+		}
+
 		lib.registerContext({ id = 'law_main', title = 'Ghanoon-name', options = options })
 		lib.showContext('law_main')
 	end)

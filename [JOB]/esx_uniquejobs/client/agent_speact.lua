@@ -350,13 +350,68 @@ AddEventHandler('esx_uniquejobs:criminalRecordResult', function(data, failedQuer
 		end
 	end
 
+	-- FEATURE ADDED (Mugshot, rebuilt): identity card fields + the
+	-- latest photo (server/records_manager.lua now joins these in from
+	-- `users` and dept_mugshots) show up right in the same Rap Sheet,
+	-- in both /doj and /law -- no separate half-wired Mugshot menu
+	-- duplicating this.
+	local identityBits = {}
+	if data.sex then identityBits[#identityBits + 1] = 'Jensiat: ' .. data.sex end
+	if data.dob then identityBits[#identityBits + 1] = 'Tavallod: ' .. data.dob end
+	if data.height then identityBits[#identityBits + 1] = 'Ghad: ' .. data.height end
+	local identityDesc = #identityBits > 0 and table.concat(identityBits, ' | ') or 'Hich Moshakhasat-e Zaheri Sabt Nashode'
+
 	local options = {
 		{
 			title = string.gsub(data.name, "_", " "),
-			description = 'Jarayem-e Pardakht-Nashode: ' .. data.unpaidCount .. ' Mored ($' .. data.unpaidTotal .. ') | Akharin Makan: ' .. lastLocationDesc,
+			description = identityDesc .. ' | Jarayem-e Pardakht-Nashode: ' .. data.unpaidCount .. ' Mored ($' .. data.unpaidTotal .. ') | Akharin Makan: ' .. lastLocationDesc,
 			icon = 'user',
+			image = data.mugshotUrl,
 			disabled = true,
 		},
+	}
+
+	if data.mugshotUrl then
+		options[#options + 1] = {
+			title = 'Namayesh-e Aks (Mugshot)',
+			description = 'Sabt-Konande: ' .. (data.mugshotTakenBy or 'Namoshakhas'),
+			icon = 'camera',
+			image = data.mugshotUrl,
+			onSelect = function()
+				lib.alertDialog({ header = 'Mugshot -- ' .. string.gsub(data.name, "_", " "), content = '![mugshot](' .. data.mugshotUrl .. ')', centered = true })
+			end,
+		}
+	end
+
+	options[#options + 1] = {
+		title = 'Namayesh-e Motn-e Kamel (Copy)',
+		description = 'Yek Nesskhe-ye Copy-Shodani Az Kol-e In Rap Sheet',
+		icon = 'copy',
+		onSelect = function()
+			local lines = {
+				'## Rap Sheet -- ' .. string.gsub(data.name, "_", " "),
+				identityDesc,
+				'Akharin Makan: ' .. lastLocationDesc,
+				'Jarayem-e Pardakht-Nashode: ' .. data.unpaidCount .. ' Mored ($' .. data.unpaidTotal .. ')',
+				'',
+			}
+			for _, record in ipairs(data.records or {}) do
+				local typeLabel = record.type == 'arrest' and 'Dastgiri' or 'Etteham'
+				lines[#lines + 1] = '- [' .. typeLabel .. '] ' .. record.reason .. ' -- Afsar: ' .. record.officer_name .. (record.jail_time and (' (' .. record.jail_time .. ' Daghighe Zendan)') or '')
+			end
+			for _, booking in ipairs(data.bookings or {}) do
+				lines[#lines + 1] = '- [CAD Booking] ' .. booking.charges .. ' -- Jarime: $' .. booking.fine .. ' | Zendan: ' .. booking.jail_minutes .. ' Daghighe'
+			end
+			if #data.records == 0 and #(data.bookings or {}) == 0 then
+				lines[#lines + 1] = '- Hich Sabegheh-i Sabt Nashode'
+			end
+
+			lib.alertDialog({
+				header = 'Motn-e Kamel (Baraye Copy Select Konid)',
+				content = '```\n' .. table.concat(lines, '\n') .. '\n```',
+				centered = true,
+			})
+		end,
 	}
 
 	if #data.records == 0 and (not data.bookings or #data.bookings == 0) then

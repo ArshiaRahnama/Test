@@ -84,4 +84,47 @@
 برای مستندسازی نگه داشته شدن، دقیقاً مثل بقیه‌ی فایل‌های `.sql` قدیمی این
 ریسورس).
 
-راهنمای کامل استفاده در بازی داخل `NEW_FEATURES_USAGE.md` هست.
+## آپدیت -- Mugshot این‌بار واقعاً پیاده‌سازی شد (و خفن‌تر از نسخه‌ی قبلی)
+
+نسخه‌ی قبلی همین changelog از `server/mugshot_manager.lua` و
+`client/mugshot_menu.lua` اسم برده بود، ولی این دو فایل هیچ‌وقت واقعاً روی
+دیسک نبودن -- نه جدول `dept_mugshots` ساخته شده بود، نه `fxmanifest.lua`
+اون‌ها رو لود می‌کرد، نه `law_menu.lua` هیچ گزینه‌ای براش داشت. کامنت خودِ
+`server/records_manager.lua` هم صریح می‌گفت این سیستم قبلاً «dead code» بوده
+و حذف شده. این‌بار واقعاً از صفر ساخته شد:
+
+- **`server/mugshot_manager.lua`** -- ذخیره‌ی هر عکس به‌عنوان یک ردیف جدید در
+  `dept_mugshots` (تاریخچه‌ی کامل، نه یک ستون overwrite‌شونده) + یک تابع
+  export شده (`GetLatestMugshot`) که `records_manager.lua` مستقیم صداش می‌زنه.
+- **`client/mugshot_menu.lua`**:
+  - **Gereftan Aks Jadid** -- اگه شهروند آنلاین باشه، یک دوربین واقعی
+    (`CreateCamWithParams` + `PointCamAtCoord`) مستقیم روی سرش zoom می‌کنه،
+    هر دو نفر فریز می‌شن، یک صدای شاتر پخش می‌شه، و بعد عکس یا خودکار با
+    `screenshot-basic` آپلود می‌شه (convar `mugshot_upload_url` +
+    اختیاری `mugshot_upload_field` برای اسم فیلد فرم -- پیش‌فرض `files[]`)،
+    یا اگه تنظیم نشده/شهروند آفلاینه یک URL دستی گرفته می‌شه.
+  - **Tarikhche-ye Aks-ha** -- فهرست تمام عکس‌های قبلی، هرکدوم با
+    thumbnail واقعی (ویژگی `image` در ox_lib context) + سابت‌کننده + زمان.
+  - **Rap Sheet + Aks** -- به‌جای یک کارت شناسایی جدا و تکراری، مستقیم همون
+    Rap Sheet مشترک `/doj`+`/law` رو باز می‌کنه (زیر).
+- **`server/records_manager.lua` ویرایش شد:** همون Rap Sheet
+  (`esx_uniquejobs:menuGetCriminalRecord`) الان علاوه بر قبل، `sex` /
+  `dateofbirth` / `height` از `users` (همون ستون‌هایی که `cia_main.lua`/
+  `fbi_main.lua` استفاده می‌کنن) و آخرین Mugshot ثبت‌شده رو هم برمی‌گردونه.
+- **`client/agent_speact.lua` ویرایش شد:** نمایش Rap Sheet الان
+  thumbnail عکس رو توی خط اول نشون می‌ده، یک گزینه‌ی جدا برای دیدن عکس در
+  سایز بزرگ داره، و یک گزینه‌ی **«Namayesh-e Motn-e Kamel (Copy)»** که کل
+  Rap Sheet رو به‌صورت یک بلاک متنی کپی‌شدنی نشون می‌ده -- دقیقاً همون
+  چیزی که نسخه‌ی قبلی این مستندات وعده داده بود ولی هیچ‌وقت پیاده‌سازی
+  نشده بود.
+- `client/law_menu.lua` -- یک گزینه‌ی «Mugshot» به منوی اصلی اضافه شد.
+- `fxmanifest.lua` -- `server/mugshot_manager.lua` و
+  `client/mugshot_menu.lua` واقعاً به `server_scripts`/`client_scripts`
+  اضافه شدن (قبلاً اصلاً نبودن، با این‌که اسمشون توی این changelog بود).
+- `server/db_migrations.lua` -- جدول `dept_mugshots` واقعاً به لیست
+  `CREATE TABLE IF NOT EXISTS` اضافه شد (قبلاً فقط توی این changelog اسمش
+  بود، هیچ‌وقت واقعاً ساخته نمی‌شد).
+
+تمام فایل‌های تغییریافته/جدید با `luac5.4 -p` سینتکس‌چک شدن.
+
+راهنمای به‌روز استفاده در بازی داخل `NEW_FEATURES_USAGE.md` هست.

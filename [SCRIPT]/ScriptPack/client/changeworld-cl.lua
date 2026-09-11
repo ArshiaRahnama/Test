@@ -1,36 +1,65 @@
+--[[
+    Change World System - Final Merged Version (client)
+    Pairs with changeworld-sv.lua
+]]
 
-
-Citizen.CreateThread(function()
+-- NOTE: old ESX build (on essentialmode) - must use the event, not exports.
+local ESX = nil
+CreateThread(function()
     while ESX == nil do
         TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
-        Citizen.Wait(0)
+        Wait(0)
     end
 end)
 
+-- ============================================================
+-- BASIC EVENT HANDLERS
+-- ============================================================
 
-
-RegisterNetEvent('showNotification')
-AddEventHandler('showNotification', function(message)
+RegisterNetEvent('cw:notify')
+AddEventHandler('cw:notify', function(message)
     ESX.ShowNotification(message)
 end)
 
+RegisterNetEvent('cw:teleport')
+AddEventHandler('cw:teleport', function(x, y, z)
+    local ped = PlayerPedId()
+    SetEntityCoords(ped, x, y, z, false, false, false, true)
+end)
 
+RegisterNetEvent('cw:setArmor')
+AddEventHandler('cw:setArmor', function(amount)
+    local ped = PlayerPedId()
+    TriggerEvent('esx_status:set', 'armor', amount)
+    AddArmourToPed(ped, amount)
+    ESX.ShowNotification("Armor Shoma Por Shod!")
+end)
 
-RegisterNetEvent('spawnVehicle')
-AddEventHandler('spawnVehicle', function(vehicleName)
-    local playerPed = PlayerPedId()
-    local coords = GetEntityCoords(playerPed)
+RegisterNetEvent('cw:setMaxAmmo')
+AddEventHandler('cw:setMaxAmmo', function(amount)
+    local ped = PlayerPedId()
+    local weaponHash = GetSelectedPedWeapon(ped)
+    if weaponHash ~= `WEAPON_UNARMED` then
+        AddAmmoToPed(ped, weaponHash, amount)
+        ESX.ShowNotification("Tedad Tir Be Maximom Afzayesh Yaft!")
+    else
+        ESX.ShowNotification("Shoma Hich Aslahe Darid!")
+    end
+end)
 
-    ESX.Game.SpawnVehicle(vehicleName, coords, GetEntityHeading(playerPed), function(vehicle)
-        TaskWarpPedIntoVehicle(playerPed, vehicle, -1)
+RegisterNetEvent('cw:doSpawnVehicle')
+AddEventHandler('cw:doSpawnVehicle', function(vehicleName)
+    local ped = PlayerPedId()
+    local coords = GetEntityCoords(ped)
+    ESX.Game.SpawnVehicle(vehicleName, coords, GetEntityHeading(ped), function(vehicle)
+        TaskWarpPedIntoVehicle(ped, vehicle, -1)
     end)
 end)
 
-RegisterNetEvent('deleteVehicle')
-AddEventHandler('deleteVehicle', function()
-    local playerPed = PlayerPedId()
-    local vehicle = GetVehiclePedIsIn(playerPed, false)
-
+RegisterNetEvent('cw:doDeleteVehicle')
+AddEventHandler('cw:doDeleteVehicle', function()
+    local ped = PlayerPedId()
+    local vehicle = GetVehiclePedIsIn(ped, false)
     if vehicle ~= 0 then
         ESX.Game.DeleteVehicle(vehicle)
     else
@@ -38,211 +67,157 @@ AddEventHandler('deleteVehicle', function()
     end
 end)
 
-RegisterNetEvent('teleportPlayer')
-AddEventHandler('teleportPlayer', function(coords)
-    local playerPed = PlayerPedId()
-    SetEntityCoords(playerPed, coords.x, coords.y, coords.z, false, false, false, true)
-end)
-
-RegisterNetEvent('gpstools:tpwaypointt')
-AddEventHandler('gpstools:tpwaypointt', function()
-    local playerPed = PlayerPedId()
-    if IsPedInAnyVehicle(playerPed) then
-        playerPed = GetVehiclePedIsUsing(playerPed)
-    end
-
-    local waypointHandle = GetFirstBlipInfoId(8)
-    if DoesBlipExist(waypointHandle) then
-        local waypointCoords = GetBlipInfoIdCoord(waypointHandle)
-
-        for height = 1, 1000 do
-            SetPedCoordsKeepVehicle(playerPed, waypointCoords.x, waypointCoords.y, height + 0.0)
-            local foundGround, zPos = GetGroundZFor_3dCoord(waypointCoords.x, waypointCoords.y, height + 0.0)
-            if foundGround then
-                SetPedCoordsKeepVehicle(playerPed, waypointCoords.x, waypointCoords.y, zPos)
-                break
-            end
-            Citizen.Wait(1)
-        end
-
-        ESX.ShowNotification("Shoma Be Marker Rojaye Map Teleport Shodid!")
-    else
-        ESX.ShowNotification("Markeri Baraye Teleport Shodan Vojoud Nadarad!")
-    end
-end)
-
-RegisterNetEvent('setArmorToFull')
-AddEventHandler('setArmorToFull', function()
+RegisterNetEvent('cw:doTpWaypoint')
+AddEventHandler('cw:doTpWaypoint', function()
     local ped = PlayerPedId()
-    local armor = 100
+    if IsPedInAnyVehicle(ped, false) then
+        ped = GetVehiclePedIsUsing(ped)
+    end
 
-    TriggerEvent('esx_status:set', 'armor', armor)
+    local waypoint = GetFirstBlipInfoId(8)
+    if not DoesBlipExist(waypoint) then
+        ESX.ShowNotification("Markeri Baraye Teleport Shodan Vojoud Nadarad!")
+        return
+    end
 
-    AddArmourToPed(ped, armor)
+    local target = GetBlipInfoIdCoord(waypoint)
+    for height = 1, 1000 do
+        SetPedCoordsKeepVehicle(ped, target.x, target.y, height + 0.0)
+        local found, z = GetGroundZFor_3dCoord(target.x, target.y, height + 0.0)
+        if found then
+            SetPedCoordsKeepVehicle(ped, target.x, target.y, z)
+            break
+        end
+        Wait(1)
+    end
+    ESX.ShowNotification("Shoma Be Marker Rooye Map Teleport Shodid!")
 end)
 
-RegisterNetEvent('menu:openMainMenu')
-AddEventHandler('menu:openMainMenu', function()
-    local elements = {
-        {label = "Self Options", value = 'self_options'},
-        {label = "Vehicle Options", value = 'vehicle_options'},
-        {label = "Weapon Options", value = 'weapon_options'},
-        {label = "Teleport Options", value = 'teleport_options'}
-    }
+-- ============================================================
+-- E-KEY LOCK (prevents vehicle entry / interactions while in a world)
+-- ============================================================
 
-    ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'main_menu', {
-        title    = "Main Menu",
-        align    = 'top-left',
-        elements = elements
-    }, function(data, menu)
+local eKeyDisabled = false
 
-        if data.current.value == 'self_options' then
-            showSelfOptions()
-        elseif data.current.value == 'vehicle_options' then
-            showVehicleOptions()
-        elseif data.current.value == 'weapon_options' then
-            showWeaponOptions()
-        elseif data.current.value == 'teleport_options' then
-            showTeleportOptions()
+RegisterNetEvent('cw:disableEKey')
+AddEventHandler('cw:disableEKey', function()
+    eKeyDisabled = true
+end)
+
+RegisterNetEvent('cw:enableEKey')
+AddEventHandler('cw:enableEKey', function()
+    eKeyDisabled = false
+end)
+
+CreateThread(function()
+    while true do
+        Wait(0)
+        if eKeyDisabled then
+            DisableControlAction(0, 38, true)  -- E
+            DisableControlAction(0, 289, true) -- vehicle enter/exit alt
         end
-    end, function(data, menu)
-        menu.close()
-    end)
-end, false)
+    end
+end)
 
-function showSelfOptions()
-    local elements = {
-        {label = "Revive", value = 'revme'},
-        {label = "Armor", value = 'armorme'},
-    }
+-- ============================================================
+-- IN-WORLD MENU (F11)
+-- ============================================================
 
-    ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'self_options_menu', {
-        title    = "Self Options",
-        align    = 'top-left',
-        elements = elements
+local function openSelfOptions()
+    ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'cw_self', {
+        title = "Self Options",
+        align = 'top-left',
+        elements = {
+            { label = "Revive",       value = 'revive' },
+            { label = "Full Armor",   value = 'armor' },
+            { label = "Max Ammo",     value = 'ammo' },
+        }
     }, function(data, menu)
-        if data.current.value == 'revme' then
-            ExecuteCommand("revme")
-        elseif data.current.value == 'armorme' then
-            ExecuteCommand("armorme")
+        if data.current.value == 'revive' then
+            TriggerServerEvent('cw:revive')
+        elseif data.current.value == 'armor' then
+            TriggerServerEvent('cw:armor')
+        elseif data.current.value == 'ammo' then
+            TriggerServerEvent('cw:maxAmmo')
         end
     end, function(data, menu)
         menu.close()
     end)
 end
 
-function showVehicleOptions()
-    local elements = {
-        {label = "Spawn Vehicle", value = 'spawn_vehicle'},
-        {label = "Delete Vehicle", value = 'delete_vehicle'}
-    }
-
-    ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'vehicle_options_menu', {
-        title    = "Vehicle Options",
-        align    = 'top-left',
-        elements = elements
+local function openVehicleOptions()
+    ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'cw_vehicle', {
+        title = "Vehicle Options",
+        align = 'top-left',
+        elements = {
+            { label = "Spawn Vehicle",  value = 'spawn' },
+            { label = "Delete Vehicle", value = 'delete' },
+        }
     }, function(data, menu)
-        if data.current.value == 'spawn_vehicle' then
-            ESX.UI.Menu.Open('dialog', GetCurrentResourceName(), 'vehicle_name_input', {
+        if data.current.value == 'spawn' then
+            ESX.UI.Menu.Open('dialog', GetCurrentResourceName(), 'cw_vehicle_name', {
                 title = "Enter Vehicle Name"
             }, function(data2, menu2)
-                local vehicleName = data2.value
-                ExecuteCommand("spawn " .. vehicleName)
+                TriggerServerEvent('cw:spawnVehicle', data2.value)
                 menu2.close()
             end, function(data2, menu2)
                 menu2.close()
             end)
-        elseif data.current.value == 'delete_vehicle' then
-            ExecuteCommand("dveh")
+        elseif data.current.value == 'delete' then
+            TriggerServerEvent('cw:deleteVehicle')
         end
     end, function(data, menu)
         menu.close()
     end)
 end
 
-function showWeaponOptions()
-    local elements = {
-        {label = "Give Weapon", value = 'give_weapon'},
-        {label = "Remove Weapon", value = 'remove_weapon'}
-    }
-
-    ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'weapon_options_menu', {
-        title    = "Weapon Options",
-        align    = 'top-left',
-        elements = elements
+local function openTeleportOptions()
+    ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'cw_teleport', {
+        title = "Teleport Options",
+        align = 'top-left',
+        elements = {
+            { label = "Teleport To Waypoint", value = 'waypoint' },
+        }
     }, function(data, menu)
-        if data.current.value == 'give_weapon' then
-            ESX.UI.Menu.Open('dialog', GetCurrentResourceName(), 'weapon_name_input', {
-                title = "Enter Weapon Name"
-            }, function(data2, menu2)
-                local weaponName = data2.value
-                ExecuteCommand("giveweapon " .. weaponName)
-                menu2.close()
-            end, function(data2, menu2)
-                menu2.close()
-            end)
-        elseif data.current.value == 'remove_weapon' then
-            ExecuteCommand("removewp")
+        if data.current.value == 'waypoint' then
+            TriggerServerEvent('cw:tpWaypoint')
         end
     end, function(data, menu)
         menu.close()
     end)
 end
 
-function showTeleportOptions()
-    local elements = {
-        {label = "Teleport to Waypoint", value = 'teleport_waypoint'}
-    }
-
-    ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'teleport_options_menu', {
-        title    = "Teleport Options",
-        align    = 'top-left',
-        elements = elements
+local function openMainMenu()
+    ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'cw_main', {
+        title = "Change World Menu",
+        align = 'top-left',
+        elements = {
+            { label = "Self Options",     value = 'self' },
+            { label = "Vehicle Options",  value = 'vehicle' },
+            { label = "Teleport Options", value = 'teleport' },
+        }
     }, function(data, menu)
-        if data.current.value == 'teleport_waypoint' then
-            ExecuteCommand("ctp")
+        if data.current.value == 'self' then
+            openSelfOptions()
+        elseif data.current.value == 'vehicle' then
+            openVehicleOptions()
+        elseif data.current.value == 'teleport' then
+            openTeleportOptions()
         end
     end, function(data, menu)
         menu.close()
     end)
 end
 
-function showWeaponOptions()
-    local elements = {
-        {label = "Get Max Ammo", value = 'cgetmaxammo'}
-    }
-
-    ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'weapon_options_menu', {
-        title    = "Weapon Options",
-        align    = 'top-left',
-        elements = elements
-    }, function(data, menu)
-        if data.current.value == 'cgetmaxammo' then
-            ExecuteCommand("cgetmaxammo")
-        end
-    end, function(data, menu)
-        menu.close()
-    end)
-end
-
-Citizen.CreateThread(function()
+CreateThread(function()
     while true do
-        Citizen.Wait(0)
-        if IsControlJustPressed(0, 56) then
-            ExecuteCommand("openmenu")
+        Wait(0)
+        if IsControlJustPressed(0, 56) then -- F11
+            ESX.TriggerServerCallback('cw:menuAccess', function(hasAccess)
+                if hasAccess then
+                    openMainMenu()
+                end
+            end)
         end
-    end
-end)
-
-RegisterNetEvent('setMaxAmmo')
-AddEventHandler('setMaxAmmo', function()
-    local playerPed = PlayerPedId()
-    local weaponHash = GetSelectedPedWeapon(playerPed)
-
-    if weaponHash ~= `WEAPON_UNARMED` then
-        AddAmmoToPed(playerPed, weaponHash, 250)
-        ESX.ShowNotification("Tedad Tir Be Maximom Afzayesh Yaft!")
-    else
-        ESX.ShowNotification("Shoma Hich Aslahe Darid!")
     end
 end)

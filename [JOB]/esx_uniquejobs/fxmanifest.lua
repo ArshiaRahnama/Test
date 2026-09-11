@@ -60,6 +60,7 @@ client_scripts {
 	'client/officer_performance_menu.lua',
 	'client/traffic_stop_menu.lua',
 	'client/evidence_custody_menu.lua',
+	'client/mugshot_menu.lua',
 
 
 
@@ -140,6 +141,7 @@ server_scripts {
 	'server/officer_performance.lua',
 	'server/traffic_stop_manager.lua',
 	'server/evidence_custody.lua',
+	'server/mugshot_manager.lua',
 	'server/doa_manager.lua',
 
 	'client/config_marshal.lua',

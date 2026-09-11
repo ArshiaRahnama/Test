@@ -15,17 +15,22 @@ Config.Options = {
     ['cant_rent'] = 'You already rented a vehicle',
 }
 
--- Rental duration tiers, picked in the UI at rent time. `multiplier` is
--- applied to each vehicle's base `price` in Config.Vehicles below (that
+-- Rental duration tiers, picked from the ox_lib menu at rent time. `multiplier`
+-- is applied to each vehicle's base `price` in Config.Vehicles below (that
 -- base price represents the 1.0x / standard tier, i.e. the "1 Hour" one).
 -- This must stay a plain sequential array ([1], [2], [3], ...) since the
--- order here is the order the tiers are shown in the UI.
+-- order here is the order the tiers are shown in the menu.
 Config.Durations = {
     [1] = { seconds = 1800, label = '30 Minutes', multiplier = 0.65 },
     [2] = { seconds = 3600, label = '1 Hour',      multiplier = 1.0  },
     [3] = { seconds = 7200, label = '2 Hours',     multiplier = 1.8  },
 }
 
+-- Markers are drawn with ox_lib's `lib.marker` (fancier built-in marker
+-- shapes than a plain DrawMarker cylinder), and the on-foot prompt is
+-- ox_lib's `lib.showTextUI` (the "[E] ..." pill in the corner of the
+-- screen) instead of custom 3D text. `oxType` is any marker name from
+-- ox_lib's MarkerType enum (see ox_lib/imports/marker/client.lua).
 Config.Locations = {
     ['lossantosavenue'] = {
         coords = vector3(-296.583, -993.327, 31.081),
@@ -33,18 +38,20 @@ Config.Locations = {
         return_coords = vector3(-297.731, -979.305, 31.081),
         markers = {
             spawn = {
-                key = 38,
-                type = 2,
-                size  = {x = 0.3, y = 0.3, z = 0.3},
-                color = {r = 255, g = 255, b = 255},
-                text = '[ ~g~E~w~ ] Rent Vehicle'
+                key = 38, -- E
+                oxType = 'CarSymbol',
+                size  = {x = 1.1, y = 1.1, z = 0.7},
+                color = {r = 232, g = 183, b = 60, a = 190},
+                icon = 'key',
+                text = 'Rent a Vehicle',
             },
             return_spot = {
-                key = 47,
-                type = 2,
-                size  = {x = 0.3, y = 0.3, z = 0.3},
-                color = {r = 255, g = 0, b = 0},
-                text = '[ ~r~G~w~ ] Return Vehicle'
+                key = 38, -- E
+                oxType = 'CheckeredFlagCircle',
+                size  = {x = 1.1, y = 1.1, z = 0.7},
+                color = {r = 90, g = 220, b = 140, a = 190},
+                icon = 'flag-checkered',
+                text = 'Park Vehicle',
             }
         },
         blips = {
@@ -68,7 +75,8 @@ Config.Locations = {
 
 -- `price` below is the BASE price, for the 1 Hour / 1.0x duration tier.
 -- The actual charge is base price × the chosen duration's multiplier
--- (see Config.Durations above), recomputed server-side.
+-- (see Config.Durations above), recomputed server-side. `icon` is a
+-- Font Awesome name shown next to the vehicle in the ox_lib menu.
 Config.Vehicles = {
     [1] = {
         model = 'neon',
@@ -76,7 +84,8 @@ Config.Vehicles = {
         description = 'Sleek city cruiser',
         image_name = 'neon',
         price = 7000,
-        type = 'car'
+        type = 'car',
+        icon = 'car-side',
     },
     [2] = {
         model = 'bf400',
@@ -84,7 +93,8 @@ Config.Vehicles = {
         description = 'Off-road dirt bike',
         image_name = 'bf400',
         price = 5000,
-        type = 'bike'
+        type = 'bike',
+        icon = 'motorcycle',
     },
     [3] = {
         model = 'bmx',
@@ -92,6 +102,7 @@ Config.Vehicles = {
         description = 'Eco-friendly pedal power',
         image_name = 'bmx',
         price = 5000,
-        type = 'bicycle'
+        type = 'bicycle',
+        icon = 'bicycle',
     },
 }

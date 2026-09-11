@@ -314,6 +314,22 @@ CreateThread(function()
 			KEY `note_id` (`note_id`),
 			KEY `case_id` (`case_id`)
 		)]],
+
+		-- Mugshot -- rebuilt from scratch (the old copy of this feature was
+		-- dead code that never shipped a table or a menu). Every photo taken
+		-- is kept as its own row so there's a real history, not just a
+		-- single overwritten "current photo" column.
+		[[CREATE TABLE IF NOT EXISTS `dept_mugshots` (
+			`id` INT(11) NOT NULL AUTO_INCREMENT,
+			`identifier` VARCHAR(255) DEFAULT NULL,
+			`citizen_name` VARCHAR(255) NOT NULL,
+			`photo_url` VARCHAR(500) NOT NULL,
+			`taken_by_name` VARCHAR(255) NOT NULL,
+			`taken_by_job` VARCHAR(20) NOT NULL,
+			`timestamp` INT(11) NOT NULL,
+			PRIMARY KEY (`id`),
+			KEY `identifier` (`identifier`)
+		)]],
 	}
 
 	for _, sql in ipairs(createStatements) do

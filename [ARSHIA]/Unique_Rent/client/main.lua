@@ -1,5 +1,3 @@
-InMenu = false
-sleep = true
 ESX = nil
 Citizen.CreateThread(function()
     Wait(100)
@@ -8,6 +6,7 @@ Citizen.CreateThread(function()
     ESX.PlayerData = ESX.GetPlayerData()
     PlayerData = ESX.GetPlayerData()
 end)
+
 Options = {
     vehicle = {hash = 0},
     last_location = '',
@@ -16,60 +15,112 @@ Options = {
     blips = {}
 }
 
-Citizen.CreateThread(function()
-    while true do
-        Citizen.Wait(1)
-        sleep = true
-		local playerPed = PlayerPedId()
-		local coords = GetEntityCoords(playerPed)
-        for k,v in pairs(Config.Locations) do
-            -- Also gated on processing_rent: the menu closes as soon as a
-            -- rent is confirmed, but the actual server check / spawn is
-            -- still in flight for a moment after that. Without this, the
-            -- E-key prompt could reappear and let a second rent_vehicle()
-            -- start during that window.
-            if not InMenu and not Options.processing_rent then
-                local distance = #(coords - v.coords)
-                local return_distance = #(coords - v.return_coords)
+-- Prebuilt ox_lib markers per location (nicer built-in shapes than a plain
+-- DrawMarker cylinder -- see Config.Locations[x].markers in config.lua for
+-- the type/color/size of each one). One rent marker + one return marker
+-- per configured location.
+local rentMarker, returnMarker = {}, {}
 
-                    if distance < 1 then
-                        sleep = false
-                        if Options.have_rented then
-                            DrawText3D(v.coords.x, v.coords.y, v.coords.z + 0.25, Config.Options['cant_rent'])
-                        else
-                            DrawText3D(v.coords.x, v.coords.y, v.coords.z + 0.25, v.markers.spawn.text)
-                            if IsControlJustReleased(0, v.markers.spawn.key) then
-                                Options.last_location = k
-                                open_ui(k)
-                            end
-                        end
-                    end
+for locId, loc in pairs(Config.Locations) do
+    rentMarker[locId] = lib.marker.new({
+        type = loc.markers.spawn.oxType,
+        coords = loc.coords,
+        width = loc.markers.spawn.size.x,
+        height = loc.markers.spawn.size.z,
+        color = loc.markers.spawn.color,
+        bobUpAndDown = true,
+        faceCamera = true,
+        rotate = true,
+    })
 
-                    if distance <= 15 then
-                        sleep = false
-                        DrawMarker(v.markers.spawn.type, v.coords.x, v.coords.y, v.coords.z, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, v.markers.spawn.size.x, v.markers.spawn.size.y, v.markers.spawn.size.z, v.markers.spawn.color.r, v.markers.spawn.color.g, v.markers.spawn.color.b, 100, false, true, 2, false, nil, nil, false)
-                    end
+    returnMarker[locId] = lib.marker.new({
+        type = loc.markers.return_spot.oxType,
+        coords = loc.return_coords,
+        width = loc.markers.return_spot.size.x,
+        height = loc.markers.return_spot.size.z,
+        color = loc.markers.return_spot.color,
+        bobUpAndDown = true,
+        faceCamera = true,
+        rotate = true,
+    })
 
-                    if Options.have_rented then
-                        if return_distance < 3 then
-                            sleep = false
-                            DrawText3D(v.return_coords.x, v.return_coords.y, v.return_coords.z + 0.25, v.markers.return_spot.text)
-                            if IsControlJustReleased(0, v.markers.return_spot.key) then
-                                return_vehicle()
-                            end
-                        end
-                        if return_distance <= 15 then
-                            sleep = false
-                            DrawMarker(v.markers.return_spot.type, v.return_coords.x, v.return_coords.y, v.return_coords.z, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, v.markers.return_spot.size.x, v.markers.return_spot.size.y, v.markers.return_spot.size.z, v.markers.return_spot.color.r, v.markers.return_spot.color.g, v.markers.return_spot.color.b, 100, false, true, 2, false, nil, nil, false)
-                        end
-                    end
+    -- Rent zone: draws the marker + "[E] Rent a Vehicle" prompt while
+    -- nearby, opens the ox_lib menu on E. Gated on `processing_rent` too --
+    -- the menu closes as soon as a rent is confirmed, but the actual
+    -- server check / spawn is still in flight for a moment after that.
+    -- Without this, the prompt could reappear and let a second
+    -- rent_vehicle() start during that window.
+    lib.points.new({
+        coords = loc.coords,
+        distance = 15,
+        locationId = locId,
+        nearby = function(self)
+            rentMarker[locId]:draw()
+
+            if self.currentDistance > 1.2 then
+                if self.promptShown then
+                    lib.hideTextUI()
+                    self.promptShown = nil
+                end
+                return
+            end
+
+            if Options.have_rented or Options.processing_rent then
+                lib.showTextUI(Config.Options['cant_rent'], { icon = 'ban', position = 'left-center' })
+                self.promptShown = true
+                return
+            end
+
+            lib.showTextUI(loc.markers.spawn.text, { icon = loc.markers.spawn.icon, position = 'left-center' })
+            self.promptShown = true
+
+            if IsControlJustReleased(0, loc.markers.spawn.key) then
+                Options.last_location = locId
+                open_ui(locId)
+            end
+        end,
+        onExit = function(self)
+            if self.promptShown then
+                lib.hideTextUI()
+                self.promptShown = nil
             end
         end
-        if sleep then
-            Citizen.Wait(150)
+    })
+
+    -- Return zone: only draws/prompts once the player actually has a
+    -- rented vehicle.
+    lib.points.new({
+        coords = loc.return_coords,
+        distance = 15,
+        locationId = locId,
+        nearby = function(self)
+            if not Options.have_rented then return end
+
+            returnMarker[locId]:draw()
+
+            if self.currentDistance > 3 then
+                if self.promptShown then
+                    lib.hideTextUI()
+                    self.promptShown = nil
+                end
+                return
+            end
+
+            lib.showTextUI(loc.markers.return_spot.text, { icon = loc.markers.return_spot.icon, position = 'left-center' })
+            self.promptShown = true
+
+            if IsControlJustReleased(0, loc.markers.return_spot.key) then
+                return_vehicle()
+            end
+        end,
+        onExit = function(self)
+            if self.promptShown then
+                lib.hideTextUI()
+                self.promptShown = nil
+            end
         end
-    end
-end)
+    })
+end
 
 -- Server-triggered reset (see /rentreset) for when a rented vehicle is
 -- lost some other way and the normal return_vehicle() flow can't run.
@@ -82,7 +133,15 @@ AddEventHandler('unique_rent:forceReset', function()
     Options.have_rented = false
     set_blip(true)
     SendNUIMessage({action = "hide_timer"})
-    Notification(Config.Options['return_success'])
+    lib.notify({ title = 'Unique Rent', description = Config.Options['return_success'], type = 'success' })
+end)
+
+-- Server-driven ox_lib notifications (see server/main.lua), so payment
+-- results use the same styled toast as everything else instead of the
+-- plain native ESX notification.
+RegisterNetEvent('unique_rent:notify')
+AddEventHandler('unique_rent:notify', function(data)
+    lib.notify(data)
 end)
 
 for k, v in pairs(Config.Locations) do
@@ -96,4 +155,3 @@ for k, v in pairs(Config.Locations) do
 	AddTextComponentSubstringPlayerName(v.blips.spawn.name)
 	EndTextCommandSetBlipName(rent)
 end
-

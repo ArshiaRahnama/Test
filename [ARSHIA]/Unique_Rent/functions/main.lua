@@ -12,11 +12,11 @@ end
 function rent_vehicle(model, durationId, location)
 	-- BUGFIX: previously nothing stopped rent_vehicle() from being called
 	-- again while a previous call was still mid-flight (waiting on the
-	-- server check / model load / spawn). Since the UI closes as soon as
-	-- the request is sent -- well before the vehicle actually spawns --
-	-- there was a real window where a second confirm click (or a fast
-	-- double relog into the E-key prompt) could trigger a second rent +
-	-- a second charge for what the player would see as one rental.
+	-- server check / model load / spawn). Since the confirm dialog closes
+	-- as soon as the request is sent -- well before the vehicle actually
+	-- spawns -- there was a real window where a second confirm click could
+	-- trigger a second rent + a second charge for what the player would
+	-- see as one rental.
 	if Options.processing_rent or Options.have_rented then
 		return
 	end
@@ -59,7 +59,7 @@ function rent_vehicle(model, durationId, location)
 					show_timer(vehicleInfo, durationInfo)
 				end
 			else
-				Notification(Config.Options['spawnpoint_blocked'])
+				lib.notify({ title = 'Unique Rent', description = Config.Options['spawnpoint_blocked'], type = 'error' })
 				Options.processing_rent = false
 			end
 		else
@@ -77,9 +77,9 @@ function return_vehicle()
 
 		set_blip(true)
 		SendNUIMessage({action = "hide_timer"})
-		Notification(Config.Options['return_success'])
+		lib.notify({ title = 'Unique Rent', description = Config.Options['return_success'], type = 'success' })
 	else
-		Notification(Config.Options['return_error'])
+		lib.notify({ title = 'Unique Rent', description = Config.Options['return_error'], type = 'error' })
 	end
 end
 
@@ -118,11 +118,10 @@ end
 function show_timer(vehicleInfo, durationInfo)
 	local seconds = durationInfo and durationInfo.seconds or 3600
 	SendNUIMessage({action = "show_timer", content = { time = seconds, vehicle = vehicleInfo, duration = durationInfo }})
-	SetNuiFocus(false, false)
 end
 
 function finish()
-    Notification(Config.Options['time_finished'])
+    lib.notify({ title = 'Unique Rent', description = Config.Options['time_finished'], type = 'info' })
 
     if Options.vehicle.hash and DoesEntityExist(Options.vehicle.hash) then
         delete_vehicle(Options.vehicle.hash)
@@ -137,62 +136,88 @@ function delete_vehicle(vehicle)
 	ESX.Game.DeleteVehicle(vehicle)
 end
 
-function Notification(text)
-	SetNotificationTextEntry("STRING")
-	AddTextComponentString(text)
-	DrawNotification(false, false)
-end
-
+-- Builds and shows the ox_lib context menu for a rental location: one
+-- entry per vehicle, each opening a duration submenu, each duration
+-- opening an ox_lib confirm dialog before anything is charged.
 function open_ui(location)
-	local vehicles = {}
-
-	-- ipairs (not pairs), same reasoning as Config.Durations below: this
-	-- guarantees the vehicle cards render in the order they're defined in
-	-- config.lua instead of an unspecified table-iteration order.
-	for k,v in ipairs(Config.Vehicles) do
-		table.insert(vehicles, {location = location, id= k,  model = v.model, label = v.label, description = v.description, price = v.price, type = v.type, image = v.image_name})
+	if Options.have_rented or Options.processing_rent then
+		lib.notify({ title = 'Unique Rent', description = Config.Options['cant_rent'], type = 'error' })
+		return
 	end
 
-	-- ipairs (not pairs) so the tiers arrive in the order they're defined
-	-- in Config.Durations -- that order is what the UI displays left-to-right.
-	local durations = {}
-	for k,v in ipairs(Config.Durations) do
-		table.insert(durations, {id = k, label = v.label, seconds = v.seconds, multiplier = v.multiplier})
+	local locationCfg = Config.Locations[location]
+	if not locationCfg then
+		return
 	end
 
-	TriggerScreenblurFadeIn(1)
-	SendNUIMessage({action = 'open', content = { vehicles = vehicles, durations = durations }})
-	SetNuiFocus(true, true)
+	local resource = GetCurrentResourceName()
+	local vehicleOptions = {}
 
-	InMenu = true
+	-- ipairs (not pairs) so vehicle cards / duration tiers render in the
+	-- order they're defined in config.lua instead of an unspecified
+	-- table-iteration order.
+	for _, vehicle in ipairs(Config.Vehicles) do
+		local durationOptions = {}
+
+		for durationId, duration in ipairs(Config.Durations) do
+			local price = math.floor((vehicle.price * duration.multiplier) + 0.5)
+
+			durationOptions[#durationOptions + 1] = {
+				title = duration.label,
+				description = ('Total price: $%s'):format(price),
+				icon = 'clock',
+				onSelect = function()
+					confirm_rent(vehicle, durationId, duration, price, location)
+				end
+			}
+		end
+
+		lib.registerContext({
+			id = ('unique_rent_duration_%s'):format(vehicle.model),
+			title = vehicle.label,
+			menu = 'unique_rent_' .. location,
+			options = durationOptions
+		})
+
+		vehicleOptions[#vehicleOptions + 1] = {
+			title = vehicle.label,
+			description = vehicle.description,
+			icon = vehicle.icon or 'car',
+			image = ('nui://%s/html/assets/%s.png'):format(resource, vehicle.image_name),
+			metadata = {
+				['Base price'] = ('$%s'):format(vehicle.price),
+				['Type'] = vehicle.type,
+			},
+			menu = ('unique_rent_duration_%s'):format(vehicle.model),
+			arrow = true,
+		}
+	end
+
+	lib.registerContext({
+		id = 'unique_rent_' .. location,
+		title = 'Rent a Vehicle',
+		options = vehicleOptions
+	})
+
+	lib.showContext('unique_rent_' .. location)
 end
 
-function close_ui()
-  TriggerScreenblurFadeOut(1000)
-	SendNUIMessage({action = "close"})
-	SetNuiFocus(false, false)
+-- Confirmation step: image (via the ox_lib menu it came from), chosen
+-- duration and total price are shown before any money is deducted -- no
+-- more accidental one-click charges. Cancelling reopens the vehicle list
+-- so the player lands back where they were instead of at the desert.
+function confirm_rent(vehicle, durationId, duration, price, location)
+	local alert = lib.alertDialog({
+		header = vehicle.label,
+		content = ('Duration: **%s**\nTotal price: **$%s**\n\nThe amount is deducted immediately on confirmation.'):format(duration.label, price),
+		centered = true,
+		cancel = true,
+		labels = { confirm = 'Confirm & Pay', cancel = 'Cancel' }
+	})
 
-	InMenu = false
-end
-
-function DrawText3D(x, y, z, text)
-	local px, py, pz = table.unpack(GetEntityCoords(PlayerPedId()))
-
-	local distance = GetDistanceBetweenCoords(x, y, z, px, py, pz, false)
-
-	if distance <= 6 then
-		SetTextScale(0.35, 0.35)
-		SetTextFont(4)
-		SetTextProportional(1)
-		SetTextColour(255, 255, 255, 215)
-		SetTextEntry("STRING")
-		SetTextCentre(true)
-		AddTextComponentString(text)
-		SetDrawOrigin(x,y,z, 0)
-		DrawText(0.0, 0.0)
-		local factor = (string.len(text)) / 370
-		DrawRect(0.0, 0.0+0.0125, 0.017+ factor, 0.03, 0, 0, 0, 75)
-		ClearDrawOrigin()
+	if alert == 'confirm' then
+		rent_vehicle(vehicle.model, durationId, location)
+	else
+		open_ui(location)
 	end
 end
-

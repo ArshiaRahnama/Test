@@ -38,9 +38,9 @@ AddEventHandler("unique_rent:pay", function(model, durationId)
 
     if xPlayer.canAfford(quote.price) then
         xPlayer.payAny(quote.price)
-        TriggerClientEvent("esx:showNotification", source, "You paid ~g~" .. quote.price .. "~w~$ to rent the vehicle.")
+        TriggerClientEvent("unique_rent:notify", source, { title = 'Unique Rent', description = ('You paid $%s to rent the vehicle.'):format(quote.price), type = 'success' })
     else
-        TriggerClientEvent("esx:showNotification", source, "You don't have enough money.")
+        TriggerClientEvent("unique_rent:notify", source, { title = 'Unique Rent', description = "You don't have enough money.", type = 'error' })
     end
 end)
 
@@ -63,7 +63,7 @@ ESX.RegisterServerCallback("unique_rent:check", function(source, cb, model, dura
         cb(true)
     else
         cb(false)
-        TriggerClientEvent("esx:showNotification", source, "You don't have enough money.")
+        TriggerClientEvent("unique_rent:notify", source, { title = 'Unique Rent', description = "You don't have enough money.", type = 'error' })
     end
 end)
 

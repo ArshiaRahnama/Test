@@ -110,29 +110,47 @@ AddEventHandler('esx_uniquejobs:menuGetCriminalRecord', function(query)
 					totalUnpaid = totalUnpaid + (b.amount or 0)
 				end
 
-				-- FEATURE ADDED (Rap Sheet, standalone from the removed Mugshot
-				-- system): also pull DOJ bookings logged through the CAD/Crime
-				-- Scene panel (doj_criminal_records - a separate table from
-				-- criminal_records above, populated by cad/server/crimescene.lua's
-				-- booking flow) and this person's last known location (their
-				-- most recent /law or radar traffic stop), the same two pieces
-				-- the old dead-code Mugshot menu's Rap Sheet promised but never
-				-- actually delivered since it was never wired into any menu.
+				-- FEATURE ADDED (Rap Sheet): also pull DOJ bookings logged
+				-- through the CAD/Crime Scene panel (doj_criminal_records -
+				-- a separate table from criminal_records above, populated by
+				-- cad/server/crimescene.lua's booking flow) and this
+				-- person's last known location (their most recent /law or
+				-- radar traffic stop) -- both now genuinely delivered here,
+				-- unlike the old dead-code Mugshot menu that only promised
+				-- them.
 				MySQL.Async.fetchAll('SELECT charges, fine, jail_minutes, booked_by_name, created_at FROM doj_criminal_records WHERE suspect_identifier = @identifier ORDER BY created_at DESC LIMIT 15', {
 					['@identifier'] = identifier,
 				}, function(bookings)
 					MySQL.Async.fetchAll('SELECT location, timestamp FROM dept_traffic_stops WHERE citizen_identifier = @identifier AND location IS NOT NULL ORDER BY timestamp DESC LIMIT 1', {
 						['@identifier'] = identifier,
 					}, function(lastStop)
-						TriggerClientEvent('esx_uniquejobs:criminalRecordResult', source, {
-							name = name,
-							records = records,
-							bookings = bookings,
-							unpaidCount = #bills,
-							unpaidTotal = totalUnpaid,
-							lastKnownLocation = lastStop[1] and lastStop[1].location or nil,
-							lastKnownTimestamp = lastStop[1] and lastStop[1].timestamp or nil,
-						})
+						-- FEATURE ADDED (Mugshot, rebuilt): identity card fields
+						-- (same users columns cia_main.lua/fbi_main.lua already
+						-- use) + the latest photo from server/mugshot_manager.lua
+						-- (dept_mugshots), so the Rap Sheet is now a genuine ID
+						-- card+photo+full history in one place, in both /doj and
+						-- /law, instead of a separate half-wired Mugshot menu.
+						MySQL.Async.fetchAll('SELECT firstname, lastname, sex, dateofbirth, height FROM users WHERE identifier = @identifier LIMIT 1', {
+							['@identifier'] = identifier,
+						}, function(identity)
+							GetLatestMugshot(identifier, function(mugshot)
+								TriggerClientEvent('esx_uniquejobs:criminalRecordResult', source, {
+									name = name,
+									records = records,
+									bookings = bookings,
+									unpaidCount = #bills,
+									unpaidTotal = totalUnpaid,
+									lastKnownLocation = lastStop[1] and lastStop[1].location or nil,
+									lastKnownTimestamp = lastStop[1] and lastStop[1].timestamp or nil,
+									sex = identity[1] and identity[1].sex or nil,
+									dob = identity[1] and identity[1].dateofbirth or nil,
+									height = identity[1] and identity[1].height or nil,
+									mugshotUrl = mugshot and mugshot.photo_url or nil,
+									mugshotTakenBy = mugshot and mugshot.taken_by_name or nil,
+									mugshotTimestamp = mugshot and mugshot.timestamp or nil,
+								})
+							end)
+						end)
 					end)
 				end)
 			end)
