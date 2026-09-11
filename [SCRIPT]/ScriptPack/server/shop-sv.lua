@@ -176,13 +176,19 @@ ESX.RegisterServerCallback('getitemsForSaleGunshop', function(source, cb)
     local itemsForSaleGunshop = {}
 
     for itemName, itemData in pairs(ShopConfig.itemsForSaleGunshop) do
-        table.insert(itemsForSaleGunshop, {
-            name = itemName,
-            label = ESX.GetWeaponLabel(itemName),
-            price = itemData.price,
-            image = itemData.image,
-            itemType = 'weapon'
-        })
+        -- Heavy weapons (RPG/Minigun/Grenade Launcher) are marked
+        -- `restricted = true` in the config and only shown/sellable
+        -- when Config_Gunshop.SellHeavyWeapons is turned on.
+        if not itemData.restricted or Config_Gunshop.SellHeavyWeapons then
+            table.insert(itemsForSaleGunshop, {
+                name = itemName,
+                label = ESX.GetWeaponLabel(itemName),
+                price = itemData.price,
+                category = itemData.category,
+                meta = ShopConfig.GunshopMeta[itemName],
+                itemType = 'weapon'
+            })
+        end
     end
 
     -- Ammo entries (see ShopConfig.itemsForSaleAmmoGunshop) merged into
@@ -195,7 +201,7 @@ ESX.RegisterServerCallback('getitemsForSaleGunshop', function(source, cb)
             label = itemInfo and itemInfo.label or itemName,
             price = itemData.price,
             amount = itemData.amount or 1,
-            image = itemData.image,
+            category = itemData.category,
             itemType = 'ammo'
         })
     end
@@ -203,14 +209,48 @@ ESX.RegisterServerCallback('getitemsForSaleGunshop', function(source, cb)
     cb(itemsForSaleGunshop)
 end)
 
+-- Basic anti-spam: one gunshop purchase per 500ms per player, so a
+-- fast-clicking macro/exploit can't fire the buy event faster than the
+-- server can process it. Resets naturally as it's just a per-source
+-- timestamp table, no cleanup needed since it's small and keyed by
+-- source (which FiveM reuses).
+local lastGunshopPurchase = {}
+
+local function isRateLimited(source)
+    local now = GetGameTimer()
+    local last = lastGunshopPurchase[source]
+    if last and (now - last) < 500 then return true end
+    lastGunshopPurchase[source] = now
+    return false
+end
+
+-- When Config_Gunshop.RequireLicense is enabled (shopseller_config.lua),
+-- every gunshop purchase requires a 'weaponlicense' item in inventory.
+local function hasWeaponLicense(xPlayer)
+    if not Config_Gunshop.RequireLicense then return true end
+    local license = xPlayer.getInventoryItem('weaponlicense')
+    return license and license.count > 0
+end
+
 RegisterServerEvent('gunshop_item:buy_gunshop')
 AddEventHandler('gunshop_item:buy_gunshop', function(itemName, amount)
     local source = source
+    if isRateLimited(source) then return end
+
     local xPlayer = ESX.GetPlayerFromId(source)
     if not xPlayer then return end
 
     local itemData = ShopConfig.itemsForSaleGunshop[itemName]
     if not itemData or not isValidAmount(amount) then return end
+
+    -- Re-check the heavy-weapons toggle server-side too -- the client
+    -- already filters these out of the menu, but never trust the client.
+    if itemData.restricted and not Config_Gunshop.SellHeavyWeapons then return end
+
+    if not hasWeaponLicense(xPlayer) then
+        TriggerClientEvent('esx:showNotification', source, 'Shoma Gavahiname Aslahe Nadarid.')
+        return
+    end
 
     local itemPrice = itemData.price
     local totalPrice = itemPrice * amount
@@ -243,11 +283,18 @@ end)
 RegisterServerEvent('gunshop_item:buy_ammo')
 AddEventHandler('gunshop_item:buy_ammo', function(itemName, amount)
     local source = source
+    if isRateLimited(source) then return end
+
     local xPlayer = ESX.GetPlayerFromId(source)
     if not xPlayer then return end
 
     local itemData = ShopConfig.itemsForSaleAmmoGunshop[itemName]
     if not itemData or not isValidAmount(amount) then return end
+
+    if not hasWeaponLicense(xPlayer) then
+        TriggerClientEvent('esx:showNotification', source, 'Shoma Gavahiname Aslahe Nadarid.')
+        return
+    end
 
     local itemPrice = itemData.price
     local totalPrice = itemPrice * amount

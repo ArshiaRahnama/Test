@@ -41,7 +41,7 @@ CWConfig.ReturnPoint = vector3(632.2348, -10.6546, 82.779)
 
 -- Distance from a gang's Boss Action point required to use /cw or /bw in a
 -- "gang" world, and from CWConfig.ReturnPoint required for a "group" world.
-CWConfig.EntryRadius = 20.0
+CWConfig.EntryRadius = 40.0
 
 -- ESX groups allowed to use the admin commands below
 CWConfig.AdminGroups = {
@@ -64,7 +64,7 @@ CWConfig.Worlds = {
             ["steam:110000166709e1e"] = true, -- Morphy
         },
     },
-    [100] = { label = "1s",   mode = "gang" },
+    [100] = { label = "1",   mode = "gang" },
     [101] = { label = "Sheriff",  mode = "gang" },
     [102] = { label = "Medic",    mode = "gang" },
     [103] = { label = "Mechanic", mode = "gang" },

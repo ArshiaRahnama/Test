@@ -57,12 +57,144 @@ ShopConfig.sellingLocationNarekshop = {
         {x = -3173.88, y = 1088.727, z = 20.838, h = 246.18, pedname = "s_m_y_blackops_01", pedtype = 4, displayBlip = true},
 }
 
+-- ============================================================
+-- GUN SHOP -- categories, catalog, metadata
+-- ============================================================
+-- Previously this list only had 3 weapons and every entry pointed at
+-- an `image` inside lc-inventory's asset folder (nui://lc-inventory/...)
+-- that doesn't actually contain weapon icons -- that's the "Missing img"
+-- placeholder seen in the buy menu in-game. The client now renders
+-- these with FontAwesome `icon`/`iconColor` instead (always renders,
+-- no missing-asset risk), grouped into categories so the menu isn't
+-- one long flat list anymore.
+
+-- Toggle whether military-grade weapons (RPG, Minigun, Grenade Launcher)
+-- are purchasable at all. Off by default -- most servers gate these
+-- behind a black market/gang script rather than a public gun store.
+Config_Gunshop = Config_Gunshop or {}
+Config_Gunshop.SellHeavyWeapons = false
+
+-- If true, buying anything from the Gun Shop requires a 'weaponlicense'
+-- item in the player's inventory (checked server-side in shop-sv.lua).
+-- Off by default so this doesn't break servers that don't use licenses.
+Config_Gunshop.RequireLicense = false
+
+ShopConfig.GunshopCategories = {
+    {id = 'pistols',    label = 'Pistols',       icon = 'fa-solid fa-gun',        iconColor = '#fbbf24'},
+    {id = 'smgs',        label = 'SMGs',          icon = 'fa-solid fa-gun',        iconColor = '#38bdf8'},
+    {id = 'shotguns',    label = 'Shotguns',      icon = 'fa-solid fa-gun',        iconColor = '#f97316'},
+    {id = 'rifles',      label = 'Rifles',        icon = 'fa-solid fa-gun',        iconColor = '#ef4444'},
+    {id = 'snipers',     label = 'Snipers',       icon = 'fa-solid fa-crosshairs', iconColor = '#a855f7'},
+    {id = 'heavy',       label = 'Heavy Weapons', icon = 'fa-solid fa-explosion',  iconColor = '#e11d48'},
+    {id = 'melee',       label = 'Melee',         icon = 'fa-solid fa-hand-fist',  iconColor = '#a8a29e'},
+    {id = 'throwables',  label = 'Throwables',    icon = 'fa-solid fa-bomb',       iconColor = '#eab308'},
+    {id = 'ammo',        label = 'Ammunition',    icon = 'fa-solid fa-box',        iconColor = '#22c55e'},
+}
+
 ShopConfig.itemsForSaleGunshop = {
-    weapon_pistol = {price = 90000, image = url.."weapon_pistol.png"},
+    -- Pistols
+    weapon_pistol          = {price = 90000,   category = 'pistols'},
+    weapon_combatpistol    = {price = 120000,  category = 'pistols'},
+    weapon_snspistol       = {price = 75000,   category = 'pistols'},
+    weapon_heavypistol     = {price = 150000,  category = 'pistols'},
+    weapon_vintagepistol   = {price = 130000,  category = 'pistols'},
+    weapon_marksmanpistol  = {price = 200000,  category = 'pistols'},
+    weapon_revolver        = {price = 175000,  category = 'pistols'},
+    weapon_doubleaction    = {price = 190000,  category = 'pistols'},
 
-    weapon_combatpistol = {price = 120000, image = url.."weapon_combatpistol.png"},
-    weapon_knife = {price = 60000, image = url.."weapon_knife.png"},
+    -- SMGs
+    weapon_microsmg        = {price = 250000,  category = 'smgs'},
+    weapon_smg             = {price = 350000,  category = 'smgs'},
+    weapon_assaultsmg      = {price = 450000,  category = 'smgs'},
+    weapon_minismg         = {price = 220000,  category = 'smgs'},
 
+    -- Shotguns
+    weapon_pumpshotgun     = {price = 400000,  category = 'shotguns'},
+    weapon_sawnoffshotgun  = {price = 300000,  category = 'shotguns'},
+    weapon_bullpupshotgun  = {price = 450000,  category = 'shotguns'},
+    weapon_assaultshotgun  = {price = 500000,  category = 'shotguns'},
+
+    -- Rifles
+    weapon_assaultrifle    = {price = 600000,  category = 'rifles'},
+    weapon_carbinerifle    = {price = 650000,  category = 'rifles'},
+    weapon_specialcarbine  = {price = 700000,  category = 'rifles'},
+    weapon_bullpuprifle    = {price = 680000,  category = 'rifles'},
+    weapon_advancedrifle   = {price = 720000,  category = 'rifles'},
+
+    -- Snipers
+    weapon_sniperrifle     = {price = 900000,  category = 'snipers'},
+    weapon_marksmanrifle   = {price = 850000,  category = 'snipers'},
+    weapon_heavysniper     = {price = 1100000, category = 'snipers'},
+
+    -- Heavy weapons -- only listed when Config_Gunshop.SellHeavyWeapons is true
+    weapon_grenadelauncher = {price = 2000000, category = 'heavy', restricted = true},
+    weapon_rpg             = {price = 3000000, category = 'heavy', restricted = true},
+    weapon_minigun         = {price = 5000000, category = 'heavy', restricted = true},
+
+    -- Melee
+    weapon_knife           = {price = 60000,   category = 'melee'},
+    weapon_bat              = {price = 15000,  category = 'melee'},
+    weapon_hatchet          = {price = 25000,  category = 'melee'},
+    weapon_machete          = {price = 30000,  category = 'melee'},
+    weapon_nightstick       = {price = 20000,  category = 'melee'},
+    weapon_knuckle          = {price = 18000,  category = 'melee'},
+
+    -- Throwables
+    weapon_grenade          = {price = 5000,   category = 'throwables'},
+    weapon_stickybomb       = {price = 8000,   category = 'throwables'},
+    weapon_molotov          = {price = 3000,   category = 'throwables'},
+    weapon_smokegrenade     = {price = 2000,   category = 'throwables'},
+}
+
+-- Flavour metadata shown under each weapon in the menu (damage / fire
+-- rate / magazine / ammo type it takes). Purely cosmetic -- doesn't
+-- affect real weapon stats -- but tells the player what they're buying
+-- before they spend the money. Entries left out just show no metadata.
+ShopConfig.GunshopMeta = {
+    weapon_pistol          = {damage = 'Low',      fireRate = 'Medium', magazine = 12, ammo = 'Pistol Ammo'},
+    weapon_combatpistol    = {damage = 'Low',      fireRate = 'Fast',   magazine = 12, ammo = 'Pistol Ammo'},
+    weapon_snspistol       = {damage = 'Low',      fireRate = 'Fast',   magazine = 6,  ammo = 'Pistol Ammo'},
+    weapon_heavypistol     = {damage = 'Medium',   fireRate = 'Medium', magazine = 9,  ammo = 'Pistol Ammo'},
+    weapon_vintagepistol   = {damage = 'Medium',   fireRate = 'Medium', magazine = 7,  ammo = 'Pistol Ammo'},
+    weapon_marksmanpistol  = {damage = 'High',     fireRate = 'Slow',   magazine = 1,  ammo = 'Pistol Ammo'},
+    weapon_revolver        = {damage = 'High',     fireRate = 'Slow',   magazine = 6,  ammo = 'Pistol Ammo'},
+    weapon_doubleaction    = {damage = 'High',     fireRate = 'Slow',   magazine = 6,  ammo = 'Pistol Ammo'},
+
+    weapon_microsmg        = {damage = 'Low',      fireRate = 'Very Fast', magazine = 16, ammo = 'SMG Ammo'},
+    weapon_smg             = {damage = 'Medium',   fireRate = 'Fast',      magazine = 30, ammo = 'SMG Ammo'},
+    weapon_assaultsmg      = {damage = 'Medium',   fireRate = 'Very Fast', magazine = 30, ammo = 'SMG Ammo'},
+    weapon_minismg         = {damage = 'Low',      fireRate = 'Fast',      magazine = 20, ammo = 'SMG Ammo'},
+
+    weapon_pumpshotgun     = {damage = 'Very High', fireRate = 'Slow', magazine = 8,  ammo = 'Shotgun Shells'},
+    weapon_sawnoffshotgun  = {damage = 'Very High', fireRate = 'Slow', magazine = 2,  ammo = 'Shotgun Shells'},
+    weapon_bullpupshotgun  = {damage = 'High',      fireRate = 'Medium', magazine = 8, ammo = 'Shotgun Shells'},
+    weapon_assaultshotgun  = {damage = 'High',      fireRate = 'Medium', magazine = 12, ammo = 'Shotgun Shells'},
+
+    weapon_assaultrifle    = {damage = 'Medium', fireRate = 'Fast', magazine = 30, ammo = 'Rifle Ammo'},
+    weapon_carbinerifle    = {damage = 'Medium', fireRate = 'Fast', magazine = 30, ammo = 'Rifle Ammo'},
+    weapon_specialcarbine  = {damage = 'High',   fireRate = 'Fast', magazine = 30, ammo = 'Rifle Ammo'},
+    weapon_bullpuprifle    = {damage = 'Medium', fireRate = 'Fast', magazine = 30, ammo = 'Rifle Ammo'},
+    weapon_advancedrifle   = {damage = 'Medium', fireRate = 'Fast', magazine = 30, ammo = 'Rifle Ammo'},
+
+    weapon_sniperrifle     = {damage = 'Very High', fireRate = 'Very Slow', magazine = 10, ammo = 'Sniper Ammo'},
+    weapon_marksmanrifle   = {damage = 'High',      fireRate = 'Slow',      magazine = 8,  ammo = 'Sniper Ammo'},
+    weapon_heavysniper     = {damage = 'Extreme',   fireRate = 'Very Slow', magazine = 6,  ammo = 'Sniper Ammo'},
+
+    weapon_grenadelauncher = {damage = 'Extreme', fireRate = 'Very Slow', magazine = 1, ammo = 'Heavy Ammo'},
+    weapon_rpg              = {damage = 'Extreme', fireRate = 'Very Slow', magazine = 1, ammo = 'Heavy Ammo'},
+    weapon_minigun           = {damage = 'Extreme', fireRate = 'Very Fast', magazine = 500, ammo = 'Heavy Ammo'},
+
+    weapon_knife            = {damage = 'Medium', class = 'Melee'},
+    weapon_bat               = {damage = 'Low',    class = 'Melee'},
+    weapon_hatchet            = {damage = 'Medium', class = 'Melee'},
+    weapon_machete            = {damage = 'High',   class = 'Melee'},
+    weapon_nightstick         = {damage = 'Low',    class = 'Melee'},
+    weapon_knuckle            = {damage = 'Low',    class = 'Melee'},
+
+    weapon_grenade            = {damage = 'High', class = 'Throwable'},
+    weapon_stickybomb         = {damage = 'Very High', class = 'Throwable'},
+    weapon_molotov            = {damage = 'Medium', class = 'Throwable'},
+    weapon_smokegrenade       = {damage = 'None (utility)', class = 'Throwable'},
 }
 
 -- Ammo (added so the ammo_* items essentialmode's weapon-in-inventory
@@ -73,15 +205,22 @@ ShopConfig.itemsForSaleGunshop = {
 -- not weapons (xPlayer.addWeapon) -- see server/shop-sv.lua's
 -- gunshop_item:buy_ammo handler.
 ShopConfig.itemsForSaleAmmoGunshop = {
-    ammo_pistol = {price = 30, amount = 30, image = url.."weapon_pistol.png"},
-    ammo_smg = {price = 25, amount = 30, image = url.."weapon_smg.png"},
-    ammo_shotgun = {price = 40, amount = 12, image = url.."weapon_pumpshotgun.png"},
-    ammo_rifle = {price = 20, amount = 30, image = url.."weapon_carbinerifle.png"},
-    ammo_sniper = {price = 60, amount = 10, image = url.."weapon_sniperrifle.png"},
-    ammo_mg = {price = 15, amount = 50, image = url.."weapon_mg.png"},
-    ammo_heavy = {price = 200, amount = 5, image = url.."weapon_rpg.png"},
+    ammo_pistol  = {price = 30,  amount = 30, category = 'ammo'},
+    ammo_smg     = {price = 25,  amount = 30, category = 'ammo'},
+    ammo_shotgun = {price = 40,  amount = 12, category = 'ammo'},
+    ammo_rifle   = {price = 20,  amount = 30, category = 'ammo'},
+    ammo_sniper  = {price = 60,  amount = 10, category = 'ammo'},
+    ammo_mg      = {price = 15,  amount = 50, category = 'ammo'},
+    ammo_heavy   = {price = 200, amount = 5,  category = 'ammo'},
 }
 
+-- Deliberately empty: every Ammu-Nation-style location below is already
+-- covered by ShopConfig.sellingLocationNarekshop's ped, which offers
+-- both "Attachment Shop" and "Gun Shop" as target options on the same
+-- ped. Adding entries here too would spawn a second, overlapping ped
+-- at the same coords. Only add locations here if you want *additional*
+-- standalone gun shops somewhere Narekshop doesn't already cover, e.g.:
+-- {x = 1000.0, y = 1000.0, z = 50.0, h = 0.0, pedname = "s_m_y_ammucity_01", pedtype = 4, displayBlip = true},
 ShopConfig.sellingLocationGunshop = {
 
 }

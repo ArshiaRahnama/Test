@@ -293,41 +293,119 @@ Citizen.CreateThread(function()
     CreateShopBlip()
 end)
 
+-- ============================================================
+-- GUN SHOP -- category menu (Pistols / SMGs / Shotguns / Rifles /
+-- Snipers / Heavy / Melee / Throwables / Ammo) instead of one long
+-- flat list. Selecting a category opens a submenu of just those
+-- items; ox_lib draws the back arrow automatically via `menu` on
+-- the registered submenu.
+-- ============================================================
+
+local function buildWeaponMetadata(item)
+    local metadata = {}
+    local meta = item.meta
+
+    if meta then
+        if meta.class then metadata[#metadata + 1] = ('Type: %s'):format(meta.class) end
+        if meta.damage then metadata[#metadata + 1] = ('Damage: %s'):format(meta.damage) end
+        if meta.fireRate then metadata[#metadata + 1] = ('Fire Rate: %s'):format(meta.fireRate) end
+        if meta.magazine then metadata[#metadata + 1] = ('Magazine: %s'):format(meta.magazine) end
+        if meta.ammo then metadata[#metadata + 1] = ('Ammo Type: %s'):format(meta.ammo) end
+    end
+
+    metadata[#metadata + 1] = ('Price: $%s'):format(item.price)
+
+    return metadata
+end
+
 function OpenBuyMenuGunshop()
-    local options = {}
-
-
     ESX.TriggerServerCallback('getitemsForSaleGunshop', function(itemsForSaleGunshop)
+        -- Group the flat list the server sends into { [categoryId] = { item, item, ... } }
+        local grouped = {}
         for _, item in ipairs(itemsForSaleGunshop) do
-
-            -- Ammo entries (item.itemType == 'ammo', see
-            -- ShopConfig.itemsForSaleAmmoGunshop) buy a stack of the real
-            -- item via gunshop_item:buy_ammo; everything else keeps
-            -- buying a weapon via gunshop_item:buy_gunshop, unchanged.
-            local buyEvent = item.itemType == 'ammo' and 'gunshop_item:buy_ammo' or 'gunshop_item:buy_gunshop'
-            local title = item.itemType == 'ammo'
-                and ("%s x%s ($%s)"):format(item.label, item.amount, item.price)
-                or ("%s ($%s)"):format(item.label, item.price)
-
-            table.insert(options, {
-                title = title,
-                description = 'Click to Buy',
-                icon = item.image,
-                image = item.image,
-                onSelect = function()
-
-                    TriggerServerEvent(buyEvent, item.name, 1, item.price)
-                end
-            })
+            grouped[item.category] = grouped[item.category] or {}
+            table.insert(grouped[item.category], item)
         end
 
-        if #options > 0 then
+        local categoryOptions = {}
+
+        for _, cat in ipairs(ShopConfig.GunshopCategories) do
+            local items = grouped[cat.id]
+            if items and #items > 0 then
+                local subOptions = {}
+
+                for _, item in ipairs(items) do
+                    local isAmmo = item.itemType == 'ammo'
+                    local buyEvent = isAmmo and 'gunshop_item:buy_ammo' or 'gunshop_item:buy_gunshop'
+                    local title = isAmmo and ('%s (x%s per stack)'):format(item.label, item.amount) or item.label
+                    local metadata = buildWeaponMetadata(item)
+
+                    subOptions[#subOptions + 1] = {
+                        title = title,
+                        description = isAmmo and 'Click to choose a quantity' or 'Click to buy',
+                        icon = cat.icon,
+                        iconColor = cat.iconColor,
+                        metadata = metadata,
+                        onSelect = function()
+                            if isAmmo then
+                                local input = lib.inputDialog(('Buy %s'):format(item.label), {
+                                    {
+                                        type = 'number',
+                                        label = 'Stacks',
+                                        description = ('Each stack = %sx for $%s'):format(item.amount, item.price),
+                                        min = 1,
+                                        max = 50,
+                                        default = 1,
+                                        required = true
+                                    }
+                                })
+
+                                if input and tonumber(input[1]) and tonumber(input[1]) > 0 then
+                                    TriggerServerEvent(buyEvent, item.name, tonumber(input[1]))
+                                else
+                                    lib.notify({ position = 'center-right', title = "", description = "Meghdar Na Motabar", type = 'error', duration = 5000 })
+                                end
+                            else
+                                local confirm = lib.alertDialog({
+                                    header = item.label,
+                                    content = table.concat(metadata, '\n\n'),
+                                    centered = true,
+                                    cancel = true,
+                                    labels = { confirm = 'Buy', cancel = 'Cancel' }
+                                })
+
+                                if confirm == 'confirm' then
+                                    TriggerServerEvent(buyEvent, item.name, 1)
+                                end
+                            end
+                        end
+                    }
+                end
+
+                lib.registerContext({
+                    id = 'gunshop_category_' .. cat.id,
+                    title = cat.label,
+                    menu = 'buy_item_gunshop_menu',
+                    options = subOptions
+                })
+
+                categoryOptions[#categoryOptions + 1] = {
+                    title = cat.label,
+                    description = ('%s item%s available'):format(#items, #items ~= 1 and 's' or ''),
+                    icon = cat.icon,
+                    iconColor = cat.iconColor,
+                    arrow = true,
+                    menu = 'gunshop_category_' .. cat.id,
+                }
+            end
+        end
+
+        if #categoryOptions > 0 then
             lib.registerContext({
                 id = 'buy_item_gunshop_menu',
-                title = 'Buy Item',
-                options = options
+                title = 'Gun Shop',
+                options = categoryOptions
             })
-
 
             lib.showContext('buy_item_gunshop_menu')
         else
@@ -364,10 +442,24 @@ Citizen.CreateThread(function()
                 {
                     name = 'Gun Shop',
                     event = 'gunshop_openmenu',
-                    icon = 'fa-solid fa-cart-weapon',
+                    icon = 'fa-solid fa-gun', -- was 'fa-solid fa-cart-weapon', not a real FontAwesome icon
                     label = 'Gun Shop',
                 },
             }
         })
+
+        -- Standalone gun shops (if any get added to ShopConfig.sellingLocationGunshop)
+        -- now also get a map blip, matching the Narekshop gun shop locations.
+        if v.displayBlip then
+            local blip = AddBlipForCoord(v.x, v.y, v.z)
+            SetBlipSprite(blip, 110)
+            SetBlipDisplay(blip, 4)
+            SetBlipScale(blip, 0.7)
+            SetBlipColour(blip, 1)
+            SetBlipAsShortRange(blip, true)
+            BeginTextCommandSetBlipName("STRING")
+            AddTextComponentSubstringPlayerName("Gun Shop")
+            EndTextCommandSetBlipName(blip)
+        end
     end
 end)

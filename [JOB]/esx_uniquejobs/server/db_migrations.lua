@@ -35,6 +35,22 @@ local function EnsureColumn(tableName, columnName, columnDef)
 	print('[esx_uniquejobs] Migrated: added `' .. columnName .. '` to `' .. tableName .. '`')
 end
 
+-- Widens a column that may have been created with an older, smaller
+-- type (VARCHAR) to a new type -- used for `dept_mugshots.photo_url`,
+-- which started as VARCHAR(500) and now needs to hold full base64
+-- images too. Only runs the ALTER if the column isn't already the
+-- target type, so it's safe to call every start.
+local function EnsureColumnType(tableName, columnName, targetType, columnDef)
+	local currentType = MySQL.Sync.fetchScalar(
+		"SELECT DATA_TYPE FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = @t AND column_name = @c",
+		{ ['@t'] = tableName, ['@c'] = columnName }
+	)
+	if not currentType or string.lower(currentType) == string.lower(targetType) then return end
+
+	MySQL.Sync.execute('ALTER TABLE `' .. tableName .. '` MODIFY COLUMN ' .. columnDef, {})
+	print('[esx_uniquejobs] Migrated: widened `' .. columnName .. '` on `' .. tableName .. '` to ' .. targetType)
+end
+
 CreateThread(function()
 	-- ============================================================
 	-- Base tables -- safe to (re)run every start, never touches
@@ -318,12 +334,15 @@ CreateThread(function()
 		-- Mugshot -- rebuilt from scratch (the old copy of this feature was
 		-- dead code that never shipped a table or a menu). Every photo taken
 		-- is kept as its own row so there's a real history, not just a
-		-- single overwritten "current photo" column.
+		-- single overwritten "current photo" column. `photo_url` is
+		-- MEDIUMTEXT (not VARCHAR) because it can hold either a real URL
+		-- OR a full base64 data: URI when the photo is stored directly in
+		-- the database (no external upload host configured/available).
 		[[CREATE TABLE IF NOT EXISTS `dept_mugshots` (
 			`id` INT(11) NOT NULL AUTO_INCREMENT,
 			`identifier` VARCHAR(255) DEFAULT NULL,
 			`citizen_name` VARCHAR(255) NOT NULL,
-			`photo_url` VARCHAR(500) NOT NULL,
+			`photo_url` MEDIUMTEXT NOT NULL,
 			`taken_by_name` VARCHAR(255) NOT NULL,
 			`taken_by_job` VARCHAR(20) NOT NULL,
 			`timestamp` INT(11) NOT NULL,
@@ -357,6 +376,12 @@ CreateThread(function()
 	-- whatever plate was actually involved (typed by hand, or locked on the
 	-- reader), so it shows up in the stop's history entry too.
 	EnsureColumn('dept_traffic_stops', 'plate', "`plate` VARCHAR(10) DEFAULT NULL AFTER `citizen_name`")
+
+	-- FEATURE ADDED (Mugshot local storage): widen photo_url so it can
+	-- hold a full base64 data: URI (a real photo, not just a URL) when
+	-- no external upload host is configured. Only runs on servers where
+	-- this table was already created with the older VARCHAR(500).
+	EnsureColumnType('dept_mugshots', 'photo_url', 'mediumtext', "`photo_url` MEDIUMTEXT NOT NULL")
 
 	print('[esx_uniquejobs] Database migrations checked -- all tables/columns present.')
 end)

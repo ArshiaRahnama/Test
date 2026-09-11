@@ -3,13 +3,21 @@
 -- why: the old copy referenced in this resource's markdown docs
 -- was dead code, no table, no menu wiring, nothing actually ran).
 --
--- Convars (set in server.cfg, both optional):
---   mugshot_upload_url   -- your screenshot-basic upload endpoint.
---                            Left empty, the camera step is skipped
---                            and officers just paste a photo URL by
---                            hand.
---   mugshot_upload_field -- multipart field name your endpoint
---                            expects (default 'files[]').
+-- Convars (all optional, set in server.cfg):
+--   mugshot_upload_url    -- your own image-host upload endpoint.
+--                             Left empty (the default), photos are
+--                             captured and stored directly in the
+--                             database as base64 -- no external host,
+--                             nothing that can 404 or time out.
+--   mugshot_upload_field  -- multipart field name your endpoint
+--                             expects, only used if mugshot_upload_url
+--                             is set (default 'files[]').
+--   mugshot_cam_distance  -- how far in front of the face the camera
+--                             sits, in metres (default 0.55).
+--   mugshot_cam_fov       -- camera field of view / zoom -- lower is
+--                             more zoomed in (default 30.0).
+--   mugshot_cam_height    -- head offset from the ped's root, in
+--                             metres (default 0.62).
 -- ============================================================
 
 local function extractUrlFromUpload(raw)
@@ -66,21 +74,25 @@ function TakeMugshotPhoto(query)
 	end
 
 	local myPed = PlayerPedId()
-	local headCoords = GetEntityCoords(targetPed) + vector3(0.0, 0.0, 0.62)
+	local camDist = tonumber(GetConvar('mugshot_cam_distance', '0.55')) or 0.55
+	local camFov = tonumber(GetConvar('mugshot_cam_fov', '30.0')) or 30.0
+	local camHeight = tonumber(GetConvar('mugshot_cam_height', '0.62')) or 0.62
+
+	local headCoords = GetEntityCoords(targetPed) + vector3(0.0, 0.0, camHeight)
 	local forward = GetEntityForwardVector(targetPed)
-	-- BUG FIX: this used to be `headCoords - (forward * 0.65)`, which
+	-- BUG FIX: this used to be `headCoords - (forward * dist)`, which
 	-- places the camera BEHIND the target (where their back is) since
 	-- `forward` points the way they're facing -- that's why the shot
 	-- came out as the back of the neck. The camera needs to sit in
 	-- front of them, i.e. further along their own forward vector, then
 	-- look back at the head.
-	local camCoords = headCoords + (forward * 0.65)
+	local camCoords = headCoords + (forward * camDist)
 
 	FreezeEntityPosition(targetPed, true)
 	FreezeEntityPosition(myPed, true)
 	DisplayRadar(false)
 
-	local cam = CreateCamWithParams('DEFAULT_SCRIPTED_CAMERA', camCoords.x, camCoords.y, camCoords.z, 0.0, 0.0, 0.0, 35.0, false, 0)
+	local cam = CreateCamWithParams('DEFAULT_SCRIPTED_CAMERA', camCoords.x, camCoords.y, camCoords.z, 0.0, 0.0, 0.0, camFov, false, 0)
 	PointCamAtCoord(cam, headCoords.x, headCoords.y, headCoords.z)
 	SetCamActive(cam, true)
 	RenderScriptCams(true, false, 0, true, true)
@@ -107,9 +119,16 @@ function TakeMugshotPhoto(query)
 		FreezeEntityPosition(myPed, false)
 	end
 
+	if GetResourceState('screenshot-basic') ~= 'started' then
+		cleanup()
+		promptManualUrl(query)
+		return
+	end
+
 	local uploadUrl = GetConvar('mugshot_upload_url', '')
 
-	if uploadUrl ~= '' and GetResourceState('screenshot-basic') == 'started' then
+	if uploadUrl ~= '' then
+		-- Upload path (only used if you've set mugshot_upload_url)
 		local field = GetConvar('mugshot_upload_field', 'files[]')
 
 		CreateThread(function()
@@ -131,8 +150,26 @@ function TakeMugshotPhoto(query)
 			end
 		end)
 	else
-		cleanup()
-		promptManualUrl(query)
+		-- Default path: no external host needed at all -- capture the
+		-- shot as base64 and store it straight in dept_mugshots.photo_url
+		-- (MEDIUMTEXT). Same stuck-forever protection via the timeout.
+		CreateThread(function()
+			Wait(8000)
+			if handled then return end
+			cleanup()
+			ESX.ShowNotification('~r~Gereftan-e Aks Timeout Shod -- URL Dasti')
+			promptManualUrl(query)
+		end)
+
+		exports['screenshot-basic']:requestScreenshot(function(data)
+			if handled then return end
+			cleanup()
+			if data and data ~= '' then
+				TriggerServerEvent('esx_uniquejobs:saveMugshot', query, data)
+			else
+				ESX.ShowNotification('~r~Gereftan-e Aks Shekast Khord')
+			end
+		end)
 	end
 end
 
