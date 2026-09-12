@@ -576,6 +576,37 @@ AddEventHandler('esx_mechanicjob:ChatMessage', function(target, player, Chek)
 	end
 end)
 
+-- FEATURE ADDED (Unique_LevelQuest bridge): repair (client/mechanic_main.lua's
+-- onCarokit/onFixkit/wrench-prop flows) previously had zero server round-trip
+-- at all -- SetVehicleFixed runs entirely client-side after a timed
+-- animation, so there was no server-authoritative signal to hook a quest
+-- onto. This adds the minimum needed: a client-reported "I just repaired
+-- something" ping, job-checked and cooldown-limited so it can't be spammed
+-- faster than a real repair animation could ever complete (the shortest is
+-- the 10s onCarokit body-repair). It's still only as trustworthy as any
+-- other client-reported action in this file (buypetrol, blingrequest, etc.)
+-- -- there's no vehicle/distance check because the repair itself never sent
+-- one to begin with.
+local LastRepairReport = {}
+RegisterServerEvent('esx_mechanicjob:reportRepair')
+AddEventHandler('esx_mechanicjob:reportRepair', function()
+	local _source = source
+	local xPlayer = ESX.GetPlayerFromId(_source)
+	if not xPlayer or xPlayer.job.name ~= 'mechanic' then return end
+
+	local now = GetGameTimer()
+	if LastRepairReport[_source] and (now - LastRepairReport[_source]) < 8000 then return end
+	LastRepairReport[_source] = now
+
+	TriggerEvent('esx_society:logAction', 'mechanic', 'Vehicle Repaired', {
+		{["name"] = "Mechanic", ["value"] = xPlayer.name, ["inline"] = false},
+	})
+end)
+
+AddEventHandler('playerDropped', function()
+	LastRepairReport[source] = nil
+end)
+
 RegisterServerEvent('logVehicleSpawn')
 AddEventHandler('logVehicleSpawn', function(playerName, serverID, steamHex, vehicleModel, plateText, isspawn)
 	if isspawn then

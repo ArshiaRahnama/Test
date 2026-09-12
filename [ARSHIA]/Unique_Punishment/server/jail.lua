@@ -165,6 +165,17 @@ AddEventHandler('arshia_jail:sendto',function (target, type, time, reason, unjai
 			end
 		end
 		TriggerEvent('DiscordBot:ToDiscord', 'jail', 'JailLog', '```css\n[ Officer : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Target : '..GetPlayerName(target)..'(' .. target .. ') ]\n[ Type : Faction Jail ]\n[ Duration : '..tostring(time)..' ]\n[ Reason : '..tostring(reason)..' ]\n```', 'user', true, source, false)
+
+		-- FEATURE ADDED (Unique_LevelQuest bridge): generic hook, same shape
+		-- as esx_uniquejobs's own esx_society:logAction calls, so
+		-- Unique_LevelQuest/server/bridges.lua can pick it up with the same
+		-- listener regardless of which resource actually did the jailing.
+		-- zPlayer.job.name is already verified above by IsJobAllowed, so it's
+		-- safe to trust here.
+		TriggerEvent('esx_society:logAction', zPlayer.job.name, 'Player Jailed', {
+			{["name"] = "Officer", ["value"] = zPlayer.name, ["inline"] = false},
+			{["name"] = "Suspect", ["value"] = yPlayer.name, ["inline"] = false},
+		})
 	else
 		TriggerClientEvent('chatMessage', -1, "[Admin Jail]", {255, 0, 0}, "^1"..GetPlayerName(target).."^0 Tavasote ^2"..GetPlayerName(source).."^0 Be Modate ^2"..time.." ^0Daghighe Jail Shod be Dalile : ^1"..reason)
 		TriggerEvent('DiscordBot:ToDiscord', 'jail', 'JailLog', '```css\n[ Admin : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Target : '..GetPlayerName(target)..'(' .. target .. ') ]\n[ Type : Admin Jail ]\n[ Duration : '..tostring(time)..' ]\n[ Reason : '..tostring(reason)..' ]\n```', 'user', true, source, false)

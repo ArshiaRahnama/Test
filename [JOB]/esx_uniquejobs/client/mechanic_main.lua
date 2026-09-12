@@ -1175,6 +1175,11 @@ ESX.TriggerServerCallback('esx_mechanicjob:list', function(tedad)
             ESX.ShowNotification(_U('vehicle_repaired'))
             IsBusy = false
             TriggerEvent('esx_customItems:checkVehicleStatus', false)
+            -- FEATURE ADDED (Unique_LevelQuest bridge): repair has no
+            -- server-authoritative signal at all otherwise (see the
+            -- server-side handler for the cooldown that keeps this
+            -- honest despite being a client-reported event).
+            TriggerServerEvent('esx_mechanicjob:reportRepair')
 
           elseif status then
           IsBusy = false
@@ -1649,6 +1654,7 @@ AddEventHandler('esx_mechanicjob:onCarokit', function()
         SetVehicleDeformationFixed(vehicle)
         ClearPedTasksImmediately(playerPed)
         ESX.ShowNotification(_U('body_repaired'))
+        TriggerServerEvent('esx_mechanicjob:reportRepair')
       end)
     end
   end
@@ -1678,6 +1684,7 @@ AddEventHandler('esx_mechanicjob:onFixkit', function()
         SetVehicleUndriveable(vehicle, false)
         ClearPedTasksImmediately(playerPed)
         ESX.ShowNotification(_U('veh_repaired'))
+        TriggerServerEvent('esx_mechanicjob:reportRepair')
       end)
     end
   end

@@ -598,6 +598,21 @@ AddEventHandler('esx:requestarrestpd', function(targetid, playerheading, playerC
 			if not cPlayer.get("Cuff") then
 				TriggerClientEvent("esx_policejob:getarrested", targetid, playerheading, playerCoords, playerlocation, true, front)
 				TriggerClientEvent("esx_policejob:doarrested", source, front)
+
+				-- FEATURE ADDED (Unique_LevelQuest bridge): police/sheriff/mt
+				-- share this one handler for cuffing (see the job-name check
+				-- above), so a single log line here covers all three. FBI is
+				-- excluded on purpose -- it already logs 'Player Cuffed' from
+				-- its own separate esx_fbi_job:handcuff event (server/fbi_main.lua),
+				-- and FBI is also allowed to use THIS event, so logging it here
+				-- too would double-count. Gang members aren't a tracked job, so
+				-- they simply won't match any pool in Config.JobQuests.
+				if xPlayer.job.name == "police" or xPlayer.job.name == "sheriff" or xPlayer.job.name == "mt" then
+					TriggerEvent('esx_society:logAction', xPlayer.job.name, 'Player Cuffed', {
+						{["name"] = "Officer", ["value"] = xPlayer.name, ["inline"] = false},
+						{["name"] = "Suspect", ["value"] = cPlayer.name, ["inline"] = false},
+					})
+				end
 			else
 				TriggerClientEvent('esx:showNotification', source, '~y~In Player Az Ghabl Dastband Khorde Ast.')
 			end

@@ -61,10 +61,21 @@ Config.JobQuests = {
 
     ["police"] = {
         {name = "Onduty", description = "Daryaft Salary Onduty", trigger = "quest-police:onduty", requiredTrigger = 6, XP = 10, coin = 0.04},
+        -- Real esx:requestarrestpd action (server/police_main.lua, shared
+        -- by police/sheriff/mt), job-gated, `source` = the officer.
+        {name = "Cuff Suspect", description = "Dastband Bezan Be 5 Suspect", trigger = "quest-police:cuff", requiredTrigger = 5, XP = 20, coin = 0.10},
+        -- Real arshia_jail:sendto (Unique_Punishment/server/jail.lua,
+        -- type == 'faction'), job-gated via that resource's own IsJobAllowed.
+        {name = "Jail Suspect", description = "5 Nafar Ra Zendani Kon", trigger = "quest-police:jail", requiredTrigger = 4, XP = 20, coin = 0.10},
+        -- Real esx_billing:send2Bill fine action, `source` = the officer.
+        {name = "Fine Player", description = "Baraye 6 Nafar Jarime Bezan", trigger = "quest-police:fine", requiredTrigger = 6, XP = 15, coin = 0.08},
     },
 
     ["sheriff"] = {
         {name = "Onduty", description = "Daryaft Salary Onduty", trigger = "quest-sheriff:onduty", requiredTrigger = 6, XP = 10, coin = 0.04},
+        {name = "Cuff Suspect", description = "Dastband Bezan Be 5 Suspect", trigger = "quest-sheriff:cuff", requiredTrigger = 5, XP = 20, coin = 0.10},
+        {name = "Jail Suspect", description = "5 Nafar Ra Zendani Kon", trigger = "quest-sheriff:jail", requiredTrigger = 4, XP = 20, coin = 0.10},
+        {name = "Fine Player", description = "Baraye 6 Nafar Jarime Bezan", trigger = "quest-sheriff:fine", requiredTrigger = 6, XP = 15, coin = 0.08},
     },
 
     -- NOTE: table key here is xPlayer.job.name, and Metropolitan's real
@@ -75,26 +86,104 @@ Config.JobQuests = {
     -- pool for job.name == "mt").
     ["mt"] = {
         {name = "Onduty", description = "Daryaft Salary Onduty", trigger = "quest-metropolitan:onduty", requiredTrigger = 6, XP = 10, coin = 0.04},
+        {name = "Cuff Suspect", description = "Dastband Bezan Be 5 Suspect", trigger = "quest-mt:cuff", requiredTrigger = 5, XP = 20, coin = 0.10},
+        {name = "Jail Suspect", description = "5 Nafar Ra Zendani Kon", trigger = "quest-mt:jail", requiredTrigger = 4, XP = 20, coin = 0.10},
+        {name = "Fine Player", description = "Baraye 6 Nafar Jarime Bezan", trigger = "quest-mt:fine", requiredTrigger = 6, XP = 15, coin = 0.08},
     },
 
     ["ambulance"] = {
         {name = "Onduty",         description = "Daryaft Salary Onduty",      trigger = "quest-ambulance:onduty",   requiredTrigger = 6, XP = 10, coin = 0.04},
         {name = "Revive Player",  description = "Revive 5 Player",            trigger = "quest-ambulance:revive",   requiredTrigger = 5, XP = 20, coin = 0.10},
         {name = "Accept Request", description = "Accept 5 Emergency Request", trigger = "quest-ambulance:acceptreq",requiredTrigger = 5, XP = 15, coin = 0.08},
+        -- Real esx_ambulancejob:blingrequest action, `source` = the medic
+        -- requesting payment (NOT esx_billing:send2Bill2 -- see
+        -- server/bridges.lua's long comment on why that one is unsafe here).
+        {name = "Charge Patient", description = "Baraye 6 Bimar Ghabz Bezan", trigger = "quest-ambulance:bill", requiredTrigger = 6, XP = 15, coin = 0.08},
     },
 
     ["mechanic"] = {
         {name = "Onduty",         description = "Daryaft Salary Onduty",   trigger = "quest-mechanic:onduty",    requiredTrigger = 6, XP = 10, coin = 0.04},
         {name = "Accept Request", description = "Accept 5 Repair Request", trigger = "quest-mechanic:acceptreq", requiredTrigger = 5, XP = 15, coin = 0.08},
+        -- Real esx_mechanicjob:reportRepair action (server/mechanic_main.lua
+        -- -- new event, repair previously had no server round-trip at all).
+        {name = "Repair Vehicle", description = "5 Vehicle Ra Repair Kon",  trigger = "quest-mechanic:repair",   requiredTrigger = 5, XP = 18, coin = 0.09},
+        -- Real esx_mechanicjob:blingrequest action, `source` = the mechanic.
+        {name = "Charge Customer",description = "Baraye 6 Moshtari Ghabz Bezan", trigger = "quest-mechanic:bill", requiredTrigger = 6, XP = 15, coin = 0.08},
     },
 
     ["taxi"] = {
         {name = "Onduty",         description = "Daryaft Salary Onduty", trigger = "quest-taxi:onduty",    requiredTrigger = 6, XP = 10, coin = 0.04},
         {name = "Accept Request", description = "Accept 5 Taxi Request", trigger = "quest-taxi:acceptreq", requiredTrigger = 5, XP = 15, coin = 0.08},
+        -- Real esx_taxijob:blingrequest action, `source` = the driver
+        -- requesting the fare (NOT esx_billing:send2Bill2/esx_taxijob:pay
+        -- -- both of those fire from the PASSENGER's own client instead).
+        {name = "Charge Fare", description = "Baraye 6 Mosafer Ghabz Bezan", trigger = "quest-taxi:bill", requiredTrigger = 6, XP = 15, coin = 0.08},
         -- NOTE: the ORIGINAL config had this whole section using the wrong
         -- trigger names (literally "quest:revive13".."quest:revive18",
         -- copy-paste leftovers from another job) so taxi quests never
         -- worked at all before.
+    },
+
+    -- ===== Department Of Justice — Jail + Fine cover all 9 of these jobs,
+    -- since Unique_Punishment's faction jail and esx_billing's fines are
+    -- shared, job-checked systems every one of them can use. =====
+    ["cid"] = {
+        {name = "Onduty", description = "Daryaft Salary Onduty", trigger = "quest-cid:onduty", requiredTrigger = 6, XP = 10, coin = 0.04},
+        {name = "Jail Suspect", description = "5 Nafar Ra Zendani Kon", trigger = "quest-cid:jail", requiredTrigger = 4, XP = 20, coin = 0.10},
+        {name = "Fine Player", description = "Baraye 6 Nafar Jarime Bezan", trigger = "quest-cid:fine", requiredTrigger = 6, XP = 15, coin = 0.08},
+    },
+
+    ["cia"] = {
+        {name = "Onduty",         description = "Daryaft Salary Onduty", trigger = "quest-cia:onduty", requiredTrigger = 6, XP = 10, coin = 0.04},
+        -- Real esx_cia_job:requestarrest action (server/cia_main.lua),
+        -- job-gated. Bridged via esx_society:logAction, same technique
+        -- already used for ambulance's Revive quest below.
+        {name = "Arrest Suspect", description = "Arrest 5 Suspect",   trigger = "quest-cia:arrest", requiredTrigger = 5, XP = 20, coin = 0.10},
+        {name = "Jail Suspect", description = "5 Nafar Ra Zendani Kon", trigger = "quest-cia:jail", requiredTrigger = 4, XP = 20, coin = 0.10},
+        {name = "Fine Player", description = "Baraye 6 Nafar Jarime Bezan", trigger = "quest-cia:fine", requiredTrigger = 6, XP = 15, coin = 0.08},
+    },
+
+    ["marshal"] = {
+        {name = "Onduty", description = "Daryaft Salary Onduty", trigger = "quest-marshal:onduty", requiredTrigger = 6, XP = 10, coin = 0.04},
+        {name = "Jail Suspect", description = "5 Nafar Ra Zendani Kon", trigger = "quest-marshal:jail", requiredTrigger = 4, XP = 20, coin = 0.10},
+        {name = "Fine Player", description = "Baraye 6 Nafar Jarime Bezan", trigger = "quest-marshal:fine", requiredTrigger = 6, XP = 15, coin = 0.08},
+    },
+
+    ["fbi"] = {
+        {name = "Onduty",         description = "Daryaft Salary Onduty", trigger = "quest-fbi:onduty", requiredTrigger = 6, XP = 10, coin = 0.04},
+        -- Real esx_fbi_job:requestarrest action (server/fbi_main.lua), same as CIA above.
+        {name = "Arrest Suspect", description = "Arrest 5 Suspect",   trigger = "quest-fbi:arrest", requiredTrigger = 5, XP = 20, coin = 0.10},
+        {name = "Jail Suspect", description = "5 Nafar Ra Zendani Kon", trigger = "quest-fbi:jail", requiredTrigger = 4, XP = 20, coin = 0.10},
+        {name = "Fine Player", description = "Baraye 6 Nafar Jarime Bezan", trigger = "quest-fbi:fine", requiredTrigger = 6, XP = 15, coin = 0.08},
+    },
+
+    ["judge"] = {
+        {name = "Onduty",         description = "Daryaft Salary Onduty", trigger = "quest-judge:onduty", requiredTrigger = 6, XP = 10, coin = 0.04},
+        -- Real, judge-exclusive esx_uniquejobs:dojRecordVerdict action
+        -- (server/court_docket.lua) -- the ONLY job allowed to call it
+        -- (isJudge(...) check inside that handler rejects everyone else).
+        {name = "Record Verdict", description = "Record 3 Verdict",   trigger = "quest-judge:verdict", requiredTrigger = 3, XP = 20, coin = 0.10},
+        {name = "Jail Suspect", description = "5 Nafar Ra Zendani Kon", trigger = "quest-judge:jail", requiredTrigger = 4, XP = 20, coin = 0.10},
+        {name = "Fine Player", description = "Baraye 6 Nafar Jarime Bezan", trigger = "quest-judge:fine", requiredTrigger = 6, XP = 15, coin = 0.08},
+    },
+
+    ["doa"] = {
+        {name = "Onduty", description = "Daryaft Salary Onduty", trigger = "quest-doa:onduty", requiredTrigger = 6, XP = 10, coin = 0.04},
+        -- doa_main.lua is a literal copy of judge_main.lua's generic
+        -- armory/vehicle-lookup boilerplate with no DOA-exclusive action
+        -- of its own on this server, but Jail + Fine below still apply
+        -- (doa IS in Unique_Punishment's Config.AllowedJobs and does call
+        -- esx_billing:send2Bill for fines, same as every job above).
+        {name = "Jail Suspect", description = "5 Nafar Ra Zendani Kon", trigger = "quest-doa:jail", requiredTrigger = 4, XP = 20, coin = 0.10},
+        {name = "Fine Player", description = "Baraye 6 Nafar Jarime Bezan", trigger = "quest-doa:fine", requiredTrigger = 6, XP = 15, coin = 0.08},
+    },
+
+    -- ===== Organ Services extra (weazel; taxi/mechanic/ambulance already above) =====
+    ["weazel"] = {
+        {name = "Onduty",   description = "Daryaft Salary Onduty", trigger = "quest-weazel:onduty",   requiredTrigger = 6, XP = 10, coin = 0.04},
+        -- Real, job-gated esx_society:logAction('weazel', 'Camera Toggled')
+        -- from server/weazel_cam_server.lua (broadcast camera on/off).
+        {name = "Broadcast", description = "Estefade Az Camera 10 Bar", trigger = "quest-weazel:broadcast", requiredTrigger = 10, XP = 15, coin = 0.06},
     },
 
     -- esx_jobs (fueler/lumberjack/slaughterer/tailor/miner): these were
@@ -225,26 +314,27 @@ Config.JobQuests["cratecarry"] = extendPool(holdingSharedPool,
     can never complete. If you add/point me to a real trigger point
     for any of these, I'll wire it in:
 
-      police/sheriff/metropolitan: Jail, Fine, Impound, Accept Robbery,
-        Cuff — esx_jailhandler's jail flow doesn't fire a distinct
-        server event for a completed jailing, and esx_aduty's "fine" is
-        an ADMIN-only command (perm 3), not a police officer action.
+      police/sheriff/metropolitan/cid/cia/marshal/fbi/judge/doa: Jail,
+        Fine, Cuff (police/sheriff/mt only) are now wired above -- see
+        server/bridges.lua for arshia_jail:sendto (Unique_Punishment)
+        and esx_billing:send2Bill. Still not wired: Impound, Accept
+        Robbery -- no distinct per-officer event exists for either.
 
-      ambulance: Heal Player, Ghabz — esx_organserver fires
-        esx_ambulancejob:heal on the PATIENT's client (not the medic's),
-        and the fine-payment event is likewise fired by the patient
-        paying, not the medic collecting — no reliable way to credit
-        the right player without editing esx_organserver itself.
+      ambulance: Heal Player -- esx_ambulancejob:heal fires on the
+        PATIENT's client, not the medic's, no reliable way to credit
+        the medic without editing that flow. Charge Patient (Ghabz) IS
+        now wired above via esx_ambulancejob:blingrequest.
 
-      mechanic: Repair, Clean, Flatbed, Impound, Flip, Custom Car —
+      mechanic: Clean, Flatbed, Impound, Flip, Custom Car —
         esx_lscustom's buyMod fires for ANY player buying mods for
         their own car (not job-gated to mechanics), so it can't be
         used to credit mechanics specifically. No other distinct event
-        exists for these actions.
+        exists for these actions. Repair and Charge Customer ARE now
+        wired above (esx_mechanicjob:reportRepair / :blingrequest).
 
-      taxi: Ghabz — esx_taxijob:pay is fired by the PASSENGER paying,
-        not the driver receiving the fare, same attribution problem
-        as ambulance Ghabz above.
+      taxi: Charge Fare is now wired above via esx_taxijob:blingrequest
+        (NOT esx_taxijob:pay / esx_billing:send2Bill2, both of which
+        fire from the PASSENGER's own client, not the driver's).
 
       gang: shop/bank robbery quests — esx_shop_robbery /
         esx_Bank_robbery don't exist as resources anywhere on this

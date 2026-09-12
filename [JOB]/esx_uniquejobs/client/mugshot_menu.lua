@@ -209,8 +209,39 @@ function OpenMugshotHistory(query)
 end
 
 -- ============================================================
--- Main entry point -- called from client/law_menu.lua
+-- Debug command -- isolates whether screenshot-basic itself works
+-- at all, independent of everything else in this file. Run
+-- `/mugshot_test_screenshot` in the F8 console as any LE job. If
+-- this also fails/times out, the problem is 100% inside
+-- screenshot-basic (duplicate resource, outdated build, etc.) and
+-- not in this feature's code.
 -- ============================================================
+
+RegisterCommand('mugshot_test_screenshot', function()
+	if GetResourceState('screenshot-basic') ~= 'started' then
+		ESX.ShowNotification('~r~screenshot-basic Resource Start Nashode')
+		return
+	end
+
+	local done = false
+	CreateThread(function()
+		Wait(8000)
+		if not done then
+			done = true
+			ESX.ShowNotification('~r~Test Shekast Khord: 8s Timeout (screenshot-basic Khodesh Javab Nadad)')
+		end
+	end)
+
+	exports['screenshot-basic']:requestScreenshot(function(data)
+		if done then return end
+		done = true
+		if data and data ~= '' then
+			ESX.ShowNotification('~g~Test Movafagh: ' .. #data .. ' Character Daryaft Shod')
+		else
+			ESX.ShowNotification('~r~Test Shekast Khord: Data Khali Bood')
+		end
+	end)
+end, false)
 
 function OpenMugshotMenu()
 	local input = lib.inputDialog('Mugshot', { { type = 'input', label = 'ID Ya Esm-e Shahrvand', required = true } })
