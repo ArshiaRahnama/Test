@@ -1,11 +1,19 @@
 ShopConfig = {}
 
+-- General Store -- categorized + FontAwesome icons like every other
+-- shop below, instead of the old flat list with broken image paths.
+ShopConfig.ShopsCategories = {
+    {id = 'food',        label = '🍔 Food & Drinks', icon = 'fa-solid fa-utensils',      iconColor = '#22c55e'},
+    {id = 'electronics', label = '📱 Electronics',   icon = 'fa-solid fa-mobile-screen', iconColor = '#38bdf8'},
+    {id = 'smoking',     label = '🚬 Smoking',       icon = 'fa-solid fa-smoking',       iconColor = '#a8a29e'},
+}
+
 ShopConfig.itemsForSaleShops = {
-    phone = {price = 5000, image = url.."phone.png"},
-    bread = {price = 2000, image = url.."bread.png"},
-    water = {price = 2000, image = url.."water.png"},
-    cigarett = {price = 20, image = url.."cigarett.png"},
-    lighter = {price = 2000, image = url.."lighter.png"},
+    phone    = {price = 5000, category = 'electronics'},
+    bread    = {price = 2000, category = 'food'},
+    water    = {price = 2000, category = 'food'},
+    cigarett = {price = 20,   category = 'smoking'},
+    lighter  = {price = 2000, category = 'smoking'},
 }
 
 ShopConfig.sellingLocationShops = {
@@ -30,17 +38,27 @@ ShopConfig.sellingLocationShops = {
     {x = 1727.544, y = 6414.502, z = 35.037, h = 241.32, pedname = "mp_m_shopkeep_01", pedtype = 4},
 }
 
-ShopConfig.itemsForSaleNarekshop = {
-    silencer = {price = 15000, image = url.."silencer.png"},
-    radio = {price = 10000, image = url.."radio.png"},
-    clip = {price = 2000, image = url.."clip.png"},
-    grip = {price = 5000, image = url.."grip.png"},
-    flashlight = {price = 15000, image = url.."flashlight.png"},
-    laptophack = {price = 30000, image = url.."laptophack.png"},
-    blowtorch = {price = 20000, image = url.."blowtorch.png"},
-    thermite = {price = 20000, image = url.."thermite.png"},
-    fishingrod = {price = 10000, image = url.."fishingrod.png"},
+-- Attachment Shop (Narekshop) -- categorized the same way as the Gun
+-- Shop below: weapon attachments vs. tools/equipment, rendered with
+-- FontAwesome icons instead of the broken lc-inventory image paths.
+ShopConfig.NarekshopCategories = {
+    {id = 'attachments', label = '🔭 Weapon Attachments', icon = 'fa-solid fa-crosshairs', iconColor = '#38bdf8'},
+    {id = 'tools',       label = '🧰 Tools & Equipment',  icon = 'fa-solid fa-toolbox',    iconColor = '#eab308'},
+}
 
+ShopConfig.itemsForSaleNarekshop = {
+    -- Weapon Attachments
+    silencer   = {price = 15000, category = 'attachments'},
+    clip       = {price = 2000,  category = 'attachments'},
+    grip       = {price = 5000,  category = 'attachments'},
+    flashlight = {price = 15000, category = 'attachments'},
+
+    -- Tools & Equipment
+    radio      = {price = 10000, category = 'tools'},
+    laptophack = {price = 30000, category = 'tools'},
+    blowtorch  = {price = 20000, category = 'tools'},
+    thermite   = {price = 20000, category = 'tools'},
+    fishingrod = {price = 10000, category = 'tools'},
 }
 
 ShopConfig.sellingLocationNarekshop = {
@@ -58,143 +76,35 @@ ShopConfig.sellingLocationNarekshop = {
 }
 
 -- ============================================================
--- GUN SHOP -- categories, catalog, metadata
+-- GUN SHOP -- same 3 weapons as before, just organized + FontAwesome
+-- icons instead of the broken lc-inventory image paths.
 -- ============================================================
--- Previously this list only had 3 weapons and every entry pointed at
--- an `image` inside lc-inventory's asset folder (nui://lc-inventory/...)
--- that doesn't actually contain weapon icons -- that's the "Missing img"
--- placeholder seen in the buy menu in-game. The client now renders
--- these with FontAwesome `icon`/`iconColor` instead (always renders,
--- no missing-asset risk), grouped into categories so the menu isn't
--- one long flat list anymore.
-
--- Toggle whether military-grade weapons (RPG, Minigun, Grenade Launcher)
--- are purchasable at all. Off by default -- most servers gate these
--- behind a black market/gang script rather than a public gun store.
-Config_Gunshop = Config_Gunshop or {}
-Config_Gunshop.SellHeavyWeapons = false
-
--- If true, buying anything from the Gun Shop requires a 'weaponlicense'
--- item in the player's inventory (checked server-side in shop-sv.lua).
--- Off by default so this doesn't break servers that don't use licenses.
-Config_Gunshop.RequireLicense = false
+-- The old list pointed every entry at an `image` inside lc-inventory's
+-- asset folder (nui://lc-inventory/...) that doesn't actually contain
+-- weapon icons -- that's the "Missing img" placeholder seen in the buy
+-- menu in-game. The client now renders these with FontAwesome
+-- `icon`/`iconColor` instead (always renders, no missing-asset risk).
 
 ShopConfig.GunshopCategories = {
-    {id = 'pistols',    label = 'Pistols',       icon = 'fa-solid fa-gun',        iconColor = '#fbbf24'},
-    {id = 'smgs',        label = 'SMGs',          icon = 'fa-solid fa-gun',        iconColor = '#38bdf8'},
-    {id = 'shotguns',    label = 'Shotguns',      icon = 'fa-solid fa-gun',        iconColor = '#f97316'},
-    {id = 'rifles',      label = 'Rifles',        icon = 'fa-solid fa-gun',        iconColor = '#ef4444'},
-    {id = 'snipers',     label = 'Snipers',       icon = 'fa-solid fa-crosshairs', iconColor = '#a855f7'},
-    {id = 'heavy',       label = 'Heavy Weapons', icon = 'fa-solid fa-explosion',  iconColor = '#e11d48'},
-    {id = 'melee',       label = 'Melee',         icon = 'fa-solid fa-hand-fist',  iconColor = '#a8a29e'},
-    {id = 'throwables',  label = 'Throwables',    icon = 'fa-solid fa-bomb',       iconColor = '#eab308'},
-    {id = 'ammo',        label = 'Ammunition',    icon = 'fa-solid fa-box',        iconColor = '#22c55e'},
+    {id = 'pistols', label = '🔫 Pistols',    icon = 'fa-solid fa-gun',       iconColor = '#fbbf24'},
+    {id = 'melee',   label = '🔪 Melee',      icon = 'fa-solid fa-hand-fist', iconColor = '#a8a29e'},
+    {id = 'ammo',    label = '📦 Ammunition', icon = 'fa-solid fa-box',       iconColor = '#22c55e'},
 }
 
 ShopConfig.itemsForSaleGunshop = {
-    -- Pistols
-    weapon_pistol          = {price = 90000,   category = 'pistols'},
-    weapon_combatpistol    = {price = 120000,  category = 'pistols'},
-    weapon_snspistol       = {price = 75000,   category = 'pistols'},
-    weapon_heavypistol     = {price = 150000,  category = 'pistols'},
-    weapon_vintagepistol   = {price = 130000,  category = 'pistols'},
-    weapon_marksmanpistol  = {price = 200000,  category = 'pistols'},
-    weapon_revolver        = {price = 175000,  category = 'pistols'},
-    weapon_doubleaction    = {price = 190000,  category = 'pistols'},
-
-    -- SMGs
-    weapon_microsmg        = {price = 250000,  category = 'smgs'},
-    weapon_smg             = {price = 350000,  category = 'smgs'},
-    weapon_assaultsmg      = {price = 450000,  category = 'smgs'},
-    weapon_minismg         = {price = 220000,  category = 'smgs'},
-
-    -- Shotguns
-    weapon_pumpshotgun     = {price = 400000,  category = 'shotguns'},
-    weapon_sawnoffshotgun  = {price = 300000,  category = 'shotguns'},
-    weapon_bullpupshotgun  = {price = 450000,  category = 'shotguns'},
-    weapon_assaultshotgun  = {price = 500000,  category = 'shotguns'},
-
-    -- Rifles
-    weapon_assaultrifle    = {price = 600000,  category = 'rifles'},
-    weapon_carbinerifle    = {price = 650000,  category = 'rifles'},
-    weapon_specialcarbine  = {price = 700000,  category = 'rifles'},
-    weapon_bullpuprifle    = {price = 680000,  category = 'rifles'},
-    weapon_advancedrifle   = {price = 720000,  category = 'rifles'},
-
-    -- Snipers
-    weapon_sniperrifle     = {price = 900000,  category = 'snipers'},
-    weapon_marksmanrifle   = {price = 850000,  category = 'snipers'},
-    weapon_heavysniper     = {price = 1100000, category = 'snipers'},
-
-    -- Heavy weapons -- only listed when Config_Gunshop.SellHeavyWeapons is true
-    weapon_grenadelauncher = {price = 2000000, category = 'heavy', restricted = true},
-    weapon_rpg             = {price = 3000000, category = 'heavy', restricted = true},
-    weapon_minigun         = {price = 5000000, category = 'heavy', restricted = true},
-
-    -- Melee
-    weapon_knife           = {price = 60000,   category = 'melee'},
-    weapon_bat              = {price = 15000,  category = 'melee'},
-    weapon_hatchet          = {price = 25000,  category = 'melee'},
-    weapon_machete          = {price = 30000,  category = 'melee'},
-    weapon_nightstick       = {price = 20000,  category = 'melee'},
-    weapon_knuckle          = {price = 18000,  category = 'melee'},
-
-    -- Throwables
-    weapon_grenade          = {price = 5000,   category = 'throwables'},
-    weapon_stickybomb       = {price = 8000,   category = 'throwables'},
-    weapon_molotov          = {price = 3000,   category = 'throwables'},
-    weapon_smokegrenade     = {price = 2000,   category = 'throwables'},
+    weapon_pistol       = {price = 90000,  category = 'pistols'},
+    weapon_combatpistol = {price = 120000, category = 'pistols'},
+    weapon_knife        = {price = 60000,  category = 'melee'},
 }
 
 -- Flavour metadata shown under each weapon in the menu (damage / fire
 -- rate / magazine / ammo type it takes). Purely cosmetic -- doesn't
 -- affect real weapon stats -- but tells the player what they're buying
--- before they spend the money. Entries left out just show no metadata.
+-- before they spend the money.
 ShopConfig.GunshopMeta = {
-    weapon_pistol          = {damage = 'Low',      fireRate = 'Medium', magazine = 12, ammo = 'Pistol Ammo'},
-    weapon_combatpistol    = {damage = 'Low',      fireRate = 'Fast',   magazine = 12, ammo = 'Pistol Ammo'},
-    weapon_snspistol       = {damage = 'Low',      fireRate = 'Fast',   magazine = 6,  ammo = 'Pistol Ammo'},
-    weapon_heavypistol     = {damage = 'Medium',   fireRate = 'Medium', magazine = 9,  ammo = 'Pistol Ammo'},
-    weapon_vintagepistol   = {damage = 'Medium',   fireRate = 'Medium', magazine = 7,  ammo = 'Pistol Ammo'},
-    weapon_marksmanpistol  = {damage = 'High',     fireRate = 'Slow',   magazine = 1,  ammo = 'Pistol Ammo'},
-    weapon_revolver        = {damage = 'High',     fireRate = 'Slow',   magazine = 6,  ammo = 'Pistol Ammo'},
-    weapon_doubleaction    = {damage = 'High',     fireRate = 'Slow',   magazine = 6,  ammo = 'Pistol Ammo'},
-
-    weapon_microsmg        = {damage = 'Low',      fireRate = 'Very Fast', magazine = 16, ammo = 'SMG Ammo'},
-    weapon_smg             = {damage = 'Medium',   fireRate = 'Fast',      magazine = 30, ammo = 'SMG Ammo'},
-    weapon_assaultsmg      = {damage = 'Medium',   fireRate = 'Very Fast', magazine = 30, ammo = 'SMG Ammo'},
-    weapon_minismg         = {damage = 'Low',      fireRate = 'Fast',      magazine = 20, ammo = 'SMG Ammo'},
-
-    weapon_pumpshotgun     = {damage = 'Very High', fireRate = 'Slow', magazine = 8,  ammo = 'Shotgun Shells'},
-    weapon_sawnoffshotgun  = {damage = 'Very High', fireRate = 'Slow', magazine = 2,  ammo = 'Shotgun Shells'},
-    weapon_bullpupshotgun  = {damage = 'High',      fireRate = 'Medium', magazine = 8, ammo = 'Shotgun Shells'},
-    weapon_assaultshotgun  = {damage = 'High',      fireRate = 'Medium', magazine = 12, ammo = 'Shotgun Shells'},
-
-    weapon_assaultrifle    = {damage = 'Medium', fireRate = 'Fast', magazine = 30, ammo = 'Rifle Ammo'},
-    weapon_carbinerifle    = {damage = 'Medium', fireRate = 'Fast', magazine = 30, ammo = 'Rifle Ammo'},
-    weapon_specialcarbine  = {damage = 'High',   fireRate = 'Fast', magazine = 30, ammo = 'Rifle Ammo'},
-    weapon_bullpuprifle    = {damage = 'Medium', fireRate = 'Fast', magazine = 30, ammo = 'Rifle Ammo'},
-    weapon_advancedrifle   = {damage = 'Medium', fireRate = 'Fast', magazine = 30, ammo = 'Rifle Ammo'},
-
-    weapon_sniperrifle     = {damage = 'Very High', fireRate = 'Very Slow', magazine = 10, ammo = 'Sniper Ammo'},
-    weapon_marksmanrifle   = {damage = 'High',      fireRate = 'Slow',      magazine = 8,  ammo = 'Sniper Ammo'},
-    weapon_heavysniper     = {damage = 'Extreme',   fireRate = 'Very Slow', magazine = 6,  ammo = 'Sniper Ammo'},
-
-    weapon_grenadelauncher = {damage = 'Extreme', fireRate = 'Very Slow', magazine = 1, ammo = 'Heavy Ammo'},
-    weapon_rpg              = {damage = 'Extreme', fireRate = 'Very Slow', magazine = 1, ammo = 'Heavy Ammo'},
-    weapon_minigun           = {damage = 'Extreme', fireRate = 'Very Fast', magazine = 500, ammo = 'Heavy Ammo'},
-
-    weapon_knife            = {damage = 'Medium', class = 'Melee'},
-    weapon_bat               = {damage = 'Low',    class = 'Melee'},
-    weapon_hatchet            = {damage = 'Medium', class = 'Melee'},
-    weapon_machete            = {damage = 'High',   class = 'Melee'},
-    weapon_nightstick         = {damage = 'Low',    class = 'Melee'},
-    weapon_knuckle            = {damage = 'Low',    class = 'Melee'},
-
-    weapon_grenade            = {damage = 'High', class = 'Throwable'},
-    weapon_stickybomb         = {damage = 'Very High', class = 'Throwable'},
-    weapon_molotov            = {damage = 'Medium', class = 'Throwable'},
-    weapon_smokegrenade       = {damage = 'None (utility)', class = 'Throwable'},
+    weapon_pistol       = {damage = 'Low', fireRate = 'Medium', magazine = 12, ammo = 'Pistol Ammo'},
+    weapon_combatpistol = {damage = 'Low', fireRate = 'Fast',   magazine = 12, ammo = 'Pistol Ammo'},
+    weapon_knife        = {damage = 'Medium', class = 'Melee'},
 }
 
 -- Ammo (added so the ammo_* items essentialmode's weapon-in-inventory
@@ -225,12 +135,19 @@ ShopConfig.sellingLocationGunshop = {
 
 }
 
+-- Mechanic Shop -- categorized + FontAwesome icons like every other
+-- shop above, instead of the old flat list with broken image paths.
+ShopConfig.MCCategories = {
+    {id = 'tools', label = '🔧 Tools', icon = 'fa-solid fa-screwdriver-wrench', iconColor = '#f97316'},
+    {id = 'parts', label = '🚗 Parts', icon = 'fa-solid fa-car-side',          iconColor = '#ef4444'},
+}
+
 ShopConfig.itemsForSaleMC = {
-    hotwire = {price = 2000, image = url.."hotwire.png"},
-    tires = {price = 7000, image = url.."tires.png"},
-    carjack = {price = 5000, image = url.."carjack.png"},
-    cleaner = {price = 5000, image = url.."cleaner.png"},
-    engin = {price = 5000, image = url.."engin.png"},
+    hotwire = {price = 2000, category = 'tools'},
+    carjack = {price = 5000, category = 'tools'},
+    cleaner = {price = 5000, category = 'tools'},
+    tires   = {price = 7000, category = 'parts'},
+    engin   = {price = 5000, category = 'parts'},
 }
 
 ShopConfig.sellingLocationMC = {

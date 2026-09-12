@@ -45,6 +45,7 @@ Config.AntiCheat = {
     checkIntervalMs = 3000,   -- how often to sample each player's position
     maxSpeed = 15.0,          -- meters/sec allowed on foot before flagging (sprint ~7-8, so this has headroom)
     action = 'alert',         -- 'alert' = just tell admins, 'kick' = also kick the flagged player
+    dropGraceMs = 45000,      -- no speed checks for this long after a plane drop starts (covers flight + parachute)
 }
 Config.wztopCommend = 'wztop'
 Config.seasonresetCommend = 'wzseasonreset' -- admin only

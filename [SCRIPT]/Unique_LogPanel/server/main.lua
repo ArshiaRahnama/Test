@@ -30,6 +30,14 @@ Config.PerPageOptions = { 25, 50, 100, 200 }  -- گزینه‌های قابل‌
 -- پاک‌سازی خودکار لاگ‌های قدیمی (روز). صفر یا false یعنی غیرفعال.
 Config.RetentionDays = 30
 
+-- محافظت از لاگ‌های مهم در برابر پاک‌سازی خودکار (پاک‌سازی دستی توسط ادمین همیشه
+-- ممکنه، این دو تا فقط جلوی حذف *خودکار* رو می‌گیرن):
+Config.RetentionExemptJobLogs = true  -- true = لاگ‌های ارگان‌ها/شغل‌ها (هر لاگی که فیلد job پر داره —
+                                       -- پلیس، آمبولانس، تاکسی، مکانیک، CID، قاضی و بقیه) هیچ‌وقت با
+                                       -- پاک‌سازی خودکار حذف نشن، فقط لاگ‌های عمومی (چت، اتصال، ادمین‌منو
+                                       -- و هر چیزی که به شغل خاصی مربوط نیست) بعد از RetentionDays پاک بشن.
+Config.RetentionExemptPinned  = true  -- true = لاگ‌های پین‌شده هم هیچ‌وقت با پاک‌سازی خودکار حذف نشن
+
 -- امکانات اضافه
 Config.EnableExport      = true     -- خروجی CSV (ادمین کامل، باس فقط شغل خودش)
 Config.EnableDelete      = true     -- حذف تک‌لاگ توسط ادمین (با ثبت رخداد حذف)
@@ -714,24 +722,33 @@ if Config.EnableLiveUpdates then
 end
 
 -- ============================================================================
--- پاک‌سازی خودکار لاگ‌های قدیمی (بر اساس Config.RetentionDays)، هر ۶ ساعت چک می‌کنه
--- ============================================================================
--- ============================================================================
 -- پاک‌سازی خودکار لاگ‌های قدیمی (Config.RetentionDays)، به‌صورت دسته‌ای (batch) تا
 -- روی جدول‌های بزرگ یه DELETE عظیم و طولانی، جدول رو برای بقیه (کوئری‌های دیگه‌ی
 -- پنل) قفل نکنه. هر بار حداکثر ۲۰۰۰ ردیف حذف می‌شه و بین بچ‌ها یه مکث کوتاه هست.
+-- لاگ‌های ارگان/شغل (اگه Config.RetentionExemptJobLogs فعال باشه، که پیش‌فرض هست)
+-- و لاگ‌های پین‌شده (اگه Config.RetentionExemptPinned فعال باشه) از این پاک‌سازی
+-- خودکار معاف می‌مونن — فقط ادمین می‌تونه دستی حذف‌شون کنه.
 -- ============================================================================
 if Config.RetentionDays and tonumber(Config.RetentionDays) and tonumber(Config.RetentionDays) > 0 then
 	CreateThread(function()
 		while not MySQL or not MySQL.Async do Wait(1000) end
 		local BATCH_SIZE = 2000
 
+		local exemptConditions = { 'category <> "logpanel_delete"' }
+		if Config.RetentionExemptJobLogs then
+			exemptConditions[#exemptConditions + 1] = "(job IS NULL OR job = '')"
+		end
+		if Config.RetentionExemptPinned then
+			exemptConditions[#exemptConditions + 1] = '(pinned IS NULL OR pinned = 0)'
+		end
+		local exemptClause = table.concat(exemptConditions, ' AND ')
+
 		while true do
 			local totalDeleted = 0
 			while true do
 				local done, affected = false, 0
 				MySQL.Async.execute(
-					'DELETE FROM unique_logpanel WHERE created_at < NOW() - INTERVAL @days DAY AND category <> "logpanel_delete" LIMIT @batch',
+					'DELETE FROM unique_logpanel WHERE created_at < NOW() - INTERVAL @days DAY AND ' .. exemptClause .. ' LIMIT @batch',
 					{ ['@days'] = tonumber(Config.RetentionDays), ['@batch'] = BATCH_SIZE },
 					function(aff)
 						affected = aff or 0
@@ -745,7 +762,7 @@ if Config.RetentionDays and tonumber(Config.RetentionDays) and tonumber(Config.R
 			end
 
 			if totalDeleted > 0 then
-				print(('[Unique_LogPanel] پاک‌سازی خودکار: %d لاگ قدیمی‌تر از %d روز حذف شد (دسته‌ای، بدون قفل‌کردن طولانی جدول).'):format(totalDeleted, Config.RetentionDays))
+				print(('[Unique_LogPanel] پاک‌سازی خودکار: %d لاگ قدیمی‌تر از %d روز حذف شد (دسته‌ای، بدون قفل‌کردن طولانی جدول؛ لاگ‌های ارگان/پین‌شده معاف بودن).'):format(totalDeleted, Config.RetentionDays))
 			end
 
 			Wait(6 * 60 * 60 * 1000) -- هر ۶ ساعت یه دور کامل پاک‌سازی

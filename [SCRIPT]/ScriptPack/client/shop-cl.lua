@@ -7,52 +7,158 @@ Citizen.CreateThread(function()
     end
 end)
 
-function OpenBuyMenuShops()
-    local options = {}
+-- ============================================================
+-- SHARED HELPERS -- every shop below (General Store, Mechanic Shop,
+-- Attachment Shop, Gun Shop) uses the same category -> submenu ->
+-- item pattern, so it's built once here instead of four times.
+-- ============================================================
 
+-- Groups a flat item list (as returned by the server callbacks) into
+-- { [categoryId] = { item, item, ... } }
+local function groupByCategory(items)
+    local grouped = {}
+    for _, item in ipairs(items) do
+        grouped[item.category] = grouped[item.category] or {}
+        table.insert(grouped[item.category], item)
+    end
+    return grouped
+end
 
-    ESX.TriggerServerCallback('getitemsForSaleShops', function(itemsForSaleShops)
-        for _, item in ipairs(itemsForSaleShops) do
+-- Builds & shows a two-level ox_lib context menu: a top level of
+-- categories (with item counts) and, per category, a submenu of items
+-- built by `itemOptionBuilder(item, cat)`. Categories with no items
+-- for the current shop are simply skipped, so an empty category never
+-- shows up as a dead end. Returns true if anything was shown.
+local function showCategorizedShopMenu(menuId, menuTitle, categories, items, itemOptionBuilder)
+    local grouped = groupByCategory(items)
+    local categoryOptions = {}
 
-            table.insert(options, {
-                title = ("%s ($%s)"):format(item.label, item.price),
-                description = 'Click to Buy',
-                icon = item.image,
-                image = item.image,
-                onSelect = function()
+    for _, cat in ipairs(categories) do
+        local catItems = grouped[cat.id]
+        if catItems and #catItems > 0 then
+            local subOptions = {}
+            for _, item in ipairs(catItems) do
+                subOptions[#subOptions + 1] = itemOptionBuilder(item, cat)
+            end
 
-                    local input = lib.inputDialog('Meghdar Baraye Kharid', {
-                        {
-                            type = 'number',
-                            label = 'Meghdar',
-                            description = 'Chand ta mikhay bekhari?',
-                            min = 1,
-                            required = true
-                        }
-                    })
-
-                    if input and tonumber(input[1]) and tonumber(input[1]) > 0 then
-
-                        TriggerServerEvent('shops_item:buy_shops', item.name, tonumber(input[1]), item.price)
-                    else
-                        lib.notify({ position = 'center-right', title = "", description = "Meghdar Na Motabar", type = 'error', duration = 5000 })
-                    end
-                end
-            })
-        end
-
-        if #options > 0 then
+            local subMenuId = menuId .. '_cat_' .. cat.id
             lib.registerContext({
-                id = 'buy_item_shops_menu',
-                title = 'Buy Item',
-                options = options
+                id = subMenuId,
+                title = cat.label,
+                menu = menuId,
+                options = subOptions
             })
 
-
-            lib.showContext('buy_item_shops_menu')
-        else
-            lib.notify({ position = 'center-right', title = "", description = "Item Baraye Kharid Mojod Nist", type = 'error', duration = 5000 })
+            categoryOptions[#categoryOptions + 1] = {
+                title = cat.label,
+                description = ('%s item%s available'):format(#catItems, #catItems ~= 1 and 's' or ''),
+                icon = cat.icon,
+                iconColor = cat.iconColor,
+                arrow = true,
+                menu = subMenuId,
+            }
         end
+    end
+
+    if #categoryOptions == 0 then
+        lib.notify({ position = 'center-right', title = "", description = "Item Baraye Kharid Mojod Nist", type = 'error', duration = 5000 })
+        return false
+    end
+
+    lib.registerContext({
+        id = menuId,
+        title = menuTitle,
+        options = categoryOptions
+    })
+    lib.showContext(menuId)
+    return true
+end
+
+-- Standard "how many do you want?" prompt used by every shop that
+-- buys plain stackable items (General Store, Mechanic Shop,
+-- Attachment Shop, Gun Shop ammo).
+local function promptQuantityAndBuy(item, buyEvent, maxAmount)
+    local input = lib.inputDialog(('Buy %s'):format(item.label), {
+        {
+            type = 'number',
+            label = 'Meghdar',
+            description = 'Chand ta mikhay bekhari?',
+            min = 1,
+            max = maxAmount,
+            default = 1,
+            required = true
+        }
+    })
+
+    if input and tonumber(input[1]) and tonumber(input[1]) > 0 then
+        TriggerServerEvent(buyEvent, item.name, tonumber(input[1]))
+    else
+        lib.notify({ position = 'center-right', title = "", description = "Meghdar Na Motabar", type = 'error', duration = 5000 })
+    end
+end
+
+-- Spawns the peds for a shop's selling locations and gives each one
+-- an ox_target zone with the given target options. Every shop below
+-- used to repeat this ped-spawn + zone-add loop; now it's one call.
+local function spawnShopPeds(locations, targetOptions)
+    for _, v in pairs(locations) do
+        RequestModel(GetHashKey(v.pedname))
+        while not HasModelLoaded(GetHashKey(v.pedname)) do
+            Wait(500)
+        end
+        local ped = CreatePed(v.pedtype, GetHashKey(v.pedname), v.x, v.y, v.z - 1, v.h, false, false)
+        SetEntityHeading(ped, v.h)
+        FreezeEntityPosition(ped, true)
+        SetEntityInvincible(ped, true)
+        SetBlockingOfNonTemporaryEvents(ped, true)
+    end
+
+    for _, v in pairs(locations) do
+        exports.ox_target:addBoxZone({
+            coords = vec3(v.x, v.y, v.z),
+            size = vec3(1.5, 1.5, 1.5),
+            rotation = 45,
+            debug = drawZones,
+            options = targetOptions
+        })
+    end
+end
+
+-- Drops a map blip (sprite 110, the Ammu-Nation gun icon) at every
+-- location in `locations` whose `displayBlip` flag is true.
+local function spawnShopBlips(locations, label, colour)
+    for _, v in pairs(locations) do
+        if v.displayBlip then
+            local blip = AddBlipForCoord(v.x, v.y, v.z)
+            SetBlipSprite(blip, 110)
+            SetBlipDisplay(blip, 4)
+            SetBlipScale(blip, 0.7)
+            SetBlipColour(blip, colour or 1)
+            SetBlipAsShortRange(blip, true)
+            BeginTextCommandSetBlipName("STRING")
+            AddTextComponentSubstringPlayerName(label)
+            EndTextCommandSetBlipName(blip)
+        end
+    end
+end
+
+-- ============================================================
+-- GENERAL STORE -- 🍔 Food & Drinks / 📱 Electronics / 🚬 Smoking
+-- ============================================================
+function OpenBuyMenuShops()
+    ESX.TriggerServerCallback('getitemsForSaleShops', function(itemsForSaleShops)
+        showCategorizedShopMenu('buy_item_shops_menu', '🛒 General Store', ShopConfig.ShopsCategories, itemsForSaleShops, function(item, cat)
+            return {
+                title = item.label,
+                description = ('$%s -- click to choose a quantity'):format(item.price),
+                icon = cat.icon,
+                iconColor = cat.iconColor,
+                metadata = { ('Price: $%s'):format(item.price) },
+                onSelect = function()
+                    promptQuantityAndBuy(item, 'shops_item:buy_shops')
+                end
+            }
+        end)
     end)
 end
 
@@ -62,82 +168,33 @@ AddEventHandler("shops_openmenu", function()
 end)
 
 Citizen.CreateThread(function()
-    for k,v in pairs(ShopConfig.sellingLocationShops) do
-        RequestModel(GetHashKey(v.pedname))
-        while not HasModelLoaded(GetHashKey(v.pedname)) do
-            Wait(500)
-        end
-        Ped = CreatePed(v.pedtype,  GetHashKey(v.pedname), v.x, v.y, v.z-1, v.h, false, false)
-        SetEntityHeading(Ped, v.h)
-        FreezeEntityPosition(Ped, true)
-        SetEntityInvincible(Ped, true)
-        SetBlockingOfNonTemporaryEvents(Ped, true)
-    end
-
-    for k,v in pairs(ShopConfig.sellingLocationShops) do
-        exports.ox_target:addBoxZone({
-            coords = vec3(v.x, v.y, v.z),
-            size = vec3(1.5, 1.5, 1.5),
-            rotation = 45,
-            debug = drawZones,
-            options = {
-                {
-                    name = 'Shop',
-                    event = 'shops_openmenu',
-                    icon = 'fa-solid fa-cart-shopping',
-                    label = 'Shop',
-                }
-            }
-        })
-    end
+    spawnShopPeds(ShopConfig.sellingLocationShops, {
+        {
+            name = 'Shop',
+            event = 'shops_openmenu',
+            icon = 'fa-solid fa-cart-shopping',
+            label = 'Shop',
+        }
+    })
 end)
 
+-- ============================================================
+-- MECHANIC SHOP -- 🔧 Tools / 🚗 Parts
+-- ============================================================
 function OpenBuyMenuMC()
-    local options = {}
-
-
     ESX.TriggerServerCallback('getitemsForSaleMC', function(itemsForSaleMC)
-        for _, item in ipairs(itemsForSaleMC) do
-
-            table.insert(options, {
-                title = ("%s ($%s)"):format(item.label, item.price),
-                description = 'Click to Buy',
-                icon = item.image,
-                image = item.image,
+        showCategorizedShopMenu('buy_item_mc_menu', '🔧 Mechanic Shop', ShopConfig.MCCategories, itemsForSaleMC, function(item, cat)
+            return {
+                title = item.label,
+                description = ('$%s -- click to choose a quantity'):format(item.price),
+                icon = cat.icon,
+                iconColor = cat.iconColor,
+                metadata = { ('Price: $%s'):format(item.price) },
                 onSelect = function()
-
-                    local input = lib.inputDialog('Meghdar Baraye Kharid', {
-                        {
-                            type = 'number',
-                            label = 'Meghdar',
-                            description = 'Chand ta mikhay bekhari?',
-                            min = 1,
-                            required = true
-                        }
-                    })
-
-                    if input and tonumber(input[1]) and tonumber(input[1]) > 0 then
-
-                        TriggerServerEvent('mc_item:buy_mc', item.name, tonumber(input[1]), item.price)
-                    else
-                        lib.notify({ position = 'center-right', title = "", description = "Meghdar Na Motabar", type = 'error', duration = 5000 })
-                    end
+                    promptQuantityAndBuy(item, 'mc_item:buy_mc')
                 end
-            })
-        end
-
-        if #options > 0 then
-            lib.registerContext({
-                id = 'buy_item_mc_menu',
-                title = 'Buy Item',
-                options = options
-            })
-
-
-            lib.showContext('buy_item_mc_menu')
-        else
-            lib.notify({ position = 'center-right', title = "", description = "Item Baraye Kharid Mojod Nist", type = 'error', duration = 5000 })
-        end
+            }
+        end)
     end)
 end
 
@@ -147,82 +204,33 @@ AddEventHandler("mc_openmenu", function()
 end)
 
 Citizen.CreateThread(function()
-    for k,v in pairs(ShopConfig.sellingLocationMC) do
-        RequestModel(GetHashKey(v.pedname))
-        while not HasModelLoaded(GetHashKey(v.pedname)) do
-            Wait(500)
-        end
-        Ped = CreatePed(v.pedtype,  GetHashKey(v.pedname), v.x, v.y, v.z-1, v.h, false, false)
-        SetEntityHeading(Ped, v.h)
-        FreezeEntityPosition(Ped, true)
-        SetEntityInvincible(Ped, true)
-        SetBlockingOfNonTemporaryEvents(Ped, true)
-    end
-
-    for k,v in pairs(ShopConfig.sellingLocationMC) do
-        exports.ox_target:addBoxZone({
-            coords = vec3(v.x, v.y, v.z),
-            size = vec3(1.5, 1.5, 1.5),
-            rotation = 45,
-            debug = drawZones,
-            options = {
-                {
-                    name = 'Mechanic Shop',
-                    event = 'mc_openmenu',
-                    icon = 'fa-solid fa-cart-shopping',
-                    label = 'Mechanic Shop',
-                }
-            }
-        })
-    end
+    spawnShopPeds(ShopConfig.sellingLocationMC, {
+        {
+            name = 'Mechanic Shop',
+            event = 'mc_openmenu',
+            icon = 'fa-solid fa-cart-shopping',
+            label = 'Mechanic Shop',
+        }
+    })
 end)
 
+-- ============================================================
+-- ATTACHMENT SHOP (Narekshop) -- 🔭 Weapon Attachments / 🧰 Tools & Equipment
+-- ============================================================
 function OpenBuyMenuNarekshop()
-    local options = {}
-
-
     ESX.TriggerServerCallback('getitemsForSaleNarekshop', function(itemsForSaleNarekshop)
-        for _, item in ipairs(itemsForSaleNarekshop) do
-
-            table.insert(options, {
-                title = ("%s ($%s)"):format(item.label, item.price),
-                description = 'Click to Buy',
-                icon = item.image,
-                image = item.image,
+        showCategorizedShopMenu('buy_item_narekshop_menu', '🔭 Attachment Shop', ShopConfig.NarekshopCategories, itemsForSaleNarekshop, function(item, cat)
+            return {
+                title = item.label,
+                description = ('$%s -- click to choose a quantity'):format(item.price),
+                icon = cat.icon,
+                iconColor = cat.iconColor,
+                metadata = { ('Price: $%s'):format(item.price) },
                 onSelect = function()
-
-                    local input = lib.inputDialog('Meghdar Baraye Kharid', {
-                        {
-                            type = 'number',
-                            label = 'Meghdar',
-                            description = 'Chand ta mikhay bekhari?',
-                            min = 1,
-                            required = true
-                        }
-                    })
-
-                    if input and tonumber(input[1]) and tonumber(input[1]) > 0 then
-
-                        TriggerServerEvent('narekshop_item:buy_narekshop', item.name, tonumber(input[1]), item.price)
-                    else
-                        lib.notify({ position = 'center-right', title = "", description = "Meghdar Na Motabar", type = 'error', duration = 5000 })
-                    end
+                    promptQuantityAndBuy(item, 'narekshop_item:buy_narekshop')
                 end
-            })
-        end
-
-        if #options > 0 then
-            lib.registerContext({
-                id = 'buy_item_narekshop_menu',
-                title = 'Buy Item',
-                options = options
-            })
-
-
-            lib.showContext('buy_item_narekshop_menu')
-        else
-            lib.notify({ position = 'center-right', title = "", description = "Item Baraye Kharid Mojod Nist", type = 'error', duration = 5000 })
-        end
+            }
+        end)
     end)
 end
 
@@ -232,75 +240,28 @@ AddEventHandler("narekshop_openmenu", function()
 end)
 
 Citizen.CreateThread(function()
-    for k,v in pairs(ShopConfig.sellingLocationNarekshop) do
-        RequestModel(GetHashKey(v.pedname))
-        while not HasModelLoaded(GetHashKey(v.pedname)) do
-            Wait(500)
-        end
-        Ped = CreatePed(v.pedtype,  GetHashKey(v.pedname), v.x, v.y, v.z-1, v.h, false, false)
-        SetEntityHeading(Ped, v.h)
-        FreezeEntityPosition(Ped, true)
-        SetEntityInvincible(Ped, true)
-        SetBlockingOfNonTemporaryEvents(Ped, true)
-    end
-
-    for k,v in pairs(ShopConfig.sellingLocationNarekshop) do
-        exports.ox_target:addBoxZone({
-            coords = vec3(v.x, v.y, v.z),
-            size = vec3(1.5, 1.5, 1.5),
-            rotation = 45,
-            debug = drawZones,
-            options = {
-                {
-                    name = 'Attachment Shop',
-                    event = 'narekshop_openmenu',
-                    icon = 'fa-solid fa-cart-shopping',
-                    label = 'Attachment Shop',
-                },
-                {
-                    name = 'Gun Shop',
-                    event = 'gunshop_openmenu',
-                    icon = 'fa-solid fa-gun',
-                    label = 'Gun Shop',
-                },
-            }
-        })
-    end
-end)
-
-function CreateShopBlip()
-    for _, v in pairs(ShopConfig.sellingLocationNarekshop) do
-        local blip = AddBlipForCoord(v.x, v.y, v.z)
-
-        SetBlipSprite (blip, 110)
-        SetBlipDisplay(blip, 4)
-        SetBlipScale(blip, 0.7)
-        SetBlipColour (blip, 81)
-        SetBlipAsShortRange(blip, true)
-        BeginTextCommandSetBlipName("STRING")
-        AddTextComponentSubstringPlayerName("Gun Shop")
-        EndTextCommandSetBlipName(blip)
-
-        if v.displayBlip == true then
-            SetBlipAlpha(blip, 255)
-        else
-            SetBlipAlpha(blip, 0)
-        end
-    end
-end
-
-Citizen.CreateThread(function()
-    CreateShopBlip()
+    spawnShopPeds(ShopConfig.sellingLocationNarekshop, {
+        {
+            name = 'Attachment Shop',
+            event = 'narekshop_openmenu',
+            icon = 'fa-solid fa-cart-shopping',
+            label = 'Attachment Shop',
+        },
+        {
+            name = 'Gun Shop',
+            event = 'gunshop_openmenu',
+            icon = 'fa-solid fa-gun',
+            label = 'Gun Shop',
+        },
+    })
+    spawnShopBlips(ShopConfig.sellingLocationNarekshop, 'Gun Shop', 81)
 end)
 
 -- ============================================================
--- GUN SHOP -- category menu (Pistols / SMGs / Shotguns / Rifles /
--- Snipers / Heavy / Melee / Throwables / Ammo) instead of one long
--- flat list. Selecting a category opens a submenu of just those
--- items; ox_lib draws the back arrow automatically via `menu` on
--- the registered submenu.
+-- GUN SHOP -- 🔫 Pistols / 🔪 Melee / 📦 Ammunition. Weapons show a
+-- confirm dialog with damage/fire-rate/magazine metadata before
+-- buying; ammo asks for a quantity of stacks instead.
 -- ============================================================
-
 local function buildWeaponMetadata(item)
     local metadata = {}
     local meta = item.meta
@@ -320,97 +281,37 @@ end
 
 function OpenBuyMenuGunshop()
     ESX.TriggerServerCallback('getitemsForSaleGunshop', function(itemsForSaleGunshop)
-        -- Group the flat list the server sends into { [categoryId] = { item, item, ... } }
-        local grouped = {}
-        for _, item in ipairs(itemsForSaleGunshop) do
-            grouped[item.category] = grouped[item.category] or {}
-            table.insert(grouped[item.category], item)
-        end
+        showCategorizedShopMenu('buy_item_gunshop_menu', '🔫 Gun Shop', ShopConfig.GunshopCategories, itemsForSaleGunshop, function(item, cat)
+            local isAmmo = item.itemType == 'ammo'
+            local buyEvent = isAmmo and 'gunshop_item:buy_ammo' or 'gunshop_item:buy_gunshop'
+            local title = isAmmo and ('%s (x%s per stack)'):format(item.label, item.amount) or item.label
+            local metadata = buildWeaponMetadata(item)
 
-        local categoryOptions = {}
+            return {
+                title = title,
+                description = isAmmo and 'Click to choose a quantity' or 'Click to buy',
+                icon = cat.icon,
+                iconColor = cat.iconColor,
+                metadata = metadata,
+                onSelect = function()
+                    if isAmmo then
+                        promptQuantityAndBuy(item, buyEvent, 50)
+                    else
+                        local confirm = lib.alertDialog({
+                            header = item.label,
+                            content = table.concat(metadata, '\n\n'),
+                            centered = true,
+                            cancel = true,
+                            labels = { confirm = 'Buy', cancel = 'Cancel' }
+                        })
 
-        for _, cat in ipairs(ShopConfig.GunshopCategories) do
-            local items = grouped[cat.id]
-            if items and #items > 0 then
-                local subOptions = {}
-
-                for _, item in ipairs(items) do
-                    local isAmmo = item.itemType == 'ammo'
-                    local buyEvent = isAmmo and 'gunshop_item:buy_ammo' or 'gunshop_item:buy_gunshop'
-                    local title = isAmmo and ('%s (x%s per stack)'):format(item.label, item.amount) or item.label
-                    local metadata = buildWeaponMetadata(item)
-
-                    subOptions[#subOptions + 1] = {
-                        title = title,
-                        description = isAmmo and 'Click to choose a quantity' or 'Click to buy',
-                        icon = cat.icon,
-                        iconColor = cat.iconColor,
-                        metadata = metadata,
-                        onSelect = function()
-                            if isAmmo then
-                                local input = lib.inputDialog(('Buy %s'):format(item.label), {
-                                    {
-                                        type = 'number',
-                                        label = 'Stacks',
-                                        description = ('Each stack = %sx for $%s'):format(item.amount, item.price),
-                                        min = 1,
-                                        max = 50,
-                                        default = 1,
-                                        required = true
-                                    }
-                                })
-
-                                if input and tonumber(input[1]) and tonumber(input[1]) > 0 then
-                                    TriggerServerEvent(buyEvent, item.name, tonumber(input[1]))
-                                else
-                                    lib.notify({ position = 'center-right', title = "", description = "Meghdar Na Motabar", type = 'error', duration = 5000 })
-                                end
-                            else
-                                local confirm = lib.alertDialog({
-                                    header = item.label,
-                                    content = table.concat(metadata, '\n\n'),
-                                    centered = true,
-                                    cancel = true,
-                                    labels = { confirm = 'Buy', cancel = 'Cancel' }
-                                })
-
-                                if confirm == 'confirm' then
-                                    TriggerServerEvent(buyEvent, item.name, 1)
-                                end
-                            end
+                        if confirm == 'confirm' then
+                            TriggerServerEvent(buyEvent, item.name, 1)
                         end
-                    }
+                    end
                 end
-
-                lib.registerContext({
-                    id = 'gunshop_category_' .. cat.id,
-                    title = cat.label,
-                    menu = 'buy_item_gunshop_menu',
-                    options = subOptions
-                })
-
-                categoryOptions[#categoryOptions + 1] = {
-                    title = cat.label,
-                    description = ('%s item%s available'):format(#items, #items ~= 1 and 's' or ''),
-                    icon = cat.icon,
-                    iconColor = cat.iconColor,
-                    arrow = true,
-                    menu = 'gunshop_category_' .. cat.id,
-                }
-            end
-        end
-
-        if #categoryOptions > 0 then
-            lib.registerContext({
-                id = 'buy_item_gunshop_menu',
-                title = 'Gun Shop',
-                options = categoryOptions
-            })
-
-            lib.showContext('buy_item_gunshop_menu')
-        else
-            lib.notify({ position = 'center-right', title = "", description = "Item Baraye Kharid Mojod Nist", type = 'error', duration = 5000 })
-        end
+            }
+        end)
     end)
 end
 
@@ -420,46 +321,15 @@ AddEventHandler("gunshop_openmenu", function()
 end)
 
 Citizen.CreateThread(function()
-    for k,v in pairs(ShopConfig.sellingLocationGunshop) do
-        RequestModel(GetHashKey(v.pedname))
-        while not HasModelLoaded(GetHashKey(v.pedname)) do
-            Wait(500)
-        end
-        Ped = CreatePed(v.pedtype,  GetHashKey(v.pedname), v.x, v.y, v.z-1, v.h, false, false)
-        SetEntityHeading(Ped, v.h)
-        FreezeEntityPosition(Ped, true)
-        SetEntityInvincible(Ped, true)
-        SetBlockingOfNonTemporaryEvents(Ped, true)
-    end
-
-    for k,v in pairs(ShopConfig.sellingLocationGunshop) do
-        exports.ox_target:addBoxZone({
-            coords = vec3(v.x, v.y, v.z),
-            size = vec3(1.5, 1.5, 1.5),
-            rotation = 45,
-            debug = drawZones,
-            options = {
-                {
-                    name = 'Gun Shop',
-                    event = 'gunshop_openmenu',
-                    icon = 'fa-solid fa-gun', -- was 'fa-solid fa-cart-weapon', not a real FontAwesome icon
-                    label = 'Gun Shop',
-                },
-            }
-        })
-
-        -- Standalone gun shops (if any get added to ShopConfig.sellingLocationGunshop)
-        -- now also get a map blip, matching the Narekshop gun shop locations.
-        if v.displayBlip then
-            local blip = AddBlipForCoord(v.x, v.y, v.z)
-            SetBlipSprite(blip, 110)
-            SetBlipDisplay(blip, 4)
-            SetBlipScale(blip, 0.7)
-            SetBlipColour(blip, 1)
-            SetBlipAsShortRange(blip, true)
-            BeginTextCommandSetBlipName("STRING")
-            AddTextComponentSubstringPlayerName("Gun Shop")
-            EndTextCommandSetBlipName(blip)
-        end
-    end
+    spawnShopPeds(ShopConfig.sellingLocationGunshop, {
+        {
+            name = 'Gun Shop',
+            event = 'gunshop_openmenu',
+            icon = 'fa-solid fa-gun',
+            label = 'Gun Shop',
+        },
+    })
+    -- Standalone gun shops (if any get added to ShopConfig.sellingLocationGunshop)
+    -- get a map blip too, same as the Attachment Shop locations above.
+    spawnShopBlips(ShopConfig.sellingLocationGunshop, 'Gun Shop', 1)
 end)

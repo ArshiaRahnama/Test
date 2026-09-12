@@ -96,6 +96,49 @@ Config.JobQuests = {
         -- copy-paste leftovers from another job) so taxi quests never
         -- worked at all before.
     },
+
+    -- esx_jobs (fueler/lumberjack/slaughterer/tailor/miner): these were
+    -- listed below as "NOT WIRED -- no matching resource exists" because
+    -- at the time nothing on this server fired a distinct, per-player
+    -- event for these actions. esx_jobs now fires
+    -- TriggerEvent('quest-<job>:produce' | ':deliver') itself (see
+    -- server/main.lua's Work() function) for the 4 Config.Jobs-based
+    -- jobs, and 'quest-miner:mine' / 'quest-miner:sell' from
+    -- server/jobs/minerjob.lua for the miner job.
+    ["fueler"] = {
+        {name = "Refine", description = "Drill/Refine/Mix 20 times", trigger = "quest-fueler:produce", requiredTrigger = 20, XP = 15, coin = 0.05},
+        {name = "Deliver", description = "Deliver 10 loads of gas", trigger = "quest-fueler:deliver", requiredTrigger = 10, XP = 20, coin = 0.08},
+    },
+
+    ["lumberjack"] = {
+        {name = "Cut", description = "Cut/package wood 20 times", trigger = "quest-lumberjack:produce", requiredTrigger = 20, XP = 15, coin = 0.05},
+        {name = "Deliver", description = "Deliver 10 board packages", trigger = "quest-lumberjack:deliver", requiredTrigger = 10, XP = 20, coin = 0.08},
+    },
+
+    ["slaughterer"] = {
+        {name = "Process", description = "Catch/slaughter/package 20 times", trigger = "quest-slaughterer:produce", requiredTrigger = 20, XP = 15, coin = 0.05},
+        {name = "Deliver", description = "Deliver 10 chicken trays", trigger = "quest-slaughterer:deliver", requiredTrigger = 10, XP = 20, coin = 0.08},
+    },
+
+    ["tailor"] = {
+        {name = "Sew", description = "Gather wool/make fabric or clothes 20 times", trigger = "quest-tailor:produce", requiredTrigger = 20, XP = 15, coin = 0.05},
+        {name = "Deliver", description = "Deliver 10 clothing orders", trigger = "quest-tailor:deliver", requiredTrigger = 10, XP = 20, coin = 0.08},
+    },
+
+    ["miner"] = {
+        {name = "Mine", description = "Mine and load 30 rocks", trigger = "quest-miner:mine", requiredTrigger = 30, XP = 15, coin = 0.05},
+        {name = "Sell", description = "Sell washed stone 10 times", trigger = "quest-miner:sell", requiredTrigger = 10, XP = 20, coin = 0.08},
+    },
+
+    -- Unemployed players (xPlayer.job.name == "nojob" on this server, not
+    -- the more common "unemployed"). esx_jobs fires this the moment a
+    -- nojob player picks any job at the Job Center (see server/main.lua's
+    -- esx_jobs:setJob) -- as soon as they do, they stop being "nojob" and
+    -- GenerateQuests picks up that job's own quests instead, so this is
+    -- just the one-time nudge to go get a job in the first place.
+    ["nojob"] = {
+        {name = "Get a Job", description = "Set a job at the Job Center", trigger = "quest-nojob:getjob", requiredTrigger = 1, XP = 10, coin = 0.02},
+    },
 }
 
 -- ===== uniquecafejobs — cafe/restaurant jobs (all 17 businesses) ===== --
@@ -207,8 +250,9 @@ Config.JobQuests["cratecarry"] = extendPool(holdingSharedPool,
         esx_Bank_robbery don't exist as resources anywhere on this
         server at all.
 
-      petrol / wool / fabric / clothe / wood / chicken chain — no
-        matching resource exists on this server under any name.
+      petrol / wool / fabric / clothe / wood / chicken chain — now wired,
+        see the ["fueler"]/["lumberjack"]/["slaughterer"]/["tailor"]/
+        ["miner"] entries above (esx_jobs fires the triggers itself).
 ======================================================================]]
 
 Config.DefaultQuest = {

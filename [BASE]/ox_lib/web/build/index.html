@@ -5,6 +5,26 @@
     <link rel="icon" type="image/svg+xml" href="/src/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>NUI React Boilerplate</title>
+    <script>
+      // Suppresses the harmless "ResizeObserver loop limit exceeded" /
+      // "ResizeObserver loop completed with undelivered notifications"
+      // browser warnings. These fire whenever a resize observer's
+      // callback triggers another resize in the same frame (common with
+      // nested/animated menus like the context menu) -- purely a
+      // console-noise issue in Chromium/CEF, not an actual bug, and has
+      // no effect on layout or behavior either way.
+      window.addEventListener('error', function (e) {
+        if (e.message && e.message.includes('ResizeObserver loop')) {
+          e.stopImmediatePropagation();
+        }
+      });
+
+      var _consoleError = window.console.error;
+      window.console.error = function () {
+        if (arguments[0] && String(arguments[0]).includes('ResizeObserver loop')) return;
+        _consoleError.apply(window.console, arguments);
+      };
+    </script>
     <script type="module" crossorigin src="./assets/index-D3YRIttc.js"></script>
     <link rel="stylesheet" crossorigin href="./assets/index-SonfJNby.css">
   </head>

@@ -154,7 +154,18 @@ AddEventHandler('esx_jobs:setJob', function(job)
 		return
 	end
 
-	local wasNojob = (xPlayer.job.name == 'nojob')
+	-- Whitelist, not blacklist: only allow switching INTO one of our jobs
+	-- if the player is currently unemployed or already holds one of our
+	-- OWN jobs. Anything else (police, ambulance, mechanic, any
+	-- organization job) is refused outright -- the Job Center should never
+	-- be able to silently "fire" someone from a real org job.
+	local currentJob = xPlayer.job.name
+	if currentJob ~= 'nojob' and not IsAllowed(currentJob) then
+		TriggerClientEvent('esx:showNotification', source, '~r~You need to resign from your current job first.')
+		return
+	end
+
+	local wasNojob = (currentJob == 'nojob')
 
 	xPlayer.setJob(job, 0)
 	TriggerClientEvent("esx:inJob", xPlayer.source, job)

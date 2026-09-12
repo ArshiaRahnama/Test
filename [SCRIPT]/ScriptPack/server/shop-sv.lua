@@ -24,7 +24,7 @@ ESX.RegisterServerCallback('getitemsForSaleShops', function(source, cb)
             name = itemName,
             label = ESX.GetItemLabel(itemName),
             price = itemData.price,
-            image = itemData.image
+            category = itemData.category
         })
     end
 
@@ -76,7 +76,7 @@ ESX.RegisterServerCallback('getitemsForSaleMC', function(source, cb)
             name = itemName,
             label = ESX.GetItemLabel(itemName),
             price = itemData.price,
-            image = itemData.image
+            category = itemData.category
         })
     end
 
@@ -128,7 +128,7 @@ ESX.RegisterServerCallback('getitemsForSaleNarekshop', function(source, cb)
             name = itemName,
             label = ESX.GetItemLabel(itemName),
             price = itemData.price,
-            image = itemData.image
+            category = itemData.category
         })
     end
 
@@ -176,19 +176,14 @@ ESX.RegisterServerCallback('getitemsForSaleGunshop', function(source, cb)
     local itemsForSaleGunshop = {}
 
     for itemName, itemData in pairs(ShopConfig.itemsForSaleGunshop) do
-        -- Heavy weapons (RPG/Minigun/Grenade Launcher) are marked
-        -- `restricted = true` in the config and only shown/sellable
-        -- when Config_Gunshop.SellHeavyWeapons is turned on.
-        if not itemData.restricted or Config_Gunshop.SellHeavyWeapons then
-            table.insert(itemsForSaleGunshop, {
-                name = itemName,
-                label = ESX.GetWeaponLabel(itemName),
-                price = itemData.price,
-                category = itemData.category,
-                meta = ShopConfig.GunshopMeta[itemName],
-                itemType = 'weapon'
-            })
-        end
+        table.insert(itemsForSaleGunshop, {
+            name = itemName,
+            label = ESX.GetWeaponLabel(itemName),
+            price = itemData.price,
+            category = itemData.category,
+            meta = ShopConfig.GunshopMeta[itemName],
+            itemType = 'weapon'
+        })
     end
 
     -- Ammo entries (see ShopConfig.itemsForSaleAmmoGunshop) merged into
@@ -224,14 +219,6 @@ local function isRateLimited(source)
     return false
 end
 
--- When Config_Gunshop.RequireLicense is enabled (shopseller_config.lua),
--- every gunshop purchase requires a 'weaponlicense' item in inventory.
-local function hasWeaponLicense(xPlayer)
-    if not Config_Gunshop.RequireLicense then return true end
-    local license = xPlayer.getInventoryItem('weaponlicense')
-    return license and license.count > 0
-end
-
 RegisterServerEvent('gunshop_item:buy_gunshop')
 AddEventHandler('gunshop_item:buy_gunshop', function(itemName, amount)
     local source = source
@@ -242,15 +229,6 @@ AddEventHandler('gunshop_item:buy_gunshop', function(itemName, amount)
 
     local itemData = ShopConfig.itemsForSaleGunshop[itemName]
     if not itemData or not isValidAmount(amount) then return end
-
-    -- Re-check the heavy-weapons toggle server-side too -- the client
-    -- already filters these out of the menu, but never trust the client.
-    if itemData.restricted and not Config_Gunshop.SellHeavyWeapons then return end
-
-    if not hasWeaponLicense(xPlayer) then
-        TriggerClientEvent('esx:showNotification', source, 'Shoma Gavahiname Aslahe Nadarid.')
-        return
-    end
 
     local itemPrice = itemData.price
     local totalPrice = itemPrice * amount
@@ -290,11 +268,6 @@ AddEventHandler('gunshop_item:buy_ammo', function(itemName, amount)
 
     local itemData = ShopConfig.itemsForSaleAmmoGunshop[itemName]
     if not itemData or not isValidAmount(amount) then return end
-
-    if not hasWeaponLicense(xPlayer) then
-        TriggerClientEvent('esx:showNotification', source, 'Shoma Gavahiname Aslahe Nadarid.')
-        return
-    end
 
     local itemPrice = itemData.price
     local totalPrice = itemPrice * amount

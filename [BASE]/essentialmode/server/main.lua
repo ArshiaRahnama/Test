@@ -60,11 +60,28 @@ local xPlayer = ESX.GetPlayerFromId(source)
 			existingNames[w.name] = true
 			table.insert(merged, w)
 		end
+		local added = {}
 		for _, w in ipairs(loadout) do
 			if not existingNames[w.name] then
 				table.insert(merged, w)
+				table.insert(added, w.name)
 			end
 		end
+		-- TEMP DIAGNOSTIC (chasing a report: switching between hotbar
+		-- slots and back makes a weapon's serial "jump"/change) - logs
+		-- exactly what this merge does every time it runs: the serials
+		-- of every weapon the server already had (untouched by this
+		-- merge, should never change here) and any weapon names that
+		-- got newly added (which would get a fresh serial from
+		-- addWeapon if that's what's actually adding them - but this
+		-- merge itself never touches an existing entry's serial).
+		-- Remove once the cause is confirmed.
+		local existingSerials = {}
+		for _, w in ipairs(xPlayer.loadout or {}) do
+			table.insert(existingSerials, tostring(w.name) .. '#' .. tostring(w.serial))
+		end
+		print(('[essentialmode] updateLoadout merge: source=%s existing=[%s] newlyAdded=[%s]'):format(
+			tostring(Source), table.concat(existingSerials, ', '), table.concat(added, ', ')))
 		Users[Source].set("loadout", merged)
 	end
 end)

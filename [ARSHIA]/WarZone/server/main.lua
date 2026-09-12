@@ -98,9 +98,14 @@ function ShowMyStats(source)
     ]], {
         ['@identifier'] = xPlayer.identifier,
     }, function(rows)
-        local kills = (rows and rows[1] and rows[1].kills) or 0
-        local wins = (rows and rows[1] and rows[1].wins) or 0
-        local deaths = (rows and rows[1] and rows[1].deaths) or 0
+        -- Fix: MySQL's SUM() comes back through oxmysql as a STRING (a
+        -- common DECIMAL-serialization quirk), not a Lua number -- so
+        -- `deaths > 0` below was comparing a string to a number and
+        -- crashing. tonumber(...) normalizes it either way (also handles
+        -- SUM() returning SQL NULL for a brand-new player with no rows yet).
+        local kills = tonumber(rows and rows[1] and rows[1].kills) or 0
+        local wins = tonumber(rows and rows[1] and rows[1].wins) or 0
+        local deaths = tonumber(rows and rows[1] and rows[1].deaths) or 0
         local kd = deaths > 0 and string.format('%.2f', kills / deaths) or tostring(kills)
         local template = '<div style="padding: 0.6vw; margin: 0.5vw; background-color:rgba(0,0,0,0.75); border-radius: 3px; font-size:0.85vw;">🔫 Your WarZone Stats<br>Kills: '..kills..' | Deaths: '..deaths..' | K/D: '..kd..'<br>Wins: '..wins..'</div>'
         TriggerClientEvent('chat:addMessage', source, {template = template, args = {}})
@@ -674,6 +679,7 @@ function StartWarZone( Blood , Time , Coord , Team , Map)
         for k,v in pairs(Players) do 
             print('[WZ DEBUG] -> sending AWZ:StartMatch to source='..v.ID)
             SetPlayerRoutingBucket(v.ID, Config.FightWorld  )
+            AntiCheatGrace(v.ID)
             TriggerClientEvent('AWZ:StartMatch' ,v.ID, Blood , Config.DistanceZone , Coord , Time , 0  , Map )
         end 
     end)
@@ -744,6 +750,7 @@ AddEventHandler("esx:onPlayerDeath", function(KillData)
 
     if InWzNormal then
         -- Normal battlefield death
+        AntiCheatGrace(source) -- they may redeploy via the plane if lives remain
         TriggerClientEvent("AWZ:respwan", source, false)
         if KillData.killer ~= false and KillData.killer ~= "Leaved" then
             TriggerClientEvent("AWZ:respwan", KillData.killer, true, GetPlayerName(source), GetPlayerName(KillData.killer))
@@ -780,6 +787,7 @@ AddEventHandler("esx:onPlayerDeath", function(KillData)
                 end
             end
             TriggerClientEvent("AWZ:respwan", KillData.killer, true, GetPlayerName(source), GetPlayerName(KillData.killer))
+            AntiCheatGrace(KillData.killer) -- Gulag winner also redeploys via the plane
             TriggerClientEvent("AWZ:Prisonbreak", KillData.killer)
         end
     end
@@ -1092,6 +1100,15 @@ end
 -------------------------------------------------------------------
 local AntiCheatLastPos = {}
 local AntiCheatLastGulag = {}
+-- Fix: the plane drop (initial spawn AND every mid-life redeploy) and its
+-- parachute flight legitimately cover a lot of ground fast -- easily
+-- 300+ km/h -- which is exactly what triggered a false "speed hack" alert
+-- during normal testing. Give each player a grace window (no anti-cheat
+-- checks) whenever a drop sequence is about to start for them.
+local AntiCheatGraceUntil = {}
+function AntiCheatGrace(src)
+    AntiCheatGraceUntil[src] = GetGameTimer() + Config.AntiCheat.dropGraceMs
+end
 function AntiCheatMonitor()
     if not Config.AntiCheat.enabled then return end
     CreateThread(function()
@@ -1105,7 +1122,8 @@ function AntiCheatMonitor()
                     local coords = GetEntityCoords(ped)
                     local last = AntiCheatLastPos[p.ID]
                     local gulagChanged = AntiCheatLastGulag[p.ID] ~= nil and AntiCheatLastGulag[p.ID] ~= p.ingulag
-                    if last and not gulagChanged then
+                    local inGrace = (AntiCheatGraceUntil[p.ID] or 0) > GetGameTimer()
+                    if last and not gulagChanged and not inGrace then
                         local dist = #(coords - last.coords)
                         local dt = (GetGameTimer() - last.time) / 1000.0
                         if dt > 0.1 then

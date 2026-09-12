@@ -32,6 +32,18 @@ local SpectatorCam = nil
 -- Private Loadout (shop item) state -- see PrivteLoadout() fix notes
 local LoadoutCharges = 0
 local UsingLoadout = false
+-- Fix: WarZone() can legitimately run more than once per session (initial
+-- drop, every mid-life redeploy, Gulag win redeploy), and if a NEW call
+-- happens while an OLDER one is still alive (e.g. its `while inheli do
+-- Wait(3000) ... end` tail loop, or mid-setup) -- which is exactly what
+-- happened when testing the same match twice without restarting the
+-- resource -- both copies share the same global `plane`/`pilot`/`inheli`
+-- variables and stomp on each other (one thread deletes the other's plane
+-- mid-flight, calls JumpNow() on the wrong plane, etc.), which is what was
+-- actually causing the mystery ExitMision right after a successful drop.
+-- This "epoch" counter lets every WarZone() invocation recognize it's been
+-- superseded and quietly stop touching shared state instead of colliding.
+local WarZoneEpoch = 0
 local AllUav = 0 
 local UAVLine  = false 
 local solo = false 
@@ -154,6 +166,7 @@ end)
 RegisterNetEvent("AWZ:ExitMision")
 AddEventHandler("AWZ:ExitMision",function()
 	print('[WZ DEBUG][client] AWZ:ExitMision FIRED. InWarzone='..tostring(InWarzone)..' inmatch='..tostring(inmatch)..' inLobby='..tostring(inLobby)..' ingulag='..tostring(ingulag)..' InSpectator='..tostring(InSpectator))
+	print('[WZ DEBUG][client] traceback: '..(debug and debug.traceback and debug.traceback() or 'n/a'))
 	-- Fix/feature: if this player was spectating (eliminated but their
 	-- squad was still alive), make sure the free-cam + invisibility state
 	-- gets torn down before the normal exit cleanup runs below.
@@ -792,8 +805,10 @@ function ShopWzDrop(PlaneCoords, Code)
 end
 local dropcheack = false 
 function WarZone(loadHud)
+	WarZoneEpoch = WarZoneEpoch + 1
+	local myEpoch = WarZoneEpoch
 	CreateThread(function()
-		print('[WZ DEBUG][client] WarZone() thread started. InWarzone='..tostring(InWarzone)..' inmatch='..tostring(inmatch)..' inLobby='..tostring(inLobby))
+		print('[WZ DEBUG][client] WarZone() thread started (epoch '..myEpoch..'). InWarzone='..tostring(InWarzone)..' inmatch='..tostring(inmatch)..' inLobby='..tostring(inLobby))
     	if not InWarzone then   
     		print('[WZ DEBUG][client] WarZone() ABORTING because InWarzone is false -- triggering ExitMision locally')
     		TriggerEvent("AWZ:ExitMision") return 
@@ -816,6 +831,18 @@ function WarZone(loadHud)
     	while not HasModelLoaded(model) do
 		Wait(1)
 		end
+		-- Fix: a NEWER WarZone() call (a redeploy, a Gulag-win respawn, or
+		-- simply testing the match again) can start while this one is still
+		-- mid-setup or sitting in its tail loop below. Since both share the
+		-- same global plane/pilot/inheli, an old, still-running copy must
+		-- bail out here rather than keep going and fight the new one for
+		-- those variables (this was the actual cause of the mystery
+		-- ExitMision right after a successful drop when re-testing without
+		-- restarting the resource).
+		if myEpoch ~= WarZoneEpoch then
+			print('[WZ DEBUG][client] WarZone() epoch '..myEpoch..' superseded by '..WarZoneEpoch..' -- stopping stale thread (pre-plane)')
+			return
+		end
 		-- Fix: this is THE bug from your test. `plane` is a global that is
 		-- never initialized -- on a fresh client session (your very first
 		-- match), `plane` is still nil here, and DeleteVehicle(nil) is
@@ -826,17 +853,21 @@ function WarZone(loadHud)
 		-- existing vehicle.
     	if plane and DoesEntityExist(plane) then DeleteVehicle(plane) end
     	Wait(200)
+		if myEpoch ~= WarZoneEpoch then return end
 		plane = CreateVehicle(model,GlobalCoord.x, GlobalCoord.y - Zone, GlobalCoord.z + Zone, 10, false, true)
 		print('[WZ DEBUG][client] plane created, handle='..tostring(plane)..' exists='..tostring(DoesEntityExist(plane)))
 		while not HasModelLoaded(model) do
 			Wait(1)
 		end
 		while not DoesEntityExist(plane) do
+			if myEpoch ~= WarZoneEpoch then return end
 			plane = CreateVehicle(model,GlobalCoord.x, GlobalCoord.y - Zone, GlobalCoord.z + Zone, 10, false, true)
 			Wait(0)
 		end 
+		if myEpoch ~= WarZoneEpoch then return end
 		FreezeEntityPosition(plane, true)
 		Wait(500)
+		if myEpoch ~= WarZoneEpoch then return end
 		SetEntityHealth(PlayerPedId(), GetEntityMaxHealth(PlayerPedId()))
 		RemoveAllPedWeapons(PlayerPedId(),1)
 		SetEntityVisible(PlayerPedId(), false,false)
@@ -856,6 +887,10 @@ function WarZone(loadHud)
 		FreezePlayer(  false  )  
 		SetEntityVisible(PlayerPedId(), false ,false)
 		Wait(5000)
+		if myEpoch ~= WarZoneEpoch then
+			print('[WZ DEBUG][client] WarZone() epoch '..myEpoch..' superseded by '..WarZoneEpoch..' -- stopping stale thread (post-flight-wait)')
+			return
+		end
 		ClearPedTasksImmediately(PlayerPedId())
 		SetPedArmour(PlayerPedId(),0) 
 		SetEntityCollision(PlayerPedId(), false, false)
@@ -863,6 +898,7 @@ function WarZone(loadHud)
 		if loadHud then SendNUIMessage({message	= "Ingame",}) end 
 		FreezeEntityPosition(plane, false)
 		Wait(2000)
+		if myEpoch ~= WarZoneEpoch then return end
 		SetMaxHealth()
 		jump = false
 		inheli = true
@@ -877,6 +913,10 @@ function WarZone(loadHud)
 		local Time = 27 
 		while inheli do 
 			Wait(3000)
+			if myEpoch ~= WarZoneEpoch then
+				print('[WZ DEBUG][client] WarZone() epoch '..myEpoch..' superseded by '..WarZoneEpoch..' -- stopping stale tail loop')
+				return
+			end
 			if inheli == true  and  jump == false then 
 				Time = Time - 3
 					if Time <= 0 then 
