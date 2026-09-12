@@ -47,4 +47,5 @@ Locale = {
     ['Exact time of death'] = 'Exact time of death',
     ['Shot distance'] = 'Shot distance',
     ['Collect body'] = 'Collect body',
+    ['Unattended body'] = 'Unattended body',
 }

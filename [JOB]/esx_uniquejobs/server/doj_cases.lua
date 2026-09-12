@@ -443,3 +443,55 @@ function SetExternalCaseStatus(caseId, status, cb)
 	end)
 end
 exports('SetExternalCaseStatus', SetExternalCaseStatus)
+-- ============================================================
+-- External export: add a plain note (or evidence entry) to an EXISTING
+-- case without a DOJ-job player as the triggering source -- mirrors
+-- AddExternalCharge's shape exactly, and also logs into the case
+-- timeline via LogCaseEvent, same as the player-triggered
+-- dojAddCaseNote path (server/case_timeline.lua's second handler on
+-- that event never fires for this external path, so this calls
+-- LogCaseEvent itself instead).
+-- Added for kq_detective's forensics integration.
+-- exports['esx_uniquejobs']:AddExternalNote(caseId, noteType, text, byName, cb)
+-- noteType: 'note' | 'evidence'. cb(true) on success, cb(false) if
+-- caseId/text missing.
+-- ============================================================
+function AddExternalNote(caseId, noteType, text, byName, cb)
+	if not caseId or not text or text == '' then
+		if cb then cb(false) end
+		return
+	end
+
+	local now = os.time()
+	MySQL.Async.execute('INSERT INTO dept_case_notes (case_id, note_type, text, by_name, timestamp) VALUES (@cid, @type, @text, @by, @ts)', {
+		['@cid'] = caseId, ['@type'] = noteType or 'note', ['@text'] = text, ['@by'] = byName or 'System', ['@ts'] = now,
+	}, function()
+		LogCaseEvent(caseId, noteType == 'evidence' and 'evidence' or 'note', text, byName or 'System')
+		if cb then cb(true) end
+	end)
+end
+exports('AddExternalNote', AddExternalNote)
+
+-- ============================================================
+-- External export: add a suspect to an EXISTING case, given a real
+-- ESX identifier (so it shows up properly in dept_case_suspects, not
+-- just buried in a note) -- mirrors dojAddSuspect's insert exactly.
+-- Added for kq_detective's forensics integration (fingerprint/ballistics
+-- matches resolve straight to an identifier, no in-game /doj search needed).
+-- exports['esx_uniquejobs']:AddExternalSuspect(caseId, identifier, name, addedByName, cb)
+-- cb(true) on success, cb(false) if required params are missing.
+-- ============================================================
+function AddExternalSuspect(caseId, identifier, name, addedByName, cb)
+	if not caseId or not identifier or not name or name == '' then
+		if cb then cb(false) end
+		return
+	end
+
+	MySQL.Async.execute('INSERT INTO dept_case_suspects (case_id, identifier, name, added_by, timestamp) VALUES (@cid, @id, @name, @by, @ts)', {
+		['@cid'] = caseId, ['@id'] = identifier, ['@name'] = name, ['@by'] = addedByName or 'System', ['@ts'] = os.time(),
+	}, function()
+		LogCaseEvent(caseId, 'suspect_added', 'Mozanne Ezafe Shod: ' .. name, addedByName or 'System')
+		if cb then cb(true) end
+	end)
+end
+exports('AddExternalSuspect', AddExternalSuspect)

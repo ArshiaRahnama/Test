@@ -118,10 +118,12 @@ AddEventHandler('kq_detective:collectEvidence', function(victimSrc, kind)
             kind = 'print',
             identifier = f.printIdentifier,
             code = ShortPrintCode(f.printIdentifier),
+            dojCaseId = info.caseId,
         }
 
         xOfficer.addInventoryItem(Config.forensics.printItem, 1)
         TriggerClientEvent('esx:showNotification', officer, ('%s (#%d)'):format(L2('Fingerprint collected'), caseId))
+        KQ_AddDojNote(info.caseId, 'evidence', ('Fingerprint collected by %s.'):format(xOfficer.getName()), xOfficer.getName())
     elseif kind == 'casing' and f.hasCasing and not f.casingCollected then
         f.casingCollected = true
         caseId = nextCaseId
@@ -131,10 +133,12 @@ AddEventHandler('kq_detective:collectEvidence', function(victimSrc, kind)
             kind = 'casing',
             identifier = f.casingIdentifier,
             serial = f.serial,
+            dojCaseId = info.caseId,
         }
 
         xOfficer.addInventoryItem(Config.forensics.casingItem, 1)
         TriggerClientEvent('esx:showNotification', officer, ('%s: %s (#%d)'):format(L2('Shell casing collected'), f.serial, caseId))
+        KQ_AddDojNote(info.caseId, 'evidence', ('Shell casing collected by %s (serial %s).'):format(xOfficer.getName(), f.serial), xOfficer.getName())
     else
         TriggerClientEvent('esx:showNotification', officer,
             kind == 'print' and L2('No fingerprint found here.') or L2('No shell casing found here.'))
@@ -191,6 +195,16 @@ Citizen.CreateThread(function()
             SendKQDetectiveLog('Forensic match found',
                 ('Case #%d (%s) matched to **%s** (%s)'):format(caseId, case.kind, suspectName, case.identifier),
                 15158332)
+
+            -- DOJ integration: attach the identified suspect to the case
+            -- opened at time of the murder, and (optionally) flag them
+            -- wanted in CAD, exactly like your own crimescene system does.
+            KQ_AddDojNote(case.dojCaseId, 'evidence',
+                (case.kind == 'print' and ('Fingerprint match: %s'):format(suspectName)
+                    or ('Ballistics match (serial %s): %s'):format(case.serial, suspectName)),
+                xOfficer.getName())
+            KQ_AddDojSuspect(case.dojCaseId, case.identifier, suspectName, xOfficer.getName())
+            KQ_PushCadWanted(case.identifier)
         end)
     end)
 

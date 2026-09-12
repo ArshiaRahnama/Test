@@ -102,8 +102,9 @@ function UploadDeathInfo(eventData)
         local cause = GetPedCauseOfDeath(ped)
         local _, bone = GetPedLastDamageBone(ped)
         local distance = eventData and eventData.distance or nil
+        local coords = GetEntityCoords(ped)
 
-        TriggerServerEvent('kq_detective:savePlayerInfo', killerNetId, cause, bone, distance)
+        TriggerServerEvent('kq_detective:savePlayerInfo', killerNetId, cause, bone, distance, coords)
     end)
 end
 

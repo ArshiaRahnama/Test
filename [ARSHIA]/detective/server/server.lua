@@ -46,7 +46,7 @@ end
 --
 
 RegisterServerEvent('kq_detective:savePlayerInfo')
-AddEventHandler('kq_detective:savePlayerInfo', function(killerNetId, cause, bone, distance)
+AddEventHandler('kq_detective:savePlayerInfo', function(killerNetId, cause, bone, distance, coords)
     local src = source
 
     -- Resolve the killer's server id from the networked entity id the victim's
@@ -68,9 +68,11 @@ AddEventHandler('kq_detective:savePlayerInfo', function(killerNetId, cause, bone
     playerDeathInfo[src] = {
         timeOfDeath = GetGameTimer(),
         source = killerNetId,
+        killerServerId = killerServerId,
         cause = cause,
         bone = bone,
         distance = distance,
+        coords = coords,
         forensics = forensics,
     }
 

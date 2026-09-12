@@ -48,8 +48,10 @@ server_scripts {
     'locale/locale.lua',
     '@oxmysql/lib/MySQL.lua',
     'server/server.lua',
+    'server/dojintegration.lua',
     'server/forensics.lua',
     'server/cleanup.lua',
+    'server/finaldeath.lua',
 }
 
 --
@@ -64,6 +66,7 @@ client_scripts {
     'client/functions.lua',
     'client/forensics.lua',
     'client/cleanup.lua',
+    'client/finaldeath.lua',
     'client/editable/editable.lua',
     'client/editable/target.lua',
     'client/editable/esx.lua',

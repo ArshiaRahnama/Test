@@ -120,6 +120,64 @@ Config.cleanup = {
 
 
 -- ============================================================================
+-- DOJ CASE INTEGRATION — uses esx_uniquejobs' own external-export API
+-- (server/doj_cases.lua: CreateExternalCase / AddExternalCharge /
+-- SetExternalCaseStatus, plus two small additions of the same shape —
+-- AddExternalNote / AddExternalSuspect — see the doj_cases.lua patch
+-- delivered alongside this resource). Nothing here touches DOJ's database
+-- directly; it's all through that export surface, same as esx_drugs does.
+--
+-- Flow:
+--   1. A real player murder (killer identified) -> a case is opened
+--      automatically the moment it happens (no command).
+--   2. Evidence collected (print/casing) -> a note is added to that case.
+--   3. Kit Azmayeshi reveals a match -> the suspect is added to the case
+--      AND (optionally) pushed into your CAD (Unique_Cad/DuckMdt) as
+--      wanted, via the exact same TriggerEvent('DuckMdt:UpdateCharacterStatus', ...)
+--      your own cad/server/crimescene.lua uses.
+--   4. If the victim bleeds out unrevived -> a note is added noting that,
+--      alongside the existing green map blip.
+-- ============================================================================
+Config.dojIntegration = {
+    enabled = true,
+    casePriority = 'high',       -- 'low' | 'medium' | 'high'
+    openedByJob = 'doa',         -- job name shown as the case's opener
+    pushCadStatus = true,        -- also mark the suspect wanted in Unique_Cad/DuckMdt
+    cadWantedLevel = 'wanted',   -- must match one of Config_cs.CadWantedLevels
+}
+
+
+-- ============================================================================
+-- FINAL DEATH BLIP — when a downed player bleeds out completely and can no
+-- longer be revived, a green body blip is broadcast AUTOMATICALLY (no
+-- command needed) to everyone currently in DOJ + Law Enforcement.
+--
+-- "Bled out completely" is mirrored from Config_ambulance.BleedoutTimer
+-- (esx_uniquejobs/client/config_ambulance.lua = 5 minutes) WITHOUT touching
+-- that file: kq_detective already knows the instant someone dies. If that
+-- same player is still recorded as dead once the same duration has passed,
+-- they were never revived in time — the exact moment ambulance_main.lua's
+-- own timer force-respawns them at the hospital.
+--
+-- notifyJobs mirrors Config_cs.DOJJobs + Config_cs.LawEnforcementJobs from
+-- esx_uniquejobs/cad/config_crimescene.lua. Keep this list in sync if you
+-- edit those.
+-- ============================================================================
+Config.finalDeath = {
+    enabled = true,
+    bleedoutMs = 5 * 60000, -- must match Config_ambulance.BleedoutTimer
+    notifyJobs = {
+        'cid', 'cia', 'marshal', 'fbi', 'judge', 'doa', -- DOJ
+        'police', 'sheriff', 'mt',                      -- Law Enforcement
+    },
+    blipSprite = 280,             -- GTA's built-in "dead body" blip icon
+    blipColor = 2,                -- green
+    blipScale = 1.0,
+    blipLifetimeMs = 10 * 60000,  -- auto-removed after 10 minutes
+}
+
+
+-- ============================================================================
 -- DISCORD LOGGING — self-contained (doesn't touch [SCRIPT]/logs), so this is
 -- the only place you need to paste a webhook URL for kq_detective's own logs.
 -- ============================================================================
