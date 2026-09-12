@@ -66,6 +66,13 @@ CREATE TABLE IF NOT EXISTS `esx_jobs_uniforms` (
 	`job` VARCHAR(50) NOT NULL,
 	`gender` VARCHAR(10) NOT NULL,
 	`active_id` VARCHAR(50) NULL,
+	`previous_active_id` VARCHAR(50) NULL,
 	`history` LONGTEXT NOT NULL,
 	PRIMARY KEY (`job`, `gender`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- if the table already existed from before Undo was added, this adds the
+-- column without erroring (MySQL 8.0.29+ / MariaDB support IF NOT EXISTS
+-- here; on older MySQL just ignore the "duplicate column" error if it's
+-- already there)
+ALTER TABLE `esx_jobs_uniforms` ADD COLUMN IF NOT EXISTS `previous_active_id` VARCHAR(50) NULL;

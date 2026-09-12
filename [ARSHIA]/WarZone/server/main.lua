@@ -17,6 +17,16 @@ local Spectators = {} -- source IDs currently in spectator mode (eliminated, squ
 local CurrentSeason = 1
 local MatchStartedAt = 0
 local MatchStartCount = 0
+-- Party system: PartyLeader[source] = leaderSource (a solo player is their
+-- own leader). PartyMembers[leaderSource] = {member source ids}.
+-- PendingInvites[targetSource] = leaderSource (one pending invite at a time).
+local PartyLeader = {}
+local PartyMembers = {}
+local PendingInvites = {}
+-- Match Replay: running log of this match's events, saved to DB on end.
+local MatchLog = {}
+local MatchId = 0
+local CurrentMatchMap = ''
 
 -------------------------------------------------------------------
 -- Leaderboard (Season) -- table is per-identifier/per-season, so a
@@ -29,29 +39,243 @@ CreateThread(function()
             `name` VARCHAR(100) NOT NULL DEFAULT '',
             `kills` INT NOT NULL DEFAULT 0,
             `wins` INT NOT NULL DEFAULT 0,
+            `deaths` INT NOT NULL DEFAULT 0,
             `season` INT NOT NULL DEFAULT 1,
             PRIMARY KEY (`identifier`,`season`)
         )
     ]], {})
+    -- Migration: this table already existed on some installs from before
+    -- the `deaths` column (and /wzstats) were added -- CREATE TABLE IF NOT
+    -- EXISTS does nothing to an existing table, so add the column here if
+    -- it's missing. If your MySQL/MariaDB version doesn't support
+    -- "ADD COLUMN IF NOT EXISTS", oxmysql will just print its own error to
+    -- console here -- harmless, and everything else still starts fine.
+    MySQL.Async.execute([[
+        ALTER TABLE `wz_leaderboard` ADD COLUMN IF NOT EXISTS `deaths` INT NOT NULL DEFAULT 0
+    ]], {})
+    -- Feature: Match Replay -- one row per finished match with a JSON blob
+    -- of its event log, so /wzlastmatch can show a summary later.
+    MySQL.Async.execute([[
+        CREATE TABLE IF NOT EXISTS `wz_match_history` (
+            `id` INT NOT NULL AUTO_INCREMENT,
+            `ended_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            `map` VARCHAR(20) NOT NULL DEFAULT '',
+            `player_count` INT NOT NULL DEFAULT 0,
+            `winners` VARCHAR(255) NOT NULL DEFAULT '',
+            `summary` TEXT,
+            PRIMARY KEY (`id`)
+        )
+    ]], {})
 end)
 
-function WZ_AddStat(identifier, name, kills, wins)
+function WZ_AddStat(identifier, name, kills, wins, deaths)
     if not identifier then return end
+    deaths = deaths or 0
     MySQL.Async.execute([[
-        INSERT INTO wz_leaderboard (identifier, name, kills, wins, season)
-        VALUES (@identifier, @name, @kills, @wins, @season)
+        INSERT INTO wz_leaderboard (identifier, name, kills, wins, deaths, season)
+        VALUES (@identifier, @name, @kills, @wins, @deaths, @season)
         ON DUPLICATE KEY UPDATE
             name = @name,
             kills = kills + @kills,
-            wins = wins + @wins
+            wins = wins + @wins,
+            deaths = deaths + @deaths
     ]], {
         ['@identifier'] = identifier,
         ['@name'] = name,
         ['@kills'] = kills,
         ['@wins'] = wins,
+        ['@deaths'] = deaths,
         ['@season'] = CurrentSeason,
     })
 end
+
+function ShowMyStats(source)
+    local xPlayer = ESX.GetPlayerFromId(source)
+    if not xPlayer then return end
+    MySQL.Async.fetchAll([[
+        SELECT SUM(kills) as kills, SUM(wins) as wins, SUM(deaths) as deaths
+        FROM wz_leaderboard WHERE identifier = @identifier
+    ]], {
+        ['@identifier'] = xPlayer.identifier,
+    }, function(rows)
+        local kills = (rows and rows[1] and rows[1].kills) or 0
+        local wins = (rows and rows[1] and rows[1].wins) or 0
+        local deaths = (rows and rows[1] and rows[1].deaths) or 0
+        local kd = deaths > 0 and string.format('%.2f', kills / deaths) or tostring(kills)
+        local template = '<div style="padding: 0.6vw; margin: 0.5vw; background-color:rgba(0,0,0,0.75); border-radius: 3px; font-size:0.85vw;">🔫 Your WarZone Stats<br>Kills: '..kills..' | Deaths: '..deaths..' | K/D: '..kd..'<br>Wins: '..wins..'</div>'
+        TriggerClientEvent('chat:addMessage', source, {template = template, args = {}})
+    end)
+end
+RegisterCommand(Config.statsCommend, function(source, args)
+    ShowMyStats(source)
+end)
+RegisterServerEvent('AWZ:ShowMyStats')
+AddEventHandler('AWZ:ShowMyStats', function()
+    ShowMyStats(source)
+end)
+
+function ShowLastMatch(source)
+    MySQL.Async.fetchAll('SELECT * FROM wz_match_history ORDER BY id DESC LIMIT 1', {}, function(rows)
+        if not rows or #rows == 0 then
+            return SendNotifyServerToPlayer(source, 'No match history yet', 'error')
+        end
+        local match = rows[1]
+        local lines = ''
+        local ok, events = pcall(json.decode, match.summary or '[]')
+        if ok and events then
+            for i, ev in ipairs(events) do
+                lines = lines .. (i)..'. '..ev..'<br>'
+            end
+        end
+        local template = '<div style="padding: 0.6vw; margin: 0.5vw; background-color:rgba(0,0,0,0.75); border-radius: 3px; font-size:0.85vw;">📼 Last Match ('..match.map..', '..match.player_count..' players)<br>Winners: '..match.winners..'<br>'..lines..'</div>'
+        TriggerClientEvent('chat:addMessage', source, {template = template, args = {}})
+    end)
+end
+RegisterCommand(Config.lastmatchCommend, function(source, args)
+    ShowLastMatch(source)
+end)
+RegisterServerEvent('AWZ:ShowLastMatch')
+AddEventHandler('AWZ:ShowLastMatch', function()
+    ShowLastMatch(source)
+end)
+
+-------------------------------------------------------------------
+-- Party system: keep a group of players together in the same squad when
+-- the match starts, instead of everyone being grouped by join order only.
+-------------------------------------------------------------------
+function GetPartyLeader(src)
+    return PartyLeader[src] or src
+end
+function GetPartyMembers(leaderSrc)
+    return PartyMembers[leaderSrc] or {leaderSrc}
+end
+function PartyInviteAction(source, target)
+    if not target or not GetPlayerName(target) then
+        return SendNotifyServerToPlayer(source, 'Invalid player id', 'error')
+    end
+    if target == source then
+        return SendNotifyServerToPlayer(source, "You can't invite yourself", 'error')
+    end
+    local myLeader = GetPartyLeader(source)
+    if #GetPartyMembers(myLeader) >= 4 then
+        return SendNotifyServerToPlayer(source, 'Your party is already full (max 4)', 'error')
+    end
+    PendingInvites[target] = myLeader
+    SendNotifyServerToPlayer(target, GetPlayerName(source)..' invited you to their WarZone party. Open /'..Config.menuCommend..' to accept', 'info')
+    SendNotifyServerToPlayer(source, 'Invite sent to '..GetPlayerName(target), 'info')
+end
+function PartyAcceptAction(source)
+    local leader = PendingInvites[source]
+    if not leader or not GetPlayerName(leader) then
+        return SendNotifyServerToPlayer(source, 'You have no pending party invite', 'error')
+    end
+    if #GetPartyMembers(leader) >= 4 then
+        PendingInvites[source] = nil
+        return SendNotifyServerToPlayer(source, 'That party is already full', 'error')
+    end
+    -- leave any existing party first
+    LeaveParty(source)
+    PartyLeader[source] = leader
+    PartyMembers[leader] = PartyMembers[leader] or {leader}
+    table.insert(PartyMembers[leader], source)
+    PendingInvites[source] = nil
+    for _, mid in ipairs(PartyMembers[leader]) do
+        SendNotifyServerToPlayer(mid, GetPlayerName(source)..' joined the party', 'info')
+    end
+end
+function PartyLeaveAction(source)
+    LeaveParty(source)
+    SendNotifyServerToPlayer(source, 'You left your party', 'info')
+end
+function PartyListAction(source)
+    local leader = GetPartyLeader(source)
+    local names = {}
+    for _, mid in ipairs(GetPartyMembers(leader)) do
+        table.insert(names, GetPlayerName(mid) or ('#'..mid))
+    end
+    SendNotifyServerToPlayer(source, 'Party: '..table.concat(names, ', '), 'info')
+end
+RegisterCommand(Config.partyCommend, function(source, args)
+    local sub = args[1]
+    if sub == 'invite' then
+        PartyInviteAction(source, tonumber(args[2]))
+    elseif sub == 'accept' then
+        PartyAcceptAction(source)
+    elseif sub == 'leave' then
+        PartyLeaveAction(source)
+    elseif sub == 'list' then
+        PartyListAction(source)
+    else
+        SendNotifyServerToPlayer(source, 'Usage: /'..Config.partyCommend..' invite <id> | accept | leave | list', 'error')
+    end
+end)
+RegisterServerEvent('AWZ:PartyInviteEvent')
+AddEventHandler('AWZ:PartyInviteEvent', function(target)
+    PartyInviteAction(source, tonumber(target))
+end)
+RegisterServerEvent('AWZ:PartyAcceptEvent')
+AddEventHandler('AWZ:PartyAcceptEvent', function()
+    PartyAcceptAction(source)
+end)
+RegisterServerEvent('AWZ:PartyLeaveEvent')
+AddEventHandler('AWZ:PartyLeaveEvent', function()
+    PartyLeaveAction(source)
+end)
+function LeaveParty(src)
+    local leader = PartyLeader[src]
+    if not leader then return end
+    if PartyMembers[leader] then
+        for k, mid in ipairs(PartyMembers[leader]) do
+            if mid == src then table.remove(PartyMembers[leader], k) break end
+        end
+        if #PartyMembers[leader] <= 1 then
+            PartyMembers[leader] = nil
+        end
+    end
+    PartyLeader[src] = nil
+end
+AddEventHandler('playerDropped', function()
+    LeaveParty(source)
+    PendingInvites[source] = nil
+end)
+
+-- Feature: /warzone menu support -- current party state and the online
+-- player list, both used to build the icon_menu client-side without
+-- needing the player to type anyone's id.
+ESX.RegisterServerCallback('AWZ:GetPartyInfo', function(source, cb)
+    local leader = GetPartyLeader(source)
+    local members = GetPartyMembers(leader)
+    local memberNames = {}
+    local inParty = #members > 1
+    if inParty then
+        for _, mid in ipairs(members) do
+            if mid ~= source then
+                table.insert(memberNames, GetPlayerName(mid) or ('#'..mid))
+            end
+        end
+    end
+    local pendingFromName = nil
+    if PendingInvites[source] then
+        pendingFromName = GetPlayerName(PendingInvites[source])
+    end
+    cb({
+        inParty = inParty,
+        isLeader = (leader == source),
+        members = memberNames,
+        pendingFrom = pendingFromName,
+    })
+end)
+ESX.RegisterServerCallback('AWZ:GetOnlinePlayers', function(source, cb)
+    local list = {}
+    for _, playerId in ipairs(GetPlayers()) do
+        local pid = tonumber(playerId)
+        if pid ~= source then
+            table.insert(list, { id = pid, name = GetPlayerName(pid) })
+        end
+    end
+    cb(list)
+end)
+
 
 RegisterCommand(Config.wztopCommend, function(source, args)
     MySQL.Async.fetchAll('SELECT name, kills, wins FROM wz_leaderboard WHERE season = @season ORDER BY (wins*5 + kills) DESC LIMIT @lim', {
@@ -195,8 +419,12 @@ function BeginMatch(source, blood, time, mapArg, teamArg)
     Lobbey = false
     MatchStartedAt = os.time()
     MatchStartCount = #Players
+    MatchId = MatchId + 1
+    MatchLog = {'Match started on '..Map..' with '..#Players..' players'}
+    CurrentMatchMap = Map
     print('[WZ DEBUG] BeginMatch ACCEPTED: Map='..Map..' Team='..Team..' #Players going in='..#Players)
     TriggerClientEvent("AWZ:CloseUI", -1)
+    AntiCheatMonitor()
     StartWarZone(blood, time, Coords, Team, Map)
     return true
 end
@@ -344,15 +572,73 @@ function StartWarZone( Blood , Time , Coord , Team , Map)
         end
         local KeyNumber = 0 
         SquadCount = 1
-        while #PlayersSnapshot > KeyNumber do 
+        -- Feature: Party-aware squad building + Squad Fill. Group the
+        -- snapshot by party leader first (a solo player is their own
+        -- "party" of one), place each party into its own squad slot(s),
+        -- then top up any squad still short of `Team` with leftover solo
+        -- players instead of leaving them in their own tiny squad.
+        local seen = {}
+        local groups = {}
+        for _, p in ipairs(PlayersSnapshot) do
+            if not seen[p.ID] then
+                local leader = GetPartyLeader(p.ID)
+                local group = {}
+                for _, memberId in ipairs(GetPartyMembers(leader)) do
+                    -- only include party members who actually joined this lobby
+                    for _, p2 in ipairs(PlayersSnapshot) do
+                        if p2.ID == memberId and not seen[memberId] then
+                            table.insert(group, memberId)
+                            seen[memberId] = true
+                        end
+                    end
+                end
+                if #group == 0 then
+                    table.insert(group, p.ID)
+                    seen[p.ID] = true
+                end
+                table.insert(groups, group)
+            end
+        end
+        local soloLeftovers = {}
+        for _, group in ipairs(groups) do
             Wait(5)
-            KeyNumber = KeyNumber + 1 
-            if type( Squads[SquadCount] ) ~= 'table'  then Squads[SquadCount] = {} end 
-            table.insert( Squads[SquadCount] , PlayersSnapshot[KeyNumber].ID )
-            if #Squads[SquadCount] == Team  then 
+            if #group > Team then
+                -- party bigger than the team size: split across squads
+                for i = 1, #group, Team do
+                    Squads[SquadCount] = {}
+                    for j = i, math.min(i + Team - 1, #group) do
+                        table.insert(Squads[SquadCount], group[j])
+                    end
+                    SquadCount = SquadCount + 1
+                end
+            elseif #group == 1 then
+                -- solo player -- park them for the fill-in pass below
+                table.insert(soloLeftovers, group[1])
+            else
+                Squads[SquadCount] = {}
+                for _, memberId in ipairs(group) do
+                    table.insert(Squads[SquadCount], memberId)
+                end
                 SquadCount = SquadCount + 1
-            end     
-        end 
+            end
+        end
+        -- Squad Fill: top up the last party squad (if it has room) and any
+        -- solo players into shared squads, instead of every solo player
+        -- getting their own squad.
+        local fillIndex = SquadCount - 1
+        if type(Squads[fillIndex]) ~= 'table' or #Squads[fillIndex] >= Team then
+            fillIndex = SquadCount
+        end
+        for _, soloId in ipairs(soloLeftovers) do
+            if type(Squads[fillIndex]) ~= 'table' then Squads[fillIndex] = {} end
+            table.insert(Squads[fillIndex], soloId)
+            if #Squads[fillIndex] >= Team then
+                fillIndex = fillIndex + 1
+            end
+        end
+        if type(Squads[fillIndex]) == 'table' and #Squads[fillIndex] == 0 then
+            Squads[fillIndex] = nil
+        end
         -- Defensive: a player could still disconnect during the snapshot
         -- window above (or the Wait(5) ticks while squads are built). Drop
         -- any squad member no longer in the live Players table so they
@@ -440,13 +726,21 @@ AddEventHandler("esx:onPlayerDeath", function(KillData)
     if not InWzNormal and not InWzGulag then return end
 
     -- Leaderboard: track the kill regardless of which branch this death
-    -- falls into (a Gulag kill still counts).
+    -- falls into (a Gulag kill still counts), and always count a death for
+    -- the victim (used for /wzstats K/D).
+    local killerName = 'the Gulag'
     if KillData.killer ~= false and KillData.killer ~= "Leaved" then
         local killerPlayer = ESX.GetPlayerFromId(KillData.killer)
         if killerPlayer then
-            WZ_AddStat(killerPlayer.identifier, GetPlayerName(KillData.killer), 1, 0)
+            WZ_AddStat(killerPlayer.identifier, GetPlayerName(KillData.killer), 1, 0, 0)
+            killerName = GetPlayerName(KillData.killer)
         end
     end
+    local victimPlayer = ESX.GetPlayerFromId(source)
+    if victimPlayer then
+        WZ_AddStat(victimPlayer.identifier, GetPlayerName(source), 0, 0, 1)
+    end
+    table.insert(MatchLog, GetPlayerName(source)..' was eliminated by '..killerName)
 
     if InWzNormal then
         -- Normal battlefield death
@@ -697,6 +991,18 @@ function WarZoneWinner(Winners)
         3066993
     )
 
+    -- Feature: Match Replay -- save this match's event log for /wzlastmatch.
+    table.insert(MatchLog, 'Winner: '..table.concat(winnerNames, ', '))
+    MySQL.Async.execute([[
+        INSERT INTO wz_match_history (map, player_count, winners, summary)
+        VALUES (@map, @player_count, @winners, @summary)
+    ]], {
+        ['@map'] = CurrentMatchMap or '',
+        ['@player_count'] = MatchStartCount,
+        ['@winners'] = table.concat(winnerNames, ', '),
+        ['@summary'] = json.encode(MatchLog),
+    })
+
     -- Any players still in spectator mode (their squad lost, so the match
     -- ending is their cue to leave too) get sent out now.
     for k, v in pairs(Spectators) do
@@ -776,6 +1082,58 @@ function SendMessage( msg )
     -- every time this function ran (e.g. on /startwarzone).
     TriggerClientEvent('chat:addMessage', -1 , {template = template ,args = {}})
 end 
+-------------------------------------------------------------------
+-- Anti-Cheat (simple): samples each in-match player's position every
+-- Config.AntiCheat.checkIntervalMs and flags anyone moving faster than
+-- Config.AntiCheat.maxSpeed. This is intentionally basic (alert-only by
+-- default) -- it resets its own tracking whenever a player's Gulag state
+-- changes, since entering/leaving the Gulag is a legitimate long-distance
+-- teleport that would otherwise always false-positive.
+-------------------------------------------------------------------
+local AntiCheatLastPos = {}
+local AntiCheatLastGulag = {}
+function AntiCheatMonitor()
+    if not Config.AntiCheat.enabled then return end
+    CreateThread(function()
+        AntiCheatLastPos = {}
+        AntiCheatLastGulag = {}
+        while StartMatch do
+            Wait(Config.AntiCheat.checkIntervalMs)
+            for _, p in ipairs(Players) do
+                local ped = GetPlayerPed(p.ID)
+                if ped and ped ~= 0 and DoesEntityExist(ped) then
+                    local coords = GetEntityCoords(ped)
+                    local last = AntiCheatLastPos[p.ID]
+                    local gulagChanged = AntiCheatLastGulag[p.ID] ~= nil and AntiCheatLastGulag[p.ID] ~= p.ingulag
+                    if last and not gulagChanged then
+                        local dist = #(coords - last.coords)
+                        local dt = (GetGameTimer() - last.time) / 1000.0
+                        if dt > 0.1 then
+                            local speed = dist / dt
+                            if speed > Config.AntiCheat.maxSpeed then
+                                local msg = (GetPlayerName(p.ID) or ('#'..p.ID))..' moved '..math.floor(dist)..'m in '..string.format('%.1f', dt)..'s (~'..math.floor(speed)..' m/s) in WarZone -- possible speed/teleport hack'
+                                print('[WZ ANTICHEAT] '..msg)
+                                SendDiscordWebhook('⚠️ Possible cheat detected', msg, 15158332)
+                                for _, adminId in ipairs(GetPlayers()) do
+                                    local aid = tonumber(adminId)
+                                    if IsPlayerCanStart(aid) then
+                                        SendNotifyServerToPlayer(aid, msg, 'error')
+                                    end
+                                end
+                                if Config.AntiCheat.action == 'kick' then
+                                    DropPlayer(p.ID, 'Kicked: suspicious movement detected in WarZone')
+                                end
+                            end
+                        end
+                    end
+                    AntiCheatLastPos[p.ID] = {coords = coords, time = GetGameTimer()}
+                    AntiCheatLastGulag[p.ID] = p.ingulag
+                end
+            end
+        end
+    end)
+end
+
 function GetPlayersFromWolrd( Wolrd )
     local xPlayers = ESX.GetPlayers()
     local Players = 0 

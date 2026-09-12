@@ -247,6 +247,7 @@ AddEventHandler('AH_uwucafejob:BuyItems', function(items, counts, prises)
 			xPlayer.addInventoryItem(items, counts)
 
 			TriggerClientEvent('chat:addMessage', source, { args = { "^1[SYSTEM]: ^0Shoma ^2"..counts.."^0 Item Be Mablagh ^2"..total.." $ ^0Kharidid" } })
+			TriggerEvent('quest-cafe:sell')
 		else
 			TriggerClientEvent('esx:showNotification', source, "Pool Bank Shoma Kafi Nist Baraye Kharid")
 		end
@@ -269,10 +270,10 @@ AddEventHandler("spawnCarOnMarker", function(vehicleName)
         if vehicleName == myCafe.SpawnVehicle then
             TriggerClientEvent("spawnCarClient", source, vehicleName)
         else
-            TriggerClientEvent("chatMessage", source, "^1شما فقط می‌توانید '" .. myCafe.SpawnVehicle .. "' اسپاون کنید.")
+            TriggerClientEvent("chatMessage", source, "^1Shoma faghat mitoonid '" .. myCafe.SpawnVehicle .. "' ro spawn konid.")
         end
     else
-        TriggerClientEvent("chatMessage", source, "^1شما اجازه این کار را ندارید!")
+        TriggerClientEvent("chatMessage", source, "^1Shoma ejazeye in karo nadarid!")
     end
 end)
 
@@ -287,6 +288,7 @@ AddEventHandler('AH_uwucafejob:ChatMessage', function(target, player, Chek)
 
 	if Chek then 
 		TriggerClientEvent('chat:addMessage', target, { args = { '^1SYSTEM', 'Darkhast Ghabz Tavasot ID: ^2'..tonumber(player)..' ^0| ^2Ghabol ^0Shod' } })
+		TriggerClientEvent('uniquecafejobs:billQuest', target)
 	else
 		TriggerClientEvent('chat:addMessage', target, { args = { '^1SYSTEM', 'Darkhast Ghabz Tavasot ID: ^1'..tonumber(player)..' ^0|^1Rad ^0Shod' } })
 	end

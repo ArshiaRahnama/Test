@@ -26,6 +26,26 @@ Config.Leaderboard = {
     seasonRewardTop1 = 2000000, -- money paid to #1 on season reset
     top = 10,                   -- how many rows /wztop shows
 }
+--- Progressive Zone Damage ---
+Config.ZoneDamage = {
+    min = 5,   -- damage/sec when the circle has just started shrinking
+    max = 25,  -- damage/sec once the circle has fully closed
+}
+--- Party System ---
+Config.partyCommend = 'wzparty' -- /wzparty invite <id> | /wzparty accept | /wzparty leave | /wzparty list
+--- Personal Stats ---
+Config.statsCommend = 'wzstats'
+--- Match Replay ---
+Config.lastmatchCommend = 'wzlastmatch'
+--- Menu (icon_menu) ---
+Config.menuCommend = 'warzone' -- opens a click-through menu for party/stats/last match
+--- Anti-Cheat (server-side speed/teleport monitor) ---
+Config.AntiCheat = {
+    enabled = true,
+    checkIntervalMs = 3000,   -- how often to sample each player's position
+    maxSpeed = 15.0,          -- meters/sec allowed on foot before flagging (sprint ~7-8, so this has headroom)
+    action = 'alert',         -- 'alert' = just tell admins, 'kick' = also kick the flagged player
+}
 Config.wztopCommend = 'wztop'
 Config.seasonresetCommend = 'wzseasonreset' -- admin only
 Config.panelCommend = 'wzpanel' -- admin only, opens the graphical admin panel

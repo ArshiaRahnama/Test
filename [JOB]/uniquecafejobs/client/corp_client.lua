@@ -89,7 +89,7 @@ local function openHoldingBossMenu(job, label)
 			OpenSetCafeUniformMenu()
 		elseif data.current.value == 'manage_vehicles' then
 			menu.close()
-			OpenManageJobVehiclesMenu(job)
+			OpenManageJobVehicleGradesMenu(job)
 		end
 	end, function(data, menu)
 		menu.close()
@@ -433,7 +433,7 @@ CreateThread(function()
 			if #(playerCoords - spawnMarker) < 10.0 then
 				DrawMarker(36, spawnMarker.x, spawnMarker.y, spawnMarker.z - 1.0, 0, 0, 0, 0, 0, 0, 1.5, 1.5, 1.0, 0, 255, 0, 100, false, true, 2, false, nil, nil, false)
 				if #(playerCoords - spawnMarker) < 2.0 then
-					ESX.ShowHelpNotification("برای دریافت خودرو ~INPUT_CONTEXT~ را فشار دهید")
+					ESX.ShowHelpNotification("Baraye daryafte mashin ~INPUT_CONTEXT~ ro feshar bedid")
 					if IsControlJustPressed(0, 38) then
 						TriggerServerEvent('uniquecafejobs:corp:spawnVehicle', corp.SpawnVehicle)
 					end
@@ -443,7 +443,7 @@ CreateThread(function()
 			if #(playerCoords - deleteMarker) < 10.0 then
 				DrawMarker(24, deleteMarker.x, deleteMarker.y, deleteMarker.z - 1.0, 0, 0, 0, 0, 0, 0, 1.5, 1.5, 1.0, 255, 0, 0, 100, false, true, 2, false, nil, nil, false)
 				if #(playerCoords - deleteMarker) < 2.0 then
-					ESX.ShowHelpNotification("برای حذف خودرو ~INPUT_CONTEXT~ را فشار دهید")
+					ESX.ShowHelpNotification("Baraye hazfe mashin ~INPUT_CONTEXT~ ro feshar bedid")
 					if IsControlJustPressed(0, 38) then
 						local vehicle = GetVehiclePedIsIn(PlayerPedId(), false)
 						if vehicle and vehicle ~= 0 then

@@ -257,60 +257,72 @@ function OpendMenuShops()
     lib.showMenu('shop_menu_uwu')
 end
 
-function OpenManageJobVehiclesMenu(job)
-    ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'uwu_manage_vehicles', {
-        title    = 'Manage Vehicles',
-        align    = 'top-left',
-        elements = {
-            { label = 'Add Current Vehicle (Admin)', value = 'add' },
-            { label = 'Remove a Vehicle', value = 'remove' },
-        },
-    }, function(data, menu)
-        menu.close()
+function OpenManageJobVehicleGradesMenu(job)
+    ESX.TriggerServerCallback('esx_society:getJob', function(jobData)
+        local elements = {}
+        for i = 1, #jobData.grades do
+            local g = jobData.grades[i]
+            if g.grade <= PlayerData.job.grade then
+                table.insert(elements, {
+                    label = ('(%s) | %s'):format(g.grade, (g.label ~= '' and g.label or jobData.label)),
+                    grade = g.grade,
+                })
+            end
+        end
 
-        if data.current.value == 'add' then
-            if not IsPedInAnyVehicle(PlayerPedId(), false) then
-                ESX.ShowNotification('Bayad savare mashin bashid.')
-                return
+        ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'uwu_manage_vehicle_grades', {
+            title    = 'Manage Grades',
+            align    = 'top-left',
+            elements = elements,
+        }, function(data, menu)
+            local rank = tonumber(data.current.grade)
+            OpenManageJobVehiclesMenu(job, rank)
+        end, function(data, menu)
+            menu.close()
+        end)
+    end, job)
+end
+
+function OpenManageJobVehiclesMenu(job, rank)
+    ESX.TriggerServerCallback('esx_society:getCustomVehicles', function(list)
+        local jobVehicles = list[job] or {}
+        if #jobVehicles == 0 then
+            ESX.ShowNotification('Hich mashini baraye in job save nashode. (/addcarjob)')
+            return
+        end
+
+        ESX.TriggerServerCallback('esx_society:getVehicles', function(vehStates)
+            local rows = {}
+            for _, v in ipairs(jobVehicles) do
+                local state = false
+                for _, vs in ipairs(vehStates or {}) do
+                    if string.lower(v.model) == string.lower(vs.model) then
+                        state = vs.status
+                        break
+                    end
+                end
+                table.insert(rows, {
+                    label    = v.label .. (state and ' | [<font color=Lime>OK</font>]' or ' | [<font color=red>X</font>]'),
+                    model    = v.model,
+                    labelVeh = v.label,
+                    value    = state,
+                })
             end
 
-            local veh = GetVehiclePedIsIn(PlayerPedId(), false)
-            local modelName = GetDisplayNameFromVehicleModel(GetEntityModel(veh))
-
-            local input = lib.inputDialog('Add Vehicle to ' .. job, {
-                { type = 'input', label = 'Label', required = true },
-                { type = 'checkbox', label = 'Helicopter' },
-            })
-            if not input or not input[1] or input[1] == '' then return end
-
-            TriggerServerEvent('esx_society:addCarJob', job, modelName, input[1], input[2] and true or false)
-
-        elseif data.current.value == 'remove' then
-            ESX.TriggerServerCallback('esx_society:getCustomVehicles', function(list)
-                local jobVehicles = list[job] or {}
-                if #jobVehicles == 0 then
-                    ESX.ShowNotification('Hich mashini baraye in job save nashode.')
-                    return
-                end
-
-                local List = {}
-                for _, v in ipairs(jobVehicles) do
-                    table.insert(List, {
-                        img      = 'SS_gold.png',
-                        text     = v.label,
-                        text2    = v.model,
-                        callBack = function()
-                            TriggerServerEvent('esx_society:deleteCustomCarJob', v.id, job)
-                            exports.icon_menu:ForceCloseMenu()
-                        end,
-                    })
-                end
-
-                exports.icon_menu:OpenMenu(List)
+            ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'uwu_manage_vehicles', {
+                title    = 'Manage Vehicles',
+                align    = 'top-left',
+                elements = rows,
+            }, function(data, menu)
+                local newStatus = not data.current.value
+                menu.close()
+                ESX.TriggerServerCallback('esx_society:setSocietyVehPerm', function()
+                    OpenManageJobVehiclesMenu(job, rank)
+                end, job, rank, rows, newStatus, data.current.model, data.current.labelVeh)
+            end, function(data, menu)
+                menu.close()
             end)
-        end
-    end, function(data, menu)
-        menu.close()
+        end, rank, job)
     end)
 end
 
@@ -444,7 +456,7 @@ AddEventHandler('AH_uwucafejob:OpenMenuSefaresh', function()
         if tojob then 
             lib.showContext('uwu_menu')
         else
-            ESX.ShowNotification('در حال حاضر هیچ کارمند کافه‌ای آنلاین نیست.')
+            ESX.ShowNotification('Dar hale hazer hich karmande cafe-i online nist.')
         end
     end)
 end)
@@ -688,6 +700,11 @@ function PlayerBlingMenu()
 		end
 	)
 end
+
+RegisterNetEvent('uniquecafejobs:billQuest')
+AddEventHandler('uniquecafejobs:billQuest', function()
+    TriggerServerEvent('quest-cafe:bill')
+end)
 
 RegisterNetEvent('AH_uwucafejob:OpenMenuDialog')
 AddEventHandler('AH_uwucafejob:OpenMenuDialog', function(player, target, amount)

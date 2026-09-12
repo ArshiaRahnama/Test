@@ -49,6 +49,7 @@ AddEventHandler('mining:PutStoneInVehicle', function(plate, minerSkill, class)
 	-- own success/weight-limit notification, so nothing else needed here.
 	xPlayer.addInventoryItem("stone", count)
 	TriggerEvent("lgdddd:actionItem", plate, class, "deposit", count, "stone")
+	TriggerEvent('quest-miner:mine')
 end)
 
 RegisterServerEvent('mining:SellStone')
@@ -71,6 +72,7 @@ AddEventHandler('mining:SellStone', function(plate, class, count)
 
 	local poull = count * 500
 	xPlayer.addMoney(poull)
+	TriggerEvent('quest-miner:sell')
 	TriggerClientEvent('esx:showNotification', source, 'Shoma ~g~'..poull..'~w~ Pool Az Frosh Ajor Daryaft Kardid')
 	TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'AMoneyLog', '```css\n[ Player : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Player Steam : '..xPlayer.identifier..' ]\n[ Job : Miner ]\n[ Sold Count : '..tostring(count)..' ]\n[ Earned : '..tostring(poull)..' ]\n```', 'user', true, source, false)
 end)

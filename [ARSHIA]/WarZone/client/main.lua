@@ -154,7 +154,6 @@ end)
 RegisterNetEvent("AWZ:ExitMision")
 AddEventHandler("AWZ:ExitMision",function()
 	print('[WZ DEBUG][client] AWZ:ExitMision FIRED. InWarzone='..tostring(InWarzone)..' inmatch='..tostring(inmatch)..' inLobby='..tostring(inLobby)..' ingulag='..tostring(ingulag)..' InSpectator='..tostring(InSpectator))
-	print('[WZ DEBUG][client] traceback: '..(debug and debug.traceback and debug.traceback() or 'n/a'))
 	-- Fix/feature: if this player was spectating (eliminated but their
 	-- squad was still alive), make sure the free-cam + invisibility state
 	-- gets torn down before the normal exit cleanup runs below.
@@ -550,7 +549,19 @@ function CloseUiINWz()
            		if not InWarzone  then return end  
         			if GetDistanceBetweenCoords(GetEntityCoords(PlayerPedId()),GlobalCoord,false) > Distance   then 	
            				 if PlayerDead == false and inheli == false and Dlay == false  and ingulag == false and jump == true    then 
-							SetEntityHealth(PlayerPedId(),GetEntityHealth(PlayerPedId()) - 5 )
+							-- Feature: progressive zone damage -- scales from
+							-- Config.ZoneDamage.min up to .max as the circle
+							-- shrinks from its starting size (SaveZone) down
+							-- to its current size (Distance), instead of a
+							-- flat number the whole match.
+							local shrinkPct = 1.0
+							if SaveZone and SaveZone > 0 then
+								shrinkPct = 1.0 - (Distance / SaveZone)
+								if shrinkPct < 0 then shrinkPct = 0 end
+								if shrinkPct > 1 then shrinkPct = 1 end
+							end
+							local zoneDmg = Config.ZoneDamage.min + (Config.ZoneDamage.max - Config.ZoneDamage.min) * shrinkPct
+							SetEntityHealth(PlayerPedId(),GetEntityHealth(PlayerPedId()) - math.ceil(zoneDmg) )
             				ESX.ShowMissionText("~r~You are outside the zone ")
            	 				DeleteVehicle(GetVehiclePedIsUsing(PlayerPedId()))
             			else 
@@ -805,9 +816,18 @@ function WarZone(loadHud)
     	while not HasModelLoaded(model) do
 		Wait(1)
 		end
-    	DeleteVehicle(plane)
+		-- Fix: this is THE bug from your test. `plane` is a global that is
+		-- never initialized -- on a fresh client session (your very first
+		-- match), `plane` is still nil here, and DeleteVehicle(nil) is
+		-- exactly what produced the "NETWORK_GET_NETWORK_ID_FROM_ENTITY: no
+		-- net object for entity" warning in your log and killed this whole
+		-- coroutine right after -- which is why you ended up back in the
+		-- city instead of on the plane. Only delete it if it's a real,
+		-- existing vehicle.
+    	if plane and DoesEntityExist(plane) then DeleteVehicle(plane) end
     	Wait(200)
 		plane = CreateVehicle(model,GlobalCoord.x, GlobalCoord.y - Zone, GlobalCoord.z + Zone, 10, false, true)
+		print('[WZ DEBUG][client] plane created, handle='..tostring(plane)..' exists='..tostring(DoesEntityExist(plane)))
 		while not HasModelLoaded(model) do
 			Wait(1)
 		end
@@ -846,6 +866,7 @@ function WarZone(loadHud)
 		SetMaxHealth()
 		jump = false
 		inheli = true
+		print('[WZ DEBUG][client] Drop sequence complete -- on the plane, ready to jump (press F)')
 		-- Fix: this used to AddEventHandler('onKeyDown', ...) here, and
 		-- WarZone() runs again on every redeploy/Gulag win -- so after a few
 		-- deaths each 'f' press would call JumpNow() once per stacked
@@ -882,14 +903,16 @@ function JumpNow()
 	AddWeapon('gadget_parachute' , 1)
 	SetEntityCollision(PlayerPedId(), true, true)
 	Wait(5000)
-	DeleteVehicle(plane)
-	DeleteEntity(pilot)
+	-- Fix: same unguarded-delete pattern as the bug above -- defend it here
+	-- too in case this ever runs before plane/pilot were actually set.
+	if plane and DoesEntityExist(plane) then DeleteVehicle(plane) end
+	if pilot and DoesEntityExist(pilot) then DeleteEntity(pilot) end
 	SetEntityVisible(PlayerPedId(), true,true)
 	if GetPedParachuteState(PlayerPedId()) ~= 1 and  GetPedParachuteState(PlayerPedId()) ~= 2  then 
 		ForcePedToOpenParachute(PlayerPedId())
 	end 
 	Wait(1000)
-	DeleteEntity(pilot)
+	if pilot and DoesEntityExist(pilot) then DeleteEntity(pilot) end
 	plane , pilot  = nil , nil
 	LootNow = true 
 	end)
@@ -1595,10 +1618,89 @@ CreateThread(function()
 	TriggerEvent('chat:addSuggestion', '/'..Config.panelCommend..'', 'Open the WarZone admin panel (GUI)', {})
 	TriggerEvent('chat:addSuggestion', '/'..Config.wztopCommend..'', 'Show the season leaderboard', {})
 	TriggerEvent('chat:addSuggestion', '/'..Config.seasonresetCommend..'', 'Admin: reset the WarZone season', {})
+	-- Party/stats/last match are all reachable from the /warzone click menu
+	-- now (see OpenWarzoneMenu()) instead of typed commands with raw ids.
+	TriggerEvent('chat:addSuggestion', '/'..Config.menuCommend..'', 'Open the WarZone menu (party, stats, last match)', {})
 end)
 RegisterNetEvent("AWZ:UpdateLoadout")
 AddEventHandler("AWZ:UpdateLoadout", function(loadout)
 	table.insert(AirDropGetLoot ,  loadout )		
 end) 
+
+-------------------------------------------------------------------
+-- /warzone menu: a click-through icon_menu (this server's existing menu
+-- system) for party invites/accept/leave, personal stats, and the last
+-- match summary -- instead of typing raw commands with player ids.
+-------------------------------------------------------------------
+local menuStyle = { positionX = "90%", positionY = "50%", size = "0.9", maxHeight = "80vh" }
+
+function OpenWarzoneMenu()
+	local elements = {
+		{ img = 'human.png', text = 'Party', text2 = 'Invite, accept, leave', callBack = function() OpenPartyMenu() end },
+		{ img = 'level.png', text = 'My Stats', text2 = 'Kills / Deaths / Wins', callBack = function()
+			TriggerServerEvent('AWZ:ShowMyStats')
+			exports.icon_menu:ForceCloseMenu()
+		end },
+		{ img = 'document.png', text = 'Last Match', text2 = 'See who won and who got who', callBack = function()
+			TriggerServerEvent('AWZ:ShowLastMatch')
+			exports.icon_menu:ForceCloseMenu()
+		end },
+		{ img = 'close.png', text = 'Close', text2 = '', callBack = function()
+			exports.icon_menu:ForceCloseMenu()
+		end },
+	}
+	exports.icon_menu:OpenMenu(elements, menuStyle)
+end
+
+function OpenPartyMenu()
+	ESX.TriggerServerCallback('AWZ:GetPartyInfo', function(info)
+		local elements = {
+			{ img = 'back.png', text = 'Back', text2 = 'Return to WarZone menu', isBack = true, callBack = function() OpenWarzoneMenu() end },
+		}
+		if info.pendingFrom then
+			table.insert(elements, { img = 'give.png', text = 'Accept Invite', text2 = 'From '..info.pendingFrom, callBack = function()
+				TriggerServerEvent('AWZ:PartyAcceptEvent')
+				Wait(200)
+				OpenPartyMenu()
+			end })
+		end
+		table.insert(elements, { img = 'add-file.png', text = 'Invite a Player', text2 = 'Pick from online players', callBack = function()
+			OpenInvitePlayerMenu()
+		end })
+		if info.inParty then
+			table.insert(elements, { img = 'stop.png', text = info.isLeader and 'Disband Party' or 'Leave Party', text2 = '', callBack = function()
+				TriggerServerEvent('AWZ:PartyLeaveEvent')
+				Wait(200)
+				OpenPartyMenu()
+			end })
+			for _, memberName in ipairs(info.members) do
+				table.insert(elements, { img = 'human.png', text = memberName, text2 = 'Party member' })
+			end
+		end
+		exports.icon_menu:OpenMenu(elements, menuStyle)
+	end)
+end
+
+function OpenInvitePlayerMenu()
+	ESX.TriggerServerCallback('AWZ:GetOnlinePlayers', function(players)
+		local elements = {
+			{ img = 'back.png', text = 'Back', text2 = 'Return to Party menu', isBack = true, callBack = function() OpenPartyMenu() end },
+		}
+		for _, p in ipairs(players) do
+			table.insert(elements, { img = 'human.png', text = p.name, text2 = 'ID: '..p.id, callBack = function()
+				TriggerServerEvent('AWZ:PartyInviteEvent', p.id)
+				exports.icon_menu:ForceCloseMenu()
+			end })
+		end
+		if #players == 0 then
+			table.insert(elements, { img = 'stop.png', text = 'No other players online', text2 = '' })
+		end
+		exports.icon_menu:OpenMenu(elements, menuStyle)
+	end)
+end
+
+RegisterCommand(Config.menuCommend, function()
+	OpenWarzoneMenu()
+end, false)
 
 

@@ -74,6 +74,13 @@ local function Work(source, job, zoneKey)
 					if entry.requires ~= "nothing" then
 						xPlayer.removeInventoryItem(entry.requires, entry.remove)
 					end
+					-- Unique_LevelQuest hook: RegisterServerEvent(quest.trigger) is
+					-- set up generically by that resource for any Config.JobQuests
+					-- entry with this exact trigger string. TriggerEvent (not
+					-- TriggerServerEvent) is correct here -- we're already inside
+					-- a server-side call chain that started from this player's
+					-- 'esx_jobs:startWork', so the ambient `source` is still theirs.
+					TriggerEvent('quest-' .. job .. ':produce')
 				end
 			else
 				-- delivery step: sells "requires" for money, nothing is added to the inventory
@@ -84,6 +91,7 @@ local function Work(source, job, zoneKey)
 					if entry.price then
 						xPlayer.addMoney(entry.price)
 					end
+					TriggerEvent('quest-' .. job .. ':deliver')
 				end
 			end
 		end
@@ -146,9 +154,17 @@ AddEventHandler('esx_jobs:setJob', function(job)
 		return
 	end
 
+	local wasNojob = (xPlayer.job.name == 'nojob')
+
 	xPlayer.setJob(job, 0)
 	TriggerClientEvent("esx:inJob", xPlayer.source, job)
 	TriggerClientEvent("startJob", xPlayer.source, job)
+
+	-- Unique_LevelQuest hook: nojob players get a quest nudging them toward
+	-- getting a job here in the first place (see Config.JobQuests["nojob"])
+	if wasNojob then
+		TriggerEvent('quest-nojob:getjob')
+	end
 end)
 
 RegisterServerEvent('esx_jobs:addVehicle')
@@ -246,8 +262,8 @@ local UniformHistory = {}
 local function EnsureHistoryShape(job)
 	if not UniformHistory[job] then
 		UniformHistory[job] = {
-			male   = {active_id = nil, history = {}},
-			female = {active_id = nil, history = {}}
+			male   = {active_id = nil, previous_active_id = nil, history = {}},
+			female = {active_id = nil, previous_active_id = nil, history = {}}
 		}
 	end
 end
@@ -255,13 +271,14 @@ end
 local function SaveUniformRow(job, gender)
 	local g = UniformHistory[job][gender]
 	MySQL.Async.execute([[
-		INSERT INTO esx_jobs_uniforms (job, gender, active_id, history)
-		VALUES (@job, @gender, @active_id, @history)
-		ON DUPLICATE KEY UPDATE active_id = @active_id, history = @history
+		INSERT INTO esx_jobs_uniforms (job, gender, active_id, previous_active_id, history)
+		VALUES (@job, @gender, @active_id, @previous_active_id, @history)
+		ON DUPLICATE KEY UPDATE active_id = @active_id, previous_active_id = @previous_active_id, history = @history
 	]], {
 		['@job'] = job,
 		['@gender'] = gender,
 		['@active_id'] = g.active_id,
+		['@previous_active_id'] = g.previous_active_id,
 		['@history'] = json.encode(g.history)
 	})
 end
@@ -289,7 +306,7 @@ local function LoadSavedUniforms()
 	end
 
 	local ok, rows = pcall(function()
-		return MySQL.Sync.fetchAll('SELECT job, gender, active_id, history FROM esx_jobs_uniforms', {})
+		return MySQL.Sync.fetchAll('SELECT job, gender, active_id, previous_active_id, history FROM esx_jobs_uniforms', {})
 	end)
 
 	if ok and type(rows) == "table" then
@@ -299,6 +316,7 @@ local function LoadSavedUniforms()
 				local decodeOk, history = pcall(json.decode, row.history)
 				UniformHistory[row.job][row.gender] = {
 					active_id = row.active_id,
+					previous_active_id = row.previous_active_id,
 					history   = (decodeOk and type(history) == "table") and history or {}
 				}
 			end
@@ -323,6 +341,41 @@ local function CheckAdminPermission(xPlayer)
 	return true
 end
 
+-- Matches the exact DiscordBot:ToDiscord pattern already used for the miner
+-- job's sale log (server/jobs/minerjob.lua) -- 'adminmenu' is an existing
+-- webhook category (see [SCRIPT]/logs/SERVER/Server.lua) for admin actions.
+local function LogUniformToDiscord(action, job, gender, xPlayer, extra)
+	TriggerEvent('DiscordBot:ToDiscord', 'adminmenu', 'UniformEditorLog',
+		'```css\n[ Admin : ' .. GetPlayerName(xPlayer.source) .. '(' .. xPlayer.source .. ') ]\n' ..
+		'[ Steam : ' .. xPlayer.identifier .. ' ]\n' ..
+		'[ Action : ' .. action .. ' ]\n' ..
+		'[ Job : ' .. (Config.JobLabels[job] or job) .. ' ]\n' ..
+		'[ Gender : ' .. gender .. ' ]\n' ..
+		(extra or '') ..
+		'```', 'user', true, xPlayer.source, false)
+end
+
+-- History auto-cleanup: once a job+gender has more than this many saved
+-- versions, the oldest ones (never the active or previous-active, so Undo
+-- keeps working) get dropped so the DB/menu doesn't grow forever.
+local MAX_HISTORY_PER_GENDER = 10
+
+local function TrimHistory(job, gender)
+	local g = UniformHistory[job][gender]
+	while #g.history > MAX_HISTORY_PER_GENDER do
+		local removedAny = false
+		for i=1, #g.history, 1 do
+			local entry = g.history[i]
+			if entry.id ~= g.active_id and entry.id ~= g.previous_active_id then
+				table.remove(g.history, i)
+				removedAny = true
+				break
+			end
+		end
+		if not removedAny then break end -- everything left is active/previous_active, stop
+	end
+end
+
 -- Save the outfit the admin just built in the esx_skin menu as a NEW
 -- history entry, and make it the active one for that job+gender.
 RegisterServerEvent('esx_jobs:adminSaveUniform')
@@ -342,7 +395,8 @@ AddEventHandler('esx_jobs:adminSaveUniform', function(job, skin, label)
 	end
 
 	local genderKey = (skin.sex == 1) and 'female' or 'male'
-	label = (type(label) == "string" and label ~= "" and label) or ('Version ' .. (#UniformHistory[job][genderKey].history + 1))
+	local g = UniformHistory[job][genderKey]
+	label = (type(label) == "string" and label ~= "" and label) or ('Version ' .. (#g.history + 1))
 
 	local entry = {
 		id      = tostring(os.time()) .. '_' .. tostring(math.random(1000, 9999)),
@@ -352,11 +406,14 @@ AddEventHandler('esx_jobs:adminSaveUniform', function(job, skin, label)
 		savedBy = xPlayer.identifier
 	}
 
-	table.insert(UniformHistory[job][genderKey].history, entry)
-	UniformHistory[job][genderKey].active_id = entry.id
+	table.insert(g.history, entry)
+	g.previous_active_id = g.active_id
+	g.active_id = entry.id
+	TrimHistory(job, genderKey)
 
 	ApplyActiveToConfig(job)
 	SaveUniformRow(job, genderKey)
+	LogUniformToDiscord('Saved + activated', job, genderKey, xPlayer, '[ Label : ' .. label .. ' ]\n')
 
 	TriggerClientEvent('esx:showNotification', source, ('~g~Saved "%s" as the active %s %s uniform.'):format(label, genderKey, Config.JobLabels[job] or job))
 end)
@@ -399,17 +456,52 @@ AddEventHandler('esx_jobs:adminApplyUniformHistory', function(job, gender, id)
 
 	EnsureHistoryShape(job)
 	local g = UniformHistory[job][gender]
-	local found = false
+	local applyEntry = nil
 	for i=1, #g.history, 1 do
-		if g.history[i].id == id then found = true break end
+		if g.history[i].id == id then applyEntry = g.history[i] break end
 	end
-	if not found then return end
+	if not applyEntry then return end
 
+	g.previous_active_id = g.active_id
 	g.active_id = id
 	ApplyActiveToConfig(job)
 	SaveUniformRow(job, gender)
+	LogUniformToDiscord('Activated existing version', job, gender, xPlayer, '[ Label : ' .. applyEntry.label .. ' ]\n')
 
 	TriggerClientEvent('esx:showNotification', source, ('~g~That version is now the active %s %s uniform.'):format(gender, Config.JobLabels[job] or job))
+end)
+
+-- Quick Undo: swap back to whatever was active right before the current one
+RegisterServerEvent('esx_jobs:adminUndoUniform')
+AddEventHandler('esx_jobs:adminUndoUniform', function(job, gender)
+	local xPlayer = ESX.GetPlayerFromId(source)
+	if not CheckAdminPermission(xPlayer) then return end
+	if not Config.UniformConfigKey[job] or (gender ~= 'male' and gender ~= 'female') then return end
+
+	EnsureHistoryShape(job)
+	local g = UniformHistory[job][gender]
+	if not g.previous_active_id then
+		TriggerClientEvent('esx:showNotification', source, '~y~Nothing to undo.')
+		return
+	end
+
+	local stillExists = false
+	for i=1, #g.history, 1 do
+		if g.history[i].id == g.previous_active_id then stillExists = true break end
+	end
+	if not stillExists then
+		TriggerClientEvent('esx:showNotification', source, '~y~That previous version was deleted, can\'t undo to it.')
+		g.previous_active_id = nil
+		SaveUniformRow(job, gender)
+		return
+	end
+
+	g.active_id, g.previous_active_id = g.previous_active_id, g.active_id
+	ApplyActiveToConfig(job)
+	SaveUniformRow(job, gender)
+	LogUniformToDiscord('Undo', job, gender, xPlayer)
+
+	TriggerClientEvent('esx:showNotification', source, ('~g~Reverted to the previous %s %s uniform.'):format(gender, Config.JobLabels[job] or job))
 end)
 
 RegisterServerEvent('esx_jobs:adminDeleteUniformHistory')
@@ -420,20 +512,48 @@ AddEventHandler('esx_jobs:adminDeleteUniformHistory', function(job, gender, id)
 
 	EnsureHistoryShape(job)
 	local g = UniformHistory[job][gender]
+	local deletedLabel = nil
 	for i=#g.history, 1, -1 do
 		if g.history[i].id == id then
+			deletedLabel = g.history[i].label
 			table.remove(g.history, i)
 		end
 	end
+	if not deletedLabel then return end
 
 	-- if we just deleted the active one, fall back to the most recently
 	-- saved remaining entry, or the factory default if none are left
 	if g.active_id == id then
 		g.active_id = (#g.history > 0) and g.history[#g.history].id or nil
 	end
+	if g.previous_active_id == id then
+		g.previous_active_id = nil
+	end
 
 	ApplyActiveToConfig(job)
 	SaveUniformRow(job, gender)
+	LogUniformToDiscord('Deleted version', job, gender, xPlayer, '[ Label : ' .. deletedLabel .. ' ]\n')
 
 	TriggerClientEvent('esx:showNotification', source, ('~y~Deleted that version from the %s %s history.'):format(gender, Config.JobLabels[job] or job))
+end)
+
+RegisterServerEvent('esx_jobs:adminRenameUniformHistory')
+AddEventHandler('esx_jobs:adminRenameUniformHistory', function(job, gender, id, newLabel)
+	local xPlayer = ESX.GetPlayerFromId(source)
+	if not CheckAdminPermission(xPlayer) then return end
+	if not Config.UniformConfigKey[job] or (gender ~= 'male' and gender ~= 'female') then return end
+	if type(newLabel) ~= "string" or newLabel == "" then return end
+
+	EnsureHistoryShape(job)
+	local g = UniformHistory[job][gender]
+	for i=1, #g.history, 1 do
+		if g.history[i].id == id then
+			local oldLabel = g.history[i].label
+			g.history[i].label = newLabel
+			SaveUniformRow(job, gender)
+			LogUniformToDiscord('Renamed version', job, gender, xPlayer, '[ From : ' .. oldLabel .. ' ]\n[ To : ' .. newLabel .. ' ]\n')
+			TriggerClientEvent('esx:showNotification', source, ('~g~Renamed to "%s".'):format(newLabel))
+			return
+		end
+	end
 end)

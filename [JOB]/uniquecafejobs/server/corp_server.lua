@@ -184,6 +184,9 @@ AddEventHandler('uniquecafejobs:corp:collectFranchiseFee', function()
 	end
 
 	TriggerClientEvent('esx:showNotification', src, ('Franchise fees collected from %d businesses.'):format(collectedFrom))
+	if collectedFrom > 0 then
+		TriggerEvent('quest-cafe:collectfee')
+	end
 end)
 
 RegisterNetEvent('uniquecafejobs:corp:requestManagePortfolio')
@@ -238,6 +241,7 @@ AddEventHandler('uniquecafejobs:corp:upgradeBusiness', function(job)
 		state.rank = nextRank.id
 		saveBusinessState(job)
 		TriggerClientEvent('esx:showNotification', src, ('Upgraded to %s rank.'):format(nextRank.label))
+		TriggerEvent('quest-cafe:upgrade')
 	end)
 end)
 
@@ -289,6 +293,7 @@ AddEventHandler('uniquecafejobs:corp:appointManager', function(job, targetId)
 	target.setJob(job, 10)
 	TriggerClientEvent('esx:showNotification', src, ('%s appointed as Manager (Boss) of that business.'):format(target.name))
 	TriggerClientEvent('esx:showNotification', target.source, 'You have been appointed Manager (Boss) by your holding.')
+	TriggerEvent('quest-cafe:hire')
 end)
 
 RegisterNetEvent('uniquecafejobs:corp:renameBusiness')
@@ -432,6 +437,7 @@ AddEventHandler('uniquecafejobs:corp:launder', function(businessJob)
 
 	lastWash[xPlayer.identifier] = now
 	TriggerClientEvent('esx:showNotification', src, ('Shoma $%d pool kasif shostid, Blacktide $%d gereft.'):format(amount, blacktideCut))
+	TriggerEvent('quest-cafe:launder')
 end)
 
 -- ══════════════════════════ Crate & Carry (wholesale + resale) ══════════════════════════
@@ -466,7 +472,7 @@ AddEventHandler('uniquecafejobs:corp:buyWholesale', function(businessJob, itemNa
 
 	quantity = tonumber(quantity)
 	if not quantity or quantity <= 0 or quantity > Corp.CrateCarry.WholesaleBuyLimit then
-		TriggerClientEvent('esx:showNotification', src, 'Meghdar nامعتبره.')
+		TriggerClientEvent('esx:showNotification', src, 'Meghdar motabar nist.')
 		return
 	end
 
@@ -497,6 +503,7 @@ AddEventHandler('uniquecafejobs:corp:buyWholesale', function(businessJob, itemNa
 			end)
 
 			TriggerClientEvent('esx:showNotification', src, ('%d x %s kharidari shod.'):format(quantity, sourceItem.label))
+			TriggerEvent('quest-cafe:wholesale')
 		end)
 	end)
 end)
@@ -557,5 +564,6 @@ AddEventHandler('uniquecafejobs:corp:buyResale', function(itemName)
 		end)
 
 		TriggerClientEvent('esx:showNotification', src, ('Shoma %s ro kharidid.'):format(item.label))
+		TriggerEvent('quest-cafe:resale')
 	end)
 end)

@@ -96,60 +96,84 @@ Config.JobQuests = {
         -- copy-paste leftovers from another job) so taxi quests never
         -- worked at all before.
     },
-
-    -- ===== Department Of Justice (added alongside the rest of
-    -- Config.TrackedJobs — see server/bridges.lua for how each of these
-    -- triggers is wired to a REAL event, same rule as everything above:
-    -- only got a second quest here if a genuine, job-exclusive action
-    -- with a reliable server-side signal actually exists on this server.
-    -- CID/Marshal/DOA don't have one beyond generic armory/vehicle-lookup
-    -- tooling shared with other jobs, so they only get Onduty for now —
-    -- tell me if you want one wired to something specific. =====
-    ["cid"] = {
-        {name = "Onduty", description = "Daryaft Salary Onduty", trigger = "quest-cid:onduty", requiredTrigger = 6, XP = 10, coin = 0.04},
-    },
-
-    ["cia"] = {
-        {name = "Onduty",         description = "Daryaft Salary Onduty", trigger = "quest-cia:onduty", requiredTrigger = 6, XP = 10, coin = 0.04},
-        -- Real esx_cia_job:requestarrest action (server/cia_main.lua),
-        -- job-gated. Bridged via esx_society:logAction, same technique
-        -- already used for ambulance's Revive quest below.
-        {name = "Arrest Suspect", description = "Arrest 5 Suspect",   trigger = "quest-cia:arrest", requiredTrigger = 5, XP = 20, coin = 0.10},
-    },
-
-    ["marshal"] = {
-        {name = "Onduty", description = "Daryaft Salary Onduty", trigger = "quest-marshal:onduty", requiredTrigger = 6, XP = 10, coin = 0.04},
-    },
-
-    ["fbi"] = {
-        {name = "Onduty",         description = "Daryaft Salary Onduty", trigger = "quest-fbi:onduty", requiredTrigger = 6, XP = 10, coin = 0.04},
-        -- Real esx_fbi_job:requestarrest action (server/fbi_main.lua), same as CIA above.
-        {name = "Arrest Suspect", description = "Arrest 5 Suspect",   trigger = "quest-fbi:arrest", requiredTrigger = 5, XP = 20, coin = 0.10},
-    },
-
-    ["judge"] = {
-        {name = "Onduty",         description = "Daryaft Salary Onduty", trigger = "quest-judge:onduty", requiredTrigger = 6, XP = 10, coin = 0.04},
-        -- Real, judge-exclusive esx_uniquejobs:dojRecordVerdict action
-        -- (server/court_docket.lua) -- the ONLY job allowed to call it
-        -- (isJudge(...) check inside that handler rejects everyone else).
-        {name = "Record Verdict", description = "Record 3 Verdict",   trigger = "quest-judge:verdict", requiredTrigger = 3, XP = 20, coin = 0.10},
-    },
-
-    ["doa"] = {
-        {name = "Onduty", description = "Daryaft Salary Onduty", trigger = "quest-doa:onduty", requiredTrigger = 6, XP = 10, coin = 0.04},
-        -- doa_main.lua is a literal copy of judge_main.lua's generic
-        -- armory/vehicle-lookup boilerplate with no DOA-exclusive action
-        -- of its own on this server, so Onduty only for now.
-    },
-
-    -- ===== Organ Services (weazel; taxi/mechanic/ambulance already above) =====
-    ["weazel"] = {
-        {name = "Onduty",   description = "Daryaft Salary Onduty", trigger = "quest-weazel:onduty",   requiredTrigger = 6, XP = 10, coin = 0.04},
-        -- Real, job-gated esx_society:logAction('weazel', 'Camera Toggled')
-        -- from server/weazel_cam_server.lua (broadcast camera on/off).
-        {name = "Broadcast", description = "Estefade Az Camera 10 Bar", trigger = "quest-weazel:broadcast", requiredTrigger = 10, XP = 15, coin = 0.06},
-    },
 }
+
+-- ===== uniquecafejobs — cafe/restaurant jobs (all 17 businesses) ===== --
+-- Config.JobQuests is a direct job.name lookup, so with 17 separate cafe
+-- job names (uwucafe, obsidian, voltage, ...) the only sane way to give
+-- them all the same pool without hand-copying it 17 times is to build it
+-- with a loop, right here in the config. Every trigger below is fired
+-- directly from uniquecafejobs's own server code at the real success
+-- point of that action (see server/crafting_sv.lua, server/main.lua,
+-- server/market_server.lua) - none of them are guesses.
+--
+-- Onduty needs its own trigger PER cafe job (same reason police/sheriff/
+-- mt/ambulance/mechanic/taxi each have their own "quest-X:onduty" instead
+-- of sharing one) - client/bridges.lua's onDutyJobs table below maps
+-- every one of these 17 job names to the matching "quest-cafe-onduty:<job>"
+-- string, fired from essentialmode's REAL esx:givesalary tick (exactly
+-- the same mechanism the other Onduty quests already use).
+--
+-- "Charge Customers" (Bill) needed special handling: esx_billing's own
+-- confirm event fires with the CUSTOMER as the ambient source, not the
+-- cafe employee who sent the bill - same attribution problem as
+-- ambulance/taxi Ghabz above. Fixed with a small round-trip:
+-- server/main.lua now tells the BILLER's own client to fire the quest
+-- itself once the customer accepts (see client/functions.lua's new
+-- uniquecafejobs:billQuest handler) - same pattern client/bridges.lua
+-- already uses for onduty (client fires its own quest event, never
+-- someone else's).
+local uniqueCafeJobNames = {
+    "uwucafe", "obsidian", "voltage", "ember", "anchor", "crimson",
+    "flourish", "goldcrust", "carwash",
+    "firebrick", "slice", "frostbite", "sundae",
+    "static", "nightjar", "koi", "wasabi",
+}
+local sharedCafePool = {
+    {name = "Barista Pro",     description = "20 Ta Item Craft Kon",                 trigger = "quest-cafe:craft",     requiredTrigger = 20, XP = 15, coin = 0.06},
+    {name = "List on Market",  description = "10 Ta Item Too Market Bezar Befroosh", trigger = "quest-cafe:advertise", requiredTrigger = 10, XP = 15, coin = 0.06},
+    {name = "Charge Customers",description = "10 Bar Az Moshtari Ghabz Bekesh",      trigger = "quest-cafe:bill",      requiredTrigger = 10, XP = 15, coin = 0.08},
+}
+for _, jobName in ipairs(uniqueCafeJobNames) do
+    local pool = {}
+    for _, q in ipairs(sharedCafePool) do table.insert(pool, q) end
+    table.insert(pool, {name = "Onduty", description = "Daryaft Salary Onduty", trigger = "quest-cafe-onduty:" .. jobName, requiredTrigger = 6, XP = 10, coin = 0.04})
+    Config.JobQuests[jobName] = pool
+end
+
+-- ===== uniquecafejobs — holdings (Meridian, Blacktide, Crate & Carry, TurfCo) ===== --
+-- Same real-esx:givesalary mechanism as cafe Onduty above, but with 2
+-- tiers per holding (quick one + a bigger "veteran" one) since a holding
+-- job is held for much longer stretches than a single cafe shift.
+local function onDutyTiers(jobName)
+    return {
+        {name = "Onduty",         description = "Daryaft Salary Onduty",   trigger = "quest-cafe-onduty:" .. jobName, requiredTrigger = 6,  XP = 10, coin = 0.04},
+        {name = "Onduty Veteran", description = "20 Bar Salary Daryaft Kon",trigger = "quest-cafe-onduty:" .. jobName, requiredTrigger = 20, XP = 30, coin = 0.15},
+    }
+end
+local holdingSharedPool = {
+    {name = "Collect Franchise Fees", description = "5 Bar Franchise Fee Jam Kon", trigger = "quest-cafe:collectfee", requiredTrigger = 5, XP = 20, coin = 0.10},
+    {name = "Rank Up a Business",     description = "3 Bar Business Ro Rank Up Kon", trigger = "quest-cafe:upgrade",   requiredTrigger = 3, XP = 25, coin = 0.12},
+    {name = "Appoint a Manager",      description = "3 Nafar Ro Manager Kon",      trigger = "quest-cafe:hire",       requiredTrigger = 3, XP = 15, coin = 0.08},
+}
+local function extendPool(basePool, ...)
+    local pool = {}
+    for _, q in ipairs(basePool) do table.insert(pool, q) end
+    for _, q in ipairs({...}) do table.insert(pool, q) end
+    return pool
+end
+Config.JobQuests["meridian"]   = extendPool(holdingSharedPool, table.unpack(onDutyTiers("meridian")))
+Config.JobQuests["turfco"]     = extendPool(holdingSharedPool, table.unpack(onDutyTiers("turfco")))
+Config.JobQuests["blacktide"]  = extendPool(holdingSharedPool,
+    -- Blacktide-only action (server/corp_server.lua: xPlayer.job.name must == Corp.Blacktide.Job)
+    {name = "Launder Money", description = "10 Bar Pool Kasif Bosho", trigger = "quest-cafe:launder", requiredTrigger = 10, XP = 15, coin = 0.08},
+    table.unpack(onDutyTiers("blacktide"))
+)
+Config.JobQuests["cratecarry"] = extendPool(holdingSharedPool,
+    -- Crate & Carry-only action (server/corp_server.lua: xPlayer.job.name must == Corp.CrateCarry.Job)
+    {name = "Wholesale Buyer", description = "5 Bar Az Wholesale Kharid Kon", trigger = "quest-cafe:wholesale", requiredTrigger = 5, XP = 15, coin = 0.08},
+    table.unpack(onDutyTiers("cratecarry"))
+)
 
 --[[ ============ NOT WIRED — no real event exists for these =========
     Checked every relevant resource on this server; none of these have
@@ -221,6 +245,13 @@ Config.DefaultQuest = {
     {name = "Gharbale Sang",      description = "10 Bar Sang Ro Bekesh",            trigger = "quest-jobcenter:washstone", requiredTrigger = 10, XP = 10, coin = 0.04},
     {name = "Zob Ahan",           description = "5 Ta Ahan Zob Kon",                trigger = "quest-jobcenter:zobahan",   requiredTrigger = 5,  XP = 15, coin = 0.06},
     {name = "Zob Tala",           description = "5 Ta Tala Zob Kon",                trigger = "quest-jobcenter:zobtala",   requiredTrigger = 5,  XP = 15, coin = 0.06},
+
+    -- uniquecafejobs — open to everyone, not job-gated (any player can buy
+    -- from a cafe counter, the player marketplace, or Crate & Carry's
+    -- resale shop). Same real-success-point rule as everything else here.
+    {name = "Cafe Regular",   description = "20 Ta Item Az Cafe Bekhar", trigger = "quest-cafe:sell",      requiredTrigger = 20, XP = 10, coin = 0.04},
+    {name = "Market Shopper", description = "10 Ta Item Az Market Bekhar", trigger = "quest-cafe:marketbuy", requiredTrigger = 10, XP = 10, coin = 0.04},
+    {name = "Bargain Hunter", description = "5 Ta Item Az Resale Shop Bekhar", trigger = "quest-cafe:resale", requiredTrigger = 5,  XP = 10, coin = 0.05},
 
     -- Petrol / wool / fabric / clothe / wood / chicken chain from the
     -- original config: no matching resource exists ANYWHERE on this

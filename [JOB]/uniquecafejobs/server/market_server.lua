@@ -85,6 +85,7 @@ AddEventHandler('lg: buyItemuwuuwu', function(data)
             TriggerClientEvent('lg: updateuwuMarket', idJ)
             TriggerClientEvent("lg: uwumarketNotify", idJ, "green", translate.TR_SUCESS)
             TriggerClientEvent("chat:addMessage", idJ, {args = {translate.TR_SUCESS}})
+            TriggerEvent('quest-cafe:marketbuy')
 
             sendWebhook(WEBHOOKS.ADMIN_WEBHOOK, WEBHOOKS.TITLE_BUY_ITEM, translate.TR_WEBHOOK_LOG_BUY .. '\n' .. translate.TR_WEBHOOK_OWNER .. data.item.owner .. '\n' .. translate.TR_WEBHOOK_LOG_BUY_BY .. namePlayer .. '\n' .. translate.TR_WEBHOOK_LOG_BUY_AMOUNT .. selectAmount .. '\n' .. translate.TR_WEBHOOK_LOG_BUY_PRICE .. translate.TR_SIMBOL_MONEY .. " " .. price, WEBHOOKS.COLOR_BUY)
         else
@@ -176,6 +177,7 @@ AddEventHandler('lg: advertiseItemuwu', function(data)
             TriggerClientEvent('lg: updatePlayeruwuMarket', idJ)
             TriggerClientEvent("lg: uwumarketNotify", idJ, "green", translate.TR_ADVERTISE_ITEM)
             TriggerClientEvent("chat:addMessage", idJ, {args = {translate.TR_ADVERTISE_ITEM}})
+            TriggerEvent('quest-cafe:advertise')
 
             sendWebhook(WEBHOOKS.PUBLIC_WEBHOOK, WEBHOOKS.TITLE_ANNOUNCE_ITEM, data.item.name .. " x" .. data.item.amount .. '\n' .. translate.TR_WEBHOOK_OWNER .. owner .. '\n' .. translate.TR_WEBHOOK_AMOUNT .. amount .. '\n' .. translate.TR_WEBHOOK_PRICE .. translate.TR_SIMBOL_MONEY .. " " .. data.item.price, WEBHOOKS.COLOR_ANNOUNCE)
         else

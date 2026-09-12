@@ -82,6 +82,18 @@ RegisterNUICallback('togglePin', function(data, cb)
 	end, data)
 end)
 
+RegisterNUICallback('bulkDelete', function(data, cb)
+	ESX.TriggerServerCallback('LogPanel:BulkDelete', function(result)
+		cb(result)
+	end, data)
+end)
+
+RegisterNUICallback('bulkPin', function(data, cb)
+	ESX.TriggerServerCallback('LogPanel:BulkPin', function(result)
+		cb(result)
+	end, data)
+end)
+
 -- ============================================================================
 -- کامندهای کلاینتی (میان‌بر مستقیم، جدا از کامند سروری که پرمیشن‌چک می‌کنه)
 -- ============================================================================

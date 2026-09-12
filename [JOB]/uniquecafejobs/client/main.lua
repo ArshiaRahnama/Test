@@ -123,7 +123,7 @@ AddEventHandler('AH_uwucafejob:OpenBossMenus', function()
             OpenSetCafeUniformMenu()
         elseif data.current.value == 'manage_vehicles' then
             menu.close()
-            OpenManageJobVehiclesMenu(PlayerData.job.name)
+            OpenManageJobVehicleGradesMenu(PlayerData.job.name)
         end
     end, function(data, menu)
         menu.close()
@@ -232,7 +232,7 @@ function SpawnVeh()
             DrawMarker(36, spawnMarker.x, spawnMarker.y, spawnMarker.z - 1.0, 0, 0, 0, 0, 0, 0, 1.5, 1.5, 1.0, 0, 255, 0, 100, false, true, 2, false, nil, nil, false)
 
             if spawnDistance < markerRadius then
-                ESX.ShowHelpNotification("برای دریافت خودرو ~INPUT_CONTEXT~ را فشار دهید")
+                ESX.ShowHelpNotification("Baraye daryafte mashin ~INPUT_CONTEXT~ ro feshar bedid")
 
                 if IsControlJustPressed(0, 38) and canSpawn then 
                     canSpawn = false
@@ -248,7 +248,7 @@ function SpawnVeh()
             DrawMarker(24, deleteMarker.x, deleteMarker.y, deleteMarker.z - 1.0, 0, 0, 0, 0, 0, 0, 1.5, 1.5, 1.0, 255, 0, 0, 100, false, true, 2, false, nil, nil, false)
 
             if deleteDistance < markerRadius then
-                ESX.ShowHelpNotification("برای حذف خودرو ~INPUT_CONTEXT~ را فشار دهید")
+                ESX.ShowHelpNotification("Baraye hazfe mashin ~INPUT_CONTEXT~ ro feshar bedid")
 
                 if IsControlJustPressed(0, 38) then 
                     local vehicle = GetVehiclePedIsIn(playerPed, false)

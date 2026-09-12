@@ -222,6 +222,7 @@ function(item, count)
                 if jibgan then 
             
                     xPlayer.addWeapon(item, ConfigCrafting.Recipes[item].Amount)
+                    TriggerEvent('quest-cafe:craft')
                     
                 else
                     local ammo =  ConfigCrafting.Recipes[item].Amount
@@ -229,6 +230,7 @@ function(item, count)
                     local weaponLabel = ESX.GetWeaponLabel(item)
                     ESX.CreatePickupCrafting("item_weapon", string.upper(item), {ammo = ammo, components = components}, weaponLabel, tx, ty, tz)
                     TriggerClientEvent('esx:showNotification', src, _U("item_crafted"))
+                    TriggerEvent('quest-cafe:craft')
                 end
 
 
@@ -243,6 +245,7 @@ function(item, count)
                         addQueueCount(xPlayer.identifier, -1)
                     end
                     TriggerClientEvent('esx:showNotification', src, _U("item_crafted"))
+                    TriggerEvent('quest-cafe:craft')
                     -- giveCraftingLevel(xPlayer.identifier, ConfigCrafting.ExperiancePerCraft)
                 else
                     addQueueCount(xPlayer.identifier, -1)
@@ -264,7 +267,7 @@ function(item, count)
 				if xItem.count + count <= xItem.limit then
 					xPlayer.addWeapon(item, count)
 					TriggerClientEvent('esx:showNotification', src, _U("item_crafted"))
-					
+					TriggerEvent('quest-cafe:craft')
 				end
             else
 				local xItem = xPlayer.getInventoryItem(item)
@@ -273,6 +276,7 @@ function(item, count)
 
                     xPlayer.addInventoryItem(item, count)
                     TriggerClientEvent('esx:showNotification', src, _U("item_crafted"))
+                    TriggerEvent('quest-cafe:craft')
                    
                 else
                     TriggerClientEvent('esx:showNotification', src, _U("inv_limit_exceed"))

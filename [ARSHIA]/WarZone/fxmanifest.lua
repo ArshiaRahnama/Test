@@ -9,6 +9,9 @@ author 'arshiahub.ir'
 -- which requires actually importing oxmysql's compat script as a
 -- server_script, same path this server's own oxmysql resource provides it at.
 dependency 'oxmysql'
+-- The /warzone menu (party/stats/last match) is built on this server's
+-- icon_menu resource, called via its exports.
+dependency 'icon_menu'
 shared_scripts {
 	'Config.lua'	
 }

@@ -45,58 +45,13 @@ end)
 -- esx_organserver's ambulance revivex handler fires this local log event
 -- only on a SUCCESSFUL revive, with `source` still equal to the medic who
 -- performed it (nested same-tick TriggerEvent, no network hop).
---
--- CIA/FBI arrests below use the same global-`source` trust, because
--- esx_cia_job:requestarrest / esx_fbi_job:requestarrest are genuine
--- RegisterServerEvent handlers (network-triggered from the client), so
--- `source` is set correctly by the FX runtime for the whole nested call
--- chain -- same reasoning as the ambulance case.
---
--- Weazel's "Camera Toggled" is different: it comes from a RegisterCommand
--- (`/cam`), which -- like the /cs command bug fixed earlier in
--- Unique_Punishment -- never sets the ambient global `source` at all.
--- weazel_cam_server.lua now passes the real source explicitly as a 4th
--- arg for exactly that reason; read that instead of the global for it.
-AddEventHandler('esx_society:logAction', function(job, action, _fields, explicitSource)
+AddEventHandler('esx_society:logAction', function(job, action)
     if job == 'ambulance' and action == 'Player Revived' then
         local _source = source
         local xPlayer = ESX.GetPlayerFromId(_source)
         if xPlayer and xPlayer.job.name == 'ambulance' then
             TriggerEvent('quest-ambulance:revive', _source)
         end
-    elseif job == 'cia' and action == 'Player Arrested' then
-        local _source = source
-        local xPlayer = ESX.GetPlayerFromId(_source)
-        if xPlayer and xPlayer.job.name == 'cia' then
-            TriggerEvent('quest-cia:arrest', _source)
-        end
-    elseif job == 'fbi' and action == 'Player Arrested' then
-        local _source = source
-        local xPlayer = ESX.GetPlayerFromId(_source)
-        if xPlayer and xPlayer.job.name == 'fbi' then
-            TriggerEvent('quest-fbi:arrest', _source)
-        end
-    elseif job == 'weazel' and action == 'Camera Toggled' then
-        local xPlayer = ESX.GetPlayerFromId(explicitSource)
-        if xPlayer and xPlayer.job.name == 'weazel' then
-            TriggerEvent('quest-weazel:broadcast', explicitSource)
-        end
-    end
-end)
-
--- ===== Judge (esx_uniquejobs) — record a verdict ===== --
--- esx_uniquejobs:dojRecordVerdict (server/court_docket.lua) is a genuine
--- RegisterServerEvent, and the ONLY job allowed to call it successfully
--- is judge (isJudge(...) check inside that handler rejects everyone
--- else and sends them an error notification instead) -- re-checked here
--- too since this fires before that handler's own async DB lookup
--- confirms the docket id was real.
-local VALID_VERDICTS = { guilty = true, not_guilty = true, plea_deal = true }
-AddEventHandler('esx_uniquejobs:dojRecordVerdict', function(docketId, verdict)
-    local _source = source
-    local xPlayer = ESX.GetPlayerFromId(_source)
-    if xPlayer and xPlayer.job.name == 'judge' and VALID_VERDICTS[verdict] then
-        TriggerEvent('quest-judge:verdict', _source)
     end
 end)
 

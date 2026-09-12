@@ -211,9 +211,7 @@ ESX.RegisterServerCallback('LogPanel:GetLogs', function(source, cb, filters)
 	if page < 1 then page = 1 end
 	local offset = (page - 1) * perPage
 
-	MySQL.Async.fetchScalar('SELECT COUNT(*) FROM unique_logpanel ' .. whereClause, params, function(total)
-		total = total or 0
-
+	local function fetchRows(total)
 		local listParams = {}
 		for k, v in pairs(params) do listParams[k] = v end
 		listParams['@limit']  = perPage
@@ -231,7 +229,7 @@ ESX.RegisterServerCallback('LogPanel:GetLogs', function(source, cb, filters)
 
 				cb({
 					logs        = result or {},
-					total       = total,
+					total       = total, -- nil یعنی «تغییری نکرده، همون قبلی رو نگه دار» (پایین توضیح داده شده)
 					page        = page,
 					perPage     = perPage,
 					perPageOpts = Config.PerPageOptions,
@@ -243,7 +241,20 @@ ESX.RegisterServerCallback('LogPanel:GetLogs', function(source, cb, filters)
 				})
 			end
 		)
-	end)
+	end
+
+	-- بهینه‌سازی مهم رو جدول‌های بزرگ: COUNT(*) فقط وقتی واقعاً لازمه اجرا بشه.
+	-- تغییر صفحه یا مرتب‌سازی، تعداد کل نتایج مطابق فیلتر رو عوض نمی‌کنه؛ فقط وقتی
+	-- خودِ فیلترها (دسته/شغل/سرچ/تاریخ/...) عوض شده باشن، کلاینت needCount=true
+	-- می‌فرسته و شمارش دوباره انجام می‌شه. این‌جوری با هر کلیک next/prev یا عوض‌کردن
+	-- مرتب‌سازی، یه اسکن سنگین COUNT روی کل جدول اجرا نمی‌شه.
+	if filters.needCount == false then
+		fetchRows(nil)
+	else
+		MySQL.Async.fetchScalar('SELECT COUNT(*) FROM unique_logpanel ' .. whereClause, params, function(total)
+			fetchRows(total or 0)
+		end)
+	end
 end)
 
 -- ============================================================================
@@ -339,27 +350,37 @@ ESX.RegisterServerCallback('LogPanel:GetStats', function(source, cb, filters)
 							"SELECT DATE(created_at) as d, COUNT(*) as cnt FROM unique_logpanel " .. trendAndOr ..
 							' created_at >= CURDATE() - INTERVAL @trendDays DAY GROUP BY DATE(created_at) ORDER BY d ASC',
 							trendParams, function(dailyRows)
-								local function finish(topJobs)
-									cb({
-										total       = total or 0,
-										today       = today or 0,
-										topCategories = topCats or {},
-										topJobs     = topJobs or {},
-										dailyActivity = dailyRows or {},
-									})
-								end
-								if admin then
-									local jobFilterPart = "job IS NOT NULL AND job <> ''"
-									local jobWhere = (whereClause == '')
-										and ('WHERE ' .. jobFilterPart)
-										or (whereClause .. ' AND ' .. jobFilterPart)
-									MySQL.Async.fetchAll(
-										'SELECT job, COUNT(*) as cnt FROM unique_logpanel ' .. jobWhere ..
-										' GROUP BY job ORDER BY cnt DESC LIMIT 6',
-										params, finish)
-								else
-									finish({})
-								end
+								local playerFilterPart = "player_name IS NOT NULL AND player_name <> ''"
+								local playerWhere = (whereClause == '')
+									and ('WHERE ' .. playerFilterPart)
+									or (whereClause .. ' AND ' .. playerFilterPart)
+								MySQL.Async.fetchAll(
+									'SELECT player_name, identifier, COUNT(*) as cnt FROM unique_logpanel ' .. playerWhere ..
+									' GROUP BY identifier, player_name ORDER BY cnt DESC LIMIT 6',
+									params, function(topPlayers)
+										local function finish(topJobs)
+											cb({
+												total       = total or 0,
+												today       = today or 0,
+												topCategories = topCats or {},
+												topJobs     = topJobs or {},
+												topPlayers  = topPlayers or {},
+												dailyActivity = dailyRows or {},
+											})
+										end
+										if admin then
+											local jobFilterPart = "job IS NOT NULL AND job <> ''"
+											local jobWhere = (whereClause == '')
+												and ('WHERE ' .. jobFilterPart)
+												or (whereClause .. ' AND ' .. jobFilterPart)
+											MySQL.Async.fetchAll(
+												'SELECT job, COUNT(*) as cnt FROM unique_logpanel ' .. jobWhere ..
+												' GROUP BY job ORDER BY cnt DESC LIMIT 6',
+												params, finish)
+										else
+											finish({})
+										end
+									end)
 							end)
 					end)
 			end)
@@ -416,6 +437,39 @@ end)
 -- ============================================================================
 -- پین/آن‌پین کردن یه لاگ (فقط ادمین) — لاگ‌های پین‌شده همیشه بالای لیست می‌مونن
 -- ============================================================================
+
+-- oxmysql بسته به نسخه/تنظیماتش، ستون TINYINT(1) رو گاهی به‌صورت boolean (true/false)
+-- به Lua برمی‌گردونه، نه عدد. tonumber(true) در Lua مقدار nil می‌ده (نه خطا)، پس اگه
+-- مستقیم از tonumber() استفاده می‌کردیم، چک "current == 1" همیشه false می‌شد و پین
+-- هیچ‌وقت درست toggle نمی‌شد (همیشه می‌رفت رو 1). این تابع هر سه حالت boolean/عدد/رشته
+-- رو درست به 0 یا 1 تبدیل می‌کنه.
+local function toBit(v)
+	if v == true then return 1 end
+	if v == false or v == nil then return 0 end
+	return (tonumber(v) == 1) and 1 or 0
+end
+
+-- برای اکشن‌های گروهی (پین/حذف چندتایی): از یه لیست عدد Lua، یه IN (@id1,@id2,...) امن
+-- (پارامتری، نه string concat مستقیم) می‌سازه.
+local function buildIdInClause(ids)
+	local placeholders, params = {}, {}
+	for i, id in ipairs(ids) do
+		local key = '@bid' .. i
+		placeholders[#placeholders + 1] = key
+		params[key] = id
+	end
+	return table.concat(placeholders, ', '), params
+end
+local function sanitizeIdList(raw, maxCount)
+	local ids = {}
+	for _, v in ipairs(raw or {}) do
+		local n = tonumber(v)
+		if n then ids[#ids + 1] = n end
+		if #ids >= maxCount then break end
+	end
+	return ids
+end
+
 ESX.RegisterServerCallback('LogPanel:TogglePin', function(source, cb, data)
 	if not Config.EnablePinning then cb({ error = 'disabled' }) return end
 	if not isAdmin(source) then cb({ error = 'no_access' }) return end
@@ -426,7 +480,7 @@ ESX.RegisterServerCallback('LogPanel:TogglePin', function(source, cb, data)
 
 	MySQL.Async.fetchScalar('SELECT pinned FROM unique_logpanel WHERE id = @id', { ['@id'] = id }, function(current)
 		if current == nil then cb({ error = 'not_found' }) return end
-		local newValue = (tonumber(current) == 1) and 0 or 1
+		local newValue = (toBit(current) == 1) and 0 or 1
 
 		MySQL.Async.execute('UPDATE unique_logpanel SET pinned = @pinned WHERE id = @id', { ['@pinned'] = newValue, ['@id'] = id }, function(affected)
 			if affected and affected > 0 then
@@ -476,6 +530,67 @@ ESX.RegisterServerCallback('LogPanel:DeleteLog', function(source, cb, data)
 				cb({ error = 'delete_failed' })
 			end
 		end)
+	end)
+end)
+
+-- ============================================================================
+-- حذف گروهی (چندتا لاگ با هم، فقط ادمین) — برای وقتی چندتا ردیف رو تیک زده و
+-- می‌خواد یه‌جا پاک‌شون کنه. حداکثر ۲۰۰ تا در هر درخواست (محافظتی، نه محدودیت UI).
+-- ============================================================================
+ESX.RegisterServerCallback('LogPanel:BulkDelete', function(source, cb, data)
+	if not Config.EnableDelete then cb({ error = 'disabled' }) return end
+	if not isAdmin(source) then cb({ error = 'no_access' }) return end
+	if not MySQL or not MySQL.Async then cb({ error = 'no_database' }) return end
+
+	local ids = sanitizeIdList(data and data.ids, 200)
+	if #ids == 0 then cb({ error = 'invalid_ids' }) return end
+
+	local inClause, params = buildIdInClause(ids)
+	local xPlayer = ESX.GetPlayerFromId(source)
+	local adminName = xPlayer and xPlayer.getName and xPlayer.getName() or ('ID:' .. source)
+	local adminIdentifier = xPlayer and xPlayer.identifier or nil
+
+	MySQL.Async.execute('DELETE FROM unique_logpanel WHERE id IN (' .. inClause .. ')', params, function(affected)
+		affected = affected or 0
+		if affected > 0 then
+			local idListStr = table.concat(ids, ', ')
+			if #idListStr > 300 then idListStr = idListStr:sub(1, 300) .. '...' end
+			MySQL.Async.execute(
+				'INSERT INTO unique_logpanel (category, job, title, message, source, identifier, player_name) VALUES (@c, @j, @t, @m, @s, @i, @p)',
+				{
+					['@c'] = 'logpanel_delete',
+					['@j'] = nil,
+					['@t'] = 'حذف گروهی لاگ توسط ادمین',
+					['@m'] = string.format('%d لاگ به‌صورت گروهی توسط %s حذف شد.\nشناسه‌ها: %s', affected, adminName, idListStr),
+					['@s'] = source,
+					['@i'] = adminIdentifier,
+					['@p'] = adminName,
+				}
+			)
+			cb({ success = true, count = affected })
+		else
+			cb({ error = 'delete_failed' })
+		end
+	end)
+end)
+
+-- ============================================================================
+-- پین/آن‌پین گروهی (چندتا لاگ با هم، فقط ادمین)
+-- ============================================================================
+ESX.RegisterServerCallback('LogPanel:BulkPin', function(source, cb, data)
+	if not Config.EnablePinning then cb({ error = 'disabled' }) return end
+	if not isAdmin(source) then cb({ error = 'no_access' }) return end
+	if not MySQL or not MySQL.Async then cb({ error = 'no_database' }) return end
+
+	local ids = sanitizeIdList(data and data.ids, 200)
+	if #ids == 0 then cb({ error = 'invalid_ids' }) return end
+
+	local pinnedValue = (data and data.pinned == false) and 0 or 1
+	local inClause, params = buildIdInClause(ids)
+	params['@pinned'] = pinnedValue
+
+	MySQL.Async.execute('UPDATE unique_logpanel SET pinned = @pinned WHERE id IN (' .. inClause .. ')', params, function(affected)
+		cb({ success = true, count = affected or 0, pinned = (pinnedValue == 1) })
 	end)
 end)
 
@@ -601,20 +716,39 @@ end
 -- ============================================================================
 -- پاک‌سازی خودکار لاگ‌های قدیمی (بر اساس Config.RetentionDays)، هر ۶ ساعت چک می‌کنه
 -- ============================================================================
+-- ============================================================================
+-- پاک‌سازی خودکار لاگ‌های قدیمی (Config.RetentionDays)، به‌صورت دسته‌ای (batch) تا
+-- روی جدول‌های بزرگ یه DELETE عظیم و طولانی، جدول رو برای بقیه (کوئری‌های دیگه‌ی
+-- پنل) قفل نکنه. هر بار حداکثر ۲۰۰۰ ردیف حذف می‌شه و بین بچ‌ها یه مکث کوتاه هست.
+-- ============================================================================
 if Config.RetentionDays and tonumber(Config.RetentionDays) and tonumber(Config.RetentionDays) > 0 then
 	CreateThread(function()
 		while not MySQL or not MySQL.Async do Wait(1000) end
+		local BATCH_SIZE = 2000
+
 		while true do
-			MySQL.Async.execute(
-				'DELETE FROM unique_logpanel WHERE created_at < NOW() - INTERVAL @days DAY AND category <> "logpanel_delete"',
-				{ ['@days'] = tonumber(Config.RetentionDays) },
-				function(affected)
-					if affected and affected > 0 then
-						print(('[Unique_LogPanel] پاک‌سازی خودکار: %d لاگ قدیمی‌تر از %d روز حذف شد.'):format(affected, Config.RetentionDays))
+			local totalDeleted = 0
+			while true do
+				local done, affected = false, 0
+				MySQL.Async.execute(
+					'DELETE FROM unique_logpanel WHERE created_at < NOW() - INTERVAL @days DAY AND category <> "logpanel_delete" LIMIT @batch',
+					{ ['@days'] = tonumber(Config.RetentionDays), ['@batch'] = BATCH_SIZE },
+					function(aff)
+						affected = aff or 0
+						done = true
 					end
-				end
-			)
-			Wait(6 * 60 * 60 * 1000) -- هر ۶ ساعت
+				)
+				while not done do Wait(50) end
+				totalDeleted = totalDeleted + affected
+				if affected < BATCH_SIZE then break end
+				Wait(400) -- مکث کوتاه بین بچ‌ها تا فشار لحظه‌ای رو دیتابیس کم بشه
+			end
+
+			if totalDeleted > 0 then
+				print(('[Unique_LogPanel] پاک‌سازی خودکار: %d لاگ قدیمی‌تر از %d روز حذف شد (دسته‌ای، بدون قفل‌کردن طولانی جدول).'):format(totalDeleted, Config.RetentionDays))
+			end
+
+			Wait(6 * 60 * 60 * 1000) -- هر ۶ ساعت یه دور کامل پاک‌سازی
 		end
 	end)
 end

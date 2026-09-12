@@ -31,9 +31,41 @@ local xPlayer = ESX.GetPlayerFromId(source)
 				end
 			end
 		end
+	-------------------------------------------------------------
+	-- FIX (revised - the first version of this fix removed the
+	-- `Users[Source].set("loadout", ...)` call entirely, which turned
+	-- out to break something else this event's completion is relied
+	-- on for - confirmed by directly comparing the working pre-fix
+	-- zip against this file: reverting just this one change was
+	-- enough to stop it. Restored the call, so whatever depends on it
+	-- keeps working) - but the ORIGINAL problem is still real: the
+	-- client's `loadout` here has at most ONE entry per weapon type
+	-- with no serial at all (GTA's engine only knows "does this ped
+	-- have a WEAPON_PISTOL: yes/no" - no concept of "how many" or
+	-- "which serial"), so blindly using it as the new loadout was
+	-- destroying every duplicate weapon and every serial, every time
+	-- this fires (which is constantly).
+	-- This keeps every EXISTING server-side loadout entry (with its
+	-- real, DB-backed serial) exactly as-is, and only ADDS an entry
+	-- for a weapon type the server has zero record of at all - the
+	-- same "client reports a weapon type the server doesn't
+	-- recognize" case the anti-cheat loop above already watches for,
+	-- just reconciled instead of blindly replacing everything.
+	-------------------------------------------------------------
 	local Source = source
-	if(Users[Source])then
-		Users[Source].set("loadout", loadout)
+	if Users[Source] then
+		local existingNames = {}
+		local merged = {}
+		for _, w in ipairs(xPlayer.loadout or {}) do
+			existingNames[w.name] = true
+			table.insert(merged, w)
+		end
+		for _, w in ipairs(loadout) do
+			if not existingNames[w.name] then
+				table.insert(merged, w)
+			end
+		end
+		Users[Source].set("loadout", merged)
 	end
 end)
 

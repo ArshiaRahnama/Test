@@ -20,13 +20,21 @@ local onDutyJobs = {
     ambulance = 'quest-ambulance:onduty',
     mechanic  = 'quest-mechanic:onduty',
     taxi      = 'quest-taxi:onduty',
-    cid       = 'quest-cid:onduty',
-    cia       = 'quest-cia:onduty',
-    marshal   = 'quest-marshal:onduty',
-    fbi       = 'quest-fbi:onduty',
-    judge     = 'quest-judge:onduty',
-    doa       = 'quest-doa:onduty',
-    weazel    = 'quest-weazel:onduty',
+
+    -- uniquecafejobs: 17 cafe/restaurant jobs + 4 holdings, each with its
+    -- own quest-cafe-onduty:<job> trigger (see config.lua's per-job Onduty
+    -- entries) so they track independently just like every job above.
+    uwucafe = 'quest-cafe-onduty:uwucafe', obsidian = 'quest-cafe-onduty:obsidian',
+    voltage = 'quest-cafe-onduty:voltage', ember = 'quest-cafe-onduty:ember',
+    anchor = 'quest-cafe-onduty:anchor', crimson = 'quest-cafe-onduty:crimson',
+    flourish = 'quest-cafe-onduty:flourish', goldcrust = 'quest-cafe-onduty:goldcrust',
+    carwash = 'quest-cafe-onduty:carwash', firebrick = 'quest-cafe-onduty:firebrick',
+    slice = 'quest-cafe-onduty:slice', frostbite = 'quest-cafe-onduty:frostbite',
+    sundae = 'quest-cafe-onduty:sundae', static = 'quest-cafe-onduty:static',
+    nightjar = 'quest-cafe-onduty:nightjar', koi = 'quest-cafe-onduty:koi',
+    wasabi = 'quest-cafe-onduty:wasabi',
+    meridian = 'quest-cafe-onduty:meridian', blacktide = 'quest-cafe-onduty:blacktide',
+    cratecarry = 'quest-cafe-onduty:cratecarry', turfco = 'quest-cafe-onduty:turfco',
 }
 
 -- Tracked for the paycheck countdown in the header (client/menu.lua).

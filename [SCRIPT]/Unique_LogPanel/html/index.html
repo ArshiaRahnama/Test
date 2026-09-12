@@ -120,6 +120,12 @@
 		transition:.15s cubic-bezier(.2,.8,.3,1);
 	}
 	#closeBtn:hover{ background:var(--danger); color:#fff; border-color:var(--danger); transform:rotate(90deg); }
+	#shortcutsBtn{
+		width:32px; height:32px; border-radius:8px; border:1px solid var(--border);
+		background:#ffffff05; color:var(--text-dim); cursor:pointer; font-size:13px;
+		display:flex; align-items:center; justify-content:center; transition:.15s;
+	}
+	#shortcutsBtn:hover{ background:#3b6fe01a; color:var(--accent-soft); border-color:#3b6fe04d; }
 
 	/* ---------- BODY LAYOUT ---------- */
 	#body{ flex:1; display:flex; min-height:0; position:relative; z-index:1; }
@@ -223,13 +229,9 @@
 	}
 	.toolBtn.primary:hover::after{ left:130%; }
 	.toolBtn.primary:hover{ filter:brightness(1.1); box-shadow:0 6px 20px rgba(59,111,224,.42); }
-	.toolBtn#pinnedToggleBtn.active{
-		background:linear-gradient(90deg, #c9a35d33, #c9a35d1a); color:var(--warn); border-color:#c9a35d55;
-	}
 	.toolBtn.danger{ color:#fca5a5; }
 	.toolBtn.danger:hover{ background:var(--danger); color:#fff; }
 	.toolBtn:disabled{ opacity:.4; cursor:not-allowed; }
-
 	#jobFilterWrap select, .miniSelect, .dateInput{
 		background:#ffffff08; border:1px solid var(--border); color:var(--text);
 		padding:8px 10px; border-radius:10px; font-size:12px; font-family:inherit; cursor:pointer;
@@ -238,7 +240,33 @@
 	#jobFilterWrap select:hover, .miniSelect:hover, .dateInput:hover{ background:#ffffff0e; border-color:#3b6fe055; }
 	#jobFilterWrap select:focus, .miniSelect:focus, .dateInput:focus{ outline:none; border-color:#3b6fe070; box-shadow:0 0 0 3px rgba(59,111,224,.14); }
 	.dateInput{ cursor:text; color-scheme: dark; width:130px; }
-	.toolbarDivider{ width:1px; align-self:stretch; background:var(--border); margin:0 2px; }
+
+	/* ---------- FILTERS POPOVER (تولبار جمع‌وجورتر) ---------- */
+	.filterPopoverWrap{ position:relative; }
+	#filtersToggleBtn.active{ background:#3b6fe01a; border-color:#3b6fe04d; color:var(--accent-soft); }
+	#filtersPopover{
+		display:none; position:absolute; top:calc(100% + 8px); right:0; z-index:12;
+		width:280px; background:linear-gradient(180deg, #171b26, var(--panel-solid));
+		border:1px solid var(--border); border-radius:var(--radius-lg);
+		padding:16px; box-shadow:0 20px 50px rgba(0,0,0,.5);
+		flex-direction:column; gap:10px;
+		animation:panelIn .15s cubic-bezier(.2,.9,.3,1);
+	}
+	#filtersPopover.show{ display:flex; }
+	.filterPopoverLabel{
+		font-size:10.5px; color:var(--text-faint); text-transform:uppercase; letter-spacing:.4px;
+		font-weight:700; margin-bottom:2px;
+	}
+	.filterPopoverDivider{ height:1px; background:var(--border-soft); margin:2px 0; }
+	.dateRangeRow{ display:flex; align-items:center; gap:8px; }
+	.dateRangeRow .dateInput{ flex:1; width:auto; }
+	.dateRangeRow span{ font-size:11px; color:var(--text-dim); }
+	#filtersPopover .miniSelect{ width:100%; }
+	.filterCheckboxRow{
+		display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text);
+		cursor:pointer; padding:2px 0;
+	}
+	.filterCheckboxRow input{ width:15px; height:15px; accent-color:#c9a35d; cursor:pointer; }
 	.quickChips{ display:flex; gap:6px; }
 	.chip{
 		font-size:11px; padding:6px 12px; border-radius:6px; border:1px solid var(--border);
@@ -257,6 +285,18 @@
 	}
 	#newLogsBanner:hover{ background:linear-gradient(90deg, #c9a35d33, #c9a35d18); }
 	#newLogsBanner.show{ display:flex; }
+
+	/* ---------- BULK ACTIONS BAR ---------- */
+	#bulkBar{
+		display:none; align-items:center; gap:8px;
+		margin:8px 18px 0; padding:9px 14px; border-radius:8px;
+		background:#3b6fe01a; border:1px solid #3b6fe040;
+		font-size:12.5px; color:var(--text);
+		animation:toastIn .18s ease;
+	}
+	#bulkBar.show{ display:flex; }
+	.bulkSpacer{ flex:1; }
+	#bulkCount{ font-weight:600; color:var(--accent-soft); }
 
 	/* ---------- TABLE ---------- */
 	#tableWrap{ flex:1; overflow-y:auto; padding:6px 18px; }
@@ -301,6 +341,11 @@
 	.jobCell{ color:var(--text-dim); font-size:11.5px; }
 	.rowActions{ text-align:left; white-space:nowrap; }
 	.rowActions{ display:flex; gap:5px; justify-content:flex-end; }
+	.rowActions > *{ opacity:0; transition:opacity .15s; }
+	.logRow:hover .rowActions > *{ opacity:1; }
+	.rowCheckbox, #selectAllCheckbox{
+		width:15px; height:15px; accent-color:#3b6fe0; cursor:pointer; vertical-align:middle;
+	}
 	.rowDeleteBtn, .rowPinBtn, .rowCoordBtn{
 		width:26px; height:26px; border-radius:8px; border:1px solid var(--border);
 		background:#ffffff08; color:var(--text-dim); cursor:pointer; font-size:12px;
@@ -383,7 +428,7 @@
 		background:linear-gradient(90deg,#fff,#dbe3f0); -webkit-background-clip:text; background-clip:text; color:transparent;
 	}
 	.statCard .lbl{ font-size:12px; color:var(--text-dim); margin-top:4px; }
-	.statGrid{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+	.statGrid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(230px, 1fr)); gap:16px; }
 	@media (max-width:760px){ .statGrid{ grid-template-columns:1fr; } }
 	.statPanel{ background:#ffffff06; border:1px solid var(--border); border-radius:12px; padding:16px; }
 	.statPanel h4{ font-size:13px; margin-bottom:12px; color:var(--text-dim); }
@@ -445,6 +490,51 @@
 	}
 	#confirmBox p{ font-size:13px; margin:10px 0 16px; color:var(--text-dim); }
 	#confirmBox .row{ display:flex; gap:8px; }
+
+	/* ---------- SHORTCUTS HELP MODAL ---------- */
+	/* ---------- ONBOARDING TOUR ---------- */
+	.tourHighlight{
+		position:relative; z-index:15; border-radius:8px;
+		box-shadow:0 0 0 3px #3b6fe0, 0 0 28px rgba(59,111,224,.55) !important;
+		transition:box-shadow .2s;
+	}
+	#tourTooltip{
+		display:none; position:fixed; z-index:50; width:270px;
+		background:linear-gradient(180deg, #171b26, var(--panel-solid));
+		border:1px solid #3b6fe04d; border-radius:12px; padding:16px;
+		box-shadow:0 16px 40px rgba(0,0,0,.5), 0 0 0 1px rgba(255,255,255,.03) inset;
+		animation:panelIn .18s cubic-bezier(.2,.9,.3,1);
+	}
+	#tourTooltip h4{ font-size:13px; margin-bottom:6px; font-weight:700; }
+	#tourTooltip p{ font-size:11.5px; color:var(--text-dim); line-height:1.7; margin-bottom:12px; }
+	#tourTooltip .tourFooter{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
+	#tourTooltip .tourProgress{ font-size:10.5px; color:var(--text-faint); white-space:nowrap; }
+	#tourTooltip .tourBtns{ display:flex; gap:6px; }
+	#tourTooltip .toolBtn{ padding:6px 12px; font-size:11.5px; }
+
+	#shortcutsOverlay{
+		position:absolute; inset:0; background:rgba(6,8,14,.75); backdrop-filter:blur(4px);
+		display:none; align-items:center; justify-content:center; z-index:10;
+	}
+	#shortcutsOverlay.show{ display:flex; }
+	#shortcutsBox{
+		width:min(360px, 85%); background:linear-gradient(180deg, #171b26, var(--panel-solid));
+		border:1px solid var(--border); border-radius:var(--radius-lg); padding:22px;
+		animation:panelIn .18s cubic-bezier(.2,.9,.3,1);
+	}
+	#shortcutsBox h3{ font-size:14.5px; margin-bottom:14px; font-weight:700; }
+	.shortcutRow{
+		display:flex; align-items:center; justify-content:space-between;
+		font-size:12.5px; color:var(--text-dim); padding:8px 0; border-bottom:1px solid var(--border-soft);
+		gap:8px;
+	}
+	.shortcutRow:last-of-type{ border-bottom:none; }
+	.shortcutRow > span:first-child{ color:var(--text); }
+	.keyCap{
+		font-family:'Consolas',monospace; font-size:11px; font-weight:700; color:var(--text);
+		background:#ffffff0a; border:1px solid var(--border); border-radius:5px;
+		padding:2px 7px; margin-inline-start:4px; min-width:20px; text-align:center; display:inline-block;
+	}
 	#confirmBox .toolBtn{ flex:1; justify-content:center; }
 
 	/* ---------- TOAST ---------- */
@@ -483,6 +573,7 @@
 				</div>
 				<div id="headerRight">
 					<span id="liveIndicator" style="display:none; font-size:11px; color:var(--text-dim); align-items:center;"><span id="liveDot"></span>لایو</span>
+					<div id="shortcutsBtn" onclick="toggleShortcutsHelp()" title="کلیدهای میان‌بر">⌨️</div>
 					<div id="closeBtn" onclick="closePanel()">✕</div>
 				</div>
 			</div>
@@ -509,31 +600,53 @@
 							<span>🔍</span>
 							<input id="searchInput" type="text" placeholder="جست‌وجو تو پیام، اسم پلیر، استیم آیدی...">
 						</div>
-						<div class="quickChips" id="quickChips">
-							<div class="chip" data-range="today">امروز</div>
-							<div class="chip" data-range="7">۷ روز اخیر</div>
-							<div class="chip" data-range="30">۳۰ روز اخیر</div>
-							<div class="chip active" data-range="all">همه</div>
+						<div class="filterPopoverWrap">
+							<div class="toolBtn" id="filtersToggleBtn" onclick="toggleFiltersPopover()">🎚 فیلترها</div>
+							<div id="filtersPopover">
+								<div class="filterPopoverLabel">بازه‌ی تاریخ</div>
+								<div class="quickChips" id="quickChips">
+									<div class="chip" data-range="today">امروز</div>
+									<div class="chip" data-range="7">۷ روز اخیر</div>
+									<div class="chip" data-range="30">۳۰ روز اخیر</div>
+									<div class="chip active" data-range="all">همه</div>
+								</div>
+								<div class="dateRangeRow">
+									<input type="date" class="dateInput" id="dateFrom" title="از تاریخ">
+									<span>تا</span>
+									<input type="date" class="dateInput" id="dateTo" title="تا تاریخ">
+								</div>
+								<div class="filterPopoverDivider"></div>
+								<div class="filterPopoverLabel">مرتب‌سازی و نمایش</div>
+								<select class="miniSelect" id="sortSelect" title="مرتب‌سازی">
+									<option value="id:DESC">جدیدترین</option>
+									<option value="id:ASC">قدیمی‌ترین</option>
+									<option value="category:ASC">دسته (الفبا)</option>
+									<option value="job:ASC">شغل (الفبا)</option>
+									<option value="player_name:ASC">پلیر (الفبا)</option>
+								</select>
+								<select class="miniSelect" id="perPageSelect" title="تعداد در صفحه"></select>
+								<label class="filterCheckboxRow" id="pinnedToggleRow" style="display:none;">
+									<input type="checkbox" id="pinnedOnlyCheckbox">
+									<span>📌 فقط پین‌شده‌ها</span>
+								</label>
+							</div>
 						</div>
-						<div class="toolbarDivider"></div>
-						<input type="date" class="dateInput" id="dateFrom" title="از تاریخ">
-						<input type="date" class="dateInput" id="dateTo" title="تا تاریخ">
-						<select class="miniSelect" id="sortSelect" title="مرتب‌سازی">
-							<option value="id:DESC">جدیدترین</option>
-							<option value="id:ASC">قدیمی‌ترین</option>
-							<option value="category:ASC">دسته (الفبا)</option>
-							<option value="job:ASC">شغل (الفبا)</option>
-							<option value="player_name:ASC">پلیر (الفبا)</option>
-						</select>
-						<select class="miniSelect" id="perPageSelect" title="تعداد در صفحه"></select>
-						<div class="toolBtn" id="pinnedToggleBtn" onclick="togglePinnedOnly()" style="display:none;">📌 فقط پین‌شده‌ها</div>
-						<div class="toolBtn" onclick="refreshLogs()">↻ رفرش</div>
+						<div class="toolBtn" onclick="refreshLogs()" title="رفرش">↻</div>
 						<div class="toolBtn primary" id="exportBtn" onclick="exportLogs()" style="display:none;">⬇️ خروجی CSV</div>
 					</div>
 
-					<div id="activeFilters" style="display:none; padding:0 18px 4px;"></div>
+					<div id="activeFilters" style="display:none; flex-wrap:wrap; gap:6px; padding:0 18px 6px;"></div>
 
 					<div id="newLogsBanner" onclick="onBannerClick()">🔔 <span id="newLogsText">لاگ جدید ثبت شد</span> — برای بارگذاری کلیک کن</div>
+
+					<div id="bulkBar">
+						<span id="bulkCount">۰ ردیف انتخاب شده</span>
+						<div class="bulkSpacer"></div>
+						<div class="toolBtn" id="bulkPinBtn" onclick="bulkPinSelected()" style="display:none;">📌 پین همه</div>
+						<div class="toolBtn" id="bulkUnpinBtn" onclick="bulkUnpinSelected()" style="display:none;">📌 آن‌پین همه</div>
+						<div class="toolBtn danger" id="bulkDeleteBtn" onclick="confirmBulkDelete()" style="display:none;">🗑️ حذف همه</div>
+						<div class="toolBtn" onclick="clearSelection()">لغو انتخاب</div>
+					</div>
 
 					<div id="tableWrap">
 						<div id="emptyState">
@@ -543,6 +656,9 @@
 						<table id="logTable" style="display:none;">
 							<thead>
 								<tr>
+									<th id="selectAllCol" style="width:32px; display:none;">
+										<input type="checkbox" id="selectAllCheckbox" title="انتخاب همه‌ی این صفحه">
+									</th>
 									<th data-col="created_at" style="width:110px;">زمان</th>
 									<th data-col="category" style="width:140px;">دسته</th>
 									<th data-col="job" style="width:120px;">شغل</th>
@@ -589,6 +705,10 @@
 								<h4>پرتکرارترین شغل‌ها</h4>
 								<div id="statJobsList"></div>
 							</div>
+							<div class="statPanel" id="statPlayersPanel">
+								<h4>فعال‌ترین پلیرها</h4>
+								<div id="statPlayersList"></div>
+							</div>
 						</div>
 					</div>
 				</div>
@@ -612,13 +732,29 @@
 			<div id="confirmOverlay">
 				<div id="confirmBox">
 					<div style="font-size:28px;">⚠️</div>
-					<p>مطمئنی می‌خوای این لاگ رو برای همیشه حذف کنی؟ این کار قابل‌بازگشت نیست (ولی خودِ حذف هم لاگ می‌شه).</p>
+					<p id="confirmMessage">مطمئنی می‌خوای این لاگ رو برای همیشه حذف کنی؟ این کار قابل‌بازگشت نیست (ولی خودِ حذف هم لاگ می‌شه).</p>
 					<div class="row">
 						<div class="toolBtn" onclick="closeConfirm()">انصراف</div>
 						<div class="toolBtn danger" onclick="doDeleteConfirmed()">حذف کن</div>
 					</div>
 				</div>
 			</div>
+
+			<div id="shortcutsOverlay" onclick="if(event.target===this) toggleShortcutsHelp()">
+				<div id="shortcutsBox">
+					<h3>⌨️ کلیدهای میان‌بر</h3>
+					<div class="shortcutRow"><span>فوکوس روی جست‌وجو</span><span class="keyCap">/</span></div>
+					<div class="shortcutRow"><span>فوکوس روی جست‌وجو</span><span class="keyCap">Ctrl</span><span class="keyCap">K</span></div>
+					<div class="shortcutRow"><span>خروجی CSV</span><span class="keyCap">Ctrl</span><span class="keyCap">E</span></div>
+					<div class="shortcutRow"><span>رفرش لیست</span><span class="keyCap">R</span></div>
+					<div class="shortcutRow"><span>بستن مودال / پنل</span><span class="keyCap">Esc</span></div>
+					<div class="shortcutRow"><span>این راهنما</span><span class="keyCap">؟</span></div>
+					<div class="toolBtn primary" style="justify-content:center; margin-top:14px;" onclick="replayTour()">🎓 نمایش دوباره‌ی راهنمای سریع</div>
+					<div class="toolBtn" style="justify-content:center; margin-top:8px;" onclick="toggleShortcutsHelp()">بستن</div>
+				</div>
+			</div>
+
+			<div id="tourTooltip"></div>
 		</div>
 	</div>
 
@@ -715,6 +851,12 @@ let state = {
 	identifierLabel: '',
 	searchDebounce: null,
 	pendingDeleteId: null,
+	pendingBulkIds: null,
+	selectedIds: new Set(),
+	canBulk: false,
+	lastCountSignature: null,
+	requestSeq: 0,
+	statsSeq: 0,
 	newLogsCount: 0,
 };
 
@@ -751,16 +893,31 @@ window.addEventListener('message', (event) => {
 		state.pinnedOnly = false;
 		state.identifierExact = '';
 		state.identifierLabel = '';
+		state.lastCountSignature = null; // مجبور می‌کنه دفعه‌ی اول این سشن حتماً COUNT تازه بگیره
+
+		const savedPrefs = loadPrefs();
+		if (savedPrefs){
+			if (savedPrefs.sortBy) state.sortBy = savedPrefs.sortBy;
+			if (savedPrefs.sortDir) state.sortDir = savedPrefs.sortDir;
+			if (savedPrefs.perPage) state.perPage = savedPrefs.perPage;
+			if (savedPrefs.category) state.category = savedPrefs.category;
+			if (savedPrefs.jobFilter) state.jobFilter = savedPrefs.jobFilter;
+			if (savedPrefs.dateFrom) state.dateFrom = savedPrefs.dateFrom;
+			if (savedPrefs.dateTo) state.dateTo = savedPrefs.dateTo;
+			if (savedPrefs.quickRange) state.quickRange = savedPrefs.quickRange;
+			if (savedPrefs.pinnedOnly) state.pinnedOnly = savedPrefs.pinnedOnly;
+		}
 
 		document.getElementById('root').classList.add('show');
 		document.getElementById('searchInput').value = '';
-		document.getElementById('dateFrom').value = '';
-		document.getElementById('dateTo').value = '';
-		document.getElementById('sortSelect').value = 'id:DESC';
+		document.getElementById('dateFrom').value = state.dateFrom;
+		document.getElementById('dateTo').value = state.dateTo;
+		document.getElementById('sortSelect').value = `${state.sortBy}:${state.sortDir}`;
+		updateSortHeaderUI();
 		document.getElementById('newLogsBanner').classList.remove('show');
-		document.getElementById('pinnedToggleBtn').classList.remove('active');
+		document.getElementById('pinnedOnlyCheckbox').checked = state.pinnedOnly;
 		renderActiveFilters();
-		[...document.querySelectorAll('#quickChips .chip')].forEach(c => c.classList.toggle('active', c.dataset.range === 'all'));
+		[...document.querySelectorAll('#quickChips .chip')].forEach(c => c.classList.toggle('active', c.dataset.range === state.quickRange));
 		switchView('logs', true);
 
 		const badge = document.getElementById('modeBadge');
@@ -775,6 +932,7 @@ window.addEventListener('message', (event) => {
 		document.getElementById('liveIndicator').style.display = 'flex';
 
 		loadMeta();
+		setTimeout(() => startTour(false), 700);
 	}
 	if (data.action === 'close'){
 		document.getElementById('root').classList.remove('show');
@@ -796,19 +954,182 @@ document.addEventListener('keydown', (e) => {
 	if (e.key === 'Escape'){
 		if (document.getElementById('confirmOverlay').classList.contains('show')){
 			closeConfirm();
+		} else if (document.getElementById('shortcutsOverlay') && document.getElementById('shortcutsOverlay').classList.contains('show')){
+			toggleShortcutsHelp();
+		} else if (document.getElementById('tourTooltip') && document.getElementById('tourTooltip').style.display === 'block'){
+			endTour();
 		} else if (document.getElementById('detailOverlay').classList.contains('show')){
 			closeDetail();
 		} else {
 			closePanel();
 		}
+		return;
+	}
+
+	const typingInField = ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement && document.activeElement.tagName);
+
+	// Ctrl/Cmd+K یا "/" → فوکوس روی سرچ (مثل خیلی از اپ‌های حرفه‌ای)
+	if ((e.key === 'k' && (e.ctrlKey || e.metaKey)) || (e.key === '/' && !typingInField)){
+		e.preventDefault();
+		if (state.view !== 'logs') switchView('logs');
+		document.getElementById('searchInput').focus();
+		return;
+	}
+	// Ctrl/Cmd+E → خروجی CSV
+	if (e.key === 'e' && (e.ctrlKey || e.metaKey) && state.canExport){
+		e.preventDefault();
+		exportLogs();
+		return;
+	}
+	// Ctrl/Cmd+R یا R تنها (وقتی داخل فیلدی تایپ نمی‌کنی) → رفرش
+	if ((e.key === 'r' && (e.ctrlKey || e.metaKey)) || (e.key === 'r' && !typingInField && !e.ctrlKey && !e.metaKey && !e.altKey)){
+		e.preventDefault();
+		state.view === 'dashboard' ? loadStats() : refreshLogs();
+		return;
+	}
+	// "?" → نمایش/بستن راهنمای کلیدهای میان‌بر
+	if (e.key === '?' && !typingInField){
+		e.preventDefault();
+		toggleShortcutsHelp();
 	}
 });
+
+function toggleFiltersPopover(force){
+	const pop = document.getElementById('filtersPopover');
+	const btn = document.getElementById('filtersToggleBtn');
+	const show = force !== undefined ? force : !pop.classList.contains('show');
+	pop.classList.toggle('show', show);
+	btn.classList.toggle('active', show);
+}
+document.addEventListener('click', (e) => {
+	const wrap = document.querySelector('.filterPopoverWrap');
+	if (!wrap) return;
+	if (!wrap.contains(e.target)){
+		toggleFiltersPopover(false);
+	}
+});
+
+function toggleShortcutsHelp(){
+	const el = document.getElementById('shortcutsOverlay');
+	if (!el) return;
+	el.classList.toggle('show');
+}
+
+// ============================================================================
+// تور آموزشی اولین‌بار — تا ادمین‌های جدید بدون خوندن راهنما، سریع یاد بگیرن
+// چه چیزی کجاست. فقط دفعه‌ی اول (به‌ازای هر بازیکن) خودکار نشون داده می‌شه؛
+// از داخل مودال کلیدهای میان‌بر هم همیشه قابل‌مشاهده‌ی دوباره‌ست.
+// ============================================================================
+const TOUR_DONE_KEY = 'uniqueLogPanel:onboarded';
+let tourSteps = [];
+let tourIndex = 0;
+
+function buildTourSteps(){
+	const steps = [
+		{ sel: '#categoryTabs', title: '🗂️ دسته‌بندی‌ها', text: 'از اینجا لاگ‌ها رو بر اساس نوع رویداد (مالی، سرقت، ورود به ماشین و...) فیلتر کن.' },
+		{ sel: '#searchBox', title: '🔍 جست‌وجوی سریع', text: 'اسم پلیر، استیم‌آیدی یا بخشی از پیام رو تایپ کن — همون لحظه فیلتر می‌شه. میان‌بر: / یا Ctrl+K' },
+		{ sel: '#filtersToggleBtn', title: '🎚 فیلترها', text: 'بازه‌ی تاریخ، مرتب‌سازی، تعداد در صفحه و «فقط پین‌شده‌ها» همه اینجان — برای شلوغ‌نشدن تولبار.' },
+	];
+	if (state.mode === 'admin' && document.getElementById('jobSection').offsetParent !== null){
+		steps.push({ sel: '#jobSection', title: '💼 فیلتر شغل', text: 'چون ادمینی، می‌تونی لاگ‌های هر شغل رو جدا از بقیه ببینی.' });
+	}
+	steps.push({ sel: '.viewBtn[data-view="dashboard"]', title: '📊 داشبورد', text: 'آمار کلی، نمودار روند ۱۴ روزه و فعال‌ترین پلیرها رو یه‌جا اینجا ببین.' });
+	if (state.canBulk){
+		steps.push({ sel: '#selectAllCol', title: '☑️ انتخاب گروهی', text: 'چندتا لاگ رو تیک بزن تا بتونی همه‌شون رو با هم پین یا حذف کنی، به‌جای تک‌تک.' });
+	}
+	steps.push({ sel: '#shortcutsBtn', title: '⌨️ کلیدهای میان‌بر', text: 'هر وقت خواستی این‌ها یا همین تور رو دوباره ببینی، همین دکمه یا کلید ؟ رو بزن.' });
+	return steps;
+}
+
+function startTour(force){
+	if (!force){
+		try{ if (localStorage.getItem(TOUR_DONE_KEY)) return; }catch(e){}
+	}
+	if (document.getElementById('detailOverlay').classList.contains('show')) return;
+	if (document.getElementById('confirmOverlay').classList.contains('show')) return;
+
+	tourSteps = buildTourSteps().filter(s => {
+		const el = document.querySelector(s.sel);
+		return el && el.offsetParent !== null;
+	});
+	tourIndex = 0;
+	if (!tourSteps.length) return;
+	showTourStep();
+}
+
+function showTourStep(){
+	clearTourHighlight();
+	const step = tourSteps[tourIndex];
+	if (!step){ endTour(); return; }
+	const target = document.querySelector(step.sel);
+	if (!target){ tourIndex++; showTourStep(); return; }
+
+	target.classList.add('tourHighlight');
+	if (target.scrollIntoView) target.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+
+	const tip = document.getElementById('tourTooltip');
+	tip.innerHTML = `
+		<h4>${step.title}</h4>
+		<p>${escapeHTML(step.text)}</p>
+		<div class="tourFooter">
+			<span class="tourProgress">${tourIndex + 1} از ${tourSteps.length}</span>
+			<div class="tourBtns">
+				<div class="toolBtn" onclick="endTour()">رد کن</div>
+				<div class="toolBtn primary" onclick="nextTourStep()">${tourIndex === tourSteps.length - 1 ? 'باشه، فهمیدم' : 'بعدی ←'}</div>
+			</div>
+		</div>`;
+	tip.style.display = 'block';
+
+	// موقعیت‌دهی نسبت به المنت هدف: ترجیحاً زیرش، اگه جا نبود بالاش
+	requestAnimationFrame(() => {
+		const rect = target.getBoundingClientRect();
+		const tipRect = tip.getBoundingClientRect();
+		const panelRect = document.getElementById('panel').getBoundingClientRect();
+
+		let top = rect.bottom + 12;
+		if (top + tipRect.height > panelRect.bottom){
+			top = rect.top - tipRect.height - 12;
+		}
+		if (top < panelRect.top + 8) top = panelRect.top + 8;
+
+		let left = rect.left;
+		if (left + tipRect.width > panelRect.right - 8) left = panelRect.right - tipRect.width - 8;
+		if (left < panelRect.left + 8) left = panelRect.left + 8;
+
+		tip.style.top = top + 'px';
+		tip.style.left = left + 'px';
+	});
+}
+
+function nextTourStep(){
+	tourIndex++;
+	if (tourIndex >= tourSteps.length){
+		endTour();
+		showToast('🎉 آماده‌ای! هر وقت خواستی، از ⌨️ دوباره می‌تونی این تور رو ببینی', 'ok');
+	} else {
+		showTourStep();
+	}
+}
+function clearTourHighlight(){
+	[...document.querySelectorAll('.tourHighlight')].forEach(el => el.classList.remove('tourHighlight'));
+}
+function endTour(){
+	clearTourHighlight();
+	const tip = document.getElementById('tourTooltip');
+	if (tip) tip.style.display = 'none';
+	try{ localStorage.setItem(TOUR_DONE_KEY, '1'); }catch(e){ /* مشکلی نیست */ }
+}
+function replayTour(){
+	toggleShortcutsHelp();
+	setTimeout(() => startTour(true), 200);
+}
 
 // ============================================================================
 // سوییچ بین «لاگ‌ها» و «داشبورد»
 // ============================================================================
 function switchView(view, silent){
 	state.view = view;
+	toggleFiltersPopover(false);
 	[...document.querySelectorAll('.viewBtn')].forEach(b => b.classList.toggle('active', b.dataset.view === view));
 	document.getElementById('main').querySelector('#toolbar').style.display = view === 'logs' ? 'flex' : 'none';
 	document.getElementById('tableWrap').style.display = view === 'logs' ? 'block' : 'none';
@@ -834,11 +1155,15 @@ async function loadMeta(){
 	state.canDelete = !!res.canDelete;
 	state.canPin = !!res.canPin;
 	state.perPageOptions = res.perPageOptions || state.perPageOptions;
-	state.perPage = res.defaultPerPage || state.perPage;
+	// اگه یه perPage معتبر از قبل ست شده (مثلاً از تنظیمات ذخیره‌شده‌ی کاربر)، همونو نگه
+	// می‌داریم؛ فقط وقتی نامعتبره میریم سراغ پیش‌فرض سرور.
+	if (!state.perPageOptions.includes(state.perPage)){
+		state.perPage = res.defaultPerPage || state.perPage;
+	}
 
 	document.getElementById('exportBtn').style.display = state.canExport ? 'flex' : 'none';
 	document.getElementById('actionsCol').style.display = (state.canDelete || state.canPin) ? 'table-cell' : 'none';
-	document.getElementById('pinnedToggleBtn').style.display = state.canPin ? 'flex' : 'none';
+	document.getElementById('pinnedToggleRow').style.display = state.canPin ? 'flex' : 'none';
 
 	const ppSel = document.getElementById('perPageSelect');
 	ppSel.innerHTML = state.perPageOptions.map(n => `<option value="${n}">${n} در صفحه</option>`).join('');
@@ -862,6 +1187,8 @@ function renderCategoryTabs(){
 			state.category = elm.dataset.value;
 			state.page = 1;
 			renderCategoryTabs();
+			renderActiveFilters();
+			savePrefs();
 			state.view === 'dashboard' ? loadStats() : refreshLogs();
 		});
 	});
@@ -906,6 +1233,8 @@ function renderJobTabs(){
 			state.jobFilter = elm.dataset.value;
 			state.page = 1;
 			renderJobTabs();
+			renderActiveFilters();
+			savePrefs();
 			state.view === 'dashboard' ? loadStats() : refreshLogs();
 		});
 	});
@@ -921,6 +1250,26 @@ function tabHTML(value, label, color, icon, active){
 // ============================================================================
 // فیلترهای مشترک (سرچ، دسته، شغل، بازه‌ی تاریخ، مرتب‌سازی، صفحه‌بندی)
 // ============================================================================
+// ============================================================================
+// بهینه‌سازی کارایی: COUNT(*) روی جدول‌های بزرگ گرونه، پس فقط وقتی خودِ فیلترها
+// (نه صفحه/مرتب‌سازی) عوض شده باشن، از سرور می‌خوایم دوباره بشمره. بین دفعاتی که
+// فقط صفحه عوض می‌شه، از همون total قبلی (که با همین فیلترها گرفتیم) استفاده می‌شه.
+// توجه: این محاسبه فقط داخل refreshLogs() انجام می‌شه (نه اینجا)، چون
+// currentFilters() از جاهای دیگه (داشبورد، خروجی CSV) هم صدا زده می‌شه و نباید
+// وضعیت شمارش رو اونجا هم دست‌کاری کنه.
+// ============================================================================
+function countableFilterSignature(){
+	return JSON.stringify({
+		category: state.category,
+		job: state.jobFilter,
+		search: state.search,
+		dateFrom: state.dateFrom,
+		dateTo: state.dateTo,
+		pinnedOnly: state.pinnedOnly,
+		identifierExact: state.identifierExact,
+	});
+}
+
 function currentFilters(){
 	return {
 		category: state.category,
@@ -950,11 +1299,22 @@ function renderSkeletonRows(n){
 }
 
 async function refreshLogs(){
+	clearSelection(true);
 	document.getElementById('emptyState').classList.remove('show');
 	document.getElementById('logTable').style.display = 'table';
 	document.getElementById('logTableBody').innerHTML = renderSkeletonRows(8);
 
-	const res = await post('fetchLogs', currentFilters());
+	// فقط وقتی خودِ فیلترها عوض شده (نه صرفاً صفحه/مرتب‌سازی)، از سرور COUNT(*) بخواه
+	const signature = countableFilterSignature();
+	const needCount = signature !== state.lastCountSignature;
+	if (needCount) state.lastCountSignature = signature;
+
+	// محافظ درخواست‌های قدیمی: اگه کاربر سریع فیلتر عوض کنه و چندتا درخواست هم‌زمان
+	// در حال رفت‌وآمد باشه، فقط جواب آخرین درخواست اعمال می‌شه (نه هر کدوم که دیرتر
+	// از سرور برگشت) — جلوی فلیکر/دیتای قدیمی رو موقع تعامل سریع می‌گیره.
+	const mySeq = ++state.requestSeq;
+	const res = await post('fetchLogs', { ...currentFilters(), needCount });
+	if (mySeq !== state.requestSeq) return;
 
 	if (res.error || !res.logs){
 		document.getElementById('logTable').style.display = 'none';
@@ -963,13 +1323,14 @@ async function refreshLogs(){
 		return;
 	}
 
-	state.total = res.total || 0;
+	if (res.total !== null && res.total !== undefined) state.total = res.total;
 	state.perPage = res.perPage || state.perPage;
 	state.canExport = !!res.canExport;
 	state.canDelete = !!res.canDelete;
 	state.canPin = !!res.canPin;
+	state.canBulk = state.canDelete || state.canPin;
 	document.getElementById('actionsCol').style.display = (state.canDelete || state.canPin) ? 'table-cell' : 'none';
-	document.getElementById('pinnedToggleBtn').style.display = state.canPin ? 'flex' : 'none';
+	document.getElementById('pinnedToggleRow').style.display = state.canPin ? 'flex' : 'none';
 
 	if (res.logs.length === 0){
 		document.getElementById('logTable').style.display = 'none';
@@ -998,13 +1359,17 @@ function highlightTerm(text){
 
 function renderTable(logs){
 	const body = document.getElementById('logTableBody');
+	document.getElementById('selectAllCol').style.display = state.canBulk ? 'table-cell' : 'none';
 	body.innerHTML = logs.map((row, idx) => {
 		const meta = getCatMeta(row.category);
 		const isPinned = tonumber1(row.pinned);
 		const avatarKey = row.identifier || row.player_name || 'unknown';
 		const avatarColor = hashColor(avatarKey);
 		const initial = (row.player_name || '?').trim().charAt(0).toUpperCase() || '?';
-		return `<tr class="logRow ${isPinned ? 'pinnedRow' : ''}" data-idx="${idx}" style="animation-delay:${Math.min(idx,10)*28}ms; --cat-color:${meta.color};">			<td class="timeCell">${formatTime(row.created_at)}</td>
+		const checked = state.selectedIds.has(row.id) ? 'checked' : '';
+		return `<tr class="logRow ${isPinned ? 'pinnedRow' : ''}" data-idx="${idx}" style="animation-delay:${Math.min(idx,10)*28}ms; --cat-color:${meta.color};">
+			${state.canBulk ? `<td><input type="checkbox" class="rowCheckbox" data-id="${row.id}" ${checked}></td>` : ''}
+			<td class="timeCell">${formatTime(row.created_at)}</td>
 			<td><span class="catBadge" style="background:${meta.color}22; color:${meta.color};">${isPinned ? '<span class="pinFlag">📌</span>' : ''}${meta.icon} ${escapeHTML(meta.label)}</span></td>
 			<td class="jobCell">${escapeHTML(row.job || '—')}</td>
 			<td class="playerCell">
@@ -1025,8 +1390,17 @@ function renderTable(logs){
 	window._currentLogs = logs;
 	[...body.querySelectorAll('.logRow')].forEach(tr => {
 		tr.addEventListener('click', (e) => {
-			if (e.target.closest('.rowDeleteBtn') || e.target.closest('.rowPinBtn') || e.target.closest('.rowCoordBtn') || e.target.closest('.playerNameWrap')) return;
+			if (e.target.closest('.rowDeleteBtn') || e.target.closest('.rowPinBtn') || e.target.closest('.rowCoordBtn') || e.target.closest('.playerNameWrap') || e.target.closest('.rowCheckbox')) return;
 			openDetail(window._currentLogs[+tr.dataset.idx]);
+		});
+	});
+	[...body.querySelectorAll('.rowCheckbox')].forEach(cb => {
+		cb.addEventListener('click', (e) => e.stopPropagation());
+		cb.addEventListener('change', (e) => {
+			const id = +cb.dataset.id;
+			if (cb.checked) state.selectedIds.add(id); else state.selectedIds.delete(id);
+			updateSelectAllCheckboxState();
+			updateBulkBar();
 		});
 	});
 	[...body.querySelectorAll('.rowCoordBtn')].forEach(btn => {
@@ -1039,6 +1413,8 @@ function renderTable(logs){
 		btn.addEventListener('click', (e) => {
 			e.stopPropagation();
 			state.pendingDeleteId = +btn.dataset.id;
+			state.pendingBulkIds = null;
+			document.getElementById('confirmMessage').textContent = 'مطمئنی می‌خوای این لاگ رو برای همیشه حذف کنی؟ این کار قابل‌بازگشت نیست (ولی خودِ حذف هم لاگ می‌شه).';
 			document.getElementById('confirmOverlay').classList.add('show');
 		});
 	});
@@ -1090,15 +1466,83 @@ function clearPlayerFilter(){
 	renderActiveFilters();
 	state.view === 'dashboard' ? loadStats() : refreshLogs();
 }
+function clearCategoryFilter(){
+	state.category = 'all';
+	state.page = 1;
+	renderCategoryTabs();
+	renderActiveFilters();
+	state.view === 'dashboard' ? loadStats() : refreshLogs();
+}
+function clearJobFilter(){
+	state.jobFilter = 'all';
+	state.page = 1;
+	renderJobTabs();
+	renderActiveFilters();
+	state.view === 'dashboard' ? loadStats() : refreshLogs();
+}
+function clearDateFilter(){
+	state.dateFrom = '';
+	state.dateTo = '';
+	state.quickRange = 'all';
+	document.getElementById('dateFrom').value = '';
+	document.getElementById('dateTo').value = '';
+	[...document.querySelectorAll('#quickChips .chip')].forEach(c => c.classList.toggle('active', c.dataset.range === 'all'));
+	state.page = 1;
+	renderActiveFilters();
+	state.view === 'dashboard' ? loadStats() : refreshLogs();
+}
+function clearSearchFilter(){
+	state.search = '';
+	document.getElementById('searchInput').value = '';
+	state.page = 1;
+	renderActiveFilters();
+	state.view === 'dashboard' ? loadStats() : refreshLogs();
+}
+function clearPinnedOnlyFilter(){
+	state.pinnedOnly = false;
+	document.getElementById('pinnedOnlyCheckbox').checked = false;
+	state.page = 1;
+	renderActiveFilters();
+	state.view === 'dashboard' ? loadStats() : refreshLogs();
+}
 function renderActiveFilters(){
 	const el = document.getElementById('activeFilters');
+	const chips = [];
+
+	if (state.category !== 'all'){
+		const meta = getCatMeta(state.category);
+		chips.push({ icon: meta.icon, label: `دسته: ${meta.label}`, clear: 'clearCategoryFilter()' });
+	}
+	if (state.mode === 'admin' && state.jobFilter !== 'all'){
+		const jobObj = (state.jobs || []).find(j => j.job === state.jobFilter);
+		chips.push({ icon: '💼', label: `شغل: ${jobObj ? jobObj.label : state.jobFilter}`, clear: 'clearJobFilter()' });
+	}
+	if (state.dateFrom || state.dateTo){
+		let label;
+		if (state.dateFrom && state.dateTo) label = `${state.dateFrom} تا ${state.dateTo}`;
+		else if (state.dateFrom) label = `از ${state.dateFrom}`;
+		else label = `تا ${state.dateTo}`;
+		chips.push({ icon: '📅', label, clear: 'clearDateFilter()' });
+	}
+	if (state.search){
+		chips.push({ icon: '🔍', label: `جست‌وجو: ${state.search}`, clear: 'clearSearchFilter()' });
+	}
+	if (state.pinnedOnly){
+		chips.push({ icon: '📌', label: 'فقط پین‌شده‌ها', clear: 'clearPinnedOnlyFilter()' });
+	}
 	if (state.identifierExact){
-		el.style.display = 'block';
-		el.innerHTML = `<span class="activeFilterChip" onclick="clearPlayerFilter()">👤 فیلتر روی: ${escapeHTML(state.identifierLabel)} <b>✕</b></span>`;
-	} else {
+		chips.push({ icon: '👤', label: `پلیر: ${state.identifierLabel}`, clear: 'clearPlayerFilter()' });
+	}
+
+	if (!chips.length){
 		el.style.display = 'none';
 		el.innerHTML = '';
+		return;
 	}
+	el.style.display = 'flex';
+	el.innerHTML = chips.map(c =>
+		`<span class="activeFilterChip" onclick="${c.clear}">${c.icon} ${escapeHTML(c.label)} <b>✕</b></span>`
+	).join('');
 }
 
 // ============================================================================
@@ -1108,16 +1552,84 @@ async function togglePin(id){
 	const res = await post('togglePin', { id });
 	if (res && res.success){
 		showToast(res.pinned ? 'لاگ پین شد' : 'پین برداشته شد', 'ok');
+		// لاگ‌های پین‌شده همیشه بالای لیست میرن؛ اگه تو صفحه‌ی ۲ به بعد بودی و پین کردی،
+		// می‌بریمت صفحه‌ی اول تا نتیجه رو همون لحظه ببینی (وگرنه انگار آیتم گم شده).
+		if (res.pinned) state.page = 1;
 		state.view === 'dashboard' ? loadStats() : refreshLogs();
 	} else {
 		showToast('عملیات پین ناموفق بود', 'err');
 	}
 }
-function togglePinnedOnly(){
-	state.pinnedOnly = !state.pinnedOnly;
-	document.getElementById('pinnedToggleBtn').classList.toggle('active', state.pinnedOnly);
+function togglePinnedOnly(checked){
+	state.pinnedOnly = !!checked;
 	state.page = 1;
+	renderActiveFilters();
+	savePrefs();
 	state.view === 'dashboard' ? loadStats() : refreshLogs();
+}
+
+// ============================================================================
+// انتخاب گروهی (چک‌باکس) و اکشن‌های دسته‌جمعی روی چند لاگ با هم
+// ============================================================================
+function clearSelection(silent){
+	state.selectedIds.clear();
+	state.pendingBulkIds = null;
+	[...document.querySelectorAll('.rowCheckbox')].forEach(cb => cb.checked = false);
+	if (!silent) updateSelectAllCheckboxState();
+	document.getElementById('bulkBar').classList.remove('show');
+}
+function updateSelectAllCheckboxState(){
+	const boxes = [...document.querySelectorAll('.rowCheckbox')];
+	const master = document.getElementById('selectAllCheckbox');
+	if (!boxes.length){ master.checked = false; master.indeterminate = false; return; }
+	const checkedCount = boxes.filter(b => b.checked).length;
+	master.checked = checkedCount === boxes.length;
+	master.indeterminate = checkedCount > 0 && checkedCount < boxes.length;
+}
+function updateBulkBar(){
+	const bar = document.getElementById('bulkBar');
+	const n = state.selectedIds.size;
+	if (n === 0){ bar.classList.remove('show'); return; }
+	bar.classList.add('show');
+	document.getElementById('bulkCount').textContent = `${n} ردیف انتخاب شده`;
+	document.getElementById('bulkPinBtn').style.display = state.canPin ? 'flex' : 'none';
+	document.getElementById('bulkUnpinBtn').style.display = state.canPin ? 'flex' : 'none';
+	document.getElementById('bulkDeleteBtn').style.display = state.canDelete ? 'flex' : 'none';
+}
+document.getElementById('pinnedOnlyCheckbox').addEventListener('change', (e) => {
+	togglePinnedOnly(e.target.checked);
+});
+document.getElementById('selectAllCheckbox').addEventListener('change', (e) => {
+	const boxes = [...document.querySelectorAll('.rowCheckbox')];
+	boxes.forEach(cb => {
+		cb.checked = e.target.checked;
+		const id = +cb.dataset.id;
+		if (e.target.checked) state.selectedIds.add(id); else state.selectedIds.delete(id);
+	});
+	updateBulkBar();
+});
+async function bulkPinSelected(){
+	if (!state.selectedIds.size) return;
+	const res = await post('bulkPin', { ids: [...state.selectedIds], pinned: true });
+	if (res && res.success){
+		showToast(`${res.count} لاگ پین شد`, 'ok');
+		state.page = 1;
+		clearSelection();
+		refreshLogs();
+	} else {
+		showToast('پین گروهی ناموفق بود', 'err');
+	}
+}
+async function bulkUnpinSelected(){
+	if (!state.selectedIds.size) return;
+	const res = await post('bulkPin', { ids: [...state.selectedIds], pinned: false });
+	if (res && res.success){
+		showToast(`${res.count} لاگ آن‌پین شد`, 'ok');
+		clearSelection();
+		refreshLogs();
+	} else {
+		showToast('آن‌پین گروهی ناموفق بود', 'err');
+	}
 }
 
 function changePage(delta){
@@ -1169,14 +1681,45 @@ document.getElementById('sortSelect').addEventListener('change', (e) => {
 	state.sortDir = dir;
 	updateSortHeaderUI();
 	state.page = 1;
+	savePrefs();
 	refreshLogs();
 });
 
 document.getElementById('perPageSelect').addEventListener('change', (e) => {
 	state.perPage = parseInt(e.target.value, 10) || 50;
 	state.page = 1;
+	savePrefs();
 	refreshLogs();
 });
+
+// ============================================================================
+// حفظ تنظیمات کاربر (تعداد در صفحه، مرتب‌سازی) بین سشن‌ها با localStorage.
+// این فایل رو خودِ سرور روی دامنه‌ی nui:// خودش اجرا می‌کنه (نه sandbox آرتیفکت)،
+// پس localStorage اینجا کاملاً امن و پایداره.
+// ============================================================================
+const PREFS_KEY = 'uniqueLogPanel:prefs';
+function savePrefs(){
+	try{
+		localStorage.setItem(PREFS_KEY, JSON.stringify({
+			perPage: state.perPage,
+			sortBy: state.sortBy,
+			sortDir: state.sortDir,
+			category: state.category,
+			jobFilter: state.jobFilter,
+			dateFrom: state.dateFrom,
+			dateTo: state.dateTo,
+			quickRange: state.quickRange,
+			pinnedOnly: state.pinnedOnly,
+		}));
+	}catch(e){ /* localStorage در دسترس نبود، مشکلی نیست */ }
+}
+function loadPrefs(){
+	try{
+		const raw = localStorage.getItem(PREFS_KEY);
+		if (!raw) return null;
+		return JSON.parse(raw);
+	}catch(e){ return null; }
+}
 
 // ============================================================================
 // فیلتر بازه‌ی تاریخ (چیپ‌های سریع + انتخاب دستی)
@@ -1201,6 +1744,8 @@ document.querySelectorAll('#quickChips .chip').forEach(chip => {
 		document.getElementById('dateFrom').value = state.dateFrom;
 		document.getElementById('dateTo').value = state.dateTo;
 		state.page = 1;
+		renderActiveFilters();
+		savePrefs();
 		state.view === 'dashboard' ? loadStats() : refreshLogs();
 	});
 });
@@ -1208,8 +1753,11 @@ document.querySelectorAll('#quickChips .chip').forEach(chip => {
 ['dateFrom','dateTo'].forEach(id => {
 	document.getElementById(id).addEventListener('change', (e) => {
 		state[id] = e.target.value;
+		state.quickRange = 'custom';
 		[...document.querySelectorAll('#quickChips .chip')].forEach(c => c.classList.remove('active'));
 		state.page = 1;
+		renderActiveFilters();
+		savePrefs();
 		state.view === 'dashboard' ? loadStats() : refreshLogs();
 	});
 });
@@ -1280,13 +1828,36 @@ async function togglePinFromDetail(){
 function confirmDeleteCurrent(){
 	if (!currentDetailRow) return;
 	state.pendingDeleteId = currentDetailRow.id;
+	state.pendingBulkIds = null;
+	document.getElementById('confirmMessage').textContent = 'مطمئنی می‌خوای این لاگ رو برای همیشه حذف کنی؟ این کار قابل‌بازگشت نیست (ولی خودِ حذف هم لاگ می‌شه).';
+	document.getElementById('confirmOverlay').classList.add('show');
+}
+function confirmBulkDelete(){
+	if (!state.selectedIds || state.selectedIds.size === 0) return;
+	state.pendingDeleteId = null;
+	state.pendingBulkIds = [...state.selectedIds];
+	document.getElementById('confirmMessage').textContent = `مطمئنی می‌خوای این ${state.pendingBulkIds.length} لاگ رو برای همیشه حذف کنی؟ این کار قابل‌بازگشت نیست (ولی خودِ حذف هم لاگ می‌شه).`;
 	document.getElementById('confirmOverlay').classList.add('show');
 }
 function closeConfirm(){
 	state.pendingDeleteId = null;
+	state.pendingBulkIds = null;
 	document.getElementById('confirmOverlay').classList.remove('show');
 }
 async function doDeleteConfirmed(){
+	if (state.pendingBulkIds && state.pendingBulkIds.length){
+		const ids = state.pendingBulkIds;
+		const res = await post('bulkDelete', { ids });
+		closeConfirm();
+		if (res && res.success){
+			showToast(`${res.count} لاگ حذف شد`, 'ok');
+			clearSelection();
+			refreshLogs();
+		} else {
+			showToast('حذف گروهی انجام نشد (دسترسی یا خطا)', 'err');
+		}
+		return;
+	}
 	if (!state.pendingDeleteId) { closeConfirm(); return; }
 	const res = await post('deleteLog', { id: state.pendingDeleteId });
 	closeConfirm();
@@ -1327,7 +1898,9 @@ async function exportLogs(){
 // داشبورد (آمار)
 // ============================================================================
 async function loadStats(){
+	const mySeq = ++state.statsSeq;
 	const res = await post('fetchStats', currentFilters());
+	if (mySeq !== state.statsSeq) return;
 	if (res.error) return;
 	animateCount('statTotal', res.total || 0);
 	animateCount('statToday', res.today || 0);
@@ -1354,6 +1927,26 @@ async function loadStats(){
 			</div>`;
 		}).join('') || '<div style="color:var(--text-dim); font-size:12px;">داده‌ای نیست</div>';
 	}
+
+	const maxPlayer = Math.max(1, ...(res.topPlayers || []).map(r => r.cnt));
+	document.getElementById('statPlayersList').innerHTML = (res.topPlayers || []).map(r => {
+		const pct = Math.round((r.cnt / maxPlayer) * 100);
+		const color = hashColor(r.identifier || r.player_name || 'unknown');
+		return `<div class="barRow playerBarRow" data-identifier="${escapeAttr(r.identifier || '')}" data-name="${escapeAttr(r.player_name || '')}">
+			<div class="barLbl"><span class="avatar" style="background:${color}; width:16px; height:16px; font-size:8px; margin-inline-end:5px;">${escapeHTML((r.player_name || '?').charAt(0).toUpperCase())}</span>${escapeHTML(r.player_name || '—')}</div>
+			<div class="barTrack"><div class="barFill" style="width:${pct}%; background:${color};"></div></div>
+			<div class="barCnt">${r.cnt}</div>
+		</div>`;
+	}).join('') || '<div style="color:var(--text-dim); font-size:12px;">داده‌ای نیست</div>';
+	[...document.querySelectorAll('.playerBarRow')].forEach(el => {
+		el.style.cursor = 'pointer';
+		el.title = 'فقط لاگ‌های این پلیر';
+		el.addEventListener('click', () => {
+			if (!el.dataset.identifier) return;
+			switchView('logs');
+			filterByPlayer({ identifier: el.dataset.identifier, player_name: el.dataset.name });
+		});
+	});
 
 	renderTrendChart(res.dailyActivity || []);
 }
@@ -1421,9 +2014,13 @@ function renderTrendChart(dailyRows){
 document.getElementById('searchInput').addEventListener('input', (e) => {
 	clearTimeout(state.searchDebounce);
 	const val = e.target.value;
+	// یه کاراکتر تنها روی جدول‌های بزرگ خیلی گرونه (اسکن تقریباً کل جدول) و عملاً هم
+	// نتیجه‌ی مفیدی نمی‌ده؛ صبر می‌کنیم حداقل ۲ کاراکتر بشه (یا کامل خالی بشه، یعنی پاک‌کردن).
+	if (val.length === 1) return;
 	state.searchDebounce = setTimeout(() => {
 		state.search = val;
 		state.page = 1;
+		renderActiveFilters();
 		state.view === 'dashboard' ? loadStats() : refreshLogs();
 	}, 350);
 });

@@ -726,45 +726,159 @@ local function ShowUniformHistoryMenu(job)
 	ESX.TriggerServerCallback('esx_jobs:getUniformHistory', function(data)
 		if not data then return end
 
-		local options = {}
+		local jobLabel = Config.JobLabels[job] or job
+		local genderMeta = {
+			male   = {label = 'Male',   icon = 'fas fa-mars'},
+			female = {label = 'Female', icon = 'fas fa-venus'}
+		}
+
+		-- register one submenu per history entry (its actions)
 		for _, gender in ipairs({'male', 'female'}) do
 			local g = data[gender]
+			for i=1, #g.history, 1 do
+				local entry = g.history[i]
+				local isActive = (entry.id == g.active_id)
+				local entryOptions = {}
+
+				table.insert(entryOptions, {
+					title = 'Preview on me',
+					description = 'Temporarily wear this outfit yourself -- not saved, not shown to anyone else',
+					icon = 'fas fa-eye',
+					iconColor = '#60a5fa',
+					onSelect = function()
+						TriggerEvent('skinchanger:getSkin', function(skin)
+							TriggerEvent('skinchanger:loadClothes', skin, entry.clothes)
+							ESX.ShowNotification('~b~Previewing "' .. entry.label .. '" -- reopen your real cloakroom to put your normal clothes back.')
+						end)
+					end
+				})
+
+				if not isActive then
+					table.insert(entryOptions, {
+						title = 'Set as active',
+						description = 'Everyone picking "job wear" for ' .. jobLabel .. ' gets this from now on',
+						icon = 'fas fa-check',
+						iconColor = '#4ade80',
+						onSelect = function()
+							TriggerServerEvent('esx_jobs:adminApplyUniformHistory', job, gender, entry.id)
+						end
+					})
+				end
+
+				table.insert(entryOptions, {
+					title = 'Rename',
+					icon = 'fas fa-pen',
+					iconColor = '#facc15',
+					onSelect = function()
+						local input = lib.inputDialog('Rename version', {
+							{type = 'input', label = 'New name', required = true, default = entry.label}
+						})
+						if not input or not input[1] then return end
+						TriggerServerEvent('esx_jobs:adminRenameUniformHistory', job, gender, entry.id, input[1])
+					end
+				})
+
+				table.insert(entryOptions, {
+					title = 'Delete this version',
+					icon = 'fas fa-trash',
+					iconColor = '#f87171',
+					onSelect = function()
+						local confirmed = lib.alertDialog({
+							header = 'Delete "' .. entry.label .. '"?',
+							content = 'This can\'t be undone.' .. (isActive and ' It\'s currently the **active** uniform -- the most recent remaining version will take over.' or ''),
+							centered = true,
+							cancel = true,
+							labels = {cancel = 'Cancel', confirm = 'Delete'}
+						})
+						if confirmed == 'confirm' then
+							TriggerServerEvent('esx_jobs:adminDeleteUniformHistory', job, gender, entry.id)
+						end
+					end
+				})
+
+				lib.registerContext({
+					id = 'esx_jobs_uniform_entry_' .. job .. '_' .. gender .. '_' .. entry.id,
+					title = entry.label,
+					menu = 'esx_jobs_uniform_gender_' .. job .. '_' .. gender,
+					options = entryOptions
+				})
+			end
+		end
+
+		-- register the two gender submenus (the actual version list)
+		for _, gender in ipairs({'male', 'female'}) do
+			local g = data[gender]
+			local genderOptions = {}
+
+			if g.previous_active_id then
+				local prevEntry = nil
+				for i=1, #g.history, 1 do
+					if g.history[i].id == g.previous_active_id then prevEntry = g.history[i] break end
+				end
+				table.insert(genderOptions, {
+					title = 'Undo (revert to previous)',
+					description = prevEntry and ('Back to "' .. prevEntry.label .. '"') or 'That version was deleted',
+					icon = 'fas fa-rotate-left',
+					iconColor = '#38bdf8',
+					onSelect = function()
+						TriggerServerEvent('esx_jobs:adminUndoUniform', job, gender)
+					end
+				})
+			end
+
 			if #g.history == 0 then
-				table.insert(options, {
-					title = ('%s -- no saved versions yet'):format(gender),
+				table.insert(genderOptions, {
+					title = 'No saved versions yet',
 					disabled = true
 				})
 			else
 				for i=1, #g.history, 1 do
 					local entry = g.history[i]
 					local isActive = (entry.id == g.active_id)
-					table.insert(options, {
-						title = ('[%s] %s%s'):format(gender, entry.label, isActive and ' -- ACTIVE' or ''),
+					table.insert(genderOptions, {
+						title = entry.label,
 						description = ('Saved %s'):format(entry.savedAt or '?'),
 						icon = isActive and 'fas fa-star' or 'fas fa-shirt',
-						disabled = isActive, -- already active, nothing to "apply"
-						onSelect = function()
-							TriggerServerEvent('esx_jobs:adminApplyUniformHistory', job, gender, entry.id)
-						end
-					})
-					table.insert(options, {
-						title = ('Delete "%s" [%s]'):format(entry.label, gender),
-						icon = 'fas fa-trash',
-						iconColor = '#ff4444',
-						onSelect = function()
-							TriggerServerEvent('esx_jobs:adminDeleteUniformHistory', job, gender, entry.id)
-						end
+						iconColor = isActive and '#facc15' or nil,
+						metadata = {
+							{label = 'Status', value = isActive and 'Active' or 'Inactive'}
+						},
+						arrow = true,
+						menu = 'esx_jobs_uniform_entry_' .. job .. '_' .. gender .. '_' .. entry.id
 					})
 				end
 			end
+
+			lib.registerContext({
+				id = 'esx_jobs_uniform_gender_' .. job .. '_' .. gender,
+				title = jobLabel .. ' -- ' .. genderMeta[gender].label,
+				menu = 'esx_jobs_uniform_history_' .. job,
+				options = genderOptions
+			})
 		end
 
+		-- top-level menu: pick a gender
 		lib.registerContext({
-			id = 'esx_jobs_uniform_history',
-			title = (Config.JobLabels[job] or job) .. ' uniform history',
-			options = options
+			id = 'esx_jobs_uniform_history_' .. job,
+			title = jobLabel .. ' uniform history',
+			options = {
+				{
+					title = genderMeta.male.label,
+					icon = genderMeta.male.icon,
+					description = #data.male.history .. ' saved version(s)',
+					arrow = true,
+					menu = 'esx_jobs_uniform_gender_' .. job .. '_male'
+				},
+				{
+					title = genderMeta.female.label,
+					icon = genderMeta.female.icon,
+					description = #data.female.history .. ' saved version(s)',
+					arrow = true,
+					menu = 'esx_jobs_uniform_gender_' .. job .. '_female'
+				}
+			}
 		})
-		lib.showContext('esx_jobs_uniform_history')
+		lib.showContext('esx_jobs_uniform_history_' .. job)
 	end, job)
 end
 
@@ -772,14 +886,14 @@ end
 -- at any distance/background -- doesn't rely on minerjob.lua's DrawTexet3D,
 -- which calls DrawTexet/DrawRecet, two functions that don't exist anywhere
 -- in this server's pack and would just error if it were ever actually used).
-local function Draw3DText(x, y, z, text)
+local function Draw3DText(x, y, z, text, r, g, b)
 	local onScreen, sx, sy = World3dToScreen2d(x, y, z)
 	if not onScreen then return end
 
 	SetTextScale(0.35, 0.35)
 	SetTextFont(4)
 	SetTextProportional(1)
-	SetTextColour(255, 255, 255, 255)
+	SetTextColour(r or 255, g or 255, b or 255, 255)
 	SetTextDropshadow(0, 0, 0, 0, 255)
 	SetTextEdge(2, 0, 0, 0, 200)
 	SetTextOutline()
@@ -788,6 +902,14 @@ local function Draw3DText(x, y, z, text)
 	AddTextComponentString(text)
 	DrawText(sx, sy)
 end
+
+local JobLabelColors = {
+	fueler      = {255, 196, 0},   -- amber
+	lumberjack  = {96, 189, 104},  -- green
+	slaughterer = {230, 80, 80},   -- red
+	tailor      = {160, 130, 255}, -- purple
+	miner       = {90, 200, 230}   -- cyan
+}
 
 local uniformEditorLabels = {}
 
@@ -798,13 +920,23 @@ Citizen.CreateThread(function()
 		for i=1, #uniformEditorLabels, 1 do
 			local pad = uniformEditorLabels[i]
 			if #(coords - vector3(pad.x, pad.y, pad.z)) < 15.0 then
-				Draw3DText(pad.x, pad.y, pad.z + 2.2, pad.text)
+				Draw3DText(pad.x, pad.y, pad.z + 2.2, pad.text, pad.r, pad.g, pad.b)
 			end
 		end
 	end
 end)
 
-local function SpawnUniformEditorPed(job, jobData)
+local JobIcons = {
+	fueler      = 'fas fa-gas-pump',
+	lumberjack  = 'fas fa-tree',
+	slaughterer = 'fas fa-drumstick-bite',
+	tailor      = 'fas fa-scissors',
+	miner       = 'fas fa-gem'
+}
+
+local uniformEditorPadDefs = {}
+
+local function RegisterUniformEditorPad(job, jobData)
 	local cloak = jobData.Zones and jobData.Zones.CloakRoom
 	if not cloak then return end
 
@@ -813,103 +945,138 @@ local function SpawnUniformEditorPed(job, jobData)
 		and {x = override.x, y = override.y, z = override.z}
 		or {x = cloak.Pos.x + 1.0, y = cloak.Pos.y, z = cloak.Pos.z - 1.0}
 	local padHeading = (override and override.heading) or 0.0
-	local model = GetHashKey('a_m_y_business_01')
 
-	Citizen.CreateThread(function()
-		RequestModel(model)
-		local timeout = 0
-		while not HasModelLoaded(model) and timeout < 500 do
-			Citizen.Wait(10)
-			timeout = timeout + 1
-		end
-		if not HasModelLoaded(model) then return end
+	table.insert(uniformEditorPadDefs, {
+		job = job,
+		pos = padPos,
+		heading = padHeading,
+		ped = nil,
+		labelIndex = nil
+	})
+end
 
-		-- snap to actual ground level -- a manually-reported or guessed Z
-		-- can easily end up slightly off and leave the ped floating/sunken.
-		-- Request collision first, otherwise GetGroundZFor_3dCoord can just
-		-- silently fail if this spot isn't streamed in yet.
-		RequestCollisionAtCoord(padPos.x, padPos.y, padPos.z)
-		local groundTimeout = 0
-		local foundGround, groundZ = false, padPos.z
-		while not foundGround and groundTimeout < 50 do
-			foundGround, groundZ = GetGroundZFor_3dCoord(padPos.x, padPos.y, padPos.z + 5.0, false)
-			if not foundGround then
-				Citizen.Wait(10)
-				groundTimeout = groundTimeout + 1
-			end
-		end
-		if foundGround then
-			padPos.z = groundZ
-		end
-
-		local ped = CreatePed(4, model, padPos.x, padPos.y, padPos.z, padHeading, false, false)
-		SetEntityInvincible(ped, true)
-		SetBlockingOfNonTemporaryEvents(ped, true)
-		FreezeEntityPosition(ped, true)
-		SetEntityAsMissionEntity(ped, true, true)
-		-- no scenario task: WORLD_HUMAN_CLIPBOARD can visually sink/sit
-		-- depending on nearby world geometry it tries to anchor to. Plain
-		-- idle stand has no such risk.
-		SetModelAsNoLongerNeeded(model)
-
-		table.insert(uniformEditorLabels, {
-			x = padPos.x, y = padPos.y, z = padPos.z,
-			text = 'Job: ' .. (Config.JobLabels[job] or job)
-		})
-
-		exports.ox_target:addLocalEntity(ped, {
-			{
-				label = 'Save new ' .. (Config.JobLabels[job] or job) .. ' uniform (admin)',
-				icon = 'fas fa-tshirt',
-				onSelect = function()
-					ESX.TriggerServerCallback('esx_jobs:isUniformAdmin', function(isAdmin)
-						if not isAdmin then
-							ESX.ShowNotification('~r~You don\'t have access to this.')
-							return
-						end
-						TriggerEvent('esx_skin:openMenu', function(_, menu)
-							menu.close()
-							TriggerEvent('skinchanger:getSkin', function(skin)
-								local input = lib.inputDialog(('Save %s uniform'):format(Config.JobLabels[job] or job), {
-									{type = 'input', label = 'Name for this version', required = true, default = 'Version'}
-								})
-								if not input or not input[1] then return end
-								TriggerServerEvent('esx_jobs:adminSaveUniform', job, skin, input[1])
-							end)
+local function BuildUniformEditorOptions(job)
+	return {
+		{
+			label = 'Save new ' .. (Config.JobLabels[job] or job) .. ' uniform (admin)',
+			icon = JobIcons[job] or 'fas fa-tshirt',
+			onSelect = function()
+				ESX.TriggerServerCallback('esx_jobs:isUniformAdmin', function(isAdmin)
+					if not isAdmin then
+						ESX.ShowNotification('~r~You don\'t have access to this.')
+						return
+					end
+					TriggerEvent('esx_skin:openMenu', function(_, menu)
+						menu.close()
+						TriggerEvent('skinchanger:getSkin', function(skin)
+							local input = lib.inputDialog(('Save %s uniform'):format(Config.JobLabels[job] or job), {
+								{type = 'input', label = 'Name for this version', required = true, default = 'Version'}
+							})
+							if not input or not input[1] then return end
+							TriggerServerEvent('esx_jobs:adminSaveUniform', job, skin, input[1])
 						end)
 					end)
-				end
-			},
-			{
-				label = 'Manage ' .. (Config.JobLabels[job] or job) .. ' uniform history (admin)',
-				icon = 'fas fa-clock-rotate-left',
-				onSelect = function()
-					ESX.TriggerServerCallback('esx_jobs:isUniformAdmin', function(isAdmin)
-						if not isAdmin then
-							ESX.ShowNotification('~r~You don\'t have access to this.')
-							return
-						end
-						ShowUniformHistoryMenu(job)
-					end)
-				end
-			}
+				end)
+			end
+		},
+		{
+			label = 'Manage ' .. (Config.JobLabels[job] or job) .. ' uniform history (admin)',
+			icon = 'fas fa-clock-rotate-left',
+			onSelect = function()
+				ESX.TriggerServerCallback('esx_jobs:isUniformAdmin', function(isAdmin)
+					if not isAdmin then
+						ESX.ShowNotification('~r~You don\'t have access to this.')
+						return
+					end
+					ShowUniformHistoryMenu(job)
+				end)
+			end
+		}
+	}
+end
+
+local function SpawnUniformEditorPed(padDef)
+	if padDef.ped and DoesEntityExist(padDef.ped) then return end
+
+	-- player is already standing right here, so collision for this spot is
+	-- guaranteed to be streamed in -- this is what floating pads actually
+	-- came from: spawning (and ground-snapping) at resource start, often
+	-- nowhere near any player, so GetGroundZFor_3dCoord silently failed and
+	-- fell back to an ungrounded Z
+	local foundGround, groundZ = GetGroundZFor_3dCoord(padDef.pos.x, padDef.pos.y, padDef.pos.z + 5.0, false)
+	local spawnZ = foundGround and groundZ or padDef.pos.z
+
+	local model = GetHashKey('a_m_y_business_01')
+	RequestModel(model)
+	local timeout = 0
+	while not HasModelLoaded(model) and timeout < 200 do
+		Citizen.Wait(10)
+		timeout = timeout + 1
+	end
+	if not HasModelLoaded(model) then return end
+
+	local ped = CreatePed(4, model, padDef.pos.x, padDef.pos.y, spawnZ, padDef.heading, false, false)
+	SetEntityInvincible(ped, true)
+	SetBlockingOfNonTemporaryEvents(ped, true)
+	FreezeEntityPosition(ped, true)
+	SetEntityAsMissionEntity(ped, true, true)
+	SetModelAsNoLongerNeeded(model)
+
+	padDef.ped = ped
+	padDef.pos.z = spawnZ -- keep the label in sync with the actual grounded height
+
+	local color = JobLabelColors[padDef.job] or {255, 255, 255}
+	if not padDef.labelIndex then
+		table.insert(uniformEditorLabels, {
+			x = padDef.pos.x, y = padDef.pos.y, z = padDef.pos.z,
+			text = 'Job: ' .. (Config.JobLabels[padDef.job] or padDef.job),
+			r = color[1], g = color[2], b = color[3]
 		})
-	end)
+		padDef.labelIndex = #uniformEditorLabels
+	else
+		uniformEditorLabels[padDef.labelIndex].z = padDef.pos.z
+	end
+
+	exports.ox_target:addLocalEntity(ped, BuildUniformEditorOptions(padDef.job))
+end
+
+local function DespawnUniformEditorPed(padDef)
+	if not padDef.ped or not DoesEntityExist(padDef.ped) then
+		padDef.ped = nil
+		return
+	end
+	exports.ox_target:removeLocalEntity(padDef.ped)
+	DeleteEntity(padDef.ped)
+	padDef.ped = nil
 end
 
 Citizen.CreateThread(function()
 	for job, jobData in pairs(Config.Jobs) do
-		SpawnUniformEditorPed(job, jobData)
+		RegisterUniformEditorPad(job, jobData)
 	end
 
 	-- miner isn't part of Config.Jobs (it's a standalone system, not the
 	-- Zone-based cloakroom setup), but it has its own locker room at
-	-- Config.Miner.ClackLoc -- reuse the same pad function there too
-	SpawnUniformEditorPed('miner', {
+	-- Config.Miner.ClackLoc -- reuse the same pad system there too
+	RegisterUniformEditorPad('miner', {
 		Zones = {
 			CloakRoom = {
 				Pos = {x = Config.Miner.ClackLoc.x, y = Config.Miner.ClackLoc.y, z = Config.Miner.ClackLoc.z}
 			}
 		}
 	})
+
+	while true do
+		Citizen.Wait(1000)
+		local coords = GetEntityCoords(PlayerPedId())
+		for i=1, #uniformEditorPadDefs, 1 do
+			local padDef = uniformEditorPadDefs[i]
+			local dist = #(coords - vector3(padDef.pos.x, padDef.pos.y, padDef.pos.z))
+			if dist < 40.0 then
+				SpawnUniformEditorPed(padDef)
+			elseif dist > 60.0 then
+				DespawnUniformEditorPed(padDef)
+			end
+		end
+	end
 end)

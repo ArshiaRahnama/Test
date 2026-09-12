@@ -576,6 +576,18 @@ dataInv.clothes2 = {}
 
 function loadPlayerInventory(result, coffre, category, poid)
         TriggerServerCallback("lgddddd:getPlayerInventory", function(data)
+            -- FIX: `data` can arrive nil (e.g. the server callback fired
+            -- before the player's data was fully ready, most likely
+            -- right at spawn-in) - indexing straight into it used to
+            -- hard-crash this whole handler. Retries once, shortly
+            -- after, instead of crashing - the same call this function
+            -- already makes, just delayed, so a genuinely-late-ready
+            -- server can still succeed on the next attempt.
+            if data == nil then
+                print('[lc-inventory] loadPlayerInventory: getPlayerInventory returned nil - retrying in 1s')
+                SetTimeout(1000, function() loadPlayerInventory(result, coffre, category, poid) end)
+                return
+            end
             items = {}
             fastItems = {}
 			dataInv.inventory = data.inventory
@@ -765,6 +777,20 @@ function loadPlayerInventory(result, coffre, category, poid)
                         -- if weapons[key].ammo <= 0 then
                         --     weapons[key] = nil
                         -- else
+                            dataInv.weapons[key].type = "item_weapon"
+                            dataInv.weapons[key].usable = true
+                            dataInv.weapons[key].image = Config.Pictures[dataInv.weapons[key].name]
+                            -- FIX (requested: every weapon must show its serial,
+                            -- without exception): this used to run AFTER the
+                            -- fastItems block below, so a weapon bound to the
+                            -- hotbar got inserted there with its plain label,
+                            -- serial-less - only the main inventory grid entry
+                            -- (inserted further down, after this ran) ever got
+                            -- the "#SERIAL" suffix. Moved up so both use the
+                            -- exact same, already-serialed label.
+                            if dataInv.weapons[key].serial then
+                                dataInv.weapons[key].label = dataInv.weapons[key].label .. ' #' .. dataInv.weapons[key].serial
+                            end
                             if json.encode(Inv.FastWeapons) ~= "[]" then
                                 -- FIX: see the identical fix + full explanation a
                                 -- few dozen lines above this, in the items block -
@@ -787,12 +813,6 @@ function loadPlayerInventory(result, coffre, category, poid)
                                         })
                                     end
                                 end
-                            end
-                            dataInv.weapons[key].type = "item_weapon"
-                            dataInv.weapons[key].usable = true
-                            dataInv.weapons[key].image = Config.Pictures[dataInv.weapons[key].name]
-                            if dataInv.weapons[key].serial then
-                                dataInv.weapons[key].label = dataInv.weapons[key].label .. ' #' .. dataInv.weapons[key].serial
                             end
                             table.insert(items, dataInv.weapons[key])
                         -- end
@@ -955,6 +975,16 @@ RegisterNUICallback('category', function(data)
                 -- if weapons[key].ammo <= 0 then
                 --     weapons[key] = nil
                 -- else
+                    dataInv.weapons[key].type = "item_weapon"
+                    dataInv.weapons[key].usable = true
+                    dataInv.weapons[key].image = Config.Pictures[dataInv.weapons[key].name]
+                    -- FIX (requested: every weapon must show its serial, without
+                    -- exception): moved above the fastItems block for the same
+                    -- reason as the identical fix above - a weapon bound to the
+                    -- hotbar was getting the plain, serial-less label.
+                    if dataInv.weapons[key].serial then
+                        dataInv.weapons[key].label = dataInv.weapons[key].label .. ' #' .. dataInv.weapons[key].serial
+                    end
                     if json.encode(Inv.FastWeapons) ~= "[]" then
                         -- FIX: same redundant-outer-loop duplication bug as above -
                         -- this is the other one that could duplicate a weapon
@@ -974,12 +1004,6 @@ RegisterNUICallback('category', function(data)
                                 })
                             end
                         end
-                    end
-                    dataInv.weapons[key].type = "item_weapon"
-                    dataInv.weapons[key].usable = true
-                    dataInv.weapons[key].image = Config.Pictures[dataInv.weapons[key].name]
-                    if dataInv.weapons[key].serial then
-                        dataInv.weapons[key].label = dataInv.weapons[key].label .. ' #' .. dataInv.weapons[key].serial
                     end
                     table.insert(items, dataInv.weapons[key])
                 -- end
@@ -1405,4 +1429,3 @@ end
 --         Wait(time)
 --     end
 -- end)
-
