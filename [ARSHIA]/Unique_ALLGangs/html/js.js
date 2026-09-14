@@ -1,6 +1,5 @@
 
 
-console.log('[Unique_ALLGangs] html/js.js (boss panel) loaded and parsing');
 // FIX ("Uiloaded request FAILED"): this kept failing even after the
 // nested-iframe was removed (section 18), which means it was never
 // really about iframe nesting - it's a startup race. This page's
@@ -13,7 +12,7 @@ console.log('[Unique_ALLGangs] html/js.js (boss panel) loaded and parsing');
 function pingUiloaded(attempt) {
     attempt = attempt || 1;
     $.post('https://' + GetParentResourceName() + '/Uiloaded', JSON.stringify({}))
-        .done(function() { console.log('[Unique_ALLGangs] Uiloaded response received OK (attempt ' + attempt + ')') })
+        .done(function() {})
         .fail(function(xhr, status, err) {
             console.log('[Unique_ALLGangs] Uiloaded request FAILED (attempt ' + attempt + '):', status, err);
             if (attempt < 20) {
@@ -24,7 +23,6 @@ function pingUiloaded(attempt) {
         });
 }
 $(document).ready(function() {
-    console.log('[Unique_ALLGangs] html/js.js $(document).ready fired, posting Uiloaded');
     pingUiloaded();
 })    
 window.addEventListener('message', function(event) {
@@ -213,7 +211,6 @@ window.addEventListener('message', function(event) {
 
     $(document).on('click', '.down', function(event) {
         var thisid = this.id
-        console.log(true)
         $.post('https://' + GetParentResourceName() + '/removerutbe', JSON.stringify({
    
             id: thisid

@@ -27,6 +27,11 @@ local PendingInvites = {}
 local MatchLog = {}
 local MatchId = 0
 local CurrentMatchMap = ''
+-- Killstreak rewards + On Fire highlight
+local KillStreak = {}      -- [source] = consecutive kills (no death) this match
+local RecentKillTimes = {} -- [source] = {timestamp, timestamp, ...} for On Fire detection
+-- Golden Crate keys (in-memory, per match, like MyCash on the client)
+local PlayerKeys = {}       -- [source] = number of keys held
 
 -------------------------------------------------------------------
 -- Leaderboard (Season) -- table is per-identifier/per-season, so a
@@ -426,6 +431,9 @@ function BeginMatch(source, blood, time, mapArg, teamArg)
     MatchStartCount = #Players
     MatchId = MatchId + 1
     MatchLog = {'Match started on '..Map..' with '..#Players..' players'}
+    KillStreak = {}
+    RecentKillTimes = {}
+    PlayerKeys = {}
     CurrentMatchMap = Map
     print('[WZ DEBUG] BeginMatch ACCEPTED: Map='..Map..' Team='..Team..' #Players going in='..#Players)
     TriggerClientEvent("AWZ:CloseUI", -1)
@@ -627,6 +635,51 @@ function StartWarZone( Blood , Time , Coord , Team , Map)
                 SquadCount = SquadCount + 1
             end
         end
+        -- Feature: WarZone is meant to always be played as squads. Anyone
+        -- who didn't come in with a party gets grouped with their real-life
+        -- "team" instead of being randomly bucketed: first their gang, then
+        -- their job (unless they have none), then everyone with no
+        -- job/gang at all. Only once none of that applies does the generic
+        -- Squad Fill below just top up whoever has room.
+        local categoryBuckets = {}   -- key -> {ids}
+        local categoryOrder = {}     -- preserves first-seen order
+        for _, soloId in ipairs(soloLeftovers) do
+            local xPlayer = ESX.GetPlayerFromId(soloId)
+            local key = 'unemployed'
+            if xPlayer then
+                if xPlayer.gang and xPlayer.gang.name and xPlayer.gang.name ~= '' and xPlayer.gang.name ~= 'none' then
+                    key = 'gang:'..xPlayer.gang.name
+                elseif xPlayer.job and xPlayer.job.name and xPlayer.job.name ~= '' and xPlayer.job.name ~= 'unemployed' then
+                    key = 'job:'..xPlayer.job.name
+                end
+            end
+            if not categoryBuckets[key] then
+                categoryBuckets[key] = {}
+                table.insert(categoryOrder, key)
+            end
+            table.insert(categoryBuckets[key], soloId)
+        end
+        soloLeftovers = {} -- rebuilt below: only true one-offs remain solo
+        for _, key in ipairs(categoryOrder) do
+            local bucket = categoryBuckets[key]
+            if #bucket > Team then
+                for i = 1, #bucket, Team do
+                    Squads[SquadCount] = {}
+                    for j = i, math.min(i + Team - 1, #bucket) do
+                        table.insert(Squads[SquadCount], bucket[j])
+                    end
+                    SquadCount = SquadCount + 1
+                end
+            elseif #bucket == 1 then
+                table.insert(soloLeftovers, bucket[1])
+            else
+                Squads[SquadCount] = {}
+                for _, memberId in ipairs(bucket) do
+                    table.insert(Squads[SquadCount], memberId)
+                end
+                SquadCount = SquadCount + 1
+            end
+        end
         -- Squad Fill: top up the last party squad (if it has room) and any
         -- solo players into shared squads, instead of every solo player
         -- getting their own squad.
@@ -673,6 +726,19 @@ function StartWarZone( Blood , Time , Coord , Team , Map)
             end
         end
         print('[WZ DEBUG] Squads built: '..squadDebug)
+        -- Feature: Team Uniform -- offer a matching outfit to any squad of
+        -- 2+ players (colors cycle per squad) before the drop.
+        local SquadColors = {'Red', 'Blue', 'Green', 'Yellow', 'Purple', 'Orange'}
+        local colorIndex = 0
+        for i, squad in pairs(Squads) do
+            if type(squad) == 'table' and #squad > 1 then
+                colorIndex = colorIndex + 1
+                local color = SquadColors[((colorIndex - 1) % #SquadColors) + 1]
+                for _, memberId in ipairs(squad) do
+                    TriggerClientEvent('AWZ:OfferTeamUniform', memberId, color)
+                end
+            end
+        end
         InsertTeam ()
         Wait(1000)
         print('[WZ DEBUG] About to send AWZ:StartMatch to #Players='..#Players..' (live table, post-Wait(1000))')
@@ -741,7 +807,42 @@ AddEventHandler("esx:onPlayerDeath", function(KillData)
             WZ_AddStat(killerPlayer.identifier, GetPlayerName(KillData.killer), 1, 0, 0)
             killerName = GetPlayerName(KillData.killer)
         end
+
+        -- Feature: Killstreak rewards -- 3 kills in a row (no death) gives
+        -- a free UAV, 5 gives a free airdrop, then the streak resets so it
+        -- can happen again.
+        KillStreak[KillData.killer] = (KillStreak[KillData.killer] or 0) + 1
+        if KillStreak[KillData.killer] == Config.Killstreak.uavKills then
+            TriggerClientEvent('AWZ:FreeUAV', KillData.killer)
+            SendNotifyServerToPlayer(KillData.killer, Config.Killstreak.uavKills..' kills in a row -- free UAV!', 'info')
+        elseif KillStreak[KillData.killer] == Config.Killstreak.airdropKills then
+            TriggerClientEvent('AWZ:FreeAirdrop', KillData.killer)
+            SendNotifyServerToPlayer(KillData.killer, Config.Killstreak.airdropKills..' kills in a row -- free airdrop!', 'info')
+            KillStreak[KillData.killer] = 0
+        end
+
+        -- Feature: On Fire -- announce a hot streak (3+ kills inside a
+        -- short window), separate from the no-death Killstreak above.
+        RecentKillTimes[KillData.killer] = RecentKillTimes[KillData.killer] or {}
+        table.insert(RecentKillTimes[KillData.killer], GetGameTimer())
+        local cutoff = GetGameTimer() - Config.OnFire.windowMs
+        local recent = {}
+        for _, t in ipairs(RecentKillTimes[KillData.killer]) do
+            if t >= cutoff then table.insert(recent, t) end
+        end
+        RecentKillTimes[KillData.killer] = recent
+        if #recent == Config.OnFire.kills then
+            SendMessage('🔥 '..GetPlayerName(KillData.killer)..' is ON FIRE! ('..#recent..' kills in '..math.floor(Config.OnFire.windowMs/1000)..'s)')
+        end
+
+        -- Feature: Golden Crate key -- a kill has a small chance to drop a
+        -- key for the locked crate.
+        if math.random(1, 100) <= Config.GoldenCrateKeyDropChance then
+            PlayerKeys[KillData.killer] = (PlayerKeys[KillData.killer] or 0) + 1
+            SendNotifyServerToPlayer(KillData.killer, 'You found a Golden Crate key!', 'info')
+        end
     end
+    KillStreak[source] = 0 -- the victim's own streak resets on death
     local victimPlayer = ESX.GetPlayerFromId(source)
     if victimPlayer then
         WZ_AddStat(victimPlayer.identifier, GetPlayerName(source), 0, 0, 1)
@@ -818,6 +919,44 @@ function GetAliveSquadmates(src)
     end
     return mates
 end
+-- Feature: Ping System -- relay a ping to squadmates only (uses the same
+-- squad lookup as spectator targets).
+-- Feature: Downed State -- relay to squadmates, and validate revive
+-- requests (must actually be a squadmate of the downed player).
+RegisterServerEvent('AWZ:PlayerDowned')
+AddEventHandler('AWZ:PlayerDowned', function(pos)
+    local mates = GetAliveSquadmates(source)
+    for _, mid in ipairs(mates) do
+        TriggerClientEvent('AWZ:SquadmateDowned', mid, source)
+    end
+end)
+RegisterServerEvent('AWZ:PlayerDownedTimeout')
+AddEventHandler('AWZ:PlayerDownedTimeout', function()
+    local mates = GetAliveSquadmates(source)
+    for _, mid in ipairs(mates) do
+        TriggerClientEvent('AWZ:SquadmateRevivedOrGone', mid, source)
+    end
+end)
+RegisterServerEvent('AWZ:ReviveRequest')
+AddEventHandler('AWZ:ReviveRequest', function(downedId)
+    local mates = GetAliveSquadmates(downedId)
+    local isMate = false
+    for _, mid in ipairs(mates) do
+        if mid == source then isMate = true end
+    end
+    if not isMate then return end
+    TriggerClientEvent('AWZ:Revived', downedId, GetPlayerName(source))
+    for _, mid in ipairs(mates) do
+        TriggerClientEvent('AWZ:SquadmateRevivedOrGone', mid, downedId)
+    end
+end)
+RegisterServerEvent('AWZ:SendPing')
+AddEventHandler('AWZ:SendPing', function(coords, pingType)
+    local mates = GetAliveSquadmates(source)
+    for _, mid in ipairs(mates) do
+        TriggerClientEvent('AWZ:ReceivePing', mid, coords, pingType, GetPlayerName(source))
+    end
+end)
 RegisterServerEvent('AWZ:LeaveSpectator')
 AddEventHandler('AWZ:LeaveSpectator', function()
     for k, v in pairs(Spectators) do
@@ -1067,6 +1206,15 @@ function RemovePlayerFromSquad ( src )
         end 
     end 
 end 
+-- Feature: Golden Crate key -- spend one to open a locked crate.
+ESX.RegisterServerCallback('AWZ:UseGoldenKey', function(source, cb)
+    if (PlayerKeys[source] or 0) > 0 then
+        PlayerKeys[source] = PlayerKeys[source] - 1
+        cb(true)
+    else
+        cb(false)
+    end
+end)
 ESX.RegisterServerCallback('AWZ:RemoveForSquad', function(source, cb)
     RemovePlayerFromSquad ( source  )
     cb(true)

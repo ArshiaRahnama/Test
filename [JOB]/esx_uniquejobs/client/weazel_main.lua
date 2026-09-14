@@ -1207,7 +1207,6 @@ function OpenSendTabligh_weazel()
         ::relog::
         inputox1 = lib.inputDialog('Send Tabligh', {'Matn Tabligh'})
         if inputox1[1] ~= "" then
-          print(inputox1[1])
           ExecuteCommand("news "..inputox1[1])
         else
           inputox1 = nil

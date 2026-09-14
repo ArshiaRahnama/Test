@@ -1,9 +1,8 @@
 Config_detective = {}
 
--- TEMPORARILY true for solo testing — enables /kqtestcorpse, /kqtestautopsy,
--- /kqtestforensics and /kqtestbleedout (see server/*.lua + client/*.lua).
--- Set back to false before going live.
-Config_detective.debug = true
+-- Enables /kqtestcorpse, /kqtestautopsy, /kqtestforensics and /kqtestbleedout
+-- (see server/*.lua + client/*.lua) for solo testing. Off for live use.
+Config_detective.debug = false
 
 
 --- SETTINGS FOR ESX

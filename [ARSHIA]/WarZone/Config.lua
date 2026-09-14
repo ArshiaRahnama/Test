@@ -47,6 +47,37 @@ Config.AntiCheat = {
     action = 'alert',         -- 'alert' = just tell admins, 'kick' = also kick the flagged player
     dropGraceMs = 45000,      -- no speed checks for this long after a plane drop starts (covers flight + parachute)
 }
+--- Killstreak Rewards ---
+Config.Killstreak = {
+    uavKills = 3,     -- kills in a row (no death) for a free UAV
+    airdropKills = 5, -- kills in a row for a free loadout airdrop
+}
+--- Weapon Tiers ---
+-- Every weapon picked up from loot/airdrops rolls one of these. Higher
+-- tiers just give more ammo for now (a real damage multiplier would need
+-- per-shot damage hooking, which risks desyncing hit detection).
+Config.WeaponTiers = {
+    { name = 'Common',    color = '~g~', chance = 50, ammoMult = 1.0 },
+    { name = 'Uncommon',  color = '~b~', chance = 30, ammoMult = 1.5 },
+    { name = 'Rare',      color = '~p~', chance = 15, ammoMult = 2.0 },
+    { name = 'Legendary', color = '~y~', chance = 5,  ammoMult = 3.0 },
+}
+--- Downed State (revive by teammate) ---
+Config.Downed = {
+    enabled = true,
+    bleedoutMs = 30000, -- how long a teammate has to revive you before you fall back to redeploy/Gulag
+    reviveHealth = 120,
+}
+--- Ping System ---
+Config.pingControl = 47 -- 'G' key
+--- On Fire (killstreak announcement) ---
+Config.OnFire = { kills = 3, windowMs = 20000 }
+--- Golden Crate (needs a key) ---
+Config.GoldenCrateKeyDropChance = 15 -- % chance a kill drops a key
+Config.GoldenCrateCoords = {
+    ['SANDY'] = vector3(1980.0, 3773.0, 32.4),
+    ['ISLAND'] = vector3(4970.0, -5175.0, 3.0),
+}
 Config.wztopCommend = 'wztop'
 Config.seasonresetCommend = 'wzseasonreset' -- admin only
 Config.panelCommend = 'wzpanel' -- admin only, opens the graphical admin panel
@@ -217,3 +248,16 @@ Config.IslandVehicles = {
     vector3(5527.398, -5299.372, 11.94141),
     vector3(5529.284, -5288.545, 11.95825),
 }
+
+--- Weapon Tier roll (shared: used client-side when granting loot) ---
+function RollWeaponTier()
+    local roll = math.random(1, 100)
+    local cumulative = 0
+    for _, tier in ipairs(Config.WeaponTiers) do
+        cumulative = cumulative + tier.chance
+        if roll <= cumulative then
+            return tier
+        end
+    end
+    return Config.WeaponTiers[1]
+end

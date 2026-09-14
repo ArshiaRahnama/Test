@@ -1,9 +1,4 @@
 Config = {
-	--UPDATE V4
-	-- Adds /evidencetest for trying the whole flow solo: sets your job to fbi grade 6,
-	-- gives you a UV Light, and spawns a blood + bullet-shell evidence pair at your feet.
-	-- Turn this OFF before the resource goes live on a real server.
-	Debug = true,
 	--
 
 	-- IMPORTANT! To configure report text navigate to /html/script.js and find the text you want to replace

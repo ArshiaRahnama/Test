@@ -32,6 +32,49 @@ local SpectatorCam = nil
 -- Private Loadout (shop item) state -- see PrivteLoadout() fix notes
 local LoadoutCharges = 0
 local UsingLoadout = false
+-- Team Uniform state -- shared between AWZ:OfferTeamUniform and
+-- AWZ:ExitMision (which restores it), so it must be declared here, not
+-- lower in the file, or the two would each get their own separate local.
+local OriginalSkinCache = nil
+-- Golden Crate entity/blip for this match (see the 'e' handler below and
+-- the AWZ:StartMatch/AWZ:ExitMision spawn/cleanup)
+local GoldenCrateEntity = nil
+local GoldenCrateBlip = nil
+
+-------------------------------------------------------------------
+-- Friendly Fire prevention: WarZone is always played in squads now, so
+-- damage from a squadmate gets undone. This is the standard FiveM
+-- technique (there's no native "disable FF between these two players
+-- only") -- track your own health/armour every tick, and if a
+-- CEventNetworkEntityDamage says a squadmate just hit you, roll it back.
+-------------------------------------------------------------------
+local FFLastHealth = 200
+local FFLastArmour = 0
+CreateThread(function()
+	while true do
+		Wait(0)
+		if InWarzone and not PlayerDead then
+			FFLastHealth = GetEntityHealth(PlayerPedId())
+			FFLastArmour = GetPedArmour(PlayerPedId())
+		end
+	end
+end)
+AddEventHandler('gameEventTriggered', function(name, args)
+	if name ~= 'CEventNetworkEntityDamage' then return end
+	if not InWarzone or ingulag then return end -- Gulag duels stay FFA
+	local victim, attacker = args[1], args[2]
+	if victim ~= PlayerPedId() then return end
+	if not attacker or attacker == 0 or not IsPedAPlayer(attacker) then return end
+	local attackerServerId = GetPlayerServerId(NetworkGetPlayerIndexFromPed(attacker))
+	local isTeammate = false
+	for _, mid in pairs(MyPlayersID) do
+		if mid ~= 0 and mid == attackerServerId then isTeammate = true end
+	end
+	if isTeammate then
+		SetEntityHealth(PlayerPedId(), FFLastHealth)
+		SetPedArmour(PlayerPedId(), FFLastArmour)
+	end
+end)
 -- Fix: WarZone() can legitimately run more than once per session (initial
 -- drop, every mid-life redeploy, Gulag win redeploy), and if a NEW call
 -- happens while an OLDER one is still alive (e.g. its `while inheli do
@@ -129,6 +172,28 @@ AddEventHandler("AWZ:StartMatch",function(Blood , DistanceZone , WzCoord , TimeM
 	ShowBoxLootTexT()
 	ShowZone()
 	MarkerWarzone = MakeZoneBlip(GlobalCoord , DistanceZone )
+	-- Feature: Golden Crate -- spawn once per match at this map's fixed
+	-- location, with a blip so squads know where to fight over it.
+	local goldenCoord = Config.GoldenCrateCoords[MapName]
+	if goldenCoord then
+		RequestModel(GetHashKey('ex_prop_container_crashed'))
+		local crateModel = GetHashKey('ex_prop_container_crashed')
+		if not HasModelLoaded(crateModel) then
+			-- fall back to a model that's always resident if the custom one
+			-- isn't streamed for this map/build
+			crateModel = GetHashKey('prop_boxpile_07d')
+		end
+		GoldenCrateEntity = CreateObject(crateModel, goldenCoord.x, goldenCoord.y, goldenCoord.z, false, true, true)
+		PlaceObjectOnGroundProperly(GoldenCrateEntity)
+		FreezeEntityPosition(GoldenCrateEntity, true)
+		GoldenCrateBlip = AddBlipForCoord(goldenCoord.x, goldenCoord.y, goldenCoord.z)
+		SetBlipSprite(GoldenCrateBlip, 618)
+		SetBlipColour(GoldenCrateBlip, 46)
+		SetBlipScale(GoldenCrateBlip, 1.1)
+		BeginTextCommandSetBlipName('STRING')
+		AddTextComponentSubstringPlayerName('Golden Crate')
+		EndTextCommandSetBlipName(GoldenCrateBlip)
+	end
 	SetTimeout(5* 1000, function()
 		SendNUIMessage({message	= "music",Name = 'joinbattle'}) 
 	end)
@@ -173,6 +238,10 @@ AddEventHandler("AWZ:ExitMision",function()
 	if InSpectator then
 		StopSpectating()
 	end
+	if OriginalSkinCache then
+		TriggerEvent('skinchanger:loadSkin', OriginalSkinCache)
+		OriginalSkinCache = nil
+	end
 	TriggerServerEvent("AWZ:SetRBucket",0)
 	armoritem , bandageitem = 0 , 0 
 	ESX.TriggerServerCallback('AWZ:RemoveForSquad', function(remove) end)
@@ -208,9 +277,17 @@ AddEventHandler("AWZ:ExitMision",function()
  	MySelf , Distance , Zone , GlobalCoord ,Time , MyKill , AllPlayers  , NZone , GulagPlayer , ZamanSanj , MyCash  , SaveZone  = 0,0 , 0 , 0 ,0 ,0 ,0 ,0 ,0 ,0 , 0 , 0
  	inheli,jump,InWarzone , PlayerDead  , Dlay  , inLobby  , inmatch , LootNow ,StartTimer , ingulag ,GulagTime , heal ,vest , showNext , inshopbox  = false,false,false , false , false , false ,false ,false ,false ,false ,false , false , false , false , false
  	AllLoots  ,  AirDropGetLoot  , BodyLoots , ShopBoxes , ShopCoords = {} , {} , {} , {}, {} 
+	-- Fix: `plane`/`pilot` were being set to nil on the line below BEFORE
+	-- DeleteVehicle/DeleteEntity ran on them -- so those calls always
+	-- operated on nil and never actually deleted the real entities. Every
+	-- match left its plane and pilot orphaned in the world instead of
+	-- cleaning them up. Delete first, then clear the variables.
+	if plane and DoesEntityExist(plane) then DeleteVehicle(plane) end
+	if pilot and DoesEntityExist(pilot) then DeleteEntity(pilot) end
+	if GoldenCrateEntity and DoesEntityExist(GoldenCrateEntity) then DeleteObject(GoldenCrateEntity) end
+	if GoldenCrateBlip and DoesBlipExist(GoldenCrateBlip) then RemoveBlip(GoldenCrateBlip) end
+	GoldenCrateEntity, GoldenCrateBlip = nil, nil
  	MarkerWarzone  , planekey  , tempBlip ,  plane , pilot  = nil , nil   , nil ,  nil   , nil 
-	DeleteVehicle(plane)
-	DeleteEntity(pilot)
 	SetEntityVisible(PlayerPedId(), true,true)
 	FreezeEntityPosition(PlayerPedId(),false)
 	DetachEntity(PlayerPedId(), true, true)
@@ -326,31 +403,129 @@ AddEventHandler("AWZ:respwan",function(addkill , Killed , Killer)
 	PlayerDead = true 
 	if InWarzone then 
 		PlayerDead = true
-		MySelf = MySelf -1
-		if MySelf > 0  then 
-			local pos = GetEntityCoords(PlayerPedId())
-			SetEntityCoords( PlayerPedId() ,vector3( pos.x , pos.y , pos.z + 200) , false )
-			FreezePlayer(  true  )  
-			SetEntityVisible(PlayerPedId(), true ,true)
-			FreezeEntityPosition( PlayerPedId() , true )
-			SetPlayerCanRevive()
-		else 
-			-- Fix: this branch used to be commented out entirely, which made
-			-- SetPLayerInGulag() -- a fully built and working feature, both
-			-- here and on the server -- permanently unreachable dead code.
-			-- Running out of redeploys used to just revive the player in
-			-- place and immediately exit them from the match instead of
-			-- giving them their one shot at fighting back in via the Gulag.
-			if not GulagTime  then 
-				GulagTime = true 
-				SetPLayerInGulag() 
-			else  
-				Revive()
-				TriggerEvent("AWZ:ExitMision")
-			end 
-		end 
+		-- Feature: Downed State -- instead of immediately consuming a life
+		-- (redeploy) or going to the Gulag, give a squadmate a window to
+		-- revive you first. Falls back to the exact same redeploy/Gulag
+		-- logic as before (now in ProceedAfterDeath()) if nobody does.
+		if Config.Downed.enabled and not ingulag then
+			EnterDownedState()
+		else
+			ProceedAfterDeath()
+		end
 	end
 
+end)
+-- Fix: this branch used to be commented out entirely, which made
+-- SetPLayerInGulag() -- a fully built and working feature, both here and
+-- on the server -- permanently unreachable dead code. Running out of
+-- redeploys used to just revive the player in place and immediately exit
+-- them from the match instead of giving them their one shot at fighting
+-- back in via the Gulag. This is now also the fallback when Downed State
+-- times out with nobody reviving you.
+function ProceedAfterDeath()
+	MySelf = MySelf -1
+	if MySelf > 0  then 
+		local pos = GetEntityCoords(PlayerPedId())
+		SetEntityCoords( PlayerPedId() ,vector3( pos.x , pos.y , pos.z + 200) , false )
+		FreezePlayer(  true  )  
+		SetEntityVisible(PlayerPedId(), true ,true)
+		FreezeEntityPosition( PlayerPedId() , true )
+		SetPlayerCanRevive()
+	else 
+		if not GulagTime  then 
+			GulagTime = true 
+			SetPLayerInGulag() 
+		else  
+			Revive()
+			TriggerEvent("AWZ:ExitMision")
+		end 
+	end 
+end
+-------------------------------------------------------------------
+-- Downed State: a squadmate can revive you before you fall back to a
+-- redeploy or the Gulag.
+-------------------------------------------------------------------
+local IsDowned = false
+local DownedSquadmates = {} -- [serverId] = true, squadmates currently downed
+function EnterDownedState()
+	IsDowned = true
+	local ped = PlayerPedId()
+	FreezeEntityPosition(ped, true)
+	SetEntityInvincible(ped, true)
+	SetEntityHealth(ped, 50)
+	ClearPedTasksImmediately(ped)
+	RequestAnimDict("combat@damage@writhe")
+	local dictWait = 0
+	while not HasAnimDictLoaded("combat@damage@writhe") and dictWait < 100 do
+		Wait(0)
+		dictWait = dictWait + 1
+	end
+	TaskPlayAnim(ped, "combat@damage@writhe", "writhe_loop_left", 8.0, -8.0, -1, 1, 0, false, false, false)
+	ESX.ShowNotification('~r~You are downed! ~w~A teammate can revive you.')
+	TriggerServerEvent('AWZ:PlayerDowned', GetEntityCoords(ped))
+	CreateThread(function()
+		local timeLeft = Config.Downed.bleedoutMs
+		while IsDowned and timeLeft > 0 do
+			Wait(1000)
+			timeLeft = timeLeft - 1000
+			if IsDowned then
+				ESX.ShowMissionText('~r~DOWNED~w~ - bleeding out in '..math.ceil(timeLeft/1000)..'s')
+			end
+		end
+		if IsDowned then
+			IsDowned = false
+			ClearPedTasksImmediately(PlayerPedId())
+			FreezeEntityPosition(PlayerPedId(), false)
+			SetEntityInvincible(PlayerPedId(), false)
+			ESX.ShowMissionText('')
+			TriggerServerEvent('AWZ:PlayerDownedTimeout')
+			ProceedAfterDeath()
+		end
+	end)
+end
+RegisterNetEvent('AWZ:Revived')
+AddEventHandler('AWZ:Revived', function(reviverName)
+	if not IsDowned then return end
+	IsDowned = false
+	local ped = PlayerPedId()
+	ClearPedTasksImmediately(ped)
+	FreezeEntityPosition(ped, false)
+	SetEntityInvincible(ped, false)
+	SetEntityHealth(ped, Config.Downed.reviveHealth)
+	PlayerDead = false
+	ESX.ShowMissionText('')
+	ESX.ShowNotification('Revived by '..(reviverName or 'a teammate')..'!')
+end)
+RegisterNetEvent('AWZ:SquadmateDowned')
+AddEventHandler('AWZ:SquadmateDowned', function(downedId)
+	DownedSquadmates[downedId] = true
+	ESX.ShowNotification((GetPlayerName(downedId) or 'A teammate')..' is downed! Go revive them.')
+end)
+RegisterNetEvent('AWZ:SquadmateRevivedOrGone')
+AddEventHandler('AWZ:SquadmateRevivedOrGone', function(downedId)
+	DownedSquadmates[downedId] = nil
+end)
+CreateThread(function()
+	while true do
+		local nearDowned = nil
+		for mid, _ in pairs(DownedSquadmates) do
+			local targetPed = GetPlayerPed(GetPlayerFromServerId(mid))
+			if targetPed and targetPed ~= 0 and DoesEntityExist(targetPed) then
+				if GetDistanceBetweenCoords(GetEntityCoords(PlayerPedId()), GetEntityCoords(targetPed), true) < 2.5 then
+					nearDowned = mid
+				end
+			end
+		end
+		if nearDowned then
+			Wait(0)
+			ESX.ShowHelpNotification('Press ~INPUT_CONTEXT~ to revive')
+			if IsControlJustPressed(0, 51) then
+				TriggerServerEvent('AWZ:ReviveRequest', nearDowned)
+			end
+		else
+			Wait(500)
+		end
+	end
 end)
 function SetPlayerCanRevive()
 	Revive()
@@ -804,6 +979,16 @@ function ShopWzDrop(PlaneCoords, Code)
 
 end
 local dropcheack = false 
+-- Feature: Weapon Tiers -- loot weapons roll a quality tier (color-coded)
+-- that scales how much ammo you get, instead of every pickup being
+-- identical.
+function AddWeaponWithTier(weapon)
+	local tier = RollWeaponTier()
+	local ammo = math.floor(250 * tier.ammoMult)
+	AddWeapon(weapon, ammo)
+	ESX.ShowMissionText(tier.color..tier.name..' ~w~'..weapon:gsub('WEAPON_', ''):gsub('_', ' '))
+	SendNotifyToPlayer(tier.name..' weapon picked up ('..ammo..' ammo)', 'info')
+end
 function WarZone(loadHud)
 	WarZoneEpoch = WarZoneEpoch + 1
 	local myEpoch = WarZoneEpoch
@@ -900,7 +1085,12 @@ function WarZone(loadHud)
 		ClearPedTasksImmediately(PlayerPedId())
 		SetPedArmour(PlayerPedId(),0) 
 		SetEntityCollision(PlayerPedId(), false, false)
-		TaskWarpPedIntoVehicle(PlayerPedId(),plane, 2)
+		-- Fix: seat 2 doesn't exist as a normal enclosed seat on this plane
+		-- model ("mammatus") -- the game fell back to just draping the ped
+		-- on the exterior (on the wing), which is exactly what showed up
+		-- in testing. Seat 0 (front passenger, next to the pilot in -1) is
+		-- a real seat that exists on every plane.
+		TaskWarpPedIntoVehicle(PlayerPedId(),plane, 0)
 		print('[WZ DEBUG][client] step: warped into plane, ped exists='..tostring(DoesEntityExist(PlayerPedId())))
 		if loadHud then SendNUIMessage({message	= "Ingame",}) end 
 		-- Fix: THIS is why the plane's speed always read 0.0 no matter how
@@ -1132,6 +1322,48 @@ function BuyUAV()
 	end 
 
 end 
+-- Feature: Killstreak reward -- a free UAV, reusing the exact same UAV
+-- system as buying one from the shop.
+RegisterNetEvent('AWZ:FreeUAV')
+AddEventHandler('AWZ:FreeUAV', function()
+	BuyUAV()
+end)
+-- Feature: Killstreak reward -- a free loadout airdrop. Shares the same
+-- crate-spawning logic as the shop-bought Private Loadout (see
+-- SpawnAirdropCrate below).
+RegisterNetEvent('AWZ:FreeAirdrop')
+AddEventHandler('AWZ:FreeAirdrop', function()
+	if not InWarzone then return end
+	SendNotifyToPlayer('Killstreak reward: a free airdrop is incoming!', 'info')
+	SpawnAirdropCrate()
+end)
+function SpawnAirdropCrate()
+	local Sploot = nil
+	local NumerofLoot = math.random(1,5)
+	for k,v in pairs(AirDrops) do
+		if NumerofLoot == k then
+			Sploot = v
+		end
+	end
+	CreateThread(function()
+		local crateSpawn = vector3(GetEntityCoords(PlayerPedId()).x, GetEntityCoords(PlayerPedId()).y, GetEntityCoords(PlayerPedId()).z + 100)
+		local objLootBox = CreateObject(GetHashKey("prop_box_wood05a"), crateSpawn, true, true, true)
+		SetEntityLodDist(objLootBox, 2000)
+		ActivatePhysics(objLootBox)
+		SetDamping(objLootBox, 2, 0.1)
+		SetEntityVelocity(objLootBox, 0.0, 0.0, -0.2)
+		local parachute = CreateObject(GetHashKey("p_cargo_chute_s"), crateSpawn, true, true, true)
+		SetEntityLodDist(parachute, 2000)
+		SetEntityVelocity(parachute, 0.0, 0.0, -0.2)
+		AttachEntityToEntity(parachute, objLootBox, 0, 0.0, 0.0, 0.3, 0.0, 0.0, 0.0, false, false, true, false, 2, true)
+		table.insert(AirDropGetLoot, {Box = objLootBox, Chatr = parachute, weapon = Sploot, Heal = true, Vest = true, Code = 'Privte'})
+		TriggerServerEvent('AWZ:Loadout', {Box = objLootBox, Chatr = parachute, weapon = Sploot, Heal = true, Vest = true, Code = 'Privte'})
+		while not IsEntityAttached(parachute) do
+			Wait(0)
+			AttachEntityToEntity(parachute, objLootBox, 0, 5, 0, 7.0, 0, 0, 0, true, true, false, true, 0, false)
+		end
+	end)
+end
 function UAVBlipThread()
 	if UAVLine then return 	SendNotifyToPlayer('You Already Used Uav') end 
 	AllUav = AllUav - 1
@@ -1319,6 +1551,53 @@ CreateThread(function()
 		end 
 	end)
 	-------------
+	-- Feature: Ping System. 'G' raycasts from the camera and drops a
+	-- marker + sound for your squad -- an enemy ping if you're looking at
+	-- another player, a location ping otherwise. No mic needed.
+	AddEventHandler('onKeyDown', function(key)
+		if key == 'g' then
+			if not InWarzone or not inmatch then return end
+			local camCoord = GetGameplayCamCoord()
+			local camRot = GetGameplayCamRot(2)
+			local rad = math.pi / 180
+			local direction = vector3(
+				-math.sin(camRot.z * rad) * math.abs(math.cos(camRot.x * rad)),
+				math.cos(camRot.z * rad) * math.abs(math.cos(camRot.x * rad)),
+				math.sin(camRot.x * rad)
+			)
+			local destination = camCoord + direction * 150.0
+			local rayHandle = StartShapeTestRay(camCoord.x, camCoord.y, camCoord.z, destination.x, destination.y, destination.z, -1, PlayerPedId(), 0)
+			local _, hit, endCoords, _, hitEntity = GetShapeTestResult(rayHandle)
+			local pingType = 'location'
+			if hit == 1 and hitEntity and hitEntity ~= 0 and IsEntityAPed(hitEntity) and IsPedAPlayer(hitEntity) then
+				pingType = 'enemy'
+			end
+			TriggerServerEvent('AWZ:SendPing', endCoords, pingType)
+		end
+	end)
+	-------------
+	-- Feature: Golden Crate. Spawned once per match at a fixed map spot --
+	-- needs a key (see Killstreak/kill-drop notes) to open.
+	AddEventHandler('onKeyDown', function(key)
+		if key == 'e' then
+			if not InWarzone or not GoldenCrateEntity or not DoesEntityExist(GoldenCrateEntity) then return end
+			if GetDistanceBetweenCoords(GetEntityCoords(PlayerPedId()), GetEntityCoords(GoldenCrateEntity), false) <= 2.5 then
+				ESX.TriggerServerCallback('AWZ:UseGoldenKey', function(success)
+					if success then
+						ESX.ShowNotification('~y~Golden Crate opened!')
+						AddWeapon('WEAPON_HEAVYSNIPER', 250)
+						armoritem = armoritem + 4
+						bandageitem = bandageitem + 4
+						MyCash = MyCash + 5000
+						SendNUIMessage({message = "cash", MyCash = MyCash})
+						SendNUIMessage({message = "music", Name = 'bigloot'})
+					else
+						ESX.ShowNotification("You need a key to open this Golden Crate.")
+					end
+				end)
+			end
+		end
+	end)
 	-- Private Loadout airdrop (bought from the shop, see PrivteLoadout()).
 	-- Registered once here instead of once per purchase (see fix notes).
 	AddEventHandler('onKeyDown', function(key)
@@ -1328,32 +1607,8 @@ CreateThread(function()
 			if GetSelectedPedWeapon(PlayerPedId()) == GetHashKey('WEAPON_FLARE') then
 				UsingLoadout = true
 				LoadoutCharges = LoadoutCharges - 1
-				local Sploot = nil
-				local NumerofLoot = math.random(1,5)
-				for k,v in pairs(AirDrops) do
-					if NumerofLoot == k then
-						Sploot = v
-					end
-				end
 				SendNotifyToPlayer('Loadout Kamtar Az 10s Dar Makan ke Istadeid Miresad', 'info')
-				CreateThread(function()
-					local crateSpawn = vector3(GetEntityCoords(PlayerPedId()).x, GetEntityCoords(PlayerPedId()).y, GetEntityCoords(PlayerPedId()).z + 100)
-					local objLootBox = CreateObject(GetHashKey("prop_box_wood05a"), crateSpawn, true, true, true)
-					SetEntityLodDist(objLootBox, 2000)
-					ActivatePhysics(objLootBox)
-					SetDamping(objLootBox, 2, 0.1)
-					SetEntityVelocity(objLootBox, 0.0, 0.0, -0.2)
-					local parachute = CreateObject(GetHashKey("p_cargo_chute_s"), crateSpawn, true, true, true)
-					SetEntityLodDist(parachute, 2000)
-					SetEntityVelocity(parachute, 0.0, 0.0, -0.2)
-					AttachEntityToEntity(parachute, objLootBox, 0, 0.0, 0.0, 0.3, 0.0, 0.0, 0.0, false, false, true, false, 2, true)
-					table.insert(AirDropGetLoot, {Box = objLootBox, Chatr = parachute, weapon = Sploot, Heal = true, Vest = true, Code = 'Privte'})
-					TriggerServerEvent('AWZ:Loadout', {Box = objLootBox, Chatr = parachute, weapon = Sploot, Heal = true, Vest = true, Code = 'Privte'})
-					while not IsEntityAttached(parachute) do
-						Wait(0)
-						AttachEntityToEntity(parachute, objLootBox, 0, 5, 0, 7.0, 0, 0, 0, true, true, false, true, 0, false)
-					end
-				end)
+				SpawnAirdropCrate()
 				Wait(3000)
 				RemoveWeaponFromPed(PlayerPedId(), 'WEAPON_FLARE')
 				UsingLoadout = false
@@ -1424,7 +1679,7 @@ CreateThread(function()
 							if v.weapon == 'WEAPON_SMOKEGRENADE' or  v.weapon == 'WEAPON_MOLOTOV' or v.weapon == 'WEAPON_BZGAS' then 
 								AddWeapon(v.weapon, 3)
 							else   
-					 			AddWeapon(v.weapon, 250)
+					 			AddWeaponWithTier(v.weapon)
 							end 
 							MyCash	= MyCash +  v.Money 
 							SendNUIMessage({message	= "cash",MyCash =  MyCash ,}) 
@@ -1451,7 +1706,7 @@ CreateThread(function()
 			if InWarzone  then
 				for k,v in pairs(AirDropGetLoot) do 
 					if GetDistanceBetweenCoords(GetEntityCoords(PlayerPedId()),GetEntityCoords(v.Box),false) <= 2  then
-						AddWeapon(v.weapon, 250)
+						AddWeaponWithTier(v.weapon)
 				 		DeleteEntity(v.Box )
 						DeleteObject(v.Chatr)
 						SendNUIMessage({message	= "music",Name = 'bigloot'}) 
@@ -1689,9 +1944,39 @@ RegisterNetEvent("AWZ:WinnerTeam")
 AddEventHandler('AWZ:WinnerTeam',function( i  ) 
 	if not i then  return end  
 	SendNUIMessage({message	= "music",Name = 'victory'}) 
+	PlayVictoryCamera()
 	Wait(5 * 1000)
 	TriggerEvent('AWZ:ExitMision')
 end)
+-- Feature: Cinematic Victory Camera -- a rotating shot around the winning
+-- player instead of just a UI banner, for the same 5s window that was
+-- already being spent waiting before the exit.
+function PlayVictoryCamera()
+	local ped = PlayerPedId()
+	local pedCoords = GetEntityCoords(ped)
+	FreezeEntityPosition(ped, true)
+	local cam = CreateCam("DEFAULT_SCRIPTED_CAMERA", true)
+	SetCamActive(cam, true)
+	RenderScriptCams(true, true, 500, true, true)
+	CreateThread(function()
+		local angle = 0.0
+		local radius = 4.0
+		local startTime = GetGameTimer()
+		while GetGameTimer() - startTime < 4800 do
+			Wait(0)
+			angle = angle + 1.2
+			local rad = angle * math.pi / 180
+			local camX = pedCoords.x + radius * math.cos(rad)
+			local camY = pedCoords.y + radius * math.sin(rad)
+			local camZ = pedCoords.z + 1.8
+			SetCamCoord(cam, camX, camY, camZ)
+			PointCamAtCoord(cam, pedCoords.x, pedCoords.y, pedCoords.z + 0.8)
+		end
+		RenderScriptCams(false, true, 500, true, true)
+		DestroyCam(cam, false)
+		FreezeEntityPosition(ped, false)
+	end)
+end
 CreateThread(function()
 	TriggerEvent('chat:addSuggestion', '/'.. Config.StartCommend..'', 'Jahate Start Lobbey Warozne', {})
 	TriggerEvent('chat:addSuggestion', '/'..Config.JoinLobbeyCommend..'', 'Jahate Join Warozne', {})
@@ -1707,6 +1992,29 @@ RegisterNetEvent("AWZ:UpdateLoadout")
 AddEventHandler("AWZ:UpdateLoadout", function(loadout)
 	table.insert(AirDropGetLoot ,  loadout )		
 end) 
+-- Feature: Ping System -- show a temporary blip + sound for a squadmate's
+-- ping, auto-removed after a few seconds.
+RegisterNetEvent('AWZ:ReceivePing')
+AddEventHandler('AWZ:ReceivePing', function(coords, pingType, fromName)
+	if not InWarzone then return end
+	local sprite = pingType == 'enemy' and 161 or 1
+	local color = pingType == 'enemy' and 1 or 3
+	local label = pingType == 'enemy' and (fromName..' spotted an enemy!') or (fromName..' pinged a location')
+	SendNUIMessage({ message = "music", Name = 'uavonline' })
+	ESX.ShowNotification(label)
+	local blip = AddBlipForCoord(coords.x, coords.y, coords.z)
+	SetBlipSprite(blip, sprite)
+	SetBlipColour(blip, color)
+	SetBlipScale(blip, 1.2)
+	SetBlipFlashes(blip, true)
+	BeginTextCommandSetBlipName('STRING')
+	AddTextComponentSubstringPlayerName(label)
+	EndTextCommandSetBlipName(blip)
+	CreateThread(function()
+		Wait(8000)
+		if DoesBlipExist(blip) then RemoveBlip(blip) end
+	end)
+end)
 
 -------------------------------------------------------------------
 -- /warzone menu: a click-through icon_menu (this server's existing menu
@@ -1714,6 +2022,44 @@ end)
 -- match summary -- instead of typing raw commands with player ids.
 -------------------------------------------------------------------
 local menuStyle = { positionX = "90%", positionY = "50%", size = "0.9", maxHeight = "80vh" }
+
+-------------------------------------------------------------------
+-- Team Uniform: squads of 2+ get offered a matching outfit before the
+-- drop. Declining or not answering just keeps your current clothes.
+-- (OriginalSkinCache is declared up top with the other state locals so
+-- both this block and the AWZ:ExitMision handler earlier in the file share
+-- the same variable instead of each getting their own.)
+-------------------------------------------------------------------
+RegisterNetEvent('AWZ:OfferTeamUniform')
+AddEventHandler('AWZ:OfferTeamUniform', function(colorName)
+	local elements = {
+		{ img = 'human.png', text = 'Wear Team Uniform', text2 = colorName..' squad colors', callBack = function()
+			ApplyTeamUniform(colorName)
+			exports.icon_menu:ForceCloseMenu()
+			ESX.ShowNotification('Wearing the '..colorName..' squad uniform.')
+		end },
+		{ img = 'close.png', text = 'Keep My Outfit', text2 = '', callBack = function()
+			exports.icon_menu:ForceCloseMenu()
+		end },
+	}
+	exports.icon_menu:OpenMenu(elements, menuStyle)
+end)
+function ApplyTeamUniform(colorName)
+	if not OriginalSkinCache then
+		ESX.TriggerServerCallback('esx_skin:getPlayerSkin', function(skin)
+			OriginalSkinCache = skin
+		end)
+		Wait(300)
+	end
+	local colorVariant = { Red = 0, Blue = 1, Green = 2, Yellow = 3, Purple = 4, Orange = 5 }
+	local variant = colorVariant[colorName] or 0
+	-- Team-color jersey: same base torso drawable, a different texture
+	-- swatch per squad color. Drawable 15 on component 3 (torso/arms) is a
+	-- plain shirt present on the default freemode models -- if your server
+	-- uses custom clothing packs the exact look may differ; the drawable
+	-- index below is easy to change to whatever your pack uses.
+	SetPedComponentVariation(PlayerPedId(), 3, 15, variant, 0)
+end
 
 function OpenWarzoneMenu()
 	local elements = {

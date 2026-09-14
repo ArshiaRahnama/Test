@@ -17,8 +17,3 @@ RegisterNetEvent('sscombat:toggle', function(status, time)
     end
 end)
 
--- ✅ اضافه شد: برای تست دستی بدون نیاز به نفر دوم. /testcombat رو بزن، باید
--- افکت قرمز لبه‌ی صفحه + تایمر ۱۰ ثانیه‌ای بیاد.
-RegisterCommand('testcombat', function()
-    TriggerEvent('sscombat:toggle', true, 10 * 1000)
-end, false)

@@ -1,6 +1,4 @@
-console.log('[Unique_ALLGangs] web/ui.html script.js loaded and parsing - build v1787993830');
 $(document).ready(function() {
-    console.log('[Unique_ALLGangs] script.js $(document).ready fired, jQuery is working');
     // FIX (nothing in the panel ever worked - Home/Gangs empty, Create
     // doing nothing, etc): FiveM NUI callbacks are routed by URL as
     // https://<resource-name>/<callback-name>, and the resource name in
@@ -70,9 +68,7 @@ $(document).ready(function() {
         $("#CGMain").fadeIn(400);
     }
     function CloseAdminPanel() {
-        console.log('[Unique_ALLGangs] CloseAdminPanel() called, posting CLOSEADMINPANEL to ' + window.ResourceName)
         $.post('https://'+ window.ResourceName  + '/CLOSEADMINPANEL', JSON.stringify({})  )
-            .done(function() { console.log('[Unique_ALLGangs] CLOSEADMINPANEL response received OK') })
             .fail(function(xhr, status, err) { console.log('[Unique_ALLGangs] CLOSEADMINPANEL request FAILED:', status, err) });
         $("#CGMain").fadeOut();
         CloseAllAdminPanelPages();

@@ -2,7 +2,7 @@ AddEventHandler('onClientResourceStart', function(resource)
 	if resource ~= GetCurrentResourceName() then
 		return
 	end
-	print('Starting script initialization')
+	logger.info('Starting script initialization')
 
 
 
@@ -45,5 +45,5 @@ AddEventHandler('onClientResourceStart', function(resource)
 		LocalPlayer.state:set("disableRadio", 0, true)
 	end
 
-	print('Script initialization finished.')
+	logger.info('Script initialization finished.')
 end)

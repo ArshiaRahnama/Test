@@ -1924,7 +1924,6 @@ AddEventHandler('esx_taxijob:callTaxi', function(coords)
 		if DoesEntityExist(globalTaxi) then
 			ESX.Game.DeleteVehicleJobs(globalTaxi)
 		end
-		print(heading)
 		ESX.Game.SpawnVehicle(vehicleHash, realSpawnPoint, heading, function(callback_vehicle)
 			SetEntityHeading(callback_vehicle, heading)
 			TaskWarpPedIntoVehicle(ped, callback_vehicle, -1)
@@ -2124,7 +2123,6 @@ function OpendivisionsMenu_taxi()
 		local jobplayer = ESX.GetPlayerData().job.name
 
         for k, v in pairs(check) do
-			print( v.job)
 			if v.job == jobplayer then
 				if v.status then
 					table.insert(elements, {

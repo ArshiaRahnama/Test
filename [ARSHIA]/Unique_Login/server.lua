@@ -1662,18 +1662,8 @@ function SendSMSCode(phone, src)
             }
         }
         PerformHttpRequest(Config.SMS.ApiUrl, function(err, text, headers)
-            if err == 200 or err == 0 then
-                local data = json.decode(text)
-                if data then
-                    print("--------------------")
-                    print("📥 ریسپانس API:")
-                    print(json.encode(data, { indent = true }))
-                    print("--------------------")
-                else
-                    print("📄 ریسپانس خام:", text)
-                end
-            else
-                print("❌ ارور HTTP:", err)
+            if err ~= 200 and err ~= 0 then
+                print(("[Unique_Login] SMS API request failed (HTTP %s)"):format(tostring(err)))
             end
         end, 'POST', json.encode(payload), { ['Content-Type'] = 'application/json', ['X-API-KEY'] = Config.SMS.ApiKey })
         return code

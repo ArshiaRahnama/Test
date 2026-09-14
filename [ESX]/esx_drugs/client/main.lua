@@ -1288,7 +1288,6 @@ end
 end)
 
 AddEventHandler('esx_drugs:hasEnteredMarker', function(zone)
-	print(zone)
 	if zone == "drug_1" then
 		CurrentAction     = 'crack_menu'
 		CurrentActionMsg  = 'Dokme ~INPUT_CONTEXT~ ro feshar bedid ta ~g~Crack ~w~besazid'
