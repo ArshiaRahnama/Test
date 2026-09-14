@@ -47,7 +47,11 @@ function GetCurrentVersion()
 	return GetResourceMetadata( GetCurrentResourceName(), "version" )
 end
 
--- Grabs the latest version number from the web GitHub
+-- Startup version-check + branding banner disabled: it made an external
+-- HTTP request to a GitHub Pages URL on every single boot just to print a
+-- decorative ASCII banner and an update nag, with no functional purpose
+-- (nothing else in this resource reads GetCurrentVersion()'s result).
+--[[
 PerformHttpRequest( "https://wolfknight98.github.io/wk_wars2x_web/version.txt", function( err, text, headers )
 	-- Wait to reduce spam
 	Citizen.Wait( 2000 )
@@ -81,3 +85,4 @@ PerformHttpRequest( "https://wolfknight98.github.io/wk_wars2x_web/version.txt", 
 	-- so this check no longer serves a purpose and was just printing a scary,
 	-- inaccurate error in console.
 end )
+--]]

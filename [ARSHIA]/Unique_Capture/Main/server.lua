@@ -1,8 +1,6 @@
 AddEventHandler('onResourceStart', function(resourceName)
     if GetCurrentResourceName() ~= resourceName then return end
     Citizen.Wait(300)
-    print("^1★^7 Capture System Running ^3->^7 ^2arshiahub.ir^7")
-    print("^1★^7 This resource is owned by ^2arshiahub.ir^7")
 end)
 
 ESX = nil

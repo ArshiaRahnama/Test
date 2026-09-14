@@ -42,8 +42,6 @@ local function Display()
 				if #result < 10 then
 					lib.notify({ position = 'center-right', title = "ERROR", description = "Lotfan hadaghal 10 character darbare report khod benevisid!", type = 'error', duration = 5000 })
 				else
-					print(1)
-					print(GetPlayerName(source))
 					TriggerServerEvent('esx_Report:CreateReport', v[2], result)
 					JayMenu.CloseMenu()
 					result = ""
@@ -123,7 +121,6 @@ function GiveInformation(cb, data, id)
 				TriggerServerEvent('esx_Report:Pending', id,ped)
 				break
 				else
-					print(123)
 					ESX.UI.Menu.CloseAll()
 				end
 			else

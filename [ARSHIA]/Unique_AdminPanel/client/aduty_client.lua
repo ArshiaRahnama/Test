@@ -389,7 +389,6 @@ end)
 RegisterNetEvent("aduty:pedHandler")
 AddEventHandler("aduty:pedHandler",function(PlayerID, skin)
    local player2 = GetPlayerFromServerId(PlayerID)
-    print("this is just a debug")
     Citizen.CreateThread(function()
     local model = GetHashKey(skin)
     RequestModel(model)
@@ -489,7 +488,6 @@ RegisterNetEvent("aduty:forceStatus")
 AddEventHandler("aduty:forceStatus", function(status)
 
   ForceToVisible = status
-  print(ForceToVisible)
   visibility()
 
 end)

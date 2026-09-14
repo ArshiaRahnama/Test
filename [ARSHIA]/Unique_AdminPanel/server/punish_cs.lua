@@ -207,7 +207,7 @@ end
 function SendToCommunityService(adminSource, target, actions_count, reason)
 	local xSender = ESX.GetPlayerFromId(adminSource)
 	if not IsAllowedToSentence(xSender) then
-		if exports.Unique_AdminPanel then
+		if exports.UNIQUE_AC then
 			exports.Unique_AdminPanel:BanPlayer(adminSource, 'Cheat Lua Executer', 'Tried esx_communityGGservice:sendToCommunityService without permission')
 		end
 		return
@@ -286,7 +286,7 @@ local playerNameVariable
 function SendToCommunityServiceOffline(adminSource, steamhex, actions_count, reason)
 	local xSender = ESX.GetPlayerFromId(adminSource)
 	if not IsAllowedToSentence(xSender) then
-		if exports.Unique_AdminPanel then
+		if exports.UNIQUE_AC then
 			exports.Unique_AdminPanel:BanPlayer(adminSource, 'Cheat Lua Executer', 'Tried esx_communityGGservice:sendToCommunityServiceoffline without permission')
 		end
 		return
@@ -379,6 +379,7 @@ function releaseFromCommunityService(target)
 	if not xTarget then return end
 	local identifier = xTarget.identifier
 	ActiveCS[target] = nil
+	RepeatStrikes[target] = nil
 
 	MySQL.Async.fetchAll('SELECT * FROM communityservice WHERE identifier = @identifier', {
 		['@identifier'] = identifier
@@ -428,12 +429,29 @@ end)
 -- client cooperating at all (kills threads, mod menu, disconnect, etc. all
 -- still get caught).
 local LastEscapePenalty = {}
+local RepeatStrikes = {}
 local function PenalizeEscape(targetSource, identifier, detectedBy)
 	-- Debounce: don't stack a penalty more than once every 10s for the same
 	-- player, in case client+server both report the same escape.
 	local now = os.time()
 	if LastEscapePenalty[targetSource] and (now - LastEscapePenalty[targetSource]) < 10 then return end
 	LastEscapePenalty[targetSource] = now
+
+	-- If this keeps firing every ~10s for the same player (5+ times in a
+	-- row = a minute of continuous "escaping"), something's actually stuck
+	-- (a desynced ped, a genuinely repeat player, whatever) rather than a
+	-- one-off. Stop stacking penalties/logs forever and hand it to an
+	-- admin instead - avoids an unbounded sentence and unbounded log/
+	-- Discord spam for the same underlying issue.
+	RepeatStrikes[targetSource] = (RepeatStrikes[targetSource] or 0) + 1
+	if RepeatStrikes[targetSource] > 5 then
+		if RepeatStrikes[targetSource] == 6 then
+			if LogAdminAction then
+				LogAdminAction(targetSource, "cs-escape-repeated", ("detected by: %s | auto-penalties paused, needs manual review"):format(detectedBy))
+			end
+		end
+		return
+	end
 
 	MySQL.Async.execute('UPDATE communityservice SET actions_remaining = actions_remaining + @extension_value WHERE identifier = @identifier', {
 		['@identifier'] = identifier,
@@ -466,12 +484,25 @@ Citizen.CreateThread(function()
 			local ped = GetPlayerPed(src)
 			if ped and ped ~= 0 then
 				local coords = GetEntityCoords(ped)
-				local dist = #(vector3(coords.x, coords.y, coords.z) - PunishConfig.ServiceLocation)
-				if dist > PunishConfig.DistanceExtension then
-					local xPlayer = ESX.GetPlayerFromId(src)
-					TriggerClientEvent('Unique_Punishment:CS_ForceReturn', src)
-					if xPlayer then
-						PenalizeEscape(src, xPlayer.identifier, 'server-watchdog')
+				-- Guard against a not-yet-streamed-in ped (just connected /
+				-- still loading): the server can briefly report (0,0,0) or
+				-- another default/garbage position for a player whose ped
+				-- hasn't finished networking to it yet, which reads as "very
+				-- far from ServiceLocation" and was making this watchdog
+				-- force-teleport + log an escape penalty every ~10s for
+				-- players who were never actually anywhere near escaping -
+				-- just loading in.
+				local looksUnstreamed = (coords.x == 0.0 and coords.y == 0.0 and coords.z == 0.0)
+				if not looksUnstreamed then
+					local dist = #(vector3(coords.x, coords.y, coords.z) - PunishConfig.ServiceLocation)
+					if dist > PunishConfig.DistanceExtension then
+						local xPlayer = ESX.GetPlayerFromId(src)
+						TriggerClientEvent('Unique_Punishment:CS_ForceReturn', src)
+						if xPlayer then
+							PenalizeEscape(src, xPlayer.identifier, 'server-watchdog')
+						end
+					else
+						RepeatStrikes[src] = nil -- back in bounds, forgive the streak
 					end
 				end
 			else
@@ -485,6 +516,7 @@ AddEventHandler('playerDropped', function()
 	ActiveCS[source] = nil
 	ReleaseAcked[source] = nil
 	LastEscapePenalty[source] = nil
+	RepeatStrikes[source] = nil
 end)
 
 RegisterServerEvent("checkCommunityService")

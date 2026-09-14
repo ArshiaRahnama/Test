@@ -27,7 +27,6 @@ RegisterCommand(
                         end
                         local vehicle = json.decode(data)
                         TriggerClientEvent("Mid_Admin:SpawnVehicle", source, vehicle, args[1])
-                        print(vehicle)
                     end
                 )
             end
