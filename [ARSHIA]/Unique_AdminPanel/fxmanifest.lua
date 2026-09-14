@@ -25,6 +25,9 @@ shared_scripts {
 	'@essentialmode/locale.lua',
 	'locales/punish_en.lua',
 	'shared/punish_config.lua',
+	-- Report System (merged from standalone PNG_ReportSystem) - Config_Shared
+	-- is read by both server/report_main.lua and client/report_main.lua
+	'shared/report_shared_config.lua',
 }
 
 client_scripts {
@@ -34,7 +37,6 @@ client_scripts {
 	'client/aduty_client.lua',
 	'client/aduty_spectate.lua',
 	'client/aduty_carp.lua',
-	'client/aduty_reports.lua',
 	-- original Unique_AdminPanel
 	'client/warmenu.lua',
 	'client/general_utils.lua',
@@ -57,6 +59,11 @@ client_scripts {
 	'client/punish_utils.lua',
 	'client/punish_jail.lua',
 	'client/punish_cs.lua',
+	-- Report System (merged from standalone PNG_ReportSystem, replaces the
+	-- old JayMenu-based esx_Report:* system that used to live in
+	-- client/aduty_reports.lua / server/aduty_reports.lua)
+	'shared/report_client_config.lua',
+	'client/report_main.lua',
 }
 
 server_scripts {
@@ -67,7 +74,15 @@ server_scripts {
 	'server/aduty_commands.lua',
 	'server/aduty_spectate.lua',
 	'server/aduty_carp.lua',
-	'server/aduty_reports.lua',
+	-- Report System (merged from standalone PNG_ReportSystem - replaces the
+	-- old esx_Report:* system that used to be here as server/aduty_reports.lua).
+	-- Keeps firing 'Unique_AdminPanel:ReportClosed' and exports('GetReports', ...)
+	-- so server/investigation.lua, server/admin_tools.lua, server/reports_extra.lua
+	-- and client/nui_panel.lua's F12 report queue all keep working unmodified.
+	'shared/report_server_config.lua',
+	'shared/report_lan.lua',
+	'server/report_function.lua',
+	'server/report_main.lua',
 	-- original Unique_AdminPanel
 	'server/admin_area.lua',
 	'server/main.lua',
@@ -134,10 +149,11 @@ server_exports {
 }
 
 -- One ui_page for the whole resource (FiveM only allows one). html/index.html
--- is a small shell that hosts the AdminMenu panel (html/adminmenu.html) and
--- the UNIQUE_AC panel (ui/index.html) in separate iframes - see that file's
--- header comment for why, and how click-focus is kept from leaking between
--- the two. Neither original app's own HTML/CSS/JS was modified.
+-- is a small shell that hosts the AdminMenu panel (html/adminmenu.html), the
+-- UNIQUE_AC panel (ui/index.html), and now the Report System panel
+-- (ui/report/index.html) in separate iframes - see that file's header
+-- comment for why, and how click-focus is kept from leaking between them.
+-- Neither original app's own HTML/CSS/JS was modified.
 ui_page('html/index.html')
 files {
 	'html/index.html',
@@ -148,6 +164,14 @@ files {
 	'ui/css/*.css',
 	'ui/js/*.js',
 	'ui/assists/**/*.*',
+	-- Report System UI (merged from standalone PNG_ReportSystem, kept under
+	-- its own ui/report/ subfolder so it doesn't collide with ui/index.html
+	-- above, which is the UNIQUE_AC panel)
+	'ui/report/*.html',
+	'ui/report/css/*.css',
+	'ui/report/js/*.js',
+	'ui/report/font/*.*',
+	'ui/report/img/*.*',
 }
 
 -- FIX: server/aduty_commands.lua (migrated from esx_aduty) registers ~36 of its

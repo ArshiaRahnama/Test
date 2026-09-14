@@ -65,14 +65,14 @@ local block_singles = lookupify{0x000000A9, 0x000000AE, 0x0000203C, 0x00002049, 
 
 
 -- Was ox_inventory's client auto-handling 'ox_inventory:openInventory'.
--- esx_inventory's stash export (added specifically to support this kind of
+-- lc-inventory's stash export (added specifically to support this kind of
 -- call - see server/apps/system/stash.lua + client/apps/system/stash.lua
--- in esx_inventory) is client-side only, so the server asks this client to
+-- in lc-inventory) is client-side only, so the server asks this client to
 -- open it directly (see esx_aduty:openPlayerPropertyStash in
 -- Server/commands_1.lua's 'openproperty' admin command).
 RegisterNetEvent('esx_aduty:openPlayerPropertyStash')
 AddEventHandler('esx_aduty:openPlayerPropertyStash', function(stashId)
-	exports['esx_inventory']:stash(stashId, nil, nil, 'Property Inventory')
+	exports['lc-inventory']:stash(stashId, nil, nil, 'Property Inventory')
 end)
 
 RegisterNetEvent('esx:ActiveAdminPerks')
@@ -389,6 +389,7 @@ end)
 RegisterNetEvent("aduty:pedHandler")
 AddEventHandler("aduty:pedHandler",function(PlayerID, skin)
    local player2 = GetPlayerFromServerId(PlayerID)
+    print("this is just a debug")
     Citizen.CreateThread(function()
     local model = GetHashKey(skin)
     RequestModel(model)
@@ -488,6 +489,7 @@ RegisterNetEvent("aduty:forceStatus")
 AddEventHandler("aduty:forceStatus", function(status)
 
   ForceToVisible = status
+  print(ForceToVisible)
   visibility()
 
 end)

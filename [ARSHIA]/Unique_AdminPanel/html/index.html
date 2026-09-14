@@ -30,52 +30,68 @@
 </head>
 <body>
 <!--
-  This resource merges two previously-separate NUI apps (the AdminMenu
-  panel and the UNIQUE_AC anti-cheat panel), and FiveM only allows ONE
-  `ui_page` per resource. Rather than merging two large, independently
-  built single-page apps (html/adminmenu.html + app.js/style.css, and
-  ui/index.html + ui/js/script.js/ui/css/style.css) into one DOM - risking
-  duplicate element IDs and CSS collisions - each one keeps living in its
-  own iframe, completely isolated from the other. Neither app's internal
-  code (app.js / script.js / their CSS) was changed for this.
+  This resource merges three previously-separate NUI apps (the AdminMenu
+  panel, the UNIQUE_AC anti-cheat panel, and now the Report System panel),
+  and FiveM only allows ONE `ui_page` per resource. Rather than merging
+  large, independently built single-page apps (html/adminmenu.html +
+  app.js/style.css, ui/index.html + ui/js/script.js/ui/css/style.css, and
+  ui/report/index.html + ui/report/js/script.js/ui/report/css/*.css) into
+  one DOM - risking duplicate element IDs and CSS collisions - each one
+  keeps living in its own iframe, completely isolated from the others.
+  Neither app's internal code (app.js / script.js / their CSS) was
+  changed for this.
 
   Two things this script does:
-  1. Forwards every SendNUIMessage from Lua into BOTH iframes. Safe
-     because the two apps use non-overlapping message shapes: AdminMenu's
-     app.js switches on `event.data.type`, UNIQUE_AC's script.js checks
+  1. Forwards every SendNUIMessage from Lua into ALL THREE iframes. Safe
+     because AdminMenu's app.js switches on `event.data.type`, while both
+     UNIQUE_AC's script.js AND the Report System's script.js check
      `event.data.action` - a message meant for one is simply ignored by
      the other (neither has a `default`/`else` branch that does
-     anything). NUI callbacks (the `fetch()` calls each app makes back to
-     Lua) are unaffected by the iframe nesting - they're plain fetch()
-     calls to this resource's own NUI host, independent of which frame
-     issues them.
+     anything). Since UNIQUE_AC and the Report System BOTH key off
+     `action`, Lua-side every Report System SendNUIMessage additionally
+     sets `_pngReport = true` so this shell (see below) can tell the two
+     apart for focus routing - script.js in either iframe just ignores
+     that extra field, it doesn't affect their own `data.action` checks.
+     NUI callbacks (the `fetch()` calls each app makes back to Lua) are
+     unaffected by the iframe nesting - they're plain fetch() calls to
+     this resource's own NUI host, independent of which frame issues them.
   2. Grants `pointer-events: auto` to whichever iframe a message was
-     shaped for, and takes it away from the other - otherwise an iframe
-     sitting on top in stacking order would silently swallow every click
-     meant for the panel underneath, even while its own content is fully
-     hidden (an iframe always captures clicks over its box from the
+     shaped for, and takes it away from the other two - otherwise an
+     iframe sitting on top in stacking order would silently swallow every
+     click meant for the panel underneath, even while its own content is
+     fully hidden (an iframe always captures clicks over its box from the
      PARENT page's point of view, regardless of what - if anything - is
-     visible inside its own document). This only matters while the game
-     has actually handed mouse control to the NUI browser (SetNuiFocus
-     true) - once a panel closes and focus returns to the game, the
-     browser stops receiving mouse input entirely, so a stale
-     pointer-events value left over from the last open panel is
-     harmless.
+     visible inside its own document). `_pngReport` is checked BEFORE the
+     generic `action` check so Report System messages route to
+     report-frame instead of being mistaken for ac-frame messages (both
+     use `action`). This only matters while the game has actually handed
+     mouse control to the NUI browser (SetNuiFocus true) - once a panel
+     closes and focus returns to the game, the browser stops receiving
+     mouse input entirely, so a stale pointer-events value left over from
+     the last open panel is harmless.
 -->
 <iframe id="admin-frame" src="html/adminmenu.html"></iframe>
 <iframe id="ac-frame" src="ui/index.html"></iframe>
+<iframe id="report-frame" src="ui/report/index.html"></iframe>
 <script>
   window.addEventListener('message', function (event) {
     var data = event.data || {};
     var adminFrame = document.getElementById('admin-frame');
     var acFrame = document.getElementById('ac-frame');
+    var reportFrame = document.getElementById('report-frame');
 
-    if (typeof data.type !== 'undefined') {
+    if (data._pngReport) {
+      if (reportFrame) reportFrame.style.pointerEvents = 'auto';
+      if (adminFrame) adminFrame.style.pointerEvents = 'none';
+      if (acFrame) acFrame.style.pointerEvents = 'none';
+    } else if (typeof data.type !== 'undefined') {
       if (adminFrame) adminFrame.style.pointerEvents = 'auto';
       if (acFrame) acFrame.style.pointerEvents = 'none';
+      if (reportFrame) reportFrame.style.pointerEvents = 'none';
     } else if (typeof data.action !== 'undefined') {
       if (acFrame) acFrame.style.pointerEvents = 'auto';
       if (adminFrame) adminFrame.style.pointerEvents = 'none';
+      if (reportFrame) reportFrame.style.pointerEvents = 'none';
     }
 
     if (adminFrame && adminFrame.contentWindow) {
@@ -83,6 +99,9 @@
     }
     if (acFrame && acFrame.contentWindow) {
       acFrame.contentWindow.postMessage(event.data, '*');
+    }
+    if (reportFrame && reportFrame.contentWindow) {
+      reportFrame.contentWindow.postMessage(event.data, '*');
     }
   });
 </script>

@@ -885,6 +885,7 @@ CreateThread(function()
         local name = GetResourceByFindIndex(i)
         if name then resourceBaseline[name] = true end
     end
+    print(("^2[UNIQUE_AC]^0 Resource baseline captured: %d resources."):format(GetNumResources()))
 end)
 
 CreateThread(function()
@@ -2691,13 +2692,33 @@ function StartAntiCheat()
 
     DebugPrint("^" .. COLORS .. "[UNIQUE_AC]^0: ^2" .. loadedCount .. "/" .. #resources .. " data files loaded.^0")
 
-    -- Startup banner: consolidated into a single line (the ASCII art +
-    -- arshiahub.ir link block that used to print here, even gated behind
-    -- Debug mode, was pure branding with no functional purpose).
+    -- Full ASCII banner + links only in Debug mode, to keep a normal restart to one line.
+    if UNIQUE_AC.Debug then
+        print("^" .. COLORS .. "")
+        print([[
+    #   # #   # #####  ###  #   # #####        ###   ####
+    #   # ##  #   #   #   # #   # #           #   # #
+    #   # # # #   #   #   # #   # #           #   # #
+    #   # #  ##   #   #   # #   # ####        ##### #
+    #   # #   #   #   # # # #   # #           #   # #
+    #   # #   #   #   #  ## #   # #           #   # #
+     ###  #   # #####  ####  ###  ##### ##### #   #  ####
+                    ]])
+        print("^3═════════════════════════════════════════════════════════════════════════════════")
+        print("^1★ ^3Arshia ^1-> ^5arshiahub.ir")
+        print("^1★ ^3Payamresan ^1-> ^5arshiahub.ir/payamresan")
+        print("^1★ ^3Derive ^1-> ^5arshiahub.ir/derive")
+        print("^1★ ^3Mail ^1-> ^5arshiahub.ir/mail")
+        print("^1★ ^3Music ^1-> ^5arshiahub.ir/music")
+        print("^3═════════════════════════════════════════════════════════════════════════════════")
+        print("^6This resource is Owner by ^5arshiahub.ir^6!")
+    end
+
     local configuredPort = tostring(UNIQUE_AC.ServerConfig.Port or "auto")
     local actualPort = GetConvar("netPort", configuredPort)
     local artifact = GetConvar("version", "unknown build")
 
+    print("^" .. COLORS .. "[UNIQUE_AC]^0: ^3Server Build : " .. tostring(artifact))
     print("^" .. COLORS .. "[UNIQUE_AC]^0: ^2Version " .. tostring(UNIQUE_AC.Version) .. " started successfully on port " .. tostring(actualPort) .. ".^0")
 
     local webhook = UNIQUE_AC.Webhooks and UNIQUE_AC.Webhooks.Ban or ""

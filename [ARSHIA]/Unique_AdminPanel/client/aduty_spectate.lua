@@ -144,6 +144,7 @@ function OpenAdminActionMenu(player)
         GangLabel = 'Gang : ' .. data.gang.name
       end
 
+	  print(data.sex)
       if data.sex ~= nil then
         if data.sex == 0 then
           sex = 'Male'
@@ -241,6 +242,7 @@ end
 
 RegisterNetEvent('es_admin:setGroup')
 AddEventHandler('es_admin:setGroup', function(g)
+	print('group setted ' .. g)
 	group = g
 end)
 
@@ -268,11 +270,13 @@ AddEventHandler('esx_spectate:AdutySpectate', function()
 end)
 
 RegisterNUICallback('select', function(data, cb)
+	print("select UI " .. json.encode(data))
 	AdutySpectate(data.id)
 	SetNuiFocus(false)
 end)
 
 RegisterNUICallback('close', function(data, cb)
+	print("closing UI")
 	SetNuiFocus(false)
 end)
 
