@@ -207,7 +207,7 @@ end
 function SendToCommunityService(adminSource, target, actions_count, reason)
 	local xSender = ESX.GetPlayerFromId(adminSource)
 	if not IsAllowedToSentence(xSender) then
-		if exports.UNIQUE_AC then
+		if exports.Unique_AdminPanel then
 			exports.Unique_AdminPanel:BanPlayer(adminSource, 'Cheat Lua Executer', 'Tried esx_communityGGservice:sendToCommunityService without permission')
 		end
 		return
@@ -286,7 +286,7 @@ local playerNameVariable
 function SendToCommunityServiceOffline(adminSource, steamhex, actions_count, reason)
 	local xSender = ESX.GetPlayerFromId(adminSource)
 	if not IsAllowedToSentence(xSender) then
-		if exports.UNIQUE_AC then
+		if exports.Unique_AdminPanel then
 			exports.Unique_AdminPanel:BanPlayer(adminSource, 'Cheat Lua Executer', 'Tried esx_communityGGservice:sendToCommunityServiceoffline without permission')
 		end
 		return
