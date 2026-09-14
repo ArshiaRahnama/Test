@@ -1,0 +1,670 @@
+/* ============================================================
+   UniqueRP — Citizen Registration
+   Concept: this screen issues a character's first identity
+   document. The right panel is the intake form; the left panel
+   is a live ID card that fills itself in as you type, then gets
+   stamped on submit. The chrome borrows from records-office
+   paperwork — hairline rules, stamp ink, carbon-copy type —
+   rather than a generic game HUD.
+   ============================================================ */
+
+:root {
+	--bg-void: #05070b;
+	--bg-panel: #0c1120;
+	--bg-panel-2: #0f1626;
+	--paper: #eee6d4;
+	--paper-shade: #ddd0ac;
+	--ink: #211c14;
+	--ink-soft: #5b5340;
+	--stamp-red: #b6402f;
+	--gold: #c9a24b;
+	--gold-dim: rgba(201, 162, 75, 0.35);
+	--text-hi: #f4f6fb;
+	--text-mid: #93a0ba;
+	--text-dim: #5b6884;
+	--danger: #d1544a;
+	--radius-card: 18px;
+}
+
+* {
+	box-sizing: border-box;
+	font-family: 'Vazirmatn', 'Nunito', sans-serif;
+}
+
+html {
+	overflow: scroll;
+	overflow-x: hidden;
+}
+
+body {
+	margin: 0;
+}
+
+@font-face {
+	font-family: Peyda;
+	src: url(../fonts/Nunito/Peyda-Bold.ttf);
+}
+
+/* ---------- backdrop ---------- */
+
+.form-v6 {
+	min-height: 100vh;
+	background:
+		radial-gradient(60% 50% at 50% 38%, rgba(37, 58, 97, 0.25) 0%, rgba(5, 7, 11, 0) 70%),
+		url(background.png) center / cover no-repeat,
+		var(--bg-void);
+}
+
+.page-content {
+	width: 100%;
+	min-height: 100vh;
+	margin: 0 auto;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	padding: 60px 20px;
+}
+
+/* ---------- card shell ---------- */
+
+.form-v6-content {
+	position: relative;
+	width: 860px;
+	max-width: 100%;
+	display: flex;
+	border-radius: var(--radius-card);
+	background: linear-gradient(180deg, var(--bg-panel) 0%, var(--bg-panel-2) 100%);
+	box-shadow:
+		0 30px 70px rgba(0, 0, 0, 0.55),
+		0 0 0 1px rgba(255, 255, 255, 0.04) inset;
+	overflow: hidden;
+	/* entrance animation: starts hidden/lowered, .is-ready (added by script.js
+	   right after the game reveals the NUI) fades + lifts it into place */
+	opacity: 0;
+	transform: translateY(22px) scale(0.985);
+	transition: opacity 0.65s cubic-bezier(.16,.8,.28,1), transform 0.65s cubic-bezier(.16,.8,.28,1);
+}
+
+.form-v6-content.is-ready {
+	opacity: 1;
+	transform: translateY(0) scale(1);
+}
+
+.form-v6-content::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+	border-radius: var(--radius-card);
+	box-shadow: 0 0 0 1px var(--gold-dim) inset;
+}
+
+.form1 {
+	display: flex;
+	width: 100%;
+}
+
+.formH {
+	display: none;
+}
+
+/* ---------- left: live ID card ---------- */
+
+.sec2 {
+	width: 320px;
+	flex: 0 0 320px;
+	display: flex;
+	flex-direction: column;
+	align-items: stretch;
+	justify-content: center;
+	padding: 34px 26px;
+	background:
+		linear-gradient(160deg, rgba(255, 255, 255, 0.03), rgba(0, 0, 0, 0) 40%),
+		#0a0f1c;
+	border-right: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.sec2 img {
+	margin-left: 0;
+}
+
+.id-card {
+	position: relative;
+	background: var(--paper);
+	color: var(--ink);
+	border-radius: 12px;
+	padding: 18px 18px 22px;
+	box-shadow:
+		0 18px 30px rgba(0, 0, 0, 0.45),
+		0 0 0 1px var(--paper-shade) inset;
+	/* base tilt + a subtle live tilt driven by mouse position, set as CSS vars
+	   by script.js (--tiltX/--tiltY default to 0 so it's a no-op without JS) */
+	--tiltX: 0deg;
+	--tiltY: 0deg;
+	transform: rotate(-2deg) rotateX(var(--tiltY)) rotateY(var(--tiltX));
+	transform-style: preserve-3d;
+	transition: transform 0.25s ease-out;
+	will-change: transform;
+}
+
+.id-card:hover {
+	transform: rotate(0deg) rotateX(var(--tiltY)) rotateY(var(--tiltX));
+}
+
+.id-card__top {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding-bottom: 12px;
+	margin-bottom: 14px;
+	border-bottom: 1.5px dashed var(--paper-shade);
+}
+
+.id-card__crest {
+	width: 34px;
+	height: 34px;
+	border-radius: 50%;
+	object-fit: cover;
+	box-shadow: 0 0 0 2px var(--paper), 0 0 0 3px var(--ink-soft);
+}
+
+.id-card__heading {
+	display: flex;
+	flex-direction: column;
+	line-height: 1.25;
+}
+
+.id-card__org {
+	font-family: 'Oswald', 'Nunito', sans-serif;
+	font-size: 13px;
+	font-weight: 600;
+	letter-spacing: 1.5px;
+}
+
+.id-card__doc {
+	font-family: 'JetBrains Mono', monospace;
+	font-size: 9.5px;
+	letter-spacing: 1px;
+	color: var(--ink-soft);
+	text-transform: uppercase;
+}
+
+.id-card__photo {
+	position: relative;
+	width: 100%;
+	height: 88px;
+	border-radius: 6px;
+	background:
+		repeating-linear-gradient(135deg, rgba(33, 28, 20, 0.06) 0px, rgba(33, 28, 20, 0.06) 6px, transparent 6px, transparent 12px),
+		#e2d8bf;
+	border: 1px solid var(--paper-shade);
+	display: flex;
+	align-items: flex-end;
+	justify-content: center;
+	overflow: hidden;
+	margin-bottom: 14px;
+}
+
+/* faint scanning shimmer, like a document being verified */
+.id-card__photo::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background: linear-gradient(100deg, transparent 40%, rgba(255,255,255,0.55) 50%, transparent 60%);
+	background-size: 220% 100%;
+	background-position: 130% 0;
+	animation: photoShimmer 4.5s ease-in-out infinite;
+	pointer-events: none;
+}
+
+@keyframes photoShimmer {
+	0%, 55% { background-position: 130% 0; }
+	100% { background-position: -30% 0; }
+}
+
+.id-card__photo svg {
+	width: 56px;
+	height: 56px;
+	color: var(--ink-soft);
+	opacity: 0.55;
+}
+
+.id-card__row {
+	display: flex;
+	flex-direction: column;
+	margin-bottom: 10px;
+}
+
+.id-card__label {
+	font-family: 'JetBrains Mono', monospace;
+	font-size: 8.5px;
+	letter-spacing: 1.2px;
+	color: var(--ink-soft);
+	text-transform: uppercase;
+}
+
+.id-card__value {
+	font-family: 'Oswald', 'Nunito', sans-serif;
+	font-size: 16px;
+	font-weight: 500;
+	letter-spacing: 0.5px;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	border-bottom: 1px solid var(--paper-shade);
+	padding-bottom: 3px;
+}
+
+.id-card__value.is-filled {
+	color: #16264a;
+}
+
+.id-card__barcode {
+	margin-top: 14px;
+	height: 26px;
+	border-radius: 2px;
+	background: repeating-linear-gradient(90deg, var(--ink) 0px, var(--ink) 2px, transparent 2px, transparent 4px, var(--ink) 4px, var(--ink) 5px, transparent 5px, transparent 9px);
+	opacity: 0.85;
+}
+
+.id-card__stamp {
+	position: absolute;
+	top: 40%;
+	right: -6px;
+	font-family: 'Oswald', 'Nunito', sans-serif;
+	font-size: 13px;
+	font-weight: 700;
+	letter-spacing: 2px;
+	color: var(--stamp-red);
+	border: 2.5px solid var(--stamp-red);
+	border-radius: 6px;
+	padding: 4px 8px;
+	transform: rotate(14deg) scale(0.94);
+	opacity: 0.75;
+	text-transform: uppercase;
+	transition: all 0.25s ease;
+}
+
+.id-card__stamp.is-approved {
+	opacity: 1;
+	transform: rotate(-8deg) scale(1.1);
+	animation: stampSlam 0.35s cubic-bezier(.2, 1.4, .4, 1);
+}
+
+@keyframes stampSlam {
+	0% { transform: rotate(-8deg) scale(2.4); opacity: 0; }
+	60% { transform: rotate(-8deg) scale(0.9); opacity: 1; }
+	100% { transform: rotate(-8deg) scale(1.1); opacity: 1; }
+}
+
+.id-card__hint {
+	margin-top: 16px;
+	text-align: center;
+	font-size: 11px;
+	color: var(--text-dim);
+	letter-spacing: 0.3px;
+}
+
+/* ---------- right: intake form ---------- */
+
+.sec1 {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	padding: 40px 46px;
+	background: transparent;
+	height: auto;
+	width: auto;
+	border-radius: 0;
+}
+
+.sec1 .eyebrow {
+	font-family: 'JetBrains Mono', monospace;
+	font-size: 11px;
+	letter-spacing: 2px;
+	color: var(--gold);
+	text-transform: uppercase;
+	margin-bottom: 8px;
+}
+
+.sec1 .h {
+	font-family: 'Oswald', 'Nunito', sans-serif;
+	font-size: 30px;
+	font-weight: 600;
+	color: var(--text-hi);
+	margin: 0 0 6px;
+	letter-spacing: 0.5px;
+}
+
+.sec1 .sub {
+	font-size: 13.5px;
+	color: var(--text-mid);
+	margin: 0 0 28px;
+	line-height: 1.6;
+	font-weight: 400;
+}
+
+.form-detail {
+	position: relative;
+	width: 100%;
+}
+
+.form-row {
+	width: 100%;
+	position: relative;
+	margin-bottom: 22px;
+}
+
+.form-row label {
+	display: block;
+	font-family: 'JetBrains Mono', monospace;
+	font-size: 10.5px;
+	letter-spacing: 1.3px;
+	text-transform: uppercase;
+	color: var(--text-dim);
+	margin-bottom: 7px;
+}
+
+.form-row {
+	position: relative;
+}
+
+.form-v6-content .form-detail input {
+	width: 100%;
+	padding: 12px 4px;
+	background-color: transparent;
+	border: none;
+	border-bottom: 1.5px solid rgba(255, 255, 255, 0.14);
+	border-radius: 0;
+	appearance: none;
+	-moz-appearance: none;
+	-webkit-appearance: none;
+	outline: none;
+	font-family: 'Nunito', sans-serif;
+	font-size: 16px;
+	font-weight: 700;
+	color: var(--text-hi);
+	transition: border-color 0.2s ease;
+}
+
+.form-v6-content .form-detail .form-row input:focus {
+	border-bottom-color: var(--gold);
+}
+
+/* gold underline that sweeps in from the center on focus, instead of the
+   border just snapping to color */
+.form-row::after {
+	content: "";
+	position: absolute;
+	left: 50%;
+	bottom: 0;
+	width: 0;
+	height: 1.5px;
+	background: var(--gold);
+	box-shadow: 0 0 8px var(--gold-dim);
+	transition: width 0.3s ease, left 0.3s ease;
+	pointer-events: none;
+}
+
+.form-row:focus-within::after {
+	width: 100%;
+	left: 0;
+}
+
+.form-v6-content .form-detail .input-text {
+	margin-bottom: 0;
+}
+
+.img1, .img2 {
+	display: none;
+}
+
+input::placeholder {
+	color: var(--text-dim);
+	font-size: 15px;
+	font-weight: 400;
+}
+
+.form-row-last {
+	margin-top: 10px;
+	display: flex;
+	align-items: center;
+	justify-content: flex-start;
+}
+
+.form-v6-content .form-detail .register {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	gap: 10px;
+	background: var(--gold);
+	color: #221a08;
+	border-radius: 8px;
+	width: auto;
+	padding: 13px 26px;
+	border: none;
+	cursor: pointer;
+	font-family: 'Oswald', 'Nunito', sans-serif;
+	font-weight: 600;
+	font-size: 15px;
+	letter-spacing: 1px;
+	text-transform: uppercase;
+	box-shadow: 0 10px 24px rgba(201, 162, 75, 0.25);
+	transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+	overflow: hidden;
+}
+
+.form-v6-content .form-detail .register::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background: linear-gradient(115deg, transparent 30%, rgba(255,255,255,0.55) 48%, transparent 66%);
+	background-size: 220% 100%;
+	background-position: 130% 0;
+	transition: background-position 0.7s ease;
+	pointer-events: none;
+}
+
+.form-v6-content .form-detail .register:hover::before {
+	background-position: -30% 0;
+}
+
+.form-v6-content .form-detail .register:hover {
+	background: #d9b566;
+	transform: translateY(-1px);
+	box-shadow: 0 14px 30px rgba(201, 162, 75, 0.32);
+}
+
+.form-v6-content .form-detail .register:active {
+	transform: translateY(0px) scale(0.98);
+}
+
+/* select (kept for compatibility if used elsewhere) */
+select {
+	padding: 0px 15px 10px 15px;
+	font-family: 'Nunito', sans-serif;
+	font-size: 16px;
+	font-weight: 700;
+	color: #666;
+	width: 102%;
+	-webkit-appearance: none;
+	word-spacing: normal;
+	display: inline-block;
+	margin: 0em;
+	border: 2px solid transparent;
+	border-bottom: 2px solid #e5e5e5;
+	box-shadow: none;
+	outline: none;
+	-moz-appearance: none;
+	user-select: none;
+}
+select:focus {
+	border-bottom: 2px solid #000000;
+}
+
+#cursor {
+	position: absolute;
+	z-index: 999999;
+	display: none;
+}
+
+::-webkit-scrollbar {
+	width: 0px;
+	background: transparent;
+}
+::-webkit-scrollbar-thumb {
+	background: #000000;
+}
+
+/* ---------- modal (reskinned as a records notice) ---------- */
+
+.modal-content {
+	background: var(--bg-panel);
+	color: var(--text-hi);
+	border-radius: 12px;
+	border: 1px solid var(--gold-dim);
+	box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6);
+}
+.modal-header {
+	position: relative;
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	border-bottom: 1px dashed rgba(255, 255, 255, 0.12);
+}
+.modal-icon {
+	flex: 0 0 auto;
+	width: 26px;
+	height: 26px;
+	border-radius: 50%;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	background: rgba(209, 84, 74, 0.15);
+	border: 1.5px solid var(--danger);
+	color: var(--danger);
+	font-family: 'Oswald', 'Nunito', sans-serif;
+	font-weight: 700;
+	font-size: 14px;
+}
+.modal-title {
+	font-family: 'Oswald', 'Nunito', sans-serif;
+	letter-spacing: 1px;
+	text-transform: uppercase;
+	color: var(--danger);
+}
+.modal-footer {
+	border-top: 1px dashed rgba(255, 255, 255, 0.12);
+}
+.modal .close {
+	color: var(--text-hi);
+	opacity: 0.7;
+	text-shadow: none;
+}
+.modal-footer .btn-secondary {
+	background: transparent;
+	border: 1px solid rgba(255, 255, 255, 0.25);
+	color: var(--text-hi);
+	font-family: 'Nunito', sans-serif;
+}
+.modal-footer .btn-secondary:hover {
+	background: rgba(255, 255, 255, 0.08);
+}
+
+/* ============================================================
+   ambient background layers
+   Purely decorative, behind .page-content (z-index 0), never
+   intercepts clicks (pointer-events: none) so the form still
+   works exactly as before.
+   ============================================================ */
+
+.ambient-glow {
+	position: fixed;
+	inset: 0;
+	z-index: 0;
+	pointer-events: none;
+	background:
+		radial-gradient(38% 30% at 20% 15%, rgba(201, 162, 75, 0.10) 0%, rgba(201, 162, 75, 0) 70%),
+		radial-gradient(45% 35% at 85% 80%, rgba(37, 58, 97, 0.22) 0%, rgba(37, 58, 97, 0) 70%);
+	animation: ambientDrift 18s ease-in-out infinite alternate;
+}
+
+@keyframes ambientDrift {
+	0%   { opacity: 0.7; transform: scale(1); }
+	100% { opacity: 1;   transform: scale(1.06); }
+}
+
+.ambient-particles {
+	position: fixed;
+	inset: 0;
+	z-index: 0;
+	pointer-events: none;
+	overflow: hidden;
+}
+
+.ambient-particles .mote {
+	position: absolute;
+	bottom: -10px;
+	width: 3px;
+	height: 3px;
+	border-radius: 50%;
+	background: var(--gold);
+	opacity: 0;
+	animation-name: moteRise;
+	animation-timing-function: linear;
+	animation-iteration-count: infinite;
+}
+
+@keyframes moteRise {
+	0%   { transform: translateY(0) translateX(0); opacity: 0; }
+	8%   { opacity: 0.55; }
+	92%  { opacity: 0.35; }
+	100% { transform: translateY(-100vh) translateX(var(--drift, 30px)); opacity: 0; }
+}
+
+.ambient-vignette {
+	position: fixed;
+	inset: 0;
+	z-index: 0;
+	pointer-events: none;
+	box-shadow: inset 0 0 220px rgba(0, 0, 0, 0.65);
+}
+
+.page-content {
+	position: relative;
+	z-index: 1;
+}
+
+/* ---------- responsive ---------- */
+
+@media screen and (max-width: 860px) {
+	.form-v6-content {
+		flex-direction: column;
+		width: 92vw;
+	}
+	.sec2 {
+		width: 100%;
+		flex: 0 0 auto;
+		border-right: none;
+		border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+		padding: 26px 26px 18px;
+	}
+	.id-card {
+		max-width: 320px;
+		margin: 0 auto;
+	}
+	.sec1 {
+		padding: 30px 28px 34px;
+	}
+}
+
+@media screen and (max-width: 480px) {
+	.sec1 .h {
+		font-size: 24px;
+	}
+	.form-v6-content .form-detail .register {
+		width: 100%;
+		justify-content: center;
+	}
+}

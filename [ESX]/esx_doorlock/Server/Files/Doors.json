@@ -1,0 +1,4966 @@
+[
+    {
+        "usePin": true,
+        "_type": "double",
+        "jobs": [
+            "mt",
+            "offmt",
+            "police",
+            "offpolice",
+            "sheriff",
+            "offsheriff",
+            "fbi",
+            "offfbi"
+        ],
+        "useitem": false,
+        "item": "",
+        "pin": 998,
+        "dist": 2,
+        "_doorsDouble": [
+            {
+                "coords": {
+                    "z": 31.5723819732666,
+                    "y": 5988.82080078125,
+                    "x": -464.88275146484377
+                },
+                "heading": 224.6367645263672,
+                "model": -1501157055
+            },
+            {
+                "coords": {
+                    "z": 31.5723819732666,
+                    "y": 5990.6572265625,
+                    "x": -463.044677734375
+                },
+                "heading": 44.89983367919922,
+                "model": -1501157055
+            }
+        ],
+        "_textCoords": {
+            "z": 31.86553955078125,
+            "y": 5989.77294921875,
+            "x": -463.9885864257813
+        }
+    },
+    {
+        "usePin": true,
+        "_type": "double",
+        "jobs": [
+            "mt",
+            "offmt",
+            "police",
+            "offpolice",
+            "sheriff",
+            "offsheriff",
+            "fbi",
+            "offfbi"
+        ],
+        "useitem": false,
+        "item": "",
+        "pin": 998,
+        "dist": 2,
+        "_doorsDouble": [
+            {
+                "coords": {
+                    "z": 31.5723819732666,
+                    "y": 6000.88818359375,
+                    "x": -476.250244140625
+                },
+                "heading": 45.47817611694336,
+                "model": -1501157055
+            },
+            {
+                "coords": {
+                    "z": 31.5723819732666,
+                    "y": 5999.12353515625,
+                    "x": -478.01324462890627
+                },
+                "heading": 224.5863037109375,
+                "model": -1501157055
+            }
+        ],
+        "_textCoords": {
+            "z": 31.86743545532226,
+            "y": 6000.19775390625,
+            "x": -476.8723754882813
+        }
+    },
+    {
+        "usePin": true,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 31.57051849365234,
+            "y": 6005.640625,
+            "x": -480.2616271972656
+        },
+        "_doorModel": -1625169788,
+        "useitem": false,
+        "item": "",
+        "pin": 998,
+        "dist": 2,
+        "_textCoords": {
+            "z": 31.59583473205566,
+            "y": 6006.27197265625,
+            "x": -480.8356628417969
+        },
+        "_heading": 314.41156005859377,
+        "jobs": [
+            "mt",
+            "offmt",
+            "police",
+            "offpolice",
+            "sheriff",
+            "offsheriff",
+            "fbi",
+            "offfbi"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 31.57237815856933,
+            "y": 5999.048828125,
+            "x": -486.1170959472656
+        },
+        "_doorModel": 631614199,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 31.7488784790039,
+            "y": 5999.8203125,
+            "x": -485.3064575195313
+        },
+        "_heading": 226.29066467285157,
+        "jobs": [
+            "mt",
+            "offmt",
+            "police",
+            "offpolice",
+            "sheriff",
+            "offsheriff",
+            "fbi",
+            "offfbi"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 31.57237815856933,
+            "y": 5995.95361328125,
+            "x": -489.2747192382813
+        },
+        "_doorModel": 631614199,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 31.76002693176269,
+            "y": 5996.19482421875,
+            "x": -488.9677429199219
+        },
+        "_heading": 226.0,
+        "jobs": [
+            "mt",
+            "offmt",
+            "police",
+            "offpolice",
+            "sheriff",
+            "offsheriff",
+            "fbi",
+            "offfbi"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 31.57237815856933,
+            "y": 5990.15625,
+            "x": -494.8102111816406
+        },
+        "_doorModel": 631614199,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 31.85906028747558,
+            "y": 5990.5927734375,
+            "x": -494.3144226074219
+        },
+        "_heading": 226.0,
+        "jobs": [
+            "mt",
+            "offmt",
+            "police",
+            "offpolice",
+            "sheriff",
+            "offsheriff",
+            "fbi",
+            "offfbi"
+        ]
+    },
+    {
+        "usePin": true,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 31.57237815856933,
+            "y": 5990.27783203125,
+            "x": -458.5135498046875
+        },
+        "_doorModel": -519068795,
+        "useitem": false,
+        "item": "",
+        "pin": 998,
+        "dist": 2,
+        "_textCoords": {
+            "z": 31.63213348388672,
+            "y": 5989.86767578125,
+            "x": -458.92047119140627
+        },
+        "_heading": 225.25,
+        "jobs": [
+            "mt",
+            "offmt",
+            "police",
+            "offpolice",
+            "sheriff",
+            "offsheriff",
+            "fbi",
+            "offfbi"
+        ]
+    },
+    {
+        "usePin": true,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 31.57238006591797,
+            "y": 5981.962890625,
+            "x": -466.9399108886719
+        },
+        "_doorModel": -952356348,
+        "useitem": false,
+        "item": "",
+        "pin": 998,
+        "dist": 2,
+        "_textCoords": {
+            "z": 31.83243942260742,
+            "y": 5981.48779296875,
+            "x": -467.4350280761719
+        },
+        "_heading": 45.5,
+        "jobs": [
+            "mt",
+            "offmt",
+            "police",
+            "offpolice",
+            "sheriff",
+            "offsheriff",
+            "fbi",
+            "offfbi"
+        ]
+    },
+    {
+        "usePin": true,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 31.5723819732666,
+            "y": 5973.10400390625,
+            "x": -476.08111572265627
+        },
+        "_doorModel": -1501157055,
+        "useitem": false,
+        "item": "",
+        "pin": 998,
+        "dist": 2,
+        "_textCoords": {
+            "z": 31.71358299255371,
+            "y": 5973.5751953125,
+            "x": -475.66888427734377
+        },
+        "_heading": 225.15000915527345,
+        "jobs": [
+            "mt",
+            "offmt",
+            "police",
+            "offpolice",
+            "sheriff",
+            "offsheriff",
+            "fbi",
+            "offfbi"
+        ]
+    },
+    {
+        "usePin": true,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 31.57238006591797,
+            "y": 5977.6025390625,
+            "x": -486.3029479980469
+        },
+        "_doorModel": -952356348,
+        "useitem": false,
+        "item": "",
+        "pin": 998,
+        "dist": 2,
+        "_textCoords": {
+            "z": 31.82848167419433,
+            "y": 5978.298828125,
+            "x": -485.5714111328125
+        },
+        "_heading": 224.72500610351569,
+        "jobs": [
+            "mt",
+            "offmt",
+            "police",
+            "offpolice",
+            "sheriff",
+            "offsheriff",
+            "fbi",
+            "offfbi"
+        ]
+    },
+    {
+        "usePin": true,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 31.57238006591797,
+            "y": 5981.30078125,
+            "x": -482.5158081054688
+        },
+        "_doorModel": -952356348,
+        "useitem": false,
+        "item": "",
+        "pin": 998,
+        "dist": 2,
+        "_textCoords": {
+            "z": 31.44765090942382,
+            "y": 5981.6875,
+            "x": -482.04638671875
+        },
+        "_heading": 224.23109436035157,
+        "jobs": [
+            "mt",
+            "offmt",
+            "police",
+            "offpolice",
+            "sheriff",
+            "offsheriff",
+            "fbi",
+            "offfbi"
+        ]
+    },
+    {
+        "usePin": true,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 31.57237815856933,
+            "y": 5982.85205078125,
+            "x": -477.86773681640627
+        },
+        "_doorModel": -519068795,
+        "useitem": false,
+        "item": "",
+        "pin": 998,
+        "dist": 2,
+        "_textCoords": {
+            "z": 31.45718955993652,
+            "y": 5982.5732421875,
+            "x": -477.5963134765625
+        },
+        "_heading": 314.25,
+        "jobs": [
+            "mt",
+            "offmt",
+            "police",
+            "offpolice",
+            "sheriff",
+            "offsheriff",
+            "fbi",
+            "offfbi"
+        ]
+    },
+    {
+        "usePin": true,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 31.57237815856933,
+            "y": 5990.16064453125,
+            "x": -476.9541015625
+        },
+        "_doorModel": 631614199,
+        "useitem": false,
+        "item": "",
+        "pin": 998,
+        "dist": 2,
+        "_textCoords": {
+            "z": 31.5505256652832,
+            "y": 5990.6396484375,
+            "x": -476.4110107421875
+        },
+        "_heading": 225.65000915527345,
+        "jobs": [
+            "mt",
+            "offmt",
+            "police",
+            "offpolice",
+            "sheriff",
+            "offsheriff",
+            "fbi",
+            "offfbi"
+        ]
+    },
+    {
+        "usePin": true,
+        "_type": "double",
+        "jobs": [
+            "mt",
+            "offmt",
+            "police",
+            "offpolice",
+            "sheriff",
+            "offsheriff",
+            "fbi",
+            "offfbi"
+        ],
+        "useitem": false,
+        "item": "",
+        "pin": 998,
+        "dist": 2,
+        "_doorsDouble": [
+            {
+                "coords": {
+                    "z": 31.5723819732666,
+                    "y": 5998.18359375,
+                    "x": -465.0649719238281
+                },
+                "heading": 315.0645446777344,
+                "model": -1501157055
+            },
+            {
+                "coords": {
+                    "z": 31.5723819732666,
+                    "y": 6000.0380859375,
+                    "x": -466.8912048339844
+                },
+                "heading": 131.003173828125,
+                "model": -1501157055
+            }
+        ],
+        "_textCoords": {
+            "z": 31.72354125976562,
+            "y": 5999.2177734375,
+            "x": -466.1257629394531
+        }
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 30.82319259643554,
+            "y": -977.60107421875,
+            "x": 440.52008056640627
+        },
+        "_doorModel": -1406685646,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 30.87343597412109,
+            "y": -977.6260986328124,
+            "x": 441.1904296875
+        },
+        "_heading": 0.0,
+        "jobs": [
+            "mt",
+            "offmt",
+            "police",
+            "offpolice",
+            "sheriff",
+            "offsheriff",
+            "fbi",
+            "offfbi"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 30.82319259643554,
+            "y": -986.2334594726564,
+            "x": 440.52008056640627
+        },
+        "_doorModel": -96679321,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 30.99735260009765,
+            "y": -986.2422485351564,
+            "x": 441.4939880371094
+        },
+        "_heading": 179.4787750244141,
+        "jobs": [
+            "mt",
+            "offmt",
+            "police",
+            "offpolice",
+            "sheriff",
+            "offsheriff",
+            "fbi",
+            "offfbi"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "double",
+        "jobs": [
+            "mt",
+            "offmt",
+            "police",
+            "offpolice",
+            "sheriff",
+            "offsheriff",
+            "fbi",
+            "offfbi"
+        ],
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_doorsDouble": [
+            {
+                "coords": {
+                    "z": 30.82319259643554,
+                    "y": -993.9112548828124,
+                    "x": 438.1970825195313
+                },
+                "heading": 270.0000305175781,
+                "model": -288803980
+            },
+            {
+                "coords": {
+                    "z": 30.82319259643554,
+                    "y": -996.316650390625,
+                    "x": 438.1970825195313
+                },
+                "heading": 89.9999771118164,
+                "model": -288803980
+            }
+        ],
+        "_textCoords": {
+            "z": 30.9896125793457,
+            "y": -995.6819458007813,
+            "x": 438.1975708007813
+        }
+    },
+    {
+        "usePin": false,
+        "_type": "double",
+        "jobs": [
+            "mt",
+            "offmt",
+            "police",
+            "offpolice",
+            "sheriff",
+            "offsheriff",
+            "fbi",
+            "offfbi"
+        ],
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_doorsDouble": [
+            {
+                "coords": {
+                    "z": 30.81530380249023,
+                    "y": -998.7462158203124,
+                    "x": 443.061767578125
+                },
+                "heading": 180.0000152587891,
+                "model": -1547307588
+            },
+            {
+                "coords": {
+                    "z": 30.81530380249023,
+                    "y": -998.7462158203124,
+                    "x": 440.73919677734377
+                },
+                "heading": 0.0,
+                "model": -1547307588
+            }
+        ],
+        "_textCoords": {
+            "z": 31.02908706665039,
+            "y": -998.7398681640624,
+            "x": 442.1595458984375
+        }
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 30.82319259643554,
+            "y": -984.201416015625,
+            "x": 445.4067077636719
+        },
+        "_doorModel": -1406685646,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 30.89545440673828,
+            "y": -983.3883056640624,
+            "x": 445.4175109863281
+        },
+        "_heading": 89.9999771118164,
+        "jobs": [
+            "mt",
+            "offmt",
+            "police",
+            "offpolice",
+            "sheriff",
+            "offsheriff",
+            "fbi",
+            "offfbi"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 30.82319259643554,
+            "y": -995.525390625,
+            "x": 452.2662658691406
+        },
+        "_doorModel": -96679321,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 31.01210594177246,
+            "y": -995.7587280273438,
+            "x": 452.5000915527344
+        },
+        "_heading": 134.97177124023438,
+        "jobs": [
+            "mt",
+            "offmt",
+            "police",
+            "offpolice",
+            "sheriff",
+            "offsheriff",
+            "fbi",
+            "offfbi"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 30.82319259643554,
+            "y": -976.8864135742188,
+            "x": 458.6543273925781
+        },
+        "_doorModel": -1406685646,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 30.83291053771972,
+            "y": -977.7413330078124,
+            "x": 458.62933349609377
+        },
+        "_heading": 270.0000305175781,
+        "jobs": [
+            "mt",
+            "offmt",
+            "police",
+            "offpolice",
+            "sheriff",
+            "offsheriff",
+            "fbi",
+            "offfbi"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "double",
+        "jobs": [
+            "mt",
+            "offmt",
+            "police",
+            "offpolice",
+            "sheriff",
+            "offsheriff",
+            "fbi",
+            "offfbi"
+        ],
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_doorsDouble": [
+            {
+                "coords": {
+                    "z": 30.8153076171875,
+                    "y": -972.2542724609376,
+                    "x": 458.208740234375
+                },
+                "heading": 180.0000152587891,
+                "model": -1547307588
+            },
+            {
+                "coords": {
+                    "z": 30.8153076171875,
+                    "y": -972.2542724609376,
+                    "x": 455.88616943359377
+                },
+                "heading": 0.0,
+                "model": -1547307588
+            }
+        ],
+        "_textCoords": {
+            "z": 30.98787307739257,
+            "y": -972.2733154296876,
+            "x": 457.1896057128906
+        }
+    },
+    {
+        "usePin": false,
+        "_type": "double",
+        "jobs": [
+            "mt",
+            "offmt",
+            "police",
+            "offpolice",
+            "sheriff",
+            "offsheriff",
+            "fbi",
+            "offfbi"
+        ],
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_doorsDouble": [
+            {
+                "coords": {
+                    "z": 30.82319259643554,
+                    "y": -985.0313110351564,
+                    "x": 469.4406127929688
+                },
+                "heading": 269.9881896972656,
+                "model": -288803980
+            },
+            {
+                "coords": {
+                    "z": 30.82319259643554,
+                    "y": -987.4376831054688,
+                    "x": 469.4406127929688
+                },
+                "heading": 90.46472930908205,
+                "model": -288803980
+            }
+        ],
+        "_textCoords": {
+            "z": 31.07645606994629,
+            "y": -986.0467529296876,
+            "x": 469.4340515136719
+        }
+    },
+    {
+        "usePin": false,
+        "_type": "double",
+        "jobs": [
+            "mt",
+            "offmt",
+            "police",
+            "offpolice",
+            "sheriff",
+            "offsheriff",
+            "fbi",
+            "offfbi"
+        ],
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_doorsDouble": [
+            {
+                "coords": {
+                    "z": 30.82319259643554,
+                    "y": -984.3721923828124,
+                    "x": 475.3836975097656
+                },
+                "heading": 180.0000152587891,
+                "model": 149284793
+            },
+            {
+                "coords": {
+                    "z": 30.82319259643554,
+                    "y": -984.3721923828124,
+                    "x": 472.97808837890627
+                },
+                "heading": 0.00344177056103,
+                "model": 149284793
+            }
+        ],
+        "_textCoords": {
+            "z": 30.94827270507812,
+            "y": -984.3915405273438,
+            "x": 473.63275146484377
+        }
+    },
+    {
+        "usePin": false,
+        "_type": "double",
+        "jobs": [
+            "mt",
+            "offmt",
+            "police",
+            "offpolice",
+            "sheriff",
+            "offsheriff",
+            "fbi",
+            "offfbi"
+        ],
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_doorsDouble": [
+            {
+                "coords": {
+                    "z": 30.82319259643554,
+                    "y": -989.82470703125,
+                    "x": 472.9776916503906
+                },
+                "heading": 180.0000152587891,
+                "model": -96679321
+            },
+            {
+                "coords": {
+                    "z": 30.82319259643554,
+                    "y": -989.82470703125,
+                    "x": 475.3836975097656
+                },
+                "heading": 180.0000152587891,
+                "model": -1406685646
+            }
+        ],
+        "_textCoords": {
+            "z": 31.0741901397705,
+            "y": -989.82421875,
+            "x": 473.5728454589844
+        }
+    },
+    {
+        "usePin": false,
+        "_type": "double",
+        "jobs": [
+            "mt",
+            "offmt",
+            "police",
+            "offpolice",
+            "sheriff",
+            "offsheriff",
+            "fbi",
+            "offfbi"
+        ],
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_doorsDouble": [
+            {
+                "coords": {
+                    "z": 30.82319259643554,
+                    "y": -986.215087890625,
+                    "x": 479.7533874511719
+                },
+                "heading": 270.0000305175781,
+                "model": -1406685646
+            },
+            {
+                "coords": {
+                    "z": 30.82319259643554,
+                    "y": -988.620361328125,
+                    "x": 479.7533874511719
+                },
+                "heading": 270.0000305175781,
+                "model": -96679321
+            }
+        ],
+        "_textCoords": {
+            "z": 31.08416557312011,
+            "y": -987.478515625,
+            "x": 479.7283935546875
+        }
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 30.7891674041748,
+            "y": -999.6290283203124,
+            "x": 479.750732421875
+        },
+        "_doorModel": -692649124,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 31.0520076751709,
+            "y": -998.7727661132813,
+            "x": 479.7169189453125
+        },
+        "_heading": 90.56446838378906,
+        "jobs": [
+            "mt",
+            "offmt",
+            "police",
+            "offpolice",
+            "sheriff",
+            "offsheriff",
+            "fbi",
+            "offfbi"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 30.82319259643554,
+            "y": -999.6306762695313,
+            "x": 476.7511596679688
+        },
+        "_doorModel": -1406685646,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 31.13649559020996,
+            "y": -998.9517822265624,
+            "x": 476.7516479492188
+        },
+        "_heading": 89.9999771118164,
+        "jobs": [
+            "mt",
+            "offmt",
+            "police",
+            "offpolice",
+            "sheriff",
+            "offsheriff",
+            "fbi",
+            "offfbi"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 30.78697204589843,
+            "y": -1000.1892700195313,
+            "x": 487.4378356933594
+        },
+        "_doorModel": -692649124,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 31.0569839477539,
+            "y": -1000.2334594726564,
+            "x": 486.5792236328125
+        },
+        "_heading": 181.280014038086,
+        "jobs": [
+            "mt",
+            "offmt",
+            "police",
+            "offpolice",
+            "sheriff",
+            "offsheriff",
+            "fbi",
+            "offfbi"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "double",
+        "jobs": [
+            "mt",
+            "offmt",
+            "police",
+            "offpolice",
+            "sheriff",
+            "offsheriff",
+            "fbi",
+            "offfbi"
+        ],
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_doorsDouble": [
+            {
+                "coords": {
+                    "z": 30.78697204589843,
+                    "y": -1002.9019775390624,
+                    "x": 485.61334228515627
+                },
+                "heading": 0.0,
+                "model": -692649124
+            },
+            {
+                "coords": {
+                    "z": 30.78697204589843,
+                    "y": -1002.9019775390624,
+                    "x": 488.0184326171875
+                },
+                "heading": 180.0000152587891,
+                "model": -692649124
+            }
+        ],
+        "_textCoords": {
+            "z": 31.12362480163574,
+            "y": -1002.876953125,
+            "x": 487.2596740722656
+        }
+    },
+    {
+        "usePin": false,
+        "_type": "double",
+        "jobs": [
+            "mt",
+            "offmt",
+            "police",
+            "offpolice",
+            "sheriff",
+            "offsheriff",
+            "fbi",
+            "offfbi"
+        ],
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_doorsDouble": [
+            {
+                "coords": {
+                    "z": 26.40548324584961,
+                    "y": -1000.543701171875,
+                    "x": 467.522216796875
+                },
+                "heading": 0.0,
+                "model": -288803980
+            },
+            {
+                "coords": {
+                    "z": 26.40548324584961,
+                    "y": -1000.543701171875,
+                    "x": 469.9273681640625
+                },
+                "heading": 180.0000152587891,
+                "model": -288803980
+            }
+        ],
+        "_textCoords": {
+            "z": 26.64714622497558,
+            "y": -1000.520263671875,
+            "x": 468.7326965332031
+        }
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 26.3707046508789,
+            "y": -997.50927734375,
+            "x": 464.1565551757813
+        },
+        "_doorModel": 1830360419,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 26.53834724426269,
+            "y": -996.6874389648438,
+            "x": 464.1835021972656
+        },
+        "_heading": 89.90768432617188,
+        "jobs": [
+            "mt",
+            "offmt",
+            "police",
+            "offpolice",
+            "sheriff",
+            "offsheriff",
+            "fbi",
+            "offfbi"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 26.3707046508789,
+            "y": -974.6655883789064,
+            "x": 464.1590576171875
+        },
+        "_doorModel": 1830360419,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 26.54808807373047,
+            "y": -975.0205078125,
+            "x": 464.1583251953125
+        },
+        "_heading": 269.78997802734377,
+        "jobs": [
+            "mt",
+            "offmt",
+            "police",
+            "offpolice",
+            "sheriff",
+            "offsheriff",
+            "fbi",
+            "offfbi"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "double",
+        "jobs": [
+            "mt",
+            "offmt",
+            "police",
+            "offpolice",
+            "sheriff",
+            "offsheriff",
+            "fbi",
+            "offfbi"
+        ],
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_doorsDouble": [
+            {
+                "coords": {
+                    "z": 26.40548324584961,
+                    "y": -987.4373779296876,
+                    "x": 471.3753051757813
+                },
+                "heading": 270.0000305175781,
+                "model": -96679321
+            },
+            {
+                "coords": {
+                    "z": 26.40548324584961,
+                    "y": -985.0319213867188,
+                    "x": 471.3753051757813
+                },
+                "heading": 270.0000305175781,
+                "model": -1406685646
+            }
+        ],
+        "_textCoords": {
+            "z": 26.68698501586914,
+            "y": -985.6661987304688,
+            "x": 471.3748168945313
+        }
+    },
+    {
+        "usePin": false,
+        "_type": "double",
+        "jobs": [
+            "mt",
+            "offmt",
+            "police",
+            "offpolice",
+            "sheriff",
+            "offsheriff",
+            "fbi",
+            "offfbi"
+        ],
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_doorsDouble": [
+            {
+                "coords": {
+                    "z": 26.40548324584961,
+                    "y": -1007.7933959960938,
+                    "x": 471.3678588867188
+                },
+                "heading": 270.06903076171877,
+                "model": 149284793
+            },
+            {
+                "coords": {
+                    "z": 26.40548324584961,
+                    "y": -1010.1978759765624,
+                    "x": 471.3758239746094
+                },
+                "heading": 90.01419830322266,
+                "model": 149284793
+            }
+        ],
+        "_textCoords": {
+            "z": 26.59119796752929,
+            "y": -1009.5211181640624,
+            "x": 471.3556823730469
+        }
+    },
+    {
+        "usePin": false,
+        "_type": "double",
+        "jobs": [
+            "mt",
+            "offmt",
+            "police",
+            "offpolice",
+            "sheriff",
+            "offsheriff",
+            "fbi",
+            "offfbi"
+        ],
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_doorsDouble": [
+            {
+                "coords": {
+                    "z": 26.48381614685058,
+                    "y": -1014.406005859375,
+                    "x": 467.3686218261719
+                },
+                "heading": 0.0,
+                "model": -692649124
+            },
+            {
+                "coords": {
+                    "z": 26.48381614685058,
+                    "y": -1014.406005859375,
+                    "x": 469.7742614746094
+                },
+                "heading": 180.0000152587891,
+                "model": -692649124
+            }
+        ],
+        "_textCoords": {
+            "z": 26.75991630554199,
+            "y": -1014.3809814453124,
+            "x": 468.9635009765625
+        }
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 26.40638542175293,
+            "y": -1010.8193359375,
+            "x": 475.953857421875
+        },
+        "_doorModel": -1406685646,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 26.49828720092773,
+            "y": -1010.81884765625,
+            "x": 475.0352478027344
+        },
+        "_heading": 180.0000152587891,
+        "jobs": [
+            "mt",
+            "offmt",
+            "police",
+            "offpolice",
+            "sheriff",
+            "offsheriff",
+            "fbi",
+            "offfbi"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 26.48005485534668,
+            "y": -1012.1886596679688,
+            "x": 483.9127197265625
+        },
+        "_doorModel": -53345114,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 26.58112525939941,
+            "y": -1012.1627807617188,
+            "x": 482.9056091308594
+        },
+        "_heading": 0.0,
+        "jobs": [
+            "mt",
+            "offmt",
+            "police",
+            "offpolice",
+            "sheriff",
+            "offsheriff",
+            "fbi",
+            "offfbi"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 26.48005485534668,
+            "y": -1012.1886596679688,
+            "x": 480.9128112792969
+        },
+        "_doorModel": -53345114,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 26.50039482116699,
+            "y": -1012.1607055664064,
+            "x": 479.8774108886719
+        },
+        "_heading": 359.92987060546877,
+        "jobs": [
+            "mt",
+            "offmt",
+            "police",
+            "offpolice",
+            "sheriff",
+            "offsheriff",
+            "fbi",
+            "offfbi"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 26.48005485534668,
+            "y": -1012.1886596679688,
+            "x": 486.9131164550781
+        },
+        "_doorModel": -53345114,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 26.4733715057373,
+            "y": -1012.1627807617188,
+            "x": 485.8351745605469
+        },
+        "_heading": 0.0,
+        "jobs": [
+            "mt",
+            "offmt",
+            "police",
+            "offpolice",
+            "sheriff",
+            "offsheriff",
+            "fbi",
+            "offfbi"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 26.48005485534668,
+            "y": -1007.734375,
+            "x": 484.1764221191406
+        },
+        "_doorModel": -53345114,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 26.48905372619629,
+            "y": -1007.76025390625,
+            "x": 485.2926330566406
+        },
+        "_heading": 180.0000152587891,
+        "jobs": [
+            "mt",
+            "offmt",
+            "police",
+            "offpolice",
+            "sheriff",
+            "offsheriff",
+            "fbi",
+            "offfbi"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 26.48005485534668,
+            "y": -1004.1179809570313,
+            "x": 481.00836181640627
+        },
+        "_doorModel": -53345114,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 26.502534866333,
+            "y": -1004.14599609375,
+            "x": 482.1450500488281
+        },
+        "_heading": 179.85400390625,
+        "jobs": [
+            "mt",
+            "offmt",
+            "police",
+            "offpolice",
+            "sheriff",
+            "offsheriff",
+            "fbi",
+            "offfbi"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 26.40650367736816,
+            "y": -1003.1729736328124,
+            "x": 479.0599670410156
+        },
+        "_doorModel": -288803980,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 26.54293251037597,
+            "y": -1002.0626831054688,
+            "x": 479.1810607910156
+        },
+        "_heading": 89.9999771118164,
+        "jobs": [
+            "mt",
+            "offmt",
+            "police",
+            "offpolice",
+            "sheriff",
+            "offsheriff",
+            "fbi",
+            "offfbi"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "double",
+        "jobs": [
+            "mt",
+            "offmt",
+            "police",
+            "offpolice",
+            "sheriff",
+            "offsheriff",
+            "fbi",
+            "offfbi"
+        ],
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_doorsDouble": [
+            {
+                "coords": {
+                    "z": 26.40650367736816,
+                    "y": -997.9099731445313,
+                    "x": 482.0685729980469
+                },
+                "heading": 180.0000152587891,
+                "model": 149284793
+            },
+            {
+                "coords": {
+                    "z": 26.40650367736816,
+                    "y": -997.9099731445313,
+                    "x": 479.6637573242188
+                },
+                "heading": 0.0,
+                "model": 149284793
+            }
+        ],
+        "_textCoords": {
+            "z": 26.74161720275879,
+            "y": -997.9288330078124,
+            "x": 480.5055541992188
+        }
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 26.40548324584961,
+            "y": -995.728515625,
+            "x": 482.6702575683594
+        },
+        "_doorModel": -1406685646,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 26.49296379089355,
+            "y": -996.5628051757813,
+            "x": 482.6697692871094
+        },
+        "_heading": 270.0000305175781,
+        "jobs": [
+            "mt",
+            "offmt",
+            "police",
+            "offpolice",
+            "sheriff",
+            "offsheriff",
+            "fbi",
+            "offfbi"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 26.40548324584961,
+            "y": -992.2991333007813,
+            "x": 482.669921875
+        },
+        "_doorModel": -1406685646,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 26.5350399017334,
+            "y": -992.6798706054688,
+            "x": 482.66943359375
+        },
+        "_heading": 270.0000305175781,
+        "jobs": [
+            "mt",
+            "offmt",
+            "police",
+            "offpolice",
+            "sheriff",
+            "offsheriff",
+            "fbi",
+            "offfbi"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 26.40548324584961,
+            "y": -987.5791625976564,
+            "x": 482.6701354980469
+        },
+        "_doorModel": -1406685646,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 26.5547981262207,
+            "y": -987.9967041015624,
+            "x": 482.6696472167969
+        },
+        "_heading": 270.0000305175781,
+        "jobs": [
+            "mt",
+            "offmt",
+            "police",
+            "offpolice",
+            "sheriff",
+            "offsheriff",
+            "fbi",
+            "offfbi"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 26.40548324584961,
+            "y": -983.98681640625,
+            "x": 482.66943359375
+        },
+        "_doorModel": -1406685646,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 26.64731407165527,
+            "y": -984.4505004882813,
+            "x": 482.6689453125
+        },
+        "_heading": 270.0000305175781,
+        "jobs": [
+            "mt",
+            "offmt",
+            "police",
+            "offpolice",
+            "sheriff",
+            "offsheriff",
+            "fbi",
+            "offfbi"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "double",
+        "jobs": [
+            "mt",
+            "offmt",
+            "police",
+            "offpolice",
+            "sheriff",
+            "offsheriff",
+            "fbi",
+            "offfbi"
+        ],
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_doorsDouble": [
+            {
+                "coords": {
+                    "z": 26.40548324584961,
+                    "y": -985.0323486328124,
+                    "x": 479.0624084472656
+                },
+                "heading": 270.0000305175781,
+                "model": 149284793
+            },
+            {
+                "coords": {
+                    "z": 26.40548324584961,
+                    "y": -987.4375610351564,
+                    "x": 479.0624084472656
+                },
+                "heading": 89.9999771118164,
+                "model": 149284793
+            }
+        ],
+        "_textCoords": {
+            "z": 26.70350074768066,
+            "y": -986.8590698242188,
+            "x": 479.081298828125
+        }
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 26.40548324584961,
+            "y": -997.9100952148438,
+            "x": 478.2891540527344
+        },
+        "_doorModel": 149284793,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 26.39298629760742,
+            "y": -997.910400390625,
+            "x": 477.24566650390627
+        },
+        "_heading": 181.38851928710936,
+        "jobs": [
+            "mt",
+            "offmt",
+            "police",
+            "offpolice",
+            "sheriff",
+            "offsheriff",
+            "fbi",
+            "offfbi"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 26.40548324584961,
+            "y": -990.4839477539064,
+            "x": 475.8323364257813
+        },
+        "_doorModel": -692649124,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 26.66250419616699,
+            "y": -989.7613525390624,
+            "x": 475.145751953125
+        },
+        "_heading": 134.97177124023438,
+        "jobs": [
+            "mt",
+            "offmt",
+            "police",
+            "offpolice",
+            "sheriff",
+            "offsheriff",
+            "fbi",
+            "offfbi"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "slide",
+        "doorCoords": {
+            "z": 52.52484893798828,
+            "y": 68.390380859375,
+            "x": -1474.131103515625
+        },
+        "_doorModel": -2125423493,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 5,
+        "_textCoords": {
+            "z": 53.18323135375976,
+            "y": 68.61585235595703,
+            "x": -1471.2305908203126
+        },
+        "_heading": 4.9470944404602,
+        "jobs": [
+            "Mafia"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "slide",
+        "doorCoords": {
+            "z": 26.73784255981445,
+            "y": -1000.7814331054688,
+            "x": 431.4119262695313
+        },
+        "_doorModel": 2130672747,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 7,
+        "_textCoords": {
+            "z": 26.03632545471191,
+            "y": -1000.9337158203124,
+            "x": 431.55474853515627
+        },
+        "_heading": 360.0,
+        "jobs": [
+            "mt",
+            "offmt",
+            "police",
+            "offpolice",
+            "sheriff",
+            "offsheriff",
+            "fbi",
+            "offfbi"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "slide",
+        "doorCoords": {
+            "z": 26.75881004333496,
+            "y": -1000.7859497070313,
+            "x": 452.3005065917969
+        },
+        "_doorModel": 2130672747,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 7,
+        "_textCoords": {
+            "z": 25.81084060668945,
+            "y": -1000.7354125976564,
+            "x": 452.0301208496094
+        },
+        "_heading": 360.0,
+        "jobs": [
+            "mt",
+            "offmt",
+            "police",
+            "offpolice",
+            "sheriff",
+            "offsheriff",
+            "fbi",
+            "offfbi"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 33.66325759887695,
+            "y": 3815.365966796875,
+            "x": 1972.7689208984376
+        },
+        "_doorModel": 132154435,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 33.67312240600586,
+            "y": 3815.6201171875,
+            "x": 1973.306396484375
+        },
+        "_heading": 29.99999237060547,
+        "jobs": [
+            "Sohrab"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "double",
+        "jobs": [
+            "fbi",
+            "offfbi"
+        ],
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 5,
+        "_doorsDouble": [
+            {
+                "coords": {
+                    "z": 46.18170928955078,
+                    "y": -742.6982421875,
+                    "x": 106.3792724609375
+                },
+                "heading": 77.99242401123047,
+                "model": -1517873911
+            },
+            {
+                "coords": {
+                    "z": 46.18265533447265,
+                    "y": -746.64599609375,
+                    "x": 105.76067352294922
+                },
+                "heading": 83.96348571777344,
+                "model": -90456267
+            }
+        ],
+        "_textCoords": {
+            "z": 46.26409149169922,
+            "y": -744.66796875,
+            "x": 106.02166748046877
+        }
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 45.9011116027832,
+            "y": -760.454833984375,
+            "x": 127.84889221191406
+        },
+        "_doorModel": -2051651622,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 45.83295059204101,
+            "y": -760.0796508789063,
+            "x": 126.63468933105468
+        },
+        "_heading": 340.4562072753906,
+        "jobs": [
+            "fbi",
+            "offfbi"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 242.301986694336,
+            "y": -764.6934814453125,
+            "x": 127.20916748046877
+        },
+        "_doorModel": -1821777087,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 3,
+        "_textCoords": {
+            "z": 242.284896850586,
+            "y": -763.5643310546875,
+            "x": 127.6467514038086
+        },
+        "_heading": 249.99996948242188,
+        "jobs": [
+            "fbi",
+            "offfbi"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 242.3021697998047,
+            "y": -768.805419921875,
+            "x": 138.5111541748047
+        },
+        "_doorModel": -1821777087,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 3,
+        "_textCoords": {
+            "z": 242.28233337402345,
+            "y": -767.67919921875,
+            "x": 138.7883758544922
+        },
+        "_heading": 249.99996948242188,
+        "jobs": [
+            "fbi",
+            "offfbi"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "slide",
+        "doorCoords": {
+            "z": 37.72630310058594,
+            "y": -154.93658447265626,
+            "x": -360.216796875
+        },
+        "_doorModel": 260701421,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 5,
+        "_textCoords": {
+            "z": 38.09418869018555,
+            "y": -154.83384704589845,
+            "x": -360.1789855957031
+        },
+        "_heading": 30.0000057220459,
+        "jobs": [
+            "mechanic",
+            "offmechanic"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "slide",
+        "doorCoords": {
+            "z": 38.01138687133789,
+            "y": -166.53225708007813,
+            "x": -341.7755432128906
+        },
+        "_doorModel": 1157738230,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 39.05128479003906,
+            "y": -167.7802886962891,
+            "x": -341.06536865234377
+        },
+        "_heading": 119.57181549072266,
+        "jobs": [
+            "mechanic",
+            "offmechanic"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 43.61780166625976,
+            "y": -165.14886474609376,
+            "x": -334.7130432128906
+        },
+        "_doorModel": 1249909928,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 44.63554000854492,
+            "y": -165.76583862304688,
+            "x": -334.6574401855469
+        },
+        "_heading": 275.0,
+        "jobs": [
+            "mechanic",
+            "offmechanic"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 43.59593963623047,
+            "y": -162.2827606201172,
+            "x": -334.98828125
+        },
+        "_doorModel": 1142444161,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 44.63483810424805,
+            "y": -161.258056640625,
+            "x": -335.0502014160156
+        },
+        "_heading": 95.0,
+        "jobs": [
+            "mechanic",
+            "offmechanic"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "double",
+        "jobs": [
+            "mechanic",
+            "offmechanic"
+        ],
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 3,
+        "_doorsDouble": [
+            {
+                "coords": {
+                    "z": 43.59727096557617,
+                    "y": -154.36585998535157,
+                    "x": -334.6126098632813
+                },
+                "heading": 263.88201904296877,
+                "model": 1142444161
+            },
+            {
+                "coords": {
+                    "z": 43.59878540039062,
+                    "y": -156.7007598876953,
+                    "x": -334.8790283203125
+                },
+                "heading": 83.01913452148438,
+                "model": 1142444161
+            }
+        ],
+        "_textCoords": {
+            "z": 44.63640594482422,
+            "y": -155.51998901367188,
+            "x": -334.7346801757813
+        }
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 46.28231430053711,
+            "y": -88.28353881835938,
+            "x": -378.9510803222656
+        },
+        "_doorModel": -1156020871,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 4,
+        "_textCoords": {
+            "z": 45.46187210083008,
+            "y": -88.76366424560547,
+            "x": -377.7111206054688
+        },
+        "_heading": 341.0000305175781,
+        "jobs": [
+            "mechanic",
+            "offmechanic"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "double",
+        "jobs": [
+            "mechanic",
+            "offmechanic"
+        ],
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 7,
+        "_doorsDouble": [
+            {
+                "coords": {
+                    "z": 45.0645866394043,
+                    "y": -62.06011962890625,
+                    "x": -395.12066650390627
+                },
+                "heading": 235.0,
+                "model": -349730013
+            },
+            {
+                "coords": {
+                    "z": 45.0645866394043,
+                    "y": -66.5493392944336,
+                    "x": -398.2640075683594
+                },
+                "heading": 235.0,
+                "model": -1918480350
+            }
+        ],
+        "_textCoords": {
+            "z": 45.2624397277832,
+            "y": -64.3172378540039,
+            "x": -396.65521240234377
+        }
+    },
+    {
+        "usePin": false,
+        "_type": "slide",
+        "doorCoords": {
+            "z": 29.13148689270019,
+            "y": -1019.698974609375,
+            "x": 459.5403442382813
+        },
+        "_doorModel": -190780785,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 4,
+        "_textCoords": {
+            "z": 28.93488883972168,
+            "y": -1019.7281494140624,
+            "x": 459.53509521484377
+        },
+        "_heading": 269.99993896484377,
+        "jobs": [
+            "mt",
+            "offmt",
+            "police",
+            "offpolice",
+            "sheriff",
+            "offsheriff",
+            "fbi",
+            "offfbi"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "slide",
+        "doorCoords": {
+            "z": 29.1431770324707,
+            "y": -1014.64599609375,
+            "x": 459.5423889160156
+        },
+        "_doorModel": -190780785,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 4,
+        "_textCoords": {
+            "z": 28.77029609680175,
+            "y": -1014.560302734375,
+            "x": 459.5345764160156
+        },
+        "_heading": 269.99993896484377,
+        "jobs": [
+            "mt",
+            "offmt",
+            "police",
+            "offpolice",
+            "sheriff",
+            "offsheriff",
+            "fbi",
+            "offfbi"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "slide",
+        "doorCoords": {
+            "z": 27.14583587646484,
+            "y": -1017.2099609375,
+            "x": 488.8948059082031
+        },
+        "_doorModel": -1603817716,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 7,
+        "_textCoords": {
+            "z": 28.51112747192382,
+            "y": -1022.40966796875,
+            "x": 488.8197937011719
+        },
+        "_heading": 90.0,
+        "jobs": [
+            "mt",
+            "offmt",
+            "police",
+            "offpolice",
+            "sheriff",
+            "offsheriff",
+            "fbi",
+            "offfbi"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 26.40638542175293,
+            "y": -1006.9378051757813,
+            "x": 475.953857421875
+        },
+        "_doorModel": -288803980,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 1,
+        "_textCoords": {
+            "z": 26.54492378234863,
+            "y": -1007.068115234375,
+            "x": 474.85302734375
+        },
+        "_heading": 180.50234985351569,
+        "jobs": [
+            "mt",
+            "offmt",
+            "police",
+            "offpolice",
+            "sheriff",
+            "offsheriff",
+            "fbi",
+            "offfbi"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 26.48005485534668,
+            "y": -1008.8754272460938,
+            "x": 476.6156921386719
+        },
+        "_doorModel": -53345114,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 3,
+        "_textCoords": {
+            "z": 26.5201187133789,
+            "y": -1007.7661743164064,
+            "x": 476.6260070800781
+        },
+        "_heading": 270.749755859375,
+        "jobs": [
+            "mt",
+            "offmt",
+            "police",
+            "offpolice",
+            "sheriff",
+            "offsheriff",
+            "fbi",
+            "offfbi"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 37.43342971801758,
+            "y": 1545.099853515625,
+            "x": -3152.126953125
+        },
+        "_doorModel": -543490328,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 3,
+        "_textCoords": {
+            "z": 37.37599945068359,
+            "y": 1545.2593994140626,
+            "x": -3150.90185546875
+        },
+        "_heading": 189.3000640869141,
+        "jobs": [
+            "KingOfKing"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 242.3019256591797,
+            "y": -768.1588134765625,
+            "x": 133.7720184326172
+        },
+        "_doorModel": -853859998,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 242.21804809570313,
+            "y": -767.7015991210938,
+            "x": 132.64463806152345
+        },
+        "_heading": 340.2035217285156,
+        "jobs": [
+            "fbi",
+            "offfbi"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 82.93212127685547,
+            "y": -4.59782743453979,
+            "x": 620.0661010742188
+        },
+        "_doorModel": -1320876379,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 82.94481658935547,
+            "y": -4.10503768920898,
+            "x": 618.8937377929688
+        },
+        "_heading": 339.4457092285156,
+        "jobs": [
+            "mt",
+            "offmt",
+            "police",
+            "offpolice",
+            "sheriff",
+            "offsheriff",
+            "fbi",
+            "offfbi"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 82.92089080810547,
+            "y": 3.72194957733154,
+            "x": 619.5421142578125
+        },
+        "_doorModel": -626684119,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 82.90725708007813,
+            "y": 4.85113000869751,
+            "x": 619.9966430664063
+        },
+        "_heading": 70.36863708496094,
+        "jobs": [
+            "mt",
+            "offmt",
+            "police",
+            "offpolice",
+            "sheriff",
+            "offsheriff",
+            "fbi",
+            "offfbi"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 82.91751861572266,
+            "y": -18.44735717773437,
+            "x": 618.3836669921875
+        },
+        "_doorModel": 749848321,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 83.06134033203125,
+            "y": -18.66622924804687,
+            "x": 619.4386596679688
+        },
+        "_heading": 161.0148468017578,
+        "jobs": [
+            "mt",
+            "offmt",
+            "police",
+            "offpolice",
+            "sheriff",
+            "offsheriff",
+            "fbi",
+            "offfbi"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 82.95065307617188,
+            "y": -16.42975234985351,
+            "x": 624.23193359375
+        },
+        "_doorModel": -543497392,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 82.93031311035156,
+            "y": -15.25063037872314,
+            "x": 624.590087890625
+        },
+        "_heading": 250.3028106689453,
+        "jobs": [
+            "mt",
+            "offmt",
+            "police",
+            "offpolice",
+            "sheriff",
+            "offsheriff",
+            "fbi",
+            "offfbi"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 43.43391036987305,
+            "y": -572.5579223632813,
+            "x": 303.9596252441406
+        },
+        "_doorModel": 854291622,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 43.43356704711914,
+            "y": -571.4413452148438,
+            "x": 304.40771484375
+        },
+        "_heading": 70.017333984375,
+        "jobs": [
+            "ambulance",
+            "offambulance",
+            "fbi"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 43.43391036987305,
+            "y": -569.5689697265625,
+            "x": 307.1181945800781
+        },
+        "_doorModel": 854291622,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 43.38037109375,
+            "y": -570.0172119140625,
+            "x": 308.23406982421877
+        },
+        "_heading": 340.0000305175781,
+        "jobs": [
+            "ambulance",
+            "offambulance",
+            "fbi"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "double",
+        "jobs": [
+            "ambulance",
+            "offambulance",
+            "fbi"
+        ],
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 3,
+        "_doorsDouble": [
+            {
+                "coords": {
+                    "z": 43.43391036987305,
+                    "y": -572.2215576171875,
+                    "x": 314.4241027832031
+                },
+                "heading": 340.0000305175781,
+                "model": -1700911976
+            },
+            {
+                "coords": {
+                    "z": 43.43391036987305,
+                    "y": -571.3411865234375,
+                    "x": 312.005126953125
+                },
+                "heading": 340.0000305175781,
+                "model": -434783486
+            }
+        ],
+        "_textCoords": {
+            "z": 43.4022216796875,
+            "y": -571.818603515625,
+            "x": 313.2113952636719
+        }
+    },
+    {
+        "usePin": false,
+        "_type": "double",
+        "jobs": [
+            "ambulance",
+            "offambulance",
+            "fbi"
+        ],
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_doorsDouble": [
+            {
+                "coords": {
+                    "z": 43.43391036987305,
+                    "y": -574.3463134765625,
+                    "x": 320.2615356445313
+                },
+                "heading": 340.0000305175781,
+                "model": -1700911976
+            },
+            {
+                "coords": {
+                    "z": 43.43391036987305,
+                    "y": -573.4658813476563,
+                    "x": 317.8425598144531
+                },
+                "heading": 340.0000305175781,
+                "model": -434783486
+            }
+        ],
+        "_textCoords": {
+            "z": 43.44258499145508,
+            "y": -573.9346923828125,
+            "x": 319.0351257324219
+        }
+    },
+    {
+        "usePin": false,
+        "_type": "double",
+        "jobs": [
+            "ambulance",
+            "offambulance",
+            "fbi"
+        ],
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_doorsDouble": [
+            {
+                "coords": {
+                    "z": 43.43391036987305,
+                    "y": -576.3099365234375,
+                    "x": 325.6565246582031
+                },
+                "heading": 340.0000305175781,
+                "model": -1700911976
+            },
+            {
+                "coords": {
+                    "z": 43.43391036987305,
+                    "y": -575.429443359375,
+                    "x": 323.237548828125
+                },
+                "heading": 340.0000305175781,
+                "model": -434783486
+            }
+        ],
+        "_textCoords": {
+            "z": 43.39963912963867,
+            "y": -575.8964233398438,
+            "x": 324.4343566894531
+        }
+    },
+    {
+        "usePin": false,
+        "_type": "double",
+        "jobs": [
+            "ambulance",
+            "offambulance",
+            "fbi"
+        ],
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 3,
+        "_doorsDouble": [
+            {
+                "coords": {
+                    "z": 43.43391036987305,
+                    "y": -580.4595947265625,
+                    "x": 325.6694641113281
+                },
+                "heading": 250.2825927734375,
+                "model": -1700911976
+            },
+            {
+                "coords": {
+                    "z": 43.43391036987305,
+                    "y": -578.0406494140625,
+                    "x": 326.5498962402344
+                },
+                "heading": 250.4068298339844,
+                "model": -434783486
+            }
+        ],
+        "_textCoords": {
+            "z": 43.38034439086914,
+            "y": -579.258056640625,
+            "x": 326.0595397949219
+        }
+    },
+    {
+        "usePin": false,
+        "_type": "double",
+        "jobs": [
+            "ambulance",
+            "offambulance",
+            "fbi"
+        ],
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_doorsDouble": [
+            {
+                "coords": {
+                    "z": 43.43391036987305,
+                    "y": -590.1066284179688,
+                    "x": 326.6549987792969
+                },
+                "heading": 340.0000305175781,
+                "model": -1700911976
+            },
+            {
+                "coords": {
+                    "z": 43.43391036987305,
+                    "y": -589.2261962890625,
+                    "x": 324.23602294921877
+                },
+                "heading": 340.0000305175781,
+                "model": -434783486
+            }
+        ],
+        "_textCoords": {
+            "z": 43.40353775024414,
+            "y": -589.6964721679688,
+            "x": 325.4210510253906
+        }
+    },
+    {
+        "usePin": false,
+        "_type": "double",
+        "jobs": [
+            "ambulance",
+            "offambulance",
+            "fbi"
+        ],
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 3,
+        "_doorsDouble": [
+            {
+                "coords": {
+                    "z": 43.43391036987305,
+                    "y": -595.1950073242188,
+                    "x": 327.2560119628906
+                },
+                "heading": 249.98272705078129,
+                "model": -1700911976
+            },
+            {
+                "coords": {
+                    "z": 43.43391036987305,
+                    "y": -592.7760620117188,
+                    "x": 328.1364440917969
+                },
+                "heading": 249.60971069335936,
+                "model": -434783486
+            }
+        ],
+        "_textCoords": {
+            "z": 43.37276077270508,
+            "y": -593.9661865234375,
+            "x": 327.6583251953125
+        }
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 43.43391036987305,
+            "y": -595.4583129882813,
+            "x": 313.4800720214844
+        },
+        "_doorModel": 854291622,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 43.44775390625,
+            "y": -596.5640258789063,
+            "x": 313.1193542480469
+        },
+        "_heading": 249.98272705078129,
+        "jobs": [
+            "ambulance",
+            "offambulance",
+            "fbi"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 43.43391036987305,
+            "y": -597.75146484375,
+            "x": 309.13372802734377
+        },
+        "_doorModel": 854291622,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 43.51432418823242,
+            "y": -597.2864990234375,
+            "x": 307.9634094238281
+        },
+        "_heading": 160.00003051757813,
+        "jobs": [
+            "ambulance",
+            "offambulance",
+            "fbi"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "slide",
+        "doorCoords": {
+            "z": 66.03221130371094,
+            "y": 155.9619140625,
+            "x": -844.051025390625
+        },
+        "_doorModel": -2125423493,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 7,
+        "_textCoords": {
+            "z": 67.3644790649414,
+            "y": 161.75111389160157,
+            "x": -843.9857788085938
+        },
+        "_heading": 90.0,
+        "jobs": [
+            "ASTA"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 31.1932258605957,
+            "y": -1441.18212890625,
+            "x": -14.86892127990722
+        },
+        "_doorModel": 520341586,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 3,
+        "_textCoords": {
+            "z": 31.1351261138916,
+            "y": -1441.2818603515626,
+            "x": -13.61484432220459
+        },
+        "_heading": 180.49996948242188,
+        "jobs": [
+            "ArazelKaraj"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 72.6240463256836,
+            "y": 186.0246124267578,
+            "x": -806.28173828125
+        },
+        "_doorModel": -1563640173,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 72.53828430175781,
+            "y": 185.76547241210936,
+            "x": -807.097412109375
+        },
+        "_heading": 201.00006103515626,
+        "jobs": [
+            "ASTA"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "double",
+        "jobs": [
+            "ASTA"
+        ],
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_doorsDouble": [
+            {
+                "coords": {
+                    "z": 72.82737731933594,
+                    "y": 177.5108642578125,
+                    "x": -816.1068115234375
+                },
+                "heading": 291.0000610351563,
+                "model": -1686014385
+            },
+            {
+                "coords": {
+                    "z": 72.82737731933594,
+                    "y": 179.09796142578126,
+                    "x": -816.7160034179688
+                },
+                "heading": 291.0000610351563,
+                "model": 159994461
+            }
+        ],
+        "_textCoords": {
+            "z": 72.26986694335938,
+            "y": 178.6640625,
+            "x": -816.6041259765625
+        }
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 70.02470397949219,
+            "y": 179.307861328125,
+            "x": -848.934326171875
+        },
+        "_doorModel": -1568354151,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 70.06981658935547,
+            "y": 178.5877685546875,
+            "x": -849.0535278320313
+        },
+        "_heading": 264.62274169921877,
+        "jobs": [
+            "ASTA"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 34.40397644042969,
+            "y": 3681.6884765625,
+            "x": 1847.9862060546876
+        },
+        "_doorModel": 631614199,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 34.58894729614258,
+            "y": 3680.984130859375,
+            "x": 1848.450439453125
+        },
+        "_heading": 119.8030242919922,
+        "jobs": [
+            "mt",
+            "offmt",
+            "police",
+            "offpolice",
+            "sheriff",
+            "offsheriff",
+            "fbi",
+            "offfbi"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 34.40397644042969,
+            "y": 3684.450439453125,
+            "x": 1846.3916015625
+        },
+        "_doorModel": 631614199,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 34.40626525878906,
+            "y": 3684.787109375,
+            "x": 1846.2645263671876
+        },
+        "_heading": 299.3701171875,
+        "jobs": [
+            "mt",
+            "offmt",
+            "police",
+            "offpolice",
+            "sheriff",
+            "offsheriff",
+            "fbi",
+            "offfbi"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 34.41642379760742,
+            "y": 3689.26708984375,
+            "x": 1846.1160888671876
+        },
+        "_doorModel": 1557126584,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 34.42866134643555,
+            "y": 3689.15478515625,
+            "x": 1846.02392578125
+        },
+        "_heading": 30.2763614654541,
+        "jobs": [
+            "mt",
+            "offmt",
+            "police",
+            "offpolice",
+            "sheriff",
+            "offsheriff",
+            "fbi",
+            "offfbi"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 34.40999984741211,
+            "y": 3683.4541015625,
+            "x": 1850.3798828125
+        },
+        "_doorModel": 1557126584,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 34.41482543945312,
+            "y": 3683.326904296875,
+            "x": 1850.394287109375
+        },
+        "_heading": 119.38096618652344,
+        "jobs": [
+            "mt",
+            "offmt",
+            "police",
+            "offpolice",
+            "sheriff",
+            "offsheriff",
+            "fbi",
+            "offfbi"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 34.41260147094726,
+            "y": 3694.5400390625,
+            "x": 1850.83642578125
+        },
+        "_doorModel": 1557126584,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 34.24060440063476,
+            "y": 3693.973388671875,
+            "x": 1851.10595703125
+        },
+        "_heading": 119.99996948242188,
+        "jobs": [
+            "mt",
+            "offmt",
+            "police",
+            "offpolice",
+            "sheriff",
+            "offsheriff",
+            "fbi",
+            "offfbi"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 34.41432571411133,
+            "y": 3691.1318359375,
+            "x": 1849.3331298828128
+        },
+        "_doorModel": 1557126584,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 34.42737197875976,
+            "y": 3690.684326171875,
+            "x": 1848.4451904296876
+        },
+        "_heading": 29.70649147033691,
+        "jobs": [
+            "mt",
+            "offmt",
+            "police",
+            "offpolice",
+            "sheriff",
+            "offsheriff",
+            "fbi",
+            "offfbi"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 34.41633605957031,
+            "y": 3694.339111328125,
+            "x": 1854.9256591796876
+        },
+        "_doorModel": 1557126584,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 34.39836502075195,
+            "y": 3694.1474609375,
+            "x": 1854.4931640625
+        },
+        "_heading": 29.8804702758789,
+        "jobs": [
+            "mt",
+            "offmt",
+            "police",
+            "offpolice",
+            "sheriff",
+            "offsheriff",
+            "fbi",
+            "offfbi"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 34.41955947875976,
+            "y": 3690.27880859375,
+            "x": 1857.26806640625
+        },
+        "_doorModel": 1557126584,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 34.02195739746094,
+            "y": 3690.06201171875,
+            "x": 1857.0001220703128
+        },
+        "_heading": 30.48025321960449,
+        "jobs": [
+            "mt",
+            "offmt",
+            "police",
+            "offpolice",
+            "sheriff",
+            "offsheriff",
+            "fbi",
+            "offfbi"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "double",
+        "jobs": [
+            "KING"
+        ],
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_doorsDouble": [
+            {
+                "coords": {
+                    "z": 235.97833251953129,
+                    "y": 903.4880981445313,
+                    "x": -124.70216369628906
+                },
+                "heading": 97.91207122802736,
+                "model": -1918480350
+            },
+            {
+                "coords": {
+                    "z": 235.97833251953129,
+                    "y": 898.0499267578125,
+                    "x": -123.90235900878906
+                },
+                "heading": 97.8026885986328,
+                "model": -349730013
+            }
+        ],
+        "_textCoords": {
+            "z": 235.7013702392578,
+            "y": 900.5560302734375,
+            "x": -124.28423309326172
+        }
+    },
+    {
+        "usePin": false,
+        "_type": "double",
+        "jobs": [
+            "Hells_Angels"
+        ],
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_doorsDouble": [
+            {
+                "coords": {
+                    "z": 28.45124244689941,
+                    "y": -2531.61181640625,
+                    "x": 1007.6200561523438
+                },
+                "heading": 174.99996948242188,
+                "model": -1209169843
+            },
+            {
+                "coords": {
+                    "z": 28.45124244689941,
+                    "y": -2531.838134765625,
+                    "x": 1010.2074584960938
+                },
+                "heading": 354.9999694824219,
+                "model": -1209169843
+            }
+        ],
+        "_textCoords": {
+            "z": 28.45846176147461,
+            "y": -2531.685546875,
+            "x": 1008.9283447265624
+        }
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 28.41559982299804,
+            "y": -2528.662841796875,
+            "x": 1018.1370239257813
+        },
+        "_doorModel": -698797376,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 28.43629455566406,
+            "y": -2529.75244140625,
+            "x": 1018.023193359375
+        },
+        "_heading": 84.9999771118164,
+        "jobs": [
+            "Hells_Angels"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "slide",
+        "doorCoords": {
+            "z": 28.94953155517578,
+            "y": -2526.46875,
+            "x": 1018.3438720703124
+        },
+        "_doorModel": 470340995,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 27.72338676452636,
+            "y": -2525.440673828125,
+            "x": 1018.4080200195313
+        },
+        "_heading": 264.6999816894531,
+        "jobs": [
+            "Hells_Angels"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "slide",
+        "doorCoords": {
+            "z": 28.94639778137207,
+            "y": -2521.64013671875,
+            "x": 1018.7722778320313
+        },
+        "_doorModel": 470340995,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 27.61021614074707,
+            "y": -2520.435546875,
+            "x": 1018.8506469726564
+        },
+        "_heading": 264.79998779296877,
+        "jobs": [
+            "Hells_Angels"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "slide",
+        "doorCoords": {
+            "z": 28.94489860534668,
+            "y": -2516.939208984375,
+            "x": 1019.1533203125
+        },
+        "_doorModel": 470340995,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 27.77837371826172,
+            "y": -2515.809814453125,
+            "x": 1019.2208862304688
+        },
+        "_heading": 265.0000610351563,
+        "jobs": [
+            "Hells_Angels"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 28.51832580566406,
+            "y": -2511.04345703125,
+            "x": 1019.6740112304688
+        },
+        "_doorModel": -698797376,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 28.46137237548828,
+            "y": -2512.135009765625,
+            "x": 1019.5599975585938
+        },
+        "_heading": 84.99996948242188,
+        "jobs": [
+            "Hells_Angels"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 32.45524978637695,
+            "y": -2543.17138671875,
+            "x": 1031.3114013671876
+        },
+        "_doorModel": -1209169843,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 32.48219299316406,
+            "y": -2544.260009765625,
+            "x": 1031.1834716796876
+        },
+        "_heading": 85.41459655761719,
+        "jobs": [
+            "Hells_Angels"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 32.45085525512695,
+            "y": -2546.23828125,
+            "x": 1027.7288818359376
+        },
+        "_doorModel": -1209169843,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 32.38726043701172,
+            "y": -2546.31494140625,
+            "x": 1028.9122314453126
+        },
+        "_heading": 174.33279418945313,
+        "jobs": [
+            "Hells_Angels"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "double",
+        "jobs": [
+            "Hells_Angels"
+        ],
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_doorsDouble": [
+            {
+                "coords": {
+                    "z": 32.44388580322265,
+                    "y": -2539.44970703125,
+                    "x": 1022.4932861328124
+                },
+                "heading": 354.385986328125,
+                "model": -1209169843
+            },
+            {
+                "coords": {
+                    "z": 32.44388580322265,
+                    "y": -2539.22314453125,
+                    "x": 1019.9057006835938
+                },
+                "heading": 174.72618103027345,
+                "model": -1209169843
+            }
+        ],
+        "_textCoords": {
+            "z": 32.44320297241211,
+            "y": -2539.364990234375,
+            "x": 1021.2021484375
+        }
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 28.39337539672851,
+            "y": -2542.31201171875,
+            "x": 1023.1721801757813
+        },
+        "_doorModel": -698797376,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 28.31970024108886,
+            "y": -2543.474609375,
+            "x": 1023.0283203125
+        },
+        "_heading": 85.18355560302735,
+        "jobs": [
+            "Hells_Angels"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "slide",
+        "doorCoords": {
+            "z": 140.48744201660157,
+            "y": 2009.822998046875,
+            "x": -1882.7041015625
+        },
+        "_doorModel": 1286392437,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 5,
+        "_textCoords": {
+            "z": 142.541748046875,
+            "y": 2006.7459716796876,
+            "x": -1883.5477294921876
+        },
+        "_heading": 74.96501159667969,
+        "jobs": [
+            "ALPHA"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "slide",
+        "doorCoords": {
+            "z": 138.0871124267578,
+            "y": 2039.7415771484376,
+            "x": -1870.157958984375
+        },
+        "_doorModel": 1286392437,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 7,
+        "_textCoords": {
+            "z": 140.50144958496098,
+            "y": 2036.0537109375,
+            "x": -1872.763671875
+        },
+        "_heading": 54.94652557373047,
+        "jobs": [
+            "ALPHA"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "slide",
+        "doorCoords": {
+            "z": 140.48147583007813,
+            "y": 2009.8587646484376,
+            "x": -1882.693603515625
+        },
+        "_doorModel": 1286392437,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 7,
+        "_textCoords": {
+            "z": 141.91717529296876,
+            "y": 2005.18994140625,
+            "x": -1883.9637451171876
+        },
+        "_heading": 74.96501159667969,
+        "jobs": [
+            "ALPHA"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "double",
+        "jobs": [
+            "ALPHA"
+        ],
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_doorsDouble": [
+            {
+                "coords": {
+                    "z": 141.3125,
+                    "y": 2052.23583984375,
+                    "x": -1890.22509765625
+                },
+                "heading": 159.95388793945313,
+                "model": 1077118233
+            },
+            {
+                "coords": {
+                    "z": 141.3115234375,
+                    "y": 2051.386962890625,
+                    "x": -1887.903076171875
+                },
+                "heading": 340.7820739746094,
+                "model": 1077118233
+            }
+        ],
+        "_textCoords": {
+            "z": 141.36634826660157,
+            "y": 2051.480224609375,
+            "x": -1888.1905517578128
+        }
+    },
+    {
+        "usePin": false,
+        "_type": "double",
+        "jobs": [
+            "ALPHA"
+        ],
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_doorsDouble": [
+            {
+                "coords": {
+                    "z": 141.30850219726566,
+                    "y": 2050.3798828125,
+                    "x": -1885.2110595703128
+                },
+                "heading": 339.6688232421875,
+                "model": 1077118233
+            },
+            {
+                "coords": {
+                    "z": 141.3125,
+                    "y": 2051.23388671875,
+                    "x": -1887.5340576171876
+                },
+                "heading": 158.98757934570313,
+                "model": 1077118233
+            }
+        ],
+        "_textCoords": {
+            "z": 141.24169921875,
+            "y": 2050.8193359375,
+            "x": -1886.51220703125
+        }
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 82.92802429199219,
+            "y": -11.2678575515747,
+            "x": 611.966796875
+        },
+        "_doorModel": 631614199,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 82.90454864501953,
+            "y": -11.52268600463867,
+            "x": 612.9811401367188
+        },
+        "_heading": 163.06307983398438,
+        "jobs": [
+            "mt",
+            "offmt",
+            "police",
+            "offpolice",
+            "sheriff",
+            "offsheriff",
+            "fbi",
+            "offfbi"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 82.92802429199219,
+            "y": -9.8642406463623,
+            "x": 608.133056640625
+        },
+        "_doorModel": 631614199,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 82.95266723632813,
+            "y": -10.09319114685058,
+            "x": 609.0873413085938
+        },
+        "_heading": 163.4412841796875,
+        "jobs": [
+            "mt",
+            "offmt",
+            "police",
+            "offpolice",
+            "sheriff",
+            "offsheriff",
+            "fbi",
+            "offfbi"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 82.92802429199219,
+            "y": -8.46445751190185,
+            "x": 604.2855224609375
+        },
+        "_doorModel": 631614199,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 82.86695861816406,
+            "y": -8.71279525756836,
+            "x": 605.290771484375
+        },
+        "_heading": 163.24266052246098,
+        "jobs": [
+            "mt",
+            "offmt",
+            "police",
+            "offpolice",
+            "sheriff",
+            "offsheriff",
+            "fbi",
+            "offfbi"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 82.93157958984375,
+            "y": -2.38962936401367,
+            "x": 614.6943969726563
+        },
+        "_doorModel": 631614199,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 82.967529296875,
+            "y": -1.94223010540008,
+            "x": 613.6134033203125
+        },
+        "_heading": 340.2099609375,
+        "jobs": [
+            "mt",
+            "offmt",
+            "police",
+            "offpolice",
+            "sheriff",
+            "offsheriff",
+            "fbi",
+            "offfbi"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 82.92802429199219,
+            "y": -7.06029224395751,
+            "x": 600.4366455078125
+        },
+        "_doorModel": 631614199,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 82.95683288574219,
+            "y": -7.27621030807495,
+            "x": 601.3819580078125
+        },
+        "_heading": 163.87513732910157,
+        "jobs": [
+            "mt",
+            "offmt",
+            "police",
+            "offpolice",
+            "sheriff",
+            "offsheriff",
+            "fbi",
+            "offfbi"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "double",
+        "jobs": [
+            "Dragon"
+        ],
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 10,
+        "_doorsDouble": [
+            {
+                "coords": {
+                    "z": 33.98643493652344,
+                    "y": 1554.013671875,
+                    "x": -3003.67578125
+                },
+                "heading": 8.18157577514648,
+                "model": 1653418708
+            },
+            {
+                "coords": {
+                    "z": 33.98643493652344,
+                    "y": 1552.7235107421876,
+                    "x": -3011.431884765625
+                },
+                "heading": 19.27606964111328,
+                "model": -1049302886
+            }
+        ],
+        "_textCoords": {
+            "z": 33.79042434692383,
+            "y": 1553.5255126953126,
+            "x": -3009.275390625
+        }
+    },
+    {
+        "usePin": false,
+        "_type": "slide",
+        "doorCoords": {
+            "z": 84.20159149169922,
+            "y": 286.8552856445313,
+            "x": -445.6925659179688
+        },
+        "_doorModel": -519500898,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 84.38941955566406,
+            "y": 287.0648498535156,
+            "x": -448.23980712890627
+        },
+        "_heading": 174.9990386962891,
+        "jobs": [
+            "Shadow_Reaper"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "slide",
+        "doorCoords": {
+            "z": 84.20661926269531,
+            "y": 287.378662109375,
+            "x": -451.662841796875
+        },
+        "_doorModel": -519500898,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 84.00667572021485,
+            "y": 287.4838562011719,
+            "x": -452.8613586425781
+        },
+        "_heading": 174.99844360351566,
+        "jobs": [
+            "Shadow_Reaper"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "double",
+        "jobs": [
+            "Shadow_Reaper"
+        ],
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_doorsDouble": [
+            {
+                "coords": {
+                    "z": 83.4959945678711,
+                    "y": 286.842529296875,
+                    "x": -442.3219299316406
+                },
+                "heading": 355.34564208984377,
+                "model": 1857231941
+            },
+            {
+                "coords": {
+                    "z": 83.4959945678711,
+                    "y": 286.619140625,
+                    "x": -439.7679443359375
+                },
+                "heading": 174.62136840820313,
+                "model": 1857231941
+            }
+        ],
+        "_textCoords": {
+            "z": 83.22551727294922,
+            "y": 286.7266540527344,
+            "x": -440.5076904296875
+        }
+    },
+    {
+        "usePin": false,
+        "_type": "slide",
+        "doorCoords": {
+            "z": 82.23731231689453,
+            "y": 297.2784729003906,
+            "x": -426.8229675292969
+        },
+        "_doorModel": 769541174,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 7,
+        "_textCoords": {
+            "z": 82.82374572753906,
+            "y": 294.9007568359375,
+            "x": -427.2225036621094
+        },
+        "_heading": 85.2855453491211,
+        "jobs": [
+            "Shadow_Reaper"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 83.16529083251953,
+            "y": 262.3037109375,
+            "x": -430.7154235839844
+        },
+        "_doorModel": 1863664570,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 82.56966400146485,
+            "y": 262.2001037597656,
+            "x": -429.9201965332031
+        },
+        "_heading": 174.62448120117188,
+        "jobs": [
+            "Shadow_Reaper"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "double",
+        "jobs": [
+            "Shadow_Reaper"
+        ],
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_doorsDouble": [
+            {
+                "coords": {
+                    "z": 83.33863830566406,
+                    "y": 268.0091247558594,
+                    "x": -418.697998046875
+                },
+                "heading": 355.525390625,
+                "model": -915156539
+            },
+            {
+                "coords": {
+                    "z": 83.33863830566406,
+                    "y": 268.2101135253906,
+                    "x": -421.28179931640627
+                },
+                "heading": 175.2835693359375,
+                "model": -915156539
+            }
+        ],
+        "_textCoords": {
+            "z": 83.35912322998047,
+            "y": 268.1319274902344,
+            "x": -420.14501953125
+        }
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 5.962975025177,
+            "y": -1187.8555908203126,
+            "x": -1173.856201171875
+        },
+        "_doorModel": -709441009,
+        "useitem": true,
+        "item": "phone",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 5.61366939544677,
+            "y": -1188.6004638671876,
+            "x": -1174.8336181640626
+        },
+        "_heading": 37.24965667724609,
+        "jobs": []
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 68.9839096069336,
+            "y": -391.5604553222656,
+            "x": 1225.906005859375
+        },
+        "_doorModel": 1745324222,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 68.12062072753906,
+            "y": -391.84564208984377,
+            "x": 1225.5111083984376
+        },
+        "_heading": 211.63099670410157,
+        "jobs": [
+            "Trap"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "slide",
+        "doorCoords": {
+            "z": 66.3624267578125,
+            "y": -434.0880737304688,
+            "x": 1213.950439453125
+        },
+        "_doorModel": -1483471451,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 7,
+        "_textCoords": {
+            "z": 67.37461853027344,
+            "y": -431.4284057617188,
+            "x": 1214.6502685546876
+        },
+        "_heading": 256.8921813964844,
+        "jobs": [
+            "Trap"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 22.71302795410156,
+            "y": -1055.1314697265626,
+            "x": -600.8886108398438
+        },
+        "_doorModel": 1099436502,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 22.9128360748291,
+            "y": -1055.975341796875,
+            "x": -600.9407348632813
+        },
+        "_heading": 269.8084106445313,
+        "jobs": [
+            "uwucafe"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 22.41300582885742,
+            "y": -1056.09130859375,
+            "x": -592.4738159179688
+        },
+        "_doorModel": -60871655,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 22.18548011779785,
+            "y": -1056.1190185546876,
+            "x": -593.08251953125
+        },
+        "_heading": 0.44187381863594,
+        "jobs": [
+            "uwucafe"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 22.41300582885742,
+            "y": -1051.8994140625,
+            "x": -587.3400268554688
+        },
+        "_doorModel": -1283712428,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 22.48894882202148,
+            "y": -1053.0828857421876,
+            "x": -587.3705444335938
+        },
+        "_heading": 89.65406799316406,
+        "jobs": [
+            "uwucafe",
+            "offuwucafe"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 22.49712753295898,
+            "y": -1049.7686767578126,
+            "x": -594.4122924804688
+        },
+        "_doorModel": 2089009131,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 22.42818260192871,
+            "y": -1050.890625,
+            "x": -594.36962890625
+        },
+        "_heading": 89.9999771118164,
+        "jobs": [
+            "uwucafe",
+            "offuwucafe"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "slide",
+        "doorCoords": {
+            "z": 21.72342109680175,
+            "y": -1059.2176513671876,
+            "x": -600.9105834960938
+        },
+        "_doorModel": 522844070,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 5,
+        "_textCoords": {
+            "z": 21.94033241271972,
+            "y": -1059.4197998046876,
+            "x": -600.87060546875
+        },
+        "_heading": 270.0000305175781,
+        "jobs": [
+            "uwucafe",
+            "offuwucafe"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 7.90813636779785,
+            "y": -1196.86376953125,
+            "x": -1191.985107421875
+        },
+        "_doorModel": 1418988847,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 8.08800315856933,
+            "y": -1197.13916015625,
+            "x": -1191.544189453125
+        },
+        "_heading": 145.63754272460938,
+        "jobs": [
+            "SEKEH"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 7.93092918395996,
+            "y": -1166.7244873046876,
+            "x": -1195.2025146484376
+        },
+        "_doorModel": -1206889434,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 8.06897735595703,
+            "y": -1166.59228515625,
+            "x": -1194.810791015625
+        },
+        "_heading": 11.74042129516601,
+        "jobs": [
+            "SEKEH"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 7.94562911987304,
+            "y": -1167.158447265625,
+            "x": -1192.01708984375
+        },
+        "_doorModel": -1206889434,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 8.04467678070068,
+            "y": -1168.19970703125,
+            "x": -1191.8775634765626
+        },
+        "_heading": 280.2625122070313,
+        "jobs": [
+            "SEKEH"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 5.94944047927856,
+            "y": -1154.865234375,
+            "x": -1191.082275390625
+        },
+        "_doorModel": -1206889434,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 5.90916013717651,
+            "y": -1154.7230224609376,
+            "x": -1190.0941162109376
+        },
+        "_heading": 10.99024295806884,
+        "jobs": [
+            "SEKEH"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "slide",
+        "doorCoords": {
+            "z": 51.9113655090332,
+            "y": -204.87464904785157,
+            "x": -1512.7913818359376
+        },
+        "_doorModel": 1286535678,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 7,
+        "_textCoords": {
+            "z": 54.14286041259765,
+            "y": -203.67916870117188,
+            "x": -1513.6524658203126
+        },
+        "_heading": 305.136474609375,
+        "jobs": [
+            "Yakoza"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 50.66551208496094,
+            "y": -184.7587890625,
+            "x": -1491.654052734375
+        },
+        "_doorModel": 91564889,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 50.74115753173828,
+            "y": -185.5703582763672,
+            "x": -1491.0010986328126
+        },
+        "_heading": 310.0,
+        "jobs": [
+            "Yakoza"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 51.01892852783203,
+            "y": -201.58108520507813,
+            "x": -1500.98486328125
+        },
+        "_doorModel": 738500688,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 50.90424346923828,
+            "y": -202.39822387695313,
+            "x": -1500.2471923828126
+        },
+        "_heading": 129.96728515625,
+        "jobs": [
+            "Yakoza"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 51.04467391967773,
+            "y": -207.21571350097657,
+            "x": -1487.1146240234376
+        },
+        "_doorModel": 738500688,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 52.1088638305664,
+            "y": -207.75384521484376,
+            "x": -1487.81982421875
+        },
+        "_heading": 39.9672966003418,
+        "jobs": [
+            "Yakoza"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "double",
+        "jobs": [
+            "Matrix"
+        ],
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 5,
+        "_doorsDouble": [
+            {
+                "coords": {
+                    "z": 38.84175872802734,
+                    "y": -33.83020782470703,
+                    "x": -824.646240234375
+                },
+                "heading": 298.9870300292969,
+                "model": -1918480350
+            },
+            {
+                "coords": {
+                    "z": 38.84906005859375,
+                    "y": -29.03375244140625,
+                    "x": -827.2945556640625
+                },
+                "heading": 298.88427734375,
+                "model": -349730013
+            }
+        ],
+        "_textCoords": {
+            "z": 38.4643669128418,
+            "y": -31.80803871154785,
+            "x": -825.7964477539063
+        }
+    },
+    {
+        "usePin": false,
+        "_type": "slide",
+        "doorCoords": {
+            "z": 60.77518844604492,
+            "y": 79.77808380126953,
+            "x": -1616.23486328125
+        },
+        "_doorModel": -2125423493,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 7,
+        "_textCoords": {
+            "z": 62.33502578735351,
+            "y": 78.50404357910156,
+            "x": -1614.16357421875
+        },
+        "_heading": 329.0000305175781,
+        "jobs": [
+            "Mafia"
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 132.9750213623047,
+            "y": 477.1578979492188,
+            "x": -1806.6295166015626
+        },
+        "_doorModel": -2122677806,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_heading": 178.0408172607422,
+        "_textCoords": {
+            "z": 133.9770660400391,
+            "y": 476.909423828125,
+            "x": -1799.6668701171876
+        },
+        "jobs": []
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 132.9750213623047,
+            "y": 477.1578979492188,
+            "x": -1806.6295166015626
+        },
+        "_doorModel": -2122677806,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 134.17330932617188,
+            "y": 476.9317321777344,
+            "x": -1799.6661376953126
+        },
+        "_heading": 178.0408172607422,
+        "jobs": [
+            ""
+        ]
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 132.9750213623047,
+            "y": 477.1578979492188,
+            "x": -1806.6295166015626
+        },
+        "_doorModel": -2122677806,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_heading": 178.0408172607422,
+        "_textCoords": {
+            "z": 134.10427856445313,
+            "y": 476.9196472167969,
+            "x": -1799.66650390625
+        },
+        "jobs": []
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 132.9750213623047,
+            "y": 477.1031494140625,
+            "x": -1805.0235595703128
+        },
+        "_doorModel": -2122677806,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 134.3203887939453,
+            "y": 476.9181518554688,
+            "x": -1798.4451904296876
+        },
+        "_heading": 178.0408172607422,
+        "jobs": []
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 132.9750213623047,
+            "y": 477.1031494140625,
+            "x": -1805.0235595703128
+        },
+        "_doorModel": -2122677806,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_heading": 178.0408172607422,
+        "_textCoords": {
+            "z": 133.90419006347657,
+            "y": 476.8631286621094,
+            "x": -1798.0606689453126
+        },
+        "jobs": []
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 133.86705017089845,
+            "y": 477.2579040527344,
+            "x": -1791.10302734375
+        },
+        "_doorModel": 1484397648,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 134.1704864501953,
+            "y": 477.3216857910156,
+            "x": -1791.92333984375
+        },
+        "_heading": 179.04083251953126,
+        "jobs": []
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 133.86705017089845,
+            "y": 477.2579040527344,
+            "x": -1791.10302734375
+        },
+        "_doorModel": 1484397648,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_heading": 179.0408172607422,
+        "_textCoords": {
+            "z": 134.17710876464845,
+            "y": 477.32080078125,
+            "x": -1791.8709716796876
+        },
+        "jobs": []
+    },
+    {
+        "usePin": false,
+        "_type": "double",
+        "jobs": [],
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_doorsDouble": [
+            {
+                "coords": {
+                    "z": 133.86705017089845,
+                    "y": 477.2579040527344,
+                    "x": -1791.10302734375
+                },
+                "heading": 179.04080200195313,
+                "model": 1484397648
+            },
+            {
+                "coords": {
+                    "z": 133.86705017089845,
+                    "y": 477.2579040527344,
+                    "x": -1791.10302734375
+                },
+                "heading": 179.04080200195313,
+                "model": 1484397648
+            }
+        ],
+        "_textCoords": {
+            "z": 134.1919403076172,
+            "y": 477.3223876953125,
+            "x": -1791.965576171875
+        }
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 133.86705017089845,
+            "y": 477.2579040527344,
+            "x": -1791.10302734375
+        },
+        "_doorModel": 1484397648,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_heading": 179.0407867431641,
+        "_textCoords": {
+            "z": 134.2392578125,
+            "y": 477.3218078613281,
+            "x": -1791.93115234375
+        },
+        "jobs": []
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 133.86705017089845,
+            "y": 477.2579040527344,
+            "x": -1791.10302734375
+        },
+        "_doorModel": 1484397648,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_textCoords": {
+            "z": 134.21934509277345,
+            "y": 477.3224792480469,
+            "x": -1791.9708251953126
+        },
+        "_heading": 179.040771484375,
+        "jobs": []
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 133.86705017089845,
+            "y": 477.2579040527344,
+            "x": -1791.10302734375
+        },
+        "_doorModel": 1484397648,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_heading": 179.04075622558598,
+        "_textCoords": {
+            "z": 134.21932983398438,
+            "y": 477.3224792480469,
+            "x": -1791.9708251953126
+        },
+        "jobs": []
+    },
+    {
+        "usePin": false,
+        "_type": "double",
+        "jobs": [
+            "mt"
+        ],
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_doorsDouble": [
+            {
+                "coords": {
+                    "z": 32.95998382568359,
+                    "y": 3267.62353515625,
+                    "x": -2342.23095703125
+                },
+                "heading": 60.17504119873047,
+                "model": 1248599813
+            },
+            {
+                "coords": {
+                    "z": 32.95998382568359,
+                    "y": 3265.37109375,
+                    "x": -2343.53125
+                },
+                "heading": 240.26910400390626,
+                "model": -1421582160
+            }
+        ],
+        "_textCoords": {
+            "z": 32.63222885131836,
+            "y": 3266.281494140625,
+            "x": -2343.06982421875
+        }
+    },
+    {
+        "usePin": false,
+        "_type": "double",
+        "jobs": [
+            "ASTA"
+        ],
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 10,
+        "_doorsDouble": [
+            {
+                "coords": {
+                    "z": 50.86629104614258,
+                    "y": -28.61775588989257,
+                    "x": -1324.0037841796876
+                },
+                "model": 1653418708,
+                "heading": 0.0
+            },
+            {
+                "coords": {
+                    "z": 51.08380508422851,
+                    "y": -28.61775588989257,
+                    "x": -1331.8828125
+                },
+                "model": -1049302886,
+                "heading": 0.0
+            }
+        ],
+        "_textCoords": {
+            "z": 50.77255630493164,
+            "y": -28.66147232055664,
+            "x": -1327.802001953125
+        }
+    },
+    {
+        "usePin": false,
+        "_type": "normal",
+        "doorCoords": {
+            "z": 13.45482921600341,
+            "y": -387.9348449707031,
+            "x": -2210.6025390625
+        },
+        "_doorModel": 870055819,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_heading": 318.77001953125,
+        "jobs": [
+            "ZEMON"
+        ],
+        "_textCoords": {
+            "z": 13.41609191894531,
+            "y": -387.0890197753906,
+            "x": -2211.49853515625
+        }
+    },
+    {
+        "usePin": false,
+        "_type": "double",
+        "jobs": [
+            "ZEMON"
+        ],
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "_textCoords": {
+            "z": 13.39232635498046,
+            "y": -382.7495422363281,
+            "x": -2209.037841796875
+        },
+        "_doorsDouble": [
+            {
+                "coords": {
+                    "z": 13.49431037902832,
+                    "y": -381.74072265625,
+                    "x": -2208.21142578125
+                },
+                "heading": 48.42008209228515,
+                "model": -1216048426
+            },
+            {
+                "coords": {
+                    "z": 13.49431037902832,
+                    "y": -383.6979370117188,
+                    "x": -2209.916015625
+                },
+                "heading": 228.3933563232422,
+                "model": -1216048426
+            }
+        ],
+        "dist": 2
+    },
+    {
+        "usePin": false,
+        "_type": "double",
+        "jobs": [
+            "ZEMON"
+        ],
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_doorsDouble": [
+            {
+                "coords": {
+                    "z": 13.65139961242675,
+                    "y": -388.9794921875,
+                    "x": -2195.477294921875
+                },
+                "model": -1216048426,
+                "heading": 229.6157989501953
+            },
+            {
+                "coords": {
+                    "z": 13.65139961242675,
+                    "y": -387.0126953125,
+                    "x": -2193.779296875
+                },
+                "model": -1216048426,
+                "heading": 49.03075408935547
+            }
+        ],
+        "_textCoords": {
+            "z": 13.63969612121582,
+            "y": -387.970703125,
+            "x": -2194.667236328125
+        }
+    },
+    {
+        "usePin": false,
+        "_type": "double",
+        "jobs": [
+            "ZEMON"
+        ],
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "_textCoords": {
+            "z": 13.40369796752929,
+            "y": -399.2717590332031,
+            "x": -2190.66357421875
+        },
+        "_doorsDouble": [
+            {
+                "coords": {
+                    "z": 13.49370288848877,
+                    "y": -400.2599182128906,
+                    "x": -2191.4990234375
+                },
+                "heading": 228.16375732421876,
+                "model": -1216048426
+            },
+            {
+                "coords": {
+                    "z": 13.49402046203613,
+                    "y": -398.304443359375,
+                    "x": -2189.7919921875
+                },
+                "heading": 49.0930290222168,
+                "model": -1216048426
+            }
+        ],
+        "dist": 2
+    },
+    {
+        "usePin": false,
+        "_type": "slide",
+        "doorCoords": {
+            "z": 13.97794246673584,
+            "y": -371.7142639160156,
+            "x": -2208.59423828125
+        },
+        "_doorModel": -1333860007,
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 4,
+        "jobs": [
+            "ZEMON"
+        ],
+        "_textCoords": {
+            "z": 12.90882301330566,
+            "y": -372.0371398925781,
+            "x": -2208.303466796875
+        },
+        "_heading": 138.60000610351566
+    },
+    {
+        "usePin": false,
+        "_type": "double",
+        "jobs": [
+            "ZEMON"
+        ],
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 5,
+        "_doorsDouble": [
+            {
+                "coords": {
+                    "z": 12.0188398361206,
+                    "y": -362.1551208496094,
+                    "x": -2199.447265625
+                },
+                "model": 637818248,
+                "heading": 352.00091552734377
+            },
+            {
+                "coords": {
+                    "z": 12.1195478439331,
+                    "y": -360.62750244140627,
+                    "x": -2210.387939453125
+                },
+                "model": 637818248,
+                "heading": 172.0999755859375
+            }
+        ],
+        "_textCoords": {
+            "z": 13.38462352752685,
+            "y": -361.5345458984375,
+            "x": -2204.8857421875
+        }
+    },
+    {
+        "usePin": false,
+        "_type": "double",
+        "jobs": [
+            "ZEMON"
+        ],
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "_textCoords": {
+            "z": 13.67615795135498,
+            "y": -367.41546630859377,
+            "x": -2175.249267578125
+        },
+        "_doorsDouble": [
+            {
+                "coords": {
+                    "z": 13.79509162902832,
+                    "y": -367.7606201171875,
+                    "x": -2173.593994140625
+                },
+                "heading": 167.158935546875,
+                "model": -1156020871
+            },
+            {
+                "coords": {
+                    "z": 13.79509162902832,
+                    "y": -366.9951477050781,
+                    "x": -2176.857666015625
+                },
+                "heading": 346.9408874511719,
+                "model": -1156020871
+            }
+        ],
+        "dist": 2
+    },
+    {
+        "usePin": false,
+        "_type": "double",
+        "jobs": [
+            "ZEMON"
+        ],
+        "useitem": false,
+        "item": "",
+        "pin": "",
+        "dist": 2,
+        "_doorsDouble": [
+            {
+                "coords": {
+                    "z": 13.793212890625,
+                    "y": -422.2210388183594,
+                    "x": -2194.5400390625
+                },
+                "model": -1156020871,
+                "heading": 346.496337890625
+            },
+            {
+                "coords": {
+                    "z": 13.793212890625,
+                    "y": -423.3786010742188,
+                    "x": -2191.3935546875
+                },
+                "model": -1156020871,
+                "heading": 158.365478515625
+            }
+        ],
+        "_textCoords": {
+            "z": 13.61297130584716,
+            "y": -422.5858459472656,
+            "x": -2192.88671875
+        }
+    }
+]

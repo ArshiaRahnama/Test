@@ -1,0 +1,283 @@
+$(document).ready(function(){
+
+  var nimmug = document.getElementsByClassName('mugshotpos')[0].getBoundingClientRect();
+
+
+
+  $.post('http://status/setmugpos', JSON.stringify({
+
+    y: nimmug.y/window.innerHeight,
+
+    x: nimmug.x/window.innerWidth,
+
+    w: nimmug.width/window.innerWidth,
+
+    h: nimmug.height/window.innerHeight
+
+  }));
+
+
+
+  $('body').css('visibility','visible');
+
+  window.addEventListener("message", function(event){
+
+    if(event.data.update == true){
+
+      setProgress(event.data.health,'.progress-health');
+
+      setProgress(event.data.armor,'.progress-armor');
+
+    }
+
+    if(event.data.display == true){
+
+      $("body").fadeIn(400);
+
+    }else if (event.data.action == "job"){
+
+      updateJob(event.data);
+
+    }else if (event.data.action == "gang"){
+
+			updateGang(event.data);
+
+		}else if (event.data.action == "updateStatus"){
+
+			updateStatus(event.data.status);
+
+		}else if (event.data.action == "cash"){
+
+      updateCash(event.data);
+
+    }else if (event.data.action == "tc"){
+
+			updatetc(event.data);
+
+		}else if (event.data.action == "playerName"){
+
+			updateName(event.data);
+
+		}else if (event.data.action == "playerId"){
+
+			updateId(event.data);
+
+		}else if (event.data.action == "ping"){
+
+			updatePing(event.data);
+
+		}else if (event.data.action == "indicator"){
+
+			updateIndicator(event.data.value);
+
+		}else if (event.data.action == "gangimg"){
+
+			updateGangimg(event.data);
+
+		}else if (event.data.action == "radioOn"){
+
+      $("ul").append("<li id='" + event.data.id + "' class='user' style='display:none;'>" + event.data.name + "</li>");
+
+      $("#" + event.data.id).fadeIn(500);
+
+    }else if (event.data.action == "radioOff"){
+
+      $("#" + event.data.id).fadeOut(500, function(){
+
+        $(this).remove();
+
+      });
+
+    }
+
+  
+
+  
+
+    updateClock();
+
+    // Edit Ahmad
+
+   if(event.data.toggle == true){
+
+	   ToggleHud();
+
+   }
+
+  });
+
+   // Edit Ahmad
+
+   let Toggle = true;
+
+  const ToggleHud = ()=>{
+
+	  if(Toggle){
+
+		  console.log("mb-4");
+
+		  $('#UperStatus').removeClass("mb-4");
+
+		  $('.toggle').hide(1000);
+
+	  }
+
+	  else{
+
+		  $('#UperStatus').addClass("mb-4");
+
+		   $('.toggle').show(1000);
+
+	  }
+
+	 Toggle = !Toggle;
+
+  }
+
+
+
+  // Functions
+
+  // Update health/thirst bars
+
+  function setProgress(percent, element){
+
+    $(element).width(percent + '%');
+
+  }
+
+
+
+  function updateJob(data){
+
+	if(data.value == "hide"){
+
+		$("[name='jobimg']").fadeOut(500);
+
+	}else {
+
+		$("[name='jobimg']").fadeIn(500);
+
+		$("[name='job']").html(data.value)
+
+		$("[name='jobimg']").css('background-image', 'url(assets/imgs/' + data.icon + '.png)')
+
+	}
+
+  }
+
+
+
+  function updatePing(data){
+
+    $("[name='ping']").html(data.value)
+
+  }
+
+
+
+  function updateCash(data){
+
+    $("[name='cash']").html(data.value)
+
+  }
+
+
+
+  function updatetc(data){
+
+    $("[name='tc']").html(data.value)
+
+  }
+
+
+
+  function updateName(data){
+
+    $("[name='PlayerName']").html(data.value)
+
+  }
+
+   function updateId(data){
+
+    $("[name='PlayerId']").html(data.value)
+
+  }
+
+
+
+  function updateGang(data,imagelink){
+
+	if(data.value == "hide"){
+
+		$("[name='gangimg']").fadeOut(500);
+
+	}else {
+
+		$("[name='gangimg']").fadeIn(500);
+
+		$("[name='gang']").html(data.value);
+
+	}
+
+  }
+
+  
+
+  function updateGangimg(data){
+
+		$("[name='gangimg']").css('background-image', 'url('+ data.value +')');
+
+  }
+
+
+
+  setProgress(70,'.progress-inventory');
+
+
+
+  // Clock based on user's local hour
+
+  function updateClock() {
+
+	  var now = new Date();
+
+	let localtime = now.getHours() + ':' + now.getMinutes();
+
+
+
+    document.getElementById('hour').innerHTML = localtime;//[data.value];
+
+  }
+
+  
+
+
+
+  function updateStatus(status){
+
+    var hunger = status[0]
+
+    var thirst = status[1]
+
+    setProgress(hunger.percent,'.progress-hunger');
+
+    setProgress(thirst.percent,'.progress-thirst');
+
+  }
+
+  function updateIndicator(talkings){
+
+  $('.indicator').html('');
+
+  for (let [id, data] of Object.entries(talkings)) {
+
+    $('.indicator').append(`<tr><td><img src="img/${data.type}.png"></td><td>${data.id}</td></tr>`);
+
+  }
+
+}
+
+
+
+});

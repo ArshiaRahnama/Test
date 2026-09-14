@@ -1,0 +1,410 @@
+ESX = nil
+TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
+
+local alogs 		= GetConvar('unique_logger_sv_alogs', '')
+local infologs 		= GetConvar('unique_logger_sv_infologs', '')
+local ganglog 		= GetConvar('unique_logger_sv_ganglog', '')
+local homelog 		= GetConvar('unique_logger_sv_homelog', '')
+local trunklog 		= GetConvar('unique_logger_sv_trunklog', '')
+local atmlog 		= GetConvar('unique_logger_sv_atmlog', '')
+local roblog 		= GetConvar('unique_logger_sv_roblog', '')
+local pedlog 		= ""
+local proplog 		= ""
+local vehlog 		= ""
+local Rewardalllog  = GetConvar('unique_logger_sv_rewardalllog', '')
+local communityname = "Server Test"
+local communtiylogo = "https://media.discordapp.net/attachments/669926392921849875/939876376784273458/ServerTest.png"
+
+-- ================= ارسال به سایت خودمون =================
+-- این تابع همون لاگی که به دیسکورد میره رو (متن ساده، بدون embed) به سایت خودمون هم می‌فرسته
+-- تا هیچ لاگی گم نشه. از export ریسورس 'logs' استفاده می‌کنه.
+local function ToSite(category, title, description, source)
+	local ok, err = pcall(function()
+		exports['logs']:SendToSite(category, title, description, source)
+	end)
+	if not ok then
+		print(('[ScriptPack Logger] Could not reach the logs resource to forward "%s" to the site (is the "logs" resource started?): %s'):format(tostring(category), tostring(err)))
+	end
+end
+
+-- ================= ارسال ترکیبی دیسکورد + سایت =================
+local function SendDiscordLog(webhookUrl, category, username, plainDescription, embeds, source)
+	if webhookUrl and webhookUrl ~= '' then
+		PerformHttpRequest(webhookUrl, function(err, text, headers) end, 'POST', json.encode({username = username, embeds = embeds}), { ['Content-Type'] = 'application/json' })
+	end
+	ToSite(category, username, plainDescription, source)
+end
+
+RegisterServerEvent("esx_logger:log")
+AddEventHandler("esx_logger:log", function(src, reason)
+
+    local source = src
+    local xPlayer = ESX.GetPlayerFromId(source)
+	if xPlayer == nil then
+		Wait(10)
+		return
+	end
+    local name = GetPlayerName(source)
+    local ip = GetPlayerEndpoint(source)
+    local ping = GetPlayerPing(source)
+    local steamhex = xPlayer.identifier
+
+    local disconnect = {
+            {
+                ["color"] = "16711680",
+                ["title"] = "Cheat has been detected",
+                ["description"] = "**Player:** ".. name .." | " .. exports.essentialmode:IcName(source) .. " (" .. GetDiscord(source) .. ") **[" .. source .."]**\nReason: **"..reason.."**\nIP: **"..ip.."**\nID: **" .. source .. "**\nSteam Hex: **"..steamhex.."**\n**Discord:** " .. GetDiscord(source) .. "",
+                ["footer"] = {
+                    ["text"] = "ServerTest Log",
+                    ["icon_url"] = communtiylogo,
+                },
+            }
+        }
+
+    SendDiscordLog(alogs, 'cheat', "ServerTest  Log", disconnect[1]["description"], disconnect, source)
+
+end)
+
+RegisterServerEvent("esx_logger:log2")
+AddEventHandler("esx_logger:log2", function(src, info)
+    local source = src
+    local name = GetPlayerName(source)
+
+    local disconnect = {
+            {
+                ["color"] = "16711680",
+                ["title"] = "Purge Details",
+                ["description"] = info.iniator .. " has been requested by **".. name .."** (" .. GetDiscord(source) .. ")\n Weapon: **" .. info.weapon.. "**\nTotal users: **"..info.utotal.."**, Total users had that weapon: **" .. info.udtotal .. "**\nTotal vehicles: **"..info.vtotal.."**, Total vehicles had that weapon: **" .. info.vdtotal .. "**\nTotal properties: **"..info.ptotal.."**, Total properties had that weapon: **" .. info.pdtotal .. "**\nTotal gangs: **"..info.gtotal.."**, Total gangs had that weapon: **" .. info.gdtotal .. "**\nTotal weapons: **" .. info.dtotal .."**",
+                ["footer"] = {
+                    ["text"] = "ServerTest Log",
+                    ["icon_url"] = communtiylogo,
+                },
+            }
+        }
+
+    SendDiscordLog(infologs, 'purge', "Purge Handler", disconnect[1]["description"], disconnect, source)
+
+end)
+
+RegisterServerEvent("esx_logger:log3")
+AddEventHandler("esx_logger:log3", function(src, info)
+    local source = src
+    local name = GetPlayerName(source)
+
+    local disconnect = {
+            {
+                ["color"] = "16711680",
+                ["title"] = "Purge Details",
+                ["description"] = "Count wave has been requested by **".. name .."** (" .. GetDiscord(source) .. ")\n Type: " .. info.type .. "\n Owner: " .. info.owner,
+                ["footer"] = {
+                    ["text"] = "ServerTest Log",
+                    ["icon_url"] = communtiylogo,
+                },
+            }
+        }
+
+    SendDiscordLog(infologs, 'purge', "Purge Handler", disconnect[1]["description"], disconnect, source)
+
+end)
+
+RegisterServerEvent("esx_logger:log4")
+AddEventHandler("esx_logger:log4", function(src, info, d)
+    local source = src
+    local name = GetPlayerName(source)
+
+    local disconnect = {
+            {
+                ["color"] = "16711680",
+                ["title"] = "StarterPackCollected",
+                ["description"] = "```css\n[ Identifier : "..info.identifier.." ]\n[ Name : "..name.." ]\n[ Add Bank = 95000 ]\n[ Add Money : 5000 ]\n[ Money : "..info.money.." ]\n[ Bank : "..info.bank.." ]\n```",
+                ["footer"] = {
+                    ["text"] = "AZ :)",
+                    ["icon_url"] = communtiylogo,
+                },
+            }
+        }
+
+    SendDiscordLog(d, 'starterpack', "AZ", disconnect[1]["description"], disconnect, source)
+
+end)
+
+RegisterServerEvent("esx_logger:log5")
+AddEventHandler("esx_logger:log5", function(src, info, d)
+    local source = src
+    local name = GetPlayerName(source)
+
+    local disconnect = {
+            {
+                ["color"] = "16711680",
+                ["title"] = "StarterPackCollected",
+                ["description"] = "```css\n("..GetPlayerName(info.source).."|"..info.source..")\n Change_Discord_Id\n("..GetPlayerName(info.targetid).."|"..info.targetid..")\n Discord_Id =="..info.dsid.."\n```",
+                ["footer"] = {
+                    ["text"] = "AZ :)",
+                    ["icon_url"] = communtiylogo,
+                },
+            }
+        }
+
+    SendDiscordLog(d, 'changediscord', "AZ", disconnect[1]["description"], disconnect, source)
+
+end)
+
+function GangLog(info)
+    local source = tonumber(info.source)
+    local name = GetPlayerName(info.source)
+
+    local color
+    if info.type == "Gozasht" then color = "51712" elseif info.type == "Bardasht" then color = "15852071" end
+
+    local details = {
+            {
+                ["color"] = color,
+                ["title"] = "Gang Log",
+                ["description"] = "**Person:** ".. name ..", " .. info.icname .. " (" .. GetDiscord(source) .. ") **[" .. source .."]**\n **Gang:** " .. info.gang  .."\n **Type:** " .. info.type .. "\n **Esm:** " .. info.name .. "\n **Tedad:** " .. info.count,
+                ["footer"] = {
+                    ["text"] = "Action Description",
+                    ["icon_url"] = communtiylogo,
+                },
+            }
+        }
+
+    SendDiscordLog(ganglog, 'gangs', "Gang Log", details[1]["description"], details, source)
+end
+
+function HomeLog(info)
+    local source = tonumber(info.source)
+    local name = GetPlayerName(info.source)
+
+    local color
+    if info.type == "Gozasht" then color = "51712" elseif info.type == "Bardasht" then color = "15852071" end
+
+    local details = {
+            {
+                ["color"] = color,
+                ["title"] = "Home Log",
+                ["description"] = "**Person:** ".. name ..", " .. info.icname .. " (" .. GetDiscord(source) .. ") **[" .. source .."]**\n **Type:** " .. info.type .. "\n **Esm:** " .. info.name .. "\n **Tedad:** " .. info.count,
+                ["footer"] = {
+                    ["text"] = "Action Description",
+                    ["icon_url"] = communtiylogo,
+                },
+            }
+        }
+
+    SendDiscordLog(homelog, 'home', "Home Log", details[1]["description"], details, source)
+end
+
+function TrunkLog(info)
+    local source = tonumber(info.source)
+    local name = GetPlayerName(info.source)
+
+    local color
+    if info.type == "Gozasht" then color = "51712" elseif info.type == "Bardasht" then color = "15852071" end
+
+    local details = {
+            {
+                ["color"] = color,
+                ["title"] = "Trunk Log",
+                ["description"] = "**Person:** ".. name .." | " .. info.icname .. " (" .. GetDiscord(source) .. ") **[" .. source .."]**\n **Type:** " .. info.type .. "\n**Plate:** " .. info.plate .. "\n**Esm:** " .. info.name .. "\n **Tedad:** " .. info.count,
+                ["footer"] = {
+                    ["text"] = "Action Description",
+                    ["icon_url"] = communtiylogo,
+                },
+            }
+        }
+
+    SendDiscordLog(trunklog, 'trunk', "Trunk Log", details[1]["description"], details, source)
+end
+
+function TransActionLog(info)
+    local source = tonumber(info.source)
+    local name = GetPlayerName(info.source)
+
+    local color
+    if info.type == "Variz" then color = "51712" elseif info.type == "Bardasht" then color = "15852071" end
+
+    local details = {
+            {
+                ["color"] = color,
+                ["title"] = "Transaction Log",
+                ["description"] = "**Type:** " .. info.type .. "\n**Person:** ".. name .." | " .. exports.essentialmode:IcName(source) .. " (" .. GetDiscord(source) .. ") **[" .. source .."]**\n**Amount:** " .. info.amount .. "$\n**Identifier:** " .. GetPlayerIdentifier(source),
+                ["footer"] = {
+                    ["text"] = "Action Description",
+                    ["icon_url"] = communtiylogo,
+                },
+            }
+        }
+
+    SendDiscordLog(atmlog, 'amoney', "Transaction Log", details[1]["description"], details, source)
+end
+
+function RewardAll(info)
+    local source = tonumber(info.source)
+    local name = GetPlayerName(info.source)
+
+
+    local details = {
+            {
+                ["color"] = 15852071,
+                ["title"] = "Rewardall Log",
+                ["description"] = "**Person:** ".. name .." | " .. exports.essentialmode:IcName(source) .. " (" .. GetDiscord(source) .. ") **[" .. source .."]**\n**Amount:** " .. info.amount .. "$\n**Identifier:** " .. GetPlayerIdentifier(source)..'\n Ids = \n ```css\n'..json.encode(info.ids)..'\n```',
+                ["footer"] = {
+                    ["text"] = "Action Description",
+                    ["icon_url"] = communtiylogo,
+                },
+            }
+        }
+
+    SendDiscordLog(Rewardalllog, 'rewardall', "RewardAll", details[1]["description"], details, source)
+end
+
+function TransferLog(info)
+    local source = tonumber(info.source)
+    local name = GetPlayerName(info.source)
+    local target = tonumber(info.target)
+    local tname = GetPlayerName(info.target)
+
+    local details = {
+            {
+                ["color"] = "2868934",
+                ["title"] = "Transaction Log",
+                ["description"] = "**Type:** " .. info.type .. "\n**Person:** ".. name .." | " .. exports.essentialmode:IcName(source) .. " (" .. GetDiscord(source) .. ") **[" .. source .."]**\n**Target:** ".. tname .." | " .. exports.essentialmode:IcName(target) .. " (" .. GetDiscord(target) .. ") **[" .. target .."]**\n**Amount:** " .. info.amount .. "$\n**Identifier:** " .. GetPlayerIdentifier(source) .. "\n**Tidentifier:** " .. GetPlayerIdentifier(target),
+                ["footer"] = {
+                    ["text"] = "Action Description",
+                    ["icon_url"] = communtiylogo,
+                },
+            }
+        }
+
+    SendDiscordLog(atmlog, 'transfer', "Transaction Log", details[1]["description"], details, source)
+end
+
+function RobLog(info)
+    local source = tonumber(info.source)
+    local name = GetPlayerName(info.source)
+
+    local color
+    if info.type == "Shop" then color = "1883948" elseif info.type == "Jewels" then color = "14610984" elseif info.type == "Bank" then color = "16187398" end
+    local amount
+    if info.amount then amount = "\n **Amount:** " .. info.amount .. "$" else amount = "" end
+
+    local details = {
+            {
+                ["color"] = color,
+                ["title"] = "Rob Log",
+                ["description"] = "**Person:** ".. name .." | " .. exports.essentialmode:IcName(source) .. " (" .. GetDiscord(source) .. ") **[" .. source .."]**\n **Type:** " .. info.type .. "\n**Action:** " .. info.action .. "\n**Location:** " .. info.location .. "\n**Time:** " .. Date() .. amount,
+                ["footer"] = {
+                    ["text"] = "Action Description",
+                    ["icon_url"] = communtiylogo,
+                },
+            }
+        }
+
+    SendDiscordLog(roblog, 'rob', "Rob Log", details[1]["description"], details, source)
+end
+
+AddPed = function(info)
+
+    local name = GetPlayerName(info.source)
+    local ip = GetPlayerEndpoint(info.source)
+    local ping = GetPlayerPing(info.source)
+    local steamhex = GetPlayerIdentifier(info.source)
+
+    local details = {
+            {
+                ["color"] = 16187398,
+                ["title"] = "EntityCreating_Ped",
+                ["description"] = "**Player:** ".. name .." | " .. exports.essentialmode:IcName(info.source) .. " (" .. GetDiscord(info.source) .. ") **[" .. info.source .."]**\nPed: **"..info.prop.." | Type : "..info.type.." | Network ID : "..info.netid.."**\nIP: **"..ip.."**\nID: **" .. source .. "**\nSteam Hex: **"..steamhex.."**\n**Discord:** " .. GetDiscord(source) .. "",
+                ["footer"] = {
+                    ["text"] = "Action Description",
+                    ["icon_url"] = communtiylogo,
+                },
+            }
+        }
+
+    SendDiscordLog(pedlog, 'entity_ped', "Entity Log", details[1]["description"], details, info.source)
+end
+AddProp = function(info)
+
+    local name = GetPlayerName(info.source)
+    local ip = GetPlayerEndpoint(info.source)
+    local ping = GetPlayerPing(info.source)
+    local steamhex = GetPlayerIdentifier(info.source)
+
+    local details = {
+            {
+                ["color"] = 16187398,
+                ["title"] = "EntityCreating_ProP",
+                ["description"] = "**Player:** ".. name .." | " .. exports.essentialmode:IcName(info.source) .. " (" .. GetDiscord(info.source) .. ") **[" .. info.source .."]**\nProp: **"..info.prop.." | Type : "..info.type.." | Network ID : "..info.netid.."**\nIP: **"..ip.."**\nID: **" .. source .. "**\nSteam Hex: **"..steamhex.."**\n**Discord:** " .. GetDiscord(source) .. "",
+                ["footer"] = {
+                    ["text"] = "Action Description",
+                    ["icon_url"] = communtiylogo,
+                },
+            }
+        }
+
+    SendDiscordLog(proplog, 'entity_prop', "Entity Log", details[1]["description"], details, info.source)
+end
+AddVehicle = function(info)
+
+    local name = GetPlayerName(info.source)
+    local ip = GetPlayerEndpoint(info.source)
+    local ping = GetPlayerPing(info.source)
+    local steamhex = GetPlayerIdentifier(info.source)
+
+    local details = {
+            {
+                ["color"] = 16187398,
+                ["title"] = "EntityCreating_Vehicle",
+                ["description"] = "**Player:** ".. name .." | " .. exports.essentialmode:IcName(info.source) .. " (" .. GetDiscord(info.source) .. ") **[" .. info.source .."]**\nProp: **"..info.prop.." | Type : "..info.type.." | Network ID : "..info.netid.."**\nIP: **"..ip.."**\nID: **" .. source .. "**\nSteam Hex: **"..steamhex.."**\n**Discord:** " .. GetDiscord(source) .. "",
+                ["footer"] = {
+                    ["text"] = "Action Description",
+                    ["icon_url"] = communtiylogo,
+                },
+            }
+        }
+
+    SendDiscordLog(vehlog, 'entity_vehicle', "Entity Log", details[1]["description"], details, info.source)
+end
+
+function RobLogF(info)
+    local color
+    if info.type == "Shop" then color = "1883948" elseif info.type == "Jewels" then color = "14610984" elseif info.type == "Bank" then color = "16187398" end
+
+    local details = {
+            {
+                ["color"] = color,
+                ["title"] = "Rob Log",
+                ["description"] = "**Person:** ".. info.name .." | " .. info.icname .. " (" .. info.discord .. ") **[" .. info.source .."]**\n **Type:** " .. info.type .. "\n**Action:** " .. info.action .. "\n**Location:** " .. info.location .. "\n**Time:** " .. Date(),
+                ["footer"] = {
+                    ["text"] = "Action Description",
+                    ["icon_url"] = communtiylogo,
+                },
+            }
+        }
+
+    SendDiscordLog(roblog, 'rob', "Rob Log", details[1]["description"], details, info.source)
+end
+
+function Date()
+    local date = os.date('*t')
+
+	if date.day < 10 then date.day = '0' .. tostring(date.day) end
+	if date.month < 10 then date.month = '0' .. tostring(date.month) end
+	if date.hour < 10 then date.hour = '0' .. tostring(date.hour) end
+	if date.min < 10 then date.min = '0' .. tostring(date.min) end
+    if date.sec < 10 then date.sec = '0' .. tostring(date.sec) end
+
+    return '`' .. date.day .. '.' .. date.month .. '.' .. date.year .. ' - ' .. date.hour .. ':' .. date.min .. ':' .. date.sec .. '`'
+end
+
+function GetDiscord(target)
+    local discord
+    for k,v in ipairs(GetPlayerIdentifiers(target)) do
+        if string.sub(v, 1, string.len("discord:")) == "discord:" then
+            discord = string.gsub(v, "discord:", "")
+           return "<@" .. discord .. ">"
+        end
+    end
+
+    return "N/A"
+end

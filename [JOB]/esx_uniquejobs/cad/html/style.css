@@ -1,0 +1,1304 @@
+/* ==========================================================================
+   Unique_Cad — tactical dispatch terminal
+   v3: local Poppins font, glass panels, cyan/gold duotone accent, subtle
+   HUD grid + glow details. Every class/id/CSS-variable name that app.js or
+   index.html reference is kept byte-for-byte so no behaviour changes --
+   only how things look.
+
+   Poppins is bundled locally (./fonts) so the terminal never depends on an
+   external Google Fonts request to render text -- the old build pulled
+   Lato from fonts.googleapis.com every load, which is both an extra
+   network round-trip and a blank-text flash if that request stalls or is
+   blocked inside the game's CEF browser.
+   ========================================================================== */
+@font-face {
+  font-family: 'Poppins';
+  src: url('./fonts/Poppins-Light.ttf') format('truetype');
+  font-weight: 300;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Poppins';
+  src: url('./fonts/Poppins-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Poppins';
+  src: url('./fonts/Poppins-Medium.ttf') format('truetype');
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Poppins';
+  src: url('./fonts/Poppins-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-display: swap;
+}
+
+/* ==========================================================================
+   Design tokens
+   ========================================================================== */
+:root {
+  /* surfaces */
+  --bg-deep:    #070d18;
+  --bg-panel:   #0b1524;
+  --bg-header:  #101f34;
+  --bg-card:    #0e1a2c;
+  --bg-active:  #17293f;
+  --bg-hover:   #132339;
+  --glass:      rgba(16, 27, 46, 0.55);
+
+  /* lines / borders */
+  --border:      rgba(255, 255, 255, 0.07);
+  --border-soft: rgba(255, 255, 255, 0.13);
+
+  /* accents -- gold stays the primary brand color used by app.js, cyan is
+     a new secondary accent used only for decorative glow/highlights */
+  --gold:       #cdbf8f;
+  --gold-soft:  #a79c78;
+  --gold-glow:  rgba(205, 191, 143, 0.28);
+  --cyan:       #57d9d0;
+  --cyan-glow:  rgba(87, 217, 208, 0.25);
+
+  /* text */
+  --text:       #eef1f6;
+  --text-dim:   #7d879c;
+
+  /* status -- referenced directly from app.js/index.html, names must stay */
+  --ok:         #3ddc91;
+  --ok-glow:    rgba(61, 220, 145, 0.3);
+  --danger:     #ff5c5c;
+  --danger-dim: #6e2d2d;
+  --danger-glow: rgba(255, 92, 92, 0.25);
+  /* Same status-blue app.js/index.html already used as a raw rgb() literal
+     in half a dozen places for "in_prison"/"special" -- named here so it's
+     one token instead of six copies of the same magic number. */
+  --info:       rgb(36, 74, 201);
+  --info-glow:  rgba(36, 74, 201, 0.25);
+
+  /* geometry */
+  --radius:     6px;
+  --radius-lg:  14px;
+
+  /* elevation */
+  --shadow-sm:  0 4px 14px rgba(0, 0, 0, 0.35);
+  --shadow-md:  0 14px 34px rgba(0, 0, 0, 0.45);
+  --shadow-lg:  0 30px 90px rgba(0, 0, 0, 0.65);
+
+  --ease:       180ms cubic-bezier(0.4, 0, 0.2, 1);
+  --font: 'Poppins', 'Lato', sans-serif;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  font-family: var(--font);
+  background-color: transparent;
+}
+
+/* Simple, cheap fade used whenever a page/modal/panel goes from
+   display:none to visible via JS -- re-triggers on every display change
+   because the element is re-inserted into the render tree, no extra JS
+   required. Kept subtle so it never delays reading data. */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Same fade, but for elements centered with top:50%/left:50% +
+   transform:translate(-50%,-50%) (.tablet, .Login). A CSS animation
+   replaces the element's transform for its whole duration, so reusing the
+   plain @keyframes fadeIn above on a centered element strips its
+   -50%/-50% centering offset while the animation plays -- the box renders
+   with its top-left corner at screen-center instead of its middle, i.e.
+   it visibly sits off to the right for ~200ms before snapping to center
+   the instant the animation ends. This keyframe re-applies the same
+   translate(-50%,-50%) on every frame so the element never leaves its
+   centered position, it only fades/settles in place. */
+@keyframes fadeInCentered {
+  from { opacity: 0; transform: translate(-50%, -50%) translateY(4px); }
+  to   { opacity: 1; transform: translate(-50%, -50%); }
+}
+
+/* Soft breathing glow, used on the "online" status dot and login avatar
+   ring -- purely decorative, never on anything the player has to read
+   quickly. */
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 0 0 var(--ok-glow); }
+  50%      { box-shadow: 0 0 0 6px rgba(61, 220, 145, 0); }
+}
+
+/* Thin scrollbar as the default everywhere (previously only defined for
+   .MainPageTabContent), so smaller inner scroll areas like the IA officer
+   search results don't fall back to the browser's default chunky bar. */
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--bg-active);
+  border-radius: 4px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--gold-soft);
+}
+
+/* ==========================================================================
+   Frame
+   ========================================================================== */
+.tablet {
+  width: 62%;
+  height: 82%;
+  max-width: 1250px;
+  aspect-ratio: 1.31 / 1;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 26px;
+  background: #08090c;
+  padding: 20px;
+  box-shadow:
+    0 0 0 3px #1c1d21,
+    0 0 0 6px #c7c8cc,
+    0 0 0 7px #8d8e93,
+    0 0 55px var(--gold-glow),
+    var(--shadow-lg);
+  overflow: visible;
+  animation: fadeInCentered 220ms var(--ease);
+}
+
+.bezel-camera {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #16171b;
+  box-shadow: 0 0 0 2px #2b2c31, inset 0 0 2px #000;
+  z-index: 2;
+}
+
+.bezel-btn {
+  position: absolute;
+  left: -9px;
+  width: 3px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #8d8e93, #c7c8cc);
+  z-index: 2;
+}
+
+.bezel-btn-1 { top: 14%; height: 4%; }
+.bezel-btn-2 { top: 20%; height: 8%; }
+.bezel-btn-3 { top: 30%; height: 8%; }
+
+/* ==========================================================================
+   Loading
+   ========================================================================== */
+.Loading {
+  display: none;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+
+.Loading img {
+  width: 56px;
+  filter: drop-shadow(0 0 16px var(--gold-glow));
+}
+
+/* ==========================================================================
+   Login
+   ========================================================================== */
+.Login {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 300px;
+  padding: 40px 28px 26px;
+  border-radius: var(--radius-lg);
+  color: var(--text);
+  text-align: center;
+  background:
+    radial-gradient(120% 100% at 50% -10%, rgba(205, 191, 143, 0.10), transparent 60%),
+    linear-gradient(180deg, var(--bg-panel), var(--bg-deep));
+  border: 1px solid var(--border-soft);
+  box-shadow: var(--shadow-lg);
+  animation: fadeInCentered 220ms var(--ease);
+}
+
+.Login img {
+  width: 25%;
+  box-shadow: 0 0 0 3px var(--bg-deep), 0 0 0 5px var(--gold-glow), 0 0 30px var(--gold-glow);
+}
+
+.Login h1 {
+  margin-top: 20px;
+  font-family: var(--font);
+  font-weight: 700;
+  font-size: 20px;
+  letter-spacing: 0.5px;
+  color: var(--text);
+}
+
+.Login button {
+  width: 100%;
+  color: var(--bg-deep);
+  border-radius: 5px;
+  padding: 12px;
+  border: none;
+  outline: none;
+  font-family: var(--font);
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0.6px;
+  margin-top: 26px;
+  background: linear-gradient(135deg, var(--gold), var(--gold-soft));
+  cursor: pointer;
+  transition: var(--ease);
+}
+
+.Login button:hover,
+.login button:hover {
+  filter: brightness(1.08);
+  box-shadow: 0 10px 26px var(--gold-glow);
+  transform: translateY(-1px);
+}
+
+.Login button:active,
+.login button:active {
+  transform: translateY(0);
+  filter: brightness(0.97);
+}
+
+.Login > p {
+  margin-top: 14px;
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+/* ==========================================================================
+   Main shell
+   ========================================================================== */
+.MainPage {
+  display: none;
+  font-family: var(--font);
+  height: 100%;
+}
+
+.Header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  height: 86px;
+  color: var(--text);
+  padding: 10px 24px;
+  background: linear-gradient(180deg, var(--bg-header), var(--bg-panel));
+  border-bottom: 1px solid var(--border-soft);
+  box-shadow: var(--shadow-sm), inset 0 -1px 0 var(--gold-glow);
+  position: relative;
+  z-index: 1;
+}
+
+.Header img {
+  width: 44px;
+  height: 44px;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 2px solid var(--gold-glow);
+  box-shadow: 0 0 14px var(--gold-glow);
+}
+
+.Header h2 {
+  font-family: var(--font);
+  font-weight: 600;
+  font-size: 18px;
+  letter-spacing: 0.6px;
+  color: var(--gold);
+  flex: 1;
+  margin-left: 16px;
+}
+
+.ExitButton {
+  padding: 9px 18px;
+  width: auto;
+  min-width: 76px;
+  background: transparent;
+  border: 1px solid var(--border-soft);
+  color: var(--text);
+  border-radius: 5px;
+  font-family: var(--font);
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  transition: var(--ease);
+}
+
+.ExitButton:hover {
+  border-color: var(--danger);
+  color: var(--danger);
+  box-shadow: 0 4px 16px var(--danger-glow);
+}
+
+.ExitButton:active {
+  transform: scale(0.97);
+}
+
+/* ==========================================================================
+   Sidebar / tabs
+   ========================================================================== */
+.MainPageTabs {
+  float: left;
+  width: 24%;
+  height: auto;
+  background: linear-gradient(180deg, var(--bg-panel), var(--bg-deep));
+  border-right: 1px solid var(--border-soft);
+  display: flex;
+  flex-direction: column;
+  flex-wrap: wrap;
+  align-content: center;
+  position: absolute;
+  top: 86px;
+  bottom: 0;
+}
+
+.MainPageUserInfo {
+  margin-top: 26px;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  color: var(--text);
+  width: 100%;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.MainPageUserInfo span {
+  color: var(--ok);
+  font-size: 13px;
+  position: relative;
+  bottom: 1px;
+  border-radius: 50%;
+  animation: pulseGlow 2.2s ease-in-out infinite;
+}
+
+.MainPageUserInfo p {
+  margin-left: 8px;
+  font-family: var(--font);
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--text);
+}
+
+#Rank_mdt {
+  font-family: var(--font) !important;
+  font-weight: 400;
+  font-size: 13px !important;
+  color: var(--gold-soft) !important;
+  left: 0 !important;
+  flex-basis: 100% !important;
+  text-align: center;
+  margin-top: 4px;
+}
+
+.MainPageTabButtons {
+  margin-top: 10px;
+  width: 100%;
+  padding: 0 14px;
+}
+
+.MainPageTabButton {
+  width: 100%;
+  background: none;
+  border: none;
+  border-left: 3px solid transparent;
+  outline: none;
+  margin-top: 4px;
+  padding: 13px 16px;
+  font-family: var(--font);
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-dim);
+  text-align: left;
+  cursor: pointer;
+  transition: var(--ease);
+  border-radius: var(--radius);
+}
+
+.MainPageTabButton:hover {
+  color: var(--text);
+  background: var(--bg-hover);
+  padding-left: 20px;
+}
+
+.MainPageTabActiveButton {
+  width: 100%;
+  transition: var(--ease);
+  background: linear-gradient(90deg, var(--bg-active), transparent);
+  border-radius: var(--radius);
+  border-left: 3px solid var(--gold);
+  box-shadow: inset 0 0 0 1px var(--border-soft);
+  color: var(--text) !important;
+}
+
+/* ==========================================================================
+   Content area
+   ========================================================================== */
+.MainPageTabContent {
+  float: right;
+  width: 76%;
+  height: auto;
+  overflow-y: auto;
+  /* Explicit rather than relying on the browser auto-converting this to
+     "auto" just because overflow-y is set (that conversion is spec'd, but
+     FiveM's in-game browser is a much older, fixed Chromium/CEF build and
+     can't be assumed to apply every modern layout quirk the same way).
+     Anything that overflows horizontally -- long dashboard text, a stray
+     wide element -- must always be clipped here rather than spilling out
+     past the tablet's rounded frame onto the game world behind it. */
+  overflow-x: hidden;
+  padding: 26px 30px;
+  color: var(--text);
+  position: absolute;
+  right: 0;
+  top: 86px;
+  bottom: 0;
+  background:
+    radial-gradient(90% 60% at 100% 0%, rgba(87, 217, 208, 0.05), transparent 55%),
+    var(--bg-deep);
+}
+
+.MainPageTabContent::-webkit-scrollbar {
+  width: 6px;
+}
+
+.MainPageTabContent::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.MainPageTabContent::-webkit-scrollbar-thumb {
+  background: var(--bg-active);
+  border-radius: 4px;
+}
+
+#Page_MainPanel > p:first-child,
+.MainPage_Header p {
+  font-family: var(--font) !important;
+  font-weight: 700;
+  color: var(--text) !important;
+  font-size: 22px !important;
+  letter-spacing: 0.3px;
+}
+
+/* ==========================================================================
+   Main panel dashboard (greeting/clock, stat cards, quick actions)
+   ========================================================================== */
+.Dashboard_Top {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 14px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.Dashboard_Greeting {
+  font-family: var(--font);
+  font-weight: 400;
+  font-size: 14px;
+  color: var(--text-dim);
+  /* Flex items default to min-width:auto, which floors their width at
+     their unbroken content size and can push them (or a sibling) past the
+     container's edge instead of wrapping. min-width:0 lets this item
+     actually shrink/wrap within .Dashboard_Top like flex-wrap intends. */
+  min-width: 0;
+}
+
+.Dashboard_Greeting span {
+  color: var(--gold);
+  font-weight: 600;
+}
+
+.Dashboard_Clock {
+  text-align: right;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.Dashboard_Clock p:first-child {
+  font-family: var(--font);
+  font-weight: 700;
+  font-size: 20px;
+  color: var(--text);
+  letter-spacing: 1px;
+  font-variant-numeric: tabular-nums;
+}
+
+.Dashboard_Clock p:last-child {
+  font-family: var(--font);
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+
+.Dashboard_Stats {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.Dashboard_StatCard {
+  flex: 1;
+  min-width: 150px;
+  background: linear-gradient(160deg, var(--bg-card), var(--bg-panel));
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  box-shadow: var(--shadow-sm);
+  transition: var(--ease);
+}
+
+.Dashboard_StatCard:hover {
+  border-color: var(--gold-soft);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.Dashboard_StatValue {
+  font-family: var(--font);
+  font-weight: 700;
+  font-size: 26px;
+  color: var(--gold);
+}
+
+.Dashboard_StatLabel {
+  font-family: var(--font);
+  font-weight: 600;
+  font-size: 11px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 4px;
+}
+
+.Dashboard_QuickActions {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 16px 0 22px;
+}
+
+.Dashboard_QuickAction {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: var(--font);
+  font-weight: 600;
+  font-size: 12.5px;
+  padding: 10px 16px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: var(--ease);
+}
+
+.Dashboard_QuickAction:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+  background: var(--bg-hover);
+  transform: translateY(-1px);
+}
+
+.Dashboard_QuickAction:active {
+  transform: translateY(0);
+}
+
+.Main_Panel_Page_WantedPeople,
+.Main_Panel_Page_WnatedCars {
+  float: left;
+  width: 50%;
+  font-size: 1.5vw;
+}
+
+.Main_Panel_Page_WantedPeople > p,
+.Main_Panel_Page_WnatedCars > p {
+  font-family: var(--font);
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text-dim);
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
+.Main_Panel_Page_List {
+  width: 92%;
+  min-height: 30px;
+  margin-right: 25px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 6px;
+  box-shadow: var(--shadow-sm);
+}
+
+/* Every direct "Page_..." panel gets the same quiet fade whenever the
+   client flips it from display:none to visible -- keeps tab switches from
+   feeling like an abrupt jump-cut without needing any JS changes. */
+[id^="Page_"] {
+  animation: fadeIn 200ms var(--ease);
+}
+
+#CitizenSearch, #VehicleSearch {
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background-color: var(--bg-card);
+  color: var(--text);
+  font-family: var(--font);
+  padding: 9px 12px;
+  outline: none;
+  transition: var(--ease);
+}
+
+#CitizenSearch:focus, #VehicleSearch:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px var(--gold-glow);
+}
+
+#CitizenSearch::placeholder, #VehicleSearch::placeholder {
+  color: var(--text-dim);
+}
+
+.MainPage_Header {
+  height: auto;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0 20px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.MainPage_Header input {
+  padding: 9px 12px;
+  width: 30%;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 13px;
+  outline: none;
+  transition: var(--ease);
+}
+
+.MainPage_Header input:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px var(--gold-glow);
+}
+
+/* ==========================================================================
+   Citizen / car detail
+   ========================================================================== */
+#Page_CitizensDetailInfo,
+#Page_CarDetailInfo {
+  display: flex;
+  flex-direction: column;
+}
+
+.Character_Info {
+  position: relative;
+  top: 50px;
+  height: 20%;
+}
+
+.Profile_Picture {
+  float: left;
+  width: 35%;
+}
+
+.Profile_Picture img {
+  border-radius: 8px;
+  border: 1px solid var(--border-soft);
+  box-shadow: var(--shadow-sm);
+}
+
+.Profile_Picture .Change_Profile_Button {
+  position: absolute;
+  bottom: 42%;
+  left: 10%;
+  opacity: 0;
+  transition: var(--ease);
+  background: linear-gradient(135deg, var(--gold), var(--gold-soft));
+  color: var(--bg-deep);
+  padding: 8px 14px;
+  border: none;
+  outline: none;
+  border-radius: 5px;
+  font-family: var(--font);
+  font-weight: 700;
+  font-size: 12px;
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45);
+}
+
+.Profile_Picture .Change_Profile_Button:hover {
+  filter: brightness(1.08);
+}
+
+.Profile_Picture:hover .Change_Profile_Button {
+  opacity: 1;
+}
+
+.Character_Details {
+  width: 60%;
+  height: auto;
+  background: var(--bg-card);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  position: absolute;
+  right: 0;
+  top: 5px;
+  bottom: 20px;
+  padding: 4px 18px;
+}
+
+.WantedColor {
+  height: 3px;
+  /* was 120% -- the strip was 1/5 wider than its own card, so it visibly
+     poked out past the right edge of .Character_Details on every citizen
+     and vehicle profile. */
+  width: 100%;
+  margin-bottom: 4px;
+  box-shadow: 0 0 10px currentColor;
+}
+
+.Character_Info_Row {
+  flex-basis: 100%;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 1.1vw;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.Character_Info_Row:last-of-type {
+  border-bottom: none;
+}
+
+.Character_Info_Row > p:first-child {
+  color: var(--text-dim);
+  font-family: var(--font);
+  font-weight: 600;
+  font-size: 0.9vw;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.Character_Info_Row > p:last-child {
+  font-family: var(--font);
+  color: var(--text);
+}
+
+.Mdt_Select {
+  appearance: none;
+  -webkit-appearance: none;
+  background: var(--bg-active) url("data:image/svg+xml;charset=UTF-8,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%237d879c' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 10px center;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 5px 26px 5px 8px;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: var(--ease);
+}
+
+.Mdt_Select:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px var(--gold-glow);
+}
+
+/* ==========================================================================
+   Lists (rows)
+   ========================================================================== */
+.MDT_List {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+}
+
+.List_Row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 13px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  margin-top: 6px;
+  border-radius: var(--radius);
+  transition: var(--ease);
+  cursor: pointer;
+  animation: fadeIn 220ms var(--ease);
+}
+
+.List_Row_Wanted {
+  border-left: 3px solid var(--danger);
+  box-shadow: inset 3px 0 10px -6px var(--danger);
+}
+
+.List_Row:hover {
+  background: var(--bg-hover);
+  border-color: var(--gold-soft);
+  transform: translateX(3px);
+  box-shadow: var(--shadow-sm);
+}
+
+.List_Row p {
+  margin: 0;
+  font-family: var(--font);
+  font-size: 1vw;
+  color: var(--text);
+}
+
+/* ==========================================================================
+   Data log (notes / history)
+   ========================================================================== */
+.Data_List {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+}
+
+.Data_List_Content {
+  padding: 15px;
+}
+
+.Data_List_Content > .data_Row:first-child {
+  color: var(--text-dim) !important;
+  font-family: var(--font) !important;
+  font-weight: 700;
+  font-size: 12px !important;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.data_Row {
+  margin-top: 4px;
+  width: 67%;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  font-family: var(--font);
+  font-size: 13px;
+  color: var(--text);
+}
+
+.Data_List_Content hr {
+  border: none;
+  border-top: 1px solid var(--border) !important;
+  margin-top: 8px !important;
+}
+
+.Data_Delete_Button {
+  position: relative;
+  right: 20px;
+  border-radius: 5px;
+  border: 1px solid var(--danger-dim);
+  padding: 3px 8px;
+  color: var(--danger);
+  background: none;
+  cursor: pointer;
+  transition: var(--ease);
+}
+
+.Data_Delete_Button:hover {
+  background: var(--danger);
+  color: var(--bg-deep);
+  box-shadow: 0 4px 14px var(--danger-glow);
+}
+
+/* ==========================================================================
+   Modal
+   ========================================================================== */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 20;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(4, 7, 13, 0.88);
+}
+
+.modal-content {
+  background: linear-gradient(180deg, var(--bg-panel), var(--bg-deep)) !important;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+  margin: 15% auto;
+  padding: 26px;
+  width: 80%;
+  max-width: 420px;
+  height: auto;
+  color: var(--text);
+  box-shadow: var(--shadow-lg), 0 0 0 1px var(--gold-glow);
+  animation: fadeIn 200ms var(--ease);
+}
+
+.modal-content h1 {
+  font-family: var(--font);
+  font-weight: 700;
+  font-size: 18px;
+  color: var(--gold);
+}
+
+.modal-content h4 {
+  font-family: var(--font);
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.modal-content hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 10px 0;
+}
+
+.modal-content .close {
+  float: right;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 20px;
+  transition: var(--ease);
+}
+
+.modal-content .close:hover {
+  color: var(--danger);
+  transform: rotate(90deg);
+  display: inline-block;
+}
+
+.modal-content input {
+  padding: 10px 12px;
+  width: 80%;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--text);
+  outline: none;
+  font-family: var(--font);
+  font-size: 13px;
+  transition: var(--ease);
+}
+
+.modal-content input:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px var(--gold-glow);
+}
+
+.DiscardButton {
+  padding: 10px 16px;
+  width: auto;
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  border-radius: 5px;
+  font-family: var(--font);
+  font-weight: 600;
+  font-size: 12px;
+  cursor: pointer;
+  transition: var(--ease);
+}
+
+.DiscardButton:hover {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+/* ==========================================================================
+   Training / Amozesh tab -- was a flat list of same-size <span> lines at
+   1.5vw (so its text size literally depended on the player's screen width,
+   too big on some resolutions and too small on others). Parsed client-side
+   in app.js into a header banner, section dividers, numbered item cards
+   and note bullets, all on fixed px sizes so it reads the same everywhere.
+   ========================================================================== */
+.Training_Header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 16px;
+  background: linear-gradient(135deg, var(--bg-panel), var(--bg-card));
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+  padding: 18px 20px;
+  margin-top: 14px;
+  box-shadow: var(--shadow-sm);
+}
+
+.Training_HeaderIcon {
+  flex-shrink: 0;
+  width: 46px;
+  height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  background: var(--bg-active);
+  border: 1px solid var(--gold-glow);
+  border-radius: 50%;
+  box-shadow: 0 0 16px var(--gold-glow);
+}
+
+.Training_HeaderTitle {
+  font-family: var(--font);
+  font-weight: 700;
+  font-size: 17px;
+  color: var(--text);
+}
+
+.Training_HeaderSub {
+  font-family: var(--font);
+  font-weight: 400;
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 3px;
+}
+
+.Training_Section {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  margin: 26px 0 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.Training_Section:first-of-type {
+  margin-top: 20px;
+}
+
+.Training_SectionIcon {
+  font-size: 15px;
+}
+
+.Training_Section p {
+  font-family: var(--font);
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--gold);
+  letter-spacing: 0.3px;
+}
+
+.Training_SectionTag {
+  font-family: var(--font);
+  font-weight: 500;
+  font-size: 11px;
+  color: var(--text-dim);
+  font-style: normal;
+}
+
+.Training_Item {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  margin-top: 8px;
+  transition: var(--ease);
+}
+
+.Training_Item:hover {
+  border-color: var(--gold-soft);
+  transform: translateX(2px);
+}
+
+.Training_ItemNumber {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font);
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--bg-deep);
+  background: var(--gold);
+  border-radius: 50%;
+}
+
+.Training_ItemTitle {
+  font-family: var(--font);
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text);
+}
+
+.Training_ItemDesc {
+  font-family: var(--font);
+  font-weight: 400;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text-dim);
+  margin-top: 3px;
+}
+
+.Training_Note {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 6px 4px;
+}
+
+.Training_NoteIcon {
+  flex-shrink: 0;
+  color: var(--gold);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.Training_Note p {
+  font-family: var(--font);
+  font-weight: 400;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-dim);
+}
+
+.Training_Plain {
+  font-family: var(--font);
+  font-weight: 400;
+  font-size: 13px;
+  color: var(--text-dim);
+  margin-top: 6px;
+}
+
+/* ==========================================================================
+   Global form controls
+   Any bare <input>/<select> not covered by a more specific rule (like
+   .modal-content input above) used to fall back to the browser's native
+   appearance -- a plain white box with light (--text) text color still
+   applied on top, which is illegible (this is what happened to the
+   Internal Affairs report form: white-on-white options in the category
+   dropdown). This is the dark-theme default for every form control in
+   the app; more specific selectors above/below still win where they exist.
+   ========================================================================== */
+
+input, select {
+  padding: 10px 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--text);
+  outline: none;
+  font-family: var(--font);
+  font-size: 13px;
+  transition: var(--ease);
+}
+
+input:focus, select:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px var(--gold-glow);
+}
+
+/* The dropdown's OPEN option list is a separate native-rendered popup in
+   FiveM's CEF -- it doesn't always inherit the select's own styling, so
+   it needs its own explicit background/color or it falls back to the
+   browser's native (light) popup with our light --text color on top,
+   same illegible-white-on-white problem as the select itself. */
+select option {
+  background: var(--bg-card);
+  color: var(--text);
+}
+
+.PrimaryButton {
+  color: var(--bg-deep);
+  border-radius: 5px;
+  padding: 10px 18px;
+  width: auto;
+  border: none;
+  outline: none;
+  font-family: var(--font);
+  font-weight: 700;
+  font-size: 12px;
+  background: linear-gradient(135deg, var(--gold), var(--gold-soft));
+  cursor: pointer;
+  transition: var(--ease);
+}
+
+.PrimaryButton:hover {
+  filter: brightness(1.08);
+  box-shadow: 0 8px 22px var(--gold-glow);
+  transform: translateY(-1px);
+}
+
+.PrimaryButton:active {
+  transform: translateY(0);
+  filter: brightness(0.97);
+}
+
+/* ==========================================================================
+   Utility / legacy hooks
+   ========================================================================== */
+.font-Secular,
+.font-Lalezar,
+.font-Pacifico,
+.font-Goch_-hand {
+  font-family: var(--font);
+}
+
+.Input-error {
+  border-color: var(--danger) !important;
+  box-shadow: 0 0 0 3px var(--danger-glow) !important;
+}

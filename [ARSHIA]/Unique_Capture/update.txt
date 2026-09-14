@@ -1,0 +1,526 @@
+========================================================
+  UNIQUE_CAPTURE — UPDATE LOG
+  By Arshia | arshiahub.ir | Unique RP
+========================================================
+
+1- Rebrand: Renamed from "Violet_Capture" to "Unique_Capture" 
+   (folder, fxmanifest author/description, and every visible 
+   chat label that used to say "Violet-CaptureSystem").
+
+2- Bug Fix: Fixed a crash when a player died from fall damage / 
+   drowning (no real killer) — the game was calling 
+   GetPlayerServerId(nil) and sending a broken kill log.
+
+3- Bug Fix: CreateZonesVar() was polluting the Kills table with 
+   zone-name keys, even though Kills is keyed by player identifier. 
+   Cleaned up.
+
+4- Bug Fix: Round auto-end was completely dead code — a typo 
+   ("CaptugreEnd" instead of "CaptureEnd") plus a string 
+   comparison that could never be true. Fixed both.
+
+5- Bug Fix: Possible crash in zone-holder calculation when a 
+   marker packet arrived before the player's zone-entry was 
+   registered. Added a safety guard.
+
+6- Bug Fix: Several global variable leaks (missing "local" on 
+   xPlayer/_source) across multiple server event handlers.
+
+7- Feature: Round history log — every round now gets saved to a 
+   new `capture_history` MySQL table (date, winning gang, top 
+   killer, full top 5 gangs/killers as JSON). New command 
+   /captureHistory (admin) shows the last 15 rounds with full 
+   detail.
+
+8- Bug Fix: Found while adding history — CaptureState.Kills, 
+   Points, and all zone-holder data were NEVER reset between 
+   rounds, so leaderboards kept accumulating forever across 
+   restarts of the event. Now everything resets cleanly when a 
+   new round starts.
+
+9- Bug Fix: The round-end event could fire twice back-to-back 
+   (once from the per-minute timer, once from the per-second 
+   timer), causing duplicate Discord posts / duplicate DB rows. 
+   Added a guard so it only ever fires once per round.
+
+10- Bug Fix: The "stand in zone marker" timer could spawn multiple 
+    overlapping threads if a player stepped in/out of the marker 
+    quickly. Now only one runs at a time.
+
+11- Bug Fix: The admin menu's Start Capture button and the announce 
+    message had the command names hardcoded ("startCap", "/joincap") 
+    instead of reading from Config — changing the command name in 
+    Config would silently break the button. Fixed to reference Config.
+
+12- Bug Fix: Removed a leftover, permission-less debug command 
+    (/kos) that let anyone toggle the capture UI.
+
+13- Feature: Persistent player stats — new `capture_player_stats` 
+    table tracks each player's all-time Kills, Deaths, and how many 
+    times they've placed in a round's Top 5. New command 
+    /captureStats (everyone) shows your own K/D + the server's 
+    all-time Top 10 killers.
+
+14- Bug Fix: SendKillLog didn't check if the damaged player still 
+    existed (could crash if they disconnected right as they died). 
+    Added a nil-check.
+
+15- UI Redesign: Full visual overhaul of the on-screen HUD to match 
+    the reference look you sent — gold theme initially, later 
+    changed to red/crimson on request. Both Top Killers and Top 
+    Gangs boards show at the same time now (not toggled). Timer bar 
+    uses the proccess.png texture with a real percentage fill based 
+    on actual time remaining (didn't exist before).
+
+16- Feature: Gang logos next to gang names, read live from your 
+    gangs_data table (with caching so it isn't hammering the DB). 
+    Table/column names are all in Config now, so switching gang 
+    systems later is just a Config edit, not a code edit.
+
+17- Feature: Player profile pictures next to Top Killers (and later 
+    the All-Time board too), read from your users table, with a 
+    safe fallback to no_photo.png if missing or the link fails to 
+    load. Fully Config-driven (table/column/URL template).
+
+18- Fix: Config.ReviveTrigger updated to match your actual 
+    esx_ambulancejob revive event (esx_ambulancejob:revivex).
+
+19- Bug Fix (reverted a bad fix): A landing-safety change 
+    (GetSafeCoordForPed) meant to stop players spawning inside 
+    walls ended up teleporting a player far away into the ocean/ 
+    mountains instead. Reverted back to the simple, reliable 
+    ground-Z placement.
+
+20- Visual: Capture zone ring color changed from purple to green.
+
+21- Feature: When a capture round starts, everyone on the server 
+    now gets a chat message telling them to use /joinCap to join 
+    (previously only the admin who started it saw a message).
+
+22- Feature: Full kill log in chat (not just the on-screen popup) — 
+    killer name + gang, victim name + gang, zone, and an exact 
+    server-side timestamp (so everyone sees the same time, not 
+    each player's own clock).
+
+23- Feature: "Top 5 Player All Cap" — a third, live-updating board 
+    showing an all-time composite leaderboard 
+    (Kills×2 + GangPoints×1 − Deaths×1, weights adjustable in 
+    Config), refreshed from the database every 15 seconds while a 
+    round is active.
+
+24- Feature: Real per-player gang-point tracking — every time a 
+    zone scores a point for a gang, every player actually standing 
+    in that zone's marker at that moment gets personal credit too 
+    (not just the gang as a whole).
+
+25- Bug Fix: After a round ended (or /endCap), the "Press G to Show 
+    Scoreboard" hint stayed stuck on screen forever because the 
+    hide logic was tangled up with the toggle logic. The UI now 
+    does a full, definitive reset on leave/end.
+
+26- Feature: Server console startup banner on resource start:
+    "★ Capture System Runing Fix -> arshiahub.ir"
+    "★ This resource is Owner by arshiahub.ir"
+
+27- Bug Fix: /leaveCap only worked while a round was globally 
+    active — if a round ended while a player was still stuck 
+    inside the capture world, the command silently did nothing and 
+    trapped them. Now it always works.
+
+28- Feature: Permanent rank badges (Bronze / Silver / Gold / 
+    Legend), calculated from the same all-time composite score, 
+    shown next to player names in both the chat kill log and the 
+    on-screen kill popup.
+
+29- Feature: Early zone-under-attack warning — when an enemy gang 
+    gets halfway through capturing one of your zones, your whole 
+    gang now gets a warning message instead of finding out only 
+    when it's already lost.
+
+30- Feature: Escape penalty — leaving via /leaveCap while actively 
+    standing in a zone's marker (i.e. running away mid-defense) 
+    blocks you from re-entering that specific zone for 3 minutes 
+    (Config.LeaveZonePenaltySeconds). Ending naturally at round-end 
+    does NOT trigger this — only a voluntary /leaveCap does.
+
+31- Feature: Zone-by-zone personal stats — new 
+    `capture_player_zone_stats` table tracks how many points you've 
+    earned per individual zone. /captureStats now shows your top 3 
+    best zones, so you can see where you're actually strong.
+
+32- Feature: Season Reset — capture_player_stats now archives and 
+    resets automatically every 30 days (Config.SeasonAutoResetDays). 
+    A full snapshot of everyone's stats (with their final rank) is 
+    saved to `capture_season_archive`, a summary row (winner, score, 
+    date) goes into `capture_seasons` so admins can look up and hand 
+    out prizes manually, and the whole server gets a chat 
+    announcement of the winner. Admins can also force an early reset 
+    with /captureSeasonReset.
+
+33- Feature: Event Themes — zone marker colors (Default/Halloween/
+    Christmas/Bloodmoon presets in Config.Themes) can be switched 
+    live with /captureTheme [name] (admin), broadcast to everyone 
+    instantly, and synced to anyone who joins mid-event. Purely 
+    visual, zero gameplay impact.
+
+34- Feature: Gang Season Leaderboard — alongside the player season 
+    archive, gangs now also accumulate points persistently 
+    (`capture_gang_stats`) every time they score on a zone. At 
+    season end, the gang standings are archived to 
+    `capture_gang_season_archive` and the winning gang is announced 
+    and recorded in `capture_seasons` next to the winning player. 
+    New command /captureSeasons (everyone) lists the last 10 
+    seasons' player + gang winners.
+
+35- Bug Fix: A harmless-but-noisy console error 
+    ("Duplicate column name 'gang_points'") was showing up every 
+    restart because the upgrade-safety ALTER TABLE didn't check if 
+    the column already existed. Switched to 
+    "ADD COLUMN IF NOT EXISTS" so it's now silent once applied.
+
+36- Feature: Automatic pre-Season-Reset backup — right before a 
+    season's stat tables get wiped (auto or via /captureSeasonReset), 
+    a full raw JSON dump of capture_player_stats and 
+    capture_gang_stats is saved to disk 
+    (resource/backups/season_N_<timestamp>.json), completely 
+    separate from the in-database archive tables, as a safety net.
+
+37- Bug Fix: Found while testing the escape-penalty feature — a 
+    penalized player's client-side capture timer kept running even 
+    though the server had rejected them, so when it finished it 
+    still fired CaptureMarkerWaitPassed and CRASHED the server 
+    (indexing a nil value). Fixed with a nil-guard, and the server 
+    now also tells the client to stop its local timer immediately 
+    when a penalty is active, so the on-screen countdown doesn't 
+    keep counting pointlessly either.
+
+38- Feature: Dry-Run Config Validator — /captureDryRun (admin) checks 
+    your zones, time, theme, score weights, and database table/
+    column names are all valid WITHOUT actually starting a round. 
+    Toggle: Config.EnableDryRun.
+
+39- Feature: 24-Hour Season-End Warning — the whole server gets a 
+    heads-up chat message a configurable number of hours 
+    (Config.SeasonWarningHoursBefore, default 24) before a season 
+    auto-resets, not just at the moment it happens. Toggle: 
+    Config.EnableSeasonWarning.
+
+40- Feature: Admin Command Rate Limiting — /captureTheme, 
+    /captureHistory, /captureSeasonReset, /editCap, and the other new 
+    admin commands below now have a short per-admin cooldown 
+    (Config.AdminCommandCooldown, default 5s) to stop accidental 
+    spam. Toggle: Config.EnableAdminRateLimit.
+
+41- Feature: Health Check — /captureHealth (admin) reports whether 
+    a round is active, the current theme, how many zones are 
+    configured, and a live row-count for every stat/history table 
+    so you can spot a broken table in seconds. Toggle: 
+    Config.EnableHealthCheck.
+
+42- Feature: Zone Import/Export — zones can now optionally be loaded 
+    from an external zones.json file instead of hardcoding them in 
+    Config.lua (Config.EnableExternalZonesFile). Admins can export 
+    the current zones to that file with /captureExportZones, and 
+    reload/replace the active zones from it with 
+    /captureImportZones (blocked while a round is active, for 
+    safety).
+
+43- Feature: Public Read-Only Status API — optionally exposes a 
+    GET endpoint (Config.PublicAPIPath) with live JSON: round 
+    active/time remaining, zone count, active theme, and the 
+    current Top Killers/Top Gangs. OFF by default 
+    (Config.EnablePublicAPI) because FiveM only allows ONE 
+    SetHttpHandler per server — turning this on will conflict with 
+    any other resource on your server that also sets one. Only 
+    enable it if you're sure nothing else does.
+
+44- Feature: League Mode (Config.EnableLeagueMode, OFF by default) — 
+    a football-style layer on top of the normal season system:
+      • /captureStandings — live current-season gang table, anyone 
+        can check it.
+      • Comeback Of The Season — automatically announced at season 
+        end, comparing each gang's rank to last season's.
+      • Playoffs (Config.EnablePlayoffs, also off by default) — at 
+        season end, the top 4 gangs are automatically paired into 
+        semifinals (1v4, 2v3) and announced. Since there's no 
+        automated 1-gang-vs-1-gang match mode, admins record each 
+        match's winner manually with /capturePlayoffResult 
+        [semi1|semi2|final] [gang_name] — the Final is auto-filled 
+        in once both semifinal winners are recorded.
+
+45- Feature: Scarcity Engine — a genuinely limited, numbered reward. 
+    The moment a player's rank first crosses into "Legend" during a 
+    season, they get a shot at a numbered medal from that season's 
+    fixed pool (Config.ScarceMedalSupplyPerSeason, default 100). 
+    Once the pool is empty, NOBODY else gets one that season — no 
+    exceptions, no refills, even if they earned it. Serial numbers 
+    are permanent and tracked forever in capture_scarce_medals. 
+    /captureMedals shows the current season's remaining supply, 
+    /mymedals shows your own claimed medals across every season. 
+    Toggle: Config.EnableScarcityEngine.
+
+46- Feature: Full Stats Dashboard — one command, /capture, opens a 
+    full-screen styled NUI dashboard showing EVERYTHING in one place 
+    instead of hunting through separate commands: your rank badge, 
+    kills/deaths/K-D/gang points/top-5 count/composite score, your 
+    best zones, all-time Top 10 killers, this season's gang 
+    standings, a countdown to the next season reset, and your 
+    scarce medal collection with a live supply bar for the current 
+    season. Press the X button or Escape to close. Branded with 
+    "arshiahub.ir" in the footer.
+
+47- Feature: Hall of Fame — a permanent, score-free honor for 
+    players who reached "Legend" rank and have since gone inactive 
+    for Config.HallOfFameInactivityDays (default 60 days). Checked 
+    automatically every 6 hours; once inducted, it's permanent and 
+    never removed, even if they come back and play again. 
+    /hallOfFame (anyone) lists the last 20 inductees with their 
+    career kills and final rank. Your own dashboard also shows a 
+    Hall of Fame indicator if you've been inducted. Toggle: 
+    Config.EnableHallOfFame.
+
+48- Feature: Training Academy — /captureAcademy teleports a player 
+    to a dedicated practice area and spawns hostile NPCs to fight, 
+    for players (especially newcomers) to get a feel for combat 
+    before joining a real round. Built entirely client-side with 
+    zero server calls, so it is structurally impossible for it to 
+    touch real kills/points/stats — genuinely zero risk to your 
+    leaderboards. /leaveAcademy exits and cleans up. 
+    ⚠️ Config.AcademyCoord is a placeholder (0,0,72) — you MUST set 
+    it to a real, safe, out-of-the-way spot on your map before 
+    enabling this. Toggle: Config.EnableAcademy.
+
+49- Feature: Dashboard got tabs — Stats / Academy / Commands. The 
+    Academy tab lets a player enter or leave the Training Academy 
+    with a single click, no typing required. The Commands tab is a 
+    button grid of every command a normal player can run (join, 
+    leave, respawn, season history, standings, medals, hall of 
+    fame) — click instead of remembering slash commands.
+
+50- Feature: Full Discord Logging — a complete, fully config-driven 
+    logging system (Config.Webhooks) with one webhook slot per 
+    category: RoundStart, RoundEnd, ZoneCapture, Kills, Season 
+    (warnings/end/Hall of Fame), Medals, and Admin (theme changes, 
+    forced season resets, manual start/end, dry-run results, zone 
+    import/export). Leave any category blank to disable just that 
+    one, or point several at the same webhook to combine them in 
+    one channel. Master switch: Config.EnableDetailedLogging. Never 
+    blocks or breaks gameplay if a webhook is missing or Discord is 
+    down — failures are only printed to console.
+
+51- Bug Fix: SQL errors spamming the console every 15 seconds 
+    ("Duplicate column" style syntax errors on capture_gang_stats). 
+    Root cause: CurrentCaptureHolders pre-fills every zone with an 
+    empty placeholder table ({}) until it's actually captured — 
+    CalcCaptureTimes was reading that placeholder as if it were a 
+    real gang name and trying to insert an empty table into the 
+    database. Fixed by only processing zones that hold an actual 
+    gang-name string, with a matching defensive check added inside 
+    UpsertGangStat itself too.
+
+52- Fix: Training Academy now teleports the player into its own 
+    separate routing bucket/world (Config.AcademyWorld, default 51 
+    — distinct from both the main world and the real capture world) 
+    instead of the main world, so academy players don't see or 
+    interact with anyone outside it.
+
+53- Fix: Academy NPCs are now spawned SERVER-SIDE (CreatePed 
+    executed on the server, networked to the entering client) 
+    instead of client-side, and are explicitly placed in the same 
+    routing bucket as the player. The client only applies local 
+    combat AI to the peds the server already created — this matches 
+    how server-authoritative entity spawning is meant to work on 
+    FiveM and should resolve peds simply not appearing.
+
+54- Feature: Academy Timer + Kill HUD — a dedicated on-screen panel 
+    (teal theme, separate from the real capture HUD) shows a live 
+    session timer ("how long have I been training") and your total 
+    Academy kill count, with a little pop animation each time you 
+    get one. These kills are tracked in a brand new table, 
+    capture_academy_stats, completely separate from 
+    capture_player_stats/CaptureState — they NEVER reset when you 
+    leave and re-enter, so you can genuinely say "I have 1000 kills 
+    in the Academy" for RP purposes, and it can never affect your 
+    real capture leaderboards, rank, or medals. Killed NPCs respawn 
+    a fresh one automatically so training never runs dry.
+
+55- Feature: Academy overhaul (major):
+      • Entry is now restricted to specific real-world locations 
+        (Config.AcademyEntryPoints) — you can't just type the 
+        command from anywhere anymore. An "instructor" NPC stands 
+        at each entry point too; walk up and press E as an 
+        alternative to the command/dashboard button.
+      • Dying in the Academy no longer kicks you out. You get an 
+        on-screen "Press E to respawn" prompt and come right back 
+        in — only /leaveAcademy (or the dashboard button) actually 
+        exits, matching how a dedicated practice mode should work.
+      • Leaving now teleports you back to the exact spot you 
+        entered from, not a random capture-exit coordinate.
+      • NPCs get progressively tougher as your permanent Academy 
+        kill count climbs (accuracy and armor scale up every 
+        Config.AcademyDifficultyStep kills, capped by 
+        Config.AcademyMaxAccuracy/MaxArmor) — real aim training 
+        that actually gets harder as you improve.
+      • A practice capture-point marker inside the Academy area 
+        visually shows what a real capture marker looks like, and 
+        the first time you enter, a full 8-step chat walkthrough 
+        explains exactly how a real capture round works from start 
+        to finish (join, parachute, land, stand in the marker, hold 
+        it, defend it, watch for enemy takeovers, don't rage-quit 
+        mid-defense).
+
+56- Feature: Every notification in this resource now goes through 
+    ox_lib (lib.notify), positioned center-right, instead of the 
+    old ESX notification popups. Requires ox_lib installed and 
+    started before this resource — added as a proper dependency in 
+    fxmanifest.lua.
+
+57- Fix: Academy NPCs could actually kill you. Health is now floored 
+    at 12% while you're active in the Academy — NPCs can still hurt 
+    you and you'll feel the pressure, but they can never land a 
+    finishing blow. This is a training sandbox, not a death trap.
+
+58- Fix: Academy revive was unreliable — it relied on the standard 
+    esx:onPlayerDeath event (which doesn't fire consistently on 
+    every server setup) and used a generic native to respawn 
+    instead of this server's actual revive flow. Rewrote it to use 
+    the same reliable polling pattern (IsEntityDead) the real 
+    capture system already uses, and revive now goes through 
+    Config.ReviveTrigger — your server's actual configured revive 
+    event — exactly like a real capture death/respawn does.
+
+59- Feature: Academy entry/exit now uses ox_target instead of a 
+    "press E" prompt. Walk up to an instructor NPC at any 
+    Config.AcademyEntryPoint and target it to enter; a second 
+    instructor NPC spawns inside the Academy itself so you can 
+    target-interact to leave, in addition to the dashboard's Leave 
+    button. Added ox_target as a proper dependency. (Falls back to 
+    silently doing nothing if ox_target isn't running — make sure 
+    it's started before this resource.)
+
+60- Feature: Safe Zone inside the Academy — a marked blue circle 
+    (Config.AcademySafeZoneOffset/Radius) where all NPCs immediately 
+    stop attacking the moment you step in, and resume the instant 
+    you step out. Useful to catch your breath or reposition without 
+    getting swarmed.
+
+61- Bug Fix: The dashboard callback referenced a GetAcademyBadge 
+    function that was never actually defined — this would have 
+    crashed the server callback the moment anyone opened /capture. 
+    Added the missing function.
+
+62- Feature: Academy badges + leaderboard, now visible right inside 
+    the Academy tab of /capture: permanent titles (Sharpshooter @ 
+    100 kills, Marksman Elite @ 500, Academy Legend @ 1000 — all 
+    configurable in Config.AcademyMilestones) plus an all-time 
+    Top 10 Academy killers leaderboard, both driven entirely by the 
+    permanent capture_academy_stats table — none of this touches 
+    real capture stats or rank.
+
+63- Feature: Spectator Mode — /captureSpectate (anyone, only works 
+    during an active round) drops you into a free-flying camera 
+    over the battle (WASD to move, mouse to look, Space/Ctrl for 
+    up/down, ESC or /leaveSpectate to exit). Your character is 
+    frozen, invisible, and invincible the whole time — you cannot 
+    be seen, damaged, or interfere with the round in any way. 
+    Automatically exits cleanly if the round ends while you're 
+    watching. Toggle: Config.EnableSpectate.
+
+64- Feature: Academy Map Blip — every Config.AcademyEntryPoints 
+    location now gets a proper map blip (Config.AcademyBlip: sprite, 
+    color, scale, short-range) so players can actually find the 
+    Training Academy instead of stumbling into it.
+
+65- Feature: Spectate Mode is now permission-gated — 
+    Config.SpectatePermLevel (defaults to Config.CommandPerm, same 
+    threshold as the other admin commands) controls who is allowed 
+    to run /captureSpectate at all. Set it to 0 to open it back up 
+    to everyone.
+
+66- Feature: Spectate Mode overhaul — pressing TAB while spectating 
+    opens a live player list of everyone actually in the capture 
+    round (spectators themselves are excluded from their own list). 
+    Click a name to lock the camera onto that player: it orbits them 
+    (mouse to rotate around, matching the free-cam controls) instead 
+    of flying freely, and a dedicated vitals panel shows their live 
+    Health and Armor, refreshed every Config.SpectateVitalsRefreshMs 
+    (default 300ms). Hit "Free Camera" in the list to unlock and go 
+    back to flying freely. If the locked player disconnects or 
+    leaves the capture world, spectating automatically falls back to 
+    free camera with a heads-up notification — it never gets stuck.
+
+67- Bugfix: Academy entry point was sitting at (0,0,72) — the ocean 
+    void near the map's origin, not anywhere a player could actually 
+    walk to. Config.AcademyEntryPoints now defaults to a real spot 
+    (outside Mission Row PD) so the entry ped/blip/interaction 
+    actually works out of the box. Still just an example — change 
+    it to fit your own map.
+
+68- Bugfix: Safe Zone on Academy entry didn't actually cover the 
+    spawn point — it was centered ~11 units away from where you 
+    land, so NPCs would start shooting the instant you walked in, 
+    before the safe-zone check even had a chance to run. 
+    Config.AcademySafeZoneOffset is now (0,0,0) so the safe zone is 
+    centered exactly on Config.AcademyCoord (your actual spawn), and 
+    the radius is bumped to 8.0. You now genuinely start protected, 
+    NPCs leave you alone while you're inside it, and they engage the 
+    moment you step out.
+
+69- Bugfix/Feature: Safe Zone is now airtight — you're made fully 
+    invincible while standing in it (on top of the existing distance 
+    check), and every NPC's relationship group is switched to 
+    neutral + stood down while you're inside, instead of just 
+    clearing their current task. Old behavior could let an NPC that 
+    was already mid-engagement re-acquire you almost instantly; now 
+    it genuinely can't target you at all until you leave. Applies on 
+    initial entry, on every zone crossing, and on death-respawn.
+
+70- Feature: Academy difficulty now ramps NPC count, not just 
+    accuracy/armor. You start with Config.AcademyStartNPCCount 
+    (default 1) active NPC instead of the old fixed 4-at-once rush, 
+    gain +1 every Config.AcademyNPCCountStep kills (default 8), and 
+    it's hard-capped at Config.AcademyMaxNPCCount (default 4) so it 
+    never gets out of hand. New NPCs trickle in one at a time with a 
+    short random delay instead of spawning together.
+
+71- Bugfix: NPCs could actually kill you in the Academy despite the
+    health floor. The floor was only re-checked every 150ms, but a
+    single rifle burst can zero your health well within that window
+    — the fix-up landed one tick too late. Now: (1) your max health
+    is boosted to Config.AcademyPlayerMaxHealth (default 500, real
+    max restored on exit) so any single hit is a much smaller slice
+    of your health bar, and (2) the floor is enforced the instant
+    damage lands via the game's own damage event, not just a poll —
+    a tight per-frame poll still runs underneath as a backup net.
+    NPCs genuinely cannot finish you off anymore.
+
+72- Rebrand: every "Violet-CaptureSystem" event/prefix across the
+    resource is now "arshiahub.ir-CaptureSystem" instead. ("Violet-
+    Capture:" event names — the other, shorter prefix used all over
+    client.lua/server.lua — were left as-is since only "Violet-
+    CaptureSystem" was asked for.)
+
+73- Removed the Academy Safe Zone's on-screen marker entirely — no
+    more flicker, no more marker at all. The Safe Zone itself still
+    works exactly the same (invincibility, NPCs standing down inside
+    it, the notification when you cross the boundary) — this only
+    removes the visual circle, since it's a fixed radius around your
+    own spawn point.
+
+74- Rebrand: the remaining "Violet-Capture:" event prefix (used all
+    over client.lua/server.lua — the shorter one, deliberately left
+    alone in item 72) is now "arshiahub.ir-Capture:" too. Every event
+    name in the resource is fully off the old Violet branding now.
+
+75- Cleanup/QA pass:
+    - Found and fixed the last bit of leftover "Violet" branding —
+      the Discord webhook footer/username ("Violet Capture System")
+      is now "Arshiahub.ir Capture System".
+    - Fixed a typo in the server startup console banner ("Runing
+      Fix" -> "Running", "Owner by" -> "owned by").
+    - AcademyPeds (the list the Academy tracks live NPCs in) now
+      gets pruned of dead/deleted entries after each kill instead of
+      growing for the entire session — everything that reads that
+      list runs faster the longer a session goes on.
+
+========================================================

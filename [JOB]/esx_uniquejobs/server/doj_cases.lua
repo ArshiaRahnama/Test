@@ -1,0 +1,497 @@
+-- ============================================================
+-- DOJ Case Files (expanded, persistent)
+-- Replaces the old in-memory single-suspect case system that
+-- used to live in doj_manager.lua. Cases now:
+--   - persist across restarts (dept_cases + 3 related tables)
+--   - support multiple suspects, not just one
+--   - track charges filed against the case, pulled straight
+--     from the (now persistent, judge-editable) law codebook
+--   - separate notes from evidence entries
+--   - richer status: open / investigating / trial / closed / dismissed
+--   - keep referral-to-another-department from before
+-- Requires law_and_cases.sql to be imported once.
+-- ============================================================
+
+ESX = nil
+TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
+
+local DOJ_JOBS = { marshal = true, judge = true, cia = true, cid = true, fbi = true, doa = true }
+
+local function isDoj(jobname)
+	return DOJ_JOBS[jobname] == true
+end
+
+local STATUS_LABELS = {
+	open = 'Baz',
+	investigating = 'Dar Hale Tahghigh',
+	trial = 'Dar Hale Mohakeme',
+	closed = 'Baste Shode',
+	dismissed = 'Rad Shode',
+}
+
+local PRIORITY_LABELS = {
+	low = 'Paeen',
+	medium = 'Motevaset',
+	high = 'Bala',
+}
+
+local function resolveIdentifier(query, cb)
+	local asId = tonumber(query)
+	if asId then
+		local xTarget = ESX.GetPlayerFromId(asId)
+		if xTarget then
+			cb(xTarget.identifier, xTarget.name)
+			return
+		end
+	end
+
+	MySQL.Async.fetchAll('SELECT identifier, playerName FROM users WHERE playerName LIKE @name LIMIT 1', {
+		['@name'] = '%' .. query .. '%',
+	}, function(result)
+		if result[1] then
+			cb(result[1].identifier, result[1].playerName)
+		else
+			cb(nil, nil)
+		end
+	end)
+end
+
+-- ============================================================
+-- List / detail
+-- ============================================================
+
+local function withAge(rows)
+	for _, row in ipairs(rows) do
+		row.ageMinutes = math.floor((os.time() - row.created_at) / 60)
+	end
+	return rows
+end
+
+ESX.RegisterServerCallback('esx_uniquejobs:dojGetCases', function(source, cb, filterStatus, searchSuspect)
+	local xPlayer = ESX.GetPlayerFromId(source)
+	if not xPlayer or not isDoj(xPlayer.job.name) then cb(nil) return end
+
+	if searchSuspect and searchSuspect ~= '' then
+		MySQL.Async.fetchAll(
+			'SELECT DISTINCT c.id, c.title, c.status, c.priority, c.lead_officer_name, c.referred_to, c.created_at FROM dept_cases c ' ..
+			'JOIN dept_case_suspects s ON s.case_id = c.id WHERE s.name LIKE @name ORDER BY c.id DESC LIMIT 30',
+			{ ['@name'] = '%' .. searchSuspect .. '%' },
+			function(rows) cb(withAge(rows)) end
+		)
+		return
+	end
+
+	if filterStatus and filterStatus ~= '' then
+		MySQL.Async.fetchAll('SELECT id, title, status, priority, lead_officer_name, referred_to, created_at FROM dept_cases WHERE status = @status ORDER BY id DESC LIMIT 30', {
+			['@status'] = filterStatus,
+		}, function(rows) cb(withAge(rows)) end)
+		return
+	end
+
+	MySQL.Async.fetchAll('SELECT id, title, status, priority, lead_officer_name, referred_to, created_at FROM dept_cases ORDER BY id DESC LIMIT 30', {}, function(rows)
+		cb(withAge(rows))
+	end)
+end)
+
+ESX.RegisterServerCallback('esx_uniquejobs:dojGetCaseDetail', function(source, cb, caseId)
+	local xPlayer = ESX.GetPlayerFromId(source)
+	if not xPlayer or not isDoj(xPlayer.job.name) then cb(nil) return end
+
+	MySQL.Async.fetchAll('SELECT * FROM dept_cases WHERE id = @id', { ['@id'] = caseId }, function(caseRows)
+		local case = caseRows[1]
+		if not case then cb(nil) return end
+
+		MySQL.Async.fetchAll('SELECT id, name FROM dept_case_suspects WHERE case_id = @id ORDER BY id', { ['@id'] = caseId }, function(suspects)
+			MySQL.Async.fetchAll('SELECT note_type, text, by_name, timestamp FROM dept_case_notes WHERE case_id = @id ORDER BY timestamp DESC', { ['@id'] = caseId }, function(notes)
+				MySQL.Async.fetchAll('SELECT id, law_code, law_title, fine, jail_minutes FROM dept_case_charges WHERE case_id = @id ORDER BY id', { ['@id'] = caseId }, function(charges)
+					local totalFine, totalJail = 0, 0
+					for _, charge in ipairs(charges) do
+						totalFine = totalFine + charge.fine
+						totalJail = totalJail + charge.jail_minutes
+					end
+
+					cb({
+						id = case.id,
+						title = case.title,
+						status = case.status,
+						statusLabel = STATUS_LABELS[case.status] or case.status,
+						priority = case.priority,
+						ageMinutes = math.floor((os.time() - case.created_at) / 60),
+						openedByName = case.opened_by_name,
+						openedByJob = case.opened_by_job,
+						leadOfficerName = case.lead_officer_name,
+						referredTo = case.referred_to,
+						suspects = suspects,
+						notes = notes,
+						charges = charges,
+						totalFine = totalFine,
+						totalJail = totalJail,
+					})
+				end)
+			end)
+		end)
+	end)
+end)
+
+-- ============================================================
+-- Create / mutate
+-- ============================================================
+
+RegisterServerEvent('esx_uniquejobs:dojOpenCase')
+AddEventHandler('esx_uniquejobs:dojOpenCase', function(title, priority, suspectQuery)
+	local source = source
+	local xPlayer = ESX.GetPlayerFromId(source)
+	if not xPlayer or not isDoj(xPlayer.job.name) then return end
+
+	if not title or title == '' then
+		TriggerClientEvent('esx:showNotification', source, '~r~Onvan-e Parvande Khali Ast')
+		return
+	end
+
+	if not PRIORITY_LABELS[priority] then priority = 'medium' end
+
+	local now = os.time()
+
+	MySQL.Async.insert(
+		'INSERT INTO dept_cases (title, status, priority, opened_by_name, opened_by_job, lead_officer_name, created_at, updated_at) VALUES (@title, @status, @priority, @by, @byjob, @lead, @ts, @ts)',
+		{
+			['@title'] = title,
+			['@status'] = 'open',
+			['@priority'] = priority,
+			['@by'] = xPlayer.name,
+			['@byjob'] = string.upper(xPlayer.job.name),
+			['@lead'] = xPlayer.name,
+			['@ts'] = now,
+		},
+		function(caseId)
+			TriggerClientEvent('esx:showNotification', source, '~g~Parvande #' .. caseId .. ' Baz Shod')
+
+			if suspectQuery and suspectQuery ~= '' then
+				resolveIdentifier(suspectQuery, function(identifier, name)
+					if not name then return end
+					MySQL.Async.execute('INSERT INTO dept_case_suspects (case_id, identifier, name, added_by, timestamp) VALUES (@cid, @id, @name, @by, @ts)', {
+						['@cid'] = caseId, ['@id'] = identifier, ['@name'] = name, ['@by'] = xPlayer.name, ['@ts'] = now,
+					})
+				end)
+			end
+		end
+	)
+end)
+
+RegisterServerEvent('esx_uniquejobs:dojAddSuspect')
+AddEventHandler('esx_uniquejobs:dojAddSuspect', function(caseId, suspectQuery)
+	local source = source
+	local xPlayer = ESX.GetPlayerFromId(source)
+	if not xPlayer or not isDoj(xPlayer.job.name) then return end
+
+	if not suspectQuery or suspectQuery == '' then return end
+
+	resolveIdentifier(suspectQuery, function(identifier, name)
+		if not name then
+			TriggerClientEvent('esx:showNotification', source, '~r~Bazikon Peida Nashod')
+			return
+		end
+
+		MySQL.Async.execute('INSERT INTO dept_case_suspects (case_id, identifier, name, added_by, timestamp) VALUES (@cid, @id, @name, @by, @ts)', {
+			['@cid'] = caseId, ['@id'] = identifier, ['@name'] = name, ['@by'] = xPlayer.name, ['@ts'] = os.time(),
+		}, function()
+			TriggerClientEvent('esx:showNotification', source, '~g~' .. name .. ' Be Parvande Ezafe Shod')
+		end)
+	end)
+end)
+
+RegisterServerEvent('esx_uniquejobs:dojAddCaseNote')
+AddEventHandler('esx_uniquejobs:dojAddCaseNote', function(caseId, noteType, text)
+	local source = source
+	local xPlayer = ESX.GetPlayerFromId(source)
+	if not xPlayer or not isDoj(xPlayer.job.name) then return end
+
+	if not text or text == '' then return end
+
+	MySQL.Async.execute('INSERT INTO dept_case_notes (case_id, note_type, text, by_name, timestamp) VALUES (@cid, @type, @text, @by, @ts)', {
+		['@cid'] = caseId, ['@type'] = noteType or 'note', ['@text'] = text, ['@by'] = xPlayer.name, ['@ts'] = os.time(),
+	}, function()
+		TriggerClientEvent('esx:showNotification', source, '~g~Ezafe Shod Be Parvande #' .. caseId)
+	end)
+end)
+
+RegisterServerEvent('esx_uniquejobs:dojAddCharge')
+AddEventHandler('esx_uniquejobs:dojAddCharge', function(caseId, lawId)
+	local source = source
+	local xPlayer = ESX.GetPlayerFromId(source)
+	if not xPlayer or not isDoj(xPlayer.job.name) then return end
+
+	MySQL.Async.fetchAll('SELECT code, title, fine, jail_minutes FROM law_codebook WHERE id = @id', { ['@id'] = lawId }, function(rows)
+		local law = rows[1]
+		if not law then
+			TriggerClientEvent('esx:showNotification', source, '~r~Ghanoon Peida Nashod')
+			return
+		end
+
+		-- Snapshot the law's current fine/jail at time of charging, so a
+		-- later edit to the codebook doesn't rewrite history on old cases
+		MySQL.Async.execute('INSERT INTO dept_case_charges (case_id, law_code, law_title, fine, jail_minutes, added_by, timestamp) VALUES (@cid, @code, @title, @fine, @jail, @by, @ts)', {
+			['@cid'] = caseId, ['@code'] = law.code, ['@title'] = law.title,
+			['@fine'] = law.fine, ['@jail'] = law.jail_minutes, ['@by'] = xPlayer.name, ['@ts'] = os.time(),
+		}, function()
+			TriggerClientEvent('esx:showNotification', source, '~g~Etteham "' .. law.title .. '" Be Parvande Ezafe Shod')
+		end)
+	end)
+end)
+
+RegisterServerEvent('esx_uniquejobs:dojSetCaseStatus')
+AddEventHandler('esx_uniquejobs:dojSetCaseStatus', function(caseId, status)
+	local source = source
+	local xPlayer = ESX.GetPlayerFromId(source)
+	if not xPlayer or not isDoj(xPlayer.job.name) then return end
+
+	if not STATUS_LABELS[status] then return end
+
+	MySQL.Async.execute('UPDATE dept_cases SET status = @status, updated_at = @ts WHERE id = @id', {
+		['@id'] = caseId, ['@status'] = status, ['@ts'] = os.time(),
+	}, function()
+		TriggerClientEvent('esx:showNotification', source, '~g~Vaziat-e Parvande #' .. caseId .. ' Be "' .. STATUS_LABELS[status] .. '" Taghir Kard')
+	end)
+end)
+
+RegisterServerEvent('esx_uniquejobs:dojSetCasePriority')
+AddEventHandler('esx_uniquejobs:dojSetCasePriority', function(caseId, priority)
+	local source = source
+	local xPlayer = ESX.GetPlayerFromId(source)
+	if not xPlayer or not isDoj(xPlayer.job.name) then return end
+
+	if not PRIORITY_LABELS[priority] then return end
+
+	MySQL.Async.execute('UPDATE dept_cases SET priority = @priority, updated_at = @ts WHERE id = @id', {
+		['@id'] = caseId, ['@priority'] = priority, ['@ts'] = os.time(),
+	}, function()
+		TriggerClientEvent('esx:showNotification', source, '~g~Ahamiyat-e Parvande #' .. caseId .. ' Be "' .. PRIORITY_LABELS[priority] .. '" Taghir Kard')
+	end)
+end)
+
+RegisterServerEvent('esx_uniquejobs:dojAssignLead')
+AddEventHandler('esx_uniquejobs:dojAssignLead', function(caseId)
+	local source = source
+	local xPlayer = ESX.GetPlayerFromId(source)
+	if not xPlayer or not isDoj(xPlayer.job.name) then return end
+
+	MySQL.Async.execute('UPDATE dept_cases SET lead_officer_name = @name, updated_at = @ts WHERE id = @id', {
+		['@id'] = caseId, ['@name'] = xPlayer.name, ['@ts'] = os.time(),
+	}, function()
+		TriggerClientEvent('esx:showNotification', source, '~g~Shoma Massol-e Parvande #' .. caseId .. ' Shodid')
+	end)
+end)
+
+RegisterServerEvent('esx_uniquejobs:dojReferCase')
+AddEventHandler('esx_uniquejobs:dojReferCase', function(caseId, targetJob)
+	local source = source
+	local xPlayer = ESX.GetPlayerFromId(source)
+	if not xPlayer or not isDoj(xPlayer.job.name) then return end
+
+	if not targetJob or not DOJ_JOBS[targetJob] then return end
+
+	MySQL.Async.fetchAll('SELECT title FROM dept_cases WHERE id = @id', { ['@id'] = caseId }, function(rows)
+		local case = rows[1]
+		if not case then return end
+
+		MySQL.Async.execute('UPDATE dept_cases SET referred_to = @job, updated_at = @ts WHERE id = @id', {
+			['@id'] = caseId, ['@job'] = string.upper(targetJob), ['@ts'] = os.time(),
+		}, function()
+			local xPlayers = ESX.GetPlayers()
+			for i = 1, #xPlayers do
+				local xTarget = ESX.GetPlayerFromId(xPlayers[i])
+				if xTarget and xTarget.job.name == targetJob then
+					TriggerClientEvent('chatMessage', xTarget.source, "[ DOJ ]", {90, 30, 160},
+						"^7Parvande #" .. caseId .. " (" .. case.title .. ") Az Taraf ^3" .. xPlayer.name .. "^7 Be Shoma Erja Shod")
+				end
+			end
+			TriggerClientEvent('esx:showNotification', source, '~g~Parvande Be ' .. string.upper(targetJob) .. ' Erja Shod')
+		end)
+	end)
+end)
+
+-- ============================================================
+-- External export
+-- ============================================================
+-- Lets OTHER resources (e.g. esx_drugs) file a real, persistent case here instead of just
+-- sending a chat message -- so it actually shows up in /doj's "Parvande-ha" (Cases) list like
+-- any other case, with opened_by_job/referred_to properly set so it's clear which department
+-- filed it and who it went to. Uses explicit params instead of the implicit `source` the
+-- RegisterServerEvent handlers above rely on, since this can be called from server-side code
+-- that isn't a client-triggered event (so there's no real player `source` to use).
+--
+-- exports['esx_uniquejobs']:CreateExternalCase({
+--     title         = 'Case title',
+--     priority      = 'low' | 'medium' | 'high',       -- optional, defaults to 'medium'
+--     openedByName  = 'Officer Name',
+--     openedByJob   = 'doa',                            -- job name, will be upper-cased for display
+--     leadOfficerName = 'Officer Name',                  -- optional, defaults to openedByName
+--     referredTo    = 'cid',                             -- optional, one of DOJ_JOBS
+--     evidenceText  = 'Free-text evidence note',         -- optional, added as a note_type='evidence' note
+--     suspects      = { {identifier = '...', name = '...'}, ... }, -- optional
+-- }, function(caseId) ... end)  -- callback optional
+function CreateExternalCase(data, cb)
+	if not data or not data.title or data.title == '' then
+		if cb then cb(nil) end
+		return
+	end
+
+	local priority = PRIORITY_LABELS[data.priority] and data.priority or 'medium'
+	local openedByName = data.openedByName or 'Namoshakhas'
+	local openedByJob = string.upper(data.openedByJob or 'DOA')
+	local leadName = data.leadOfficerName or openedByName
+	local referredTo = (data.referredTo and DOJ_JOBS[data.referredTo]) and string.upper(data.referredTo) or nil
+	local now = os.time()
+
+	MySQL.Async.insert(
+		'INSERT INTO dept_cases (title, status, priority, opened_by_name, opened_by_job, lead_officer_name, referred_to, created_at, updated_at) VALUES (@title, @status, @priority, @by, @byjob, @lead, @referred, @ts, @ts)',
+		{
+			['@title'] = data.title,
+			['@status'] = 'open',
+			['@priority'] = priority,
+			['@by'] = openedByName,
+			['@byjob'] = openedByJob,
+			['@lead'] = leadName,
+			['@referred'] = referredTo,
+			['@ts'] = now,
+		},
+		function(caseId)
+			if data.evidenceText and data.evidenceText ~= '' then
+				MySQL.Async.execute('INSERT INTO dept_case_notes (case_id, note_type, text, by_name, timestamp) VALUES (@cid, @type, @text, @by, @ts)', {
+					['@cid'] = caseId, ['@type'] = 'evidence', ['@text'] = data.evidenceText, ['@by'] = openedByName, ['@ts'] = now,
+				})
+			end
+
+			if data.suspects then
+				for _, suspect in ipairs(data.suspects) do
+					MySQL.Async.execute('INSERT INTO dept_case_suspects (case_id, identifier, name, added_by, timestamp) VALUES (@cid, @id, @name, @by, @ts)', {
+						['@cid'] = caseId, ['@id'] = suspect.identifier, ['@name'] = suspect.name, ['@by'] = openedByName, ['@ts'] = now,
+					})
+				end
+			end
+
+			if referredTo then
+				local xPlayers = ESX.GetPlayers()
+				for i = 1, #xPlayers do
+					local xTarget = ESX.GetPlayerFromId(xPlayers[i])
+					if xTarget and string.upper(xTarget.job.name) == referredTo then
+						TriggerClientEvent('chatMessage', xTarget.source, "[ DOJ ]", {90, 30, 160},
+							"^7Parvande #" .. caseId .. " (" .. data.title .. ") Az Taraf ^3" .. openedByJob .. "^7 Be Shoma Erja Shod")
+					end
+				end
+			end
+
+			if cb then cb(caseId) end
+		end
+	)
+end
+
+exports('CreateExternalCase', CreateExternalCase)
+
+-- ============================================================
+-- External export: add a charge to an existing case by law CODE
+-- (e.g. '§9'), without needing a DOJ-job player as the triggering
+-- source -- mirrors dojAddCharge's snapshot-at-charge-time behavior,
+-- but looks the law up by `code` instead of `id` since an external
+-- caller (e.g. Unique_AllRobs) knows the human-readable code, not
+-- the codebook's internal row id.
+-- exports['esx_uniquejobs']:AddExternalCharge(caseId, lawCode, addedByName, cb)
+-- cb(true, law) on success, cb(false) if the case/law isn't found.
+-- ============================================================
+function AddExternalCharge(caseId, lawCode, addedByName, cb)
+	if not caseId or not lawCode then
+		if cb then cb(false) end
+		return
+	end
+
+	MySQL.Async.fetchAll('SELECT code, title, fine, jail_minutes FROM law_codebook WHERE code = @code', { ['@code'] = lawCode }, function(rows)
+		local law = rows[1]
+		if not law then
+			if cb then cb(false) end
+			return
+		end
+
+		MySQL.Async.execute('INSERT INTO dept_case_charges (case_id, law_code, law_title, fine, jail_minutes, added_by, timestamp) VALUES (@cid, @code, @title, @fine, @jail, @by, @ts)', {
+			['@cid'] = caseId, ['@code'] = law.code, ['@title'] = law.title,
+			['@fine'] = law.fine, ['@jail'] = law.jail_minutes, ['@by'] = addedByName or 'System', ['@ts'] = os.time(),
+		}, function()
+			LogCaseEvent(caseId, 'charge', 'Etteham Ezafe Shod: ' .. law.code .. ' -- ' .. law.title, addedByName or 'System')
+			if cb then cb(true, law) end
+		end)
+	end)
+end
+exports('AddExternalCharge', AddExternalCharge)
+
+-- ============================================================
+-- External export: change a case's status without a DOJ-job
+-- player as the source -- e.g. auto-dismiss the case opened for a
+-- robbery attempt that got cancelled or lost its suspect before a
+-- unit ever engaged.
+-- exports['esx_uniquejobs']:SetExternalCaseStatus(caseId, status, cb)
+-- ============================================================
+function SetExternalCaseStatus(caseId, status, cb)
+	if not caseId or not STATUS_LABELS[status] then
+		if cb then cb(false) end
+		return
+	end
+
+	MySQL.Async.execute('UPDATE dept_cases SET status = @status, updated_at = @ts WHERE id = @id', {
+		['@id'] = caseId, ['@status'] = status, ['@ts'] = os.time(),
+	}, function()
+		LogCaseEvent(caseId, 'status', 'Vaziat-e Parvande Be "' .. tostring(status) .. '" Taghir Kard', 'Sisteme Dispatch')
+		if cb then cb(true) end
+	end)
+end
+exports('SetExternalCaseStatus', SetExternalCaseStatus)
+-- ============================================================
+-- External export: add a plain note (or evidence entry) to an EXISTING
+-- case without a DOJ-job player as the triggering source -- mirrors
+-- AddExternalCharge's shape exactly, and also logs into the case
+-- timeline via LogCaseEvent, same as the player-triggered
+-- dojAddCaseNote path (server/case_timeline.lua's second handler on
+-- that event never fires for this external path, so this calls
+-- LogCaseEvent itself instead).
+-- Added for kq_detective's forensics integration.
+-- exports['esx_uniquejobs']:AddExternalNote(caseId, noteType, text, byName, cb)
+-- noteType: 'note' | 'evidence'. cb(true) on success, cb(false) if
+-- caseId/text missing.
+-- ============================================================
+function AddExternalNote(caseId, noteType, text, byName, cb)
+	if not caseId or not text or text == '' then
+		if cb then cb(false) end
+		return
+	end
+
+	local now = os.time()
+	MySQL.Async.execute('INSERT INTO dept_case_notes (case_id, note_type, text, by_name, timestamp) VALUES (@cid, @type, @text, @by, @ts)', {
+		['@cid'] = caseId, ['@type'] = noteType or 'note', ['@text'] = text, ['@by'] = byName or 'System', ['@ts'] = now,
+	}, function()
+		LogCaseEvent(caseId, noteType == 'evidence' and 'evidence' or 'note', text, byName or 'System')
+		if cb then cb(true) end
+	end)
+end
+exports('AddExternalNote', AddExternalNote)
+
+-- ============================================================
+-- External export: add a suspect to an EXISTING case, given a real
+-- ESX identifier (so it shows up properly in dept_case_suspects, not
+-- just buried in a note) -- mirrors dojAddSuspect's insert exactly.
+-- Added for kq_detective's forensics integration (fingerprint/ballistics
+-- matches resolve straight to an identifier, no in-game /doj search needed).
+-- exports['esx_uniquejobs']:AddExternalSuspect(caseId, identifier, name, addedByName, cb)
+-- cb(true) on success, cb(false) if required params are missing.
+-- ============================================================
+function AddExternalSuspect(caseId, identifier, name, addedByName, cb)
+	if not caseId or not identifier or not name or name == '' then
+		if cb then cb(false) end
+		return
+	end
+
+	MySQL.Async.execute('INSERT INTO dept_case_suspects (case_id, identifier, name, added_by, timestamp) VALUES (@cid, @id, @name, @by, @ts)', {
+		['@cid'] = caseId, ['@id'] = identifier, ['@name'] = name, ['@by'] = addedByName or 'System', ['@ts'] = os.time(),
+	}, function()
+		LogCaseEvent(caseId, 'suspect_added', 'Mozanne Ezafe Shod: ' .. name, addedByName or 'System')
+		if cb then cb(true) end
+	end)
+end
+exports('AddExternalSuspect', AddExternalSuspect)

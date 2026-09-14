@@ -1,0 +1,285 @@
+.quests-summary {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.questSlotChip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  font-size: 11px;
+  font-weight: 800;
+  color: #d8dbe4;
+}
+
+.questSlotChip i { color: var(--steel); font-size: 11px; }
+.questSlotChip.full {
+  border-color: rgba(255, 107, 107, 0.4);
+  color: #ff8f8f;
+  animation: slotFullPulse 2.2s ease-in-out infinite;
+}
+.questSlotChip.full i { color: #ff6b6b; }
+.questSlotChip.done { color: #4ee08a; border-color: rgba(78, 224, 138, 0.25); }
+.questSlotChip.done i { color: #4ee08a; }
+
+@keyframes slotFullPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 107, 107, 0); }
+  50%      { box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.12); }
+}
+
+.quests-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 16px;
+}
+
+.achCard {
+  position: relative;
+  background: rgba(28, 28, 28, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  padding: 18px 14px 16px;
+  text-align: center;
+  transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+  animation: cardIn 0.35s ease backwards;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Three states — available (not yet accepted), active (accepted,
+   in progress), completed — get distinct treatments so it's obvious
+   at a glance which bucket a card is in without reading the button. */
+.achCard.is-available {
+  opacity: 0.68;
+}
+
+.achCard.is-active {
+  border-color: rgba(255, 140, 26, 0.45);
+  box-shadow: 0 0 0 1px rgba(255, 140, 26, 0.1), 0 0 22px rgba(255, 140, 26, 0.12);
+  animation: cardIn 0.35s ease backwards, activeGlow 2.6s ease-in-out infinite;
+}
+
+@keyframes activeGlow {
+  0%, 100% { box-shadow: 0 0 0 1px rgba(255, 140, 26, 0.1), 0 0 16px rgba(255, 140, 26, 0.10); }
+  50%      { box-shadow: 0 0 0 1px rgba(255, 140, 26, 0.22), 0 0 26px rgba(255, 140, 26, 0.22); }
+}
+
+.achCard.is-completed {
+  border-color: rgba(31, 211, 75, 0.35);
+  background: linear-gradient(165deg, rgba(31, 211, 75, 0.06), rgba(28, 28, 28, 0.92));
+}
+
+.quests-grid .achCard:nth-child(1) { animation-delay: 0.02s; }
+.quests-grid .achCard:nth-child(2) { animation-delay: 0.05s; }
+.quests-grid .achCard:nth-child(3) { animation-delay: 0.08s; }
+.quests-grid .achCard:nth-child(4) { animation-delay: 0.11s; }
+.quests-grid .achCard:nth-child(5) { animation-delay: 0.14s; }
+.quests-grid .achCard:nth-child(6) { animation-delay: 0.17s; }
+.quests-grid .achCard:nth-child(7) { animation-delay: 0.20s; }
+.quests-grid .achCard:nth-child(8) { animation-delay: 0.23s; }
+
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.achCard:hover {
+  border-color: rgba(255, 140, 26, 0.45);
+  transform: translateY(-3px);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.35);
+}
+
+.ring {
+  --deg: 0deg;
+  --ringColor: #6b6b72;
+  width: 84px;
+  height: 84px;
+  margin: 0 auto;
+  border-radius: 999px;
+  position: relative;
+  background: conic-gradient(var(--ringColor) var(--deg), rgba(255, 255, 255, 0.12) 0deg);
+  transition: background 0.15s linear;
+}
+
+.ring::after {
+  content: '';
+  position: absolute;
+  inset: 9px;
+  background: rgba(20, 20, 20, 0.96);
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+.ringText {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 13px;
+  color: #eaeaf0;
+  z-index: 2;
+}
+
+.ring.complete {
+  animation: ringPop 1.4s ease-out 1;
+}
+
+@keyframes ringPop {
+  0%   { transform: scale(1); }
+  35%  { transform: scale(1.09); filter: drop-shadow(0 0 10px rgba(31, 211, 75, 0.7)); }
+  100% { transform: scale(1); }
+}
+
+.achTitle {
+  margin-top: 12px;
+  color: #f0f0f3;
+  font-weight: 900;
+  font-size: 13.5px;
+}
+
+.achDesc {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 10.5px;
+  line-height: 1.5;
+  min-height: 28px;
+}
+
+.achReward {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.rewardChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 800;
+  font-size: 11px;
+  padding: 4px 9px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.xpChip { color: #6dc9ff; }
+.xpChip i { color: #6dc9ff; }
+
+.coinChip { color: var(--orange2); }
+.coin {
+  width: 12px;
+  height: 12px;
+  display: inline-block;
+  background: radial-gradient(circle at 35% 35%, #ffe08a, var(--orange) 70%);
+  border-radius: 50%;
+}
+
+.questBtn {
+  margin-top: auto;
+  padding: 9px 0;
+  border-radius: 9px;
+  border: none;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  transition: transform 0.15s ease, box-shadow 0.2s ease, filter 0.2s ease, opacity 0.15s ease;
+}
+
+.questBtn:active:not(:disabled) { transform: scale(0.96); }
+.questBtn:disabled { cursor: default; }
+.questBtn i { transition: transform 0.2s ease; }
+
+/* ---- Accept: bold gradient, glow, diagonal shine sweep on hover ---- */
+.acceptBtn {
+  background: linear-gradient(135deg, var(--orange2), var(--orange) 65%, #ff9f3d);
+  color: #1a1005;
+  box-shadow: 0 0 0 1px rgba(255, 166, 43, 0.25), 0 4px 14px rgba(255, 140, 26, 0.25);
+}
+
+.acceptBtn:hover:not(:disabled) {
+  filter: brightness(1.08);
+  box-shadow: 0 0 0 1px rgba(255, 166, 43, 0.45), 0 6px 20px rgba(255, 140, 26, 0.45);
+}
+
+.acceptBtn:hover:not(:disabled) i { transform: scale(1.15) rotate(90deg); }
+
+.acceptBtn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(115deg, transparent 40%, rgba(255, 255, 255, 0.55) 50%, transparent 60%);
+  background-size: 220% 100%;
+  background-position: 120% 0;
+  transition: background-position 0.6s ease;
+}
+
+.acceptBtn:hover:not(:disabled)::after { background-position: -20% 0; }
+
+/* ---- Cancel: dark glass that fills red + glows on hover ---- */
+.cancelBtn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--muted);
+}
+
+.cancelBtn:hover:not(:disabled) {
+  background: linear-gradient(135deg, rgba(226, 85, 78, 0.24), rgba(226, 85, 78, 0.08));
+  border-color: rgba(255, 110, 100, 0.55);
+  color: #ffb3ad;
+  box-shadow: 0 0 14px rgba(226, 85, 78, 0.25);
+}
+
+.cancelBtn:hover:not(:disabled) i { transform: rotate(90deg); }
+
+/* ---- Locked: caution-stripe glass — visually distinct from a plain
+   disabled button, reads as "gated" rather than just greyed out ---- */
+.lockedBtn {
+  background: repeating-linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.045) 0 10px,
+    rgba(255, 255, 255, 0.012) 10px 20px
+  );
+  border: 1px dashed rgba(255, 255, 255, 0.18);
+  color: var(--steel);
+  opacity: 0.8;
+}
+
+.lockedBtn i { color: rgba(255, 255, 255, 0.45); }
+
+.questDoneBadge {
+  margin-top: auto;
+  padding: 8px 0;
+  border-radius: 9px;
+  background: linear-gradient(135deg, rgba(31, 211, 75, 0.18), rgba(31, 211, 75, 0.05));
+  border: 1px solid rgba(31, 211, 75, 0.35);
+  color: #4ee08a;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  box-shadow: 0 0 14px rgba(31, 211, 75, 0.12);
+}

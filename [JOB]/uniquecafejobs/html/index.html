@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>uniquecafejobs</title>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            overflow: hidden;
+        }
+        iframe {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: none;
+        }
+        iframe.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <iframe id="frame-cafe" src="cafe/form.html"></iframe>
+    <iframe id="frame-market" src="market/index.html"></iframe>
+
+    <script>
+        const frames = {
+            cafe: document.getElementById('frame-cafe'),
+            market: document.getElementById('frame-market'),
+        };
+
+        window.addEventListener('message', function (event) {
+            const data = event.data;
+
+            // Only messages sent from Lua (SendCafeNUI / SendMarketNUI) carry
+            // __routeTo - anything else (e.g. a message bouncing back out of
+            // one of the iframes) is ignored so we don't create a loop.
+            if (!data || !data.__routeTo) return;
+
+            const target = frames[data.__routeTo];
+            if (!target) return;
+
+            for (const key in frames) {
+                frames[key].classList.toggle('active', key === data.__routeTo);
+            }
+
+            target.contentWindow.postMessage(data.payload, '*');
+        });
+    </script>
+</body>
+</html>

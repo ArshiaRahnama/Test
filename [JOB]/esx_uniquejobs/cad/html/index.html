@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unique CAD // Dispatch Terminal</title>
+    <link rel="stylesheet" href="./style.css">
+    <!-- jQuery core is the only external dependency actually used anywhere in
+         app.js (every $(...) call). Bootstrap CSS/JS, jQuery UI and Howler
+         were loaded here but nothing in this app touches a single Bootstrap
+         class, a jQuery UI widget (draggable/sortable/etc), or the Howler
+         API -- pure dead weight, and the Bootstrap stylesheet in particular
+         loaded AFTER style.css, so its default input/button/heading rules
+         could silently outrank this app's own theme depending on selector
+         order. Removed rather than "modernized" since nothing used them.
+
+         FIX: jQuery itself used to load from an external CDN
+         (code.jquery.com). Now that this page runs inside a nested iframe
+         (see ui.html) instead of being its own top-level ui_page, external
+         requests from inside that iframe are far more likely to get
+         blocked (client firewall/DNS, ad-blocker, or FiveM's NUI CSP being
+         stricter for framed content) - and if jQuery fails to load, every
+         single $(...) call in app.js throws immediately, so NONE of this
+         script runs, including the code that defines DuckMdt.Login. The
+         Login button's onclick="DuckMdt.Login()" then does nothing at all,
+         with no visible error since NUI doesn't show a console to players.
+         Bundling jQuery locally removes that failure point entirely. -->
+    <script src="./jquery.min.js"></script>
+    <script src="./app.js"></script>
+</head>
+    <body style="background: none;">
+        <div class="tablet" style="display:none ;">
+
+          <span class="bezel-camera"></span>
+          <span class="bezel-btn bezel-btn-1"></span>
+          <span class="bezel-btn bezel-btn-2"></span>
+          <span class="bezel-btn bezel-btn-3"></span>
+
+          <div class="Loading" id="LoadingPage">
+            <img src="img/1484.gif">
+          </div>
+
+            <div class="Login" id="LoginPage">
+              <img style="border-radius: 100%; width: 100%; height: 100%;" src="img/military.png">
+              <h1>🛡️ Military CAD</h1>
+              <button onclick="DuckMdt.Login()">Login</button>
+              <p style="text-align:center; opacity:0.55; font-size:11px; margin-top:10px;">Unique_Cad by Arshia | arshiahub.ir</p>
+            </div>
+
+            <div class="MainPage" id="MainPage">
+              <div class="Header">
+                <img style="border-radius: 100%;" src="img/military.png">
+                <h2>Military Organs CAD</h2>
+                <span style="color: var(--ok); font-size: 11px; font-weight: 600; letter-spacing: 0.5px; margin-right: 14px; white-space: nowrap;">🟢 SYSTEM ONLINE</span>
+                <button class="ExitButton" onclick="ExitTablet()">Exit</button>
+              </div>
+
+              <div class="MainPageContent"></div>
+                <div class="MainPageTabs">
+                    <div class="MainPageUserInfo">
+                        <span>●</span>
+                        <p id="username_mdt" style="word-wrap: break-word; font-size: 1.3vw;">UserName</p>
+                        <br>
+                        <p style="font-size: 1.5vw; flex-basis: 100%; position: relative; left: 40%; color: blanchedalmond;" id="Rank_mdt">Chief</p>
+                    </div>
+                    <div class="MainPageTabButtons">
+                      <button class="MainPageTabButton MainPageTabActiveButton" id="Page_Button_MainPanel" onclick="DuckMdt.TabSelected('MainPanel')">🖥️ Main panel</button>
+                      <button class="MainPageTabButton" id="Page_Button_CitizensList" onclick="DuckMdt.TabSelected('CitizensList')">👤 List of citizens</button>
+                      <button class="MainPageTabButton" id="Page_Button_VehiclesList" onclick="DuckMdt.TabSelected('VehiclesList')">🚗 List of vehicles</button>
+                      <button class="MainPageTabButton" id="Page_Button_Training" onclick="DuckMdt.TabSelected('Training')">🎓 Amozesh</button>
+                      <!-- CrimeScene (Unique_CrimeScene) tabs -- hidden by default, CS_ApplyJobVisibility()
+                           shows/hides the doj-tab / law-tab ones once we know the player's job group -->
+                      <button class="MainPageTabButton doj-tab" style="display:none;" id="Page_Button_CS_Cases" onclick="DuckMdt.TabSelected('CS_Cases')">📂 Cases</button>
+                      <button class="MainPageTabButton doj-tab" style="display:none;" id="Page_Button_CS_ColdCases" onclick="DuckMdt.TabSelected('CS_ColdCases')">❄️ Cold Cases</button>
+                      <button class="MainPageTabButton doj-tab" style="display:none;" id="Page_Button_CS_Wanted" onclick="DuckMdt.TabSelected('CS_Wanted')">🎯 Wanted Board</button>
+                      <button class="MainPageTabButton law-tab" style="display:none;" id="Page_Button_CS_Bolo" onclick="DuckMdt.TabSelected('CS_Bolo')">🚨 BOLO</button>
+                      <button class="MainPageTabButton law-tab" style="display:none;" id="Page_Button_CS_Booking" onclick="DuckMdt.TabSelected('CS_Booking')">📋 Booking</button>
+                      <button class="MainPageTabButton cs-tab" style="display:none;" id="Page_Button_CS_Records" onclick="DuckMdt.TabSelected('CS_Records')">📁 Records</button>
+                      <button class="MainPageTabButton cs-tab" style="display:none;" id="Page_Button_CS_Leaderboard" onclick="DuckMdt.TabSelected('CS_Leaderboard')">🏆 Leaderboard</button>
+                      <button class="MainPageTabButton cs-tab" style="display:none;" id="Page_Button_CS_IA" onclick="DuckMdt.TabSelected('CS_IA')">⚖️ Internal Affairs</button>
+                    </div>
+                </div>
+
+                <div class="MainPageTabContent" id="MainPageTabContent">
+                      <div id="Page_MainPanel">
+                          <p style="font-size: 3vw;">🖥️ Main panel</p>
+
+                          <div class="Dashboard_Top">
+                            <p class="Dashboard_Greeting">Welcome back, <span id="MainPanel_Greeting_Rank">-</span> <span id="MainPanel_Greeting_Name">-</span></p>
+                            <div class="Dashboard_Clock">
+                              <p id="MainPanel_Clock_Time">--:--:--</p>
+                              <p id="MainPanel_Clock_Date">-</p>
+                            </div>
+                          </div>
+
+                          <div class="Dashboard_Stats">
+                            <div class="Dashboard_StatCard">
+                              <p class="Dashboard_StatValue" id="MainPanel_Stat_WantedPeople">0</p>
+                              <p class="Dashboard_StatLabel">🚨 Wanted Suspects</p>
+                            </div>
+                            <div class="Dashboard_StatCard">
+                              <p class="Dashboard_StatValue" id="MainPanel_Stat_WantedCars">0</p>
+                              <p class="Dashboard_StatLabel">🚗 Wanted Vehicles</p>
+                            </div>
+                            <div class="Dashboard_StatCard">
+                              <p class="Dashboard_StatValue" id="MainPanel_Stat_Rank">-</p>
+                              <p class="Dashboard_StatLabel">🎖️ Your Rank</p>
+                            </div>
+                          </div>
+
+                          <div class="Dashboard_QuickActions">
+                            <button class="Dashboard_QuickAction" onclick="DuckMdt.TabSelected('CitizensList')">👤 Search Citizen</button>
+                            <button class="Dashboard_QuickAction" onclick="DuckMdt.TabSelected('VehiclesList')">🚗 Search Vehicle</button>
+                            <button class="Dashboard_QuickAction law-tab" style="display:none;" onclick="DuckMdt.TabSelected('CS_Bolo')">🚨 Issue BOLO</button>
+                            <button class="Dashboard_QuickAction law-tab" style="display:none;" onclick="DuckMdt.TabSelected('CS_Booking')">📋 New Booking</button>
+                            <button class="Dashboard_QuickAction doj-tab" style="display:none;" onclick="DuckMdt.TabSelected('CS_Cases')">📂 Open Cases</button>
+                          </div>
+
+                          <!--  -->
+                          <div class="Main_Panel_Page_Lists">
+
+                            <div class="Main_Panel_Page_WantedPeople">
+                              <p>People Wanted</p>
+                              <div class="Main_Panel_Page_List">
+                                <div class="MDT_List" id="Main_Page_PeopleWanted_List">
+
+                                </div>
+                              </div>
+                            </div>
+                            <!--  -->
+                            <div class="Main_Panel_Page_WnatedCars">
+                              <p>Cars Wanted</p>
+                              <div class="Main_Panel_Page_List">
+                                <div class="MDT_List" id="Main_Page_CarsWanted_List">
+
+                                </div>
+                              </div>
+                            </div>
+
+                          </div>
+
+
+                      </div>
+                      
+                      <!-- should change id citizen lists to list and citizen list to specefic id -->
+
+                      <div id="Page_CitizensList" style="display: none;"> 
+                        <div class="MainPage_Header">
+                          <p style="font-size: 2vw;">👤 Citizens List</p>
+                          <input type="text" id="CitizenSearch" placeholder="Search">
+                        </div>
+
+
+                        <div id="Citizens_List_Search_Resualts" class="MDT_List" style="margin-top: 65px;">
+                          <!-- <div class="List_Row">
+                              <p>1</p>
+                              <p style="margin-left: 15px;">IC Name</p>
+                              <p style="margin-left: 50px;">093125452</p>
+                              <p style="margin-left: 120px; color: rgb(255, 47, 47);">Wanted</p>
+                          </div> -->
+
+
+                        </div>
+
+
+
+                        <div>
+
+                        </div>
+                      </div>
+
+
+                      <div id="Page_CitizensDetailInfo" style="display: none;">
+                        <div class="MainPage_Header">
+                          <button class="ExitButton" style="width: 120px;" onclick="DuckMdt.BackToCitzenList()">Back</button>
+                          <p style="font-size: 2vw;" id="CharacterName_P">IC Name</p>
+                        </div>
+                        <div class="Character_Info">
+                          <div class="Profile_Picture">
+                            <img style="height:220px;width:100%;float:left;object-fit:cover;" id="Character_Profile_Picture" src="img/no_photo.png" onerror="this.onerror=null;this.src='img/no_photo.png';"/>
+                            <button class="Change_Profile_Button" id="Character_Profile_Picture_Button">Set Profile</button>
+                          </div>
+
+                          <div class="Character_Details">
+                            <div class="WantedColor" id="WantedColor_Character" style="background-color: rgb(177, 177, 177);"></div>
+                            <div class="Character_Info_Row">
+                              <p>Gender</p>
+                              <p id="Character_Details_Gender">Man</p>
+                            </div>
+
+                            <div class="Character_Info_Row">
+                              <p>Phone</p>
+                              <p id="Character_Details_Phonenumber">093938545165</p>
+                            </div>
+
+                            <div class="Character_Info_Row">
+                              <p>Bank</p>
+                              <p id="Character_Details_Bank">124</p>
+                            </div>
+
+                            <div class="Character_Info_Row">
+                              <p>Status</p>
+                              <Select class="Mdt_Select" id="Character_Profile_Select_Wanted">
+                                <option value="standard" style="color: var(--text)">Standard</option>
+                                <option value="arrested" style="color: var(--danger);">Arrested</option>
+                                <option value="wanted" style="color: var(--danger);">Wanted</option>
+                                <option value="in_prison" style="color: var(--info);">In prison</option>
+                                <option value="special" style="color: var(--info);">Special</option>
+                              </Select>
+                            </div>
+
+                                                                          <!--  -->
+
+                                                                          <div id="NewCPorfileUrlModal" class="modal">
+                                                                            <div class="modal-content" style="background-color: rgb(0, 53, 88);">
+                                                                              <span class="close" onclick="CloseCProfileModal()">&times;</span>
+                                                                              <h1>New Profile</h1>
+                                                                              <hr>
+                                                                              <h4>Picture Url</h4>
+                                                                              <input id="NewCPorfileUrl" type="text" placeholder="Url">
+                                                                              <br>
+                                                                              <div style="margin-top: 15px;">
+                                                                                <button class="DiscardButton" style="float: left;" onclick="CloseCProfileModal()">Discard</button><button class="ExitButton" style="float: right;" onclick="SetNewProfilePic()" id="Character_SetNewProfilePic">Save</button>
+                                                                              </div>
+                                                                            </div>
+                                                                          </div>
+                                                
+                                                                        <!--  -->
+
+                          </div>
+                        </div>
+
+                        <div class="MDT_List" style="margin-top: 65px;" id="Character_Profile_Cars_List">
+                          <!-- <div class="List_Row">
+                              <p>1</p>
+                              <p style="margin-left: 90px;">153VHA1</p>
+                              <p style="margin-left: 130px;">Vehicle Model</p>
+                          </div> -->
+
+                        </div>
+
+                        <div class="Data_List" style="margin-top: 10px;">
+                          <div class="Data_List_Content">
+                            <div class="data_Row" style="color: blanchedalmond;">
+                              <p>Charges</p>
+                              <p>Fine / Jail</p>
+                              <p>Officer</p>
+                            </div>
+                            <hr style="color: rgb(49, 49, 49); margin-top: 2px;">
+                            <div id="Character_Profile_Records_List"></div>
+                          </div>
+                        </div>
+
+                        <div class="Data_List">
+                          <div class="Data_List_Content">
+                            <div class="data_Row" style="color: blanchedalmond;">
+                              <p>Id</p>
+                              <p>Author</p>
+                              <p>Date</p>
+                              <p>Reason</p>
+                            </div>
+                          <hr style="color: rgb(49, 49, 49); margin-top: 2px;">
+                            <div id="list_data_citizen">
+                              <div style="width: 100%;">
+                                <div class="data_Row" style="float: left;">
+                                  <p>1</p>
+                                  <p>AmirHossein Aghghi</p>
+                                  <p>2021/3/21</p>
+                                  <p>Rob Shop</p>
+                                </div>
+                                <div style="float: right;">
+                                  <button class="Data_Delete_Button">✖</button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <button class="ExitButton" style="margin-top: 15px;" onclick="DataButton()" id="DataButton">Data</button>
+
+                          <div id="myModal" class="modal">
+                            
+                            <div class="modal-content" style="background-color: rgb(0, 53, 88);">
+                              <span class="close" onclick="CloseDataModal()">&times;</span>
+                              <h1>New Data</h1>
+                              <hr>
+                              <h4>Reason</h4>
+                              <input id="NewDataReason" type="text" placeholder="Reason">
+                              <br>
+                              <div style="margin-top: 15px;">
+                                <button class="DiscardButton" style="float: left;" onclick="CloseDataModal()">Discard</button><button class="ExitButton" style="float: right;" onclick="SaveNewData()" id="SaveNewData">Save</button>
+                              </div>
+                            </div>
+                          </div>
+
+                      </div>
+                      <!--  -->
+                      
+                      
+
+                      <div id="Page_VehiclesList" style="display: none;">
+                        <div class="MainPage_Header">
+                          <p style="font-size: 2vw;">🚗 Vehicles List</p>
+                          <input type="text" id="VehicleSearch" placeholder="Search">
+                        </div>
+                        
+                          <div id="Cars_List_Search_Resualts" class="MDT_List" style="margin-top: 65px;">
+                            <!-- <div class="List_Row">
+                                <p>1</p>
+                                <p style="margin-left: 15px;">IC Name</p>
+                                <p style="margin-left: 50px;">093125452</p>
+                                <p style="margin-left: 120px; color: rgb(255, 47, 47);">Wanted</p>
+                            </div> -->
+  
+  
+                          </div>
+  
+                      </div>
+
+                      <div id="Page_CarDetailInfo" style="display: none;">
+                        <div class="MainPage_Header">
+                          <button class="ExitButton" style="width: 120px;" onclick="DuckMdt.BackToCarList()">Back</button>
+                          <p style="font-size: 2vw;" id="CarName_P">IC Name</p>
+                        </div>
+                        <div class="Character_Info">
+                          <div class="Profile_Picture">
+                            <img style="height:220px;width:100%;float:left;object-fit:cover;" id="Car_Profile_Picture" src="img/no_photo.png" onerror="this.onerror=null;this.src='img/no_photo.png';"/>
+                            <button class="Change_Profile_Button" id="Car_Profile_Picture_Button">Set Profile</button>
+                          </div>
+                          <div class="Character_Details">
+                            <div class="WantedColor" id="WantedColor_Car" style="background-color: rgb(177, 177, 177);"></div>
+                            <div class="Character_Info_Row">
+                              <p>Owner</p>
+                              <p id="Car_Details_Owner">Man</p>
+                            </div>
+
+                            <div class="Character_Info_Row">
+                              <p>Owner Phone Number</p>
+                              <p id="Car_Details_Owner_Phone_Number">093938545165</p>
+                            </div>
+
+
+                            <div class="Character_Info_Row">
+                              <p>Status</p>
+                              <Select class="Mdt_Select" id="Car_Profile_Select_Wanted">
+                                <option value="standard" style="color: var(--text)">Standard</option>
+                                <option value="arrested" style="color: var(--danger);">Arrested</option>
+                                <option value="wanted" style="color: var(--danger);">Wanted</option>
+                                <option value="in_prison" style="color: var(--info);">In prison</option>
+                                <option value="special" style="color: var(--info);">Special</option>
+                              </Select>
+                            </div>
+
+                                                        
+                                              <!--  -->
+
+                                              <div id="NewCarPorfileUrlModal" class="modal">
+                                                <div class="modal-content" style="background-color: rgb(0, 53, 88);">
+                                                  <span class="close" onclick="CloseCProfileModal()">&times;</span>
+                                                  <h1>New Profile</h1>
+                                                  <hr>
+                                                  <h4>Picture Url</h4>
+                                                  <input id="NewCarPorfileUrl" type="text" placeholder="Url">
+                                                  <br>
+                                                  <div style="margin-top: 15px;">
+                                                    <button class="DiscardButton" style="float: left;" onclick="CloseCarProfileModal()">Discard</button><button class="ExitButton" style="float: right;" onclick="Car_SetNewProfilePic()" id="Car_SetNewProfilePic">Save</button>
+                                                  </div>
+                                                </div>
+                                              </div>
+                    
+                                            <!--  -->
+
+                          </div>
+                        </div>
+                      </div>
+
+                      <!--  -->
+
+                      <!-- ===================== CrimeScene: Cases (DOJ) ===================== -->
+                      <div id="Page_CS_Cases" style="display: none;">
+                        <div class="MainPage_Header">
+                          <p style="font-size: 2vw;">📂 DOJ Cases</p>
+                        </div>
+                        <div id="CS_CasesList" class="MDT_List"></div>
+                      </div>
+
+                      <div id="Page_CS_CaseDetail" style="display: none;">
+                        <div class="MainPage_Header">
+                          <button class="ExitButton" style="width: 120px;" onclick="DuckMdt.PageSwitch('CS_CaseDetail', 'CS_Cases', 500); currenttab = 'CS_Cases';">Back</button>
+                          <p style="font-size: 2vw;" id="CS_CaseTitle_P">Case</p>
+                        </div>
+                        <p id="CS_CaseStatus_P" style="color: var(--gold); font-weight: 700; margin-bottom: 14px;"></p>
+
+                        <div class="Data_List">
+                          <div class="Data_List_Content">
+                            <div class="data_Row" style="color: blanchedalmond;">
+                              <p>Suspect</p><p>Role</p>
+                            </div>
+                            <hr style="color: rgb(49, 49, 49); margin-top: 2px;">
+                            <div id="CS_SuspectsList"></div>
+                          </div>
+                        </div>
+
+                        <div class="Data_List">
+                          <div class="Data_List_Content">
+                            <div class="data_Row" style="color: blanchedalmond;">
+                              <p>Type</p><p>Content</p><p>Found By</p>
+                            </div>
+                            <hr style="color: rgb(49, 49, 49); margin-top: 2px;">
+                            <div id="CS_EvidenceList"></div>
+                          </div>
+                        </div>
+
+                        <div class="Data_List">
+                          <div class="Data_List_Content">
+                            <div class="data_Row" style="color: blanchedalmond;">
+                              <p>Author</p><p>Note</p>
+                            </div>
+                            <hr style="color: rgb(49, 49, 49); margin-top: 2px;">
+                            <div id="CS_NotesList"></div>
+                          </div>
+                        </div>
+
+                        <div style="margin-top: 14px;">
+                          <input id="CS_NewNote" type="text" placeholder="New note" style="width: 55%;">
+                          <button class="ExitButton" onclick="CS_AddNote()">Add Note</button>
+                        </div>
+
+                        <div id="CS_CaseActions" style="margin-top: 14px;"></div>
+                      </div>
+
+                      <!-- ===================== CrimeScene: Cold Cases (DOJ) ===================== -->
+                      <div id="Page_CS_ColdCases" style="display: none;">
+                        <div class="MainPage_Header">
+                          <p style="font-size: 2vw;">❄️ Cold Cases</p>
+                        </div>
+                        <div id="CS_ColdCasesList" class="MDT_List"></div>
+                      </div>
+
+                      <!-- ===================== CrimeScene: Wanted Board (DOJ) ===================== -->
+                      <div id="Page_CS_Wanted" style="display: none;">
+                        <div class="MainPage_Header">
+                          <p style="font-size: 2vw;">🎯 Wanted Board</p>
+                        </div>
+                        <div id="CS_WantedList" class="MDT_List"></div>
+                      </div>
+
+                      <!-- ===================== CrimeScene: BOLO (Law) ===================== -->
+                      <div id="Page_CS_Bolo" style="display: none;">
+                        <div class="MainPage_Header">
+                          <p style="font-size: 2vw;">🚨 Active BOLOs</p>
+                          <button class="ExitButton" onclick="CS_CheckNearestVehicle()">Check Nearest Vehicle</button>
+                        </div>
+                        <p id="CS_BoloResult" style="color: var(--danger); font-weight: 700; margin-bottom: 10px;"></p>
+                        <div id="CS_BoloList" class="MDT_List"></div>
+                      </div>
+
+                      <!-- ===================== CrimeScene: Booking (Law) ===================== -->
+                      <div id="Page_CS_Booking" style="display: none;">
+                        <div class="MainPage_Header">
+                          <p style="font-size: 2vw;">📋 New Booking</p>
+                        </div>
+                        <div style="max-width: 480px;">
+                          <input id="CS_BookTarget" type="number" placeholder="Player ID (optional, links to CAD)" style="width: 100%; margin-bottom: 4px;" oninput="CS_PreviewBookTarget()">
+                          <p id="CS_BookTargetPreview" style="font-size: 12px; color: var(--text-dim); min-height: 16px; margin: 0 0 10px 2px;"></p>
+                          <input id="CS_BookCase" type="number" placeholder="Case ID (optional, needs approved warrant)" style="width: 100%; margin-bottom: 10px;">
+                          <input id="CS_BookSuspect" type="text" placeholder="Suspect name" style="width: 100%; margin-bottom: 10px;">
+                          <input id="CS_BookCharges" type="text" placeholder="Charges" style="width: 100%; margin-bottom: 10px;">
+                          <div style="display: flex; gap: 10px; margin-bottom: 14px;">
+                            <input id="CS_BookFine" type="number" placeholder="Fine ($)" style="flex: 1;">
+                            <input id="CS_BookJail" type="number" placeholder="Jail (minutes)" style="flex: 1;">
+                          </div>
+                          <button class="ExitButton" onclick="CS_SubmitBooking()">Submit Booking</button>
+                        </div>
+                      </div>
+
+                      <!-- ===================== CrimeScene: Records (DOJ + Law) ===================== -->
+                      <div id="Page_CS_Records" style="display: none;">
+                        <div class="MainPage_Header">
+                          <p style="font-size: 2vw;">📁 Criminal Records</p>
+                          <input id="CS_RecordsSearch" type="text" placeholder="Search by suspect name..." style="width: 30%;" oninput="CS_SearchRecords()">
+                        </div>
+                        <div id="CS_RecordsList" class="MDT_List"></div>
+                      </div>
+
+                      <!-- ===================== CrimeScene: Leaderboard (DOJ + Law) ===================== -->
+                      <div id="Page_CS_Leaderboard" style="display: none;">
+                        <div class="MainPage_Header">
+                          <p style="font-size: 2vw;">🏆 Leaderboard</p>
+                        </div>
+                        <div style="display: flex; gap: 24px;">
+                          <div style="flex: 1;">
+                            <p style="color: var(--text-dim); font-weight: 600; font-size: 13px; margin-bottom: 10px;">🔍 Top Investigators (DOJ)</p>
+                            <div id="CS_LeaderInvestigators" class="MDT_List"></div>
+                          </div>
+                          <div style="flex: 1;">
+                            <p style="color: var(--text-dim); font-weight: 600; font-size: 13px; margin-bottom: 10px;">👮 Top Officers (Law)</p>
+                            <div id="CS_LeaderOfficers" class="MDT_List"></div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- ===================== CrimeScene: Internal Affairs ===================== -->
+                      <div id="Page_CS_IA" style="display: none;">
+                        <div class="MainPage_Header">
+                          <p style="font-size: 2vw;">⚖️ Internal Affairs</p>
+                        </div>
+
+                        <div style="padding: 12px 20px; max-width: 480px;">
+                          <p style="color: var(--text-dim); font-weight: 600; font-size: 13px; margin-bottom: 8px;">📝 File a Report</p>
+                          <div style="position: relative; margin-bottom: 8px;">
+                            <input id="CS_IATargetSearch" type="text" placeholder="Search officer by name..." style="width: 100%;" oninput="CS_SearchIAOfficer()">
+                            <div id="CS_IAOfficerResults" style="display: none; position: absolute; top: 100%; left: 0; right: 0; z-index: 5; background: var(--bg-card); border: 1px solid var(--border); border-radius: 5px; max-height: 180px; overflow-y: auto; margin-top: 4px;"></div>
+                          </div>
+                          <select id="CS_IACategory" style="width: 100%; margin-bottom: 8px;">
+                            <option value="shooting">Shooting</option>
+                            <option value="wrongful_arrest">Wrongful Arrest</option>
+                            <option value="excessive_force">Excessive Force</option>
+                            <option value="booking_abuse">Booking Abuse</option>
+                            <option value="other">Other</option>
+                          </select>
+                          <input id="CS_IADescription" type="text" placeholder="What happened" style="width: 100%; margin-bottom: 8px;">
+                          <button class="ExitButton" onclick="CS_SubmitIAReport()">Submit Report</button>
+                        </div>
+
+                        <div id="CS_IAReviewerSection" style="display: none;">
+                          <div style="padding: 4px 20px;">
+                            <p style="color: var(--text-dim); font-weight: 600; font-size: 13px; margin-bottom: 8px;">🕒 Recent Officer Activity</p>
+                          </div>
+                          <div id="CS_OfficerActivityList" class="MDT_List"></div>
+
+                          <div style="padding: 12px 20px 4px;">
+                            <p style="color: var(--text-dim); font-weight: 600; font-size: 13px; margin-bottom: 8px;">📄 Reports</p>
+                          </div>
+                          <div id="CS_IAReportsList" class="MDT_List"></div>
+                        </div>
+                      </div>
+
+                      <div id="Page_Training" style="display: none;">
+                      </div>
+
+                </div>
+
+                <!--                             -->
+
+            </div>
+        </div>
+    </body>
+</html>

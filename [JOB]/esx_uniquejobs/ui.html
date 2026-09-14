@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>esx_uniquejobs NUI</title>
+    <style>
+        /*
+          FiveM only lets one resource have one ui_page (one NUI browser).
+          This resource bundles five independent NUI apps (the bodydamage
+          HUD, the CAD/MDT tablet, the Wraith radar, the taximeter, and the
+          detective notepad), so instead of merging their HTML/CSS/JS by
+          hand (high risk of id/class/global collisions) each keeps its own
+          document in its own iframe, and this page just relays
+          SendNuiMessage() to all of them.
+          Each iframe still receives the exact same message shape it always
+          did, so none of the apps' own code needed to change its
+          message-handling logic. Their NUI callbacks (the fetch()/$.post()
+          calls back to Lua) already target https://GetParentResourceName()
+          dynamically, so they keep working unchanged now that they live
+          inside esx_uniquejobs instead of their own resource.
+        */
+        html, body {
+            margin: 0;
+            padding: 0;
+            background: transparent;
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+        }
+        iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: transparent;
+        }
+        /* The bodydamage HUD and taximeter meter are both passive
+           status overlays - neither has a single clickable element, so
+           they must never swallow clicks meant for CAD/radar (or the game)
+           when they overlap on screen. */
+        #frame_bodydamage,
+        #frame_taximeter {
+            pointer-events: none;
+        }
+
+        /* FIX: radar defaults to pointer-events:auto, NOT none. Radar's own
+           clickable widgets (Quick Actions/PANIC, the plate reader BOLO
+           ribbon, etc.) are meant to be usable any time the mouse happens
+           to be free for ANY reason - the remote's own open button, or some
+           unrelated resource's generic "free the cursor" keybind - not only
+           after formally opening the full remote panel. CAD is the one
+           exception: it's later... no, EARLIER than radar in the DOM above,
+           so radar (being on top) would otherwise always eat CAD's clicks
+           even while CAD is the one actually open (that was the original
+           Login-button-does-nothing bug). So radar only ever drops to
+           pointer-events:none for the one specific moment CAD says it's
+           open (via the setUiFocusOwner message cad/client/main.lua sends
+           right next to its own SetNuiFocus() calls) - everywhere else,
+           radar stays clickable by default. */
+        #frame_cad {
+            pointer-events: auto;
+        }
+        #frame_radar {
+            pointer-events: auto;
+        }
+        /* FIX: detective was added as the LAST iframe in the DOM (so it
+           paints on top of CAD *and* radar) but was left permanently
+           pointer-events:auto with no exception logic at all - unlike
+           radar, which only ever goes auto->none for as long as CAD
+           specifically is open. That made detective silently eat every
+           click meant for CAD or radar, all the time, everywhere on
+           screen, which is the actual "Login button does nothing" bug
+           (the click never even reached CAD's iframe). Treated the same
+           way CAD itself is treated: closed (none) by default, and only
+           auto while detective is the current focus owner. */
+        #frame_detective {
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <iframe id="frame_bodydamage" src="bodydamage/html/index.html"></iframe>
+    <iframe id="frame_cad" src="cad/html/index.html"></iframe>
+    <iframe id="frame_radar" src="radar/nui/radar.html"></iframe>
+    <iframe id="frame_taximeter" src="taximeter/client/ui/index.html"></iframe>
+    <iframe id="frame_detective" src="detective/html/index.html"></iframe>
+
+    <script>
+        var frames = {
+            bodydamage: document.getElementById('frame_bodydamage'),
+            cad: document.getElementById('frame_cad'),
+            radar: document.getElementById('frame_radar'),
+            taximeter: document.getElementById('frame_taximeter'),
+            detective: document.getElementById('frame_detective'),
+        };
+
+        // FIX: radar is auto by default (see the CSS comment above for why)
+        // and only ever forced to 'none' for as long as CAD or detective is
+        // the current owner - CAD was the one real conflict originally,
+        // since radar sits on top of it in the DOM; detective sits on top
+        // of radar too, so it needs the same treatment. detective itself
+        // defaults to 'none' (it's the CAD-style "closed unless open" case,
+        // not the radar-style "always has a floating quick action" case)
+        // and only goes 'auto' while it's the current owner - being the
+        // topmost layer, that's enough for it to receive its own clicks
+        // regardless of what radar/cad are set to underneath it.
+        function setUiFocusOwner(owner) {
+            frames.radar.style.pointerEvents = (owner === 'cad' || owner === 'detective') ? 'none' : 'auto';
+            frames.detective.style.pointerEvents = (owner === 'detective') ? 'auto' : 'none';
+        }
+
+        var ready = { bodydamage: false, cad: false, radar: false, taximeter: false, detective: false };
+        var pending = [];
+
+        function allReady() {
+            for (var key in ready) {
+                if (!ready[key]) return false;
+            }
+            return true;
+        }
+
+        function relay(data) {
+            for (var key in frames) {
+                try {
+                    if (frames[key] && frames[key].contentWindow) {
+                        frames[key].contentWindow.postMessage(data, '*');
+                    }
+                } catch (e) {}
+            }
+        }
+
+        function flushPending() {
+            if (!allReady()) return;
+            while (pending.length) relay(pending.shift());
+        }
+
+        // Don't relay until every iframe has actually finished loading and
+        // attached its own message listener - otherwise a message that
+        // arrives right after SetNuiFocus (e.g. the very first /cad press)
+        // can be sent before that iframe's own script is ready to catch it,
+        // and is lost for good (postMessage is not queued for late listeners).
+        Object.keys(frames).forEach(function (key) {
+            frames[key].addEventListener('load', function () {
+                ready[key] = true;
+                flushPending();
+            });
+        });
+
+        // Safety net: if a 'load' event never fires for some reason, don't
+        // let queued messages get stuck forever - force a flush after 3s.
+        setTimeout(function () {
+            Object.keys(ready).forEach(function (key) { ready[key] = true; });
+            flushPending();
+        }, 3000);
+
+        window.addEventListener('message', function (event) {
+            // Ignore anything bounced back up from one of our own iframes -
+            // only relay messages that actually came from the game (Lua).
+            for (var key in frames) {
+                if (frames[key] && event.source === frames[key].contentWindow) return;
+            }
+
+            // FIX: intercept the focus-owner signal here instead of just
+            // relaying it - none of the individual apps need to see it,
+            // it's purely for this top-level page's own iframe stacking.
+            if (event.data && event.data._type === 'setUiFocusOwner') {
+                setUiFocusOwner(event.data.owner);
+                return;
+            }
+
+            if (allReady()) {
+                relay(event.data);
+            } else {
+                pending.push(event.data);
+            }
+        });
+    </script>
+</body>
+</html>

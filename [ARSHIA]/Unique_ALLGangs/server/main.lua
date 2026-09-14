@@ -1,0 +1,291 @@
+ESX = nil 
+local cuffTime = {}
+local uncuffTime = {}
+TriggerEvent(Config.ESX, function(obj) ESX = obj end)
+-------------------------
+----- ADMIN CMD 
+-------------------------
+RegisterCommand(Config.OPENPANELCMD, function(source, args)
+    if IsPlayerCanOpenPanel(source) then
+        local AdminInfo = {
+            Name =  GetAdminName(source) ,
+            Rank =  GetAdminRank(source)  ,
+            Profile = GetAvatar(source) , 
+        }
+        TriggerClientEvent('For5M:OpenPanel', source, AdminInfo)
+    end
+end)
+RegisterCommand(Config.ADDXPCMD, function(source, args)
+    if IsPlayerCanOpenPanel(source) then
+        if args[1] and tonumber(args[2]) then 
+            TriggerEvent('For5M:AddGangXP', tonumber(args[2]),args[1] ) 
+        end 
+    end
+end)
+RegisterCommand(Config.REMOVEXPCMD, function(source, args)
+    if IsPlayerCanOpenPanel(source) then
+        if args[1] and tonumber(args[2]) and Gangs[args[1]] then 
+            TriggerEvent('For5M:AddGangXP', tonumber(args[2]) * -1 ,args[1] ) 
+        end 
+    end
+end)
+-------------------------------------------------------------------
+-- FIX (openpanel lag): the old GetAvatar() did a *synchronous* Steam
+-- API call (PerformHttpRequest + a busy `while data == nil do Wait(10) end`
+-- loop, up to 5000ms) EVERY time a panel/callback needed an avatar.
+-- GetPanelData() called this once per ONLINE gang member, so opening
+-- the panel with e.g. 10 online members could block the callback for
+-- several seconds (or up to 10x5s if Steam was slow/unreachable).
+--
+-- Fix: fetch avatars asynchronously in the background, cache them per
+-- identifier, and refresh the cache on connect/spawn. GetAvatar(source)
+-- now just reads the cache and returns instantly - no more blocking,
+-- no more repeated HTTP calls on every panel open.
+-------------------------------------------------------------------
+local AvatarCache = {} -- [identifierHex] = avatarUrl
+
+local function FetchAvatarAsync(identifierHex, cb)
+    if not identifierHex or identifierHex == '' then
+        if cb then cb(Config.DefaultAvatar) end
+        return
+    end
+
+    local steamhex2 = tonumber(identifierHex:gsub("steam:", ""), 16)
+    local steamkey = Config.SteamWebApiKey
+    local url = string.format("https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key=%s&steamids=%s", steamkey, tostring(steamhex2))
+
+    PerformHttpRequest(url, function(errorCode, resultData, resultHeaders)
+        local avatar = Config.DefaultAvatar
+        if errorCode == 200 and resultData then
+            local ok, decoded = pcall(json.decode, resultData)
+            if ok and decoded and decoded.response and decoded.response.players and decoded.response.players[1] then
+                avatar = decoded.response.players[1].avatarfull or Config.DefaultAvatar
+            end
+        end
+        AvatarCache[identifierHex] = avatar
+        if cb then cb(avatar) end
+    end, "GET", "", { ["Content-Type"] = "application/json" })
+end
+
+-- Kicks off (or refreshes) a background fetch for this player and caches
+-- it. Non-blocking - does not return the avatar, just warms the cache.
+function PrefetchAvatar(source)
+    local steamhex
+    for _, id in ipairs(GetPlayerIdentifiers(source)) do
+        if string.match(id, "steam:") then
+            steamhex = id
+            break
+        end
+    end
+    if not steamhex then return end
+    FetchAvatarAsync(steamhex)
+end
+
+-- Instant, non-blocking read. Returns the cached avatar if we have one,
+-- otherwise the default avatar - and kicks off a background fetch so the
+-- NEXT call already has it cached. Never blocks the calling thread.
+function GetAvatar(user)
+    local steamhex
+    for _, id in ipairs(GetPlayerIdentifiers(user)) do
+        if string.match(id, "steam:") then
+            steamhex = id
+            break
+        end
+    end
+    if not steamhex then
+        return Config.DefaultAvatar
+    end
+    if AvatarCache[steamhex] then
+        return AvatarCache[steamhex]
+    end
+    -- Not cached yet (e.g. very first call before onPlayerJoin ran) -
+    -- warm the cache for next time, but don't block this call on it.
+    FetchAvatarAsync(steamhex)
+    return Config.DefaultAvatar
+end
+
+-- Warm the cache as soon as possible after connect, well before anyone
+-- opens a panel, so panel opens never wait on Steam at all.
+AddEventHandler('playerConnecting', function()
+    local src = source
+    CreateThread(function()
+        Wait(1500) -- allow identifiers to populate
+        PrefetchAvatar(src)
+    end)
+end)
+
+RegisterNetEvent(Config.DefaultEvents['playerLoaded'])
+AddEventHandler(Config.DefaultEvents['playerLoaded'], function()
+    PrefetchAvatar(source)
+end)
+
+RegisterServerEvent('For5M:cuff')
+AddEventHandler('For5M:cuff', function(targetid, playerheading, playerCoords,  playerlocation)
+    if not tonumber(targetid) or not  ESX.GetPlayerFromId(targetid) then return end 
+	if #(GetEntityCoords(GetPlayerPed(source)) - GetEntityCoords(GetPlayerPed(targetid))) >= 5 then return end
+	TriggerClientEvent('For5M:Actions:getarrested', targetid, playerheading, playerCoords, playerlocation, source)
+	TriggerClientEvent('For5M:Actions:doarrested', source)
+end)
+
+RegisterServerEvent('For5M:uncuff')
+AddEventHandler('For5M:uncuff', function(targetid, playerheading, playerCoords,  playerlocation)
+    if not tonumber(targetid) or not  ESX.GetPlayerFromId(targetid) then return end 
+	if #(GetEntityCoords(GetPlayerPed(source)) - GetEntityCoords(GetPlayerPed(targetid))) >= 5 then return end
+	TriggerClientEvent('For5M:Actions:getuncuffed', targetid, playerheading, playerCoords, playerlocation, source)
+	TriggerClientEvent('For5M:Actions:douncuffing', source)
+end)
+
+RegisterServerEvent('F5M:putInVehicle')
+AddEventHandler('F5M:putInVehicle', function(target)
+	local cPlayer = ESX.GetPlayerFromId(target)
+	if GetPlayerName(target) or cPlayer then
+		if #(GetEntityCoords(GetPlayerPed(source)) - GetEntityCoords(GetPlayerPed(tonumber(target)))) < 15.0 then
+            TriggerClientEvent('F5M:putInVehicle', target)
+            TriggerClientEvent("For5M:putInVehicleS", source)
+		end
+	end
+end)
+
+RegisterServerEvent('For5M:drag')
+AddEventHandler('For5M:drag', function(target)
+	TriggerClientEvent('For5M:drag', target, source)
+	TriggerClientEvent('For5M:Actions:draging', source, target)
+end)
+
+RegisterServerEvent('For5M:putInVehicle')
+AddEventHandler('For5M:putInVehicle', function(target, NetID)
+	TriggerClientEvent('For5M:putInVehicleS', source)
+	TriggerClientEvent('For5M:putInVehicle', target, NetID)
+end)
+
+RegisterServerEvent('For5M:OutVehicle')
+AddEventHandler('For5M:OutVehicle', function(target)
+    TriggerClientEvent('For5M:OutVehicle', target)
+end)
+
+-------------------------------------------------------------------
+-- FEATURE (requested: per-category webhooks instead of one URL for
+-- every log type): Gangs[gang].webhook stays the exact same DB
+-- column/string it always was - no schema change - but can now hold
+-- either a plain URL (legacy, used for every category, unchanged
+-- behavior) or a JSON object {category = url, default = url} set via
+-- FMGangs:SetCategoryWebhook (server/Gangs.lua). This is the single
+-- place that resolves which URL a given category actually uses.
+-------------------------------------------------------------------
+function GetCategoryWebhook(gangName, category)
+    local raw = Gangs[gangName] and Gangs[gangName].webhook
+    if not raw or raw == '' then return nil end
+    local ok, decoded = pcall(json.decode, raw)
+    if ok and type(decoded) == 'table' then
+        return decoded[category] or decoded['default']
+    end
+    -- legacy: still a plain URL string, not JSON - used for every category
+    return raw
+end
+
+RegisterServerEvent('For5M:SendLog')
+AddEventHandler('For5M:SendLog', function(source , category , Text  )
+    local identifierlist = ExtractIdentifiers(source) 
+	local xPlayer = ESX.GetPlayerFromId(source)
+    -- FIX: no guard here before - a bad/invalid source would crash on
+    -- xPlayer.gang.name below. Same class of bug as everywhere else
+    -- in this resource; cheap to close while touching this function.
+    if not xPlayer or not xPlayer.gang or not Gangs[xPlayer.gang.name] then return end
+    local data = {}
+    data.playerid = source 
+    data.identifier = identifierlist.steam 
+    data.discord =  identifierlist.discord 
+    data.category = category  
+    data.Text = Text 
+    data.gang = xPlayer.gang.name 
+    data.IconURL = Gangs[ xPlayer.gang.name ].logo  
+    data.Webhook = GetCategoryWebhook(xPlayer.gang.name, category)
+    SendLog(data)
+end)
+function SendLog(data)
+	local color = '65352'
+	local category = data.category
+    local DiscordStart = data.Webhook
+    -- FIX: no guard here before - a gang that hasn't set a webhook
+    -- yet (Config.WebHook default / never configured via "Set Log
+    -- Webhook") would fire a PerformHttpRequest at an empty/invalid
+    -- URL for every single boss action, silently failing every time.
+    if not DiscordStart or DiscordStart == '' then return end
+    local connect = {
+        {
+            ["color"] = color ,
+            ["title"] = category ,
+            ["description"] = '**Action:** '.. data.Text  ..'\n\n**ID:** '.. data.playerid ..'\n**Identifier:** '.. data.identifier ..'\n**Discord:** '..data.discord,
+	        ["footer"] = {
+                ["text"] = data.gang ..' - Logs',
+                ["icon_url"] = data.IconURL , 
+            },
+        }
+    }
+    PerformHttpRequest(DiscordStart, function(err, text, headers) end, 'POST', json.encode({username = "Heta RP",embeds = connect}), { ['Content-Type'] = 'application/json' })
+end 
+
+
+
+
+-------------------------- IDENTIFIERS
+
+function ExtractIdentifiers(id)
+    local identifiers = {
+        steam = "",
+        ip = "",
+        discord = "",
+        license = "",
+        xbl = "",
+        live = ""
+    }
+
+    for i = 0, GetNumPlayerIdentifiers(id) - 1 do
+        local playerID = GetPlayerIdentifier(id, i)
+
+        if string.find(playerID, "steam") then
+            identifiers.steam = playerID
+        elseif string.find(playerID, "ip") then
+            identifiers.ip = playerID
+        elseif string.find(playerID, "discord") then
+            identifiers.discord = playerID
+        elseif string.find(playerID, "license") then
+            identifiers.license = playerID
+        elseif string.find(playerID, "xbl") then
+            identifiers.xbl = playerID
+        elseif string.find(playerID, "live") then
+            identifiers.live = playerID
+        end
+    end
+
+    return identifiers
+end
+
+-------------------------------------------------------------------
+-- Gang chat (/g) - ported from the reference Unique_Gangs system
+-- (server/prop_main.lua) and adapted to this resource's own gang
+-- lookups (Gangs[name] instead of that system's data model).
+-------------------------------------------------------------------
+RegisterCommand('g', function(source, args)
+    local zPlayer = ESX.GetPlayerFromId(source)
+    if not zPlayer then return end
+
+    local message = table.concat(args, " ")
+    if not args[1] or message == '' then
+        return TriggerClientEvent(Config.showNotification, source, "You can't send an empty message!", "error")
+    end
+    if not zPlayer.gang or zPlayer.gang.name == 'nogang' or not Gangs[zPlayer.gang.name] then
+        return TriggerClientEvent(Config.showNotification, source, "You can't use this command!", "error")
+    end
+
+    local xPlayers = ESX.GetPlayers()
+    for i = 1, #xPlayers, 1 do
+        local xPlayer = ESX.GetPlayerFromId(xPlayers[i])
+        if xPlayer and xPlayer.gang and xPlayer.gang.name == zPlayer.gang.name then
+            TriggerClientEvent('chatMessage', xPlayer.source, "^4[^1Gang Chat^4]", {255, 0, 0},
+                "^3( " .. zPlayer.gang.name .. " | " .. zPlayer.name .. " )^0: ^0^*" .. message .. "^4")
+        end
+    end
+
+    MaybeLeakGangChatTip(zPlayer.gang.name, message)
+end)

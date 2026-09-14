@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Unique_Radio</title>
+		<script src="nui://game/ui/jquery.js" type="text/javascript"></script>
+
+		<style>
+			/* ---- Handheld radio "who's broadcasting" indicator (top-left, higher) ---- */
+			table.indicator {
+				position: absolute;
+				top: 18vh;
+				left: 0.2%;
+				border-spacing: 0 1px;
+			}
+			.indicator td {
+				padding: 4px 2px;
+				background: #00000087;
+				color: #fff;
+				font-size: 16px;
+			}
+			.indicator td:nth-child(1) {
+				border-top-left-radius: 10px;
+				border-bottom-left-radius: 10px;
+				padding-left: 10px;
+			}
+			.indicator td:nth-child(2) {
+				border-top-right-radius: 10px;
+				border-bottom-right-radius: 10px;
+				padding-right: 10px;
+			}
+			.indicator img {
+				width: 15px;
+			}
+
+			/* ---- Radio channel member list (top-left, lower, was overlapping the ----
+			   ---- indicator table before the merge — moved down to 31vh to avoid it) ---- */
+			.radio-list-container {
+				position: absolute;
+				top: 31vh;
+				left: 0.2%;
+				text-align: left;
+				padding: 0;
+				font-family: 'Segoe UI', sans-serif;
+				font-weight: 600;
+				letter-spacing: 0.3px;
+				font-size: 0.8vw;
+				line-height: 1.4;
+			}
+			.radio-list-container div {
+				color: rgb(255, 255, 255);
+				text-shadow: -1px 0 black, 0 1px black, 1px 0 black, 0 -1px black, 0 0 3px rgba(0,0,0,0.8);
+			}
+			.talking {
+				color: rgb(244, 196, 65) !important;
+			}
+		</style>
+
+		<script type="text/javascript">
+			// ============================================================
+			// PART 1: handheld radio indicator (call.png rows + on/off sfx)
+			// ============================================================
+			function updateIndicator(talkings) {
+				$('.indicator').html('');
+				for (const src in talkings) {
+					$('.indicator').append(`<tr><td><img class="w-100" src="call.png"></td><td>${talkings[src]}</td></tr>`);
+				}
+			}
+
+			// ============================================================
+			// PART 2: radio channel member list
+			// ============================================================
+			let revealed = false;
+			let names = {};
+
+			function renderItem(id) {
+				let listItem = document.getElementById("radio-list-item-" + id);
+				if (!listItem) return;
+				listItem.textContent = (revealed && names[id]) ? ("[" + id + "] " + names[id]) : ("[" + id + "]");
+			}
+
+			// ============================================================
+			// Single shared message listener for both parts
+			// ============================================================
+			window.addEventListener("message", function (event) {
+				var item = event.data;
+
+				// --- handheld radio messages ---
+				if (item.action === "indicator") {
+					updateIndicator(item.value);
+					return;
+				}
+				if (item.sound && item.volume) {
+					let audioEl = document.getElementById(item.sound);
+					if (audioEl) {
+						audioEl.load();
+						audioEl.volume = item.volume;
+						audioEl.play();
+					}
+					return;
+				}
+
+				// --- radio list messages ---
+				if (item.reveal != null) {
+					revealed = item.reveal;
+					for (let id in names) {
+						renderItem(id);
+					}
+				}
+
+				if (item.radioId != null) {
+					let radioListElem = document.getElementById("radio-list");
+
+					if (item.radioName != null) {
+						names[item.radioId] = item.radioName;
+
+						let listItem = document.getElementById("radio-list-item-" + item.radioId);
+						if (!listItem) {
+							listItem = document.createElement("div");
+							listItem.id = "radio-list-item-" + item.radioId;
+							radioListElem.appendChild(listItem);
+						}
+						renderItem(item.radioId);
+					} else if (item.radioTalking != null) {
+						// FIXED: guard against a message arriving for a player that
+						// isn't in the list yet (race condition) — used to throw and
+						// silently break the whole listener for every message after it.
+						let listItem = document.getElementById("radio-list-item-" + item.radioId);
+						if (listItem) {
+							listItem.className = item.radioTalking ? "talking" : "";
+						}
+					} else {
+						let listItem = document.getElementById("radio-list-item-" + item.radioId);
+						if (listItem) radioListElem.removeChild(listItem);
+						delete names[item.radioId];
+					}
+				}
+
+				if (item.clearRadioList) {
+					let radioListElem = document.getElementById("radio-list");
+					while (radioListElem.firstChild) {
+						radioListElem.removeChild(radioListElem.firstChild);
+					}
+					names = {};
+				}
+
+				if (item.changeVisibility) {
+					let radioListElem = document.getElementById("radio-list");
+					radioListElem.style.display = item.visible ? "block" : "none";
+				}
+			});
+		</script>
+	</head>
+	<body>
+		<table class="indicator"></table>
+		<audio id="audio_on" src="on.ogg"></audio>
+		<audio id="audio_off" src="off.ogg"></audio>
+
+		<div class="radio-list-container" id="radio-list"></div>
+	</body>
+</html>

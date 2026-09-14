@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Unique_AdminPanel</title>
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100vw;
+    height: 100vh;
+    background: transparent;
+    overflow: hidden;
+  }
+  iframe {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    border: none;
+    background: transparent;
+    /* Neither panel is open on a fresh resource start, so neither should
+       be able to swallow clicks meant for the game / the other panel.
+       The script below grants pointer-events to whichever one just
+       received a message meant for it. */
+    pointer-events: none;
+  }
+</style>
+</head>
+<body>
+<!--
+  This resource merges two previously-separate NUI apps (the AdminMenu
+  panel and the UNIQUE_AC anti-cheat panel), and FiveM only allows ONE
+  `ui_page` per resource. Rather than merging two large, independently
+  built single-page apps (html/adminmenu.html + app.js/style.css, and
+  ui/index.html + ui/js/script.js/ui/css/style.css) into one DOM - risking
+  duplicate element IDs and CSS collisions - each one keeps living in its
+  own iframe, completely isolated from the other. Neither app's internal
+  code (app.js / script.js / their CSS) was changed for this.
+
+  Two things this script does:
+  1. Forwards every SendNUIMessage from Lua into BOTH iframes. Safe
+     because the two apps use non-overlapping message shapes: AdminMenu's
+     app.js switches on `event.data.type`, UNIQUE_AC's script.js checks
+     `event.data.action` - a message meant for one is simply ignored by
+     the other (neither has a `default`/`else` branch that does
+     anything). NUI callbacks (the `fetch()` calls each app makes back to
+     Lua) are unaffected by the iframe nesting - they're plain fetch()
+     calls to this resource's own NUI host, independent of which frame
+     issues them.
+  2. Grants `pointer-events: auto` to whichever iframe a message was
+     shaped for, and takes it away from the other - otherwise an iframe
+     sitting on top in stacking order would silently swallow every click
+     meant for the panel underneath, even while its own content is fully
+     hidden (an iframe always captures clicks over its box from the
+     PARENT page's point of view, regardless of what - if anything - is
+     visible inside its own document). This only matters while the game
+     has actually handed mouse control to the NUI browser (SetNuiFocus
+     true) - once a panel closes and focus returns to the game, the
+     browser stops receiving mouse input entirely, so a stale
+     pointer-events value left over from the last open panel is
+     harmless.
+-->
+<iframe id="admin-frame" src="html/adminmenu.html"></iframe>
+<iframe id="ac-frame" src="ui/index.html"></iframe>
+<script>
+  window.addEventListener('message', function (event) {
+    var data = event.data || {};
+    var adminFrame = document.getElementById('admin-frame');
+    var acFrame = document.getElementById('ac-frame');
+
+    if (typeof data.type !== 'undefined') {
+      if (adminFrame) adminFrame.style.pointerEvents = 'auto';
+      if (acFrame) acFrame.style.pointerEvents = 'none';
+    } else if (typeof data.action !== 'undefined') {
+      if (acFrame) acFrame.style.pointerEvents = 'auto';
+      if (adminFrame) adminFrame.style.pointerEvents = 'none';
+    }
+
+    if (adminFrame && adminFrame.contentWindow) {
+      adminFrame.contentWindow.postMessage(event.data, '*');
+    }
+    if (acFrame && acFrame.contentWindow) {
+      acFrame.contentWindow.postMessage(event.data, '*');
+    }
+  });
+</script>
+</body>
+</html>

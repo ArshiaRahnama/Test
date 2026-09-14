@@ -1,0 +1,2 @@
+/startmatch <تعداد جون> <زمان به دقیقه> <SANDY یا ISLAND> <تعداد نفر تیم (اختیاری، ۱ تا ۴)>
+/startmatch 3 10 SANDY 2
