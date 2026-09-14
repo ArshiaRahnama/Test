@@ -774,6 +774,35 @@ Citizen.CreateThread(
     end
 )
 
+-- UPDATE V4: /evidencetest support. Blood/shell markers ONLY render while you're
+-- aiming the flashlight (see the "IsPlayerFreeAiming ... WEAPON_FLASHLIGHT" check
+-- near the top of this file) -- that's the core detection mechanic, not a bug -- so
+-- the instructions here explicitly tell the tester to equip and aim it.
+RegisterNetEvent("evidence:spawnTestEvidence")
+AddEventHandler(
+    "evidence:spawnTestEvidence",
+    function()
+        local ped = GetPlayerPed(-1)
+        local coords = GetEntityCoords(ped)
+        local interior = GetInteriorFromEntity(ped)
+
+        TriggerServerEvent("evidence:saveBlood", coords, interior)
+        TriggerServerEvent("evidence:saveShot", coords, Config.Text["pistol_category"], interior)
+
+        update = true -- forces the next flashlight-aim tick to pull the fresh evidence from the server
+
+        TriggerEvent(
+            "chat:addMessage",
+            {
+                args = {
+                    "[EVIDENCE TEST]",
+                    "Equip a flashlight (weapon wheel) and hold aim -- markers only show while aiming it. Walk within 1m and press E to pick up, then go to the analysis desk, press E to analyze, wait, press E again to read the report, then check the archive."
+                }
+            }
+        )
+    end
+)
+
 function getWeaponName(hash)
     local ped = GetPlayerPed(-1)
 
