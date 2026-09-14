@@ -493,9 +493,9 @@ end)
 
 CreateThread(function()
     local semiAutoWeapons = {
-        [`WEAPON_PISTOL`] = true, [`WEAPON_PISTOL_MK2`] = true, [`WEAPON_COMBATPISTOL`] = true,
-        [`WEAPON_APPISTOL`] = true, [`WEAPON_PISTOL50`] = true, [`WEAPON_SNSPISTOL`] = true,
-        [`WEAPON_HEAVYPISTOL`] = true, [`WEAPON_MARKSMANPISTOL`] = true, [`WEAPON_REVOLVER`] = true,
+        [GetHashKey("WEAPON_PISTOL")] = true, [GetHashKey("WEAPON_PISTOL_MK2")] = true, [GetHashKey("WEAPON_COMBATPISTOL")] = true,
+        [GetHashKey("WEAPON_APPISTOL")] = true, [GetHashKey("WEAPON_PISTOL50")] = true, [GetHashKey("WEAPON_SNSPISTOL")] = true,
+        [GetHashKey("WEAPON_HEAVYPISTOL")] = true, [GetHashKey("WEAPON_MARKSMANPISTOL")] = true, [GetHashKey("WEAPON_REVOLVER")] = true,
     }
     local shotTimestamps = {}
     local wasShooting = false

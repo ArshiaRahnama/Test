@@ -3,6 +3,14 @@ ESX = nil
 local shots = {}
 local blood = {}
 
+-- UPDATE V4 — fixed a real data-loss bug: blood/shots used to be keyed by os.time()
+-- (whole seconds). Any two pieces of evidence created in the same second (an
+-- automatic weapon, two scenes at once) silently overwrote each other. Now each
+-- piece gets its own incrementing id; `created` holds the timestamp separately for
+-- the age calculations (fresh/aged/old).
+local nextBloodId = 0
+local nextShotId = 0
+
 TriggerEvent(
     "esx:getSharedObject",
     function(obj)
@@ -151,8 +159,9 @@ AddEventHandler(
                 ["@owner"] = xPlayer.identifier
             },
             function(reportInfo)
-                local time = os.time()
-                blood[time] = {coords = coords, reportInfo = reportInfo[1], interior = interior}
+                local id = nextBloodId
+                nextBloodId = nextBloodId + 1
+                blood[id] = {coords = coords, reportInfo = reportInfo[1], interior = interior, created = os.time()}
             end
         )
     end
@@ -188,11 +197,51 @@ AddEventHandler(
                 ["@owner"] = xPlayer.identifier
             },
             function(reportInfo)
-                local time = os.time()
-                shots[time] = {coords = coords, bullet = bullet, reportInfo = reportInfo[1], interior = interior}
+                local id = nextShotId
+                nextShotId = nextShotId + 1
+                shots[id] = {coords = coords, bullet = bullet, reportInfo = reportInfo[1], interior = interior, created = os.time()}
             end
         )
     end
 )
 
+--[[
+    UPDATE V4 — /evidencetest
+    Lets you test the whole flow alone: sets your job to fbi grade 6 (so you pass
+    Config.JobRequired/JobGradeRequired), gives you a uvlight, then tells the client
+    to drop a blood + bullet-shell pair right at your feet. Gated behind Config.Debug
+    the same way esx_uniquejobs/detective gates its own kqtest* commands — set
+    Config.Debug = false (or delete this block) before going live.
+]]
+if Config.Debug then
+    RegisterCommand(
+        "evidencetest",
+        function(source)
+            if source == 0 then
+                return
+            end -- console has no job/inventory to give
 
+            local xPlayer = ESX.GetPlayerFromId(source)
+            if not xPlayer then
+                return
+            end
+
+            xPlayer.setJob("fbi", 6)
+            xPlayer.addInventoryItem("uvlight", 1)
+
+            TriggerClientEvent(
+                "chat:addMessage",
+                source,
+                {
+                    args = {
+                        "[EVIDENCE TEST]",
+                        "Job set to FBI (grade 6) and gave you a UV Light. Spawning a blood + bullet-shell pair at your feet..."
+                    }
+                }
+            )
+
+            TriggerClientEvent("evidence:spawnTestEvidence", source)
+        end,
+        false
+    )
+end
