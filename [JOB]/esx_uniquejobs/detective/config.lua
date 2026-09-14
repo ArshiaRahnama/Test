@@ -81,7 +81,7 @@ Config_detective.forensics = {
                          -- (see ESX.GenerateWeaponSerial in essentialmode/server/common.lua —
                          -- the same LAW-/DOJ-/GANG- serials your armories already hand out)
 
-    -- lc-inventory items police/ambulance receive when they collect evidence.
+    -- esx_inventory items police/ambulance receive when they collect evidence.
     -- Add these to your `items` table — see sql/kq_detective_forensics.sql.
     printItem = 'evidence_print',
     casingItem = 'evidence_casing',

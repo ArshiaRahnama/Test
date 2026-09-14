@@ -171,7 +171,7 @@ end)
 -- even weapons already properly given to the ped (essentialmode's
 -- esx:addWeapon already calls GiveWeaponToPed for everything in the loadout,
 -- hotbar-bound or not - the wheel just could never be opened to reach them).
--- Now only blocks the wheel while an lc-inventory UI is actually open (so it
+-- Now only blocks the wheel while an esx_inventory UI is actually open (so it
 -- doesn't fight with the custom inventory/hotbar controls while that's up),
 -- and explicitly re-enables switching the rest of the time.
 Citizen.CreateThread(function()

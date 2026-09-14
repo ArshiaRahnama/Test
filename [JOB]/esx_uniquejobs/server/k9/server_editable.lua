@@ -164,22 +164,22 @@ function GetVehicleItems(plate, type)
 
         return items
 
-    elseif CFG.INVENTORY == 'lc-inventory' then
+    elseif CFG.INVENTORY == 'esx_inventory' then
         if type == 'trunk' then
-            -- uses the GetTrunkItems export added to lc-inventory/server/apps/system/trunk.lua
-            -- (see lc-inventory-patch/ in the K9 integration package) - guarded with pcall
+            -- uses the GetTrunkItems export added to esx_inventory/server/apps/system/trunk.lua
+            -- (see esx_inventory-patch/ in the K9 integration package) - guarded with pcall
             -- in case that patch hasn't been applied/restarted yet, so a missing export
             -- fails clean instead of throwing a script error every time it's called.
             local ok, result = pcall(function()
-                return exports['lc-inventory']:GetTrunkItems(plate)
+                return exports['esx_inventory']:GetTrunkItems(plate)
             end)
             if not ok then
-                print('^1[k9] lc-inventory export "GetTrunkItems" not found - did you apply lc-inventory-patch/server/apps/system/trunk.lua and restart lc-inventory?^0')
+                print('^1[k9] esx_inventory export "GetTrunkItems" not found - did you apply esx_inventory-patch/server/apps/system/trunk.lua and restart esx_inventory?^0')
                 return nil
             end
             return result
         else
-            -- lc-inventory has no glovebox system
+            -- esx_inventory has no glovebox system
             return nil
         end
 

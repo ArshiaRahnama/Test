@@ -1,10 +1,10 @@
 CFG = {}
 
 CFG.FRAMEWORK = 'ESXOLD' -- 'QBCore', 'QBX', 'ESX', 'ESXOLD' or false to disable it
-CFG.INVENTORY = 'lc-inventory' -- 'qb-inventory', 'ox-inventory', 'qs-inventory', 'lc-inventory' or false to disable it
--- NOTE: 'lc-inventory' support added specifically for this server. It reads trunk
--- contents through a new export in lc-inventory/server/apps/system/trunk.lua
--- (see the patch provided alongside this script). lc-inventory has no glovebox
+CFG.INVENTORY = 'esx_inventory' -- 'qb-inventory', 'ox-inventory', 'qs-inventory', 'esx_inventory' or false to disable it
+-- NOTE: 'esx_inventory' support added specifically for this server. It reads trunk
+-- contents through a new export in esx_inventory/server/apps/system/trunk.lua
+-- (see the patch provided alongside this script). esx_inventory has no glovebox
 -- system, so k9searchcar will only ever detect items in the trunk, never the glovebox.
 CFG.TARGET = 'ox_target' -- 'qb-target', 'qtarget', 'ox_target' or false to disable it
 CFG.DATABASE = 'oxmysql' -- 'oxmysql', 'mysql-async' or false to disable

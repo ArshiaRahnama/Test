@@ -70,8 +70,8 @@ What changed under the hood
 
 Limitations
 -----------
-- lc-inventory has no glovebox system (only trunk), so k9searchcar can
+- esx_inventory has no glovebox system (only trunk), so k9searchcar can
   only ever find items in a vehicle's trunk — this is a limitation of
-  lc-inventory, not of K9. (Covered in the earlier lc-inventory patch,
+  esx_inventory, not of K9. (Covered in the earlier esx_inventory patch,
   unrelated to this integration — merge that in separately if you
   haven't already.)
