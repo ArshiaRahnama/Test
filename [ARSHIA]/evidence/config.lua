@@ -11,9 +11,13 @@ Config = {
 	-- FIXED for this server's `users` table (see [BASE]/database.sql): the original
 	-- columns (playerName, is_male) don't exist here and would throw a SQL error on
 	-- every report. This server's real columns are firstname, lastname, job, sex.
-	EvidenceReportInformationBullet = "firstname, lastname, job, sex",      -- The information displayd from users table in mysql in the evidence report (ONLY CHANGE IF YOU KNOW WHAT ARE YOU DOING)
-	EvidenceReportInformationFingerprint = "firstname, lastname, job, sex", -- The information displayd from users table in mysql in the evidence report (ONLY CHANGE IF YOU KNOW WHAT ARE YOU DOING)
-	EvidenceReportInformationBlood = "firstname, lastname, job, sex",       -- The information displayd from users table in mysql in the evidence report (ONLY CHANGE IF YOU KNOW WHAT ARE YOU DOING)
+	-- UPDATE V8: added `identifier` -- needed internally to link a suspect into the
+	-- esx_uniquejobs DOJ case system (see DojIntegration below). script.js filters
+	-- this field out of what's actually shown on screen, so it never leaks into the
+	-- visible report.
+	EvidenceReportInformationBullet = "firstname, lastname, job, sex, identifier",      -- The information displayd from users table in mysql in the evidence report (ONLY CHANGE IF YOU KNOW WHAT ARE YOU DOING)
+	EvidenceReportInformationFingerprint = "firstname, lastname, job, sex, identifier", -- The information displayd from users table in mysql in the evidence report (ONLY CHANGE IF YOU KNOW WHAT ARE YOU DOING)
+	EvidenceReportInformationBlood = "firstname, lastname, job, sex, identifier",       -- The information displayd from users table in mysql in the evidence report (ONLY CHANGE IF YOU KNOW WHAT ARE YOU DOING)
 
 	ShowBloodSplatsOnGround = true,                                       -- Show blood on the ground when player is shot
 	PlayClipboardAnimation = true,                                        -- Play clipboard animation when reading report
@@ -49,6 +53,26 @@ Config = {
 	--   exports['evidence']:SetIgnoreBullets(targetServerId, true)   -- server-side export
 	-- or for the local player only, from another client script:
 	--   exports['evidence']:SetIgnoreBullets(true)                  -- client-side export
+	--
+
+	--UPDATE V8
+	-- Full integration with esx_uniquejobs' DOJ case system
+	-- ([JOB]/esx_uniquejobs/server/doj_cases.lua). Every report filed at the
+	-- Analysis Desk now ALSO opens a real DOJ case (visible in their own /doj menu,
+	-- on top of staying in this resource's own archive) with every identified
+	-- suspect attached, and bumps each suspect's CAD wanted level.
+	DojIntegration = {
+		enabled = true,
+
+		-- exports['esx_uniquejobs']:CreateExternalCase's `priority` -- 'low' | 'medium' | 'high'.
+		casePriority = 'medium',
+
+		-- Also push each suspect's CAD WantedLevel, same as
+		-- Config_detective.dojIntegration.pushCadStatus / cadWantedLevel in
+		-- esx_uniquejobs/detective/config.lua. Must match one of Config_cs.CadWantedLevels.
+		pushCadWanted = true,
+		cadWantedLevel = 'wanted',
+	},
 	--
 
 	Text = {
@@ -94,6 +118,11 @@ Config = {
 		['date'] = 'Date',
 		['evidence_count'] = 'Items of evidence',
 		['close_hint'] = 'Press BACKSPACE or ESC to close',
+		--
+
+		--UPDATE V8
+		['doj_case_linked'] = 'Linked DOJ case #{caseid} -- suspects flagged wanted.',
+		['doj_case_failed'] = 'Report saved, but the DOJ case could not be opened (is esx_uniquejobs running?).',
 		--
 
 		['submachine_category'] = 'Submachine',

@@ -3,6 +3,9 @@
 // clickable close button wired back to the client via a NUI callback, and the same
 // generic field renderer as before (still just reflects whatever columns
 // Config.EvidenceReportInformation* pulls from `users`, nothing hardcoded).
+// UPDATE V8 — DOJ integration: shows the linked esx_uniquejobs case number in the
+// header when present, and hides the internal `identifier` field (added server-side
+// purely to link suspects into that case) from the visible evidence cards.
 
 function GetParentResourceName() {
     return window.location.hostname || 'evidence';
@@ -14,6 +17,10 @@ const EVIDENCE_ICON = {
     fingerprint: '🖐️'
 };
 
+// Fields pulled from `users` purely for internal linking (DOJ suspects), never meant
+// to be displayed on the printed report.
+const HIDDEN_FIELDS = ['identifier'];
+
 function fieldLabel(key) {
     return key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 }
@@ -23,6 +30,7 @@ function GenerateReport(payload) {
     const caseNumber = payload.caseNumber || '—';
     const analyzedBy = payload.analyzedBy || '—';
     const createdAt = payload.createdAt || 'Just now';
+    const dojCaseId = payload.dojCaseId;
 
     $('#main_container').css({display: 'block', bottom: '-80%'}).animate({bottom: '9%'}, 450, 'swing');
 
@@ -33,7 +41,7 @@ function GenerateReport(payload) {
     html += '  <div id="header_seal"></div>';
     html += '  <div id="header_details">';
     html += '    <div id="header_title">CASE FILE #' + caseNumber + '</div>';
-    html += '    <div id="header_subtitle">Forensics Division — Evidence Report</div>';
+    html += '    <div id="header_subtitle">Forensics Division — Evidence Report' + (dojCaseId ? ' · Linked to DOJ Case #' + dojCaseId : '') + '</div>';
     html += '    <div id="header_meta">';
     html += '      <div><span class="meta_label">Analyzed By</span><span class="meta_value">' + analyzedBy + '</span></div>';
     html += '      <div><span class="meta_label">Date</span><span class="meta_value">' + createdAt + '</span></div>';
@@ -57,6 +65,10 @@ function GenerateReport(payload) {
             html += '  <div class="evidence_fields">';
 
             for (const [key, value] of Object.entries(item['evidence'] || {})) {
+                if (HIDDEN_FIELDS.includes(key)) {
+                    continue;
+                }
+
                 html += '<div class="header_information_subblock">';
                 html += '  <h3>' + fieldLabel(key) + '</h3>';
                 html += '  <h4>' + (value === null || value === '' ? '—' : value) + '</h4>';
@@ -94,7 +106,8 @@ window.addEventListener('message', function (event) {
             evidence: JSON.parse(edata.evidence),
             caseNumber: edata.caseNumber,
             analyzedBy: edata.analyzedBy,
-            createdAt: edata.createdAt
+            createdAt: edata.createdAt,
+            dojCaseId: edata.dojCaseId
         });
     } else if (edata.type === 'close') {
         $('#main_container').html('');

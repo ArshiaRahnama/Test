@@ -32,8 +32,10 @@ ESX.RegisterServerCallback(
         -- epoch-ms number instead of text (a known driver quirk with DATETIME
         -- columns), which showed up as a huge meaningless number in the case file.
         -- DATE_FORMAT() forces it to always come back as a clean string.
+        -- UPDATE V8: now also returns doj_case_id so the archive can show which DOJ
+        -- case each report is linked to.
         MySQL.Async.fetchAll(
-            "SELECT `id`, `data`, `analyzed_by`, DATE_FORMAT(`created_at`, '%Y-%m-%d %H:%i') AS `created_at` FROM `evidence_storage` ORDER BY `id` DESC",
+            "SELECT `id`, `data`, `analyzed_by`, `doj_case_id`, DATE_FORMAT(`created_at`, '%Y-%m-%d %H:%i') AS `created_at` FROM `evidence_storage` ORDER BY `id` DESC",
             {},
             function(reports)
                 cb(reports)
@@ -59,6 +61,12 @@ AddEventHandler(
 -- hands back its real case number, officer name and timestamp (all from the DB, not
 -- guessed client-side) so the report screen can show accurate case-file metadata
 -- the instant it's filed.
+--
+-- UPDATE V8 — full DOJ integration: every filed report now ALSO opens a real case
+-- in esx_uniquejobs' own DOJ system (exports['esx_uniquejobs']:CreateExternalCase,
+-- see [JOB]/esx_uniquejobs/server/doj_cases.lua) with every identified suspect
+-- attached, and pushes each suspect's CAD wanted level -- while still keeping this
+-- resource's own archive (both, per Config.DojIntegration).
 ESX.RegisterServerCallback(
     "evidence:submitReport",
     function(source, cb, evidence)
@@ -76,13 +84,79 @@ ESX.RegisterServerCallback(
                 ["@officer"] = officerName
             },
             function(insertId)
-                MySQL.Async.fetchAll(
-                    "SELECT `id`, `analyzed_by`, DATE_FORMAT(`created_at`, '%Y-%m-%d %H:%i') AS `created_at` FROM `evidence_storage` WHERE `id` = @id",
-                    {["@id"] = insertId},
-                    function(rows)
-                        cb(rows[1])
+                local ok, items = pcall(json.decode, evidence)
+                items = ok and items or {}
+
+                -- Build a human-readable evidence summary + a deduped suspect list
+                -- (by identifier) for the DOJ case, straight from what the officer
+                -- actually collected.
+                local evidenceLines = {}
+                local suspects = {}
+                local seen = {}
+
+                for _, item in ipairs(items) do
+                    local info = item.evidence or {}
+                    local name = ((info.firstname or "Unknown") .. " " .. (info.lastname or ""))
+
+                    table.insert(
+                        evidenceLines,
+                        string.format(
+                            "- %s evidence links to %s (job: %s)",
+                            item.type or "Unknown",
+                            name,
+                            info.job or "unemployed"
+                        )
+                    )
+
+                    if info.identifier and not seen[info.identifier] then
+                        seen[info.identifier] = true
+                        table.insert(suspects, {identifier = info.identifier, name = name})
                     end
-                )
+                end
+
+                local function finish(dojCaseId)
+                    if dojCaseId then
+                        MySQL.Async.execute(
+                            "UPDATE `evidence_storage` SET `doj_case_id` = @caseId WHERE `id` = @id",
+                            {["@caseId"] = dojCaseId, ["@id"] = insertId}
+                        )
+
+                        if Config.DojIntegration.pushCadWanted then
+                            for _, suspect in ipairs(suspects) do
+                                MySQL.Async.execute(
+                                    "UPDATE `users` SET `WantedLevel` = @level WHERE `identifier` = @id",
+                                    {["@level"] = Config.DojIntegration.cadWantedLevel, ["@id"] = suspect.identifier}
+                                )
+                            end
+                        end
+                    end
+
+                    MySQL.Async.fetchAll(
+                        "SELECT `id`, `analyzed_by`, `doj_case_id`, DATE_FORMAT(`created_at`, '%Y-%m-%d %H:%i') AS `created_at` FROM `evidence_storage` WHERE `id` = @id",
+                        {["@id"] = insertId},
+                        function(rows)
+                            cb(rows[1])
+                        end
+                    )
+                end
+
+                if Config.DojIntegration.enabled and GetResourceState("esx_uniquejobs") == "started" then
+                    exports["esx_uniquejobs"]:CreateExternalCase(
+                        {
+                            title = "Forensics Report #" .. insertId .. " -- filed by " .. officerName,
+                            priority = Config.DojIntegration.casePriority,
+                            openedByName = officerName,
+                            openedByJob = Config.JobRequired,
+                            evidenceText = table.concat(evidenceLines, "\n"),
+                            suspects = suspects
+                        },
+                        function(dojCaseId)
+                            finish(dojCaseId)
+                        end
+                    )
+                else
+                    finish(nil)
+                end
             end
         )
     end

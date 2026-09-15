@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS `evidence_storage` (
   `data` longtext DEFAULT NULL,
   `analyzed_by` varchar(100) DEFAULT NULL,
   `created_at` datetime DEFAULT NULL,
+  `doj_case_id` int(11) DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -18,6 +19,7 @@ CREATE TABLE IF NOT EXISTS `evidence_storage` (
 -- re-creating the table (safe to run even if the columns already exist):
 -- ALTER TABLE `evidence_storage` ADD COLUMN IF NOT EXISTS `analyzed_by` varchar(100) DEFAULT NULL;
 -- ALTER TABLE `evidence_storage` ADD COLUMN IF NOT EXISTS `created_at` datetime DEFAULT NULL;
+-- ALTER TABLE `evidence_storage` ADD COLUMN IF NOT EXISTS `doj_case_id` int(11) DEFAULT NULL;
 
 -- The 'uvlight' usable item (ESX.RegisterUsableItem("uvlight", ...) in server/main.lua)
 -- did not exist in the `items` table, so it could never be given to a player.

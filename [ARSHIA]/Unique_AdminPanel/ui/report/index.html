@@ -10,16 +10,6 @@
 </head>
 
 <body>
-    <!-- DEBUG ONLY: always-visible marker, NOT gated by the 'no-active'
-         class or any JS logic - if you don't see this red banner
-         somewhere on screen after joining the server, this updated
-         index.html file is NOT the one being loaded (old cache / wrong
-         path / didn't actually get deployed) - that's the real bug to
-         chase, not anything inside script.js. Remove once confirmed. -->
-    <div style="position:fixed;top:0;left:0;width:100%;padding:6px;background:red;color:#fff;font-weight:bold;font-size:16px;z-index:999999;text-align:center;font-family:sans-serif;">
-        REPORT DEBUG FILE ACTIVE - v2 (if you see this, the updated ui/report/index.html IS loaded)
-    </div>
-
     <div class="loader">
         <div class="scanner">
             <span>Loading...</span>
@@ -97,69 +87,5 @@
 </body>
 <script src="nui://game/ui/jquery.js" type="text/javascript"></script>
 <script src="./js/script.js"></script>
-
-<!-- ============================================================
-     DEBUG ONLY - added to trace the "/report doesn't open, mouse
-     stuck" bug. Does NOT touch script.js (that file is obfuscated
-     3rd-party code, kept untouched). Pure observation:
-       1. logs every postMessage this iframe (the Report panel)
-          receives from the shell (html/index.html)
-       2. logs whenever #user-pannel / #admin-pannel actually gets
-          shown/hidden (class "no-active" added or removed) - this
-          tells us whether script.js's message handler is even
-          running and reaching the DOM
-       3. logs when THIS iframe's window gains/loses keyboard focus
-     Remove this whole <script> block once the bug is found.
-     ============================================================ -->
-<script>
-  // F8 فقط console.log صفحه‌ی اصلی (html/index.html) رو نشون میده، نه اینجا -
-  // برای همین علاوه بر console.log، هر پیام رو با fetch به یه NUI callback
-  // تو report_main.lua می‌فرستیم که با print() چاپش کنه و تو F8 دیده بشه.
-  function debugLog(msg) {
-    console.log('[REPORT-FRAME DEBUG] ' + msg);
-    try {
-      fetch('https://Unique_AdminPanel/reportFrameDebug', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json; charset=UTF-8' },
-        body: JSON.stringify({ msg: msg })
-      });
-    } catch (e) { /* NUI not ready yet, ignore */ }
-  }
-
-  debugLog('script loaded, waiting for messages/focus events...');
-
-  window.addEventListener('message', function (event) {
-    debugLog('postMessage received in report-frame: ' + JSON.stringify(event.data));
-  });
-
-  window.addEventListener('focus', function () {
-    debugLog('*** report-frame WINDOW GAINED KEYBOARD FOCUS ***');
-  });
-  window.addEventListener('blur', function () {
-    debugLog('report-frame window LOST keyboard focus');
-  });
-
-  function watchPanel(id) {
-    var el = document.getElementById(id);
-    if (!el) {
-      debugLog('!! element #' + id + ' NOT FOUND in DOM at script-load time !!');
-      return;
-    }
-    debugLog('watching #' + id + ' | initial classList=' + el.className);
-    new MutationObserver(function () {
-      var visible = !el.classList.contains('no-active');
-      debugLog('#' + id + ' classList changed -> ' + el.className + ' | now ' + (visible ? 'VISIBLE' : 'HIDDEN'));
-    }).observe(el, { attributes: true, attributeFilter: ['class'] });
-  }
-  watchPanel('user-pannel');
-  watchPanel('admin-pannel');
-
-  window.addEventListener('DOMContentLoaded', function () {
-    debugLog('DOMContentLoaded fired');
-  });
-  window.addEventListener('error', function (e) {
-    debugLog('!!! JS ERROR in report-frame: ' + e.message + ' | file: ' + e.filename + ' | line: ' + e.lineno);
-  });
-</script>
 
 </html>

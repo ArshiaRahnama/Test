@@ -423,9 +423,20 @@ function GenerateReport()
                     evidence = encoded,
                     caseNumber = caseInfo and caseInfo.id,
                     analyzedBy = caseInfo and caseInfo.analyzed_by,
-                    createdAt = caseInfo and caseInfo.created_at
+                    createdAt = caseInfo and caseInfo.created_at,
+                    dojCaseId = caseInfo and caseInfo.doj_case_id
                 }
             )
+
+            -- UPDATE V8: confirms in chat whether the DOJ case actually opened, since
+            -- it depends on esx_uniquejobs being started.
+            if caseInfo and caseInfo.doj_case_id then
+                SendTextMessage(
+                    Config.Text["doj_case_linked"]:gsub("{caseid}", tostring(caseInfo.doj_case_id))
+                )
+            elseif Config.DojIntegration.enabled then
+                SendTextMessage(Config.Text["doj_case_failed"])
+            end
 
             if Config.PlayClipboardAnimation then
                 TaskStartScenarioInPlace(ped, "WORLD_HUMAN_CLIPBOARD", 0, true)
@@ -456,7 +467,8 @@ function OpenArchiveEntry(entry)
                                 evidence = entry.data,
                                 caseNumber = entry.id,
                                 analyzedBy = entry.analyzed_by,
-                                createdAt = entry.created_at
+                                createdAt = entry.created_at,
+                                dojCaseId = entry.doj_case_id
                             }
                         )
                         open = true
@@ -486,6 +498,9 @@ function OpenArchive()
                 local desc = Config.Text["analyzed_by"] .. ": " .. tostring(v.analyzed_by or "?")
                 if v.created_at then
                     desc = desc .. "  •  " .. tostring(v.created_at)
+                end
+                if v.doj_case_id then
+                    desc = desc .. "  •  DOJ #" .. tostring(v.doj_case_id)
                 end
 
                 table.insert(

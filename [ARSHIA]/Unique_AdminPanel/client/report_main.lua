@@ -1,11 +1,4 @@
 -- تعریف متغیرهای اولیه و تنظیمات
-local Debug_PNGReport = true -- ست کن false بعد از پیدا کردن باگ
-local function dbg(fmt, ...)
-    if Debug_PNGReport then
-        print(("^5[PNG_ReportSystem DEBUG]^0 " .. fmt):format(...))
-    end
-end
-
 local lastCommandTime = 0
 local nuiFocusActive = false
 local debounceTime = 2000
@@ -88,31 +81,21 @@ end
 -- فرمان برای باز و بسته کردن پنل کاربر
 RegisterCommand(Client_Config.CommandForUser, function()
     local currentTime = GetGameTimer()
-    dbg("/%s pressed | now=%d lastCommandTime=%d diff=%d debounceTime=%d nuiFocusActive(BEFORE)=%s",
-        Client_Config.CommandForUser, currentTime, lastCommandTime, currentTime - lastCommandTime, debounceTime, tostring(nuiFocusActive))
-
     if currentTime - lastCommandTime > debounceTime then
         if not nuiFocusActive then
-            dbg("branch: OPEN user panel -> SendNUIMessage(action=%s) + SetNuiFocus(true,true)", actionShowUserPanel)
             SendNUIMessage({_pngReport = true, action = actionShowUserPanel})
             SetNuiFocus(true, true)
             nuiFocusActive = true
         else
-            dbg("branch: CLOSE user panel -> SendNUIMessage(action=%s) + SetNuiFocus(false,false)", actionHideUserPanel)
             SendNUIMessage({_pngReport = true, action = actionHideUserPanel})
             SetNuiFocus(false, false)
             nuiFocusActive = false
         end
         lastCommandTime = currentTime
-        dbg("nuiFocusActive(AFTER)=%s", tostring(nuiFocusActive))
     else
-        -- NOTE: lastCommandTime is shared between CommandForUser AND
-        -- CommandForAdmin (same variable, declared once above). Pressing
-        -- /report then /areport (or vice versa) within debounceTime(2s)
-        -- of EACH OTHER also hits this branch and does nothing but warn -
-        -- worth ruling out if you tested both commands back to back.
-        dbg("branch: DEBOUNCED (spam warning) - diff=%d <= debounceTime=%d. If you didn't press this command twice, check whether /%s was pressed recently (lastCommandTime is shared between both commands).",
-            currentTime - lastCommandTime, debounceTime, Client_Config.CommandForAdmin)
+        -- NOTE: lastCommandTime is shared between CommandForUser and
+        -- CommandForAdmin, so pressing /report then /areport (or vice
+        -- versa) within debounceTime(2s) of each other also lands here.
         sendNotification(spamWarning)
         lastCommandTime = currentTime
     end
@@ -120,33 +103,23 @@ end)
 
 -- فرمان برای باز و بسته کردن پنل ادمین با بررسی دسترسی
 RegisterCommand(Client_Config.CommandForAdmin, function()
-    dbg("/%s pressed | requesting access (permission=%s)", Client_Config.CommandForAdmin, tostring(Config_Shared.accessToAdminCommand))
     getAccess(Config_Shared.accessToAdminCommand, function(hasAccess)
-        dbg("access callback returned: hasAccess=%s", tostring(hasAccess))
         if not hasAccess then
-            dbg("STOPPED HERE: access denied by server (PNG_ReportSystem:Getaccess returned false) - this is why nothing opens.")
             return
         end
         local currentTime = GetGameTimer()
-        dbg("now=%d lastCommandTime=%d diff=%d debounceTime=%d nuiFocusActive(BEFORE)=%s",
-            currentTime, lastCommandTime, currentTime - lastCommandTime, debounceTime, tostring(nuiFocusActive))
         if currentTime - lastCommandTime > debounceTime then
             if not nuiFocusActive then
-                dbg("branch: OPEN admin panel -> SendNUIMessage(action=%s) + SetNuiFocus(true,true)", actionShowAdminPanel)
                 SendNUIMessage({_pngReport = true, action = actionShowAdminPanel})
                 SetNuiFocus(true, true)
                 nuiFocusActive = true
             else
-                dbg("branch: CLOSE admin panel -> SendNUIMessage(action=%s) + SetNuiFocus(false,false)", actionHideAdminPanel)
                 SendNUIMessage({_pngReport = true, action = actionHideAdminPanel})
                 SetNuiFocus(false, false)
                 nuiFocusActive = false
             end
             lastCommandTime = currentTime
-            dbg("nuiFocusActive(AFTER)=%s", tostring(nuiFocusActive))
         else
-            dbg("branch: DEBOUNCED (spam warning) - diff=%d <= debounceTime=%d. lastCommandTime is shared with /%s.",
-                currentTime - lastCommandTime, debounceTime, Client_Config.CommandForUser)
             sendNotification(spamWarning)
             lastCommandTime = currentTime
         end
@@ -179,19 +152,8 @@ AddEventHandler("PNG_ReportSystem:updateReportListAllAdmin", function()
     SendNUIMessage({_pngReport = true, action = actionUpdateReportList})
 end)
 
--- کانال دیباگ جداگونه: F8 کنسولِ کلاینت فقط console.log صفحه‌ی اصلی NUI
--- (html/index.html) رو نشون میده، نه چیزی که داخل یه iframe جدا (مثل
--- ui/report/index.html) لاگ بشه. برای همین گزارش‌های خودِ report-frame
--- به‌جای console.log از این مسیر (fetch -> این NUI callback -> print)
--- میان که تو F8 قطعاً دیده بشن.
-RegisterNUICallback("reportFrameDebug", function(data, cb)
-    dbg("[report-frame] %s", tostring(data and data.msg))
-    cb("ok")
-end)
-
 -- مدیریت درخواست‌های NUI callback
 RegisterNUICallback("action", function(data, cb)
-    dbg("NUI callback 'action' fired: action=%s (this confirms the report iframe's JS ran and posted back to Lua)", tostring(data and data.action))
     if data.action == actionCreateReport then
         TriggerServerEvent("PNG_ReportSystem:CreateNewRepot", data.data)
     elseif data.action == actionGetDataReport then
@@ -229,18 +191,12 @@ RegisterNUICallback("action", function(data, cb)
         -- open) would force SetNuiFocus(false,false) out from under that
         -- other panel without telling it to close, leaving it stuck
         -- rendered on screen with no working mouse/keyboard.
-        dbg("exit action received | nuiFocusActive(BEFORE)=%s", tostring(nuiFocusActive))
         if nuiFocusActive then
             SetNuiFocus(false, false)
             nuiFocusActive = false
-            dbg("-> SetNuiFocus(false,false) applied, nuiFocusActive(AFTER)=false")
-        else
-            dbg("-> IGNORED (nuiFocusActive was already false, so this exit did NOT come from a panel this script actually opened - likely a stale keyup/focus leak from another panel/iframe). If your mouse is stuck right after this line, the panel that's actually stuck open is NOT the report panel - check nui_panel.lua/ac_menu.lua's InAdminNui flag.")
         end
     elseif data.action == actionNotif then
         sendNotification(data.msg)
-    else
-        dbg("UNHANDLED action received: %s (no branch in this callback matches it - check for a typo/renamed action string between Lua and ui/report/js/script.js)", tostring(data.action))
     end
 end)
 

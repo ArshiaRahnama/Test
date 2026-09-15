@@ -31,17 +31,22 @@
 <body>
 <!--
   This resource merges three previously-separate NUI apps (the AdminMenu
-  panel, the UNIQUE_AC anti-cheat panel, and now the Report System panel),
-  and FiveM only allows ONE `ui_page` per resource. Rather than merging
-  large, independently built single-page apps (html/adminmenu.html +
-  app.js/style.css, ui/index.html + ui/js/script.js/ui/css/style.css, and
+  panel, the UNIQUE_AC anti-cheat panel, and the Report System panel), and
+  FiveM only allows ONE `ui_page` per resource. Rather than merging large,
+  independently built single-page apps (html/adminmenu.html + app.js/
+  style.css, ui/index.html + ui/js/script.js/ui/css/style.css, and
   ui/report/index.html + ui/report/js/script.js/ui/report/css/*.css) into
   one DOM - risking duplicate element IDs and CSS collisions - each one
   keeps living in its own iframe, completely isolated from the others.
-  Neither app's internal code (app.js / script.js / their CSS) was
-  changed for this.
+  Neither app's internal code (app.js / script.js / their CSS) was changed
+  for this.
 
-  Two things this script does:
+  NOTE ON PATHS: this file lives at html/index.html, so the browser
+  resolves the src="" paths below relative to the html/ folder, not the
+  resource root - adminmenu.html is a sibling (no "html/" prefix), the
+  other two need "../" to reach ui/ from inside html/.
+
+  Two things the script below does:
   1. Forwards every SendNUIMessage from Lua into ALL THREE iframes. Safe
      because AdminMenu's app.js switches on `event.data.type`, while both
      UNIQUE_AC's script.js AND the Report System's script.js check
@@ -49,87 +54,32 @@
      the other (neither has a `default`/`else` branch that does
      anything). Since UNIQUE_AC and the Report System BOTH key off
      `action`, Lua-side every Report System SendNUIMessage additionally
-     sets `_pngReport = true` so this shell (see below) can tell the two
-     apart for focus routing - script.js in either iframe just ignores
-     that extra field, it doesn't affect their own `data.action` checks.
-     NUI callbacks (the `fetch()` calls each app makes back to Lua) are
+     sets `_pngReport = true` so this shell can tell the two apart for
+     focus routing - script.js in either iframe just ignores that extra
+     field, it doesn't affect their own `data.action` checks. NUI
+     callbacks (the `fetch()` calls each app makes back to Lua) are
      unaffected by the iframe nesting - they're plain fetch() calls to
      this resource's own NUI host, independent of which frame issues them.
-  2. Grants `pointer-events: auto` to whichever iframe a message was
-     shaped for, and takes it away from the other two - otherwise an
-     iframe sitting on top in stacking order would silently swallow every
-     click meant for the panel underneath, even while its own content is
-     fully hidden (an iframe always captures clicks over its box from the
-     PARENT page's point of view, regardless of what - if anything - is
-     visible inside its own document). `_pngReport` is checked BEFORE the
-     generic `action` check so Report System messages route to
-     report-frame instead of being mistaken for ac-frame messages (both
-     use `action`). This only matters while the game has actually handed
-     mouse control to the NUI browser (SetNuiFocus true) - once a panel
-     closes and focus returns to the game, the browser stops receiving
-     mouse input entirely, so a stale pointer-events value left over from
-     the last open panel is harmless.
+  2. Grants `pointer-events: auto` (mouse) AND keyboard focus to whichever
+     iframe a message was shaped for, and takes pointer-events away from
+     the other two - otherwise an iframe sitting on top in stacking order
+     would silently swallow every click meant for the panel underneath,
+     even while its own content is fully hidden. The focus() call matters
+     because each app's own Escape-key handler is bound to its own
+     document - without moving keyboard focus along with pointer-events,
+     Escape could reach a panel that isn't the one actually open.
 -->
-<iframe id="admin-frame" src="html/adminmenu.html"></iframe>
-<iframe id="ac-frame" src="ui/index.html"></iframe>
-<iframe id="report-frame" src="ui/report/index.html"></iframe>
+<iframe id="admin-frame" src="adminmenu.html"></iframe>
+<iframe id="ac-frame" src="../ui/index.html"></iframe>
+<iframe id="report-frame" src="../ui/report/index.html"></iframe>
 <script>
-  var DEBUG_SHELL = true; // false کن بعد از پیدا کردن باگ
-
-  // این چک مستقیم از صفحه‌ی اصلی (که مطمئنیم console.log‌ش تو F8 دیده میشه،
-  // برخلاف کنسول داخل خودِ iframe‌ها) واقعاً چیزی که سرور برای
-  // ui/report/index.html میفرسته رو میخونه - مستقل از اینکه اون iframe لود
-  // بشه/اجرا بشه یا نه. اگه اینجا هم "HAS DEBUG BANNER: false" چاپ بشه،
-  // یعنی خودِ فایل رو دیسک/سرور هنوز نسخه‌ی قدیمیه، نه مشکل اجرای اسکریپت.
-  if (DEBUG_SHELL) {
-    fetch('ui/report/index.html', { cache: 'no-store' })
-      .then(function (r) { return r.text(); })
-      .then(function (text) {
-        console.log('[SHELL DEBUG] fetched ui/report/index.html directly | length=' + text.length +
-          ' | HAS DEBUG BANNER ("REPORT DEBUG FILE ACTIVE"): ' + (text.indexOf('REPORT DEBUG FILE ACTIVE') !== -1) +
-          ' | HAS old-vs-new hideuserpannel fix ("classList[\\'add\\']"): checked separately in script.js');
-      })
-      .catch(function (err) {
-        console.log('[SHELL DEBUG] FAILED to fetch ui/report/index.html:', err.message);
-      });
-
-    fetch('ui/report/js/script.js', { cache: 'no-store' })
-      .then(function (r) { return r.text(); })
-      .then(function (text) {
-        console.log('[SHELL DEBUG] fetched ui/report/js/script.js directly | length=' + text.length +
-          ' | HAS FIX (hideuserpannel now uses add, not remove): ' + (text.indexOf("_0x175)) userpannel[_0x102eb2(0x1b7)]['add']('no-active')") !== -1 || text.indexOf("'add']('no-active')") !== -1));
-      })
-      .catch(function (err) {
-        console.log('[SHELL DEBUG] FAILED to fetch ui/report/js/script.js:', err.message);
-      });
-  }
-
   window.addEventListener('message', function (event) {
     var data = event.data || {};
     var adminFrame = document.getElementById('admin-frame');
     var acFrame = document.getElementById('ac-frame');
     var reportFrame = document.getElementById('report-frame');
 
-    if (DEBUG_SHELL) {
-      console.log('[SHELL DEBUG] message received:', JSON.stringify(data),
-        '| frames found: admin=' + !!adminFrame, 'ac=' + !!acFrame, 'report=' + !!reportFrame);
-    }
-
-    // Granting pointer-events (mouse) to a frame without also moving keyboard
-    // focus to it left keyboard input (Escape in particular - see each app's
-    // own keyup/keydown handler) stuck on whichever iframe last held it,
-    // independent of which panel was actually visible. That's what caused
-    // the stuck-mouse/panel-won't-open bug after the Report System merge:
-    // Escape would silently fire the Report iframe's own exit handler
-    // (forcing SetNuiFocus(false,false) + reloading itself) while a
-    // completely different panel (with its own separate open/closed state,
-    // e.g. InAdminNui in nui_panel.lua) was the one actually on screen -
-    // leaving that panel's HTML stuck rendered with no NUI focus to close
-    // or reopen it. activate() now hands keyboard focus to whichever frame
-    // just received pointer-events, so Escape always reaches the panel
-    // that's actually open.
-    function activate(name, frame, others) {
-      if (DEBUG_SHELL) console.log('[SHELL DEBUG] activate() ->', name, '| frame found:', !!frame, '| has contentWindow:', !!(frame && frame.contentWindow));
+    function activate(frame, others) {
       if (frame) {
         frame.style.pointerEvents = 'auto';
         if (frame.contentWindow) frame.contentWindow.focus();
@@ -138,13 +88,11 @@
     }
 
     if (data._pngReport) {
-      activate('report-frame', reportFrame, [adminFrame, acFrame]);
+      activate(reportFrame, [adminFrame, acFrame]);
     } else if (typeof data.type !== 'undefined') {
-      activate('admin-frame', adminFrame, [acFrame, reportFrame]);
+      activate(adminFrame, [acFrame, reportFrame]);
     } else if (typeof data.action !== 'undefined') {
-      activate('ac-frame', acFrame, [adminFrame, reportFrame]);
-    } else if (DEBUG_SHELL) {
-      console.log('[SHELL DEBUG] message matched NO routing branch (no _pngReport, no .type, no .action) - pointer-events were NOT changed for this message.');
+      activate(acFrame, [adminFrame, reportFrame]);
     }
 
     if (adminFrame && adminFrame.contentWindow) {
