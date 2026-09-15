@@ -25,14 +25,14 @@ Config = {
 	CloseReportKeyAlt = 'ESC',                                            -- Second key that also closes the report (ESC's default pause menu is blocked while the report is open)
 	PickupEvidenceKey = 'E',                                              -- The key used to pick up evidence
 
-	EvidenceAlanysisLocation = vector3(-2268.14, 360.99, 179.75),         -- The place where the evidence will be analyzed and report generated
+	EvidenceAlanysisLocation = vector3(-420.08, 1122.67, 325.90),         -- The place where the evidence will be analyzed and report generated
 	TimeToAnalyze = 10000,                                                -- Time in miliseconds to analyze the given evidence
 	TimeToFindFingerprints = 3000,                                        -- Time in miliseconds to find fingerprints in a car
 
 	--UPDATE V2
 	RainRemovesEvidence = true,                              -- Removes evidence when it starts raining!
 	TimeBeforeCrimsCanDestory = 300,                         -- Seconds before Criminals can destroy evidence (300 is the time when evidence coolsdown and shows up as WARM)
-	EvidenceStorageLocation = vector3(-2271.13, 358.42, 179.75), -- The place where all evidence are being archived! You can view old evidence or delete it
+	EvidenceStorageLocation = vector3(-424.50, 1124.76, 325.85), -- The place where all evidence are being archived! You can view old evidence or delete it
 	--
 
 	--UPDATE V3

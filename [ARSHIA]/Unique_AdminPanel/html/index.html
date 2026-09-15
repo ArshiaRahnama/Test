@@ -74,24 +74,77 @@
 <iframe id="ac-frame" src="ui/index.html"></iframe>
 <iframe id="report-frame" src="ui/report/index.html"></iframe>
 <script>
+  var DEBUG_SHELL = true; // false کن بعد از پیدا کردن باگ
+
+  // این چک مستقیم از صفحه‌ی اصلی (که مطمئنیم console.log‌ش تو F8 دیده میشه،
+  // برخلاف کنسول داخل خودِ iframe‌ها) واقعاً چیزی که سرور برای
+  // ui/report/index.html میفرسته رو میخونه - مستقل از اینکه اون iframe لود
+  // بشه/اجرا بشه یا نه. اگه اینجا هم "HAS DEBUG BANNER: false" چاپ بشه،
+  // یعنی خودِ فایل رو دیسک/سرور هنوز نسخه‌ی قدیمیه، نه مشکل اجرای اسکریپت.
+  if (DEBUG_SHELL) {
+    fetch('ui/report/index.html', { cache: 'no-store' })
+      .then(function (r) { return r.text(); })
+      .then(function (text) {
+        console.log('[SHELL DEBUG] fetched ui/report/index.html directly | length=' + text.length +
+          ' | HAS DEBUG BANNER ("REPORT DEBUG FILE ACTIVE"): ' + (text.indexOf('REPORT DEBUG FILE ACTIVE') !== -1) +
+          ' | HAS old-vs-new hideuserpannel fix ("classList[\\'add\\']"): checked separately in script.js');
+      })
+      .catch(function (err) {
+        console.log('[SHELL DEBUG] FAILED to fetch ui/report/index.html:', err.message);
+      });
+
+    fetch('ui/report/js/script.js', { cache: 'no-store' })
+      .then(function (r) { return r.text(); })
+      .then(function (text) {
+        console.log('[SHELL DEBUG] fetched ui/report/js/script.js directly | length=' + text.length +
+          ' | HAS FIX (hideuserpannel now uses add, not remove): ' + (text.indexOf("_0x175)) userpannel[_0x102eb2(0x1b7)]['add']('no-active')") !== -1 || text.indexOf("'add']('no-active')") !== -1));
+      })
+      .catch(function (err) {
+        console.log('[SHELL DEBUG] FAILED to fetch ui/report/js/script.js:', err.message);
+      });
+  }
+
   window.addEventListener('message', function (event) {
     var data = event.data || {};
     var adminFrame = document.getElementById('admin-frame');
     var acFrame = document.getElementById('ac-frame');
     var reportFrame = document.getElementById('report-frame');
 
+    if (DEBUG_SHELL) {
+      console.log('[SHELL DEBUG] message received:', JSON.stringify(data),
+        '| frames found: admin=' + !!adminFrame, 'ac=' + !!acFrame, 'report=' + !!reportFrame);
+    }
+
+    // Granting pointer-events (mouse) to a frame without also moving keyboard
+    // focus to it left keyboard input (Escape in particular - see each app's
+    // own keyup/keydown handler) stuck on whichever iframe last held it,
+    // independent of which panel was actually visible. That's what caused
+    // the stuck-mouse/panel-won't-open bug after the Report System merge:
+    // Escape would silently fire the Report iframe's own exit handler
+    // (forcing SetNuiFocus(false,false) + reloading itself) while a
+    // completely different panel (with its own separate open/closed state,
+    // e.g. InAdminNui in nui_panel.lua) was the one actually on screen -
+    // leaving that panel's HTML stuck rendered with no NUI focus to close
+    // or reopen it. activate() now hands keyboard focus to whichever frame
+    // just received pointer-events, so Escape always reaches the panel
+    // that's actually open.
+    function activate(name, frame, others) {
+      if (DEBUG_SHELL) console.log('[SHELL DEBUG] activate() ->', name, '| frame found:', !!frame, '| has contentWindow:', !!(frame && frame.contentWindow));
+      if (frame) {
+        frame.style.pointerEvents = 'auto';
+        if (frame.contentWindow) frame.contentWindow.focus();
+      }
+      others.forEach(function (f) { if (f) f.style.pointerEvents = 'none'; });
+    }
+
     if (data._pngReport) {
-      if (reportFrame) reportFrame.style.pointerEvents = 'auto';
-      if (adminFrame) adminFrame.style.pointerEvents = 'none';
-      if (acFrame) acFrame.style.pointerEvents = 'none';
+      activate('report-frame', reportFrame, [adminFrame, acFrame]);
     } else if (typeof data.type !== 'undefined') {
-      if (adminFrame) adminFrame.style.pointerEvents = 'auto';
-      if (acFrame) acFrame.style.pointerEvents = 'none';
-      if (reportFrame) reportFrame.style.pointerEvents = 'none';
+      activate('admin-frame', adminFrame, [acFrame, reportFrame]);
     } else if (typeof data.action !== 'undefined') {
-      if (acFrame) acFrame.style.pointerEvents = 'auto';
-      if (adminFrame) adminFrame.style.pointerEvents = 'none';
-      if (reportFrame) reportFrame.style.pointerEvents = 'none';
+      activate('ac-frame', acFrame, [adminFrame, reportFrame]);
+    } else if (DEBUG_SHELL) {
+      console.log('[SHELL DEBUG] message matched NO routing branch (no _pngReport, no .type, no .action) - pointer-events were NOT changed for this message.');
     }
 
     if (adminFrame && adminFrame.contentWindow) {

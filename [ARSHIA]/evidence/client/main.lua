@@ -2,7 +2,11 @@
 --CORE EVIDENCE 2.0
 
 local Keys = {
-	["ESC"] = 322, ["F1"] = 288, ["F2"] = 289, ["F3"] = 170, ["F5"] = 166, ["F6"] = 167, ["F7"] = 168, ["F8"] = 169, ["F9"] = 56, ["F10"] = 57, 
+	-- UPDATE V7: fixed -- this table (copied from a widely-shared community list) had
+	-- ESC mapped to the wrong control ID (322), which is why ESC wasn't closing the
+	-- report. Verified against the official FiveM control reference: ESC is control
+	-- 200 (INPUT_FRONTEND_PAUSE_ALTERNATE).
+	["ESC"] = 200, ["F1"] = 288, ["F2"] = 289, ["F3"] = 170, ["F5"] = 166, ["F6"] = 167, ["F7"] = 168, ["F8"] = 169, ["F9"] = 56, ["F10"] = 57, 
 	["~"] = 243, ["1"] = 157, ["2"] = 158, ["3"] = 160, ["4"] = 164, ["5"] = 165, ["6"] = 159, ["7"] = 161, ["8"] = 162, ["9"] = 163, ["-"] = 84, ["="] = 83, ["BACKSPACE"] = 177, 
 	["TAB"] = 37, ["Q"] = 44, ["W"] = 32, ["E"] = 38, ["R"] = 45, ["T"] = 245, ["Y"] = 246, ["U"] = 303, ["P"] = 199, ["["] = 39, ["]"] = 40, ["ENTER"] = 18,
 	["CAPS"] = 137, ["A"] = 34, ["S"] = 8, ["D"] = 9, ["F"] = 23, ["G"] = 47, ["H"] = 74, ["K"] = 311, ["L"] = 182,
@@ -72,15 +76,22 @@ Citizen.CreateThread(
             Citizen.Wait(1)
 
             local playerid = PlayerId()
+            local playerPed = GetPlayerPed(-1)
 
-            if not IsPlayerFreeAiming(playerid) then
+            -- UPDATE V6 — the V5 fix used a native (IsFlashlightOn) that doesn't
+            -- actually exist in FiveM, causing a hard script error. Replaced with a
+            -- solid, well-documented check instead: WEAPON_FLASHLIGHT's beam is lit by
+            -- holding the aim control (control 25, INPUT_AIM) -- the same button an
+            -- officer holds in your screenshot -- so checking that control directly is
+            -- both correct and guaranteed to exist.
+            local flashlightActive =
+                GetSelectedPedWeapon(playerPed) == GetHashKey("WEAPON_FLASHLIGHT") and IsControlPressed(0, 25)
+
+            if not flashlightActive then
                 update = true
                 Citizen.Wait(500)
             else
-                local playerPed = GetPlayerPed(-1)
-
-                if IsPlayerFreeAiming(playerid) and GetSelectedPedWeapon(playerPed) == GetHashKey("WEAPON_FLASHLIGHT") then
-                    if update then
+                if update then
                         ESX.TriggerServerCallback(
                             "evidence:getData",
                             function(ans)
@@ -125,7 +136,7 @@ Citizen.CreateThread(
                         if GetDistanceBetweenCoords(s.coords, GetEntityCoords(playerPed)) < 5 then
                             DrawText3D(s.coords[1], s.coords[2], s.coords[3] - 0.5, Config.Text["blood_hologram"])
 
-                            local passed = time - t
+                            local passed = time - s.created
 
                             if passed > 300 and passed < 600 then
                                 DrawText3D(
@@ -193,7 +204,7 @@ Citizen.CreateThread(
                             else
                                 DrawText3D(s.coords[1], s.coords[2], s.coords[3] - 0.65, Config.Text["remove_evidence"])
                                 if IsControlJustReleased(0, Keys[Config.PickupEvidenceKey]) then
-                                    if (time - t) > Config.TimeBeforeCrimsCanDestory then
+                                    if (time - s.created) > Config.TimeBeforeCrimsCanDestory then
                                         local dict, anim =
                                             "weapons@first_person@aim_rng@generic@projectile@sticky_bomb@",
                                             "plant_floor"
@@ -263,7 +274,7 @@ Citizen.CreateThread(
                                 string.gsub(Config.Text["shell_hologram"], "{guncategory}", s.bullet)
                             )
 
-                            local passed = time - t
+                            local passed = time - s.created
 
                             if passed > 300 and passed < 600 then
                                 DrawText3D(
@@ -331,7 +342,7 @@ Citizen.CreateThread(
                             else
                                 DrawText3D(s.coords[1], s.coords[2], s.coords[3] - 0.65, Config.Text["remove_evidence"])
                                 if IsControlJustReleased(0, Keys[Config.PickupEvidenceKey]) then
-                                    if (time - t) > Config.TimeBeforeCrimsCanDestory then
+                                    if (time - s.created) > Config.TimeBeforeCrimsCanDestory then
                                         local dict, anim =
                                             "weapons@first_person@aim_rng@generic@projectile@sticky_bomb@",
                                             "plant_floor"
@@ -362,7 +373,6 @@ Citizen.CreateThread(
                             end
                         end
                     end
-                end
             end
         end
     end
@@ -774,6 +784,58 @@ Citizen.CreateThread(
     end
 )
 
+-- UPDATE V4: /evidencetest support. Blood/shell markers ONLY render while the
+-- flashlight is equipped AND the aim control is held (control 25 -- see the top of
+-- this file) -- that's the core detection mechanic, not a bug -- so the instructions
+-- here tell the tester to equip it and hold aim.
+-- UPDATE V6 — /evidencecoords: stand wherever you want the analysis desk / archive
+-- to actually be (e.g. inside your FBI HQ) and run this to print the exact
+-- vector3(...) for Config.EvidenceAlanysisLocation / EvidenceStorageLocation to
+-- chat, ready to copy-paste. Gated behind Config.Debug like the other test tools.
+if Config.Debug then
+    RegisterCommand(
+        "evidencecoords",
+        function()
+            local coords = GetEntityCoords(GetPlayerPed(-1))
+            local line =
+                string.format("vector3(%.2f, %.2f, %.2f)", coords.x, coords.y, coords.z)
+
+            TriggerEvent(
+                "chat:addMessage",
+                {
+                    args = {"[EVIDENCE TEST]", "Your current coords: " .. line}
+                }
+            )
+        end,
+        false
+    )
+end
+
+RegisterNetEvent("evidence:spawnTestEvidence")
+AddEventHandler(
+    "evidence:spawnTestEvidence",
+    function()
+        local ped = GetPlayerPed(-1)
+        local coords = GetEntityCoords(ped)
+        local interior = GetInteriorFromEntity(ped)
+
+        TriggerServerEvent("evidence:saveBlood", coords, interior)
+        TriggerServerEvent("evidence:saveShot", coords, Config.Text["pistol_category"], interior)
+
+        update = true -- forces the next flashlight-aim tick to pull the fresh evidence from the server
+
+        TriggerEvent(
+            "chat:addMessage",
+            {
+                args = {
+                    "[EVIDENCE TEST]",
+                    "Equip a flashlight (weapon wheel) and hold aim -- markers only show while aiming it. Walk within 1m and press E to pick up, then go to the analysis desk, press E to analyze, wait, press E again to read the report, then check the archive."
+                }
+            }
+        )
+    end
+)
+
 function getWeaponName(hash)
     local ped = GetPlayerPed(-1)
 
@@ -799,7 +861,7 @@ function getWeaponName(hash)
         return Config.Text["heavy_category"]
     end
 
-    return GetWeapontypeGroup(hash)
+    return Config.Text["unknown_category"] or "Unknown Weapon"
 end
 
 function DrawText3D(x, y, z, text)

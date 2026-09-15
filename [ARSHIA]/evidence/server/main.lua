@@ -28,8 +28,12 @@ ESX.RegisterServerCallback(
 ESX.RegisterServerCallback(
     "evidence:getStorageData",
     function(source, cb)
+        -- UPDATE V7: SELECT * let the DB driver hand back `created_at` as a raw
+        -- epoch-ms number instead of text (a known driver quirk with DATETIME
+        -- columns), which showed up as a huge meaningless number in the case file.
+        -- DATE_FORMAT() forces it to always come back as a clean string.
         MySQL.Async.fetchAll(
-            "SELECT * FROM `evidence_storage` ORDER BY `id` DESC",
+            "SELECT `id`, `data`, `analyzed_by`, DATE_FORMAT(`created_at`, '%Y-%m-%d %H:%i') AS `created_at` FROM `evidence_storage` ORDER BY `id` DESC",
             {},
             function(reports)
                 cb(reports)
@@ -73,7 +77,7 @@ ESX.RegisterServerCallback(
             },
             function(insertId)
                 MySQL.Async.fetchAll(
-                    "SELECT `id`, `analyzed_by`, `created_at` FROM `evidence_storage` WHERE `id` = @id",
+                    "SELECT `id`, `analyzed_by`, DATE_FORMAT(`created_at`, '%Y-%m-%d %H:%i') AS `created_at` FROM `evidence_storage` WHERE `id` = @id",
                     {["@id"] = insertId},
                     function(rows)
                         cb(rows[1])
