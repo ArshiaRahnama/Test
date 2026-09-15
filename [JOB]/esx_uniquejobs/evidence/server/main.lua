@@ -63,10 +63,15 @@ AddEventHandler(
 -- the instant it's filed.
 --
 -- UPDATE V8 — full DOJ integration: every filed report now ALSO opens a real case
--- in esx_uniquejobs' own DOJ system (exports['esx_uniquejobs']:CreateExternalCase,
--- see [JOB]/esx_uniquejobs/server/doj_cases.lua) with every identified suspect
--- attached, and pushes each suspect's CAD wanted level -- while still keeping this
--- resource's own archive (both, per Config.DojIntegration).
+-- in esx_uniquejobs' own DOJ system (see server/doj_cases.lua) with every identified
+-- suspect attached, and pushes each suspect's CAD wanted level -- while still keeping
+-- this resource's own archive (both, per Config_evidence.DojIntegration).
+-- UPDATE V9 — merged into esx_uniquejobs itself (was a standalone `evidence`
+-- resource). CreateExternalCase is now called directly as a plain global function
+-- (defined in server/doj_cases.lua, loaded earlier in fxmanifest.lua's
+-- server_scripts) instead of through exports['esx_uniquejobs'] -- there's no other
+-- resource to reach across anymore, and it can never NOT be "started" relative to
+-- this code, so that GetResourceState check is gone too.
 ESX.RegisterServerCallback(
     "evidence:submitReport",
     function(source, cb, evidence)
@@ -121,11 +126,11 @@ ESX.RegisterServerCallback(
                             {["@caseId"] = dojCaseId, ["@id"] = insertId}
                         )
 
-                        if Config.DojIntegration.pushCadWanted then
+                        if Config_evidence.DojIntegration.pushCadWanted then
                             for _, suspect in ipairs(suspects) do
                                 MySQL.Async.execute(
                                     "UPDATE `users` SET `WantedLevel` = @level WHERE `identifier` = @id",
-                                    {["@level"] = Config.DojIntegration.cadWantedLevel, ["@id"] = suspect.identifier}
+                                    {["@level"] = Config_evidence.DojIntegration.cadWantedLevel, ["@id"] = suspect.identifier}
                                 )
                             end
                         end
@@ -140,13 +145,13 @@ ESX.RegisterServerCallback(
                     )
                 end
 
-                if Config.DojIntegration.enabled and GetResourceState("esx_uniquejobs") == "started" then
-                    exports["esx_uniquejobs"]:CreateExternalCase(
+                if Config_evidence.DojIntegration.enabled then
+                    CreateExternalCase(
                         {
                             title = "Forensics Report #" .. insertId .. " -- filed by " .. officerName,
-                            priority = Config.DojIntegration.casePriority,
+                            priority = Config_evidence.DojIntegration.casePriority,
                             openedByName = officerName,
-                            openedByJob = Config.JobRequired,
+                            openedByJob = Config_evidence.JobRequired,
                             evidenceText = table.concat(evidenceLines, "\n"),
                             suspects = suspects
                         },
@@ -207,7 +212,7 @@ AddEventHandler(
             if NetworkGetEntityOwner(entity) ~= src then
                 MySQL.Async.fetchAll(
                     "SELECT " ..
-                        Config.EvidenceReportInformationFingerprint .. " FROM `users` WHERE identifier = @owner LIMIT 1",
+                        Config_evidence.EvidenceReportInformationFingerprint .. " FROM `users` WHERE identifier = @owner LIMIT 1",
                     {
                         ["@owner"] = xPlayer.identifier
                     },
@@ -216,10 +221,10 @@ AddEventHandler(
                     end
                 )
             else
-                TriggerClientEvent("evidence:SendTextMessage", src, Config.Text["no_fingerprints_found"])
+                TriggerClientEvent("evidence:SendTextMessage", src, Config_evidence.Text["no_fingerprints_found"])
             end
         else
-            TriggerClientEvent("evidence:SendTextMessage", src, Config.Text["no_fingerprints_found"])
+            TriggerClientEvent("evidence:SendTextMessage", src, Config_evidence.Text["no_fingerprints_found"])
         end
     end
 )
@@ -232,7 +237,7 @@ AddEventHandler(
         local xPlayer = ESX.GetPlayerFromId(src)
 
         MySQL.Async.fetchAll(
-            "SELECT " .. Config.EvidenceReportInformationBlood .. " FROM `users` WHERE identifier = @owner LIMIT 1",
+            "SELECT " .. Config_evidence.EvidenceReportInformationBlood .. " FROM `users` WHERE identifier = @owner LIMIT 1",
             {
                 ["@owner"] = xPlayer.identifier
             },
@@ -270,7 +275,7 @@ AddEventHandler(
         local xPlayer = ESX.GetPlayerFromId(src)
 
         MySQL.Async.fetchAll(
-            "SELECT " .. Config.EvidenceReportInformationBullet .. " FROM `users` WHERE identifier = @owner LIMIT 1",
+            "SELECT " .. Config_evidence.EvidenceReportInformationBullet .. " FROM `users` WHERE identifier = @owner LIMIT 1",
             {
                 ["@owner"] = xPlayer.identifier
             },
@@ -286,12 +291,12 @@ AddEventHandler(
 --[[
     UPDATE V4 — /evidencetest
     Lets you test the whole flow alone: sets your job to fbi grade 6 (so you pass
-    Config.JobRequired/JobGradeRequired), gives you a uvlight, then tells the client
-    to drop a blood + bullet-shell pair right at your feet. Gated behind Config.Debug
+    Config_evidence.JobRequired/JobGradeRequired), gives you a uvlight, then tells the client
+    to drop a blood + bullet-shell pair right at your feet. Gated behind Config_evidence.Debug
     the same way esx_uniquejobs/detective gates its own kqtest* commands — set
-    Config.Debug = false (or delete this block) before going live.
+    Config_evidence.Debug = false (or delete this block) before going live.
 ]]
-if Config.Debug then
+if Config_evidence.Debug then
     RegisterCommand(
         "evidencetest",
         function(source)

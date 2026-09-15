@@ -128,6 +128,10 @@ client_scripts {
 	'client/k9/target.lua',
 	'client/k9/camera.lua',
 	'client/k9/esx_menu.lua',
+
+	-- evidence (merged in from the standalone `evidence` resource)
+	'evidence/config.lua',
+	'evidence/client/main.lua',
 }
 
 server_scripts {
@@ -208,6 +212,12 @@ server_scripts {
 	-- K9 (merged in from the standalone k9 resource)
 	'server/k9/server_editable.lua',
 	'server/k9/server.lua',
+
+	-- evidence (merged in from the standalone `evidence` resource). Loaded after
+	-- server/doj_cases.lua above, since its DOJ integration calls that file's
+	-- CreateExternalCase directly as a plain global function now.
+	'evidence/config.lua',
+	'evidence/server/main.lua',
 }
 
 ui_page 'ui.html'
@@ -261,6 +271,14 @@ files {
 	-- taximeter
 	'taximeter/client/ui/*',
 	'taximeter/client/ui/**/*',
+
+	-- evidence (merged in from the standalone `evidence` resource)
+	'evidence/html/form.html',
+	'evidence/html/css.css',
+	'evidence/html/script.js',
+	'evidence/html/jquery-3.4.1.min.js',
+	'evidence/html/img/logo.png',
+	'evidence/html/img/report.jpg',
 }
 
 dependencies {

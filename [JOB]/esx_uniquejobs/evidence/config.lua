@@ -1,4 +1,4 @@
-Config = {
+Config_evidence = {
 	--UPDATE V4
 	-- Adds /evidencetest for trying the whole flow solo: sets your job to fbi grade 6,
 	-- gives you a UV Light, and spawns a blood + bullet-shell evidence pair at your feet.
@@ -56,11 +56,22 @@ Config = {
 	--
 
 	--UPDATE V8
-	-- Full integration with esx_uniquejobs' DOJ case system
-	-- ([JOB]/esx_uniquejobs/server/doj_cases.lua). Every report filed at the
-	-- Analysis Desk now ALSO opens a real DOJ case (visible in their own /doj menu,
-	-- on top of staying in this resource's own archive) with every identified
-	-- suspect attached, and bumps each suspect's CAD wanted level.
+	-- Full integration with esx_uniquejobs' DOJ case system (server/doj_cases.lua,
+	-- this same resource as of UPDATE V9 below). Every report filed at the Analysis
+	-- Desk now ALSO opens a real DOJ case (visible in the /doj menu, on top of
+	-- staying in this module's own archive) with every identified suspect attached,
+	-- and bumps each suspect's CAD wanted level.
+
+	--UPDATE V9
+	-- This whole module (was the standalone `evidence` resource) now lives inside
+	-- esx_uniquejobs, at evidence/. Same features, same database table
+	-- (`evidence_storage`, now created automatically by server/db_migrations.lua --
+	-- see evidence/install.sql, kept only for reference like this resource's other
+	-- *.sql files). Its NUI page is folded into the shared ui.html as an
+	-- always-present, click-through iframe (see ui.html) instead of its own
+	-- ui_page/fxmanifest.lua, and its DojIntegration call below now reaches
+	-- CreateExternalCase directly as a plain function instead of through
+	-- exports['esx_uniquejobs'].
 	DojIntegration = {
 		enabled = true,
 
@@ -122,7 +133,7 @@ Config = {
 
 		--UPDATE V8
 		['doj_case_linked'] = 'Linked DOJ case #{caseid} -- suspects flagged wanted.',
-		['doj_case_failed'] = 'Report saved, but the DOJ case could not be opened (is esx_uniquejobs running?).',
+		['doj_case_failed'] = 'Report saved, but the DOJ case could not be opened.',
 		--
 
 		['submachine_category'] = 'Submachine',

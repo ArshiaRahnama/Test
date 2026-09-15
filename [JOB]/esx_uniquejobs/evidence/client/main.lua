@@ -31,7 +31,7 @@ local analyzingDone = false
 -- UPDATE V3: split into two flags so either source can suppress bullet evidence
 -- independently -- manualIgnore is set by evidence:unmarkedBullets / the
 -- SetIgnoreBullets export (other resources), zoneIgnore is set automatically by the
--- Config.NoEvidenceZones check below (shooting ranges etc).
+-- Config_evidence.NoEvidenceZones check below (shooting ranges etc).
 local manualIgnore = false
 local zoneIgnore = false
 
@@ -134,43 +134,43 @@ Citizen.CreateThread(
                         end
 
                         if GetDistanceBetweenCoords(s.coords, GetEntityCoords(playerPed)) < 5 then
-                            DrawText3D(s.coords[1], s.coords[2], s.coords[3] - 0.5, Config.Text["blood_hologram"])
+                            Evidence_DrawText3D(s.coords[1], s.coords[2], s.coords[3] - 0.5, Config_evidence.Text["blood_hologram"])
 
                             local passed = time - s.created
 
                             if passed > 300 and passed < 600 then
-                                DrawText3D(
+                                Evidence_DrawText3D(
                                     s.coords[1],
                                     s.coords[2],
                                     s.coords[3] - 0.57,
-                                    Config.Text["blood_after_5_minutes"]
+                                    Config_evidence.Text["blood_after_5_minutes"]
                                 )
                             elseif passed > 600 then
-                                DrawText3D(
+                                Evidence_DrawText3D(
                                     s.coords[1],
                                     s.coords[2],
                                     s.coords[3] - 0.57,
-                                    Config.Text["blood_after_10_minutes"]
+                                    Config_evidence.Text["blood_after_10_minutes"]
                                 )
                             else
-                                DrawText3D(
+                                Evidence_DrawText3D(
                                     s.coords[1],
                                     s.coords[2],
                                     s.coords[3] - 0.57,
-                                    Config.Text["blood_after_0_minutes"]
+                                    Config_evidence.Text["blood_after_0_minutes"]
                                 )
                             end
                         end
 
                         if GetDistanceBetweenCoords(s.coords, GetEntityCoords(playerPed)) < 1 then
-                            if job == Config.JobRequired and grade >= Config.JobGradeRequired then
-                                DrawText3D(
+                            if job == Config_evidence.JobRequired and grade >= Config_evidence.JobGradeRequired then
+                                Evidence_DrawText3D(
                                     s.coords[1],
                                     s.coords[2],
                                     s.coords[3] - 0.65,
-                                    Config.Text["pick_up_evidence_text"]
+                                    Config_evidence.Text["pick_up_evidence_text"]
                                 )
-                                if IsControlJustReleased(0, Keys[Config.PickupEvidenceKey]) then
+                                if IsControlJustReleased(0, Keys[Config_evidence.PickupEvidenceKey]) then
                                     if #evidence < 3 then
                                         local dict, anim =
                                             "weapons@first_person@aim_rng@generic@projectile@sticky_bomb@",
@@ -194,17 +194,17 @@ Citizen.CreateThread(
                                         evidence[#evidence + 1] = {type = "blood", evidence = s.reportInfo}
                                         TriggerServerEvent("evidence:removeBlood", t)
                                         SendTextMessage(
-                                            string.gsub(Config.Text["evidence_colleted"], "{number}", #evidence)
+                                            string.gsub(Config_evidence.Text["evidence_colleted"], "{number}", #evidence)
                                         )
                                         PlaySoundFrontend(-1, "PICK_UP", "HUD_FRONTEND_DEFAULT_SOUNDSET", false)
                                     else
-                                        SendTextMessage(Config.Text["no_more_space"])
+                                        SendTextMessage(Config_evidence.Text["no_more_space"])
                                     end
                                 end
                             else
-                                DrawText3D(s.coords[1], s.coords[2], s.coords[3] - 0.65, Config.Text["remove_evidence"])
-                                if IsControlJustReleased(0, Keys[Config.PickupEvidenceKey]) then
-                                    if (time - s.created) > Config.TimeBeforeCrimsCanDestory then
+                                Evidence_DrawText3D(s.coords[1], s.coords[2], s.coords[3] - 0.65, Config_evidence.Text["remove_evidence"])
+                                if IsControlJustReleased(0, Keys[Config_evidence.PickupEvidenceKey]) then
+                                    if (time - s.created) > Config_evidence.TimeBeforeCrimsCanDestory then
                                         local dict, anim =
                                             "weapons@first_person@aim_rng@generic@projectile@sticky_bomb@",
                                             "plant_floor"
@@ -226,10 +226,10 @@ Citizen.CreateThread(
                                         blood[t] = nil
 
                                         TriggerServerEvent("evidence:removeBlood", t)
-                                        SendTextMessage(Config.Text["evidence_removed"])
+                                        SendTextMessage(Config_evidence.Text["evidence_removed"])
                                         PlaySoundFrontend(-1, "PICK_UP", "HUD_FRONTEND_DEFAULT_SOUNDSET", false)
                                     else
-                                        SendTextMessage(Config.Text["cooldown_before_pickup"])
+                                        SendTextMessage(Config_evidence.Text["cooldown_before_pickup"])
                                     end
                                 end
                             end
@@ -267,48 +267,48 @@ Citizen.CreateThread(
                         end
 
                         if GetDistanceBetweenCoords(s.coords, GetEntityCoords(playerPed)) < 5 then
-                            DrawText3D(
+                            Evidence_DrawText3D(
                                 s.coords[1],
                                 s.coords[2],
                                 s.coords[3] - 0.5,
-                                string.gsub(Config.Text["shell_hologram"], "{guncategory}", s.bullet)
+                                string.gsub(Config_evidence.Text["shell_hologram"], "{guncategory}", s.bullet)
                             )
 
                             local passed = time - s.created
 
                             if passed > 300 and passed < 600 then
-                                DrawText3D(
+                                Evidence_DrawText3D(
                                     s.coords[1],
                                     s.coords[2],
                                     s.coords[3] - 0.57,
-                                    Config.Text["shell_after_5_minutes"]
+                                    Config_evidence.Text["shell_after_5_minutes"]
                                 )
                             elseif passed > 600 then
-                                DrawText3D(
+                                Evidence_DrawText3D(
                                     s.coords[1],
                                     s.coords[2],
                                     s.coords[3] - 0.57,
-                                    Config.Text["shell_after_10_minutes"]
+                                    Config_evidence.Text["shell_after_10_minutes"]
                                 )
                             else
-                                DrawText3D(
+                                Evidence_DrawText3D(
                                     s.coords[1],
                                     s.coords[2],
                                     s.coords[3] - 0.57,
-                                    Config.Text["shell_after_0_minutes"]
+                                    Config_evidence.Text["shell_after_0_minutes"]
                                 )
                             end
                         end
 
                         if GetDistanceBetweenCoords(s.coords, GetEntityCoords(playerPed)) < 1 then
-                            if job == Config.JobRequired and grade >= Config.JobGradeRequired then
-                                DrawText3D(
+                            if job == Config_evidence.JobRequired and grade >= Config_evidence.JobGradeRequired then
+                                Evidence_DrawText3D(
                                     s.coords[1],
                                     s.coords[2],
                                     s.coords[3] - 0.65,
-                                    Config.Text["pick_up_evidence_text"]
+                                    Config_evidence.Text["pick_up_evidence_text"]
                                 )
-                                if IsControlJustReleased(0, Keys[Config.PickupEvidenceKey]) then
+                                if IsControlJustReleased(0, Keys[Config_evidence.PickupEvidenceKey]) then
                                     if #evidence < 3 then
                                         local dict, anim =
                                             "weapons@first_person@aim_rng@generic@projectile@sticky_bomb@",
@@ -332,17 +332,17 @@ Citizen.CreateThread(
                                         evidence[#evidence + 1] = {type = "bullet", evidence = s.reportInfo}
                                         TriggerServerEvent("evidence:removeShot", t)
                                         SendTextMessage(
-                                            string.gsub(Config.Text["evidence_colleted"], "{number}", #evidence)
+                                            string.gsub(Config_evidence.Text["evidence_colleted"], "{number}", #evidence)
                                         )
                                         PlaySoundFrontend(-1, "PICK_UP", "HUD_FRONTEND_DEFAULT_SOUNDSET", false)
                                     else
-                                        SendTextMessage(Config.Text["no_more_space"])
+                                        SendTextMessage(Config_evidence.Text["no_more_space"])
                                     end
                                 end
                             else
-                                DrawText3D(s.coords[1], s.coords[2], s.coords[3] - 0.65, Config.Text["remove_evidence"])
-                                if IsControlJustReleased(0, Keys[Config.PickupEvidenceKey]) then
-                                    if (time - s.created) > Config.TimeBeforeCrimsCanDestory then
+                                Evidence_DrawText3D(s.coords[1], s.coords[2], s.coords[3] - 0.65, Config_evidence.Text["remove_evidence"])
+                                if IsControlJustReleased(0, Keys[Config_evidence.PickupEvidenceKey]) then
+                                    if (time - s.created) > Config_evidence.TimeBeforeCrimsCanDestory then
                                         local dict, anim =
                                             "weapons@first_person@aim_rng@generic@projectile@sticky_bomb@",
                                             "plant_floor"
@@ -364,10 +364,10 @@ Citizen.CreateThread(
                                         shots[t] = nil
 
                                         TriggerServerEvent("evidence:removeShot", t)
-                                        SendTextMessage(Config.Text["evidence_removed"])
+                                        SendTextMessage(Config_evidence.Text["evidence_removed"])
                                         PlaySoundFrontend(-1, "PICK_UP", "HUD_FRONTEND_DEFAULT_SOUNDSET", false)
                                     else
-                                        SendTextMessage(Config.Text["cooldown_before_pickup"])
+                                        SendTextMessage(Config_evidence.Text["cooldown_before_pickup"])
                                     end
                                 end
                             end
@@ -390,18 +390,18 @@ function StartAnalysis()
     end
 
     if #evidence == 0 then
-        SendTextMessage(Config.Text["no_evidence_to_analyze"])
+        SendTextMessage(Config_evidence.Text["no_evidence_to_analyze"])
         return
     end
 
     Citizen.CreateThread(
         function()
-            SendTextMessage(Config.Text["evidence_being_analyzed"])
+            SendTextMessage(Config_evidence.Text["evidence_being_analyzed"])
             analyzing = true
-            Citizen.Wait(Config.TimeToAnalyze)
+            Citizen.Wait(Config_evidence.TimeToAnalyze)
             analyzing = false
             analyzingDone = true
-            SendTextMessage(Config.Text["read_evidence_report"])
+            SendTextMessage(Config_evidence.Text["read_evidence_report"])
         end
     )
 end
@@ -432,13 +432,13 @@ function GenerateReport()
             -- it depends on esx_uniquejobs being started.
             if caseInfo and caseInfo.doj_case_id then
                 SendTextMessage(
-                    Config.Text["doj_case_linked"]:gsub("{caseid}", tostring(caseInfo.doj_case_id))
+                    Config_evidence.Text["doj_case_linked"]:gsub("{caseid}", tostring(caseInfo.doj_case_id))
                 )
-            elseif Config.DojIntegration.enabled then
-                SendTextMessage(Config.Text["doj_case_failed"])
+            elseif Config_evidence.DojIntegration.enabled then
+                SendTextMessage(Config_evidence.Text["doj_case_failed"])
             end
 
-            if Config.PlayClipboardAnimation then
+            if Config_evidence.PlayClipboardAnimation then
                 TaskStartScenarioInPlace(ped, "WORLD_HUMAN_CLIPBOARD", 0, true)
             end
 
@@ -454,11 +454,11 @@ function OpenArchiveEntry(entry)
     lib.registerContext(
         {
             id = "evidence_archive_entry",
-            title = Config.Text["report_list"] .. entry.id,
+            title = Config_evidence.Text["report_list"] .. entry.id,
             menu = "evidence_archive",
             options = {
                 {
-                    title = Config.Text["view"],
+                    title = Config_evidence.Text["view"],
                     icon = "eye",
                     onSelect = function()
                         SendNUIMessage(
@@ -475,11 +475,11 @@ function OpenArchiveEntry(entry)
                     end
                 },
                 {
-                    title = Config.Text["delete"],
+                    title = Config_evidence.Text["delete"],
                     icon = "trash",
                     onSelect = function()
                         TriggerServerEvent("evidence:deleteEvidenceFromStorage", entry.id)
-                        SendTextMessage(Config.Text["evidence_deleted_from_archive"])
+                        SendTextMessage(Config_evidence.Text["evidence_deleted_from_archive"])
                     end
                 }
             }
@@ -495,7 +495,7 @@ function OpenArchive()
             local options = {}
 
             for _, v in ipairs(data) do
-                local desc = Config.Text["analyzed_by"] .. ": " .. tostring(v.analyzed_by or "?")
+                local desc = Config_evidence.Text["analyzed_by"] .. ": " .. tostring(v.analyzed_by or "?")
                 if v.created_at then
                     desc = desc .. "  •  " .. tostring(v.created_at)
                 end
@@ -506,7 +506,7 @@ function OpenArchive()
                 table.insert(
                     options,
                     {
-                        title = Config.Text["report_list"] .. v.id,
+                        title = Config_evidence.Text["report_list"] .. v.id,
                         description = desc,
                         icon = "folder-open",
                         onSelect = function()
@@ -523,7 +523,7 @@ function OpenArchive()
             lib.registerContext(
                 {
                     id = "evidence_archive",
-                    title = Config.Text["evidence_archive"],
+                    title = Config_evidence.Text["evidence_archive"],
                     options = options
                 }
             )
@@ -536,28 +536,28 @@ Citizen.CreateThread(
     function()
         exports.ox_target:addBoxZone(
             {
-                coords = Config.EvidenceAlanysisLocation,
+                coords = Config_evidence.EvidenceAlanysisLocation,
                 size = vector3(1.6, 1.6, 2.0),
                 rotation = 0.0,
                 debug = false,
                 options = {
                     {
-                        label = Config.Text["analyze_evidence"],
+                        label = Config_evidence.Text["analyze_evidence"],
                         icon = "fa-solid fa-magnifying-glass",
                         distance = 2.0,
                         canInteract = function()
-                            return job == Config.JobRequired and grade >= Config.JobGradeRequired and
+                            return job == Config_evidence.JobRequired and grade >= Config_evidence.JobGradeRequired and
                                 not analyzing and
                                 not analyzingDone
                         end,
                         onSelect = StartAnalysis
                     },
                     {
-                        label = Config.Text["read_evidence_report"],
+                        label = Config_evidence.Text["read_evidence_report"],
                         icon = "fa-solid fa-file-shield",
                         distance = 2.0,
                         canInteract = function()
-                            return job == Config.JobRequired and grade >= Config.JobGradeRequired and analyzingDone
+                            return job == Config_evidence.JobRequired and grade >= Config_evidence.JobGradeRequired and analyzingDone
                         end,
                         onSelect = GenerateReport
                     }
@@ -567,17 +567,17 @@ Citizen.CreateThread(
 
         exports.ox_target:addBoxZone(
             {
-                coords = Config.EvidenceStorageLocation,
+                coords = Config_evidence.EvidenceStorageLocation,
                 size = vector3(1.6, 1.6, 2.0),
                 rotation = 0.0,
                 debug = false,
                 options = {
                     {
-                        label = Config.Text["open_evidence_archive"],
+                        label = Config_evidence.Text["open_evidence_archive"],
                         icon = "fa-solid fa-box-archive",
                         distance = 2.0,
                         canInteract = function()
-                            return job == Config.JobRequired and grade >= Config.JobGradeRequired
+                            return job == Config_evidence.JobRequired and grade >= Config_evidence.JobGradeRequired
                         end,
                         onSelect = OpenArchive
                     }
@@ -607,11 +607,11 @@ Citizen.CreateThread(
             Citizen.Wait(0)
 
             if open then
-                DisableControlAction(0, Keys[Config.CloseReportKeyAlt], true)
+                DisableControlAction(0, Keys[Config_evidence.CloseReportKeyAlt], true)
 
                 if
-                    IsControlJustReleased(0, Keys[Config.CloseReportKey]) or
-                        IsControlJustReleased(0, Keys[Config.CloseReportKeyAlt])
+                    IsControlJustReleased(0, Keys[Config_evidence.CloseReportKey]) or
+                        IsControlJustReleased(0, Keys[Config_evidence.CloseReportKeyAlt])
                  then
                     SendNUIMessage({type = "close"})
                     ClearPedTasks(GetPlayerPed(-1))
@@ -656,21 +656,21 @@ AddEventHandler(
     function(report)
         Citizen.CreateThread(
             function()
-                SendTextMessage(Config.Text["analyzing_car"])
+                SendTextMessage(Config_evidence.Text["analyzing_car"])
 
                 local dict, anim = "anim@heists@prison_heiststation@cop_reactions", "cop_b_idle"
                 ESX.Streaming.RequestAnimDict(dict)
                 TaskPlayAnim(GetPlayerPed(-1), dict, anim, 8.0, 1.0, 1000, 16, 0.0, false, false, false)
 
-                Citizen.Wait(Config.TimeToFindFingerprints)
+                Citizen.Wait(Config_evidence.TimeToFindFingerprints)
 
                 if #evidence < 3 then
                     evidence[#evidence + 1] = {type = "fingerprint", evidence = report}
 
-                    SendTextMessage(string.gsub(Config.Text["evidence_colleted"], "{number}", #evidence))
+                    SendTextMessage(string.gsub(Config_evidence.Text["evidence_colleted"], "{number}", #evidence))
                     PlaySoundFrontend(-1, "PICK_UP", "HUD_FRONTEND_DEFAULT_SOUNDSET", false)
                 else
-                    SendTextMessage(Config.Text["no_more_space"])
+                    SendTextMessage(Config_evidence.Text["no_more_space"])
                 end
             end
         )
@@ -695,7 +695,7 @@ exports(
     end
 )
 
--- UPDATE V3: automatically suppresses bullet evidence near Config.NoEvidenceZones
+-- UPDATE V3: automatically suppresses bullet evidence near Config_evidence.NoEvidenceZones
 -- (shooting ranges, firing academies) -- checked once a second, not every tick.
 Citizen.CreateThread(
     function()
@@ -705,7 +705,7 @@ Citizen.CreateThread(
             local coords = GetEntityCoords(GetPlayerPed(-1))
             local inZone = false
 
-            for _, zone in ipairs(Config.NoEvidenceZones) do
+            for _, zone in ipairs(Config_evidence.NoEvidenceZones) do
                 if #(coords - zone.coords) <= zone.radius then
                     inZone = true
                     break
@@ -731,7 +731,7 @@ AddEventHandler("evidence:checkForFingerprints",
         if IsPedInAnyVehicle(GetPlayerPed(-1), false) then
             TriggerServerEvent("evidence:LastInCar", NetworkGetNetworkIdFromEntity(last))
         else
-            SendTextMessage(Config.Text["not_in_vehicle"])
+            SendTextMessage(Config_evidence.Text["not_in_vehicle"])
         end
     end
 )
@@ -740,7 +740,7 @@ Citizen.CreateThread(
     function()
         while true do
             Citizen.Wait(5000)
-            if Config.RainRemovesEvidence then
+            if Config_evidence.RainRemovesEvidence then
                 if GetRainLevel() > 0.3 then
                     TriggerServerEvent("evidence:removeEverything")
                     Citizen.Wait(10000)
@@ -762,7 +762,7 @@ Citizen.CreateThread(
                 if HasEntityBeenDamagedByAnyPed(ped) then
                     ClearEntityLastDamageEntity(ped)
 
-                    if Config.ShowBloodSplatsOnGround then
+                    if Config_evidence.ShowBloodSplatsOnGround then
                         local stain =
                             CreateObject(
                             GetHashKey("p_bloodsplat_s"),
@@ -805,9 +805,9 @@ Citizen.CreateThread(
 -- here tell the tester to equip it and hold aim.
 -- UPDATE V6 — /evidencecoords: stand wherever you want the analysis desk / archive
 -- to actually be (e.g. inside your FBI HQ) and run this to print the exact
--- vector3(...) for Config.EvidenceAlanysisLocation / EvidenceStorageLocation to
--- chat, ready to copy-paste. Gated behind Config.Debug like the other test tools.
-if Config.Debug then
+-- vector3(...) for Config_evidence.EvidenceAlanysisLocation / EvidenceStorageLocation to
+-- chat, ready to copy-paste. Gated behind Config_evidence.Debug like the other test tools.
+if Config_evidence.Debug then
     RegisterCommand(
         "evidencecoords",
         function()
@@ -835,7 +835,7 @@ AddEventHandler(
         local interior = GetInteriorFromEntity(ped)
 
         TriggerServerEvent("evidence:saveBlood", coords, interior)
-        TriggerServerEvent("evidence:saveShot", coords, Config.Text["pistol_category"], interior)
+        TriggerServerEvent("evidence:saveShot", coords, Config_evidence.Text["pistol_category"], interior)
 
         update = true -- forces the next flashlight-aim tick to pull the fresh evidence from the server
 
@@ -855,31 +855,37 @@ function getWeaponName(hash)
     local ped = GetPlayerPed(-1)
 
     if GetWeapontypeGroup(hash) == -957766203 then
-        return Config.Text["submachine_category"]
+        return Config_evidence.Text["submachine_category"]
     end
     if GetWeapontypeGroup(hash) == 416676503 then
-        return Config.Text["pistol_category"]
+        return Config_evidence.Text["pistol_category"]
     end
     if GetWeapontypeGroup(hash) == 860033945 then
-        return Config.Text["shotgun_category"]
+        return Config_evidence.Text["shotgun_category"]
     end
     if GetWeapontypeGroup(hash) == 970310034 then
-        return Config.Text["assault_category"]
+        return Config_evidence.Text["assault_category"]
     end
     if GetWeapontypeGroup(hash) == 1159398588 then
-        return Config.Text["lightmachine_category"]
+        return Config_evidence.Text["lightmachine_category"]
     end
     if GetWeapontypeGroup(hash) == -1212426201 then
-        return Config.Text["sniper_category"]
+        return Config_evidence.Text["sniper_category"]
     end
     if GetWeapontypeGroup(hash) == -1569042529 then
-        return Config.Text["heavy_category"]
+        return Config_evidence.Text["heavy_category"]
     end
 
-    return Config.Text["unknown_category"] or "Unknown Weapon"
+    return Config_evidence.Text["unknown_category"] or "Unknown Weapon"
 end
 
-function DrawText3D(x, y, z, text)
+-- UPDATE V9: renamed from DrawText3D -- now that this file lives inside
+-- esx_uniquejobs, that name collided with the *different* global DrawText3D(x,
+-- y, z, text, rect) already defined in client/k9/client_editable.lua and used by
+-- client/k9/client.lua's tracking hint. Since this file loads after the K9
+-- files, an unrenamed DrawText3D here would have silently overwritten K9's
+-- version (Lua globals are last-write-wins) and broken its tracking display.
+function Evidence_DrawText3D(x, y, z, text)
     local onScreen, _x, _y = World3dToScreen2d(x, y, z)
     local px, py, pz = table.unpack(GetGameplayCamCoord())
     local dist = GetDistanceBetweenCoords(px, py, pz, x, y, z, 1)

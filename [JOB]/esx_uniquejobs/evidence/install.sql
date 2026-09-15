@@ -1,5 +1,10 @@
--- evidence — install SQL for UniqueRP (ESXOLD) server
--- Import this once via phpMyAdmin/HeidiSQL before starting the resource.
+-- evidence/ (merged into esx_uniquejobs) -- install SQL for UniqueRP (ESXOLD) server
+--
+-- NOTE: kept only as human-readable schema documentation. `evidence_storage`
+-- and the `uvlight` items row are now created/added automatically on resource
+-- start by server/db_migrations.lua (see its evidence/ section) -- you do NOT
+-- need to run this file by hand for a normal install/update.
+--
 -- Matches the schema used in [BASE]/database.sql on this server.
 
 -- Archive table used by evidence:getStorageData / addEvidenceToStorage / deleteEvidenceFromStorage

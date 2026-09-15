@@ -349,6 +349,18 @@ CreateThread(function()
 			PRIMARY KEY (`id`),
 			KEY `identifier` (`identifier`)
 		)]],
+
+		-- evidence/ module (merged in from the standalone `evidence` resource).
+		-- `doj_case_id` links a filed report to the DOJ case
+		-- evidence/server/main.lua opens for it via CreateExternalCase above.
+		[[CREATE TABLE IF NOT EXISTS `evidence_storage` (
+			`id` INT(11) NOT NULL AUTO_INCREMENT,
+			`data` LONGTEXT DEFAULT NULL,
+			`analyzed_by` VARCHAR(100) DEFAULT NULL,
+			`created_at` DATETIME DEFAULT NULL,
+			`doj_case_id` INT(11) DEFAULT NULL,
+			PRIMARY KEY (`id`)
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4]],
 	}
 
 	for _, sql in ipairs(createStatements) do
@@ -382,6 +394,14 @@ CreateThread(function()
 	-- no external upload host is configured. Only runs on servers where
 	-- this table was already created with the older VARCHAR(500).
 	EnsureColumnType('dept_mugshots', 'photo_url', 'mediumtext', "`photo_url` MEDIUMTEXT NOT NULL")
+
+	-- evidence/ module: the 'uvlight' usable item (ESX.RegisterUsableItem("uvlight",
+	-- ...) in evidence/server/main.lua) needs a matching row in `items`, or it can
+	-- never be given to a player. REPLACE INTO is idempotent -- safe every start,
+	-- and updates the label/limit if an older row already exists.
+	MySQL.Sync.execute(
+		"REPLACE INTO `items` (`name`, `label`, `limit`, `rare`, `can_remove`) VALUES ('uvlight', 'UV Light', 1, 0, 1)"
+	)
 
 	print('[esx_uniquejobs] Database migrations checked -- all tables/columns present.')
 end)
