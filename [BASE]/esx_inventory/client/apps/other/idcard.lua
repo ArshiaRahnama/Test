@@ -2,12 +2,30 @@ local sex = nil
 local typeCard = nil
 local image = nil
 
+-- FIX: the mugshot export lives in an optional external resource
+-- (MugShotBase64). If it isn't installed/started, calling it directly
+-- would throw and leave `image` nil (broken ID card). This wraps it so a
+-- missing/failing resource always falls back to Config.PictureIdCard
+-- instead of erroring.
+local function safeGetMugshot(entity)
+    if GetResourceState('MugShotBase64') ~= 'started' then
+        return Config.PictureIdCard
+    end
+    local ok, result = pcall(function()
+        return exports["MugShotBase64"]:GetMugShotBase64(entity, false)
+    end)
+    if ok and result then
+        return result
+    end
+    return Config.PictureIdCard
+end
+
 
 RegisterNUICallback('lookCard', function(data)
     if Config.ActiveMugShot == false then
         image = Config.PictureIdCard 
     else
-        image = exports["MugShotBase64"]:GetMugShotBase64(PlayerPedId(), false)
+        image = safeGetMugshot(PlayerPedId())
     end
     SendNUIMessage({
         action = "open:idCard", 
@@ -42,9 +60,10 @@ AddEventHandler('lgd:lookCard', function(networkId, data)
 
         local entity = NetworkGetEntityFromNetworkId(networkId)
         if DoesEntityExist(entity) then
-            image = exports["MugShotBase64"]:GetMugShotBase64(entity, false)
+            image = safeGetMugshot(entity)
         else
             debugprint("Entity with this ID in netword " .. networkId .. " does not exist.")
+            image = Config.PictureIdCard
         end
     end
     SendNUIMessage({

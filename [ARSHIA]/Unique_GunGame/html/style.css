@@ -1,0 +1,208 @@
+:root {
+    --panel: rgba(16, 19, 22, 0.82);
+    --panel-edge: rgba(255, 255, 255, 0.08);
+    --accent: #ff7a1a;
+    --accent-dim: #7a3d10;
+    --steel: #7d93ac;
+    --text: #eceef0;
+    --text-dim: #97a0a8;
+    --gold: #e8b94b;
+    --silver: #c7cdd3;
+    --bronze: #c88a4c;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    overflow: hidden;
+    font-family: 'Bahnschrift', 'Segoe UI Semibold', 'Arial Narrow', sans-serif;
+    color: var(--text);
+}
+
+.hidden {
+    display: none !important;
+}
+
+.panel {
+    background: var(--panel);
+    border: 1px solid var(--panel-edge);
+    backdrop-filter: blur(2px);
+}
+
+/* ===== Countdown ===== */
+
+#countdown {
+    position: fixed;
+    top: 60px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 260px;
+    padding: 14px 24px 18px;
+    text-align: center;
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 14px 100%, 0 calc(100% - 14px));
+    border-top: 2px solid var(--accent);
+}
+
+.countdown-label {
+    font-size: 13px;
+    letter-spacing: 0.5px;
+    color: var(--text-dim);
+    margin-bottom: 2px;
+}
+
+.countdown-number {
+    font-size: 46px;
+    font-weight: 700;
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+}
+
+/* ===== Round timer ===== */
+
+#timer {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    padding: 8px 16px;
+    clip-path: polygon(10px 0, 100% 0, 100% 100%, 0 100%);
+    border-left: 2px solid var(--steel);
+}
+
+.timer-tag {
+    font-size: 11px;
+    letter-spacing: 1px;
+    color: var(--text-dim);
+}
+
+.timer-value {
+    font-size: 20px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--text);
+}
+
+.timer-value.urgent {
+    color: var(--accent);
+}
+
+/* ===== Scoreboard ===== */
+
+#scoreboard {
+    position: fixed;
+    top: 24px;
+    left: 24px;
+    width: 300px;
+    padding: 0 0 8px;
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 16px 100%, 0 calc(100% - 16px));
+}
+
+.scoreboard-head {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--panel-edge);
+    border-top: 2px solid var(--accent);
+}
+
+.scoreboard-title {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    color: var(--accent);
+}
+
+.scoreboard-columns {
+    display: grid;
+    grid-template-columns: 28px 1fr 40px 50px;
+    padding: 6px 16px 4px;
+    font-size: 10px;
+    letter-spacing: 0.5px;
+    color: var(--text-dim);
+}
+
+.scoreboard-row {
+    display: grid;
+    grid-template-columns: 28px 1fr 40px 50px;
+    align-items: center;
+    padding: 6px 16px;
+    font-size: 13px;
+    border-left: 2px solid transparent;
+}
+
+.scoreboard-row:nth-child(odd) {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.scoreboard-row .rank {
+    color: var(--text-dim);
+    font-variant-numeric: tabular-nums;
+}
+
+.scoreboard-row .name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.scoreboard-row .level,
+.scoreboard-row .kills {
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+}
+
+.scoreboard-row .kills {
+    color: var(--accent);
+    font-weight: 600;
+}
+
+.scoreboard-row.rank-1 { border-left-color: var(--gold); }
+.scoreboard-row.rank-2 { border-left-color: var(--silver); }
+.scoreboard-row.rank-3 { border-left-color: var(--bronze); }
+
+/* ===== Kill feed ===== */
+
+#killfeed {
+    position: fixed;
+    top: 100px;
+    right: 24px;
+    width: 280px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: flex-end;
+}
+
+.killfeed-item {
+    background: var(--panel);
+    border: 1px solid var(--panel-edge);
+    border-right: 2px solid var(--accent);
+    padding: 6px 14px;
+    font-size: 12px;
+    white-space: nowrap;
+    clip-path: polygon(8px 0, 100% 0, 100% 100%, 0 100%);
+    animation: killfeed-in 0.18s ease-out, killfeed-out 0.4s ease-in 3.6s forwards;
+}
+
+.killfeed-item .victim {
+    color: var(--accent);
+    font-weight: 600;
+}
+
+@keyframes killfeed-in {
+    from { opacity: 0; transform: translateX(20px); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes killfeed-out {
+    from { opacity: 1; }
+    to   { opacity: 0; }
+}

@@ -20,6 +20,7 @@
     <link rel="stylesheet" type="text/css" href="assets/css/hud.css">
     <link rel="stylesheet" type="text/css" href="assets/css/notif.css">
     <link rel="stylesheet" type="text/css" href="assets/css/fonts.css">
+    <link rel="stylesheet" type="text/css" href="assets/css/extras.css">
     <link rel="stylesheet" type="text/css" href="../../config/config.css">
 
 
@@ -79,7 +80,15 @@
                 <div class="novalue-left-part">
                     <div class="value-left-part" id="weightBar"></div>
                 </div>
-                <input type="text" id="itemSearch" class="item-search-box" placeholder="Search" autocomplete="off">
+                <div class="search-sort-row">
+                    <input type="text" id="itemSearch" class="item-search-box" placeholder="Search" autocomplete="off">
+                    <div class="sort-buttons" id="sortButtons">
+                        <button type="button" class="sort-btn" data-sort="weight" title="Sort by weight"><i class="fas fa-weight-hanging"></i></button>
+                        <button type="button" class="sort-btn" data-sort="name" title="Sort by name"><i class="fas fa-sort-alpha-down"></i></button>
+                        <button type="button" class="sort-btn" data-sort="rank" title="Sort by rank"><i class="fas fa-gem"></i></button>
+                        <button type="button" class="sort-btn" data-sort="category" title="Sort by category"><i class="fas fa-layer-group"></i></button>
+                    </div>
+                </div>
             </div>
             
             <div id="left-inventory">
@@ -128,6 +137,12 @@
                     <span id="translateDelete">DELETE</span>
                     <div class="raccours2">
                         <img src="assets/images/TOP-BUTTONS-4-ICON.png" alt="">
+                    </div>
+                </div>
+                <div class="top-button-drop" id="dropItem">
+                    <span id="translateDrop">DROP</span>
+                    <div class="raccours2">
+                        <i class="fas fa-arrow-down"></i>
                     </div>
                 </div>
             </div>
@@ -208,6 +223,31 @@
     </div>
     <div class="notification"></div>
     <div class="iconNotif"></div>
+
+    <!-- Right-click context menu (Use / Give / Drop / Inspect) -->
+    <div id="itemContextMenu" class="item-context-menu">
+        <div class="context-item" data-action="use"><i class="fas fa-hand-pointer"></i><span id="ctxUse">Use</span></div>
+        <div class="context-item" data-action="give"><i class="fas fa-people-arrows"></i><span id="ctxGive">Give</span></div>
+        <div class="context-item" data-action="drop"><i class="fas fa-arrow-down"></i><span id="ctxDrop">Drop</span></div>
+        <div class="context-item" data-action="scan"><i class="fas fa-satellite-dish"></i><span id="ctxScan">Scan Serial</span></div>
+        <div class="context-item" data-action="inspect"><i class="fas fa-search"></i><span id="ctxInspect">Inspect</span></div>
+    </div>
+
+    <!-- Item inspect modal -->
+    <div id="itemInspect" class="item-inspect-overlay">
+        <div class="item-inspect-card">
+            <div class="item-inspect-close" id="itemInspectClose">&times;</div>
+            <div class="item-inspect-image-wrap">
+                <img id="itemInspectImage" src="" alt="">
+            </div>
+            <div class="item-inspect-info">
+                <div class="item-inspect-label" id="itemInspectLabel"></div>
+                <div class="item-inspect-rank" id="itemInspectRank"></div>
+                <div class="item-inspect-row"><span id="itemInspectCountLabel">Quantity</span><span id="itemInspectCount"></span></div>
+                <div class="item-inspect-row"><span id="itemInspectWeightLabel">Total weight</span><span id="itemInspectWeight"></span></div>
+            </div>
+        </div>
+    </div>
 
     <div id="keyboard-input">
         <div class="title"></div>
@@ -299,6 +339,15 @@
         $("#translateSex").html(_U('idcard_sex'));
         $("#translateHeight").html(_U('idcard_height'));
         $("#translateSignature").html(_U('idcard_signature'));
+
+        $("#translateDrop").html(_U('drop'));
+        $("#ctxUse").html(_U('use'));
+        $("#ctxGive").html(_U('give'));
+        $("#ctxDrop").html(_U('drop'));
+        $("#ctxScan").html(_U('scan'));
+        $("#ctxInspect").html(_U('inspect'));
+        $("#itemInspectCountLabel").html(_U('quantite') || 'Quantity');
+        $("#itemSearch").attr('placeholder', _U('search_placeholder'));
         
     });
 </script>

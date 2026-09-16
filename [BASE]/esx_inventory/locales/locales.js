@@ -21,6 +21,15 @@ Translations['fr'] = {
     'idcard_signature': 'SIGNATURE',
 
     'help_interfaces': 'Interface lente: cochez la case \'NUI in-process GPU\' dans les paramètres du launcher Fivem Souris bloquée: changez la méthode d\'entrée dans les paramètres du jeu, catégorie clavier/souris',
+
+    'drop': 'JETER',
+    'inspect': 'INSPECTER',
+    'sort_weight': 'Poids',
+    'sort_name': 'Nom',
+    'sort_rank': 'Rareté',
+    'sort_category': 'Catégorie',
+    'search_placeholder': 'Rechercher',
+    'scan': 'SCANNER',
 };
 
 // Translations in English
@@ -43,6 +52,15 @@ Translations['en'] = {
     'idcard_signature': 'SIGNATURE',
 
     'help_interfaces': 'Slow interface: Check the \'NUI in-process GPU\' option in the Fivem launcher settings Blocked mouse: Change the input method in the game settings, keyboard/mouse category',
+
+    'drop': 'DROP',
+    'inspect': 'INSPECT',
+    'sort_weight': 'Weight',
+    'sort_name': 'Name',
+    'sort_rank': 'Rank',
+    'sort_category': 'Category',
+    'search_placeholder': 'Search',
+    'scan': 'SCAN',
 };
 
 // Translations in Spanish
@@ -65,6 +83,15 @@ Translations['es'] = {
     'idcard_signature': 'Firma',
 
     'help_interfaces': 'Interfaz lenta: Marcar la opción "NUI in-process GPU" en la configuración del launcher de Fivem Ratón bloqueado: Cambiar el método de entrada en la configuración del juego, categoría teclado/ratón',
+
+    'drop': 'SOLTAR',
+    'inspect': 'INSPECCIONAR',
+    'sort_weight': 'Peso',
+    'sort_name': 'Nombre',
+    'sort_rank': 'Rareza',
+    'sort_category': 'Categoría',
+    'search_placeholder': 'Buscar',
+    'scan': 'ESCANEAR',
 };
 
 

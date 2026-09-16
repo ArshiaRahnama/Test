@@ -709,6 +709,7 @@ function loadPlayerInventory(result, coffre, category, poid)
                                         image = Config.Pictures[accounts[key].name],
                                         usable = false,
                                         rare = false,
+                                        rank = 'common',
                                         weight = 0
                                     }
                                     table.insert(items, accountData)
@@ -729,6 +730,7 @@ function loadPlayerInventory(result, coffre, category, poid)
                                 usable = true,
                                 value = v.number,
                                 rare = false,
+                                rank = 'common',
                                 weight = 0
                             }
                             table.insert(items, dataInv.phone)
@@ -750,6 +752,7 @@ function loadPlayerInventory(result, coffre, category, poid)
                                 id = v.id,
                                 usable = true,
                                 rare = true,
+                                rank = 'rare',
                                 slot = nil
                             }
                             table.insert(items, idcardData)
@@ -791,6 +794,8 @@ function loadPlayerInventory(result, coffre, category, poid)
                                             image = Config.Pictures[dataInv.inventory[key].name],
                                             usable = true,
                                             rare = false,
+                                            rank = Config.GetItemRank(dataInv.inventory[key].name),
+                                            weight = dataInv.inventory[key].weight,
                                             slot = fast
                                         })
                                     end
@@ -800,6 +805,7 @@ function loadPlayerInventory(result, coffre, category, poid)
                             dataInv.inventory[key].usable = true
                             dataInv.inventory[key].image = Config.Pictures[dataInv.inventory[key].name]
                             dataInv.inventory[key].count = dataInv.inventory[key].count
+                            dataInv.inventory[key].rank = Config.GetItemRank(dataInv.inventory[key].name)
                             table.insert(items, dataInv.inventory[key])
                         end
                     end
@@ -825,6 +831,7 @@ function loadPlayerInventory(result, coffre, category, poid)
                             if dataInv.weapons[key].serial then
                                 dataInv.weapons[key].label = dataInv.weapons[key].label .. ' #' .. dataInv.weapons[key].serial
                             end
+                            dataInv.weapons[key].rank = Config.GetItemRank(dataInv.weapons[key].name)
                             if json.encode(Inv.FastWeapons) ~= "[]" then
                                 -- FIX: see the identical fix + full explanation a
                                 -- few dozen lines above this, in the items block -
@@ -843,6 +850,7 @@ function loadPlayerInventory(result, coffre, category, poid)
                                             image = Config.Pictures[dataInv.weapons[key].name],
                                             usable = true,
                                             rare = false,
+                                            rank = dataInv.weapons[key].rank,
                                             slot = fast
                                         })
                                     end
@@ -866,6 +874,8 @@ function loadPlayerInventory(result, coffre, category, poid)
                             id = v.id,
                             usable = true,
                             rare = true,
+                            rank = Config.GetClotheRank(v.type, v.clothe),
+                            isNew = Config.IsClotheNew(v.type, v.clothe),
                             slot = nil
                         }
                         table.insert(items, dataInv.clothes2)
@@ -891,6 +901,7 @@ function loadPlayerInventory(result, coffre, category, poid)
                             image = Config.Pictures['cash'],
                             usable = false,
                             rare = false,
+                            rank = 'common',
                             weight = 0
                         }
                         table.insert(items, accountData)
@@ -915,6 +926,8 @@ function loadPlayerInventory(result, coffre, category, poid)
                                             image = Config.Pictures[dataInv.inventory[key].name],
                                             usable = true,
                                             rare = false,
+                                            rank = Config.GetItemRank(dataInv.inventory[key].name),
+                                            weight = dataInv.inventory[key].weight,
                                             slot = fast
                                         })
                                     end
@@ -924,6 +937,7 @@ function loadPlayerInventory(result, coffre, category, poid)
                             dataInv.inventory[key].usable = true
                             dataInv.inventory[key].image = Config.Pictures[dataInv.inventory[key].name]
                             dataInv.inventory[key].count = dataInv.inventory[key].amount
+                            dataInv.inventory[key].rank = Config.GetItemRank(dataInv.inventory[key].name)
                             table.insert(items, dataInv.inventory[key])
                         end
                     end
@@ -941,6 +955,8 @@ function loadPlayerInventory(result, coffre, category, poid)
                             id = v.id,
                             usable = true,
                             rare = true,
+                            rank = Config.GetClotheRank(v.type, v.clothe),
+                            isNew = Config.IsClotheNew(v.type, v.clothe),
                             slot = nil
                         }
                         table.insert(items, dataInv.clothes2)
@@ -989,6 +1005,8 @@ RegisterNUICallback('category', function(data)
                                     image = Config.Pictures[dataInv.inventory[key].name],
                                     usable = true,
                                     rare = false,
+                                    rank = Config.GetItemRank(dataInv.inventory[key].name),
+                                    weight = dataInv.inventory[key].weight,
                                     slot = fast
                                 })
                             end
@@ -997,6 +1015,7 @@ RegisterNUICallback('category', function(data)
                     dataInv.inventory[key].type = "item_standard"
                     dataInv.inventory[key].usable = true
                     dataInv.inventory[key].image = Config.Pictures[dataInv.inventory[key].name]
+                    dataInv.inventory[key].rank = Config.GetItemRank(dataInv.inventory[key].name)
                     table.insert(items, dataInv.inventory[key])
                 end
             end
@@ -1019,6 +1038,7 @@ RegisterNUICallback('category', function(data)
                     if dataInv.weapons[key].serial then
                         dataInv.weapons[key].label = dataInv.weapons[key].label .. ' #' .. dataInv.weapons[key].serial
                     end
+                    dataInv.weapons[key].rank = Config.GetItemRank(dataInv.weapons[key].name)
                     if json.encode(Inv.FastWeapons) ~= "[]" then
                         -- FIX: same redundant-outer-loop duplication bug as above -
                         -- this is the other one that could duplicate a weapon
@@ -1034,6 +1054,7 @@ RegisterNUICallback('category', function(data)
                                     image = Config.Pictures[dataInv.weapons[key].name],
                                     usable = true,
                                     rare = false,
+                                    rank = dataInv.weapons[key].rank,
                                     slot = fast
                                 })
                             end
@@ -1057,6 +1078,8 @@ RegisterNUICallback('category', function(data)
                     id = v.id,
                     usable = true,
                     rare = true,
+                    rank = Config.GetClotheRank(v.type, v.clothe),
+                    isNew = Config.IsClotheNew(v.type, v.clothe),
                     slot = nil
                 }
                 table.insert(items, dataInv.clothes2)
@@ -1141,20 +1164,40 @@ RegisterNUICallback('useItem', function(data)
             local ped = PlayerPedId()
             if not weaponLock then
                 weaponLock = true
+                local weaponClass = Config.GetWeaponClass(data.item.name)
+                local weaponSounds = Config.WeaponSounds[weaponClass]
                 if  weaponEquiped ~= data.item.name then
                     weaponEquiped = data.item.name
                     SetCurrentPedWeapon(ped, data.item.name, true)
+                    if weaponSounds and weaponSounds.equip then
+                        PlaySoundFrontend(-1, weaponSounds.equip.name, weaponSounds.equip.set, true)
+                    end
                     Wait(150)
                     weaponLock = false
                 else 
                     weaponEquiped = nil
                     SetCurrentPedWeapon(ped, 'WEAPON_UNARMED', true)
+                    if weaponSounds and weaponSounds.holster then
+                        PlaySoundFrontend(-1, weaponSounds.holster.name, weaponSounds.holster.set, true)
+                    end
                     Wait(150)
                     weaponLock = false
                 end 
             end
 
         elseif data.item.type == "item_vetement" then
+            local jobName = PlayerData and PlayerData.job and PlayerData.job.name
+            local lock = Config.GetClotheFactionLock(data.item.name, data.item.value)
+            if lock then
+                local allowed = false
+                for _, j in ipairs(lock) do
+                    if j == jobName then allowed = true break end
+                end
+                if not allowed then
+                    NotificationInInventory(Locales[Config.Language]['cloth_faction_wear'] or 'Your job does not allow you to wear this item.', 'error')
+                    return
+                end
+            end
             Inventaire:ApplyClothes(data.item.value)
             RefreshPedScreen()
         elseif data.item.type == "item_idcard" then

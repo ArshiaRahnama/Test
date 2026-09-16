@@ -117,6 +117,26 @@ Locales['en'] = {
     ['no_backpack'] = "You aren't wearing a backpack.",
     --
     ['no_player_handsup'] = 'The player must raise their hands.',
+    -- drop
+    ['drop_full_ground'] = 'Too many items on the ground right now, try again shortly.',
+    ['pickup_item'] = 'You picked up x%s %s',
+    ['drop_prompt'] = 'Pick up %s',
+    ['translateDrop'] = 'DROP',
+    ['translateInspect'] = 'INSPECT',
+    ['sort_weight'] = 'Weight',
+    ['sort_name'] = 'Name',
+    ['sort_rank'] = 'Rank',
+    ['sort_category'] = 'Category',
+    -- weapon scan
+    ['scan_no_equipment'] = "You don't have the equipment to run this check.",
+    ['scan_no_serial'] = 'no serial',
+    ['scan_legal'] = 'LEGAL',
+    ['scan_illegal'] = 'ILLEGAL',
+    ['scan_result'] = '%s (%s): %s',
+    -- clothes extras
+    ['cloth_limited'] = 'This item is Limited Edition and cannot be bought here.',
+    ['cloth_faction_buy'] = 'Your job does not allow you to buy this item.',
+    ['cloth_faction_wear'] = 'Your job does not allow you to wear this item.',
     -- phone
     ['phone_cardSim'] = 'SIM card %s is activated',
     -- item

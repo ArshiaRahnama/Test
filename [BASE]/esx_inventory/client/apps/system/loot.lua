@@ -43,7 +43,8 @@ function openPlayerInventory(closestPlayer)
     SendNUIMessage(
         {
             action = "open:Inv",
-            type = "player"
+            type = "player",
+            lootAnim = true
         }
     )
 

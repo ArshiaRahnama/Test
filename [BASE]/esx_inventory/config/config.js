@@ -21,6 +21,23 @@ const config = {
 
 };
 
+// ██████╗  █████╗ ███╗   ██╗██╗  ██╗
+// ██╔══██╗██╔══██╗████╗  ██║██║ ██╔╝
+// ██████╔╝███████║██╔██╗ ██║█████╔╝
+// ██╔══██╗██╔══██║██║╚██╗██║██╔═██╗
+// ██║  ██║██║  ██║██║ ╚████║██║  ██╗
+// ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝
+// Mirrors Config.RankOrder / Config.ItemRanks (config/config.lua) - keep
+// the key list and the visual order in sync with that file.
+const RANK_ORDER = ['common', 'uncommon', 'rare', 'epic', 'legendary'];
+const RANK_COLORS = {
+  common:    { border: 'rgba(255, 255, 255, 0.18)', glow: 'rgba(255, 255, 255, 0)'   },
+  uncommon:  { border: '#4caf50',                    glow: 'rgba(76, 175, 80, 0.55)'  },
+  rare:      { border: '#3d9dff',                    glow: 'rgba(61, 157, 255, 0.6)'  },
+  epic:      { border: '#b64dff',                    glow: 'rgba(182, 77, 255, 0.65)' },
+  legendary: { border: '#e6c15c',                    glow: 'rgba(230, 193, 92, 0.75)' },
+};
+
 // ███╗   ██╗ ██████╗ ████████╗██╗███████╗
 // ████╗  ██║██╔═══██╗╚══██╔══╝██║██╔════╝
 // ██╔██╗ ██║██║   ██║   ██║   ██║█████╗  

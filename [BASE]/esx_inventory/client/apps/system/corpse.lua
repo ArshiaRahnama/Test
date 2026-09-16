@@ -88,7 +88,8 @@ function OpenCorpseLoot()
 
     SendNUIMessage({
         action = "open:Inv",
-        type = "corpse"
+        type = "corpse",
+        lootAnim = true
     })
 end
 

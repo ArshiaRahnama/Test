@@ -32,6 +32,23 @@ local KillStreak = {}      -- [source] = consecutive kills (no death) this match
 local RecentKillTimes = {} -- [source] = {timestamp, timestamp, ...} for On Fire detection
 -- Golden Crate keys (in-memory, per match, like MyCash on the client)
 local PlayerKeys = {}       -- [source] = number of keys held
+-- Expansion: Server-Authoritative Economy -- WzCash used to live only on
+-- the client with the whole shop flow running there too, trivially
+-- cheatable. This table is now the real source of truth; the client HUD
+-- just mirrors AWZ:SyncCash.
+local PlayerCash = {}       -- [source] = current match WzCash
+-- Expansion: Vehicle Loot -- car keys, same in-memory-per-match pattern as PlayerKeys
+local CarKeys = {}          -- [source] = number of car keys held
+-- Expansion: Team-Size / Map Vote -- collected while Lobbey is open, tallied by AutoQueueWatch
+local ModeVotes = {}        -- [source] = 1..4
+local MapVotes = {}         -- [source] = 'SANDY' | 'ISLAND'
+-- Expansion: Custom Loadout Drop -- picked in the lobby, applied on AWZ:StartMatch
+local PlayerLoadout = {}    -- [source] = Config.CustomLoadout.options entry
+-- Expansion: Pre-Match Contract -- picked in the lobby, checked on death/win
+local PlayerContract = {}   -- [source] = Config.PreMatchContract.options entry
+local ContractStreak = {}   -- [source] = current no-death kill streak this match (for the 'streak' contract stat)
+-- Expansion: Reboot Van -- players currently eliminated-but-recoverable via the van (squad matches only)
+local AwaitingReboot = {}   -- [source] = true
 
 -------------------------------------------------------------------
 -- Leaderboard (Season) -- table is per-identifier/per-season, so a
@@ -71,6 +88,52 @@ CreateThread(function()
             PRIMARY KEY (`id`)
         )
     ]], {})
+    -- Expansion: Persistent Rank (XP that never resets, separate from the seasonal leaderboard)
+    MySQL.Async.execute([[
+        CREATE TABLE IF NOT EXISTS `wz_rank` (
+            `identifier` VARCHAR(60) NOT NULL,
+            `xp` INT NOT NULL DEFAULT 0,
+            PRIMARY KEY (`identifier`)
+        )
+    ]], {})
+    -- Expansion: WZCoins (persistent currency spent in the Cosmetic Shop / earned via Battle Pass)
+    MySQL.Async.execute([[
+        CREATE TABLE IF NOT EXISTS `wz_currency` (
+            `identifier` VARCHAR(60) NOT NULL,
+            `coins` INT NOT NULL DEFAULT 0,
+            PRIMARY KEY (`identifier`)
+        )
+    ]], {})
+    -- Expansion: owned Cosmetic Shop items
+    MySQL.Async.execute([[
+        CREATE TABLE IF NOT EXISTS `wz_cosmetics` (
+            `identifier` VARCHAR(60) NOT NULL,
+            `item` VARCHAR(60) NOT NULL,
+            PRIMARY KEY (`identifier`, `item`)
+        )
+    ]], {})
+    -- Expansion: Battle Pass daily challenge progress (one row per player per day)
+    MySQL.Async.execute([[
+        CREATE TABLE IF NOT EXISTS `wz_battlepass` (
+            `identifier` VARCHAR(60) NOT NULL,
+            `day` VARCHAR(10) NOT NULL,
+            `kills` INT NOT NULL DEFAULT 0,
+            `wins` INT NOT NULL DEFAULT 0,
+            `claimed` TEXT NOT NULL DEFAULT '',
+            PRIMARY KEY (`identifier`, `day`)
+        )
+    ]], {})
+    -- Expansion: player reports, reachable from the /warzone menu
+    MySQL.Async.execute([[
+        CREATE TABLE IF NOT EXISTS `wz_reports` (
+            `id` INT NOT NULL AUTO_INCREMENT,
+            `reporter` VARCHAR(100) NOT NULL,
+            `reported` VARCHAR(100) NOT NULL,
+            `reason` VARCHAR(255) NOT NULL,
+            `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (`id`)
+        )
+    ]], {})
 end)
 
 function WZ_AddStat(identifier, name, kills, wins, deaths)
@@ -93,6 +156,80 @@ function WZ_AddStat(identifier, name, kills, wins, deaths)
         ['@season'] = CurrentSeason,
     })
 end
+
+-------------------------------------------------------------------
+-- Expansion: Server-Authoritative Economy
+-------------------------------------------------------------------
+function WZ_GetCash(src) return PlayerCash[src] or 0 end
+function WZ_SetCash(src, amount)
+    PlayerCash[src] = amount
+    TriggerClientEvent('AWZ:SyncCash', src, PlayerCash[src])
+end
+function WZ_AddCash(src, amount)
+    WZ_SetCash(src, (PlayerCash[src] or 0) + amount)
+end
+function WZ_TrySpend(src, amount)
+    if (PlayerCash[src] or 0) >= amount then
+        WZ_SetCash(src, PlayerCash[src] - amount)
+        return true
+    end
+    return false
+end
+RegisterServerEvent('AWZ:ResetCash')
+AddEventHandler('AWZ:ResetCash', function() WZ_SetCash(source, 0) end)
+RegisterServerEvent('AWZ:KillCashReward')
+AddEventHandler('AWZ:KillCashReward', function() WZ_AddCash(source, 500) end)
+
+local ShopPrices = { heal50 = 300, heal100 = 500, vest50 = 300, vest100 = 500, uav = 400, blood = 1000, loadout = 1000 }
+-- Every WarZone shop purchase now goes through this single validated
+-- callback instead of the client just deciding locally it can afford
+-- something. The client still applies the actual item effect (gain armor,
+-- gain a bandage charge, etc) once this confirms the money was real.
+ESX.RegisterServerCallback('AWZ:ShopBuy', function(source, cb, item)
+    local price = ShopPrices[item]
+    if not price then return cb(false, WZ_GetCash(source)) end
+    local ok = WZ_TrySpend(source, price)
+    cb(ok, WZ_GetCash(source))
+end)
+
+-- Expansion: Buy Station -- same validated pattern, but the cost comes out
+-- of the whole squad's pooled cash (split evenly across alive squadmates
+-- + the buyer), not just the buyer's own.
+ESX.RegisterServerCallback('AWZ:BuyStationBuy', function(source, cb, value)
+    local item = nil
+    for _, v in ipairs(Config.BuyStation.items) do
+        if v.value == value then item = v break end
+    end
+    if not item then return cb(false, 'Unknown item') end
+    local mates = GetAliveSquadmates(source)
+    table.insert(mates, source)
+    local pooled = 0
+    for _, mid in ipairs(mates) do pooled = pooled + WZ_GetCash(mid) end
+    if pooled < item.cost then
+        return cb(false, 'Squad pooled cash is short ('..pooled..'/'..item.cost..')')
+    end
+    local remaining = item.cost
+    local share = math.ceil(item.cost / #mates)
+    for _, mid in ipairs(mates) do
+        if remaining <= 0 then break end
+        local take = math.min(share, WZ_GetCash(mid), remaining)
+        WZ_TrySpend(mid, take)
+        remaining = remaining - take
+    end
+    for _, mid in ipairs(mates) do
+        SendNotifyServerToPlayer(mid, 'Squad bought: '..item.label, 'info')
+    end
+    if item.value == 'streakskip' then
+        -- resolve immediately server-side instead of round-tripping through
+        -- the client: pulls the buyer 2 kills closer to a Vehicle Killstreak
+        KillStreak[source] = (KillStreak[source] or 0) + 2
+        if Config.VehicleKillstreak.enabled and KillStreak[source] >= Config.VehicleKillstreak.kills then
+            TriggerClientEvent('AWZ:VehicleKillstreak', source)
+            SendNotifyServerToPlayer(source, 'Vehicle Killstreak ready -- attack chopper incoming!', 'info')
+        end
+    end
+    cb(true, item.value)
+end)
 
 function ShowMyStats(source)
     local xPlayer = ESX.GetPlayerFromId(source)
@@ -148,6 +285,186 @@ RegisterServerEvent('AWZ:ShowLastMatch')
 AddEventHandler('AWZ:ShowLastMatch', function()
     ShowLastMatch(source)
 end)
+
+-------------------------------------------------------------------
+-- Expansion: Persistent Rank (XP that never resets)
+-------------------------------------------------------------------
+function WZ_AwardXP(identifier, amount)
+    if not identifier or amount == 0 then return end
+    MySQL.Async.execute([[
+        INSERT INTO wz_rank (identifier, xp) VALUES (@identifier, @xp)
+        ON DUPLICATE KEY UPDATE xp = xp + @xp
+    ]], { ['@identifier'] = identifier, ['@xp'] = amount })
+end
+RegisterCommand(Config.Rank.command, function(source, args)
+    local xPlayer = ESX.GetPlayerFromId(source)
+    if not xPlayer then return end
+    MySQL.Async.fetchAll('SELECT xp FROM wz_rank WHERE identifier = @identifier', {
+        ['@identifier'] = xPlayer.identifier,
+    }, function(rows)
+        local xp = (rows and rows[1] and tonumber(rows[1].xp)) or 0
+        local level = math.floor(xp / Config.Rank.xpPerLevel) + 1
+        local intoLevel = xp % Config.Rank.xpPerLevel
+        local template = '<div style="padding: 0.6vw; margin: 0.5vw; background-color:rgba(0,0,0,0.75); border-radius: 3px; font-size:0.85vw;">⭐ WarZone Rank: Level '..level..' ('..xp..' XP total, '..intoLevel..'/'..Config.Rank.xpPerLevel..' to next)</div>'
+        TriggerClientEvent('chat:addMessage', source, {template = template, args = {}})
+    end)
+end)
+
+-------------------------------------------------------------------
+-- Expansion: WZCoins (persistent currency) + Cosmetic Shop
+-------------------------------------------------------------------
+function WZ_GetCoins(identifier, cb)
+    MySQL.Async.fetchAll('SELECT coins FROM wz_currency WHERE identifier = @identifier', {
+        ['@identifier'] = identifier,
+    }, function(rows)
+        cb((rows and rows[1] and tonumber(rows[1].coins)) or 0)
+    end)
+end
+function WZ_AddCoins(identifier, amount)
+    MySQL.Async.execute([[
+        INSERT INTO wz_currency (identifier, coins) VALUES (@identifier, @coins)
+        ON DUPLICATE KEY UPDATE coins = coins + @coins
+    ]], { ['@identifier'] = identifier, ['@coins'] = amount })
+end
+ESX.RegisterServerCallback('AWZ:GetShopState', function(source, cb)
+    local xPlayer = ESX.GetPlayerFromId(source)
+    if not xPlayer then return cb(0, {}) end
+    WZ_GetCoins(xPlayer.identifier, function(coins)
+        MySQL.Async.fetchAll('SELECT item FROM wz_cosmetics WHERE identifier = @identifier', {
+            ['@identifier'] = xPlayer.identifier,
+        }, function(rows)
+            local owned = {}
+            for _, row in ipairs(rows or {}) do owned[row.item] = true end
+            cb(coins, owned)
+        end)
+    end)
+end)
+ESX.RegisterServerCallback('AWZ:BuyCosmetic', function(source, cb, itemId)
+    local xPlayer = ESX.GetPlayerFromId(source)
+    if not xPlayer then return cb(false, 'No player') end
+    local item = nil
+    for _, v in ipairs(Config.CosmeticShop.items) do
+        if v.id == itemId then item = v break end
+    end
+    if not item then return cb(false, 'Unknown item') end
+    WZ_GetCoins(xPlayer.identifier, function(coins)
+        if coins < item.cost then return cb(false, 'Not enough WZCoins') end
+        WZ_AddCoins(xPlayer.identifier, -item.cost)
+        MySQL.Async.execute([[
+            INSERT INTO wz_cosmetics (identifier, item) VALUES (@identifier, @item)
+            ON DUPLICATE KEY UPDATE item = item
+        ]], { ['@identifier'] = xPlayer.identifier, ['@item'] = item.id })
+        cb(true, item.variant)
+    end)
+end)
+
+-------------------------------------------------------------------
+-- Expansion: Battle Pass -- daily challenges, tracked per calendar day.
+-- Progress is bumped from the same places WZ_AddStat already gets called
+-- (a kill, a win) so it stays in sync with the seasonal leaderboard.
+-------------------------------------------------------------------
+function WZ_Today() return os.date('%Y-%m-%d') end
+function WZ_BumpBattlePass(identifier, stat, amount)
+    if not identifier or not Config.BattlePass.enabled then return end
+    local day = WZ_Today()
+    local col = (stat == 'wins') and 'wins' or 'kills'
+    MySQL.Async.execute('INSERT INTO wz_battlepass (identifier, day, '..col..') VALUES (@identifier, @day, @amount) ON DUPLICATE KEY UPDATE '..col..' = '..col..' + @amount', {
+        ['@identifier'] = identifier, ['@day'] = day, ['@amount'] = amount,
+    })
+end
+RegisterCommand(Config.BattlePass.command, function(source, args)
+    local xPlayer = ESX.GetPlayerFromId(source)
+    if not xPlayer then return end
+    local day = WZ_Today()
+    MySQL.Async.fetchAll('SELECT * FROM wz_battlepass WHERE identifier = @identifier AND day = @day', {
+        ['@identifier'] = xPlayer.identifier, ['@day'] = day,
+    }, function(rows)
+        local row = rows and rows[1]
+        local kills = row and tonumber(row.kills) or 0
+        local wins = row and tonumber(row.wins) or 0
+        local claimed = {}
+        for id in string.gmatch((row and row.claimed) or '', '[^,]+') do claimed[id] = true end
+        local lines = ''
+        local toClaim = {}
+        for _, ch in ipairs(Config.BattlePass.dailyChallenges) do
+            local progress = (ch.stat == 'wins') and wins or kills
+            local done = progress >= ch.target
+            local status = claimed[ch.id] and '✅ claimed' or (done and '🎁 ready to claim!' or (progress..'/'..ch.target))
+            lines = lines..ch.label..' — '..status..'<br>'
+            if done and not claimed[ch.id] then table.insert(toClaim, ch) end
+        end
+        local template = '<div style="padding: 0.6vw; margin: 0.5vw; background-color:rgba(0,0,0,0.75); border-radius: 3px; font-size:0.85vw;">🎫 Today\'s Battle Pass Challenges<br>'..lines..'</div>'
+        TriggerClientEvent('chat:addMessage', source, {template = template, args = {}})
+        for _, ch in ipairs(toClaim) do
+            WZ_AddCoins(xPlayer.identifier, ch.reward)
+            claimed[ch.id] = true
+        end
+        if #toClaim > 0 then
+            local claimedList = {}
+            for id, _ in pairs(claimed) do table.insert(claimedList, id) end
+            MySQL.Async.execute([[
+                INSERT INTO wz_battlepass (identifier, day, claimed) VALUES (@identifier, @day, @claimed)
+                ON DUPLICATE KEY UPDATE claimed = @claimed
+            ]], { ['@identifier'] = xPlayer.identifier, ['@day'] = day, ['@claimed'] = table.concat(claimedList, ',') })
+            SendNotifyServerToPlayer(source, 'Claimed '..#toClaim..' Battle Pass reward(s)!', 'info')
+        end
+    end)
+end)
+
+-------------------------------------------------------------------
+-- Expansion: Reports -- reachable from the /warzone menu (client side),
+-- logs to wz_reports and pings every online admin immediately.
+-------------------------------------------------------------------
+RegisterServerEvent('AWZ:SubmitReport')
+AddEventHandler('AWZ:SubmitReport', function(reportedId, reason)
+    if not Config.Report.enabled then return end
+    local reporterName = GetPlayerName(source) or ('#'..source)
+    local reportedName = GetPlayerName(tonumber(reportedId)) or ('#'..tostring(reportedId))
+    reason = tostring(reason or 'No reason given')
+    MySQL.Async.execute([[
+        INSERT INTO wz_reports (reporter, reported, reason) VALUES (@reporter, @reported, @reason)
+    ]], { ['@reporter'] = reporterName, ['@reported'] = reportedName, ['@reason'] = reason })
+    for _, playerId in ipairs(GetPlayers()) do
+        local aid = tonumber(playerId)
+        if IsPlayerCanStart(aid) then
+            SendNotifyServerToPlayer(aid, '🚩 Report: '..reporterName..' reported '..reportedName..' — '..reason, 'error')
+        end
+    end
+    SendNotifyServerToPlayer(source, 'Report submitted, thank you.', 'info')
+end)
+
+-------------------------------------------------------------------
+-- Expansion: Team-Size Vote + Map Vote -- collected while the lobby is
+-- open, tallied by AutoQueueWatch (see BeginMatch/OpenLobby edits below)
+-- instead of always using Config.AutoQueue's fixed defaults.
+-------------------------------------------------------------------
+RegisterCommand(Config.ModeVote.voteCommend, function(source, args)
+    if not Config.ModeVote.enabled then return end
+    local size = tonumber(args[1])
+    if not size or size < 1 or size > 4 then
+        return SendNotifyServerToPlayer(source, 'Usage: /'..Config.ModeVote.voteCommend..' 1-4 (1=Solo 2=Duo 3=Trio 4=Squad)', 'error')
+    end
+    ModeVotes[source] = size
+    SendNotifyServerToPlayer(source, 'Voted for '..Config.ModeVote.labels[size]..'!', 'info')
+end)
+RegisterCommand(Config.MapVote.voteCommend, function(source, args)
+    if not Config.MapVote.enabled then return end
+    local map = args[1] and string.upper(args[1])
+    if map ~= 'SANDY' and map ~= 'ISLAND' then
+        return SendNotifyServerToPlayer(source, 'Usage: /'..Config.MapVote.voteCommend..' sandy|island', 'error')
+    end
+    MapVotes[source] = map
+    SendNotifyServerToPlayer(source, 'Voted for '..map..'!', 'info')
+end)
+function WZ_TallyVotes(votes)
+    local counts = {}
+    local best, bestCount = nil, 0
+    for src, v in pairs(votes) do
+        counts[v] = (counts[v] or 0) + 1
+        if counts[v] > bestCount then best, bestCount = v, counts[v] end
+    end
+    return best
+end
 
 -------------------------------------------------------------------
 -- Party system: keep a group of players together in the same squad when
@@ -382,7 +699,14 @@ function AutoQueueWatch()
                     end
                 end
                 if Lobbey and not StartMatch and #Players >= Config.AutoQueue.minPlayers and secondsLeft <= 0 then
-                    BeginMatch(0, Config.AutoQueue.defaultBlood, Config.AutoQueue.defaultTime, Config.AutoQueue.defaultMap, Config.AutoQueue.defaultTeam)
+                    -- Expansion: Team-Size Vote / Map Vote -- use the
+                    -- lobby's vote tally when available, falling back to
+                    -- Config.AutoQueue's fixed defaults otherwise (voting
+                    -- disabled, or nobody voted).
+                    local votedTeam = Config.ModeVote.enabled and WZ_TallyVotes(ModeVotes) or nil
+                    local votedMap = Config.MapVote.enabled and WZ_TallyVotes(MapVotes) or nil
+                    BeginMatch(0, Config.AutoQueue.defaultBlood, Config.AutoQueue.defaultTime,
+                        votedMap or Config.AutoQueue.defaultMap, votedTeam or Config.AutoQueue.defaultTeam)
                 end
             end
         end
@@ -434,10 +758,18 @@ function BeginMatch(source, blood, time, mapArg, teamArg)
     KillStreak = {}
     RecentKillTimes = {}
     PlayerKeys = {}
+    -- Expansion: match-scoped state, reset for every new match
+    PlayerCash = {}
+    CarKeys = {}
+    AwaitingReboot = {}
+    ContractStreak = {}
+    ModeVotes = {}
+    MapVotes = {}
     CurrentMatchMap = Map
     print('[WZ DEBUG] BeginMatch ACCEPTED: Map='..Map..' Team='..Team..' #Players going in='..#Players)
     TriggerClientEvent("AWZ:CloseUI", -1)
     AntiCheatMonitor()
+    SpawnMatchVehicles(Map) -- Expansion: Vehicle Loot
     StartWarZone(blood, time, Coords, Team, Map)
     return true
 end
@@ -747,9 +1079,39 @@ function StartWarZone( Blood , Time , Coord , Team , Map)
             SetPlayerRoutingBucket(v.ID, Config.FightWorld  )
             AntiCheatGrace(v.ID)
             TriggerClientEvent('AWZ:StartMatch' ,v.ID, Blood , Config.DistanceZone , Coord , Time , 0  , Map )
+            -- Expansion: Custom Loadout Drop
+            local loadout = PlayerLoadout[v.ID]
+            if loadout and loadout.value ~= 'none' then
+                TriggerClientEvent('AWZ:ApplyCustomLoadout', v.ID, loadout.weapons)
+            end
         end 
     end)
+    StartHazards(Coord) -- Expansion: Environmental Hazards
 end 
+
+-------------------------------------------------------------------
+-- Expansion: Environmental Hazards. Picks a random point around the
+-- match's starting zone center and radius every Config.Hazards.everyMs;
+-- this is deliberately approximate rather than tracking the live shrinking
+-- zone (that's computed entirely client-side in ZoneRuning()) -- it stays
+-- roughly centered on the play area for the whole match instead of always
+-- being inside the current, smaller circle late in a match.
+-------------------------------------------------------------------
+function StartHazards(Coord)
+    if not Config.Hazards.enabled then return end
+    CreateThread(function()
+        while StartMatch do
+            Wait(Config.Hazards.everyMs)
+            if not StartMatch then break end
+            local hType = Config.Hazards.types[math.random(1, #Config.Hazards.types)]
+            local angle = math.random(0, 360) * (math.pi / 180)
+            local dist = math.random(0, math.floor(Config.DistanceZone / 2))
+            local hCoord = vector3(Coord.x + math.cos(angle) * dist, Coord.y + math.sin(angle) * dist, Coord.z)
+            SendMessage('⚠️ '..(hType == 'gas' and 'A toxic gas cloud' or hType == 'sandstorm' and 'A sandstorm' or 'A lightning storm')..' is forming somewhere on the map!')
+            TriggerClientEvent('AWZ:Hazard', -1, hType, hCoord, Config.Hazards.radius, Config.Hazards.damagePerTick)
+        end
+    end)
+end
 function InsertTeam ()
     if #Squads  ~= 0  and #Players ~= 0 then 
         for i=1 , #Squads  , 1 do 
@@ -785,6 +1147,17 @@ AddEventHandler('playerDropped', function ()
             break
         end
     end
+    -- Expansion: clear per-source expansion state on disconnect. Without
+    -- this, a lobby vote or a Reboot Van wait from someone who already
+    -- left would keep counting/blocking for everyone else.
+    ModeVotes[source] = nil
+    MapVotes[source] = nil
+    PlayerLoadout[source] = nil
+    PlayerContract[source] = nil
+    ContractStreak[source] = nil
+    CarKeys[source] = nil
+    PlayerCash[source] = nil
+    AwaitingReboot[source] = nil
 end) 
 RegisterServerEvent("esx:onPlayerDeath")
 AddEventHandler("esx:onPlayerDeath", function(KillData)
@@ -806,6 +1179,37 @@ AddEventHandler("esx:onPlayerDeath", function(KillData)
         if killerPlayer then
             WZ_AddStat(killerPlayer.identifier, GetPlayerName(KillData.killer), 1, 0, 0)
             killerName = GetPlayerName(KillData.killer)
+            -- Expansion: server-authoritative kill reward (used to be a
+            -- purely client-side `MyCash = MyCash + 500`)
+            WZ_AddCash(KillData.killer, 500)
+            -- Expansion: Persistent Rank XP + Battle Pass daily progress
+            WZ_AwardXP(killerPlayer.identifier, Config.Rank.xpPerKill)
+            WZ_BumpBattlePass(killerPlayer.identifier, 'kills', 1)
+        end
+
+        -- Expansion: Pre-Match Contract -- track a no-death kill streak
+        -- separately from the Killstreak-reward counter below, so a
+        -- 'nodeath3' contract doesn't get consumed/reset by the UAV/airdrop
+        -- streak payouts.
+        ContractStreak[KillData.killer] = (ContractStreak[KillData.killer] or 0) + 1
+        local contract = PlayerContract[KillData.killer]
+        if contract and contract.stat == 'streak' and ContractStreak[KillData.killer] == contract.target then
+            local cp = ESX.GetPlayerFromId(KillData.killer)
+            if cp then WZ_AddCoins(cp.identifier, contract.reward) end
+            SendNotifyServerToPlayer(KillData.killer, 'Contract complete: '..contract.label..' (+'..contract.reward..' WZCoins)', 'info')
+            PlayerContract[KillData.killer] = nil
+        end
+
+        -- Expansion: Killcam -- give the victim a quick look at their
+        -- killer's final position/heading (open battlefield only; a Gulag
+        -- death is already a 1v1 duel the victim watched happen).
+        if Config.Killcam.enabled and InWzNormal then
+            local killerPed = GetPlayerPed(KillData.killer)
+            if killerPed and killerPed ~= 0 then
+                local kc = GetEntityCoords(killerPed)
+                local kh = GetEntityHeading(killerPed)
+                TriggerClientEvent('AWZ:PlayKillcam', source, kc, kh, GetPlayerName(KillData.killer))
+            end
         end
 
         -- Feature: Killstreak rewards -- 3 kills in a row (no death) gives
@@ -819,6 +1223,12 @@ AddEventHandler("esx:onPlayerDeath", function(KillData)
             TriggerClientEvent('AWZ:FreeAirdrop', KillData.killer)
             SendNotifyServerToPlayer(KillData.killer, Config.Killstreak.airdropKills..' kills in a row -- free airdrop!', 'info')
             KillStreak[KillData.killer] = 0
+        end
+        -- Expansion: Vehicle Killstreak -- a longer streak than the
+        -- UAV/airdrop rewards grants a temporary attack helicopter.
+        if Config.VehicleKillstreak.enabled and KillStreak[KillData.killer] == Config.VehicleKillstreak.kills then
+            TriggerClientEvent('AWZ:VehicleKillstreak', KillData.killer)
+            SendNotifyServerToPlayer(KillData.killer, Config.VehicleKillstreak.kills..' kills in a row -- attack chopper incoming!', 'info')
         end
 
         -- Feature: On Fire -- announce a hot streak (3+ kills inside a
@@ -841,7 +1251,14 @@ AddEventHandler("esx:onPlayerDeath", function(KillData)
             PlayerKeys[KillData.killer] = (PlayerKeys[KillData.killer] or 0) + 1
             SendNotifyServerToPlayer(KillData.killer, 'You found a Golden Crate key!', 'info')
         end
+        -- Expansion: Vehicle Loot -- a kill also has a chance to drop a car key
+        if Config.VehicleLoot.enabled and math.random(1, 100) <= Config.VehicleLoot.keyDropChance then
+            CarKeys[KillData.killer] = (CarKeys[KillData.killer] or 0) + 1
+            TriggerClientEvent('AWZ:SyncCarKeys', KillData.killer, CarKeys[KillData.killer])
+            SendNotifyServerToPlayer(KillData.killer, 'You found a Car Key!', 'info')
+        end
     end
+    ContractStreak[source] = 0 -- the victim's own no-death streak resets on death
     KillStreak[source] = 0 -- the victim's own streak resets on death
     local victimPlayer = ESX.GetPlayerFromId(source)
     if victimPlayer then
@@ -983,6 +1400,134 @@ AddEventHandler("AWZ:Loadout", function(loadout)
     for k,v in pairs(Players) do 
         TriggerClientEvent("AWZ:UpdateLoadout",v.ID,loadout)
     end 
+end)
+
+-------------------------------------------------------------------
+-- Expansion: Custom Loadout Drop / Pre-Match Contract -- picked from the
+-- /warzone menu before the match starts, applied on AWZ:StartMatch.
+-------------------------------------------------------------------
+RegisterServerEvent('AWZ:SetLoadoutChoice')
+AddEventHandler('AWZ:SetLoadoutChoice', function(value)
+    for _, opt in ipairs(Config.CustomLoadout.options) do
+        if opt.value == value then PlayerLoadout[source] = opt return end
+    end
+end)
+RegisterServerEvent('AWZ:SetContractChoice')
+AddEventHandler('AWZ:SetContractChoice', function(id)
+    for _, opt in ipairs(Config.PreMatchContract.options) do
+        if opt.id == id then
+            PlayerContract[source] = (opt.id ~= 'none') and opt or nil
+            return
+        end
+    end
+end)
+
+-------------------------------------------------------------------
+-- Expansion: a client-asserted cash gain (airdrop pickup, body loot) gets
+-- folded into the server-authoritative total through one funnel with a
+-- sanity cap, instead of just being trusted outright. This does not make
+-- loot amounts themselves server-verified (loot is still generated
+-- client-side, see the code comments in client/main.lua) but it does mean
+-- no purchase can ever spend more than what actually passed through here.
+-------------------------------------------------------------------
+RegisterServerEvent('AWZ:AddCashSync')
+AddEventHandler('AWZ:AddCashSync', function(amount)
+    if type(amount) == 'number' and amount > 0 and amount <= 5000 then
+        WZ_AddCash(source, amount)
+    end
+end)
+
+-------------------------------------------------------------------
+-- Expansion: Vehicle Loot -- spawn vehicles for the match (server-side, so
+-- there's exactly one shared set instead of one per connected client),
+-- lock a share of them, and let a found Car Key unlock one on request.
+-- Config.SandyVehicles/IslandVehicles existed before this but nothing
+-- ever spawned anything at those coordinates.
+-------------------------------------------------------------------
+function SpawnMatchVehicles(map)
+    local list = (map == 'ISLAND') and Config.IslandVehicles or Config.SandyVehicles
+    if not Config.VehicleLoot.enabled or not list then return end
+    for _, coord in ipairs(list) do
+        local model = Config.VehicleLoot.models[math.random(1, #Config.VehicleLoot.models)]
+        local veh = CreateVehicle(GetHashKey(model), coord.x, coord.y, coord.z, 0.0, true, false)
+        if veh and veh ~= 0 then
+            SetVehicleOnGroundProperly(veh)
+            local locked = math.random(1, 100) <= Config.VehicleLoot.lockedChance
+            SetVehicleDoorsLocked(veh, locked and 2 or 1)
+            table.insert(WzVehs, veh)
+        end
+    end
+end
+ESX.RegisterServerCallback('AWZ:UnlockVehicleWithKey', function(source, cb, netId)
+    if (CarKeys[source] or 0) < 1 then return cb(false) end
+    local veh = NetworkGetEntityFromNetworkId(netId)
+    if not veh or veh == 0 then return cb(false) end
+    CarKeys[source] = CarKeys[source] - 1
+    TriggerClientEvent('AWZ:SyncCarKeys', source, CarKeys[source])
+    SetVehicleDoorsLocked(veh, 1)
+    cb(true)
+end)
+RegisterServerEvent('AWZ:HotwireVehicle')
+AddEventHandler('AWZ:HotwireVehicle', function(netId)
+    local veh = NetworkGetEntityFromNetworkId(netId)
+    if veh and veh ~= 0 then SetVehicleDoorsLocked(veh, 1) end
+end)
+
+-------------------------------------------------------------------
+-- Expansion: Reboot Van (squad matches only -- replaces the Gulag duel).
+-- See client/main.lua SetPLayerInGulag() for where a squad member gets
+-- routed here instead of into the Gulag.
+-------------------------------------------------------------------
+RegisterServerEvent('AWZ:RequestReboot')
+AddEventHandler('AWZ:RequestReboot', function()
+    local src = source
+    local mates = GetAliveSquadmates(src)
+    for k, v in pairs(Players) do
+        if v.ID == src then table.remove(Players, k) break end
+    end
+    RemovePlayerFromSquad(src)
+    AwaitingReboot[src] = { mates = mates }
+    if #mates > 0 then
+        table.insert(Spectators, src)
+        TriggerClientEvent('AWZ:EnterSpectator', src, mates)
+    else
+        TriggerClientEvent('AWZ:ExitMision', src)
+    end
+end)
+RegisterServerEvent('AWZ:RebootVanComplete')
+AddEventHandler('AWZ:RebootVanComplete', function()
+    local reviver = source
+    local targetId = nil
+    for downedId, info in pairs(AwaitingReboot) do
+        for _, m in ipairs(info.mates) do
+            if m == reviver then targetId = downedId break end
+        end
+        if targetId then break end
+    end
+    if not targetId then
+        return SendNotifyServerToPlayer(reviver, 'No squadmate is waiting on the Reboot Van right now.', 'error')
+    end
+    AwaitingReboot[targetId] = nil
+    for k, v in pairs(Spectators) do
+        if v == targetId then table.remove(Spectators, k) break end
+    end
+    table.insert(Players, { ID = targetId, ingulag = false })
+    -- put them back in the reviver's current squad
+    for i, squad in pairs(Squads) do
+        if type(squad) == 'table' then
+            for _, id in pairs(squad) do
+                if id == reviver then
+                    table.insert(Squads[i], targetId)
+                    goto placed
+                end
+            end
+        end
+    end
+    ::placed::
+    SetPlayerRoutingBucket(targetId, Config.FightWorld)
+    local reviverPed = GetPlayerPed(reviver)
+    TriggerClientEvent('AWZ:RebootRevive', targetId, reviverPed and GetEntityCoords(reviverPed) or nil)
+    SendNotifyServerToPlayer(reviver, 'Squadmate rebooted!', 'info')
 end)
 
 ESX.RegisterServerCallback('AWZ:SetPlayerInWarZone', function(source, cb)
@@ -1128,6 +1673,16 @@ function WarZoneWinner(Winners)
         local xPlayer = ESX.GetPlayerFromId(v)
         if xPlayer then
             WZ_AddStat(xPlayer.identifier, GetPlayerName(v), 0, 1)
+            -- Expansion: Persistent Rank XP + Battle Pass daily progress for the win
+            WZ_AwardXP(xPlayer.identifier, Config.Rank.xpPerWin)
+            WZ_BumpBattlePass(xPlayer.identifier, 'wins', 1)
+            -- Expansion: Pre-Match Contract -- award the 'win the match' contract
+            local contract = PlayerContract[v]
+            if contract and contract.stat == 'win' then
+                WZ_AddCoins(xPlayer.identifier, contract.reward)
+                SendNotifyServerToPlayer(v, 'Contract complete: '..contract.label..' (+'..contract.reward..' WZCoins)', 'info')
+                PlayerContract[v] = nil
+            end
         end
     end 
     Wait(1000)
@@ -1183,21 +1738,41 @@ function CountSquads()
     end
     return count
 end
+-- Fix: two real bugs here.
+-- 1) The `Players` removal ran inside CreateThread(...), i.e. deferred to
+--    the next tick instead of happening immediately. Every caller of this
+--    function (AWZ:RemoveForSquad callback, the Gulag-death branch) reads
+--    #Players / Squads state right around the same time, so there was a
+--    window where a player who had just left/died was still counted as
+--    present -- CountSquads()/the win-check thread could briefly see stale
+--    numbers. Nothing here needs a Wait, so it can just run synchronously.
+-- 2) Both loops called table.remove() on a table while iterating that same
+--    table with pairs()/ipairs() -- table.remove() shifts every later
+--    array index down by one, which is more than "setting an existing
+--    field", and the Lua manual only guarantees next() behaves if you set
+--    existing fields (including to nil), not if you reshuffle them mid-
+--    traversal. In practice this risks silently skipping the element right
+--    after the one removed. Since each id can only appear once, this finds
+--    the index first and removes it after the loop ends instead.
 function RemovePlayerFromSquad ( src )
     if #Squads  ~= 0  and #Players ~= 0 then 
-        CreateThread(function()            
-            for k,v in pairs(Players) do 
-                if v.ID == src then 
-                    table.remove(Players , k,v) 
-                end 
+        for k,v in pairs(Players) do 
+            if v.ID == src then 
+                table.remove(Players , k) 
+                break 
             end 
-        end)
+        end 
         for i,m in pairs(Squads) do 
             if type( Squads[i] ) == 'table'  then 
+                local removeAt = nil
                 for k,v in pairs(Squads[i]) do 
                     if v == src then 
-                        table.remove(Squads[i] , k ,v  ) 
+                        removeAt = k
+                        break 
                     end 
+                end 
+                if removeAt then 
+                    table.remove(Squads[i] , removeAt) 
                 end 
                 if #Squads[i] == 0 then 
                     Squads[i] = nil 

@@ -2,7 +2,7 @@
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	width: 22.552vw;
+	width: 27.552vw;
 	height: 6.094vw;
 }
 
@@ -54,6 +54,23 @@
 }
 .top-button-delete span:nth-child(1) {
 	font-size: 0.625vw;
+}
+
+.top-button-drop {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-direction: column;
+	width: 5vw;
+	height: 6.094vw;
+	margin-left: 0.573vw;
+}
+.top-button-drop span:nth-child(1) {
+	font-size: 0.625vw;
+}
+.top-button-drop .raccours2 {
+	font-size: 1.3vw;
+	color: rgba(255, 255, 255, 0.8);
 }
 
 .raccours4, .raccours3, .raccours2, .raccours1 {

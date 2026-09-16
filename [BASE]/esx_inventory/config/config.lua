@@ -294,7 +294,7 @@ Config.AccountName = {
 
 -- Display id card in inventory
 Config.ActiveIdCard = true -- just for ESX
-Config.ActiveMugShot = false -- https://github.com/BaziForYou/MugShotBase64 -- reverted back to off at your request (removing the Mugshot feature); flip to true + ensure MugShotBase64 if you want it back later.
+Config.ActiveMugShot = true -- requires the 'MugShotBase64' resource (https://github.com/BaziForYou/MugShotBase64) to be installed & started; client/apps/other/idcard.lua falls back to Config.PictureIdCard automatically if it isn't.
 Config.PictureIdCard = 'https://cdn.discordapp.com/attachments/979486375218937946/1135635765397823488/47848.png'  -- if ActiveMugShot == false
 Config.IdCardName = {
     ["id"] = {
@@ -452,5 +452,202 @@ Config.ClothesWeight = {
     ["mask"] = 0.4,
 }
 
+--╔════════════════════════════════════════════════════════════════════════════════╗
+--  ██████╗ ██████╗  ██████╗ ██████╗
+--  ██╔══██╗██╔══██╗██╔═══██╗██╔══██╗
+--  ██║  ██║██████╔╝██║   ██║██████╔╝
+--  ██║  ██║██╔══██╗██║   ██║██╔═══╝
+--  ██████╔╝██║  ██║╚██████╔╝██║
+--  ╚═════╝ ╚═╝  ╚═╝ ╚═════╝ ╚═╝
+-- Drop-on-ground system (see client/custom/drop & server/custom/drop).
+Config.Drop = {
+    enabled = true,
+    prop = 'prop_paper_bag01',       -- world prop used to represent a dropped stack
+    pickupDistance = 1.6,            -- meters, checked both client-side (for the prompt) and server-side (anti-cheat)
+    despawnTime = 5 * 60 * 1000,     -- ms a drop stays on the ground before auto-despawning (5 min)
+    maxStacksOnGround = 200,         -- hard ceiling so a griefer can't spam-drop and crash everyone's client
+}
+
+--╔════════════════════════════════════════════════════════════════════════════════╗
+--  ██████╗  █████╗ ███╗   ██╗██╗  ██╗
+--  ██╔══██╗██╔══██╗████╗  ██║██║ ██╔╝
+--  ██████╔╝███████║██╔██╗ ██║█████╔╝
+--  ██╔══██╗██╔══██║██║╚██╗██║██╔═██╗
+--  ██║  ██║██║  ██║██║ ╚████║██║  ██╗
+--  ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝
+-- Item rank/quality (colored glow in the NUI). Anything not listed here
+-- falls back to Config.DefaultItemRank. Ranks are purely cosmetic - they
+-- don't change weight, price or usability, only the border/glow color
+-- and the sort order used by the "Sort by rank" button in the UI.
+-- Valid ranks (in ascending order): common, uncommon, rare, epic, legendary
+Config.DefaultItemRank = 'common'
+Config.ItemRanks = {
+    -- example real entries - rename to match your own `items` table:
+    -- ['lockpick']        = 'uncommon',
+    -- ['diamond']         = 'epic',
+    -- ['golden_watch']    = 'legendary',
+    ['WEAPON_PISTOL']      = 'uncommon',
+    ['WEAPON_COMBATPISTOL']= 'rare',
+    ['WEAPON_ASSAULTRIFLE']= 'epic',
+    ['WEAPON_RPG']         = 'legendary',
+}
+
+-- Ordering used by the "Sort by rank" button (low -> high). Also used to
+-- resolve the CSS class + color applied to an item's border/glow.
+Config.RankOrder = {'common', 'uncommon', 'rare', 'epic', 'legendary'}
+
+-- Free-standing helper, safe to call from anywhere `config/*.lua` has
+-- already loaded (shared_scripts, so it exists client AND server side).
+function Config.GetItemRank(name)
+    if not name then return Config.DefaultItemRank end
+    return Config.ItemRanks[name] or Config.DefaultItemRank
+end
+
 --╚════════════════════════════════════════════════════════════════════════════════╝
 
+
+--╔════════════════════════════════════════════════════════════════════════════════╗
+--  ██╗    ██╗███████╗ █████╗ ██████╗  ██████╗ ███╗   ██╗
+--  ██║    ██║██╔════╝██╔══██╗██╔══██╗██╔═══██╗████╗  ██║
+--  ██║ █╗ ██║█████╗  ███████║██████╔╝██║   ██║██╔██╗ ██║
+--  ██║███╗██║██╔══╝  ██╔══██║██╔═══╝ ██║   ██║██║╚██╗██║
+--  ╚███╔███╔╝███████╗██║  ██║██║     ╚██████╔╝██║ ╚████║
+--   ╚══╝╚══╝ ╚══════╝╚═╝  ╚═╝╚═╝      ╚═════╝ ╚═╝  ╚═══╝
+-- Jobs allowed to run a "Scan Serial" check on a weapon (see the new
+-- 'esx_inventory:scanWeapon' event / the context-menu "Scan" action).
+Config.PoliceJobs = {'police', 'sheriff'}
+
+-- Per-weapon legality. Anything not listed defaults to
+-- Config.WeaponLegalDefault. Purely informational (shown to police on
+-- scan) - doesn't stop the player from carrying/using it.
+Config.WeaponLegalDefault = true
+Config.WeaponLegality = {
+    ['WEAPON_PISTOL']       = true,
+    ['WEAPON_KNIFE']        = true,
+    ['WEAPON_COMBATPISTOL'] = false,
+    ['WEAPON_ASSAULTRIFLE'] = false,
+    ['WEAPON_RPG']          = false,
+}
+
+-- Sound played when equipping/holstering a weapon, grouped by class so you
+-- don't have to list every single weapon name. Uses PlaySoundFrontend with
+-- GTA's built-in sound sets, so no extra audio files are required. Swap
+-- these for your own {name, set} pairs if you want a different feel per
+-- class - an invalid name/set simply plays nothing, it never errors.
+Config.WeaponClasses = {
+    ['WEAPON_KNIFE'] = 'melee', ['WEAPON_BAT'] = 'melee', ['WEAPON_HAMMER'] = 'melee',
+    ['WEAPON_PISTOL'] = 'pistol', ['WEAPON_PISTOL_MK2'] = 'pistol', ['WEAPON_COMBATPISTOL'] = 'pistol',
+    ['WEAPON_MICROSMG'] = 'smg', ['WEAPON_SMG'] = 'smg',
+    ['WEAPON_ASSAULTRIFLE'] = 'rifle', ['WEAPON_CARBINERIFLE'] = 'rifle',
+    ['WEAPON_PUMPSHOTGUN'] = 'shotgun', ['WEAPON_SAWNOFFSHOTGUN'] = 'shotgun',
+    ['WEAPON_RPG'] = 'heavy', ['WEAPON_GRENADE'] = 'heavy',
+}
+Config.WeaponDefaultClass = 'pistol'
+Config.WeaponSounds = {
+    ['melee']    = { equip = {name = 'Bag_Impact',      set = 'GTAO_FM_Events_Soundset'},     holster = {name = 'Weapon_Bag_Empty', set = 'GTAO_FM_Events_Soundset'} },
+    ['pistol']   = { equip = {name = 'WEAPON_PURCHASE', set = 'HUD_AMMO_SHOP_SOUNDSET'},       holster = {name = 'SELECT',           set = 'HUD_FRONTEND_DEFAULT_SOUNDSET'} },
+    ['smg']      = { equip = {name = 'WEAPON_PURCHASE', set = 'HUD_AMMO_SHOP_SOUNDSET'},       holster = {name = 'SELECT',           set = 'HUD_FRONTEND_DEFAULT_SOUNDSET'} },
+    ['rifle']    = { equip = {name = 'WEAPON_PURCHASE', set = 'HUD_AMMO_SHOP_SOUNDSET'},       holster = {name = 'BACK',             set = 'HUD_FRONTEND_DEFAULT_SOUNDSET'} },
+    ['shotgun']  = { equip = {name = 'WEAPON_PURCHASE', set = 'HUD_AMMO_SHOP_SOUNDSET'},       holster = {name = 'BACK',             set = 'HUD_FRONTEND_DEFAULT_SOUNDSET'} },
+    ['heavy']    = { equip = {name = 'WEAPON_PURCHASE', set = 'HUD_AMMO_SHOP_SOUNDSET'},       holster = {name = 'BACK',             set = 'HUD_FRONTEND_DEFAULT_SOUNDSET'} },
+}
+
+function Config.GetWeaponClass(name)
+    return (name and Config.WeaponClasses[name]) or Config.WeaponDefaultClass
+end
+
+--╚════════════════════════════════════════════════════════════════════════════════╝
+
+--╔════════════════════════════════════════════════════════════════════════════════╗
+-- Extra metadata for OWNED clothing items (item_vetement), keyed by
+-- [componentType][key] where `key` is built by Config.ClotheValueKey()
+-- below from the item's stored data table (dataInv.clothes2.value, shape
+-- {[type..'_1']=drawableId, [type..'_2']=textureId}, per Config.Clothes
+-- above) - e.g. tshirt drawable 15 / texture 0 -> key "15_0". Component
+-- types match Config.Clothes above ('tshirt', 'torso', 'pants', ...).
+-- Everything here is opt-in: an item with no entry just behaves like
+-- before (common rank, not limited, not faction-locked, not "new").
+
+-- `value` can be the raw data table already decoded from the DB, OR a
+-- JSON string (some code paths hand this off before decoding) - this
+-- normalizes both, and returns nil if it can't make sense of it (in
+-- which case every Is/Get helper below just treats the item as unlocked/
+-- common/not-new, same as an item with no config entry at all).
+function Config.ClotheValueKey(componentType, value)
+    if type(value) == 'string' then
+        local ok, decoded = pcall(json.decode, value)
+        if not ok or type(decoded) ~= 'table' then return nil end
+        value = decoded
+    end
+    if type(value) ~= 'table' then return nil end
+    local d, t = value[componentType .. '_1'], value[componentType .. '_2']
+    if d == nil or t == nil then return nil end
+    return tostring(d) .. '_' .. tostring(t)
+end
+
+-- Luxury/brand rank -> reuses the exact same rank/glow system as
+-- Config.ItemRanks (see the rank block further up), just keyed
+-- differently since a clothing "item" is a component+variant, not a
+-- unique name.
+Config.ClothesRanks = {
+    -- ['torso'] = { ['5_0'] = 'legendary' }, -- torso, drawable 5, texture 0
+}
+
+-- Limited Edition: NOT purchasable through the normal in-game shop -
+-- server/apps/system/clothes.lua blocks the buy request. The only way to
+-- get one onto a player is the new
+-- `exports.esx_inventory:grantLimitedCloth(source, type, drawable, texture, label)`
+-- export, meant to be called by your event/seasonal-reward script.
+Config.LimitedClothes = {
+    -- ['bags'] = { ['12_3'] = true }, -- bags, drawable 12, texture 3
+}
+
+-- Faction-locked: only players whose job is in this list can BUY or WEAR
+-- the item. Checked both at purchase time (server) and at equip time
+-- (client, using the job the resource already knows about).
+Config.ClothesFactionLock = {
+    -- ['torso'] = { ['20_0'] = {'police', 'ambulance'} },
+}
+
+-- "New" tag: shown as a small badge in the shop listing and inventory for
+-- N days after being added (Config.NewClothesDays), OR permanently if set
+-- to `true` instead of a date. Stamp new items with os.time() when you add
+-- them to your shop config.
+Config.NewClothesDays = 7
+Config.NewClothes = {
+    -- ['pants'] = { ['44_0'] = os.time() },
+}
+
+function Config.GetClotheRank(componentType, value)
+    local key = Config.ClotheValueKey(componentType, value)
+    if key and Config.ClothesRanks[componentType] and Config.ClothesRanks[componentType][key] then
+        return Config.ClothesRanks[componentType][key]
+    end
+    return Config.DefaultItemRank
+end
+
+function Config.IsClotheLimited(componentType, value)
+    local key = Config.ClotheValueKey(componentType, value)
+    return key ~= nil and Config.LimitedClothes[componentType] ~= nil and Config.LimitedClothes[componentType][key] == true
+end
+
+function Config.GetClotheFactionLock(componentType, value)
+    local key = Config.ClotheValueKey(componentType, value)
+    if key and Config.ClothesFactionLock[componentType] then
+        return Config.ClothesFactionLock[componentType][key]
+    end
+    return nil
+end
+
+function Config.IsClotheNew(componentType, value)
+    local key = Config.ClotheValueKey(componentType, value)
+    if not key then return false end
+    local stamp = Config.NewClothes[componentType] and Config.NewClothes[componentType][key]
+    if stamp == nil then return false end
+    if stamp == true then return true end
+    return (os.time() - stamp) <= (Config.NewClothesDays * 86400)
+end
+
+--╚════════════════════════════════════════════════════════════════════════════════╝
+
+--╚════════════════════════════════════════════════════════════════════════════════╝

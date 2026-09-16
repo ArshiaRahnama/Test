@@ -34,6 +34,136 @@ $(document).on('input', '#itemSearch', function() {
     filterInventoryItems($(this).val());
 });
 
+// ██████╗  █████╗ ███╗   ██╗██╗  ██╗
+// (rank/quality glow - mirrors Config.ItemRanks, see config/config.lua)
+
+function applyRankStyle($el, item) {
+    if (!item) return;
+    var rank = item.rank || 'common';
+    var colors = RANK_COLORS[rank] || RANK_COLORS.common;
+    RANK_ORDER.forEach(function(r) { $el.removeClass('rank-' + r); });
+    $el.addClass('rank-' + rank);
+    if (rank === 'common') {
+        $el.css('box-shadow', 'none');
+        $el.css('border-color', '');
+    } else {
+        $el.css('border-color', colors.border);
+        $el.css('box-shadow', '0 0 0.5vw 0.08vw ' + colors.glow);
+    }
+    var tint = clotheColorFilter(item);
+    $el.css('filter', tint || '');
+}
+
+function itemWeightLabel(item) {
+    if (!item || !item.weight || item.weight <= 0) return '';
+    var count = (item.type === 'item_weapon') ? 1 : (item.count || 1);
+    var total = item.weight * count;
+    return total.toFixed(1) + 'kg';
+}
+
+// Dynamic clothing icon tint: real 3D palette swatches aren't available to
+// a flat 2D NUI icon, so this approximates "icon reflects the actual color
+// picked" with a CSS hue-rotate derived from the item's stored texture
+// (color variant) index - same variant always renders the same tint.
+function clotheColorFilter(item) {
+    if (!item || item.type !== 'item_vetement' || !item.value) return '';
+    var textureKey = item.name + '_2';
+    var textureId = item.value[textureKey];
+    if (textureId === undefined || textureId === null) return '';
+    var hue = (Number(textureId) * 37) % 360; // 37 spreads small indices apart nicely
+    return 'hue-rotate(' + hue + 'deg) saturate(1.4)';
+}
+
+function itemNewBadge(item) {
+    return (item && item.isNew) ? '<div class="item-new-badge">' + (window.NEW_BADGE_TEXT || 'NEW') + '</div>' : '';
+}
+
+// ██╗    ██╗███████╗██╗ ██████╗ ██╗  ██╗████████╗    ██████╗  █████╗ ██████╗
+// weight bar goes from the normal color to a warning/danger red the closer
+// the player is to their max carry weight.
+function updateWeightBarColor($bar, weight, maxWeight) {
+    var ratio = maxWeight > 0 ? (weight / maxWeight) : 0;
+    $bar.removeClass('weight-warn weight-danger');
+    if (ratio >= 0.9) {
+        $bar.addClass('weight-danger');
+    } else if (ratio >= 0.75) {
+        $bar.addClass('weight-warn');
+    }
+}
+
+// ███████╗ ██████╗ ██████╗ ████████╗
+// Auto-sort: reorders the .item-info nodes already in #left-inventory
+// in-place, based on the .item element's stored `item` data. Empty slots
+// (no item data) always sink to the bottom, same as the server already
+// pads the grid with empty slots.
+var currentSort = { key: null, dir: 1 };
+
+function categoryOf(item) {
+    if (!item) return 'zzz';
+    if (item.type === 'item_weapon') return '1_weapon';
+    if (item.type === 'item_vetement') return '2_clothes';
+    if (item.type === 'item_account' || item.type === 'item_money') return '3_account';
+    if (item.type === 'item_idcard' || item.type === 'item_phone') return '4_misc';
+    return '5_item';
+}
+
+function rankWeight(item) {
+    if (!item) return -1;
+    var idx = RANK_ORDER.indexOf(item.rank || 'common');
+    return idx === -1 ? 0 : idx;
+}
+
+function sortInventory(key) {
+    if (currentSort.key === key) {
+        currentSort.dir *= -1;
+    } else {
+        currentSort.key = key;
+        currentSort.dir = 1;
+    }
+
+    var $container = $('#left-inventory');
+    var $slots = $container.find('.item-info').get();
+
+    $slots.sort(function(a, b) {
+        var itemA = $(a).find('.item').data('item');
+        var itemB = $(b).find('.item').data('item');
+
+        // empty slots always sink to the bottom regardless of direction
+        if (!itemA && !itemB) return 0;
+        if (!itemA) return 1;
+        if (!itemB) return -1;
+
+        var va, vb;
+        if (key === 'weight') {
+            va = (itemA.weight || 0) * (itemA.count || 1);
+            vb = (itemB.weight || 0) * (itemB.count || 1);
+        } else if (key === 'name') {
+            va = (itemA.label || itemA.name || '').toLowerCase();
+            vb = (itemB.label || itemB.name || '').toLowerCase();
+        } else if (key === 'rank') {
+            va = rankWeight(itemA);
+            vb = rankWeight(itemB);
+        } else if (key === 'category') {
+            va = categoryOf(itemA);
+            vb = categoryOf(itemB);
+        }
+
+        if (va < vb) return -1 * currentSort.dir;
+        if (va > vb) return 1 * currentSort.dir;
+        return 0;
+    });
+
+    $.each($slots, function(_, el) {
+        $container.append(el);
+    });
+}
+
+$(document).on('click', '.sort-btn', function() {
+    $('.sort-btn').removeClass('active');
+    $(this).addClass('active');
+    sortInventory($(this).data('sort'));
+});
+
 function initItemDraggable() {
     $('.item').draggable({
         helper: 'clone',
@@ -94,8 +224,21 @@ window.addEventListener("message", function(event) {
         type = event.data.type
 
         disabled = false;
-        $(".form-inv").fadeIn();
+        $(".form-inv").css('display', 'block');
+        // rAF so the browser registers the display change before the
+        // transition class flips - without this the fade+scale doesn't
+        // animate on the very first open.
+        requestAnimationFrame(function() {
+            requestAnimationFrame(function() {
+                $(".form-inv").addClass('visible');
+            });
+        });
         inventoryVisible = true;
+
+        if (event.data.lootAnim) {
+            $(".inventory").addClass('loot-opening');
+            setTimeout(function() { $(".inventory").removeClass('loot-opening'); }, 550);
+        }
 
         if (type == "normal" && event.data.playerName) {
             $("#translateInventory").text(event.data.playerName + ' [' + event.data.serverId + ']');
@@ -103,8 +246,9 @@ window.addEventListener("message", function(event) {
     } else if (event.data.action == "close:Inv") {
 
         $("#dialog").dialog("close");
-        
-        $(".form-inv").fadeOut(100);
+
+        $(".form-inv").removeClass('visible');
+        setTimeout(function() { $(".form-inv").css('display', 'none'); }, 180);
         inventoryVisible = false;
 
         $(".item").remove();
@@ -123,6 +267,7 @@ window.addEventListener("message", function(event) {
         let maxBarValue = (maxWeightBarValue * event.data.weight) / event.data.maxWeight; 
         weightBar.css("width", maxBarValue + "vw");     
         weightText.text(event.data.text); 
+        updateWeightBarColor(weightBar, event.data.weight, event.data.maxWeight);
 
     } else if (event.data.action == "setItems") {
         
@@ -133,6 +278,7 @@ window.addEventListener("message", function(event) {
         let maxBarValue = maxWeightBarValue / maxWeight * totalWeight//Math.floor(fillPercentage);
         weightBar.css("width", maxBarValue + "vw");     
         weightText.text(event.data.text);
+        updateWeightBarColor(weightBar, totalWeight, maxWeight);
 
         $('.info_ui').attr('data-html', 'true').attr('title', _U('help_interfaces')
         ).tooltip({
@@ -285,6 +431,7 @@ window.addEventListener("message", function(event) {
         weightBarCoffre.css("width", maxBarValue + "vw");     
         weightCoffre.text(event.data.textTrunk);
         textCoffre.text(event.data.plate);
+        updateWeightBarColor(weightBarCoffre, event.data.weightTrunk, event.data.maxWeightTrunk);
 
     }
 });
@@ -315,10 +462,11 @@ function inventorySetup(items, fastItems, crMenu, itemTrunk) {
           item.image = '';
         }
       
-        $("#left-inventory").append('<div class="item-info"><div id="item-' + index + '" class="item' + (item.rare ? ' rare-item' : '') + '" style="background-image: url(' + item.image + ')"><div class="item-count">' + count + '</div><div class="item-name">' + item.label + '</div></div><div class="item-name-bg"></div></div>');
+        $("#left-inventory").append('<div class="item-info"><div id="item-' + index + '" class="item' + (item.rare ? ' rare-item' : '') + '" style="background-image: url(' + item.image + ')">' + itemNewBadge(item) + '<div class="item-count">' + count + '</div><div class="item-weight-tag">' + itemWeightLabel(item) + '</div><div class="item-name">' + item.label + '</div></div><div class="item-name-bg"></div></div>');
       
         $('#item-' + index).data('item', item);
         $('#item-' + index).data('inventory', 'main');
+        applyRankStyle($('#item-' + index), item);
       });
       
       for (let i = 0; i < totalSlots - itemsCount; i++) {
@@ -370,6 +518,7 @@ function inventorySetup(items, fastItems, crMenu, itemTrunk) {
                 $('#itemFast-' + item.slot).toggleClass('rare-item', !!item.rare);
                 $('#itemFast-' + item.slot).data('item', item);
                 $('#itemFast-' + item.slot).data('inventory', "fast");
+                applyRankStyle($('#itemFast-' + item.slot), item);
             });
         }
 
@@ -405,10 +554,11 @@ function secondInventorySetup(items) {
             item.image = '';
           }
         
-          $("#right-inventory").append('<div class="item-info"><div id="itemOther-' + index + '" class="item' + (item.locked ? ' locked' : '') + (item.rare ? ' rare-item' : '') + '" style = "background-image: url(' + item.image + ')">' + (item.locked ? '<i class="fas fa-lock lock-icon"></i>' : '') + '<div class="item-count">' + count + '</div><div class="item-name">' + item.label + '</div></div><div class="item-name-bg"></div></div>');
+          $("#right-inventory").append('<div class="item-info"><div id="itemOther-' + index + '" class="item' + (item.locked ? ' locked' : '') + (item.rare ? ' rare-item' : '') + '" style = "background-image: url(' + item.image + ')">' + (item.locked ? '<i class="fas fa-lock lock-icon"></i>' : '') + itemNewBadge(item) + '<div class="item-count">' + count + '</div><div class="item-weight-tag">' + itemWeightLabel(item) + '</div><div class="item-name">' + item.label + '</div></div><div class="item-name-bg"></div></div>');
 
           $('#itemOther-' + index).data('item', item);
           $('#itemOther-' + index).data('inventory', "second");
+          applyRankStyle($('#itemOther-' + index), item);
         });
         
         for (let i = 0; i < totalSlots - itemsCount; i++) {
@@ -467,6 +617,7 @@ function updateSlot(fastItems, crMenu) {
             $('#itemFast-' + item.slot).toggleClass('rare-item', !!item.rare);
             $('#itemFast-' + item.slot).data('item', item);
             $('#itemFast-' + item.slot).data('inventory', "fast");
+            applyRankStyle($('#itemFast-' + item.slot), item);
         });
     }
 
@@ -614,7 +765,8 @@ $(document).ready(function() {
             if (inventoryVisible) {
                 $("#dialog").dialog("close");
         
-                $(".form-inv").fadeOut(100);
+                $(".form-inv").removeClass('visible');
+                setTimeout(function() { $(".form-inv").css('display', 'none'); }, 180);
                 inventoryVisible = false;
                 $.post("http://esx_inventory/close",JSON.stringify())
 
@@ -687,6 +839,16 @@ $(document).ready(function() {
             $.post("http://esx_inventory/deleteItem", JSON.stringify({
                 item: itemData,
                 // number: parseInt($("#count").val())
+            }));
+        }
+    });
+
+    $('#dropItem').droppable({
+        hoverClass: 'hoverControl',
+        drop: function(event, ui) {
+            itemData = ui.draggable.data("item");
+            $.post("http://esx_inventory/dropItem", JSON.stringify({
+                item: itemData,
             }));
         }
     });
@@ -1084,7 +1246,11 @@ function formatMoney(n, c, d, t) {
     return s + (j ? i.substr(0, j) + t : "") + i.substr(j).replace(/(\d{3})(?=\d)/g, "$1" + t);
 };
 
-// CLIQUE DROIT
+// CLIQUE DROIT (legacy quick-use on right click, kept for anyone relying
+// on the old single-click-use flow; the new context menu below is the
+// primary right-click interaction and takes over the actual click via
+// contextmenu preventDefault, so this mousedown handler no longer fires
+// for items - only non-item targets, if any, ever reach it.)
 
 $(document).mousedown(function(event) {
 
@@ -1096,19 +1262,117 @@ $(document).mousedown(function(event) {
         return;
     }
 
-    itemInventory = $(event.target).data("esx_inventory");
+});
 
-    if (itemData.usable) {
 
-        // $(event.target).fadeIn(50)
-        // setTimeout(function() {
-            $.post("http://esx_inventory/useItem", JSON.stringify({
-                item: itemData
-            }));
-        // }, 100);
-        // $(event.target).fadeOut(50)
+// ██████╗ ██╗ ██████╗ ██╗  ██╗████████╗    ███╗   ███╗███████╗███╗   ██╗██╗   ██╗
+// Right-click context menu: Use / Give / Drop / Inspect
+
+var contextMenuItemEl = null;
+
+$(document).on('contextmenu', '.item', function(e) {
+    var itemData = $(this).data('item');
+    if (!itemData) return; // empty slot - let the browser default (nothing) happen
+    e.preventDefault();
+
+    contextMenuItemEl = $(this);
+
+    var droppable = !(itemData.type === 'item_vetement' || itemData.type === 'item_idcard' || itemData.type === 'item_phone');
+
+    $('#itemContextMenu .context-item[data-action="use"]').toggle(!!itemData.usable);
+    $('#itemContextMenu .context-item[data-action="give"]').toggle(itemData.type !== 'item_idcard');
+    $('#itemContextMenu .context-item[data-action="drop"]').toggle(droppable);
+    $('#itemContextMenu .context-item[data-action="scan"]').toggle(itemData.type === 'item_weapon');
+
+    var $menu = $('#itemContextMenu');
+    var x = e.pageX, y = e.pageY;
+    var menuW = 160, menuH = 160;
+    if (x + menuW > window.innerWidth) x -= menuW;
+    if (y + menuH > window.innerHeight) y -= menuH;
+
+    $menu.css({ left: x + 'px', top: y + 'px' }).addClass('visible');
+});
+
+$(document).on('click', function(e) {
+    if (!$(e.target).closest('#itemContextMenu').length) {
+        $('#itemContextMenu').removeClass('visible');
+    }
+});
+
+$(document).on('click', '#itemContextMenu .context-item', function() {
+    if (!contextMenuItemEl) return;
+    var itemData = contextMenuItemEl.data('item');
+    var action = $(this).data('action');
+
+    if (itemData) {
+        if (action === 'use') {
+            $.post("http://esx_inventory/useItem", JSON.stringify({ item: itemData }));
+        } else if (action === 'give') {
+            $.post("http://esx_inventory/giveItem", JSON.stringify({ item: itemData }));
+        } else if (action === 'drop') {
+            $.post("http://esx_inventory/dropItem", JSON.stringify({ item: itemData }));
+        } else if (action === 'scan') {
+            $.post("http://esx_inventory/scanWeapon", JSON.stringify({ item: itemData }));
+        } else if (action === 'inspect') {
+            openInspect(itemData);
+        }
     }
 
+    $('#itemContextMenu').removeClass('visible');
+});
+
+// ██╗███╗   ██╗███████╗██████╗ ███████╗ ██████╗████████╗
+// Inspect modal
+
+function openInspect(itemData) {
+    $('#itemInspectImage').attr('src', itemData.image || '');
+    $('#itemInspectLabel').text(itemData.label || itemData.name || '');
+
+    var rank = itemData.rank || 'common';
+    $('#itemInspectRank').text(rank.charAt(0).toUpperCase() + rank.slice(1));
+    RANK_ORDER.forEach(function(r) { $('#itemInspectRank').removeClass('rank-text-' + r); });
+    $('#itemInspectRank').addClass('rank-text-' + rank);
+
+    var count = (itemData.type === 'item_weapon') ? 1 : (itemData.count || 1);
+    $('#itemInspectCount').text(count);
+
+    var totalWeight = itemData.weight ? (itemData.weight * count).toFixed(1) + 'kg' : '—';
+    $('#itemInspectWeight').text(totalWeight);
+
+    $('#itemInspect').addClass('visible');
+}
+
+$(document).on('click', '#itemInspectClose', function() {
+    $('#itemInspect').removeClass('visible');
+});
+$(document).on('click', '#itemInspect', function(e) {
+    if (e.target.id === 'itemInspect') {
+        $('#itemInspect').removeClass('visible');
+    }
+});
+
+// ██████╗ ██████╗     ██████╗ ██████╗ ███████╗██╗   ██╗██╗███████╗██╗    ██╗
+// Lightweight "3D-ish" hover preview: since item icons are flat 2D images
+// (not real 3D models), a real rotating 3D render isn't possible here -
+// this gives a tilt/parallax feel driven by cursor position instead, which
+// is the honest equivalent achievable with a 2D icon.
+$(document).on('mousemove', '.item', function(e) {
+    var itemData = $(this).data('item');
+    if (!itemData || $(this).hasClass('locked')) return;
+
+    var rect = this.getBoundingClientRect();
+    var px = (e.clientX - rect.left) / rect.width;   // 0..1
+    var py = (e.clientY - rect.top) / rect.height;   // 0..1
+    var rotateY = (px - 0.5) * 22;  // deg
+    var rotateX = (0.5 - py) * 22;  // deg
+
+    $(this).css('transform', 'perspective(400px) scale(1.12) rotateX(' + rotateX + 'deg) rotateY(' + rotateY + 'deg)');
+    $(this).css('z-index', 50);
+});
+
+$(document).on('mouseleave', '.item', function() {
+    $(this).css('transform', '');
+    $(this).css('z-index', '');
 });
 
 

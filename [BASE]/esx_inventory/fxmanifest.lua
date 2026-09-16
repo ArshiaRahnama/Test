@@ -24,6 +24,8 @@ client_scripts {
 
 	'client/custom/framework/*.lua',
   'client/custom/property/*.lua',
+  'client/custom/drop/*.lua',
+  'client/custom/weaponscan/*.lua',
   'client/apps/other/*.lua',
   'client/apps/default/*.lua',
   'client/apps/system/*.lua',
@@ -37,6 +39,8 @@ server_scripts {
 	'server/custom/property/*.lua',
 	'server/custom/glovebox/*.lua',
 	'server/custom/corpse/*.lua',
+	'server/custom/drop/*.lua',
+	'server/custom/weaponscan/*.lua',
 	'server/custom/apps/*.lua',
   'server/apps/default/*.lua',
   'server/apps/system/*.lua',

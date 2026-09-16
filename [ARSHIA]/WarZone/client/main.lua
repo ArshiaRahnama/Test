@@ -17,6 +17,10 @@ local MarkerWarzone  , planekey  , tempBlip ,  plane , pilot   = nil , nil   , n
 local GulagCoord  =  Config.GulagZone 
 local model = GetHashKey( Config.airplane)
 local armoritem , bandageitem = 0 , 0
+-- Expansion: state for the new client-side systems below
+local CarKeysHeld = 0
+local HasSelfRevive = false
+local LockedVehicleNearby = nil -- {veh=, netId=} while standing next to a locked vehicle
 -- Fix: ZoneOne used to be declared as a `local` further down the file (after
 -- the AWZ:StartMatch handler), so the `ZoneOne = true` reset inside
 -- AWZ:StartMatch was actually creating/writing a separate GLOBAL variable.
@@ -114,6 +118,7 @@ AddEventHandler("AWZ:StartMatch",function(Blood , DistanceZone , WzCoord , TimeM
 	   Zone = DistanceZone
 	   SaveZone = DistanceZone
 	   MyCash = 0
+	   TriggerServerEvent('AWZ:ResetCash') -- Expansion: keep the server-authoritative total in sync
 	   NZone = DistanceZone 
 	   MapName = Map
 	---- bool ----
@@ -176,12 +181,31 @@ AddEventHandler("AWZ:StartMatch",function(Blood , DistanceZone , WzCoord , TimeM
 	-- location, with a blip so squads know where to fight over it.
 	local goldenCoord = Config.GoldenCrateCoords[MapName]
 	if goldenCoord then
-		RequestModel(GetHashKey('ex_prop_container_crashed'))
+		-- Fix: HasModelLoaded() was checked immediately after RequestModel()
+		-- with no wait loop -- streaming a model always takes at least a few
+		-- frames, so this check was reading "not loaded yet" as "will never
+		-- load" and falling back to prop_boxpile_07d on effectively every
+		-- single match, regardless of whether ex_prop_container_crashed was
+		-- actually available. Give it a real (bounded) wait loop, same
+		-- pattern used for requiredModels in JoinLobbey(), and only fall
+		-- back if it genuinely never streams in. The fallback model also
+		-- needs its own Request/wait -- CreateObject on an unloaded model
+		-- can silently spawn nothing.
 		local crateModel = GetHashKey('ex_prop_container_crashed')
+		RequestModel(crateModel)
+		local streamWait = 0
+		while not HasModelLoaded(crateModel) and streamWait < 500 do
+			Wait(10)
+			streamWait = streamWait + 1
+		end
 		if not HasModelLoaded(crateModel) then
-			-- fall back to a model that's always resident if the custom one
-			-- isn't streamed for this map/build
 			crateModel = GetHashKey('prop_boxpile_07d')
+			RequestModel(crateModel)
+			streamWait = 0
+			while not HasModelLoaded(crateModel) and streamWait < 500 do
+				Wait(10)
+				streamWait = streamWait + 1
+			end
 		end
 		GoldenCrateEntity = CreateObject(crateModel, goldenCoord.x, goldenCoord.y, goldenCoord.z, false, true, true)
 		PlaceObjectOnGroundProperly(GoldenCrateEntity)
@@ -392,9 +416,10 @@ RegisterNetEvent("AWZ:respwan")
 AddEventHandler("AWZ:respwan",function(addkill , Killed , Killer)
 	if addkill then 
 		MyKill = MyKill + 1 
-		MyCash = MyCash + 500
+		-- Expansion: the +500 kill reward is now granted server-side
+		-- (see esx:onPlayerDeath in server/main.lua) and mirrored back via
+		-- AWZ:SyncCash, instead of the client just crediting itself.
 		SendNUIMessage({message	= "kill",MyKill =  MyKill ,}) 
-		SendNUIMessage({message	= "cash",MyCash =  MyCash ,}) 
 		SendNUIMessage({message = 'kilmsg' ,Killer = Killer , killed = Killed  })
 		SetTimeout(3000 , function() SendNUIMessage({message = 'delmsg'}) end)
 		return 
@@ -495,6 +520,17 @@ AddEventHandler('AWZ:Revived', function(reviverName)
 	PlayerDead = false
 	ESX.ShowMissionText('')
 	ESX.ShowNotification('Revived by '..(reviverName or 'a teammate')..'!')
+end)
+-- Expansion: Self-Revive Kit -- reuses the exact same "AWZ:Revived" local
+-- event the Downed State system already uses for a teammate revive, just
+-- triggered by the player themself instead of a squadmate's key press.
+CreateThread(function()
+	AddEventHandler('onKeyDown', function(key)
+		if key == 'j' and IsDowned and HasSelfRevive then
+			HasSelfRevive = false
+			TriggerEvent('AWZ:Revived', 'yourself (Self-Revive Kit)')
+		end
+	end)
 end)
 RegisterNetEvent('AWZ:SquadmateDowned')
 AddEventHandler('AWZ:SquadmateDowned', function(downedId)
@@ -942,7 +978,25 @@ function MakeZoneBlip(pos, radius , color )
 	SetBlipAsShortRange(blip, true)
 	return tonumber(blip)
 end
+-- Fix: `realyWait` in ShopWzDrop() was referenced as a guard condition but
+-- never assigned anywhere in the whole file -- an always-nil global, so the
+-- guard was permanently dead code. This is also why old shop boxes were
+-- never actually cleaned up between zone rounds: ZoneRuning() only removed
+-- the previous round's blips and flagged them unusable, but left the actual
+-- CreateObject entities sitting in the world for the rest of the match --
+-- still showing the "WarZone Shop" 3D text prompt (see ShowBoxLootTexT) at
+-- locations that just tell you "no longer has items" if you walk up to
+-- them. ClearShopBoxes() (called from ZoneRuning, see below) now actually
+-- deletes the previous round's entities instead of leaving them orphaned.
+function ClearShopBoxes()
+	for k, v in pairs(ShopBoxes) do
+		if DoesEntityExist(v.Box) then DeleteEntity(v.Box) end
+		if DoesBlipExist(v.Blip) then RemoveBlip(v.Blip) end
+	end
+	ShopBoxes = {}
+end
 function CreateShop(SCoord)
+	if not SCoord then return end -- defensive: an unexpected Map/round key would otherwise error pairs(nil) and kill the caller's thread
 	CreateThread(function()
 		for k,v in pairs(SCoord) do 
 			ShopWzDrop(v  )
@@ -950,7 +1004,6 @@ function CreateShop(SCoord)
 	end)
 end 
 function ShopWzDrop(PlaneCoords, Code)
-	if realyWait  then return end 
 	CreateThread(function()
     	local crateSpawn = vector3(PlaneCoords.x , PlaneCoords.y ,PlaneCoords.z - 1)
 		local blip2
@@ -1000,6 +1053,12 @@ function WarZone(loadHud)
     	end 
 		armoritem , bandageitem = 2 , 2
 		MyCash = 0
+		-- Expansion: reset per-match item state that used to leak into the
+		-- next match otherwise (a self-revive kit or car key found in one
+		-- match would silently still be "held" going into the next one,
+		-- even though the server already wiped its own copies at BeginMatch).
+		HasSelfRevive = false
+		CarKeysHeld = 0
 		SendNUIMessage({message	= "cash",MyCash =  MyCash ,}) 
 		AllUav = 1 
 		PlayerDead = false 
@@ -1233,10 +1292,12 @@ function ZoneRuning()
 local ZoneRun = true  
 NZone = Distance / 2 
 	SoundZoneMoved()
-	for k,v in pairs(ShopBoxes) do 
-		RemoveBlip(v.Blip)
-		v.CanUse = false 
-    end
+	-- Fix: this used to only remove the blip and flag CanUse=false, leaving
+	-- the actual shop entities (and their "WarZone Shop" 3D text prompt)
+	-- orphaned in the world for the rest of the match. ClearShopBoxes()
+	-- (see above CreateShop) deletes them properly before the new round's
+	-- shops are created below.
+	ClearShopBoxes()
 	if ZoneOne then  
 		ZoneOne = false 
 		CreateShop(Config.shops [ string.upper ( MapName .. 2 ) ]  )
@@ -1408,6 +1469,15 @@ end
 
 function SetPLayerInGulag()
 	if not InWarzone  then return end 
+	-- Expansion: Reboot Van -- in a squad (any of the 3 teammate slots
+	-- filled), skip the Gulag duel entirely and go straight to the same
+	-- "spectate until rescued" state a Gulag loss ends in, but recoverable
+	-- by a teammate visiting the van instead of needing to win a fight.
+	-- Solo matches have no teammate to do that, so they keep the Gulag.
+	if Config.RebootVan.enabled and (MyPlayersID[1] ~= 0 or MyPlayersID[2] ~= 0 or MyPlayersID[3] ~= 0) then
+		EnterAwaitingReboot()
+		return
+	end
 	armoritem , bandageitem = 0 , 0
 	AllUav = 0 
 	ESX.TriggerServerCallback('AWZ:SetPlayerInGulag', function(prisoner) 
@@ -1589,6 +1659,7 @@ CreateThread(function()
 						armoritem = armoritem + 4
 						bandageitem = bandageitem + 4
 						MyCash = MyCash + 5000
+						TriggerServerEvent('AWZ:AddCashSync', 5000) -- Expansion: keep server total in sync
 						SendNUIMessage({message = "cash", MyCash = MyCash})
 						SendNUIMessage({message = "music", Name = 'bigloot'})
 					else
@@ -1658,6 +1729,7 @@ CreateThread(function()
 								TriggerServerEvent("WarZone:SyncDelBox",v.CodeMeli)
 				 				PuckUP()
 								MyCash = MyCash + v.Money
+								TriggerServerEvent('AWZ:AddCashSync', v.Money) -- Expansion: keep server total in sync
 								for c, d in pairs(v.Weapons) do 
 									AddWeapon( d, 250)
 								end 
@@ -1682,6 +1754,7 @@ CreateThread(function()
 					 			AddWeaponWithTier(v.weapon)
 							end 
 							MyCash	= MyCash +  v.Money 
+							TriggerServerEvent('AWZ:AddCashSync', v.Money) -- Expansion: keep server total in sync
 							SendNUIMessage({message	= "cash",MyCash =  MyCash ,}) 
 					 		if v.Heal then 
 								bandageitem = bandageitem + 1
@@ -1691,6 +1764,12 @@ CreateThread(function()
 							if v.Uav then 
 								AllUav = AllUav + 1
 							end 
+							-- Expansion: Self-Revive Kit -- small chance on any ground
+							-- crate pickup, on top of whatever else it contained.
+							if Config.SelfRevive.enabled and not HasSelfRevive and math.random(1, 100) <= Config.SelfRevive.crateDropChance then
+								HasSelfRevive = true
+								ESX.ShowNotification('~g~You found a Self-Revive Kit! ~w~Press [J] if downed to use it.')
+							end
 							table.remove(AllLoots , k,v )
 							PuckUP()
 						end
@@ -1770,68 +1849,45 @@ CreateThread(function()
 								},
 							function(data, menu) 
 							local action = data.current.value
-								if action == 'heal50' then 
-									if MyCash >= 300 then 
+								-- Expansion: Server-Authoritative Economy -- WzCash used to
+								-- be checked/deducted entirely client-side here, trivially
+								-- cheatable. The server now decides whether this purchase
+								-- is affordable and deducts the real cash; the effect below
+								-- is only applied once it confirms.
+								local function applyEffect(act)
+									if act == 'heal50' then
 										bandageitem = bandageitem + 2
 										SendNotifyToPlayer('You have purchased Armor')
-										MyCash = MyCash - 300 
-									else 
-										SendNotifyToPlayer('Your money is not enough' )
-									end 
-								elseif action == 'heal100' then 
-									if MyCash >= 500 then 
+									elseif act == 'heal100' then
 										bandageitem = bandageitem + 4
 										SendNotifyToPlayer('You have purchased  bandage Pack ')
-										MyCash = MyCash - 500 
-									else 
-										SendNotifyToPlayer('Your money is not enough' )
-									end 
-								elseif action == 'vest50' then 
-									if MyCash >= 300 then 
+									elseif act == 'vest50' then
 										armoritem = armoritem + 2
-										SendNotifyToPlayer('You have purchased Armor') 
-										MyCash = MyCash - 300 
-									else 
-									SendNotifyToPlayer('Your money is not enough' )
-									end 
-								elseif action == 'vest100' then 
-									if MyCash >= 500 then 
+										SendNotifyToPlayer('You have purchased Armor')
+									elseif act == 'vest100' then
+										armoritem = armoritem + 4
 										SendNotifyToPlayer('You have purchased  Armor Pack ')
-										MyCash = MyCash - 500 
-										armoritem = armoritem +4 
-									else 
-										SendNotifyToPlayer('Your money is not enough' )
-									end 
-								elseif action == 'uav' then 
-									if AllUav <= 4 then 
-										if MyCash >= 400 then 
-											MyCash = MyCash - 400 
-											BuyUAV()
-										else 
-											SendNotifyToPlayer('Your money is not enough' )
-										end 
-									else 
-										SendNotifyToPlayer('You cannot buy more than 4 UAV')
-									end 
-								elseif action == 'blood' then 
-									if MyCash >= 1000 then 
-										MyCash = MyCash - 1000 
-										MySelf = MySelf + 1	
-									else 
-										SendNotifyToPlayer('Your money is not enough' )
-									end 
-								elseif action == 'loadout' then 
-									if MyCash >= 1000 then 
-										MyCash = MyCash - 1000 
+									elseif act == 'uav' then
+										BuyUAV()
+									elseif act == 'blood' then
+										MySelf = MySelf + 1
+									elseif act == 'loadout' then
 										AddWeapon( "WEAPON_FLARE", 1)
 										PrivteLoadout()
-									else 
-										SendNotifyToPlayer('Your money is not enough' )
-									end 
-								end 
+									end
+								end
+								if action == 'uav' and AllUav > 4 then
+									SendNotifyToPlayer('You cannot buy more than 4 UAV')
+								elseif action == 'heal50' or action == 'heal100' or action == 'vest50'
+									or action == 'vest100' or action == 'uav' or action == 'blood' or action == 'loadout' then
+									ESX.TriggerServerCallback('AWZ:ShopBuy', function(ok, newCash)
+										MyCash = newCash
+										SendNUIMessage({message = "cash", MyCash = MyCash})
+										if ok then applyEffect(action) else SendNotifyToPlayer('Your money is not enough') end
+									end, action)
+								end
 								menu.close()
 								inshopbox = false
-								SendNUIMessage({message	= "cash",MyCash =  MyCash ,}) 
 								end, function(data, menu)
 		 						 menu.close() 
 		  						inshopbox = false
@@ -2072,11 +2128,138 @@ function OpenWarzoneMenu()
 			TriggerServerEvent('AWZ:ShowLastMatch')
 			exports.icon_menu:ForceCloseMenu()
 		end },
+		-- Expansion: Persistent Rank / Battle Pass -- both just print a chat
+		-- card, so no dedicated submenu is needed for them.
+		{ img = 'level.png', text = 'My Rank', text2 = 'Lifetime WarZone level', callBack = function()
+			ExecuteCommand(Config.Rank.command)
+			exports.icon_menu:ForceCloseMenu()
+		end },
+		{ img = 'document.png', text = 'Battle Pass', text2 = "Today's challenges", callBack = function()
+			ExecuteCommand(Config.BattlePass.command)
+			exports.icon_menu:ForceCloseMenu()
+		end },
+		{ img = 'add-file.png', text = 'Cosmetic Shop', text2 = 'Spend WZCoins on uniforms', callBack = function() OpenCosmeticShopMenu() end },
+		{ img = 'give.png', text = 'Loadout Drop', text2 = 'Pick what you jump in with', callBack = function() OpenLoadoutMenu() end },
+		{ img = 'give.png', text = 'Contract', text2 = 'Optional bonus objective', callBack = function() OpenContractMenu() end },
+		{ img = 'human.png', text = 'Vote Team Size', text2 = 'Solo / Duo / Trio / Squad', callBack = function() OpenModeVoteMenu() end },
+		{ img = 'human.png', text = 'Vote Map', text2 = 'Sandy Shores / Cayo-style Island', callBack = function() OpenMapVoteMenu() end },
+		{ img = 'stop.png', text = 'Report a Player', text2 = 'Pings online admins', callBack = function() OpenReportMenu() end },
 		{ img = 'close.png', text = 'Close', text2 = '', callBack = function()
 			exports.icon_menu:ForceCloseMenu()
 		end },
 	}
 	exports.icon_menu:OpenMenu(elements, menuStyle)
+end
+
+-- Expansion: Custom Loadout Drop -- picked once, applied by AWZ:StartMatch
+LocalLoadoutChoice = 'none'
+function OpenLoadoutMenu()
+	local elements = {
+		{ img = 'back.png', text = 'Back', text2 = 'Return to WarZone menu', isBack = true, callBack = function() OpenWarzoneMenu() end },
+	}
+	for _, opt in ipairs(Config.CustomLoadout.options) do
+		table.insert(elements, { img = 'give.png', text = opt.label, text2 = (LocalLoadoutChoice == opt.value) and 'Currently selected' or '', callBack = function()
+			LocalLoadoutChoice = opt.value
+			TriggerServerEvent('AWZ:SetLoadoutChoice', opt.value)
+			ESX.ShowNotification('Loadout set: '..opt.label)
+			exports.icon_menu:ForceCloseMenu()
+		end })
+	end
+	exports.icon_menu:OpenMenu(elements, menuStyle)
+end
+
+-- Expansion: Pre-Match Contract
+function OpenContractMenu()
+	local elements = {
+		{ img = 'back.png', text = 'Back', text2 = 'Return to WarZone menu', isBack = true, callBack = function() OpenWarzoneMenu() end },
+	}
+	for _, opt in ipairs(Config.PreMatchContract.options) do
+		table.insert(elements, { img = 'give.png', text = opt.label, text2 = opt.reward > 0 and ('+'..opt.reward..' WZCoins') or '', callBack = function()
+			TriggerServerEvent('AWZ:SetContractChoice', opt.id)
+			ESX.ShowNotification('Contract set: '..opt.label)
+			exports.icon_menu:ForceCloseMenu()
+		end })
+	end
+	exports.icon_menu:OpenMenu(elements, menuStyle)
+end
+
+-- Expansion: Team-Size / Map Vote -- thin wrappers around the /wzmode and
+-- /wzmapvote commands so voting doesn't require typing.
+function OpenModeVoteMenu()
+	local elements = {
+		{ img = 'back.png', text = 'Back', text2 = 'Return to WarZone menu', isBack = true, callBack = function() OpenWarzoneMenu() end },
+	}
+	for size, label in pairs(Config.ModeVote.labels) do
+		table.insert(elements, { img = 'human.png', text = label, text2 = '', callBack = function()
+			ExecuteCommand(Config.ModeVote.voteCommend..' '..size)
+			exports.icon_menu:ForceCloseMenu()
+		end })
+	end
+	exports.icon_menu:OpenMenu(elements, menuStyle)
+end
+function OpenMapVoteMenu()
+	local elements = {
+		{ img = 'back.png', text = 'Back', text2 = 'Return to WarZone menu', isBack = true, callBack = function() OpenWarzoneMenu() end },
+		{ img = 'human.png', text = 'Sandy Shores', text2 = '', callBack = function()
+			ExecuteCommand(Config.MapVote.voteCommend..' sandy')
+			exports.icon_menu:ForceCloseMenu()
+		end },
+		{ img = 'human.png', text = 'Island', text2 = '', callBack = function()
+			ExecuteCommand(Config.MapVote.voteCommend..' island')
+			exports.icon_menu:ForceCloseMenu()
+		end },
+	}
+	exports.icon_menu:OpenMenu(elements, menuStyle)
+end
+
+-- Expansion: Cosmetic Shop (WZCoins, persistent)
+function OpenCosmeticShopMenu()
+	ESX.TriggerServerCallback('AWZ:GetShopState', function(coins, owned)
+		local elements = {
+			{ img = 'back.png', text = 'Back', text2 = 'Return to WarZone menu', isBack = true, callBack = function() OpenWarzoneMenu() end },
+			{ img = 'level.png', text = 'Your WZCoins: '..coins, text2 = 'Earned via the Battle Pass', callBack = function() end },
+		}
+		for _, item in ipairs(Config.CosmeticShop.items) do
+			local ownedTag = owned[item.id] and ' (owned)' or ''
+			table.insert(elements, { img = 'add-file.png', text = item.label..ownedTag, text2 = item.cost..' WZCoins', callBack = function()
+				if owned[item.id] then
+					SetPedComponentVariation(PlayerPedId(), 3, 15, item.variant, 0)
+					ESX.ShowNotification('Equipped '..item.label)
+					return exports.icon_menu:ForceCloseMenu()
+				end
+				ESX.TriggerServerCallback('AWZ:BuyCosmetic', function(ok, variantOrReason)
+					if ok then
+						SetPedComponentVariation(PlayerPedId(), 3, 15, variantOrReason, 0)
+						ESX.ShowNotification('Bought and equipped '..item.label..'!')
+					else
+						ESX.ShowNotification(tostring(variantOrReason))
+					end
+					exports.icon_menu:ForceCloseMenu()
+				end, item.id)
+			end })
+		end
+		exports.icon_menu:OpenMenu(elements, menuStyle)
+	end)
+end
+
+-- Expansion: Reports
+function OpenReportMenu()
+	ESX.TriggerServerCallback('AWZ:GetOnlinePlayers', function(players)
+		local elements = {
+			{ img = 'back.png', text = 'Back', text2 = 'Return to WarZone menu', isBack = true, callBack = function() OpenWarzoneMenu() end },
+		}
+		for _, p in ipairs(players) do
+			table.insert(elements, { img = 'human.png', text = p.name, text2 = 'ID: '..p.id, callBack = function()
+				TriggerServerEvent('AWZ:SubmitReport', p.id, 'Reported via WarZone menu')
+				ESX.ShowNotification('Report sent for '..p.name)
+				exports.icon_menu:ForceCloseMenu()
+			end })
+		end
+		if #players == 0 then
+			table.insert(elements, { img = 'stop.png', text = 'No other players online', text2 = '' })
+		end
+		exports.icon_menu:OpenMenu(elements, menuStyle)
+	end)
 end
 
 function OpenPartyMenu()
@@ -2125,6 +2308,264 @@ function OpenInvitePlayerMenu()
 		exports.icon_menu:OpenMenu(elements, menuStyle)
 	end)
 end
+
+-------------------------------------------------------------------
+-- Expansion: cash/car-key HUD sync from the server-authoritative totals
+-------------------------------------------------------------------
+RegisterNetEvent('AWZ:SyncCash')
+AddEventHandler('AWZ:SyncCash', function(amount)
+	MyCash = amount
+	SendNUIMessage({message = "cash", MyCash = MyCash})
+end)
+RegisterNetEvent('AWZ:SyncCarKeys')
+AddEventHandler('AWZ:SyncCarKeys', function(amount)
+	CarKeysHeld = amount
+end)
+
+-------------------------------------------------------------------
+-- Expansion: Custom Loadout Drop -- applied once AWZ:StartMatch has
+-- already run (see the RegisterNetEvent("AWZ:StartMatch") handler above).
+-------------------------------------------------------------------
+RegisterNetEvent('AWZ:ApplyCustomLoadout')
+AddEventHandler('AWZ:ApplyCustomLoadout', function(weaponList)
+	CreateThread(function()
+		Wait(3000) -- let the normal jump/drop sequence finish first
+		for _, w in ipairs(weaponList or {}) do
+			AddWeapon(w.name, w.ammo)
+		end
+		if #(weaponList or {}) > 0 then
+			ESX.ShowNotification('Custom loadout applied!')
+		end
+	end)
+end)
+
+-------------------------------------------------------------------
+-- Expansion: Killcam -- a short static cam on the killer right after an
+-- open-battlefield death (not the Gulag -- that duel is already a 1v1 the
+-- victim watched happen).
+-------------------------------------------------------------------
+RegisterNetEvent('AWZ:PlayKillcam')
+AddEventHandler('AWZ:PlayKillcam', function(killerCoords, killerHeading, killerName)
+	if not Config.Killcam.enabled or not killerCoords then return end
+	CreateThread(function()
+		local cam = CreateCam("DEFAULT_SCRIPTED_CAMERA", true)
+		local behind = killerCoords - vector3(math.cos(math.rad(killerHeading)) * -3.0, math.sin(math.rad(killerHeading)) * -3.0, -1.5)
+		SetCamCoord(cam, behind.x, behind.y, behind.z)
+		PointCamAtCoord(cam, killerCoords.x, killerCoords.y, killerCoords.z + 0.5)
+		SetCamActive(cam, true)
+		RenderScriptCams(true, true, 300, true, true)
+		ESX.ShowNotification('~r~Killed by '..(killerName or 'an enemy'))
+		Wait(Config.Killcam.durationMs)
+		RenderScriptCams(false, true, 300, true, true)
+		DestroyCam(cam, false)
+	end)
+end)
+
+-------------------------------------------------------------------
+-- Expansion: Vehicle Killstreak -- a longer no-death kill streak grants a
+-- temporary attack helicopter, on top of the existing UAV/airdrop rewards.
+-------------------------------------------------------------------
+RegisterNetEvent('AWZ:VehicleKillstreak')
+AddEventHandler('AWZ:VehicleKillstreak', function()
+	if not Config.VehicleKillstreak.enabled or not InWarzone then return end
+	CreateThread(function()
+		local model = GetHashKey(Config.VehicleKillstreak.vehicle)
+		RequestModel(model)
+		local w = 0
+		while not HasModelLoaded(model) and w < 500 do Wait(10) w = w + 1 end
+		if not HasModelLoaded(model) then return end
+		local ped = PlayerPedId()
+		local pCoord = GetEntityCoords(ped)
+		local spawnCoord = pCoord + vector3(0.0, 0.0, 20.0)
+		local heli = CreateVehicle(model, spawnCoord.x, spawnCoord.y, spawnCoord.z, GetEntityHeading(ped), true, false)
+		SetVehicleOnGroundProperly(heli)
+		TaskWarpPedIntoVehicle(ped, heli, -1)
+		ESX.ShowNotification('~g~Vehicle Killstreak! ~w~Attack chopper is yours for '..math.floor(Config.VehicleKillstreak.durationMs/1000)..'s.')
+		Wait(Config.VehicleKillstreak.durationMs)
+		if DoesEntityExist(heli) then
+			ESX.ShowNotification('Killstreak chopper despawning...')
+			Wait(3000)
+			if DoesEntityExist(heli) then DeleteEntity(heli) end
+		end
+	end)
+end)
+
+-------------------------------------------------------------------
+-- Expansion: Environmental Hazards -- damages anyone standing in the
+-- affected radius while it's active. Runs for a fixed lifespan since the
+-- server only announces the event once, not an on/off pair.
+-------------------------------------------------------------------
+RegisterNetEvent('AWZ:Hazard')
+AddEventHandler('AWZ:Hazard', function(hType, hCoord, radius, damagePerTick)
+	if not InWarzone then return end
+	CreateThread(function()
+		local label = hType == 'gas' and 'Toxic Gas' or hType == 'sandstorm' and 'Sandstorm' or 'Lightning Storm'
+		local lifespanMs = 40000
+		local elapsed = 0
+		while InWarzone and elapsed < lifespanMs do
+			Wait(1000)
+			elapsed = elapsed + 1000
+			local ped = PlayerPedId()
+			if not IsEntityDead(ped) and not ingulag then
+				local dist = GetDistanceBetweenCoords(GetEntityCoords(ped), hCoord.x, hCoord.y, hCoord.z, true)
+				if dist <= radius then
+					ESX.ShowMissionText('~r~'..label..'~w~ -- get out of the area!')
+					local newHealth = GetEntityHealth(ped) - damagePerTick
+					SetEntityHealth(ped, math.max(newHealth, 1))
+				end
+			end
+		end
+	end)
+end)
+
+-------------------------------------------------------------------
+-- Expansion: Reboot Van (squad matches only) -- see SetPLayerInGulag()
+-- above for where a squad member gets routed here instead of the Gulag.
+-------------------------------------------------------------------
+function EnterAwaitingReboot()
+	ESX.ShowMissionText("")
+	RemoveAllPedWeapons(PlayerPedId(), true)
+	TriggerServerEvent('AWZ:RequestReboot')
+end
+RegisterNetEvent('AWZ:RebootRevive')
+AddEventHandler('AWZ:RebootRevive', function(nearCoords)
+	StopSpectating()
+	TriggerServerEvent("AWZ:SetRBucket", Config.FightWorld)
+	local ped = PlayerPedId()
+	local dropCoord = nearCoords or GetEntityCoords(ped)
+	local offset = vector3((math.random(-3,3)) * 1.0, (math.random(-3,3)) * 1.0, 0.0)
+	SetEntityCoordsNoOffset(ped, dropCoord.x + offset.x, dropCoord.y + offset.y, dropCoord.z, false, false, false)
+	FreezeEntityPosition(ped, false)
+	SetEntityVisible(ped, true, false)
+	SetEntityCollision(ped, true, true)
+	SetEntityInvincible(ped, false)
+	SetEntityHealth(ped, 200)
+	SetPedArmour(ped, 0)
+	AddWeapon('WEAPON_PISTOL', 100)
+	PlayerDead = false
+	ingulag = false
+	ESX.ShowNotification('~g~A squadmate rebooted you back into the fight!')
+end)
+-- Reboot Van interaction: any live squad member holds [E] at the van to
+-- bring a waiting teammate back.
+CreateThread(function()
+	while true do
+		Wait(1000)
+		if InWarzone and not PlayerDead and Config.RebootVan.enabled then
+			local vanCoord = MapName and Config.RebootVan.coords[MapName]
+			if vanCoord and (MyPlayersID[1] ~= 0 or MyPlayersID[2] ~= 0 or MyPlayersID[3] ~= 0) then
+				local dist = GetDistanceBetweenCoords(GetEntityCoords(PlayerPedId()), vanCoord.x, vanCoord.y, vanCoord.z, true)
+				if dist <= 8.0 then
+					BeginTextCommandDisplayHelp("STRING")
+					AddTextComponentSubstringPlayerName("~y~Reboot Van~w~ -- hold ~INPUT_CONTEXT~ to bring back a squadmate")
+					EndTextCommandDisplayHelp(0, false, false, -1)
+					if IsControlPressed(0, 51) then -- E held
+						TriggerEvent("LG_Progbar:client:progress", {name = "wzreboot", duration = Config.RebootVan.reviveMs, label = 'Rebooting squadmate...', useWhileDead = false, canCancel = true, controlDisables = {disableMovement = true, disableCarMovement = true, disableMouse = false, disableCombat = true}})
+						Wait(Config.RebootVan.reviveMs)
+						if IsControlPressed(0, 51) then
+							TriggerServerEvent('AWZ:RebootVanComplete')
+						end
+					end
+				end
+			end
+		end
+	end
+end)
+
+-------------------------------------------------------------------
+-- Expansion: Buy Station -- one fixed shop per map, paid from the whole
+-- squad's pooled cash (see AWZ:BuyStationBuy on the server).
+-------------------------------------------------------------------
+CreateThread(function()
+	local inBuyStation = false
+	while true do
+		if not InWarzone or PlayerDead or not Config.BuyStation.enabled or inBuyStation then
+			Wait(1000) -- Expansion fix: don't tick every frame while there's nothing to check
+		else
+			Wait(0)
+			local coord = MapName and Config.BuyStation.coords[MapName]
+			if coord and GetDistanceBetweenCoords(GetEntityCoords(PlayerPedId()), coord.x, coord.y, coord.z, true) <= 2.5 then
+				BeginTextCommandDisplayHelp("STRING")
+				AddTextComponentSubstringPlayerName("~y~Buy Station~w~ -- press ~INPUT_CONTEXT~ to open (squad pooled cash)")
+				EndTextCommandDisplayHelp(0, false, false, -1)
+				if IsControlJustPressed(0, 51) then
+					inBuyStation = true
+					local elements = { {label = "[------- Buy Station -------]", value = 'BP'} }
+					for _, item in ipairs(Config.BuyStation.items) do
+						table.insert(elements, {label = item.label..' -- '..item.cost..'$ (squad)', value = item.value})
+					end
+					ESX.UI.Menu.CloseAll()
+					ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'WarZone_BuyStation', {
+						title = "Buy Station", align = 'center', elements = elements,
+					}, function(data, menu)
+						local action = data.current.value
+						if action ~= 'BP' then
+							ESX.TriggerServerCallback('AWZ:BuyStationBuy', function(ok, resultOrItem)
+								if not ok then return SendNotifyToPlayer(tostring(resultOrItem)) end
+								if resultOrItem == 'heavysniper' then AddWeapon('WEAPON_HEAVYSNIPER', 250)
+								elseif resultOrItem == 'fullkit' then armoritem = armoritem + 10 bandageitem = bandageitem + 10
+								elseif resultOrItem == 'vehiclekey' then CarKeysHeld = CarKeysHeld + 1
+								elseif resultOrItem == 'streakskip' then ESX.ShowNotification('Killstreak progress boosted!') end
+							end, action)
+						end
+						menu.close()
+						inBuyStation = false
+					end, function(data, menu)
+						menu.close()
+						inBuyStation = false
+					end)
+				end
+			end
+		end
+	end
+end)
+
+-------------------------------------------------------------------
+-- Expansion: Vehicle Loot -- interact with a locked WarZone vehicle: use a
+-- Car Key if you have one, otherwise hold [E] to hot-wire it.
+-------------------------------------------------------------------
+CreateThread(function()
+	local hotwiring = false
+	while true do
+		if not InWarzone or PlayerDead or not Config.VehicleLoot.enabled or hotwiring then
+			Wait(1000) -- Expansion fix: don't scan the whole vehicle pool every tick while there's nothing to check
+		else
+			Wait(500)
+			local ped = PlayerPedId()
+			local pCoord = GetEntityCoords(ped)
+			-- Note: there is no GetClosestVehicle native in GTA V; find the
+			-- nearest one by hand from the vehicle pool instead.
+			local veh, closestDist = nil, 3.0
+			for _, v in ipairs(GetGamePool('CVehicle')) do
+				local d = GetDistanceBetweenCoords(pCoord, GetEntityCoords(v), true)
+				if d <= closestDist then veh, closestDist = v, d end
+			end
+			if veh and GetVehicleDoorLockStatus(veh) == 2 then
+				local netId = NetworkGetNetworkIdFromEntity(veh)
+				BeginTextCommandDisplayHelp("STRING")
+				AddTextComponentSubstringPlayerName(CarKeysHeld > 0 and "~y~Locked vehicle~w~ -- press ~INPUT_CONTEXT~ to unlock with your Car Key" or "~y~Locked vehicle~w~ -- hold ~INPUT_CONTEXT~ to hot-wire")
+				EndTextCommandDisplayHelp(0, false, false, -1)
+				if CarKeysHeld > 0 and IsControlJustPressed(0, 51) then
+					ESX.TriggerServerCallback('AWZ:UnlockVehicleWithKey', function(ok)
+						if ok then
+							CarKeysHeld = CarKeysHeld - 1
+							SendNotifyToPlayer('Vehicle unlocked with your Car Key!')
+						end
+					end, netId)
+				elseif CarKeysHeld == 0 and IsControlPressed(0, 51) then
+					hotwiring = true
+					TriggerEvent("LG_Progbar:client:progress", {name = "wzhotwire", duration = Config.VehicleLoot.breakInMs, label = 'Hot-wiring...', useWhileDead = false, canCancel = true, controlDisables = {disableMovement = true, disableCarMovement = true, disableMouse = false, disableCombat = true}})
+					Wait(Config.VehicleLoot.breakInMs)
+					if DoesEntityExist(veh) and GetVehicleDoorLockStatus(veh) == 2 then
+						TriggerServerEvent('AWZ:HotwireVehicle', netId)
+						SendNotifyToPlayer('Vehicle hot-wired!')
+					end
+					hotwiring = false
+				end
+			end
+		end
+	end
+end)
 
 RegisterCommand(Config.menuCommend, function()
 	OpenWarzoneMenu()

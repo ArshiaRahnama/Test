@@ -261,3 +261,165 @@ function RollWeaponTier()
     end
     return Config.WeaponTiers[1]
 end
+
+--- ===================================================================
+--- EXPANSION PACK v2
+--- Team-Size Vote, Map Vote, Vehicle Loot, Buy Station, Reboot Van,
+--- Custom Loadout Drop, Environmental Hazards, Killcam, Self-Revive Kit,
+--- Vehicle Killstreak, Persistent Rank, Battle Pass, Cosmetic Shop,
+--- Pre-Match Contract, Reports. See server/main.lua and client/main.lua
+--- (search "-- Expansion:") for the implementation of each.
+--- ===================================================================
+
+--- Team-Size Vote (Solo/Duo/Trio/Squad) -- players in the lobby vote with
+--- /wzmode <1-4>; the most-voted size is used when Auto-Queue starts the
+--- match (an admin's /startmatch <blood> <time> <map> <team> still
+--- overrides it directly, same as before).
+Config.ModeVote = {
+    enabled = true,
+    voteCommend = 'wzmode',
+    labels = { [1] = 'Solo', [2] = 'Duo', [3] = 'Trio', [4] = 'Squad' },
+}
+
+--- Map Vote -- players in the lobby vote with /wzmapvote <sandy|island>;
+--- the winning map is used the same way as the Team-Size Vote above.
+Config.MapVote = {
+    enabled = true,
+    voteCommend = 'wzmapvote',
+}
+
+--- Vehicle Loot -- WarZone now actually spawns vehicles at the coordinates
+--- in Config.SandyVehicles/Config.IslandVehicles (those lists existed
+--- before but nothing ever spawned anything at them). A share of them
+--- start locked and need either a found Car Key or a bit of hot-wiring
+--- time to get into.
+Config.VehicleLoot = {
+    enabled = true,
+    models = { 'sultan', 'kuruma', 'baller', 'asea', 'panto', 'blista' },
+    lockedChance = 55,   -- % chance a spawned vehicle starts locked
+    keyDropChance = 20,  -- % chance a kill drops a Car Key (rolled alongside the Golden Crate key)
+    breakInMs = 8000,    -- how long holding E on a locked car with no key takes to hot-wire it
+}
+
+--- Buy Station -- one fixed, always-open shop per map (in addition to the
+--- rotating loot-crate shops) whose priciest items are paid for out of the
+--- WHOLE squad's pooled cash, split evenly, instead of just the buyer's.
+Config.BuyStation = {
+    enabled = true,
+    coords = {
+        ['SANDY']  = vector3(280.0, 3120.0, 41.5),
+        ['ISLAND'] = vector3(5200.0, -5350.0, 15.5),
+    },
+    items = {
+        { value = 'heavysniper', label = 'Heavy Sniper + 250 ammo',      cost = 1500 },
+        { value = 'fullkit',     label = 'Full Armor + Full Bandages',   cost = 1200 },
+        { value = 'vehiclekey',  label = 'Guaranteed Car Key',           cost = 600  },
+        { value = 'streakskip',  label = 'Vehicle Killstreak (-2 kills needed)', cost = 3000 },
+    },
+}
+
+--- Reboot Van -- for squad matches (Team > 1) this replaces the Gulag duel:
+--- an eliminated player goes straight to Spectator mode (same as losing
+--- the Gulag today) and any alive squadmate can bring them back by
+--- standing at the van for `reviveMs`. Solo matches (Team == 1) are
+--- unaffected and still use the Gulag.
+Config.RebootVan = {
+    enabled = true,
+    reviveMs = 8000,
+    coords = {
+        ['SANDY']  = vector3(320.0, 3080.0, 41.0),
+        ['ISLAND'] = vector3(5150.0, -5300.0, 15.0),
+    },
+}
+
+--- Custom Loadout Drop -- picked once from the lobby (via the /warzone
+--- menu) before the plane takes off; 'none' keeps today's behaviour
+--- (unarmed drop, find everything on the ground).
+Config.CustomLoadout = {
+    enabled = true,
+    options = {
+        { value = 'none',    label = 'Default (unarmed, loot everything)', weapons = {} },
+        { value = 'assault', label = 'Assault: Carbine Rifle + Pistol', weapons = {
+            { name = 'WEAPON_CARBINERIFLE', ammo = 250 }, { name = 'WEAPON_PISTOL', ammo = 100 } } },
+        { value = 'sniper',  label = 'Sniper: Marksman Rifle + SMG', weapons = {
+            { name = 'WEAPON_MARKSMANRIFLE', ammo = 100 }, { name = 'WEAPON_SMG', ammo = 200 } } },
+        { value = 'rungun',  label = 'Run and Gun: SMG + Shotgun', weapons = {
+            { name = 'WEAPON_SMG', ammo = 250 }, { name = 'WEAPON_PUMPSHOTGUN', ammo = 60 } } },
+    },
+}
+
+--- Environmental Hazards -- every ~everyMs while a match is live, a random
+--- hazard hits a random spot inside the current zone.
+Config.Hazards = {
+    enabled = true,
+    everyMs = 90000,
+    radius = 35.0,
+    damagePerTick = 5,
+    types = { 'gas', 'sandstorm', 'lightning' },
+}
+
+--- Killcam -- a short scripted cam on your killer's position/angle right
+--- after you die on the open battlefield (not in the Gulag -- that duel is
+--- 1v1 already, you know exactly who got you).
+Config.Killcam = { enabled = true, durationMs = 4000 }
+
+--- Self-Revive Kit -- rare loot-crate drop; use it while Downed to revive
+--- yourself with no teammate needed.
+Config.SelfRevive = { enabled = true, crateDropChance = 8, reviveHealth = 100 }
+
+--- Vehicle Killstreak -- on top of the existing UAV/Airdrop killstreak
+--- rewards, a longer streak grants a temporary attack helicopter.
+Config.VehicleKillstreak = {
+    enabled = true,
+    kills = 7,
+    vehicle = 'buzzard2',
+    durationMs = 90000,
+}
+
+--- Persistent Rank -- separate from the seasonal /wztop leaderboard, this
+--- XP never resets. Flat curve: level = floor(xp / xpPerLevel) + 1.
+Config.Rank = {
+    xpPerKill = 10,
+    xpPerWin = 60,
+    xpPerLevel = 100,
+    command = 'wzrank',
+}
+
+--- Battle Pass -- simple daily challenges, tracked per calendar day,
+--- rewarding WZCoins (the persistent currency used by the Cosmetic Shop
+--- below, separate from the per-match WzCash).
+Config.BattlePass = {
+    enabled = true,
+    command = 'wzbattlepass',
+    dailyChallenges = {
+        { id = 'kills5',  label = 'Get 5 kills today',  target = 5,  stat = 'kills', reward = 150 },
+        { id = 'win1',    label = 'Win 1 match today',  target = 1,  stat = 'wins',  reward = 300 },
+        { id = 'kills15', label = 'Get 15 kills today', target = 15, stat = 'kills', reward = 400 },
+    },
+}
+
+--- Cosmetic Shop -- squad-uniform-style clothing variants, bought once
+--- with WZCoins and owned forever after.
+Config.CosmeticShop = {
+    command = 'wzshop',
+    items = {
+        { id = 'skin_red_ops', label = 'Red Ops Uniform',      cost = 500, variant = 6 },
+        { id = 'skin_desert',  label = 'Desert Camo Uniform',  cost = 500, variant = 7 },
+        { id = 'skin_night',   label = 'Night Stalker Uniform',cost = 750, variant = 8 },
+    },
+}
+
+--- Pre-Match Contract -- picked from the /warzone menu before joining the
+--- lobby; an optional bonus objective for extra WZCoins.
+Config.PreMatchContract = {
+    enabled = true,
+    options = {
+        { id = 'none',     label = 'No contract',            target = 0, stat = 'none',   reward = 0   },
+        { id = 'nodeath3', label = '3 kills without dying',  target = 3, stat = 'streak', reward = 250 },
+        { id = 'win',      label = 'Win the match',          target = 1, stat = 'win',    reward = 500 },
+    },
+}
+
+--- Reports -- reachable from the /warzone menu, pings online admins live
+--- and logs to `wz_reports` for later review.
+Config.Report = { enabled = true }
