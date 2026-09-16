@@ -1,91 +1,98 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html lang="fa" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PNG Report System</title>
-    <link rel="stylesheet" href="./css/style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Unique RP — Report</title>
+<link rel="stylesheet" href="./css/style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
-
 <body>
-    <div class="loader">
-        <div class="scanner">
-            <span>Loading...</span>
-        </div>
+
+<!-- ============================ پنل بازیکن ============================ -->
+<section id="userPanel" class="stage hidden" aria-hidden="true">
+  <div class="shell shell--user">
+
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand__mark" aria-hidden="true"></span>
+        <span class="brand__name" id="brandNameUser">Unique RP</span>
+        <span class="brand__sep">/</span>
+        <span class="brand__sub">ریپورت</span>
+      </div>
+      <nav class="tabs" role="tablist">
+        <button class="tab is-on" data-view="compose" role="tab">ریپورت جدید</button>
+        <button class="tab" data-view="mine" role="tab">
+          ریپورت من <span class="dot dot--unread" id="userUnread" hidden></span>
+        </button>
+        <button class="tab" data-view="board" role="tab">برترین ادمین‌ها</button>
+      </nav>
+      <button class="iconbtn" id="userClose" title="بستن (Esc)"><i class="fa-solid fa-xmark"></i></button>
+    </header>
+
+    <main class="body" id="userBody"></main>
+
+    <footer class="footbar">
+      <button class="linkbtn" id="siteLinkUser"><i class="fa-solid fa-link"></i> <span>arshiahub.ir</span></button>
+    </footer>
+  </div>
+</section>
+
+<!-- ============================ پنل ادمین ============================ -->
+<section id="adminPanel" class="stage hidden" aria-hidden="true">
+  <div class="shell shell--admin">
+
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand__mark brand__mark--admin" aria-hidden="true"></span>
+        <span class="brand__name" id="brandNameAdmin">Unique RP</span>
+        <span class="brand__sep">/</span>
+        <span class="brand__sub">میز ادمین</span>
+      </div>
+      <nav class="tabs" role="tablist">
+        <button class="tab is-on" data-view="queue" role="tab">
+          صف <span class="pill pill--count" id="queueCount">0</span>
+        </button>
+        <button class="tab" data-view="active" role="tab">
+          ریپورت من <span class="dot dot--unread" id="adminUnread" hidden></span>
+        </button>
+        <button class="tab" data-view="stats" role="tab">آمار</button>
+        <button class="tab" data-view="archive" role="tab">بایگانی</button>
+      </nav>
+      <button class="iconbtn" id="adminClose" title="بستن (Esc)"><i class="fa-solid fa-xmark"></i></button>
+    </header>
+
+    <main class="body" id="adminBody"></main>
+
+    <footer class="footbar">
+      <button class="linkbtn" id="siteLinkAdmin"><i class="fa-solid fa-link"></i> <span>arshiahub.ir</span></button>
+    </footer>
+  </div>
+</section>
+
+<!-- ============================ امتیازدهی ============================ -->
+<section id="ratePanel" class="stage stage--center hidden" aria-hidden="true">
+  <div class="ratecard">
+    <h2 class="ratecard__title">رسیدگی چطور بود؟</h2>
+    <p class="ratecard__sub" id="rateAdminName"></p>
+    <div class="stars" id="rateStars" role="radiogroup" aria-label="امتیاز">
+      <button class="star" data-v="1" aria-label="۱ ستاره"><i class="fa-solid fa-star"></i></button>
+      <button class="star" data-v="2" aria-label="۲ ستاره"><i class="fa-solid fa-star"></i></button>
+      <button class="star" data-v="3" aria-label="۳ ستاره"><i class="fa-solid fa-star"></i></button>
+      <button class="star" data-v="4" aria-label="۴ ستاره"><i class="fa-solid fa-star"></i></button>
+      <button class="star" data-v="5" aria-label="۵ ستاره"><i class="fa-solid fa-star"></i></button>
     </div>
-
-    <div class="main no-active" id="user-pannel">
-        <div class="header">
-            <div class="row1">
-                <p>Report System</p>
-
-                <div>
-                    <span id="close-btn-user"><i class="fa-solid fa-x"></i></span>
-                </div>
-
-            </div>
-            <div class="row2">
-                <div id="user-tab-create"><i class="fa-solid fa-plus"></i>ثبت ریپورت</div>
-                <div id="user-tab-show"><i class="fa-solid fa-flag"></i>ریپورت شما</div>
-                <div id="user-top-admin"><i class="fa-regular fa-thumbs-up"></i>ادمین های برتر</div>
-            </div>
-        </div>
-
-        <div class="content">
-            <!-- <p id="welcome"> دوست خوب من،  من اینجام تا بهت کمک کنم میتونی از منو بالا ریپورت جدید ارسال کنی </p> -->
-            
-        </div>
-        <div class="footer"></div>
+    <p class="ratecard__hint" id="rateHint">یک امتیاز انتخاب کن</p>
+    <div class="ratecard__row">
+      <button class="btn btn--ghost" id="rateSkip">بعداً</button>
+      <button class="btn btn--go" id="rateSend" disabled>ثبت امتیاز</button>
     </div>
+  </div>
+</section>
 
+<!-- ============================ توست ============================ -->
+<div id="toastHost" class="toasts" aria-live="polite"></div>
 
-
-    <div class="main no-active" id="admin-pannel">
-        <div class="header">
-            <div class="row1">
-                <p>Report System (admin)</p>
-
-                <div>
-                    <span id="close-btn-admin"><i class="fa-solid fa-x"></i></span>
-                </div>
-
-            </div>
-            <div class="row2">
-                <div id="report-list-btn"><i class="fa-solid fa-list"></i>لیست ریپورت ها</div>
-                <div id="view-Report-btn"><i class="fa-solid fa-eye"></i>مشاهده ریپورت</div>
-                <div id="admin-score-btn"><i class="fa-solid fa-star"></i>امتیازات</div>
-            </div>
-        </div>
-
-        <div class="AdminContent">
-
-            <!-- <p id="welcome">ادمین وقتشه همه امتیاز ها رو برای خودت ثبت کنی</p> -->
-
-        </div>
-
-
-        <div class="footer2">
-            <!-- <p>Powered By PNG Community</p> -->
-        </div>
-    </div>
-
-
-
-    <div class="feedback-menu no-active" id="feedback-menu">
-        <p>میزان رضایت شما از ادمین در پاسخگویی </p>
-        <div class="emoji-icons">
-            <i id="e1" class="fa-regular fa-face-angry"></i>
-            <i id="e2" class="fa-regular fa-face-frown"></i>
-            <i id="e3" class="fa-regular fa-face-meh"></i>
-            <i id="e4" class="fa-regular fa-face-grin-wide"></i>
-            <i id="e5" class="fa-regular fa-face-grin-stars"></i>
-        </div>
-    </div>
-
-</body>
-<script src="nui://game/ui/jquery.js" type="text/javascript"></script>
 <script src="./js/script.js"></script>
-
+</body>
 </html>

@@ -1,1 +1,783 @@
-const _0x5c3bcc = _0x58a1; (function (_0x36fa1e, _0x32a879) { const _0x3cc009 = _0x58a1, _0x74a7a7 = _0x36fa1e(); while (!![]) { try { const _0x3a9d64 = -parseInt(_0x3cc009(0x19c)) / 0x1 * (parseInt(_0x3cc009(0x1f0)) / 0x2) + -parseInt(_0x3cc009(0x186)) / 0x3 + parseInt(_0x3cc009(0x1a5)) / 0x4 * (-parseInt(_0x3cc009(0x1cb)) / 0x5) + -parseInt(_0x3cc009(0x1ec)) / 0x6 * (-parseInt(_0x3cc009(0x18e)) / 0x7) + parseInt(_0x3cc009(0x1a7)) / 0x8 + -parseInt(_0x3cc009(0x1c0)) / 0x9 + parseInt(_0x3cc009(0x1f7)) / 0xa; if (_0x3a9d64 === _0x32a879) break; else _0x74a7a7['push'](_0x74a7a7['shift']()); } catch (_0x5cc0e9) { _0x74a7a7['push'](_0x74a7a7['shift']()); } } }(_0x56ec, 0xb730e)); let content = document[_0x5c3bcc(0x1a8)](_0x5c3bcc(0x1ea)), contentadmin = document[_0x5c3bcc(0x1a8)]('.AdminContent'); content['style'][_0x5c3bcc(0x173)] = 'none'; let loader = document[_0x5c3bcc(0x1a8)]('.loader'); window[_0x5c3bcc(0x16e)](_0x5c3bcc(0x1bb), () => { const _0x7663d5 = _0x5c3bcc; loader[_0x7663d5(0x182)]['display'] = _0x7663d5(0x196), content[_0x7663d5(0x182)]['display'] = _0x7663d5(0x1f2); }); let userpannel = document[_0x5c3bcc(0x1a8)](_0x5c3bcc(0x1e7)), adminPannel = document[_0x5c3bcc(0x1a8)](_0x5c3bcc(0x1d2)), Admin__feedBack = 0x0, feedmenu = document[_0x5c3bcc(0x1a8)](_0x5c3bcc(0x1f1)); function _0x56ec() { const _0x83853e = ['feed', 'reload', 'value', 'insertAdjacentHTML', 'notFound', 'btnSendReport', 'forEach', '.create-report', 'updateChatadmin', '#user-pannel', '</p>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>', '#btn_send_msg', '.content', 'revive', '396780CoQiyd', 'createElement', '#user-tab-show', 'status', '659198UUWeEU', '#feedback-menu', 'flex', 'appendChild', 'name', 'accessKey', '\x22\x20>spect</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20id=\x22teleport\x22\x20accessKey=\x22', '24829720jdcfaY', '\x20-\x20', '\x22\x20class=\x22setting-accept\x22\x20data-id=\x22\x22><i\x20class=\x22fas\x20fa-check\x22>\x20</i>\x20ACCEPT</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</tr>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20', '.setting-accept', '\x22>Close\x20Report</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20', '<div\x20class=\x22alert\x22>شما\x20ریپورتی\x20ندارید\x20لطفاً\x20ابتدا\x20ریپورت\x20باز\x20کنید</div>', 'png-community.ir', '.setting-delete', '</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td\x20style=\x22color:\x20green;\x22>', 'stringify', 'title', 'chat', 'create', '<div\x20class=\x27me\x27>', '.footer', 'addEventListener', '#chat', 'exit', '<div\x20class=\x22alert\x22>هیچ\x20رپیورت\x20قبول\x20شده\x20ای\x20برای\x20نمایش\x20نیست\x20لطفا\x20ابتدا\x20یک\x20ریپورت\x20را\x20قبول\x20کنید</div>', 'which', 'display', 'getElementById', 'hideuserpannel', 'preventDefault', 'Description\x20is\x20Short', '</p>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22img-control\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<img\x20src=\x22', '</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td\x20accesskey=\x22', 'pid', 'GetDataReportAdmin', 'Powered\x20By\x20PNG\x20Community', 'add', 'givecar', '</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td\x20style=\x22color:orange;\x22>', 'action', 'admin', 'style', 'https://Unique_AdminPanel/action', 'div', '<div\x20class=\x22alert\x22>ریپورت\x20شما\x20ثبت\x20شده\x20و\x20در\x20انتظار\x20تایید\x20توسط\x20ادمین\x20است</div>', '554484jtKQco', 'Name', 'showuserpannel', '#spect', 'GetAllreport', 'hide', '#close', 'adminId', '77tWVeQm', '\x22\x20>revive</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22btn-control\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20id=\x22close\x22\x20accessKey=\x22', '\x20\x20\x20\x20\x20\x20\x20\x20\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22alert\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20ادمینی\x20یافت\x20نشد\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>', '\x22\x20alt=\x22\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<p\x20class=\x22name-ch\x22>#', '</p>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22img-control\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<img\x20src=\x22', 'msg', '</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td>', '\x20\x20\x20<form\x20action=\x22\x22\x20class=\x22create-report\x22>\x0a\x20\x20\x20\x20<div\x20class=\x22row-form-1\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20<input\x20id=\x22title\x22\x20class=\x22cr\x22\x20type=\x22text\x22\x20placeholder=\x22عنوان\x20ریپورت\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20<select\x20id=\x22sub\x22\x20class=\x22cr\x22\x20name=\x22\x22\x20id=\x22\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<option\x20value=\x22\x22\x20disabled\x20selected>موضوع\x20ریپورت</option>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<option\x20value=\x22shop\x22>خرید\x20از\x20فروشگاه\x20سرور</option>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<option\x20value=\x22rp\x22>نقض\x20قوانین</option>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<option\x20value=\x22quest\x22>سوال</option>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<option\x20value=\x22help\x22>راهنمایی</option>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<option\x20value=\x22bug\x22>باگ</option>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<option\x20value=\x22more\x22>بیشتر</option>\x0a\x0a\x20\x20\x20\x20\x20\x20\x20\x20</select>\x0a\x20\x20\x20\x20</div>\x0a\x0a\x20\x20\x20\x20<div\x20class=\x22row-form-3\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20<textarea\x20id=\x22info\x22\x20class=\x22cr\x22\x20name=\x22\x22\x20id=\x22\x22\x20rows=\x2210\x22\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20placeholder=\x22توضیحات\x20\x20ریپورت\x20را\x20به\x20صورت\x20کامل\x20شرح\x20دهید\x22></textarea>\x0a\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20<button\x20id=\x22btnSendReport\x22>ارسال</button>\x0a\x20\x20\x20\x20</form>', 'none', 'no-active', '</p>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<p>Score\x20:\x20', 'GetDataReport', 'err', '.view', '4ADpHYt', '\x20\x20\x20\x20\x20\x20\x20\x20\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<p>#', '.footer2', 'className', 'GetTopAdmin', 'perm', 'closeReport', '\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22view-Report\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22chat-box\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22view\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22sender\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<input\x20id=\x22chat\x22\x20type=\x22text\x22\x20placeholder=\x22chat\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<i\x20id=\x22btn_send_msg\x22\x20class=\x22fa-solid\x20fa-paper-plane\x22></i>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22data\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<p>Report\x20ID\x20:\x20#', 'querySelectorAll', '933508chtFGD', 'AdminXP', '8769192nAsouy', 'querySelector', 'user', '\x20XP</p>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x20', '#teleport', '.admin-score', 'notaccept', 'post', 'remove', 'avatar', 'removeChild', '\x22\x20>give\x20car</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20id=\x22revive\x22\x20accessKey=\x22', 'acceptReport', '</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</tr>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20', 'click', 'innerText', 'classList', 'message', 'beforeend', '</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td\x20class=\x22setting-accepted\x22\x20data-id=\x22\x22><i\x20class=\x22fas\x20fa-ban\x22>\x20</i>\x20Accept\x20By\x20', 'load', 'showadminpannel', 'select', '#view-Report-btn', 'accept', '5874435XtucLh', '\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<tr>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td>#', 'text', 'close', 'copy', 'tab', 'innerHTML', 'updatereportList', 'newChat', '#givecar', '<div\x20class=\x27to\x27>', '30YrujTY', 'body', 'Title\x20is\x20Short', 'لینک\x20وبسایت\x20کپی\x20شد\x20میتونید\x20در\x20مرورگر\x20آن\x20را\x20سرچ\x20کنید', '#allreport', 'data', 'textarea', '#admin-pannel', '#user-tab-create', '\x20</p>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22info-control1\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<p>امتیاز\x20ادمین</p>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<p>', '</div>', '#report-list-btn', 'pending', 'type', 'onkeyup', 'target', 'sub', 'execCommand', 'length']; _0x56ec = function () { return _0x83853e; }; return _0x56ec(); } function FeedBackActive(_0x57d597, _0x4705ff) { const _0x200968 = _0x5c3bcc; _0x57d597 == 'show' ? (feedmenu[_0x200968(0x1b7)][_0x200968(0x1af)](_0x200968(0x197)), userpannel[_0x200968(0x1b7)][_0x200968(0x17d)]('no-active'), adminPannel[_0x200968(0x1b7)][_0x200968(0x17d)]('no-active'), Admin__feedBack = _0x4705ff) : (feedmenu['classList'][_0x200968(0x17d)](_0x200968(0x197)), userpannel[_0x200968(0x1b7)][_0x200968(0x17d)](_0x200968(0x197)), adminPannel['classList']['add']('no-active'), Admin__feedBack = 0x0); } function CopyManger(_0x375c37) { const _0x136033 = _0x5c3bcc, _0xcd2a73 = document[_0x136033(0x1ed)](_0x136033(0x1d1)); _0xcd2a73[_0x136033(0x1e0)] = _0x375c37, document['body'][_0x136033(0x1f3)](_0xcd2a73), _0xcd2a73[_0x136033(0x1bd)](), document[_0x136033(0x1dc)](_0x136033(0x1c4)), document[_0x136033(0x1cc)][_0x136033(0x1b1)](_0xcd2a73); } let tab = document[_0x5c3bcc(0x1a8)](_0x5c3bcc(0x16d)), newP = document[_0x5c3bcc(0x1ed)]('p'); newP['innerHTML'] = _0x5c3bcc(0x17c), newP[_0x5c3bcc(0x1b7)]['add']('tab'), tab[_0x5c3bcc(0x1f3)](newP), newP[_0x5c3bcc(0x16e)](_0x5c3bcc(0x1b5), () => { const _0x38522e = _0x5c3bcc; CopyManger(_0x38522e(0x165)), SendNotif(_0x38522e(0x1ce)); }); let tab2 = document[_0x5c3bcc(0x1a8)](_0x5c3bcc(0x19e)), newP2 = document[_0x5c3bcc(0x1ed)]('p'); newP2['innerHTML'] = _0x5c3bcc(0x17c), newP2['classList'][_0x5c3bcc(0x17d)](_0x5c3bcc(0x1c5)), tab2[_0x5c3bcc(0x1f3)](newP2), newP2[_0x5c3bcc(0x16e)](_0x5c3bcc(0x1b5), () => { const _0x14f731 = _0x5c3bcc; CopyManger(_0x14f731(0x165)), SendNotif(_0x14f731(0x1ce)); }), window[_0x5c3bcc(0x16e)](_0x5c3bcc(0x1b8), _0x3178eb => { const _0x102eb2 = _0x5c3bcc; if (_0x3178eb[_0x102eb2(0x1d0)]['action'] === _0x102eb2(0x188)) userpannel[_0x102eb2(0x1b7)][_0x102eb2(0x1af)](_0x102eb2(0x197)); else { if (_0x3178eb[_0x102eb2(0x1d0)][_0x102eb2(0x180)] === _0x102eb2(0x175)) userpannel[_0x102eb2(0x1b7)]['add']('no-active'); else { if (_0x3178eb[_0x102eb2(0x1d0)]['action'] === 'hideadminpannel') adminPannel[_0x102eb2(0x1b7)][_0x102eb2(0x17d)](_0x102eb2(0x197)); else { if (_0x3178eb['data'][_0x102eb2(0x180)] === _0x102eb2(0x1bc)) adminPannel[_0x102eb2(0x1b7)][_0x102eb2(0x1af)]('no-active'); else { if (_0x3178eb[_0x102eb2(0x1d0)]['action'] === 'feedBack') FeedBackActive(_0x3178eb[_0x102eb2(0x1d0)][_0x102eb2(0x1d8)], _0x3178eb['data'][_0x102eb2(0x18d)]); else { if (_0x3178eb['data']['action'] === _0x102eb2(0x1c7)) updateReportLitst(); else { if (_0x3178eb[_0x102eb2(0x1d0)][_0x102eb2(0x180)] === _0x102eb2(0x1e6)) updateViewReportAdmin(); else _0x3178eb['data'][_0x102eb2(0x180)] === 'updateChatUser' && updateViewReport(); } } } } } } }), $(document)['ready'](function () { document['onkeyup'] = function (_0x43232c) { const _0x39364e = _0x58a1; _0x43232c[_0x39364e(0x172)] == 0x1b && ($[_0x39364e(0x1ae)](_0x39364e(0x183), JSON[_0x39364e(0x168)]({ 'action': 'exit' })), userpannel[_0x39364e(0x1b7)]['add']('no-active'), adminPannel[_0x39364e(0x1b7)][_0x39364e(0x17d)](_0x39364e(0x197)), location['reload']()); }; }), document['querySelector']('#close-btn-admin')[_0x5c3bcc(0x16e)](_0x5c3bcc(0x1b5), () => { const _0x1ecac2 = _0x5c3bcc; $[_0x1ecac2(0x1ae)](_0x1ecac2(0x183), JSON[_0x1ecac2(0x168)]({ 'action': _0x1ecac2(0x170) })), adminPannel[_0x1ecac2(0x1b7)][_0x1ecac2(0x17d)](_0x1ecac2(0x197)), location[_0x1ecac2(0x1df)](); }), document[_0x5c3bcc(0x1a8)]('#close-btn-user')['addEventListener'](_0x5c3bcc(0x1b5), () => { const _0x22b6ae = _0x5c3bcc; $['post']('https://Unique_AdminPanel/action', JSON[_0x22b6ae(0x168)]({ 'action': 'exit' })), userpannel['classList'][_0x22b6ae(0x17d)]('no-active'), location['reload'](); }); function _0x58a1(_0x31eebe, _0x45480e) { const _0x56ecbe = _0x56ec(); return _0x58a1 = function (_0x58a15b, _0x435d93) { _0x58a15b = _0x58a15b - 0x165; let _0x33af74 = _0x56ecbe[_0x58a15b]; return _0x33af74; }, _0x58a1(_0x31eebe, _0x45480e); } function SendNotif(_0xe03986) { const _0x1ec148 = _0x5c3bcc; $[_0x1ec148(0x1ae)](_0x1ec148(0x183), JSON[_0x1ec148(0x168)]({ 'action': 'notif', 'data': { 'msg': _0xe03986 } })); } function updateViewReport() { const _0x496ca3 = _0x5c3bcc; $[_0x496ca3(0x1ae)](_0x496ca3(0x183), JSON[_0x496ca3(0x168)]({ 'action': _0x496ca3(0x199) }), function (_0x143ad0) { const _0x2c429e = _0x496ca3; content[_0x2c429e(0x1c6)] = ''; if (_0x143ad0['r']) { let _0x18ed3c = '\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22chat-box\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22view\x22></div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22sender\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<input\x20id=\x22chat\x22\x20type=\x22text\x22\x20placeholder=\x22chat\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<i\x20id=\x22btn_send_msg\x22\x20class=\x22fa-solid\x20fa-paper-plane\x22></i>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22data\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<p>Report\x20ID\x20:\x20#' + _0x143ad0[_0x2c429e(0x1d0)]['ID'] + _0x2c429e(0x192) + _0x143ad0['data']['AdminAvatar'] + '\x22\x20alt=\x22\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<p\x20class=\x22name-ch\x22>Admin\x20:\x20' + _0x143ad0['data']['AdminName'] + _0x2c429e(0x1d4) + _0x143ad0['data'][_0x2c429e(0x1a6)] + '\x20XP</p>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22info-control2\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<p>رنک\x20ادمین</p>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<p>' + _0x143ad0[_0x2c429e(0x1d0)]['AdminRank'] + _0x2c429e(0x1e8); content['insertAdjacentHTML'](_0x2c429e(0x1b9), _0x18ed3c); let _0xd3996c = document[_0x2c429e(0x1a8)](_0x2c429e(0x19b)); _0x143ad0[_0x2c429e(0x1d0)]['chat']['forEach'](_0x173258 => { const _0x430f7c = _0x2c429e; if (_0x173258[_0x430f7c(0x1a9)] == 'user') { let _0x404d8 = '<div\x20class=\x27me\x27>' + _0x173258[_0x430f7c(0x1c2)] + _0x430f7c(0x1d5); _0xd3996c[_0x430f7c(0x1e1)]('beforeend', _0x404d8); } else { let _0x44cb67 = '<div\x20class=\x27to\x27>' + _0x173258[_0x430f7c(0x1c2)] + _0x430f7c(0x1d5); _0xd3996c[_0x430f7c(0x1e1)](_0x430f7c(0x1b9), _0x44cb67); } }); let _0x1e286d = document['querySelector'](_0x2c429e(0x1e9)), _0x24dcb5 = document[_0x2c429e(0x1a8)](_0x2c429e(0x16f)); _0x1e286d[_0x2c429e(0x16e)]('click', () => { const _0xd24da6 = _0x2c429e; !_0x24dcb5[_0xd24da6(0x1e0)] == '' && $[_0xd24da6(0x1ae)](_0xd24da6(0x183), JSON[_0xd24da6(0x168)]({ 'action': 'newChat', 'text': _0x24dcb5[_0xd24da6(0x1e0)], 'user': 'user', 'id': _0x143ad0[_0xd24da6(0x1d0)]['ID'] }), function (_0x42badb) { const _0x1dc2d5 = _0xd24da6; _0x24dcb5[_0x1dc2d5(0x1e0)] = '', updateViewOnlyUSer(_0xd3996c); }); }), document['onkeyup'] = function (_0xb8b693) { const _0x567b22 = _0x2c429e; _0xb8b693['which'] == 0xd && (!_0x24dcb5[_0x567b22(0x1e0)] == '' && $['post'](_0x567b22(0x183), JSON['stringify']({ 'action': _0x567b22(0x1c8), 'text': _0x24dcb5[_0x567b22(0x1e0)], 'user': _0x567b22(0x1a9), 'id': _0x143ad0[_0x567b22(0x1d0)]['ID'] }), function (_0x15c815) { const _0x4c0b5c = _0x567b22; _0x24dcb5[_0x4c0b5c(0x1e0)] = '', updateViewOnlyUSer(_0xd3996c); })); }; } else { if (_0x143ad0[_0x2c429e(0x193)] == _0x2c429e(0x1d7)) content[_0x2c429e(0x1c6)] = _0x2c429e(0x185); else _0x143ad0[_0x2c429e(0x193)] == _0x2c429e(0x1e2) && (content[_0x2c429e(0x1c6)] = _0x2c429e(0x1fc)); } }); } function updateViewOnlyUSer(_0x530997) { const _0x2d92dd = _0x5c3bcc; $[_0x2d92dd(0x1ae)](_0x2d92dd(0x183), JSON['stringify']({ 'action': _0x2d92dd(0x199) }), function (_0x12598f) { const _0x43d55b = _0x2d92dd; _0x530997[_0x43d55b(0x1c6)] = '', _0x12598f['r'] && _0x12598f[_0x43d55b(0x1d0)][_0x43d55b(0x16a)][_0x43d55b(0x1e4)](_0x431002 => { const _0x1cb36f = _0x43d55b; if (_0x431002['user'] == _0x1cb36f(0x1a9)) { let _0x3ba339 = _0x1cb36f(0x16c) + _0x431002[_0x1cb36f(0x1c2)] + _0x1cb36f(0x1d5); _0x530997[_0x1cb36f(0x1e1)](_0x1cb36f(0x1b9), _0x3ba339); } else { let _0x120187 = _0x1cb36f(0x1ca) + _0x431002['text'] + '</div>'; _0x530997['insertAdjacentHTML'](_0x1cb36f(0x1b9), _0x120187); } }); }); } function updateTopAdmin(_0x3f2002) { const _0x1e926d = _0x5c3bcc; _0x3f2002[_0x1e926d(0x1c6)] = '', $[_0x1e926d(0x1ae)](_0x1e926d(0x183), JSON[_0x1e926d(0x168)]({ 'action': _0x1e926d(0x1a0) }), function (_0x1c063) { const _0x172869 = _0x1e926d; _0x3f2002[_0x172869(0x1c6)] = ''; if (_0x1c063['r']) { let _0x2c0f2d = _0x1c063[_0x172869(0x1d0)], _0x1849f4 = '\x20\x20\x20\x20\x20\x20\x20\x20\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22admin-score\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<p>TOP\x20Admin</p>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>'; _0x3f2002[_0x172869(0x1e1)](_0x172869(0x1b9), _0x1849f4), _0x2c0f2d[_0x172869(0x1e4)]((_0x1aa940, _0x3d5582) => { const _0x21b885 = _0x172869; let _0x520a44 = _0x21b885(0x19d) + (_0x3d5582 + 0x1) + _0x21b885(0x1f8) + _0x1aa940[_0x21b885(0x1f4)] + '</p>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<p>Rank\x20:\x20' + _0x1aa940[_0x21b885(0x1a1)] + _0x21b885(0x198) + _0x1aa940['xp'] + _0x21b885(0x1aa); document[_0x21b885(0x1a8)](_0x21b885(0x1ac))[_0x21b885(0x1e1)]('beforeend', _0x520a44); }); } else { let _0x1d0013 = _0x172869(0x190); _0x3f2002['insertAdjacentHTML'](_0x172869(0x1b9), _0x1d0013); } }); } let TabCreate = document[_0x5c3bcc(0x1a8)](_0x5c3bcc(0x1d3)), TabShow = document['querySelector'](_0x5c3bcc(0x1ee)), TopAdmin = document[_0x5c3bcc(0x1a8)]('#user-top-admin'), pageCreate = document[_0x5c3bcc(0x1a8)](_0x5c3bcc(0x1e5)), pageYourReport = document['querySelector']('.view-Report'), pageTopAdmin = document[_0x5c3bcc(0x1a8)](_0x5c3bcc(0x1ac)); TabCreate[_0x5c3bcc(0x16e)]('click', () => { const _0xa72f81 = _0x5c3bcc; let _0x1ad41d = _0xa72f81(0x195); content[_0xa72f81(0x1c6)] = '', content['insertAdjacentHTML'](_0xa72f81(0x1b9), _0x1ad41d); let _0x28fa0a = document[_0xa72f81(0x174)](_0xa72f81(0x1e3)), _0x570c8d = document[_0xa72f81(0x174)](_0xa72f81(0x169)), _0x21c80d = document['getElementById'](_0xa72f81(0x1db)), _0x36e3bf = document[_0xa72f81(0x174)]('info'); _0x28fa0a['addEventListener'](_0xa72f81(0x1b5), _0x561ccc => { const _0x38684a = _0xa72f81; _0x561ccc[_0x38684a(0x176)](), _0x570c8d[_0x38684a(0x1e0)]['length'] > 0x4 ? _0x21c80d[_0x38684a(0x1e0)] != '' ? _0x36e3bf['value'][_0x38684a(0x1dd)] > 0xf ? ($[_0x38684a(0x1ae)](_0x38684a(0x183), JSON['stringify']({ 'action': _0x38684a(0x16b), 'data': { 'title': _0x570c8d[_0x38684a(0x1e0)], 'sub': _0x21c80d[_0x38684a(0x1e0)], 'info': _0x36e3bf[_0x38684a(0x1e0)] } })), _0x36e3bf['value'] = '', _0x21c80d[_0x38684a(0x1e0)] = '', _0x570c8d[_0x38684a(0x1e0)] = '', _0x21c80d[_0x38684a(0x1e0)] = '') : (_0x36e3bf['classList'][_0x38684a(0x17d)](_0x38684a(0x19a)), setTimeout(() => { const _0xa1fe6a = _0x38684a; _0x36e3bf[_0xa1fe6a(0x1b7)]['remove'](_0xa1fe6a(0x19a)); }, 0x5dc), SendNotif(_0x38684a(0x177))) : (_0x21c80d['classList'][_0x38684a(0x17d)](_0x38684a(0x19a)), setTimeout(() => { const _0x3f38a1 = _0x38684a; _0x21c80d[_0x3f38a1(0x1b7)][_0x3f38a1(0x1af)](_0x3f38a1(0x19a)); }, 0x5dc), SendNotif('subject\x20is\x20Short')) : (_0x570c8d[_0x38684a(0x1b7)][_0x38684a(0x17d)](_0x38684a(0x19a)), setTimeout(() => { const _0x5e08b4 = _0x38684a; _0x570c8d[_0x5e08b4(0x1b7)][_0x5e08b4(0x1af)](_0x5e08b4(0x19a)); }, 0x5dc), SendNotif(_0x38684a(0x1cd))); }); }), TabShow['addEventListener']('click', () => { updateViewReport(); }), TopAdmin[_0x5c3bcc(0x16e)](_0x5c3bcc(0x1b5), () => { updateTopAdmin(content); }); let reportList = document[_0x5c3bcc(0x1a8)](_0x5c3bcc(0x1d6)), topAdmin = document[_0x5c3bcc(0x1a8)]('#admin-score-btn'), viewReport = document[_0x5c3bcc(0x1a8)](_0x5c3bcc(0x1be)); function updateReportLitst() { const _0x1e0d78 = _0x5c3bcc; $[_0x1e0d78(0x1ae)](_0x1e0d78(0x183), JSON[_0x1e0d78(0x168)]({ 'action': _0x1e0d78(0x18a) }), function (_0x277272) { const _0x1b7191 = _0x1e0d78; contentadmin[_0x1b7191(0x1c6)] = ''; if (_0x277272['r']) { let _0x107aba = '\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22report-list\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<table\x20id=\x22allreport\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<tr>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>ID</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>Name</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>Status</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>Subject</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>title</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>setting</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</tr>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</table>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20'; contentadmin[_0x1b7191(0x1e1)](_0x1b7191(0x1b9), _0x107aba); let _0x3c4537 = document[_0x1b7191(0x1a8)](_0x1b7191(0x1cf)); _0x277272[_0x1b7191(0x1d0)]['forEach'](_0x41d60a => { const _0x3c5848 = _0x1b7191; let _0x311d11 = ''; if (_0x41d60a['status'] == _0x3c5848(0x1d7)) _0x311d11 = _0x3c5848(0x1c1) + _0x41d60a['ID'] + '</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td>' + _0x41d60a[_0x3c5848(0x187)] + _0x3c5848(0x17f) + _0x41d60a['status'] + _0x3c5848(0x194) + _0x41d60a[_0x3c5848(0x1db)] + _0x3c5848(0x194) + _0x41d60a[_0x3c5848(0x169)] + _0x3c5848(0x179) + _0x41d60a['ID'] + _0x3c5848(0x1f9); else { if (_0x41d60a['status'] == _0x3c5848(0x1bf)) _0x311d11 = _0x3c5848(0x1c1) + _0x41d60a['ID'] + _0x3c5848(0x194) + _0x41d60a['Name'] + _0x3c5848(0x167) + _0x41d60a['status'] + _0x3c5848(0x194) + _0x41d60a[_0x3c5848(0x1db)] + _0x3c5848(0x194) + _0x41d60a[_0x3c5848(0x169)] + _0x3c5848(0x1ba) + _0x41d60a['AdminName'] + _0x3c5848(0x1b4); else _0x41d60a['status'] == _0x3c5848(0x1c3) && (_0x311d11 = _0x3c5848(0x1c1) + _0x41d60a['ID'] + _0x3c5848(0x194) + _0x41d60a[_0x3c5848(0x187)] + '</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td\x20style=\x22color:red;\x22>' + _0x41d60a[_0x3c5848(0x1ef)] + '</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td>' + _0x41d60a[_0x3c5848(0x1db)] + _0x3c5848(0x194) + _0x41d60a[_0x3c5848(0x169)] + '</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<td\x20accesskey=\x22' + _0x41d60a['ID'] + '\x22\x20class=\x22setting-delete\x22\x20data-id=\x22\x22><i\x20class=\x22fas\x20fa-trash\x22></i>\x20DELETE</td>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</tr>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20'); } _0x3c4537[_0x3c5848(0x1e1)](_0x3c5848(0x1b9), _0x311d11); }); let _0x15c527 = document['querySelectorAll'](_0x1b7191(0x166)); _0x15c527[_0x1b7191(0x1e4)]((_0x12cdf2, _0x110d69) => { const _0x33485c = _0x1b7191; _0x12cdf2[_0x33485c(0x16e)](_0x33485c(0x1b5), _0x11eea0 => { const _0x19ff01 = _0x33485c; $[_0x19ff01(0x1ae)](_0x19ff01(0x183), JSON[_0x19ff01(0x168)]({ 'action': 'deleteReport', 'reportId': _0x11eea0[_0x19ff01(0x1da)][_0x19ff01(0x1f5)] }), function (_0x44e8b4) { updateReportLitst(); }); }); }); let _0x58f6e1 = document[_0x1b7191(0x1a4)](_0x1b7191(0x1fa)); _0x58f6e1['forEach']((_0x2724c6, _0x31cf1b) => { const _0x18b2d3 = _0x1b7191; _0x2724c6[_0x18b2d3(0x16e)]('click', _0x27f8e6 => { const _0x11f468 = _0x18b2d3; $['post'](_0x11f468(0x183), JSON['stringify']({ 'action': _0x11f468(0x1b3), 'reportId': _0x27f8e6[_0x11f468(0x1da)][_0x11f468(0x1f5)] }), function (_0x359905) { updateReportLitst(); }); }); }); } else { let _0x349f7e = '\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22report-list\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<table\x20id=\x22allreport\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<tr>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>ID</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>Name</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>Status</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>Subject</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>title</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<th>setting</th>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</tr>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</table>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20'; contentadmin['insertAdjacentHTML'](_0x1b7191(0x1b9), _0x349f7e); } }); } function updateViewOnlyAdmin(_0x41f37f) { const _0x4ad82a = _0x5c3bcc; $[_0x4ad82a(0x1ae)](_0x4ad82a(0x183), JSON['stringify']({ 'action': _0x4ad82a(0x17b) }), function (_0x599f35) { const _0x3b78d3 = _0x4ad82a; _0x599f35['r'] && (_0x41f37f['innerHTML'] = '', _0x599f35[_0x3b78d3(0x1d0)][_0x3b78d3(0x16a)][_0x3b78d3(0x1e4)](_0x32e2e4 => { const _0x5a495b = _0x3b78d3; if (_0x32e2e4['user'] == 'user') { let _0x511ce2 = document['createElement'](_0x5a495b(0x184)); _0x511ce2[_0x5a495b(0x19f)] = 'to', _0x511ce2[_0x5a495b(0x1b6)] = _0x32e2e4[_0x5a495b(0x1c2)], _0x41f37f[_0x5a495b(0x1f3)](_0x511ce2); } else { let _0x464dce = document[_0x5a495b(0x1ed)]('div'); _0x464dce[_0x5a495b(0x19f)] = 'me', _0x464dce[_0x5a495b(0x1b6)] = _0x32e2e4[_0x5a495b(0x1c2)], _0x41f37f[_0x5a495b(0x1f3)](_0x464dce); } })); }); } function updateViewReportAdmin() { const _0x249bf1 = _0x5c3bcc; $[_0x249bf1(0x1ae)](_0x249bf1(0x183), JSON[_0x249bf1(0x168)]({ 'action': _0x249bf1(0x17b) }), function (_0x3d56f0) { const _0x2a5b57 = _0x249bf1; contentadmin[_0x2a5b57(0x1c6)] = ''; if (_0x3d56f0['r']) { let _0x504466 = _0x2a5b57(0x1a3) + _0x3d56f0[_0x2a5b57(0x1d0)]['ID'] + _0x2a5b57(0x178) + _0x3d56f0['data'][_0x2a5b57(0x1b0)] + _0x2a5b57(0x191) + _0x3d56f0[_0x2a5b57(0x1d0)][_0x2a5b57(0x17a)] + _0x2a5b57(0x1f8) + _0x3d56f0[_0x2a5b57(0x1d0)][_0x2a5b57(0x1f4)] + '</p>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22btn-control\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20id=\x22spect\x22\x20accessKey=\x22' + _0x3d56f0[_0x2a5b57(0x1d0)]['pid'] + _0x2a5b57(0x1f6) + _0x3d56f0[_0x2a5b57(0x1d0)][_0x2a5b57(0x17a)] + '\x22\x20>teleoprt</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22btn-control\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20id=\x22givecar\x22\x20accessKey=\x22' + _0x3d56f0[_0x2a5b57(0x1d0)][_0x2a5b57(0x17a)] + _0x2a5b57(0x1b2) + _0x3d56f0[_0x2a5b57(0x1d0)]['pid'] + _0x2a5b57(0x18f) + _0x3d56f0[_0x2a5b57(0x1d0)]['ID'] + _0x2a5b57(0x1fb); contentadmin['insertAdjacentHTML'](_0x2a5b57(0x1b9), _0x504466); let _0x3afab0 = document['querySelector']('.view'); _0x3d56f0[_0x2a5b57(0x1d0)]['chat'][_0x2a5b57(0x1e4)](_0x4d694c => { const _0x331e6d = _0x2a5b57; if (_0x4d694c[_0x331e6d(0x1a9)] == 'user') { let _0x5218ce = '<div\x20class=\x27to\x27>' + _0x4d694c[_0x331e6d(0x1c2)] + _0x331e6d(0x1d5); _0x3afab0['insertAdjacentHTML'](_0x331e6d(0x1b9), _0x5218ce); } else { let _0x455f91 = _0x331e6d(0x16c) + _0x4d694c[_0x331e6d(0x1c2)] + _0x331e6d(0x1d5); _0x3afab0[_0x331e6d(0x1e1)]('beforeend', _0x455f91); } }); let _0x2fbe4f = document[_0x2a5b57(0x1a8)](_0x2a5b57(0x18c)), _0x461c0a = document[_0x2a5b57(0x1a8)]('#revive'), _0x35e3a2 = document[_0x2a5b57(0x1a8)](_0x2a5b57(0x1c9)), _0x50ae99 = document['querySelector'](_0x2a5b57(0x189)), _0x29617f = document['querySelector'](_0x2a5b57(0x1ab)); _0x2fbe4f[_0x2a5b57(0x16e)]('click', _0x440d => { const _0x8c518d = _0x2a5b57; let _0x529944 = _0x440d[_0x8c518d(0x1da)][_0x8c518d(0x1f5)]; $[_0x8c518d(0x1ae)](_0x8c518d(0x183), JSON[_0x8c518d(0x168)]({ 'action': _0x8c518d(0x1a2), 'id': _0x529944 }), function (_0x2d8567) { _0x2d8567 && updateReportLitst(); }); }), _0x461c0a[_0x2a5b57(0x16e)](_0x2a5b57(0x1b5), _0x4fdbfa => { const _0x4e23a1 = _0x2a5b57; let _0x52340f = _0x4fdbfa[_0x4e23a1(0x1da)][_0x4e23a1(0x1f5)]; $['post'](_0x4e23a1(0x183), JSON[_0x4e23a1(0x168)]({ 'action': _0x4e23a1(0x1eb), 'id': _0x52340f }), function (_0x1d47f1) { if (_0x1d47f1) { } }); }), _0x35e3a2[_0x2a5b57(0x16e)](_0x2a5b57(0x1b5), _0x116102 => { const _0x381eec = _0x2a5b57; let _0x3a4344 = _0x116102[_0x381eec(0x1da)][_0x381eec(0x1f5)]; $[_0x381eec(0x1ae)](_0x381eec(0x183), JSON[_0x381eec(0x168)]({ 'action': _0x381eec(0x17e), 'id': _0x3a4344 }), function (_0x149e25) { }); }), _0x50ae99[_0x2a5b57(0x16e)](_0x2a5b57(0x1b5), _0x4d808a => { const _0xde3a84 = _0x2a5b57; let _0x5e5302 = _0x4d808a[_0xde3a84(0x1da)][_0xde3a84(0x1f5)]; $['post'](_0xde3a84(0x183), JSON[_0xde3a84(0x168)]({ 'action': 'spect', 'id': _0x5e5302 }), function (_0x2b0601) { }); }), _0x29617f[_0x2a5b57(0x16e)](_0x2a5b57(0x1b5), _0x233b14 => { const _0x5d8f51 = _0x2a5b57; let _0x486ac1 = _0x233b14[_0x5d8f51(0x1da)][_0x5d8f51(0x1f5)]; $[_0x5d8f51(0x1ae)]('https://Unique_AdminPanel/action', JSON[_0x5d8f51(0x168)]({ 'action': 'teleport', 'id': _0x486ac1 }), function (_0x1e3f7f) { }); }); let _0x2676fd = document['querySelector']('#btn_send_msg'), _0x19c59a = document['querySelector'](_0x2a5b57(0x16f)); _0x2676fd[_0x2a5b57(0x16e)]('click', () => { const _0x549ae2 = _0x2a5b57; !_0x19c59a[_0x549ae2(0x1e0)] == '' && $['post'](_0x549ae2(0x183), JSON['stringify']({ 'action': _0x549ae2(0x1c8), 'text': _0x19c59a['value'], 'user': _0x549ae2(0x181), 'id': _0x3d56f0['data']['ID'] }), function (_0x22f886) { const _0x35f3c2 = _0x549ae2; _0x19c59a[_0x35f3c2(0x1e0)] = '', updateViewOnlyAdmin(_0x3afab0); }); }), document[_0x2a5b57(0x1d9)] = function (_0xef7007) { const _0x15685a = _0x2a5b57; _0xef7007[_0x15685a(0x172)] == 0xd && (!_0x19c59a[_0x15685a(0x1e0)] == '' && $[_0x15685a(0x1ae)](_0x15685a(0x183), JSON[_0x15685a(0x168)]({ 'action': _0x15685a(0x1c8), 'text': _0x19c59a[_0x15685a(0x1e0)], 'user': _0x15685a(0x181), 'id': _0x3d56f0['data']['ID'] }), function (_0x1bc78a) { const _0x520687 = _0x15685a; _0x19c59a[_0x520687(0x1e0)] = '', updateViewOnlyAdmin(_0x3afab0); })); }; } else { if (_0x3d56f0['msg'] == _0x2a5b57(0x1ad)) { contentadmin['innerHTML'] = ''; let _0x4a01fc = _0x2a5b57(0x171); contentadmin[_0x2a5b57(0x1e1)](_0x2a5b57(0x1b9), _0x4a01fc); } } }); } reportList['addEventListener'](_0x5c3bcc(0x1b5), () => { updateReportLitst(); }), topAdmin[_0x5c3bcc(0x16e)]('click', () => { updateTopAdmin(contentadmin); }), viewReport['addEventListener'](_0x5c3bcc(0x1b5), () => { updateViewReportAdmin(); }), document['getElementById']('e1')[_0x5c3bcc(0x16e)](_0x5c3bcc(0x1b5), function () { const _0x4962ec = _0x5c3bcc; $['post'](_0x4962ec(0x183), JSON[_0x4962ec(0x168)]({ 'action': 'feed', 'id': 0x1, 'adminId': Admin__feedBack })); }), document[_0x5c3bcc(0x174)]('e2')[_0x5c3bcc(0x16e)](_0x5c3bcc(0x1b5), function () { const _0x306bda = _0x5c3bcc; $[_0x306bda(0x1ae)](_0x306bda(0x183), JSON[_0x306bda(0x168)]({ 'action': _0x306bda(0x1de), 'id': 0x2, 'adminId': Admin__feedBack }), function (_0x562fe6) { const _0x555be3 = _0x306bda; FeedBackActive(_0x555be3(0x18b)); }); }), document['getElementById']('e3')[_0x5c3bcc(0x16e)]('click', function () { const _0xd68d5d = _0x5c3bcc; $[_0xd68d5d(0x1ae)](_0xd68d5d(0x183), JSON['stringify']({ 'action': _0xd68d5d(0x1de), 'id': 0x4, 'adminId': Admin__feedBack }), function (_0x385c3e) { FeedBackActive('hide'); }); }), document[_0x5c3bcc(0x174)]('e4')[_0x5c3bcc(0x16e)](_0x5c3bcc(0x1b5), function () { const _0x2a7040 = _0x5c3bcc; $['post'](_0x2a7040(0x183), JSON[_0x2a7040(0x168)]({ 'action': _0x2a7040(0x1de), 'id': 0x5, 'adminId': Admin__feedBack }), function (_0x5a777f) { const _0xb4921d = _0x2a7040; FeedBackActive(_0xb4921d(0x18b)); }); }), document[_0x5c3bcc(0x174)]('e5')[_0x5c3bcc(0x16e)](_0x5c3bcc(0x1b5), function () { const _0x1e068a = _0x5c3bcc; $[_0x1e068a(0x1ae)](_0x1e068a(0x183), JSON['stringify']({ 'action': _0x1e068a(0x1de), 'id': 0x6, 'adminId': Admin__feedBack }), function (_0x261f46) { FeedBackActive('hide'); }); });
+/* ===========================================================================
+   Unique RP — Report System | ui/report/js/script.js
+   arshiahub.ir
+
+   نسخه بازنویسی‌شده و غیر-آبفاسکیت.
+   نکته امنیتی مهم: نسخه قبلی متنِ خام کاربر رو مستقیم با insertAdjacentHTML
+   داخل صفحه میریخت. یعنی هر بازیکنی میتونست با فرستادن <img onerror=...>
+   داخل عنوان یا چت ریپورت، کد دلخواه رو توی NUI ادمین اجرا کنه.
+   اینجا هر رشته‌ای که از سرور میاد از esc() رد میشه.
+   =========================================================================== */
+
+'use strict';
+
+const RES = 'Unique_AdminPanel';   // اگه اسم پوشه ریسورس رو عوض کردی، اینجا هم عوض کن
+
+/* ------------------------------------------------------------ helpers --- */
+
+const $  = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+
+function esc(v) {
+  if (v === null || v === undefined) return '';
+  return String(v)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+async function nui(name, data = {}) {
+  try {
+    const res = await fetch(`https://${RES}/${name}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json; charset=UTF-8' },
+      body: JSON.stringify(data),
+    });
+    return await res.json();
+  } catch (e) {
+    return { r: false, msg: 'ارتباط با سرور برقرار نشد.' };
+  }
+}
+
+function toast(msg, kind) {
+  const host = $('#toastHost');
+  const el = document.createElement('div');
+  el.className = 'toast' + (kind ? ` toast--${kind}` : '');
+  el.textContent = msg;
+  host.appendChild(el);
+  setTimeout(() => el.remove(), 3800);
+}
+
+function ago(seconds) {
+  seconds = Number(seconds) || 0;
+  if (seconds < 60)    return `${seconds} ثانیه`;
+  if (seconds < 3600)  return `${Math.floor(seconds / 60)} دقیقه`;
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)} ساعت`;
+  return `${Math.floor(seconds / 86400)} روز`;
+}
+
+function clock(ts) {
+  if (!ts) return '';
+  const d = new Date(Number(ts) * 1000);
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
+/* UTF-8 aware length (فارسی) */
+const len = (s) => Array.from(String(s || '')).length;
+
+/* -------------------------------------------------------------- state --- */
+
+const S = {
+  cfg: { categories: [], priorities: {}, limits: {}, server: 'Unique RP', site: 'arshiahub.ir' },
+  userView:  'compose',
+  adminView: 'queue',
+  compose:   { category: null },
+  tickets:   [],
+  selected:  null,
+  active:    null,   // ریپورتی که این ادمین قبول کرده
+  mine:      null,   // ریپورت خود بازیکن
+  filter:    'all',
+  search:    '',
+  rating:    { id: null, value: 0 },
+  lastMsgCount: { user: 0, admin: 0 },
+};
+
+const catOf   = (k) => S.cfg.categories.find(c => c.key === k);
+const catName = (k) => (catOf(k) || {}).label || k || '—';
+const catIcon = (k) => (catOf(k) || {}).icon  || 'fa-circle-question';
+const priOf   = (p) => S.cfg.priorities[p] || S.cfg.priorities[1] || { label: '—', color: '#7c8698' };
+
+/* ============================================================== panels === */
+
+function showStage(id) {
+  ['#userPanel', '#adminPanel', '#ratePanel'].forEach(sel => {
+    const el = $(sel);
+    const on = sel === id;
+    el.classList.toggle('hidden', !on);
+    el.setAttribute('aria-hidden', String(!on));
+  });
+}
+
+function hideAll() {
+  ['#userPanel', '#adminPanel', '#ratePanel'].forEach(sel => {
+    $(sel).classList.add('hidden');
+    $(sel).setAttribute('aria-hidden', 'true');
+  });
+}
+
+function applyConfig(cfg) {
+  if (!cfg) return;
+  S.cfg = Object.assign(S.cfg, cfg);
+  $('#brandNameUser').textContent  = S.cfg.server;
+  $('#brandNameAdmin').textContent = S.cfg.server;
+  $$('#siteLinkUser span, #siteLinkAdmin span').forEach(el => { el.textContent = S.cfg.site; });
+}
+
+/* ========================================================= USER PANEL === */
+
+function renderUser() {
+  const body = $('#userBody');
+  $$('#userPanel .tab').forEach(t => t.classList.toggle('is-on', t.dataset.view === S.userView));
+
+  if (S.userView === 'compose') return renderCompose(body);
+  if (S.userView === 'mine')    return renderMine(body);
+  if (S.userView === 'board')   return renderBoard(body);
+}
+
+function renderCompose(body) {
+  const L = S.cfg.limits || {};
+  body.className = 'body scroller';
+  body.innerHTML = `
+    <form class="compose" id="composeForm" novalidate>
+      <p class="compose__lede">
+        هرچی دقیق‌تر بنویسی سریع‌تر رسیدگی می‌شه. زمان، مکان و آیدی افراد درگیر رو بنویس.
+        تا بسته شدن این ریپورت نمی‌تونی ریپورت جدید بدی.
+      </p>
+
+      <div class="field">
+        <label class="field__label" for="cTitle">عنوان</label>
+        <input class="input" id="cTitle" maxlength="${esc(L.titleMax || 64)}"
+               placeholder="مثلاً: بازیکن بدون دلیل به من شلیک کرد" autocomplete="off">
+        <div class="counter" id="cTitleCount">0 / ${esc(L.titleMax || 64)}</div>
+      </div>
+
+      <div class="field">
+        <span class="field__label">موضوع</span>
+        <div class="cats" id="cCats">
+          ${S.cfg.categories.map(c => `
+            <button type="button" class="cat" data-key="${esc(c.key)}">
+              <i class="fa-solid ${esc(c.icon)}"></i><span>${esc(c.label)}</span>
+            </button>`).join('')}
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="cInfo">توضیحات</label>
+        <textarea class="textarea" id="cInfo" maxlength="${esc(L.infoMax || 1000)}"
+                  placeholder="چه اتفاقی افتاد؟ کِی و کجا؟ آیدی طرف مقابل چند بود؟"></textarea>
+        <div class="counter" id="cInfoCount">0 / ${esc(L.infoMax || 1000)}</div>
+      </div>
+
+      <button class="btn btn--go" id="cSend" type="submit">
+        <i class="fa-solid fa-paper-plane"></i> ارسال ریپورت
+      </button>
+    </form>`;
+
+  // انتخاب موضوع
+  $$('#cCats .cat').forEach(btn => {
+    btn.classList.toggle('is-on', btn.dataset.key === S.compose.category);
+    btn.addEventListener('click', () => {
+      S.compose.category = btn.dataset.key;
+      $$('#cCats .cat').forEach(b => b.classList.toggle('is-on', b === btn));
+    });
+  });
+
+  // شمارنده کاراکتر
+  const bind = (inputId, countId, min, max) => {
+    const inp = $(`#${inputId}`), out = $(`#${countId}`);
+    const upd = () => {
+      const n = len(inp.value);
+      out.textContent = `${n} / ${max}`;
+      const bad = n > 0 && n < min;
+      out.classList.toggle('is-bad', bad || n > max);
+      inp.classList.toggle('is-bad', n > max);
+    };
+    inp.addEventListener('input', upd);
+    upd();
+  };
+  bind('cTitle', 'cTitleCount', L.titleMin || 5,  L.titleMax || 64);
+  bind('cInfo',  'cInfoCount',  L.infoMin  || 15, L.infoMax  || 1000);
+
+  $('#composeForm').addEventListener('submit', submitReport);
+}
+
+async function submitReport(ev) {
+  ev.preventDefault();
+  const L = S.cfg.limits || {};
+  const title = $('#cTitle').value.trim();
+  const info  = $('#cInfo').value.trim();
+
+  const fail = (el, msg) => {
+    el.classList.add('is-bad');
+    setTimeout(() => el.classList.remove('is-bad'), 1200);
+    toast(msg, 'bad');
+  };
+
+  if (len(title) < (L.titleMin || 5))  return fail($('#cTitle'), `عنوان باید حداقل ${L.titleMin || 5} کاراکتر باشه.`);
+  if (!S.compose.category)             return toast('یک موضوع انتخاب کن.', 'bad');
+  if (len(info) < (L.infoMin || 15))   return fail($('#cInfo'), `توضیحات باید حداقل ${L.infoMin || 15} کاراکتر باشه.`);
+
+  const btn = $('#cSend');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> در حال ارسال';
+
+  const res = await nui('create', { title, info, category: S.compose.category });
+
+  btn.disabled = false;
+  btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> ارسال ریپورت';
+
+  if (res && res.r) {
+    toast(res.msg || 'ریپورت ثبت شد.', 'ok');
+    S.compose.category = null;
+    S.userView = 'mine';
+    renderUser();
+  } else {
+    toast((res && res.msg) || 'ثبت ریپورت انجام نشد.', 'bad');
+  }
+}
+
+async function renderMine(body) {
+  body.className = 'body';
+  body.innerHTML = `<div class="empty"><i class="fa-solid fa-circle-notch fa-spin"></i></div>`;
+
+  const res = await nui('getMine');
+  S.mine = res;
+  $('#userUnread').hidden = true;
+
+  if (!res || !res.r) {
+    const pending = res && res.msg === 'pending';
+    body.innerHTML = `
+      <div class="empty">
+        <i class="fa-solid ${pending ? 'fa-hourglass-half' : 'fa-inbox'}"></i>
+        <h3>${pending ? 'ریپورتت در صف بررسیه' : 'ریپورت بازی نداری'}</h3>
+        <p>${pending
+            ? `ریپورت شماره ${esc(res.id)} ثبت شده و ${esc(ago(res.waited))} منتظره. به‌محض اینکه ادمینی قبولش کنه اینجا باز می‌شه.`
+            : 'از تب «ریپورت جدید» می‌تونی یک ریپورت باز کنی.'}</p>
+      </div>`;
+    return;
+  }
+
+  const d = res.data;
+  body.innerHTML = `
+    <div class="pane" style="flex:1">
+      <div class="pane__head">
+        <img class="avatar" src="${esc(d.AdminAvatar || './img/self.png')}" alt="">
+        <div class="pane__who">
+          <div class="pane__name">${esc(d.AdminName)}</div>
+          <div class="pane__sub">
+            <span>${esc(d.AdminRank)}</span>
+            <span>${esc(d.AdminXP)} XP</span>
+            <span><i class="dot ${d.AdminOnline ? 'dot--on' : 'dot--off'}"></i>
+              ${d.AdminOnline ? 'آنلاین' : 'آفلاین'}</span>
+          </div>
+        </div>
+        <div class="pane__acts">
+          <span class="pill">ریپورت ${esc(d.ID)}</span>
+          <span class="pill">${esc(catName(d.category))}</span>
+        </div>
+      </div>
+      <div class="thread scroller" id="userThread"></div>
+      <div class="composer">
+        <input class="input" id="userMsg" placeholder="پیامت رو بنویس…"
+               maxlength="${esc((S.cfg.limits || {}).chatMax || 500)}" autocomplete="off">
+        <button class="sendbtn" id="userSend"><i class="fa-solid fa-paper-plane"></i></button>
+      </div>
+    </div>`;
+
+  paintThread('#userThread', d.chat, 'user');
+  S.lastMsgCount.user = (d.chat || []).length;
+
+  const doSend = async () => {
+    const inp = $('#userMsg');
+    const text = inp.value.trim();
+    if (!text) return;
+    inp.value = '';
+    const r = await nui('chat', { id: d.ID, text });
+    if (r && r.r) { renderMine(body); }
+    else { toast((r && r.msg) || 'پیام ارسال نشد.', 'bad'); inp.value = text; }
+  };
+  $('#userSend').addEventListener('click', doSend);
+  $('#userMsg').addEventListener('keydown', e => { if (e.key === 'Enter') doSend(); });
+  $('#userMsg').focus();
+}
+
+/* ------------------------------------------------------------- thread --- */
+
+function paintThread(sel, chat, mySide) {
+  const box = $(sel);
+  if (!box) return;
+  const list = Array.isArray(chat) ? chat : [];
+
+  if (!list.length) {
+    box.innerHTML = `<div class="empty"><p>هنوز پیامی رد و بدل نشده.</p></div>`;
+    return;
+  }
+
+  box.innerHTML = list.map(m => {
+    if (m.user === 'system') {
+      return `<div class="msg msg--sys"><div class="msg__body">${esc(m.text)}</div></div>`;
+    }
+    const mine = m.user === mySide;
+    const who  = m.name ? esc(m.name) : (m.user === 'admin' ? 'ادمین' : 'بازیکن');
+    return `
+      <div class="msg ${mine ? 'msg--me' : 'msg--them'}">
+        <div class="msg__who">${who}${m.at ? ' · ' + esc(clock(m.at)) : ''}</div>
+        <div class="msg__body">${esc(m.text)}</div>
+      </div>`;
+  }).join('');
+
+  box.scrollTop = box.scrollHeight;
+}
+
+/* ---------------------------------------------------------- leaderboard --- */
+
+async function renderBoard(body) {
+  body.className = 'body scroller';
+  body.innerHTML = `<div class="empty"><i class="fa-solid fa-circle-notch fa-spin"></i></div>`;
+
+  const res = await nui('topAdmins');
+  if (!res || !res.r || !res.data || !res.data.length) {
+    body.innerHTML = `<div class="empty"><i class="fa-solid fa-ranking-star"></i>
+      <h3>هنوز آماری ثبت نشده</h3><p>بعد از رسیدگی به چند ریپورت، جدول اینجا پر می‌شه.</p></div>`;
+    return;
+  }
+
+  body.innerHTML = `
+    <div class="board">
+      <div class="board__row board__row--head">
+        <span>#</span><span>ادمین</span><span>رسیدگی</span><span>میانگین امتیاز</span><span>XP</span>
+      </div>
+      ${res.data.map((a, i) => `
+        <div class="board__row">
+          <span class="board__pos ${i === 0 ? 'board__pos--1' : ''}">${i + 1}</span>
+          <span class="board__name">
+            <i class="dot ${a.online ? 'dot--on' : 'dot--off'}"></i>
+            <span>${esc(a.name || '—')}</span>
+            <span class="board__rank">${esc(a.rank)}</span>
+          </span>
+          <span class="board__num">${esc(a.handled)}</span>
+          <span class="board__num">${a.avg_rating ? esc(Number(a.avg_rating).toFixed(1)) + ' ★' : '—'}</span>
+          <span class="board__num">${esc(a.xp)}</span>
+        </div>`).join('')}
+    </div>`;
+}
+
+/* ======================================================== ADMIN PANEL === */
+
+function renderAdmin() {
+  const body = $('#adminBody');
+  $$('#adminPanel .tab').forEach(t => t.classList.toggle('is-on', t.dataset.view === S.adminView));
+
+  if (S.adminView === 'queue')   return renderQueue(body, false);
+  if (S.adminView === 'archive') return renderQueue(body, true);
+  if (S.adminView === 'active')  return renderActive(body);
+  if (S.adminView === 'stats')   return renderStats(body);
+}
+
+async function renderQueue(body, archived) {
+  body.className = 'body';
+  body.innerHTML = `<div class="empty"><i class="fa-solid fa-circle-notch fa-spin"></i></div>`;
+
+  const res = await nui('getAll', { status: archived ? 'archive' : 'live' });
+  S.tickets = (res && res.r && res.data) ? res.data : [];
+
+  const waiting = S.tickets.filter(t => t.status === 'pending').length;
+  $('#queueCount').textContent = waiting;
+
+  body.innerHTML = `
+    <div class="split">
+      <div class="queue">
+        <div class="queue__tools">
+          <input class="search" id="qSearch" placeholder="جستجو در عنوان، بازیکن یا شماره…"
+                 value="${esc(S.search)}" autocomplete="off">
+          <div class="filters">
+            <button class="filt ${S.filter === 'all'     ? 'is-on' : ''}" data-f="all">همه</button>
+            <button class="filt ${S.filter === 'pending' ? 'is-on' : ''}" data-f="pending">در انتظار</button>
+            <button class="filt ${S.filter === 'accept'  ? 'is-on' : ''}" data-f="accept">در حال بررسی</button>
+          </div>
+        </div>
+        <div class="list scroller" id="qList"></div>
+      </div>
+      <div class="pane" id="qDetail"></div>
+    </div>`;
+
+  $('#qSearch').addEventListener('input', e => { S.search = e.target.value; paintQueue(); });
+  $$('.filt').forEach(b => b.addEventListener('click', () => {
+    S.filter = b.dataset.f;
+    $$('.filt').forEach(x => x.classList.toggle('is-on', x === b));
+    paintQueue();
+  }));
+
+  paintQueue();
+  paintDetail();
+}
+
+function visibleTickets() {
+  const q = S.search.trim().toLowerCase();
+  return S.tickets.filter(t => {
+    if (S.filter !== 'all' && t.status !== S.filter) return false;
+    if (!q) return true;
+    return String(t.ID).includes(q)
+        || String(t.title || '').toLowerCase().includes(q)
+        || String(t.Name  || '').toLowerCase().includes(q);
+  });
+}
+
+function paintQueue() {
+  const list = $('#qList');
+  if (!list) return;
+  const rows = visibleTickets();
+
+  if (!rows.length) {
+    list.innerHTML = `<div class="empty"><i class="fa-solid fa-inbox"></i>
+      <h3>چیزی اینجا نیست</h3><p>با این فیلتر ریپورتی پیدا نشد.</p></div>`;
+    return;
+  }
+
+  list.innerHTML = rows.map(t => {
+    const pr = priOf(t.priority);
+    const statusPill =
+      t.status === 'pending' ? '<span class="pill pill--wait">در انتظار</span>' :
+      t.status === 'accept'  ? '<span class="pill pill--live">در حال بررسی</span>' :
+                               '<span class="pill pill--done">بسته</span>';
+    return `
+      <div class="tk ${t.status === 'pending' ? 'tk--wait' : ''} ${S.selected === t.ID ? 'is-sel' : ''}"
+           data-id="${esc(t.ID)}">
+        <span class="tk__spine" style="background:${esc(pr.color)}"></span>
+        <div class="tk__main">
+          <div class="tk__top">
+            <span class="tk__id">#${esc(t.ID)}</span>
+            <span class="tk__title">${esc(t.title)}</span>
+          </div>
+          <div class="tk__meta">
+            <span><i class="fa-solid ${esc(catIcon(t.category))}"></i> ${esc(catName(t.category))}</span>
+            <span><i class="dot ${t.online ? 'dot--on' : 'dot--off'}"></i> ${esc(t.Name)}</span>
+            <span><i class="fa-regular fa-clock"></i> ${esc(ago(t.age))}</span>
+            ${t.msgCount ? `<span><i class="fa-regular fa-comment"></i> ${esc(t.msgCount)}</span>` : ''}
+          </div>
+        </div>
+        <div class="tk__side">${statusPill}</div>
+      </div>`;
+  }).join('');
+
+  $$('.tk', list).forEach(row => row.addEventListener('click', () => {
+    S.selected = Number(row.dataset.id);
+    paintQueue();
+    paintDetail();
+  }));
+}
+
+function paintDetail() {
+  const pane = $('#qDetail');
+  if (!pane) return;
+
+  const t = S.tickets.find(x => x.ID === S.selected);
+  if (!t) {
+    pane.innerHTML = `<div class="empty"><i class="fa-solid fa-hand-pointer"></i>
+      <h3>یک ریپورت انتخاب کن</h3><p>جزئیات و دکمه‌های اقدام اینجا نشون داده می‌شن.</p></div>`;
+    return;
+  }
+
+  const pr = priOf(t.priority);
+  const canDelete = true;   // سرور خودش دسترسی رو چک میکنه؛ اینجا فقط UI
+
+  pane.innerHTML = `
+    <div class="pane__head">
+      <div class="pane__who">
+        <div class="pane__name">#${esc(t.ID)} — ${esc(t.title)}</div>
+        <div class="pane__sub">
+          <span>${esc(catName(t.category))}</span>
+          <span style="color:${esc(pr.color)}">اولویت ${esc(pr.label)}</span>
+          <span>${esc(ago(t.age))} پیش</span>
+        </div>
+      </div>
+      <div class="pane__acts">
+        ${t.status === 'pending'
+          ? `<button class="btn btn--jade btn--sm" data-do="accept"><i class="fa-solid fa-check"></i> قبول</button>`
+          : ''}
+        ${t.status === 'accept'
+          ? `<button class="btn btn--ghost btn--sm" data-do="open"><i class="fa-solid fa-comments"></i> باز کردن چت</button>`
+          : ''}
+        <button class="btn btn--ghost btn--sm" data-do="archive"><i class="fa-solid fa-box-archive"></i> بایگانی</button>
+        ${canDelete ? `<button class="btn btn--rust btn--sm" data-do="delete"><i class="fa-solid fa-trash"></i> حذف</button>` : ''}
+      </div>
+    </div>
+
+    <div class="thread scroller">
+      <div class="msg msg--them" style="max-width:100%">
+        <div class="msg__who">${esc(t.Name)} ${t.pid ? `· ID ${esc(t.pid)}` : ''}</div>
+        <div class="msg__body">${esc(t.sub)}</div>
+      </div>
+      ${t.AdminName && t.status !== 'pending'
+        ? `<div class="msg msg--sys"><div class="msg__body">رسیدگی توسط ${esc(t.AdminName)}</div></div>`
+        : ''}
+      ${t.rating > 0
+        ? `<div class="msg msg--sys"><div class="msg__body">امتیاز بازیکن: ${esc(t.rating)} از ۵</div></div>`
+        : ''}
+    </div>`;
+
+  $$('[data-do]', pane).forEach(btn => btn.addEventListener('click', () => detailAction(btn.dataset.do, t)));
+}
+
+async function detailAction(what, t) {
+  if (what === 'open') { S.adminView = 'active'; return renderAdmin(); }
+
+  if (what === 'delete' && !confirm(`ریپورت #${t.ID} برای همیشه حذف بشه؟`)) return;
+
+  const res = await nui(what, { id: t.ID });
+  if (res && res.r) {
+    toast(res.msg || 'انجام شد.', 'ok');
+    if (what === 'accept') { S.adminView = 'active'; return renderAdmin(); }
+    S.selected = null;
+    renderAdmin();
+  } else {
+    toast((res && res.msg) || 'انجام نشد.', 'bad');
+  }
+}
+
+/* -------------------------------------------------------- active ticket --- */
+
+async function renderActive(body) {
+  body.className = 'body';
+  body.innerHTML = `<div class="empty"><i class="fa-solid fa-circle-notch fa-spin"></i></div>`;
+
+  const res = await nui('getActive');
+  S.active = res;
+  $('#adminUnread').hidden = true;
+
+  if (!res || !res.r) {
+    body.innerHTML = `<div class="empty"><i class="fa-solid fa-headset"></i>
+      <h3>ریپورتی در دست نداری</h3>
+      <p>از تب «صف» یک ریپورت رو قبول کن تا اینجا باز بشه.</p></div>`;
+    return;
+  }
+
+  const d  = res.data;
+  const p  = d.perms || {};
+  const pr = priOf(d.priority);
+
+  const act = (key, icon, label, on) => on
+    ? `<button class="btn btn--ghost btn--sm" data-act="${key}"><i class="fa-solid ${icon}"></i> ${label}</button>`
+    : '';
+
+  body.innerHTML = `
+    <div class="pane" style="flex:1">
+      <div class="pane__head">
+        <img class="avatar" src="${esc(d.avatar || './img/self.png')}" alt="">
+        <div class="pane__who">
+          <div class="pane__name">${esc(d.name)}</div>
+          <div class="pane__sub">
+            <span>#${esc(d.ID)}</span>
+            <span>${esc(catName(d.category))}</span>
+            <span style="color:${esc(pr.color)}">${esc(pr.label)}</span>
+            <span><i class="dot ${d.online ? 'dot--on' : 'dot--off'}"></i>
+              ${d.online ? 'ID ' + esc(d.pid) : 'آفلاین'}</span>
+          </div>
+        </div>
+        <div class="pane__acts">
+          ${act('teleport', 'fa-location-arrow', 'رفتن پیشش', p.teleport && d.online)}
+          ${act('bring',    'fa-hand',           'آوردنش',    p.bring    && d.online)}
+          ${act('return',   'fa-rotate-left',    'برگشت',     true)}
+          ${act('spect',    'fa-eye',            'اسپکت',     p.spect    && d.online)}
+          ${act('revive',   'fa-heart-pulse',    'ریوایو',    p.revive   && d.online)}
+          ${act('freeze',   'fa-snowflake',      'فریز',      p.freeze   && d.online)}
+          ${act('givecar',  'fa-car',            'ماشین',     p.givecar)}
+          <button class="btn btn--jade btn--sm" id="closeActive">
+            <i class="fa-solid fa-flag-checkered"></i> بستن ریپورت
+          </button>
+        </div>
+      </div>
+
+      <div class="thread scroller" id="adminThread"></div>
+
+      <div class="composer">
+        <input class="input" id="adminMsg" placeholder="پاسخت رو بنویس…"
+               maxlength="${esc((S.cfg.limits || {}).chatMax || 500)}" autocomplete="off">
+        <button class="sendbtn" id="adminSend"><i class="fa-solid fa-paper-plane"></i></button>
+      </div>
+    </div>`;
+
+  paintThread('#adminThread', d.chat, 'admin');
+  S.lastMsgCount.admin = (d.chat || []).length;
+
+  $$('[data-act]', body).forEach(b => b.addEventListener('click', () => {
+    nui('action', { kind: b.dataset.act, id: d.pid });
+  }));
+
+  $('#closeActive').addEventListener('click', async () => {
+    const r = await nui('close', { id: d.ID });
+    if (r && r.r) { toast('ریپورت بسته شد.', 'ok'); S.adminView = 'queue'; renderAdmin(); }
+    else toast((r && r.msg) || 'بسته نشد.', 'bad');
+  });
+
+  const doSend = async () => {
+    const inp = $('#adminMsg');
+    const text = inp.value.trim();
+    if (!text) return;
+    inp.value = '';
+    const r = await nui('chat', { id: d.ID, text });
+    if (r && r.r) renderActive(body);
+    else { toast((r && r.msg) || 'ارسال نشد.', 'bad'); inp.value = text; }
+  };
+  $('#adminSend').addEventListener('click', doSend);
+  $('#adminMsg').addEventListener('keydown', e => { if (e.key === 'Enter') doSend(); });
+  $('#adminMsg').focus();
+}
+
+/* ---------------------------------------------------------------- stats --- */
+
+async function renderStats(body) {
+  body.className = 'body scroller';
+  body.innerHTML = `<div class="empty"><i class="fa-solid fa-circle-notch fa-spin"></i></div>`;
+
+  const [st, top] = await Promise.all([nui('stats'), nui('topAdmins')]);
+  const d = (st && st.r && st.data) ? st.data : {};
+
+  const card = (cls, n, l) => `<div class="stat ${cls}"><span class="stat__n">${esc(n)}</span><span class="stat__l">${esc(l)}</span></div>`;
+
+  body.innerHTML = `
+    <div class="stats">
+      <div class="stats__grid">
+        ${card('stat--wait', d.pending || 0, 'در انتظار')}
+        ${card('stat--live', d.active  || 0, 'در حال بررسی')}
+        ${card('stat--done', d.closed  || 0, 'بسته‌شده')}
+        ${card('', d.total || 0, 'کل ریپورت‌ها')}
+        ${card('', d.avg_rating ? Number(d.avg_rating).toFixed(1) + ' ★' : '—', 'میانگین رضایت')}
+        ${card('', d.avg_response ? ago(Math.round(d.avg_response)) : '—', 'میانگین زمان پاسخ')}
+      </div>
+      <div id="statsBoard"></div>
+    </div>`;
+
+  const boardHost = $('#statsBoard');
+  if (top && top.r && top.data && top.data.length) {
+    boardHost.innerHTML = `
+      <div class="board" style="padding:0">
+        <div class="board__row board__row--head">
+          <span>#</span><span>ادمین</span><span>رسیدگی</span><span>امتیاز</span><span>میانگین پاسخ</span>
+        </div>
+        ${top.data.map((a, i) => `
+          <div class="board__row">
+            <span class="board__pos ${i === 0 ? 'board__pos--1' : ''}">${i + 1}</span>
+            <span class="board__name">
+              <i class="dot ${a.online ? 'dot--on' : 'dot--off'}"></i>
+              <span>${esc(a.name || '—')}</span>
+              <span class="board__rank">${esc(a.rank)}</span>
+            </span>
+            <span class="board__num">${esc(a.handled)}</span>
+            <span class="board__num">${a.avg_rating ? esc(Number(a.avg_rating).toFixed(1)) + ' ★' : '—'}</span>
+            <span class="board__num">${a.avg_response ? esc(ago(Math.round(a.avg_response))) : '—'}</span>
+          </div>`).join('')}
+      </div>`;
+  }
+}
+
+/* ========================================================= RATING CARD === */
+
+function openRating(id, adminName) {
+  S.rating = { id, value: 0 };
+  $('#rateAdminName').textContent = adminName ? `رسیدگی توسط ${adminName}` : '';
+  $('#rateHint').textContent = 'یک امتیاز انتخاب کن';
+  $('#rateSend').disabled = true;
+  $$('#rateStars .star').forEach(s => s.classList.remove('is-lit'));
+  showStage('#ratePanel');
+}
+
+const RATE_WORDS = ['', 'اصلاً راضی نبودم', 'می‌شد بهتر باشه', 'قابل قبول بود', 'خوب بود', 'عالی بود'];
+
+$$('#rateStars .star').forEach(star => {
+  star.addEventListener('click', () => {
+    const v = Number(star.dataset.v);
+    S.rating.value = v;
+    $$('#rateStars .star').forEach(s => s.classList.toggle('is-lit', Number(s.dataset.v) <= v));
+    $('#rateHint').textContent = RATE_WORDS[v];
+    $('#rateSend').disabled = false;
+  });
+});
+
+$('#rateSend').addEventListener('click', async () => {
+  if (!S.rating.value) return;
+  await nui('rate', { id: S.rating.id, rating: S.rating.value });
+  hideAll();
+  toast('ممنون بابت امتیازت.', 'ok');
+});
+
+$('#rateSkip').addEventListener('click', () => { nui('exit'); hideAll(); });
+
+/* ============================================================== wiring === */
+
+$$('#userPanel .tab').forEach(t => t.addEventListener('click', () => {
+  S.userView = t.dataset.view; renderUser();
+}));
+$$('#adminPanel .tab').forEach(t => t.addEventListener('click', () => {
+  S.adminView = t.dataset.view; renderAdmin();
+}));
+
+$('#userClose').addEventListener('click',  () => { nui('exit'); hideAll(); });
+$('#adminClose').addEventListener('click', () => { nui('exit'); hideAll(); });
+
+$$('#siteLinkUser, #siteLinkAdmin').forEach(b => b.addEventListener('click', () => {
+  const text = S.cfg.site;
+  navigator.clipboard?.writeText(text).catch(() => {});
+  nui('copy', { text });
+  toast(`آدرس سایت کپی شد: ${text}`, 'ok');
+}));
+
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  const anyOpen = ['#userPanel', '#adminPanel', '#ratePanel']
+    .some(s => !$(s).classList.contains('hidden'));
+  if (!anyOpen) return;
+  nui('exit');
+  hideAll();
+});
+
+/* --------------------------------------------------- messages from Lua --- */
+
+window.addEventListener('message', ev => {
+  const d = ev.data || {};
+  if (!d._uniqueReport) return;   // پیام مال پنل‌های دیگه‌ست، رد شو
+
+  switch (d.action) {
+    case 'showUserPanel':
+      applyConfig(d.config);
+      showStage('#userPanel');
+      renderUser();
+      break;
+
+    case 'showAdminPanel':
+      applyConfig(d.config);
+      showStage('#adminPanel');
+      renderAdmin();
+      break;
+
+    case 'hideAll':
+      hideAll();
+      break;
+
+    case 'refreshList':
+      if (!$('#adminPanel').classList.contains('hidden') &&
+          (S.adminView === 'queue' || S.adminView === 'archive')) {
+        renderAdmin();
+      }
+      break;
+
+    case 'refreshChat':
+      if (d.side === 'admin') {
+        if (!$('#adminPanel').classList.contains('hidden') && S.adminView === 'active') renderAdmin();
+        else $('#adminUnread').hidden = false;
+      } else {
+        if (!$('#userPanel').classList.contains('hidden') && S.userView === 'mine') renderUser();
+        else $('#userUnread').hidden = false;
+      }
+      break;
+
+    case 'activeClosed':
+      if (!$('#adminPanel').classList.contains('hidden') && S.adminView === 'active') {
+        S.adminView = 'queue';
+        renderAdmin();
+      }
+      break;
+
+    case 'askRating':
+      openRating(d.id, d.adminName);
+      break;
+
+    case 'ping':
+      // فقط علامت خوانده‌نشده؛ پنل رو به‌زور باز نمی‌کنیم
+      if (d.kind === 'new')    $('#adminUnread').hidden = false;
+      if (d.kind === 'accept') $('#userUnread').hidden  = false;
+      break;
+  }
+});
