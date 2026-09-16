@@ -159,14 +159,14 @@ AddEventHandler(
     end
 )
 
-ESX.RegisterServerCallback(
+RegisterServerCallbackSafe(
     "esx_aduty:checkdutystatus",
     function(source, cb, target)
         CheckPlayerDutyStatus(target, cb)
     end
 )
 
-ESX.RegisterServerCallback(
+RegisterServerCallbackSafe(
     "esx_aduty:doesGangExist",
     function(source, cb, name, grade)
         if ESX.DoesGangExist(name, grade) then
@@ -177,7 +177,7 @@ ESX.RegisterServerCallback(
     end
 )
 
-ESX.RegisterServerCallback(
+RegisterServerCallbackSafe(
     "esx_aduty:checkAdmin",
     function(source, cb)
         local xPlayer = ESX.GetPlayerFromId(source)
@@ -195,14 +195,14 @@ ESX.RegisterServerCallback(
     end
 )
 
-ESX.RegisterServerCallback(
+RegisterServerCallbackSafe(
     "esx_aduty:getEventCoords",
     function(source, cb)
         cb(event.coords)
     end
 )
 
-ESX.RegisterServerCallback(
+RegisterServerCallbackSafe(
     "esx_aduty:getAdminPerm",
     function(source, cb)
         if source == 0 then
@@ -223,7 +223,7 @@ ESX.RegisterServerCallback(
     end
 )
 
-ESX.RegisterServerCallback(
+RegisterServerCallbackSafe(
     "esx_aduty:checkAduty",
     function(source, cb)
         local xPlayer = ESX.GetPlayerFromId(source)
@@ -576,7 +576,7 @@ AddEventHandler(
     end
 )
 
-ESX.RegisterServerCallback("GetGangMembers", function(source, cb)
+RegisterServerCallbackSafe("GetGangMembers", function(source, cb)
     Gangs = {}
     local xPlayer = ESX.GetPlayerFromId(source)
     local xPlayers = ESX.GetPlayers()

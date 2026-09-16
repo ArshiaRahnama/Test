@@ -54,7 +54,7 @@
      the other (neither has a `default`/`else` branch that does
      anything). Since UNIQUE_AC and the Report System BOTH key off
      `action`, Lua-side every Report System SendNUIMessage additionally
-     sets `_pngReport = true` so this shell can tell the two apart for
+     sets `_uniqueReport = true` so this shell can tell the two apart for
      focus routing - script.js in either iframe just ignores that extra
      field, it doesn't affect their own `data.action` checks. NUI
      callbacks (the `fetch()` calls each app makes back to Lua) are
@@ -87,7 +87,7 @@
       others.forEach(function (f) { if (f) f.style.pointerEvents = 'none'; });
     }
 
-    if (data._pngReport) {
+    if (data._uniqueReport) {
       activate(reportFrame, [adminFrame, acFrame]);
     } else if (typeof data.type !== 'undefined') {
       activate(adminFrame, [acFrame, reportFrame]);

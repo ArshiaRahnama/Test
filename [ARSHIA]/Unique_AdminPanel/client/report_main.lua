@@ -51,7 +51,7 @@ end
 local function send(action, payload)
     payload = payload or {}
     payload._uniqueReport = true
-    payload.action = action
+    payload.ureport = action
     SendNUIMessage(payload)
 end
 

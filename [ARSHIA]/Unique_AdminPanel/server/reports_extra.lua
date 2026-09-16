@@ -4,35 +4,26 @@
 -- (everyone has this resource loaded, not just admins, so ox_lib is
 -- available to them too) how the response was.
 
-AddEventHandler('Unique_AdminPanel:ReportClosed', function(reporterId, reportId, closerName, openedAt)
-    reporterId = tonumber(reporterId)
-
-    -- Response-time tracking: independent of whether the reporter is even
-    -- still online, so this runs before the online-check below.
-    openedAt = tonumber(openedAt)
-    if openedAt and openedAt > 0 then
-        local responseSeconds = os.time() - openedAt
-        if responseSeconds >= 0 then
-            MySQL.Async.execute(
-                "INSERT INTO `admin_report_response_times` (`admin_name`, `response_seconds`, `created_at`) VALUES (@admin, @seconds, @createdat)",
-                { ['@admin'] = closerName, ['@seconds'] = responseSeconds, ['@createdat'] = os.date('%Y-%m-%d %H:%M:%S') }
-            )
-        end
-    end
-
-    if not reporterId or not GetPlayerName(reporterId) then return end -- reporter already disconnected
-
-    Citizen.SetTimeout(1500, function()
-        if GetPlayerName(reporterId) then -- still online a moment later
-            TriggerClientEvent('Unique_AdminPanel:AskReportRating', reporterId, reportId, closerName)
-        end
-    end)
-end)
+-- NOTE (Unique Report System): this handler used to do two things that the
+-- report system now owns itself, and doing them twice corrupted the stats:
+--
+--   1. INSERT into `admin_report_response_times`. server/report_main.lua's
+--      CloseReport() already writes that row, so every closed report was
+--      counted TWICE and the "average response time" per admin was computed
+--      over duplicated samples.
+--   2. TriggerClientEvent('Unique_AdminPanel:AskReportRating', ...) - an
+--      ox_lib prompt that fired on top of the report system's own rating
+--      card, so the reporter got asked to rate the same report twice, and
+--      a second row landed in `admin_report_ratings`.
+--
+-- Both are removed. The event is kept (other files may listen to it) and the
+-- SubmitReportRating handler below is kept for backwards compatibility with
+-- anything still calling it directly.
 
 RegisterServerEvent('Unique_AdminPanel:SubmitReportRating')
 AddEventHandler('Unique_AdminPanel:SubmitReportRating', function(reportId, rating, adminName)
     rating = tonumber(rating)
-    if not rating or rating < 1 or rating > 3 then return end
+    if not rating or rating < 1 or rating > 5 then return end -- 1..5 (سیستم جدید ۵ ستاره‌ای است)
 
     MySQL.Async.execute(
         "INSERT INTO `admin_report_ratings` (`report_id`, `admin_name`, `rating`, `created_at`) VALUES (@rid, @admin, @rating, @createdat)",
@@ -40,7 +31,7 @@ AddEventHandler('Unique_AdminPanel:SubmitReportRating', function(reportId, ratin
     )
 end)
 
-ESX.RegisterServerCallback('Unique_AdminPanel:GetReportSatisfaction', function(source, cb)
+RegisterServerCallbackSafe('Unique_AdminPanel:GetReportSatisfaction', function(source, cb)
     if not IsOnDutyAdmin(source) then cb({}) return end
     MySQL.Async.fetchAll(
         "SELECT `admin_name`, AVG(`rating`) AS avg_rating, COUNT(*) AS cnt FROM `admin_report_ratings` GROUP BY `admin_name` ORDER BY avg_rating DESC",
@@ -79,7 +70,7 @@ end)
 
 -- --------------------------------------------------- RESPONSE TIMES ---
 
-ESX.RegisterServerCallback('Unique_AdminPanel:GetResponseTimes', function(source, cb)
+RegisterServerCallbackSafe('Unique_AdminPanel:GetResponseTimes', function(source, cb)
     if not IsOnDutyAdmin(source) then cb({}) return end
     MySQL.Async.fetchAll(
         "SELECT `admin_name`, AVG(`response_seconds`) AS avg_seconds, COUNT(*) AS cnt FROM `admin_report_response_times` GROUP BY `admin_name` ORDER BY avg_seconds ASC",

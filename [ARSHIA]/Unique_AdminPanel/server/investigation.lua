@@ -26,7 +26,7 @@ end)
 -- Default in-game voice range is ~15-20m depending on the voice resource's
 -- config; 20m is a reasonable default guess for "could plausibly have
 -- heard them".
-ESX.RegisterServerCallback('Unique_AdminPanel:GetVoiceProximity', function(source, cb, targetId, range)
+RegisterServerCallbackSafe('Unique_AdminPanel:GetVoiceProximity', function(source, cb, targetId, range)
     if not IsOnDutyAdmin(source) then cb({}) return end
     targetId = tonumber(targetId)
     range = tonumber(range) or 20.0
@@ -158,7 +158,7 @@ BanPresets = {
     { id = 'ncz',         label = 'NCZ Violation',         minutes = 60,   reason = 'Non-combat zone violation' },
 }
 
-ESX.RegisterServerCallback('Unique_AdminPanel:GetBanPresets', function(source, cb)
+RegisterServerCallbackSafe('Unique_AdminPanel:GetBanPresets', function(source, cb)
     if not IsOnDutyAdminFor(source, 'btn_ban') then cb({}) return end
     cb(BanPresets)
 end)

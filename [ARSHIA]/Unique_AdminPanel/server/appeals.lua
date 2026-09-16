@@ -12,7 +12,7 @@
 -- into this same resource), so whatever cache/Central-Hub-sync UNIQUE_AC
 -- does internally on unban still happens correctly.
 
-ESX.RegisterServerCallback('Unique_AdminPanel:GetPendingAppeals', function(source, cb)
+RegisterServerCallbackSafe('Unique_AdminPanel:GetPendingAppeals', function(source, cb)
     if not IsOnDutyAdminFor(source, 'btn_appeals') then cb({}) return end
     MySQL.Async.fetchAll(
         "SELECT id, identifier, player_name, ban_id, message, UNIX_TIMESTAMP(created_at) AS at FROM uniqueac_appeals WHERE status = 'pending' ORDER BY id DESC LIMIT 100",

@@ -36,12 +36,12 @@ CreateThread(function()
     while not Rep.Ready() do Wait(200) end
     local ESXo = Rep.ESX()
 
-    ESXo.RegisterServerCallback('Unique_Report:getAccess', function(source, cb, level)
+    RegisterServerCallbackSafe('Unique_Report:getAccess', function(source, cb, level)
         cb(Rep.HasAccess(source, level))
     end)
 
     -- ------------------------------------------------ ثبت ریپورت (کاربر) ---
-    ESXo.RegisterServerCallback('Unique_Report:create', function(source, cb, payload)
+    RegisterServerCallbackSafe('Unique_Report:create', function(source, cb, payload)
         local src = source
         if not guard(src, cb) then return end
         if type(payload) ~= 'table' then return cb({ r = false, msg = ReportLan.err }) end
@@ -94,7 +94,7 @@ CreateThread(function()
         } })
 
         local now = os.time()
-        MySQL.Async.execute([[
+        MySQL.Async.insert([[
             INSERT INTO reports (title, sub, category, priority, identifier, status, chat, meta, created_at)
             VALUES (@title, @sub, @cat, @pri, @id, 'pending', @chat, @meta, @now)
         ]], {
@@ -106,13 +106,13 @@ CreateThread(function()
             ['@chat']  = chat,
             ['@meta']  = meta,
             ['@now']   = now,
-        }, function()
+        }, function(insertId)
             Rep.TouchCooldown(identifier, 'create')
 
-            local row = MySQL.Sync.fetchAll(
-                "SELECT ID FROM reports WHERE identifier = @id ORDER BY ID DESC LIMIT 1",
-                { ['@id'] = identifier })
-            local newId = row and row[1] and row[1].ID or 0
+            -- MySQL.Async.insert برمیگردونه ID رکورد جدید رو مستقیم.
+            -- نسخه قبلی یه MySQL.Sync.fetchAll تو دلِ کال‌بکِ async میزد که
+            -- هم کند بود هم تو شرایط همزمانی میتونست ID یکی دیگه رو برگردونه.
+            local newId = tonumber(insertId) or 0
 
             cb({ r = true, id = newId, msg = ReportLan.submitReport })
 
@@ -130,7 +130,7 @@ CreateThread(function()
     end)
 
     -- ------------------------------------------- ریپورت خودم (کاربر) ---
-    ESXo.RegisterServerCallback('Unique_Report:getMine', function(source, cb)
+    RegisterServerCallbackSafe('Unique_Report:getMine', function(source, cb)
         local src = source
         if not guard(src, cb) then return end
 
@@ -170,7 +170,7 @@ CreateThread(function()
     end)
 
     -- --------------------------------------------- لیست ریپورت (ادمین) ---
-    ESXo.RegisterServerCallback('Unique_Report:getAll', function(source, cb, filter)
+    RegisterServerCallbackSafe('Unique_Report:getAll', function(source, cb, filter)
         local src = source
         if not Rep.HasAccess(src, Config_Shared.accessToAdminCommand) then
             return cb({ r = false, msg = ReportLan.notAccess })
@@ -210,7 +210,7 @@ CreateThread(function()
     end)
 
     -- --------------------------------------- ریپورتِ در دستِ این ادمین ---
-    ESXo.RegisterServerCallback('Unique_Report:getActive', function(source, cb)
+    RegisterServerCallbackSafe('Unique_Report:getActive', function(source, cb)
         local src = source
         if not Rep.HasAccess(src, Config_Shared.accessToAdminCommand) then
             return cb({ r = false, msg = ReportLan.notAccess })
@@ -256,15 +256,15 @@ CreateThread(function()
     end)
 
     -- -------------------------------------------------- قبول / بستن ---
-    ESXo.RegisterServerCallback('Unique_Report:accept', function(source, cb, id)
+    RegisterServerCallbackSafe('Unique_Report:accept', function(source, cb, id)
         AcceptReport(source, id, cb)
     end)
 
-    ESXo.RegisterServerCallback('Unique_Report:close', function(source, cb, id)
+    RegisterServerCallbackSafe('Unique_Report:close', function(source, cb, id)
         CloseReport(source, id, cb)
     end)
 
-    ESXo.RegisterServerCallback('Unique_Report:archive', function(source, cb, id)
+    RegisterServerCallbackSafe('Unique_Report:archive', function(source, cb, id)
         local src = source
         if not Rep.HasAccess(src, Config_Shared.accessToArchive) then
             return cb({ r = false, msg = ReportLan.notAccess })
@@ -276,7 +276,7 @@ CreateThread(function()
             end)
     end)
 
-    ESXo.RegisterServerCallback('Unique_Report:delete', function(source, cb, id)
+    RegisterServerCallbackSafe('Unique_Report:delete', function(source, cb, id)
         local src = source
         if not Rep.HasAccess(src, Config_Shared.accessToDelReport) then
             return cb({ r = false, msg = ReportLan.cantdel })
@@ -292,7 +292,7 @@ CreateThread(function()
     -- نسخه قبلی هیچ چکی نداشت. الان: باید یا صاحب ریپورت باشی یا ادمینِ
     -- تخصیص‌داده‌شده به همون ریپورت. نقش (user/admin) هم از روی خودِ سرور
     -- تعیین میشه نه از روی چیزی که کلاینت فرستاده.
-    ESXo.RegisterServerCallback('Unique_Report:chat', function(source, cb, id, text)
+    RegisterServerCallbackSafe('Unique_Report:chat', function(source, cb, id, text)
         local src = source
         if not guard(src, cb) then return end
 
@@ -343,7 +343,7 @@ CreateThread(function()
     -- ------------------------------------------------- امتیازدهی کاربر ---
     -- نسخه قبلی: هر پلیری میتونست feedBackXP رو با هر identifier ای اسپم کنه.
     -- الان: فقط صاحبِ همون ریپورتِ بسته‌شده، فقط یک‌بار.
-    ESXo.RegisterServerCallback('Unique_Report:rate', function(source, cb, reportId, rating)
+    RegisterServerCallbackSafe('Unique_Report:rate', function(source, cb, reportId, rating)
         local src = source
         rating = tonumber(rating)
         if not rating or rating < 1 or rating > 5 then return cb({ r = false }) end
@@ -385,7 +385,7 @@ CreateThread(function()
     end)
 
     -- ------------------------------------------------- برترین ادمین‌ها ---
-    ESXo.RegisterServerCallback('Unique_Report:topAdmins', function(source, cb)
+    RegisterServerCallbackSafe('Unique_Report:topAdmins', function(source, cb)
         local nameCol = Config_Server.PlayerNameInDB or 'playerName'
         local permCol = Config_Server.NamePermInDB  or 'permission_level'
         local xpCol   = Config_Server.AdminXPColumn or 'unique_admin_xp'
@@ -415,7 +415,7 @@ CreateThread(function()
     end)
 
     -- ------------------------------------------------------ آمار کلی ---
-    ESXo.RegisterServerCallback('Unique_Report:stats', function(source, cb)
+    RegisterServerCallbackSafe('Unique_Report:stats', function(source, cb)
         if not Rep.HasAccess(source, Config_Shared.accessToAdminCommand) then
             return cb({ r = false })
         end

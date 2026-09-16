@@ -50,12 +50,12 @@ AddEventHandler('Unique_AdminPanel:RevivePlayer', function(targetId)
     LogAdminAction(source, "revive", ("target: %s (id:%s)"):format(GetPlayerName(targetId), targetId), ESX.GetPlayerFromId(targetId).identifier, GetPlayerName(targetId))
 end)
 
-ESX.RegisterServerCallback('Unique_AdminPanel:GetMyPermissionLevel', function(source, cb)
+RegisterServerCallbackSafe('Unique_AdminPanel:GetMyPermissionLevel', function(source, cb)
     local xPlayer = ESX.GetPlayerFromId(source)
     cb(xPlayer and xPlayer.permission_level or 0)
 end)
 
-ESX.RegisterServerCallback('Unique_AdminPanel:GetButtonPerms', function(source, cb)
+RegisterServerCallbackSafe('Unique_AdminPanel:GetButtonPerms', function(source, cb)
     MySQL.Async.fetchAll('SELECT button_id, min_level FROM admin_button_perms', {}, function(rows)
         local perms = {}
         for _, r in ipairs(rows or {}) do perms[r.button_id] = r.min_level end
@@ -84,7 +84,7 @@ AddEventHandler('Unique_AdminPanel:SetButtonPerm', function(buttonId, minLevel)
     LogAdminAction(source, "set-button-perm", ("%s -> min level %s"):format(buttonId, minLevel))
 end)
 
-ESX.RegisterServerCallback('Unique_AdminPanel:GetConfirmSummary', function(source, cb, targetId)
+RegisterServerCallbackSafe('Unique_AdminPanel:GetConfirmSummary', function(source, cb, targetId)
     if not IsOnDutyAdmin(source) then cb(nil) return end
     local Target = ESX.GetPlayerFromId(tonumber(targetId))
     if not Target then cb(nil) return end
@@ -235,7 +235,7 @@ RegisterCommand('aunban', function(source, args)
     end)
 end, false)
 
-ESX.RegisterServerCallback('Unique_AdminPanel:SearchBans', function(source, cb, query)
+RegisterServerCallbackSafe('Unique_AdminPanel:SearchBans', function(source, cb, query)
     if not IsOnDutyAdminFor(source, 'btn_unban') then cb({}) return end
     query = tostring(query or ''):sub(1, 60)
     MySQL.Async.fetchAll(
@@ -366,7 +366,7 @@ RegisterCommand('aremovemoney', function(source, args)
     LogAdminAction(source, "remove-money", ("target: %s | %s: -%s | reason: %s"):format(GetPlayerName(targetId), account, amount, reason), Target.identifier, GetPlayerName(targetId))
 end, false)
 
-ESX.RegisterServerCallback('Unique_AdminPanel:InspectPlayer', function(source, cb, targetId)
+RegisterServerCallbackSafe('Unique_AdminPanel:InspectPlayer', function(source, cb, targetId)
     if not IsOnDutyAdmin(source) then cb(nil) return end
     targetId = tonumber(targetId)
     local Target = ESX.GetPlayerFromId(targetId)
@@ -578,7 +578,7 @@ AddEventHandler('Unique_AdminPanel:ImpoundRecorded', function(plate, modelLabel,
     LogAdminAction(source, "impound", ("target: %s (id:%s) | plate: %s | reason: %s"):format(ownerName, source, plate, reason), xPlayer.identifier, ownerName)
 end)
 
-ESX.RegisterServerCallback('Unique_AdminPanel:SearchImpoundYard', function(source, cb, query)
+RegisterServerCallbackSafe('Unique_AdminPanel:SearchImpoundYard', function(source, cb, query)
     if not IsOnDutyAdminFor(source, 'btn_impound_yard') then cb({}) return end
     query = tostring(query or ''):sub(1, 60)
     MySQL.Async.fetchAll(
@@ -663,7 +663,7 @@ AddEventHandler('Unique_AdminPanel:AntiCheatExempt', function(ms, kinds)
     ExemptFromAntiCheat(source, ms, kinds)
 end)
 
-ESX.RegisterServerCallback('Unique_AdminPanel:GetSavedLocations', function(source, cb)
+RegisterServerCallbackSafe('Unique_AdminPanel:GetSavedLocations', function(source, cb)
     if not IsOnDutyAdmin(source) then cb({}) return end
     MySQL.Async.fetchAll("SELECT `id`, `name`, `x`, `y`, `z` FROM `admin_saved_locations` ORDER BY `name` ASC", {}, function(rows)
         cb(rows or {})
@@ -715,7 +715,7 @@ function IsAllowed(source, ace)
     return IsPlayerAceAllowed(source, ace)
 end
 
-ESX.RegisterServerCallback('Unique_AdminPanel:GetServerStats', function(source, cb)
+RegisterServerCallbackSafe('Unique_AdminPanel:GetServerStats', function(source, cb)
     if not IsOnDutyAdmin(source) then cb(nil) return end
 
     local openReports = 0
@@ -736,7 +736,7 @@ ESX.RegisterServerCallback('Unique_AdminPanel:GetServerStats', function(source, 
     })
 end)
 
-ESX.RegisterServerCallback('Unique_AdminPanel:GetReports', function(source, cb)
+RegisterServerCallbackSafe('Unique_AdminPanel:GetReports', function(source, cb)
     if not IsOnDutyAdmin(source) then cb({}) return end
     local ok, reports = pcall(function() return exports.Unique_AdminPanel:GetReports() end)
     cb(ok and reports or {})
@@ -768,12 +768,12 @@ AddEventHandler('chatMessage', function(source, name, message)
     end
 end)
 
-ESX.RegisterServerCallback('Unique_AdminPanel:GetChatLog', function(source, cb)
+RegisterServerCallbackSafe('Unique_AdminPanel:GetChatLog', function(source, cb)
     if not IsOnDutyAdmin(source) then cb({}) return end
     cb(ChatLog)
 end)
 
-ESX.RegisterServerCallback('Unique_AdminPanel:GetPlayerChatArchive', function(source, cb, targetId, query)
+RegisterServerCallbackSafe('Unique_AdminPanel:GetPlayerChatArchive', function(source, cb, targetId, query)
     if not IsOnDutyAdmin(source) then cb({}) return end
     local Target = ESX.GetPlayerFromId(tonumber(targetId))
     if not Target then cb({}) return end

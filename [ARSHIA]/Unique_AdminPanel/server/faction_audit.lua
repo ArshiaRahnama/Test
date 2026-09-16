@@ -48,7 +48,7 @@ Citizen.CreateThread(function()
     end
 end)
 
-ESX.RegisterServerCallback('Unique_AdminPanel:GetFactionAccounts', function(source, cb)
+RegisterServerCallbackSafe('Unique_AdminPanel:GetFactionAccounts', function(source, cb)
     if not IsOnDutyAdminFor(source, 'btn_faction') then cb({}) return end
     MySQL.Async.fetchAll(
         "SELECT `account_name`, `money` FROM `addon_account_data` WHERE `account_name` LIKE 'society_%' ORDER BY `account_name` ASC",
@@ -56,7 +56,7 @@ ESX.RegisterServerCallback('Unique_AdminPanel:GetFactionAccounts', function(sour
     )
 end)
 
-ESX.RegisterServerCallback('Unique_AdminPanel:GetFactionHistory', function(source, cb, accountName)
+RegisterServerCallbackSafe('Unique_AdminPanel:GetFactionHistory', function(source, cb, accountName)
     if not IsOnDutyAdminFor(source, 'btn_faction') then cb({}) return end
     MySQL.Async.fetchAll(
         "SELECT `balance`, `taken_at` FROM `admin_faction_snapshots` WHERE `account_name` = @name ORDER BY `taken_at` ASC LIMIT 200",

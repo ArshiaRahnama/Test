@@ -146,7 +146,7 @@ AddEventHandler('playerDropped', function()
     SessionStart[source] = nil
 end)
 
-ESX.RegisterServerCallback('Unique_AdminPanel:GetOnlinePlayers', function(source, cb)
+RegisterServerCallbackSafe('Unique_AdminPanel:GetOnlinePlayers', function(source, cb)
     if not IsOnDutyAdmin(source) then cb({}) return end
     MySQL.Async.fetchAll('SELECT identifier, note FROM admin_player_flags', {}, function(flagRows)
         local flagged = {}
@@ -180,7 +180,7 @@ end)
 
 -- Same data as GetOnlinePlayers, just sorted by most-recently-connected
 -- (SessionStart is already tracked for the online-playtime panel above).
-ESX.RegisterServerCallback('Unique_AdminPanel:GetNewPlayers', function(source, cb)
+RegisterServerCallbackSafe('Unique_AdminPanel:GetNewPlayers', function(source, cb)
     if not IsOnDutyAdmin(source) then cb({}) return end
     MySQL.Async.fetchAll('SELECT identifier, note FROM admin_player_flags', {}, function(flagRows)
         local flagged = {}
@@ -304,7 +304,7 @@ end)
 
 -- --------------------------------------------------------------- DASHBOARD ---
 
-ESX.RegisterServerCallback('Unique_AdminPanel:GetDashboard', function(source, cb)
+RegisterServerCallbackSafe('Unique_AdminPanel:GetDashboard', function(source, cb)
     if not IsOnDutyAdmin(source) then cb(nil) return end
 
     local resources = {}

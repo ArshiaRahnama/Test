@@ -47,7 +47,7 @@ Citizen.CreateThread(function()
     end
 end)
 
-ESX.RegisterServerCallback('Unique_AdminPanel:GetEconomyHistory', function(source, cb)
+RegisterServerCallbackSafe('Unique_AdminPanel:GetEconomyHistory', function(source, cb)
     if not IsOnDutyAdmin(source) then cb({}) return end
     MySQL.Async.fetchAll(
         "SELECT `taken_at`, `total_cash`, `total_bank`, `player_count` FROM `admin_economy_snapshots` ORDER BY `taken_at` ASC LIMIT 200",
@@ -57,7 +57,7 @@ end)
 
 -- ------------------------------------------------------- BUTTON PERMS ---
 
-ESX.RegisterServerCallback('Unique_AdminPanel:GetButtonPermsPanel', function(source, cb)
+RegisterServerCallbackSafe('Unique_AdminPanel:GetButtonPermsPanel', function(source, cb)
     if not IsOnDutyAdmin(source) then cb({ catalog = {}, perms = {}, defaultLevel = Config.MinPermissionLevel }) return end
     MySQL.Async.fetchAll('SELECT button_id, min_level FROM admin_button_perms', {}, function(rows)
         local perms = {}

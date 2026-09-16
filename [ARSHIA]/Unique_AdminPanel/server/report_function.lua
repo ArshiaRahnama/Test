@@ -203,10 +203,19 @@ function SendNotifToAllAdmin() Rep.NotifyAllAdmins(ReportLan.newReprot) end
 --- (تا متن اصلی سالم تو دیتابیس بمونه).
 function Rep.Clean(str, maxLen)
     if type(str) ~= 'string' then return nil end
-    str = str:gsub('[%z\1-\8\11\12\14-\31\127]', '')  -- کنترلی‌ها (به جز \n \r \t)
+    str = str:gsub('[\0\1-\8\11\12\14-\31\127]', '')  -- کنترلی‌ها (به جز \n \r \t)
     str = str:gsub('^%s+', ''):gsub('%s+$', '')
     if maxLen and #str > maxLen then
-        str = str:sub(1, maxLen)
+        -- بریدن بر اساس مرز کاراکتر UTF-8، نه بایت.
+        -- برش بایتی وسط یک حرف فارسی، رشته‌ی نامعتبر میسازه و بعداً
+        -- json.encode روی بلاک چت میترکه.
+        local cut = maxLen
+        while cut > 0 do
+            local b = str:byte(cut + 1)
+            if not b or b < 128 or b > 191 then break end
+            cut = cut - 1
+        end
+        str = str:sub(1, cut)
     end
     if str == '' then return nil end
     return str

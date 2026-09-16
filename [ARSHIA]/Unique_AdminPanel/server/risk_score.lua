@@ -78,7 +78,7 @@ function GetRiskScoreForIdentifier(identifier, cb)
 end
 
 -- Thin wrapper for client/NUI use.
-ESX.RegisterServerCallback('Unique_AdminPanel:GetRiskScore', function(source, cb, identifier)
+RegisterServerCallbackSafe('Unique_AdminPanel:GetRiskScore', function(source, cb, identifier)
     if not IsOnDutyAdmin(source) then cb(nil) return end
     GetRiskScoreForIdentifier(identifier, cb)
 end)

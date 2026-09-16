@@ -211,7 +211,7 @@ AddEventHandler('arshia_jail:UpdateTime',function (time)
 	end
 end)
 
-ESX.RegisterServerCallback('arshia_jail:retriveJail', function(source, cb, id)
+RegisterServerCallbackSafe('arshia_jail:retriveJail', function(source, cb, id)
 	local xPlayer = ESX.GetPlayerFromId(source)
 	if id then
 		if ESX.GetPlayerFromId(id) then

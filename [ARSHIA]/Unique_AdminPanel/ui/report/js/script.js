@@ -67,6 +67,9 @@ function clock(ts) {
 /* UTF-8 aware length (فارسی) */
 const len = (s) => Array.from(String(s || '')).length;
 
+const SKEL = Array.from({length:6}).map(()=>
+  '<div class="skel-row"><div class="skel"></div><div class="skel"></div></div>').join('');
+
 /* -------------------------------------------------------------- state --- */
 
 const S = {
@@ -87,7 +90,16 @@ const S = {
 const catOf   = (k) => S.cfg.categories.find(c => c.key === k);
 const catName = (k) => (catOf(k) || {}).label || k || '—';
 const catIcon = (k) => (catOf(k) || {}).icon  || 'fa-circle-question';
-const priOf   = (p) => S.cfg.priorities[p] || S.cfg.priorities[1] || { label: '—', color: '#7c8698' };
+// Lua tables with contiguous integer keys (1..n) come across as JSON ARRAYS,
+// not objects - so Priorities[1] on the Lua side arrives at index 0 here.
+// Handle both shapes so the labels/colours line up either way.
+const priOf = (p) => {
+  const P = S.cfg.priorities;
+  const fallback = { label: '—', color: '#7c8698' };
+  if (!P) return fallback;
+  const hit = Array.isArray(P) ? P[Number(p) - 1] : P[p];
+  return hit || (Array.isArray(P) ? P[0] : P[1]) || fallback;
+};
 
 /* ============================================================== panels === */
 
@@ -368,7 +380,7 @@ function renderAdmin() {
 
 async function renderQueue(body, archived) {
   body.className = 'body';
-  body.innerHTML = `<div class="empty"><i class="fa-solid fa-circle-notch fa-spin"></i></div>`;
+  body.innerHTML = `<div class="split"><div class="queue">${SKEL}</div><div class="pane"></div></div>`;
 
   const res = await nui('getAll', { status: archived ? 'archive' : 'live' });
   S.tickets = (res && res.r && res.data) ? res.data : [];
@@ -428,14 +440,20 @@ function paintQueue() {
 
   list.innerHTML = rows.map(t => {
     const pr = priOf(t.priority);
+    // "heat": older unclaimed tickets warm up, so urgency reads at a glance
+    // without adding another badge to the row.
+    const mins = (Number(t.age) || 0) / 60;
+    const heat = t.status !== 'pending' ? 0 : mins > 20 ? 3 : mins > 10 ? 2 : mins > 4 ? 1 : 0;
+    const initial = esc(String(t.Name || '?').trim().charAt(0).toUpperCase() || '?');
     const statusPill =
       t.status === 'pending' ? '<span class="pill pill--wait">در انتظار</span>' :
       t.status === 'accept'  ? '<span class="pill pill--live">در حال بررسی</span>' :
                                '<span class="pill pill--done">بسته</span>';
     return `
-      <div class="tk ${t.status === 'pending' ? 'tk--wait' : ''} ${S.selected === t.ID ? 'is-sel' : ''}"
-           data-id="${esc(t.ID)}">
-        <span class="tk__spine" style="background:${esc(pr.color)}"></span>
+      <div class="tk tk__grid ${t.status === 'pending' ? 'tk--wait' : ''} ${S.selected === t.ID ? 'is-sel' : ''}"
+           data-id="${esc(t.ID)}" data-heat="${heat}">
+        <span class="tk__spine" style="background:${esc(pr.color)};color:${esc(pr.color)}"></span>
+        <span class="tk__ava">${initial}</span>
         <div class="tk__main">
           <div class="tk__top">
             <span class="tk__id">#${esc(t.ID)}</span>
@@ -444,7 +462,7 @@ function paintQueue() {
           <div class="tk__meta">
             <span><i class="fa-solid ${esc(catIcon(t.category))}"></i> ${esc(catName(t.category))}</span>
             <span><i class="dot ${t.online ? 'dot--on' : 'dot--off'}"></i> ${esc(t.Name)}</span>
-            <span><i class="fa-regular fa-clock"></i> ${esc(ago(t.age))}</span>
+            <span class="tk__age"><i class="fa-regular fa-clock"></i> ${esc(ago(t.age))}</span>
             ${t.msgCount ? `<span><i class="fa-regular fa-comment"></i> ${esc(t.msgCount)}</span>` : ''}
           </div>
         </div>
@@ -452,11 +470,26 @@ function paintQueue() {
       </div>`;
   }).join('');
 
+  paintPressure();
+
   $$('.tk', list).forEach(row => row.addEventListener('click', () => {
     S.selected = Number(row.dataset.id);
     paintQueue();
     paintDetail();
   }));
+}
+
+// Thin bar under the header showing how much of the queue is unclaimed vs
+// being worked. Gives the whole panel a live "how busy are we" read.
+function paintPressure() {
+  const bar = $('#pressureBar');
+  if (!bar) return;
+  const total = S.tickets.length || 1;
+  const wait  = S.tickets.filter(t => t.status === 'pending').length;
+  const live  = S.tickets.filter(t => t.status === 'accept').length;
+  bar.innerHTML =
+    `<span class="pressure__seg pressure__seg--wait" style="width:${(wait / total) * 100}%"></span>` +
+    `<span class="pressure__seg pressure__seg--live" style="width:${(live / total) * 100}%"></span>`;
 }
 
 function paintDetail() {
@@ -729,7 +762,7 @@ window.addEventListener('message', ev => {
   const d = ev.data || {};
   if (!d._uniqueReport) return;   // پیام مال پنل‌های دیگه‌ست، رد شو
 
-  switch (d.action) {
+  switch (d.ureport) {
     case 'showUserPanel':
       applyConfig(d.config);
       showStage('#userPanel');

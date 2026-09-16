@@ -66,7 +66,7 @@ AddEventHandler('playerDropped', function()
     end
 end)
 
-ESX.RegisterServerCallback('Unique_AdminPanel:GetDutyHistory', function(source, cb, query)
+RegisterServerCallbackSafe('Unique_AdminPanel:GetDutyHistory', function(source, cb, query)
     if not IsOnDutyAdminFor(source, 'btn_dutyhist') then cb({}) return end
     query = tostring(query or ''):sub(1, 60)
     MySQL.Async.fetchAll(
@@ -88,7 +88,7 @@ end)
 
 -- Distinct admin names that have ever logged a duty session, for the
 -- Duty History Search dropdown (pick a name instead of typing it).
-ESX.RegisterServerCallback('Unique_AdminPanel:GetAdminNameList', function(source, cb)
+RegisterServerCallbackSafe('Unique_AdminPanel:GetAdminNameList', function(source, cb)
     if not IsOnDutyAdminFor(source, 'btn_dutyhist') then cb({}) return end
     MySQL.Async.fetchAll(
         "SELECT DISTINCT `name` FROM `admin_duty` WHERE `name` IS NOT NULL ORDER BY `name` ASC",

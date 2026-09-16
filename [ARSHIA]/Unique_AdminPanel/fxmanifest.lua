@@ -67,7 +67,14 @@ client_scripts {
 }
 
 server_scripts {
-	"@mysql-async/lib/MySQL.lua", -- resolved via oxmysql's `provide 'mysql-async'`; same file UNIQUE_AC's own "@oxmysql/lib/MySQL.lua" pointed to, kept as one single import
+	-- resolved via oxmysql's `provide 'mysql-async'`
+	"@mysql-async/lib/MySQL.lua",
+	-- MUST load before every other server file: they all call
+	-- RegisterServerCallbackSafe() at load time. essentialmode IS this
+	-- server's ESX core (there is no es_extended), and
+	-- ESX.RegisterServerCallback on a copy of the shared object silently
+	-- no-ops - this bridge routes them through essentialmode's relay.
+	'server/esm_callback_bridge.lua',
 	-- migrated from esx_aduty (loaded first: later files depend on AdutyConfig / AdutyTableLength)
 	'server/aduty_functions.lua',
 	'server/aduty_core.lua',
@@ -191,6 +198,10 @@ files {
 -- /cs, /uncs etc. the exact same way - Unique_Punishment's own fxmanifest
 -- already documented this identical bug/fix before it was merged in.
 dependencies {
+	-- NOTE: this server has NO es_extended. essentialmode is the ESX core
+	-- (see [BASE]/essentialmode/server/common.lua, which registers
+	-- esx:getSharedObject). Listing es_extended here would make the whole
+	-- resource refuse to start.
 	'essentialmode',
 	'oxmysql',
 	'Unique_Login',

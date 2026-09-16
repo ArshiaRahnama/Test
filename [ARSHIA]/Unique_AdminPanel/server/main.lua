@@ -176,7 +176,7 @@ AddEventHandler('Unique_AdminPanel:RequestToggle', function(feature)
     TriggerClientEvent('Unique_AdminPanel:ApplyToggle', source, feature, newValue)
 end)
 
-ESX.RegisterServerCallback('Admin_Menu:GetActivePlayers', function(source, cb)
+RegisterServerCallbackSafe('Admin_Menu:GetActivePlayers', function(source, cb)
     if not IsOnDutyAdmin(source) then cb({}) return end
 
     local cX = ESX.GetPlayers()
@@ -191,7 +191,7 @@ ESX.RegisterServerCallback('Admin_Menu:GetActivePlayers', function(source, cb)
     cb(cJ)
 end)
 
-ESX.RegisterServerCallback('esx_spectate:xPlayerServerSide', function(source, cb, ID)
+RegisterServerCallbackSafe('esx_spectate:xPlayerServerSide', function(source, cb, ID)
   if not IsOnDutyAdmin(source) then cb(nil) return end
   local xPlayer = ESX.GetPlayerFromId(tonumber(ID))
   if xPlayer then
@@ -201,7 +201,7 @@ ESX.RegisterServerCallback('esx_spectate:xPlayerServerSide', function(source, cb
   end
 end)
 
-ESX.RegisterServerCallback('Admin_Menu:GetTargetPosition', function(source, cb, id)
+RegisterServerCallbackSafe('Admin_Menu:GetTargetPosition', function(source, cb, id)
   if not IsOnDutyAdmin(source) then cb(GetEntityCoords(GetPlayerPed(tonumber(source)))) return end
   local sPlayer = ESX.GetPlayerFromId(tonumber(id))
   local xPlayer = ESX.GetPlayerFromId(source)
@@ -213,12 +213,12 @@ ESX.RegisterServerCallback('Admin_Menu:GetTargetPosition', function(source, cb, 
   end
 end)
 
-ESX.RegisterServerCallback('esx_spectate:RequestPermission', function(source, cb)
+RegisterServerCallbackSafe('esx_spectate:RequestPermission', function(source, cb)
   local xPlayer = ESX.GetPlayerFromId(source)
   cb(tonumber(xPlayer.permission_level))
 end)
 
-ESX.RegisterServerCallback('esx_spectate:RequestDutyStatus', function(source, cb)
+RegisterServerCallbackSafe('esx_spectate:RequestDutyStatus', function(source, cb)
   local xPlayer = ESX.GetPlayerFromId(source)
   if xPlayer.get('aduty') then
       cb(true)

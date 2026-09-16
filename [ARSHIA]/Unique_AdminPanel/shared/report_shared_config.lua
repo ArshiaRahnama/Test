@@ -13,8 +13,13 @@ Config_Shared.ServerSite    = "arshiahub.ir"
 Config_Shared.BotName       = "Unique Bot"
 
 Config_Shared.Framework     = "ESX"
-Config_Shared.ESX_Version   = 1   -- [1] ESX قدیمی (ESS)  |  [2] ESX Legacy
-Config_Shared.ESX_Export    = "es_extended"
+
+-- ⚠ روی این سرور باید 1 بمونه.
+-- es_extended نصب نیست؛ هسته‌ی ESX خودِ essentialmode هست
+-- ([BASE]/essentialmode/server/common.lua که esx:getSharedObject رو ثبت میکنه).
+-- گذاشتن 2 باعث میشه exports['es_extended'] رو صدا بزنه که وجود نداره.
+Config_Shared.ESX_Version   = 1   -- [1] essentialmode/ESS  |  [2] ESX Legacy
+Config_Shared.ESX_Export    = "es_extended"   -- فقط وقتی ESX_Version = 2
 Config_Shared.ESX_Event     = "esx:getSharedObject"
 
 -- ---------------------------------------------------------------- رنک‌ها ---

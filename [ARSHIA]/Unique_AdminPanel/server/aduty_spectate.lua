@@ -2,14 +2,14 @@ ESX = nil
 
 TriggerEvent('esx:getSharedObject', function(obj)ESX = obj end)
 
-ESX.RegisterServerCallback('esx_spectate:getPlayerData', function(source, cb, id)
+RegisterServerCallbackSafe('esx_spectate:getPlayerData', function(source, cb, id)
     local xPlayer = ESX.GetPlayerFromId(id)
     if xPlayer ~= nil then
         cb(xPlayer)
     end
 end)
 
-ESX.RegisterServerCallback('esx_spectate:getOtherPlayerData', function(source, cb, target)
+RegisterServerCallbackSafe('esx_spectate:getOtherPlayerData', function(source, cb, target)
 
         local xPlayer = ESX.GetPlayerFromId(target)
         if xPlayer ~= nil then
