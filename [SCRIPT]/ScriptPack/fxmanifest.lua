@@ -26,6 +26,7 @@ client_scripts {
 	'client/bastan-r-q-cl.lua',
 	'autorules/client.lua',
 	'autorules/config.lua',
+	-- 'client_debug/synsit_debug-cl.lua', -- only needed while actively debugging synsit seat placement (set SitConfig.Debug = true in synsit_config.lua and uncomment this line)
 }
 
 server_scripts {

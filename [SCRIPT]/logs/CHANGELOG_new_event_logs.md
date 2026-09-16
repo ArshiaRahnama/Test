@@ -1,3 +1,21 @@
+## ✅ ادغام Unique_LogPanel داخل همین ریسورس (logs)
+
+پنل مشاهده‌ی لاگ که قبلاً یه ریسورس جدا (`Unique_LogPanel`) بود، الان کامل داخل همین `logs`
+ادغام شده (`CLIENT/LogPanel.lua`, `SERVER/LogPanel.lua`, `html/index.html`, `install.sql`) —
+هیچ منطقی عوض نشده، فقط فایل‌ها جابه‌جا شدن. جزئیات کامل تو `README.md` همین پوشه.
+
+همچنین موقع این ادغام، دو مورد اضافه فیکس شد:
+1. **نشت امنیتی**: `shared/webhooks.cfg` شامل لینک‌های واقعی وبهوک دیسکورد + توکن سایت بود که
+   مستقیم تو گیت commit شده بودن (تو یه ریپوی Public). همه با `WEBHOOK_LINK_HERE` جایگزین شدن —
+   باید تو دیسکورد Regenerate بشن و دوباره پر بشن.
+2. **کامل‌شدن webhooks.cfg**: ۲۶ تا از Convar هایی که `shared/Config.lua` می‌خوندشون (مثل
+   AFK, AntiCheat, IllegalWeapon, RDMPattern, ServerError, ClientError, TireLog, Lockpick و...)
+   اصلاً تو `webhooks.cfg` خط `set` نداشتن — یعنی اون دسته‌ها هیچ‌وقت به دیسکورد نمی‌رفتن (فقط
+   تو دیتابیس/پنل ثبت می‌شدن، بی‌سروصدا). الان همه‌ی ۷۴ Convar وبهوک + `SiteDebugMode` تو
+   `webhooks.cfg` هستن (به‌صورت `WEBHOOK_LINK_HERE`، آماده‌ی پرشدن).
+
+---
+
 # تغییرات این نسخه — تکمیل و اضافه‌کردن لاگ‌های ریز
 
 ## ۱) شش دسته‌ای که «نیمه‌کاره» رها شده بودن، الان کامل شدن

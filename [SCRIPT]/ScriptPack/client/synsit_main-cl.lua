@@ -574,7 +574,6 @@ function SeatActivation()
                                 if dist <= 10 then
                                     SetEntityCoords(PlayerPed, PlayerLastPos)
                                 end
-                                print("here 2")
                             else
                                 FreezeEntityPosition(PlayerPed, false)
                                 ClearPedTasks(PlayerPed)

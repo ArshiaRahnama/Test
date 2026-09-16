@@ -868,7 +868,7 @@ end, false)
 RegisterNetEvent('ArSa:GoToSp')
 AddEventHandler('ArSa:GoToSp', function(TargetID)
     local _source = source
-    TriggerClientEvent('esx_spectate:spectatexxxx', _source, TargetID)
+    TriggerClientEvent('esx_spectate:spectate', _source, TargetID)
 end)
 
 ESX = nil
