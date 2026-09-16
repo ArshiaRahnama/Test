@@ -30,6 +30,17 @@ Translations['fr'] = {
     'sort_category': 'Catégorie',
     'search_placeholder': 'Rechercher',
     'scan': 'SCANNER',
+
+    // #5 / #7 / #8 / #15
+    'note': 'DESCRIPTION',
+    'history': 'HISTORIQUE',
+    'report_stolen': 'DÉCLARER VOLÉE',
+    'chain_of_custody': 'Chaîne de possession',
+    'hist_empty': 'Aucun historique pour ce numéro de série.',
+    'hist_stolen': 'DÉCLARÉE VOLÉE',
+    'backpack_band': 'Sac à dos',
+    'other_band': 'Équipement',
+    'overflow_band': 'Aucun emplacement libre',
 };
 
 // Translations in English
@@ -61,6 +72,17 @@ Translations['en'] = {
     'sort_category': 'Category',
     'search_placeholder': 'Search',
     'scan': 'SCAN',
+
+    // #5 / #7 / #8 / #15
+    'note': 'DESCRIPTION',
+    'history': 'HISTORY',
+    'report_stolen': 'REPORT STOLEN',
+    'chain_of_custody': 'Chain of custody',
+    'hist_empty': 'No recorded history for this serial.',
+    'hist_stolen': 'REPORTED STOLEN',
+    'backpack_band': 'Backpack',
+    'other_band': 'Equipment',
+    'overflow_band': 'No free slot',
 };
 
 // Translations in Spanish
@@ -92,6 +114,17 @@ Translations['es'] = {
     'sort_category': 'Categoría',
     'search_placeholder': 'Buscar',
     'scan': 'ESCANEAR',
+
+    // #5 / #7 / #8 / #15
+    'note': 'DESCRIPCIÓN',
+    'history': 'HISTORIAL',
+    'report_stolen': 'DENUNCIAR ROBO',
+    'chain_of_custody': 'Cadena de custodia',
+    'hist_empty': 'No hay historial para este número de serie.',
+    'hist_stolen': 'DENUNCIADA COMO ROBADA',
+    'backpack_band': 'Mochila',
+    'other_band': 'Equipamiento',
+    'overflow_band': 'Sin espacio libre',
 };
 
 

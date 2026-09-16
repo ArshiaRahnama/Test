@@ -32,6 +32,13 @@ function openInventory()
         Inventaire:hideHUD()
         CreatePedScreen(true)
 
+        -- #1: pull the slot grid alongside the legacy item list. The two
+        -- coexist deliberately - the grid owns standard items, while
+        -- weapons / clothing / accounts / ID cards keep their existing
+        -- non-slot presentation because they live in separate stores
+        -- (loadout, lc_clothes, accounts), not in the item inventory.
+        if RefreshGrid then RefreshGrid() end
+
         SetTimecycleModifierStrength(1.50)
         
         TriggerScreenblurFadeIn(0)

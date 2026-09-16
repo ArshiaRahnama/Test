@@ -27,6 +27,7 @@ local Queue = {}        -- source ids waiting to be grouped into an arena
 local Pending = {}      -- [src] = true while a player has been pulled from Queue into a forming group but the arena hasn't started yet
 local Matches = {}      -- [matchId] = { state='running'|'ended', players={[src]={name,identifier,kills,level}}, bucket, locationSet }
 local PlayerMatch = {}  -- [src] = matchId, for O(1) lookup on kill/drop events
+local EventActive = false -- players can only /jgg once an admin runs "/gungame start"
 local nextMatchId = 1
 local nextBucket = INITIAL_BUCKET
 local freeBuckets = {}  -- buckets released by ended arenas, reused before handing out new numbers
@@ -286,7 +287,16 @@ RegisterCommand(Config.AdminCommand, function(source, args)
         return
     end
 
-    if args[1] == 'stop' then
+    if args[1] == 'start' then
+        if EventActive then
+            notify(source, '^1The GunGame event is already active.')
+            return
+        end
+        EventActive = true
+        broadcastMessage('^0The GunGame event is now open! Use /' .. Config.JoinCommand .. ' to join.')
+    elseif args[1] == 'stop' then
+        EventActive = false
+
         local matchIds = {}
         for matchId in pairs(Matches) do matchIds[#matchIds + 1] = matchId end
         for _, matchId in ipairs(matchIds) do
@@ -297,10 +307,11 @@ RegisterCommand(Config.AdminCommand, function(source, args)
             notify(src, '^1The event has been stopped by an admin.')
         end
         Queue = {}
+        Pending = {}
 
-        broadcastMessage('^0All GunGame arenas have been stopped!')
+        broadcastMessage('^0The GunGame event has been closed and all arenas stopped!')
     else
-        broadcastMessage('^0Use /' .. Config.JoinCommand .. ' to join the GunGame queue!')
+        notify(source, '^0Usage: /' .. Config.AdminCommand .. ' start | stop')
     end
 end)
 
@@ -308,6 +319,10 @@ RegisterCommand(Config.JoinCommand, function(source)
     local xPlayer = ESX.GetPlayerFromId(source)
     if not xPlayer then return end
 
+    if not EventActive then
+        notify(source, '^1The GunGame event has not been started yet.')
+        return
+    end
     if PlayerMatch[source] then
         notify(source, '^1You are already in a running arena!')
         return

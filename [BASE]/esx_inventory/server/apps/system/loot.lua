@@ -22,11 +22,17 @@ RegisterServerCallback("lgddddd:getPlayerOtherInventory", function(source, cb, t
 			}, function(result2) 
 				if result[1] then
 					for i = 1, #result, 1 do  
-						table.insert(clothes, {      
-							type      = result[i].type,  
-							clothe      = result[i].clothe,
-							id      = result[i].id,
-							label      = result[i].nom,
+						-- FIX: `clothe` and `nom` are not columns of lc_clothes -
+						-- the schema (sql.sql) has `data` and `name`. Both of these
+						-- came back nil for every row, so searching another player
+						-- showed their clothing as unnamed entries with no data
+						-- behind them (and taking one transferred a row whose
+						-- contents the UI had never actually seen).
+						table.insert(clothes, {
+							type      = result[i].type,
+							clothe    = result[i].data,
+							id        = result[i].id,
+							label     = result[i].name,
 						})
 					end
 				end
@@ -68,57 +74,142 @@ RegisterServerCallback("lgddddd:getPlayerOtherInventory", function(source, cb, t
 end)
 
 
+--[[
+    SECURITY REWRITE — the single worst hole in the resource.
+
+    The original read BOTH ends of the transfer out of the client's own
+    payload:
+
+        local _source = data.player
+        local target  = data.target
+
+    `source` (the real, engine-provided sender) was never used at all.
+    So any client could send {player = <victim>, target = <me>} and pull
+    items, weapons, money or clothing out of ANY player on the server,
+    from anywhere on the map, with no search, no proximity, no hands-up,
+    and no job requirement - none of which are checked server-side here
+    either.
+
+    Now: the direction comes from `source` plus an explicit `taking`
+    flag, the counterpart is re-resolved server-side, and every transfer
+    goes through the same Guard pipeline as lgd:giveItem.
+]]
 RegisterServerEvent("lgd:putToPlayer")
-AddEventHandler("lgd:putToPlayer",function(data, count)
-	local _source = data.player
-	local target = data.target
+AddEventHandler("lgd:putToPlayer", function(data, count)
+	local source = source
+	if type(data) ~= 'table' then return end
+
+	if _G.InvGuard and not _G.InvGuard.rateLimit(source, 'loot') then return end
+
+	local other = tonumber(data.target)
+	if data.taking then other = tonumber(data.player) end
+	if not other then return end
+
+	-- The requester must be one of the two parties, and the OTHER party
+	-- is whoever they named. `taking` decides which way the goods flow.
+	local _source, target
+	if data.taking then
+		-- pulling FROM `other` INTO me
+		_source, target = other, source
+	else
+		-- pushing FROM me INTO `other`
+		_source, target = source, other
+	end
+
+	if _source ~= source and target ~= source then return end
+
 	local sourceXPlayer = GetPlayerFromId(_source)
 	local targetXPlayer = GetPlayerFromId(target)
+	if sourceXPlayer == nil or targetXPlayer == nil then return end
+	if _source == target then return end
+
+	-- Proximity + shape validation, server-side. The old code trusted the
+	-- client's 2.5m check in client/apps/system/loot.lua, which is not a
+	-- check at all.
+	if _G.InvGuard then
+		local kind = (data.type == 'item_account' and 'money') or (data.type == 'item_weapon' and 'weapon') or 'item'
+		local ok = _G.InvGuard.validateTransfer(source, other, kind, tostring(data.name or ''), count or 1)
+		if not ok then return end
+	end
+
+	-- Searching someone is a police/job action: enforce the same gate the
+	-- client applies before it will even open the panel.
+	if Config.ActiveJobForLoot then
+		local searcher = GetPlayerFromId(source)
+		local job = GetJob(searcher)
+		local jobName = type(job) == 'table' and job.name or job
+		if not Config.JobForLoot[jobName] then return end
+	end
+
 	if data.type == "item_standard" then
+		count = tonumber(count)
+		if not count or count <= 0 or count ~= math.floor(count) then return end
 		local sourceItem = GetItem(sourceXPlayer, data.name)
-		local targetItem = GetItem(targetXPlayer, data.name)
-		if count > 0 and sourceItem.count >= count then
-            if GetWeightPlayer(targetXPlayer, data.name, count) then
-			    RemoveItem(sourceXPlayer, data.name, count)
-			    AddItem(targetXPlayer, data.name, count)
-                showNotification(targetXPlayer, (Locales[Config.Language]['trade_from_item']):format(count, data.label), 'success')
-                showNotification(sourceXPlayer, (Locales[Config.Language]['trade_target_item']):format(count, data.label), 'success')
+		if not sourceItem then return end
+		local before = GetItemAmount(sourceItem)
+		if before < count then return end
 
-            else
-                showNotification(targetXPlayer, Locales[Config.Language]['trade_weight_max'], 'error')
-            end
+		if not GetWeightPlayer(targetXPlayer, data.name, count) then
+			showNotification(targetXPlayer, Locales[Config.Language]['trade_weight_max'], 'error')
+			return
 		end
+
+		RemoveItem(sourceXPlayer, data.name, count)
+		AddItem(targetXPlayer, data.name, count)
+		showNotification(targetXPlayer, (Locales[Config.Language]['trade_from_item']):format(count, data.label), 'success')
+		showNotification(sourceXPlayer, (Locales[Config.Language]['trade_target_item']):format(count, data.label), 'success')
+
 	elseif data.type == "item_account" then
-		if count > 0 and getAccount(sourceXPlayer, data.name) >= count then
-			removeMoney(sourceXPlayer, data.name, count)
-			addMoney(targetXPlayer, data.name, count)
+		count = tonumber(count)
+		if not count or count <= 0 then return end
+		if not Config.Account[data.name] then return end
+		if getAccount(sourceXPlayer, data.name) < count then return end
 
-            showNotification(targetXPlayer, (Locales[Config.Language]['trade_from_account']):format(count, Config.AccountName[data.name]), 'success')
-            showNotification(sourceXPlayer, (Locales[Config.Language]['trade_target_account']):format(count, Config.AccountName[data.name]), 'success')
+		removeMoney(sourceXPlayer, data.name, count)
+		addMoney(targetXPlayer, data.name, count)
+		showNotification(targetXPlayer, (Locales[Config.Language]['trade_from_account']):format(count, Config.AccountName[data.name]), 'success')
+		showNotification(sourceXPlayer, (Locales[Config.Language]['trade_target_account']):format(count, Config.AccountName[data.name]), 'success')
 
-		end
 	elseif data.type == "item_weapon" then
-		if not getWeapon(targetXPlayer, data.name) then
-			local pos, playerWeapon = infoWeapon(sourceXPlayer, data.name)
-			local components = playerWeapon.components
-			removeWeapon(sourceXPlayer, data.name)
-			addWeapon(targetXPlayer, data.name, count)
-			if components == nil then
-				components = {}
-			end
-			for i = 1, #components do
-				addWeaponComponent(targetXPlayer, data.name, components[i])
-			end
-            showNotification(targetXPlayer, (Locales[Config.Language]['trade_from_weapon']):format(count, data.label), 'success')
-            showNotification(sourceXPlayer, (Locales[Config.Language]['trade_target_weapon']):format(count, data.label), 'success')
-		end
-    elseif data.type == "item_vetement" then
-		MySQL.Sync.execute('UPDATE lc_clothes SET identifier = @identifier WHERE id = @id', {
-			['@id'] = data.id,   
-			['@identifier'] = GetPlayerLicense(targetXPlayer)
-		})
-        showNotification(targetXPlayer, Locales[Config.Language]['trade_from_clothes'], 'success')
-        showNotification(sourceXPlayer, Locales[Config.Language]['trade_target_clothes'], 'success')
+		if Config.WeaponNoGive[data.name] then return end
+		if getWeapon(targetXPlayer, data.name, data.serial) then return end
 
+		local pos, playerWeapon = infoWeapon(sourceXPlayer, data.name, data.serial)
+		if not playerWeapon then return end
+		local components = playerWeapon.components or {}
+		local serial = playerWeapon.serial or data.serial
+
+		removeWeapon(sourceXPlayer, data.name, serial)
+		addWeapon(targetXPlayer, data.name, playerWeapon.ammo or 255, serial)
+		for i = 1, #components do
+			addWeaponComponent(targetXPlayer, data.name, components[i])
+		end
+
+		-- #7: a weapon taken off a searched player is a custody change.
+		if InvHistory then
+			InvHistory.record(serial, data.name, sourceXPlayer, targetXPlayer, 'search')
+		end
+
+		showNotification(targetXPlayer, (Locales[Config.Language]['trade_from_weapon']):format(1, data.label), 'success')
+		showNotification(sourceXPlayer, (Locales[Config.Language]['trade_target_weapon']):format(1, data.label), 'success')
+
+	elseif data.type == "item_vetement" then
+		-- IDOR fix: same identifier predicate as everywhere else.
+		MySQL.Async.execute('UPDATE lc_clothes SET identifier = @identifier WHERE id = @id AND identifier = @owner', {
+			['@id'] = data.id,
+			['@identifier'] = GetPlayerLicense(targetXPlayer),
+			['@owner'] = GetPlayerLicense(sourceXPlayer)
+		}, function(rows)
+			if rows and rows > 0 then
+				showNotification(targetXPlayer, Locales[Config.Language]['trade_from_clothes'], 'success')
+				showNotification(sourceXPlayer, Locales[Config.Language]['trade_target_clothes'], 'success')
+			end
+		end)
+	end
+
+	if _G.InvGuard then
+		_G.InvGuard.observeTransfer(_source, target,
+			(data.type == 'item_account' and 'money') or (data.type == 'item_weapon' and 'weapon') or 'item',
+			tostring(data.name or ''), count or 1)
 	end
 end)

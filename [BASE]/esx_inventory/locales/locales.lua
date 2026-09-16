@@ -383,3 +383,50 @@ for lang, strings in pairs(extra) do
         Locales[lang][key] = value
     end
 end
+
+-- #1/#2/#3 grid + #5 notes + #7 custody + #8 stolen register + #15 band
+local extraGrid = {
+    ['fr'] = {
+        ['title_note']        = "Description :",
+        ['title_stolen']      = "Circonstances (optionnel) :",
+        ['stolen_reported']   = "Série #%s déclarée volée.",
+        ['stolen_not_owner']  = "Vous n'êtes pas le propriétaire enregistré de cette série.",
+        ['stolen_resolved']   = "Série #%s marquée %s.",
+        ['no_access_item']    = "Vous n'avez pas accès à cet objet.",
+        ['grid_full']         = "Aucun emplacement libre.",
+        ['stack_full']        = "Cette pile est pleine.",
+        ['bag_none']          = "Cette personne ne porte pas de sac.",
+        ['bag_empty']         = "Le sac est vide.",
+    },
+    ['en'] = {
+        ['title_note']        = "Description:",
+        ['title_stolen']      = "Circumstances (optional):",
+        ['stolen_reported']   = "Serial #%s reported stolen.",
+        ['stolen_not_owner']  = "You are not the registered owner of that serial.",
+        ['stolen_resolved']   = "Serial #%s marked %s.",
+        ['no_access_item']    = "You do not have access to this item.",
+        ['grid_full']         = "No free slot.",
+        ['stack_full']        = "That stack is full.",
+        ['bag_none']          = "This person is not wearing a backpack.",
+        ['bag_empty']         = "The backpack is empty.",
+    },
+    ['es'] = {
+        ['title_note']        = "Descripcion:",
+        ['title_stolen']      = "Circunstancias (opcional):",
+        ['stolen_reported']   = "Serie #%s denunciada como robada.",
+        ['stolen_not_owner']  = "No eres el propietario registrado de esa serie.",
+        ['stolen_resolved']   = "Serie #%s marcada como %s.",
+        ['no_access_item']    = "No tienes acceso a este objeto.",
+        ['grid_full']         = "Sin espacio libre.",
+        ['stack_full']        = "Esa pila esta llena.",
+        ['bag_none']          = "Esta persona no lleva mochila.",
+        ['bag_empty']         = "La mochila esta vacia.",
+    },
+}
+
+for lang, strings in pairs(extraGrid) do
+    Locales[lang] = Locales[lang] or {}
+    for key, value in pairs(strings) do
+        Locales[lang][key] = value
+    end
+end

@@ -21,6 +21,7 @@
     <link rel="stylesheet" type="text/css" href="assets/css/notif.css">
     <link rel="stylesheet" type="text/css" href="assets/css/fonts.css">
     <link rel="stylesheet" type="text/css" href="assets/css/extras.css">
+    <link rel="stylesheet" type="text/css" href="assets/css/grid.css">
     <link rel="stylesheet" type="text/css" href="../../config/config.css">
 
 
@@ -44,6 +45,10 @@
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/css/all.min.css"/>
 
     <script src="assets/js/inventory.js"></script>
+    <!-- grid.js must load AFTER inventory.js: it reuses applyRankStyle,
+         itemWeightLabel, itemNewBadge, updateWeightBarColor,
+         filterInventoryItems and initItemDraggable from it. -->
+    <script src="assets/js/grid.js"></script>
 
     <script>
         $(function() {
@@ -231,6 +236,27 @@
         <div class="context-item" data-action="drop"><i class="fas fa-arrow-down"></i><span id="ctxDrop">Drop</span></div>
         <div class="context-item" data-action="scan"><i class="fas fa-satellite-dish"></i><span id="ctxScan">Scan Serial</span></div>
         <div class="context-item" data-action="inspect"><i class="fas fa-search"></i><span id="ctxInspect">Inspect</span></div>
+        <div class="context-item" data-action="note" id="ctxNoteItem"><i class="fas fa-pen"></i><span id="ctxNote">Description</span></div>
+        <div class="context-item" data-action="history" id="ctxHistoryItem"><i class="fas fa-clock-rotate-left"></i><span id="ctxHistory">History</span></div>
+        <div class="context-item" data-action="stolen" id="ctxStolenItem"><i class="fas fa-flag"></i><span id="ctxStolen">Report stolen</span></div>
+    </div>
+
+    <!-- #14 police backpack search -->
+    <div id="bagSearch" class="hist-overlay">
+        <div class="hist-card">
+            <span class="hist-close" id="bagSearchClose">&times;</span>
+            <h3><i class="fas fa-suitcase-rolling"></i> <span id="bagSearchLabel"></span></h3>
+            <div class="bag-body"></div>
+        </div>
+    </div>
+
+    <!-- #7/#8 weapon custody + stolen register -->
+    <div id="weaponHistory" class="hist-overlay">
+        <div class="hist-card">
+            <span class="hist-close" id="weaponHistoryClose">&times;</span>
+            <h3 id="histTitle">Chain of custody <span class="hist-serial"></span></h3>
+            <div class="hist-body"></div>
+        </div>
     </div>
 
     <!-- Item inspect modal -->
@@ -348,6 +374,10 @@
         $("#ctxInspect").html(_U('inspect'));
         $("#itemInspectCountLabel").html(_U('quantite') || 'Quantity');
         $("#itemSearch").attr('placeholder', _U('search_placeholder'));
+        $("#ctxNote").html(_U('note'));
+        $("#ctxHistory").html(_U('history'));
+        $("#ctxStolen").html(_U('report_stolen'));
+        $("#histTitle").contents().first().replaceWith(_U('chain_of_custody') + ' ');
         
     });
 </script>

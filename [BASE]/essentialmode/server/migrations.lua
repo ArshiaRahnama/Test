@@ -42,6 +42,13 @@ CreateThread(function()
     -- 'backpack' usable item in esx_inventory. NULL = none equipped.
     ensureColumn('users', 'equipped_backpack', "`equipped_backpack` VARCHAR(50) DEFAULT NULL")
 
+    -- #1/#2/#15 — grid placement map: {"slot": {"name":..,"count":..}}.
+    -- NULL for every existing player, which InitInventorySlots reads as
+    -- "no map yet" and auto-places their whole inventory. So this is a
+    -- zero-downtime migration: nobody loses anything, the first save
+    -- after they log in writes their real layout.
+    ensureColumn('users', 'invslots', "`invslots` LONGTEXT DEFAULT NULL")
+
     -- The three backpack items themselves (esx_inventory's
     -- server/custom/apps/backpack.lua RegisterUsableItem needs each one
     -- to already exist in ESX.Items, same as any other item). Safe to

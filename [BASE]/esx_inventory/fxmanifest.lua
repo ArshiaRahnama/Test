@@ -23,6 +23,8 @@ client_scripts {
   "src/RageUI/menu/windows/*.lua",
 
 	'client/custom/framework/*.lua',
+  'client/custom/slots/*.lua',
+  'client/custom/backpack/*.lua',
   'client/custom/property/*.lua',
   'client/custom/drop/*.lua',
   'client/custom/weaponscan/*.lua',
@@ -42,6 +44,12 @@ server_scripts {
   -- which is the required order.
   'server/custom/framework/*.lua',
   'server/custom/security/*.lua',
+
+  -- registry (#5 notes, #7 custody, #8 stolen register) loads before
+  -- everything that writes to it: server/main.lua's give handler and
+  -- the trunk/stash/corpse paths all call InvHistory / InvNotes.
+  'server/custom/registry/*.lua',
+  'server/custom/slots/*.lua',
 
 	'server/custom/property/*.lua',
 	'server/custom/glovebox/*.lua',

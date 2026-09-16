@@ -99,6 +99,9 @@ AddEventHandler(
 
                     position = json.encode(SC(Users[Source].coords)),
                     inventory = json.encode(invent),
+                    -- #1/#2/#15: grid placement map, saved alongside the
+                    -- totals it describes so the two can't drift apart.
+                    invslots = json.encode(Users[Source].getSlots and Users[Source].getSlots() or {}),
                     loadout = json.encode(Users[Source].loadout),
                     status = json.encode(Users[Source].status)
                 }
@@ -165,6 +168,7 @@ AddEventHandler(
                     bank = Users[Source].bank,
                     position = json.encode(SC(Users[Source].coords)),
                     inventory = json.encode(invent),
+                    invslots = json.encode(Users[Source].getSlots and Users[Source].getSlots() or {}),
                     loadout = json.encode(Users[Source].loadout)
                 }
             )

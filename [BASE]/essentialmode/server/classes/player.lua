@@ -21,7 +21,12 @@ function CreatePlayer(
     discordid,
     level,
     respect,
-    black_money)
+    black_money,
+    -- #1/#2/#15: decoded `users.invslots` (grid placement map). Added
+    -- LAST on purpose so every existing CreatePlayer call site that
+    -- doesn't know about it keeps working and just gets nil (which
+    -- InitInventorySlots handles by auto-placing everything).
+    invslots)
     local self = {}
 
     self.source = source
@@ -660,6 +665,7 @@ function CreatePlayer(
                 info = info,
             }
             table.insert(self.inventory, item)
+            if self.reconcileSlots then self.reconcileSlots() end
             TriggerEvent("esx:onaddInventoryItem", self.source, item, count)
             TriggerClientEvent("esx:addInventoryItem", self.source, item, count)
             return
@@ -673,6 +679,7 @@ function CreatePlayer(
         if not i then
             table.insert(self.inventory, item)
         end
+        if self.reconcileSlots then self.reconcileSlots() end
         TriggerEvent("esx:onaddInventoryItem", self.source, item, count)
         TriggerClientEvent("esx:addInventoryItem", self.source, item, count)
     end
@@ -714,6 +721,8 @@ function CreatePlayer(
         if newCount <= 0 then
             table.remove(self.inventory, i)
         end
+
+        if self.reconcileSlots then self.reconcileSlots() end
     end
 
 
@@ -763,6 +772,8 @@ function CreatePlayer(
         local oldCount = item.count
         item.count = count
 
+        if self.reconcileSlots then self.reconcileSlots() end
+
         if oldCount > item.count then
             TriggerEvent("esx:onRemoveInventoryItem", self.source, item, oldCount - item.count)
             TriggerClientEvent("esx:removeInventoryItem", self.source, item, oldCount - item.count)
@@ -770,6 +781,15 @@ function CreatePlayer(
             TriggerEvent("esx:onaddInventoryItem", self.source, item, item.count - oldCount)
             TriggerClientEvent("esx:addInventoryItem", self.source, item, item.count - oldCount)
         end
+    end
+
+    -- #1/#2/#15 — grid placement layer. Must be attached AFTER the
+    -- inventory mutators above are defined (it reads self.inventory) and
+    -- BEFORE anything can call them. See server/classes/slots.lua for
+    -- why this is a layer on top of the name-keyed list rather than a
+    -- replacement for it.
+    if InitInventorySlots then
+        InitInventorySlots(self, invslots)
     end
 
     self.setJob = function(job, grade)

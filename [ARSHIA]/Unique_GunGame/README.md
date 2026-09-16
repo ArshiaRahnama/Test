@@ -25,14 +25,16 @@ the corresponding `TriggerEvent` call in `client.lua` with your server's equival
 
 | Command | Who | Description |
 |---|---|---|
-| `/jgg` | everyone | Join the GunGame queue |
+| `/jgg` | everyone | Join the GunGame queue (only works after an admin runs `/gungame start`) |
 | `/ggl` | everyone | Leave the queue (only while still waiting, not once in a running arena) |
 | `/gungamestats` | everyone | Shows the top-10 all-time leaderboard (kills, wins, matches) — requires `Config.UseDatabase = true` |
-| `/gungame stop` | admin (`permission_level` ≥ `Config.PermissionLevel`) | Force-stops every running arena and clears the queue |
+| `/gungame start` | admin (`permission_level` ≥ `Config.PermissionLevel`) | Opens the event so players can `/jgg` |
+| `/gungame stop` | admin (`permission_level` ≥ `Config.PermissionLevel`) | Closes the event, force-stops every running arena, and clears the queue |
 
 ## How arenas work
 
-- Players who run `/jgg` are added to a single waiting queue.
+- The event is closed by default. An admin must run `/gungame start` before anyone can `/jgg`.
+- Once open, players who run `/jgg` are added to a single waiting queue.
 - As soon as `Config.PlayersPerArena` players are queued, that group is pulled out
   and starts its own independent arena (countdown, then the match) — the rest of
   the queue keeps waiting for the next group.

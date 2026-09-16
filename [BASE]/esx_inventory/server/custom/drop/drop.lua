@@ -51,10 +51,63 @@ local function buildDropDisplay(itemType, name, count, label, serial)
     }
 end
 
+--- Place an already-validated stack on the ground. Split out of the
+--- net-event handler below so the grid's drag-to-ground path (#3, see
+--- server/custom/slots/slots.lua) can reuse the identical spawn/cap/
+--- despawn/broadcast logic instead of reimplementing it — the two used
+--- to be one function only because there was only one caller.
+--- `display` must already have had the item REMOVED from the player.
+local function placeDrop(source, coords, display)
+    local dropId = 'drop_' .. nextDropId
+    nextDropId = nextDropId + 1
+
+    Drops[dropId] = {
+        id = dropId,
+        coords = coords,
+        item = display,
+        owner = source,
+        createdAt = os.time(),
+    }
+
+    TriggerClientEvent('esx_inventory:spawnDrop', -1, dropId, coords, display)
+
+    SetTimeout(Config.Drop.despawnTime or 300000, function()
+        if Drops[dropId] then
+            Drops[dropId] = nil
+            TriggerClientEvent('esx_inventory:removeDrop', -1, dropId)
+        end
+    end)
+
+    return dropId
+end
+
+-- Internal (server->server) entry point used by the grid. Not a net
+-- event: TriggerEvent from another server script only, so a client can
+-- never reach it directly.
+AddEventHandler('esx_inventory:internalDrop', function(source, item, count)
+    local xPlayer = GetPlayerFromId(source)
+    if not xPlayer then return end
+
+    if countActiveDrops() >= (Config.Drop.maxStacksOnGround or 200) then
+        showNotification(xPlayer, Locales[Config.Language]['drop_full_ground'] or 'Too many items on the ground right now, try again shortly.', 'error')
+        return
+    end
+
+    local coords = getPedCoords(source)
+    if not coords then return end
+
+    local x_Item = GetItem(xPlayer, item.name)
+    if not x_Item or GetItemAmount(x_Item) < count then return end
+
+    RemoveItem(xPlayer, item.name, count)
+    placeDrop(source, coords, buildDropDisplay('item_standard', item.name, count, item.label))
+end)
+
 RegisterNetEvent('esx_inventory:requestDrop')
 AddEventHandler('esx_inventory:requestDrop', function(item, count)
     local source = source
     if not Config.Drop or not Config.Drop.enabled then return end
+    if _G.InvGuard and not _G.InvGuard.rateLimit(source, 'drop') then return end
 
     local xPlayer = GetPlayerFromId(source)
     if xPlayer == nil or item == nil or type(item) ~= 'table' then return end
@@ -105,25 +158,7 @@ AddEventHandler('esx_inventory:requestDrop', function(item, count)
         return
     end
 
-    local dropId = 'drop_' .. nextDropId
-    nextDropId = nextDropId + 1
-
-    Drops[dropId] = {
-        id = dropId,
-        coords = coords,
-        item = display,
-        owner = source,
-        createdAt = os.time(),
-    }
-
-    TriggerClientEvent('esx_inventory:spawnDrop', -1, dropId, coords, display)
-
-    SetTimeout(Config.Drop.despawnTime or 300000, function()
-        if Drops[dropId] then
-            Drops[dropId] = nil
-            TriggerClientEvent('esx_inventory:removeDrop', -1, dropId)
-        end
-    end)
+    placeDrop(source, coords, display)
 end)
 
 RegisterNetEvent('esx_inventory:pickupDrop')

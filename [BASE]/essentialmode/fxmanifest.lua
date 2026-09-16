@@ -21,6 +21,7 @@ server_scripts {
     "server/paycheck.lua",
     "server/main.lua",
     "server/db.lua",
+    "server/classes/slots.lua",
     "server/classes/player.lua",
     "server/classes/groups.lua",
     "server/player/login.lua",

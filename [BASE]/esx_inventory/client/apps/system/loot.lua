@@ -4,8 +4,12 @@ Inv.openInvPlayer = false
 
 openPlayerLoot = function()
     if not Inv.inventoryLock then -- for export inventoryLock
-        if Config.ActiveJobForLoot then 
-            if not Config.JobForLoot[PlayerData.job.name] then
+        if Config.ActiveJobForLoot then
+            -- FIX: PlayerData (or .job) is nil right after a resource
+            -- restart, which made this line error instead of returning -
+            -- so /fouiller hard-failed until the next reconnect.
+            local jobName = PlayerData and PlayerData.job and PlayerData.job.name
+            if not jobName or not Config.JobForLoot[jobName] then
                 return
             end
         end
@@ -229,12 +233,17 @@ RegisterNUICallback("PutIntoPlayer", function(data, cb)
     end
     local closestPlayer, closestDistance = GetClosestPlayer()
     if closestPlayer ~= -1 and closestDistance < 2.5 then
+        -- `taking` tells the server which DIRECTION this is; the server
+        -- resolves the real sender from `source` and only uses the id
+        -- below as the counterpart. See server/apps/system/loot.lua.
         local dataLoot = {
+            taking = false,
             player = GetPlayerServerId(PlayerId()),
             target = GetPlayerServerId(closestPlayer),
             type = data.item.type,
             id = data.item.id,
             name = data.item.name,
+            serial = data.item.serial,
             label = data.item.label
         }
         if data.item.type == 'item_vetement' then
@@ -281,11 +290,13 @@ RegisterNUICallback("TakeFromPlayer", function(data, cb)
     local closestPlayer, closestDistance = GetClosestPlayer()
     if closestPlayer ~= -1 and closestDistance < 2.5 then
         local dataLoot = {
+            taking = true,
             player = GetPlayerServerId(closestPlayer),
             target = GetPlayerServerId(PlayerId()),
             type = data.item.type,
             id = data.item.id,
             name = data.item.name,
+            serial = data.item.serial,
             label = data.item.label
         }
         if data.item.type == 'item_vetement' then
