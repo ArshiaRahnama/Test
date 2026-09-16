@@ -38,6 +38,10 @@ function openInventory()
         -- non-slot presentation because they live in separate stores
         -- (loadout, lc_clothes, accounts), not in the item inventory.
         if RefreshGrid then RefreshGrid() end
+        -- Round 5: fill the right-hand panel with whatever is lying
+        -- within reach, so the floor is browsable instead of being a
+        -- blind [E] prompt.
+        if RefreshGroundPanel then RefreshGroundPanel() end
 
         SetTimecycleModifierStrength(1.50)
         
@@ -1168,29 +1172,21 @@ RegisterNUICallback('useItem', function(data)
 
         elseif data.item.type == "item_weapon" then 
 
-            local ped = PlayerPedId()
-            if not weaponLock then
-                weaponLock = true
-                local weaponClass = Config.GetWeaponClass(data.item.name)
-                local weaponSounds = Config.WeaponSounds[weaponClass]
-                if  weaponEquiped ~= data.item.name then
-                    weaponEquiped = data.item.name
-                    SetCurrentPedWeapon(ped, data.item.name, true)
-                    if weaponSounds and weaponSounds.equip then
-                        PlaySoundFrontend(-1, weaponSounds.equip.name, weaponSounds.equip.set, true)
-                    end
-                    Wait(150)
-                    weaponLock = false
-                else 
-                    weaponEquiped = nil
-                    SetCurrentPedWeapon(ped, 'WEAPON_UNARMED', true)
-                    if weaponSounds and weaponSounds.holster then
-                        PlaySoundFrontend(-1, weaponSounds.holster.name, weaponSounds.holster.set, true)
-                    end
-                    Wait(150)
-                    weaponLock = false
-                end 
-            end
+            -- Round 4: the draw/holster animation, the sound and the
+            -- re-entrancy guard all live in EquipWeaponAnimated
+            -- (client/apps/default/weapondraw.lua) so there is exactly one
+            -- code path that changes what is in the player's hands.
+            --
+            -- Two bugs fixed by the move:
+            --   * SetCurrentPedWeapon was being handed a STRING
+            --     ('WEAPON_PISTOL'); the native wants a hash, so the call
+            --     only worked by accident on some builds and silently did
+            --     nothing on others. It gets GetHashKey() now.
+            --   * `weaponLock` was set true, then released after Wait(150)
+            --     inside the same callback - but the early `return` paths
+            --     above it could leave it stuck true forever, and the
+            --     player could never equip anything again until relog.
+            weaponEquiped = EquipWeaponAnimated(data.item.name, weaponEquiped)
 
         elseif data.item.type == "item_vetement" then
             local jobName = PlayerData and PlayerData.job and PlayerData.job.name

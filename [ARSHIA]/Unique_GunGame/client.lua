@@ -145,6 +145,7 @@ end)
 local function handleDeath(playerPed)
     alreadyDead = true
     SetEntityInvincible(playerPed, true)
+    TriggerServerEvent('Unique_GunGame:PlayerDied')
 
     local killerServerId = findKillerServerId(GetPedKiller(playerPed), playerPed)
     if killerServerId ~= 0 then

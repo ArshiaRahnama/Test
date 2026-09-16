@@ -26,6 +26,15 @@ Config.MaxQueueSize = 30     -- total players allowed across the waiting queue +
 Config.CountdownTime = 15    -- seconds of countdown once a group of PlayersPerArena is formed
 Config.RoundTimeLimit = 300  -- seconds per arena, 0 = no time limit (highest kills wins when it hits 0)
 
+-- Announce (to everyone in that arena) when a player's current life-streak hits one
+-- of these numbers. The streak resets to 0 whenever that player dies. Empty table disables it.
+Config.KillstreakAnnouncements = { 3, 5, 7 }
+
+-- Reminds everyone on the server how many more players are needed to start an arena,
+-- as long as the event is open and the queue isn't already full enough on its own.
+-- Seconds between reminders, 0 disables them.
+Config.QueueReminderInterval = 30
+
 -- Jobs that cannot queue while on duty
 Config.RestrictedJobs = {
     police = true,

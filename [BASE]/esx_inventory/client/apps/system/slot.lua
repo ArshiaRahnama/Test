@@ -145,10 +145,28 @@ AddEventHandler('esx:removeWeapon', function(weaponName)
 end)
 
 RegisterNUICallback("PutIntoFast", function(data, cb)
-    if not Config.BL_SlotInv[data.item.name] then
-	    if data.item.slot ~= nil then
-		    Inv.FastWeapons[data.item.slot] = nil
-	    end
+    if Config.BL_SlotInv[data.item.name] then
+        -- BUGFIX: this used to just fall off the end of the function
+        -- without ever calling cb(), leaving the NUI callback hanging.
+        NotificationInInventory(Locales[Config.Language]['no_possible'], 'error')
+        if cb then cb('ok') end
+        return
+    end
+
+    -- BUGFIX: `data.item.slot` means TWO different things now.
+    -- For an item dragged from the hotbar it is the hotbar index
+    -- (1-5) - clearing it is correct, that's the slot being moved
+    -- out of. For an item dragged from the inventory it is the GRID
+    -- cell (1-50), added by the slot layer. Clearing that blindly
+    -- wiped a random hotbar binding: drag the item sitting in grid
+    -- cell 3 onto hotbar slot 1, and whatever was bound to hotbar
+    -- slot 3 silently disappeared. Only the hotbar meaning may be
+    -- acted on here.
+    if data.from == 'fast' and data.item.slot ~= nil then
+        Inv.FastWeapons[data.item.slot] = nil
+    end
+
+    do
         -- FIX (prevents the same item ending up bound to multiple
         -- hotbar slots again - see the one-time cleanup in
         -- client/main.lua for the historical case): clear any OTHER
@@ -206,26 +224,19 @@ function useitem(num)
         if Inv.FastWeapons[num] ~= nil then
             local prefix = string.sub(Inv.FastWeapons[num], 1, 7) -- extrait les 7 premiers caractères
             if prefix ~= 'WEAPON_' then
-                TriggerServerEvent(Config.Trigger["esx:useItem"], Inv.FastWeapons[num])
+                -- BUGFIX: this read Config.Trigger["esx:useItem"], but the
+                -- table is keyed "useItem" (the VALUE is 'esx:useItem').
+                -- The lookup returned nil, so every hotbar key press on a
+                -- normal item fired TriggerServerEvent(nil, ...) - i.e.
+                -- hotbar slots 1-5 silently did nothing for every
+                -- non-weapon item. Same key the inventory itself uses.
+                TriggerServerEvent(Config.Trigger["useItem"], Inv.FastWeapons[num])
             else
-                local ped = PlayerPedId()
-
-                if not weaponLock then
-                    weaponLock = true
-                    if  weaponEquiped ~= Inv.FastWeapons[num] then
-                        weaponEquiped = Inv.FastWeapons[num]
-                        SetCurrentPedWeapon(ped, Inv.FastWeapons[num], true)
-                        -- SetPedCurrentWeaponVisible(ped, 0, true, 1, 0) -- Cache l'arme
-
-                        Wait(150)
-                        weaponLock = false
-                    else 
-                        weaponEquiped = nil
-                        SetCurrentPedWeapon(ped, 'WEAPON_UNARMED', true)
-                        Wait(150)
-                        weaponLock = false
-                    end 
-                end
+                -- Same animated draw the inventory uses, so a weapon
+                -- pulled from the hotbar and one used from the grid
+                -- behave identically instead of one of them teleporting
+                -- into the player's hands.
+                weaponEquiped = EquipWeaponAnimated(Inv.FastWeapons[num], weaponEquiped)
             end
         end
     end

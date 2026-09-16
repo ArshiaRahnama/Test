@@ -126,10 +126,8 @@ function renderGrid() {
 
     // weight bar
     if (d.maxWeight > 0) {
-        var $bar = $('#weightBar');
-        $bar.css('width', (28.2 / d.maxWeight * d.weight) + 'vw');
+        setWeightBar($('#weightBar'), d.weight, d.maxWeight);
         $('#weight').text(d.weight.toFixed(1) + ' / ' + d.maxWeight + 'KG');
-        updateWeightBarColor($bar, d.weight, d.maxWeight);
     }
 
     initItemDraggable();
@@ -212,38 +210,97 @@ function initGridDroppables() {
     });
 }
 
-// #3 — released outside the inventory window entirely => throw it on the
-// ground. Checked against the panel's real bounding box rather than a
-// dedicated drop zone, so there is nothing to aim at: anywhere outside
-// works, which is what players expect from this gesture.
-$(document).on('mouseup', function(e) {
-    if (!window.__gridDragging) return;
-    var item = window.__gridDragging;
-    window.__gridDragging = null;
+// #3 — DRAG OUT OF THE WINDOW => DROP ON THE GROUND
+// ------------------------------------------------------------------
+// Rewritten in round 4. The previous version had three problems:
+//
+//   * it armed itself on `mousedown`, including RIGHT mousedown, so
+//     opening the context menu on an item and then clicking anywhere
+//     outside the panel threw that item on the floor;
+//   * it only handled grid slots, so weapons / cash / anything in the
+//     "Equipment" band could not be dragged out at all - the gesture
+//     just did nothing, with no feedback;
+//   * there was no indication the gesture existed.
+//
+// Now: arm on jQuery UI's real `dragstart` (so it takes an actual drag,
+// left button only), show a hint strip while dragging, and route by
+// item type on release - slot items through the server-authoritative
+// grid path, everything else through the existing `dropItem` NUI
+// callback which already validates weapons/accounts server-side.
 
-    if (item.slot === undefined || item.slot === null) return;
+var DragOut = { item: null, inv: null, x: 0, y: 0 };
 
+// cheap pointer tracking: two number writes, no style reads
+document.addEventListener('mousemove', function(e) {
+    DragOut.x = e.clientX;
+    DragOut.y = e.clientY;
+}, { passive: true });
+
+function dragOutIsOutside(x, y) {
     var panel = document.querySelector('.form-inv .inventory');
-    if (!panel) return;
+    if (!panel) return false;
     var r = panel.getBoundingClientRect();
-    var inside = e.clientX >= r.left && e.clientX <= r.right
-              && e.clientY >= r.top  && e.clientY <= r.bottom;
-    if (inside) return;
+    var insidePanel = x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
+    if (insidePanel) return false;
 
-    // also ignore drops onto the action buttons / centre panel, which
-    // have their own meanings (use / give / rename / delete / drop)
-    if ($(e.target).closest('.center-part, .middle-slot-box, .top-buttons-center-part').length) return;
+    // the centre column (use/give/rename/delete/drop, the clothing dolls
+    // and the hotbar) sits outside .inventory but has its own meaning
+    var el = document.elementFromPoint(x, y);
+    if (el && $(el).closest('.center-part, .top-buttons-center-part, .middle-slot-box, .item-context-menu, #keyboard-input, .menu, .idcard-form, .hist-overlay, .item-inspect-overlay').length) {
+        return false;
+    }
+    return true;
+}
 
-    $.post('http://esx_inventory/grid:dropToGround', JSON.stringify({
-        slot: item.slot,
-        all: !(gridDragShift || e.shiftKey)   // shift => ask for a quantity
-    }));
+$(document).on('dragstart', '.item', function(event, ui) {
+    var d = $(this).data('item');
+    if (!d) return;
+    DragOut.item = d;
+    DragOut.inv = $(this).data('inventory') || 'main';
+    // only the player's own inventory can be thrown on the ground: a
+    // trunk/stash cell dragged outside must not vanish from the trunk
+    if (DragOut.inv === 'main' || DragOut.inv === 'fast') {
+        $('#dropZoneHint').addClass('visible');
+    }
 });
 
-// record what's being dragged so the mouseup above knows
-$(document).on('dragstart mousedown', '.item', function() {
-    var d = $(this).data('item');
-    if (d) window.__gridDragging = d;
+$(document).on('dragstop', '.item', function() {
+    $('#dropZoneHint').removeClass('visible');
+
+    var item = DragOut.item, inv = DragOut.inv;
+    DragOut.item = null;
+    DragOut.inv = null;
+    if (!item) return;
+    if (inv !== 'main' && inv !== 'fast') return;
+    if (!dragOutIsOutside(DragOut.x, DragOut.y)) return;
+
+    if (item.slot !== undefined && item.slot !== null) {
+        // standard stackable item living in a real grid cell
+        $.post('http://esx_inventory/grid:dropToGround', JSON.stringify({
+            slot: item.slot,
+            all: !gridDragShift       // hold SHIFT while releasing => ask for a quantity
+        }));
+    } else if (item.type === 'item_weapon') {
+        // Deliberate exception: a weapon is never dropped by "letting go"
+        // of it. Losing a gun to a mis-aimed drag is unrecoverable in a
+        // way that losing 3 bandages is not, so a weapon has to be placed
+        // into the ground panel on the right - a target you have to hit
+        // on purpose.
+        $.post('http://esx_inventory/notifyInv', JSON.stringify({
+            message: (window._U ? _U('weapon_needs_panel') : 'Put the weapon in the right-hand panel to drop it.'),
+            type: 'error'
+        }));
+    } else {
+        // account / anything else with no grid slot: same path as the
+        // DROP button, which already rejects the non-droppable types
+        $.post('http://esx_inventory/dropItem', JSON.stringify({ item: item }));
+    }
+});
+
+// safety net: if a drag is interrupted (NUI focus lost, Escape) the hint
+// must not stay burned onto the screen
+$(document).on('keydown', function(e) {
+    if (e.which === 27) $('#dropZoneHint').removeClass('visible');
 });
 
 /* ---------- message hooks ------------------------------------------ */
@@ -269,7 +326,8 @@ window.addEventListener('message', function(event) {
 
     } else if (a === 'close:Inv') {
         GRID.lastCounts = {};
-        window.__gridDragging = null;
+        DragOut.item = null;
+        $('#dropZoneHint').removeClass('visible');
 
     } else if (a === 'open:History') {
         renderHistory(event.data.history);

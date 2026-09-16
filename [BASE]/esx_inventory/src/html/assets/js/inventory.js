@@ -81,6 +81,23 @@ function itemNewBadge(item) {
 // ██╗    ██╗███████╗██╗ ██████╗ ██╗  ██╗████████╗    ██████╗  █████╗ ██████╗
 // weight bar goes from the normal color to a warning/danger red the closer
 // the player is to their max carry weight.
+// One place that sets a weight bar's width, because there were four, and
+// none of them clamped. An over-encumbered player (235.5 / 24KG in the
+// report) produced `28.2 / 24 * 235.5` = 276vw of bar inside a 28.2vw
+// track: the bar ran the entire width of the panel and out the other
+// side. Width is capped at the track, and the colour already says
+// "danger", so the information isn't lost - just the overflow.
+function setWeightBar($bar, weight, maxWeight) {
+    var w = 0;
+    if (maxWeight > 0) {
+        w = maxWeightBarValue * (weight / maxWeight);
+        if (!isFinite(w) || w < 0) w = 0;
+        if (w > maxWeightBarValue) w = maxWeightBarValue;
+    }
+    $bar.css('width', w + 'vw');
+    updateWeightBarColor($bar, weight, maxWeight);
+}
+
 function updateWeightBarColor($bar, weight, maxWeight) {
     var ratio = maxWeight > 0 ? (weight / maxWeight) : 0;
     $bar.removeClass('weight-warn weight-danger');
@@ -158,18 +175,68 @@ function sortInventory(key) {
     });
 }
 
-$(document).on('click', '.sort-btn', function() {
-    $('.sort-btn').removeClass('active');
-    $(this).addClass('active');
-    sortInventory($(this).data('sort'));
+// ONE sort control (see ui.html). The old strip had a "category" button
+// that did the same job as the category filter row above the search box -
+// two different widgets for one concept. Category stays a filter, sorting
+// is one menu: pick the key, click the button again to flip direction.
+var sortOneKey = 'name';
+
+function applySortOne(key, flip) {
+    if (key) sortOneKey = key;
+    // sortInventory() toggles direction itself when the key is unchanged,
+    // so pass the same key twice only when the user asked for a flip.
+    if (flip) {
+        sortInventory(sortOneKey);
+    } else {
+        currentSort.key = null;          // force ascending on a fresh key
+        sortInventory(sortOneKey);
+    }
+    $('#sortOneKey').text(_U('sort_' + sortOneKey) || sortOneKey);
+    $('#sortOneBtn').toggleClass('desc', currentSort.dir === -1);
+    $('.sort-one-opt').removeClass('active')
+        .filter('[data-sort="' + sortOneKey + '"]').addClass('active');
+}
+
+$(document).on('click', '#sortOneBtn', function(e) {
+    e.stopPropagation();
+    // plain click = flip direction, right-click / long list = open the menu
+    if ($('#sortOneMenu').hasClass('visible')) {
+        $('#sortOneMenu').removeClass('visible');
+    } else {
+        applySortOne(null, true);
+    }
 });
 
+$(document).on('contextmenu', '#sortOneBtn', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    $('#sortOneMenu').toggleClass('visible');
+});
+
+$(document).on('click', '.sort-one-opt', function(e) {
+    e.stopPropagation();
+    $('#sortOneMenu').removeClass('visible');
+    applySortOne($(this).data('sort'), false);
+});
+
+$(document).on('click', function() { $('#sortOneMenu').removeClass('visible'); });
+
 function initItemDraggable() {
-    $('.item').draggable({
+    // PERF: this used to make EVERY .item draggable - including the ~100
+    // empty padding cells in the two panels, on every single refresh.
+    // jQuery UI builds a full widget instance per element, so that was
+    // ~100 throwaway widgets several times a second while items moved.
+    // Only cells that actually hold something are draggable now, and
+    // already-initialised cells are skipped instead of re-initialised.
+    $('.item').filter(function() {
+        return !!$(this).data('item') && !$(this).hasClass('ui-draggable');
+    }).draggable({
         helper: 'clone',
         appendTo: 'body',
         zIndex: 99999,
         revert: 'invalid',
+        distance: 6,          // a click is a click, not a 1px drag
+        cursorAt: { left: 28, top: 28 },
         start: function(event, ui) {
             if (disabled) {
                 return false;
@@ -264,10 +331,8 @@ window.addEventListener("message", function(event) {
     } else if (event.data.action == "Inv:WeightBarText") {
         
 
-        let maxBarValue = (maxWeightBarValue * event.data.weight) / event.data.maxWeight; 
-        weightBar.css("width", maxBarValue + "vw");     
-        weightText.text(event.data.text); 
-        updateWeightBarColor(weightBar, event.data.weight, event.data.maxWeight);
+        setWeightBar(weightBar, event.data.weight, event.data.maxWeight);
+        weightText.text(event.data.text);
 
     } else if (event.data.action == "setItems") {
         
@@ -275,10 +340,8 @@ window.addEventListener("message", function(event) {
 
         maxWeight = event.data.maxWeight
         totalWeight = event.data.weight
-        let maxBarValue = maxWeightBarValue / maxWeight * totalWeight//Math.floor(fillPercentage);
-        weightBar.css("width", maxBarValue + "vw");     
+        setWeightBar(weightBar, totalWeight, maxWeight);
         weightText.text(event.data.text);
-        updateWeightBarColor(weightBar, totalWeight, maxWeight);
 
         $('.info_ui').attr('data-html', 'true').attr('title', _U('help_interfaces')
         ).tooltip({
@@ -426,12 +489,9 @@ window.addEventListener("message", function(event) {
     } else if (event.data.action == "trunk:WeightBarText") {
 
 
-        let maxBarValue = maxWeightBarValue * event.data.weightTrunk / event.data.maxWeightTrunk//Math.floor(fillPercentage);
-        
-        weightBarCoffre.css("width", maxBarValue + "vw");     
+        setWeightBar(weightBarCoffre, event.data.weightTrunk, event.data.maxWeightTrunk);
         weightCoffre.text(event.data.textTrunk);
         textCoffre.text(event.data.plate);
-        updateWeightBarColor(weightBarCoffre, event.data.weightTrunk, event.data.maxWeightTrunk);
 
     }
 });
@@ -446,13 +506,27 @@ window.addEventListener("message", function(event) {
 
 
 function inventorySetup(items, fastItems, crMenu, itemTrunk) {
-    $("#left-inventory").html("");
+    // PERF/FLICKER FIX: when the slot grid is active, this function used to
+    // paint a full 50-cell list into #left-inventory, and grid.js's own
+    // handler then immediately wiped it and painted the grid over the top.
+    // Every single refresh built ~100 cells that were thrown away one tick
+    // later - that is the visible flicker AND a large part of the lag when
+    // moving items quickly. The grid owns the left panel when it has data;
+    // this function only does the parts the grid does not own (the hotbar
+    // and the second panel).
+    var gridOwnsLeft = (typeof GRID !== 'undefined' && GRID && GRID.data);
+    // the ground panel owns the right side while it is open: repainting
+    // empty padding cells over it on every refresh would make items on
+    // the floor flicker in and out as you move things around
+    var groundOwnsRight = (typeof GROUND !== 'undefined' && GROUND && GROUND.active);
+
+    if (!gridOwnsLeft) $("#left-inventory").html("");
     if (itemTrunk == 'no') {
         $("#right-inventory").html("");
     }
 
 
-    if (Array.isArray(items)) {
+    if (Array.isArray(items) && !gridOwnsLeft) {
       let itemsCount = items.length;
       
       $.each(items, function(index, item) {
@@ -473,63 +547,29 @@ function inventorySetup(items, fastItems, crMenu, itemTrunk) {
         let currentIndex = itemsCount + i;
         $("#left-inventory").append('<div class="item-info"><div id="item-' + currentIndex + '" class="item"></div><div class="item-name-bg"></div></div>');
       }
-      if (idcardOpen == false) {
+      if (idcardOpen == false && !groundOwnsRight) {
         if (itemTrunk == 'no') {
 
+            // FIX: these used id="item-N", the SAME ids the left panel
+            // already used, so every $('#item-N') lookup (data binding,
+            // rank styling, the hotbar droppables) silently hit the wrong
+            // panel's cell. Right-side cells are namespaced now.
             for (let i = 0; i < totalSlots; i++) {
-                $("#right-inventory").append('<div class="item-info"><div id="item-' + i + '" class="item"></div><div class="item-name-bg"></div></div>');
+                $("#right-inventory").append('<div class="item-info"><div id="itemOther-empty-' + i + '" class="item"></div></div>');
             }
         }
       }
       
-    } else {
-      // Gérer le cas où items n'est pas un tableau
-    //   console.error("items n'est pas un tableau");
+    } else if (gridOwnsLeft && idcardOpen == false && itemTrunk == 'no' && !groundOwnsRight) {
+      // grid owns the left panel, but the empty right panel still needs
+      // padding cells so the layout doesn't collapse
+      $("#right-inventory").html("");
+      for (let i = 0; i < totalSlots; i++) {
+        $("#right-inventory").append('<div class="item-info"><div id="itemOther-empty-' + i + '" class="item"></div></div>');
+      }
     }
     
-        $(".middle-bottom-slots").html("");
-        if (crMenu == 'item') {
-            $("#drop");
-            var i;
-            image = ''
-
-            for (i = 1; i < 6; i++) {
-                $(".middle-bottom-slots").append(
-                    '<div class="middle-slot-box" id"itemDescr-' + i + '">'+
-                        // '<div class="slot-count"> ' + i + '</div>'+
-                        '<img class="slot-count" src="assets/icons/' + i + '_key.png" alt="">'+
-                        // '<div class="slot-name"></div>'+
-                        '<div id="itemFast-' + i + '" class="item" style = "background-image: url(' + image + ')">' +
-                        '</div >'+
-                    // '<div class="item-name-bg"></div>'+
-                    '</div>'
-                );
-            }
-
-
-            $.each(fastItems, function(index, item) {
-                count = setCount(item);
-                if (item.image == undefined ) {
-                    item.image = ''
-                }
-                $('#itemFast-' + item.slot).html('<div class="slot-name">' + item.label + '</div>');
-                // $('#itemFast-' + item.slot).html('<div class="slot-name">' + item.label + '</div> <div class="item-name-bg"></div>');
-                $('#itemFast-' + item.slot).css("background-image", 'url(' + item.image + ')');
-                $('#itemFast-' + item.slot).toggleClass('rare-item', !!item.rare);
-                $('#itemFast-' + item.slot).data('item', item);
-                $('#itemFast-' + item.slot).data('inventory', "fast");
-                applyRankStyle($('#itemFast-' + item.slot), item);
-            });
-        }
-
-
-    if (crMenu == 'clothe') {
-        $("#drop");
-    }
-    makeDraggables()
-    if (crMenu == 'item') {
-        $("#drop");
-    }
+    buildHotbar(fastItems, crMenu);
 }
 
 // ██████╗ ██╗ ██████╗ ██╗  ██╗████████╗    ██╗███╗   ██╗██╗   ██╗
@@ -584,50 +624,43 @@ function secondInventorySetup(items) {
 // ╚══════╝╚══════╝ ╚═════╝    ╚═╝       
                                       
 
-function updateSlot(fastItems, crMenu) {
+// ONE hotbar builder. `inventorySetup` and `updateSlot` used to contain
+// two byte-identical copies of this markup + binding loop, so any fix had
+// to be made twice and they had already drifted apart in the comments.
+function buildHotbar(fastItems, crMenu) {
     $(".middle-bottom-slots").html("");
-    if (crMenu == 'item') {
-        $("#drop");
-        var i;
-        image = ''
-
-        for (i = 1; i < 6; i++) {
-            $(".middle-bottom-slots").append(
-                '<div class="middle-slot-box" id"itemDescr-' + i + '">'+
-                    '<img class="slot-count" src="assets/icons/' + i + '_key.png" alt="">'+
-
-                    // '<div class="slot-count">' + i + '</div>'+
-                    // '<div class="slot-name"></div>'+
-                    '<div id="itemFast-' + i + '" class="item" style = "background-image: url(' + image + ')">' +
-                    '</div >'+
-                // '<div class="item-name-bg"></div>'+
-                '</div>'
-            );
-        }
-
-
-        $.each(fastItems, function(index, item) {
-            count = setCount(item);
-            if (item.image == undefined ) {
-                item.image = ''
-            }
-            $('#itemFast-' + item.slot).html('<div class="slot-name">' + item.label + '</div>');
-            // $('#itemFast-' + item.slot).html('<div class="slot-name">' + item.label + '</div> <div class="item-name-bg"></div>');
-            $('#itemFast-' + item.slot).css("background-image", 'url(' + item.image + ')');
-            $('#itemFast-' + item.slot).toggleClass('rare-item', !!item.rare);
-            $('#itemFast-' + item.slot).data('item', item);
-            $('#itemFast-' + item.slot).data('inventory', "fast");
-            applyRankStyle($('#itemFast-' + item.slot), item);
-        });
+    if (crMenu !== 'item') {
+        makeDraggables();
+        return;
     }
 
-    if (crMenu == 'clothe') {
-        $("#drop");
+    for (var i = 1; i < 6; i++) {
+        $(".middle-bottom-slots").append(
+            '<div class="middle-slot-box" id="itemDescr-' + i + '">' +
+                '<img class="slot-count" src="assets/icons/' + i + '_key.png" alt="">' +
+                '<div id="itemFast-' + i + '" class="item"></div>' +
+            '</div>'
+        );
     }
-    makeDraggables()
-    if (crMenu == 'item') {
-        $("#drop");
-    }
+
+    $.each(fastItems || {}, function(index, item) {
+        if (!item) return;
+        var $cell = $('#itemFast-' + item.slot);
+        if (!$cell.length) return;
+        $cell.html('<div class="slot-name">' + item.label + '</div>');
+        $cell.css("background-image", 'url(' + (item.image || '') + ')');
+        $cell.toggleClass('rare-item', !!item.rare);
+        $cell.data('item', item);
+        $cell.data('inventory', "fast");
+        applyRankStyle($cell, item);
+    });
+
+    makeDraggables();
+    initItemDraggable();
+}
+
+function updateSlot(fastItems, crMenu) {
+    buildHotbar(fastItems, crMenu);
 }
 
 function makeDraggables() {
@@ -640,7 +673,12 @@ function makeDraggables() {
                 disableInventory(500);
                 $.post("http://esx_inventory/PutIntoFast", JSON.stringify({
                     item: itemData,
-                    slot: 1
+                    slot: 1,
+                    // which store the drag STARTED in. Needed because
+                    // item.slot now means two different things: a hotbar
+                    // index for a 'fast' item, a grid cell for a 'main'
+                    // one. See the Lua side.
+                    from: itemInventory
                 }));
             }
         }
@@ -654,7 +692,12 @@ function makeDraggables() {
                 disableInventory(500);
                 $.post("http://esx_inventory/PutIntoFast", JSON.stringify({
                     item: itemData,
-                    slot: 2
+                    slot: 2,
+                    // which store the drag STARTED in. Needed because
+                    // item.slot now means two different things: a hotbar
+                    // index for a 'fast' item, a grid cell for a 'main'
+                    // one. See the Lua side.
+                    from: itemInventory
                 }));
             }
         }
@@ -668,7 +711,12 @@ function makeDraggables() {
                 disableInventory(500);
                 $.post("http://esx_inventory/PutIntoFast", JSON.stringify({
                     item: itemData,
-                    slot: 3
+                    slot: 3,
+                    // which store the drag STARTED in. Needed because
+                    // item.slot now means two different things: a hotbar
+                    // index for a 'fast' item, a grid cell for a 'main'
+                    // one. See the Lua side.
+                    from: itemInventory
                 }));
             }
         }
@@ -682,7 +730,12 @@ function makeDraggables() {
                 disableInventory(500);
                 $.post("http://esx_inventory/PutIntoFast", JSON.stringify({
                     item: itemData,
-                    slot: 4
+                    slot: 4,
+                    // which store the drag STARTED in. Needed because
+                    // item.slot now means two different things: a hotbar
+                    // index for a 'fast' item, a grid cell for a 'main'
+                    // one. See the Lua side.
+                    from: itemInventory
                 }));
             }
         }
@@ -696,7 +749,12 @@ function makeDraggables() {
                 disableInventory(500);
                 $.post("http://esx_inventory/PutIntoFast", JSON.stringify({
                     item: itemData,
-                    slot: 5
+                    slot: 5,
+                    // which store the drag STARTED in. Needed because
+                    // item.slot now means two different things: a hotbar
+                    // index for a 'fast' item, a grid cell for a 'main'
+                    // one. See the Lua side.
+                    from: itemInventory
                 }));
             }
         }
@@ -707,25 +765,34 @@ function makeDraggables() {
 
 $(function() {
 
+    function setCategoryActive(el) {
+        $('.categorys > div').removeClass('category-active');
+        $(el).addClass('category-active');
+    }
+
     $('#button\\.raccourci-1').click(function() {
+        setCategoryActive(this);
         $.post('http://esx_inventory/category', JSON.stringify({
             type: 'all'
         }));
     });
 
     $('#button\\.raccourci-2').click(function() {
+        setCategoryActive(this);
         $.post('http://esx_inventory/category', JSON.stringify({
             type: 'item'
         }));
     });
 
     $('#button\\.raccourci-3').click(function() {
+        setCategoryActive(this);
         $.post('http://esx_inventory/category', JSON.stringify({
             type: 'weapon'
         }));
     });
 
     $('#button\\.raccourci-4').click(function() {
+        setCategoryActive(this);
         $.post('http://esx_inventory/category', JSON.stringify({
             type: 'clothes'
         }));
@@ -743,11 +810,17 @@ $(function() {
 // ╚═════╝  ╚═════╝    ╚═╝      ╚═╝    ╚═════╝ ╚═╝  ╚═══╝
                                                       
 
+// FIX: this used setInterval, so EVERY drag left a timer running forever
+// that re-set `disabled = false` 2x/second for the rest of the session.
+// After a few hundred interactions the NUI was running hundreds of live
+// timers - that was the "inventory gets laggy the longer you play" bug.
+var disableTimer = null;
 function disableInventory(ms) {
     disabled = true;
-
-    setInterval(function() {
+    if (disableTimer) clearTimeout(disableTimer);
+    disableTimer = setTimeout(function() {
         disabled = false;
+        disableTimer = null;
     }, ms);
 }
 
@@ -985,7 +1058,7 @@ $(document).ready(function() {
         $('#id-card').hide();
         idcardOpen = false
         for (let i = 0; i < totalSlots; i++) {
-            $("#right-inventory").append('<div class="item-info"><div id="item-' + i + '" class="item"></div><div class="item-name-bg"></div></div>');
+            $("#right-inventory").append('<div class="item-info"><div id="itemOther-empty-' + i + '" class="item"></div></div>');
         }
     });
 });
@@ -1045,15 +1118,17 @@ $.widget('ui.dialog', $.ui.dialog, {
 
 var currentNotification = null;
 
+// FIX: this used to `return` whenever another notification was already on
+// screen, so anything that happened during those ~3 seconds (weight
+// errors, "item removed", pickup confirmations) was silently thrown away.
+// Notifications now stack, each with its own id, capped so a spam loop
+// can't fill the screen.
+var notifySeq = 0;
 function NotifyDefault( message, timeout) {
-    var count = 1;
-    
-    if (currentNotification == 1) {
-        return;
+    if ($('.notification .notify-without-icon').length >= 4) {
+        $('.notification .notify-without-icon').last().remove();
     }
-    if (currentNotification == undefined) {
-        currentNotification = 1;
-    }
+    var count = ++notifySeq;
 
     $(".notification").prepend(`        
         <div class="notify-without-icon" id="notifydef-${count}">
@@ -1071,25 +1146,20 @@ function NotifyDefault( message, timeout) {
     var progressEl = notificationEl.find(`.progress-bar-notifi-without-icon`);
     var startTime = Date.now();
     
+    // 10ms -> 40ms: 100 timer wakeups a second per notification, purely to
+    // move a progress bar, for no visible difference at 25fps.
     var interval = setInterval(function() {
         var elapsedTime = Date.now() - startTime;
         var percentage = elapsedTime / timeout * 100;
 
         if (percentage >= 100) {
             clearInterval(interval);
-			setTimeout(() => {
-				notificationEl.addClass("hidden");
-			}, 150);
-
-			setTimeout(() => {
-				notificationEl.remove()
-                currentNotification = null;
-
-			}, 600);
+            setTimeout(function() { notificationEl.addClass("hidden"); }, 150);
+            setTimeout(function() { notificationEl.remove(); }, 600);
         } else {
             progressEl.css("width", `${percentage}%`);
         }
-    }, 10);
+    }, 40);
 
     count++;
 }
@@ -1137,7 +1207,7 @@ function NotifyItem(message, icon, number) {
         } else {
             // progressEl.css("width", `${percentage}%`);
         }
-    }, 10);
+    }, 250);
 
     count++;
 }
@@ -1246,24 +1316,10 @@ function formatMoney(n, c, d, t) {
     return s + (j ? i.substr(0, j) + t : "") + i.substr(j).replace(/(\d{3})(?=\d)/g, "$1" + t);
 };
 
-// CLIQUE DROIT (legacy quick-use on right click, kept for anyone relying
-// on the old single-click-use flow; the new context menu below is the
-// primary right-click interaction and takes over the actual click via
-// contextmenu preventDefault, so this mousedown handler no longer fires
-// for items - only non-item targets, if any, ever reach it.)
-
-$(document).mousedown(function(event) {
-
-    if (event.which != 3) return
-
-    itemData = $(event.target).data("item");
-
-    if (itemData == undefined || itemData.usable == undefined) {
-        return;
-    }
-
-});
-
+// REMOVED: a document-wide mousedown handler that read the item data on
+// every right click and then did nothing with it. Dead since the context
+// menu below took over right-click, but it still ran a jQuery data lookup
+// on every right click anywhere in the UI.
 
 // ██████╗ ██╗ ██████╗ ██╗  ██╗████████╗    ███╗   ███╗███████╗███╗   ██╗██╗   ██╗
 // Right-click context menu: Use / Give / Drop / Inspect
@@ -1356,24 +1412,11 @@ $(document).on('click', '#itemInspect', function(e) {
 // (not real 3D models), a real rotating 3D render isn't possible here -
 // this gives a tilt/parallax feel driven by cursor position instead, which
 // is the honest equivalent achievable with a 2D icon.
-$(document).on('mousemove', '.item', function(e) {
-    var itemData = $(this).data('item');
-    if (!itemData || $(this).hasClass('locked')) return;
-
-    var rect = this.getBoundingClientRect();
-    var px = (e.clientX - rect.left) / rect.width;   // 0..1
-    var py = (e.clientY - rect.top) / rect.height;   // 0..1
-    var rotateY = (px - 0.5) * 22;  // deg
-    var rotateX = (0.5 - py) * 22;  // deg
-
-    $(this).css('transform', 'perspective(400px) scale(1.12) rotateX(' + rotateX + 'deg) rotateY(' + rotateY + 'deg)');
-    $(this).css('z-index', 50);
-});
-
-$(document).on('mouseleave', '.item', function() {
-    $(this).css('transform', '');
-    $(this).css('z-index', '');
-});
+// REMOVED (perf): the cursor-tilt preview wrote an inline `transform` on
+// every single mousemove event over a cell. Each write forced a style
+// recalculation on a 50+ cell grid, which is what made dragging feel
+// heavy. The hover effect now lives entirely in CSS (`.item-info:hover
+// .item` in v4.css) and costs nothing on the main thread.
 
 
 

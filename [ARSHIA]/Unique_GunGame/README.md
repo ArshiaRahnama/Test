@@ -74,6 +74,8 @@ exports['Unique_GunGame']:GetQueueSize()            -- number currently waiting
 - `Config.MaxQueueSize` – hard cap on players in the queue + all running arenas combined.
 - `Config.CountdownTime` – seconds between a group forming and the match starting.
 - `Config.RoundTimeLimit` – seconds before a round is decided by kill count (0 disables the limit).
+- `Config.KillstreakAnnouncements` – life-streak counts (resets on death) that trigger an in-arena chat announcement. Empty table disables it.
+- `Config.QueueReminderInterval` – seconds between server-wide reminders that the queue needs more players (0 disables).
 - `Config.RestrictedJobs` – jobs that can't queue while on duty.
 - `Config.Locations` – array of `{ Lobby, Arena, Exit }` coordinate sets, assigned
   round-robin to new arenas. Safe to leave duplicated; isolation comes from

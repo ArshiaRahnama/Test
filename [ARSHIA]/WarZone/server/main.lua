@@ -291,6 +291,7 @@ end)
 -------------------------------------------------------------------
 function WZ_AwardXP(identifier, amount)
     if not identifier or amount == 0 then return end
+    if DoubleXPActive then amount = amount * 2 end
     MySQL.Async.execute([[
         INSERT INTO wz_rank (identifier, xp) VALUES (@identifier, @xp)
         ON DUPLICATE KEY UPDATE xp = xp + @xp
@@ -465,6 +466,35 @@ function WZ_TallyVotes(votes)
     end
     return best
 end
+
+-------------------------------------------------------------------
+-- Epic: Kill Feed, First Blood, Squad Wiped, Legendary Find, MVP, Double
+-- XP -- all layered on top of existing kill/win/squad events so they
+-- can't change match outcomes, only announce them louder.
+-------------------------------------------------------------------
+-- Fix: declared without `local`, same reasoning as DoubleXPActive above --
+-- BeginMatch() (defined earlier in this file) resets these too, and a
+-- `local` here would be invisible to code above this point.
+FirstBloodDone = false
+LastAnnouncedSquadCount = nil
+MatchKillTotals = {} -- [source] = kills this match, for the MVP announcement
+-- Fix: declared without `local` on purpose -- WZ_AwardXP() (defined
+-- earlier in this file, in the Rank section) reads this flag too, and a
+-- `local` here would only be visible to code textually AFTER this point,
+-- silently making WZ_AwardXP's check always see an unset value.
+DoubleXPActive = false
+
+RegisterServerEvent('AWZ:AnnounceLegendaryFind')
+AddEventHandler('AWZ:AnnounceLegendaryFind', function(weaponLabel)
+    if not StartMatch then return end
+    SendMessage('✨ '..GetPlayerName(source)..' just found a ~y~LEGENDARY ~w~'..tostring(weaponLabel)..'!')
+end)
+
+RegisterCommand('wzdoublexp', function(source, args)
+    if not IsPlayerCanStart(source) then return end
+    DoubleXPActive = not DoubleXPActive
+    SendMessage(DoubleXPActive and '⭐ Double XP is now ACTIVE for WarZone!' or '⭐ Double XP has ended.')
+end, false)
 
 -------------------------------------------------------------------
 -- Party system: keep a group of players together in the same squad when
@@ -765,6 +795,10 @@ function BeginMatch(source, blood, time, mapArg, teamArg)
     ContractStreak = {}
     ModeVotes = {}
     MapVotes = {}
+    -- Epic: reset per-match announcement state
+    FirstBloodDone = false
+    LastAnnouncedSquadCount = nil
+    MatchKillTotals = {}
     CurrentMatchMap = Map
     print('[WZ DEBUG] BeginMatch ACCEPTED: Map='..Map..' Team='..Team..' #Players going in='..#Players)
     TriggerClientEvent("AWZ:CloseUI", -1)
@@ -1185,6 +1219,13 @@ AddEventHandler("esx:onPlayerDeath", function(KillData)
             -- Expansion: Persistent Rank XP + Battle Pass daily progress
             WZ_AwardXP(killerPlayer.identifier, Config.Rank.xpPerKill)
             WZ_BumpBattlePass(killerPlayer.identifier, 'kills', 1)
+            -- Epic: Kill Feed + First Blood + MVP tracking
+            MatchKillTotals[KillData.killer] = (MatchKillTotals[KillData.killer] or 0) + 1
+            if not FirstBloodDone and InWzNormal then
+                FirstBloodDone = true
+                SendMessage('🩸 FIRST BLOOD -- '..killerName..' drew first blood!')
+            end
+            SendMessage((InWzGulag and '⚔️ ' or '💀 ')..killerName..' eliminated '..GetPlayerName(source)..(InWzGulag and ' (Gulag)' or ''))
         end
 
         -- Expansion: Pre-Match Contract -- track a no-death kill streak
@@ -1582,6 +1623,15 @@ function UpdateMembers()
             -- from it the moment they're eliminated).
             local PlayerCount = #Players
             SquadAlive = CountSquads()
+            -- Epic: announce squad-count milestones once each, only for
+            -- real squad matches (a solo match's "squad count" is just its
+            -- player count, which would spam constantly).
+            if StartMatch and Team and Team > 1 and SquadAlive ~= LastAnnouncedSquadCount then
+                if SquadAlive == 5 or SquadAlive == 3 or SquadAlive == 2 then
+                    SendMessage('🔥 Only '..SquadAlive..' squads remain!')
+                end
+                LastAnnouncedSquadCount = SquadAlive
+            end
             Wait(500)
             Alive = PlayerCount
             -- Fix: with no minimum-player gate, both win checks below were
@@ -1700,6 +1750,15 @@ function WarZoneWinner(Winners)
         3066993
     )
 
+    -- Epic: MVP of the Match -- whoever racked up the most kills, win or lose.
+    local mvpId, mvpKills = nil, 0
+    for pid, kills in pairs(MatchKillTotals) do
+        if kills > mvpKills then mvpId, mvpKills = pid, kills end
+    end
+    if mvpId and mvpKills > 0 then
+        SendMessage('🏆 MVP of the Match: '..(GetPlayerName(mvpId) or ('#'..mvpId))..' with '..mvpKills..' kills!')
+    end
+
     -- Feature: Match Replay -- save this match's event log for /wzlastmatch.
     table.insert(MatchLog, 'Winner: '..table.concat(winnerNames, ', '))
     MySQL.Async.execute([[
@@ -1776,6 +1835,11 @@ function RemovePlayerFromSquad ( src )
                 end 
                 if #Squads[i] == 0 then 
                     Squads[i] = nil 
+                    -- Epic: announce a full squad wipe (only during a live
+                    -- match with actual squads, not a solo lobby cleanup)
+                    if StartMatch and Team and Team > 1 then
+                        SendMessage('☠️ A squad has been wiped out! '..CountSquads()..' squad(s) remain.')
+                    end
                  end 
             end 
         end 

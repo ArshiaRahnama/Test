@@ -1041,6 +1041,10 @@ function AddWeaponWithTier(weapon)
 	AddWeapon(weapon, ammo)
 	ESX.ShowMissionText(tier.color..tier.name..' ~w~'..weapon:gsub('WEAPON_', ''):gsub('_', ' '))
 	SendNotifyToPlayer(tier.name..' weapon picked up ('..ammo..' ammo)', 'info')
+	-- Epic: server-wide hype announcement when someone finds the rarest tier
+	if tier.name == 'Legendary' then
+		TriggerServerEvent('AWZ:AnnounceLegendaryFind', weapon:gsub('WEAPON_', ''):gsub('_', ' '))
+	end
 end
 function WarZone(loadHud)
 	WarZoneEpoch = WarZoneEpoch + 1

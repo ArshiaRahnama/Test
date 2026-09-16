@@ -124,6 +124,17 @@ local function broadcastKillFeed(match, killerName, victimName)
     end
 end
 
+local function announceKillstreakIfNeeded(match, playerData)
+    for _, threshold in ipairs(Config.KillstreakAnnouncements) do
+        if playerData.streak == threshold then
+            for src in pairs(match.players) do
+                TriggerClientEvent('chat:addMessage', src, { args = { CHAT_TAG, '^1' .. playerData.name .. ' ^0is on a ' .. threshold .. '-kill streak!' } })
+            end
+            return
+        end
+    end
+end
+
 -- ============================================================
 -- Optional persistence (oxmysql)
 -- ============================================================
@@ -215,7 +226,7 @@ local function startMatch(group)
         Pending[src] = nil
         local xPlayer = ESX.GetPlayerFromId(src)
         if xPlayer then
-            match.players[src] = { name = GetPlayerName(src), identifier = xPlayer.identifier, kills = 0, level = 0 }
+            match.players[src] = { name = GetPlayerName(src), identifier = xPlayer.identifier, kills = 0, level = 0, streak = 0 }
             PlayerMatch[src] = matchId
             SetPlayerRoutingBucket(src, bucket)
             TriggerClientEvent('Unique_GunGame:JoinToMach', src, locationSet)
@@ -260,14 +271,29 @@ local function tryFormArenas()
             Pending[src] = true
         end
 
+        local function abortGroup()
+            for _, src in ipairs(group) do
+                Pending[src] = nil
+                notify(src, '^1The event has been stopped by an admin.')
+            end
+        end
+
         Citizen.CreateThread(function()
             local remaining = Config.CountdownTime
             while remaining > 0 do
+                if not EventActive then
+                    abortGroup()
+                    return
+                end
                 for _, src in ipairs(group) do
                     TriggerClientEvent('Unique_GunGame:UpdateCountdown', src, remaining)
                 end
                 Citizen.Wait(TICK_MS)
                 remaining = remaining - 1
+            end
+            if not EventActive then
+                abortGroup()
+                return
             end
             startMatch(group)
         end)
@@ -415,7 +441,9 @@ AddEventHandler('Unique_GunGame:ReportKill', function(killerServerId, victimName
     if not data then return end
 
     data.kills = data.kills + 1
+    data.streak = data.streak + 1
     persistKill(data)
+    announceKillstreakIfNeeded(match, data)
 
     local newLevel = math.min(math.floor(data.kills / Config.KillsPerLevel), #Config.Weapons - 1)
     if newLevel ~= data.level then
@@ -432,6 +460,16 @@ AddEventHandler('Unique_GunGame:ReportKill', function(killerServerId, victimName
     if data.kills >= Config.KillsToWin then
         endMatch(matchId, killerSrc)
     end
+end)
+
+RegisterServerEvent('Unique_GunGame:PlayerDied')
+AddEventHandler('Unique_GunGame:PlayerDied', function()
+    local matchId = PlayerMatch[source]
+    local match = matchId and Matches[matchId]
+    if not match then return end
+
+    local data = match.players[source]
+    if data then data.streak = 0 end
 end)
 
 RegisterServerEvent('Unique_GunGame:GiveParachute')
@@ -460,6 +498,18 @@ end)
 Citizen.CreateThread(function()
     ensureStatsTable()
 end)
+
+if Config.QueueReminderInterval and Config.QueueReminderInterval > 0 then
+    Citizen.CreateThread(function()
+        while true do
+            Citizen.Wait(Config.QueueReminderInterval * 1000)
+            if EventActive and #Queue > 0 and #Queue < Config.PlayersPerArena then
+                local needed = Config.PlayersPerArena - #Queue
+                broadcastMessage(('^0GunGame needs %d more player(s) to start an arena - use /%s to join!'):format(needed, Config.JoinCommand))
+            end
+        end
+    end)
+end
 
 -- Without this, restarting the script mid-event would leave players stuck in an
 -- isolated routing bucket with no way back to the normal world.

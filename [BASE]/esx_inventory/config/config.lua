@@ -466,6 +466,14 @@ Config.Drop = {
     pickupDistance = 1.6,            -- meters, checked both client-side (for the prompt) and server-side (anti-cheat)
     despawnTime = 5 * 60 * 1000,     -- ms a drop stays on the ground before auto-despawning (5 min)
     maxStacksOnGround = 200,         -- hard ceiling so a griefer can't spam-drop and crash everyone's client
+
+    -- Round 5: how far the RIGHT-hand inventory panel reaches when you
+    -- open your inventory. Anything on the floor inside this radius is
+    -- listed there and can be dragged straight into your inventory.
+    -- Wider than pickupDistance on purpose: [E] is a precise gesture you
+    -- aim at one item, the panel is a list you browse. Set it equal to
+    -- pickupDistance if you want them to behave identically.
+    panelDistance = 3.0,
 }
 
 --╔════════════════════════════════════════════════════════════════════════════════╗

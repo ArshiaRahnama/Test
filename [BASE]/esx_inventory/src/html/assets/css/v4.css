@@ -1,0 +1,585 @@
+/* ===================================================================
+   ROUND 4 — layout/visual fixes. Loaded LAST on purpose: everything in
+   here overrides an earlier rule rather than duplicating it, so deleting
+   this one <link> puts the old look back exactly.
+
+   What it fixes
+   -------------
+   1. Item label rendered ON TOP of the icon (the "name over the gun"
+      bug). Root cause: `.item-name` is `position:absolute; bottom:0`
+      but `.item` was only 3.125vw tall inside a 5.4vw cell, so "bottom
+      of .item" was the MIDDLE of the cell — and a long label (weapon
+      serials) wrapped upward across the artwork. Fixed by making `.item`
+      fill the cell, keeping the artwork in the upper band, and pinning
+      the label to a fixed-height strip at the bottom that clamps to two
+      lines instead of growing.
+   2. Cell chrome: one consistent border/radius, readable count, no
+      double outline from the grid layer.
+   3. A single sort control (see ui.html) instead of the 4-button strip
+      that duplicated the category row.
+   4. Drag-out-of-the-window drop zone hint.
+   =================================================================== */
+
+/* ---------- 1. the cell ------------------------------------------- */
+
+#left-inventory .item-info,
+#right-inventory .item-info,
+.item-info {
+    overflow: hidden;              /* nothing may spill onto its neighbour */
+}
+
+.item,
+.item-other {
+    /* fill the whole cell: this is what makes "bottom" actually mean the
+       bottom of the slot */
+    position: absolute;
+    inset: 0;
+    width: auto;
+    height: auto;
+    margin: 0;
+
+    /* artwork sits in the upper ~65% so the label strip never covers it */
+    background-size: 68% auto;
+    background-position: center 34%;
+    background-repeat: no-repeat;
+
+    border-radius: 0.25vw;
+    overflow: hidden;
+}
+
+/* the old spacer div is now meaningless and was drawing a second bar
+   under the label */
+.item-name-bg { display: none !important; }
+
+/* ---------- 2. the label ------------------------------------------ */
+
+.item-name {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: auto;
+    margin: 0;
+    padding: 0.12vw 0.15vw 0.16vw;
+
+    /* fixed box = it can never grow upward over the icon again */
+    height: 1.25vw;
+    line-height: 0.62vw;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    word-break: break-word;
+
+    font-family: 'Roboto', sans-serif;
+    font-size: 0.5vw;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.92);
+
+    /* gradient instead of a hard bar: reads as part of the cell */
+    background: linear-gradient(to top,
+                rgba(12, 11, 10, 0.95) 45%,
+                rgba(12, 11, 10, 0.75) 75%,
+                rgba(12, 11, 10, 0) 100%);
+    border-bottom-left-radius: 0.25vw;
+    border-bottom-right-radius: 0.25vw;
+    z-index: 5;
+    pointer-events: none;
+}
+
+/* hotbar cells use .slot-name with the same problem */
+.middle-slot-box .slot-name {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: auto;
+    margin: 0;
+    padding: 0.1vw 0.12vw 0.14vw;
+    height: 1.15vw;
+    line-height: 0.6vw;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    word-break: break-word;
+    font-size: 0.48vw;
+    text-align: center;
+    background: linear-gradient(to top,
+                rgba(12, 11, 10, 0.95) 45%,
+                rgba(12, 11, 10, 0) 100%);
+    pointer-events: none;
+    z-index: 5;
+}
+
+.middle-slot-box .item {
+    background-size: 66% auto;
+    background-position: center 36%;
+}
+
+/* ---------- 3. count / tags --------------------------------------- */
+
+.item-count {
+    position: absolute;
+    top: 0.12vw;
+    left: 0.22vw;
+    width: auto;
+    height: auto;
+    margin: 0;
+    font-size: 0.55vw;
+    font-weight: 600;
+    color: #fff;
+    text-shadow: 0 0 0.25vw rgba(0, 0, 0, 0.95);
+    z-index: 6;
+    pointer-events: none;
+}
+
+.item-weight-tag {
+    top: 0.12vw;
+    right: 0.22vw;
+    left: auto;
+}
+
+/* the count badge and the NEW badge were both pinned top-left and
+   overlapped; NEW moves under it */
+.item-new-badge { top: 0.85vw; left: 0.15vw; }
+.item-note-flag { bottom: 1.35vw; left: 0.15vw; top: auto; }
+
+/* ---------- 4. cell chrome ---------------------------------------- */
+
+.item-info,
+#left-inventory .item-info[data-slot] {
+    background: linear-gradient(160deg,
+                rgba(255, 255, 255, 0.045) 0%,
+                rgba(255, 255, 255, 0.012) 55%,
+                rgba(0, 0, 0, 0.16) 100%),
+                var(--background-color);
+    border: 0.052vw solid rgba(255, 255, 255, 0.07);
+    box-shadow: inset 0 0.05vw 0 rgba(255, 255, 255, 0.05);
+}
+
+/* grid.js drew a second dashed outline on top of the real border */
+#left-inventory .item-info[data-slot]::after { display: none; }
+
+.item-info:hover {
+    border-color: var(--active-color);
+    background: linear-gradient(160deg,
+                rgba(255, 153, 51, 0.10) 0%,
+                rgba(255, 153, 51, 0.03) 100%),
+                var(--background-color);
+}
+
+#left-inventory .item-info[data-slot].slot-hover {
+    border-color: var(--color-notif);
+    box-shadow: inset 0 0 0.6vw var(--active-color);
+}
+
+/* hover lift, CSS-only. Replaces the per-mousemove JS tilt, which ran a
+   layout-forcing style write on every single mouse move. */
+.item-info:hover .item:not(.locked) {
+    transform: scale(1.06);
+}
+.item {
+    transition: transform 0.12s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+    will-change: transform;
+}
+
+/* drag ghost */
+.ui-draggable-dragging.item {
+    /* jQuery UI appends the clone to <body> and drives it with inline
+       left/top, so `inset:0` from the cell rule has to be released on the
+       right/bottom edges or the helper stretches across the screen.
+       left/top are NOT touched here — they belong to jQuery. */
+    right: auto;
+    bottom: auto;
+    width: 4.6vw;
+    height: 4.6vw;
+    background-color: rgba(18, 16, 15, 0.9);
+    border: 0.052vw solid var(--active-color);
+    border-radius: 0.25vw;
+}
+
+/* ---------- 5. single sort control -------------------------------- */
+
+.search-sort-row {
+    display: flex;
+    align-items: center;
+    gap: 0.35vw;
+}
+
+.item-search-box { width: 100%; flex: 1 1 auto; }
+
+.sort-one { position: relative; flex: 0 0 auto; margin-top: 0.417vw; }
+
+.sort-one-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.25vw;
+    height: 1.25vw;
+    padding: 0 0.45vw;
+    border: 0.052vw solid var(--border-color);
+    background: var(--background-color);
+    border-radius: 0.25vw;
+    color: rgba(255, 255, 255, 0.85);
+    font-family: var(--font-family);
+    font-size: 0.55vw;
+    cursor: pointer;
+    outline: none;
+    transition: all 0.12s ease;
+    white-space: nowrap;
+}
+.sort-one-btn:hover { background: var(--hover-color); border-color: var(--active-color); }
+.sort-one-btn.desc i { transform: rotate(180deg); }
+.sort-one-btn i { transition: transform 0.15s ease; font-size: 0.55vw; }
+.sort-one-key { opacity: 0.85; }
+
+.sort-one-menu {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: 1.45vw;
+    min-width: 5.5vw;
+    padding: 0.15vw;
+    background: rgba(18, 16, 15, 0.97);
+    border: 0.052vw solid var(--border-color);
+    border-radius: 0.25vw;
+    box-shadow: 0 0.2vw 0.7vw rgba(0, 0, 0, 0.6);
+    z-index: 9000;
+}
+.sort-one-menu.visible { display: block; }
+
+.sort-one-opt {
+    display: flex;
+    align-items: center;
+    gap: 0.3vw;
+    padding: 0.22vw 0.35vw;
+    border-radius: 0.2vw;
+    font-size: 0.55vw;
+    color: rgba(255, 255, 255, 0.85);
+    cursor: pointer;
+}
+.sort-one-opt:hover { background: var(--hover-color); }
+.sort-one-opt.active { color: var(--color-notif); }
+
+/* ---------- 6. category row: show which filter is live ------------- */
+
+.categorys > div { border: 0.052vw solid transparent; border-radius: 0.25vw; }
+.categorys > div.category-active {
+    border-color: var(--active-color);
+    background: var(--hover-color);
+}
+
+/* ---------- 7. drag-out-to-ground hint ----------------------------- */
+
+#dropZoneHint {
+    display: none;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 3vw;
+    justify-content: center;
+    pointer-events: none;
+    z-index: 99990;
+}
+#dropZoneHint.visible { display: flex; }
+
+.drop-zone-inner {
+    display: flex;
+    align-items: center;
+    gap: 0.4vw;
+    padding: 0.35vw 0.9vw;
+    border: 0.052vw dashed var(--active-color);
+    border-radius: 0.3vw;
+    background: rgba(18, 16, 15, 0.85);
+    color: var(--color-notif);
+    font-family: var(--font-family);
+    font-size: 0.65vw;
+    letter-spacing: 0.03vw;
+    animation: dropHintPulse 1.1s ease-in-out infinite;
+}
+
+@keyframes dropHintPulse {
+    0%, 100% { opacity: 0.55; }
+    50%      { opacity: 1; }
+}
+
+/* ---------- 8. search: dim, don't collapse ------------------------- */
+
+.item-info.search-hidden { opacity: 0.1; }
+
+/* ===================================================================
+   ROUND 5 — the panel layout itself
+   ===================================================================
+   The bug in the screenshot (cells sliced off at the left edge, a
+   horizontal scrollbar under the list, the EQUIPMENT divider floating
+   off to the right) was NOT a sizing accident: #left-inventory is a
+   float layout, and grid.js inserts band dividers (`Backpack`,
+   `Equipment`, `No free slot`) styled with `grid-column: 1 / -1`.
+   `grid-column` means nothing to a float container, so each divider
+   became a plain block that the surrounding floats wrapped AROUND
+   instead of breaking the row — from that point on every following cell
+   was placed relative to the divider rather than to the row, which is
+   what pushed the whole list sideways and created the horizontal
+   scroll.
+
+   Making the two panels real CSS grids fixes the cause rather than the
+   symptom: the dividers now genuinely span a full row, the cells are
+   column-aligned, and there is no horizontal axis left to overflow on.
+   =================================================================== */
+
+#left-inventory,
+#right-inventory {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    grid-auto-rows: min-content;
+    gap: 0.3vw;
+    align-content: start;
+
+    /* NOTE: the float is KEPT. `.inventory` is a plain block and relies on
+       float:left / float:right to put the two panels side by side - a
+       floated box can still be a grid container internally, which is
+       exactly what is wanted here. Setting float:none would stack the
+       two panels on top of each other. */
+    width: 28.2vw;            /* matches the weight bar above it exactly */
+    height: 27.2vw;           /* was 36vw — taller than .inventory itself,
+                                 which is why the list ran off the panel */
+    padding: 0.1vw 0.45vw 0.1vw 0.1vw;
+    box-sizing: content-box;
+    overflow-x: hidden;       /* there is nothing to scroll sideways to */
+    overflow-y: auto;
+}
+
+#left-inventory  { margin-left: 0.15vw; }
+#right-inventory { margin-right: 0.15vw; }
+
+/* cells stop carrying their own size/float: the grid places them */
+#left-inventory  > .item-info,
+#right-inventory > .item-info {
+    float: none;
+    width: auto;
+    height: auto;
+    aspect-ratio: 1 / 1;
+    margin: 0;
+    bottom: auto;
+}
+
+/* dividers now really do take a whole row */
+.grid-band-label {
+    grid-column: 1 / -1;
+    margin: 0.45vw 0 0.1vw;
+}
+
+/* scrollbar: thinner, and it no longer eats a column */
+#left-inventory::-webkit-scrollbar,
+#right-inventory::-webkit-scrollbar { width: 0.2vw; }
+#left-inventory::-webkit-scrollbar-track,
+#right-inventory::-webkit-scrollbar-track { background: rgba(255,255,255,0.04); border-radius: 1vw; }
+#left-inventory::-webkit-scrollbar-thumb,
+#right-inventory::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 1vw; }
+
+/* ---------- weight bar: clamp + readability ------------------------ */
+/* 235.5 / 24KG in the screenshot produced a bar ~10x wider than its
+   track, which is why it ran the full width of the panel. The width is
+   clamped in JS now; this keeps the track visible underneath. */
+.novalue-left-part,
+.novalue-right-part {
+    border-radius: 1vw;
+    overflow: hidden;
+    box-shadow: inset 0 0 0.2vw rgba(0, 0, 0, 0.6);
+}
+.value-left-part,
+.value-right-part {
+    border-radius: 1vw;
+    transition: width 0.25s ease, background 0.25s ease;
+    box-shadow: 0 0 0.35vw rgba(255, 153, 51, 0.45);
+}
+.value-left-part.weight-warn,
+.value-right-part.weight-warn   { background: #e3a13a; box-shadow: 0 0 0.35vw rgba(227,161,58,0.6); }
+.value-left-part.weight-danger,
+.value-right-part.weight-danger { background: #e05a4d; box-shadow: 0 0 0.45vw rgba(224,90,77,0.7); }
+
+/* ---------- panel polish ------------------------------------------ */
+
+.loading-bar-kg-left-part,
+.loading-bar-kg-right-part {
+    padding: 0.3vw 0.35vw 0.45vw;
+    border-radius: 0.35vw 0.35vw 0 0;
+    background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0));
+}
+
+.text-loading-bar-left-part,
+.text-loading-bar-right-part {
+    letter-spacing: 0.03vw;
+    text-transform: uppercase;
+    font-size: 0.72vw;
+}
+
+.categorys { justify-content: flex-start; padding-left: 0.15vw; }
+
+/* ---------- GROUND panel (right side) ------------------------------ */
+
+.ground-head {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 0.3vw;
+    margin-bottom: 0.15vw;
+    padding-bottom: 0.15vw;
+    border-bottom: 0.052vw solid var(--border-color);
+    font-family: var(--font-family);
+    font-size: 0.58vw;
+    letter-spacing: 0.06vw;
+    text-transform: uppercase;
+    color: var(--color-notif);
+}
+
+.ground-empty {
+    grid-column: 1 / -1;
+    padding: 0.6vw 0.2vw;
+    font-size: 0.58vw;
+    opacity: 0.55;
+    text-align: center;
+}
+
+/* the right panel is a live drop target while an item is being dragged */
+#right-inventory.ground-target {
+    outline: 0.052vw dashed var(--active-color);
+    outline-offset: 0.15vw;
+    border-radius: 0.3vw;
+    background: rgba(255, 153, 51, 0.04);
+}
+
+/* ===================================================================
+   ROUND 6 — the giant weapon across the middle of the screen
+   ===================================================================
+   Cause: round 4 made `.item` fill its cell with
+   `position:absolute; inset:0`. That is correct for grid cells, because
+   `.item-info` is `position:relative`. But the HOTBAR cell
+   (`.middle-slot-box`) has NO position of its own, so an absolutely
+   positioned `.item` inside it resolved against the nearest positioned
+   ancestor instead — `.center-part`, which is `position:absolute`.
+
+   So the moment a weapon was bound to a hotbar slot, its icon stretched
+   across the ENTIRE centre column: the huge pistol over the ped, the
+   glowing rectangle around the whole middle panel (that was the item's
+   own rank border), the label stranded at the bottom — and, worst of
+   all, an invisible full-size element sitting on top of USE / GIVE /
+   RENAME / DELETE / DROP and the other four hotbar slots, swallowing
+   every click and every drop. That is why weapons "couldn't" be put in
+   the hotbar: the first one blocked all the rest.
+
+   One missing containing block. Everything below is that plus polish.
+   =================================================================== */
+
+.middle-slot-box {
+    position: relative;          /* <- the actual fix */
+    overflow: hidden;
+    border-radius: 0.3vw;
+}
+
+.middle-slot-box .item {
+    position: absolute;
+    inset: 0;
+    background-size: 62% auto;
+    background-position: center 38%;
+}
+
+/* the 1-5 key badge: it was an <img> floating with hard-coded margins,
+   which drifted as soon as the cell gained a border */
+.middle-slot-box .slot-count {
+    position: absolute;
+    top: 0.18vw;
+    left: 0.22vw;
+    width: 0.8vw;
+    height: auto;
+    margin: 0;
+    z-index: 7;
+    opacity: 0.85;
+    pointer-events: none;
+}
+
+/* ---------- hotbar look --------------------------------------------- */
+
+.middle-bottom-slots { gap: 0.35vw; }
+
+.middle-slot-box {
+    background: linear-gradient(160deg,
+                rgba(255, 255, 255, 0.05) 0%,
+                rgba(0, 0, 0, 0.18) 100%),
+                var(--background-color);
+    border: 0.052vw solid rgba(255, 255, 255, 0.08);
+    transition: border-color 0.12s ease, box-shadow 0.12s ease, transform 0.12s ease;
+}
+.middle-slot-box:hover {
+    border-color: var(--active-color);
+    box-shadow: 0 0 0.5vw rgba(255, 153, 51, 0.25);
+    transform: translateY(-0.08vw);
+}
+/* a bound slot reads as "loaded" at a glance */
+.middle-slot-box .item[style*="background-image: url("] {
+    filter: drop-shadow(0 0.1vw 0.25vw rgba(0, 0, 0, 0.6));
+}
+
+/* ---------- centre column ------------------------------------------- */
+
+.top-buttons-center-part > div {
+    border-radius: 0.3vw;
+    transition: background-color 0.12s ease, box-shadow 0.12s ease, transform 0.12s ease;
+}
+.top-buttons-center-part > div:hover {
+    box-shadow: 0 0 0.5vw rgba(255, 153, 51, 0.3);
+    transform: translateY(-0.08vw);
+}
+/* jQuery UI adds this while an item is held over a button */
+.top-buttons-center-part > div.hoverControl {
+    background: var(--hover-color);
+    box-shadow: inset 0 0 0.6vw var(--active-color);
+}
+
+.item-box, .item-box2 {
+    border-radius: 0.3vw;
+    transition: border-color 0.12s ease, background-color 0.12s ease;
+}
+.item-box:hover, .item-box2:hover { border-color: var(--active-color); }
+
+/* ---------- ground panel header ------------------------------------- */
+/* The trunk/stash weight bar sits above the right panel and is empty for
+   a ground panel - it showed up as an unexplained grey bar floating over
+   the list. Hidden, and the panel's title goes in the same place a
+   trunk's plate would, so the two panels read identically. */
+.ground-active .novalue-right-part { visibility: hidden; }
+.ground-active #plate { color: var(--color-notif); letter-spacing: 0.06vw; }
+
+/* ---------- panel framing ------------------------------------------- */
+/* Cheap: borders and gradients only. No backdrop-filter anywhere - the
+   game already blurs the world behind this UI via
+   TriggerScreenblurFadeIn, so a second GPU blur would cost frames for an
+   effect that is already on screen. */
+
+#left-inventory,
+#right-inventory {
+    border: 0.052vw solid rgba(255, 255, 255, 0.06);
+    border-radius: 0 0 0.4vw 0.4vw;
+    border-top: none;
+    background: linear-gradient(180deg,
+                rgba(255, 255, 255, 0.022),
+                rgba(0, 0, 0, 0.10));
+}
+
+.loading-bar-kg-left-part,
+.loading-bar-kg-right-part {
+    border: 0.052vw solid rgba(255, 255, 255, 0.06);
+    border-bottom: none;
+}
+
+.item-search-box:focus {
+    box-shadow: 0 0 0.4vw rgba(255, 153, 51, 0.35);
+}
+
+.categorys > div.category-active {
+    box-shadow: inset 0 -0.1vw 0 var(--color-notif);
+}
+
+/* the divider under the weight bar, so the header reads as a header */
+.novalue-left-part,
+.novalue-right-part { margin-bottom: 0.1vw; }

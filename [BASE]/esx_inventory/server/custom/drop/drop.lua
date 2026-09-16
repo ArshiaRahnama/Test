@@ -40,13 +40,19 @@ local function vdist(a, b)
     return math.sqrt(dx * dx + dy * dy + dz * dz)
 end
 
-local function buildDropDisplay(itemType, name, count, label, serial)
+local function buildDropDisplay(itemType, name, count, label, serial, ammo, components)
     return {
         type = itemType,
         name = name,
         count = count,
         label = label or GetItemLabel(name) or name,
         serial = serial,
+        -- BUGFIX: a dropped weapon used to lose its magazine and every
+        -- attachment. Pickup then handed back a hardcoded 255 rounds,
+        -- which also made "drop it and pick it up again" a free ammo
+        -- refill. Both are carried through the drop now.
+        ammo = ammo,
+        components = components,
         image = Config.Pictures and Config.Pictures[name] or nil,
     }
 end
@@ -57,6 +63,8 @@ end
 --- despawn/broadcast logic instead of reimplementing it — the two used
 --- to be one function only because there was only one caller.
 --- `display` must already have had the item REMOVED from the player.
+local notifyGroundWatchers   -- defined below, called from placeDrop
+
 local function placeDrop(source, coords, display)
     local dropId = 'drop_' .. nextDropId
     nextDropId = nextDropId + 1
@@ -70,6 +78,7 @@ local function placeDrop(source, coords, display)
     }
 
     TriggerClientEvent('esx_inventory:spawnDrop', -1, dropId, coords, display)
+    notifyGroundWatchers(coords)
 
     SetTimeout(Config.Drop.despawnTime or 300000, function()
         if Drops[dropId] then
@@ -137,9 +146,20 @@ AddEventHandler('esx_inventory:requestDrop', function(item, count)
     elseif itemType == 'item_weapon' then
         if not Config.WeaponNoGive or not Config.WeaponNoGive[name] then
             if getWeapon(xPlayer, name, item.serial) then
+                -- read ammo/components BEFORE removing it, and read them
+                -- from the server's own loadout - never from `item`,
+                -- which is client-supplied and would be a trivial way to
+                -- mint ammo or attachments out of nothing.
+                local _, weaponData = infoWeapon(xPlayer, name, item.serial)
+                local ammo, comps = 0, {}
+                if weaponData then
+                    ammo = tonumber(weaponData.ammo) or 0
+                    for _, c in ipairs(weaponData.components or {}) do comps[#comps + 1] = c end
+                end
+
                 removeWeapon(xPlayer, name, item.serial)
                 removed = true
-                display = buildDropDisplay(itemType, name, 1, label, item.serial)
+                display = buildDropDisplay(itemType, name, 1, label, item.serial, ammo, comps)
             end
         end
     elseif itemType == 'item_account' then
@@ -198,7 +218,10 @@ AddEventHandler('esx_inventory:pickupDrop', function(dropId)
             return
         end
     elseif item.type == 'item_weapon' then
-        addWeapon(xPlayer, item.name, 255, item.serial)
+        addWeapon(xPlayer, item.name, tonumber(item.ammo) or 0, item.serial)
+        for _, c in ipairs(item.components or {}) do
+            addWeaponComponent(xPlayer, item.name, c)
+        end
         given = true
     elseif item.type == 'item_account' then
         addMoney(xPlayer, item.name, item.count)
@@ -208,7 +231,71 @@ AddEventHandler('esx_inventory:pickupDrop', function(dropId)
     if given then
         Drops[dropId] = nil
         TriggerClientEvent('esx_inventory:removeDrop', -1, dropId)
+        notifyGroundWatchers(drop.coords)
         showNotification(xPlayer, (Locales[Config.Language]['pickup_item'] or 'You picked up %sx %s'):format(item.count, item.label), 'success')
+    end
+end)
+
+--═════════════════════════════════════════════════════════════════════
+-- GROUND PANEL (round 5) — what is lying within reach of this player
+--
+-- The client asks; the server measures. Distance is computed from the
+-- server's own ped coords and its own stored drop coords, so this can't
+-- be used to enumerate the map's loot from a distance.
+--═════════════════════════════════════════════════════════════════════
+
+RegisterServerCallback('esx_inventory:getNearbyDrops', function(source, cb)
+    local coords = getPedCoords(source)
+    if not coords then cb({}) return end
+
+    local reach = (Config.Drop and Config.Drop.panelDistance) or 3.0
+    local list = {}
+
+    for id, drop in pairs(Drops) do
+        if vdist(coords, drop.coords) <= reach then
+            local it = drop.item
+            list[#list + 1] = {
+                dropId = id,
+                type   = it.type,
+                name   = it.name,
+                label  = it.label,
+                count  = it.count,
+                image  = it.image,
+                serial = it.serial,
+                weight = (ESX and ESX.getItemWeight and ESX.getItemWeight(it.name)) or 0,
+                rank   = Config.GetItemRank and Config.GetItemRank(it.name) or 'common',
+            }
+        end
+    end
+
+    cb(list)
+end)
+
+--- Anyone with the inventory open near a drop that just changed needs to
+--- see it change. Cheap: only players inside the panel radius are told,
+--- and the client ignores the event unless its panel is actually open.
+function notifyGroundWatchers(coords)
+    local reach = ((Config.Drop and Config.Drop.panelDistance) or 3.0) + 2.0
+    for _, pid in ipairs(GetPlayers()) do
+        local pc = getPedCoords(tonumber(pid))
+        if pc and vdist(pc, coords) <= reach then
+            TriggerClientEvent('esx_inventory:groundChanged', tonumber(pid))
+        end
+    end
+end
+
+--- BUGFIX: drops were only broadcast at the moment they were created, so
+--- anyone who connected (or reconnected, or restarted their game) after
+--- that point saw NOTHING on the ground - the item was still there
+--- server-side and still pickable, but invisible, which reads exactly
+--- like it was lost. Clients ask for the current ground state when they
+--- finish loading.
+RegisterNetEvent('esx_inventory:requestDrops')
+AddEventHandler('esx_inventory:requestDrops', function()
+    local source = source
+    if _G.InvGuard and not _G.InvGuard.rateLimit(source, 'default') then return end
+    for id, drop in pairs(Drops) do
+        TriggerClientEvent('esx_inventory:spawnDrop', source, id, drop.coords, drop.item)
     end
 end)
 

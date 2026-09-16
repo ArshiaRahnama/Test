@@ -28,6 +28,10 @@ Translations['fr'] = {
     'sort_name': 'Nom',
     'sort_rank': 'Rareté',
     'sort_category': 'Catégorie',
+    'drop_zone_hint': 'Relâchez ici pour jeter au sol',
+    'ground_band': 'Au sol',
+    'ground_empty': 'Rien à proximité.',
+    'weapon_needs_panel': "Déposez l'arme dans le panneau de droite pour la jeter.",
     'search_placeholder': 'Rechercher',
     'scan': 'SCANNER',
 
@@ -70,6 +74,10 @@ Translations['en'] = {
     'sort_name': 'Name',
     'sort_rank': 'Rank',
     'sort_category': 'Category',
+    'drop_zone_hint': 'Release here to drop on the ground',
+    'ground_band': 'On the ground',
+    'ground_empty': 'Nothing nearby.',
+    'weapon_needs_panel': 'Put the weapon in the right-hand panel to drop it.',
     'search_placeholder': 'Search',
     'scan': 'SCAN',
 
@@ -112,6 +120,10 @@ Translations['es'] = {
     'sort_name': 'Nombre',
     'sort_rank': 'Rareza',
     'sort_category': 'Categoría',
+    'drop_zone_hint': 'Suelta aquí para tirar al suelo',
+    'ground_band': 'En el suelo',
+    'ground_empty': 'Nada cerca.',
+    'weapon_needs_panel': 'Pon el arma en el panel derecho para tirarla.',
     'search_placeholder': 'Buscar',
     'scan': 'ESCANEAR',
 
