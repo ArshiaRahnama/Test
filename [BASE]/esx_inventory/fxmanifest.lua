@@ -35,7 +35,14 @@ client_scripts {
 server_scripts {
   "@oxmysql/lib/MySQL.lua",
 
+  -- Framework adapters first (everything below calls GetPlayerFromId /
+  -- GetPlayerLicense / showNotification from here), then the security
+  -- layer, then everything that depends on it. The 'security/*.lua'
+  -- glob resolves alphabetically, so core.lua loads before guard.lua,
+  -- which is the required order.
   'server/custom/framework/*.lua',
+  'server/custom/security/*.lua',
+
 	'server/custom/property/*.lua',
 	'server/custom/glovebox/*.lua',
 	'server/custom/corpse/*.lua',

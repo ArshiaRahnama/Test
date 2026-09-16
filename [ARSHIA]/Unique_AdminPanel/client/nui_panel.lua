@@ -5,65 +5,27 @@ InAdminNui = false
 RegisterKeyMapping('adminradial', 'Open Admin Quick Actions Radial Menu', 'keyboard', 'F7')
 RegisterKeyMapping('adminreports', 'Open Admin Report Queue', 'keyboard', 'F12')
 
+-- FIX (یکی‌سازی): این تابع قبلاً یک لیست ریپورتِ کاملاً جداگانه با ox_lib
+-- میساخت (از exports('GetReports', ...) قدیمی، بدون اولویت/دسته‌بندی/چت
+-- زنده) که همزمان با پنل جدید ریپورت (/areport، shared/report_*.lua) اجرا
+-- میشد. نتیجه‌اش دو تا "صف ریپورت" جدا با دو منبع دیتای متفاوت بود که هر
+-- کدوم جدا از اون یکی آپدیت میشدن - دقیقاً همون چیزی که تو اسکرین‌شات‌ها
+-- دیده میشه (پنل NUI جدید + ویجت "Report Queue" قدیمی روی هم).
+--
+-- الان F12 و دکمه‌ی "Report Queue" تو WarMenu، دقیقاً همون پنل ادمینِ
+-- /areport رو باز میکنن - یک صف، یک منبع دیتا، یک محل قبول/بستن/چت.
+--
+-- FIX ۲: قبلاً اینجا یک گارد `if not aduty then return end` بود.
+-- `aduty` یه فلگِ سراسریِ کاملاً جدا و بی‌ربطه (client/menu_ui.lua) که
+-- فقط وقتی true میشه که ادمین از یک منوی دیگه دکمه‌ی "روی دیوتی" رو زده
+-- باشه؛ ربطی به دسترسیِ واقعیِ ریپورت نداره. نتیجه: ادمینی که دسترسی کامل
+-- داره ولی اون دیوتیِ جدا رو فعال نکرده، F12 رو میزد و هیچ اتفاقی
+-- نمی‌افتاد - نه پنل باز میشد، نه پیامی. حذف شد: /areport خودش یک چک
+-- دسترسیِ واقعی و سمت سرور داره (Unique_Report:getAccess تو
+-- client/report_main.lua) و اگه دسترسی نباشه با پیام مشخص رد میکنه -
+-- همون رفتار درستیه که F12 هم باید داشته باشه، بدون قید اضافه.
 function OpenReportsMenu()
-    if not aduty then return end
-    ESX.TriggerServerCallback('Unique_AdminPanel:GetReports', function(reports)
-        reports = reports or {}
-        local options = {}
-
-        for id, r in pairs(reports) do
-            local statusIcon = r.status == 'open' and 'circle-exclamation' or 'clock'
-            local statusColor = r.status == 'open' and '#c85450' or '#d6a83a'
-
-            lib.registerContext({
-                id = 'report_actions_' .. id,
-                title = ('Report #%s'):format(id),
-                menu = 'reports_menu',
-                options = {
-                    {
-                        title = 'Accept Report',
-                        icon = 'check',
-                        iconColor = '#5fae72',
-                        disabled = r.status ~= 'open',
-                        onSelect = function()
-                            ExecuteCommand('ar ' .. id)
-                            Citizen.SetTimeout(300, OpenReportsMenu)
-                        end,
-                    },
-                    {
-                        title = 'Close Report',
-                        icon = 'xmark',
-                        iconColor = '#c85450',
-                        disabled = r.status ~= 'pending',
-                        onSelect = function()
-                            ExecuteCommand('cr ' .. id)
-                            Citizen.SetTimeout(300, OpenReportsMenu)
-                        end,
-                    },
-                }
-            })
-
-            options[#options + 1] = {
-                title = ('%s (id: %s) - %s'):format(r.owner and r.owner.name or 'Unknown', r.owner and r.owner.id or '?', r.category or ''),
-                description = (r.Detail or '') .. '\nstatus: ' .. (r.status or 'open'),
-                icon = statusIcon,
-                iconColor = statusColor,
-                menu = 'report_actions_' .. id,
-                arrow = true,
-            }
-        end
-
-        if #options == 0 then
-            options[1] = { title = 'No open reports', disabled = true }
-        end
-
-        lib.registerContext({
-            id = 'reports_menu',
-            title = ('Report Queue (%s)'):format(#options),
-            options = options,
-        })
-        lib.showContext('reports_menu')
-    end)
+    ExecuteCommand(Client_Config and Client_Config.CommandForAdmin or 'areport')
 end
 
 RegisterCommand('adminreports', OpenReportsMenu, false)
@@ -469,35 +431,15 @@ function OpenBanAppeals()
     end)
 end
 
--- ----------------------------------------------------- REPORT RATING ---
-RegisterNetEvent('Unique_AdminPanel:AskReportRating')
-AddEventHandler('Unique_AdminPanel:AskReportRating', function(reportId, closerName)
-    lib.registerContext({
-        id = 'report_rating_menu',
-        title = 'How was the response to your report?',
-        options = {
-            {
-                title = '😊 Satisfied',
-                icon = 'face-smile',
-                iconColor = '#5fae72',
-                onSelect = function() TriggerServerEvent('Unique_AdminPanel:SubmitReportRating', reportId, 3, closerName) end,
-            },
-            {
-                title = '😐 Neutral',
-                icon = 'face-meh',
-                iconColor = '#c9a24b',
-                onSelect = function() TriggerServerEvent('Unique_AdminPanel:SubmitReportRating', reportId, 2, closerName) end,
-            },
-            {
-                title = '😞 Unsatisfied',
-                icon = 'face-frown',
-                iconColor = '#c85450',
-                onSelect = function() TriggerServerEvent('Unique_AdminPanel:SubmitReportRating', reportId, 1, closerName) end,
-            },
-        },
-    })
-    lib.showContext('report_rating_menu')
-end)
+-- FIX (یکی‌سازی): امتیازدهی به ریپورت یک بار دیگه، به‌صورت یک منوی جدا
+-- (ox_lib، مقیاس ۱ تا ۳) اینجا بود؛ همزمان پنل ریپورت جدید هم کارت
+-- امتیازدهی خودش رو داره (مقیاس ۱ تا ۵، shared/report_lan.lua +
+-- server/report_main.lua's CloseReport). یعنی کاربر بعضی وقتا هر دو رو
+-- می‌دید، هرکدوم با مقیاس/جدول دیتابیسِ متفاوت. اون یکی حذف شد
+-- (server/reports_extra.lua دیگه Unique_AdminPanel:AskReportRating رو
+-- ترییگر نمیکنه)، این هندلرِ سمت کلاینتش هم که دیگه هیچ‌وقت صدا زده
+-- نمیشد همینجا حذف شد. کارت امتیازدهی واحد: Unique_Report:askRating
+-- (client/report_main.lua).
 
 function OpenButtonPermsPanel()
     ESX.TriggerServerCallback('Unique_AdminPanel:GetButtonPermsPanel', function(data)

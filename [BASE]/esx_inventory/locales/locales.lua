@@ -325,3 +325,61 @@ Locales['es'] = {
     ['trade_target_clothes'] = 'Alguien ha recuperado una prenda de vestir',
     ['trade_weight_max'] = 'Tienes demasiados objetos contigo'
 }
+
+-------------------------------------------------------------------
+-- Added strings, appended rather than edited inline so an upstream
+-- diff of the original three blocks above stays clean.
+--
+-- Lua evaluates these table constructors in order, so assigning into
+-- the already-built Locales['xx'] tables below is equivalent to having
+-- written the keys inside them - and it means a key added here silently
+-- wins over a duplicate above, which is the behaviour you want when
+-- overriding.
+-------------------------------------------------------------------
+
+-- #9/#10/#11 corpse loot + #17-22 security
+local extra = {
+    ['fr'] = {
+        ['corpse_weapon_taken']       = "Vous avez récupéré un %s sur le corps.",
+        ['corpse_nothing']            = "Ce corps est vide.",
+        ['rate_limited']              = "Vous faites cela trop vite.",
+        ['confirm_expired']           = "Transfert expiré - non confirmé à temps.",
+        ['confirm_declined']          = "Transfert refusé.",
+        ['confirm_revalidate_failed'] = "Les conditions du transfert ne sont plus remplies.",
+        ['confirm_title']             = "Confirmer le transfert",
+        ['confirm_accept']            = "Accepter",
+        ['confirm_decline']           = "Refuser",
+    },
+    ['en'] = {
+        ['corpse_weapon_taken']       = "You took a %s off the body.",
+        ['corpse_nothing']            = "This body is empty.",
+        ['rate_limited']              = "You are doing that too quickly.",
+        ['confirm_expired']           = "Transfer expired - not confirmed in time.",
+        ['confirm_declined']          = "Transfer declined.",
+        ['confirm_revalidate_failed'] = "Transfer conditions are no longer met.",
+        ['confirm_title']             = "Confirm transfer",
+        ['confirm_accept']            = "Accept",
+        ['confirm_decline']           = "Decline",
+    },
+    ['es'] = {
+        ['corpse_weapon_taken']       = "Has cogido un %s del cuerpo.",
+        ['corpse_nothing']            = "Este cuerpo está vacío.",
+        ['rate_limited']              = "Estás haciendo eso demasiado rápido.",
+        ['confirm_expired']           = "Transferencia caducada - no confirmada a tiempo.",
+        ['confirm_declined']          = "Transferencia rechazada.",
+        ['confirm_revalidate_failed'] = "Ya no se cumplen las condiciones de la transferencia.",
+        ['confirm_title']             = "Confirmar transferencia",
+        ['confirm_accept']            = "Aceptar",
+        ['confirm_decline']           = "Rechazar",
+    },
+}
+
+for lang, strings in pairs(extra) do
+    -- Create the language table if this install doesn't have it, so a
+    -- Config.Language pointing at a locale that only exists here still
+    -- resolves instead of indexing nil.
+    Locales[lang] = Locales[lang] or {}
+    for key, value in pairs(strings) do
+        Locales[lang][key] = value
+    end
+end

@@ -736,6 +736,9 @@ RegisterServerCallbackSafe('Unique_AdminPanel:GetServerStats', function(source, 
     })
 end)
 
+-- توجه: دیگه توسط هیچ UI ای مصرف نمیشه (client/nui_panel.lua's F12 منو
+-- که تنها مصرف‌کننده‌ش بود، الان یکی شده با پنل اصلی /areport - ببین
+-- OpenReportsMenu). فقط برای سازگاری با کدهای بیرونی احتمالی نگه داشته شده.
 RegisterServerCallbackSafe('Unique_AdminPanel:GetReports', function(source, cb)
     if not IsOnDutyAdmin(source) then cb({}) return end
     local ok, reports = pcall(function() return exports.Unique_AdminPanel:GetReports() end)

@@ -61,6 +61,34 @@ local function setFocus(on, panel)
     activePanel = on and panel or nil
 end
 
+-- ============================================================== Esc ===
+-- بستن با Esc قبلاً فقط سمت جاوااسکریپت (ui/report/js/script.js) بود:
+-- یک document.addEventListener('keydown', ...) که خودِ آیفریمِ ریپورت باید
+-- فوکوس کیبورد رو داشته باشه تا اون رویداد رو بگیره. پنل ریپورت اما داخل
+-- یک آیفریمِ تو دلِ آیفریمِ دیگه‌ست (html/index.html میزبانِ سه پنله)، و
+-- روتینگِ فوکوس بین اونا با postMessage/contentWindow.focus() انجام میشه -
+-- شکننده و به ترتیب اجرا/تایمینگِ پیام‌ها حساسه. نتیجه همون چیزی بود که تو
+-- اسکرین‌شات دیده شد: پنل باز می‌مونه و Esc هیچ اثری نداره.
+--
+-- درمان: کاملاً مستقل از DOM/فوکوسِ آیفریم، مستقیم از روی کنترل نیتیوِ
+-- بازی (200 = INPUT_FRONTEND_PAUSE) گوش میدیم. این همیشه کار میکنه چون به
+-- هیچ چیزی تو NUI وابسته نیست، و همزمان کنترل رو دیزیبل میکنیم تا Esc باعث
+-- باز شدن منوی pause بازی هم نشه.
+CreateThread(function()
+    while true do
+        Wait(0)
+        if nuiFocusActive then
+            DisableControlAction(0, 200, true)   -- INPUT_FRONTEND_PAUSE
+            if IsDisabledControlJustPressed(0, 200) then
+                send('hideAll')
+                setFocus(false)
+            end
+        else
+            Wait(250)   -- وقتی پنلی باز نیست هر فریم چک نکن
+        end
+    end
+end)
+
 -- ======================================================== باز/بسته کردن ===
 
 local function openUserPanel()
