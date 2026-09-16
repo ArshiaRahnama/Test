@@ -1,0 +1,834 @@
+/* ===================================================================
+   SUNSET SKIN  —  esx_inventory  ·  round 8
+   ===================================================================
+
+   Reskins esx_inventory's existing DOM to match the esx_inventoryhud
+   "Sunset" look, and carries the round-7 layout fixes with it. This
+   file REPLACES v7.css — do not load both, they set the same
+   properties and the loser depends on link order.
+
+   No Lua and no JS is touched, so nothing here can break inventory
+   behaviour: delete the one <link> and the old look returns exactly.
+
+   WHAT SUNSET ACTUALLY LOOKS LIKE (read off the three screenshots)
+   ---------------------------------------------------------------
+   Flat, not beveled. Cells are a soft 150deg gradient between two
+   near-black tints with no visible border until you touch them, ~6px
+   radius, and the only bright thing on screen is a thin orange
+   scrollbar and the weight fill. The item name sits centred along the
+   bottom of the cell as plain text with no dark strip under it; the
+   stack count sits in the bottom-right corner; quality is a hairline
+   bar across the top. The chrome is the quiet part and the items are
+   the loud part, which is the opposite of what esx_inventory was
+   doing with its 40 amber hairlines.
+
+   Sunset's cell tint is user-configurable (grey in one screenshot,
+   green in another, teal in the third). --sun-cell-1 / --sun-cell-2
+   below are the same two stops, so one edit recolours every cell.
+
+   THE TWO LAYOUT BUGS, STILL FIXED
+   --------------------------------
+   1. #right-part was float-left positioned by `left: 34.375vw` while
+      #right-inventory is float-right against the container's right
+      edge; they landed 3.17vw apart, which is the panel title hanging
+      off the side of its own panel. It is anchored to the same right
+      edge here, so the two cannot disagree.
+   2. The panel height was a hard 27.2vw against a 5.7vw row pitch =
+      4.77 rows, so the bottom row was sliced. Cell size and panel
+      height are both derived from the tokens below, making the panel
+      a whole number of rows by construction.
+   =================================================================== */
+
+
+/* ===================================================================
+   0.  TOKENS
+   =================================================================== */
+
+:root {
+    /* --- geometry ---------------------------------------------------
+       Change --inv-rows and the panel still lands on a row boundary. */
+    --inv-w:      28.2vw;
+    --inv-cols:   5;
+    --inv-rows:   5;
+    --inv-gap:    0.2vw;     /* Sunset's cells sit close together      */
+    --inv-pad:    0.3vw;
+    --inv-bd:     0.052vw;
+    --inv-sb:     0.3vw;     /* the orange scrollbar's gutter          */
+    --inv-cat-h:  3.135vw;
+    --inv-head-h: 5.1vw;
+
+    --inv-cell: calc((var(--inv-w)
+                      - 2 * var(--inv-pad)
+                      - 2 * var(--inv-bd)
+                      - var(--inv-sb)
+                      - (var(--inv-cols) - 1) * var(--inv-gap))
+                     / var(--inv-cols));
+
+    --inv-grid-h: calc(var(--inv-rows) * var(--inv-cell)
+                       + (var(--inv-rows) - 1) * var(--inv-gap)
+                       + 2 * var(--inv-pad)
+                       + 2 * var(--inv-bd));
+
+    --sun-r:  0.32vw;        /* cell radius                            */
+    --sun-rp: 0.45vw;        /* panel / button radius                  */
+
+    /* --- palette: Sunset's own defaults ------------------------------
+       itembg_1 / itembg_2 / weightbg_1 / weightbg_2 straight out of
+       the Sunset settings block. Recolour the whole UI from here. */
+    --sun-cell-1: rgba(20, 20, 20, 0.50);
+    --sun-cell-2: rgba(40, 40, 40, 0.65);
+    --sun-track:  rgb(60, 60, 60);
+    --sun-fill:   rgb(204, 91, 0);
+
+    --sun-accent: rgb(204, 91, 0);
+    --sun-slot:   #6b3fa0;      /* the purple hotbar badge             */
+    --sun-warn:   #d9a441;
+    --sun-danger: #d14b3c;
+
+    --sun-text:   rgba(255, 255, 255, 0.95);
+    --sun-text-2: rgba(255, 255, 255, 0.45);
+    --sun-line:   rgba(133, 133, 133, 0.31);   /* Sunset's cell border */
+
+    /* config.css's names, retuned so every rule that already reads
+       them inherits the Sunset palette instead of the amber one. */
+    --border-color:     var(--sun-line);
+    --active-color:     rgba(204, 91, 0, 0.75);
+    --hover-color:      rgba(255, 255, 255, 0.07);
+    --background-color: rgba(20, 20, 20, 0.62);
+    --background-notif: rgba(15, 15, 15, 0.9);
+    --color-notif:      var(--sun-accent);
+}
+
+
+/* ===================================================================
+   1.  BACKDROP + OPEN SEQUENCE
+   ===================================================================
+   Two things were flat on purpose but ended up flat in the wrong way.
+
+   BACKGROUND: the whole screen behind the UI was one uniform
+   rgba(10,10,10,0.55) wash — same darkness at the centre, where the
+   ped and both panels sit, as at the corners nobody looks at. That
+   reads as a disabled/greyed screen, not a lit space the player is
+   standing in. Replaced with a vignette centred on the same point
+   `.inventory` itself is anchored to (50% / 46%): lighter over the
+   ped and panels, darker toward the edges, so the eye is pulled where
+   the UI actually is instead of the darkness being uninformative. A
+   single soft warm glow sits high and centred — a nod to "Sunset"
+   that is the one accent colour back there and nothing else competes
+   with it, at 9% opacity so it reads as atmosphere, not decoration.
+   Still no backdrop-filter: the game already blurs the world behind
+   this UI (TriggerScreenblurFadeIn), so a second GPU blur would spend
+   frames on an effect that's already on screen.
+
+   OPEN: the old motion was one flat fade+scale on the ENTIRE
+   `.form-inv` — background, panels, ped and hud all arriving as one
+   rigid block, which reads as a dialog box popping open rather than
+   equipment closing in around the player. The backdrop's own
+   scale is neutralised below (it only fades now — it's the stage,
+   not part of the move) and the actual arrival moves to the content:
+   both grids rise into place first, the centre column (ped + action
+   buttons) follows ~50ms behind so it reads as the two panels closing
+   in around the player rather than everything landing at once. One
+   orchestrated moment, ease-out-expo so it settles rather than snaps,
+   transform + opacity only — nothing here forces a repaint.
+   =================================================================== */
+
+.form-inv {
+    background:
+        radial-gradient(ellipse 55% 46% at 50% 10%,
+            rgba(214, 120, 47, 0.09) 0%,
+            rgba(214, 120, 47, 0) 60%),
+        radial-gradient(ellipse 78% 68% at 50% 46%,
+            rgba(24, 22, 20, 0.30) 0%,
+            rgba(10, 9, 8, 0.58) 55%,
+            rgba(4, 4, 4, 0.80) 100%);
+}
+
+/* the fade timing matches inventory.js's own close timeout (180ms) so
+   `display:none` never lands mid-transition; the pop this used to have
+   (extras.css's `transform: scale(0.94)`) is removed here on purpose —
+   see above, the arrival moves to the content instead. */
+.form-inv,
+.form-inv.visible {
+    transform: none;
+    transition: opacity 0.18s ease;
+}
+
+.form-inv.visible .inventory:not(.loot-opening),
+.form-inv.visible .categorys,
+.form-inv.visible .loading-bar-kg-left-part,
+.form-inv.visible #right-part {
+    animation: sunOpenPanels 0.34s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+/* `.inventory.loot-opening` (corpses/loot containers) keeps its own
+   existing lid-pop flourish from extras.css untouched — excluded above
+   with :not() rather than overridden, so opening a body still pops the
+   way it always has. */
+
+.form-inv.visible .center-part {
+    animation: sunOpenCenter 0.34s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation-delay: 0.05s;
+}
+
+@keyframes sunOpenPanels {
+    from { opacity: 0; transform: translateY(0.55vw) scale(0.97); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes sunOpenCenter {
+    from { opacity: 0; transform: translateY(0.85vw) scale(0.96); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .form-inv.visible .inventory,
+    .form-inv.visible .categorys,
+    .form-inv.visible .loading-bar-kg-left-part,
+    .form-inv.visible #right-part,
+    .form-inv.visible .center-part {
+        animation: none;
+    }
+}
+
+
+/* ===================================================================
+   2.  CONTAINER + PANELS   (layout fix 2)
+   =================================================================== */
+
+.inventory {
+    height: auto;
+    top: 46%;
+    overflow: visible;
+}
+.inventory::after { content: ''; display: block; clear: both; }
+
+#left-inventory,
+#right-inventory {
+    box-sizing: border-box;
+    width: var(--inv-w);
+    height: var(--inv-grid-h);
+    padding: var(--inv-pad);
+    gap: var(--inv-gap);
+    grid-template-columns: repeat(var(--inv-cols), 1fr);
+
+    scrollbar-gutter: stable;
+    overscroll-behavior: contain;
+    scroll-snap-type: y proximity;
+
+    /* Sunset has no panel frame at all — the cells are the panel */
+    border: none;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+}
+
+#left-inventory  { margin-left: 0.15vw; }
+#right-inventory { margin-right: 0.15vw; }
+
+#left-inventory  > .item-info,
+#right-inventory > .item-info { scroll-snap-align: start; }
+
+/* the thin bright orange bar down the side of each grid */
+#left-inventory::-webkit-scrollbar,
+#right-inventory::-webkit-scrollbar { width: var(--inv-sb); }
+#left-inventory::-webkit-scrollbar-track,
+#right-inventory::-webkit-scrollbar-track { background: transparent; }
+#left-inventory::-webkit-scrollbar-thumb,
+#right-inventory::-webkit-scrollbar-thumb {
+    background: var(--sun-accent);
+    border-radius: 1vw;
+}
+
+
+/* ===================================================================
+   3.  HEADERS   (layout fix 1)
+   =================================================================== */
+
+#right-part {
+    position: absolute;
+    float: none;
+    left: auto;
+    right: 0.15vw;              /* the edge #right-inventory uses      */
+    top: var(--inv-cat-h);
+
+    box-sizing: border-box;
+    width: var(--inv-w);
+    height: var(--inv-head-h);
+
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+}
+
+.loading-bar-kg-right-part {
+    width: 100%;
+    height: auto;
+    margin-left: 0;             /* the 2vw that caused the offset      */
+}
+
+.loading-bar-kg-left-part {
+    box-sizing: border-box;
+    width: var(--inv-w);
+    height: var(--inv-head-h);
+    margin: 0 0 0 0.15vw;
+    justify-content: flex-end;
+}
+
+/* Sunset's header is bare: a name, a weight readout, a hairline bar.
+   No card, no border, no background. */
+.loading-bar-kg-left-part,
+.loading-bar-kg-right-part {
+    padding: 0 0 0.45vw;
+    border: none;
+    border-radius: 0;
+    background: none;
+}
+
+.text-loading-bar-left-part,
+.text-loading-bar-right-part {
+    align-items: baseline;
+    font-size: 1.15vw;
+    letter-spacing: 0.02vw;
+    text-transform: none;
+    color: var(--sun-text);
+    margin-bottom: 0.3vw;
+}
+/* the player / container name, in the small caps Sunset uses */
+.text-loading-bar-left-part  span:nth-child(1),
+.text-loading-bar-right-part span:nth-child(1) {
+    font-variant-caps: small-caps;
+    letter-spacing: 0.04vw;
+}
+/* the weight readout is data: smaller, dimmer, tabular */
+.text-loading-bar-left-part  span:nth-child(2),
+.text-loading-bar-right-part span:nth-child(2) {
+    font-size: 0.72vw;
+    color: rgba(255, 255, 255, 0.8);
+    font-variant-numeric: tabular-nums;
+}
+
+
+/* ===================================================================
+   4.  WEIGHT BAR
+   ===================================================================
+   Flat, square-ended, full width, track and fill only.
+
+   setWeightBar() in inventory.js already clamps the fill at the track,
+   which is what keeps an over-encumbered player (234/24KG) from
+   running the bar off the panel. The colour steps below are what tell
+   you it happened, since a clamped bar looks the same at 100% and at
+   975%.                                                               */
+
+.novalue-left-part,
+.novalue-right-part {
+    width: 100%;
+    height: 0.36vw;
+    margin: 0;
+    border-radius: 0;
+    overflow: hidden;
+    background: var(--sun-track);
+    box-shadow: none;
+}
+
+.value-left-part,
+.value-right-part {
+    height: 100%;
+    border-radius: 0;
+    background: var(--sun-fill);
+    box-shadow: none;
+    transition: width 0.25s ease, background 0.25s ease;
+}
+.value-left-part.weight-warn,
+.value-right-part.weight-warn   { background: var(--sun-warn);   animation: none; }
+.value-left-part.weight-danger,
+.value-right-part.weight-danger { background: var(--sun-danger); animation: none; }
+
+
+/* ===================================================================
+   5.  SEARCH + SORT
+   ===================================================================
+   Sunset's search is a wide, soft, translucent box with oversized
+   grey placeholder text and no border.                               */
+
+.search-sort-row { gap: 0.3vw; margin-top: 0.4vw; }
+
+.item-search-box {
+    height: 1.7vw;
+    padding: 0 0.7vw;
+    border: none;
+    border-radius: var(--sun-rp);
+    background: rgba(255, 255, 255, 0.07);
+    font-size: 0.8vw;
+    color: var(--sun-text);
+    transition: background 0.14s ease;
+}
+.item-search-box::placeholder {
+    color: var(--sun-text-2);
+    font-size: 0.85vw;
+}
+.item-search-box:focus {
+    background: rgba(255, 255, 255, 0.12);
+    box-shadow: none;
+}
+
+/* round 9: the "Name" sort button hidden — Sunset's own reference shows
+   a bare search box with nothing beside it. The sort feature in
+   grid.js is untouched, just not shown, so this is a one-line revert
+   (delete the `display: none` below) if it's wanted back later. The
+   search box takes the row it used to share. */
+.sort-one { display: none !important; }
+.item-search-box { width: 100% !important; }
+
+
+/* ===================================================================
+   6.  CATEGORY STRIP
+   =================================================================== */
+
+.categorys {
+    box-sizing: border-box;
+    width: var(--inv-w);
+    height: var(--inv-cat-h);
+    margin-left: 0.15vw;
+    padding-left: 0;
+    gap: 0.25vw;
+    justify-content: flex-start;
+}
+
+.categorys > div {
+    width: 2vw;
+    height: 2vw;
+    margin-left: 0;
+    border: none;
+    border-radius: var(--sun-r);
+    background: linear-gradient(150deg, var(--sun-cell-1) 0%, var(--sun-cell-2) 100%);
+    transition: background 0.14s ease;
+}
+.categorys > div img { opacity: 0.5; transition: opacity 0.14s ease; }
+.categorys > div:hover { background: rgba(255, 255, 255, 0.12); }
+.categorys > div:hover img { opacity: 0.85; }
+
+.categorys > div.category-active {
+    background: linear-gradient(150deg, var(--sun-cell-1) 0%, var(--sun-cell-2) 100%);
+    box-shadow: inset 0 0 0 0.1vw var(--sun-accent);
+}
+.categorys > div.category-active img { opacity: 1; }
+
+
+/* ===================================================================
+   7.  CELLS
+   ===================================================================
+   The heart of the skin. Flat gradient fill, hairline that only shows
+   on hover, generous radius, nothing else.                           */
+
+.item-info,
+#left-inventory  .item-info[data-slot],
+#right-inventory .item-info {
+    border: 0.1vw solid transparent;
+    border-radius: var(--sun-r);
+    background: linear-gradient(150deg, var(--sun-cell-1) 0%, var(--sun-cell-2) 100%);
+    box-shadow: none;
+    overflow: hidden;
+    transition: border-color 0.12s ease, background 0.12s ease;
+}
+
+/* onSearch() in inventory.js writes border-color and border-width
+   inline on matched cells, which is why the border box is declared at
+   0.1vw here: the widths have to agree or matches jump a pixel. */
+
+/* SPECIFICITY: the base rule above is ID-qualified, so a bare
+   `.item-info:hover` loses to it and the hover state never paints.
+   The ID-qualified forms are listed so hover actually wins. */
+.item-info:hover,
+#left-inventory  .item-info:hover,
+#left-inventory  .item-info[data-slot]:hover,
+#right-inventory .item-info:hover {
+    border-color: rgba(255, 255, 255, 0.35);
+    background: linear-gradient(150deg,
+                rgba(45, 45, 45, 0.6) 0%,
+                rgba(70, 70, 70, 0.7) 100%);
+}
+
+#left-inventory .item-info[data-slot].slot-hover {
+    border-color: var(--sun-accent);
+}
+#left-inventory .item-info[data-slot]::after { display: none; }
+
+.item,
+.item-other {
+    position: absolute;
+    inset: 0;
+    width: auto;
+    height: auto;
+    margin: 0;
+    background-size: 58% auto;
+    background-position: center 40%;
+    background-repeat: no-repeat;
+    border-radius: var(--sun-r);
+    /* applyRankStyle() writes border-color and box-shadow INLINE, which
+       would put an amber halo inside every Sunset cell. Rarity is drawn
+       as a quality bar on ::before instead — see below. */
+    border: none !important;
+    box-shadow: none !important;
+    transition: transform 0.12s ease;
+}
+.item-name-bg { display: none !important; }
+
+.item-info:hover .item:not(.locked),
+#left-inventory  .item-info:hover .item:not(.locked),
+#right-inventory .item-info:hover .item:not(.locked) { transform: scale(1.05); }
+
+
+/* --- quality bar ----------------------------------------------------
+   Sunset shows item quality as a hairline across the top of the cell.
+   esx_inventory's ranks map onto it directly, and drawing it on a
+   pseudo-element keeps it clear of applyRankStyle's inline styles. */
+
+.item::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 0.14vw;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 4;
+}
+.item.rank-uncommon::before  { background: #4caf50; opacity: 1; }
+.item.rank-rare::before      { background: #3d9dff; opacity: 1; }
+.item.rank-epic::before      { background: #b64dff; opacity: 1; }
+.item.rank-legendary::before { background: #e6c15c; opacity: 1; }
+.item.rare-item              { border: none; box-shadow: none; }
+
+.item.locked { opacity: 0.3; filter: grayscale(1) !important; }
+.lock-icon {
+    font-size: 1.1vw;
+    color: rgba(255, 255, 255, 0.8);
+    text-shadow: 0 0 0.3vw rgba(0, 0, 0, 0.9);
+}
+
+
+/* --- label + count --------------------------------------------------
+   Sunset puts the name centred along the bottom as plain text with no
+   strip behind it, and the stack count in the bottom-right corner. The
+   name is padded clear of the count so a long weapon serial doesn't
+   run underneath it.                                                  */
+
+.item-name {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0.12vw;
+    width: auto;
+    margin: 0;
+    padding: 0 1.3vw 0 0.3vw;
+
+    height: auto;
+    max-height: 1.1vw;
+    line-height: 0.56vw;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    word-break: break-word;
+
+    font-family: 'Roboto', sans-serif;
+    font-size: 0.47vw;
+    text-align: center;
+    color: var(--sun-text);
+    text-shadow: 0 0.05vw 0.15vw rgba(0, 0, 0, 0.9);
+    background: none;
+    border-radius: 0;
+    z-index: 5;
+    pointer-events: none;
+}
+
+.item-count {
+    position: absolute;
+    top: auto;
+    left: auto;
+    right: 0.25vw;
+    bottom: 0.18vw;
+    width: auto;
+    height: auto;
+    margin: 0;
+    font-family: 'Roboto', sans-serif;
+    font-size: 0.5vw;
+    font-variant-numeric: tabular-nums;
+    color: var(--sun-text);
+    text-shadow: 0 0.05vw 0.15vw rgba(0, 0, 0, 0.9);
+    z-index: 6;
+    pointer-events: none;
+}
+.item-count .stack-full { color: #e6c15c; }
+
+/* Sunset shows no per-item weight in the grid. Delete this rule if you
+   want the tag back — it is positioned top-right and stays correct. */
+.item-weight-tag { display: none; }
+
+.item-new-badge {
+    top: 0.16vw;
+    left: 0.2vw;
+    font-size: 0.34vw;
+    border-radius: 0.12vw;
+}
+.item-note-flag { top: 0.18vw; right: 0.25vw; left: auto; bottom: auto; }
+
+.item-info.search-hidden { opacity: 0.25; }
+
+
+/* --- drag ghost -----------------------------------------------------
+   jQuery UI clones the node and drives left/top inline, so those two
+   must not be touched here; `inset: 0` from the cell rule has to be
+   released on the other two edges or the clone stretches. */
+.ui-draggable-dragging.item {
+    right: auto;
+    bottom: auto;
+    width: 4.6vw;
+    height: 4.6vw;
+    opacity: 0.85;
+    transform: none;
+    background-color: rgba(30, 30, 30, 0.9);
+    border-radius: var(--sun-r);
+    box-shadow: 0 0.4vw 1.2vw rgba(0, 0, 0, 0.7);
+    cursor: grabbing;
+    transition: none;
+    z-index: 99999;
+}
+
+
+/* ===================================================================
+   8.  BAND DIVIDERS / GROUND PANEL
+   =================================================================== */
+
+.grid-band-label {
+    grid-column: 1 / -1;
+    margin: 0.35vw 0 0.1vw;
+    padding-bottom: 0;
+    border-bottom: none;
+    font-size: 0.5vw;
+    letter-spacing: 0.09vw;
+    color: var(--sun-text-2);
+    opacity: 1;
+}
+.grid-band-label.overflow { color: var(--sun-danger); }
+
+.ground-head {
+    grid-column: 1 / -1;
+    margin-bottom: 0.15vw;
+    padding-bottom: 0;
+    border-bottom: none;
+    font-size: 0.55vw;
+    letter-spacing: 0.09vw;
+    color: var(--sun-text-2);
+}
+.ground-empty { padding: 1.2vw 0.2vw; font-size: 0.62vw; opacity: 0.4; }
+
+#right-inventory.ground-target {
+    outline: 0.1vw dashed var(--sun-accent);
+    outline-offset: -0.1vw;
+    border-radius: var(--sun-rp);
+    background: rgba(204, 91, 0, 0.05);
+}
+.ground-active #plate { color: var(--sun-text); }
+
+
+/* ===================================================================
+   9.  CENTRE COLUMN
+   ===================================================================
+   Sunset's action buttons are flat translucent pills with plain text.
+   The column's POSITION is left alone: the clothing slots are aligned
+   to where the game renders the ped, and moving them would put the
+   slots on top of the model.                                         */
+
+.top-buttons-center-part > div {
+    border: none;
+    border-radius: var(--sun-rp);
+    background: rgba(40, 40, 40, 0.72);
+    transition: background 0.12s ease;
+}
+.top-buttons-center-part > div:hover {
+    background: rgba(70, 70, 70, 0.82);
+    transform: none;
+    box-shadow: none;
+}
+.top-buttons-center-part > div span {
+    font-size: 0.75vw;
+    letter-spacing: 0.02vw;
+    color: var(--sun-text);
+}
+.top-buttons-center-part > div img,
+.top-buttons-center-part > div i { opacity: 0.85; }
+
+/* DELETE and DROP are the two that lose you something; they stay
+   quiet until you reach for them, then read red. */
+#deleteItem:hover,
+#dropItem:hover { background: rgba(155, 55, 44, 0.8); }
+
+.top-buttons-center-part > div.hoverControl {
+    background: rgba(204, 91, 0, 0.45);
+}
+
+.item-box, .item-box2 {
+    border: none;
+    border-radius: var(--sun-r);
+    background: linear-gradient(150deg, var(--sun-cell-1) 0%, var(--sun-cell-2) 100%);
+    transition: background 0.12s ease;
+}
+.item-box:hover, .item-box2:hover { background: rgba(255, 255, 255, 0.12); }
+.item-box img, .item-box2 img { opacity: 0.4; transition: opacity 0.12s ease; }
+.item-box:hover img, .item-box2:hover img { opacity: 0.8; }
+/* a filled clothing slot hides its placeholder icon. Progressive
+   enhancement: where :has() is unsupported the selector is dropped and
+   the placeholder simply stays behind the item, as it does today. */
+.item-box:has(.item[style*="background-image"]) img,
+.item-box2:has(.item[style*="background-image"]) img { opacity: 0; }
+
+
+/* ===================================================================
+   10.  HOTBAR
+   ===================================================================
+   Sunset marks its bound slots with a small purple badge in the
+   corner. esx_inventory's hotbar uses the same shape, so the 1-5 key
+   image gets that badge instead of floating bare in the corner.      */
+
+.middle-bottom-slots { gap: 0.3vw; }
+
+.middle-slot-box {
+    position: relative;
+    overflow: hidden;
+    border: 0.1vw solid transparent;
+    border-radius: var(--sun-r);
+    background: linear-gradient(150deg, var(--sun-cell-1) 0%, var(--sun-cell-2) 100%);
+    box-shadow: none;
+    transition: border-color 0.12s ease, background 0.12s ease;
+}
+.middle-slot-box:hover {
+    border-color: rgba(255, 255, 255, 0.35);
+    background: linear-gradient(150deg, rgba(45,45,45,0.6) 0%, rgba(70,70,70,0.7) 100%);
+    transform: none;
+}
+
+.middle-slot-box .item {
+    position: absolute;      /* v6's fix: .middle-slot-box is the
+                                containing block, or the icon escapes
+                                into .center-part and covers the UI */
+    inset: 0;
+    background-size: 56% auto;
+    background-position: center 40%;
+}
+
+.middle-slot-box .slot-count {
+    position: absolute;
+    top: 0.2vw;
+    right: 0.2vw;
+    left: auto;
+    width: 0.85vw;
+    height: auto;
+    margin: 0;
+    padding: 0.1vw;
+    border-radius: 0.16vw;
+    background: var(--sun-slot);
+    z-index: 7;
+    pointer-events: none;
+}
+
+.middle-slot-box .slot-name {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0.12vw;
+    width: auto;
+    margin: 0;
+    padding: 0 0.3vw;
+    height: auto;
+    max-height: 1vw;
+    line-height: 0.54vw;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    word-break: break-word;
+    font-size: 0.45vw;
+    text-align: center;
+    color: var(--sun-text);
+    text-shadow: 0 0.05vw 0.15vw rgba(0, 0, 0, 0.9);
+    background: none;
+    z-index: 5;
+    pointer-events: none;
+}
+
+
+/* ===================================================================
+   11.  MENUS, MODALS, HINTS
+   =================================================================== */
+
+.item-context-menu {
+    min-width: 7.5vw;
+    padding: 0.25vw;
+    border: none;
+    border-radius: var(--sun-rp);
+    background: rgba(26, 26, 26, 0.97);
+    box-shadow: 0 0.4vw 1.2vw rgba(0, 0, 0, 0.7);
+}
+.item-context-menu .context-item {
+    padding: 0.32vw 0.5vw;
+    border-radius: var(--sun-r);
+    font-size: 0.62vw;
+    color: rgba(255, 255, 255, 0.75);
+}
+.item-context-menu .context-item:hover {
+    background: rgba(255, 255, 255, 0.09);
+    color: #fff;
+}
+.item-context-menu .context-item i { color: rgba(255, 255, 255, 0.45); }
+.item-context-menu .context-item[data-action="drop"]:hover i { color: var(--sun-danger); }
+
+.item-inspect-overlay,
+.hist-overlay { background: rgba(10, 10, 10, 0.6); }
+
+.item-inspect-card,
+.hist-card {
+    border: none;
+    border-radius: var(--sun-rp);
+    background: rgba(26, 26, 26, 0.97);
+    box-shadow: 0 0.5vw 1.6vw rgba(0, 0, 0, 0.7);
+}
+.item-inspect-image-wrap {
+    border: none;
+    border-radius: var(--sun-r);
+    background: linear-gradient(150deg, var(--sun-cell-1) 0%, var(--sun-cell-2) 100%);
+}
+.item-inspect-label { font-size: 0.9vw; font-variant-caps: small-caps; letter-spacing: 0.03vw; }
+.item-inspect-row   { font-variant-numeric: tabular-nums; }
+.hist-card h3       { color: var(--sun-text); font-variant-caps: small-caps; }
+.hist-row           { font-variant-numeric: tabular-nums; }
+.bag-cell {
+    border: none;
+    border-radius: var(--sun-r);
+    background: linear-gradient(150deg, var(--sun-cell-1) 0%, var(--sun-cell-2) 100%);
+}
+.bag-count { color: var(--sun-text); }
+
+.drop-zone-inner {
+    padding: 0.4vw 1vw;
+    border: 0.1vw dashed var(--sun-accent);
+    border-radius: var(--sun-rp);
+    background: rgba(26, 26, 26, 0.9);
+    color: var(--sun-text);
+    font-size: 0.68vw;
+    box-shadow: none;
+}
+
+
+/* ===================================================================
+   12.  FOCUS
+   ===================================================================
+   left.css sets `outline: none` on the search box with nothing put
+   back, so it is unreachable-looking by keyboard.                    */
+
+.item-search-box:focus-visible,
+.sort-one-btn:focus-visible,
+.sort-one-opt:focus-visible {
+    outline: 0.1vw solid var(--sun-accent);
+    outline-offset: 0.1vw;
+}

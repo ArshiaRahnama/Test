@@ -20,6 +20,15 @@ const scoreboardRowsEl = document.getElementById('scoreboard-rows');
 
 const killfeedEl = document.getElementById('killfeed');
 
+function escapeHtml(text) {
+    return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 function formatTime(totalSeconds) {
     const minutes = Math.floor(totalSeconds / 60);
     const seconds = totalSeconds % 60;
@@ -33,7 +42,7 @@ function renderScoreboard(players) {
         row.className = `scoreboard-row rank-${player.rank}`;
         row.innerHTML = `
             <span class="rank">${player.rank}</span>
-            <span class="name">${player.name}</span>
+            <span class="name">${escapeHtml(player.name)}</span>
             <span class="level">Lv${player.level + 1}</span>
             <span class="kills">${player.kills}</span>
         `;
@@ -44,7 +53,7 @@ function renderScoreboard(players) {
 function addKillFeed(killer, victim) {
     const item = document.createElement('div');
     item.className = 'killfeed-item';
-    item.innerHTML = `${killer} <span class="victim">➔ ${victim}</span>`;
+    item.innerHTML = `${escapeHtml(killer)} <span class="victim">➔ ${escapeHtml(victim)}</span>`;
     killfeedEl.appendChild(item);
 
     setTimeout(() => item.remove(), KILLFEED_ITEM_LIFETIME_MS);

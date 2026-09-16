@@ -214,7 +214,16 @@ AddEventHandler('esx_inventory:pickupDrop', function(dropId)
             AddItem(xPlayer, item.name, item.count)
             given = true
         else
-            showNotification(xPlayer, Locales[Config.Language]['give_error_weight'] or 'Not enough space.', 'error')
+            -- BUGFIX (round 9): this used 'give_error_weight', whose text is
+            -- "The person's inventory is full" - correct for the GIVE flow
+            -- in server/main.lua (telling YOU that THEY have no room), but
+            -- wrong here: this is the player failing to pick up their OWN
+            -- drop, i.e. their own pocket is full. Every sibling call site
+            -- that checks getWeight() for a self-pickup (property.lua,
+            -- corpse.lua, glovebox.lua, stash.lua) already uses
+            -- 'trunk_weight_player_max' - "You have no more space on you" -
+            -- for exactly this case. This was the one that didn't match.
+            showNotification(xPlayer, Locales[Config.Language]['trunk_weight_player_max'] or 'You have no more space on you', 'error')
             return
         end
     elseif item.type == 'item_weapon' then

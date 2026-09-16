@@ -125,6 +125,7 @@ local function broadcastKillFeed(match, killerName, victimName)
 end
 
 local function announceKillstreakIfNeeded(match, playerData)
+    if not Config.KillstreakAnnouncements then return end
     for _, threshold in ipairs(Config.KillstreakAnnouncements) do
         if playerData.streak == threshold then
             for src in pairs(match.players) do
@@ -496,6 +497,11 @@ end)
 -- ============================================================
 
 Citizen.CreateThread(function()
+    if Config.UseDatabase then
+        while GetResourceState('oxmysql') ~= 'started' do
+            Citizen.Wait(500)
+        end
+    end
     ensureStatsTable()
 end)
 

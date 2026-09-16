@@ -218,6 +218,9 @@ AddEventHandler('Unique_GunGame:LevelUp', function(weapon)
     RemoveAllPedWeapons(PlayerPedId(), true)
     Citizen.Wait(WEAPON_SWAP_WAIT)
     TriggerEvent('esx:addWeapon', weapon, Config.WeaponAmmo)
+    if Config.GiveParachuteOnSpawn then
+        TriggerServerEvent('Unique_GunGame:GiveParachute', GetPlayerServerId(PlayerId()))
+    end
 end)
 
 -- ============================================================
