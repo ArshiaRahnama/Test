@@ -14,7 +14,7 @@ end
 
 -- SECURITY FIX (part of the buyMod fix below): every mod price sent by the
 -- client is `vehiclePrice * somePercent / 100`, where the percentages all
--- live in Config.Menus (which this resource also loads server-side -- see
+-- live in Config_lscustom.Menus (which this resource also loads server-side -- see
 -- fxmanifest.lua). The buyMod event doesn't say WHICH mod is being bought,
 -- only a raw price number, so we can't look up the exact percentage for a
 -- given call -- but we CAN find the single highest percentage that exists
@@ -39,8 +39,8 @@ local function computeMaxModPercent(t, best)
 	return best
 end
 
-local MaxModPercent = computeMaxModPercent(Config.Menus)
-if MaxModPercent <= 0 then MaxModPercent = 35 end -- config walk found nothing usable; fall back to the highest value observed in Config.Menus at the time of this fix
+local MaxModPercent = computeMaxModPercent(Config_lscustom.Menus)
+if MaxModPercent <= 0 then MaxModPercent = 35 end -- config walk found nothing usable; fall back to the highest value observed in Config_lscustom.Menus at the time of this fix
 
 local function getRealVehiclePrice(vehicleModelHash)
 	if not Vehicles or not vehicleModelHash then return nil end
@@ -205,7 +205,10 @@ AddEventHandler('esx_lscustom:customVehicleCupon', function(plate)
 end)
 
 ESX.RegisterServerCallback('esx_lscustom:PayVehicleOrders', function(source, cb, vehicle, payWithBank)
-	xPlayer = ESX.GetPlayerFromId(source)
+	-- BUG FIX: was `xPlayer = ...` with no `local` -- a global leak that could
+	-- race with any other concurrent callback in this resource touching a
+	-- global of the same name.
+	local xPlayer = ESX.GetPlayerFromId(source)
 	local i = GetVehicleInList(vehicle)
 	if i then
 		local paidAmount = VehiclesInWatingList[i].price

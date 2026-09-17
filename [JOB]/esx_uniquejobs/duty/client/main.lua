@@ -15,9 +15,13 @@ Citizen.CreateThread(function ()
 end)
 
 AddEventHandler('esx_duty:hasEnteredMarker', function (zone)
-    if zone == 'ambulance' or zone == "police" or zone == "mechanic" or zone == "sheriff" or zone == "taxi" or zone == "weazel" or zone == "fbi" or zone == "mt"
-        or zone == "cid" or zone == "cia" or zone == "marshal" or zone == "judge" or zone == "doa"
-        or zone == "uwucafe" or zone == "obsidian" or zone == "voltage" or zone == "ember" or zone == "anchor" or zone == "crimson" or zone == "flourish" or zone == "goldcrust" or zone == "static" or zone == "nightjar" or zone == "firebrick" or zone == "slice" or zone == "frostbite" or zone == "sundae" or zone == "koi" or zone == "wasabi" or zone == "carwash" or zone == "meridian" or zone == "blacktide" or zone == "cratecarry" or zone == "turfco" then
+    -- BUG FIX: was a 33-way hardcoded `zone == "police" or zone == "ambulance"
+    -- or ...` chain -- a duplicate of the exact key list Config_duty.Zones
+    -- already has (and has to have, since that's what actually places the
+    -- markers). Deriving from it means a zone added to Config_duty.Zones
+    -- automatically works here too, instead of needing a second edit that's
+    -- easy to forget.
+    if Config_duty.Zones[zone] then
         CurrentAction     = 'duty'
         CurrentActionJob  = zone
     end
@@ -61,7 +65,9 @@ Citizen.CreateThread(function ()
 
                         if jobToSend then
                             TriggerServerEvent('esx_duty:setjob', jobToSend)
-                            TriggerServerEvent('esx_duty:setjob2', jobToSend)
+                            -- BUG FIX: esx_duty:setjob2 was triggered here but has no
+                            -- server-side handler anywhere in this resource (or anywhere
+                            -- else in the repo) -- a dead, no-op call. Removed.
                             lastDutyChangeTime = currentTime -- زمان آخرین تغییر وضعیت را ثبت کنید
                         end
                     end
@@ -81,10 +87,10 @@ Citizen.CreateThread(function ()
     while true do
         Wait(0)
         local coords = GetEntityCoords(GetPlayerPed(-1))
-        for k, v in pairs(Config.Zones) do
+        for k, v in pairs(Config_duty.Zones) do
         
             if (GetDistanceBetweenCoords(coords, v.Pos.x, v.Pos.y, v.Pos.z, true) < 10.0) then
-                DrawMarker(20, v.Pos.x, v.Pos.y, v.Pos.z, 0.0, 0.0, 0.0, 0, 0.0, 0.0, Config.Size.x, Config.Size.y, Config.Size.z, Config.Color.r, Config.Color.g, Config.Color.b, 100, false, true, 2, false, false, false, false)
+                DrawMarker(20, v.Pos.x, v.Pos.y, v.Pos.z, 0.0, 0.0, 0.0, 0, 0.0, 0.0, Config_duty.Size.x, Config_duty.Size.y, Config_duty.Size.z, Config_duty.Color.r, Config_duty.Color.g, Config_duty.Color.b, 100, false, true, 2, false, false, false, false)
             end
         end
     end
@@ -96,8 +102,8 @@ Citizen.CreateThread(function ()
         local coords      = GetEntityCoords(GetPlayerPed(-1))
         local isInMarker  = false
         local currentZone = nil
-        for k, v in pairs(Config.Zones) do
-            if (GetDistanceBetweenCoords(coords, v.Pos.x, v.Pos.y, v.Pos.z, true) < Config.Size.x) then
+        for k, v in pairs(Config_duty.Zones) do
+            if (GetDistanceBetweenCoords(coords, v.Pos.x, v.Pos.y, v.Pos.z, true) < Config_duty.Size.x) then
                 isInMarker  = true
                 currentZone = k
             end
@@ -128,7 +134,7 @@ local afkLastCoords  = nil
 local afkLastMoveTime = 0
 local afkCheckRunning = false
 
--- Only these three organs get the AFK check — everything else in Config.Zones
+-- Only these three organs get the AFK check — everything else in Config_duty.Zones
 -- (Holding 1 cafes/businesses etc.) is left alone.
 local AfkCheckJobs = {
     -- Department Of Justice
@@ -175,7 +181,7 @@ local function runAfkCheck(jobName)
     else
         ExecuteCommand('f Man Be Dalil Afk OffDuty Shodam')
         TriggerServerEvent('esx_duty:setjob', jobName)
-        TriggerServerEvent('esx_duty:setjob2', jobName)
+        -- BUG FIX: esx_duty:setjob2 (dead, no server handler) removed here too.
     end
 
     afkCheckRunning = false

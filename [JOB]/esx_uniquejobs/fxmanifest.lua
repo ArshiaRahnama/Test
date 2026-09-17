@@ -132,6 +132,16 @@ client_scripts {
 	-- evidence (merged in from the standalone `evidence` resource)
 	'evidence/config.lua',
 	'evidence/client/main.lua',
+
+	-- duty (merged in from the standalone esx_duty resource)
+	'duty/config.lua',
+	'duty/client/main.lua',
+
+	-- lscustom (merged in from the standalone esx_lscustom resource)
+	'lscustom/config.lua',
+	'lscustom/locales/en.lua',
+	'lscustom/client/main.lua',
+	'lscustom/client/colorPicker.lua',
 }
 
 server_scripts {
@@ -218,6 +228,15 @@ server_scripts {
 	-- CreateExternalCase directly as a plain global function now.
 	'evidence/config.lua',
 	'evidence/server/main.lua',
+
+	-- duty (merged in from the standalone esx_duty resource)
+	'duty/config.lua',
+	'duty/server/main.lua',
+
+	-- lscustom (merged in from the standalone esx_lscustom resource)
+	'lscustom/config.lua',
+	'lscustom/locales/en.lua',
+	'lscustom/server/main.lua',
 }
 
 ui_page 'ui.html'
@@ -279,6 +298,11 @@ files {
 	'evidence/html/jquery-3.4.1.min.js',
 	'evidence/html/img/logo.png',
 	'evidence/html/img/report.jpg',
+
+	-- lscustom (merged in from the standalone esx_lscustom resource)
+	'lscustom/html/index.html',
+	'lscustom/html/style.css',
+	'lscustom/html/colorpicker.js',
 }
 
 dependencies {

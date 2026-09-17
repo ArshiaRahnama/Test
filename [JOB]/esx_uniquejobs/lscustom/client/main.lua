@@ -154,7 +154,7 @@ function OpenLSMenu(elems, menuName, menuTitle, parent, vehicle)
 		if data.current.value == 'cc' then
 			CustomColor()
 		else
-			for k,v in pairs(Config.Menus) do
+			for k,v in pairs(Config_lscustom.Menus) do
 				if k == data.current.modType or isRimMod then
 					if data.current.label == _U('by_default') or string.match(data.current.label, _U('installed')) then
 						ESX.ShowNotification(_U('already_own', data.current.label))
@@ -268,7 +268,7 @@ function GetAction(data, vehicle)
 	if vehiclePrice == 1000000000 then
 		vehiclePrice = 10000000
 	end
-	for k,v in pairs(Config.Menus) do
+	for k,v in pairs(Config_lscustom.Menus) do
 		if data.value == k then
 			menuName  = k
 			menuTitle = v.label
@@ -412,15 +412,15 @@ function GetAction(data, vehicle)
 				end
 			else
 				if data.value == 'primaryRespray' or data.value == 'secondaryRespray' or data.value == 'pearlescentRespray' or data.value == 'modFrontWheelsColor' then
-					for i=1, #Config.Colors, 1 do
+					for i=1, #Config_lscustom.Colors, 1 do
 						if data.value == 'primaryRespray' then
-							table.insert(elements, {label = Config.Colors[i].label, value = 'color1', color = Config.Colors[i].value})
+							table.insert(elements, {label = Config_lscustom.Colors[i].label, value = 'color1', color = Config_lscustom.Colors[i].value})
 						elseif data.value == 'secondaryRespray' then
-							table.insert(elements, {label = Config.Colors[i].label, value = 'color2', color = Config.Colors[i].value})
+							table.insert(elements, {label = Config_lscustom.Colors[i].label, value = 'color2', color = Config_lscustom.Colors[i].value})
 						elseif data.value == 'pearlescentRespray' then
-							table.insert(elements, {label = Config.Colors[i].label, value = 'pearlescentColor', color = Config.Colors[i].value})
+							table.insert(elements, {label = Config_lscustom.Colors[i].label, value = 'pearlescentColor', color = Config_lscustom.Colors[i].value})
 						elseif data.value == 'modFrontWheelsColor' then
-							table.insert(elements, {label = Config.Colors[i].label, value = 'wheelColor', color = Config.Colors[i].value})
+							table.insert(elements, {label = Config_lscustom.Colors[i].label, value = 'wheelColor', color = Config_lscustom.Colors[i].value})
 						end
 					end
 				else

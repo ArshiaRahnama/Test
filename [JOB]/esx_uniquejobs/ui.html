@@ -6,12 +6,13 @@
     <style>
         /*
           FiveM only lets one resource have one ui_page (one NUI browser).
-          This resource bundles six independent NUI apps (the bodydamage
+          This resource bundles seven independent NUI apps (the bodydamage
           HUD, the CAD/MDT tablet, the Wraith radar, the taximeter, the
-          detective notepad, and the evidence case-file report), so instead
-          of merging their HTML/CSS/JS by hand (high risk of id/class/global
-          collisions) each keeps its own document in its own iframe, and
-          this page just relays SendNuiMessage() to all of them.
+          detective notepad, the evidence case-file report, and the LS
+          Customs color picker), so instead of merging their HTML/CSS/JS by
+          hand (high risk of id/class/global collisions) each keeps its own
+          document in its own iframe, and this page just relays
+          SendNuiMessage() to all of them.
           Each iframe still receives the exact same message shape it always
           did, so none of the apps' own code needed to change its
           message-handling logic. Their NUI callbacks (the fetch()/$.post()
@@ -44,10 +45,17 @@
            then its close button is never actually reachable by mouse -
            evidence/client/main.lua never calls SetNuiFocus, closing is
            BACKSPACE/ESC only (see its Keys table) - so, same as the two
-           above, it must stay permanently click-through. */
+           above, it must stay permanently click-through.
+           lscustom/html/index.html (the LS Customs color picker) is the
+           same story again: #container starts display:none, and even once
+           shown it's driven entirely by D-pad/controller input
+           (IncrementFocus/DecrementFocus in lscustom/client/colorPicker.lua,
+           bound to controls 174/175) - lscustom never calls SetNuiFocus
+           either, so there's no mouse interaction to protect here at all. */
         #frame_bodydamage,
         #frame_taximeter,
-        #frame_evidence {
+        #frame_evidence,
+        #frame_lscustom {
             pointer-events: none;
         }
 
@@ -93,6 +101,7 @@
     <iframe id="frame_taximeter" src="taximeter/client/ui/index.html"></iframe>
     <iframe id="frame_detective" src="detective/html/index.html"></iframe>
     <iframe id="frame_evidence" src="evidence/html/form.html"></iframe>
+    <iframe id="frame_lscustom" src="lscustom/html/index.html"></iframe>
 
     <script>
         var frames = {
@@ -102,6 +111,7 @@
             taximeter: document.getElementById('frame_taximeter'),
             detective: document.getElementById('frame_detective'),
             evidence: document.getElementById('frame_evidence'),
+            lscustom: document.getElementById('frame_lscustom'),
         };
 
         // FIX: radar is auto by default (see the CSS comment above for why)
@@ -119,7 +129,7 @@
             frames.detective.style.pointerEvents = (owner === 'detective') ? 'auto' : 'none';
         }
 
-        var ready = { bodydamage: false, cad: false, radar: false, taximeter: false, detective: false, evidence: false };
+        var ready = { bodydamage: false, cad: false, radar: false, taximeter: false, detective: false, evidence: false, lscustom: false };
         var pending = [];
 
         function allReady() {

@@ -1,14 +1,14 @@
-Config                   = {}
-Config.DrawDistance      = 100.0
-Config.Locale            = 'en'
-Config.IsMechanicJobOnly = false
+Config_lscustom = {}
+Config_lscustom.DrawDistance      = 100.0
+Config_lscustom.Locale            = 'en'
+Config_lscustom.IsMechanicJobOnly = false
 
-Config.Zones = {
+Config_lscustom.Zones = {
 	vector4(-323.256, -133.897, 38.388, 248.55),
 	vector4(-317.659, -118.607, 39.017, 251.43),
 }
 
-Config.Colors = {
+Config_lscustom.Colors = {
 	{ label = _U('black'), value = 'black'},
 	{ label = _U('white'), value = 'white'},
 	{ label = _U('grey'), value = 'grey'},
@@ -414,7 +414,7 @@ function GetPlatesName(index)
 	end
 end
 
-Config.Menus = {
+Config_lscustom.Menus = {
 	main = {
 		label		= 'LS CUSTOMS',
 		parent		= nil,

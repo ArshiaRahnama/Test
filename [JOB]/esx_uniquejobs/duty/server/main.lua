@@ -48,7 +48,7 @@ AddEventHandler('esx_duty:setjob', function(job)
         end
 
        
-        PerformHttpRequest(Config.Webhooks[job], function(err, text, headers) end, 'POST', json.encode({
+        PerformHttpRequest(Config_duty.Webhooks[job], function(err, text, headers) end, 'POST', json.encode({
             content = "",
             embeds = {
                 {
@@ -90,7 +90,7 @@ AddEventHandler('esx_duty:setjob', function(job)
 
         activeDutyPlayers[source] = job
        
-        PerformHttpRequest(Config.Webhooks[job], function(err, text, headers) end, 'POST', json.encode({
+        PerformHttpRequest(Config_duty.Webhooks[job], function(err, text, headers) end, 'POST', json.encode({
             content = "",
             embeds = {
                 {
@@ -129,19 +129,37 @@ Citizen.CreateThread(function()
             local xPlayer = ESX.GetPlayerFromId(source)
             if xPlayer then
                 local JobName = xPlayer.job.name
-                if xPlayer and (JobName == 'police' or JobName == 'sheriff' or JobName == 'ambulance' or JobName == 'fbi' or JobName == 'mechanic' or JobName == 'weazel' or JobName == 'taxi' or JobName == 'mt'
-                    or JobName == 'cid' or JobName == 'cia' or JobName == 'marshal' or JobName == 'judge' or JobName == 'doa'
-                    or JobName == 'uwucafe' or JobName == 'obsidian' or JobName == 'voltage' or JobName == 'ember' or JobName == 'anchor' or JobName == 'crimson' or JobName == 'flourish' or JobName == 'goldcrust' or JobName == 'static' or JobName == 'nightjar' or JobName == 'firebrick' or JobName == 'slice' or JobName == 'frostbite' or JobName == 'sundae' or JobName == 'koi' or JobName == 'wasabi' or JobName == 'carwash' or JobName == 'meridian' or JobName == 'blacktide' or JobName == 'cratecarry' or JobName == 'turfco') then
+                -- BUG FIX: was the same 33-way hardcoded job-name chain as the
+                -- client-side one above -- now just checks Config_duty.Zones,
+                -- which already has to list every one of these jobs anyway.
+                if xPlayer and Config_duty.Zones[JobName] then
                     local steamHex = GetPlayerIdentifiers(source)[1] 
                     local todayDate = os.date("%Y-%m-%d") 
                     local jgrade = xPlayer.job.grade_label
+                    -- BUG FIX: these six were referenced further down (inside the
+                    -- AFK-kick PerformHttpRequest) but never defined anywhere in
+                    -- this scope -- every AFK-triggered off-duty webhook posted
+                    -- "nil" for player ID/name/steam name/hex/time/timestamp.
+                    -- Computed the same way the esx_duty:setjob handler above does.
+                    local playerID = source
+                    local steamIdentifier = steamHex
+                    local steamName = GetPlayerName(source)
+                    local playerName = xPlayer.get('name')
+                    local timestamp = os.date("%Y-%m-%d %H:%M:%S")
+                    local unixTime = os.time()
 
 
                     local playerPosition = GetEntityCoords(GetPlayerPed(source))
                     
                     if lastPlayerPosition[source] and #(playerPosition - lastPlayerPosition[source]) < 3.0 then
                         afkTimers[source] = (afkTimers[source] or 0) + 300
-                        lastPlayerPosition = GetEntityCoords(GetPlayerPed(source))
+                        -- BUG FIX: was `lastPlayerPosition = GetEntityCoords(...)` with
+                        -- no [source] index -- overwrote the WHOLE tracking table with
+                        -- a single vector3 instead of updating this one player's entry,
+                        -- so every other player's (and this one's, next cycle)
+                        -- lastPlayerPosition[source] read came back nil and the AFK
+                        -- timer silently reset every 5 minutes instead of accumulating.
+                        lastPlayerPosition[source] = playerPosition
                      
                         if afkTimers[source] >= 900 then
                             
@@ -174,7 +192,7 @@ Citizen.CreateThread(function()
                                 end
                         
                          
-                                PerformHttpRequest(Config.Webhooks[job], function(err, text, headers) end, 'POST', json.encode({
+                                PerformHttpRequest(Config_duty.Webhooks[job], function(err, text, headers) end, 'POST', json.encode({
                                     content = "",
                                     embeds = {
                                         {

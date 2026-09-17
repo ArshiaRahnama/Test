@@ -1,7 +1,7 @@
-Config = {}
-Config.Color = { r = 0, g = 255, b = 0 }
-Config.Size = { x = 0.7, y = 0.7, z = 0.7 }
-Config.Zones = {
+Config_duty = {}
+Config_duty.Color = { r = 0, g = 255, b = 0 }
+Config_duty.Size = { x = 0.7, y = 0.7, z = 0.7 }
+Config_duty.Zones = {
   police = {Pos = {x = 629.1069, y = -6.22858, z = 82.779}},
  -- police2 = {Pos = { x = 629.1069, y = -6.22858, z = 82.779 }},
 
@@ -52,7 +52,7 @@ Config.Zones = {
   turfco = {Pos = {x = 2565.0, y = 2585.0, z = 37.9}},
 }
 
-Config.Webhooks = {
+Config_duty.Webhooks = {
   police = GetConvar('unique_config_police', ''),
   ambulance = GetConvar('unique_config_ambulance', ''),
   mechanic = GetConvar('unique_config_mechanic', ''),

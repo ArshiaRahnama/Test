@@ -52,9 +52,21 @@
 		</div>
 		<script>
 		(function() {
+			// BUG FIX (merge into esx_uniquejobs): this used to be
+			// `if (this[item.type]) { this[item.type](item); }` -- calling
+			// ANY window-scoped function whose name happens to match an
+			// incoming message's `type`. That was harmless as this file's own
+			// standalone ui_page, since nothing else could ever message it --
+			// but merged in here, this iframe receives every OTHER merged
+			// app's SendNuiMessage too (cad, doj, detective, evidence, radar,
+			// bodydamage, taximeter all broadcast to every iframe, see
+			// ui.html's relay()), so an unrelated type name could have called
+			// an arbitrary global function. Whitelisted to just the three
+			// this file actually uses.
+			var handlers = { ON_SHOW: true, ON_COLOR_CHANGED: true, ON_HIGHLIGHT: true };
 			window.addEventListener('message', (event) => {
 				const item = event.data;
-				if (this[item.type]) {
+				if (item && handlers[item.type] && typeof this[item.type] === 'function') {
 					this[item.type](item);
 				}
 			});

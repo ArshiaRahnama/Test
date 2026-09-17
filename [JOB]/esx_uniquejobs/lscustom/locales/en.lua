@@ -1,4 +1,12 @@
-Locales['en'] = {
+-- BUG FIX (merge into esx_uniquejobs): was `Locales['en'] = { ... }`, a full
+-- table overwrite. taximeter/shared/locales/en.lua does the exact same thing
+-- to the exact same bare 'en' key in this same resource -- whichever of the
+-- two loaded last would completely wipe out the other's translations. Zero
+-- key-name overlap between the two (checked), so switched to the same
+-- additive-merge pattern esx_uniquejobs' own department locale files already
+-- use (locales/fbi_en.lua etc.) instead of a flat overwrite.
+Locales['en'] = Locales['en'] or {}
+for k, v in pairs({
   ['by_default'] = 'Default',
   ['installed'] = 'Installed',
   ['already_own'] = 'You Already Own : ~b~%s~s~',
@@ -243,4 +251,4 @@ Locales['en'] = {
   ['fuel_tank'] = 'Fuel Tank',
   ['windows'] = 'Windows',
   ['stickers'] = 'Stickers'
-}
+}) do Locales['en'][k] = v end
