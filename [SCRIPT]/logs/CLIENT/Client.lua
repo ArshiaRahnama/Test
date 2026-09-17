@@ -92,7 +92,13 @@ Citizen.CreateThread(function()
 			end
 
 			if DeathReason == 'committed suicide' or DeathReason == 'died' then
-				TriggerServerEvent('DiscordBot:plascaryyerDied', GetPlayerName(PlayerId()) .. ' ' .. DeathReason .. '.', Weapon)
+				-- ✅ فیکس شد: قبلاً فقط 2 آرگومان (Message, Weapon) فرستاده می‌شد، درحالی‌که
+				-- هندلر سرور امضای (Message, killer, Deader, Weapon, KillerCorrd, PlayerCorrd) داره.
+				-- نتیجه‌اش این بود که Weapon اشتباهی می‌نشست تو پارامتر killer، و Deader اصلاً
+				-- مقداری نمی‌گرفت (nil می‌موند) -> کرش "table index is nil" تو Server.lua خط
+				-- getkillers[Deader] هر بار که کسی می‌مرد/خودکشی می‌کرد. الان همه‌ی پارامترها
+				-- درست‌جا سرجاشون پر می‌شن (killer=nil چون قاتلی وجود نداره).
+				TriggerServerEvent('DiscordBot:plascaryyerDied', GetPlayerName(PlayerId()) .. ' ' .. DeathReason .. '.', nil, GetPlayerServerId(PlayerId()), Weapon, nil, GetEntityCoords(PlayerPedId()))
 			else
 				Wait(3000)
 				print(GetEntityHealth(PlayerPedId()))

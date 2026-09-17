@@ -96,6 +96,10 @@ end)
 
 RegisterServerEvent('DiscordBot:plascaryyerDied')
 AddEventHandler('DiscordBot:plascaryyerDied', SafeWrap('DiscordBot:plascaryyerDied', function(Message, killer, Deader, Weapon, KillerCorrd, PlayerCorrd)
+	-- ✅ محافظ دفاعی: اگه به هر دلیلی (باگ کلاینت، یا یه ریسورس دیگه که این ایونت رو صدا
+	-- می‌زنه) Deader خالی برسه، به‌جای کرش‌کردن رو getkillers[Deader]، بیفت رو source همین
+	-- ایونت (که همیشه همون پلیریه که مرده، چون کلاینت خودش این ایونت رو موقع مرگ خودش می‌زنه)
+	Deader = tonumber(Deader) or source
 	local date = os.date('*t')
 	local xPlayer = ESX.GetPlayerFromId(Deader)
 	local xTarget = killer and ESX.GetPlayerFromId(killer) or nil
@@ -199,6 +203,17 @@ AddEventHandler('DiscordBot:ToDiscord', function(WebHook, Name, Message, Image, 
 	local category = 'unknown'
 	if type(WebHook) == 'string' then
 		category = WebHook:lower()
+	end
+
+	-- ✅ باگ فیکس شد: playerConnecting/playerDropped مستقیم لینک وبهوک (DiscordConnect/
+	-- DiscordDisconnect) رو به‌عنوان WebHook می‌فرستن، نه یه اسم دسته (چون External=false
+	-- ـه و نیازی به روتینگ ندارن). بدون این فیکس، ستون category تو دیتابیس/پنل پر می‌شد
+	-- از خودِ URL کامل وبهوک دیسکورد (یا رشته‌ی خالی، تا وقتی ست نشده) به‌جای یه اسم تمیز؛
+	-- که هم تو UI پنل زشت به‌نظر می‌رسید هم فیلتر/گروه‌بندی دسته‌ای رو خراب می‌کرد.
+	if WebHook == DiscordConnect then
+		category = 'connect'
+	elseif WebHook == DiscordDisconnect then
+		category = 'disconnect'
 	end
 
 	if External then
@@ -848,10 +863,13 @@ AddEventHandler('EventLogs:SafezoneShot', SafeWrap('EventLogs:SafezoneShot', fun
 	TriggerEvent('DiscordBot:ToDiscord', 'safezoneshot', 'SafezoneShotLog', desc, 'user', true, _source, false)
 end))
 
-RegisterCommand("getdamage", function(source, args)
+RegisterCommand("getdamage", SafeWrap('getdamage', function(source, args)
     local targetId = tonumber(args[1])
 	local xPlayer = ESX.GetPlayerFromId(source)
-	if xPlayer.permission_level >= 1 then
+	-- ✅ باگ فیکس شد: اگه دستور از کنسول سرور (source == 0) یا قبل از لود کامل پلیر تو ESX
+	-- اجرا بشه، ESX.GetPlayerFromId می‌تونه nil برگردونه؛ چک قبلی (xPlayer.permission_level)
+	-- مستقیم رو nil ایندکس می‌زد و کرش می‌کرد ("attempt to index a nil value").
+	if xPlayer and xPlayer.permission_level and xPlayer.permission_level >= 1 then
 
 		if not targetId then
 			TriggerClientEvent('chat:addMessage', source, { args = { "Id vared konin" } })
@@ -861,11 +879,18 @@ RegisterCommand("getdamage", function(source, args)
 		local damageList = lastDamagers[targetId]
 		if damageList and #damageList > 0 then
 			for i, dmg in ipairs(damageList) do
-				local x, y, z = table.unpack(dmg.coords or {0, 0, 0})
-				local x2, y2, z2 = table.unpack(dmg.coordsatacer or {0, 0, 0})
+				-- ✅ باگ فیکس شد: dmg.coords/dmg.coordsatacer یه vector3 هستن (از
+				-- GetEntityCoords)، نه یه Lua table با ایندکس عددی ۱/۲/۳؛ table.unpack
+				-- روشون چیزی برنمی‌گردوند (x,y,z همیشه nil می‌شدن) و همین باعث کرش
+				-- string.format می‌شد ("number expected, got nil") به‌محض اینکه واقعاً
+				-- دیتای دیمج وجود داشت. الان مستقیم از .x/.y/.z می‌خونیم.
+				local pt = dmg.coords
+				local pa = dmg.coordsatacer
+				local x,  y,  z  = (pt and pt.x) or 0.0, (pt and pt.y) or 0.0, (pt and pt.z) or 0.0
+				local x2, y2, z2 = (pa and pa.x) or 0.0, (pa and pa.y) or 0.0, (pa and pa.z) or 0.0
 				TriggerClientEvent('chat:addMessage', source, {
 					args = {
-						string.format("[%d] Damage by ID %s | PT: (%.2f, %.2f, %.2f) | PA: (%.3f, %.3f, %.3f)",
+						string.format("[%d] Damage by ID %s | PT: (%.2f, %.2f, %.2f) | PA: (%.2f, %.2f, %.2f)",
 							i,
 							dmg.attackerId or "?",
 							x, y, z, x2, y2, z2)
@@ -882,4 +907,4 @@ RegisterCommand("getdamage", function(source, args)
 			args = { "Shoma Dast Resi Nadarid." }
 		})
 	end
-end, false)
+end), false)
