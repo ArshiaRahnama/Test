@@ -1,0 +1,69 @@
+<html>
+ <head>
+        <meta name="viewport" content="width=device-width,initial-scale=1">
+        <link rel="stylesheet" href="config.css" type="text/css">
+        <link rel="stylesheet" href="stylesheet.css" type="text/css">
+
+      <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+      
+ </head>
+ <body>
+          
+        <div class='blur' id="bg">
+  <!-- ADD your background images here (same format) and make sure to add it in __resource.lua  -->
+           
+  
+         </div>
+         <div class="snow" id="container">
+         <div id="container">
+                
+    <!-- Uncomment for PLAIN TEXT (also uncomment title in app.js)  <h2 id="title"></h2> -->
+                    <!-- Your logo below -->
+        <img class="logo" src="imgs/logo.png">
+             <br>
+                <!--<div class="loadbar">
+                        <div class="yeet"></div>
+                    </div>-->
+                </div>
+         <p id="link"></p>
+        
+       
+  </div>
+
+<!--<audio controls autoplay id="myaudio">
+  <source src="gtavthemesong.ogg">
+</audio>
+<script>
+  var audio = document.getElementById("myaudio");
+  audio.volume = 0.2;
+</script>-->
+
+<audio id="myaudio" autoplay>
+
+</audio>
+
+    <script src="config.js"></script>
+    <script src="app.js"></script>
+	 <script>
+        var myaudio = document.getElementById("myaudio");
+        var rndIntmusic = Math.floor(Math.random() * 5) + 1
+          myaudio.src = `music/${rndIntmusic}.mp3`;
+          myaudio.volume = 0.4;
+          myaudio.load();
+          myaudio.play();
+        var state = true
+
+        document.addEventListener("keydown", function (e) {
+            if (e.keyCode == 32) {
+                if (state) {
+                    state = false;
+                    myaudio.volume = 0.0;
+                } else {
+                    state = true;
+                    myaudio.volume = 0.4;
+                }
+            }
+        });
+    </script>
+ </body>
+</html>

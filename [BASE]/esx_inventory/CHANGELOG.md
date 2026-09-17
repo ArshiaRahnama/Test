@@ -6,17 +6,17 @@
 # Round 13 — client crash: `TriggerServerCallback` not defined yet
 # Round 14 — Equipment label hidden, empty ground title hidden,
 #            right-click menu now closes with the inventory
+# Round 15 — action bar moved to the bottom (layout reference)
 
 Five files changed in total. Nothing else in this resource was
 touched.
 
 - `src/html/assets/css/sunset.css` — new file (round 8), edited again
-  in rounds 9, 10, 11 and 14.
+  in rounds 9, 10, 11, 14 and 15.
 - `src/html/ui.html` — **one `<link>` added**, right before `</head>`,
   after `config.css`. That's the only diff; every line above it is
   original.
-- `src/html/assets/js/inventory.js` — **one line added** (round 14,
-  see below).
+- `src/html/assets/js/inventory.js` — **one line added** (round 14).
 - `server/custom/drop/drop.lua` — **one line changed** (round 9).
 - `client/custom/framework/esx.lua` — edited twice: round 12 (one
   event handler), round 13 (four function definitions moved and
@@ -105,6 +105,40 @@ an ESX server (`Config.Framework == "esx"` here), so left untouched;
 already guarded (`PlayerData and PlayerData.job and ...` /
 `if PlayerData and PlayerData.loadout then`) before this round. This
 was the one live, unguarded call site.
+
+## Round 15 — action bar moved to the bottom (matching the reference layout)
+
+The person shared a screenshot of a different inventory UI (from a
+separate, unrelated Vue-based resource) and asked for esx_inventory's
+own layout to move toward it. Confirmed the two are genuinely separate
+codebases first - didn't touch or merge in anything from that other
+resource, just used its screenshot as a layout reference.
+
+The clearest structural difference: that reference keeps a compact,
+text-only button row low on screen, near the hotbar, instead of a tall
+icon-tile toolbar floating above the character's head. Moved
+`.top-buttons-center-part` (USE/GIVE/RENAME/DELETE/DROP) to
+`position: absolute; bottom: 0.7vw` inside `.center-part`, and
+restyled each button as a small text-only pill (the 5vw icon tile each
+one used to carry is hidden rather than shrunk - no room for both a
+label and an icon at this size without crowding either).
+
+**Why `position: absolute` and not flexbox `order` +
+`justify-content: flex-end`:** `.center-part` also holds the clothing
+slots, which are aligned to line up with wherever the game renders the
+ped - `flex-end` would have re-anchored that whole centred group
+toward the bottom of the box right along with the buttons, which would
+have knocked the clothing slots off the ped. Pulling only the button
+row out of the flex flow and positioning it directly leaves the
+clothes/hotbar centring completely untouched; the row lands in the
+same visual spot without disturbing anything else in that column.
+
+No ids, classes, or click handlers were touched - `#useItem`,
+`#giveItem`, `#renameItem`, `#deleteItem`, `#dropItem` are the exact
+same elements JS already binds to, just repositioned and restyled.
+Exact vertical offset (`bottom: 0.7vw`) was picked by calculation, not
+by eye in the running game client - nudge that one value if it needs
+to sit a little higher or lower once seen in-game.
 
 ## Round 13 — `SCRIPT ERROR: attempt to call a nil value (global 'TriggerServerCallback')`
 

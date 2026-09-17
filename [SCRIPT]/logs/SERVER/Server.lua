@@ -362,6 +362,9 @@ AddEventHandler('DiscordBot:ToDiscord', function(WebHook, Name, Message, Image, 
 			WebHook = DiscordWebhookNLRViolation
 		elseif WebHook:lower() == "fakename" then
 			WebHook = DiscordWebhookFakeName
+		-- ✅ اضافه شد (راند چهارم)
+		elseif WebHook:lower() == "multiaccount" then
+			WebHook = DiscordWebhookMultiAccount
 		end
 
 		if Image:lower() == 'steam' then
@@ -395,6 +398,25 @@ AddEventHandler('DiscordBot:ToDiscord', function(WebHook, Name, Message, Image, 
 	SendToSite(category, Name, Message, Source)
 end)
 
+-- ✅ باگ فیکس شد: قبلاً تو SendToSite از GetPlayerIdentifier(source, 0) استفاده
+-- می‌شد که بسته به ترتیب برگشتنِ آیدنتیفایرها (که تضمین‌شده نیست) گاهی steam،
+-- گاهی license برمی‌گردوند؛ یعنی لاگ‌های یه پلیرِ ثابت ممکن بود تو دو سشن مختلف
+-- با دو "identifier" متفاوت تو دیتابیس ذخیره بشن و فیلتر/پروفایل پلیر رو ناقص کنه.
+-- این تابع همیشه license رو اولویت می‌ده (پایدارترین شناسه)، وگرنه اولین آیدنتیفایر
+-- موجود رو برمی‌گردونه.
+function GetStableIdentifier(source)
+	local ids = GetPlayerIdentifiers(source) or {}
+	local fallback = nil
+	for _, id in ipairs(ids) do
+		if id:sub(1, 8) == 'license:' then
+			return id
+		elseif not fallback then
+			fallback = id
+		end
+	end
+	return fallback
+end
+
 -- ================= ارسال به سایت خودمون =================
 -- هر لاگی که به دیسکورد میره، از این تابع هم برای آرشیو روی سایت رد میشه.
 function SendToSite(category, name, message, source)
@@ -403,7 +425,7 @@ function SendToSite(category, name, message, source)
 	local job = nil
 	if source and tonumber(source) then
 		playerName = GetPlayerName(tonumber(source))
-		identifier = GetPlayerIdentifier(tonumber(source), 0) or GetPlayerIdentifier(tonumber(source), 1)
+		identifier = GetStableIdentifier(tonumber(source))
 		if ESX then
 			local xPlayer = ESX.GetPlayerFromId(tonumber(source))
 			if xPlayer and xPlayer.job then
@@ -861,6 +883,86 @@ AddEventHandler('EventLogs:SafezoneShot', SafeWrap('EventLogs:SafezoneShot', fun
 	local _source = source
 	local desc = '```css\n[ Player : '..GetPlayerName(_source)..'(' .. _source .. ') ]\n[ Zone : '..tostring(zoneName)..' ]\n[ Coords : '..tostring(coords)..' ]\n```'
 	TriggerEvent('DiscordBot:ToDiscord', 'safezoneshot', 'SafezoneShotLog', desc, 'user', true, _source, false)
+end))
+
+-- ============================================================================
+-- ✅ اضافه شد (راند چهارم): تشخیص چند اکانتی
+-- هر پلیر که کامل لود می‌شه (esx:playerLoaded)، آیدنتیفایرهاش رو با همه‌ی پلیرهای
+-- در حالِ حاضر آنلاین مقایسه می‌کنیم؛ اگه تو انواع مشخص‌شده تو Config.MultiAccount
+-- اشتراک پیدا شد (یعنی به‌احتمال زیاد یه نفرن با دو کلاینت هم‌زمان وصل)، لاگ می‌شه.
+-- توجه: این فقط لاگ می‌کنه، هیچ کیک/بنی خودکار نمی‌زنه — تصمیم نهایی با ادمینه،
+-- چون آیدنتیفایر مشترک همیشه لزوماً تقلب نیست (مثلاً برادر/خواهر رو یه سیستم مشترک).
+-- ============================================================================
+
+onlineIdentifiers = onlineIdentifiers or {}
+multiAccountCooldown = multiAccountCooldown or {}
+
+-- همه‌ی آیدنتیفایرهای یه پلیر رو به‌صورت جدول {type = "type:value", ...} برمی‌گردونه
+function CollectPlayerIdentifiers(source)
+	local ids = {}
+	for _, full in ipairs(GetPlayerIdentifiers(source) or {}) do
+		local idType = full:match('^(%a+):')
+		if idType then
+			ids[idType:lower()] = full
+		end
+	end
+	if Config.MultiAccount.CheckIP then
+		local ep = GetPlayerEndpoint(source)
+		if ep and ep ~= '' then
+			ids['ip'] = 'ip:' .. ep
+		end
+	end
+	return ids
+end
+
+-- موقع ری‌استارت خودِ ریسورس، پلیرهایی که از قبل آنلاینن رو هم تو جدول بذار،
+-- وگرنه تا وقتی دوباره کانکت نشن اصلاً چک نمی‌شن
+CreateThread(function()
+	Wait(2000) -- بذار ESX و بقیه‌ی ریسورس‌ها کامل بالا بیان
+	for _, plyIdStr in ipairs(GetPlayers()) do
+		local plyId = tonumber(plyIdStr)
+		if plyId then
+			onlineIdentifiers[plyId] = CollectPlayerIdentifiers(plyId)
+		end
+	end
+end)
+
+AddEventHandler('esx:playerLoaded', SafeWrap('MultiAccountCheck', function(playerId, xPlayer)
+	if not (Config.MultiAccount and Config.MultiAccount.Enabled) then return end
+	playerId = tonumber(playerId)
+	if not playerId then return end
+
+	local myIds = CollectPlayerIdentifiers(playerId)
+	onlineIdentifiers[playerId] = myIds
+
+	for otherSrc, otherIds in pairs(onlineIdentifiers) do
+		if otherSrc ~= playerId and GetPlayerName(otherSrc) then
+			local matched = {}
+			for _, idType in ipairs(Config.MultiAccount.CheckTypes) do
+				if myIds[idType] and otherIds[idType] and myIds[idType] == otherIds[idType] then
+					matched[#matched + 1] = myIds[idType]
+				end
+			end
+			if Config.MultiAccount.CheckIP and myIds['ip'] and otherIds['ip'] and myIds['ip'] == otherIds['ip'] then
+				matched[#matched + 1] = myIds['ip']
+			end
+
+			if #matched > 0 then
+				local a, b = math.min(playerId, otherSrc), math.max(playerId, otherSrc)
+				local pairKey = a .. '-' .. b
+				local now = GetGameTimer()
+				if not multiAccountCooldown[pairKey] or (now - multiAccountCooldown[pairKey]) > Config.MultiAccount.CooldownMs then
+					multiAccountCooldown[pairKey] = now
+					local desc = '```css\n[ Player A : '..GetPlayerName(playerId)..' (' .. playerId .. ') ]\n[ Player B : '..GetPlayerName(otherSrc)..' (' .. otherSrc .. ') ]\n[ Matched  : '..table.concat(matched, ', ')..' ]\n[ Note : هر دو هم‌زمان آنلاینن و این آیدنتیفایرها رو مشترک دارن ]\n```'
+					TriggerEvent('DiscordBot:ToDiscord', 'multiaccount', 'MultiAccountLog', desc, 'user', true, playerId, false)
+				end
+			end
+		end
+	end
+end))
+
+AddEventHandler('playerDropped', SafeWrap('MultiAccountCleanup', function()
+	onlineIdentifiers[source] = nil
 end))
 
 RegisterCommand("getdamage", SafeWrap('getdamage', function(source, args)

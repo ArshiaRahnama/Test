@@ -346,7 +346,7 @@
 	.rowCheckbox, #selectAllCheckbox{
 		width:15px; height:15px; accent-color:#3b6fe0; cursor:pointer; vertical-align:middle;
 	}
-	.rowDeleteBtn, .rowPinBtn, .rowCoordBtn{
+	.rowDeleteBtn, .rowPinBtn, .rowCoordBtn, .rowProfileBtn{
 		width:26px; height:26px; border-radius:8px; border:1px solid var(--border);
 		background:#ffffff08; color:var(--text-dim); cursor:pointer; font-size:12px;
 		display:inline-flex; align-items:center; justify-content:center; transition:.12s;
@@ -355,6 +355,7 @@
 	.rowCoordBtn:hover{ background:#3b6fe0; color:#fff; border-color:#3b6fe0; }
 	.rowPinBtn:hover{ background:var(--warn); color:#fff; border-color:var(--warn); }
 	.rowPinBtn.pinned{ background:#c9a35d26; color:var(--warn); border-color:#c9a35d55; }
+	.rowProfileBtn:hover{ background:#8b5cf6; color:#fff; border-color:#8b5cf6; }
 	mark{ background:#c9a35d55; color:#fff; border-radius:3px; padding:0 2px; }
 
 	.logRow.pinnedRow{ background:#c9a35d14; border-color:#c9a35d40; }
@@ -474,6 +475,47 @@
 	.factChip .factCopyIcon{ opacity:.6; font-size:10px; }
 	#detailActions{ display:flex; gap:8px; margin-top:14px; }
 	#detailActions .toolBtn{ flex:1; justify-content:center; padding:10px; }
+
+	/* ---------- PLAYER PROFILE MODAL ---------- */
+	#profileOverlay{
+		position:absolute; inset:0; background:rgba(6,8,14,.7); backdrop-filter:blur(4px);
+		display:none; align-items:center; justify-content:center; z-index:6;
+	}
+	#profileOverlay.show{ display:flex; }
+	#profileBox{
+		width:min(680px, 90%); max-height:85%; overflow-y:auto;
+		background:linear-gradient(180deg, #131a2a, var(--panel-solid));
+		border:1px solid var(--border); border-radius:var(--radius);
+		padding:22px; animation:panelIn .2s cubic-bezier(.2,.9,.3,1);
+		box-shadow:0 20px 60px rgba(0,0,0,.5), 0 0 0 1px rgba(255,255,255,.03) inset;
+	}
+	#profileHeader{ display:flex; align-items:center; gap:12px; margin-bottom:14px; }
+	#profileHeader .avatar{ width:42px; height:42px; font-size:17px; }
+	#profileHeader h3{ font-size:15px; font-weight:700; }
+	#profileHeader small{ display:block; color:var(--text-faint); font-size:11px; font-family:'Consolas',monospace; margin-top:2px; }
+	#profileStats{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px; }
+	#profileStats span{
+		font-size:11px; color:var(--text-dim); background:#ffffff08; padding:6px 11px; border-radius:8px;
+	}
+	#profileCategoryBreakdown{ margin-bottom:16px; }
+	#profileCategoryBreakdown h4, #profileTimelineWrap h4{ font-size:12.5px; color:var(--text-dim); margin-bottom:10px; }
+	#profileTimeline{ display:flex; flex-direction:column; gap:8px; max-height:340px; overflow-y:auto; padding-inline-end:4px; }
+	.profileTimelineItem{
+		display:flex; align-items:flex-start; gap:10px; padding:10px 12px;
+		background:#ffffff05; border:1px solid var(--border); border-radius:10px;
+		border-inline-start:3px solid var(--cat-color, var(--border)); cursor:pointer; transition:.12s;
+	}
+	.profileTimelineItem:hover{ background:#ffffff0a; }
+	.profileTimelineItem .ptiIcon{ font-size:15px; flex-shrink:0; }
+	.profileTimelineItem .ptiBody{ flex:1; min-width:0; }
+	.profileTimelineItem .ptiTop{ display:flex; justify-content:space-between; gap:8px; font-size:11.5px; color:var(--text-dim); margin-bottom:3px; }
+	.profileTimelineItem .ptiMsg{
+		font-size:12px; color:var(--text); overflow:hidden; text-overflow:ellipsis;
+		display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+	}
+	#profileEmpty{ text-align:center; padding:30px 10px; color:var(--text-faint); font-size:12.5px; }
+	#profileActions{ display:flex; gap:8px; margin-top:16px; }
+	#profileActions .toolBtn{ flex:1; justify-content:center; padding:10px; }
 
 	/* ---------- CONFIRM MODAL ---------- */
 	#confirmOverlay{
@@ -729,6 +771,32 @@
 				</div>
 			</div>
 
+			<div id="profileOverlay" onclick="if(event.target===this) closePlayerProfile()">
+				<div id="profileBox">
+					<div id="profileHeader">
+						<div class="avatar" id="profileAvatar">👤</div>
+						<div>
+							<h3 id="profileName">—</h3>
+							<small id="profileIdentifier"></small>
+						</div>
+					</div>
+					<div id="profileStats"></div>
+					<div id="profileCategoryBreakdown">
+						<h4>شکست دسته‌بندی</h4>
+						<div id="profileCategoryList"></div>
+					</div>
+					<div id="profileTimelineWrap">
+						<h4>تایم‌لاین</h4>
+						<div id="profileTimeline"></div>
+						<div id="profileEmpty" style="display:none;">هیچ لاگی برای این پلیر پیدا نشد.</div>
+					</div>
+					<div id="profileActions">
+						<div class="toolBtn" onclick="filterFromProfile()">🔎 فیلتر جدول با این پلیر</div>
+						<div class="toolBtn" onclick="closePlayerProfile()">بستن</div>
+					</div>
+				</div>
+			</div>
+
 			<div id="confirmOverlay">
 				<div id="confirmBox">
 					<div style="font-size:28px;">⚠️</div>
@@ -806,6 +874,9 @@ const CATEGORY_META = {
 	kill_bounty:   { label: 'جایزه',               color: '#eab308', icon: '🎖️' },
 	pdrop:         { label: 'دراپ آیتم',           color: '#8a93a8', icon: '📦' },
 	co:            { label: 'اتصال',              color: '#22c55e', icon: '🔌' },
+	connect:       { label: 'اتصال',              color: '#22c55e', icon: '🟢' },
+	disconnect:    { label: 'قطع اتصال',           color: '#8a93a8', icon: '🔴' },
+	multiaccount:  { label: 'چند اکانتی',          color: '#ef4444', icon: '👥' },
 	system:        { label: 'سیستم',              color: '#8a93a8', icon: '⚙️' },
 	chat:          { label: 'چت',                 color: '#8a93a8', icon: '💬' },
 	logpanel_delete:{ label: 'حذف لاگ (ادمین)',    color: '#ef4444', icon: '🗑️' },
@@ -846,6 +917,7 @@ let state = {
 	canExport: false,
 	canDelete: false,
 	canPin: false,
+	canProfile: false,
 	pinnedOnly: false,
 	identifierExact: '',
 	identifierLabel: '',
@@ -960,6 +1032,8 @@ document.addEventListener('keydown', (e) => {
 			endTour();
 		} else if (document.getElementById('detailOverlay').classList.contains('show')){
 			closeDetail();
+		} else if (document.getElementById('profileOverlay') && document.getElementById('profileOverlay').classList.contains('show')){
+			closePlayerProfile();
 		} else {
 			closePanel();
 		}
@@ -1154,6 +1228,7 @@ async function loadMeta(){
 	state.canExport = !!res.canExport;
 	state.canDelete = !!res.canDelete;
 	state.canPin = !!res.canPin;
+	state.canProfile = !!res.canProfile;
 	state.perPageOptions = res.perPageOptions || state.perPageOptions;
 	// اگه یه perPage معتبر از قبل ست شده (مثلاً از تنظیمات ذخیره‌شده‌ی کاربر)، همونو نگه
 	// می‌داریم؛ فقط وقتی نامعتبره میریم سراغ پیش‌فرض سرور.
@@ -1162,7 +1237,7 @@ async function loadMeta(){
 	}
 
 	document.getElementById('exportBtn').style.display = state.canExport ? 'flex' : 'none';
-	document.getElementById('actionsCol').style.display = (state.canDelete || state.canPin) ? 'table-cell' : 'none';
+	document.getElementById('actionsCol').style.display = (state.canDelete || state.canPin || state.canProfile) ? 'table-cell' : 'none';
 	document.getElementById('pinnedToggleRow').style.display = state.canPin ? 'flex' : 'none';
 
 	const ppSel = document.getElementById('perPageSelect');
@@ -1329,7 +1404,7 @@ async function refreshLogs(){
 	state.canDelete = !!res.canDelete;
 	state.canPin = !!res.canPin;
 	state.canBulk = state.canDelete || state.canPin;
-	document.getElementById('actionsCol').style.display = (state.canDelete || state.canPin) ? 'table-cell' : 'none';
+	document.getElementById('actionsCol').style.display = (state.canDelete || state.canPin || state.canProfile) ? 'table-cell' : 'none';
 	document.getElementById('pinnedToggleRow').style.display = state.canPin ? 'flex' : 'none';
 
 	if (res.logs.length === 0){
@@ -1381,6 +1456,7 @@ function renderTable(logs){
 			<td class="msgCell">${highlightTerm(stripCodeBlock(row.message))}</td>
 			<td class="rowActions">
 				${(() => { const c = extractCoordsCopyValue(row.message); return c ? `<div class="rowCoordBtn" data-coords="${escapeAttr(c)}" title="کپی مختصات">📍</div>` : ''; })()}
+				${(state.canProfile && row.identifier) ? `<div class="rowProfileBtn" data-identifier="${escapeAttr(row.identifier)}" data-name="${escapeAttr(row.player_name || '')}" title="پروفایل پلیر">🧾</div>` : ''}
 				${state.canPin ? `<div class="rowPinBtn ${isPinned ? 'pinned' : ''}" data-id="${row.id}" title="${isPinned ? 'آن‌پین' : 'پین'}">📌</div>` : ''}
 				${state.canDelete ? `<div class="rowDeleteBtn" data-id="${row.id}" title="حذف">🗑️</div>` : ''}
 			</td>
@@ -1390,7 +1466,7 @@ function renderTable(logs){
 	window._currentLogs = logs;
 	[...body.querySelectorAll('.logRow')].forEach(tr => {
 		tr.addEventListener('click', (e) => {
-			if (e.target.closest('.rowDeleteBtn') || e.target.closest('.rowPinBtn') || e.target.closest('.rowCoordBtn') || e.target.closest('.playerNameWrap') || e.target.closest('.rowCheckbox')) return;
+			if (e.target.closest('.rowDeleteBtn') || e.target.closest('.rowPinBtn') || e.target.closest('.rowCoordBtn') || e.target.closest('.rowProfileBtn') || e.target.closest('.playerNameWrap') || e.target.closest('.rowCheckbox')) return;
 			openDetail(window._currentLogs[+tr.dataset.idx]);
 		});
 	});
@@ -1422,6 +1498,12 @@ function renderTable(logs){
 		btn.addEventListener('click', (e) => {
 			e.stopPropagation();
 			togglePin(+btn.dataset.id);
+		});
+	});
+	[...body.querySelectorAll('.rowProfileBtn')].forEach(btn => {
+		btn.addEventListener('click', (e) => {
+			e.stopPropagation();
+			openPlayerProfile(btn.dataset.identifier, btn.dataset.name);
 		});
 	});
 	[...body.querySelectorAll('.playerNameWrap')].forEach(elm => {
@@ -1807,6 +1889,109 @@ function renderDetailFacts(message){
 function closeDetail(){
 	document.getElementById('detailOverlay').classList.remove('show');
 }
+
+// ============================================================================
+// ✅ اضافه شد (راند چهارم): پروفایل تجمیعی پلیر — خلاصه + شکست دسته‌بندی + تایم‌لاین
+// ============================================================================
+let currentProfileIdentifier = null;
+let currentProfileName = null;
+
+async function openPlayerProfile(identifier, playerName){
+	if (!identifier){ showToast('این ردیف شناسه‌ی معتبری نداره', 'err'); return; }
+	currentProfileIdentifier = identifier;
+	currentProfileName = playerName || identifier;
+
+	document.getElementById('profileOverlay').classList.add('show');
+	document.getElementById('profileName').textContent = 'در حال بارگذاری...';
+	document.getElementById('profileIdentifier').textContent = identifier;
+	document.getElementById('profileStats').innerHTML = '';
+	document.getElementById('profileCategoryList').innerHTML = '';
+	document.getElementById('profileTimeline').innerHTML = '';
+	document.getElementById('profileEmpty').style.display = 'none';
+
+	const res = await post('fetchPlayerProfile', { identifier });
+	if (!res || res.error){
+		const msgs = {
+			no_access: 'دسترسی نداری (فقط ادمین).',
+			disabled: 'این فیچر غیرفعاله.',
+			no_database: 'دیتابیس آماده نیست.',
+			invalid_identifier: 'شناسه‌ی نامعتبر.',
+		};
+		showToast(msgs[res && res.error] || 'خطا تو گرفتن پروفایل', 'err');
+		closePlayerProfile();
+		return;
+	}
+	renderPlayerProfile(res);
+}
+
+function renderPlayerProfile(res){
+	const avatarColor = hashColor(res.identifier || res.playerName || 'unknown');
+	const initial = (res.playerName || currentProfileName || '?').trim().charAt(0).toUpperCase() || '?';
+	document.getElementById('profileAvatar').style.background = avatarColor;
+	document.getElementById('profileAvatar').textContent = initial;
+	document.getElementById('profileName').textContent = res.playerName || currentProfileName || 'ناشناس';
+	document.getElementById('profileIdentifier').textContent = res.identifier || '';
+
+	document.getElementById('profileStats').innerHTML = `
+		<span>📊 مجموع لاگ‌ها: ${res.total || 0}</span>
+		<span>🕐 اولین لاگ: ${res.firstSeen ? formatTime(res.firstSeen) : '—'}</span>
+		<span>🕐 آخرین لاگ: ${res.lastSeen ? formatTime(res.lastSeen) : '—'}</span>
+		${res.truncated ? `<span>⚠️ فقط ${res.limit} مورد آخر نشون داده می‌شه</span>` : ''}
+	`;
+
+	const catList = document.getElementById('profileCategoryList');
+	if (!res.categoryCounts || !res.categoryCounts.length){
+		catList.innerHTML = '<div style="color:var(--text-dim); font-size:12px;">داده‌ای نیست</div>';
+	} else {
+		const maxCnt = Math.max(1, ...res.categoryCounts.map(c => +c.cnt || 0));
+		catList.innerHTML = res.categoryCounts.map(c => {
+			const meta = getCatMeta(c.category);
+			const pct = Math.round(((+c.cnt || 0) / maxCnt) * 100);
+			return `<div class="barRow">
+				<div class="barLbl">${meta.icon} ${escapeHTML(meta.label)}</div>
+				<div class="barTrack"><div class="barFill" style="width:${pct}%; background:${meta.color};"></div></div>
+				<div class="barCnt">${c.cnt}</div>
+			</div>`;
+		}).join('');
+	}
+
+	const timeline = document.getElementById('profileTimeline');
+	const emptyEl = document.getElementById('profileEmpty');
+	if (!res.timeline || !res.timeline.length){
+		timeline.innerHTML = '';
+		emptyEl.style.display = 'block';
+	} else {
+		emptyEl.style.display = 'none';
+		window._profileTimeline = res.timeline;
+		timeline.innerHTML = res.timeline.map((row, idx) => {
+			const meta = getCatMeta(row.category);
+			return `<div class="profileTimelineItem" data-idx="${idx}" style="--cat-color:${meta.color};">
+				<span class="ptiIcon">${meta.icon}</span>
+				<div class="ptiBody">
+					<div class="ptiTop"><span>${escapeHTML(meta.label)}${row.job ? ' · ' + escapeHTML(row.job) : ''}</span><span>${formatTime(row.created_at)}</span></div>
+					<div class="ptiMsg">${escapeHTML(stripCodeBlock(row.message))}</div>
+				</div>
+			</div>`;
+		}).join('');
+		[...timeline.querySelectorAll('.profileTimelineItem')].forEach(el => {
+			el.addEventListener('click', () => {
+				openDetail(window._profileTimeline[+el.dataset.idx]);
+			});
+		});
+	}
+}
+
+function closePlayerProfile(){
+	document.getElementById('profileOverlay').classList.remove('show');
+}
+
+function filterFromProfile(){
+	if (!currentProfileIdentifier) return;
+	closePlayerProfile();
+	switchView('logs');
+	filterByPlayer({ identifier: currentProfileIdentifier, player_name: currentProfileName });
+}
+
 function copyToClipboard(text, successMsg){
 	navigator.clipboard.writeText(text)
 		.then(() => showToast(successMsg || 'کپی شد', 'ok'))
@@ -1936,15 +2121,23 @@ async function loadStats(){
 			<div class="barLbl"><span class="avatar" style="background:${color}; width:16px; height:16px; font-size:8px; margin-inline-end:5px;">${escapeHTML((r.player_name || '?').charAt(0).toUpperCase())}</span>${escapeHTML(r.player_name || '—')}</div>
 			<div class="barTrack"><div class="barFill" style="width:${pct}%; background:${color};"></div></div>
 			<div class="barCnt">${r.cnt}</div>
+			${(state.canProfile && r.identifier) ? `<div class="rowProfileBtn barProfileBtn" data-identifier="${escapeAttr(r.identifier)}" data-name="${escapeAttr(r.player_name || '')}" title="پروفایل پلیر" style="width:22px; height:22px; margin-inline-start:4px;">🧾</div>` : ''}
 		</div>`;
 	}).join('') || '<div style="color:var(--text-dim); font-size:12px;">داده‌ای نیست</div>';
 	[...document.querySelectorAll('.playerBarRow')].forEach(el => {
 		el.style.cursor = 'pointer';
 		el.title = 'فقط لاگ‌های این پلیر';
-		el.addEventListener('click', () => {
+		el.addEventListener('click', (e) => {
+			if (e.target.closest('.barProfileBtn')) return;
 			if (!el.dataset.identifier) return;
 			switchView('logs');
 			filterByPlayer({ identifier: el.dataset.identifier, player_name: el.dataset.name });
+		});
+	});
+	[...document.querySelectorAll('.barProfileBtn')].forEach(btn => {
+		btn.addEventListener('click', (e) => {
+			e.stopPropagation();
+			openPlayerProfile(btn.dataset.identifier, btn.dataset.name);
 		});
 	});
 

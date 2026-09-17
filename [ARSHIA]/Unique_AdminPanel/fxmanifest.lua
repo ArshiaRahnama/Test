@@ -88,6 +88,11 @@ server_scripts {
 	-- and client/nui_panel.lua's F12 report queue all keep working unmodified.
 	'shared/report_server_config.lua',
 	'shared/report_lan.lua',
+	-- باید همینجا باشه: قبل از هر فایلی که reports/users رو کوئری میکنه،
+	-- ولی بعد از Config_Server (برای اسم ستونِ XP). خودش اسکیمای دیتابیس
+	-- رو موقعِ استارت چک/ترمیم میکنه تا یک SQL جا‌مونده دیگه هیچ‌وقت کل
+	-- صفِ ادمین رو خالی نشون نده (ببین هدرِ خودِ فایل برای جزئیات).
+	'server/report_schema_guard.lua',
 	'server/report_function.lua',
 	'server/report_main.lua',
 	-- original Unique_AdminPanel

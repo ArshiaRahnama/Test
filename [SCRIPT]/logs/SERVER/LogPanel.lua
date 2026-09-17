@@ -298,6 +298,10 @@ ESX.RegisterServerCallback('LogPanel:GetMeta', function(source, cb)
 		canExport      = Config.EnableExport,
 		canDelete      = Config.EnableDelete and admin,
 		canPin         = Config.EnablePinning and admin,
+		-- ✅ اضافه شد: پروفایل تجمیعی پلیر فقط برای ادمین (نه باس شغلی)، چون این
+		-- کوئری همه‌ی دسته‌ها/شغل‌های اون پلیر رو تو کل سرور برمی‌گردونه، نه فقط
+		-- همون شغلی که باس مسئولشه
+		canProfile     = Config.EnableProfileView and admin,
 		retentionDays  = Config.RetentionDays,
 	}
 
@@ -331,6 +335,69 @@ ESX.RegisterServerCallback('LogPanel:GetMeta', function(source, cb)
 			cb(base)
 		end)
 	end
+end)
+
+-- ============================================================================
+-- ✅ اضافه شد (راند چهارم): پروفایل تجمیعی یه پلیر خاص — خلاصه (اولین/آخرین دیده‌شدن
+-- + تعداد کل) + شکست دسته‌ای + تایم‌لاین کامل. فقط ادمین (نه باس)، چون چندشغلیه.
+-- ============================================================================
+ESX.RegisterServerCallback('LogPanel:GetPlayerProfile', function(source, cb, data)
+	if not Config.EnableProfileView then
+		cb({ error = 'disabled' })
+		return
+	end
+	if not isAdmin(source) then
+		cb({ error = 'no_access' })
+		return
+	end
+	if not MySQL or not MySQL.Async then
+		cb({ error = 'no_database' })
+		return
+	end
+
+	local identifier = tostring(data and data.identifier or ''):match('^%s*(.-)%s*$')
+	if identifier == '' then
+		cb({ error = 'invalid_identifier' })
+		return
+	end
+	if #identifier > 64 then identifier = identifier:sub(1, 64) end
+
+	local limit = tonumber(data and data.limit) or Config.ProfileTimelineLimit
+	if not limit or limit < 1 then limit = Config.ProfileTimelineLimit end
+	if limit > Config.ProfileTimelineLimit then limit = Config.ProfileTimelineLimit end
+
+	MySQL.Async.fetchAll(
+		'SELECT category, COUNT(*) AS cnt FROM unique_logpanel WHERE identifier = @identifier GROUP BY category ORDER BY cnt DESC',
+		{ ['@identifier'] = identifier },
+		function(categoryCounts)
+			MySQL.Async.fetchAll(
+				'SELECT (SELECT player_name FROM unique_logpanel WHERE identifier = @identifier AND player_name IS NOT NULL ORDER BY created_at DESC LIMIT 1) AS player_name, '
+				.. 'COUNT(*) AS total, MIN(created_at) AS first_seen, MAX(created_at) AS last_seen '
+				.. 'FROM unique_logpanel WHERE identifier = @identifier',
+				{ ['@identifier'] = identifier },
+				function(summaryRows)
+					local summary = (summaryRows and summaryRows[1]) or {}
+					MySQL.Async.fetchAll(
+						'SELECT id, category, job, title, message, source, created_at, pinned FROM unique_logpanel WHERE identifier = @identifier ORDER BY created_at DESC LIMIT @limit',
+						{ ['@identifier'] = identifier, ['@limit'] = limit },
+						function(timeline)
+							cb({
+								identifier     = identifier,
+								playerName     = summary.player_name,
+								total          = summary.total or 0,
+								firstSeen      = summary.first_seen,
+								lastSeen       = summary.last_seen,
+								categoryCounts = categoryCounts or {},
+								timeline       = timeline or {},
+								limit          = limit,
+								truncated      = (summary.total or 0) > limit,
+							})
+						end
+					)
+				end
+			)
+		end
+	)
 end)
 
 -- ============================================================================

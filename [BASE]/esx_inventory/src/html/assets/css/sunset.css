@@ -84,15 +84,19 @@
     --sun-r:  0.32vw;        /* cell radius                            */
     --sun-rp: 0.45vw;        /* panel / button radius                  */
 
-    /* --- palette: Sunset's own defaults ------------------------------
-       itembg_1 / itembg_2 / weightbg_1 / weightbg_2 straight out of
-       the Sunset settings block. Recolour the whole UI from here. */
+    /* --- palette: round 15 -------------------------------------------
+       Retuned against the actual reference resource's own SCSS
+       ($orange, the kilobar's default fill, the groove border colour)
+       rather than guessed off the screenshot. Recolour the whole UI
+       from here. */
     --sun-cell-1: rgba(20, 20, 20, 0.50);
     --sun-cell-2: rgba(40, 40, 40, 0.65);
     --sun-track:  rgb(60, 60, 60);
-    --sun-fill:   rgb(204, 91, 0);
+    --sun-fill:   rgb(144, 238, 144);   /* reference's default kilobar fill - light green, not amber */
+    --sun-fill-ok-text: rgba(0, 0, 0, 0.55); /* light-green fill needs a dark readout, not white-on-white */
 
-    --sun-accent: rgb(204, 91, 0);
+    --sun-accent:  rgb(255, 123, 0);    /* reference's $orange, exact   */
+    --sun-groove:  rgba(210, 210, 210, 0.65); /* reference's itementry border colour */
     --sun-slot:   #6b3fa0;      /* the purple hotbar badge             */
     --sun-warn:   #d9a441;
     --sun-danger: #d14b3c;
@@ -102,9 +106,9 @@
     --sun-line:   rgba(133, 133, 133, 0.31);   /* Sunset's cell border */
 
     /* config.css's names, retuned so every rule that already reads
-       them inherits the Sunset palette instead of the amber one. */
+       them inherits the palette instead of the old amber one. */
     --border-color:     var(--sun-line);
-    --active-color:     rgba(204, 91, 0, 0.75);
+    --active-color:     rgba(255, 123, 0, 0.75);
     --hover-color:      rgba(255, 255, 255, 0.07);
     --background-color: rgba(20, 20, 20, 0.62);
     --background-notif: rgba(15, 15, 15, 0.9);
@@ -336,9 +340,11 @@
     color: var(--sun-text);
     margin-bottom: 0.3vw;
 }
-/* the player / container name, in the small caps Sunset uses */
+/* the player / container name, in the small caps Sunset uses -
+   sized up in round 15 to match the reference's bigger header name */
 .text-loading-bar-left-part  span:nth-child(1),
 .text-loading-bar-right-part span:nth-child(1) {
+    font-size: 1.4vw;
     font-variant-caps: small-caps;
     letter-spacing: 0.04vw;
 }
@@ -354,29 +360,35 @@
 /* ===================================================================
    4.  WEIGHT BAR
    ===================================================================
-   Flat, square-ended, full width, track and fill only.
+   Round 15: rounded pill with a thin grey border and a light-green
+   default fill, matching the reference resource's own `.kilobar`
+   exactly (`border: 0.05vw solid grey`, default fill
+   `rgb(144,238,144)`) rather than the flat square amber bar this file
+   used before. Green->amber->red reads as a clearer progression than
+   the old orange->amber->red did anyway, since orange and amber sit
+   too close in hue to tell apart at a glance.
 
    setWeightBar() in inventory.js already clamps the fill at the track,
    which is what keeps an over-encumbered player (234/24KG) from
-   running the bar off the panel. The colour steps below are what tell
-   you it happened, since a clamped bar looks the same at 100% and at
-   975%.                                                               */
+   running the bar off the panel. The colour steps are what tell you
+   it happened, since a clamped bar looks the same at 100% and 975%.  */
 
 .novalue-left-part,
 .novalue-right-part {
     width: 100%;
-    height: 0.36vw;
+    height: 0.6vw;
     margin: 0;
-    border-radius: 0;
+    border-radius: 0.5vw;
+    border: 0.05vw solid rgba(255, 255, 255, 0.35);
     overflow: hidden;
-    background: var(--sun-track);
+    background: rgba(0, 0, 0, 0.4);
     box-shadow: none;
 }
 
 .value-left-part,
 .value-right-part {
     height: 100%;
-    border-radius: 0;
+    border-radius: 0.5vw;
     background: var(--sun-fill);
     box-shadow: none;
     transition: width 0.25s ease, background 0.25s ease;
@@ -460,13 +472,16 @@
 /* ===================================================================
    7.  CELLS
    ===================================================================
-   The heart of the skin. Flat gradient fill, hairline that only shows
-   on hover, generous radius, nothing else.                           */
+   Round 15: groove border (a real carved-in bevel, not a flat line) and
+   a brighter border on hover, matching the reference resource's own
+   `.itementry` (`0.1vw groove rgba(210,210,210,.65)`, brightening to
+   `rgba(255,255,255,.75)` on hover) instead of this file's earlier
+   invisible-until-hover hairline.                                     */
 
 .item-info,
 #left-inventory  .item-info[data-slot],
 #right-inventory .item-info {
-    border: 0.1vw solid transparent;
+    border: 0.1vw groove var(--sun-groove);
     border-radius: var(--sun-r);
     background: linear-gradient(150deg, var(--sun-cell-1) 0%, var(--sun-cell-2) 100%);
     box-shadow: none;
@@ -476,7 +491,9 @@
 
 /* onSearch() in inventory.js writes border-color and border-width
    inline on matched cells, which is why the border box is declared at
-   0.1vw here: the widths have to agree or matches jump a pixel. */
+   0.1vw here: the widths have to agree or matches jump a pixel. Only
+   the width and colour get overridden that way, never the style, so
+   the groove bevel survives a search highlight untouched. */
 
 /* SPECIFICITY: the base rule above is ID-qualified, so a bare
    `.item-info:hover` loses to it and the hover state never paints.
@@ -485,7 +502,7 @@
 #left-inventory  .item-info:hover,
 #left-inventory  .item-info[data-slot]:hover,
 #right-inventory .item-info:hover {
-    border-color: rgba(255, 255, 255, 0.35);
+    border-color: rgba(255, 255, 255, 0.75);
     background: linear-gradient(150deg,
                 rgba(45, 45, 45, 0.6) 0%,
                 rgba(70, 70, 70, 0.7) 100%);
@@ -522,17 +539,28 @@
 
 
 /* --- quality bar ----------------------------------------------------
-   Sunset shows item quality as a hairline across the top of the cell.
-   esx_inventory's ranks map onto it directly, and drawing it on a
-   pseudo-element keeps it clear of applyRankStyle's inline styles. */
+   Round 15: moved from a hairline across the top to a bar down the
+   LEFT edge, matching the reference's own `.qualitybar` position and
+   shape (`left:0; height:100%; width:4%`).
+
+   One thing this is NOT: the reference's bar is a continuous 0-100%
+   condition/durability gauge, filled bottom-up by an actual quality
+   value in their item data. esx_inventory doesn't carry a quality
+   percentage on items - what it has is `rank` (a discrete tier:
+   uncommon/rare/epic/legendary), which is what was already driving
+   this bar before this round. So the POSITION now matches the
+   reference; the bar itself is still esx_inventory's own rarity
+   indicator, not a quality meter with real percentage data behind it -
+   building that would mean adding a quality field to the item data
+   model server-side first, not just moving a bar in CSS. */
 
 .item::before {
     content: '';
     position: absolute;
     top: 0;
     left: 0;
-    right: 0;
-    height: 0.14vw;
+    bottom: 0;
+    width: 0.22vw;
     opacity: 0;
     pointer-events: none;
     z-index: 4;
@@ -696,39 +724,77 @@
 
 
 /* ===================================================================
-   9.  CENTRE COLUMN
+   9.  CENTRE COLUMN  (round 15: action bar moved to the bottom)
    ===================================================================
-   Sunset's action buttons are flat translucent pills with plain text.
-   The column's POSITION is left alone: the clothing slots are aligned
-   to where the game renders the ped, and moving them would put the
-   slots on top of the model.                                         */
+   Reference layout keeps a compact, text-only button row low on
+   screen, near the hotbar - not a tall icon-tile toolbar floating
+   above the character's head. Moved with `position` only: same DOM
+   node, same #useItem/#giveItem/#renameItem/#deleteItem/#dropItem
+   ids, same click handlers in inventory.js - nothing here changes
+   what any button does, only where it sits and how it looks.
+
+   Pulled out of the flex flow (`position: absolute`, anchored to
+   `.center-part`'s own bottom edge) rather than reordered in place
+   with flex `order` + `justify-content: flex-end`: the clothing slots
+   above it are aligned to where the game renders the ped, and
+   `flex-end` would have shifted THAT whole centred group down with
+   it. Pulling just the button row out of flow leaves the clothes/
+   hotbar centring completely untouched. */
+
+.center-part {
+    overflow: visible;   /* the button row now extends past this box's
+                             own bottom edge on purpose */
+}
+
+.top-buttons-center-part {
+    position: absolute;
+    left: 50%;
+    bottom: 0.7vw;
+    transform: translateX(-50%);
+    width: auto;
+    height: auto;
+    gap: 0.35vw;
+}
 
 .top-buttons-center-part > div {
+    width: auto;
+    height: 1.85vw;
+    padding: 0 0.95vw;
+    margin-left: 0;         /* button.css's per-button 0.573vw gap,
+                                replaced by the row's own `gap` above */
     border: none;
-    border-radius: var(--sun-rp);
-    background: rgba(40, 40, 40, 0.72);
+    border-radius: 999px;   /* pill */
+    background: rgba(30, 28, 26, 0.82);
     transition: background 0.12s ease;
 }
 .top-buttons-center-part > div:hover {
-    background: rgba(70, 70, 70, 0.82);
+    background: rgba(60, 56, 52, 0.9);
     transform: none;
     box-shadow: none;
 }
 .top-buttons-center-part > div span {
-    font-size: 0.75vw;
-    letter-spacing: 0.02vw;
+    font-size: 0.62vw;
+    letter-spacing: 0.04vw;
     color: var(--sun-text);
 }
-.top-buttons-center-part > div img,
-.top-buttons-center-part > div i { opacity: 0.85; }
+/* text-only pills, matching the reference - the icon tile each button
+   used to carry (5vw square, its own border/background from
+   button.css) is dropped rather than shrunk, since a pill this small
+   has no room for both a label and an icon without crowding either. */
+.top-buttons-center-part > div .raccours1,
+.top-buttons-center-part > div .raccours2,
+.top-buttons-center-part > div .raccours3,
+.top-buttons-center-part > div .raccours4 {
+    display: none;
+}
 
 /* DELETE and DROP are the two that lose you something; they stay
    quiet until you reach for them, then read red. */
 #deleteItem:hover,
-#dropItem:hover { background: rgba(155, 55, 44, 0.8); }
+#dropItem:hover { background: rgba(155, 55, 44, 0.85); }
 
 .top-buttons-center-part > div.hoverControl {
-    background: rgba(204, 91, 0, 0.45);
+    background: rgba(204, 91, 0, 0.55);
 }
 
 .item-box, .item-box2 {

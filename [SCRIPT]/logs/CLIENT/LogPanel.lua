@@ -99,6 +99,13 @@ RegisterNUICallback('bulkPin', function(data, cb)
 	end, data)
 end)
 
+-- ✅ اضافه شد (راند چهارم): پروفایل تجمیعی پلیر (تایم‌لاین + آمار دسته‌بندی)
+RegisterNUICallback('fetchPlayerProfile', function(data, cb)
+	ESX.TriggerServerCallback('LogPanel:GetPlayerProfile', function(result)
+		cb(result)
+	end, data)
+end)
+
 -- ============================================================================
 -- کامندهای کلاینتی (میان‌بر مستقیم، جدا از کامند سروری که پرمیشن‌چک می‌کنه)
 -- ============================================================================
