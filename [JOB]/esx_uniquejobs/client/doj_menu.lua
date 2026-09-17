@@ -13,7 +13,7 @@
 ESX = nil
 
 local dojJob = nil -- 'marshal' | 'judge' | 'cia' | 'cid' | 'fbi' | 'doa' | nil
-local DOJ_JOBS = { marshal = true, judge = true, cia = true, cid = true, fbi = true, doa = true }
+local DOJ_JOBS = DojJobSet -- shared/departments.lua (was a hardcoded duplicate)
 
 Citizen.CreateThread(function()
 	while ESX == nil do
@@ -241,6 +241,17 @@ end
 -- ============================================================
 
 function OpenDojMenu()
+	-- BUG FIX: was trusting the dojJob variable as cached by the
+	-- esx:setJob event handler above -- if a job change happened through
+	-- something that doesn't fire that exact client event (an admin panel
+	-- tool setting the job directly is a common one), dojJob stayed stale
+	-- and /doj would wrongly say "not a DOJ member" even though the
+	-- player's actual, live ESX.PlayerData.job (what the HUD reads, and
+	-- what the server actually checks) was already correct. Re-checking
+	-- fresh here means /doj can never be wrong about the player's own
+	-- current job, no matter how it last changed.
+	CheckDojJob()
+
 	if not dojJob then
 		ESX.ShowNotification("❌ Shoma Ozve DOJ Nistid!")
 		return

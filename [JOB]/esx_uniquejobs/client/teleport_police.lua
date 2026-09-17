@@ -9,7 +9,7 @@ local markerCoords5 = vector3(624.5064, -18.6185, 82.778)
 local function isPlayerAllowedPolice()
     local playerData = ESX.GetPlayerData()
     if playerData and playerData.job then
-        return playerData.job.name == 'police' or playerData.job.name == 'sheriff' or playerData.job.name == 'mt' or playerData.job.name == 'fbi' or playerData.job.name == 'cid' or playerData.job.name == 'cia' or playerData.job.name == 'marshal' or playerData.job.name == 'judge' or playerData.job.name == 'doa'
+        return IsGovernmentJob(playerData.job.name) -- shared/departments.lua (was a hardcoded DOJ+LE job list)
     end
     return false
 end
@@ -165,7 +165,7 @@ local markerCoords2 = vector3(565.6870, 4.959659, 103.23)
 local function isPlayerAllowedPoliceheli()
     local playerData = ESX.GetPlayerData()
     if playerData and playerData.job then
-        return playerData.job.name == 'police' or playerData.job.name == 'sheriff' or playerData.job.name == 'mt' or playerData.job.name == 'fbi' or playerData.job.name == 'cid' or playerData.job.name == 'cia' or playerData.job.name == 'marshal' or playerData.job.name == 'judge' or playerData.job.name == 'doa'
+        return IsGovernmentJob(playerData.job.name) -- shared/departments.lua (was a hardcoded DOJ+LE job list)
     end
     return false
 end

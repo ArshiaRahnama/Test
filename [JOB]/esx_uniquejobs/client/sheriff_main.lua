@@ -3970,7 +3970,12 @@ Citizen.CreateThread(function()
 					if GetPedInVehicleSeat(veh, 0) == PlayerPedId() then
 						notified = true
 						ESX.ShowHelpNotification('~INPUT_CONTEXT~ Neshastan Poshte Farmon')
-						ActivateTask()
+						-- BUG FIX: was a call to a global function ActivateTask() that is
+						-- never defined anywhere in this resource (checked every client/*_main.lua
+						-- and every other file) -- guaranteed 'attempt to call a nil value'
+						-- script error every single time any government-job player sat in a
+						-- vehicle's driver seat. The help notification right above already did
+						-- this block's only real job, so the dead call is just removed.
 					else
 						notified = false
 					end

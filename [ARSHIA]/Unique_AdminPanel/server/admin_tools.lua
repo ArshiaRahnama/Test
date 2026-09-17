@@ -136,15 +136,15 @@ RegisterCommand('akick', function(source, args)
     end)
 end, false)
 
-RegisterCommand('aban', function(source, args)
-    if not IsOnDutyAdminFor(source, 'btn_ban') then DenyButtonAccess(source, 'btn_ban') return end
-    local targetId = tonumber(args[1])
-    if not targetId then return end
+-- ریفکتور شد به یک تابع قابل استفاده‌ی مجدد، چون پنل ریپورت هم به همین
+-- منطق (سین/تأخیر/لاگ/جدول یکسان) نیاز داره برای «بن یک‌کلیکی از روی
+-- پریست» - به‌جای اینکه یک مسیر بنِ دومِ جدا و ناهماهنگ بسازه.
+-- امضا و رفتار /aban دقیقاً همون قبلیه، فقط بدنه‌ش رفته تو IssueBan.
+function IssueBan(source, targetId, durationArg, reason)
     local Target = ESX.GetPlayerFromId(targetId)
-    if not Target then return end
+    if not Target then return false, 'not-online' end
 
-    local durationArg = args[2]
-    local reason = table.concat(args, ' ', 3)
+    reason = reason or ''
     if reason == '' then reason = 'No reason specified' end
 
     local permanent = (durationArg == 'perm' or durationArg == 'permanent')
@@ -152,7 +152,7 @@ RegisterCommand('aban', function(source, args)
 
     if not permanent and minutes <= 0 then
         TriggerClientEvent('esx:showNotification', source, "~r~Usage: /aban <id> <minutes|perm> <reason>")
-        return
+        return false, 'bad-duration'
     end
 
     local identifier = Target.identifier
@@ -208,6 +208,20 @@ RegisterCommand('aban', function(source, args)
             LogAdminAction(source, "ban", ("target: %s | %s minutes | reason: %s"):format(targetName, minutes, reason), identifier, targetName)
         end
     end)
+
+    return true
+end
+
+RegisterCommand('aban', function(source, args)
+    if not IsOnDutyAdminFor(source, 'btn_ban') then DenyButtonAccess(source, 'btn_ban') return end
+    local targetId = tonumber(args[1])
+    if not targetId then return end
+    if not ESX.GetPlayerFromId(targetId) then return end
+
+    local durationArg = args[2]
+    local reason = table.concat(args, ' ', 3)
+
+    IssueBan(source, targetId, durationArg, reason)
 end, false)
 
 RegisterCommand('aunban', function(source, args)

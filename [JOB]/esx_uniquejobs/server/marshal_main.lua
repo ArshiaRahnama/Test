@@ -30,7 +30,13 @@ AddEventHandler('esx_marshaljob:requestrelease', function(targetid, playerheadin
 	if not GetPlayerName(targetid) or not cPlayer then
 		return
 	end
-	if xPlayer.job.name == "marshal" or xPlayer.job.name == "sheriff" or xPlayer.job.name == "fbi" or xPlayer.gang.name ~= "nogang" or xPlayer.job.name == "mt" or xPlayer.job.name == "forces" then
+	-- BUG FIX: this used to be its own narrower hardcoded list (marshal, sheriff, fbi,
+	-- mt, plus a dead 'forces' job name) that was MISSING cid/judge/doa, unlike the
+	-- near-identical check in server/police_main.lua's esx_policejob:requestrelease --
+	-- so a CID/judge/DOA officer could release a cuffed suspect through the police
+	-- menu but not through this identical marshal one. Now both read from the same
+	-- shared/departments.lua set, so they can't drift apart again.
+	if IsGovernmentJob(xPlayer.job.name) or xPlayer.gang.name ~= "nogang" then
 		if #(GetEntityCoords(GetPlayerPed(source)) - GetEntityCoords(GetPlayerPed(tonumber(targetid)))) < 15.0 then
 			if cPlayer.get("Cuff") then
 
@@ -51,6 +57,11 @@ end)
 
 RegisterServerEvent('esx_marshaljob:drag')
 AddEventHandler('esx_marshaljob:drag', function(target)
+	-- SECURITY FIX: had NO job check at all -- any connected player, regardless
+	-- of job, could drag any cuffed player around. Same fix applied to the
+	-- identical server/police_main.lua handler.
+	local xPlayer = ESX.GetPlayerFromId(source)
+	if not xPlayer or not IsGovernmentJob(xPlayer.job.name) then return end
 	local cPlayer = ESX.GetPlayerFromId(target)
 	if GetPlayerName(target) or cPlayer then
 		if #(GetEntityCoords(GetPlayerPed(source)) - GetEntityCoords(GetPlayerPed(tonumber(target)))) < 20.0 then
@@ -81,6 +92,10 @@ end)
 
 RegisterServerEvent('esx_marshaljob:putInVehicle')
 AddEventHandler('esx_marshaljob:putInVehicle', function(target)
+	-- SECURITY FIX: had NO job check at all -- any connected player, regardless
+	-- of job, could shove any cuffed player into any vehicle.
+	local requester = ESX.GetPlayerFromId(source)
+	if not requester or not IsGovernmentJob(requester.job.name) then return end
 	local cPlayer = ESX.GetPlayerFromId(target)
 
 	local playerPed = GetPlayerPed(source)
@@ -133,6 +148,10 @@ end)
 
 RegisterServerEvent('esx_marshaljob:OutVehicle')
 AddEventHandler('esx_marshaljob:OutVehicle', function(target)
+	-- SECURITY FIX: had NO job check at all -- any connected player, regardless
+	-- of job, could pull any cuffed/dead player out of a vehicle.
+	local requester = ESX.GetPlayerFromId(source)
+	if not requester or not IsGovernmentJob(requester.job.name) then return end
 	local cPlayer = ESX.GetPlayerFromId(target)
 	if GetPlayerName(target) or not cPlayer then
 		if #(GetEntityCoords(GetPlayerPed(source)) - GetEntityCoords(GetPlayerPed(tonumber(target)))) < 15.0 then
@@ -572,8 +591,8 @@ ESX.RegisterServerCallback("PD_CuffStatus:GetPedHandsUpStatus", function(source,
 	cb(IsCuffed, Injure, Dead)
 end)
 
-RegisterServerEvent('esx:requestarrestpd')
-AddEventHandler('esx:requestarrestpd', function(targetid, playerheading, playerCoords, playerlocation, front)
+RegisterServerEvent('esx:requestarrestmarshal')
+AddEventHandler('esx:requestarrestmarshal', function(targetid, playerheading, playerCoords, playerlocation, front)
 	local source = source
 	local xPlayer = ESX.GetPlayerFromId(source)
 	local cPlayer = ESX.GetPlayerFromId(targetid)
@@ -596,8 +615,8 @@ AddEventHandler('esx:requestarrestpd', function(targetid, playerheading, playerC
 	end
 end)
 
-RegisterServerEvent('logpdVehicleSpawn')
-AddEventHandler('logpdVehicleSpawn', function(playerName, serverID, steamHex, vehicleModel, plateText, isspawn)
+RegisterServerEvent('logmarshalVehicleSpawn')
+AddEventHandler('logmarshalVehicleSpawn', function(playerName, serverID, steamHex, vehicleModel, plateText, isspawn)
 	if isspawn then
 		messages = {
 			{["name"] = "👤 **Player Name**", ["value"] = playerName, ["inline"] = false},
@@ -662,8 +681,8 @@ function DiscordLogs_marshal(messagess, titelss, grren)
     end
 end
 
-RegisterServerEvent('logpdPutItem')
-AddEventHandler('logpdPutItem', function(playerName, serverID, steamHex, itemLabel, itemCount)
+RegisterServerEvent('logmarshalPutItem')
+AddEventHandler('logmarshalPutItem', function(playerName, serverID, steamHex, itemLabel, itemCount)
     local discordWebhooks = {
         GetConvar('unique_cid_main_wh3', ''),
         GetConvar('unique_marshal_main_wh2', '')
@@ -689,8 +708,8 @@ AddEventHandler('logpdPutItem', function(playerName, serverID, steamHex, itemLab
     end
 end)
 
-RegisterServerEvent('logpdGetItem')
-AddEventHandler('logpdGetItem', function(playerName, serverID, steamHex, itemLabel, itemCount)
+RegisterServerEvent('logmarshalGetItem')
+AddEventHandler('logmarshalGetItem', function(playerName, serverID, steamHex, itemLabel, itemCount)
     local discordWebhooks = {
         GetConvar('unique_cid_main_wh3', ''),
         GetConvar('unique_marshal_main_wh2', '')
@@ -716,8 +735,8 @@ AddEventHandler('logpdGetItem', function(playerName, serverID, steamHex, itemLab
     end
 end)
 
-RegisterServerEvent('logpdBuyItem')
-AddEventHandler('logpdBuyItem', function(playerName, serverID, steamHex, itemLabel, itemCount, itemPrice)
+RegisterServerEvent('logmarshalBuyItem')
+AddEventHandler('logmarshalBuyItem', function(playerName, serverID, steamHex, itemLabel, itemCount, itemPrice)
     local discordWebhooks = {
         GetConvar('unique_cid_main_wh5', ''),
         GetConvar('unique_marshal_main_wh3', '')
@@ -744,8 +763,8 @@ AddEventHandler('logpdBuyItem', function(playerName, serverID, steamHex, itemLab
     end
 end)
 
-RegisterServerEvent('logpdGetWeapon')
-AddEventHandler('logpdGetWeapon', function(playerName, serverID, steamHex, weaponLabel, ammoCount)
+RegisterServerEvent('logmarshalGetWeapon')
+AddEventHandler('logmarshalGetWeapon', function(playerName, serverID, steamHex, weaponLabel, ammoCount)
     local discordWebhooks = {
         GetConvar('unique_cid_main_wh3', ''),
         GetConvar('unique_marshal_main_wh4', '')
@@ -771,8 +790,8 @@ AddEventHandler('logpdGetWeapon', function(playerName, serverID, steamHex, weapo
     end
 end)
 
-RegisterServerEvent('logpdPutWeapon')
-AddEventHandler('logpdPutWeapon', function(playerName, serverID, steamHex, weaponLabel, ammoCount)
+RegisterServerEvent('logmarshalPutWeapon')
+AddEventHandler('logmarshalPutWeapon', function(playerName, serverID, steamHex, weaponLabel, ammoCount)
     local discordWebhooks = {
         GetConvar('unique_cid_main_wh3', ''),
         GetConvar('unique_marshal_main_wh4', '')
@@ -798,8 +817,8 @@ AddEventHandler('logpdPutWeapon', function(playerName, serverID, steamHex, weapo
     end
 end)
 
-RegisterServerEvent('logpdBuyWeapon')
-AddEventHandler('logpdBuyWeapon', function(playerName, serverID, steamHex, weaponLabel, buyCount, totalPrice)
+RegisterServerEvent('logmarshalBuyWeapon')
+AddEventHandler('logmarshalBuyWeapon', function(playerName, serverID, steamHex, weaponLabel, buyCount, totalPrice)
     local discordWebhooks = {
         GetConvar('unique_cid_main_wh5', ''),
         GetConvar('unique_marshal_main_wh3', '')
@@ -826,8 +845,8 @@ AddEventHandler('logpdBuyWeapon', function(playerName, serverID, steamHex, weapo
     end
 end)
 
-RegisterServerEvent("PdBillingWebhook")
-AddEventHandler("PdBillingWebhook", function(targetId, amount, reason)
+RegisterServerEvent("MarshalBillingWebhook")
+AddEventHandler("MarshalBillingWebhook", function(targetId, amount, reason)
     local src = source
     local xPlayer = ESX.GetPlayerFromId(src)
     local xTarget = ESX.GetPlayerFromId(targetId)
@@ -865,8 +884,8 @@ AddEventHandler("PdBillingWebhook", function(targetId, amount, reason)
     }), {['Content-Type'] = 'application/json'})
 end)
 
-RegisterServerEvent("PdJailWebhook")
-AddEventHandler("PdJailWebhook", function(targetId, jailTime, reason)
+RegisterServerEvent("MarshalJailWebhook")
+AddEventHandler("MarshalJailWebhook", function(targetId, jailTime, reason)
     local src = source
     local xPlayer = ESX.GetPlayerFromId(src)
     local xTarget = ESX.GetPlayerFromId(targetId)
@@ -878,6 +897,15 @@ AddEventHandler("PdJailWebhook", function(targetId, jailTime, reason)
 
     local executorHex = xPlayer.identifier
     local targetHex = xTarget.identifier
+
+    -- CONNECTED: every department's own jailing now feeds the same rap
+    -- sheet / officer-performance stats that server/cid_main.lua's own
+    -- CidJailWebhook already fed (via server/records_manager.lua's global
+    -- LogCriminalRecord) -- previously only CID arrests showed up there.
+    if LogCriminalRecord then
+        LogCriminalRecord(targetHex, 'arrest', reason, executorICName, executorHex, jailTime)
+    end
+
 
     local timestamp = os.date("!%Y-%m-%dT%H:%M:%SZ")
     local unixTime = os.time()

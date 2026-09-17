@@ -123,11 +123,20 @@ function OpenBankAtm(atmEntity)
 	Wait(1000)
 	PlaySoundFrontend(-1, "ATM_WINDOW", "HUD_FRONTEND_DEFAULT_SOUNDSET", true)
 
+	OpenBankUI()
+end
+
+-- Opens the bank NUI on its own, without needing a physical ATM prop nearby.
+-- Used by the ATM flow above (after the walk-up/animation), and also exported
+-- so other resources (e.g. the phone's banking app) can open the exact same
+-- ATM-style UI instead of any UI of their own.
+function OpenBankUI()
+	if inMenu then return end
+
 	inMenu = true
 	SetNuiFocus(true, true)
 	SendNUIMessage({type = 'openGeneral'})
 	TriggerServerEvent('bank:balance')
-
 
 	Citizen.CreateThread(function()
 		while inMenu do
@@ -139,6 +148,8 @@ function OpenBankAtm(atmEntity)
 		end
 	end)
 end
+
+exports('OpenBankUI', OpenBankUI)
 
 RegisterNUICallback('deposit', function(data, cb)
 	TriggerServerEvent('bank:depositx', tonumber(data.amount))

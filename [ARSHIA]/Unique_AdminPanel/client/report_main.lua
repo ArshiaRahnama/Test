@@ -112,6 +112,7 @@ local function openAdminPanel()
             limits     = Config_Shared.Limits,
             server     = Config_Shared.ServerName,
             site       = Config_Shared.ServerSite,
+            canned     = Config_Shared.CannedReplies,
         }
     })
     setFocus(true, 'admin')
@@ -176,6 +177,7 @@ RegisterNUICallback('create', function(data, rawCb)
         title    = data.title,
         info     = data.info,
         category = data.category,
+        targetId = data.targetId,   -- گسترش: بازیکنِ گزارش‌شده (اختیاری)
     })
 end)
 
@@ -244,6 +246,35 @@ RegisterNUICallback('rate', function(data, rawCb)
     if not ESX then return cb({ r = false }) end
     ESX.TriggerServerCallback('Unique_Report:rate', cb, data.id, data.rating)
     setFocus(false)
+end)
+
+-- =============================================================== گسترش‌ها ===
+
+RegisterNUICallback('setNote', function(data, rawCb)
+    local cb = cbWrap(rawCb)
+    if not ESX then return cb({ r = false }) end
+    ESX.TriggerServerCallback('Unique_Report:setNote', cb, data.id, data.note)
+end)
+
+RegisterNUICallback('voiceCheck', function(data, rawCb)
+    local cb = cbWrap(rawCb)
+    if not ESX then return cb({ r = false }) end
+    ESX.TriggerServerCallback('Unique_Report:voiceCheck', cb, data.pid)
+end)
+
+RegisterNUICallback('banPresets', function(_, rawCb)
+    local cb = cbWrap(rawCb)
+    if not ESX then return cb({ r = false }) end
+    -- همون کال‌بکِ موجودِ investigation.lua - چیزِ جدیدی سمت سرور لازم نداره
+    ESX.TriggerServerCallback('Unique_AdminPanel:GetBanPresets', function(presets)
+        cb({ r = true, data = presets or {} })
+    end)
+end)
+
+RegisterNUICallback('banClose', function(data, rawCb)
+    local cb = cbWrap(rawCb)
+    if not ESX then return cb({ r = false }) end
+    ESX.TriggerServerCallback('Unique_Report:banClose', cb, data.id, data.presetId)
 end)
 
 RegisterNUICallback('action', function(data, rawCb)

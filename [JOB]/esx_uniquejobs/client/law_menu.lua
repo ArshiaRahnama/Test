@@ -6,7 +6,7 @@
 
 ESX = nil
 
-local LE_JOBS = { police = true, sheriff = true, mt = true }
+local LE_JOBS = LeJobSet -- shared/departments.lua (was a hardcoded duplicate)
 local leJob = nil
 
 local CODEBOOK_CATEGORIES = {
@@ -67,6 +67,15 @@ local function issueOption(law)
 end
 
 function OpenLawMenu()
+	-- BUG FIX: same stale-cache issue as client/doj_menu.lua's OpenDojMenu()
+	-- (see GOVERNMENT_JOBS_CONSOLIDATION.md) -- leJob only updated via the
+	-- esx:setJob event handler above, which can miss a job change made
+	-- through something else (an admin panel tool, most commonly).
+	-- Re-derive it fresh from ESX.PlayerData.job here so this can never
+	-- wrongly reject a player whose actual current job is already correct.
+	local livejob = ESX.PlayerData and ESX.PlayerData.job
+	leJob = (livejob and LE_JOBS[livejob.name]) and livejob.name or nil
+
 	if not leJob then
 		ESX.ShowNotification("❌ Shoma Police, Sheriff Ya MT Nistid!")
 		return

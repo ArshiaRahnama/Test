@@ -576,9 +576,11 @@ RegisterServerEvent('esx_fbi_job:requestrelease')
 AddEventHandler('esx_fbi_job:requestrelease', function(targetid, playerheading, playerCoords,  playerlocation)
     local _source = source
     local xPlayer = ESX.GetPlayerFromId(_source)
-    -- SECURITY FIX: previously had NO job check -- any player could
-    -- release any arrested player.
-    if not xPlayer or xPlayer.job.name ~= 'fbi' then
+    -- CONNECTED: was strictly fbi-only (a suspect cuffed by FBI could only be
+    -- released through this exact event by another FBI agent). Opened up to
+    -- match every other department's requestrelease handler (police,
+    -- marshal, cia) -- any government job can now release, via shared/departments.lua.
+    if not xPlayer or not IsGovernmentJob(xPlayer.job.name) then
         if exports.Unique_AdminPanel then
             exports.Unique_AdminPanel:BanPlayer(_source, 'Cheat Lua Executer', 'Tried esx_fbi_job:requestrelease without the fbi job')
         end

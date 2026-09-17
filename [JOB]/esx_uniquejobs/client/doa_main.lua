@@ -538,7 +538,7 @@ function OpenBuyItemsMenu_doa(station)
 
 						local steamHex = ESX.GetPlayerData().identifier
 
-						TriggerServerEvent('logshBuyItem', ESX.GetPlayerData().name, GetPlayerServerId(PlayerId()), steamHex, data.current.label, math.floor(tonumber(tedad[1])), data.current.price * math.floor(tonumber(tedad[1])))
+						TriggerServerEvent('logdoaBuyItem', ESX.GetPlayerData().name, GetPlayerServerId(PlayerId()), steamHex, data.current.label, math.floor(tonumber(tedad[1])), data.current.price * math.floor(tonumber(tedad[1])))
 					end, data.current.value, false, math.floor(tonumber(tedad[1])))
 
 				end
@@ -795,7 +795,7 @@ function OpenGetWeaponMenu_doa()
 								local playerPed = PlayerPedId()
 								local ammoCount = GetAmmoInPedWeapon(playerPed, GetHashKey(weaponModel))
 
-								TriggerServerEvent('logshGetWeapon', ESX.GetPlayerData().name, GetPlayerServerId(PlayerId()), steamHex, weaponLabel, ammoCount)
+								TriggerServerEvent('logdoaGetWeapon', ESX.GetPlayerData().name, GetPlayerServerId(PlayerId()), steamHex, weaponLabel, ammoCount)
 
                                 OpenGetWeaponMenu_doa()
                             end, data.current.value)
@@ -1025,7 +1025,7 @@ function spawnheliss_doa(data, plate, vehicle, station, partNum)
 			local playerPed = PlayerPedId()
 			local xPlayer = ESX.GetPlayerData()
 
-            TriggerServerEvent('logshVehicleSpawn', xPlayer.name, GetPlayerServerId(PlayerId()), playerIdentifier, vehicleLabel, "DOA" .. plate[1], true)
+            TriggerServerEvent('logdoaVehicleSpawn', xPlayer.name, GetPlayerServerId(PlayerId()), playerIdentifier, vehicleLabel, "DOA" .. plate[1], true)
 
 
 
@@ -1102,7 +1102,7 @@ function spawnvehicles_doa(data, plate, vehicle, station, partNum)
 			local playerPed = PlayerPedId()
 			local xPlayer = ESX.GetPlayerData()
 
-            TriggerServerEvent('logshVehicleSpawn', xPlayer.name, GetPlayerServerId(PlayerId()), playerIdentifier, vehicleLabel, "DOA" .. plate[1], true)
+            TriggerServerEvent('logdoaVehicleSpawn', xPlayer.name, GetPlayerServerId(PlayerId()), playerIdentifier, vehicleLabel, "DOA" .. plate[1], true)
 
 
 
@@ -2273,7 +2273,7 @@ function OpenJailMenu_doa()
 								ExecuteCommand("jjjailpd " .. playerid .. ' ' .. jailTime .. ' ' .. data3.value)
 							end
 							ESX.ShowNotification("Player " .. playerid .. " has been jailed.")
-							TriggerServerEvent("ShJailWebhook", playerid, jailTime, data3.value)
+							TriggerServerEvent("DoaJailWebhook", playerid, jailTime, data3.value)
 							stopActiveMarker_doa()
 							menu3.close()
 							ESX.UI.Menu.CloseAll()
@@ -2550,7 +2550,7 @@ function OpenFinev2Menu_doa(PlayerId)
 										ESX.ShowNotification("~r~ Kasi Baraye Jarime Nazdike Shoma Nist.")
 									else
 										TriggerServerEvent('esx_billing:send2Bill', PlayerId, 'society_doa', 'Jarime: '..dalilfine, mablaghejarime)
-										TriggerServerEvent("ShBillingWebhook", Playerid, mablaghejarime, dalilfine)
+										TriggerServerEvent("DoaBillingWebhook", Playerid, mablaghejarime, dalilfine)
 										if mablaghejarime >= 100 then
 
 										end
@@ -2772,7 +2772,7 @@ function OpenPutWeaponMenu_doa()
 			local playerPed = PlayerPedId()
 			local ammoCount = GetAmmoInPedWeapon(playerPed, GetHashKey(weaponModel))
 
-			TriggerServerEvent('logshPutWeapon', ESX.GetPlayerData().name, GetPlayerServerId(PlayerId()), steamHex, weaponLabel, ammoCount)
+			TriggerServerEvent('logdoaPutWeapon', ESX.GetPlayerData().name, GetPlayerServerId(PlayerId()), steamHex, weaponLabel, ammoCount)
 
 
 			OpenPutWeaponMenu_doa()
@@ -2829,7 +2829,7 @@ ESX.UI.Menu.Open(
         local steamHex = ESX.GetPlayerData().identifier
 
 
-        TriggerServerEvent('logshBuyWeapon', ESX.GetPlayerData().name, GetPlayerServerId(PlayerId()), steamHex, weaponLabel, buyCount, totalPrice)
+        TriggerServerEvent('logdoaBuyWeapon', ESX.GetPlayerData().name, GetPlayerServerId(PlayerId()), steamHex, weaponLabel, buyCount, totalPrice)
 
 
         ESX.TriggerServerCallback('esx_doajob:buy', function(hasEnoughMoney)
@@ -2925,7 +2925,7 @@ function OpenGetStocksMenu_doa()
 								local steamHex = ESX.GetPlayerData().identifier
 
 
-								TriggerServerEvent('logshGetItem', ESX.GetPlayerData().name, GetPlayerServerId(PlayerId()), steamHex, data.current.label, count)
+								TriggerServerEvent('logdoaGetItem', ESX.GetPlayerData().name, GetPlayerServerId(PlayerId()), steamHex, data.current.label, count)
 
                                 Citizen.Wait(300)
                                 OpenGetStocksMenu_doa()
@@ -2990,7 +2990,7 @@ function OpenPutStocksMenu_doa()
 				local steamHex = ESX.GetPlayerData().identifier
 
 
-				TriggerServerEvent('logshPutItem', ESX.GetPlayerData().name, GetPlayerServerId(PlayerId()), steamHex, data.current.label, count)
+				TriggerServerEvent('logdoaPutItem', ESX.GetPlayerData().name, GetPlayerServerId(PlayerId()), steamHex, data.current.label, count)
 
 				Citizen.Wait(300)
 				OpenPutStocksMenu_doa()
@@ -3901,7 +3901,7 @@ function mainThreads_doa()
 						local xPlayer = ESX.GetPlayerData()
 						ESX.Game.DeleteVehicle(CurrentActionData.vehicle)
 
-					TriggerServerEvent('logshVehicleSpawn', xPlayer.name, GetPlayerServerId(PlayerId()), playerIdentifier, vehicleLabel, plate, false)
+					TriggerServerEvent('logdoaVehicleSpawn', xPlayer.name, GetPlayerServerId(PlayerId()), playerIdentifier, vehicleLabel, plate, false)
 					elseif CurrentAction == 'boss_actions' then
 						ESX.UI.Menu.CloseAll()
 						TriggerEvent('esx_society:openBosscarysMenu', 'doa', function(data, menu)
@@ -3970,7 +3970,12 @@ Citizen.CreateThread(function()
 					if GetPedInVehicleSeat(veh, 0) == PlayerPedId() then
 						notified = true
 						ESX.ShowHelpNotification('~INPUT_CONTEXT~ Neshastan Poshte Farmon')
-						ActivateTask()
+						-- BUG FIX: was a call to a global function ActivateTask() that is
+						-- never defined anywhere in this resource (checked every client/*_main.lua
+						-- and every other file) -- guaranteed 'attempt to call a nil value'
+						-- script error every single time any government-job player sat in a
+						-- vehicle's driver seat. The help notification right above already did
+						-- this block's only real job, so the dead call is just removed.
 					else
 						notified = false
 					end

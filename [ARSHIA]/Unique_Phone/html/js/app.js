@@ -122,6 +122,20 @@ MI.Phone.Functions.IsAppHeaderAllowed = function(app) {
 $(document).on('click', '.phone-application', function(e){
     e.preventDefault();
     var PressedApplication = $(this).data('app');
+
+    // EXPANSION: "Bank" now hands off to the new_banking resource's own
+    // ATM-style UI instead of opening the phone's built-in bank screen, so
+    // both entry points (physical ATM and phone) show the identical UI.
+    // We skip the normal app-open/toggle logic entirely to avoid a flash
+    // of the old bank screen before the phone closes.
+    if (PressedApplication == "bank") {
+        if (CanOpenApp && MI.Phone.Data.currentApplication == null) {
+            MI.Phone.Functions.Close();
+            $.post('http://Unique_Phone/OpenExternalBank', JSON.stringify({}));
+        }
+        return;
+    }
+
     var AppObject = $("."+PressedApplication+"-app");
 
     if (AppObject.length !== 0) {

@@ -244,6 +244,10 @@ function CS_ReferCase(job) {
     if (CS_currentCaseId) $.post('https://esx_uniquejobs/CS_ReferCase', JSON.stringify({ id: CS_currentCaseId, job: job }))
 }
 
+function CS_OpenDojCase() {
+    if (CS_currentCaseId) $.post('https://esx_uniquejobs/CS_OpenDojCase', JSON.stringify({ id: CS_currentCaseId }))
+}
+
 function CS_RunMatch() {
     if (CS_currentCaseId) $.post('https://esx_uniquejobs/CS_RunMatch', JSON.stringify({ id: CS_currentCaseId }))
 }
@@ -807,6 +811,12 @@ window.addEventListener('message', function(event) {
         }
         $('#CS_CaseStatus_P').text(statusText)
 
+        // CONNECTED: shows whether this robbery/warrant case has a real DOJ
+        // investigation case linked, and if not, a button to create/link one.
+        if (caseRow.linked_dept_case_id) {
+            $('#CS_CaseStatus_P').append(' <span style="color: var(--accent-color, #6cf);">| 🔗 DOJ Case #' + caseRow.linked_dept_case_id + '</span>')
+        }
+
         $('#CS_SuspectsList').empty()
         if (!c.suspects || !c.suspects.length) {
             $('#CS_SuspectsList').append('<div class="data_Row"><p>' + caseRow.suspect_name + '</p><p>primary</p></div>')
@@ -840,6 +850,9 @@ window.addEventListener('message', function(event) {
             }
             if (!caseRow.warrant_status || caseRow.warrant_status === 'none' || caseRow.warrant_status === 'denied') {
                 actionsHtml += '<button class="ExitButton" style="margin-right:6px;margin-bottom:6px;" onclick="CS_RequestWarrant()">Request Warrant</button>'
+            }
+            if (!caseRow.linked_dept_case_id) {
+                actionsHtml += '<button class="ExitButton" style="margin-right:6px;margin-bottom:6px;" onclick="CS_OpenDojCase()">📂 Open DOJ Case</button>'
             }
         }
         if (CS_playerJob === 'judge' && caseRow.warrant_status === 'requested') {

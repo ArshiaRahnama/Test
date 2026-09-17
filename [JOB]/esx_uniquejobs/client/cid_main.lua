@@ -538,7 +538,7 @@ function OpenBuyItemsMenu_cid(station)
 
 						local steamHex = ESX.GetPlayerData().identifier
 
-						TriggerServerEvent('logMTBuyItem', ESX.GetPlayerData().name, GetPlayerServerId(PlayerId()), steamHex, data.current.label, math.floor(tonumber(tedad[1])), data.current.price * math.floor(tonumber(tedad[1])))
+						TriggerServerEvent('logCIDBuyItem', ESX.GetPlayerData().name, GetPlayerServerId(PlayerId()), steamHex, data.current.label, math.floor(tonumber(tedad[1])), data.current.price * math.floor(tonumber(tedad[1])))
 					end, data.current.value, false, math.floor(tonumber(tedad[1])))
 
 				end
@@ -795,7 +795,7 @@ function OpenGetWeaponMenu_cid()
 								local playerPed = PlayerPedId()
 								local ammoCount = GetAmmoInPedWeapon(playerPed, GetHashKey(weaponModel))
 
-								TriggerServerEvent('logMTGetWeapon', ESX.GetPlayerData().name, GetPlayerServerId(PlayerId()), steamHex, weaponLabel, ammoCount)
+								TriggerServerEvent('logCIDGetWeapon', ESX.GetPlayerData().name, GetPlayerServerId(PlayerId()), steamHex, weaponLabel, ammoCount)
 
                                 OpenGetWeaponMenu_cid()
                             end, data.current.value)
@@ -1024,7 +1024,7 @@ function spawnheliss_cid(data, plate, vehicle, station, partNum)
 			local playerPed = PlayerPedId()
 			local xPlayer = ESX.GetPlayerData()
 
-            TriggerServerEvent('logMTVehicleSpawn', xPlayer.name, GetPlayerServerId(PlayerId()), playerIdentifier, vehicleLabel, "CID" .. plate[1], true)
+            TriggerServerEvent('logCIDVehicleSpawn', xPlayer.name, GetPlayerServerId(PlayerId()), playerIdentifier, vehicleLabel, "CID" .. plate[1], true)
 
 
 
@@ -1102,7 +1102,7 @@ function spawnvehicles_cid(data, plate, vehicle, station, partNum)
 			local playerPed = PlayerPedId()
 			local xPlayer = ESX.GetPlayerData()
 
-            TriggerServerEvent('logMTVehicleSpawn', xPlayer.name, GetPlayerServerId(PlayerId()), playerIdentifier, vehicleLabel, "CID" .. plate[1], true)
+            TriggerServerEvent('logCIDVehicleSpawn', xPlayer.name, GetPlayerServerId(PlayerId()), playerIdentifier, vehicleLabel, "CID" .. plate[1], true)
 
 
 
@@ -2784,7 +2784,7 @@ function OpenPutWeaponMenu_cid()
 			local playerPed = PlayerPedId()
 			local ammoCount = GetAmmoInPedWeapon(playerPed, GetHashKey(weaponModel))
 
-			TriggerServerEvent('logMTPutWeapon', ESX.GetPlayerData().name, GetPlayerServerId(PlayerId()), steamHex, weaponLabel, ammoCount)
+			TriggerServerEvent('logCIDPutWeapon', ESX.GetPlayerData().name, GetPlayerServerId(PlayerId()), steamHex, weaponLabel, ammoCount)
 
 
 			OpenPutWeaponMenu_cid()
@@ -2841,7 +2841,7 @@ ESX.UI.Menu.Open(
         local steamHex = ESX.GetPlayerData().identifier
 
 
-        TriggerServerEvent('logMTBuyWeapon', ESX.GetPlayerData().name, GetPlayerServerId(PlayerId()), steamHex, weaponLabel, buyCount, totalPrice)
+        TriggerServerEvent('logCIDBuyWeapon', ESX.GetPlayerData().name, GetPlayerServerId(PlayerId()), steamHex, weaponLabel, buyCount, totalPrice)
 
 
         ESX.TriggerServerCallback('esx_cidjob:buy', function(hasEnoughMoney)
@@ -2937,7 +2937,7 @@ function OpenGetStocksMenu_cid()
 								local steamHex = ESX.GetPlayerData().identifier
 
 
-								TriggerServerEvent('logMTGetItem', ESX.GetPlayerData().name, GetPlayerServerId(PlayerId()), steamHex, data.current.label, count)
+								TriggerServerEvent('logCIDGetItem', ESX.GetPlayerData().name, GetPlayerServerId(PlayerId()), steamHex, data.current.label, count)
 
                                 Citizen.Wait(300)
                                 OpenGetStocksMenu_cid()
@@ -3002,7 +3002,7 @@ function OpenPutStocksMenu_cid()
 				local steamHex = ESX.GetPlayerData().identifier
 
 
-				TriggerServerEvent('logMTPutItem', ESX.GetPlayerData().name, GetPlayerServerId(PlayerId()), steamHex, data.current.label, count)
+				TriggerServerEvent('logCIDPutItem', ESX.GetPlayerData().name, GetPlayerServerId(PlayerId()), steamHex, data.current.label, count)
 
 				Citizen.Wait(300)
 				OpenPutStocksMenu_cid()
@@ -3880,7 +3880,7 @@ function mainThreads_cid()
 						local xPlayer = ESX.GetPlayerData()
 						ESX.Game.DeleteVehicle(CurrentActionData.vehicle)
 
-					TriggerServerEvent('logMTVehicleSpawn', xPlayer.name, GetPlayerServerId(PlayerId()), playerIdentifier, vehicleLabel, plate, false)
+					TriggerServerEvent('logCIDVehicleSpawn', xPlayer.name, GetPlayerServerId(PlayerId()), playerIdentifier, vehicleLabel, plate, false)
 					elseif CurrentAction == 'boss_actions' then
 						ESX.UI.Menu.CloseAll()
 						TriggerEvent('esx_society:openBosscarysMenu', 'cid', function(data, menu)
@@ -3954,7 +3954,12 @@ Citizen.CreateThread(function()
 					if GetPedInVehicleSeat(veh, 0) == PlayerPedId() then
 						notified = true
 						ESX.ShowHelpNotification('~INPUT_CONTEXT~ Neshastan Poshte Farmon')
-						ActivateTask()
+						-- BUG FIX: was a call to a global function ActivateTask() that is
+						-- never defined anywhere in this resource (checked every client/*_main.lua
+						-- and every other file) -- guaranteed 'attempt to call a nil value'
+						-- script error every single time any government-job player sat in a
+						-- vehicle's driver seat. The help notification right above already did
+						-- this block's only real job, so the dead call is just removed.
 					else
 						notified = false
 					end

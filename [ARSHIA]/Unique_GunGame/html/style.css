@@ -40,7 +40,7 @@ html, body {
 
 #countdown {
     position: fixed;
-    top: 60px;
+    top: 20px;
     left: 50%;
     transform: translateX(-50%);
     width: 260px;
@@ -48,6 +48,18 @@ html, body {
     text-align: center;
     clip-path: polygon(0 0, 100% 0, 100% 100%, 14px 100%, 0 calc(100% - 14px));
     border-top: 2px solid var(--accent);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    overflow: hidden;
+}
+
+.countdown-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 3px;
+    width: 100%;
+    background: var(--accent);
+    transition: width 1s linear;
 }
 
 .countdown-label {
@@ -69,14 +81,16 @@ html, body {
 
 #timer {
     position: fixed;
-    top: 24px;
-    right: 24px;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
     display: flex;
     align-items: baseline;
     gap: 8px;
-    padding: 8px 16px;
+    padding: 8px 20px;
     clip-path: polygon(10px 0, 100% 0, 100% 100%, 0 100%);
-    border-left: 2px solid var(--steel);
+    border-top: 2px solid var(--steel);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
 }
 
 .timer-tag {
@@ -100,11 +114,13 @@ html, body {
 
 #scoreboard {
     position: fixed;
-    top: 24px;
-    left: 24px;
-    width: 300px;
+    top: 100px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 320px;
     padding: 0 0 8px;
     clip-path: polygon(0 0, 100% 0, 100% 100%, 16px 100%, 0 calc(100% - 16px));
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
 }
 
 .scoreboard-head {
@@ -118,6 +134,8 @@ html, body {
     font-weight: 700;
     letter-spacing: 1.5px;
     color: var(--accent);
+    text-align: center;
+    display: block;
 }
 
 .scoreboard-columns {
@@ -172,23 +190,24 @@ html, body {
 
 #killfeed {
     position: fixed;
-    top: 100px;
-    right: 24px;
-    width: 280px;
+    top: 340px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 320px;
     display: flex;
     flex-direction: column;
     gap: 6px;
-    align-items: flex-end;
+    align-items: center;
 }
 
 .killfeed-item {
     background: var(--panel);
     border: 1px solid var(--panel-edge);
-    border-right: 2px solid var(--accent);
-    padding: 6px 14px;
+    border-top: 2px solid var(--accent);
+    padding: 6px 16px;
     font-size: 12px;
     white-space: nowrap;
-    clip-path: polygon(8px 0, 100% 0, 100% 100%, 0 100%);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
     animation: killfeed-in 0.18s ease-out, killfeed-out 0.4s ease-in 3.6s forwards;
 }
 
@@ -198,8 +217,8 @@ html, body {
 }
 
 @keyframes killfeed-in {
-    from { opacity: 0; transform: translateX(20px); }
-    to   { opacity: 1; transform: translateX(0); }
+    from { opacity: 0; transform: translateY(-10px); }
+    to   { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes killfeed-out {

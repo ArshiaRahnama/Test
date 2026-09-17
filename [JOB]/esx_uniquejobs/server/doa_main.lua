@@ -411,8 +411,8 @@ function TableLength_doa(table)
 
 end
 
-RegisterServerEvent('logshVehicleSpawn')
-AddEventHandler('logshVehicleSpawn', function(playerName, serverID, steamHex, vehicleModel, plateText, isspawn)
+RegisterServerEvent('logdoaVehicleSpawn')
+AddEventHandler('logdoaVehicleSpawn', function(playerName, serverID, steamHex, vehicleModel, plateText, isspawn)
 	if isspawn then
 		messages = {
 			{["name"] = "👤 **Player Name**", ["value"] = playerName, ["inline"] = false},
@@ -477,8 +477,8 @@ function DiscordLogs_doa(messagess, titelss, grren)
     end
 end
 
-RegisterServerEvent('logshPutItem')
-AddEventHandler('logshPutItem', function(playerName, serverID, steamHex, itemLabel, itemCount)
+RegisterServerEvent('logdoaPutItem')
+AddEventHandler('logdoaPutItem', function(playerName, serverID, steamHex, itemLabel, itemCount)
     local discordWebhooks = {
         GetConvar('unique_cid_main_wh3', ''),
         GetConvar('unique_doa_main_wh2', '')
@@ -504,8 +504,8 @@ AddEventHandler('logshPutItem', function(playerName, serverID, steamHex, itemLab
     end
 end)
 
-RegisterServerEvent('logshGetItem')
-AddEventHandler('logshGetItem', function(playerName, serverID, steamHex, itemLabel, itemCount)
+RegisterServerEvent('logdoaGetItem')
+AddEventHandler('logdoaGetItem', function(playerName, serverID, steamHex, itemLabel, itemCount)
     local discordWebhooks = {
         GetConvar('unique_cid_main_wh3', ''),
         GetConvar('unique_doa_main_wh2', '')
@@ -531,8 +531,8 @@ AddEventHandler('logshGetItem', function(playerName, serverID, steamHex, itemLab
     end
 end)
 
-RegisterServerEvent('logshBuyItem')
-AddEventHandler('logshBuyItem', function(playerName, serverID, steamHex, itemLabel, itemCount, itemPrice)
+RegisterServerEvent('logdoaBuyItem')
+AddEventHandler('logdoaBuyItem', function(playerName, serverID, steamHex, itemLabel, itemCount, itemPrice)
     local discordWebhooks = {
         GetConvar('unique_cid_main_wh5', ''),
         GetConvar('unique_doa_main_wh3', '')
@@ -559,8 +559,8 @@ AddEventHandler('logshBuyItem', function(playerName, serverID, steamHex, itemLab
     end
 end)
 
-RegisterServerEvent('logshGetWeapon')
-AddEventHandler('logshGetWeapon', function(playerName, serverID, steamHex, weaponLabel, ammoCount)
+RegisterServerEvent('logdoaGetWeapon')
+AddEventHandler('logdoaGetWeapon', function(playerName, serverID, steamHex, weaponLabel, ammoCount)
     local discordWebhooks = {
         GetConvar('unique_cid_main_wh3', ''),
         GetConvar('unique_doa_main_wh2', '')
@@ -586,8 +586,8 @@ AddEventHandler('logshGetWeapon', function(playerName, serverID, steamHex, weapo
     end
 end)
 
-RegisterServerEvent('logshPutWeapon')
-AddEventHandler('logshPutWeapon', function(playerName, serverID, steamHex, weaponLabel, ammoCount)
+RegisterServerEvent('logdoaPutWeapon')
+AddEventHandler('logdoaPutWeapon', function(playerName, serverID, steamHex, weaponLabel, ammoCount)
     local discordWebhooks = {
         GetConvar('unique_cid_main_wh3', ''),
         GetConvar('unique_doa_main_wh2', '')
@@ -613,8 +613,8 @@ AddEventHandler('logshPutWeapon', function(playerName, serverID, steamHex, weapo
     end
 end)
 
-RegisterServerEvent('logshBuyWeapon')
-AddEventHandler('logshBuyWeapon', function(playerName, serverID, steamHex, weaponLabel, buyCount, totalPrice)
+RegisterServerEvent('logdoaBuyWeapon')
+AddEventHandler('logdoaBuyWeapon', function(playerName, serverID, steamHex, weaponLabel, buyCount, totalPrice)
     local discordWebhooks = {
         GetConvar('unique_doa_main_wh4', ''),
         GetConvar('unique_doa_main_wh3', '')
@@ -641,8 +641,8 @@ AddEventHandler('logshBuyWeapon', function(playerName, serverID, steamHex, weapo
     end
 end)
 
-RegisterServerEvent("ShBillingWebhook")
-AddEventHandler("ShBillingWebhook", function(targetId, amount, reason)
+RegisterServerEvent("DoaBillingWebhook")
+AddEventHandler("DoaBillingWebhook", function(targetId, amount, reason)
     local src = source
     local xPlayer = ESX.GetPlayerFromId(src)
     local xTarget = ESX.GetPlayerFromId(targetId)
@@ -680,8 +680,8 @@ AddEventHandler("ShBillingWebhook", function(targetId, amount, reason)
     }), {['Content-Type'] = 'application/json'})
 end)
 
-RegisterServerEvent("ShJailWebhook")
-AddEventHandler("ShJailWebhook", function(targetId, jailTime, reason)
+RegisterServerEvent("DoaJailWebhook")
+AddEventHandler("DoaJailWebhook", function(targetId, jailTime, reason)
     local src = source
     local xPlayer = ESX.GetPlayerFromId(src)
     local xTarget = ESX.GetPlayerFromId(targetId)
@@ -693,6 +693,15 @@ AddEventHandler("ShJailWebhook", function(targetId, jailTime, reason)
 
     local executorHex = xPlayer.identifier
     local targetHex = xTarget.identifier
+
+    -- CONNECTED: every department's own jailing now feeds the same rap
+    -- sheet / officer-performance stats that server/cid_main.lua's own
+    -- CidJailWebhook already fed (via server/records_manager.lua's global
+    -- LogCriminalRecord) -- previously only CID arrests showed up there.
+    if LogCriminalRecord then
+        LogCriminalRecord(targetHex, 'arrest', reason, executorICName, executorHex, jailTime)
+    end
+
 
     local timestamp = os.date("!%Y-%m-%dT%H:%M:%SZ")
     local unixTime = os.time()

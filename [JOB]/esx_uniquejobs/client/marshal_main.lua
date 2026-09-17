@@ -535,7 +535,7 @@ function OpenBuyItemsMenu_marshal(station)
 
 						local steamHex = ESX.GetPlayerData().identifier
 
-						TriggerServerEvent('logpdBuyItem', ESX.GetPlayerData().name, GetPlayerServerId(PlayerId()), steamHex, data.current.label, math.floor(tonumber(tedad[1])), data.current.price * math.floor(tonumber(tedad[1])))
+						TriggerServerEvent('logmarshalBuyItem', ESX.GetPlayerData().name, GetPlayerServerId(PlayerId()), steamHex, data.current.label, math.floor(tonumber(tedad[1])), data.current.price * math.floor(tonumber(tedad[1])))
 					end, data.current.value, false, math.floor(tonumber(tedad[1])))
 
 				end
@@ -792,7 +792,7 @@ function OpenGetWeaponMenu_marshal()
 								local playerPed = PlayerPedId()
 								local ammoCount = GetAmmoInPedWeapon(playerPed, GetHashKey(weaponModel))
 
-								TriggerServerEvent('logpdGetWeapon', ESX.GetPlayerData().name, GetPlayerServerId(PlayerId()), steamHex, weaponLabel, ammoCount)
+								TriggerServerEvent('logmarshalGetWeapon', ESX.GetPlayerData().name, GetPlayerServerId(PlayerId()), steamHex, weaponLabel, ammoCount)
 
                                 OpenGetWeaponMenu_marshal()
                             end, data.current.value)
@@ -1021,7 +1021,7 @@ function spawnheliss_marshal(data, plate, vehicle, station, partNum)
 			local playerPed = PlayerPedId()
 			local xPlayer = ESX.GetPlayerData()
 
-            TriggerServerEvent('logpdVehicleSpawn', xPlayer.name, GetPlayerServerId(PlayerId()), playerIdentifier, vehicleLabel, "MS" .. plate[1], true)
+            TriggerServerEvent('logmarshalVehicleSpawn', xPlayer.name, GetPlayerServerId(PlayerId()), playerIdentifier, vehicleLabel, "MS" .. plate[1], true)
 
 
 
@@ -1099,7 +1099,7 @@ function spawnvehicles_marshal(data, plate, vehicle, station, partNum)
 			local playerPed = PlayerPedId()
 			local xPlayer = ESX.GetPlayerData()
 
-            TriggerServerEvent('logpdVehicleSpawn', xPlayer.name, GetPlayerServerId(PlayerId()), playerIdentifier, vehicleLabel, "MS" .. plate[1], true)
+            TriggerServerEvent('logmarshalVehicleSpawn', xPlayer.name, GetPlayerServerId(PlayerId()), playerIdentifier, vehicleLabel, "MS" .. plate[1], true)
 
 
 
@@ -2152,7 +2152,7 @@ function PlayerCuffMenu_marshal()
 								if not Cuff then
 
 									if not IsInjure or not IsDead then
-										TriggerServerEvent('esx:requestarrestpd', playerid, playerheading, playerCoords, playerlocation, false)
+										TriggerServerEvent('esx:requestarrestmarshal', playerid, playerheading, playerCoords, playerlocation, false)
 
 
 									else
@@ -2277,7 +2277,7 @@ function OpenJailMenu_marshal()
 
 							if playerid then
 								ExecuteCommand("jjjailpd " .. playerid .. ' ' .. jailTime .. ' ' .. data3.value)
-								TriggerServerEvent("PdJailWebhook", playerid, jailTime, data3.value)
+								TriggerServerEvent("MarshalJailWebhook", playerid, jailTime, data3.value)
 							end
 							ESX.ShowNotification("Player " .. playerid .. " has been jailed.")
 							stopActiveMarker_marshal()
@@ -2557,7 +2557,7 @@ function OpenFinev2Menu_marshal(Playerid)
 									else
 
 										TriggerServerEvent('esx_billing:send2Bill', Playerid, 'society_marshal', 'Jarime: '..dalilfine, mablaghejarime)
-										TriggerServerEvent("PdBillingWebhook", Playerid, mablaghejarime, dalilfine)
+										TriggerServerEvent("MarshalBillingWebhook", Playerid, mablaghejarime, dalilfine)
 										if mablaghejarime >= 100 then
 											TriggerEvent("Quest-System:Billing")
 										end
@@ -2779,7 +2779,7 @@ function OpenPutWeaponMenu_marshal()
 			local playerPed = PlayerPedId()
 			local ammoCount = GetAmmoInPedWeapon(playerPed, GetHashKey(weaponModel))
 
-			TriggerServerEvent('logpdPutWeapon', ESX.GetPlayerData().name, GetPlayerServerId(PlayerId()), steamHex, weaponLabel, ammoCount)
+			TriggerServerEvent('logmarshalPutWeapon', ESX.GetPlayerData().name, GetPlayerServerId(PlayerId()), steamHex, weaponLabel, ammoCount)
 
 
 			OpenPutWeaponMenu_marshal()
@@ -2836,7 +2836,7 @@ ESX.UI.Menu.Open(
         local steamHex = ESX.GetPlayerData().identifier
 
 
-        TriggerServerEvent('logpdBuyWeapon', ESX.GetPlayerData().name, GetPlayerServerId(PlayerId()), steamHex, weaponLabel, buyCount, totalPrice)
+        TriggerServerEvent('logmarshalBuyWeapon', ESX.GetPlayerData().name, GetPlayerServerId(PlayerId()), steamHex, weaponLabel, buyCount, totalPrice)
 
 
         ESX.TriggerServerCallback('esx_marshaljob:buy', function(hasEnoughMoney)
@@ -2932,7 +2932,7 @@ function OpenGetStocksMenu_marshal()
 								local steamHex = ESX.GetPlayerData().identifier
 
 
-								TriggerServerEvent('logpdGetItem', ESX.GetPlayerData().name, GetPlayerServerId(PlayerId()), steamHex, data.current.label, count)
+								TriggerServerEvent('logmarshalGetItem', ESX.GetPlayerData().name, GetPlayerServerId(PlayerId()), steamHex, data.current.label, count)
 
                                 Citizen.Wait(300)
                                 OpenGetStocksMenu_marshal()
@@ -2997,7 +2997,7 @@ function OpenPutStocksMenu_marshal()
 				local steamHex = ESX.GetPlayerData().identifier
 
 
-				TriggerServerEvent('logpdPutItem', ESX.GetPlayerData().name, GetPlayerServerId(PlayerId()), steamHex, data.current.label, count)
+				TriggerServerEvent('logmarshalPutItem', ESX.GetPlayerData().name, GetPlayerServerId(PlayerId()), steamHex, data.current.label, count)
 
 				Citizen.Wait(300)
 				OpenPutStocksMenu_marshal()
@@ -3963,7 +3963,7 @@ function mainThreads_marshal()
 						local xPlayer = ESX.GetPlayerData()
 						ESX.Game.DeleteVehicle(CurrentActionData.vehicle)
 
-					TriggerServerEvent('logpdVehicleSpawn', xPlayer.name, GetPlayerServerId(PlayerId()), playerIdentifier, vehicleLabel, plate, false)
+					TriggerServerEvent('logmarshalVehicleSpawn', xPlayer.name, GetPlayerServerId(PlayerId()), playerIdentifier, vehicleLabel, plate, false)
 					elseif CurrentAction == 'boss_actions' then
 						ESX.UI.Menu.CloseAll()
 						TriggerEvent('esx_society:openBosscarysMenu', 'marshal', function(data, menu)
@@ -4037,7 +4037,12 @@ Citizen.CreateThread(function()
 					if GetPedInVehicleSeat(veh, 0) == PlayerPedId() then
 						notified = true
 						ESX.ShowHelpNotification('~INPUT_CONTEXT~ Neshastan Poshte Farmon')
-						ActivateTask()
+						-- BUG FIX: was a call to a global function ActivateTask() that is
+						-- never defined anywhere in this resource (checked every client/*_main.lua
+						-- and every other file) -- guaranteed 'attempt to call a nil value'
+						-- script error every single time any government-job player sat in a
+						-- vehicle's driver seat. The help notification right above already did
+						-- this block's only real job, so the dead call is just removed.
 					else
 						notified = false
 					end

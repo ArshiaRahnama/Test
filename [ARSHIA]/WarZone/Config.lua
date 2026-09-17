@@ -154,7 +154,15 @@ Config.FightWorld = 51
 Config.LobbeyWorld = 50 
 Config.Gulagworld = 52 
 Config.DistanceZone = 1000.0 
-Config.airplane = 'mammatus'
+-- Fix: the Mammatus crop-duster only has one real seat -- the pilot's --
+-- and no passenger seat at all. Every attempt to warp the player into any
+-- seat index on it (0, 1, 2 -- all tried in earlier passes) was failing to
+-- find a real seat and falling back to draping the ped on the exterior,
+-- which is exactly the "I end up ON the plane, not inside it" symptom
+-- reported in testing. Titan is a cargo plane with real, working passenger
+-- seats next to the pilot, so TaskWarpPedIntoVehicle(ped, plane, 0) now
+-- has an actual seat to put the player in.
+Config.airplane = 'titan'
 Config.ShowKillFeed = true 
 Config.LobbeyCoord = vector3(-2131.17,3262.66,34.81)
 Config.LastCoord  =  vector3(231.45, -746.1, 34.59) 

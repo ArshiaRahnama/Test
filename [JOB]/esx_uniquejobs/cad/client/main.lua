@@ -43,7 +43,7 @@ local function CheckPerm_cad()
     -- only controls whether the log/announce side-effects fire.
     if PlayerData_cad.job == nil then return true end
 
-    local hasAccess = PlayerData_cad.job.name == DuckMdt.PoliceJob or PlayerData_cad.job.name == 'sheriff' or PlayerData_cad.job.name == 'fbi' or PlayerData_cad.job.name == 'mt' or PlayerData_cad.job.name == 'cid' or PlayerData_cad.job.name == 'cia' or PlayerData_cad.job.name == 'marshal' or PlayerData_cad.job.name == 'judge' or PlayerData_cad.job.name == 'doa'
+    local hasAccess = PlayerData_cad.job.name == DuckMdt.PoliceJob or IsGovernmentJob(PlayerData_cad.job.name) -- shared/departments.lua (was a hardcoded DOJ+LE job list)
 
     if hasAccess then
         return false
@@ -64,7 +64,7 @@ end
 RegisterCommand(DuckMdt.Command, function()
     if PlayerData_cad.job == nil then return end
 
-    if PlayerData_cad.job.name == DuckMdt.PoliceJob or PlayerData_cad.job.name == 'sheriff' or PlayerData_cad.job.name == 'fbi' or PlayerData_cad.job.name == 'mt' or PlayerData_cad.job.name == 'cid' or PlayerData_cad.job.name == 'cia' or PlayerData_cad.job.name == 'marshal' or PlayerData_cad.job.name == 'judge' or PlayerData_cad.job.name == 'doa' then
+    if PlayerData_cad.job.name == DuckMdt.PoliceJob or IsGovernmentJob(PlayerData_cad.job.name) then -- shared/departments.lua (was a hardcoded DOJ+LE job list)
         if MdtDisplay_cad then
             ClearPedTasks(PlayerPedId())
             SendNuiMessage(json.encode({
@@ -273,6 +273,10 @@ end)
 
 RegisterNUICallback('CS_ReferCase', function(data)
     TriggerServerEvent('CrimeScene:referCase', tonumber(data.id), data.job)
+end)
+
+RegisterNUICallback('CS_OpenDojCase', function(data)
+    TriggerServerEvent('CrimeScene:openDojCase', tonumber(data.id))
 end)
 
 RegisterNUICallback('CS_RunMatch', function(data)

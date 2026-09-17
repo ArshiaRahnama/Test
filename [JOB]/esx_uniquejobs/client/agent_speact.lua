@@ -105,6 +105,14 @@ end)
 -- ============================================================
 
 function OpenAgentMenu()
+	-- BUG FIX: same stale-cache issue as client/doj_menu.lua's OpenDojMenu()
+	-- (see GOVERNMENT_JOBS_CONSOLIDATION.md) -- agentJob only updated via
+	-- the esx:setJob event handler above, which can miss a job change made
+	-- through something else (an admin panel tool, most commonly).
+	-- CheckAgentJob() already existed below for exactly this, it just was
+	-- never called from here.
+	CheckAgentJob()
+
 	if not agentJob then
 		ESX.ShowNotification("❌ Shoma FBI Ya CIA Nistid!")
 		return

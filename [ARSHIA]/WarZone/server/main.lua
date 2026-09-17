@@ -1492,7 +1492,14 @@ function SpawnMatchVehicles(map)
         local model = Config.VehicleLoot.models[math.random(1, #Config.VehicleLoot.models)]
         local veh = CreateVehicle(GetHashKey(model), coord.x, coord.y, coord.z, 0.0, true, false)
         if veh and veh ~= 0 then
-            SetVehicleOnGroundProperly(veh)
+            -- Fix: SetVehicleOnGroundProperly is a client-only native --
+            -- calling it here (server-side) hard-errored the whole
+            -- BeginMatch thread with "attempt to call a nil value" and
+            -- silently killed match start. CreateVehicle already places it
+            -- reasonably close to the given coordinates; skip the
+            -- ground-snap rather than crash. If a vehicle ever spawns
+            -- slightly embedded in terrain, that's a cosmetic issue, not a
+            -- match-breaking one.
             local locked = math.random(1, 100) <= Config.VehicleLoot.lockedChance
             SetVehicleDoorsLocked(veh, locked and 2 or 1)
             table.insert(WzVehs, veh)

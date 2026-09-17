@@ -73,6 +73,13 @@ local function totalActivePlayers()
     return total
 end
 
+-- In TestMode a single player is enough to form an arena, so the whole flow can be
+-- tried out solo on a local server without needing to fill a real queue.
+local function getPlayersPerArena()
+    if Config.TestMode then return 1 end
+    return Config.PlayersPerArena
+end
+
 -- ============================================================
 -- Routing bucket pool
 -- ============================================================
@@ -108,10 +115,43 @@ local function buildScoreboard(match)
     return list
 end
 
+-- Sends each player the top N rows (Config.ScoreboardTopCount), plus their own row
+-- appended at the end if they aren't already in that top N, so everyone can always
+-- see their own standing even in a large arena.
 local function broadcastScoreboard(match)
     local board = buildScoreboard(match)
+
+    local topCount = (Config.ScoreboardTopCount and Config.ScoreboardTopCount > 0)
+        and math.min(Config.ScoreboardTopCount, #board)
+        or #board
+
+    local topRows = {}
+    for i = 1, topCount do
+        topRows[i] = board[i]
+    end
+
     for src in pairs(match.players) do
-        TriggerClientEvent('Unique_GunGame:UpdateScoreboard', src, board)
+        local inTop = false
+        for _, entry in ipairs(topRows) do
+            if entry.source == src then
+                inTop = true
+                break
+            end
+        end
+
+        if inTop then
+            TriggerClientEvent('Unique_GunGame:UpdateScoreboard', src, topRows)
+        else
+            local payload = {}
+            for i, entry in ipairs(topRows) do payload[i] = entry end
+            for _, entry in ipairs(board) do
+                if entry.source == src then
+                    payload[#payload + 1] = entry
+                    break
+                end
+            end
+            TriggerClientEvent('Unique_GunGame:UpdateScoreboard', src, payload)
+        end
     end
 end
 
@@ -264,9 +304,10 @@ end
 -- Pulls players out of the queue in fixed-size groups and runs an independent
 -- countdown for each one, so several arenas can be mid-countdown or running at once.
 local function tryFormArenas()
-    while #Queue >= Config.PlayersPerArena do
+    local groupSize = getPlayersPerArena()
+    while #Queue >= groupSize do
         local group = {}
-        for i = 1, Config.PlayersPerArena do
+        for i = 1, groupSize do
             local src = table.remove(Queue, 1)
             group[i] = src
             Pending[src] = true
@@ -372,7 +413,7 @@ RegisterCommand(Config.JoinCommand, function(source)
     end
 
     Queue[#Queue + 1] = source
-    notify(source, ('^0Joined the queue (%d waiting). A new arena starts automatically every %d players.'):format(#Queue, Config.PlayersPerArena))
+    notify(source, ('^0Joined the queue (%d waiting). A new arena starts automatically every %d players.'):format(#Queue, getPlayersPerArena()))
     tryFormArenas()
 end)
 
@@ -473,13 +514,6 @@ AddEventHandler('Unique_GunGame:PlayerDied', function()
     if data then data.streak = 0 end
 end)
 
-RegisterServerEvent('Unique_GunGame:GiveParachute')
-AddEventHandler('Unique_GunGame:GiveParachute', function(source)
-    local xPlayer = ESX.GetPlayerFromId(source)
-    if not xPlayer then return end
-    xPlayer.addWeapon('gadget_parachute', 1)
-end)
-
 -- ============================================================
 -- Exports (for other resources to query GunGame state)
 -- ============================================================
@@ -509,8 +543,8 @@ if Config.QueueReminderInterval and Config.QueueReminderInterval > 0 then
     Citizen.CreateThread(function()
         while true do
             Citizen.Wait(Config.QueueReminderInterval * 1000)
-            if EventActive and #Queue > 0 and #Queue < Config.PlayersPerArena then
-                local needed = Config.PlayersPerArena - #Queue
+            if EventActive and #Queue > 0 and #Queue < getPlayersPerArena() then
+                local needed = getPlayersPerArena() - #Queue
                 broadcastMessage(('^0GunGame needs %d more player(s) to start an arena - use /%s to join!'):format(needed, Config.JoinCommand))
             end
         end

@@ -280,10 +280,16 @@ function Rep.SetXP(identifier, value)
         { ['@id'] = identifier, ['@xp'] = math.floor(value) })
 end
 
-function Rep.AddXP(identifier, amount)
+function Rep.AddXP(identifier, amount, reason)
     amount = tonumber(amount) or 0
     if amount == 0 then return end
     Rep.SetXP(identifier, Rep.GetXP(identifier) + amount)
+
+    -- لجر: تا این تیکه از قبل نبود، «چقدر XP این ماه گرفتی» اصلاً قابل
+    -- محاسبه نبود چون فقط یک عدد جمع‌شونده بدون تاریخ ذخیره می‌شد.
+    MySQL.Async.execute(
+        "INSERT INTO admin_xp_log (identifier, amount, reason, created_at) VALUES (@id, @amt, @reason, @now)",
+        { ['@id'] = identifier, ['@amt'] = amount, ['@reason'] = reason or 'manual', ['@now'] = os.time() })
 end
 
 -- exports سازگار با نسخه قبلی (با source کار میکنن، نه identifier)
@@ -293,11 +299,11 @@ function UNIQUE_GET_ADMIN_XP(playerId)
 end
 function UNIQUE_ADD_ADMIN_XP(playerId, amount)
     local id = Rep.GetIdentifier(playerId); if not id then return false end
-    Rep.AddXP(id, amount); return true
+    Rep.AddXP(id, amount, 'command:addxp'); return true
 end
 function UNIQUE_REMOVE_ADMIN_XP(playerId, amount)
     local id = Rep.GetIdentifier(playerId); if not id then return false end
-    Rep.AddXP(id, -(tonumber(amount) or 0)); return true
+    Rep.AddXP(id, -(tonumber(amount) or 0), 'command:delxp'); return true
 end
 function UNIQUE_CLEAN_ADMIN_XP(playerId)
     local id = Rep.GetIdentifier(playerId); if not id then return false end
@@ -490,4 +496,137 @@ function Rep.HumanTime(seconds)
         return ("%d ساعت و %d دقیقه"):format(math.floor(seconds / 3600), math.floor((seconds % 3600) / 60))
     end
     return ("%d روز"):format(math.floor(seconds / 86400))
+end
+
+-- ===================================================== هوش پنل (گسترش) ===
+
+--- ریسک‌اسکورِ یک شناسه، از سیستمِ موجودِ server/risk_score.lua.
+--- pcall شده چون این فایل قبل از risk_score.lua لود میشه؛ GetRiskScoreForIdentifier
+--- تا وقتی اون فایل هم لود بشه global نیست - این تابع فقط زمانی که یک
+--- ادمین واقعاً یک تیکت رو باز میکنه صدا زده میشه (خیلی بعد از لود کامل
+--- ریسورس)، ولی pcall برای موقعی که کسی بدون risk_score.lua این ریسورس رو
+--- کپی کرده باشه هم امن نگهش میداره.
+function Rep.RiskFor(identifier, cb)
+    if not identifier or type(GetRiskScoreForIdentifier) ~= 'function' then
+        return cb(nil)
+    end
+    local ok = pcall(GetRiskScoreForIdentifier, identifier, cb)
+    if not ok then cb(nil) end
+end
+
+--- آیا این شناسه الان یک فلگ فعال داره؟ (server/investigation.lua's money
+--- spike، server/collusion_detection.lua، server/spawn_pattern.lua - هر
+--- سه‌تا رو یک جدول مشترک `admin_player_flags` مینویسن). برای لیستِ صف
+--- (ممکنه ده‌ها ردیف باشه) به‌جای صدا زدن ریسک‌اسکورِ کامل (۳ کوئری
+--- زنجیره‌ای برای هرکدوم) فقط یک کوئریِ دسته‌ای ارزون میزنیم.
+function Rep.FlaggedIdentifiers(identifiers, cb)
+    local list = {}
+    local seen = {}
+    for _, id in ipairs(identifiers) do
+        if id and id ~= '' and not seen[id] then seen[id] = true; list[#list + 1] = id end
+    end
+    if #list == 0 then return cb({}) end
+
+    local placeholders, params = {}, {}
+    for i, id in ipairs(list) do
+        placeholders[i] = '@id' .. i
+        params['@id' .. i] = id
+    end
+
+    MySQL.Async.fetchAll(
+        ("SELECT identifier FROM admin_player_flags WHERE identifier IN (%s)"):format(table.concat(placeholders, ',')),
+        params,
+        function(rows)
+            local out = {}
+            for _, r in ipairs(rows or {}) do out[r.identifier] = true end
+            cb(out)
+        end)
+end
+
+--- چند تا ریپورتِ دیگه علیه همین «هدف» تو N روز اخیر ثبت شده (برای بجِ
+--- «سابقه‌ی تکرار» و بالابردنِ خودکارِ اولویت).
+function Rep.TargetReportCount(targetIdentifier, excludeReportId, days, cb)
+    if not targetIdentifier then return cb(0) end
+    local cutoff = os.time() - ((tonumber(days) or Config_Server.TargetLookback or 7) * 86400)
+    MySQL.Async.fetchScalar(
+        "SELECT COUNT(*) FROM reports WHERE target_identifier = @tid AND created_at >= @cut AND ID != @exclude",
+        { ['@tid'] = targetIdentifier, ['@cut'] = cutoff, ['@exclude'] = tonumber(excludeReportId) or 0 },
+        function(n) cb(tonumber(n) or 0) end)
+end
+
+--- یادداشتِ بین‌ادمینیِ یک تیکت (بازیکن هیچ‌وقت اینو نمی‌بینه).
+function Rep.SetAdminNote(reportId, note)
+    note = Rep.Clean(note, 2000)  -- nil اگه خالی باشه - یعنی پاک کردنِ یادداشت هم با متنِ خالی ممکنه
+    MySQL.Async.execute("UPDATE reports SET admin_note = @note WHERE ID = @id",
+        { ['@note'] = note, ['@id'] = tonumber(reportId) })
+    return note
+end
+
+-- ========================================================= استریکِ XP ===
+-- چند روزِ پشت‌سرهم که این ادمین حداقل یک ریپورت بسته و هیچ امتیازی زیر ۳
+-- نگرفته. روزهایی که هیچی نبسته نه استریک رو میشکنن نه جلو میبرن (روزهای
+-- خنثی) - فقط روزی که ریپورتِ امتیازدارِ زیر ۳ داشته باشه استریک صفر میشه.
+
+function Rep.RecomputeStreak(adminIdentifier, cb)
+    if not adminIdentifier then return cb(0, false) end
+
+    -- هر روزی که این ادمین حداقل یک ریپورتِ امتیازدار بسته، به‌همراه
+    -- کمترین امتیازِ اون روز.
+    MySQL.Async.fetchAll([[
+        SELECT DATE(FROM_UNIXTIME(closed_at)) AS d, MIN(rating) AS min_rating
+        FROM reports
+        WHERE admin = @a AND status IN ('close','archive') AND rating > 0 AND closed_at > 0
+        GROUP BY DATE(FROM_UNIXTIME(closed_at))
+        ORDER BY d DESC
+        LIMIT 60
+    ]], { ['@a'] = adminIdentifier }, function(rows)
+        rows = rows or {}
+
+        -- از امروز به عقب بشمار؛ اولین شکاف یا اولین روزِ min_rating<3 استریک رو تموم میکنه.
+        local streak = 0
+        local cursor = os.date('*t')
+        cursor = os.time({ year = cursor.year, month = cursor.month, day = cursor.day })
+
+        local byDate = {}
+        for _, r in ipairs(rows) do byDate[r.d] = tonumber(r.min_rating) end
+
+        for i = 0, 59 do
+            local dayStr = os.date('%Y-%m-%d', cursor - (i * 86400))
+            local minRating = byDate[dayStr]
+            if minRating == nil then
+                -- روز خنثی: نه شکست نه ادامه. فقط برای «امروز» (i==0) اجازه
+                -- میدیم بدون شکستن استریک رد بشیم (شیفت هنوز تموم نشده)،
+                -- برای روزهای قبل‌تر یعنی استریک همین‌جا تمومه.
+                if i == 0 then goto continue end
+                break
+            elseif minRating < 3 then
+                break
+            else
+                streak = streak + 1
+            end
+            ::continue::
+        end
+
+        MySQL.Async.fetchAll("SELECT last_bonus_streak FROM admin_streak_state WHERE identifier = @id",
+            { ['@id'] = adminIdentifier }, function(stateRows)
+                local lastBonus = (stateRows and stateRows[1] and tonumber(stateRows[1].last_bonus_streak)) or 0
+                local every = (Config_Server.Streak and Config_Server.Streak.every) or 3
+
+                local milestone = streak > 0 and streak % every == 0 and streak or nil
+                local earnedBonus = milestone and milestone > lastBonus
+
+                MySQL.Async.execute([[
+                    INSERT INTO admin_streak_state (identifier, current_streak, last_bonus_streak, updated_at)
+                    VALUES (@id, @cur, @lb, @now)
+                    ON DUPLICATE KEY UPDATE current_streak = @cur, last_bonus_streak = @lb, updated_at = @now
+                ]], {
+                    ['@id']  = adminIdentifier,
+                    ['@cur'] = streak,
+                    ['@lb']  = earnedBonus and milestone or lastBonus,
+                    ['@now'] = os.time(),
+                })
+
+                cb(streak, earnedBonus)
+            end)
+    end)
 end

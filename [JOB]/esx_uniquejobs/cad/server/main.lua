@@ -14,7 +14,7 @@ TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
 -- citizen's or vehicle's WantedLevel, and inject or delete arbitrary MDT
 -- incident log entries. Every handler now re-checks the same job list the
 -- client uses.
-local ALLOWED_CAD_JOBS = { police = true, sheriff = true, fbi = true, mt = true, cid = true, cia = true, marshal = true, judge = true, doa = true }
+local ALLOWED_CAD_JOBS = GovernmentJobSet -- shared/departments.lua (was a hardcoded duplicate; DOJ + LE)
 
 local function IsAllowedCadJob(source)
     local xPlayer = ESX.GetPlayerFromId(source)

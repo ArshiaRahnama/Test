@@ -6,7 +6,7 @@
 -- ============================================================
 
 local dojJob = nil
-local DOJ_JOBS = { marshal = true, judge = true, cia = true, cid = true, fbi = true, doa = true }
+local DOJ_JOBS = DojJobSet -- shared/departments.lua (was a hardcoded duplicate)
 
 local function safeNow()
 	if GetServerUnixTime then return GetServerUnixTime() end
@@ -114,6 +114,15 @@ local function openDocketRow(docket)
 end
 
 function OpenDocketMenu()
+	-- BUG FIX: same stale-cache issue as client/doj_menu.lua's OpenDojMenu()
+	-- -- dojJob only updated via the esx:setJob event handler above, which
+	-- can miss a job change made through something else (an admin panel
+	-- tool, most commonly). Re-derive it fresh from ESX.PlayerData.job here
+	-- so this can never wrongly reject a player whose actual current job
+	-- (what the HUD shows, what the server checks) is already correct.
+	local livejob = ESX.GetPlayerData().job
+	dojJob = (livejob and DOJ_JOBS[livejob.name]) and livejob.name or nil
+
 	if not dojJob then
 		ESX.ShowNotification("❌ Shoma Ozve DOJ Nistid!")
 		return

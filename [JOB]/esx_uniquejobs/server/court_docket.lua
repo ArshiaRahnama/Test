@@ -9,7 +9,7 @@
 ESX = nil
 TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
 
-local DOJ_JOBS = { marshal = true, judge = true, cia = true, cid = true, fbi = true, doa = true }
+local DOJ_JOBS = DojJobSet -- shared/departments.lua (was a hardcoded duplicate)
 local function isDoj(jobname) return DOJ_JOBS[jobname] == true end
 local function isJudge(jobname) return jobname == 'judge' end
 

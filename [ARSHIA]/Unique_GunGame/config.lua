@@ -25,6 +25,11 @@ Config.PlayersPerArena = 5   -- as soon as this many players are queued, a new a
 Config.MaxQueueSize = 30     -- total players allowed across the waiting queue + all running arenas
 Config.CountdownTime = 15    -- seconds of countdown once a group of PlayersPerArena is formed
 Config.RoundTimeLimit = 300  -- seconds per arena, 0 = no time limit (highest kills wins when it hits 0)
+Config.ScoreboardTopCount = 5 -- only show the top N players on the live scoreboard HUD (0 = show everyone)
+
+-- Testing convenience: when true, only 1 player is needed to form an arena, so you
+-- can test the whole flow solo on a local server. Turn this off before going live.
+Config.TestMode = true
 
 -- Announce (to everyone in that arena) when a player's current life-streak hits one
 -- of these numbers. The streak resets to 0 whenever that player dies. Empty table disables it.
@@ -82,6 +87,18 @@ Config.WeaponAmmo = 250
 Config.KillsPerLevel = 5                                    -- kills needed to move to the next weapon
 Config.KillsToWin = Config.KillsPerLevel * #Config.Weapons  -- reaching the last weapon and getting KillsPerLevel more kills wins an arena
 Config.GiveParachuteOnSpawn = true
+
+-- Event triggered repeatedly while a player is dead, asking your server's medical/EMS
+-- system to revive them. Set to '' if your server revives players a different way
+-- (a menu, an NPC interaction, etc) - the script will just wait for the ped to no
+-- longer be dead either way, it doesn't depend on this event actually working.
+Config.ReviveEvent = 'esx_ambulancejob:revive'
+
+-- If your server has a hardcore/long death system (a "respawn available in X minutes"
+-- screen), leave this true so arena deaths are resurrected directly at the game-engine
+-- level instead of waiting on that system, which would otherwise leave players stuck
+-- respecting a long real-life death timer inside what's supposed to be a fast minigame.
+Config.ForceNativeRevive = true
 
 -- ============================================================
 -- Cosmetics

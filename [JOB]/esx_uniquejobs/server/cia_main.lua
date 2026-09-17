@@ -555,8 +555,11 @@ RegisterServerEvent('esx_cia_job:requestrelease')
 AddEventHandler('esx_cia_job:requestrelease', function(targetid, playerheading, playerCoords,  playerlocation)
     local _source = source
     local xPlayer = ESX.GetPlayerFromId(_source)
-    -- SECURITY FIX: same missing check as requestarrest above.
-    if not xPlayer or xPlayer.job.name ~= 'cia' then
+    -- CONNECTED: was strictly cia-only (a suspect cuffed by CIA could only be
+    -- released through this exact event by another CIA agent). Opened up to
+    -- match every other department's requestrelease handler (police,
+    -- marshal) -- any government job can now release, via shared/departments.lua.
+    if not xPlayer or not IsGovernmentJob(xPlayer.job.name) then
         if exports.Unique_AdminPanel then
             exports.Unique_AdminPanel:BanPlayer(_source, 'Cheat Lua Executer', 'Tried esx_cia_job:requestrelease without the cia job')
         end

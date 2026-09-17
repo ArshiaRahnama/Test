@@ -322,7 +322,18 @@ window.addEventListener("message", function(event) {
         $(".menu").hide();
         $("#itemSearch").val('');
 
-        
+        // BUG FIX: #itemContextMenu (the right-click Use/Give/Drop/...
+        // menu) is a sibling of .form-inv in ui.html, not a child of it -
+        // it was appended straight to <body> so its own z-index/position
+        // never gets clipped by whatever panel it was opened over. That
+        // also means .form-inv's own display:none on close never reached
+        // it: right-click an item, close the inventory before picking a
+        // menu option (Esc, walking away, anything else that fires
+        // close:Inv), and the menu was left floating over the game world
+        // with nothing open to attach it to - reported screenshot showed
+        // exactly this, third-person view with the menu still up.
+        $('#itemContextMenu').removeClass('visible');
+
         weightBarCoffre.css("width", 0 + "vw");     
         weightCoffre.text('');
         textCoffre.text('');

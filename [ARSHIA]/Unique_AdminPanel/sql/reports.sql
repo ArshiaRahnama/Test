@@ -77,3 +77,43 @@ CREATE TABLE IF NOT EXISTS `admin_report_response_times` (
 UPDATE `reports` SET `category` = 'other'  WHERE `category` IS NULL OR `category` = '';
 UPDATE `reports` SET `priority` = 1        WHERE `priority` IS NULL OR `priority` = 0;
 UPDATE `reports` SET `created_at` = UNIX_TIMESTAMP() WHERE `created_at` IS NULL OR `created_at` = 0;
+
+-- ===========================================================================
+--  گسترش: هدف ریپورت + هوش پنل + یادداشت شیفت + لجر XP + استریک
+-- ===========================================================================
+
+-- تا الان `reports.identifier` فقط گزارش‌دهنده بود - هیچ ستونی برای «کی رو
+-- داری گزارش میدی» نبود. server/risk_score.lua خودش همین محدودیت رو تو
+-- کامنتش نوشته بود: «قبلاً inclusion این signal رو نداشتیم چون فیلدِ
+-- target روی تیکت نبود». این سه ستون همون چیزیه که کم بود:
+ALTER TABLE `reports` ADD COLUMN `target_identifier` VARCHAR(64)  DEFAULT NULL;
+ALTER TABLE `reports` ADD COLUMN `target_name`       VARCHAR(128) DEFAULT NULL;
+ALTER TABLE `reports` ADD COLUMN `admin_note`         TEXT        DEFAULT NULL;
+
+ALTER TABLE `reports` ADD INDEX `idx_target_created` (`target_identifier`, `created_at`);
+
+-- لجرِ XP: تا الان XP فقط یک عدد جمع‌شونده روی users.unique_admin_xp بود،
+-- بدون تاریخ. یعنی «چقدر XP این ماه گرفتی» اصلاً قابل محاسبه نبود. از الان
+-- هر تغییر XP یک ردیف اینجا هم می‌گیره - از این به بعد رتبه‌بندی ماهانه‌ی
+-- واقعی (بر اساس XP، نه فقط تعداد تیکت) ممکن میشه. XP قدیمی‌تر از امروز
+-- قابل بازیابی نیست (تو هیچ‌جای اسکیمای قبلی تاریخ نداشت).
+CREATE TABLE IF NOT EXISTS `admin_xp_log` (
+  `id`         INT(11)      NOT NULL AUTO_INCREMENT,
+  `identifier` VARCHAR(64)  DEFAULT NULL,
+  `amount`     INT(11)      DEFAULT 0,
+  `reason`     VARCHAR(64)  DEFAULT NULL,
+  `created_at` INT(11)      DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `idx_identifier_created` (`identifier`, `created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- وضعیت استریکِ هر ادمین (چند روز پشت‌سرهم بدون امتیاز زیر ۳)، تا بونس
+-- XP هر آستانه فقط یک‌بار داده بشه، نه هر بار که رتبه‌بندی چک میشه.
+CREATE TABLE IF NOT EXISTS `admin_streak_state` (
+  `identifier`        VARCHAR(64) NOT NULL,
+  `current_streak`    INT(11)     DEFAULT 0,
+  `last_bonus_streak` INT(11)     DEFAULT 0,
+  `updated_at`         INT(11)     DEFAULT 0,
+  PRIMARY KEY (`identifier`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+

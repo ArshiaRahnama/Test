@@ -26,13 +26,18 @@ end)
 -- Default in-game voice range is ~15-20m depending on the voice resource's
 -- config; 20m is a reasonable default guess for "could plausibly have
 -- heard them".
-RegisterServerCallbackSafe('Unique_AdminPanel:GetVoiceProximity', function(source, cb, targetId, range)
-    if not IsOnDutyAdmin(source) then cb({}) return end
+--
+-- ریفکتور شد به یک تابعِ سراسریِ قابل استفاده مجدد (همون الگوی
+-- server/risk_score.lua: هسته + یک رَپرِ نازکِ NUI)، چون پنل ریپورت
+-- (server/report_main.lua) هم به همین منطق نیاز داره برای دکمه‌ی
+-- «بررسی صدا» روی تیکت - به‌جای اینکه یک نسخه‌ی دوم و جدا از محاسبه‌ی
+-- فاصله بسازه.
+function GetVoiceProximityFor(targetId, range)
     targetId = tonumber(targetId)
     range = tonumber(range) or 20.0
 
     local targetPos = PositionSnapshots[targetId]
-    if not targetPos then cb({}) return end
+    if not targetPos then return {} end
 
     local nearby = {}
     for _, playerId in ipairs(ESX.GetPlayers()) do
@@ -52,7 +57,12 @@ RegisterServerCallbackSafe('Unique_AdminPanel:GetVoiceProximity', function(sourc
         end
     end
     table.sort(nearby, function(a, b) return a.distance < b.distance end)
-    cb(nearby)
+    return nearby
+end
+
+RegisterServerCallbackSafe('Unique_AdminPanel:GetVoiceProximity', function(source, cb, targetId, range)
+    if not IsOnDutyAdmin(source) then cb({}) return end
+    cb(GetVoiceProximityFor(targetId, range))
 end)
 
 -- ------------------------------------------------- MONEY SPIKE SCANNER ---

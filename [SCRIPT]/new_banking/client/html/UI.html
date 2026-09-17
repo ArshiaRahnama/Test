@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fa">
 <head>
 	<meta charset="UTF-8" />
 	<title>Bank</title>
@@ -13,191 +13,260 @@
 
 		<div class="toast" id="toast">
 			<span class="toast-icon" id="toastIcon"></span>
-			<span class="toast-text" id="toastText"></span>
+			<span class="toast-text fa" id="toastText"></span>
 		</div>
 
-		<!-- ===== HOME ===== -->
-		<div class="panel" id="screen-home" style="display:block;">
-			<div class="panel-header">
-				<div class="brand">
-					<span class="brand-icon">
+		<div class="shell">
+
+			<!-- ===== SIDEBAR ===== -->
+			<aside class="sidebar">
+				<div class="sidebar-logo">
+					<div class="mark">
 						<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V10l7-6 7 6v11"/><path d="M9 21v-6h6v6"/></svg>
-					</span>
-					Fleeca Bank
+					</div>
+					<div class="brand-name fa">بانک یونیک</div>
 				</div>
-				<button class="icon-btn" id="exitbank" title="Exit">
-					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
-				</button>
-			</div>
 
-			<div class="account-card" id="accountCard">
-				<div class="card-shine" id="cardShine"></div>
-				<div class="card-top">
-					<div class="chip"></div>
-					<div class="card-network">FLEECA</div>
-				</div>
-				<div class="card-iban">
-					IBAN <span class="cardnumber1">----</span>
-					<button type="button" class="copy-btn" id="copyIban" title="Copy IBAN">
-						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+				<nav class="nav">
+					<button class="nav-item active fa" id="navHome" data-screen="home">
+						<span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg></span>
+						داشبورد
 					</button>
-					<span class="copy-toast" id="copyToast">Copied</span>
-				</div>
-				<div class="card-bottom">
-					<div>
-						<div class="card-label">Account Holder</div>
-						<div class="card-value username1">—</div>
-					</div>
-					<div class="card-balance"><span class="cur-symbol">$</span><span class="curbalance" id="mainBalance">0</span></div>
-				</div>
-			</div>
-
-			<div class="actions-grid">
-				<button id="deposit" class="action-btn ripple-target">
-					<span class="action-icon">
-						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>
-					</span>
-					Variz (Deposit)
-					<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
-				</button>
-				<button id="withdraw" class="action-btn ripple-target">
-					<span class="action-icon">
-						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M19 12l-7 7-7-7"/></svg>
-					</span>
-					Bardasht (Withdraw)
-					<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
-				</button>
-				<button id="transfer" class="action-btn ripple-target">
-					<span class="action-icon">
-						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3l4 4-4 4"/><path d="M21 7H9"/><path d="M7 21l-4-4 4-4"/><path d="M3 17h12"/></svg>
-					</span>
-					Enteghal (Transfer)
-					<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
-				</button>
-				<button id="history" class="action-btn ripple-target">
-					<span class="action-icon">
-						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 109-9 9.75 9.75 0 00-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
-					</span>
-					Tarikhche (History)
-					<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
-				</button>
-			</div>
-		</div>
-
-		<!-- ===== DEPOSIT ===== -->
-		<div class="panel" id="screen-deposit">
-			<button class="back-btn ripple-target" data-cancel="deposit">
-				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-				Bazgasht
-			</button>
-			<div class="subscreen-title">Variz kardan</div>
-			<div class="subscreen-sub">Deposit cash into <span class="username1b">your</span> account</div>
-			<div class="balance-pill">Mojoodi: $<span class="curbalance2">0</span></div>
-
-			<form id="form-deposit">
-				<div class="field-row">
-					<label class="field-label">Meghdar (Amount)</label>
-					<input id="amount" type="text" inputmode="numeric" placeholder="0" class="field-input" autocomplete="off">
-					<div class="quick-row" id="depositQuick">
-						<button type="button" class="quick-btn" data-pct="25">25%</button>
-						<button type="button" class="quick-btn" data-pct="50">50%</button>
-						<button type="button" class="quick-btn" data-pct="100">Max</button>
-					</div>
-				</div>
-				<button type="submit" class="submit-btn ripple-target">
-					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>
-					Variz
-				</button>
-				<button type="button" class="cancel-link" data-cancel="deposit">Enseraf</button>
-			</form>
-		</div>
-
-		<!-- ===== WITHDRAW ===== -->
-		<div class="panel" id="screen-withdraw">
-			<button class="back-btn ripple-target" data-cancel="withdraw">
-				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-				Bazgasht
-			</button>
-			<div class="subscreen-title">Bardasht kardan</div>
-			<div class="subscreen-sub">Withdraw cash from <span class="username1b">your</span> account</div>
-			<div class="balance-pill">Mojoodi: $<span class="curbalance3">0</span></div>
-
-			<form id="form-withdraw">
-				<div class="field-row">
-					<label class="field-label">Meghdar (Amount)</label>
-					<input id="amountw" type="text" inputmode="numeric" placeholder="0" class="field-input" autocomplete="off">
-					<div class="quick-row" id="withdrawQuick">
-						<button type="button" class="quick-btn" data-pct="25">25%</button>
-						<button type="button" class="quick-btn" data-pct="50">50%</button>
-						<button type="button" class="quick-btn" data-pct="100">Max</button>
-					</div>
-				</div>
-				<button type="submit" class="submit-btn danger ripple-target">
-					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M19 12l-7 7-7-7"/></svg>
-					Bardasht
-				</button>
-				<button type="button" class="cancel-link" data-cancel="withdraw">Enseraf</button>
-			</form>
-		</div>
-
-		<!-- ===== TRANSFER ===== -->
-		<div class="panel" id="screen-transfer">
-			<button class="back-btn ripple-target" data-cancel="transfer">
-				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-				Bazgasht
-			</button>
-			<div class="subscreen-title">Enteghal vajh</div>
-			<div class="subscreen-sub">Send money by player ID, IBAN, or name</div>
-			<div class="balance-pill">Mojoodi: $<span class="curbalance4">0</span></div>
-
-			<div class="contacts-row" id="contactsRow"></div>
-
-			<form id="form-transfer">
-				<div class="field-row" style="position:relative;">
-					<label class="field-label">Player ID, IBAN or Name</label>
-					<input id="to" type="text" placeholder="e.g. 12, IBAN, or a name" class="field-input" autocomplete="off">
-					<div class="suggest-box" id="suggestBox"></div>
-				</div>
-				<div class="field-row">
-					<label class="field-label">Meghdar (Amount)</label>
-					<input id="amountt" type="text" inputmode="numeric" placeholder="0" class="field-input" autocomplete="off">
-				</div>
-				<button type="submit" class="submit-btn ripple-target">
-					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3l4 4-4 4"/><path d="M21 7H9"/><path d="M7 21l-4-4 4-4"/><path d="M3 17h12"/></svg>
-					Enteghal
-				</button>
-				<button type="button" class="cancel-link" data-cancel="transfer">Enseraf</button>
-			</form>
-		</div>
-
-		<!-- ===== HISTORY ===== -->
-		<div class="panel" id="screen-history">
-			<button class="back-btn ripple-target" data-cancel="history">
-				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-				Bazgasht
-			</button>
-			<div class="subscreen-title">Tarikhche-ye Tarakonesh</div>
-			<div class="subscreen-sub">Last transactions on this account</div>
-			<div class="history-list" id="historyList">
-				<div class="history-empty">Dar hale bargozari...</div>
-			</div>
-		</div>
-
-		<!-- ===== TRANSFER CONFIRM MODAL ===== -->
-		<div class="modal-overlay" id="confirmOverlay">
-			<div class="modal-box">
-				<div class="modal-title">Ta'yid Enteghal</div>
-				<div class="modal-text" id="confirmText">Motma'en hastid mikhahid meghdar mashkhas ra enteghal dahid?</div>
-				<div class="modal-actions">
-					<button type="button" class="submit-btn ripple-target" id="confirmYes">
-						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
-						Ta'yid, Beferest
+					<button class="nav-item fa" id="deposit">
+						<span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg></span>
+						واریز
 					</button>
-					<button type="button" class="cancel-link" id="confirmNo">Enseraf</button>
-				</div>
-			</div>
-		</div>
+					<button class="nav-item fa" id="withdraw">
+						<span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M19 12l-7 7-7-7"/></svg></span>
+						برداشت
+					</button>
+					<button class="nav-item fa" id="transfer">
+						<span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3l4 4-4 4"/><path d="M21 7H9"/><path d="M7 21l-4-4 4-4"/><path d="M3 17h12"/></svg></span>
+						انتقال پول
+					</button>
+					<button class="nav-item fa" id="history">
+						<span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 109-9 9.75 9.75 0 00-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg></span>
+						تاریخچه
+					</button>
+				</nav>
 
+				<button class="nav-item exit fa ripple-target" id="exitbank">
+					<span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg></span>
+					خروج
+				</button>
+
+				<div class="profile-card">
+					<div class="profile-top">
+						<div class="avatar">
+							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+						</div>
+						<div class="profile-name username1">—</div>
+					</div>
+					<div class="profile-stat bank">
+						<span class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V10l7-6 7 6v11"/><path d="M9 21v-6h6v6"/></svg></span>
+						<span>$<span class="curbalance" id="mainBalanceMini">0</span></span>
+					</div>
+					<div class="profile-stat cash">
+						<span class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M12 8v8M9 10h4.5a1.5 1.5 0 010 3H10a1.5 1.5 0 000 3h4.5"/></svg></span>
+						<span>$<span class="curcash" id="cashMini">0</span></span>
+					</div>
+				</div>
+			</aside>
+
+			<!-- ===== MAIN CONTENT ===== -->
+			<main class="content">
+
+				<!-- ===== HOME / DASHBOARD ===== -->
+				<div class="panel" id="screen-home" style="display:block;">
+
+					<div class="top-row">
+						<div class="account-card" id="accountCard">
+							<div class="card-shine" id="cardShine"></div>
+							<span class="copy-toast" id="copyToast">کپی شد</span>
+							<div class="card-top">
+								<div class="card-title fa">شماره کارت</div>
+								<div class="brand-mark">
+									<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V10l7-6 7 6v11"/><path d="M9 21v-6h6v6"/></svg>
+								</div>
+							</div>
+							<div class="card-number" id="copyIban" title="کپی شماره کارت">
+								<span class="cardnumber1">----</span>
+								<button type="button" class="copy-btn ripple-target">
+									<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+								</button>
+							</div>
+							<div class="card-bottom">
+								<div>
+									<div class="card-holder-label fa">دارنده حساب</div>
+									<div class="card-holder-value username1">—</div>
+								</div>
+								<div class="card-expiry">09/25</div>
+							</div>
+						</div>
+
+						<div class="info-col">
+							<div class="info-box bank">
+								<div class="info-icon">
+									<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V10l7-6 7 6v11"/><path d="M9 21v-6h6v6"/></svg>
+								</div>
+								<div>
+									<div class="info-label fa">موجودی حساب</div>
+									<div class="info-value">$<span class="curbalance" id="mainBalance">0</span></div>
+								</div>
+							</div>
+							<div class="info-box cash">
+								<div class="info-icon">
+									<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="5"/><circle cx="16" cy="16" r="5"/><path d="M12 8v.01M12 16v.01"/></svg>
+								</div>
+								<div>
+									<div class="info-label fa">پول نقد</div>
+									<div class="info-value">$<span class="curcash" id="cashDisplay">0</span></div>
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<div class="chart-card">
+						<div class="chart-title fa">نمودار موجودی بانک در ۳۰ روز اخیر</div>
+						<div class="chart-wrap" id="chartWrap"></div>
+					</div>
+
+					<div class="quick-actions">
+						<button class="qa-btn fa ripple-target" id="qaDeposit">
+							<span class="qa-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg></span>
+							واریز
+						</button>
+						<button class="qa-btn fa ripple-target" id="qaWithdraw">
+							<span class="qa-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M19 12l-7 7-7-7"/></svg></span>
+							برداشت
+						</button>
+						<button class="qa-btn fa ripple-target" id="qaTransfer">
+							<span class="qa-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3l4 4-4 4"/><path d="M21 7H9"/><path d="M7 21l-4-4 4-4"/><path d="M3 17h12"/></svg></span>
+							انتقال
+						</button>
+						<button class="qa-btn fa ripple-target" id="qaHistory">
+							<span class="qa-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 109-9 9.75 9.75 0 00-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg></span>
+							تاریخچه
+						</button>
+					</div>
+				</div>
+
+				<!-- ===== DEPOSIT ===== -->
+				<div class="panel" id="screen-deposit">
+					<button class="back-btn ripple-target fa" data-cancel="deposit">
+						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+						بازگشت
+					</button>
+					<div class="subscreen-title fa">واریز کردن</div>
+					<div class="subscreen-sub fa">مبلغ نقد را به حساب <span class="username1b">شما</span> واریز کنید</div>
+					<div class="balance-pill">موجودی: $<span class="curcash2">0</span></div>
+
+					<form id="form-deposit">
+						<div class="field-row">
+							<label class="field-label fa">مبلغ</label>
+							<input id="amount" type="text" inputmode="numeric" placeholder="0" class="field-input" autocomplete="off">
+							<div class="quick-row" id="depositQuick">
+								<button type="button" class="quick-btn" data-pct="25">25%</button>
+								<button type="button" class="quick-btn" data-pct="50">50%</button>
+								<button type="button" class="quick-btn" data-pct="100">Max</button>
+							</div>
+						</div>
+						<button type="submit" class="submit-btn ripple-target fa">
+							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>
+							واریز
+						</button>
+						<button type="button" class="cancel-link fa" data-cancel="deposit">انصراف</button>
+					</form>
+				</div>
+
+				<!-- ===== WITHDRAW ===== -->
+				<div class="panel" id="screen-withdraw">
+					<button class="back-btn ripple-target fa" data-cancel="withdraw">
+						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+						بازگشت
+					</button>
+					<div class="subscreen-title fa">برداشت کردن</div>
+					<div class="subscreen-sub fa">مبلغ نقد را از حساب <span class="username1b">شما</span> برداشت کنید</div>
+					<div class="balance-pill">موجودی: $<span class="curbalance3">0</span></div>
+
+					<form id="form-withdraw">
+						<div class="field-row">
+							<label class="field-label fa">مبلغ</label>
+							<input id="amountw" type="text" inputmode="numeric" placeholder="0" class="field-input" autocomplete="off">
+							<div class="quick-row" id="withdrawQuick">
+								<button type="button" class="quick-btn" data-pct="25">25%</button>
+								<button type="button" class="quick-btn" data-pct="50">50%</button>
+								<button type="button" class="quick-btn" data-pct="100">Max</button>
+							</div>
+						</div>
+						<button type="submit" class="submit-btn danger ripple-target fa">
+							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M19 12l-7 7-7-7"/></svg>
+							برداشت
+						</button>
+						<button type="button" class="cancel-link fa" data-cancel="withdraw">انصراف</button>
+					</form>
+				</div>
+
+				<!-- ===== TRANSFER ===== -->
+				<div class="panel" id="screen-transfer">
+					<button class="back-btn ripple-target fa" data-cancel="transfer">
+						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+						بازگشت
+					</button>
+					<div class="subscreen-title fa">انتقال وجه</div>
+					<div class="subscreen-sub fa">ارسال پول با آیدی بازیکن، شماره کارت یا نام</div>
+					<div class="balance-pill">موجودی: $<span class="curbalance4">0</span></div>
+
+					<div class="contacts-row" id="contactsRow"></div>
+
+					<form id="form-transfer">
+						<div class="field-row" style="position:relative;">
+							<label class="field-label fa">آیدی بازیکن، شماره کارت یا نام</label>
+							<input id="to" type="text" placeholder="مثلا 12، شماره کارت یا نام" class="field-input" autocomplete="off">
+							<div class="suggest-box" id="suggestBox"></div>
+						</div>
+						<div class="field-row">
+							<label class="field-label fa">مبلغ</label>
+							<input id="amountt" type="text" inputmode="numeric" placeholder="0" class="field-input" autocomplete="off">
+						</div>
+						<button type="submit" class="submit-btn ripple-target fa">
+							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3l4 4-4 4"/><path d="M21 7H9"/><path d="M7 21l-4-4 4-4"/><path d="M3 17h12"/></svg>
+							انتقال
+						</button>
+						<button type="button" class="cancel-link fa" data-cancel="transfer">انصراف</button>
+					</form>
+				</div>
+
+				<!-- ===== HISTORY ===== -->
+				<div class="panel" id="screen-history">
+					<button class="back-btn ripple-target fa" data-cancel="history">
+						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+						بازگشت
+					</button>
+					<div class="subscreen-title fa">تاریخچه تراکنش‌ها</div>
+					<div class="subscreen-sub fa">آخرین تراکنش‌های این حساب</div>
+					<div class="history-list" id="historyList">
+						<div class="history-empty fa">در حال بارگذاری...</div>
+					</div>
+				</div>
+
+				<!-- ===== TRANSFER CONFIRM MODAL ===== -->
+				<div class="modal-overlay" id="confirmOverlay">
+					<div class="modal-box">
+						<div class="modal-title fa">تایید انتقال</div>
+						<div class="modal-text fa" id="confirmText">آیا از انتقال مبلغ مورد نظر مطمئن هستید؟</div>
+						<div class="modal-actions">
+							<button type="button" class="submit-btn ripple-target fa" id="confirmYes">
+								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+								تایید، ارسال کن
+							</button>
+							<button type="button" class="cancel-link fa" id="confirmNo">انصراف</button>
+						</div>
+					</div>
+				</div>
+
+			</main>
+		</div>
 	</div>
 
 	<script>
@@ -209,18 +278,32 @@
 			transfer: document.getElementById('screen-transfer'),
 			history: document.getElementById('screen-history'),
 		};
+		const navButtons = {
+			home: document.getElementById('navHome'),
+			deposit: document.getElementById('deposit'),
+			withdraw: document.getElementById('withdraw'),
+			transfer: document.getElementById('transfer'),
+			history: document.getElementById('history'),
+		};
 
 		let onlinePlayers = [];
 		let currentIban = '';
 		let currentBank = 0;
 		let currentCash = 0;
 		let pendingTransfer = null;
+		let historyRows = [];
 
 		// ================= Navigation =================
 
 		function showScreen(name){
 			Object.values(screens).forEach(s => s.style.display = 'none');
 			screens[name].style.display = 'block';
+			Object.entries(navButtons).forEach(([key, btn]) => {
+				btn.classList.toggle('active', key === name);
+			});
+			if (name === 'home'){
+				post('history');
+			}
 			if (name === 'transfer'){
 				post('getOnlinePlayers');
 				post('recentContacts');
@@ -230,7 +313,7 @@
 				document.getElementById('suggestBox').style.display = 'none';
 			}
 			if (name === 'history'){
-				document.getElementById('historyList').innerHTML = '<div class="history-empty">Dar hale bargozari...</div>';
+				document.getElementById('historyList').innerHTML = '<div class="history-empty fa">در حال بارگذاری...</div>';
 				post('history');
 			}
 		}
@@ -300,6 +383,12 @@
 			currentBank = newBalance;
 		}
 
+		function updateCashDisplays(){
+			document.querySelectorAll('.curcash, .curcash2').forEach(el => {
+				el.textContent = formatMoney(currentCash);
+			});
+		}
+
 		// ================= Sound effects (Web Audio, no external files) =================
 
 		let audioCtx = null;
@@ -358,7 +447,7 @@
 
 		function burstConfetti(){
 			resizeConfettiCanvas();
-			const colors = ['#3d8bff', '#24d9a3', '#6f5bff', '#ffd166', '#ff5d6c'];
+			const colors = ['#7c5cff', '#22d3ee', '#4f6bff', '#ffb84d', '#ff5d6c'];
 			const cx = confettiCanvas.width / 2;
 			for (let i = 0; i < 46; i++){
 				confettiParticles.push({
@@ -433,8 +522,8 @@
 			const y = e.clientY - rect.top;
 			const px = x / rect.width;
 			const py = y / rect.height;
-			const rotateY = (px - 0.5) * 10;
-			const rotateX = (0.5 - py) * 10;
+			const rotateY = (px - 0.5) * 8;
+			const rotateX = (0.5 - py) * 8;
 			accountCard.style.transform = `perspective(600px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
 			cardShine.style.background = `radial-gradient(circle at ${px * 100}% ${py * 100}%, rgba(255,255,255,0.22), transparent 55%)`;
 		});
@@ -459,66 +548,134 @@
 			setTimeout(() => ripple.remove(), 600);
 		});
 
-		// ================= NUI messages from Lua =================
+		// ================= Balance history chart =================
+		// Builds a real 31-point balance trend (today, and 30 days back) from the
+		// account's transaction history, so the dashboard chart reflects actual
+		// deposits / withdrawals / transfers rather than fake data.
 
-		window.addEventListener('message', function(event){
-			const data = event.data;
-			if (data.type === 'openGeneral'){
-				app.style.display = 'block';
-				showScreen('home');
-			} else if (data.type === 'balanceHUD'){
-				currentIban = data.cardnumber;
-				if (typeof data.cash === 'number') currentCash = data.cash;
-				document.querySelectorAll('.username1').forEach(el => el.textContent = data.player);
-				document.querySelectorAll('.username1b').forEach(el => el.textContent = data.player);
-				document.querySelectorAll('.cardnumber1').forEach(el => el.textContent = data.cardnumber);
-				updateBalanceDisplays(data.balance);
-			} else if (data.type === 'closeAll'){
-				app.style.display = 'none';
-			} else if (data.type === 'onlinePlayers'){
-				onlinePlayers = data.players || [];
-			} else if (data.type === 'historyData'){
-				renderHistory(data.rows || []);
-			} else if (data.type === 'recentContacts'){
-				renderContacts(data.rows || []);
-			} else if (data.type === 'actionResult'){
-				handleActionResult(data);
-			}
-		});
+		function computeBalanceSeries(rows){
+			const DAY = 86400000;
+			const now = Date.now();
+			const cutoff = now - 30 * DAY;
 
-		function handleActionResult(data){
-			const labels = { deposit: 'Variz', withdraw: 'Bardasht', transfer: 'Enteghal' };
-			const label = labels[data.kind] || 'Amaliat';
-			if (data.ok){
-				showToast(true, `${label} movafaq bud: $${formatMoney(data.amount)}`);
-				if (data.kind === 'withdraw'){
-					playWithdrawThud();
-				} else {
-					playSuccessChime();
-					burstConfetti();
+			const signed = (rows || [])
+				.map(r => {
+					const t = r.created_at ? new Date(r.created_at).getTime() : NaN;
+					if (isNaN(t) || t < cutoff) return null;
+					let sign = 0;
+					if (r.type === 'deposit' || r.type === 'transfer_in') sign = 1;
+					else if (r.type === 'withdraw' || r.type === 'transfer_out') sign = -1;
+					return { t, amount: sign * (Number(r.amount) || 0) };
+				})
+				.filter(Boolean)
+				.sort((a, b) => a.t - b.t);
+
+			// Balance right before the earliest transaction in range.
+			const netInRange = signed.reduce((sum, r) => sum + r.amount, 0);
+			let baseline = currentBank - netInRange;
+
+			// Running balance snapshots over time.
+			const snapshots = [{ t: cutoff, balance: baseline }];
+			let running = baseline;
+			signed.forEach(r => {
+				running += r.amount;
+				snapshots.push({ t: r.t, balance: running });
+			});
+			snapshots.push({ t: now, balance: currentBank });
+
+			// Sample 31 points (day 0..30) carrying forward the last known balance.
+			const points = [];
+			for (let i = 0; i <= 30; i++){
+				const dayTime = cutoff + i * DAY;
+				let val = snapshots[0].balance;
+				for (const s of snapshots){
+					if (s.t <= dayTime) val = s.balance;
+					else break;
 				}
-			} else {
-				showToast(false, `${label} anjam nashod`);
-				playErrorBuzz();
+				points.push(Math.max(0, val));
 			}
+			return points;
 		}
+
+		function niceMax(value){
+			if (value <= 0) return 10;
+			const magnitude = Math.pow(10, Math.floor(Math.log10(value)));
+			const steps = [1, 2, 2.5, 5, 10];
+			for (const s of steps){
+				if (value <= s * magnitude) return s * magnitude;
+			}
+			return 10 * magnitude;
+		}
+
+		function drawBalanceChart(rows){
+			const wrap = document.getElementById('chartWrap');
+			const points = computeBalanceSeries(rows);
+			const w = 720, h = 260;
+			const padL = 56, padR = 14, padT = 14, padB = 26;
+			const plotW = w - padL - padR;
+			const plotH = h - padT - padB;
+
+			const maxVal = niceMax(Math.max(...points, 1));
+			const gridCount = 4;
+
+			const xFor = i => padL + (plotW * i) / 30;
+			const yFor = v => padT + plotH - (plotH * v) / maxVal;
+
+			let grid = '';
+			let yLabels = '';
+			for (let g = 0; g <= gridCount; g++){
+				const v = (maxVal / gridCount) * g;
+				const y = yFor(v);
+				grid += `<line x1="${padL}" y1="${y}" x2="${w - padR}" y2="${y}" class="chart-grid-line"/>`;
+				yLabels += `<text x="${padL - 10}" y="${y + 3}" text-anchor="end" class="chart-axis-text">${formatMoney(v)}</text>`;
+			}
+
+			let xLabels = '';
+			for (let i = 0; i <= 30; i += 2){
+				xLabels += `<text x="${xFor(i)}" y="${h - 6}" text-anchor="middle" class="chart-axis-text">${i}</text>`;
+			}
+
+			const linePath = points.map((v, i) => `${i === 0 ? 'M' : 'L'} ${xFor(i).toFixed(1)} ${yFor(v).toFixed(1)}`).join(' ');
+			const areaPath = `${linePath} L ${xFor(30).toFixed(1)} ${(padT + plotH).toFixed(1)} L ${xFor(0).toFixed(1)} ${(padT + plotH).toFixed(1)} Z`;
+
+			const dots = points.map((v, i) => `<circle cx="${xFor(i).toFixed(1)}" cy="${yFor(v).toFixed(1)}" r="3" class="chart-dot"/>`).join('');
+
+			wrap.innerHTML = `
+				<svg viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg">
+					<defs>
+						<linearGradient id="chartFade" x1="0" y1="0" x2="0" y2="1">
+							<stop offset="0%" stop-color="#22d3ee" stop-opacity="0.28"/>
+							<stop offset="100%" stop-color="#22d3ee" stop-opacity="0"/>
+						</linearGradient>
+					</defs>
+					${grid}
+					${yLabels}
+					${xLabels}
+					<path d="${areaPath}" class="chart-area"/>
+					<path d="${linePath}" class="chart-line"/>
+					${dots}
+				</svg>
+			`;
+		}
+
+		// ================= History / contacts rendering =================
 
 		function renderHistory(rows){
 			const box = document.getElementById('historyList');
 			if (!rows.length){
-				box.innerHTML = '<div class="history-empty">Hich tarakoneshi sabt nashode</div>';
+				box.innerHTML = '<div class="history-empty fa">هیچ تراکنشی ثبت نشده</div>';
 				return;
 			}
 			const typeMeta = {
-				deposit:      { label: 'Variz',            sign: '+', cls: 'positive' },
-				withdraw:     { label: 'Bardasht',         sign: '-', cls: 'negative' },
-				transfer_out: { label: 'Enteghal be',      sign: '-', cls: 'negative' },
-				transfer_in:  { label: 'Enteghal az',      sign: '+', cls: 'positive' },
+				deposit:      { label: 'واریز',         sign: '+', cls: 'positive' },
+				withdraw:     { label: 'برداشت',        sign: '-', cls: 'negative' },
+				transfer_out: { label: 'انتقال به',      sign: '-', cls: 'negative' },
+				transfer_in:  { label: 'انتقال از',      sign: '+', cls: 'positive' },
 			};
 			box.innerHTML = rows.map(row => {
 				const meta = typeMeta[row.type] || { label: row.type, sign: '', cls: '' };
 				const date = row.created_at ? new Date(row.created_at).toLocaleString() : '';
-				const counterparty = row.counterparty ? `<div class="history-sub">${meta.label} ${row.counterparty}</div>` : `<div class="history-sub">${meta.label}</div>`;
+				const counterparty = row.counterparty ? `<div class="history-sub fa">${meta.label} ${row.counterparty}</div>` : `<div class="history-sub fa">${meta.label}</div>`;
 				return `
 					<div class="history-item">
 						<div class="history-icon ${meta.cls}">${meta.sign}</div>
@@ -567,10 +724,16 @@
 			btn.addEventListener('click', () => showScreen('home'));
 		});
 
+		document.getElementById('navHome').addEventListener('click', () => showScreen('home'));
 		document.getElementById('deposit').addEventListener('click', () => showScreen('deposit'));
 		document.getElementById('withdraw').addEventListener('click', () => showScreen('withdraw'));
 		document.getElementById('transfer').addEventListener('click', () => showScreen('transfer'));
 		document.getElementById('history').addEventListener('click', () => showScreen('history'));
+
+		document.getElementById('qaDeposit').addEventListener('click', () => showScreen('deposit'));
+		document.getElementById('qaWithdraw').addEventListener('click', () => showScreen('withdraw'));
+		document.getElementById('qaTransfer').addEventListener('click', () => showScreen('transfer'));
+		document.getElementById('qaHistory').addEventListener('click', () => showScreen('history'));
 
 		// ---- Quick-amount buttons ----
 		document.getElementById('depositQuick').addEventListener('click', function(e){
@@ -649,7 +812,7 @@
 			if (!to || !amountt) return;
 
 			const label = toInput.dataset.pickedName ? `${toInput.dataset.pickedName} (#${to})` : to;
-			document.getElementById('confirmText').textContent = `Motma'en hastid mikhahid $${formatMoney(amountt)} be ${label} enteghal dahid?`;
+			document.getElementById('confirmText').textContent = `آیا مطمئن هستید می‌خواهید $${formatMoney(amountt)} به ${label} انتقال دهید؟`;
 			pendingTransfer = { to, amountt };
 			confirmOverlay.classList.add('show');
 		});
@@ -678,6 +841,57 @@
 				}
 			}
 		});
+
+		// ================= NUI messages from Lua =================
+
+		window.addEventListener('message', function(event){
+			const data = event.data;
+			if (data.type === 'openGeneral'){
+				app.style.display = 'block';
+				showScreen('home');
+			} else if (data.type === 'balanceHUD'){
+				currentIban = data.cardnumber;
+				if (typeof data.cash === 'number') currentCash = data.cash;
+				document.querySelectorAll('.username1').forEach(el => el.textContent = data.player);
+				document.querySelectorAll('.username1b').forEach(el => el.textContent = data.player);
+				document.querySelectorAll('.cardnumber1').forEach(el => el.textContent = data.cardnumber);
+				updateBalanceDisplays(data.balance);
+				updateCashDisplays();
+				drawBalanceChart(historyRows);
+			} else if (data.type === 'closeAll'){
+				app.style.display = 'none';
+			} else if (data.type === 'onlinePlayers'){
+				onlinePlayers = data.players || [];
+			} else if (data.type === 'historyData'){
+				historyRows = data.rows || [];
+				renderHistory(historyRows);
+				drawBalanceChart(historyRows);
+			} else if (data.type === 'recentContacts'){
+				renderContacts(data.rows || []);
+			} else if (data.type === 'actionResult'){
+				handleActionResult(data);
+			}
+		});
+
+		function handleActionResult(data){
+			const labels = { deposit: 'واریز', withdraw: 'برداشت', transfer: 'انتقال' };
+			const label = labels[data.kind] || 'عملیات';
+			if (data.ok){
+				showToast(true, `${label} با موفقیت انجام شد: $${formatMoney(data.amount)}`);
+				if (data.kind === 'withdraw'){
+					playWithdrawThud();
+				} else {
+					playSuccessChime();
+					burstConfetti();
+				}
+			} else {
+				showToast(false, `${label} انجام نشد`);
+				playErrorBuzz();
+			}
+		}
+
+		// Draw an empty chart shell before first data arrives.
+		drawBalanceChart([]);
 	</script>
 </body>
 </html>

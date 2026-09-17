@@ -11,6 +11,70 @@ if Config.Framework ~= "esx" then
 end
 
 
+-------------------------------------------------------------------
+-- BUG FIX (round 13): TriggerServerCallback / GetPlayerIdentifier /
+-- GetClosestPlayer / GetClosestVehicle used to be defined AFTER the
+-- ESX-resolution block below. For Config.esxVersion == 'old' (this
+-- server: essentialmode) that block BLOCKS this file's own execution
+-- inside `while not ESX do ... Wait(500) end` until essentialmode
+-- responds to the handshake - so for however long that takes, these
+-- four globals simply don't exist yet anywhere in the resource.
+--
+-- Nothing else in the resource waits for that: client/main.lua
+-- registers its `inventory` command (bound to F2) on its own
+-- top-level run, independent of this file's blocking loop. A player
+-- who presses that key in the first second or two after connecting -
+-- or right after a `restart esx_inventory` / `restart essentialmode`
+-- sequence, before the handshake has had a chance to complete - calls
+-- straight into a function that hasn't been defined yet:
+--   "attempt to call a nil value (global 'TriggerServerCallback')"
+-- A nil-check placed INSIDE these functions wouldn't have helped - the
+-- functions themselves didn't exist yet to be called into; the crash
+-- happens before their own body ever runs.
+--
+-- Fixed by defining all four unconditionally, right here, before ESX
+-- resolution even starts. Each one waits (bounded to 10s, the same
+-- budget already used elsewhere in this file, e.g. the
+-- onClientResourceStart re-seed thread) for ESX to be ready before
+-- touching it. A call arriving during that startup window now waits
+-- briefly instead of crashing; a call arriving any time after behaves
+-- exactly as it always did - same functions, same bodies, just moved
+-- earlier and internally patient about ESX not being ready yet.
+-------------------------------------------------------------------
+local function waitForESX()
+    local waited = 0
+    while not ESX and waited < 10000 do
+        Wait(100)
+        waited = waited + 100
+    end
+    return ESX
+end
+
+function TriggerServerCallback(name, cb, ...)
+    local esx = waitForESX()
+    if not esx then return end
+    esx.TriggerServerCallback(name, cb, ...)
+end
+
+function GetPlayerIdentifier()
+    local esx = waitForESX()
+    if not esx then return nil end
+    return esx.GetPlayerData().identifier
+end
+
+function GetClosestPlayer()
+    local esx = waitForESX()
+    if not esx then return nil end
+    return esx.Game.GetClosestPlayer()
+end
+
+function GetClosestVehicle(coords)
+    local esx = waitForESX()
+    if not esx then return nil end
+    return esx.Game.GetClosestVehicle(coords)
+end
+
+
 if Config.esxVersion == 'new' then
 	ESX = exports['es_extended']:getSharedObject()
 elseif Config.esxVersion == 'old' then
@@ -33,28 +97,35 @@ end)
 
 RegisterNetEvent('esx:setJob')
 AddEventHandler('esx:setJob', function(job)
-	PlayerData.job = job
+	-- BUG FIX: unguarded `PlayerData.job = job` crashed with
+	--   "attempt to index a nil value (global 'PlayerData')"
+	-- whenever esx:setJob arrived before PlayerData was set - same
+	-- root cause as the onClientResourceStart fix further down this
+	-- file (a `restart esx_inventory` while the player stays connected
+	-- resets this local to nil, and esx:playerLoaded isn't guaranteed
+	-- to fire again just because this one resource restarted). Rather
+	-- than only guarding the crash, this recovers PlayerData first via
+	-- the same ESX.GetPlayerData() call the restart thread below
+	-- already trusts, so a job change arriving in that gap still
+	-- lands instead of silently getting dropped.
+	if not PlayerData and ESX and type(ESX.GetPlayerData) == 'function' then
+		local ok, data = pcall(ESX.GetPlayerData)
+		if ok and type(data) == 'table' and data.identifier then
+			PlayerData = data
+			PlayerLoaded = true
+		end
+	end
+	if PlayerData then
+		PlayerData.job = job
+	end
 end)
 
 
 
-function TriggerServerCallback(name, cb, ...)
-    ESX.TriggerServerCallback(name, cb, ...)
-end
+-- TriggerServerCallback / GetPlayerIdentifier / GetClosestPlayer /
+-- GetClosestVehicle now live at the top of this file (round 13) - see
+-- the BUG FIX comment there for why they had to move.
 
-function GetPlayerIdentifier()
-	return ESX.GetPlayerData().identifier
-end
-
-function GetClosestPlayer()
-	return ESX.Game.GetClosestPlayer()
-end
-
-function GetClosestVehicle(coords)
-	return ESX.Game.GetClosestVehicle(coords)
-end
-
- 
 
 function SendTextMessage(msg, type)
     if type == 'inform' then 

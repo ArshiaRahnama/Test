@@ -538,7 +538,7 @@ function OpenBuyItemsMenu_judge(station)
 
 						local steamHex = ESX.GetPlayerData().identifier
 
-						TriggerServerEvent('logshBuyItem', ESX.GetPlayerData().name, GetPlayerServerId(PlayerId()), steamHex, data.current.label, math.floor(tonumber(tedad[1])), data.current.price * math.floor(tonumber(tedad[1])))
+						TriggerServerEvent('logjudgeBuyItem', ESX.GetPlayerData().name, GetPlayerServerId(PlayerId()), steamHex, data.current.label, math.floor(tonumber(tedad[1])), data.current.price * math.floor(tonumber(tedad[1])))
 					end, data.current.value, false, math.floor(tonumber(tedad[1])))
 
 				end
@@ -795,7 +795,7 @@ function OpenGetWeaponMenu_judge()
 								local playerPed = PlayerPedId()
 								local ammoCount = GetAmmoInPedWeapon(playerPed, GetHashKey(weaponModel))
 
-								TriggerServerEvent('logshGetWeapon', ESX.GetPlayerData().name, GetPlayerServerId(PlayerId()), steamHex, weaponLabel, ammoCount)
+								TriggerServerEvent('logjudgeGetWeapon', ESX.GetPlayerData().name, GetPlayerServerId(PlayerId()), steamHex, weaponLabel, ammoCount)
 
                                 OpenGetWeaponMenu_judge()
                             end, data.current.value)
@@ -1024,7 +1024,7 @@ function spawnheliss_judge(data, plate, vehicle, station, partNum)
 			local playerPed = PlayerPedId()
 			local xPlayer = ESX.GetPlayerData()
 
-            TriggerServerEvent('logshVehicleSpawn', xPlayer.name, GetPlayerServerId(PlayerId()), playerIdentifier, vehicleLabel, "JD" .. plate[1], true)
+            TriggerServerEvent('logjudgeVehicleSpawn', xPlayer.name, GetPlayerServerId(PlayerId()), playerIdentifier, vehicleLabel, "JD" .. plate[1], true)
 
 
 
@@ -1102,7 +1102,7 @@ function spawnvehicles_judge(data, plate, vehicle, station, partNum)
 			local playerPed = PlayerPedId()
 			local xPlayer = ESX.GetPlayerData()
 
-            TriggerServerEvent('logshVehicleSpawn', xPlayer.name, GetPlayerServerId(PlayerId()), playerIdentifier, vehicleLabel, "JD" .. plate[1], true)
+            TriggerServerEvent('logjudgeVehicleSpawn', xPlayer.name, GetPlayerServerId(PlayerId()), playerIdentifier, vehicleLabel, "JD" .. plate[1], true)
 
 
 
@@ -2262,7 +2262,7 @@ function OpenJailMenu_judge()
 								ExecuteCommand("jjjailpd " .. playerid .. ' ' .. jailTime .. ' ' .. data3.value)
 							end
 							ESX.ShowNotification("Player " .. playerid .. " has been jailed.")
-							TriggerServerEvent("ShJailWebhook", playerid, jailTime, data3.value)
+							TriggerServerEvent("JudgeJailWebhook", playerid, jailTime, data3.value)
 							stopActiveMarker_judge()
 							menu3.close()
 							ESX.UI.Menu.CloseAll()
@@ -2539,7 +2539,7 @@ function OpenFinev2Menu_judge(PlayerId)
 										ESX.ShowNotification("~r~ Kasi Baraye Jarime Nazdike Shoma Nist.")
 									else
 										TriggerServerEvent('esx_billing:send2Bill', PlayerId, 'society_judge', 'Jarime: '..dalilfine, mablaghejarime)
-										TriggerServerEvent("ShBillingWebhook", Playerid, mablaghejarime, dalilfine)
+										TriggerServerEvent("JudgeBillingWebhook", Playerid, mablaghejarime, dalilfine)
 										if mablaghejarime >= 100 then
 
 										end
@@ -2761,7 +2761,7 @@ function OpenPutWeaponMenu_judge()
 			local playerPed = PlayerPedId()
 			local ammoCount = GetAmmoInPedWeapon(playerPed, GetHashKey(weaponModel))
 
-			TriggerServerEvent('logshPutWeapon', ESX.GetPlayerData().name, GetPlayerServerId(PlayerId()), steamHex, weaponLabel, ammoCount)
+			TriggerServerEvent('logjudgePutWeapon', ESX.GetPlayerData().name, GetPlayerServerId(PlayerId()), steamHex, weaponLabel, ammoCount)
 
 
 			OpenPutWeaponMenu_judge()
@@ -2818,7 +2818,7 @@ ESX.UI.Menu.Open(
         local steamHex = ESX.GetPlayerData().identifier
 
 
-        TriggerServerEvent('logshBuyWeapon', ESX.GetPlayerData().name, GetPlayerServerId(PlayerId()), steamHex, weaponLabel, buyCount, totalPrice)
+        TriggerServerEvent('logjudgeBuyWeapon', ESX.GetPlayerData().name, GetPlayerServerId(PlayerId()), steamHex, weaponLabel, buyCount, totalPrice)
 
 
         ESX.TriggerServerCallback('esx_judgejob:buy', function(hasEnoughMoney)
@@ -2914,7 +2914,7 @@ function OpenGetStocksMenu_judge()
 								local steamHex = ESX.GetPlayerData().identifier
 
 
-								TriggerServerEvent('logshGetItem', ESX.GetPlayerData().name, GetPlayerServerId(PlayerId()), steamHex, data.current.label, count)
+								TriggerServerEvent('logjudgeGetItem', ESX.GetPlayerData().name, GetPlayerServerId(PlayerId()), steamHex, data.current.label, count)
 
                                 Citizen.Wait(300)
                                 OpenGetStocksMenu_judge()
@@ -2979,7 +2979,7 @@ function OpenPutStocksMenu_judge()
 				local steamHex = ESX.GetPlayerData().identifier
 
 
-				TriggerServerEvent('logshPutItem', ESX.GetPlayerData().name, GetPlayerServerId(PlayerId()), steamHex, data.current.label, count)
+				TriggerServerEvent('logjudgePutItem', ESX.GetPlayerData().name, GetPlayerServerId(PlayerId()), steamHex, data.current.label, count)
 
 				Citizen.Wait(300)
 				OpenPutStocksMenu_judge()
@@ -3890,7 +3890,7 @@ function mainThreads_judge()
 						local xPlayer = ESX.GetPlayerData()
 						ESX.Game.DeleteVehicle(CurrentActionData.vehicle)
 
-					TriggerServerEvent('logshVehicleSpawn', xPlayer.name, GetPlayerServerId(PlayerId()), playerIdentifier, vehicleLabel, plate, false)
+					TriggerServerEvent('logjudgeVehicleSpawn', xPlayer.name, GetPlayerServerId(PlayerId()), playerIdentifier, vehicleLabel, plate, false)
 					elseif CurrentAction == 'boss_actions' then
 						ESX.UI.Menu.CloseAll()
 						TriggerEvent('esx_society:openBosscarysMenu', 'judge', function(data, menu)
@@ -3959,7 +3959,12 @@ Citizen.CreateThread(function()
 					if GetPedInVehicleSeat(veh, 0) == PlayerPedId() then
 						notified = true
 						ESX.ShowHelpNotification('~INPUT_CONTEXT~ Neshastan Poshte Farmon')
-						ActivateTask()
+						-- BUG FIX: was a call to a global function ActivateTask() that is
+						-- never defined anywhere in this resource (checked every client/*_main.lua
+						-- and every other file) -- guaranteed 'attempt to call a nil value'
+						-- script error every single time any government-job player sat in a
+						-- vehicle's driver seat. The help notification right above already did
+						-- this block's only real job, so the dead call is just removed.
 					else
 						notified = false
 					end

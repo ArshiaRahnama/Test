@@ -689,6 +689,15 @@ AddEventHandler("MtJailWebhook", function(targetId, jailTime, reason)
     local executorHex = xPlayer.identifier
     local targetHex = xTarget.identifier
 
+    -- CONNECTED: every department's own jailing now feeds the same rap
+    -- sheet / officer-performance stats that server/cid_main.lua's own
+    -- CidJailWebhook already fed (via server/records_manager.lua's global
+    -- LogCriminalRecord) -- previously only CID arrests showed up there.
+    if LogCriminalRecord then
+        LogCriminalRecord(targetHex, 'arrest', reason, executorICName, executorHex, jailTime)
+    end
+
+
     local timestamp = os.date("!%Y-%m-%dT%H:%M:%SZ")
     local unixTime = os.time()
 

@@ -1,16 +1,19 @@
 /* ===================================================================
-   SUNSET SKIN  —  esx_inventory  ·  round 8
+   SUNSET SKIN  —  esx_inventory  ·  rounds 8-11
    ===================================================================
 
    Reskins esx_inventory's existing DOM to match the esx_inventoryhud
-   "Sunset" look, and carries the round-7 layout fixes with it. This
-   file REPLACES v7.css — do not load both, they set the same
-   properties and the loser depends on link order.
+   "Sunset" look. This file REPLACES the earlier v7.css exploration —
+   do not load both, they set the same properties and the loser
+   depends on link order (v7.css isn't part of this package anyway).
 
-   No Lua and no JS is touched, so nothing here can break inventory
-   behaviour: delete the one <link> and the old look returns exactly.
+   No Lua is touched by this file (the one Lua fix in this package —
+   the pickup-notification text — lives in
+   server/custom/drop/drop.lua, see CHANGELOG.md). Nothing here can
+   break inventory behaviour: delete the one <link> in ui.html and the
+   old CSS look returns exactly.
 
-   WHAT SUNSET ACTUALLY LOOKS LIKE (read off the three screenshots)
+   WHAT SUNSET ACTUALLY LOOKS LIKE (read off the reference screenshots)
    ---------------------------------------------------------------
    Flat, not beveled. Cells are a soft 150deg gradient between two
    near-black tints with no visible border until you touch them, ~6px
@@ -19,24 +22,33 @@
    bottom of the cell as plain text with no dark strip under it; the
    stack count sits in the bottom-right corner; quality is a hairline
    bar across the top. The chrome is the quiet part and the items are
-   the loud part, which is the opposite of what esx_inventory was
-   doing with its 40 amber hairlines.
+   the loud part.
 
-   Sunset's cell tint is user-configurable (grey in one screenshot,
-   green in another, teal in the third). --sun-cell-1 / --sun-cell-2
-   below are the same two stops, so one edit recolours every cell.
+   Sunset's cell tint is user-configurable (grey/green/teal across the
+   reference screenshots). --sun-cell-1 / --sun-cell-2 below are the
+   same two stops, so one edit recolours every cell.
 
-   THE TWO LAYOUT BUGS, STILL FIXED
-   --------------------------------
-   1. #right-part was float-left positioned by `left: 34.375vw` while
-      #right-inventory is float-right against the container's right
-      edge; they landed 3.17vw apart, which is the panel title hanging
-      off the side of its own panel. It is anchored to the same right
-      edge here, so the two cannot disagree.
-   2. The panel height was a hard 27.2vw against a 5.7vw row pitch =
-      4.77 rows, so the bottom row was sliced. Cell size and panel
-      height are both derived from the tokens below, making the panel
-      a whole number of rows by construction.
+   CHANGE LOG (full detail + reasoning in CHANGELOG.md)
+   ------------------------------------------------------
+   Round  8 - Sunset reskin + the two original layout bugs (right-panel
+              header offset; sliced bottom row) carried over and fixed.
+   Round  9 - "Name" sort button hidden; matching pickup-notification
+              text fix in server/custom/drop/drop.lua (not this file).
+   Round 10 - vignette backdrop + staggered open animation.
+   Round 11 - fixed a bug ROUND 10 ITSELF introduced: animating
+              `transform` on `.inventory` / `.center-part` replaced
+              their pre-existing centring translate instead of adding
+              to it (a CSS `animation` always replaces the whole
+              `transform` property, it never composes with a static
+              one already on the element - and `fill-mode: both` holds
+              that replacement for as long as the inventory stays
+              open, not just for the animation's duration). Fixed by
+              baking each element's own base translate into its own
+              dedicated keyframes. See section 1 below for the full
+              writeup, and CHANGELOG.md for the general lesson: before
+              animating `transform` on ANY selector, grep the other
+              CSS files for an existing `transform` on that same
+              selector first.
    =================================================================== */
 
 
@@ -154,19 +166,42 @@
     transition: opacity 0.18s ease;
 }
 
-.form-inv.visible .inventory:not(.loot-opening),
-.form-inv.visible .categorys,
-.form-inv.visible .loading-bar-kg-left-part,
-.form-inv.visible #right-part {
-    animation: sunOpenPanels 0.34s cubic-bezier(0.16, 1, 0.3, 1) both;
+.form-inv.visible .inventory:not(.loot-opening) {
+    /* `.inventory` is not just animated here — it is ui.css's own
+       `left:51%; transform:translate(-50%,-50%)` centring. An
+       `animation` REPLACES the whole `transform` property rather than
+       composing with it, and `both` holds that replacement for as
+       long as `.visible` is set — i.e. for the entire time the
+       inventory is open, not just during the 0.34s animation. The
+       bug this caused: the panel lost its -50%/-50% centring
+       entirely and rendered from its raw `left:51%` corner instead,
+       so the whole left panel (header, search, grid) landed on top of
+       the centre column and the ped. Fixed by baking the base
+       translate into every frame of THIS element's own keyframes
+       below, instead of reusing the shared one. */
+    animation: sunOpenInventory 0.34s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 /* `.inventory.loot-opening` (corpses/loot containers) keeps its own
    existing lid-pop flourish from extras.css untouched — excluded above
    with :not() rather than overridden, so opening a body still pops the
    way it always has. */
 
+.form-inv.visible .categorys,
+.form-inv.visible .loading-bar-kg-left-part,
+.form-inv.visible #right-part {
+    /* none of these three carry a base `transform` anywhere else in
+       the cascade, so replacing the property for 0.34s is harmless
+       for them - only `.inventory` and `.center-part` needed the
+       dedicated fix above/below. */
+    animation: sunOpenPanels 0.34s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
 .form-inv.visible .center-part {
-    animation: sunOpenCenter 0.34s cubic-bezier(0.16, 1, 0.3, 1) both;
+    /* same clobbering bug as `.inventory` above: middle.css centres
+       this column with `left:50%; transform:translate(-74%,-50%)`.
+       Baked into sunOpenCenterCol's own keyframes instead of the
+       shared one for the same reason. */
+    animation: sunOpenCenterCol 0.34s cubic-bezier(0.16, 1, 0.3, 1) both;
     animation-delay: 0.05s;
 }
 
@@ -174,9 +209,18 @@
     from { opacity: 0; transform: translateY(0.55vw) scale(0.97); }
     to   { opacity: 1; transform: translateY(0) scale(1); }
 }
-@keyframes sunOpenCenter {
-    from { opacity: 0; transform: translateY(0.85vw) scale(0.96); }
-    to   { opacity: 1; transform: translateY(0) scale(1); }
+/* .inventory's own base transform (ui.css) is translate(-50%,-50%) -
+   present in every frame here so the animation adds motion on top of
+   the centring instead of replacing it. */
+@keyframes sunOpenInventory {
+    from { opacity: 0; transform: translate(-50%, -50%) translateY(0.55vw) scale(0.97); }
+    to   { opacity: 1; transform: translate(-50%, -50%) translateY(0) scale(1); }
+}
+/* .center-part's own base transform (middle.css) is translate(-74%,-50%) -
+   same reasoning as sunOpenInventory above. */
+@keyframes sunOpenCenterCol {
+    from { opacity: 0; transform: translate(-74%, -50%) translateY(0.85vw) scale(0.96); }
+    to   { opacity: 1; transform: translate(-74%, -50%) translateY(0) scale(1); }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -612,15 +656,34 @@
 }
 .grid-band-label.overflow { color: var(--sun-danger); }
 
-.ground-head {
-    grid-column: 1 / -1;
-    margin-bottom: 0.15vw;
-    padding-bottom: 0;
-    border-bottom: none;
-    font-size: 0.55vw;
-    letter-spacing: 0.09vw;
-    color: var(--sun-text-2);
+/* "EQUIPMENT" divider hidden - the weapons/clothes/accounts/cards it
+   groups (grid.js's `other_band`, fa-layer-group icon) still render
+   normally right below where it used to sit, just without a heading
+   over them now. Targeted by icon class rather than a dedicated
+   selector because grid.js gives all three band types
+   (backpack/equipment/overflow) the exact same `.grid-band-label`
+   class - :has() on the icon is the only thing that tells them apart
+   without touching the JS. The other two stay: "Backpack" still marks
+   where backpack-only slots start, and the overflow warning is
+   deliberately never hidden anywhere in this file (grid.js's own
+   comment: an overflowing, invisible item looks exactly like item
+   loss). Progressive enhancement - where :has() isn't supported the
+   selector is dropped and the label simply stays visible. */
+.grid-band-label:has(.fa-layer-group) { display: none; }
+
+/* #plate carries the title text for every "second panel" type this
+   slot is shared by - ground items, a trunk, a stash, a property, a
+   corpse - renderGround() (ground.js) is the only one of them that can
+   leave #right-inventory holding nothing but a single .ground-empty
+   message ("Nothing nearby"); the others pad empty slots with blank
+   grid cells instead and always have real contents to title. So this
+   hides #right-part (title + weight bar) specifically in that one
+   state and nothing else - the title reappears the moment there's
+   something to put it over. */
+#right-part:has(+ #right-inventory > .ground-empty:only-child) {
+    display: none;
 }
+
 .ground-empty { padding: 1.2vw 0.2vw; font-size: 0.62vw; opacity: 0.4; }
 
 #right-inventory.ground-target {

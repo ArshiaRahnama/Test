@@ -8,7 +8,7 @@ local markerCoords4 = vector3(-991.324, -2948.80, 13.945)
 local function isPlayerAllowedMechanic()
     local playerData = ESX.GetPlayerData()
     if playerData and playerData.job then
-        return playerData.job.name == 'mechanic' or playerData.job.name == 'cid' or playerData.job.name == 'cia' or playerData.job.name == 'marshal' or playerData.job.name == 'fbi' or playerData.job.name == 'judge' or playerData.job.name == 'doa'
+        return playerData.job.name == 'mechanic' or IsDojJob(playerData.job.name) -- shared/departments.lua (was a hardcoded DOJ job list)
     end
     return false
 end

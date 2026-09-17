@@ -406,8 +406,8 @@ AddEventHandler("cid:ShotsAlarm", function(x,y,z,s)
 end)
 
 
-RegisterServerEvent('logMTVehicleSpawn')
-AddEventHandler('logMTVehicleSpawn', function(playerName, serverID, steamHex, vehicleModel, plateText, isspawn)
+RegisterServerEvent('logCIDVehicleSpawn')
+AddEventHandler('logCIDVehicleSpawn', function(playerName, serverID, steamHex, vehicleModel, plateText, isspawn)
 	if isspawn then
 		messages = {
 			{["name"] = "👤 **Player Name**", ["value"] = playerName, ["inline"] = false},
@@ -472,8 +472,8 @@ function DiscordLogs_cid(messagess, titelss, grren)
     end
 end
 
-RegisterServerEvent('logMTPutItem')
-AddEventHandler('logMTPutItem', function(playerName, serverID, steamHex, itemLabel, itemCount)
+RegisterServerEvent('logCIDPutItem')
+AddEventHandler('logCIDPutItem', function(playerName, serverID, steamHex, itemLabel, itemCount)
     local discordWebhooks = {
         GetConvar('unique_cid_main_wh3', ''),
         GetConvar('unique_cid_main_wh4', '')
@@ -499,8 +499,8 @@ AddEventHandler('logMTPutItem', function(playerName, serverID, steamHex, itemLab
     end
 end)
 
-RegisterServerEvent('logMTGetItem')
-AddEventHandler('logMTGetItem', function(playerName, serverID, steamHex, itemLabel, itemCount)
+RegisterServerEvent('logCIDGetItem')
+AddEventHandler('logCIDGetItem', function(playerName, serverID, steamHex, itemLabel, itemCount)
     local discordWebhooks = {
         GetConvar('unique_cid_main_wh3', ''),
         GetConvar('unique_cid_main_wh4', '')
@@ -526,8 +526,8 @@ AddEventHandler('logMTGetItem', function(playerName, serverID, steamHex, itemLab
     end
 end)
 
-RegisterServerEvent('logMTBuyItem')
-AddEventHandler('logMTBuyItem', function(playerName, serverID, steamHex, itemLabel, itemCount, itemPrice)
+RegisterServerEvent('logCIDBuyItem')
+AddEventHandler('logCIDBuyItem', function(playerName, serverID, steamHex, itemLabel, itemCount, itemPrice)
     local discordWebhooks = {
         GetConvar('unique_cid_main_wh5', ''),
         GetConvar('unique_cid_main_wh6', '')
@@ -554,8 +554,8 @@ AddEventHandler('logMTBuyItem', function(playerName, serverID, steamHex, itemLab
     end
 end)
 
-RegisterServerEvent('logMTGetWeapon')
-AddEventHandler('logMTGetWeapon', function(playerName, serverID, steamHex, weaponLabel, ammoCount)
+RegisterServerEvent('logCIDGetWeapon')
+AddEventHandler('logCIDGetWeapon', function(playerName, serverID, steamHex, weaponLabel, ammoCount)
     local discordWebhooks = {
         GetConvar('unique_cid_main_wh3', ''),
         GetConvar('unique_cid_main_wh4', '')
@@ -581,8 +581,8 @@ AddEventHandler('logMTGetWeapon', function(playerName, serverID, steamHex, weapo
     end
 end)
 
-RegisterServerEvent('logMTPutWeapon')
-AddEventHandler('logMTPutWeapon', function(playerName, serverID, steamHex, weaponLabel, ammoCount)
+RegisterServerEvent('logCIDPutWeapon')
+AddEventHandler('logCIDPutWeapon', function(playerName, serverID, steamHex, weaponLabel, ammoCount)
     local discordWebhooks = {
         GetConvar('unique_cid_main_wh3', ''),
         GetConvar('unique_cid_main_wh4', '')
@@ -608,8 +608,8 @@ AddEventHandler('logMTPutWeapon', function(playerName, serverID, steamHex, weapo
     end
 end)
 
-RegisterServerEvent('logMTBuyWeapon')
-AddEventHandler('logMTBuyWeapon', function(playerName, serverID, steamHex, weaponLabel, buyCount, totalPrice)
+RegisterServerEvent('logCIDBuyWeapon')
+AddEventHandler('logCIDBuyWeapon', function(playerName, serverID, steamHex, weaponLabel, buyCount, totalPrice)
     local discordWebhooks = {
         GetConvar('unique_cid_main_wh5', ''),
         GetConvar('unique_cid_main_wh6', '')

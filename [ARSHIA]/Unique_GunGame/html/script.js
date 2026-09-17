@@ -11,6 +11,7 @@ const TIMER_URGENT_THRESHOLD_SECONDS = 30;
 
 const countdownEl = document.getElementById('countdown');
 const countdownNumberEl = countdownEl.querySelector('.countdown-number');
+const countdownBarEl = countdownEl.querySelector('.countdown-bar');
 
 const timerEl = document.getElementById('timer');
 const timerValueEl = timerEl.querySelector('.timer-value');
@@ -71,10 +72,17 @@ window.addEventListener('message', (event) => {
         case 'showCountdown':
             countdownEl.classList.remove('hidden');
             countdownNumberEl.textContent = data.seconds;
+            if (data.total > 0) {
+                countdownBarEl.style.width = `${Math.max(0, Math.min(100, (data.seconds / data.total) * 100))}%`;
+            }
             break;
 
         case 'hideCountdown':
             countdownEl.classList.add('hidden');
+            countdownBarEl.style.transition = 'none';
+            countdownBarEl.style.width = '100%';
+            void countdownBarEl.offsetWidth; // force reflow before re-enabling the transition
+            countdownBarEl.style.transition = '';
             break;
 
         case 'showTimer':

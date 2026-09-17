@@ -15,7 +15,7 @@
 ESX = nil
 TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
 
-local LE_JOBS = { police = true, sheriff = true, mt = true }
+local LE_JOBS = LeJobSet -- shared/departments.lua (was a hardcoded duplicate)
 local function isLe(jobname) return LE_JOBS[jobname] == true end
 
 local function resolveIdentifier(query, cb)

@@ -68,6 +68,37 @@ exports['Unique_GunGame']:IsPlayerInGunGame(source) -- true/false
 exports['Unique_GunGame']:GetQueueSize()            -- number currently waiting
 ```
 
+## Testing solo on a local server
+
+Set `Config.TestMode = true` and a single `/jgg` will immediately form its own
+arena instead of waiting for `Config.PlayersPerArena` people. Turn it back to
+`false` before going live — with it on, every player forms their own 1-person
+arena instead of the real group size.
+
+## Framework compatibility
+
+This script avoids depending on ESX's inventory/status events where it reasonably
+can, since heavily customized servers often replace them:
+- Weapons and the parachute are given with the `GiveWeaponToPed` native directly,
+  not `esx:addWeapon` — so it works even if your server's inventory system doesn't
+  listen for that event.
+- Revive uses `Config.ReviveEvent` (default `esx_ambulancejob:revive`) to *ask* your
+  server to revive the player, but only ever waits on the native `IsEntityDead` check
+  to decide when they're actually back up — so it still works correctly even if your
+  server's own death/status fields don't match vanilla ESX. Set `Config.ReviveEvent = ''`
+  if your server revives players some other way (a menu, an NPC, etc); the script will
+  just wait for the ped to no longer be dead either way.
+- If your server has a hardcore/long death system (a "respawn available in X minutes"
+  screen), leave `Config.ForceNativeRevive = true` (the default). Arena deaths are then
+  resurrected directly with the `NetworkResurrectLocalPlayer` native instead of waiting
+  on that system, so a normal PvP kill inside the arena doesn't leave the player stuck
+  respecting a long real-life death timer. Set it to `false` to use `Config.ReviveEvent`
+  instead if you'd rather integrate with your own medic flow.
+- Arena entry drops the player in from above the arena point with a real
+  parachute (`TaskParachute`), and invincibility is held until the game engine confirms
+  they've actually landed (polling `GetEntityHeightAboveGround`) rather than a fixed
+  guess - a fixed guess is what caused fall-damage deaths right after spawning.
+
 ## config.lua reference
 
 - `Config.PlayersPerArena` – group size that triggers a new arena.
@@ -76,6 +107,8 @@ exports['Unique_GunGame']:GetQueueSize()            -- number currently waiting
 - `Config.RoundTimeLimit` – seconds before a round is decided by kill count (0 disables the limit).
 - `Config.KillstreakAnnouncements` – life-streak counts (resets on death) that trigger an in-arena chat announcement. Empty table disables it.
 - `Config.QueueReminderInterval` – seconds between server-wide reminders that the queue needs more players (0 disables).
+- `Config.ScoreboardTopCount` – the live scoreboard HUD shows this many top rows; if a player isn't in it, their own row is appended after so they can always see their standing (0 shows everyone).
+- `Config.ReviveEvent` / `Config.ForceNativeRevive` – how arena deaths get the player back up; see Framework compatibility above.
 - `Config.RestrictedJobs` – jobs that can't queue while on duty.
 - `Config.Locations` – array of `{ Lobby, Arena, Exit }` coordinate sets, assigned
   round-robin to new arenas. Safe to leave duplicated; isolation comes from

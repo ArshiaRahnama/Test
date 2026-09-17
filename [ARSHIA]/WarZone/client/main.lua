@@ -107,6 +107,20 @@ local Uniforms = {
 ------------------------------------ 
 RegisterNetEvent("AWZ:StartMatch")
 AddEventHandler("AWZ:StartMatch",function(Blood , DistanceZone , WzCoord , TimeMoveZone , Diff , Map )
+	-- Fix: this whole handler (plane, Golden Crate, shops, zone threads,
+	-- everything) had no guard against running twice. If the server ever
+	-- delivers AWZ:StartMatch to the same client more than once for one
+	-- match -- a double BeginMatch trigger, a network retry, anything --
+	-- this entire sequence would start a second time in parallel with the
+	-- first: a second plane, a second Golden Crate, a second set of shops,
+	-- all fighting the first set over the same global state. That's what
+	-- produced the "epoch 2" plane and the stray ExitMision in testing.
+	-- One delivery per match, full stop.
+	if StartMatchHandlerRunning then
+		print('[WZ DEBUG][client] AWZ:StartMatch IGNORED -- already starting/running for this match')
+		return
+	end
+	StartMatchHandlerRunning = true
 	print('[WZ DEBUG][client] AWZ:StartMatch RECEIVED. Blood='..tostring(Blood)..' Distance='..tostring(DistanceZone)..' Time='..tostring(TimeMoveZone)..' Map='..tostring(Map))
 	armoritem , bandageitem = 2 , 2
 	AllUav = 1 
@@ -646,6 +660,7 @@ function JoinLobbey()
 		AllLoots = {}
 		InWarzone = true 
 		inmatch = false 
+		StartMatchHandlerRunning = false -- Fix: re-arm the AWZ:StartMatch guard above for this new lobby/match cycle
 		inLobby = true 
 		print('[WZ DEBUG][client] JoinLobbey() InWarzone set to true')
 		SaveWeapons()
@@ -1147,14 +1162,39 @@ function WarZone(loadHud)
 		-- it takes off, not after.
 		ClearPedTasksImmediately(PlayerPedId())
 		SetPedArmour(PlayerPedId(),0) 
-		SetEntityCollision(PlayerPedId(), false, false)
-		-- Fix: seat 2 doesn't exist as a normal enclosed seat on this plane
-		-- model ("mammatus") -- the game fell back to just draping the ped
-		-- on the exterior (on the wing), which is exactly what showed up
-		-- in testing. Seat 0 (front passenger, next to the pilot in -1) is
-		-- a real seat that exists on every plane.
-		TaskWarpPedIntoVehicle(PlayerPedId(),plane, 0)
-		print('[WZ DEBUG][client] step: warped into plane, ped exists='..tostring(DoesEntityExist(PlayerPedId())))
+		-- Fix: disabling the player's own collision BEFORE asking the game
+		-- to seat them was very likely why TaskWarpPedIntoVehicle kept
+		-- failing to actually seat them (confirmed: actuallySeated=false in
+		-- testing, even with a genuinely free seat found) -- vehicle entry
+		-- relies on the ped's collision being active to register. Warp
+		-- first with collision left on, verify it worked, retry a few
+		-- times if not, and only fall back to a manual attach (so they at
+		-- least can't fall off and die, which is what was actually
+		-- re-triggering "epoch 2" in testing) if seating genuinely never
+		-- succeeds.
+		local seatToUse = 0
+		local maxPassengers = GetVehicleMaxNumberOfPassengers(plane)
+		for s = 0, maxPassengers - 1 do
+			if IsVehicleSeatFree(plane, s) then
+				seatToUse = s
+				break
+			end
+		end
+		print('[WZ DEBUG][client] step: plane maxPassengers='..tostring(maxPassengers)..' -- using seat '..tostring(seatToUse))
+		local seated = false
+		for attempt = 1, 5 do
+			TaskWarpPedIntoVehicle(PlayerPedId(), plane, seatToUse)
+			Wait(150)
+			seated = IsPedInVehicle(PlayerPedId(), plane, false)
+			if seated then break end
+			print('[WZ DEBUG][client] step: seat attempt '..attempt..' failed, retrying')
+		end
+		if not seated then
+			print('[WZ DEBUG][client] step: could not seat ped after 5 attempts -- falling back to a safe attach so they cannot fall off')
+			SetEntityCollision(PlayerPedId(), false, false)
+			AttachEntityToEntity(PlayerPedId(), plane, 0, 0.0, -1.0, 1.0, 0.0, 0.0, 0.0, false, false, false, false, 2, true)
+		end
+		print('[WZ DEBUG][client] step: warped into plane, ped exists='..tostring(DoesEntityExist(PlayerPedId()))..' actuallySeated='..tostring(seated))
 		if loadHud then SendNUIMessage({message	= "Ingame",}) end 
 		-- Fix: THIS is why the plane's speed always read 0.0 no matter how
 		-- many times the drive task was re-issued -- FreezeEntityPosition
@@ -1236,15 +1276,30 @@ function JumpNow()
 	AddWeapon('WEAPON_SNSPISTOL' , 250)
 	AddWeapon('gadget_parachute' , 1)
 	SetEntityCollision(PlayerPedId(), true, true)
-	Wait(5000)
-	-- Fix: same unguarded-delete pattern as the bug above -- defend it here
-	-- too in case this ever runs before plane/pilot were actually set.
-	if plane and DoesEntityExist(plane) then DeleteVehicle(plane) end
-	if pilot and DoesEntityExist(pilot) then DeleteEntity(pilot) end
-	SetEntityVisible(PlayerPedId(), true,true)
+	-- Fix: the parachute used to only get force-opened AFTER this Wait(5000)
+	-- -- meaning every player free-fell completely uncontrolled (ragdolling
+	-- from the TaskLeaveVehicle exit, no parachute task running at all) for
+	-- a full 5 seconds after jumping, before the game even tried to open
+	-- their chute. From plane altitude that's enough uncontrolled tumbling
+	-- to look exactly like a broken fall (as reported) and, depending on
+	-- start height, to not leave enough room left to safely open before
+	-- hitting the ground. Open the parachute right away instead -- just
+	-- enough of a wait (a few frames) to let the leave-vehicle animation
+	-- actually start so ForcePedToOpenParachute has a falling ped to act
+	-- on. The plane/pilot cleanup below doesn't need to block this at all,
+	-- so it moves after the chute is already open.
+	Wait(300)
 	if GetPedParachuteState(PlayerPedId()) ~= 1 and  GetPedParachuteState(PlayerPedId()) ~= 2  then 
 		ForcePedToOpenParachute(PlayerPedId())
 	end 
+	Wait(700)
+	-- retry once in case the first attempt was too early (still mid leave-vehicle animation)
+	if GetPedParachuteState(PlayerPedId()) ~= 1 and  GetPedParachuteState(PlayerPedId()) ~= 2  then 
+		ForcePedToOpenParachute(PlayerPedId())
+	end 
+	if plane and DoesEntityExist(plane) then DeleteVehicle(plane) end
+	if pilot and DoesEntityExist(pilot) then DeleteEntity(pilot) end
+	SetEntityVisible(PlayerPedId(), true,true)
 	Wait(1000)
 	if pilot and DoesEntityExist(pilot) then DeleteEntity(pilot) end
 	plane , pilot  = nil , nil
@@ -2531,18 +2586,38 @@ end)
 CreateThread(function()
 	local hotwiring = false
 	while true do
-		if not InWarzone or PlayerDead or not Config.VehicleLoot.enabled or hotwiring then
+		-- Fix: this used to run throughout the ENTIRE match, including
+		-- while still on the skydive plane. GTA V's skydive planes spawn
+		-- with a locked door status by default, so this thread was
+		-- detecting the plane itself as "the closest locked vehicle" while
+		-- standing on its wing, mid-flight -- calling
+		-- NetworkGetNetworkIdFromEntity on it every 500ms (harmless on its
+		-- own, but confirmed in testing: the resulting warning's entity
+		-- handle matched the plane exactly), and if a player so much as
+		-- brushed the E key it would kick off an 8-second hot-wire
+		-- progress bar that DISABLES MOVEMENT while still airborne and
+		-- not seated -- almost certainly the actual cause of players
+		-- falling off the plane and dying mid-flight, which then
+		-- auto-redeployed them into a brand new plane (the "epoch 2"
+		-- bug reported in testing). Loot vehicles don't spawn until
+		-- StartWarZone anyway, so there is nothing legitimate to hot-wire
+		-- before landing -- only run this once actually on the ground.
+		if not InWarzone or PlayerDead or inheli or not Config.VehicleLoot.enabled or hotwiring then
 			Wait(1000) -- Expansion fix: don't scan the whole vehicle pool every tick while there's nothing to check
 		else
 			Wait(500)
 			local ped = PlayerPedId()
 			local pCoord = GetEntityCoords(ped)
 			-- Note: there is no GetClosestVehicle native in GTA V; find the
-			-- nearest one by hand from the vehicle pool instead.
+			-- nearest one by hand from the vehicle pool instead. Also
+			-- explicitly skip the skydive plane -- it is never a Vehicle
+			-- Loot target, locked or not.
 			local veh, closestDist = nil, 3.0
 			for _, v in ipairs(GetGamePool('CVehicle')) do
-				local d = GetDistanceBetweenCoords(pCoord, GetEntityCoords(v), true)
-				if d <= closestDist then veh, closestDist = v, d end
+				if v ~= plane then
+					local d = GetDistanceBetweenCoords(pCoord, GetEntityCoords(v), true)
+					if d <= closestDist then veh, closestDist = v, d end
+				end
 			end
 			if veh and GetVehicleDoorLockStatus(veh) == 2 then
 				local netId = NetworkGetNetworkIdFromEntity(veh)

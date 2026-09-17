@@ -20,7 +20,7 @@ local RobCounter = 0
 
 -- Anyone who should see/accept dispatched robbery alerts.
 -- Mirrors the union of the old IsPoliceForUnit + IsMarshalForUnit checks.
-local RESPONDER_JOBS = { police = true, sheriff = true, mt = true, fbi = true, marshal = true }
+local RESPONDER_JOBS = ResponderJobs -- shared/departments.lua (was two independently hardcoded copies)
 
 local function isResponder(jobname)
 	return RESPONDER_JOBS[jobname] == true

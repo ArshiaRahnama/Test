@@ -956,6 +956,56 @@ ESX.RegisterServerCallback('CrimeScene:getWantedBoard', function(source, cb)
 end)
 
 -- ============================================================
+-- CONNECTED: link this CAD robbery/warrant case to a real DOJ
+-- investigation case (dept_cases, via the global CreateExternalCase
+-- also used by evidence/server/main.lua) -- previously the two case
+-- systems never touched each other at all. Creates one on first use,
+-- reuses it (and just refreshes the client) on later clicks.
+-- ============================================================
+
+RegisterServerEvent('CrimeScene:openDojCase')
+AddEventHandler('CrimeScene:openDojCase', function(caseId)
+    local _source = source
+    local xPlayer = ESX.GetPlayerFromId(_source)
+    if not xPlayer or not IsDOJJob(xPlayer.job.name) then return end
+
+    MySQL.Async.fetchAll('SELECT * FROM doj_cases WHERE id = @id', { ['@id'] = caseId }, function(rows)
+        local row = rows and rows[1]
+        if not row then return end
+
+        if row.linked_dept_case_id then
+            TriggerClientEvent('esx:showNotification', _source, 'In Parvande Az Ghabl Be Parvandeye DOJ #' .. row.linked_dept_case_id .. ' Vasl Shode', 'info')
+            TriggerClientEvent('CrimeScene:refreshCase', _source, caseId)
+            return
+        end
+
+        local suspects = {}
+        if row.suspect_name and row.suspect_name ~= '' then
+            suspects[#suspects + 1] = { identifier = row.suspect_identifier, name = row.suspect_name }
+        end
+
+        CreateExternalCase({
+            title = 'Robbery Case #' .. caseId .. ': ' .. row.rob_name,
+            priority = 'medium',
+            openedByName = xPlayer.name,
+            openedByJob = xPlayer.job.name,
+            evidenceText = 'Linked automatically from CAD robbery/warrant case #' .. caseId .. ' (' .. row.rob_name
+                .. '). Warrant status: ' .. (row.warrant_status or 'none') .. '.',
+            suspects = suspects,
+        }, function(dojCaseId)
+            if not dojCaseId then
+                TriggerClientEvent('esx:showNotification', _source, 'Parvandeye DOJ Sakhte Nashod', 'error')
+                return
+            end
+
+            MySQL.Async.execute('UPDATE doj_cases SET linked_dept_case_id = @dcid WHERE id = @id', { ['@dcid'] = dojCaseId, ['@id'] = caseId })
+            TriggerClientEvent('esx:showNotification', _source, 'Parvandeye DOJ #' .. dojCaseId .. ' Sakhte Shod', 'success')
+            TriggerClientEvent('CrimeScene:refreshCase', _source, caseId)
+        end)
+    end)
+end)
+
+-- ============================================================
 -- Callbacks for the /cad panel
 -- ============================================================
 

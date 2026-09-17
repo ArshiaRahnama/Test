@@ -4001,7 +4001,12 @@ Citizen.CreateThread(function()
 					if GetPedInVehicleSeat(veh, 0) == PlayerPedId() then
 						notified = true
 						ESX.ShowHelpNotification('~INPUT_CONTEXT~ Neshastan Poshte Farmon')
-						ActivateTask()
+						-- BUG FIX: was a call to a global function ActivateTask() that is
+						-- never defined anywhere in this resource (checked every client/*_main.lua
+						-- and every other file) -- guaranteed 'attempt to call a nil value'
+						-- script error every single time any government-job player sat in a
+						-- vehicle's driver seat. The help notification right above already did
+						-- this block's only real job, so the dead call is just removed.
 					else
 						notified = false
 					end
@@ -4103,7 +4108,7 @@ AddEventHandler("Police:ShotsAlarm", function(x, y, z, street)
     if ESX == nil then return end
     if PlayerData == nil or PlayerData.job == nil then return end
 	if #( vector3( x,y,z) - GetEntityCoords(PlayerPedId()) ) > 310.0 then return end
-    if PlayerData.job.name ~= nil and (PlayerData.job.name == "police" or PlayerData.job.name == "sheriff" or PlayerData.job.name == "fbi" or PlayerData.job.name == "mt" or PlayerData.job.name == "cid" or PlayerData.job.name == "cia" or PlayerData.job.name == "marshal" or PlayerData.job.name == "judge" or PlayerData.job.name == "doa") then
+    if PlayerData.job.name ~= nil and IsGovernmentJob(PlayerData.job.name) then -- shared/departments.lua (was a hardcoded DOJ+LE job list)
         SendNotif_police("~r~Tir Andazi ~w~Dar ~y~"..street)
         local alpha = 250
         local gunshotBlip = AddBlipForRadius(x, y, z, 50.0)
@@ -4132,7 +4137,7 @@ end
 RegisterNetEvent('esx_policejob:notifyp')
   AddEventHandler('esx_policejob:notifyp', function(message, passedJob)
 
-	  if PlayerData.job.name == "police" or PlayerData.job.name == "sheriff" or PlayerData.job.name == "mt" or PlayerData.job.name == "fbi" or PlayerData.job.name == "cid" or PlayerData.job.name == "cia" or PlayerData.job.name == "marshal" or PlayerData.job.name == "judge" or PlayerData.job.name == "doa" then
+	  if IsGovernmentJob(PlayerData.job.name) then -- shared/departments.lua (was a hardcoded DOJ+LE job list)
 		TriggerEvent('chat:addMessage', { color = {0, 95, 254}, multiline = true, args = {"[ Dispatch] ("..passedJob..") : ", message}})
 	  end
 

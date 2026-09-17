@@ -12,3 +12,9 @@ files {
 }
 
 dependency 'ox_target'
+
+-- Lets other resources (e.g. Unique_Phone's bank app) open this same
+-- ATM-style banking UI: exports['new_banking']:OpenBankUI()
+exports {
+    'OpenBankUI'
+}

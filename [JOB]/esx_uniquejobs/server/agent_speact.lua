@@ -16,7 +16,7 @@
 ESX = nil
 TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
 
-local AGENT_JOBS = { fbi = true, cia = true }
+local AGENT_JOBS = AgentJobs -- shared/departments.lua (was a hardcoded duplicate)
 
 local function isAgent(jobname)
 	return AGENT_JOBS[jobname] == true

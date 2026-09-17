@@ -71,6 +71,26 @@ CreateThread(function()
             return cb({ r = false, msg = ReportLan.infoShort:format(L.infoMin, L.infoMax) })
         end
 
+        -- --------------------------------------- گسترش: هدفِ ریپورت (اختیاری) ---
+        -- اختیاریه (نه هر ریپورتی - مثلاً باگ یا سوال - یک متهمِ مشخص داره).
+        -- اگه دادن، سرور خودش شناسه رو از روی آیدیِ آنلاین resolve میکنه؛
+        -- کلاینت هیچ‌وقت مستقیم identifier نمی‌فرسته.
+        local targetIdentifier, targetName = nil, nil
+        local targetIdRaw = tonumber(payload.targetId)
+        if targetIdRaw then
+            local xTarget = Rep.GetPlayer(targetIdRaw)
+            if xTarget then
+                if xTarget.identifier == identifier then
+                    return cb({ r = false, msg = ReportLan.cantReportSelf })
+                end
+                targetIdentifier = xTarget.identifier
+                targetName       = Rep.GetName(targetIdRaw)
+            end
+            -- اگه آیدی داده شده بود ولی پلیرِ آنلاینی پیداش نکردیم، ریپورت رو
+            -- رد نمی‌کنیم - فقط بدون هدفِ ساختاریافته ثبت میشه؛ متنِ توضیحات
+            -- هنوز برای ادمین قابل خوندنه.
+        end
+
         -- سقف ریپورت باز
         local open = MySQL.Sync.fetchAll(
             "SELECT ID FROM reports WHERE identifier = @id AND status IN ('pending','accept')",
@@ -95,8 +115,8 @@ CreateThread(function()
 
         local now = os.time()
         MySQL.Async.insert([[
-            INSERT INTO reports (title, sub, category, priority, identifier, status, chat, meta, created_at)
-            VALUES (@title, @sub, @cat, @pri, @id, 'pending', @chat, @meta, @now)
+            INSERT INTO reports (title, sub, category, priority, identifier, status, chat, meta, created_at, target_identifier, target_name)
+            VALUES (@title, @sub, @cat, @pri, @id, 'pending', @chat, @meta, @now, @tid, @tname)
         ]], {
             ['@title'] = title,
             ['@sub']   = info,
@@ -106,6 +126,8 @@ CreateThread(function()
             ['@chat']  = chat,
             ['@meta']  = meta,
             ['@now']   = now,
+            ['@tid']   = targetIdentifier,
+            ['@tname'] = targetName,
         }, function(insertId)
             Rep.TouchCooldown(identifier, 'create')
 
@@ -126,6 +148,26 @@ CreateThread(function()
                 ID = newId, title = title, sub = info,
                 category = cat.key, priority = cat.priority,
             }, Rep.GetName(src), src, identifier)
+
+            -- ------------------------------- گسترش: بالابردنِ خودکارِ اولویت ---
+            -- اگه تو N روز اخیر به‌اندازه‌ی کافی ریپورتِ دیگه علیه همین هدف
+            -- ثبت شده، این تیکتِ تازه رو مستقیم رو بالاترین اولویت میذاریم -
+            -- یعنی یک بازیکنِ پرتکرار دیگه لای صف زیرِ بقیه گم نمیشه.
+            if targetIdentifier then
+                Rep.TargetReportCount(targetIdentifier, newId, Config_Server.TargetLookback, function(count)
+                    if count >= (Config_Server.AutoPriorityBumpAt or 3) then
+                        local maxPriority = 1
+                        for p in pairs(Config_Shared.Priorities) do
+                            if p > maxPriority then maxPriority = p end
+                        end
+                        MySQL.Async.execute("UPDATE reports SET priority = @p WHERE ID = @id",
+                            { ['@p'] = maxPriority, ['@id'] = newId })
+                        Rep.NotifyAllAdmins(("⚠ %s ریپورتِ دیگه علیه همین بازیکن تو %s روز اخیر بوده - اولویتِ #%s رفت بالا.")
+                            :format(count, Config_Server.TargetLookback, newId))
+                        Rep.RefreshAdminLists()
+                    end
+                end)
+            end
         end)
     end)
 
@@ -185,6 +227,7 @@ CreateThread(function()
             SELECT r.ID, r.title, r.sub, r.category, r.priority, r.status,
                    r.identifier, r.admin, r.admin_name, r.created_at,
                    r.accepted_at, r.closed_at, r.rating, r.meta,
+                   r.target_identifier, r.target_name, r.admin_note,
                    u.`%s` AS Name
             FROM reports r
             LEFT JOIN users u ON u.identifier = r.identifier
@@ -196,6 +239,7 @@ CreateThread(function()
         if not rows or #rows == 0 then return cb({ r = true, data = {} }) end
 
         local now = os.time()
+        local targetIds = {}
         for _, row in ipairs(rows) do
             row.Name      = row.Name or "N/A"
             row.AdminName = row.admin_name or ReportLan.notOnline
@@ -204,9 +248,19 @@ CreateThread(function()
             row.online    = xP ~= nil
             row.pid       = xP and xP.source or 0
             row.msgCount  = #Rep.GetChat(row.ID)
+            row.hasNote   = row.admin_note ~= nil and row.admin_note ~= ''
+            if row.target_identifier then targetIds[#targetIds + 1] = row.target_identifier end
         end
 
-        cb({ r = true, data = rows })
+        -- بجِ سبک برای کلِ صف: فقط «آیا فلگِ فعال داره یا نه»، نه ریسک‌اسکورِ
+        -- کامل (اون برای وقتیه که ادمین واقعاً یک تیکتِ خاص رو باز کرده -
+        -- ببین getActive پایین‌تر).
+        Rep.FlaggedIdentifiers(targetIds, function(flagged)
+            for _, row in ipairs(rows) do
+                row.targetFlagged = row.target_identifier ~= nil and flagged[row.target_identifier] == true
+            end
+            cb({ r = true, data = rows })
+        end)
     end)
 
     -- --------------------------------------- ریپورتِ در دستِ این ادمین ---
@@ -229,29 +283,63 @@ CreateThread(function()
         if rep.meta then local ok, m = pcall(json.decode, rep.meta); if ok then meta = m or {} end end
 
         Rep.GetAvatar(rep.identifier, function(avatar)
-            cb({
-                r = true,
-                data = {
-                    ID       = rep.ID,
-                    pid      = xT and xT.source or 0,
-                    name     = (xT and xT.name) or meta.name or ReportLan.notOnline,
-                    online   = xT ~= nil,
-                    avatar   = avatar,
-                    title    = rep.title,
-                    category = rep.category,
-                    priority = rep.priority,
-                    coords   = meta.coords,
-                    chat     = Rep.GetChat(rep.ID),
-                    perms    = {
-                        revive   = Rep.HasAccess(src, Config_Shared.AccessToRevive),
-                        teleport = Rep.HasAccess(src, Config_Shared.AccessToTeleport),
-                        bring    = Rep.HasAccess(src, Config_Shared.AccessToBring),
-                        givecar  = Rep.HasAccess(src, Config_Shared.AccessToGiveCar),
-                        spect    = Rep.HasAccess(src, Config_Shared.AccessToSpect),
-                        freeze   = Rep.HasAccess(src, Config_Shared.AccessToFreeze),
-                    }
+            local payload = {
+                ID       = rep.ID,
+                pid      = xT and xT.source or 0,
+                name     = (xT and xT.name) or meta.name or ReportLan.notOnline,
+                online   = xT ~= nil,
+                avatar   = avatar,
+                title    = rep.title,
+                category = rep.category,
+                priority = rep.priority,
+                coords   = meta.coords,
+                chat     = Rep.GetChat(rep.ID),
+                adminNote = rep.admin_note,
+                target   = rep.target_identifier and {
+                    name    = rep.target_name,
+                    online  = false,  -- زیر پر میشه اگه آنلاین باشه
+                    pid     = 0,
+                } or nil,
+                perms    = {
+                    revive   = Rep.HasAccess(src, Config_Shared.AccessToRevive),
+                    teleport = Rep.HasAccess(src, Config_Shared.AccessToTeleport),
+                    bring    = Rep.HasAccess(src, Config_Shared.AccessToBring),
+                    givecar  = Rep.HasAccess(src, Config_Shared.AccessToGiveCar),
+                    spect    = Rep.HasAccess(src, Config_Shared.AccessToSpect),
+                    freeze   = Rep.HasAccess(src, Config_Shared.AccessToFreeze),
+                    -- بنِ واقعی از همون گیتِ واقعیِ /aban رد میشه
+                    -- (IsOnDutyAdminFor(src,'btn_ban') - permission_level تنها
+                    -- کافی نیست، باید سرور هم روی دیوتیِ واقعی باشه؛ همون
+                    -- قانونی که خودِ /aban ازش پیروی میکنه)، نه یک سطحِ
+                    -- جداگانه که با بقیه‌ی ریسورس ناهماهنگ باشه.
+                    ban      = type(IsOnDutyAdminFor) == 'function' and IsOnDutyAdminFor(src, 'btn_ban') or false,
                 }
-            })
+            }
+
+            -- ------------------------------------------- گسترش: هوشِ هدف ---
+            -- فقط وقتی «هدف» مشخص باشه این زنجیره اجرا میشه؛ برای تیکت‌هایی
+            -- که هدف ندارن (باگ/سوال/فروشگاه) بدونِ هیچ کوئریِ اضافه رد میشه.
+            if rep.target_identifier then
+                local xTarget = Rep.GetPlayerByIdentifier(rep.target_identifier)
+                payload.target.online = xTarget ~= nil
+                payload.target.pid    = xTarget and xTarget.source or 0
+                payload.target.name   = (xTarget and xTarget.name) or payload.target.name
+
+                Rep.RiskFor(rep.target_identifier, function(risk)
+                    if risk then
+                        local b = Config_Server.RiskBadge or { low = 30, med = 60 }
+                        risk.level = (risk.score >= b.med and 'high') or (risk.score >= b.low and 'med') or 'low'
+                    end
+                    payload.target.risk = risk   -- { score, reasons, level } یا nil
+
+                    Rep.TargetReportCount(rep.target_identifier, rep.ID, Config_Server.TargetLookback, function(count)
+                        payload.target.recentReports = count
+                        cb({ r = true, data = payload })
+                    end)
+                end)
+            else
+                cb({ r = true, data = payload })
+            end
         end)
     end)
 
@@ -375,13 +463,115 @@ CreateThread(function()
             or Config_Server.XpAfterClose
 
         if amount > 0 and rep.admin then
-            Rep.AddXP(rep.admin, amount)
+            Rep.AddXP(rep.admin, amount, 'rating')
             local xAdmin = Rep.GetPlayerByIdentifier(rep.admin)
             if xAdmin then Rep.Notify(xAdmin.source, ReportLan.adminxpAdd:format(amount)) end
         end
 
+        -- ------------------------------------------------- گسترش: استریک ---
+        -- امتیاز نهایی همین الان مشخص شد (بالا نوشته شد)، پس همین لحظه‌ست که
+        -- میشه فهمید امروز برای این ادمین «روزِ خوب» بوده یا نه.
+        if rep.admin then
+            Rep.RecomputeStreak(rep.admin, function(streak, earnedBonus)
+                if earnedBonus then
+                    local bonusAmount = (Config_Server.Streak and Config_Server.Streak.amount) or 20
+                    Rep.AddXP(rep.admin, bonusAmount, 'streak')
+                    local xAdmin = Rep.GetPlayerByIdentifier(rep.admin)
+                    if xAdmin then
+                        Rep.Notify(xAdmin.source, ReportLan.streakBonus:format(streak, bonusAmount))
+                    end
+                end
+            end)
+        end
+
         Rep.Notify(src, ReportLan.tankstofeedback)
         cb({ r = true })
+    end)
+
+    -- ------------------------------------------------- گسترش: یادداشتِ شیفت ---
+    -- فقط بینِ ادمین‌ها. کاربر (گزارش‌دهنده) هیچ‌وقت اینو نمی‌بینه چون یک
+    -- فیلدِ کاملاً جدا از chat ئه و توی Unique_Report:getMine اصلاً
+    -- برگردونده نمیشه.
+    RegisterServerCallbackSafe('Unique_Report:setNote', function(source, cb, reportId, note)
+        local src = source
+        if not Rep.HasAccess(src, Config_Shared.accessToAdminCommand) then
+            return cb({ r = false, msg = ReportLan.notAccess })
+        end
+
+        local rep = Rep.GetReport(reportId)
+        if not rep then return cb({ r = false, msg = ReportLan.reportnotfound }) end
+
+        local identifier = Rep.GetIdentifier(src)
+        -- ادمینِ تخصیص‌داده‌شده یا یک ادمینِ ارشد‌تر میتونه یادداشت بذاره
+        if identifier ~= rep.admin and not Rep.HasAccess(src, Config_Shared.accessToDelReport) then
+            return cb({ r = false, msg = ReportLan.notYours })
+        end
+
+        local saved = Rep.SetAdminNote(rep.ID, note)
+        cb({ r = true, note = saved, msg = ReportLan.noteSaved })
+    end)
+
+    -- ------------------------------------------------- گسترش: بررسیِ صدا ---
+    RegisterServerCallbackSafe('Unique_Report:voiceCheck', function(source, cb, targetId)
+        local src = source
+        if not Rep.HasAccess(src, Config_Shared.accessToAdminCommand) then
+            return cb({ r = false, msg = ReportLan.notAccess })
+        end
+        if type(GetVoiceProximityFor) ~= 'function' then
+            return cb({ r = false, msg = 'investigation.lua لود نشده.' })
+        end
+        local nearby = GetVoiceProximityFor(targetId, Config_Server.VoiceCheckRange)
+        cb({ r = true, data = nearby, range = Config_Server.VoiceCheckRange })
+    end)
+
+    -- --------------------------------------------- گسترش: بستن با بنِ آماده ---
+    -- از همون مسیرِ واقعیِ /aban رد میشه (IssueBan تو server/admin_tools.lua،
+    -- که شامل سینِ بازداشت و همون گیتِ IsOnDutyAdminFor('btn_ban') هست) -
+    -- یک مسیرِ بنِ دومِ جدا و ناهماهنگ نمیسازه.
+    RegisterServerCallbackSafe('Unique_Report:banClose', function(source, cb, reportId, presetId)
+        local src = source
+        if not (type(IsOnDutyAdminFor) == 'function' and IsOnDutyAdminFor(src, 'btn_ban')) then
+            return cb({ r = false, msg = ReportLan.notAccess })
+        end
+
+        local rep = Rep.GetReport(reportId)
+        if not rep then return cb({ r = false, msg = ReportLan.reportnotfound }) end
+
+        local identifier = Rep.GetIdentifier(src)
+        if identifier ~= rep.admin and not Rep.HasAccess(src, Config_Shared.accessToDelReport) then
+            return cb({ r = false, msg = ReportLan.notYours })
+        end
+        if not rep.target_identifier then
+            return cb({ r = false, msg = 'این تیکت هدفِ ساختاریافته نداره.' })
+        end
+
+        local xTarget = Rep.GetPlayerByIdentifier(rep.target_identifier)
+        if not xTarget then
+            return cb({ r = false, msg = ReportLan.targetOffline })
+        end
+
+        if type(BanPresets) ~= 'table' or type(IssueBan) ~= 'function' then
+            return cb({ r = false, msg = 'investigation.lua یا admin_tools.lua لود نشده.' })
+        end
+
+        local preset
+        for _, p in ipairs(BanPresets) do
+            if p.id == presetId then preset = p break end
+        end
+        if not preset then return cb({ r = false, msg = 'پریستِ بن پیدا نشد.' }) end
+
+        local durationArg = (preset.minutes == 0) and 'perm' or tostring(preset.minutes)
+        local ok = IssueBan(src, xTarget.source, durationArg, preset.reason)
+        if not ok then return cb({ r = false, msg = ReportLan.err }) end
+
+        Rep.AddChat(rep.ID, 'system', ('ریپورت با بنِ «%s» بسته شد.'):format(preset.label), Rep.GetName(src))
+        CloseReport(src, rep.ID, function(closeRes)
+            if closeRes.r then
+                cb({ r = true, msg = ReportLan.banAndClose:format(rep.ID, preset.label) })
+            else
+                cb(closeRes)
+            end
+        end)
     end)
 
     -- ------------------------------------------------- برترین ادمین‌ها ---
@@ -411,7 +601,33 @@ CreateThread(function()
             r.online     = Rep.GetPlayerByIdentifier(r.identifier) ~= nil
             r.identifier = nil   -- به UI نمیدیم
         end
-        cb({ r = true, data = rows })
+
+        -- ------------------------------------------ گسترش: جدولِ این ماه ---
+        -- بر پایه‌ی تیکت‌های بسته‌شده‌ی همین ماهِ میلادی (از reports.closed_at،
+        -- که تاریخ داره) - نه XP خام، چون XP قبل از اضافه‌شدنِ admin_xp_log
+        -- هیچ تاریخی نداشت و «XP همین ماه» هنوز قابل محاسبه نیست (یک ماهِ
+        -- کامل داده لازم داره). با پر شدنِ لجر، این خودش دقیق‌تر میشه.
+        local monthStart = os.time({
+            year = tonumber(os.date('%Y')), month = tonumber(os.date('%m')), day = 1,
+            hour = 0, min = 0, sec = 0,
+        })
+        local monthlyRows = MySQL.Sync.fetchAll([[
+            SELECT admin_name AS name, COUNT(*) AS handled, AVG(NULLIF(rating,0)) AS avg_rating
+            FROM reports
+            WHERE status IN ('close','archive') AND closed_at >= @start AND admin_name IS NOT NULL
+            GROUP BY admin_name
+            ORDER BY handled DESC, avg_rating DESC
+            LIMIT 3
+        ]], { ['@start'] = monthStart })
+
+        local titles = { 'قهرمان ماه 🥇', 'ستاره‌ی ماه 🥈', 'تلاشگر ماه 🥉' }
+        for i, r in ipairs(monthlyRows or {}) do
+            r.handled    = tonumber(r.handled) or 0
+            r.avg_rating = tonumber(r.avg_rating)
+            r.title      = titles[i]
+        end
+
+        cb({ r = true, data = rows, monthly = monthlyRows or {} })
     end)
 
     -- ------------------------------------------------------ آمار کلی ---

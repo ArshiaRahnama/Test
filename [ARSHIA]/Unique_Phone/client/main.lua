@@ -515,6 +515,22 @@ RegisterNUICallback('SetupGarageVehicles', function(data, cb)
     cb(PhoneData.GarageVehicles)
 end)
 
+-- EXPANSION: the phone's "Bank" icon now opens the same ATM-style bank UI
+-- from the new_banking resource instead of the phone's own built-in bank
+-- screen, so the look/behaviour is identical everywhere. The phone JS
+-- (app.js) closes the phone itself and posts here; this just hands off to
+-- new_banking's exported OpenBankUI() once the phone is out of the way.
+RegisterNUICallback('OpenExternalBank', function(data, cb)
+    SetTimeout(300, function()
+        if GetResourceState('new_banking') == 'started' then
+            exports['new_banking']:OpenBankUI()
+        else
+            ESX.ShowNotification('~r~بانک در دسترس نیست.', 'error')
+        end
+    end)
+    cb('ok')
+end)
+
 RegisterNUICallback('Close', function(data)
     if not PhoneData.CallData.InCall then
         DoPhoneAnimation('cellphone_text_out')

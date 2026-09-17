@@ -68,3 +68,33 @@ Config_Server.CommandNameAddXP   = 'addxp'
 Config_Server.CommandNameDelXP   = 'delxp'
 Config_Server.CommandNameCleanXP = 'cleanxp'
 Config_Server.CommandNameShowXP  = 'showxp'
+
+-- ============================================================ گسترش‌ها ===
+
+-- --------------------------------------------------------- هوش پنل ---
+-- وقتی «هدف» (بازیکن گزارش‌شده) مشخص باشه، این‌ها روی جزئیات تیکت نشون
+-- داده میشه: ریسک‌اسکور (server/risk_score.lua)، تعداد ریپورتِ دیگه علیه
+-- همون بازیکن تو N روز اخیر، و اگه اون تعداد از حد گذشت، اولویت تیکتِ
+-- تازه‌ثبت‌شده خودکار میره رو بیشترین سطح.
+Config_Server.TargetLookback         = 7     -- روز
+Config_Server.AutoPriorityBumpAt     = 3     -- >= این تعداد ریپورتِ دیگه = اولویت اجباری بره رو حداکثر
+Config_Server.VoiceCheckRange        = 20.0  -- متر (پیش‌فرض همون چیزیه که investigation.lua برای رنج صدا حدس زده)
+
+-- آستانه‌های رنگِ بج ریسک (0 تا 100، از server/risk_score.lua)
+Config_Server.RiskBadge = {
+    low  = 30,  -- زیر این = خنثی (خاکستری)
+    med  = 60,  -- بین low و med = زرد، بالای med = قرمز
+}
+
+-- --------------------------------------------------------- پاسخ آماده ---
+-- جابه‌جا شد به shared/report_shared_config.lua (Config_Shared.CannedReplies)
+-- چون این فایل فقط تو server_scripts هست و کلاینت اصلاً نمی‌بینتش - ولی
+-- دکمه‌های پاسخِ آماده باید تو NUI کلاینت رندر بشن.
+
+-- --------------------------------------------------------- استریک XP ---
+-- هر چند روزِ پشت‌سرهمِ «بدون امتیازِ زیر ۳» یک بونس XP یک‌باره میده.
+Config_Server.Streak = {
+    every  = 3,    -- هر ۳ روز پشت‌سرهم
+    amount = 20,   -- این‌قدر XP بونس
+}
+

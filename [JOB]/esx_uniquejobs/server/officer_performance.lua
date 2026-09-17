@@ -14,8 +14,8 @@
 ESX = nil
 TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
 
-local DOJ_JOBS = { marshal = true, judge = true, cia = true, cid = true, fbi = true, doa = true }
-local LE_JOBS = { police = true, sheriff = true, mt = true }
+local DOJ_JOBS = DojJobSet -- shared/departments.lua (was a hardcoded duplicate)
+local LE_JOBS = LeJobSet -- shared/departments.lua (was a hardcoded duplicate)
 local function canView(jobname) return DOJ_JOBS[jobname] or LE_JOBS[jobname] end
 
 local IA_STATUS_LABELS = {

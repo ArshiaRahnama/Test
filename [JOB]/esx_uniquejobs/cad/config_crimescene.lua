@@ -6,12 +6,16 @@ Config_cs = {}
 
 -- Department Of Justice. Any of these jobs can walk up to a crime scene,
 -- collect evidence, and expand a case (add investigative notes).
-Config_cs.DOJJobs = { 'cid', 'cia', 'marshal', 'fbi', 'judge', 'doa' }
+-- CONNECTED: was its own hardcoded copy of the same 6/3 jobs already defined
+-- in shared/departments.lua's Departments table (loaded first, see
+-- fxmanifest.lua) -- now reads the array straight from there so it can't
+-- drift out of sync (see GOVERNMENT_JOBS_CONSOLIDATION.md Round 3).
+Config_cs.DOJJobs = GetDepartmentById('doj').jobs
 
 -- Law Enforcement -- NOT part of DOJ. They're first on scene: they secure
 -- it before DOJ can investigate cleanly, and they're the ones who act on
 -- BOLOs that DOJ issues once a vehicle plate turns up in a case.
-Config_cs.LawEnforcementJobs = { 'police', 'sheriff', 'mt' }
+Config_cs.LawEnforcementJobs = GetDepartmentById('le').jobs -- shared/departments.lua (was a hardcoded duplicate)
 
 -- Once a case has evidence in it, a DOJ member can formally refer it to one
 -- of these jobs for prosecution / specialized follow-up. These jobs also

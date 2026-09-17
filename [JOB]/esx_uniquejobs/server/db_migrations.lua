@@ -378,6 +378,11 @@ CreateThread(function()
 	EnsureColumn('doj_cases', 'warrant_decided_by', "`warrant_decided_by` VARCHAR(64) DEFAULT NULL AFTER `warrant_requested_by`")
 	EnsureColumn('doj_cases', 'closed_by_name', "`closed_by_name` VARCHAR(64) DEFAULT NULL AFTER `warrant_decided_by`")
 	EnsureColumn('doj_cases', 'archived_at', "`archived_at` DATETIME DEFAULT NULL AFTER `closed_by_name`")
+	-- CONNECTED: lets a CAD robbery/warrant case (doj_cases) link to a real
+	-- DOJ investigation case (dept_cases) via cad/server/crimescene.lua's
+	-- new CrimeScene:openDojCase -- the two systems stayed fully separate
+	-- before this (see GOVERNMENT_JOBS_CONSOLIDATION.md Round 3).
+	EnsureColumn('doj_cases', 'linked_dept_case_id', "`linked_dept_case_id` INT(11) DEFAULT NULL AFTER `archived_at`")
 	EnsureColumn('doj_case_evidence', 'plate', "`plate` VARCHAR(10) DEFAULT NULL AFTER `suspect_hint_id`")
 	EnsureColumn('doj_criminal_records', 'suspect_identifier', "`suspect_identifier` VARCHAR(64) DEFAULT NULL AFTER `case_id`")
 

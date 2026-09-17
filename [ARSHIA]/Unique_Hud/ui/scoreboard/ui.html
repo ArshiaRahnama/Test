@@ -1,10 +1,45 @@
 <html>
   <head>
-    <link href="https://fonts.googleapis.com/css2?family=Gluten&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
+    <meta charset="UTF-8">
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700;800&display=swap" rel="stylesheet">
     <style>
-      /* ✅ کاملاً مستقل: هیچ کلاس/آیدی از css/index.css قدیمی (LogoBox/RightSide/
-         InfoBox/container/#wrap) استفاده نشده - اون‌ها یه انیمیشن+float داشتن
-         که هر بار به‌طرز عجیبی باعث یه فضای خالی بزرگ زیر پنل می‌شد. */
+      /* ============================================================
+         Unique_Hud / ui / scoreboard / ui.html
+         ری‌دیزاین ظاهری بر اساس عکس نمونه (پنل بنفش «SUNSET RP»).
+         منطق دیتا/پیام‌رسانی (window.message با id=scoreboard) دست‌نخورده
+         موند تا با client/scoreboard.lua فعلی سازگار بمونه.
+         اسم سرور + لینک دیسکورد/سایت رو بالای js/main.js (CONFIG) عوض کن.
+         ============================================================ */
+      :root {
+        /* دارک (پیش‌فرض) = تم زرد خفن */
+        --uh-bg: rgba(28, 22, 10, 0.9);
+        --uh-bg2: rgba(20, 15, 6, 0.94);
+        --uh-border: rgba(255, 200, 60, 0.22);
+        --uh-card-bg: rgba(255, 200, 60, 0.055);
+        --uh-card-border: rgba(255, 200, 60, 0.25);
+        --uh-card-border-hover: rgba(255, 200, 60, 0.5);
+        --uh-label: #d8b978;
+        --uh-value: #ffffff;
+        --uh-accent: #ffd23f;
+        --uh-accent2: #ff9d2c;
+        --uh-muted: #a68a52;
+      }
+      html[data-theme="light"] {
+        /* طبق درخواست: "لایت" فقط اسمشه، ظاهرش دقیقاً همون بنفش تیره‌ی
+           پیش‌فرض قدیمیه (نه پس‌زمینه سفید). */
+        --uh-bg: rgba(24, 16, 36, 0.88);
+        --uh-bg2: rgba(18, 12, 28, 0.92);
+        --uh-border: rgba(190, 130, 255, 0.18);
+        --uh-card-bg: rgba(255, 255, 255, 0.045);
+        --uh-card-border: rgba(190, 130, 255, 0.22);
+        --uh-card-border-hover: rgba(200, 140, 255, 0.45);
+        --uh-label: #a99bc4;
+        --uh-value: #ffffff;
+        --uh-accent: #b35bff;
+        --uh-accent2: #ff5cc8;
+        --uh-muted: #7a6d90;
+      }
+
       html, body {
         margin: 0;
         padding: 0;
@@ -18,14 +53,9 @@
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%) scale(0.96);
-        width: 420px;
-        max-height: 70vh;
-        overflow-y: auto;
-        background: #26222dcc;
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 14px;
-        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.55);
-        color: #fff;
+        width: 540px;
+        background: transparent;
+        color: var(--uh-value);
         opacity: 0;
         transition: opacity 180ms ease, transform 180ms ease;
       }
@@ -34,130 +64,276 @@
         transform: translate(-50%, -50%) scale(1);
       }
 
-      #uh-sb-inner {
-        padding: 18px;
+      #uh-sb-panel {
+        /* ✅ فیکس شد: backdrop-filter/blur تو CEF بازی (NUI) باعث می‌شد کل
+           پس‌زمینه‌ی پشتِ پنل مشکی و مات رندر بشه (یه باگ شناخته‌شده‌ی خودِ
+           موتور CEF با پس‌زمینه‌ی شفاف). به‌جاش فقط یه گرادینت نیمه‌شفاف
+           ساده استفاده شد که هم زیبایی رو حفظ می‌کنه هم واقعاً شفافه. */
         position: relative;
+        background: linear-gradient(165deg, var(--uh-bg), var(--uh-bg2));
+        border: 1px solid var(--uh-border);
+        border-radius: 24px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(179, 91, 255, 0.06) inset;
+        padding: 26px 28px 24px;
       }
 
       #uh-close-btn {
         position: absolute;
-        top: 8px;
-        left: 10px;
-        background: #ff3547;
+        top: -12px;
+        right: -12px;
+        background: #ff3b5c;
         color: #fff;
         border: none;
-        width: 26px;
-        height: 26px;
+        width: 28px;
+        height: 28px;
         border-radius: 50%;
         cursor: pointer;
         font-size: 14px;
         line-height: 1;
-        box-shadow: 0 0 8px rgba(255, 53, 71, 0.5);
+        box-shadow: 0 0 12px rgba(255, 59, 92, 0.55);
         transition: transform 150ms ease, box-shadow 150ms ease;
       }
       #uh-close-btn:hover {
         transform: scale(1.12);
-        box-shadow: 0 0 14px rgba(255, 53, 71, 0.8);
+        box-shadow: 0 0 16px rgba(255, 59, 92, 0.85);
       }
 
+      /* ---------- Header ---------- */
       #uh-sb-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 18px;
+      }
+      #uh-sb-header .uh-brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      #uh-sb-header img.uh-logo {
+        height: 42px;
+        width: 42px;
+        object-fit: contain;
+      }
+      #uh-sb-header .uh-title {
+        font-family: 'Quicksand', sans-serif;
+        font-weight: 800;
+        font-size: 27px;
+        letter-spacing: 0.5px;
+        background: linear-gradient(90deg, var(--uh-accent), var(--uh-accent2));
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+
+      /* toggle switch */
+      .uh-theme-toggle {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12px;
+        color: var(--uh-muted);
+        user-select: none;
+      }
+      .uh-switch {
+        position: relative;
+        width: 40px;
+        height: 22px;
+        border-radius: 20px;
+        background: linear-gradient(90deg, var(--uh-accent), var(--uh-accent2));
+        cursor: pointer;
+        transition: background 200ms ease;
+        flex-shrink: 0;
+      }
+      .uh-switch .uh-knob {
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: #fff;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        transition: left 200ms ease;
+      }
+      html[data-theme="dark"] .uh-switch .uh-knob { left: 20px; }
+
+      /* ---------- Grid ---------- */
+      #uh-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+        margin-bottom: 20px;
+      }
+      .uh-card {
+        position: relative;
+        background: var(--uh-card-bg);
+        border: 1px solid var(--uh-card-border);
+        border-radius: 16px;
+        padding: 18px 10px 16px;
         display: flex;
         flex-direction: column;
         align-items: center;
-        margin-bottom: 14px;
+        gap: 8px;
+        transition: border-color 180ms ease, transform 180ms ease, background 180ms ease;
+        cursor: pointer;
+        user-select: none;
       }
-      #uh-sb-header img {
-        height: 60px;
-        margin-bottom: 8px;
+      .uh-card:hover {
+        border-color: var(--uh-card-border-hover);
+        transform: translateY(-2px);
       }
-      #uh-sb-stats {
-        display: flex;
-        gap: 26px;
+      .uh-card.uh-active {
+        border-color: var(--uh-card-border-hover);
       }
-      .uh-stat {
-        text-align: center;
+      .uh-card .uh-icon {
+        font-size: 24px;
+        line-height: 1;
+        transition: opacity 150ms ease, height 200ms ease, margin 200ms ease;
       }
-      .uh-stat .uh-stat-label {
-        font-size: 11px;
-        color: #9ca3af;
+      .uh-card .uh-icon img {
+        width: 34px;
+        height: 34px;
+        object-fit: contain;
+        border-radius: 50%;
+        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.45));
       }
-      .uh-stat .uh-stat-value {
-        font-size: 22px;
+      .uh-card .uh-label {
+        font-size: 12px;
         font-weight: 700;
+        letter-spacing: 0.3px;
+        color: var(--uh-label);
+        text-transform: uppercase;
+        text-align: center;
+        line-height: 1.3;
+      }
+      .uh-card .uh-value {
+        font-size: 24px;
+        font-weight: 800;
+        color: var(--uh-value);
+        transition: opacity 150ms ease, height 200ms ease, margin 200ms ease;
       }
 
-      .org-card {
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid transparent;
-        border-radius: 10px;
+      /* ---------- کلیک روی کارت = عوض شدن به لیست ریز جاب‌ها همون داخل کارت ---------- */
+      /* وقتی کارت باز (uh-active) نیست: آیکون/عدد نشون داده می‌شه و لیست مخفیه. */
+      /* وقتی باز می‌شه: آیکون/عدد مخفی می‌شن و لیست ریز جاب‌ها جاش میاد. با
+         کلیک دوباره روی همون کارت، دقیقاً برمی‌گرده به حالت قبلش. */
+      .uh-tooltip {
+        display: none;
+        width: 100%;
+        margin-top: 2px;
+      }
+      .uh-card.uh-active .uh-icon,
+      .uh-card.uh-active .uh-value,
+      .uh-card.uh-active .uh-label {
+        display: none;
+      }
+      .uh-card.uh-active .uh-tooltip {
+        display: block;
+      }
+      .uh-tooltip .uh-tt-title {
+        font-size: 10.5px;
+        font-weight: 800;
+        letter-spacing: 0.4px;
+        color: var(--uh-accent);
+        text-transform: uppercase;
         margin-bottom: 6px;
-        overflow: hidden;
-        transition: border-color 200ms ease;
+        text-align: center;
+        white-space: nowrap;
       }
-      .org-card.expanded {
-        border-color: rgba(196, 163, 0, 0.35);
-      }
-      .org-header {
+      .uh-tooltip .uh-tt-row {
         display: flex;
-        justify-content: space-between;
         align-items: center;
-        padding: 10px 14px;
-        cursor: pointer;
-        font-family: 'Gluten', cursive;
-        transition: background 150ms ease;
-      }
-      .org-header:hover {
-        background: rgba(255, 255, 255, 0.05);
-      }
-      .org-header .org-title {
-        font-size: 13px;
-        color: #fff;
-      }
-      .org-header .org-count {
-        font-size: 12px;
-        color: #c4a300;
-        font-weight: bold;
-      }
-      .org-header .org-arrow {
-        transition: transform 200ms ease, color 200ms ease;
-        margin-right: 6px;
-        color: #9ca3af;
-        display: inline-block;
-      }
-      .org-card.expanded .org-arrow {
-        transform: rotate(90deg);
-        color: #c4a300;
-      }
-      .org-jobs {
-        max-height: 0;
-        overflow: hidden;
-        transition: max-height 300ms ease;
-      }
-      .org-card.expanded .org-jobs {
-        max-height: 260px;
-      }
-      .org-job-row {
-        display: flex;
         justify-content: space-between;
-        padding: 6px 18px;
-        font-size: 11px;
-        color: rgba(255, 255, 255, 0.8);
-        border-top: 1px solid rgba(255, 255, 255, 0.06);
-        transition: background 150ms ease;
+        gap: 14px;
+        font-size: 12px;
+        padding: 3px 2px;
+        white-space: nowrap;
       }
-      .org-job-row:hover {
-        background: rgba(255, 255, 255, 0.04);
+      .uh-tooltip .uh-tt-row span { color: var(--uh-label); font-weight: 600; }
+      .uh-tooltip .uh-tt-row b { color: var(--uh-value); font-weight: 800; }
+      .uh-tooltip .uh-tt-empty {
+        font-size: 11.5px;
+        color: var(--uh-muted);
+        text-align: center;
+        padding: 2px 0;
       }
-      .org-job-row .count-badge {
-        background: rgba(255, 255, 255, 0.08);
-        border-radius: 10px;
-        padding: 1px 8px;
-        font-weight: bold;
-        transition: background 150ms ease, color 150ms ease;
+
+      /* ---------- Footer ---------- */
+      #uh-sb-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding-top: 18px;
+        border-top: 1px solid var(--uh-border);
       }
-      .org-job-row.online .count-badge {
-        background: #c4a300;
+      .uh-players {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 14.5px;
+        font-weight: 700;
+        color: var(--uh-label);
+        white-space: nowrap;
+      }
+      .uh-players b {
+        color: var(--uh-accent);
+        font-weight: 800;
+      }
+      .uh-btn {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        border: none;
+        border-radius: 20px;
+        padding: 10px 16px;
+        font-family: 'Quicksand', sans-serif;
+        font-weight: 700;
+        font-size: 13.5px;
+        color: #fff;
+        cursor: pointer;
+        text-decoration: none;
+        white-space: nowrap;
+        transition: filter 150ms ease, transform 150ms ease;
+      }
+      .uh-btn:hover { filter: brightness(1.12); transform: translateY(-1px); }
+      .uh-btn.uh-discord { background: #5865f2; }
+      .uh-btn.uh-website { background: linear-gradient(90deg, #06b6d4, #0891b2); }
+
+      #uh-clock {
+        background: rgba(255, 255, 255, 0.06);
+        border-radius: 20px;
+        padding: 10px 16px;
+        font-size: 13.5px;
+        font-weight: 700;
+        color: var(--uh-value);
+        white-space: nowrap;
+      }
+
+      /* ---------- نوتیف کپی‌شدن لینک ---------- */
+      #uh-toast {
+        position: fixed;
+        left: 50%;
+        bottom: 40px;
+        transform: translateX(-50%) translateY(12px);
+        background: linear-gradient(90deg, var(--uh-accent), var(--uh-accent2));
         color: #1a1a1a;
+        font-family: 'Quicksand', sans-serif;
+        font-weight: 800;
+        font-size: 13px;
+        padding: 10px 20px;
+        border-radius: 30px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 200ms ease, transform 200ms ease;
+        z-index: 999;
+        white-space: nowrap;
+      }
+      #uh-toast.uh-toast-show {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
       }
     </style>
     <title>Scoreboard</title>
@@ -165,26 +341,32 @@
 
   <body>
     <div id="uh-sb-wrap">
-      <div id="uh-sb-inner">
+      <div id="uh-sb-panel">
         <button id="uh-close-btn" onclick="requestClose()">✕</button>
 
         <div id="uh-sb-header">
-          <img src="images/Assets/silver_logo.png">
-          <div id="uh-sb-stats">
-            <div class="uh-stat">
-              <div class="uh-stat-label">Players</div>
-              <div class="uh-stat-value" id="playersnum">0</div>
-            </div>
-            <div class="uh-stat">
-              <div class="uh-stat-label">Admins</div>
-              <div class="uh-stat-value" id="adminsnum">0</div>
-            </div>
+          <div class="uh-brand">
+            <img class="uh-logo" src="images/Assets/silver_logo.png">
+            <span class="uh-title" id="uh-server-name">SUNSET RP</span>
+          </div>
+          <div class="uh-theme-toggle">
+            <span id="uh-theme-label">Dark</span>
+            <div class="uh-switch" id="uh-theme-switch" onclick="toggleTheme()"><div class="uh-knob"></div></div>
           </div>
         </div>
 
-        <div id="org-list"></div>
+        <div id="uh-grid"></div>
+
+        <div id="uh-sb-footer">
+          <div class="uh-players">👥 Players: <b id="uh-players-num">0</b></div>
+          <a class="uh-btn uh-discord" id="uh-discord-btn" href="#" target="_blank" rel="noopener">💬 Discord</a>
+          <a class="uh-btn uh-website" id="uh-website-btn" href="#" target="_blank" rel="noopener">🌐 Website</a>
+          <div id="uh-clock">12:00 PM</div>
+        </div>
       </div>
     </div>
+
+    <div id="uh-toast"></div>
 
     <script src="js/main.js" type="text/javascript"></script>
   </body>

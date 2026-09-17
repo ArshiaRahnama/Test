@@ -166,6 +166,12 @@ function renderCompose(body) {
       </div>
 
       <div class="field">
+        <label class="field__label" for="cTarget">آیدیِ بازیکنِ گزارش‌شده <b>(اختیاری)</b></label>
+        <input class="input" id="cTarget" type="number" min="1" inputmode="numeric"
+               placeholder="اگه این ریپورت درباره‌ی یک بازیکنِ خاصه، آیدیش رو بنویس" autocomplete="off">
+      </div>
+
+      <div class="field">
         <label class="field__label" for="cInfo">توضیحات</label>
         <textarea class="textarea" id="cInfo" maxlength="${esc(L.infoMax || 1000)}"
                   placeholder="چه اتفاقی افتاد؟ کِی و کجا؟ آیدی طرف مقابل چند بود؟"></textarea>
@@ -210,6 +216,8 @@ async function submitReport(ev) {
   const L = S.cfg.limits || {};
   const title = $('#cTitle').value.trim();
   const info  = $('#cInfo').value.trim();
+  const targetRaw = $('#cTarget').value.trim();
+  const targetId = targetRaw ? Number(targetRaw) : undefined;
 
   const fail = (el, msg) => {
     el.classList.add('is-bad');
@@ -220,12 +228,13 @@ async function submitReport(ev) {
   if (len(title) < (L.titleMin || 5))  return fail($('#cTitle'), `عنوان باید حداقل ${L.titleMin || 5} کاراکتر باشه.`);
   if (!S.compose.category)             return toast('یک موضوع انتخاب کن.', 'bad');
   if (len(info) < (L.infoMin || 15))   return fail($('#cInfo'), `توضیحات باید حداقل ${L.infoMin || 15} کاراکتر باشه.`);
+  if (targetRaw && (!Number.isInteger(targetId) || targetId < 1)) return fail($('#cTarget'), 'آیدی باید یک عدد صحیح باشه.');
 
   const btn = $('#cSend');
   btn.disabled = true;
   btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> در حال ارسال';
 
-  const res = await nui('create', { title, info, category: S.compose.category });
+  const res = await nui('create', { title, info, category: S.compose.category, targetId });
 
   btn.disabled = false;
   btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> ارسال ریپورت';
@@ -464,6 +473,9 @@ function paintQueue() {
             <span><i class="dot ${t.online ? 'dot--on' : 'dot--off'}"></i> ${esc(t.Name)}</span>
             <span class="tk__age"><i class="fa-regular fa-clock"></i> ${esc(ago(t.age))}</span>
             ${t.msgCount ? `<span><i class="fa-regular fa-comment"></i> ${esc(t.msgCount)}</span>` : ''}
+            ${t.hasNote ? `<span title="یادداشتِ شیفت"><i class="fa-solid fa-note-sticky"></i></span>` : ''}
+            ${t.targetFlagged ? `<span class="flag-badge" title="هدفِ این ریپورت الان یک فلگِ فعالِ سیستمی داره">
+              <i class="fa-solid fa-triangle-exclamation"></i> فلگ‌دار</span>` : ''}
           </div>
         </div>
         <div class="tk__side">${statusPill}</div>
@@ -514,6 +526,7 @@ function paintDetail() {
           <span>${esc(catName(t.category))}</span>
           <span style="color:${esc(pr.color)}">اولویت ${esc(pr.label)}</span>
           <span>${esc(ago(t.age))} پیش</span>
+          ${t.targetFlagged ? `<span class="flag-badge"><i class="fa-solid fa-triangle-exclamation"></i> هدف فلگ‌دار</span>` : ''}
         </div>
       </div>
       <div class="pane__acts">
@@ -535,6 +548,9 @@ function paintDetail() {
       </div>
       ${t.AdminName && t.status !== 'pending'
         ? `<div class="msg msg--sys"><div class="msg__body">رسیدگی توسط ${esc(t.AdminName)}</div></div>`
+        : ''}
+      ${t.admin_note
+        ? `<div class="msg msg--sys"><div class="msg__body"><i class="fa-solid fa-note-sticky"></i> یادداشت: ${esc(t.admin_note)}</div></div>`
         : ''}
       ${t.rating > 0
         ? `<div class="msg msg--sys"><div class="msg__body">امتیاز بازیکن: ${esc(t.rating)} از ۵</div></div>`
@@ -580,10 +596,13 @@ async function renderActive(body) {
   const d  = res.data;
   const p  = d.perms || {};
   const pr = priOf(d.priority);
+  const t  = d.target || null;
 
   const act = (key, icon, label, on) => on
     ? `<button class="btn btn--ghost btn--sm" data-act="${key}"><i class="fa-solid ${icon}"></i> ${label}</button>`
     : '';
+
+  const riskLevelLabel = { low: 'کم', med: 'متوسط', high: 'بالا' };
 
   body.innerHTML = `
     <div class="pane" style="flex:1">
@@ -607,13 +626,53 @@ async function renderActive(body) {
           ${act('revive',   'fa-heart-pulse',    'ریوایو',    p.revive   && d.online)}
           ${act('freeze',   'fa-snowflake',      'فریز',      p.freeze   && d.online)}
           ${act('givecar',  'fa-car',            'ماشین',     p.givecar)}
+          ${t ? `<button class="btn btn--ghost btn--sm" id="voiceBtn"><i class="fa-solid fa-microphone-lines"></i> بررسی صدا</button>` : ''}
+          ${t && p.ban ? `<button class="btn btn--rust btn--sm" id="banBtn" ${!t.online ? 'disabled title="هدف آنلاین نیست"' : ''}>
+            <i class="fa-solid fa-gavel"></i> بستن با بن</button>` : ''}
           <button class="btn btn--jade btn--sm" id="closeActive">
             <i class="fa-solid fa-flag-checkered"></i> بستن ریپورت
           </button>
         </div>
       </div>
 
+      ${t ? `
+      <div class="target-intel">
+        <div class="target-intel__row">
+          <span class="target-intel__name">
+            <i class="fa-solid fa-crosshairs"></i> هدف: ${esc(t.name)}
+            <i class="dot ${t.online ? 'dot--on' : 'dot--off'}"></i>
+          </span>
+          ${t.risk ? `<span class="risk-badge risk-badge--${esc(t.risk.level)}">
+            ریسک ${esc(t.risk.score)} · ${esc(riskLevelLabel[t.risk.level] || t.risk.level)}</span>` : ''}
+          ${t.recentReports > 0 ? `<span class="pill pill--wait">
+            <i class="fa-solid fa-clock-rotate-left"></i> ${esc(t.recentReports)} ریپورتِ دیگر (۷ روز اخیر)</span>` : ''}
+        </div>
+        ${t.risk && t.risk.reasons && t.risk.reasons.length ? `
+          <details class="target-intel__reasons">
+            <summary>چرا این امتیاز؟</summary>
+            <ul>${t.risk.reasons.map(r => `<li>${esc(r)}</li>`).join('')}</ul>
+          </details>` : ''}
+      </div>
+      <div class="inline-panel hidden" id="voicePanel"></div>
+      <div class="inline-panel hidden" id="banPanel"></div>
+      ` : ''}
+
+      <div class="note-strip">
+        <button class="note-strip__toggle" id="noteToggle">
+          <i class="fa-solid fa-note-sticky"></i> یادداشتِ شیفت <span class="note-strip__hint">(فقط ادمین‌ها می‌بینن)</span>
+          <i class="fa-solid fa-chevron-down note-strip__chev"></i>
+        </button>
+        <div class="note-strip__body hidden" id="noteBody">
+          <textarea class="textarea" id="noteText" rows="2" placeholder="مثلاً: منتظرم کلیپ بفرسته، هنوز جواب نداده…">${esc(d.adminNote || '')}</textarea>
+          <button class="btn btn--ghost btn--sm" id="noteSave"><i class="fa-solid fa-check"></i> ذخیره یادداشت</button>
+        </div>
+      </div>
+
       <div class="thread scroller" id="adminThread"></div>
+
+      <div class="canned">
+        ${(S.cfg.canned || []).map(c => `<button class="canned__chip" data-canned="${esc(c.key)}">${esc(c.label)}</button>`).join('')}
+      </div>
 
       <div class="composer">
         <input class="input" id="adminMsg" placeholder="پاسخت رو بنویس…"
@@ -634,6 +693,88 @@ async function renderActive(body) {
     if (r && r.r) { toast('ریپورت بسته شد.', 'ok'); S.adminView = 'queue'; renderAdmin(); }
     else toast((r && r.msg) || 'بسته نشد.', 'bad');
   });
+
+  // ------------------------------------------------------- یادداشتِ شیفت ---
+  $('#noteToggle')?.addEventListener('click', () => {
+    $('#noteBody').classList.toggle('hidden');
+    $('#noteToggle').classList.toggle('is-open');
+  });
+  $('#noteSave')?.addEventListener('click', async () => {
+    const note = $('#noteText').value;
+    const r = await nui('setNote', { id: d.ID, note });
+    toast(r && r.r ? 'یادداشت ذخیره شد.' : (r && r.msg) || 'ذخیره نشد.', r && r.r ? 'ok' : 'bad');
+  });
+
+  // ------------------------------------------------------------ بررسیِ صدا ---
+  $('#voiceBtn')?.addEventListener('click', async () => {
+    const panel = $('#voicePanel');
+    const opening = panel.classList.contains('hidden');
+    $('#banPanel')?.classList.add('hidden');
+    if (!opening) { panel.classList.add('hidden'); return; }
+
+    panel.classList.remove('hidden');
+    panel.innerHTML = `<div class="inline-panel__loading"><i class="fa-solid fa-circle-notch fa-spin"></i> در حال بررسی…</div>`;
+    const r = await nui('voiceCheck', { pid: t.pid });
+    if (!r || !r.r) { panel.innerHTML = `<p class="inline-panel__empty">بررسی انجام نشد.</p>`; return; }
+    if (!r.data || !r.data.length) {
+      panel.innerHTML = `<p class="inline-panel__empty">کسی تو رنجِ صدا (${esc(r.range)} متر) نبود.</p>`;
+      return;
+    }
+    panel.innerHTML = `
+      <div class="inline-panel__title">تو رنجِ صدا (${esc(r.range)} متر):</div>
+      ${r.data.map(n => `
+        <div class="voice-row">
+          <span>${esc(n.name)} <span class="voice-row__id">ID ${esc(n.id)}</span></span>
+          <span class="voice-row__dist">${esc(n.distance)} متر</span>
+        </div>`).join('')}`;
+  });
+
+  // -------------------------------------------------------- بستن با بن ---
+  $('#banBtn')?.addEventListener('click', async () => {
+    const panel = $('#banPanel');
+    const opening = panel.classList.contains('hidden');
+    $('#voicePanel')?.classList.add('hidden');
+    if (!opening) { panel.classList.add('hidden'); return; }
+
+    panel.classList.remove('hidden');
+    panel.innerHTML = `<div class="inline-panel__loading"><i class="fa-solid fa-circle-notch fa-spin"></i> در حال بارگذاری پریست‌ها…</div>`;
+    const r = await nui('banPresets');
+    const presets = (r && r.data) || [];
+    if (!presets.length) { panel.innerHTML = `<p class="inline-panel__empty">پریستِ بنی تعریف نشده.</p>`; return; }
+
+    panel.innerHTML = `
+      <div class="inline-panel__title">یک پریست انتخاب کن - ریپورت هم همزمان بسته می‌شه:</div>
+      ${presets.map(ps => `
+        <button class="ban-preset" data-preset="${esc(ps.id)}">
+          <span class="ban-preset__label">${esc(ps.label)}</span>
+          <span class="ban-preset__meta">${ps.minutes === 0 ? 'دائم' : ps.minutes + ' دقیقه'}</span>
+        </button>`).join('')}`;
+
+    $$('.ban-preset', panel).forEach(b => b.addEventListener('click', async () => {
+      if (!confirm(`مطمئنی؟ بازیکن بن می‌شه و ریپورت بسته می‌شه.`)) return;
+      b.disabled = true;
+      const res2 = await nui('banClose', { id: d.ID, presetId: b.dataset.preset });
+      if (res2 && res2.r) {
+        toast(res2.msg || 'انجام شد.', 'ok');
+        S.adminView = 'queue';
+        renderAdmin();
+      } else {
+        toast((res2 && res2.msg) || 'بن انجام نشد.', 'bad');
+        b.disabled = false;
+      }
+    }));
+  });
+
+  // ------------------------------------------------------- پاسخِ آماده ---
+  $$('[data-canned]', body).forEach(chip => chip.addEventListener('click', async () => {
+    const preset = (S.cfg.canned || []).find(c => c.key === chip.dataset.canned);
+    if (!preset) return;
+    chip.disabled = true;
+    const r = await nui('chat', { id: d.ID, text: preset.text });
+    chip.disabled = false;
+    if (r && r.r) renderActive(body);
+    else toast((r && r.msg) || 'ارسال نشد.', 'bad');
+  }));
 
   const doSend = async () => {
     const inp = $('#adminMsg');
@@ -670,8 +811,29 @@ async function renderStats(body) {
         ${card('', d.avg_rating ? Number(d.avg_rating).toFixed(1) + ' ★' : '—', 'میانگین رضایت')}
         ${card('', d.avg_response ? ago(Math.round(d.avg_response)) : '—', 'میانگین زمان پاسخ')}
       </div>
+      <div id="monthlyBoard"></div>
       <div id="statsBoard"></div>
     </div>`;
+
+  const monthly = (top && top.monthly) || [];
+  if (monthly.length) {
+    $('#monthlyBoard').innerHTML = `
+      <div class="monthly">
+        <div class="monthly__title"><i class="fa-solid fa-trophy"></i> برترین‌های این ماه</div>
+        <div class="monthly__grid">
+          ${monthly.map((m, i) => `
+            <div class="monthly__card monthly__card--${i}">
+              <div class="monthly__badge">${['🥇', '🥈', '🥉'][i] || ''}</div>
+              <div class="monthly__name">${esc(m.name || '—')}</div>
+              <div class="monthly__title2">${esc(m.title || '')}</div>
+              <div class="monthly__stats">
+                <span>${esc(m.handled)} ریپورت</span>
+                ${m.avg_rating ? `<span>${esc(Number(m.avg_rating).toFixed(1))} ★</span>` : ''}
+              </div>
+            </div>`).join('')}
+        </div>
+      </div>`;
+  }
 
   const boardHost = $('#statsBoard');
   if (top && top.r && top.data && top.data.length) {

@@ -32,7 +32,7 @@ AddEventHandler('esx_policejob:requestrelease', function(targetid, playerheading
 	if not GetPlayerName(targetid) or not cPlayer then
 		return
 	end
-	if xPlayer.job.name == "police" or xPlayer.job.name == "sheriff" or xPlayer.job.name == "fbi" or xPlayer.gang.name ~= "nogang" or xPlayer.job.name == "mt" or xPlayer.job.name == "forces" or xPlayer.job.name == "cid" or xPlayer.job.name == "cia" or xPlayer.job.name == "marshal" or xPlayer.job.name == "judge" or xPlayer.job.name == "doa" then
+	if IsGovernmentJob(xPlayer.job.name) or xPlayer.gang.name ~= "nogang" then -- shared/departments.lua (was a hardcoded DOJ+LE list with a dead 'forces' job name; gang clause unchanged)
 		if #(GetEntityCoords(GetPlayerPed(source)) - GetEntityCoords(GetPlayerPed(tonumber(targetid)))) < 15.0 then
 			if cPlayer.get("Cuff") then
 				PendingLegitUncuff[tonumber(targetid)] = { officer = source, time = GetGameTimer() }
@@ -53,6 +53,11 @@ end)
 
 RegisterServerEvent('esx_policejob:drag')
 AddEventHandler('esx_policejob:drag', function(target)
+	-- SECURITY FIX: had NO job check at all -- any connected player, regardless
+	-- of job, could drag any cuffed player around. Same class of bug already
+	-- fixed for esx_policejob:giveWeapon above.
+	local xPlayer = ESX.GetPlayerFromId(source)
+	if not xPlayer or not IsGovernmentJob(xPlayer.job.name) then return end
 	local cPlayer = ESX.GetPlayerFromId(target)
 	if GetPlayerName(target) or cPlayer then
 		if #(GetEntityCoords(GetPlayerPed(source)) - GetEntityCoords(GetPlayerPed(tonumber(target)))) < 20.0 then
@@ -83,6 +88,10 @@ end)
 
 RegisterServerEvent('esx_policejob:putInVehicle')
 AddEventHandler('esx_policejob:putInVehicle', function(target)
+	-- SECURITY FIX: had NO job check at all -- any connected player, regardless
+	-- of job, could shove any cuffed player into any vehicle.
+	local requester = ESX.GetPlayerFromId(source)
+	if not requester or not IsGovernmentJob(requester.job.name) then return end
 	local cPlayer = ESX.GetPlayerFromId(target)
 
 	local playerPed = GetPlayerPed(source)
@@ -135,6 +144,10 @@ end)
 
 RegisterServerEvent('esx_policejob:OutVehicle')
 AddEventHandler('esx_policejob:OutVehicle', function(target)
+	-- SECURITY FIX: had NO job check at all -- any connected player, regardless
+	-- of job, could pull any cuffed/dead player out of a vehicle.
+	local requester = ESX.GetPlayerFromId(source)
+	if not requester or not IsGovernmentJob(requester.job.name) then return end
 	local cPlayer = ESX.GetPlayerFromId(target)
 	if GetPlayerName(target) or not cPlayer then
 		if #(GetEntityCoords(GetPlayerPed(source)) - GetEntityCoords(GetPlayerPed(tonumber(target)))) < 15.0 then
@@ -906,6 +919,15 @@ AddEventHandler("PdJailWebhook", function(targetId, jailTime, reason)
 
     local executorHex = xPlayer.identifier
     local targetHex = xTarget.identifier
+
+    -- CONNECTED: every department's own jailing now feeds the same rap
+    -- sheet / officer-performance stats that server/cid_main.lua's own
+    -- CidJailWebhook already fed (via server/records_manager.lua's global
+    -- LogCriminalRecord) -- previously only CID arrests showed up there.
+    if LogCriminalRecord then
+        LogCriminalRecord(targetHex, 'arrest', reason, executorICName, executorHex, jailTime)
+    end
+
 
     local timestamp = os.date("!%Y-%m-%dT%H:%M:%SZ")
     local unixTime = os.time()

@@ -639,3 +639,129 @@ button { cursor: pointer; background: none; border: none; }
 
 /* ۵) نوار اولویت به لبه‌ی اسکرول‌بار چسبیده بود */
 .tk { padding-inline-start: 5px; }
+
+/* ===========================================================================
+   گسترش: هوش پنل، پاسخ آماده، یادداشت شیفت، رتبه‌بندی ماهانه
+   =========================================================================== */
+
+/* ---------------------------------------------------------- بجِ فلگ‌دار --- */
+.flag-badge {
+  color: var(--rust) !important;
+  font-weight: 600;
+}
+
+/* --------------------------------------------------------- هوش هدف --- */
+.target-intel {
+  padding: 10px 16px;
+  background: var(--sunk);
+  border-bottom: 1px solid var(--edge);
+  display: flex; flex-direction: column; gap: 6px;
+}
+.target-intel__row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.target-intel__name {
+  font-size: 12.5px; color: var(--ink-2);
+  display: flex; align-items: center; gap: 7px;
+}
+.target-intel__name i.fa-crosshairs { color: var(--dim); }
+
+.risk-badge {
+  font-size: 11px; padding: 3px 10px; border-radius: 99px;
+  border: 1px solid; font-weight: 600;
+}
+.risk-badge--low  { color: var(--dim);   border-color: var(--edge-2); }
+.risk-badge--med  { color: var(--amber); border-color: rgba(232,163,61,.4); background: rgba(232,163,61,.08); }
+.risk-badge--high { color: var(--rust);  border-color: rgba(217,83,79,.45); background: rgba(217,83,79,.1); }
+
+.target-intel__reasons { font-size: 11.5px; color: var(--dim); }
+.target-intel__reasons summary { cursor: pointer; color: var(--ink-2); }
+.target-intel__reasons ul { margin: 6px 0 0; padding-inline-start: 18px; display: flex; flex-direction: column; gap: 3px; }
+
+/* --------------------------------------------------- پنل‌های داخلی --- */
+.inline-panel {
+  padding: 12px 16px;
+  background: var(--raise);
+  border-bottom: 1px solid var(--edge);
+  font-size: 12.5px;
+}
+.inline-panel__title { color: var(--dim); margin-bottom: 8px; font-size: 12px; }
+.inline-panel__loading { color: var(--dim); display: flex; align-items: center; gap: 8px; }
+.inline-panel__empty { color: var(--dim); }
+
+.voice-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 7px 0; border-bottom: 1px solid var(--edge);
+}
+.voice-row:last-child { border-bottom: none; }
+.voice-row__id { color: var(--dim); font-size: 11px; margin-inline-start: 6px; }
+.voice-row__dist { color: var(--amber); font-variant-numeric: tabular-nums; }
+
+.ban-preset {
+  width: 100%;
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 9px 13px; margin-bottom: 6px;
+  background: var(--sunk); border: 1px solid var(--edge); border-radius: var(--r-sm);
+  color: var(--ink); transition: border-color .14s, background .14s;
+}
+.ban-preset:hover:not(:disabled) { border-color: var(--rust); background: rgba(217,83,79,.06); }
+.ban-preset:disabled { opacity: .5; cursor: not-allowed; }
+.ban-preset__meta { font-size: 11px; color: var(--dim); }
+
+/* --------------------------------------------------- یادداشتِ شیفت --- */
+.note-strip { border-bottom: 1px solid var(--edge); }
+.note-strip__toggle {
+  width: 100%; display: flex; align-items: center; gap: 8px;
+  padding: 9px 16px; font-size: 12px; color: var(--dim);
+  background: var(--sunk); transition: color .14s;
+}
+.note-strip__toggle:hover { color: var(--ink-2); }
+.note-strip__hint { color: var(--dim); font-size: 11px; }
+.note-strip__chev { margin-inline-start: auto; transition: transform .16s; font-size: 10px; }
+.note-strip__toggle.is-open .note-strip__chev { transform: rotate(180deg); }
+.note-strip__body {
+  padding: 10px 16px 14px;
+  display: flex; flex-direction: column; gap: 8px;
+  background: var(--sunk);
+}
+.note-strip__body .textarea { min-height: unset; }
+
+/* ----------------------------------------------------- پاسخِ آماده --- */
+.canned {
+  display: flex; gap: 6px; flex-wrap: wrap;
+  padding: 8px 14px; border-top: 1px solid var(--edge);
+  background: var(--sunk);
+}
+.canned__chip {
+  font-size: 11.5px; padding: 5px 11px;
+  border-radius: 99px; border: 1px solid var(--edge-2);
+  color: var(--ink-2); white-space: nowrap;
+  transition: border-color .14s, color .14s, background .14s;
+}
+.canned__chip:hover:not(:disabled) { border-color: var(--amber-d); color: var(--amber); background: rgba(232,163,61,.06); }
+.canned__chip:disabled { opacity: .5; }
+
+/* -------------------------------------------------- رتبه‌بندی ماهانه --- */
+.monthly { padding-bottom: 22px; }
+.monthly__title {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 13.5px; font-weight: 600; color: var(--ink-2);
+  margin-bottom: 12px;
+}
+.monthly__title i { color: var(--amber); }
+.monthly__grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.monthly__card {
+  background: var(--sunk); border: 1px solid var(--edge);
+  border-radius: var(--r-md); padding: 16px 14px;
+  display: flex; flex-direction: column; align-items: center; gap: 5px;
+  text-align: center;
+}
+.monthly__card--0 { border-color: rgba(232,163,61,.45); background: rgba(232,163,61,.06); }
+.monthly__card--1 { border-color: rgba(174,184,200,.4); }
+.monthly__card--2 { border-color: rgba(184,115,51,.4); }
+.monthly__badge { font-size: 26px; line-height: 1; }
+.monthly__name { font-size: 13.5px; font-weight: 600; }
+.monthly__title2 { font-size: 11px; color: var(--dim); }
+.monthly__stats { display: flex; gap: 10px; font-size: 11.5px; color: var(--ink-2); margin-top: 4px; }
+
+@media (max-width: 900px) {
+  .monthly__grid { grid-template-columns: 1fr; }
+}
