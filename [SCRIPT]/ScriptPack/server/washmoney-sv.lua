@@ -23,7 +23,11 @@ local function depositGovernmentCut(amount)
 
         local enabledJobs = {}
         for _, row in ipairs(rows) do
-            if row.washmoney == 'true' then
+            -- BUG FIX: `washmoney` is INT(11) (see [BASE]/database.sql), not a
+            -- string -- comparing it to 'true' can never match. Same mismatch
+            -- fixed in esx_society/server/main.lua's GetPermWashMoney/
+            -- SetPermWash/the on-duty-cop background loop.
+            if tonumber(row.washmoney) == 1 then
                 enabledJobs[#enabledJobs + 1] = row.name
             end
         end

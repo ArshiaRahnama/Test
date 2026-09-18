@@ -2832,8 +2832,15 @@ ESX.RegisterServerCallback('esx_society:GetPermWashMoney', function(source, cb, 
 	exports.oxmysql:execute("SELECT washmoney FROM jobs WHERE name = ?", {
 		JobName
 	}, function(result)
-		print(result[1].washmoney)
-		cb(result[1].washmoney)
+		-- BUG FIX: `washmoney` is `INT(11)` (see [BASE]/database.sql), but this
+		-- used to return the raw DB value (a number, e.g. 0 or 1) straight to
+		-- the client, which compares it against the STRING "true"
+		-- (client/main.lua's `if Wash == "true" then`) -- a number can never
+		-- equal that string in Lua, so the toggle button always rendered as
+		-- off regardless of what was actually stored. Converts to the same
+		-- "true"/"false" string the client already expects.
+		local isOn = result[1] and tonumber(result[1].washmoney) == 1
+		cb(tostring(isOn))
 
 	end)
 end)
@@ -2854,8 +2861,15 @@ AddEventHandler('esx_society:SetPermWash', function(JobName, Status)
 		green = false
 		OffOn = 'Gheyre Faal'
 	end
+	-- BUG FIX: was writing the literal STRING "true"/"false" into `washmoney`,
+	-- an INT(11) column -- MySQL can't parse either as a number, so both
+	-- silently coerced to 0 (in non-strict SQL mode) or errored (in strict
+	-- mode). Either way the toggle could never actually turn on. Converts to
+	-- a real 0/1 before writing; the wire format to/from the client (the
+	-- "true"/"false" strings) is unchanged, only what actually reaches SQL.
+	local washValue = (Status == "true") and 1 or 0
 	exports.oxmysql:execute("UPDATE jobs SET washmoney = ? WHERE name = ?", {
-		Status,
+		washValue,
 		JobName,
 	})
 
@@ -2881,7 +2895,10 @@ Citizen.CreateThread(function()
 					exports.oxmysql:execute("SELECT washmoney FROM jobs WHERE name = ?", {
 						xPlayer.job.name
 					}, function(result)
-						if result[1].washmoney == "true" then
+						-- BUG FIX: same string-vs-INT(11) mismatch as GetPermWashMoney
+						-- above -- was comparing the raw DB number to the string "true",
+						-- which can never be true.
+						if result[1] and tonumber(result[1].washmoney) == 1 then
 							TriggerEvent('esx_addoninventory:getSharedInventory', 'society_'..xPlayer.job.name, function(inventory)
 								local inventoryItem = inventory.getItem('eskenas')
 								if count > 0 and inventoryItem.count >= count then
