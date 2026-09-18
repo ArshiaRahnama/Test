@@ -1,0 +1,1233 @@
+.inventorybg {
+  width: 100%;
+  height: 100%;
+  background: url(../img/inventorybg.png);
+  background-position: center;
+  background-size: contain;
+  background-repeat: no-repeat;
+}
+
+.nearbyplayers {
+  position: absolute;
+  width: 15vw;
+  height: 15vw;
+  background: -webkit-gradient(linear, left top, right top, from(rgba(45, 45, 45, 0.75)), to(rgba(55, 55, 55, 0.8)));
+  background: linear-gradient(90deg, rgba(45, 45, 45, 0.75) 0%, rgba(55, 55, 55, 0.8) 100%);
+  z-index: 999;
+  border-radius: 0.25vw;
+}
+
+.nearbyplayers .header {
+  position: relative;
+  width: 100%;
+  height: 10%;
+  color: white;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-pack: center;
+      -ms-flex-pack: center;
+          justify-content: center;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  font-size: 1.1vw;
+  background: black;
+  border-top-left-radius: 0.25vw;
+  border-top-right-radius: 0.25vw;
+}
+
+.nearbyplayers .header .name {
+  position: absolute;
+  left: 5%;
+  width: 75%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-variant: small-caps;
+}
+
+.nearbyplayers .header .name i {
+  margin-right: 0.25vw;
+}
+
+.nearbyplayers .header .exit {
+  position: absolute;
+  right: 5%;
+  -webkit-transition: ease();
+  transition: ease();
+  -webkit-transition-duration: 0.1s;
+          transition-duration: 0.1s;
+}
+
+.nearbyplayers .header .exit:hover {
+  color: red;
+  -webkit-animation: pulse 1s ease infinite;
+          animation: pulse 1s ease infinite;
+}
+
+.nearbyplayers .content {
+  position: relative;
+  top: 5%;
+  max-height: 85%;
+  width: 100%;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-pack: center;
+      -ms-flex-pack: center;
+          justify-content: center;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  -ms-flex-wrap: wrap;
+      flex-wrap: wrap;
+  border-radius: 0.25vw;
+}
+
+.nearbyplayers .content .entry {
+  position: relative;
+  width: 30%;
+  height: 2vw;
+  background: rgba(20, 20, 20, 0.85);
+  margin: 0.1vw 0.2vw;
+  border-radius: 0.15vw;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-pack: center;
+      -ms-flex-pack: center;
+          justify-content: center;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  color: white;
+  font-size: 1vw;
+  -webkit-transition: ease();
+  transition: ease();
+  -webkit-transition-duration: 0.45s;
+          transition-duration: 0.45s;
+}
+
+.nearbyplayers .content .entry:hover {
+  background: #ff7b00;
+  -webkit-animation: pulse 1s ease infinite;
+          animation: pulse 1s ease infinite;
+}
+
+.notiparent {
+  position: absolute;
+  width: 100%;
+  left: 0%;
+  height: 15%;
+  bottom: 5%;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-pack: center;
+      -ms-flex-pack: center;
+          justify-content: center;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  overflow: hidden;
+}
+
+.notiparent .notchild {
+  position: relative;
+  width: 45%;
+  height: 100%;
+  margin: 0 2vw;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  -webkit-box-pack: center;
+      -ms-flex-pack: center;
+          justify-content: center;
+  overflow: hidden;
+}
+
+.notiparent .notchild.slots {
+  -webkit-box-pack: end;
+      -ms-flex-pack: end;
+          justify-content: flex-end;
+}
+
+.notiparent .notchild.items {
+  -webkit-box-pack: start;
+      -ms-flex-pack: start;
+          justify-content: flex-start;
+}
+
+.notiparent .notchild .entry {
+  position: relative;
+  width: 4vw;
+  height: 4vw;
+  margin: 0 0.55vw;
+  border-radius: 0.5vw;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-pack: center;
+      -ms-flex-pack: center;
+          justify-content: center;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+}
+
+.notiparent .notchild .entry .count {
+  position: absolute;
+  font-size: 0.8vw;
+  color: white;
+  top: -0.5vw;
+  left: -0.5vw;
+  background: rgba(20, 20, 20, 0.75);
+  padding: 0.25vw;
+  border-radius: 100%;
+}
+
+.notiparent .notchild .entry .name {
+  position: absolute;
+  bottom: 0;
+  height: 25%;
+  width: 100%;
+  background: #141414;
+  font-size: 0.65vw;
+  color: white;
+  border-bottom-left-radius: 0.5vw;
+  border-bottom-right-radius: 0.5vw;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-pack: center;
+      -ms-flex-pack: center;
+          justify-content: center;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+}
+
+.notiparent .notchild .entry .img {
+  position: absolute;
+  width: 65%;
+  height: 65%;
+  background-image: url(../img/preselt_szilva.png);
+  background-position: center;
+  background-size: contain;
+  background-repeat: no-repeat;
+}
+
+.settingsfullscreen {
+  position: absolute;
+  z-index: 9999;
+  right: 11%;
+  width: 20%;
+  height: 100%;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-pack: center;
+      -ms-flex-pack: center;
+          justify-content: center;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  -ms-flex-wrap: wrap;
+      flex-wrap: wrap;
+}
+
+.settingsfullscreen .colorpicker {
+  position: absolute;
+  top: 5%;
+}
+
+.settingsfullscreen .child {
+  position: absolute;
+  top: 40%;
+  max-height: 55%;
+  width: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.settingsfullscreen .child .setentry {
+  position: relative;
+  width: 100%;
+  height: 2vw;
+  background: linear-gradient(150deg, rgba(41, 8, 56, 0.5) 0%, rgba(43, 3, 61, 0.65) 100%);
+  border: 1px solid rgba(68, 68, 68, 0.308);
+  border-radius: 7px;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-pack: center;
+      -ms-flex-pack: center;
+          justify-content: center;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  -webkit-box-shadow: 0.1vw 0.1vw 0.1vw rgba(0, 0, 0, 0.55);
+          box-shadow: 0.1vw 0.1vw 0.1vw rgba(0, 0, 0, 0.55);
+  margin: 0.35vw 0;
+  border-left: 0.2vw groove #c8c8c8;
+  -webkit-transition-duration: 0.1s;
+          transition-duration: 0.1s;
+  -webkit-transition: ease();
+  transition: ease();
+}
+
+.settingsfullscreen .child .setentry.active {
+  border-left: 0.2vw groove #ff7b00;
+}
+
+.settingsfullscreen .child .setentry .checked {
+  position: absolute;
+  right: 10%;
+  height: 1.2vw;
+  width: 1.2vw;
+  background: white;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-pack: center;
+      -ms-flex-pack: center;
+          justify-content: center;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  font-size: 0.9vw;
+  color: black;
+  text-shadow: 0.05vw 0.05vw 0.025vw black;
+}
+
+.settingsfullscreen .child .setentry .checked:hover {
+  -webkit-animation: pulse 1s ease infinite;
+          animation: pulse 1s ease infinite;
+}
+
+.settingsfullscreen .child .setentry .color {
+  position: absolute;
+  right: 10%;
+  width: 1.2vw;
+  height: 1.2vw;
+  color: white;
+  border-radius: 0.25vw;
+}
+
+.settingsfullscreen .child .setentry .name {
+  position: absolute;
+  left: 5%;
+  font-size: 1vw;
+  width: 60%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: white;
+  text-shadow: 0.05vw 0.05vw 0.025vw black;
+}
+
+.settingsopener {
+  position: absolute;
+  left: 1%;
+  top: 5%;
+  font-size: 1.1vw;
+  color: white;
+  text-shadow: 0.05vw 0.05vw 0.025vw black;
+  -webkit-transition: ease();
+  transition: ease();
+  -webkit-transition-duration: 0.1s;
+          transition-duration: 0.1s;
+  padding: 0.25vw 0.65vw;
+  border-radius: 0.25vw;
+  z-index: 99999;
+}
+
+.settingsopener:hover {
+  background: rgba(20, 20, 20, 0.35);
+  -webkit-animation: pulse 2s ease infinite;
+          animation: pulse 2s ease infinite;
+}
+
+.settingsopener i {
+  margin-right: 0.5vw;
+}
+
+.clotheOpener {
+  position: absolute;
+  left: 1%;
+  top: 10%;
+  font-size: 1.1vw;
+  color: white;
+  text-shadow: 0.05vw 0.05vw 0.025vw black;
+  -webkit-transition: ease();
+  transition: ease();
+  -webkit-transition-duration: 0.1s;
+          transition-duration: 0.1s;
+  padding: 0.25vw 0.65vw;
+  border-radius: 0.25vw;
+  z-index: 99999;
+}
+
+.clotheOpener:hover {
+  background: rgba(20, 20, 20, 0.35);
+  -webkit-animation: pulse 2s ease infinite;
+          animation: pulse 2s ease infinite;
+}
+
+.clotheOpener i {
+  margin-right: 0.5vw;
+}
+
+.actionpanels {
+  position: absolute;
+  height: 100%;
+  width: 50%;
+  bottom: 1%;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-pack: center;
+      -ms-flex-pack: center;
+          justify-content: center;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  -webkit-transition: ease();
+  transition: ease();
+  -webkit-transition-duration: 0.5s;
+          transition-duration: 0.5s;
+}
+
+.actionpanels input {
+  width: 20%;
+  position: absolute;
+  border: 0;
+  outline: 0;
+  top: 85%;
+  background: rgba(20, 20, 20, 0.35);
+  font-family: majestic;
+  font-size: 1.75vw;
+  color: white;
+  text-shadow: 0.05vw 0.05vw 0.025vw black;
+  text-align: center;
+  border: 1px solid rgba(68, 68, 68, 0.308);
+  border-radius: 7px;
+}
+
+.actionpanels input::-webkit-input-placeholder {
+  color: grey;
+}
+
+.actionpanels input:-ms-input-placeholder {
+  color: grey;
+}
+
+.actionpanels input::-ms-input-placeholder {
+  color: grey;
+}
+
+.actionpanels input::placeholder {
+  color: grey;
+}
+
+.actionpanels .panel {
+  top: 1vw;
+  position: relative;
+  font-size: 1.3vw;
+  text-shadow: 0.05vw 0.05vw 0.025vw black;
+  color: white;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-pack: center;
+      -ms-flex-pack: center;
+          justify-content: center;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  background: rgba(20, 20, 20, 0.85);
+  margin: 0 0.5vw;
+}
+
+.actionpanels .panel:hover {
+  -webkit-animation: pulse 1s ease infinite;
+          animation: pulse 1s ease infinite;
+}
+
+.actionpanels .panel.use {
+  height: 3.5vw;
+  width: 6.5vw;
+  border-bottom: 0.2vw groove #ff7b00;
+  top: 45%;
+  border: 1px solid rgba(68, 68, 68, 0.308);
+  border-radius: 7px;
+}
+
+.actionpanels .panel.throw, .actionpanels .panel.give {
+  height: 3.5vw;
+  width: 6.5vw;
+  top: 45%;
+  border: 1px solid rgba(68, 68, 68, 0.308);
+  border-radius: 7px;
+}
+
+.actionpanels .panel.money {
+  border: 1px solid rgba(68, 68, 68, 0.308);
+  border-radius: 7px;
+  height: 2.5vw;
+  width: 2.5vw;
+  top: 46%;
+  right: 18%;
+}
+
+.actionpanels .panel.moneyLabel {
+  background: none;
+  border: none;
+  outline: none;
+  text-align: left !important;
+  margin-right: 1vw;
+  top: 46%;
+  right: -6%;
+}
+
+.actionpanels .panel.moneyLogo {
+  background: none;
+  border: none;
+  outline: none;
+  text-align: center;
+  top: 46%;
+  right: -7.5%;
+}
+
+.centercontainer {
+  position: absolute;
+  right: 20%;
+  width: 25vw;
+  height: 70%;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-pack: center;
+      -ms-flex-pack: center;
+          justify-content: center;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  -webkit-transition-duration: 0.1s;
+          transition-duration: 0.1s;
+  -webkit-transition: ease();
+  transition: ease();
+}
+
+.centercontainer .characterimg {
+  position: absolute;
+  top: 15%;
+  width: 70%;
+  height: 75%;
+  background-image: url(../img/char.png);
+  background-position: center;
+  background-size: contain;
+  background-repeat: no-repeat;
+  z-index: -1;
+  opacity: 0.5;
+}
+
+.centercontainer .name {
+  position: absolute;
+  top: 8%;
+  font-size: 1.5vw;
+  color: white;
+  text-shadow: 0.05vw 0.05vw 0.025vw black;
+  padding: 0.1vw 0.8vw;
+}
+
+.centercontainer .content {
+  position: absolute;
+  display: -ms-grid;
+  display: grid;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  -webkit-box-pack: center;
+      -ms-flex-pack: center;
+          justify-content: center;
+}
+
+.centercontainer .content .entry {
+  position: relative;
+  width: 3vw;
+  height: 3vw;
+  background: rgba(60, 60, 60, 0.45);
+  margin: 0.25vw 0;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-pack: center;
+      -ms-flex-pack: center;
+          justify-content: center;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  border-radius: 100%;
+  border: 0.1vw groove rgba(78, 78, 78, 0.45);
+}
+
+.centercontainer .content .entry:hover {
+  -webkit-animation: pulse 1s ease infinite;
+          animation: pulse 1s ease infinite;
+}
+
+.centercontainer .content .entry .img {
+  position: absolute;
+  width: 60%;
+  height: 60%;
+  background-position: center;
+  background-size: contain;
+  background-repeat: no-repeat;
+}
+
+.centercontainer .content.left {
+  left: 5%;
+}
+
+.centercontainer .content.right {
+  right: 5%;
+}
+
+.inventorycontainer {
+  position: absolute;
+  width: 30vw;
+  height: 40.5vw;
+  -webkit-transition-duration: 0.5s;
+          transition-duration: 0.5s;
+  -webkit-transition: ease();
+  transition: ease();
+  z-index: 1;
+}
+
+.inventorycontainer.left {
+  left: 5%;
+}
+
+.inventorycontainer.right {
+  right: 5%;
+}
+
+.inventorycontainer .hoverdata {
+  position: absolute;
+  bottom: -7.5vw;
+  width: 100%;
+  height: 6vw;
+  background: rgba(40, 40, 40, 0.35);
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-pack: center;
+      -ms-flex-pack: center;
+          justify-content: center;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+}
+
+.inventorycontainer .hoverdata .itemname {
+  position: absolute;
+  left: 24%;
+  top: 8%;
+  font-size: 1.1vw;
+  color: white;
+  text-shadow: 0.05vw 0.05vw 0.025vw black;
+  font-variant: small-caps;
+}
+
+.inventorycontainer .hoverdata .description {
+  position: absolute;
+  left: 24%;
+  font-size: 0.85vw;
+  color: gainsboro;
+  text-shadow: 0.05vw 0.05vw 0.025vw black;
+  top: 35%;
+  width: 75%;
+  height: 60%;
+  overflow: auto;
+}
+
+.inventorycontainer .hoverdata .imgentry {
+  position: absolute;
+  left: 0;
+  height: 100%;
+  width: 20%;
+  background: rgba(20, 20, 20, 0.35);
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-pack: center;
+      -ms-flex-pack: center;
+          justify-content: center;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  border-right: 0.1vw solid #ff7b00;
+}
+
+.inventorycontainer .hoverdata .imgentry .img {
+  position: absolute;
+  width: 60%;
+  height: 60%;
+  background-image: url(../img/preselt_szilva.png);
+  background-position: center;
+  background-size: contain;
+  background-repeat: no-repeat;
+}
+
+.inventorycontainer .header {
+  position: relative;
+  width: 100%;
+  height: 10%;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-pack: center;
+      -ms-flex-pack: center;
+          justify-content: center;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+}
+
+.inventorycontainer .header .kiloparent {
+  position: absolute;
+  width: 60%;
+  height: 100%;
+  right: 0;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-pack: center;
+      -ms-flex-pack: center;
+          justify-content: center;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+}
+
+.inventorycontainer .header .kiloparent .text {
+  position: absolute;
+  top: 1.5vw;
+  right: 5%;
+  font-size: 0.9vw;
+  color: white;
+  text-shadow: 0.05vw 0.05vw 0.025vw black;
+}
+
+.inventorycontainer .header .kiloparent .kilobar {
+  position: absolute;
+  bottom: 15%;
+  width: 90%;
+  height: 0.6vw;
+  border-radius: 0.5vw;
+  border: 0.05vw solid grey;
+}
+
+.inventorycontainer .header .kiloparent .kilobar .inside {
+  height: 100%;
+  width: 20%;
+  background: lightgreen;
+  border-radius: 0.5vw;
+  -webkit-transition-duration: 1s;
+          transition-duration: 1s;
+  -webkit-transition: ease();
+  transition: ease();
+}
+
+.inventorycontainer .header .name {
+  position: absolute;
+  left: 5%;
+  top: 13%;
+  color: white;
+  text-shadow: 0.05vw 0.05vw 0.025vw black;
+  font-size: 1.5vw;
+  font-variant: small-caps;
+}
+
+.inventorycontainer .content {
+  position: relative;
+  width: 30vw;
+  max-height: 90%;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-pack: center;
+      -ms-flex-pack: center;
+          justify-content: center;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  -ms-flex-wrap: wrap;
+      flex-wrap: wrap;
+  overflow: auto;
+}
+
+#draggedItem {
+  position: absolute;
+  z-index: 80;
+  opacity: 0;
+  pointer-events: none;
+  -webkit-transition: opacity 0.2s ease;
+  transition: opacity 0.2s ease;
+  width: 5vw;
+  height: 4.5vw;
+  -webkit-animation: rubberBand 1s ease infinite;
+          animation: rubberBand 1s ease infinite;
+}
+
+.itementry, #draggedItem {
+  width: 5vw;
+  height: 4.5vw;
+  margin: 0.25vw;
+  border: 0.1vw groove rgba(68, 68, 68, 0.308);
+  border-radius: 7px;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-pack: center;
+      -ms-flex-pack: center;
+          justify-content: center;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  -webkit-transition: ease();
+  transition: ease();
+  -webkit-transition-duration: 0.1s;
+          transition-duration: 0.1s;
+}
+
+.itementry:not(#draggedItem), #draggedItem:not(#draggedItem) {
+  position: relative;
+}
+
+.itementry .slot, #draggedItem .slot {
+  position: absolute;
+  top: 0;
+  right: 0;
+  color: white;
+  font-size: 0.9vw;
+  background: rgba(56, 1, 56, 0.75);
+  padding: 0 0.25vw;
+  z-index: 1;
+}
+
+.itementry .name, #draggedItem .name {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  font-size: 0.55vw;
+  background: rgba(30, 30, 30, 0.85);
+  color: white;
+  z-index: 1;
+  text-align: center;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.itementry .name, #draggedItem .name div {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.itementry .name, #draggedItem .namediv {
+  text-overflow: unset;
+  animation: FullText 4s linear infinite;
+}
+
+.itementry:hover, #draggedItem:hover {
+  border: 0.1vw groove rgba(133, 133, 133, 0.308);
+}
+
+.itementry .count, #draggedItem .count {
+  position: absolute;
+  font-size: 0.65vw;
+  color: white;
+  bottom: 15%;
+  right: 2%;
+  z-index: 9999;
+}
+
+.itementry .qualitybar, #draggedItem .qualitybar {
+  position: absolute;
+  left: 0;
+  height: 100%;
+  width: 4%;
+  background: #141414;
+  -webkit-box-align: end;
+      -ms-flex-align: end;
+          align-items: flex-end;
+  display: -ms-grid;
+  display: grid;
+  z-index: 2;
+}
+
+.itementry .qualitybar .inside, #draggedItem .qualitybar .inside {
+  background: #ff7b00;
+  height: 95%;
+  width: 100%;
+}
+
+.itementry .img1, #draggedItem .img1 {
+  position: absolute;
+  width: 65%;
+  height: 65%;
+  background-image: url(../img/preselt_szilva.png);
+  background-position: center;
+  background-size: contain;
+  background-repeat: no-repeat;
+  filter: drop-shadow(0px 0px 7px rgb(191, 191, 191));
+}
+
+.itementry .img2, .img2 {
+  position: absolute;
+  width: 65%;
+  height: 65%;
+  background-image: url(../img/preselt_szilva.png);
+  background-position: center;
+  background-size: contain;
+  background-repeat: no-repeat;
+  filter: drop-shadow(0px 0px 5px rgb(83,124,187));
+}
+.itementry .img3, .img3 {
+  position: absolute;
+  width: 65%;
+  height: 65%;
+  background-image: url(../img/preselt_szilva.png);
+  background-position: center;
+  background-size: contain;
+  background-repeat: no-repeat;
+  filter: drop-shadow(0px 0px 7px rgb(179, 2, 254));
+}
+.itementry .img4, .img4 {
+  position: absolute;
+  width: 65%;
+  height: 65%;
+  background-image: url(../img/preselt_szilva.png);
+  background-position: center;
+  background-size: contain;
+  background-repeat: no-repeat;
+  filter: drop-shadow(0px 0px 7px rgb(255,215,0));
+}
+/*# sourceMappingURL=style.css.map */
+
+/* clothe */
+@import url('https://v1.fontapi.ir/css/Samim%27');
+
+
+.wrap {
+    position: fixed;
+    top: 47%;
+    left: 66.8%;
+    transform: translate(-50%, -50%);
+    width: 400px;
+    height: 500px;
+    /* /* background-color: var(--ColorTwo); /
+    / box-shadow: 0px 2px 5px 0px rgb(0 0 0 / 50%), 0px 2px 10px 0px rgb(0 0 0 / 50%); /
+    / background-color: rgba(0, 138, 85, 0.9); /
+    / background: none; / */
+    border-radius: 12px;
+    transition: 500ms;
+    padding: 15px;
+    display: none;
+}
+
+
+.box {
+/* /     background-color: rgb(255, 187, 0); / */
+    width: 100%;
+    height: 100%;
+    border-radius: 5px;
+    border-top-left-radius: 20px;
+}
+
+.HeaderClothe {
+    /* background-color: rgb(255, 187, 0); */
+    background-color: rgba(10, 10, 10, 0.39);
+    border: 3px solid #969696;
+    display: flex;
+    /* / padding: 5px; / */
+    text-align: center;
+    border-radius: 10px;
+
+    color: white;
+
+    height: 70px;
+
+    justify-content: space-between;
+}
+
+.Profile img {
+    border-radius: 100px;
+    width: 85px;
+    height: 85px;
+    object-fit: cover;
+    position: relative;
+    top: -12px;
+    left: -12px;
+    border: 2px solid;
+}
+
+.ss-circle img {
+    width: 35px !important;
+    height: 30px;
+    border-radius: 50%;
+    /* / background-image: url(https://sunrp.ir/img/SS_gold.png); / */
+    background-color: rgb(43, 43, 43);
+    border: 2px solid white;
+    top: 65px;
+    left: 65px;
+    position: absolute;
+}
+
+
+.Header h3 {
+    padding: 4px;
+    font-family: cursive;
+    top: 50%;
+    left: 50%;
+    /* transform: translate(-50%, -50%); */
+}
+
+.main {
+    padding: 5px;
+    display: flex;
+}
+
+.column {
+    /* background-color: rgb(255, 187, 0); */
+    /* background-color: #ffbf00; */
+    background-color: rgba(10, 10, 10, 0.534);
+    border: 3px solid #969696;
+    display: flex;
+    flex-direction: column;
+    border-radius: 15px;
+}
+
+.clothebox {
+    border-radius: 5px;
+    padding: 8px;
+    /* margin-top: 10px; */
+
+    margin-top: 2px;
+}
+
+.clothebox:hover {
+    cursor: pointer;
+}
+
+.clothebox img {
+    width: 40px;
+    /* border: 1px solid rgb(255, 51, 0); */
+}
+
+.mugshot {
+    height: 100%;
+    padding: 14%;
+    padding-top: 0px;
+    width: 50%;
+}
+
+.mugshot img {
+    height: 275px;
+}
+
+.itemlist {
+    display: flex;
+    flex-direction: column;
+    overflow-x: overlay;
+    background-color: rgba(10, 10, 10, 0.534);
+    height: 443px;
+    width: min-content;
+    margin-top: -3px;
+    text-align: center;
+    font-family: cursive;
+    border-top-left-radius: 10px;
+    border-bottom-left-radius: 10px;
+    position: absolute;
+    top: 55px;
+    left: -90px;
+    color: white;
+}
+
+.item {
+    padding: 12px;
+    /* transition: 500ms; */
+}
+
+.item:hover {
+    padding: 10px;
+    cursor: pointer;
+    border: 1px solid #969696;
+}
+
+.item img {
+    width: 60px;
+    height: 60px;
+}
+
+.item p {
+    margin: 0px;
+}
+
+.active {
+    background-color: rgba(41, 120, 211, 0.952);
+    border: 1px solid #969696;
+    border-radius: 0px;
+}
+
+
+.buttons {
+    display: flex;
+    /* flex-direction: column; */
+    justify-content: space-evenly;
+    align-items: stretch;
+    /* padding-left: 10px; */
+}
+
+.buttons i {
+    padding: 0.4vw;
+    /* background-color: #ffe714; */
+    border-radius: 2px;
+    border: none;
+    transition: 500ms;
+
+    /* font-family: cursive;
+    font-weight: 700; */
+    background-color: rgb(255, 220, 20);
+    color: black;
+}
+
+.buttons i span {
+    font-family: cursive;
+    font-weight: 700;
+    padding-left: 3px;
+}
+
+.buttons i:hover {
+    padding-top: 7px;
+    padding-bottom: 7px;
+    cursor: pointer;
+    background-color: rgb(20 168 255);
+    
+    /* color: white; */
+}
+
+
+@media screen and (min-width: 1919px) {
+    .clothebox img {
+        width: 70px;
+    }
+
+    .wrap {
+        width: 600px;
+        height: 800px;
+    }
+
+    .Header h3 {
+        font-size: 25px;
+        padding: 14px;
+        font-family: cursive;
+        margin: 0px;
+    }
+
+    .Profile img {
+        border-radius: 100px;
+        width: 100px;
+        height: 100px;
+        object-fit: cover;
+        position: relative;
+        top: -24px;
+        left: -29px;
+        border: 2px solid;
+    }
+
+    .item img {
+        width: 60px;
+        height: 60px;
+    }
+}
+
+@media screen and (min-width: 2559px) {
+    .clothebox img {
+        width: 100px;
+    }
+
+    .wrap {
+        width: 800px;
+        height: 1000px;
+    }
+
+    .Header {
+        height: 100px;
+    }
+
+    .Header h3 {
+        font-size: 45px;
+        padding: 14px;
+        font-family: cursive;
+        margin: 0px;
+    }
+
+    .Profile img {
+        border-radius: 100px;
+        width: 130px;
+        height: 130px;
+        object-fit: cover;
+        position: relative;
+        top: -24px;
+        left: -39px;
+        border: 2px solid;
+    }
+
+    .buttons i {
+        padding: 0.35vw;
+        font-size: 25px;
+    }
+
+    .item img {
+        width: 100px;
+        height: 100px;
+    }
+}
+
+
+
+
+
+
+
+
+
+::-webkit-scrollbar {
+    width: 2px;
+    height: 5px;
+  }
+  
+
+  ::-webkit-scrollbar-track {
+    background: rgba(46, 46, 46, 0.836);
+  }
+   
+
+  ::-webkit-scrollbar-thumb {
+    background: rgba(30, 120, 255, 0.836);
+  }
+  
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgb(230, 230, 230)
+  }

@@ -1,0 +1,377 @@
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css"
+        integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr"
+        crossorigin="anonymous">
+
+    <script src="dep/verte.js"></script>
+    <link rel="stylesheet" href="css/verte.css">
+
+    <script src="dep/howler.js"></script>
+    <script src="dep/vue.js"></script>
+    <script src="dep/jquery.js"></script>
+    <!-- VUEX -->
+    <script src="dep/vuex.js"></script>
+
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="dep/animate.css">
+    <link rel="stylesheet" href="dep/defaultstyle.css">
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/icon?family=Material+Icons"
+    /> 
+</head>
+
+<body>
+    <template id="app">
+        <div>
+            <div class="notiparent">
+                <div class="notchild slots">
+                    <transition-group style="display: flex;"
+                        enter-active-class="animate__animated animate__bounceIn"
+                        leave-active-class="animate__animated animate__bounceOut">
+                        <div :style="{ 'backgroundImage': itembgcoloring }" class="entry" :key="a.unique"
+                            v-for="(a,index) in notifs.slots">
+                            <div :style="{ 'backgroundImage': 'url(' + a.image + ')' }" class="img">
+                            </div>
+                            <div class="name">{{ a.label }}</div>
+                        </div>
+                    </transition-group>
+                </div>
+                <div class="notchild items">
+                    <transition-group style="display: flex;"
+                        enter-active-class="animate__animated animate__bounceIn"
+                        leave-active-class="animate__animated animate__bounceOut">
+                        <div :style="{ 'backgroundImage': itembgcoloring }" class="entry" :key="a.unique"
+                            v-for="(a,index) in notifs.items">
+                            <div :style="{ 'backgroundImage': 'url(' + a.image + ')' }" class="img">
+                            </div>
+                            <div class="name">{{ a.label }}</div>
+                            <div class="count">{{ a.count }}</div>
+                        </div>
+                    </transition-group>
+                </div>
+            </div>
+
+            <transition enter-active-class="animate__animated animate__fadeIn"
+                leave-active-class="animate__animated animate__fadeOut">
+                <div v-if="opened" class="kozeprehuz">
+
+                    <!-- -------------------------------------- -->
+                    <!-- MAIN -->
+                    <div id="draggedItem">
+                        <div class="entry"></div>
+                    </div>
+                    <div v-if="settings_enabled('background')" class="inventorybg"></div>
+
+                    <!-- -------------------------------------- -->
+                    <!-- NEARBYPLAYERS  -->
+                    <transition enter-active-class="animate__animated animate__zoomIn"
+                        leave-active-class="animate__animated animate__zoomOut">
+                        <div v-if="nearbyplayers.opened" class="nearbyplayers">
+                            <div class="header">
+                                <div class="name"><i class="fas fa-users"></i> {{ _U('nearby_players') }}
+                                </div>
+                                <i @click="nearbyplayers.opened = false" class="fas fa-times exit"></i>
+                            </div>
+                            <div class="content">
+                                <div @click="giveItemToTarget(src)" class="entry" v-for="(src,index) in nearbyplayers.players">
+                                    {{ src }}
+                                </div>
+                            </div>
+                        </div>
+                    </transition>
+
+
+                    <!-- -------------------------------------- -->
+                    <!-- SETTINGS -->
+                    <div @click="settings.opened = !settings.opened" class="settingsopener"><i
+                            class="fas fa-cogs"></i> {{ _U('settings') }}</div>
+                    <div @click="toggleClothe()" class="clotheOpener"><i class="fas fa-tshirt"></i> Lebas</div>
+                    <transition enter-active-class="animate__animated animate__zoomIn"
+                        leave-active-class="animate__animated animate__zoomOut">
+                        <div v-if="settings.opened" class="settingsfullscreen">
+                            <verte class="colorpicker" @input="colorChanged()" v-if="coloringValid()"
+                                v-model="settings.setters[settings.selectedColoring].set" model="rgb"
+                                display="widget" picker="square">
+                            </verte>
+
+                            <div class="child">
+                                <div :class="settings.selectedColoring == index ? 'setentry active' : 'setentry'"
+                                    v-for="(a,index) in settings.setters">
+                                    <div @click="setSettingsBool(index, a)" v-if="a.checkbox" class="checked">
+                                        <i v-if="a.set != 'off'" class="fas fa-check"></i>
+                                    </div>
+                                    <div class="name">{{ a.name }}</div>
+                                    <div @click="settings.selectedColoring == index ? settings.selectedColoring = null : settings.selectedColoring = index"
+                                        :style="{ 'background': a.set }" v-if="a.color" class="color"></div>
+                                </div>
+                                <div style="background: rgba(255, 0, 0, .35);" class="setentry">
+                                    <div @click="resetSettings()" class="checked">
+                                        <i class="fas fa-sync"></i>
+                                    </div>
+                                    <div class="name">{{ _U('reset') }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </transition>
+
+                    <!-- -------------------------------------- -->
+                    <!-- LEFT CONTAINER MAIN INVENTORY -->
+                    <div class="inventorycontainer left">
+                        <div class="header">
+                            <div class="name">{{ playerStaticData.name }}</div>
+                            <div class="kiloparent">
+                                <div class="text">{{ inventoryWeight(mainInventory, true) }} / {{
+                                    formatMoney(playerStaticData.maxweight) }} {{ _U('weight_measure') }}
+                                </div>
+                                <div :style="{ 'background': settings.setters.weightbg_1.set }"
+                                    class="kilobar">
+                                    <div :style="{ 'background': settings.setters.weightbg_2.set, 'width': getPercentage(inventoryWeight(mainInventory, true), playerStaticData.maxweight) + '%' }"
+                                        class="inside"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="content">
+                            <div @mouseleave="hoveredItemMain = null"
+                                @mouseenter="isEmpty(a) == false ? hoveredItemMain = a : null"
+                                @mousedown.left="startDrag('main', index)" @mousedown.right="instantDrag('main', index)" @mouseup="endDrag('main', index)"
+                                :style="{ 'backgroundImage': itembgcoloring }" class="itementry"
+                                :id="'main-' + index" v-for="(a,index) in mainInventory">
+                                <div v-if="settings_enabled('itemnames') && isEmpty(a) == false && a.locked != true" class="name">
+                                    {{ a.label }}</div>
+                                <div v-if="settings_enabled('itemnames') && isEmpty(a) == false && a.locked == true && a.locked2 != true" class="name">{{ '🔒' + a.label + '🔒' }}</div>
+                                <div v-if="settings_enabled('itemnames') && isEmpty(a) == false && a.locked2 == true" class="name">{{ '' }}</div>
+                                <div v-if="a.quality && isEmpty(a) == false" class="qualitybar">
+                                    <div class="inside"></div>
+                                </div>
+                                <div class="slot" v-if="settings_enabled('slots') && index < 10 && index > 2">{{ index +1-3 }}
+                                </div>
+                                <div v-if="isEmpty(a) == false && (a.visible == undefined) && a.locked != true"
+                                    :style="{ 'backgroundImage': 'url(' + a.image + ')' }"
+                                    :class="`img${a.difficulty || 1}`">
+                                </div>
+                                <div v-if="isEmpty(a) == false && (a.visible == true) && a.locked != true"
+                                    :style="{ 'backgroundImage': 'url(' + a.image + ')' }"
+                                    :class="`img${a.difficulty || 1}`">
+                                </div>
+                                <div v-if="a.visible == false || (a.locked == true && a.locked2 != true)"
+                                    :style="{ 'backgroundImage': 'url(' + a.image + ')', 'opacity': '0.3' }"
+                                    :class="`img${a.difficulty || 1}`">
+                                </div>
+                                <div v-if="a.locked2 == true"
+                                    :style="{ 'backgroundImage': 'url(img/items/lock.png)', 'opacity': '0.3' }"
+                                    :class="`img1`">
+                                </div>
+                                <div v-if="isEmpty(a) == false && a.count > 0" class="count">{{
+                                    formatMoney(a.count) + (a.limit != -1 && a.limit && ('/' + nFormatter(a.limit)) || '')}}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div v-if="settings_enabled('itemdescription') && hoveredItemMain != null"
+                            class="hoverdata animate__flipInX animate__animated">
+                            <div class="itemname">{{ hoveredItemMain.locked && hoveredItemMain.locked2 && ('🔒') || hoveredItemMain.label + ' x' + formatMoney(hoveredItemMain.count)}}</div>
+                            <div class="description">
+                                {{ hoveredItemMain.locked && hoveredItemMain.locked2 && ('🔒') || hoveredItemMain.itemdata.description }}
+                            </div>
+                            <div v-if="hoveredItemMain.locked && hoveredItemMain.locked2 == true" class="imgentry">
+                                <div :style="{ 'backgroundImage': 'url(img/items/lock.png)' }"
+                                    class="img"></div>
+                            </div>
+                            <div class="imgentry">
+                                <div :style="{ 'backgroundImage': 'url(' + hoveredItemMain.image + ')' }"
+                                    class="img"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- -------------------------------------- -->
+                    <!-- MID CONTAINER CHARACTER -->
+                    <div class="actionpanels">
+                        <span class="material-icons color-white panel moneyLogo"> paid </span>
+                        <div class="name panel moneyLabel">{{ money.toLocaleString() }}</div>
+                        <span class="material-icons panel money" onclick="swapMoney()" >swap_horiz</span>
+                        <input v-on:input="onSearch()" v-model="search" placeholder="Search" type="text" style="top: 9%; width: 30%;">
+                        <div class="name panel moneyLabel" style="top:-39%; right: -25%; color: gold;">{{ searchResult }}</div>
+                        <input v-model="count" placeholder="Amount" type="text" >
+                        <div @mouseup="throwItem()" class="panel throw">{{ _U('throw') }}</div>
+                        <div @mouseup="useItem()" class="panel use">{{ _U('use') }}</div>
+                        <!-- <div @mouseup="give()" class="panel give">{{ _U('give') }}</div> -->
+                    </div>
+                    <!-- -------------------------------------- -->
+                    <!-- RIGHT CONTAINER CHARACTER -->
+                    <div v-if="settings.opened == false && clotheOpened == false && secondInventory.length > 0"
+                        class="inventorycontainer right">
+                        <div class="header">
+                            <div class="name">{{ secondInventoryStaticData.label }}</div>
+                            <div class="kiloparent">
+                                <div class="text">{{ inventoryWeight(secondInventory) }} / {{
+                                    formatMoney(secondInventoryStaticData.maxweight) }} {{
+                                    _U('weight_measure') }}</div>
+                                <div :style="{ 'background': settings.setters.weightbg_1.set }"
+                                    class="kilobar">
+                                    <div :style="{ 'background': settings.setters.weightbg_2.set, 'width': getPercentage(inventoryWeight(secondInventory), secondInventoryStaticData.maxweight) + '%' }"
+                                        class="inside"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="content">
+                            <div @mouseleave="hoveredItemSecond = null"
+                                @mouseenter="isEmpty(a) == false ? hoveredItemSecond = a : null"
+                                @mousedown.left="startDrag('second', index)" @mousedown.right="instantDrag('second', index)"  @mouseup="endDrag('second', index)"
+                                :style="{ 'backgroundImage': itembgcoloring }" class="itementry"
+                                :id="'second-' + index" v-for="(a,index) in secondInventory">
+                                <div v-if="isEmpty(a) == false && a.locked != true" class="name">
+                                    {{ a.label }}</div>
+                                <div v-if="settings_enabled('itemnames') && isEmpty(a) == false && a.locked == true && a.locked2 != true" class="name">{{ '🔒' + a.label + '🔒' }}</div>
+                                <div v-if="settings_enabled('itemnames') && isEmpty(a) == false && a.locked2 == true" class="name">{{ '' }}</div>
+                                <div v-if="a.quality && isEmpty(a) == false" class="qualitybar">
+                                    <div class="inside"></div>
+                                </div>
+                                <div v-if="isEmpty(a) == false && (a.visible == undefined) && a.locked != true"
+                                    :style="{ 'backgroundImage': 'url(' + a.image + ')' }"
+                                    :class="`img${a.difficulty || 1}`">
+                                </div>
+                                <div v-if="isEmpty(a) == false && (a.visible == true) && a.locked != true"
+                                    :style="{ 'backgroundImage': 'url(' + a.image + ')' }"
+                                    :class="`img${a.difficulty || 1}`">
+                                </div>
+                                <div v-if="a.visible == false || (a.locked == true && a.locked2 != true)"
+                                    :style="{ 'backgroundImage': 'url(' + a.image + ')', 'opacity': '0.3' }"
+                                    :class="`img${a.difficulty || 1}`">
+                                </div>
+                                <div v-if="a.locked2 == true"
+                                    :style="{ 'backgroundImage': 'url(img/items/lock.png)', 'opacity': '0.3' }"
+                                    :class="`img1`">
+                                </div>
+                                <div v-if="showLimitInSecondInventory == true && isEmpty(a) == false && a.count > 0" class="count">{{
+                                    formatMoney(a.count) + (a.limit != -1 && a.limit && ('/' + nFormatter(a.limit)) || '')}}
+                                </div>
+                                <div v-if="showLimitInSecondInventory == false && isEmpty(a) == false && a.count > 0" class="count">{{
+                                    formatMoney(a.count)}}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div v-if="settings_enabled('itemdescription') && hoveredItemSecond != null"
+                            class="hoverdata animate__flipInX animate__animated">
+                            <div class="itemname">{{ hoveredItemSecond.locked && hoveredItemSecond.locked2 && ('🔒') || hoveredItemSecond.label + ' x' + formatMoney(hoveredItemSecond.count)}}</div>
+                            <div class="description">
+                                {{ hoveredItemSecond.locked && hoveredItemSecond.locked2 && ('🔒') || hoveredItemSecond.itemdata.description }}
+                            </div>
+                            <div v-if="hoveredItemSecond.locked && hoveredItemSecond.locked2 == true" class="imgentry">
+                                <div :style="{ 'backgroundImage': 'url(img/items/lock.png)' }"
+                                    class="img"></div>
+                            </div>
+                            <div  v-if="hoveredItemSecond.locked2 != true" class="imgentry">
+                                <div :style="{ 'backgroundImage': 'url(' + hoveredItemSecond.image + ')' }"
+                                    class="img"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </transition>
+        </div>
+    </template>
+
+    <!-- itt kell lennie a végén -->
+    <script src="js/locale.js"></script>
+    <script src="js/app.js"></script>
+    <div class="wrap">
+      <div class="box">
+          <div class="buttons">
+              <i class="fas fa-plus-square" onclick="CreatePack()"><span>Create Pack</span></i>
+              <i class="fas fa-question" onclick="LoadPack()"><span>Use Pack</span></i>
+          </div>
+          <div class="main">
+              <div class="column" id="Connected">
+                  <div class="clothebox" id="helmet" onclick="Select(this.id)">
+                      <img id="helmet_img" src="img/helmet.png" alt="">
+                  </div>
+                  <div class="clothebox" id="tshirt" onclick="Select(this.id)">
+                      <img id="tshirt_img" src="img/tshirt.png" alt="">
+                  </div>
+                  <div class="clothebox" id="torso" onclick="Select(this.id)">
+                      <img id="torso_img" src="img/torso.png" alt="">
+                  </div>
+                  <div class="clothebox" id="pants" onclick="Select(this.id)">
+                      <img id="pants_img" src="img/pants.png" alt="">
+                  </div>
+                  <div class="clothebox" id="shoes" onclick="Select(this.id)">
+                      <img id="shoes_img" src="img/shoes.png" alt="">
+                  </div>
+                  <div class="clothebox" id="bproof" onclick="Select(this.id)">
+                      <img id="bproof_img" src="img/bproof.png" alt="">
+                  </div>
+                  <div class="clothebox" id="bag" onclick="Select(this.id)">
+                      <img id="bag_img" src="img/bag.png" alt="">
+                  </div>
+              </div>
+
+              <div class="mugshot">
+                  <!-- <img src="https://docs.fivem.net/peds/a_m_m_afriamer_01.webp"> -->
+              </div>
+
+              <div class="column" id="Connected2" style="border-top-right-radius: 10px;border-bottom-right-radius: 10px;">
+                  <div class="clothebox" id="mask" onclick="Select(this.id)">
+                      <img id="mask_img" src="img/mask.png" alt="">
+                  </div>
+                  <div class="clothebox" id="ears" onclick="Select(this.id)">
+                      <img id="ears_img" src="img/ears.png" alt="">
+                  </div>
+                  <div class="clothebox" id="glasses" onclick="Select(this.id)">
+                      <img id="glasses_img" src="img/glasses.png" alt="">
+                  </div>
+                  <div class="clothebox" id="chain" onclick="Select(this.id)">
+                      <img id="chain_img" src="img/chain.png" alt="">
+                  </div>
+                  <div class="clothebox" id="arms" onclick="Select(this.id)">
+                      <img id="arms_img" src="img/arms.png" alt="">
+                  </div>
+                  <div class="clothebox" id="watches" onclick="Select(this.id)">
+                      <img id="watches_img" src="img/watches.png" alt="">
+                  </div>
+                  <div class="clothebox" id="bracelets" onclick="Select(this.id)">
+                      <img id="bracelets_img" src="img/bracelets.png" alt="">
+                  </div>
+                  <div class="clothebox" id="decals" onclick="Select(this.id)">
+                      <img id="decals_img" src="img/decals.png" alt="">
+                  </div>
+              </div>
+          </div>
+
+          <div class="itemlist" id="itemlist" style="display: none;">
+              <div class="item">
+                  <img src="https://www.metoffice.gov.uk/binaries/content/gallery/metofficegovuk/hero-images/advice/maps-satellite-images/satellite-image-of-globe.jpg">
+                  <p>item name</p>
+              </div>
+
+              <div class="item">
+                  <img src="https://www.metoffice.gov.uk/binaries/content/gallery/metofficegovuk/hero-images/advice/maps-satellite-images/satellite-image-of-globe.jpg">
+                  <p>item name</p>
+              </div>
+
+              <div class="item">
+                  <img src="https://www.metoffice.gov.uk/binaries/content/gallery/metofficegovuk/hero-images/advice/maps-satellite-images/satellite-image-of-globe.jpg">
+                  <p>item name</p>
+              </div>
+
+              <div class="item">
+                  <img src="https://www.metoffice.gov.uk/binaries/content/gallery/metofficegovuk/hero-images/advice/maps-satellite-images/satellite-image-of-globe.jpg">
+                  <p>item name</p>
+              </div>
+
+              <div class="item">
+                  <img src="https://www.metoffice.gov.uk/binaries/content/gallery/metofficegovuk/hero-images/advice/maps-satellite-images/satellite-image-of-globe.jpg">
+                  <p>item name</p>
+              </div>
+          </div>
+      </div>
+  </div>
+</body>
+
+</html>

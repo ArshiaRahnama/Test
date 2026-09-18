@@ -191,6 +191,22 @@ function OpenBossMenu(society, close, options)
 		table.insert(elements, {label = '🗂️ Mosahede Logha (LogPanel)', value = 'open_logpanel'})
 	end
 
+	-- FEATURE ADDED: Paintball access grade, DOJ/LE bosses only. exports[]
+	-- throws if the target resource isn't running (unlike TriggerEvent above,
+	-- which just silently no-ops), so this is pcall-wrapped -- if
+	-- esx_uniquejobs isn't started, the button just doesn't show rather than
+	-- erroring this whole menu.
+	local isGovJobBoss = false
+	if ESX.PlayerData.job.grade_name == 'boss' then
+		local ok, result = pcall(function()
+			return exports['esx_uniquejobs']:IsGovernmentJob(ESX.PlayerData.job.name)
+		end)
+		isGovJobBoss = ok and result == true
+	end
+	if isGovJobBoss then
+		table.insert(elements, {label = '🎯 Dastresi Paintball (Hadaghal Grade)', value = 'paintball_access'})
+	end
+
 	ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'boss_actions_' .. society, {
 		title    = _U('boss_menu'),
 		align    = 'top-left',
@@ -233,6 +249,26 @@ function OpenBossMenu(society, close, options)
 		elseif data.current.value == 'open_logpanel' then
 			menu.close()
 			TriggerEvent('LogPanel:OpenBossPanel')
+		elseif data.current.value == 'paintball_access' then
+			menu.close()
+			-- FEATURE ADDED: shows the currently-set minimum grade (0 if never
+			-- set) in the dialog title before asking for a new one, so the boss
+			-- isn't guessing what it's currently set to.
+			ESX.TriggerServerCallback('esx_paintball:GetJobAccessGrade', function(currentGrade)
+				ESX.UI.Menu.Open('dialog', GetCurrentResourceName(), 'paintball_access_grade_' .. society, {
+					title = 'Hadaghal Grade Baraye Dastresi Paintball (Fe\'li: ' .. tostring(currentGrade or 0) .. ')'
+				}, function(data, menu)
+					local grade = tonumber(data.value)
+					if grade == nil or grade < 0 or grade ~= math.floor(grade) then
+						ESX.ShowNotification('Grade Namoatabar')
+					else
+						menu.close()
+						TriggerServerEvent('esx_paintball:setJobAccessGrade', society, grade)
+					end
+				end, function(data, menu)
+					menu.close()
+				end)
+			end, ESX.PlayerData.job.name)
 		end
 
 	end, function(data, menu)
