@@ -28,7 +28,7 @@ Config.RoundTimeLimit = 300  -- seconds per arena, 0 = no time limit (highest ki
 
 -- Testing convenience: when true, only 1 player is needed to form an arena, so you
 -- can test the whole flow solo on a local server. Turn this off before going live.
-Config.TestMode = false
+Config.TestMode = true
 
 -- Jobs that cannot queue while on duty
 Config.RestrictedJobs = {
