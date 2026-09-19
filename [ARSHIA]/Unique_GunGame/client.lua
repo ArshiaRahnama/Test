@@ -2,8 +2,9 @@
     Unique_GunGame - client logic
 
     Handles everything for the local player once the server places them into an
-    arena: the fade-teleport intro (dropping them in from above), death/respawn
-    loop, kill reporting, and relaying server events into NUI messages for the HUD.
+    arena: the scripted-camera spawn intro, death/respawn loop (waiting on your
+    server's own revive flow), kill reporting, arena leash, player blips, the
+    winner MVP screen, and relaying server events into NUI messages for the HUD.
 
     See config.lua for every tunable value and README.md for command/setup docs.
 ]]
@@ -20,14 +21,8 @@ end)
 -- Constants
 -- ============================================================
 
-local FADE_OUT_MS = 300         -- ms for the screen to fade to black before teleporting
-local FADE_IN_MS = 500          -- ms for the screen to fade back in after teleporting
-local FADE_HOLD_MS = 300        -- ms to stay faded out after moving the ped, before fading back in
-local DROP_HEIGHT = 40.0        -- meters above the arena point players are dropped from (they fall/parachute in)
-local PARACHUTE_DEPLOY_WAIT = 200 -- ms after landing coords are set before forcing the parachute open
-local FALL_POLL_MS = 100        -- how often to check if the player has landed yet
-local FALL_MAX_WAIT_MS = 10000  -- safety cap so a stuck landing check can't hang forever
-local LANDING_GRACE_MS = 500    -- brief extra invincibility after landing before becoming vulnerable
+local CAM_PAN_WAIT = 3000       -- ms the scripted camera holds before teleporting the player
+local CAM_SETTLE_WAIT = 2000    -- ms to hold position after teleport before releasing the camera
 local BUCKET_SWITCH_WAIT = 200  -- ms given to the routing bucket switch to settle before teleporting
 local OUTFIT_APPLY_WAIT = 500   -- ms given to the outfit swap before spawning weapons
 local RESPAWN_DELAY = 3000      -- ms after death before the first revive attempt
@@ -35,6 +30,8 @@ local REVIVE_RETRY_WAIT = 2500  -- ms between repeated revive attempts if the fi
 local FREEZE_SETTLE_WAIT = 1000 -- ms after a successful revive before freezing the player for the progress bar
 local RESPAWN_PROGRESS_MS = 2000 -- duration of the on-screen "Respawning..." progress bar
 local WEAPON_SWAP_WAIT = 100    -- ms between clearing weapons and giving the new one on a level-up
+local LEASH_CHECK_MS = 1000     -- how often to check the arena-leash distance
+local FIREWORKS_ASSET_WAIT_MS = 2000 -- safety cap while waiting for the firework particle asset to load
 
 -- ============================================================
 -- Runtime state
@@ -42,38 +39,28 @@ local WEAPON_SWAP_WAIT = 100    -- ms between clearing weapons and giving the ne
 
 local inEvent = false
 local alreadyDead = false
-local currentLocationSet = nil -- the {Lobby, Arena, Exit} set for the arena this player is currently in
+local currentLocationSet = nil -- the {Lobby, ArenaPoints, Center, Exit} set for the arena this player is currently in
+local matchBlips = {}          -- blips currently shown for other players in this arena
 
 -- ============================================================
 -- Helpers
 -- ============================================================
 
--- Standard fade-teleport-fade, far more robust than a scripted camera (which can get
--- stuck if anything interrupts it). When dropFromAbove is true the player is placed
--- high over the target point instead of exactly on it, so they fall/parachute in.
-local function teleportWithFade(coords, dropFromAbove)
-    SetEntityInvincible(PlayerPedId(), true)
+local function teleportWithCam(coords)
+    local cam = CreateCam('DEFAULT_SCRIPTED_CAMERA', false)
+    SetCamCoord(cam, coords.x + 1.5, coords.y - 5.0, coords.z + 2.0)
+    SetCamActive(cam, true)
+    PointCamAtCoord(cam, coords.x, coords.y, coords.z)
+    RenderScriptCams(true, true, 1000, true, false)
+    Citizen.Wait(CAM_PAN_WAIT)
 
-    DoScreenFadeOut(FADE_OUT_MS)
-    local waited = 0
-    while not IsScreenFadedOut() and waited < 2000 do
-        Citizen.Wait(50)
-        waited = waited + 50
-    end
+    SetEntityCoords(PlayerPedId(), coords.x, coords.y, coords.z + 3.0)
+    RemoveAllPedWeapons(PlayerPedId(), true)
+    Citizen.Wait(CAM_SETTLE_WAIT)
 
-    local targetZ = dropFromAbove and (coords.z + DROP_HEIGHT) or coords.z
-    SetEntityCoords(PlayerPedId(), coords.x, coords.y, targetZ, false, false, false, false)
-
-    Citizen.Wait(FADE_HOLD_MS)
-    DoScreenFadeIn(FADE_IN_MS)
-    Citizen.Wait(FADE_IN_MS)
-
-    if not dropFromAbove then
-        SetEntityInvincible(PlayerPedId(), false)
-    end
-    -- when dropping from above, invincibility is left on until the caller gives a
-    -- weapon/parachute and the fall has had a moment to start, so a stray bullet
-    -- or fall damage can't kill someone before they've even landed
+    ClearFocus()
+    RenderScriptCams(false, false, 0, true, false)
+    DestroyCam(cam, false)
 end
 
 local function applyEventOutfit()
@@ -84,31 +71,27 @@ local function applyEventOutfit()
     end)
 end
 
-local function spawnIntoArena()
-    RemoveAllPedWeapons(PlayerPedId(), true)
-    if Config.GiveParachuteOnSpawn then
-        GiveWeaponToPed(PlayerPedId(), GetHashKey('gadget_parachute'), 1, false, false)
+-- Picks a random point from the current arena's ArenaPoints list, so a fight
+-- doesn't always start/restart from the exact same corner.
+local function pickArenaPoint()
+    local points = currentLocationSet.ArenaPoints
+    if not points or #points == 0 then
+        return currentLocationSet.Center
     end
+    return points[math.random(#points)]
+end
 
-    teleportWithFade(currentLocationSet.Arena, true)
+local function spawnIntoArena()
+    if Config.GiveParachuteOnSpawn then
+        TriggerServerEvent('Unique_GunGame:GiveParachute', GetPlayerServerId(PlayerId()))
+    end
+    RemoveAllPedWeapons(PlayerPedId(), true)
+    teleportWithCam(pickArenaPoint())
     GiveWeaponToPed(PlayerPedId(), GetHashKey(Config.Weapons[1]), Config.WeaponAmmo, false, true)
 
-    if Config.GiveParachuteOnSpawn then
-        Citizen.Wait(PARACHUTE_DEPLOY_WAIT)
-        TaskParachute(PlayerPedId(), true)
+    if Config.Sounds and Config.Sounds.MatchStart then
+        SendNUIMessage({ action = 'playSound', sound = Config.Sounds.MatchStart, volume = Config.SoundVolume })
     end
-
-    -- Stay invincible until the player has actually landed rather than guessing a fixed
-    -- delay - a 40m fall takes longer than a short guess, and taking fall damage the
-    -- instant invincibility dropped (while still airborne) is what made deaths right
-    -- after spawning feel instant.
-    local waited = 0
-    while GetEntityHeightAboveGround(PlayerPedId()) > 1.5 and waited < FALL_MAX_WAIT_MS do
-        Citizen.Wait(FALL_POLL_MS)
-        waited = waited + FALL_POLL_MS
-    end
-    Citizen.Wait(LANDING_GRACE_MS)
-    SetEntityInvincible(PlayerPedId(), false)
 end
 
 -- Scans every active player ped against the ped that killed us to resolve a
@@ -122,6 +105,13 @@ local function findKillerServerId(killerPed, ownPed)
         end
     end
     return 0
+end
+
+local function clearMatchBlips()
+    for _, blip in ipairs(matchBlips) do
+        if DoesBlipExist(blip) then RemoveBlip(blip) end
+    end
+    matchBlips = {}
 end
 
 -- ============================================================
@@ -141,7 +131,7 @@ AddEventHandler('Unique_GunGame:JoinToMach', function(locationSet)
     SendNUIMessage({ action = 'showScoreboard' })
 
     Citizen.Wait(BUCKET_SWITCH_WAIT)
-    teleportWithFade(currentLocationSet.Lobby, false)
+    teleportWithCam(currentLocationSet.Lobby)
     applyEventOutfit()
     Citizen.Wait(OUTFIT_APPLY_WAIT)
     spawnIntoArena()
@@ -156,13 +146,10 @@ AddEventHandler('Unique_GunGame:End', function(locationSet)
 
     SendNUIMessage({ action = 'hideScoreboard' })
     SendNUIMessage({ action = 'hideTimer' })
+    clearMatchBlips()
 
     local exitLoc = (locationSet or currentLocationSet or Config.Locations[1]).Exit
-    teleportWithFade({
-        x = exitLoc.x + math.random(-10, 10),
-        y = exitLoc.y + math.random(-10, 10),
-        z = exitLoc.z + 2.0,
-    }, false)
+    SetEntityCoords(PlayerPedId(), exitLoc.x + math.random(-10, 10), exitLoc.y + math.random(-10, 10), exitLoc.z + 2.0)
 
     ESX.TriggerServerCallback('esx_skin:getPlayerSkin', function(skin)
         TriggerEvent('skinchanger:loadSkin', skin)
@@ -180,12 +167,12 @@ end)
 local function handleDeath(playerPed)
     alreadyDead = true
     SetEntityInvincible(playerPed, true)
-    TriggerServerEvent('Unique_GunGame:PlayerDied')
 
     local killerServerId = findKillerServerId(GetPedKiller(playerPed), playerPed)
     if killerServerId ~= 0 then
         TriggerServerEvent('Unique_GunGame:ReportKill', killerServerId, GetPlayerName(PlayerId()))
     end
+    TriggerServerEvent('Unique_GunGame:PlayerDied')
 
     Citizen.Wait(RESPAWN_DELAY)
     if not inEvent then
@@ -194,28 +181,18 @@ local function handleDeath(playerPed)
         return
     end
 
-    if Config.ForceNativeRevive then
-        -- Resurrects the ped directly at the game-engine level, bypassing whatever
-        -- custom death/medic system the server might otherwise force this player
-        -- to sit through (long timers, distress signals, etc).
-        local ped = PlayerPedId()
-        local coords = GetEntityCoords(ped)
-        NetworkResurrectLocalPlayer(coords.x, coords.y, coords.z, GetEntityHeading(ped), true, false)
-        ClearPedTasksImmediately(PlayerPedId())
-    else
+    if Config.ReviveEvent and Config.ReviveEvent ~= '' then
+        TriggerEvent(Config.ReviveEvent)
+    end
+    while ESX.GetPlayerData().IsDead do
+        Citizen.Wait(REVIVE_RETRY_WAIT)
         if Config.ReviveEvent and Config.ReviveEvent ~= '' then
             TriggerEvent(Config.ReviveEvent)
         end
-        while IsEntityDead(PlayerPedId()) do
-            Citizen.Wait(REVIVE_RETRY_WAIT)
-            if Config.ReviveEvent and Config.ReviveEvent ~= '' then
-                TriggerEvent(Config.ReviveEvent)
-            end
-            if not inEvent then
-                alreadyDead = false
-                SetEntityInvincible(PlayerPedId(), false)
-                return
-            end
+        if not inEvent then
+            alreadyDead = false
+            SetEntityInvincible(PlayerPedId(), false)
+            return
         end
     end
 
@@ -268,9 +245,148 @@ AddEventHandler('Unique_GunGame:LevelUp', function(weapon)
     Citizen.Wait(WEAPON_SWAP_WAIT)
     GiveWeaponToPed(PlayerPedId(), GetHashKey(weapon), Config.WeaponAmmo, false, true)
     if Config.GiveParachuteOnSpawn then
-        GiveWeaponToPed(PlayerPedId(), GetHashKey('gadget_parachute'), 1, false, false)
+        TriggerServerEvent('Unique_GunGame:GiveParachute', GetPlayerServerId(PlayerId()))
     end
 end)
+
+-- ============================================================
+-- Arena leash
+-- ============================================================
+-- Keeps players from wandering (or driving) away from the fight instead of
+-- actually playing. Pulls them back to a random arena point if they stray too far.
+
+Citizen.CreateThread(function()
+    while true do
+        Citizen.Wait(LEASH_CHECK_MS)
+        if inEvent and Config.ArenaLeashRadius and Config.ArenaLeashRadius > 0 and currentLocationSet then
+            local center = currentLocationSet.Center
+            local ped = PlayerPedId()
+            local dist = #(GetEntityCoords(ped) - vector3(center.x, center.y, center.z))
+            if dist > Config.ArenaLeashRadius then
+                local point = pickArenaPoint()
+                SetEntityCoords(ped, point.x, point.y, point.z + 1.0, false, false, false, true)
+            end
+        end
+    end
+end)
+
+-- ============================================================
+-- Player blips
+-- ============================================================
+-- Shows a blip for every other player currently in this arena (the roster the
+-- server sends is scoped to this match only, so other concurrent arenas never
+-- show up here).
+
+RegisterNetEvent('Unique_GunGame:UpdateRoster')
+AddEventHandler('Unique_GunGame:UpdateRoster', function(roster)
+    clearMatchBlips()
+    if not Config.ShowPlayerBlips then return end
+
+    local myServerId = GetPlayerServerId(PlayerId())
+    for _, entry in ipairs(roster) do
+        if entry.source ~= myServerId then
+            local targetIndex = GetPlayerFromServerId(entry.source)
+            if targetIndex ~= -1 then
+                local targetPed = GetPlayerPed(targetIndex)
+                local blip = AddBlipForEntity(targetPed)
+                SetBlipSprite(blip, Config.PlayerBlipSprite)
+                SetBlipColour(blip, Config.PlayerBlipColor)
+                SetBlipScale(blip, 0.8)
+                SetBlipAsShortRange(blip, false)
+                BeginTextCommandSetBlipName('STRING')
+                AddTextComponentString(entry.name)
+                EndTextCommandSetBlipName(blip)
+                matchBlips[#matchBlips + 1] = blip
+            end
+        end
+    end
+end)
+
+-- ============================================================
+-- Winner MVP screen
+-- ============================================================
+
+RegisterNetEvent('Unique_GunGame:ShowMVP')
+AddEventHandler('Unique_GunGame:ShowMVP', function(winnerName, winnerKills, winnerServerId)
+    local isMe = winnerServerId == GetPlayerServerId(PlayerId())
+    local card = (Config.CallingCards and #Config.CallingCards > 0)
+        and Config.CallingCards[math.random(#Config.CallingCards)]
+        or nil
+
+    SendNUIMessage({ action = 'showMVP', name = winnerName, kills = winnerKills, isYou = isMe, card = card })
+
+    if Config.Sounds and Config.Sounds.MatchWin then
+        SendNUIMessage({ action = 'playSound', sound = Config.Sounds.MatchWin, volume = Config.SoundVolume })
+    end
+
+    if Config.WinnerFireworks then
+        Citizen.CreateThread(function()
+            local winnerIndex = GetPlayerFromServerId(winnerServerId)
+            local fxCoords = (winnerIndex ~= -1) and GetEntityCoords(GetPlayerPed(winnerIndex)) or GetEntityCoords(PlayerPedId())
+
+            RequestNamedPtfxAsset('scr_indep_fireworks')
+            local waited = 0
+            while not HasNamedPtfxAssetLoaded('scr_indep_fireworks') and waited < FIREWORKS_ASSET_WAIT_MS do
+                Citizen.Wait(50)
+                waited = waited + 50
+            end
+            if HasNamedPtfxAssetLoaded('scr_indep_fireworks') then
+                UseParticleFxAssetNextCall('scr_indep_fireworks')
+                StartParticleFxNonLoopedAtCoord('scr_indep_firework_finale', fxCoords.x, fxCoords.y, fxCoords.z + 3.0, 0.0, 0.0, 0.0, 1.0, false, false, false)
+            end
+        end)
+    end
+
+    Citizen.SetTimeout(Config.WinnerCameraSeconds * 1000, function()
+        SendNUIMessage({ action = 'hideMVP' })
+    end)
+end)
+
+-- ============================================================
+-- Physical join point (optional)
+-- ============================================================
+
+if Config.JoinPed and Config.JoinPed.Enabled then
+    Citizen.CreateThread(function()
+        local modelHash = GetHashKey(Config.JoinPed.Model)
+        RequestModel(modelHash)
+        while not HasModelLoaded(modelHash) do Citizen.Wait(50) end
+
+        local c = Config.JoinPed.Coords
+        local ped = CreatePed(4, modelHash, c.x, c.y, c.z - 1.0, c.heading or 0.0, false, true)
+        FreezeEntityPosition(ped, true)
+        SetEntityInvincible(ped, true)
+        SetBlockingOfNonTemporaryEvents(ped, true)
+        SetModelAsNoLongerNeeded(modelHash)
+
+        while true do
+            Citizen.Wait(0)
+            local dist = #(GetEntityCoords(PlayerPedId()) - vector3(c.x, c.y, c.z))
+            if dist < Config.JoinPed.MarkerDistance then
+                DrawMarker(2, c.x, c.y, c.z + 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.3, 0.3, 0.3, 255, 140, 0, 180, false, true, 2, false, nil, nil, false)
+
+                if dist < Config.JoinPed.InteractDistance then
+                    local onScreen, sx, sy = GetScreenCoordFromWorldCoord(c.x, c.y, c.z + 1.0)
+                    if onScreen then
+                        SetTextScale(0.35, 0.35)
+                        SetTextFont(4)
+                        SetTextColour(255, 255, 255, 215)
+                        SetTextEntry('STRING')
+                        AddTextComponentString('~y~E~w~ - ' .. Config.JoinPed.Label)
+                        SetTextCentre(true)
+                        DrawText(sx, sy)
+                    end
+
+                    if IsControlJustReleased(0, 38) then -- E
+                        ExecuteCommand(Config.JoinCommand)
+                    end
+                end
+            else
+                Citizen.Wait(400) -- far away, no need to check every frame
+            end
+        end
+    end)
+end
 
 -- ============================================================
 -- NUI relay: scoreboard / countdown / timer / kill feed
@@ -296,6 +412,11 @@ AddEventHandler('Unique_GunGame:KillFeed', function(killerName, victimName)
     SendNUIMessage({ action = 'addKillFeed', killer = killerName, victim = victimName })
 end)
 
+RegisterNetEvent('Unique_GunGame:PlaySound')
+AddEventHandler('Unique_GunGame:PlaySound', function(sound)
+    SendNUIMessage({ action = 'playSound', sound = sound, volume = Config.SoundVolume })
+end)
+
 -- ============================================================
 -- Cleanup on resource restart
 -- ============================================================
@@ -305,7 +426,9 @@ AddEventHandler('onResourceStop', function(resourceName)
     if inEvent then
         SetEntityInvincible(PlayerPedId(), false)
     end
+    clearMatchBlips()
     SendNUIMessage({ action = 'hideCountdown' })
     SendNUIMessage({ action = 'hideTimer' })
     SendNUIMessage({ action = 'hideScoreboard' })
+    SendNUIMessage({ action = 'hideMVP' })
 end)

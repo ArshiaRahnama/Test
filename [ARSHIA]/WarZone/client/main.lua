@@ -1,5 +1,14 @@
 ESX = nil 
 
+-- Set to true to bring back the verbose [WZ DEBUG] tracing used while
+-- tracking down the plane-boarding/parachute bugs (double-plane, wrong
+-- seat, falling off, etc). Leave false for normal play -- flip it back on
+-- if something new needs diagnosing.
+WZ_DEBUG = false
+function WZDebugPrint(msg)
+	if WZ_DEBUG then print(msg) end
+end
+
 CreateThread(function()
 	while ESX == nil do
 		TriggerEvent(Config.ESX, function(obj) ESX = obj end)
@@ -117,11 +126,11 @@ AddEventHandler("AWZ:StartMatch",function(Blood , DistanceZone , WzCoord , TimeM
 	-- produced the "epoch 2" plane and the stray ExitMision in testing.
 	-- One delivery per match, full stop.
 	if StartMatchHandlerRunning then
-		print('[WZ DEBUG][client] AWZ:StartMatch IGNORED -- already starting/running for this match')
+		WZDebugPrint('[WZ DEBUG][client] AWZ:StartMatch IGNORED -- already starting/running for this match')
 		return
 	end
 	StartMatchHandlerRunning = true
-	print('[WZ DEBUG][client] AWZ:StartMatch RECEIVED. Blood='..tostring(Blood)..' Distance='..tostring(DistanceZone)..' Time='..tostring(TimeMoveZone)..' Map='..tostring(Map))
+	WZDebugPrint('[WZ DEBUG][client] AWZ:StartMatch RECEIVED. Blood='..tostring(Blood)..' Distance='..tostring(DistanceZone)..' Time='..tostring(TimeMoveZone)..' Map='..tostring(Map))
 	armoritem , bandageitem = 2 , 2
 	AllUav = 1 
 	---- Number ----
@@ -235,7 +244,7 @@ AddEventHandler("AWZ:StartMatch",function(Blood , DistanceZone , WzCoord , TimeM
 	SetTimeout(5* 1000, function()
 		SendNUIMessage({message	= "music",Name = 'joinbattle'}) 
 	end)
-	print('[WZ DEBUG][client] About to call WarZone(true), InWarzone='..tostring(InWarzone))
+	WZDebugPrint('[WZ DEBUG][client] About to call WarZone(true), InWarzone='..tostring(InWarzone))
 	WarZone(true)
     Wait(Time * 60000)
     ZoneRuning()
@@ -268,8 +277,8 @@ AddEventHandler("AWZ:MyTeam",function( Myteam , Count , id , MyName  )
 end) 
 RegisterNetEvent("AWZ:ExitMision")
 AddEventHandler("AWZ:ExitMision",function()
-	print('[WZ DEBUG][client] AWZ:ExitMision FIRED. InWarzone='..tostring(InWarzone)..' inmatch='..tostring(inmatch)..' inLobby='..tostring(inLobby)..' ingulag='..tostring(ingulag)..' InSpectator='..tostring(InSpectator))
-	print('[WZ DEBUG][client] traceback: '..(debug and debug.traceback and debug.traceback() or 'n/a'))
+	WZDebugPrint('[WZ DEBUG][client] AWZ:ExitMision FIRED. InWarzone='..tostring(InWarzone)..' inmatch='..tostring(inmatch)..' inLobby='..tostring(inLobby)..' ingulag='..tostring(ingulag)..' InSpectator='..tostring(InSpectator))
+	WZDebugPrint('[WZ DEBUG][client] traceback: '..(debug and debug.traceback and debug.traceback() or 'n/a'))
 	-- Fix/feature: if this player was spectating (eliminated but their
 	-- squad was still alive), make sure the free-cam + invisibility state
 	-- gets torn down before the normal exit cleanup runs below.
@@ -612,7 +621,7 @@ end)
 RegisterNUICallback('start', function(data, cb)
 	SetNuiFocus(false, false)
 	ESX.TriggerServerCallback('AWZ:SetPlayerInWarZone', function(CanJoin) 
-		print('[WZ DEBUG][client] PLAY clicked -> AWZ:SetPlayerInWarZone returned CanJoin='..tostring(CanJoin))
+		WZDebugPrint('[WZ DEBUG][client] PLAY clicked -> AWZ:SetPlayerInWarZone returned CanJoin='..tostring(CanJoin))
 		if CanJoin then 
 			JoinLobbey()
 		end 
@@ -653,7 +662,7 @@ end)
 -----------------------------------
 function JoinLobbey()
 	CreateThread(function()
-		print('[WZ DEBUG][client] JoinLobbey() started')
+		WZDebugPrint('[WZ DEBUG][client] JoinLobbey() started')
 		BlackSceern(6000)
 		Wait(1500)
 		insertToJoinLobbey()
@@ -662,7 +671,7 @@ function JoinLobbey()
 		inmatch = false 
 		StartMatchHandlerRunning = false -- Fix: re-arm the AWZ:StartMatch guard above for this new lobby/match cycle
 		inLobby = true 
-		print('[WZ DEBUG][client] JoinLobbey() InWarzone set to true')
+		WZDebugPrint('[WZ DEBUG][client] JoinLobbey() InWarzone set to true')
 		SaveWeapons()
 		ESX.UI.Menu.CloseAll()
 		ClearPedBloodDamage(PlayerPedId())
@@ -1065,9 +1074,9 @@ function WarZone(loadHud)
 	WarZoneEpoch = WarZoneEpoch + 1
 	local myEpoch = WarZoneEpoch
 	CreateThread(function()
-		print('[WZ DEBUG][client] WarZone() thread started (epoch '..myEpoch..'). InWarzone='..tostring(InWarzone)..' inmatch='..tostring(inmatch)..' inLobby='..tostring(inLobby))
+		WZDebugPrint('[WZ DEBUG][client] WarZone() thread started (epoch '..myEpoch..'). InWarzone='..tostring(InWarzone)..' inmatch='..tostring(inmatch)..' inLobby='..tostring(inLobby))
     	if not InWarzone then   
-    		print('[WZ DEBUG][client] WarZone() ABORTING because InWarzone is false -- triggering ExitMision locally')
+    		WZDebugPrint('[WZ DEBUG][client] WarZone() ABORTING because InWarzone is false -- triggering ExitMision locally')
     		TriggerEvent("AWZ:ExitMision") return 
     	end 
 		armoritem , bandageitem = 2 , 2
@@ -1103,7 +1112,7 @@ function WarZone(loadHud)
 		-- ExitMision right after a successful drop when re-testing without
 		-- restarting the resource).
 		if myEpoch ~= WarZoneEpoch then
-			print('[WZ DEBUG][client] WarZone() epoch '..myEpoch..' superseded by '..WarZoneEpoch..' -- stopping stale thread (pre-plane)')
+			WZDebugPrint('[WZ DEBUG][client] WarZone() epoch '..myEpoch..' superseded by '..WarZoneEpoch..' -- stopping stale thread (pre-plane)')
 			return
 		end
 		-- Fix: this is THE bug from your test. `plane` is a global that is
@@ -1118,7 +1127,7 @@ function WarZone(loadHud)
     	Wait(200)
 		if myEpoch ~= WarZoneEpoch then return end
 		plane = CreateVehicle(model,GlobalCoord.x, GlobalCoord.y - Zone, GlobalCoord.z + Zone, 10, false, true)
-		print('[WZ DEBUG][client] plane created, handle='..tostring(plane)..' exists='..tostring(DoesEntityExist(plane)))
+		WZDebugPrint('[WZ DEBUG][client] plane created, handle='..tostring(plane)..' exists='..tostring(DoesEntityExist(plane)))
 		while not HasModelLoaded(model) do
 			Wait(1)
 		end
@@ -1127,16 +1136,16 @@ function WarZone(loadHud)
 			plane = CreateVehicle(model,GlobalCoord.x, GlobalCoord.y - Zone, GlobalCoord.z + Zone, 10, false, true)
 			Wait(0)
 		end 
-		print('[WZ DEBUG][client] step: plane confirmed existing, about to freeze')
+		WZDebugPrint('[WZ DEBUG][client] step: plane confirmed existing, about to freeze')
 		if myEpoch ~= WarZoneEpoch then return end
 		FreezeEntityPosition(plane, true)
 		Wait(500)
-		print('[WZ DEBUG][client] step: post-freeze wait done')
+		WZDebugPrint('[WZ DEBUG][client] step: post-freeze wait done')
 		if myEpoch ~= WarZoneEpoch then return end
 		SetEntityHealth(PlayerPedId(), GetEntityMaxHealth(PlayerPedId()))
 		RemoveAllPedWeapons(PlayerPedId(),1)
 		SetEntityVisible(PlayerPedId(), false,false)
-		print('[WZ DEBUG][client] step: health/weapons/visibility set')
+		WZDebugPrint('[WZ DEBUG][client] step: health/weapons/visibility set')
 		SetEntityDynamic(plane, true)
 		ActivatePhysics(plane)
 		SetVehicleForwardSpeed(plane, 100.0)
@@ -1145,9 +1154,9 @@ function WarZone(loadHud)
 		ControlLandingGear(plane, 1)
 		OpenBombBayDoors(plane)
 		SetEntityProofs(plane, true, false, true, false, false, false, false, false)
-		print('[WZ DEBUG][client] step: plane physics/engine configured')
+		WZDebugPrint('[WZ DEBUG][client] step: plane physics/engine configured')
 		pilot = CreatePedInsideVehicle(plane, 1, GetHashKey("mp_m_freemode_01"), -1, false, true)
-		print('[WZ DEBUG][client] step: pilot created, handle='..tostring(pilot)..' exists='..tostring(DoesEntityExist(pilot)))
+		WZDebugPrint('[WZ DEBUG][client] step: pilot created, handle='..tostring(pilot)..' exists='..tostring(DoesEntityExist(pilot)))
 		SetBlockingOfNonTemporaryEvents(pilot, true)
 		SetPedKeepTask(pilot, true)
 		SetPlaneMinHeightAboveTerrain(plane, 50)
@@ -1180,21 +1189,21 @@ function WarZone(loadHud)
 				break
 			end
 		end
-		print('[WZ DEBUG][client] step: plane maxPassengers='..tostring(maxPassengers)..' -- using seat '..tostring(seatToUse))
+		WZDebugPrint('[WZ DEBUG][client] step: plane maxPassengers='..tostring(maxPassengers)..' -- using seat '..tostring(seatToUse))
 		local seated = false
 		for attempt = 1, 5 do
 			TaskWarpPedIntoVehicle(PlayerPedId(), plane, seatToUse)
 			Wait(150)
 			seated = IsPedInVehicle(PlayerPedId(), plane, false)
 			if seated then break end
-			print('[WZ DEBUG][client] step: seat attempt '..attempt..' failed, retrying')
+			WZDebugPrint('[WZ DEBUG][client] step: seat attempt '..attempt..' failed, retrying')
 		end
 		if not seated then
-			print('[WZ DEBUG][client] step: could not seat ped after 5 attempts -- falling back to a safe attach so they cannot fall off')
+			WZDebugPrint('[WZ DEBUG][client] step: could not seat ped after 5 attempts -- falling back to a safe attach so they cannot fall off')
 			SetEntityCollision(PlayerPedId(), false, false)
 			AttachEntityToEntity(PlayerPedId(), plane, 0, 0.0, -1.0, 1.0, 0.0, 0.0, 0.0, false, false, false, false, 2, true)
 		end
-		print('[WZ DEBUG][client] step: warped into plane, ped exists='..tostring(DoesEntityExist(PlayerPedId()))..' actuallySeated='..tostring(seated))
+		WZDebugPrint('[WZ DEBUG][client] step: warped into plane, ped exists='..tostring(DoesEntityExist(PlayerPedId()))..' actuallySeated='..tostring(seated))
 		if loadHud then SendNUIMessage({message	= "Ingame",}) end 
 		-- Fix: THIS is why the plane's speed always read 0.0 no matter how
 		-- many times the drive task was re-issued -- FreezeEntityPosition
@@ -1205,7 +1214,7 @@ function WarZone(loadHud)
 		-- pilot (and now the player) are ready to actually fly in it.
 		FreezeEntityPosition(plane, false)
 		TaskVehicleDriveToCoord(pilot, plane,GlobalCoord.x, GlobalCoord.y + Zone, GlobalCoord.z + Zone + 5, 90.0, 95.0, model, 16777216, 1.0, 1)
-		print('[WZ DEBUG][client] step: pilot task assigned, plane departing')
+		WZDebugPrint('[WZ DEBUG][client] step: pilot task assigned, plane departing')
 		FreezePlayer(  false  )  
 		SetEntityVisible(PlayerPedId(), true ,true)
 		-- Feature/fix: on a lagging server (or any other hiccup right as the
@@ -1218,25 +1227,25 @@ function WarZone(loadHud)
 			Wait(1200)
 			if myEpoch ~= WarZoneEpoch then return end
 			local speed = GetEntitySpeed(plane)
-			print('[WZ DEBUG][client] step: plane speed check #'..(retries+1)..' = '..string.format('%.1f', speed)..' m/s')
+			WZDebugPrint('[WZ DEBUG][client] step: plane speed check #'..(retries+1)..' = '..string.format('%.1f', speed)..' m/s')
 			if speed > 5.0 then
 				break
 			end
 			retries = retries + 1
-			print('[WZ DEBUG][client] step: plane not moving, re-issuing drive task (attempt '..retries..')')
+			WZDebugPrint('[WZ DEBUG][client] step: plane not moving, re-issuing drive task (attempt '..retries..')')
 			SetVehicleForwardSpeed(plane, 100.0)
 			TaskVehicleDriveToCoord(pilot, plane,GlobalCoord.x, GlobalCoord.y + Zone, GlobalCoord.z + Zone + 5, 90.0, 95.0, model, 16777216, 1.0, 1)
 		end
-		print('[WZ DEBUG][client] step: about to Wait(5000) for the flight')
+		WZDebugPrint('[WZ DEBUG][client] step: about to Wait(5000) for the flight')
 		Wait(5000)
 		if myEpoch ~= WarZoneEpoch then
-			print('[WZ DEBUG][client] WarZone() epoch '..myEpoch..' superseded by '..WarZoneEpoch..' -- stopping stale thread (post-flight-wait)')
+			WZDebugPrint('[WZ DEBUG][client] WarZone() epoch '..myEpoch..' superseded by '..WarZoneEpoch..' -- stopping stale thread (post-flight-wait)')
 			return
 		end
 		SetMaxHealth()
 		jump = false
 		inheli = true
-		print('[WZ DEBUG][client] Drop sequence complete -- on the plane, ready to jump (press F)')
+		WZDebugPrint('[WZ DEBUG][client] Drop sequence complete -- on the plane, ready to jump (press F)')
 		-- Fix: this used to AddEventHandler('onKeyDown', ...) here, and
 		-- WarZone() runs again on every redeploy/Gulag win -- so after a few
 		-- deaths each 'f' press would call JumpNow() once per stacked
@@ -1248,7 +1257,7 @@ function WarZone(loadHud)
 		while inheli do 
 			Wait(3000)
 			if myEpoch ~= WarZoneEpoch then
-				print('[WZ DEBUG][client] WarZone() epoch '..myEpoch..' superseded by '..WarZoneEpoch..' -- stopping stale tail loop')
+				WZDebugPrint('[WZ DEBUG][client] WarZone() epoch '..myEpoch..' superseded by '..WarZoneEpoch..' -- stopping stale tail loop')
 				return
 			end
 			if inheli == true  and  jump == false then 

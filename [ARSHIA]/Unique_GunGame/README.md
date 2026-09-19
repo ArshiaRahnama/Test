@@ -1,8 +1,9 @@
 # Unique_GunGame
 
 FiveM/ESX GunGame event script. Players queue up with a command, get grouped
-automatically into small concurrent arenas, fight through a weapon ladder by
-getting kills, and see a live scoreboard, countdown, and round timer on screen.
+automatically into small concurrent arenas, fight through a long weapon ladder
+(ending in a forced melee finish) by getting kills, and see a live scoreboard,
+countdown, round timer, kill feed, and a Call-of-Duty-style MVP screen on win.
 
 ## Requirements
 
@@ -13,6 +14,24 @@ getting kills, and see a live scoreboard, countdown, and round timer on screen.
 
 If your server doesn't have one of these resources, either install it or replace
 the corresponding `TriggerEvent` call in `client.lua` with your server's equivalent.
+
+## Features
+
+- Concurrent arenas with an admin-gated queue (`/gungame start` / `stop`)
+- 30-weapon ladder (classic 1-kill-per-weapon GunGame rule), ending on a melee
+  weapon for a forced knife-fight finish
+- Multiple random spawn points per arena (`Config.Locations[i].ArenaPoints`), so
+  the same corner doesn't get camped every round
+- An arena leash that pulls wandering players back toward the fight
+- Live scoreboard (top N + your own row), round timer, countdown, and kill feed
+- Kill-streak announcements and an optional persistent database leaderboard
+- Player blips on the minimap for everyone else currently in your arena
+- A Call-of-Duty-style MVP screen with kills, name, and an optional calling-card
+  image, plus a fireworks effect at the winner's position
+- Optional sound effects (kill / match start / match win)
+- An optional physical NPC players can walk up to and press E on to join
+- Discord webhook announcements on arena wins
+- Exports for other resources to query GunGame state
 
 ## Install
 
@@ -46,6 +65,40 @@ the corresponding `TriggerEvent` call in `client.lua` with your server's equival
 - If `Config.RoundTimeLimit` is reached before anyone wins, whoever has the most
   kills in that arena is declared the winner.
 
+## Winner MVP screen
+
+When an arena is won, everyone in it sees a Call-of-Duty-style MVP screen (name,
+kill count, and a calling-card image) for `Config.WinnerCameraSeconds`, plus a
+fireworks effect at the winner's position (`Config.WinnerFireworks`). Calling-card
+images are optional — drop your own into `html/callingcards/` and list the
+filenames in `Config.CallingCards`; leave it empty and the screen just shows a
+plain star badge instead. This is a delivery/teleport delay, not extra combat time
+— the round is already decided.
+
+## Sound effects (optional)
+
+`Config.Sounds.Kill` / `MatchStart` / `MatchWin` reference files under
+`html/sounds/`, e.g. `Config.Sounds.Kill = 'sounds/kill.ogg'`. Leave any of them
+`nil` (the default) to skip that sound entirely — no audio files are required to
+use the script. `Config.SoundVolume` controls playback volume (0–1) for all of them.
+
+## Player blips & arena leash
+
+While in a match, every other player in that same arena shows up as a blip on
+your minimap (`Config.ShowPlayerBlips`, `Config.PlayerBlipSprite/Color`) — blips
+are scoped per-arena, so other concurrent arenas never show up on your map.
+`Config.ArenaLeashRadius` automatically pulls a player back to a random arena
+point if they stray further than that from the arena's `Center` — set it to `0`
+to disable.
+
+## Physical join point (optional)
+
+In addition to `/jgg`, you can place an NPC in the world for players to walk up
+to and press E on. It's off by default (`Config.JoinPed.Enabled = false`) since
+`Config.JoinPed.Coords` needs to be a real spot on your map first — set the
+coordinates, flip `Enabled` to `true`, and the NPC (model, interact distance,
+and prompt label all configurable) will call `/jgg` for anyone who interacts.
+
 ## Persistent leaderboard (optional)
 
 Set `Config.UseDatabase = true` and start `oxmysql` before this resource to
@@ -77,27 +130,21 @@ arena instead of the real group size.
 
 ## Framework compatibility
 
-This script avoids depending on ESX's inventory/status events where it reasonably
-can, since heavily customized servers often replace them:
+This script avoids depending on ESX's inventory events specifically, since heavily
+customized servers often replace them, while keeping spawn and revive on the same
+classic flow most ESX ambulance-job setups already use:
 - Weapons and the parachute are given with the `GiveWeaponToPed` native directly,
   not `esx:addWeapon` — so it works even if your server's inventory system doesn't
   listen for that event.
-- Revive uses `Config.ReviveEvent` (default `esx_ambulancejob:revive`) to *ask* your
-  server to revive the player, but only ever waits on the native `IsEntityDead` check
-  to decide when they're actually back up — so it still works correctly even if your
-  server's own death/status fields don't match vanilla ESX. Set `Config.ReviveEvent = ''`
-  if your server revives players some other way (a menu, an NPC, etc); the script will
-  just wait for the ped to no longer be dead either way.
-- If your server has a hardcore/long death system (a "respawn available in X minutes"
-  screen), leave `Config.ForceNativeRevive = true` (the default). Arena deaths are then
-  resurrected directly with the `NetworkResurrectLocalPlayer` native instead of waiting
-  on that system, so a normal PvP kill inside the arena doesn't leave the player stuck
-  respecting a long real-life death timer. Set it to `false` to use `Config.ReviveEvent`
-  instead if you'd rather integrate with your own medic flow.
-- Arena entry drops the player in from above the arena point with a real
-  parachute (`TaskParachute`), and invincibility is held until the game engine confirms
-  they've actually landed (polling `GetEntityHeightAboveGround`) rather than a fixed
-  guess - a fixed guess is what caused fall-damage deaths right after spawning.
+- Arena entry and respawns use a scripted camera (like a normal ESX spawn-select
+  screen) rather than anything fancier.
+- Revive triggers `Config.ReviveEvent` (default `esx_ambulancejob:revive`) and waits
+  on `ESX.GetPlayerData().IsDead` to know when the player is actually back up, exactly
+  like a stock ESX ambulance-job revive. If your server's revive event has a different
+  name, change `Config.ReviveEvent` to match it. If your server also doesn't keep
+  `IsDead` in sync with vanilla ESX, the wait loop won't resolve correctly — in that
+  case let me know what does track your player's dead state and the wait condition can
+  be swapped to match it.
 
 ## config.lua reference
 
@@ -105,18 +152,30 @@ can, since heavily customized servers often replace them:
 - `Config.MaxQueueSize` – hard cap on players in the queue + all running arenas combined.
 - `Config.CountdownTime` – seconds between a group forming and the match starting.
 - `Config.RoundTimeLimit` – seconds before a round is decided by kill count (0 disables the limit).
+- `Config.TestMode` – lets a single player form their own arena, for solo local testing.
+- `Config.Locations` – array of `{ Lobby, Center, ArenaPoints, Exit }` sets, assigned
+  round-robin to new arenas. `ArenaPoints` is a list of spawn points inside that
+  arena; a random one is picked on every spawn/respawn. `Center` is the reference
+  point for `Config.ArenaLeashRadius`. Safe to leave duplicated across sets;
+  isolation between concurrent arenas comes from routing buckets, not distance.
+- `Config.ArenaLeashRadius` – auto-recall distance from `Center` (0 disables it).
+- `Config.Weapons` / `Config.WeaponAmmo` / `Config.KillsPerLevel` / `Config.KillsToWin`
+  – the weapon progression ladder (30 weapons by default, 1 kill per level, ending
+  in a melee weapon).
+- `Config.ChangeOutfitOnJoin` / `Config.OutfitMale` / `Config.OutfitFemale` –
+  optional cosmetic outfit swap while in a match.
+- `Config.WinnerCameraSeconds` / `Config.WinnerFireworks` / `Config.CallingCards` –
+  the MVP win screen; see above.
+- `Config.Sounds` / `Config.SoundVolume` – optional sound effects; see above.
+- `Config.ShowPlayerBlips` / `Config.PlayerBlipSprite` / `Config.PlayerBlipColor` –
+  minimap blips for other players in your arena.
+- `Config.JoinPed` – optional physical join NPC; see above.
 - `Config.KillstreakAnnouncements` – life-streak counts (resets on death) that trigger an in-arena chat announcement. Empty table disables it.
 - `Config.QueueReminderInterval` – seconds between server-wide reminders that the queue needs more players (0 disables).
 - `Config.ScoreboardTopCount` – the live scoreboard HUD shows this many top rows; if a player isn't in it, their own row is appended after so they can always see their standing (0 shows everyone).
-- `Config.ReviveEvent` / `Config.ForceNativeRevive` – how arena deaths get the player back up; see Framework compatibility above.
+- `Config.ReviveEvent` – the event triggered to ask your server to revive a dead player; see Framework compatibility above.
 - `Config.RestrictedJobs` – jobs that can't queue while on duty.
-- `Config.Locations` – array of `{ Lobby, Arena, Exit }` coordinate sets, assigned
-  round-robin to new arenas. Safe to leave duplicated; isolation comes from
-  routing buckets, not distance.
-- `Config.Weapons` / `Config.WeaponAmmo` / `Config.KillsPerLevel` / `Config.KillsToWin`
-  – the weapon progression ladder.
-- `Config.ChangeOutfitOnJoin` / `Config.OutfitMale` / `Config.OutfitFemale` –
-  optional cosmetic outfit swap while in a match.
+- `Config.UseDatabase` / `Config.DiscordWebhook` – optional persistent leaderboard and Discord announcements; see above.
 
 ## Files
 
@@ -126,9 +185,11 @@ Unique_GunGame/
 ├── config.lua
 ├── server.lua
 ├── client.lua
-├── install.sql   (optional, see Config.UseDatabase)
+├── install.sql          (optional, see Config.UseDatabase)
 └── html/
     ├── index.html
     ├── style.css
-    └── script.js   (scoreboard / countdown / round-timer / kill-feed HUD)
+    ├── script.js         (HUD + MVP screen + sound playback)
+    ├── callingcards/      (optional images, see Config.CallingCards)
+    └── sounds/            (optional audio, see Config.Sounds)
 ```

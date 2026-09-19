@@ -161,6 +161,21 @@ local function broadcastKillFeed(match, killerName, victimName)
     for src in pairs(match.players) do
         TriggerClientEvent('chat:addMessage', src, { args = { CHAT_TAG, '^0' .. killerName .. ' killed ' .. tostring(victimName) } })
         TriggerClientEvent('Unique_GunGame:KillFeed', src, killerName, victimName)
+        if Config.Sounds and Config.Sounds.Kill then
+            TriggerClientEvent('Unique_GunGame:PlaySound', src, Config.Sounds.Kill)
+        end
+    end
+end
+
+-- Tells every player in the arena who else is in it (source id + name), so each
+-- client can put a blip on exactly those players and nobody else.
+local function broadcastRoster(match)
+    local roster = {}
+    for src, data in pairs(match.players) do
+        roster[#roster + 1] = { source = src, name = data.name }
+    end
+    for src in pairs(match.players) do
+        TriggerClientEvent('Unique_GunGame:UpdateRoster', src, roster)
     end
 end
 
@@ -240,19 +255,37 @@ local function endMatch(matchId, winnerSrc)
 
     local winnerData = winnerSrc and match.players[winnerSrc]
     if winnerData then
+        for src in pairs(match.players) do
+            TriggerClientEvent('Unique_GunGame:ShowMVP', src, winnerData.name, winnerData.kills, winnerSrc)
+        end
         broadcastMessage('^1' .. winnerData.name .. ' ^0won an arena in the GunGame event!')
         postWinToDiscord(winnerData.name)
     end
     persistMatchResult(match, winnerData and winnerData.identifier or nil)
 
+    -- Clear bookkeeping immediately: FiveM can reuse a disconnected player's source
+    -- id for a new connection, and if we left PlayerMatch pointing at this (already
+    -- finished) match, that new player would be wrongly told they're "already in a
+    -- match" the moment they tried to queue.
+    local playersToRelease = {}
     for src in pairs(match.players) do
-        TriggerClientEvent('Unique_GunGame:End', src, match.locationSet)
-        SetPlayerRoutingBucket(src, 0)
+        playersToRelease[#playersToRelease + 1] = src
         PlayerMatch[src] = nil
     end
-
-    releaseBucket(match.bucket)
+    local locationSet = match.locationSet
+    local bucket = match.bucket
     Matches[matchId] = nil
+
+    -- Only the actual teleport-out/bucket-reset waits for the MVP screen to finish;
+    -- everything above already happened so a new match can start immediately.
+    local delayMs = winnerData and (Config.WinnerCameraSeconds * 1000) or 0
+    Citizen.SetTimeout(delayMs, function()
+        for _, src in ipairs(playersToRelease) do
+            TriggerClientEvent('Unique_GunGame:End', src, locationSet)
+            SetPlayerRoutingBucket(src, 0)
+        end
+        releaseBucket(bucket)
+    end)
 end
 
 local function startMatch(group)
@@ -282,6 +315,7 @@ local function startMatch(group)
 
     Matches[matchId] = match
     broadcastScoreboard(match)
+    broadcastRoster(match)
 
     if Config.RoundTimeLimit and Config.RoundTimeLimit > 0 then
         Citizen.CreateThread(function()
@@ -469,6 +503,7 @@ AddEventHandler('playerDropped', function()
         Matches[matchId] = nil
     else
         broadcastScoreboard(match)
+        broadcastRoster(match)
     end
 end)
 

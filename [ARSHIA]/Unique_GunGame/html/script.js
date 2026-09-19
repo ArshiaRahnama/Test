@@ -21,6 +21,12 @@ const scoreboardRowsEl = document.getElementById('scoreboard-rows');
 
 const killfeedEl = document.getElementById('killfeed');
 
+const mvpScreenEl = document.getElementById('mvp-screen');
+const mvpCallingCardEl = document.getElementById('mvp-callingcard');
+const mvpNameEl = document.getElementById('mvp-name');
+const mvpKillsEl = document.getElementById('mvp-kills');
+let mvpHideTimeout = null;
+
 function escapeHtml(text) {
     return String(text)
         .replace(/&/g, '&amp;')
@@ -62,6 +68,41 @@ function addKillFeed(killer, victim) {
     // keep the feed from growing unbounded if kills come in faster than the fade-out
     while (killfeedEl.children.length > KILLFEED_MAX_ITEMS) {
         killfeedEl.removeChild(killfeedEl.firstChild);
+    }
+}
+
+function showMVP(name, kills, card) {
+    mvpNameEl.textContent = escapeHtml(name);
+    mvpKillsEl.textContent = `${kills} KILLS`;
+
+    if (card) {
+        mvpCallingCardEl.style.backgroundImage = `url(callingcards/${encodeURIComponent(card)})`;
+        mvpCallingCardEl.classList.add('has-image');
+    } else {
+        mvpCallingCardEl.style.backgroundImage = '';
+        mvpCallingCardEl.classList.remove('has-image');
+    }
+
+    mvpScreenEl.classList.remove('hidden');
+    if (mvpHideTimeout) clearTimeout(mvpHideTimeout);
+}
+
+function hideMVP() {
+    mvpScreenEl.classList.add('hidden');
+    if (mvpHideTimeout) clearTimeout(mvpHideTimeout);
+}
+
+function playSound(sound, volume) {
+    if (!sound) return;
+    try {
+        const audio = new Audio(sound);
+        audio.volume = (typeof volume === 'number') ? Math.max(0, Math.min(1, volume)) : 0.5;
+        audio.play().catch(() => {
+            // Autoplay can be blocked before any user interaction with the page;
+            // safe to ignore since GunGame audio is just a nice-to-have.
+        });
+    } catch (err) {
+        console.error('Unique_GunGame: failed to play sound', sound, err);
     }
 }
 
@@ -109,6 +150,18 @@ window.addEventListener('message', (event) => {
 
         case 'addKillFeed':
             addKillFeed(data.killer, data.victim);
+            break;
+
+        case 'showMVP':
+            showMVP(data.name, data.kills, data.card);
+            break;
+
+        case 'hideMVP':
+            hideMVP();
+            break;
+
+        case 'playSound':
+            playSound(data.sound, data.volume);
             break;
     }
 });

@@ -1,6 +1,15 @@
 ESX = nil
 TriggerEvent(Config.ESX, function(obj) ESX = obj end)
 
+-- Set to true to bring back the verbose [WZ DEBUG] tracing used while
+-- tracking down the plane-boarding/parachute/double-match bugs. Leave
+-- false for normal play -- flip it back on if something new needs
+-- diagnosing.
+WZ_DEBUG = false
+function WZDebugPrint(msg)
+	if WZ_DEBUG then print(msg) end
+end
+
 local Event = false
 local StartMatch = false 
 local Lobbey = false 
@@ -747,21 +756,21 @@ end
 -- Auto-Queue. `source` is 0 for system/auto-queue starts (no player to
 -- notify). Returns true on success, false + an error string otherwise.
 function BeginMatch(source, blood, time, mapArg, teamArg)
-    print('[WZ DEBUG] BeginMatch called: source='..tostring(source)..' blood='..tostring(blood)..' time='..tostring(time)..' map='..tostring(mapArg)..' team='..tostring(teamArg)..' | StartMatch='..tostring(StartMatch)..' Lobbey='..tostring(Lobbey)..' #Players='..#Players)
+    WZDebugPrint('[WZ DEBUG] BeginMatch called: source='..tostring(source)..' blood='..tostring(blood)..' time='..tostring(time)..' map='..tostring(mapArg)..' team='..tostring(teamArg)..' | StartMatch='..tostring(StartMatch)..' Lobbey='..tostring(Lobbey)..' #Players='..#Players)
     if StartMatch then
-        print('[WZ DEBUG] BeginMatch REJECTED: match already started')
+        WZDebugPrint('[WZ DEBUG] BeginMatch REJECTED: match already started')
         if source and source ~= 0 then SendNotifyServerToPlayer(source, 'Warzone has started', 'error') end
         return false, 'already started'
     end
     if not Lobbey then
-        print('[WZ DEBUG] BeginMatch REJECTED: lobby not open')
+        WZDebugPrint('[WZ DEBUG] BeginMatch REJECTED: lobby not open')
         if source and source ~= 0 then SendNotifyServerToPlayer(source, 'Lobbey has not opened', 'error') end
         return false, 'lobby not open'
     end
     blood = tonumber(blood)
     time = tonumber(time)
     if not blood or not time or blood <= 0 or time <= 0 or not mapArg then
-        print('[WZ DEBUG] BeginMatch REJECTED: bad args (blood='..tostring(blood)..' time='..tostring(time)..' map='..tostring(mapArg)..')')
+        WZDebugPrint('[WZ DEBUG] BeginMatch REJECTED: bad args (blood='..tostring(blood)..' time='..tostring(time)..' map='..tostring(mapArg)..')')
         if source and source ~= 0 then SendNotifyServerToPlayer(source, 'Enter the elements correctly', 'error') end
         return false, 'bad args'
     end
@@ -800,7 +809,7 @@ function BeginMatch(source, blood, time, mapArg, teamArg)
     LastAnnouncedSquadCount = nil
     MatchKillTotals = {}
     CurrentMatchMap = Map
-    print('[WZ DEBUG] BeginMatch ACCEPTED: Map='..Map..' Team='..Team..' #Players going in='..#Players)
+    WZDebugPrint('[WZ DEBUG] BeginMatch ACCEPTED: Map='..Map..' Team='..Team..' #Players going in='..#Players)
     TriggerClientEvent("AWZ:CloseUI", -1)
     AntiCheatMonitor()
     SpawnMatchVehicles(Map) -- Expansion: Vehicle Loot
@@ -890,7 +899,7 @@ RegisterCommand(Config.closelobbey,function(source,args)
     if IsPlayerCanStart(source) then 
         if  StartMatch then return SendNotifyServerToPlayer(source , 'Warzone has started' , 'error') end 
         if not  Lobbey then return SendNotifyServerToPlayer(source , 'Lobbey has not  opened' , 'error')  end 
-        for k,v in pairs(Players) do  print('[WZ DEBUG] ExitMision -> '..v.ID..' from CLOSELOBBEY command') TriggerClientEvent("AWZ:ExitMision",v.ID )  end 
+        for k,v in pairs(Players) do  WZDebugPrint('[WZ DEBUG] ExitMision -> '..v.ID..' from CLOSELOBBEY command') TriggerClientEvent("AWZ:ExitMision",v.ID )  end 
         Players = {}
         StartMatch = false 
         Lobbey = false 
@@ -903,7 +912,7 @@ RegisterCommand(Config.endwarzoneCommend ,function(source,args)
     if IsPlayerCanStart(source) then 
         if not StartMatch then return SendNotifyServerToPlayer(source , 'Warzone has not started' , 'error') end 
         if  Lobbey then return SendNotifyServerToPlayer(source , 'Lobbey has opened' , 'error')  end 
-        for k,v in pairs(Players) do  print('[WZ DEBUG] ExitMision -> '..v.ID..' from ENDWARZONE command') TriggerClientEvent("AWZ:ExitMision",v.ID )  end 
+        for k,v in pairs(Players) do  WZDebugPrint('[WZ DEBUG] ExitMision -> '..v.ID..' from ENDWARZONE command') TriggerClientEvent("AWZ:ExitMision",v.ID )  end 
         Players = {}
         StartMatch = false 
         Lobbey = false 
@@ -924,7 +933,7 @@ RegisterCommand(Config.exitCommend,function(source,args)
                     Prisoner = Prisoner - 1
                 end
                 table.remove(Players , k,v) 
-                print('[WZ DEBUG] ExitMision -> '..source..' from EXITWZ command')
+                WZDebugPrint('[WZ DEBUG] ExitMision -> '..source..' from EXITWZ command')
                 TriggerClientEvent("AWZ:ExitMision",source )
                 SendNotifyServerToPlayer(source , 'You left the Battle' , 'info') 
                 break 
@@ -935,7 +944,7 @@ end)
 function StartWarZone( Blood , Time , Coord , Team , Map) 
     SendMessage(Config.StartMatchNotify) 
     CreateThread(function()
-        print('[WZ DEBUG] StartWarZone thread begins, snapshotting #Players='..#Players)
+        WZDebugPrint('[WZ DEBUG] StartWarZone thread begins, snapshotting #Players='..#Players)
         -- Fix: this loop used to read the live `Players` table across
         -- Wait(5) yields, so a player disconnecting/leaving mid-loop (still
         -- possible: StartMatch is already true, and playerDropped/exitwz
@@ -1091,7 +1100,7 @@ function StartWarZone( Blood , Time , Coord , Team , Map)
                 squadDebug = squadDebug..'squad'..i..'=['..table.concat(squad, ',')..'] '
             end
         end
-        print('[WZ DEBUG] Squads built: '..squadDebug)
+        WZDebugPrint('[WZ DEBUG] Squads built: '..squadDebug)
         -- Feature: Team Uniform -- offer a matching outfit to any squad of
         -- 2+ players (colors cycle per squad) before the drop.
         local SquadColors = {'Red', 'Blue', 'Green', 'Yellow', 'Purple', 'Orange'}
@@ -1107,9 +1116,9 @@ function StartWarZone( Blood , Time , Coord , Team , Map)
         end
         InsertTeam ()
         Wait(1000)
-        print('[WZ DEBUG] About to send AWZ:StartMatch to #Players='..#Players..' (live table, post-Wait(1000))')
+        WZDebugPrint('[WZ DEBUG] About to send AWZ:StartMatch to #Players='..#Players..' (live table, post-Wait(1000))')
         for k,v in pairs(Players) do 
-            print('[WZ DEBUG] -> sending AWZ:StartMatch to source='..v.ID)
+            WZDebugPrint('[WZ DEBUG] -> sending AWZ:StartMatch to source='..v.ID)
             SetPlayerRoutingBucket(v.ID, Config.FightWorld  )
             AntiCheatGrace(v.ID)
             TriggerClientEvent('AWZ:StartMatch' ,v.ID, Blood , Config.DistanceZone , Coord , Time , 0  , Map )
@@ -1335,7 +1344,7 @@ AddEventHandler("esx:onPlayerDeath", function(KillData)
             table.insert(Spectators, source)
             TriggerClientEvent("AWZ:EnterSpectator", source, mates)
         else
-            print("[WZ DEBUG] ExitMision -> "..source.." from GULAG DEATH (no alive squadmates)") TriggerClientEvent("AWZ:ExitMision", source)
+            WZDebugPrint("[WZ DEBUG] ExitMision -> "..source.." from GULAG DEATH (no alive squadmates)") TriggerClientEvent("AWZ:ExitMision", source)
         end
         Prisoner = Prisoner - 1
         if KillData.killer ~= false and KillData.killer ~= "Leaved" then
@@ -1423,7 +1432,7 @@ AddEventHandler('AWZ:LeaveSpectator', function()
             break
         end
     end
-    print("[WZ DEBUG] ExitMision -> "..source.." from LEAVE SPECTATOR") TriggerClientEvent("AWZ:ExitMision", source)
+    WZDebugPrint("[WZ DEBUG] ExitMision -> "..source.." from LEAVE SPECTATOR") TriggerClientEvent("AWZ:ExitMision", source)
 end)
 RegisterServerEvent("AWZ:SetRBucket")
 AddEventHandler("AWZ:SetRBucket", function(Wz)
@@ -1589,7 +1598,7 @@ ESX.RegisterServerCallback('AWZ:SetPlayerInWarZone', function(source, cb)
         SetPlayerRoutingBucket(source , Config.LobbeyWorld  )
         table.insert(Players , { ID = source , ingulag = false })
     end    
-    print('[WZ DEBUG] AWZ:SetPlayerInWarZone source='..source..' CanInsert='..tostring(CanInsert)..' #Players now='..#Players)
+    WZDebugPrint('[WZ DEBUG] AWZ:SetPlayerInWarZone source='..source..' CanInsert='..tostring(CanInsert)..' #Players now='..#Players)
      cb(CanInsert)
 end)
 ESX.RegisterServerCallback('AWZ:SetPlayerInGulag', function(source, cb)
@@ -1781,7 +1790,7 @@ function WarZoneWinner(Winners)
     -- Any players still in spectator mode (their squad lost, so the match
     -- ending is their cue to leave too) get sent out now.
     for k, v in pairs(Spectators) do
-        print("[WZ DEBUG] ExitMision -> "..v.." from MATCH WINNER cleanup (leftover spectator)") TriggerClientEvent("AWZ:ExitMision", v)
+        WZDebugPrint("[WZ DEBUG] ExitMision -> "..v.." from MATCH WINNER cleanup (leftover spectator)") TriggerClientEvent("AWZ:ExitMision", v)
     end
     Spectators = {}
 
