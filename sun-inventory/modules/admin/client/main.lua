@@ -21,9 +21,9 @@ function openOtherPlayerInventory(target, permission)
             return sortItems(getOnlinePlayerItem(target))
         elseif data.type == 'moveInside' then
         elseif data.type == 'moveToOther' then
-            ESX.TriggerServerEvent('inventory:admin:put', target, data.data)
+            TriggerServerEvent('inventory:admin:put', target, data.data)
         elseif data.type == 'moveToMain' then
-            ESX.TriggerServerEvent('inventory:admin:get', target, data.data)
+            TriggerServerEvent('inventory:admin:get', target, data.data)
             Wait(500)
             if data.data.droppedTo then
                 data.data.inventoryType = 'main'
@@ -49,9 +49,9 @@ function openOtherPlayerInventoryOffline(target)
             return sortItems(getOfflinePlayerItem(target))
         elseif data.type == 'moveInside' then
         elseif data.type == 'moveToOther' then
-            ESX.TriggerServerEvent('inventory:admin:put', target, data.data)
+            TriggerServerEvent('inventory:admin:put', target, data.data)
         elseif data.type == 'moveToMain' then
-            ESX.TriggerServerEvent('inventory:admin:get', target, data.data)
+            TriggerServerEvent('inventory:admin:get', target, data.data)
             Wait(500)
             if data.data.droppedTo then
                 data.data.inventoryType = 'main'

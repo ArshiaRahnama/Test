@@ -76,7 +76,8 @@ client_scripts {
 	'client/config_mt.lua',
 	'client/mt_main.lua',
 
-	'client/teleport_police.lua',
+	'client/config_teleport.lua',
+	'client/teleport_manager.lua',
 
 
 
@@ -89,11 +90,6 @@ client_scripts {
 	'client/config_weazel.lua',
 	'client/weazel_main.lua',
 	'client/weazel_cam_client.lua',
-
-	'client/teleport_ambulance.lua',
-	'client/teleport_mechanic.lua',
-	'client/teleport_taxi.lua',
-	'client/teleport_weazel.lua',
 
 	'client/config_ambulance.lua',
 	'client/ambulance_main.lua',

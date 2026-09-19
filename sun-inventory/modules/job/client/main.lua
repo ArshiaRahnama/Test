@@ -1,3 +1,19 @@
+--[[
+    sun-inventory — job stash client.
+
+    FIXES:
+      - ESX.Alert doesn't exist -> ESX.ShowNotification.
+      - 'esx_society:getInventoryPermission' is not a callback esx_society
+        (or anything else in this project) registers - TriggerServerCallback
+        on a name nobody answers never resolves, so Citizen.Await(p) below
+        would have hung forever the first time anyone opened a job stash.
+        Removed the whole per-item-permission layer it was trying to
+        build: access is already gated server-side, uniformly per job, by
+        modules/job/server/main.lua (xPlayer.job.name == jobName) - that's
+        the actual security boundary, so this just matches it instead of
+        pretending a finer-grained, nonexistent permission system exists.
+]]
+
 function openJobInventory()
     jobName = ESX.GetPlayerData().job.name
     ESX.UI.Menu.CloseAll()
@@ -7,18 +23,18 @@ function openJobInventory()
         elseif data.type == 'update' then
             return sortItems(getJobInventory(jobName))
         elseif data.type == 'moveInside' then
-            ESX.TriggerServerEvent('inventory-job:updateSlot', jobName, data.data)
+            TriggerServerEvent('inventory-job:updateSlot', jobName, data.data)
         elseif data.type == 'moveToOther' then
-            if ESX.isDead() then return end
-            local clotheData = exports['sunset_clothe']:getClotheData(data.data.name)
+            if IsPlayerDead() then return end
+            local clotheData = GetClotheData(data.data.name)
             if not clotheData then
-                ESX.TriggerServerEvent('inventory-job:put', jobName, data.data)
+                TriggerServerEvent('inventory-job:put', jobName, data.data)
             else
-                ESX.Alert('', 'Shoma nemitavanid dar komod job lebas bezarid!', 7000, 'error')
+                ESX.ShowNotification('Shoma nemitavanid dar komod job lebas bezarid!')
             end
         elseif data.type == 'moveToMain' then
-            if ESX.isDead() then return end
-            ESX.TriggerServerEvent('inventory-job:get', jobName, data.data)
+            if IsPlayerDead() then return end
+            TriggerServerEvent('inventory-job:get', jobName, data.data)
             Wait(500)
             if data.data.droppedTo then
                 data.data.inventoryType = 'main'
@@ -30,34 +46,8 @@ end
 
 function getJobInventory(jobName)
     local p = promise.new()
-    local gradeName = ESX.GetPlayerData().job.grade_name
     ESX.TriggerServerCallback('inventory-job:getInventory', function(data)
-        ESX.TriggerServerCallback('esx_society:getInventoryPermission', function(perm, perm2)
-            local items = {
-                items = {},
-                weapons = {},
-                slots = {}
-            }
-            for k , v in ipairs(data.items) do
-                if perm[v.name] or perm2[v.name] or perm[v.name:lower()] or perm2[v.name:lower()] or gradeName == 'boss' then
-                    table.insert(items.items,v)
-                else
-                    v.locked = true
-                    table.insert(items.items,v)
-                end
-            end
-            for k , v in ipairs(data.weapons) do
-                if perm[v.name] or perm2[v.name] or perm[v.name:lower()] or perm2[v.name:lower()] or gradeName == 'boss' then
-                    table.insert(items.weapons, v)
-                else
-                    v.locked = true
-                    table.insert(items.weapons, v)
-                end
-            end
-            items.slots = data.slots
-            p:resolve(items)
-        end)
-        -- p:resolve(data)
+        p:resolve(data)
     end, jobName)
     return Citizen.Await(p)
 end

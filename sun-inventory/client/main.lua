@@ -30,8 +30,38 @@
     differs.
 ]]
 
+--[[
+    FIX: nothing anywhere in this resource ever fetched the ESX shared
+    object client-side (same root cause as the server-side "attempt to
+    index a nil value (global 'ESX')" crash - just the async client-side
+    form of it, since ESX.* here is only ever called from inside NUI/game
+    callbacks, not at top-level, so it wouldn't have errored until the
+    first time you actually opened the inventory). Every ESX.* call in
+    this file and in client/clothe.lua, client/setting.lua and every
+    modules/*/client/main.lua depends on this having run first.
+]]
+ESX = nil
+Citizen.CreateThread(function()
+    while ESX == nil do
+        TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
+        Citizen.Wait(0)
+    end
+end)
+
 isOpen = false
 local uiReady = false
+
+--[[
+    FIX: ESX.isDead() doesn't exist on this server's shared object (see
+    essentialmode/client/main.lua and client/modules/death.lua - death
+    state is tracked as a local variable there, never exposed on ESX).
+    Every ESX.isDead() call in this resource (this file and every
+    modules/*/client/main.lua that gates an action on the player being
+    alive) is replaced with this native-based check instead.
+]]
+function IsPlayerDead()
+    return IsPedFatallyInjured(PlayerPedId()) or IsEntityDead(PlayerPedId())
+end
 local currentSecond = nil -- { opts = {...}, callback = function(data) ... end }
 
 -- ---------------------------------------------------------------------------
@@ -139,17 +169,7 @@ end
 
 function sendMoney()
     if not uiReady then return end
-    local playerData = ESX.GetPlayerData()
-    local money = 0
-    if playerData.accounts then
-        for _, acc in pairs(playerData.accounts) do
-            if acc.name == 'money' or acc.name == 'cash' then
-                money = acc.money
-                break
-            end
-        end
-    end
-    SendNuiMessage(json.encode({ action = 'updateMoney', obj = money }))
+    SendNuiMessage(json.encode({ action = 'updateMoney', obj = ESX.PlayerData.money or 0 }))
 end
 
 function sendConfig()
@@ -173,7 +193,7 @@ end
 -- ---------------------------------------------------------------------------
 
 function openInventory()
-    if isOpen or ESX.isDead() then return end
+    if isOpen or IsPlayerDead() then return end
     isOpen = true
     currentSecond = nil
     local playerData = ESX.GetPlayerData()
@@ -213,8 +233,8 @@ end
 RegisterCommand('inventory', function()
     toggleInventory()
 end, false)
--- Default keybind: TAB. Players can rebind it from FiveM's Settings > Key Bindings > FiveM.
-RegisterKeyMapping('inventory', 'Open/close inventory', 'keyboard', 'TAB')
+-- Default keybind: F2. Players can rebind it from FiveM's Settings > Key Bindings > FiveM.
+RegisterKeyMapping('inventory', 'Open/close inventory', 'keyboard', 'F2')
 
 -- Close on ESC while open (the NUI itself has no dedicated "close" callback
 -- in the observed protocol, so this is handled client-side).
@@ -279,6 +299,16 @@ end
 
 RegisterNUICallback('inventory:mounted', function(_, cb)
     uiReady = true
+    -- FIX: the NUI's Vue root renders `{{ money.toLocaleString() }}` (see
+    -- ui/index.html) as soon as it mounts, regardless of whether the
+    -- inventory is actually open - `money` is undefined until something
+    -- sends it a value, and sendMoney()/sendConfig() were previously only
+    -- ever called from inside openInventory(), so every player got a
+    -- flood of "Cannot read properties of undefined (reading
+    -- 'toLocaleString')" render errors from the moment the resource
+    -- started until they first opened their inventory.
+    sendConfig()
+    sendMoney()
     cb('ok')
 end)
 
@@ -331,29 +361,29 @@ RegisterNUICallback('inventory:instantToSecond', function(data, cb)
 end)
 
 RegisterNUICallback('inventory:useItem', function(data, cb)
-    if not ESX.isDead() then
-        ESX.TriggerServerEvent('esx:useItem', data.name)
+    if not IsPlayerDead() then
+        TriggerServerEvent('esx:useItem', data.name)
     end
     cb('ok')
 end)
 
 RegisterNUICallback('inventory:throwItem', function(data, cb)
-    if not ESX.isDead() then
-        ESX.TriggerServerEvent('inventory:throwItem', data.name, data.count, data.ammo)
+    if not IsPlayerDead() then
+        TriggerServerEvent('inventory:throwItem', data.name, data.count, data.ammo)
     end
     cb('ok')
 end)
 
 RegisterNUICallback('inventory:giveItemToTarget', function(data, cb)
-    if not ESX.isDead() and data.targetSrc then
-        ESX.TriggerServerEvent('inventory:giveItemToTarget', data.targetSrc, data.name, data.count, data.ammo)
+    if not IsPlayerDead() and data.targetSrc then
+        TriggerServerEvent('inventory:giveItemToTarget', data.targetSrc, data.name, data.count, data.ammo)
     end
     cb('ok')
 end)
 
 RegisterNUICallback('inventory:swapMoney', function(data, cb)
-    if not ESX.isDead() and data.targetSrc and tonumber(data.count) and tonumber(data.count) > 0 then
-        ESX.TriggerServerEvent('inventory:swapMoney', data.targetSrc, tonumber(data.count))
+    if not IsPlayerDead() and data.targetSrc and tonumber(data.count) and tonumber(data.count) > 0 then
+        TriggerServerEvent('inventory:swapMoney', data.targetSrc, tonumber(data.count))
     end
     cb('ok')
 end)
@@ -369,22 +399,25 @@ end)
 -- KEEP THE OPEN PANES IN SYNC WITH SERVER-DRIVEN INVENTORY CHANGES
 -- ---------------------------------------------------------------------------
 
-RegisterNetEvent('esx:addInventoryItem', function(itemLabel, count, name)
-    itemNotification(itemLabel, count, 'img/items/' .. tostring(name) .. '.png', false)
+-- FIX: essentialmode's server fires these as
+-- TriggerClientEvent("esx:addInventoryItem"/"esx:removeInventoryItem", source, item, count)
+-- where `item` is the full item table (.name/.label/...), not three
+-- separate (label, count, name) arguments.
+RegisterNetEvent('esx:addInventoryItem', function(item, count)
+    itemNotification(item and item.label, count, 'img/items/' .. tostring(item and item.name) .. '.png', false)
     sendPlayerInventory()
     refreshSecond()
 end)
 
-RegisterNetEvent('esx:removeInventoryItem', function(itemLabel, count, name)
-    itemNotification(itemLabel, count, 'img/items/' .. tostring(name) .. '.png', true)
+RegisterNetEvent('esx:removeInventoryItem', function(item, count)
+    itemNotification(item and item.label, count, 'img/items/' .. tostring(item and item.name) .. '.png', true)
     sendPlayerInventory()
     refreshSecond()
 end)
 
-RegisterNetEvent('esx:setAccountMoney', function(account)
-    if account.name == 'money' or account.name == 'cash' then
-        sendMoney()
-    end
+RegisterNetEvent('moneyUpdate', function(money)
+    if not uiReady then return end
+    SendNuiMessage(json.encode({ action = 'updateMoney', obj = money }))
 end)
 
 RegisterNetEvent('esx:showInventory', function()

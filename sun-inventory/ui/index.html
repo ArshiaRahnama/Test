@@ -29,6 +29,19 @@
 <body>
     <template id="app">
         <div>
+            <!-- FIX: moved out of the v-if="opened" block below. app.js's
+                 document.onmousemove/onmouseup handlers reference
+                 document.getElementById('draggedItem') unconditionally, with
+                 no null-check, on every mouse move/up - not just while
+                 actually dragging. With this div only existing while the
+                 inventory was open (v-if destroys it from the DOM entirely
+                 when closed), any mouse movement while the inventory was
+                 closed threw "Cannot set properties of null (setting
+                 'innerHTML')". Keeping it always in the DOM (CSS still only
+                 shows/positions it during an actual drag) fixes that. -->
+            <div id="draggedItem">
+                <div class="entry"></div>
+            </div>
             <div class="notiparent">
                 <div class="notchild slots">
                     <transition-group style="display: flex;"
@@ -63,9 +76,6 @@
 
                     <!-- -------------------------------------- -->
                     <!-- MAIN -->
-                    <div id="draggedItem">
-                        <div class="entry"></div>
-                    </div>
                     <div v-if="settings_enabled('background')" class="inventorybg"></div>
 
                     <!-- -------------------------------------- -->

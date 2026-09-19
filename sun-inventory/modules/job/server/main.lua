@@ -1,7 +1,5 @@
 --[[
     sun-inventory — job stash storage.
-    'esx_society:getInventoryPermission' (called from modules/job/client/main.lua)
-    belongs to the separate esx_society resource and is not redefined here.
 ]]
 
 local function jobKey(jobName)

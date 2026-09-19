@@ -9,6 +9,18 @@
     security-hardened resources use: verify -> lock -> mutate -> notify.
 ]]
 
+--[[
+    ESX isn't a resource-global here - every resource has to fetch its own
+    copy of the shared object. essentialmode's handler replies
+    synchronously (`AddEventHandler("esx:getSharedObject", function(cb)
+    cb(ESX) end)`), so this must be the very first thing that runs in this
+    resource: fxmanifest.lua loads server/main.lua before
+    modules/**/server/**.lua, and everything after this line (including
+    every module file) relies on the global `ESX` already being set.
+]]
+ESX = nil
+TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
+
 CreateThread(function()
     MySQL.Async.execute([[
         CREATE TABLE IF NOT EXISTS `sun_inventories` (
@@ -132,7 +144,7 @@ AddEventHandler('inventory:swapMoney', function(targetId, amount)
     if not amount or amount <= 0 or amount ~= math.floor(amount) then return end
 
     withLock(src, function()
-        if xPlayer.getMoney() < amount then return end
+        if xPlayer.money < amount then return end
         xPlayer.removeMoney(amount)
         xTarget.addMoney(amount)
     end)

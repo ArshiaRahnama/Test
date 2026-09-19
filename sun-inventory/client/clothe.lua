@@ -26,9 +26,9 @@ RegisterNUICallback('Select', function(data, cb)
     mode = data.mode
     SendNuiMessage(json.encode({
         action = "loadClothe",
-        obj = exports['sunset_clothe']:getOwnedClotheByType(mode, true),
+        obj = GetOwnedClotheByType(mode),
         mode = mode,
-        used = exports['sunset_clothe']:getUsedType()
+        used = GetUsedType()
     }))
     cb('ok')
 end)
@@ -36,7 +36,7 @@ end)
 RegisterNUICallback('LoadPack', function(_, cb)
     SendNuiMessage(json.encode({
         action = 'loadClothe',
-        obj =  exports['sunset_clothe']:getOwnedPack(),
+        obj =  GetOwnedPack(),
         mode = 'pack'
     }))
     cb('ok')
@@ -53,22 +53,26 @@ RegisterNUICallback('ChangeClothe', function(data, cb)
     end)
     TriggerEvent('removeSwatHelmet')
     if componentIds[data.name] then
-		exports['sunset_clothe']:unUseByType(data.name)
+		UnUseByType(data.name)
 		playClotheAnim(data.name)
         if data.name == 'bproof' and GetPedArmour(PlayerPedId()) > 0 then
             TriggerEvent('esx:spawnObject', 'prop_bodyarmour_03')
-            ESX.SetPedArmour(PlayerPedId(),0)
-            -- SetPedComponentVariation(PlayerPedId(), 9, 0,  0, 2)
-            TriggerEvent('skinchanger:loadStuff',{bproof_1 = 0,bproof_2 = 0})
+            SetPedArmour(PlayerPedId(), 0)
+            -- FIX: 'skinchanger:loadStuff' isn't a handler skinchanger
+            -- registers (checked [SCRIPT]/skinchanger/client/main.lua) - this
+            -- silently no-op'd. The real per-key setter is 'skinchanger:change'.
+            TriggerEvent('skinchanger:change', 'bproof_1', 0)
+            TriggerEvent('skinchanger:change', 'bproof_2', 0)
         end
 	else
-		exports['sunset_clothe']:toggleClothe(data.name)
-		playClotheAnim(exports['sunset_clothe']:getClotheData(data.name).type)
+		ToggleClothe(data.name)
+		local clotheData = GetClotheData(data.name)
+		if clotheData then playClotheAnim(clotheData.type) end
     end
 	Citizen.Wait(300)
     SendNuiMessage(json.encode({
         action = "update",
-        obj = exports['sunset_clothe']:getUsedType()
+        obj = GetUsedType()
     }))
     refreshPedScreen()
     sendPlayerInventory()
@@ -82,7 +86,7 @@ RegisterNUICallback('UsePack', function(data, cb)
         spam = false
     end)
     closeInventory()
-    ESX.TriggerServerEvent("esx:useItem", data.name)
+    TriggerServerEvent("esx:useItem", data.name)
     cb('ok')
 end)
 
@@ -105,7 +109,7 @@ RegisterNUICallback('CreatePack', function(data, cb)
             menu1.close()
             name = data1.value
             packAnim()
-            exports['sunset_clothe']:createPack(name)
+            CreatePack(name)
             Wait(300)
         end
     end, function(data1,menu1)

@@ -73,6 +73,8 @@
 <iframe id="ac-frame" src="../ui/index.html"></iframe>
 <iframe id="report-frame" src="../ui/report/index.html"></iframe>
 <script>
+  var RES = 'Unique_AdminPanel';
+
   window.addEventListener('message', function (event) {
     var data = event.data || {};
     var adminFrame = document.getElementById('admin-frame');
@@ -82,7 +84,17 @@
     function activate(frame, others) {
       if (frame) {
         frame.style.pointerEvents = 'auto';
-        if (frame.contentWindow) frame.contentWindow.focus();
+        if (frame.contentWindow) {
+          frame.contentWindow.focus();
+          // فوکوس‌کردنِ خودِ window کافی نیست - اگه هیچی داخلِ سندِ
+          // آیفریم واقعاً فوکوس نگرفته باشه (نه حتی <body>)، کیدان‌لیسنرِ
+          // خودِ اون سند ممکنه رویدادِ کیبورد رو نگیره. این یک تلاشِ
+          // اضافیه، ضرری نداره (همون‌مبدأ‌ست، try/catch هم برای احتیاط).
+          try {
+            var doc = frame.contentWindow.document;
+            if (doc && doc.body) doc.body.focus();
+          } catch (e) {}
+        }
       }
       others.forEach(function (f) { if (f) f.style.pointerEvents = 'none'; });
     }
@@ -104,6 +116,38 @@
     if (reportFrame && reportFrame.contentWindow) {
       reportFrame.contentWindow.postMessage(event.data, '*');
     }
+  });
+
+  // ------------------------------------------------------------- Esc ---
+  // یک لایه‌ی اضافیِ best-effort، نه خطِ دفاعِ اصلی. با تستِ واقعی (نه
+  // حدس) معلوم شد که وقتی contentWindow.focus() آیفریمِ گزارش رو فعال
+  // میکنه، فوکوسِ کیبوردِ واقعی میره رو خودِ المنتِ <iframe> تو سندِ
+  // بالایی - نه رو چیزی داخلِ سندِ خودِ آیفریم. نتیجه: هم این لیسنرِ
+  // سطحِ بالا (چون activeElement دیگه «سند» نیست) هم حتی کیدان‌لیسنرِ
+  // خودِ آیفریم (چون هیچی داخلش واقعاً فوکوس نگرفته) هر دو ممکنه رویدادِ
+  // کیبورد رو از دست بدن - این محدودیتِ امنیتیِ خودِ مرورگره (رویدادِ
+  // کیبورد از مرزِ فریم رد نمیشه)، نه یک باگِ قابلِ‌رفعِ کاملِ سمتِ ما.
+  //
+  // خطِ دفاعِ واقعی و قابلِ‌اتکا سمتِ Lua ئه (client/report_main.lua) -
+  // مستقیم از روی کنترلِ نیتیوِ بازی می‌خونه، کاملاً مستقل از فوکوسِ DOM.
+  // این لیسنر فقط برای حالت‌هایی که مرورگر لطف کنه نگهش داشتیم - ضرری
+  // نداره، گاهی زودتر از ترد Lua واکنش نشون میده.
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape') return;
+
+    var reportFrame = document.getElementById('report-frame');
+    if (!reportFrame || reportFrame.style.pointerEvents !== 'auto') return; // پنلِ گزارش الان فعال نیست
+
+    if (reportFrame.contentWindow) {
+      reportFrame.contentWindow.postMessage({ _uniqueReport: true, ureport: 'hideAll' }, '*');
+    }
+    reportFrame.style.pointerEvents = 'none';
+
+    fetch('https://' + RES + '/exit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json; charset=UTF-8' },
+      body: JSON.stringify({}),
+    }).catch(function () {});
   });
 </script>
 </body>

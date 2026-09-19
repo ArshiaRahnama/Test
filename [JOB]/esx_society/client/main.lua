@@ -1250,14 +1250,26 @@ function OpenManageJobMenu(society)
 		table.insert(elements, {label = _U('manage_inventory'), value = 'manage_inventory'})
 
 		if ESX.PlayerData.job.grade >= 16 then
+			-- BUG FIX: this used to only check grade >= 16 -- any job's boss
+			-- with a high enough grade saw this button, even though toggling
+			-- it only ever does anything for the specific jobs
+			-- ConfigWashMoney.GovernmentJobs (ScriptPack/washmoney_config.lua)
+			-- actually lists (DOJ + Law Enforcement). Gated on the same list
+			-- now via its export, so it can't drift out of sync and non-eligible
+			-- jobs don't see a button that does nothing. exports[] throws if
+			-- ScriptPack isn't running, so pcall-wrapped like the paintball
+			-- button above -- if it's not running, the button just doesn't show.
+			local ok, isEligible = pcall(function()
+				return exports['ScriptPack']:IsWashMoneyEligibleJob(ESX.PlayerData.job.name)
+			end)
 
-			if Wash == "true" then
-				table.insert(elements, { label = 'wash money' .. " | [<font color=Lime>✅</font>]", isonoff = false, value = 'wash_money' })
-			else
-				table.insert(elements, { label = 'wash money' .. " | [<font color=red>❌</font>]", isonoff = true, value = 'wash_money' })
+			if ok and isEligible then
+				if Wash == "true" then
+					table.insert(elements, { label = 'wash money' .. " | [<font color=Lime>✅</font>]", isonoff = false, value = 'wash_money' })
+				else
+					table.insert(elements, { label = 'wash money' .. " | [<font color=red>❌</font>]", isonoff = true, value = 'wash_money' })
+				end
 			end
-
-
 		end
 
 		ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'manage_job' .. society, {

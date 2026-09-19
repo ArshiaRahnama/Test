@@ -11,13 +11,13 @@ function openPublicInventory(name, owner, label, searchKey)
         elseif data.type == 'update' then
             return sortItems(getPublicInventory(name, owner))
         elseif data.type == 'moveInside' then
-            ESX.TriggerServerEvent('inventory-public:updateSlot', name, data.data)
+            TriggerServerEvent('inventory-public:updateSlot', name, data.data)
         elseif data.type == 'moveToOther' then
-            if ESX.isDead() then return end
-            ESX.TriggerServerEvent('inventory-public:put', name, data.data)
+            if IsPlayerDead() then return end
+            TriggerServerEvent('inventory-public:put', name, data.data)
         elseif data.type == 'moveToMain' then
-            if ESX.isDead() then return end
-            ESX.TriggerServerEvent('inventory-public:get', name, data.data)
+            if IsPlayerDead() then return end
+            TriggerServerEvent('inventory-public:get', name, data.data)
             Wait(500)
             if data.data.droppedTo then
                 data.data.inventoryType = 'main'

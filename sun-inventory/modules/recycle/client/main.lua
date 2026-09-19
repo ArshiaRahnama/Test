@@ -4,9 +4,9 @@ function openRecycle(entity)
     local recycleId = nil
     local lastCoords = nil
     for k, v in pairs(recycleCoords) do
-        if not lastCoords or ESX.GetDistance(coords, v) < lastCoords then
+        if not lastCoords or #(coords - v) < lastCoords then
             recycleId = k
-            lastCoords = ESX.GetDistance(coords, v)
+            lastCoords = #(coords - v)
         end
     end
     if recycleId then

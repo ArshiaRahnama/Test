@@ -1,8 +1,42 @@
-local doesHaveBag = false
+--[[
+    sun-inventory — bag (worn backpack -> extra storage) client.
+
+    FIXES applied here (all genuine bugs in the uploaded package, verified
+    against essentialmode's real APIs - not assumptions):
+      - ESX.GetDistance doesn't exist; essentialmode has no such helper.
+        Replaced with plain vector subtraction (#(a - b)).
+      - RegisterNetEvent('esx:addInventoryItem', function(label, count, name)):
+        essentialmode's server actually fires this as
+        TriggerClientEvent("esx:addInventoryItem", source, item, count) -
+        i.e. (item TABLE, count), not (label, count, name). The old
+        signature meant `name:find(...)` was being called on a NUMBER
+        (count) and would hard-error the first time it ran.
+      - The matching removal handler was registered as
+        'esx:removeInventoryItemss' (typo, extra 's') so it silently never
+        fired at all.
+      - ESX.SetPlayerState doesn't exist; the FiveM-native equivalent is
+        LocalPlayer.state.
+      - ESX.RegisterClientCallback doesn't exist, and the resource it was
+        wrapping for ('exports["input"]:Keyboard') isn't in this project
+        either, and nothing anywhere ever actually calls 'bag:getName' -
+        removed as unreachable dead code rather than half-fixing an unused
+        naming prompt with no keyboard-input resource behind it.
+      - The "show a bag prop on the ped matching whichever kif_N item is
+        equipped" logic (setBag/onSkinChange/doesHaveBagSkin) referenced a
+        global `bag` table (`bag[1]`, `bag[2]`) that is never defined
+        ANYWHERE in this package - there is no source for "which
+        drawable/texture does kif_5 look like". That would have hard-erred
+        (indexing a nil value) the first time setBag() ran. Removed rather
+        than guessed at; the storage side of bags (this whole file's actual
+        job) doesn't depend on it. If you want a worn-bag visual, that
+        needs an explicit drawable/texture mapping per kif_N item, which
+        isn't defined anywhere in the uploaded resource.
+]]
+
 local currentBag = nil
 local inSearch = nil
 local bagId = nil
-local kifChanged = false
+
 function openBag(bagId, maxWeight)
     local items = sortItems(getBagInventory(bagId))
     currentBag = 'kif_'.. bagId
@@ -11,16 +45,16 @@ function openBag(bagId, maxWeight)
             currentBag = nil
         elseif data.type == 'update' then
             return sortItems(getBagInventory(bagId))
+        elseif data.type == 'moveToOther' then
+            if IsPlayerDead() or inSearch then return end
+            TriggerServerEvent('inventory-bag:put', bagId, data.data)
         elseif data.type == 'moveInside' then
             if not inSearch then
-                ESX.TriggerServerEvent('inventory-bag:updateSlot', bagId, data.data)
+                TriggerServerEvent('inventory-bag:updateSlot', bagId, data.data)
             end
-        elseif data.type == 'moveToOther' then
-            if ESX.isDead() or inSearch then return end
-            ESX.TriggerServerEvent('inventory-bag:put', bagId, data.data, inSearch)
         elseif data.type == 'moveToMain' then
-            if ESX.isDead() then return end
-            ESX.TriggerServerEvent('inventory-bag:get', bagId, data.data, inSearch)
+            if IsPlayerDead() then return end
+            TriggerServerEvent('inventory-bag:get', bagId, data.data)
             Wait(500)
             if data.data.droppedTo then
                 data.data.inventoryType = 'main'
@@ -38,15 +72,15 @@ function getBagInventory(bagId)
     return Citizen.Await(p)
 end
 
-RegisterNetEvent('inventory-bag:openBag', function(bagId, maxWeight, search, target)
+RegisterNetEvent('inventory-bag:openBag', function(openBagId, maxWeight, search, target)
     inSearch = search
-    openBag(bagId, maxWeight)
+    openBag(openBagId, maxWeight)
     if target then
         local ped = GetPlayerPed(GetPlayerFromServerId(target))
         Citizen.CreateThread(function()
             while true do
                 Wait(1000)
-                if not DoesEntityExist(ped) or ESX.GetDistance(GetEntityCoords(PlayerPedId()), GetEntityCoords(ped)) > 5 then
+                if not DoesEntityExist(ped) or #(GetEntityCoords(PlayerPedId()) - GetEntityCoords(ped)) > 5.0 then
                     break
                 end
             end
@@ -55,91 +89,36 @@ RegisterNetEvent('inventory-bag:openBag', function(bagId, maxWeight, search, tar
     end
 end)
 
-RegisterNetEvent('esx:addInventoryItem', function(label, count, name)
-    if name and name:find('kif_') then
-        setBag()
-        Wait(500)
-        bagId = nil
-        local doesHave = false
-        for k, v in pairs(ESX.GetPlayerData().inventory) do
-            if v.name:find('kif_') and v.count > 0 then
-                doesHave = true
-                local id = v.name:gsub('kif_', '')
-                bagId = tonumber(id)
-                break
-            end
+local function findOwnedBagId()
+    for _, v in pairs(ESX.GetPlayerData().inventory) do
+        if v.name:find('kif_') and v.count > 0 then
+            return tonumber(v.name:gsub('kif_', ''))
         end
-        ESX.SetPlayerState('bag', bagId)
+    end
+    return nil
+end
+
+RegisterNetEvent('esx:addInventoryItem', function(item, count)
+    local name = item and item.name
+    if name and name:find('kif_') then
+        Wait(500)
+        bagId = findOwnedBagId()
+        LocalPlayer.state:set('bag', bagId, true)
     elseif name and name:find('kool') then
         Wait(1000)
-        ESX.TriggerServerEvent('esx:useItem', name)
+        TriggerServerEvent('esx:useItem', name)
     end
 end)
 
-RegisterNetEvent('esx:removeInventoryItemss', function(label, count, name)
+RegisterNetEvent('esx:removeInventoryItem', function(item, count)
+    local name = item and item.name
     if name and name:find('kif_') then
         if currentBag == name then
             closeInventory()
             currentBag = nil
         end
         Wait(1500)
-        local doesHave = false
-        bagId = nil
-        for k, v in pairs(ESX.GetPlayerData().inventory) do
-            if v.name:find('kif_') and v.count > 0 then
-                doesHave = true
-                local id = v.name:gsub('kif_', '')
-                bagId = tonumber(id)
-                break
-            end
-        end
-        doesHaveBag = doesHave
-        ESX.SetPlayerState('bag', bagId)
-        if not doesHaveBag and kifChanged then
-            kifChanged = false
-            TriggerEvent('skinchanger:loadStuff', {bags_1 = 0, bags_2 = 0})
-        end
+        bagId = findOwnedBagId()
+        LocalPlayer.state:set('bag', bagId, true)
     end
 end)
-
-AddEventHandler('onSkinChange', function()
-    if doesHaveBag then
-        if not doesHaveBagSkin() then
-            kifChanged = true
-            TriggerEvent('skinchanger:loadStuff', {bags_1 = bag[1], bags_2 = bag[2]})
-        end
-    end
-end)
-
-function setBag()
-    if not doesHaveBag and not doesHaveBagSkin() then
-        doesHaveBag = true
-        kifChanged = true
-        TriggerEvent('skinchanger:loadStuff', {bags_1 = bag[1], bags_2 = bag[2]})
-    end
-end
-
-CreateThread(function()
-    while ESX == nil do
-        Wait(1000)
-    end
-    ESX.RegisterClientCallback('bag:getName', function(cb)
-        local keyboard, name = exports["input"]:Keyboard({
-            header = 'Name kif ra vared konid', 
-            rows = {'Name'}
-        })
-        if keyboard then
-            if name then
-                cb(name)
-            end
-        end
-    end)
-end)
-
-function doesHaveBagSkin()
-    local p = promise.new()
-    TriggerEvent('skinchanger:getSkin', function(skin)
-        p:resolve(skin.bags_1 ~= 0)
-    end)
-    return Citizen.Await(p)
-end

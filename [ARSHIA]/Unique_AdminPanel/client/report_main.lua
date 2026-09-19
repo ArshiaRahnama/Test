@@ -67,19 +67,37 @@ end
 -- فوکوس کیبورد رو داشته باشه تا اون رویداد رو بگیره. پنل ریپورت اما داخل
 -- یک آیفریمِ تو دلِ آیفریمِ دیگه‌ست (html/index.html میزبانِ سه پنله)، و
 -- روتینگِ فوکوس بین اونا با postMessage/contentWindow.focus() انجام میشه -
--- شکننده و به ترتیب اجرا/تایمینگِ پیام‌ها حساسه. نتیجه همون چیزی بود که تو
--- اسکرین‌شات دیده شد: پنل باز می‌مونه و Esc هیچ اثری نداره.
+-- شکننده و به ترتیب اجرا/تایمینگِ پیام‌ها حساسه.
 --
--- درمان: کاملاً مستقل از DOM/فوکوسِ آیفریم، مستقیم از روی کنترل نیتیوِ
--- بازی (200 = INPUT_FRONTEND_PAUSE) گوش میدیم. این همیشه کار میکنه چون به
--- هیچ چیزی تو NUI وابسته نیست، و همزمان کنترل رو دیزیبل میکنیم تا Esc باعث
--- باز شدن منوی pause بازی هم نشه.
+-- این ترد اون مشکل رو با گوش‌دادنِ مستقیم به کنترلِ نیتیوِ بازی دور می‌زنه
+-- (به هیچ چیزی تو NUI وابسته نیست). ولی یک نکته‌ی دیگه هم هست: خودِ
+-- Escape تو GTA/FiveM به‌طور معروفی سرسخته - حتی وقتی NuiFocus فعاله،
+-- گاهی موتورِ بازی قبل از اینکه اسکریپتِ ما فرصتِ چک‌کردن پیدا کنه، خودش
+-- منوی pause رو باز میکنه (این یک quirk شناخته‌شده‌ست، نه چیزی که فقط
+-- این ریسورس داشته باشه). برای همین سه لایه‌ی مستقل داریم، نه یکی:
+--   ۱) کنترل 200 (INPUT_FRONTEND_PAUSE) - نگاشتِ اصلیِ Esc
+--   ۲) کنترل 322 (INPUT_FRONTEND_CANCEL) - تو بعضی کانتکست‌ها Esc از این
+--      یکی رد میشه، نه از 200
+--   ۳) اگه بازم منوی pause باز شد (موتور برنده‌ی مسابقه شد)، همون لحظه
+--      خودمون می‌بندیمش - یک تورِ ایمنیِ آخر
 CreateThread(function()
     while true do
         Wait(0)
         if nuiFocusActive then
             DisableControlAction(0, 200, true)   -- INPUT_FRONTEND_PAUSE
-            if IsDisabledControlJustPressed(0, 200) then
+            DisableControlAction(0, 322, true)   -- INPUT_FRONTEND_CANCEL
+
+            local pressed = IsDisabledControlJustPressed(0, 200)
+                or IsDisabledControlJustPressed(0, 322)
+
+            if pressed then
+                send('hideAll')
+                setFocus(false)
+            elseif IsPauseMenuActive() then
+                -- تورِ ایمنی: موتور بازی برنده شد و خودش منو رو باز کرد؛
+                -- ما هم پنل خودمون رو می‌بندیم و هم منوی pause رو می‌بندیم
+                -- تا بازیکن گیر نکنه بینِ این دوتا.
+                SetPauseMenuActive(false)
                 send('hideAll')
                 setFocus(false)
             end
