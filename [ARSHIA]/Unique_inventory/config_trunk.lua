@@ -77,25 +77,25 @@ local Keys = {
     ["N9"] = 118
 }
 
-Config = {}
+TrunkConfig = {}
 
-Config.CheckOwnership = false -- If true, Only owner of vehicle can store items in trunk.
-Config.AllowPolice = false -- If true, police will be able to search players' trunks.
+TrunkConfig.CheckOwnership = false -- If true, Only owner of vehicle can store items in trunk.
+TrunkConfig.AllowPolice = false -- If true, police will be able to search players' trunks.
 
-Config.Locale = "en"
+TrunkConfig.Locale = "en"
 
-Config.OpenKey = Keys["LEFTALT"]
+TrunkConfig.OpenKey = Keys["LEFTALT"]
 
 -- Limit, unit can be whatever you want. Originally grams (as average people can hold 25kg)
-Config.Limit = 25000
+TrunkConfig.Limit = 25000
 
 -- Default weight for an item:
 -- weight == 0 : The item do not affect character inventory weight
 -- weight > 0 : The item cost place on inventory
 -- weight < 0 : The item add place on inventory. Smart people will love it.
-Config.DefaultWeight = 1000
+TrunkConfig.DefaultWeight = 1000
 
-Config.localWeight = {
+TrunkConfig.localWeight = {
     bread = 125,
     water = 330,
     WEAPON_SMG = 15000,
@@ -187,7 +187,7 @@ Config.localWeight = {
     money                   = 10,
 }
 
-Config.VehicleLimit = {
+TrunkConfig.VehicleLimit = {
     [0] = 30000, --Compact
     [1] = 40000, --Sedan
     [2] = 70000, --SUV
@@ -212,11 +212,11 @@ Config.VehicleLimit = {
     [21] = 0 --Trains
 }
 
-Config.CustomLimit = {
+TrunkConfig.CustomLimit = {
     {model = GetHashKey('lex570'), limit = 500000},
 }
 
-Config.VehiclePlate = {
+TrunkConfig.VehiclePlate = {
     taxi = "TAXI",
     cop = "LSPD",
     ambulance = "EMS0",

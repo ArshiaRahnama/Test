@@ -162,7 +162,7 @@ $(document).ready(function () {
       return
     }
     $.post(
-      'http://esx_inventory/requestItemSecondInventory',
+      'http://Unique_inventory/requestItemSecondInventory',
       JSON.stringify({ tipo: _0x5692f1 }),
       (_0x24ece6) => {
         $('.name-car').html(_0x5692f1)
@@ -451,7 +451,7 @@ $(document).ready(function () {
   }
   function _0x5d5272() {
     $.post(
-      'http://esx_inventory/requsetIdentity',
+      'http://Unique_inventory/requsetIdentity',
       JSON.stringify({}),
       (_0x56c24c) => {
         $('.identidade-js')
@@ -526,7 +526,7 @@ $(document).ready(function () {
   }
   function _0x4ac9c1() {
     $.post(
-      'http://esx_inventory/requestItens',
+      'http://Unique_inventory/requestItens',
       JSON.stringify({}),
       (_0x17f90f) => {
         $('#box-menu-item').html('')
@@ -659,7 +659,7 @@ $(document).ready(function () {
           .unbind()
           .click(function () {
             $.post(
-              'http://esx_inventory/buySlot',
+              'http://Unique_inventory/buySlot',
               JSON.stringify({}),
               function (_0x431ac5) {}
             )
@@ -696,7 +696,7 @@ $(document).ready(function () {
   document.onkeyup = function (_0x5b6cc9) {
     _0x5b6cc9.which == 27 &&
       $.post(
-        'http://esx_inventory/closeInventory',
+        'http://Unique_inventory/closeInventory',
         JSON.stringify({}),
         function (_0x1dc1fb) {}
       )
@@ -706,11 +706,11 @@ function verificarItem() {
   craftUpdate = true
   $('.result-craft').html('')
   $.post(
-    'http://esx_inventory/updateCraft',
+    'http://Unique_inventory/updateCraft',
     JSON.stringify({ tabela: caftItens })
   )
   $.post(
-    'http://esx_inventory/getResultCraft',
+    'http://Unique_inventory/getResultCraft',
     JSON.stringify({}),
     (_0x362b88) => {
       _0x362b88.resultado &&
@@ -768,7 +768,7 @@ function getDrag() {
           var _0x2fd6f0 = parseInt(_0x2fd6f0)
           if (Number(_0x2fd6f0) > 0) {
             $.post(
-              'http://esx_inventory/moverItemChest',
+              'http://Unique_inventory/moverItemChest',
               JSON.stringify({
                 item: _0x1d6e47,
                 oldSlot: _0x188d24,
@@ -802,7 +802,7 @@ function getDrag() {
           var _0x2fd6f0 = parseInt(_0x2fd6f0)
           if (Number(_0x2fd6f0) > 0) {
             $.post(
-              'http://esx_inventory/moverItemTrunckChest',
+              'http://Unique_inventory/moverItemTrunckChest',
               JSON.stringify({
                 item: _0x1d6e47,
                 oldSlot: _0x188d24,
@@ -837,7 +837,7 @@ function getDrag() {
             var _0x2fd6f0 = parseInt(_0x2fd6f0)
             if (Number(_0x2fd6f0) > 0) {
               $.post(
-                'http://esx_inventory/moverItemHouse',
+                'http://Unique_inventory/moverItemHouse',
                 JSON.stringify({
                   item: _0x1d6e47,
                   oldSlot: _0x188d24,
@@ -875,7 +875,7 @@ function getDrag() {
                 var _0x2fd6f0 = parseInt(_0x2fd6f0)
                 if (Number(_0x2fd6f0) > 0) {
                   $.post(
-                    'http://esx_inventory/colocarItemInventory',
+                    'http://Unique_inventory/colocarItemInventory',
                     JSON.stringify({
                       item: _0x1d6e47,
                       oldSlot: _0x188d24,
@@ -910,7 +910,7 @@ function getDrag() {
                   }
                   if (Number(_0x2fd6f0) > 0) {
                     $.post(
-                      'http://esx_inventory/venderItem',
+                      'http://Unique_inventory/venderItem',
                       JSON.stringify({
                         item: _0x1d6e47,
                         slot: _0x188d24,
@@ -949,7 +949,7 @@ function getDrag() {
                     var _0x2fd6f0 = parseInt(_0x2fd6f0)
                     if (Number(_0x2fd6f0) > 0) {
                       $.post(
-                        'http://esx_inventory/colocarItemTrunkInventory',
+                        'http://Unique_inventory/colocarItemTrunkInventory',
                         JSON.stringify({
                           item: _0x1d6e47,
                           oldSlot: _0x188d24,
@@ -991,7 +991,7 @@ function getDrag() {
                       var _0x2fd6f0 = parseInt(_0x2fd6f0)
                       if (Number(_0x2fd6f0) > 0) {
                         $.post(
-                          'http://esx_inventory/colocarItemHouse',
+                          'http://Unique_inventory/colocarItemHouse',
                           JSON.stringify({
                             item: _0x1d6e47,
                             oldSlot: _0x188d24,
@@ -1038,7 +1038,7 @@ function getDrag() {
             var _0x3e2039 = parseInt(_0x3e2039)
             if (Number(_0x3e2039) > 0) {
               $.post(
-                'http://esx_inventory/moverItem',
+                'http://Unique_inventory/moverItem',
                 JSON.stringify({
                   item: _0x40ebe8,
                   oldSlot: _0x241c9d,
@@ -1077,7 +1077,7 @@ function getDrag() {
               var _0x3e2039 = parseInt(_0x3e2039)
               if (Number(_0x3e2039) > 0) {
                 $.post(
-                  'http://esx_inventory/retirarItemChest',
+                  'http://Unique_inventory/retirarItemChest',
                   JSON.stringify({
                     item: _0x40ebe8,
                     oldSlot: _0x241c9d,
@@ -1116,7 +1116,7 @@ function getDrag() {
                 var _0x3e2039 = parseInt(_0x3e2039)
                 if (Number(_0x3e2039) > 0) {
                   $.post(
-                    'http://esx_inventory/retirarItemTrunk',
+                    'http://Unique_inventory/retirarItemTrunk',
                     JSON.stringify({
                       item: _0x40ebe8,
                       oldSlot: _0x241c9d,
@@ -1155,7 +1155,7 @@ function getDrag() {
                   var _0x3e2039 = parseInt(_0x3e2039)
                   if (Number(_0x3e2039) > 0) {
                     $.post(
-                      'http://esx_inventory/retirarItemHouse',
+                      'http://Unique_inventory/retirarItemHouse',
                       JSON.stringify({
                         item: _0x40ebe8,
                         oldSlot: _0x241c9d,
@@ -1182,7 +1182,7 @@ function getDrag() {
         if (parseInt(_0x3e2039) > 0) {
           var _0x3e2039 = parseInt(_0x3e2039)
           $.post(
-            'http://esx_inventory/buyItem',
+            'http://Unique_inventory/buyItem',
             JSON.stringify({
               item: _0x40ebe8,
               preco: _0x3c6470,
@@ -1202,7 +1202,7 @@ function getDrag() {
       _0x8e4ddb &&
         _0x1321b9 &&
         ($.post(
-          'http://esx_inventory/resgatarItem',
+          'http://Unique_inventory/resgatarItem',
           JSON.stringify({
             slot: _0x54ff57,
             quantidade: _0x1321b9,
@@ -1299,7 +1299,7 @@ function getDrag() {
             caftItens[parseInt(_0x565864)].item = _0x1d1731
             caftItens[parseInt(_0x565864)].quantidade = parseInt(_0x412a09)
             $.post(
-              'http://esx_inventory/craftItemRemove',
+              'http://Unique_inventory/craftItemRemove',
               JSON.stringify({
                 item: _0x585a43,
                 oldSlot: _0x540988,
@@ -1323,7 +1323,7 @@ function getDrag() {
         _0xdcff21 = caftItens[Number(_0x21d0bc)].item,
         _0x5c8bce = caftItens[Number(_0x21d0bc)].quantidade
       $.post(
-        'http://esx_inventory/craftItemDbClick',
+        'http://Unique_inventory/craftItemDbClick',
         JSON.stringify({
           item: _0xdcff21,
           amount: parseInt(_0x5c8bce),
@@ -1372,7 +1372,7 @@ function getDrag() {
         }
         var _0x2f20e3 = parseInt(_0x2f20e3)
         $.post(
-          'http://esx_inventory/usarItem',
+          'http://Unique_inventory/usarItem',
           JSON.stringify({
             item: _0x17c58c,
             amount: parseInt(_0x2f20e3),
@@ -1398,7 +1398,7 @@ function getDrag() {
           var _0x2f20e3 = parseInt(_0x2f20e3)
           _0x2f20e3 > 0 &&
             $.post(
-              'http://esx_inventory/enviarItem',
+              'http://Unique_inventory/enviarItem',
               JSON.stringify({
                 item: _0x17c58c,
                 amount: parseInt(_0x2f20e3),
@@ -1424,7 +1424,7 @@ function getDrag() {
             var _0x2f20e3 = parseInt(_0x2f20e3)
             _0x2f20e3 > 0 &&
               $.post(
-                'http://esx_inventory/droparItem',
+                'http://Unique_inventory/droparItem',
                 JSON.stringify({
                   item: _0x17c58c,
                   amount: parseInt(_0x2f20e3),

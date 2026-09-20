@@ -206,7 +206,7 @@ AddEventHandler('esx_inventoryhud:updateKey', function(target, type, itemName)
 	end
 end)
 
-ESX.RegisterServerCallback("esx_inventoryhud:getPlayerInventory", function(source, cb, target)
+RegisterServerCallbackSafe("esx_inventoryhud:getPlayerInventory", function(source, cb, target)
 
 	local xPlayer = ESX.GetPlayerFromId(target)
 --	local Inventory = targetXPlayer.inventory
@@ -219,7 +219,7 @@ ESX.RegisterServerCallback("esx_inventoryhud:getPlayerInventory", function(sourc
 
 end)
 
-ESX.RegisterServerCallback("esx_inventoryhud:getPlayerInventory2323", function(source, cb)
+RegisterServerCallbackSafe("esx_inventoryhud:getPlayerInventory2323", function(source, cb)
 
 	local xPlayer = ESX.GetPlayerFromId(source)
 
@@ -262,7 +262,7 @@ ESX.RegisterServerCallback("esx_inventoryhud:getPlayerInventory2323", function(s
 					name = v.name,
 					label = v.label,
 					count = v.ammo,
-					peso = 10,
+					peso = ESX.getWeaponWeight and ESX.getWeaponWeight(v.name) or 2,
 					filter = 'arma'
 				})
 			end
@@ -277,11 +277,21 @@ ESX.RegisterServerCallback("esx_inventoryhud:getPlayerInventory2323", function(s
 					name = v.name,
 					label = v.label,
 					count = v.count,
-					peso = 10,
+					peso = ESX.getItemWeight and ESX.getItemWeight(v.name) or 0.5,
 					filter = 'food'
 				})
 			end
 		end
+	end
+
+	-- FIX: total/max weight used to be hardcoded client-side to 1000/4000
+	-- no matter what was actually carried (visible on the identity/pocket
+	-- circle as a static "1000.0/4000.0" that never moved). Now computed
+	-- for real: sum of each item's peso * count, against a configurable
+	-- cap.
+	local totalWeight = 0
+	for k, v in ipairs(items) do
+		totalWeight = totalWeight + ((v.peso or 0) * (v.count or 1))
 	end
 
 
@@ -289,14 +299,18 @@ ESX.RegisterServerCallback("esx_inventoryhud:getPlayerInventory2323", function(s
 
 
 	if xPlayer ~= nil then
-		cb({inventory = items})
+		cb({
+			inventory = items,
+			atualPeso = math.floor(totalWeight * 10) / 10,
+			maximoPeso = HudConfig.MaxInventoryWeight or 90,
+		})
 	else
 		cb(nil)
 	end
 
 end)
 
-ESX.RegisterServerCallback("esx_inventoryhud:getPlayerInventory1", function(source, cb, target, data)
+RegisterServerCallbackSafe("esx_inventoryhud:getPlayerInventory1", function(source, cb, target, data)
 
 	local xPlayer = ESX.GetPlayerFromId(target)
 	local Inventory = xPlayer.inventory
@@ -456,7 +470,7 @@ ESX.RegisterServerCallback("esx_inventoryhud:getPlayerInventory1", function(sour
 
 end)--]]
 
-ESX.RegisterServerCallback("esx_inventoryhud:GetHouseItems", function(source, cb)
+RegisterServerCallbackSafe("esx_inventoryhud:GetHouseItems", function(source, cb)
 	local xPlayer = ESX.GetPlayerFromId(source)
 	local items = {}
 	local items2      = {}
@@ -501,7 +515,7 @@ ESX.RegisterServerCallback("esx_inventoryhud:GetHouseItems", function(source, cb
 	cb(items)
 end)
 
-ESX.RegisterServerCallback("esx_inventoryhud:GetData", function(source, cb)
+RegisterServerCallbackSafe("esx_inventoryhud:GetData", function(source, cb)
 	local xPlayer = ESX.GetPlayerFromId(source)
 	MySQL.Async.fetchAll('SELECT btc, phone FROM users WHERE identifier = @identifier', {['@identifier'] = xPlayer.identifier}, function(data)
         if data[1] then

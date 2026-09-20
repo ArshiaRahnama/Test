@@ -2,7 +2,7 @@ ESX = nil
 
 TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
 
-ESX.RegisterServerCallback("Parzival:getHouseINV", function(source, cb)
+RegisterServerCallbackSafe("Parzival:getHouseINV", function(source, cb)
     local xPlayer = ESX.GetPlayerFromId(source)
     local items = {}
     local items2      = {}
@@ -44,7 +44,7 @@ ESX.RegisterServerCallback("Parzival:getHouseINV", function(source, cb)
     cb(items)
 end)
 
-ESX.RegisterServerCallback("Parzival:getGangINV", function(source, cb)
+RegisterServerCallbackSafe("Parzival:getGangINV", function(source, cb)
     local xPlayer = ESX.GetPlayerFromId(source)
     local items = {}
     local items2      = {}
@@ -85,7 +85,7 @@ ESX.RegisterServerCallback("Parzival:getGangINV", function(source, cb)
     cb(items)
 end)
 
-ESX.RegisterServerCallback("Parzival:getJobINV1", function(source, cb)
+RegisterServerCallbackSafe("Parzival:getJobINV1", function(source, cb)
     local xPlayer = ESX.GetPlayerFromId(source)
     local items = {}
         local grade = xPlayer.job.grade
@@ -130,7 +130,7 @@ ESX.RegisterServerCallback("Parzival:getJobINV1", function(source, cb)
     cb(items)
 end)
 
-ESX.RegisterServerCallback("Parzival:getJobINV2", function(source, cb)
+RegisterServerCallbackSafe("Parzival:getJobINV2", function(source, cb)
     local xPlayer = ESX.GetPlayerFromId(source)
     local items = {}
       

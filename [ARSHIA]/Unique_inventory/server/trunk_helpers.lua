@@ -4,7 +4,7 @@ local DataStoresIndex = {}
 local DataStores = {}
 local SharedDataStores = {}
 
-local listPlate = Config.VehiclePlate
+local listPlate = TrunkConfig.VehiclePlate
 
 TriggerEvent(
   "esx:getSharedObject",

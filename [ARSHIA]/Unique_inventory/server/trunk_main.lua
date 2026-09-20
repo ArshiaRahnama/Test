@@ -1,5 +1,5 @@
 ESX = nil
-local arrayWeight = Config.localWeight
+local arrayWeight = TrunkConfig.localWeight
 local VehicleList = {}
 local VehicleInventory = {}
 
@@ -46,7 +46,7 @@ function getItemWeight(item)
   local weight = 0
   local itemWeight = 0
   if item ~= nil then
-    itemWeight = Config.DefaultWeight
+    itemWeight = TrunkConfig.DefaultWeight
     if arrayWeight[item] ~= nil then
       itemWeight = arrayWeight[item]
     end
@@ -60,7 +60,7 @@ function getInventoryWeight(inventory)
   if inventory ~= nil then
     for i = 1, #inventory, 1 do
       if inventory[i] ~= nil then
-        itemWeight = Config.DefaultWeight
+        itemWeight = TrunkConfig.DefaultWeight
         if arrayWeight[inventory[i].name] ~= nil then
           itemWeight = arrayWeight[inventory[i].name]
         end
@@ -93,7 +93,7 @@ function getTotalInventoryWeight(plate)
   return total
 end
 
-ESX.RegisterServerCallback(
+RegisterServerCallbackSafe(
   "esx_trunk:getInventoryV",
   function(source, cb, plate)
     if not plate then
@@ -544,7 +544,7 @@ AddEventHandler(
   end
 )
 
-ESX.RegisterServerCallback(
+RegisterServerCallbackSafe(
   "esx_trunk:getPlayerInventory",
   function(source, cb)
     local xPlayer = ESX.GetPlayerFromId(source)

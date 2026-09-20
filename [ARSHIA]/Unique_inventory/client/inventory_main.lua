@@ -108,7 +108,7 @@ AddEventHandler('esx_inventoryhud:OpenHouseInventory', function(ID)
     SendNUIMessage({
         action = "openInventory",
         secondAction = secondInventory,
-        url = 'nui://esx_inventoryhud/html/img/items/'
+        url = 'nui://Unique_inventory/html/img/items/'
     })
 end)
 
@@ -128,7 +128,7 @@ AddEventHandler('esx_inventoryhud:OpenJobInventory1', function(ID)
     SendNUIMessage({
         action = "openInventory",
         secondAction = secondInventory,
-        url = 'nui://esx_inventoryhud/html/img/items/'
+        url = 'nui://Unique_inventory/html/img/items/'
     })
 end)
 
@@ -145,7 +145,7 @@ AddEventHandler('esx_inventoryhud:OpenJobInventory2', function(ID)
     SendNUIMessage({
         action = "openInventory",
         secondAction = secondInventory,
-        url = 'nui://esx_inventoryhud/html/img/items/'
+        url = 'nui://Unique_inventory/html/img/items/'
     })
 end)
 
@@ -163,7 +163,7 @@ AddEventHandler('esx_inventoryhud:OpenGangInventory', function(sec)
     SendNUIMessage({
         action = "openInventory",
         secondAction = secondInventory,
-        url = 'nui://esx_inventoryhud/html/img/items/'
+        url = 'nui://Unique_inventory/html/img/items/'
     })
 end)
 
@@ -184,7 +184,7 @@ AddEventHandler('esx_inventoryhud:AdminOpenPropertyInventory', function(items, m
     SendNUIMessage({
         action = "openInventory",
         secondAction = secondInventory,
-        url = 'nui://esx_inventoryhud/html/img/items/'
+        url = 'nui://Unique_inventory/html/img/items/'
     })
 end)
 
@@ -210,7 +210,7 @@ AddEventHandler("openInventoryHud", function()
     SendNUIMessage({
         action = "openInventory",
         secondAction = secondInventory,
-        url = 'nui://esx_inventoryhud/html/img/items/'
+        url = 'nui://Unique_inventory/html/img/items/'
     })
 end)
 local inPaintBall = false
@@ -380,7 +380,7 @@ function openmenuvehicle(_)
             SendNUIMessage({
                 action = "openInventory",
                 secondAction = "trunckChest",
-                url = 'nui://esx_inventoryhud/html/img/items/'
+                url = 'nui://Unique_inventory/html/img/items/'
             })
             -- end
         end
@@ -462,7 +462,7 @@ local VIP = {
 
 
 RegisterNUICallback("requsetIdentity", function(data, cb)
-    cb({
+    local identityData = {
         nome = (MyData.name:match("([^/]+)_")),
         sobrenome = (MyData.name:match("_([^/]+)")),
         idade = MyData.steam,
@@ -470,11 +470,34 @@ RegisterNUICallback("requsetIdentity", function(data, cb)
         registro =  ESX.Math.GroupDigits(MyData.btc),
         telefone = MyData.phone,
         emprego = PlayerData.job.label..' - '..PlayerData.job.grade_label,
-     
+
         carteira = MyData.money,
         banco = MyData.bank,
-    
-    })
+
+        admin = false,
+    }
+
+    -- FIX: this field used to never be sent, so the front-end's
+    -- (admin === true / === false) check never matched and the admin
+    -- row stayed visible for every player. Uses the exact same
+    -- permission check Unique_AdminPanel's own admin panel does
+    -- (esx_aduty:checkAdmin -> xPlayer.permission_level > 1), so this
+    -- card agrees with the real admin system instead of inventing its
+    -- own threshold. A short timeout guards against esx_aduty not being
+    -- started, so the identity card never hangs waiting on it.
+    local replied = false
+    local function finish()
+        if replied then return end
+        replied = true
+        cb(identityData)
+    end
+
+    ESX.TriggerServerCallback("esx_aduty:checkAdmin", function(isAdmin)
+        identityData.admin = isAdmin == true
+        finish()
+    end)
+
+    SetTimeout(2000, finish)
 end)
 
 RegisterNUICallback("requestItens", function(data, cb)
@@ -482,8 +505,8 @@ RegisterNUICallback("requestItens", function(data, cb)
        
         cb({
             inventario = data.inventory,
-            atualPeso = 1000,
-            maximoPeso = 4000,
+            atualPeso = data.atualPeso or 0,
+            maximoPeso = data.maximoPeso or 90,
             slot = 30,
             un = 30,
             slot2 = 30,
@@ -505,7 +528,7 @@ AddEventHandler("esx_inventoryhud:CargoInventory", function()
     SendNUIMessage({
         action = "openInventory",
         secondAction = secondInventory,
-        url = 'nui://inventory/web/assets/icons'
+        url = 'nui://Unique_inventory/html/img/items/'
     })
 end)
 

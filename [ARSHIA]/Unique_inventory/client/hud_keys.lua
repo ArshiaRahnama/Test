@@ -1035,7 +1035,7 @@ function loadPlayerInventoryOther(other, name1, name2, weapon, data_config)
         weapons = data.weapons
         --carkeys = data.carkeys
 
-        if Config.IncludeCash and money ~= nil and money > 0 then
+        if HudConfig.IncludeCash and money ~= nil and money > 0 then
             for key, value in pairs(accounts) do
                 moneyData = {
                     label = "Money",
@@ -1073,7 +1073,7 @@ function loadPlayerInventoryOther(other, name1, name2, weapon, data_config)
             end
         end
 
-        if Config.IncludeWeapons and weapons ~= nil then
+        if HudConfig.IncludeWeapons and weapons ~= nil then
             for key, value in pairs(weapons) do
                 local weaponHash = GetHashKey(weapons[key].name)
                 local playerPed = other
@@ -1130,7 +1130,7 @@ function loadPlayerInventory()
 
         table.insert(items, moneyData)
         
-        if Config.EnableVehicleKey == true then
+        if HudConfig.EnableVehicleKey == true then
             for i=1, #Vehicle_Key, 1 do
                 table.insert(inventory, {
                     label = Vehicle_Key[i].plate,
@@ -1145,7 +1145,7 @@ function loadPlayerInventory()
             end
         end
 
-        if Config.EnableHouseKey == true then
+        if HudConfig.EnableHouseKey == true then
             for i=1, #House_Key, 1 do
                 table.insert(inventory, {
                     label = House_Key[i].name,
@@ -1197,7 +1197,7 @@ function loadPlayerInventory()
             end
         end
 
-        if Config.IncludeWeapons and weapons ~= nil then
+        if HudConfig.IncludeWeapons and weapons ~= nil then
             for key, value in pairs(weapons) do
                 local weaponHash = GetHashKey(weapons[key].name)
                 local playerPed = PlayerPedId()
@@ -1305,7 +1305,7 @@ function setTrunkInventoryData(data, inventory, weapons)
         end
     end
 
-    if Config.IncludeWeapons and weapons ~= nil then
+    if HudConfig.IncludeWeapons and weapons ~= nil then
         for key, value in pairs(weapons) do
             local weaponHash = GetHashKey(weapons[key].name)
             local playerPed = PlayerPedId()
@@ -1366,7 +1366,7 @@ function setHouseInventoryData(propertyItems, weapons)
         end
     end
 
-    if Config.IncludeWeapons and weapons ~= nil then
+    if HudConfig.IncludeWeapons and weapons ~= nil then
         for key, value in pairs(weapons) do
             local weaponHash = GetHashKey(weapons[key].name)
             local playerPed = PlayerPedId()
@@ -1428,7 +1428,7 @@ function setGangInventoryData(propertyItems, weapons)
         end
     end
 
-    if Config.IncludeWeapons and weapons ~= nil then
+    if HudConfig.IncludeWeapons and weapons ~= nil then
         for key, value in pairs(weapons) do
             local weaponHash = GetHashKey(weapons[key].name)
             local playerPed = PlayerPedId()
@@ -1490,7 +1490,7 @@ function setBoxInventoryData(propertyItems, weapons)
         end
     end
 
-    if Config.IncludeWeapons and weapons ~= nil then
+    if HudConfig.IncludeWeapons and weapons ~= nil then
         for key, value in pairs(weapons) do
             local weaponHash = GetHashKey(weapons[key].name)
             local playerPed = PlayerPedId()

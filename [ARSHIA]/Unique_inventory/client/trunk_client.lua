@@ -6,7 +6,7 @@ local lastVehicle = nil
 local lastOpen = false
 GUI.Time = 0
 local vehiclePlate = {}
-local arrayWeight = Config.localWeight
+local arrayWeight = TrunkConfig.localWeight
 local CloseToVehicle = false
 local entityWorld = nil
 local globalplate = nil
@@ -113,7 +113,7 @@ function getItemyWeight(item)
 
   if item ~= nil then
 
-    itemWeight = Config.DefaultWeight
+    itemWeight = TrunkConfig.DefaultWeight
 
     if arrayWeight[item] ~= nil then
 
@@ -145,7 +145,7 @@ end
 
 
 
-function openmenuvehicle()
+function Trunk_OpenMenuVehicle()
 
   local playerPed = GetPlayerPed(-1)
 
@@ -211,7 +211,7 @@ function openmenuvehicle()
 
 
 
-    if not Config.CheckOwnership or (Config.AllowPolice and PlayerData.job.name == "police") or (Config.CheckOwnership and myVeh) then
+    if not TrunkConfig.CheckOwnership or (TrunkConfig.AllowPolice and PlayerData.job.name == "police") or (TrunkConfig.CheckOwnership and myVeh) then
 
       if globalplate ~= nil or globalplate ~= "" or globalplate ~= " " then
 
@@ -254,8 +254,8 @@ function openmenuvehicle()
               if globalplate ~= nil or globalplate ~= "" or globalplate ~= " " then
 
                 CloseToVehicle = true
-                local Limit = Config.VehicleLimit[class]
-                for k,v in pairs(Config.CustomLimit) do
+                local Limit = TrunkConfig.VehicleLimit[class]
+                for k,v in pairs(TrunkConfig.CustomLimit) do
                   if v.model == GetEntityModel(vehFront) then
                     Limit = v.limit
                   end

@@ -22,26 +22,26 @@
 
             <div class="top-menu">
                 <div class="inventory-title-menu">
-                    <div class="escolha-menu personagem">Profile</div>
-                    <div class="escolha-menu identidade">Craft</div>
+                    <div class="escolha-menu personagem">UNIQUE</div>
+                    <!-- <div class="escolha-menu identidade">Craft</div> -->
 					
                     <div class="line"></div>
                     <div class="esc">
-                        <div class="texto">Esc<span>To Close</span></div>
+                        <div class="texto">Esc<span>to close menu</span></div>
                     </div>
                     <div class="margin-bottom-escolha"></div>
-                    <input id="barra-pesquisa" placeholder="Search Item" onkeyup="pesquisar()">
-                    <div class="line2"></div>
+                    <input id="barra-pesquisa" placeholder="Search item" onkeyup="pesquisar()">
+                    <!-- <div class="line2"></div>
                     <div class="toltip-pesquisa">
                         <div class="text-toltip">
                             When searching, filters will be reset
                         </div>
-                    </div>
+                    </div> -->
                 </div>
 
                 <div class="chest-title-menu">
                     <div class="name-car">Second Inventory</div>
-                    <div class="name-inventory">Your Inventory</div>
+                    <div class="name-inventory">Pocket Space</div>
                     <div class="line-chest"></div>
                     <div class="esc">
                         <div class="texto">Esc<span>To Close</span></div>
@@ -66,32 +66,32 @@
                                 <div class="primeiro-identity segundo"></div>
                             </div>
                             <div class="itens-identity">
-                                <div class="primeiro-identity primeiro">Passaporte</div>
+                                <div class="primeiro-identity primeiro">National ID:</div>
                                 <div class="primeiro-identity segundo">251</div>
                             </div>
                             <div class="itens-identity">
-                                <div class="primeiro-identity primeiro">Registro geral</div>
+                                <div class="primeiro-identity primeiro">Bitcoin:</div>
                                 <div class="primeiro-identity segundo">k7mon10u</div>
                             </div>
                             <div class="itens-identity">
-                                <div class="primeiro-identity primeiro">Telefone</div>
+                                <div class="primeiro-identity primeiro">Phone Number:</div>
                                 <div class="primeiro-identity segundo">551-512</div>
                             </div>
                             <div class="itens-identity">
-                                <div class="primeiro-identity primeiro">Profissão</div>
-                                <div class="primeiro-identity segundo">Policia Civil</div>
+                                <div class="primeiro-identity primeiro">Job:</div>
+                                <div class="primeiro-identity segundo">Civil Police</div>
                             </div>
-                            <div class="itens-identity">
+                            <!-- <div class="itens-identity">
                                 <div class="primeiro-identity primeiro">Seu vip</div>
                                 <div class="primeiro-identity segundo">Platina</div>
-                            </div>
+                            </div> -->
                             <div class="itens-identity">
-                                <div class="primeiro-identity primeiro">Paypal</div>
+                                <div class="primeiro-identity primeiro">Bank:</div>
                                 <div class="primeiro-identity segundo">$ 320.000</div>
                             </div>
-                            <div class="itens-identity admin" >
+                            <div class="itens-identity admin" style="display:none">
                                 <div class="primeiro-identity primeiro">Admin</div>
-                                <div class="primeiro-identity segundo">Você é administrador</div>
+                                <div class="primeiro-identity segundo">You Are An Admin</div>
                             </div>
                         </div>
                         
@@ -124,7 +124,7 @@
                         <div class="line-circle"></div>
                         <div id="circleChest">
                             <div class="peso-texto-chest">76/90kg</div>
-                            <div class="desc-bau">Baú</div>
+                            <div class="desc-bau">Second Space</div>
                         </div>
                         <div class="peso-sobrando-chest">14kg sobrando</div>
                     </div>
@@ -146,7 +146,7 @@
 
            
             <div class="filter-menu"  >
-                <div class="title">Filtar By:</div>
+                <div class="title"> Filter:</div>
                 <div class="filtro-button arma">
                     <img class="gun-image" src="app/gun.png">
                 </div>
@@ -159,11 +159,11 @@
                 <div class="filtro-button box">
                     <img class="box-image" src="app/box.png">
                 </div>
-                <div class="clear-filter">Clear Filters</div>
+                <div class="clear-filter">Clear filter</div>
                 <div class="box-amount-player">
-                    <input id="quantidade" placeholder="Enter Quantity">
-                    <div class="dividendo metade-item">Half</div>
-                    <div class="dividendo todos-itens">All</div>
+                    <input id="quantidade" placeholder="Amount">
+                    <div class="dividendo metade-item">Half item</div>
+                    <div class="dividendo todos-itens">All items</div>
                 </div>
             
             </div>
@@ -175,14 +175,14 @@
             <div class="descricao-menu">
 
                 <div class="desc-normal" style="display: none;">
-                    <div class="title-descricao">Descrição</div>
+                    <div class="title-descricao">Description:</div>
                     <div class="primeira-descricao">Delicioso hambúrguer bovino com queijo, alface, tomate</div>
                     <div class="funcao-descricao"> <b>Função: </b> Reduz a fome em 60%</div>
-                    <div class="peso-descricao"> <b>Peso: </b> <span>1kg por unidade (10 = 10kg)</span></div>
+                    <div class="peso-descricao"> <b>Weight: </b> <span>1kg por unidade (10 = 10kg)</span></div>
                 </div>
 
                 <div class="desc-weapon" style="display: none;">
-                    <div class="title-descricao">Descrição</div>
+                    <div class="title-descricao">Description:</div>
 
                     <div class="informacao cadencia">
                         <div class="title-info">Velocidade</div>
@@ -232,11 +232,11 @@
                 <div class="box-peso">
                     <div id="circle">
                         <div class="peso-texto">76/90kg</div>
-                        <div class="desc-bau">Inventory</div>
+                        <div class="desc-bau">Pocket Space</div>
                     </div>
                     <div class="peso-sobrando">14kg Remaining</div>
                     <div class="box-circle-mochila">
-                        <div class="title-circle">Backpack Level</div>
+                        <!-- <div class="title-circle">Backpack Level</div> -->
                         <div class="circle-mochila 1"></div>
                         <div class="circle-mochila 2"></div>
                         <div class="circle-mochila 3"></div>
@@ -257,7 +257,7 @@
 </div>
     <script src='https://kit.fontawesome.com/a076d05399.js'></script>
     <script src="config.js" type="text/javascript"></script>
-    <script src="jquery.js" type="text/javascript"></script>
+    <script src="app.js" type="text/javascript"></script>
 
 </body>
 </html>
