@@ -110,12 +110,32 @@
       others.forEach(function (f) { if (f) f.style.pointerEvents = 'none'; });
     }
 
+    // BUG FIX ("the panel is open, the mouse is stuck on screen, nothing is clickable"):
+    // client/nui_panel.lua sends a `stats` message every 8 seconds to any on-duty admin,
+    // and the old code treated EVERY message as "open my panel" - so each stats tick
+    // gave pointer-events to the admin-menu iframe and took them away from the Report /
+    // AC panel the admin was actually using (its clicks then fell on a transparent iframe).
+    // Only messages that OPEN or focus a panel may move pointer-events; background updates
+    // (stats, alerts, list/chat refreshes, pings, data pushes) must leave them alone.
+    var PASSIVE_TYPES = { stats: 1, newReportAlert: 1, searchResults: 1 };
+    var PASSIVE_ACTIONS = { refreshList: 1, refreshChat: 1, ping: 1, activeClosed: 1,
+                            updateAdminLog: 1, updateAppeals: 1, updateBranding: 1,
+                            updatePlayerProfile: 1, forceClose: 1 };
+
     if (data._uniqueReport) {
-      activate(reportFrame, [adminFrame, acFrame]);
+      if (data.action === 'hideAll') {
+        if (reportFrame) reportFrame.style.pointerEvents = 'none';
+      } else if (!PASSIVE_ACTIONS[data.action]) {
+        activate(reportFrame, [adminFrame, acFrame]);
+      }
     } else if (typeof data.type !== 'undefined') {
-      activate(adminFrame, [acFrame, reportFrame]);
+      if (!PASSIVE_TYPES[data.type]) activate(adminFrame, [acFrame, reportFrame]);
     } else if (typeof data.action !== 'undefined') {
-      activate(acFrame, [adminFrame, reportFrame]);
+      if (data.action === 'forceClose') {
+        if (acFrame) acFrame.style.pointerEvents = 'none';
+      } else if (!PASSIVE_ACTIONS[data.action]) {
+        activate(acFrame, [adminFrame, reportFrame]);
+      }
     }
 
     if (adminFrame && adminFrame.contentWindow) {

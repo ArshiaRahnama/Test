@@ -3,7 +3,7 @@ game 'gta5'
 
 author 'Arshia'
 description 'Unique_AdminPanel - merged from Admin_Menu + esx_aduty + UNIQUE_AC anti-cheat'
-version '3.2.0'
+version '3.2.1'
 
 -- Loaded on BOTH client and server, before client_scripts/server_scripts below
 -- (migrated from UNIQUE_AC/configs/fire-config.lua and UNIQUE_AC/tables/*.lua -

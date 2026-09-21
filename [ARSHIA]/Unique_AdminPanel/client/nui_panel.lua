@@ -530,3 +530,15 @@ Citizen.CreateThread(function()
         end
     end
 end)
+
+
+-- Emergency reset if a panel ever gets stuck (cursor visible, nothing clickable):
+-- type /uapfixui in chat. Releases NUI focus and tells every panel to close.
+RegisterCommand('uapfixui', function()
+    SetNuiFocus(false, false)
+    InAdminNui = false
+    SendNUIMessage({ action = 'hideAll', _uniqueReport = true })
+    SendNUIMessage({ action = 'forceClose' })
+    if MenuV then MenuV:CloseAll() end
+    drawNotification('~g~Admin UI reset')
+end, false)
