@@ -283,7 +283,8 @@ function OpenBuyMenuGunshop()
     ESX.TriggerServerCallback('getitemsForSaleGunshop', function(itemsForSaleGunshop)
         showCategorizedShopMenu('buy_item_gunshop_menu', '🔫 Gun Shop', ShopConfig.GunshopCategories, itemsForSaleGunshop, function(item, cat)
             local isAmmo = item.itemType == 'ammo'
-            local buyEvent = isAmmo and 'gunshop_item:buy_ammo' or 'gunshop_item:buy_gunshop'
+            local isPermit = item.itemType == 'permit'
+            local buyEvent = isAmmo and 'gunshop_item:buy_ammo' or (isPermit and 'gunshop_item:buy_permit' or 'gunshop_item:buy_gunshop')
             local title = isAmmo and ('%s (x%s per stack)'):format(item.label, item.amount) or item.label
             local metadata = buildWeaponMetadata(item)
 

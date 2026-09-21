@@ -82,6 +82,13 @@ local function PushLicenseUpdate(target)
     end)
 end
 
+-- Lets other ScriptPack server files (e.g. shop-sv.lua's gunshop_item:buy_permit,
+-- which inserts into user_licenses directly for a cash purchase) ask for a
+-- license:update push without duplicating GetPlayerLicenses/PushLicenseUpdate.
+AddEventHandler('license:internalPush', function(target)
+    PushLicenseUpdate(target)
+end)
+
 -- true if this player's job has add/view/remove access to at least one license type
 -- (used to gate staff looking up someone else's licenses)
 local function IsLicenseStaff(xPlayer)
@@ -205,3 +212,31 @@ AddEventHandler('license:remove', function(target, licenseType)
         end
     end)
 end)
+
+-------------------------------------------------------
+-- Auto-revoke on kill: fired by client/ncz-cl.lua when a player holding the
+-- 'dys' license kills another player. Deliberately NOT a general-purpose
+-- "remove any license" event - it always targets the CALLER's own 'dys' row
+-- only, so there's no permission check needed and nothing for a client to
+-- gain by forging the trigger (worst case, they revoke their own permit for
+-- no reason).
+-------------------------------------------------------
+RegisterServerEvent('license:dysKillRevoke')
+AddEventHandler('license:dysKillRevoke', function()
+    local src = source
+    local identifier = GetPlayerIdentifier(src, 0)
+
+    MySQL.Async.execute('DELETE FROM user_licenses WHERE type = @type AND owner = @owner', {
+        ['@type']  = 'dys',
+        ['@owner'] = identifier
+    }, function(rowsChanged)
+        if rowsChanged and rowsChanged > 0 then
+            PushLicenseUpdate(src)
+            local xPlayer = ESX.GetPlayerFromId(src)
+            if xPlayer then
+                xPlayer.showNotification('~r~Mojaveze DYS shoma laghv shod (ghatl ba silencer dar Base Zone)!')
+            end
+        end
+    end)
+end)
+

@@ -1094,13 +1094,17 @@ AddEventHandler(
             end
         elseif type == "item_weapon" then
             local xPlayer = ESX.GetPlayerFromId(source)
-            local ammo = xPlayer.hasWeapon(itemName).ammo
-            local components = xPlayer.hasWeapon(itemName).components
+            -- FIX: hasWeapon() returns false when the weapon isn't carried;
+            -- indexing it (.ammo) threw a script error. Also keep the serial.
+            local carried = xPlayer and xPlayer.hasWeapon(itemName)
+            local ammo = carried and carried.ammo
+            local components = carried and carried.components
+            local serial = carried and carried.serial
 
             if ammo then
                 local weaponLabel = ESX.GetWeaponLabel(itemName)
 
-                xPlayer.removeWeapon(itemName)
+                xPlayer.removeWeapon(itemName, nil, serial)
 				if weaponLabel ~= nil then
 					TriggerEvent(
 						"DiscordBot:ToDiscord",
@@ -1112,7 +1116,7 @@ AddEventHandler(
 						true,
 						false
 					)
-					ESX.CreatePickup("item_weapon", string.upper(itemName), {ammo = ammo, components = components}, weaponLabel, _source)
+					ESX.CreatePickup("item_weapon", string.upper(itemName), {ammo = ammo, components = components, serial = serial}, weaponLabel, _source)
 					TriggerClientEvent("esx:showNotification", _source, _U("threw_weapon_ammo", weaponLabel, ammo))
 				end
             end
@@ -1141,9 +1145,21 @@ AddEventHandler(
     function(id)
         local _source = source
         local xPlayer = ESX.GetPlayerFromId(_source)
+        if not xPlayer then return end
 
         local pickup = ESX.Pickups[id]
         if pickup then
+            -- The client only sends the pickup id, so without this any player
+            -- could loot any pickup on the map from anywhere. 1m is needed on
+            -- the client; 6m leaves room for network/animation drift.
+            if pickup.coords then
+                local ped = GetPlayerPed(_source)
+                if not ped or ped == 0 or #(GetEntityCoords(ped) - pickup.coords) > 6.0 then
+                    TriggerClientEvent("esx:pickupUpdate", _source, id, pickup.label or "")
+                    return
+                end
+            end
+
             if pickup.type == "item_standard" then
                 local item = xPlayer.getInventoryItem(pickup.name)
                 local canTake =
@@ -1190,15 +1206,10 @@ AddEventHandler(
                 xPlayer.addMoney(pickup.count)
                 ESX.Pickups[id] = nil
             elseif pickup.type == "item_weapon" then
-                local IsNote  = true
-                for k,v in pairs(xPlayer.loadout) do
-                    if v.name == pickup.name then
-                        IsNote = false
-                        break
-                    end
-                end
+                -- one weapon of each type per player (same rule as before)
+                local alreadyHas = xPlayer.hasWeapon(pickup.name)
 
-                if IsNote then
+                if not alreadyHas then
                     TriggerEvent(
                         "DiscordBot:ToDiscord",
                         "pickup",
@@ -1209,19 +1220,26 @@ AddEventHandler(
                         true,
                         false
                     )
+                    -- take it off the ground BEFORE giving it, so it can never be picked twice
+                    ESX.Pickups[id] = nil
                     TriggerClientEvent("esx:removePickup", -1, id)
-                    xPlayer.addWeapon(pickup.name, pickup.count)
+                    -- pickup.serial: the weapon keeps the serial number it had when dropped
+                    xPlayer.addWeapon(pickup.name, pickup.count, pickup.serial)
                     if pickup.components ~= nil then
                         for k,v in pairs(pickup.components) do
                             xPlayer.addWeaponComponent(pickup.name, v)
                         end
                     end
-                    ESX.Pickups[id] = nil
                 else
-                    TriggerClientEvent("esx:showNotification", sourceXPlayer.source, "Jib Shoma Az In Aslahe Vojod Darad")
-                    TriggerClientEvent("esx:removePickup", -1, id)
-                    ESX.Pickups[id] = nil
-                    ESX.CreatePickup("item_weapon", string.upper(pickup.name), {ammo = pickup.count, components = pickup.components}, ESX.GetWeaponLabel(pickup.name), _source)
+                    -- FIX: this branch used `sourceXPlayer.source` - an undefined variable
+                    -- ("attempt to index a nil value (global 'sourceXPlayer')") - so the
+                    -- error aborted the handler before anything else ran.
+                    TriggerClientEvent("esx:showNotification", _source, "Jib Shoma Az In Aslahe Vojod Darad")
+                    -- The weapon simply stays where it is for someone else. Tell THIS
+                    -- client to re-enable its "press E" prompt: it sets inRange=true the
+                    -- moment E is pressed and only esx:pickupUpdate resets it, so before
+                    -- this the item became impossible to pick up again.
+                    TriggerClientEvent("esx:pickupUpdate", _source, id, pickup.label or "")
                 end
             end
         end

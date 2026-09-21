@@ -234,6 +234,13 @@ TrunkConfig.VehiclePlate = {
 -- prefix in the same trunk_inventory table (run install.sql once so the
 -- plate column is wide enough).
 TrunkConfig.GlovePrefix = 'GLOVE:'
-TrunkConfig.GloveboxLimit = 5000 -- grams, same unit as the trunk limits above (5 kg)
+TrunkConfig.GloveboxLimit = 10000 -- grams, same unit as the trunk limits above (10 kg). NOTE: WEAPON_PISTOL weighs 5000 in localWeight, so 5000 would only fit one pistol
 -- vehicle classes with NO glovebox (8 = motorcycles, 13 = cycles, 21 = trains)
 TrunkConfig.GloveboxNoClass = { [8] = true, [13] = true, [21] = true }
+
+-- Server-side check that the player is really at the vehicle they are
+-- opening (see canAccessStorage in server/trunk_main.lua). Distances are
+-- measured to the vehicle's centre, in metres.
+TrunkConfig.ServerProximityCheck = true
+TrunkConfig.TrunkAccessDistance = 10.0    -- standing at the boot (long trucks need room)
+TrunkConfig.GloveboxAccessDistance = 6.0  -- sitting inside

@@ -206,13 +206,27 @@ end
 ESX.CreatePickup = function(type, name, sc, label, player)
 	local count = 1
 	local components = nil
+	local serial = nil
     local pickupId = (ESX.PickupId == 65635 and 0 or ESX.PickupId + 1)
-	if type == 'item_weapon' then count = sc.ammo components = sc.components else count = sc end
+	if type == 'item_weapon' then count = sc.ammo components = sc.components serial = sc.serial else count = sc end
+
+	-- Where the pickup lies, so esx:onPickup can verify the picker is really
+	-- standing at it (the client only sends the pickup id). nil if the position
+	-- can't be read (no OneSync) -> the distance check is then skipped.
+	local coords = nil
+	if player then
+		local ped = GetPlayerPed(player)
+		if ped and ped ~= 0 then coords = GetEntityCoords(ped) end
+	end
+
     ESX.Pickups[pickupId] = {
         type = type,
         name = name,
         count = count,
-		components = components
+		components = components,
+		serial = serial, -- weapon serial number travels with the dropped weapon
+		label = label,   -- needed to re-enable the client's "press E" prompt
+		coords = coords
     }
 
     local object = ESX.GetWeaponObject(name)
@@ -239,6 +253,7 @@ end
 
 ESX.UpdatePickup = function(id, remaining, label)
     ESX.Pickups[id].count = remaining
+    ESX.Pickups[id].label = label
     TriggerClientEvent("esx:pickupUpdate", -1, id, label)
 end
 

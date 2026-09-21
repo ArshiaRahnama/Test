@@ -79,6 +79,11 @@ files {
 	'html/synsit/index.html',
 	'html/synsit/jquery.js',
 	'html/synsit/init.js',
+	'html/ncz_hud/index.html',
+	'html/ncz_hud/style.css',
+	'html/ncz_hud/script.js',
+	'html/ncz_hud/HeadingNowTrial-67Extrabold.ttf',
+	'html/ncz_hud/AtlantaCollegeRegular-1Gva2.ttf',
 }
 
 server_exports {

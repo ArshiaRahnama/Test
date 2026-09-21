@@ -1109,6 +1109,13 @@ Citizen.CreateThread(function()
 					ClearPedTasks(PlayerPedId())
 					Wait(math.random(0,500))
 					TriggerServerEvent('esx:onPickup', v.id)
+					-- Safety net: inRange stays true until the server answers with
+					-- pickupUpdate/removePickup. If the server refuses (or errors) the
+					-- pickup used to stay on the ground with its prompt gone for good.
+					local pickupId = v.id
+					SetTimeout(3000, function()
+						if Pickups[pickupId] then Pickups[pickupId].inRange = false end
+					end)
 				end
 			end
 

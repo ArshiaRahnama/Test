@@ -31,6 +31,15 @@
         server-side, and sent to the client as ready strings
         (v.expired, v.remainingString, v.expireString, v.startString). The
         client no longer needs "the current time" at all.
+
+      - The "scrolling glitches sometimes" bug: every menu here used to
+        build its option list with `pairs()` over a table keyed by license
+        type name. Lua's pairs() has NO guaranteed order for that kind of
+        table - the same menu could come back in a different item order
+        each time it opened, which looks like scrolling/reordering glitches.
+        Fixed by adding licenseConfig.order (a plain numbered list) in
+        license_config.lua and iterating THAT with ipairs() everywhere a
+        list is built, so the order is always identical.
 ]]
 
 ESX = nil
@@ -59,8 +68,9 @@ RegisterCommand('license', function()
 
     local options = {}
 
-    for k, v in pairs(licenses) do
-        if licenseConfig.licenses[k] then
+    for _, k in ipairs(licenseConfig.order) do
+        local v = licenses[k]
+        if v and licenseConfig.licenses[k] then
             if v.expired then
                 table.insert(options, {
                     label = ('%s - Expired❌'):format(licenseConfig.licenses[k].label),
@@ -112,6 +122,7 @@ local LICENSE_ICONS = {
     ['mojavezgun_1']  = 'shield-halved',
     ['mojavezvest_1'] = 'shirt',
     ['salamateravan'] = 'heart-pulse',
+    ['dys']           = 'gun',
 }
 
 local function LicenseIcon(key)
@@ -127,9 +138,10 @@ end
 local function openViewMenu(target, targetName, _licenses)
     local options = {}
 
-    for k, v in pairs(_licenses) do
+    for _, k in ipairs(licenseConfig.order) do
+        local v = _licenses[k]
         local config = licenseConfig.licenses[k]
-        if config and (config.viewAccess.all or config.viewAccess[ESX.PlayerData.job.name]) then
+        if v and config and (config.viewAccess.all or config.viewAccess[ESX.PlayerData.job.name]) then
             if v.expired then
                 table.insert(options, {label = ('%s - Expired❌'):format(config.label), icon = 'x', args = {license = k}, description = ('%s - %s'):format(v.from, v.description or '')})
             else
@@ -186,7 +198,8 @@ end
 local function openAddMenu(target)
     local options = {}
 
-    for k, v in pairs(licenseConfig.licenses) do
+    for _, k in ipairs(licenseConfig.order) do
+        local v = licenseConfig.licenses[k]
         if v.addAccess.all or v.addAccess[ESX.PlayerData.job.name] then
             table.insert(options, {label = v.label, icon = LicenseIcon(k), args = {license = k}})
         end

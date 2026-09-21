@@ -2,7 +2,7 @@ fx_version 'adamant'
 game 'gta5'
 
 description 'Unique_inventory - merged esx_inventory + esx_inventoryhud + esx_inventoryhud_trunk'
-version '1.2.0'
+version '1.3.0'
 
 dependency 'essentialmode'
 dependency 'oxmysql'

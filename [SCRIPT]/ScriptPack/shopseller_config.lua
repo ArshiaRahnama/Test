@@ -89,12 +89,23 @@ ShopConfig.GunshopCategories = {
     {id = 'pistols', label = '🔫 Pistols',    icon = 'fa-solid fa-gun',       iconColor = '#fbbf24'},
     {id = 'melee',   label = '🔪 Melee',      icon = 'fa-solid fa-hand-fist', iconColor = '#a8a29e'},
     {id = 'ammo',    label = '📦 Ammunition', icon = 'fa-solid fa-box',       iconColor = '#22c55e'},
+    {id = 'permits', label = '📜 Permits',    icon = 'fa-solid fa-scroll',    iconColor = '#f472b6'},
 }
 
 ShopConfig.itemsForSaleGunshop = {
     weapon_pistol       = {price = 90000,  category = 'pistols'},
     weapon_combatpistol = {price = 120000, category = 'pistols'},
     weapon_knife        = {price = 60000,  category = 'melee'},
+}
+
+-- Permits sold at the Gun Shop -- NOT real weapons/items, so these are
+-- handled completely separately (see itemType = 'permit' in
+-- getitemsForSaleGunshop and the gunshop_item:buy_permit handler in
+-- server/shop-sv.lua) rather than going through xPlayer.addWeapon like
+-- itemsForSaleGunshop above. `licenseType` is the key in
+-- license_config.lua's licenseConfig.licenses this purchase grants.
+ShopConfig.itemsForSaleGunshopPermits = {
+    dys_permit = {price = 150000, category = 'permits', licenseType = 'dys'},
 }
 
 -- Flavour metadata shown under each weapon in the menu (damage / fire

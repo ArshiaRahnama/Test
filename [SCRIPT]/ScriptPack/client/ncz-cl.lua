@@ -1,4 +1,6 @@
 ESX = nil
+local hasDysLicense = false
+
 Citizen.CreateThread(function()
 	while ESX == nil do
 		TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
@@ -10,7 +12,41 @@ Citizen.CreateThread(function()
 	end
 
 	PlayerData = ESX.GetPlayerData()
+
+	-- DYS permit check (see license_config.lua's 'dys' entry, bought at the
+	-- Gun Shop - server/shop-sv.lua's gunshop_item:buy_permit). Fetched once
+	-- here and kept in sync via license:update, which fires whenever the
+	-- local player's own licenses change (bought, or added/revoked by
+	-- staff) - see server/licensemenu-sv.lua.
+	ESX.TriggerServerCallback('license:getData', function(_licenses)
+		hasDysLicense = _licenses['dys'] ~= nil and not _licenses['dys'].expired
+	end)
 end)
+
+RegisterNetEvent('license:update', function(_licenses)
+	hasDysLicense = _licenses['dys'] ~= nil and not _licenses['dys'].expired
+end)
+
+-- Any suppressor component across the common weapon families (pistol and
+-- rifle/SMG variants both exist in GTA V). HasPedGotWeaponComponent just
+-- returns false for a component that doesn't fit the currently equipped
+-- weapon, so checking all 4 against whatever's equipped is safe.
+local SUPPRESSOR_COMPONENTS = {
+	GetHashKey('COMPONENT_AT_PI_SUPP'),
+	GetHashKey('COMPONENT_AT_PI_SUPP_02'),
+	GetHashKey('COMPONENT_AT_AR_SUPP'),
+	GetHashKey('COMPONENT_AT_AR_SUPP_02'),
+}
+
+local function HasSuppressorEquipped(ped, weaponHash)
+	for i = 1, #SUPPRESSOR_COMPONENTS do
+		if HasPedGotWeaponComponent(ped, weaponHash, SUPPRESSOR_COMPONENTS[i]) then
+			return true
+		end
+	end
+	return false
+end
+
 local blip = nil
 RegisterNetEvent('esx:setJob')
 AddEventHandler('esx:setJob', function(job)
@@ -36,6 +72,10 @@ local zoneMap = {
 }
 
 local coords = {label = false,x=nil,y=nil,z=nil,radius=nil,name=nil}
+local notifiedNoSuppressor = false
+local notifiedNoDys = false
+local inBaseZone = false
+local hudShown = false
 
 local WhitelistJobs = {
 	 ["police"] = 'police',
@@ -63,39 +103,79 @@ function GetOnlineActive(Entity)
 	end
 end
 
+-- Shows/hides the "You Are In NCZ" NUI badge. This used to be a separate
+-- ncz_hud resource with its own export, but ScriptPack can only have ONE
+-- ui_page (html/index.html), so it's now one more iframe inside that
+-- existing shell (see html/index.html and html/ncz_hud/) - same pattern
+-- already used here for headbag/babicz/changwinwood/synsit. That means this
+-- is just a normal SendNUIMessage now, no export/cross-resource call needed.
+local function UpdateHudVisibility()
+	local shouldShow = coords.label or inBaseZone
+	if shouldShow and not hudShown then
+		hudShown = true
+		SendNUIMessage({ action = 'enable' })
+	elseif not shouldShow and hudShown then
+		hudShown = false
+		SendNUIMessage({ action = 'disable' })
+	end
+end
+
+-- If a DYS holder kills another player, their permit is revoked immediately
+-- (this is a client-side detection triggering a server-side delete - the
+-- server event only ever deletes the CALLER's own 'dys' row, so there's
+-- nothing to gain by forging it). args layout for CEventNetworkEntityDamage:
+-- args[1] victim, args[2] attacker, args[4] isDead (1/0).
+AddEventHandler('gameEventTriggered', function(name, args)
+	if name ~= 'CEventNetworkEntityDamage' then return end
+	if not hasDysLicense then return end
+
+	local victim, attacker, isDead = args[1], args[2], args[4] == 1
+	local playerPed = PlayerPedId()
+
+	if isDead and attacker == playerPed and victim ~= playerPed and IsPedAPlayer(victim) then
+		hasDysLicense = false
+		TriggerServerEvent('license:dysKillRevoke')
+		ESX.ShowNotification('~r~Mojaveze DYS shoma be dalile estefade baraye ghatl ~y~laghv~r~ shod!')
+	end
+end)
+
 Citizen.CreateThread(function()
 	while true do
 		Citizen.Wait(1)
 		local playerPed = PlayerPedId()
 		local pedid = PlayerPedId()
 		local x, y, z = table.unpack(GetEntityCoords(playerPed, true))
+		local isWhitelisted = WhitelistJobs[PlayerData.job.name] ~= nil
 
+		-------------------------------------------------------
+		-- Small named NCZ zones (`zone` table) - UNCHANGED from your
+		-- original: absolute no-fire for anyone not in WhitelistJobs. The
+		-- DYS permit does NOT apply here, on purpose - it only applies to
+		-- the big zoneMap.Base circle below.
+		-------------------------------------------------------
 		if not coords.label then
 			for i, v in pairs(zone) do
 				if Vdist(x, y, z, v.x, v.y, v.z) <= v.radius then
 					coords.label = true
 					coords.x, coords.y, coords.z, coords.radius, coords.name = v.x, v.y, v.z, v.radius, i
 
-					local isWhitelisted = WhitelistJobs[PlayerData.job.name] ~= nil
-
 					if not isWhitelisted then
 						ClearPlayerWantedLevel(PlayerId())
 						SetCurrentPedWeapon(playerPed, GetHashKey("WEAPON_UNARMED"), true)
-						DisablePlayerFiring(playerPed, true)
+						DisablePlayerFiring(PlayerId(), true)
 						TriggerServerEvent('EventLogs:NCZEnter', i)
 					end
 
-					SetPlayerInvincible(playerPed, true)
+					SetPlayerInvincible(PlayerId(), true)
 				end
 			end
 		end
 
 		if coords.label then
-			local isWhitelisted = WhitelistJobs[PlayerData.job.name] ~= nil
 			local currentWeapon = GetSelectedPedWeapon(playerPed)
 
 			if not isWhitelisted then
-				DisablePlayerFiring(playerPed, true)
+				DisablePlayerFiring(PlayerId(), true)
 				SetCurrentPedWeapon(playerPed, GetHashKey("WEAPON_UNARMED"), true)
 				DisableControlAction(0, 263, true)
 				DisableControlAction(0, 25, true)
@@ -103,10 +183,10 @@ Citizen.CreateThread(function()
 			else
 
 				if currentWeapon == GetHashKey("WEAPON_STUNGUN") then
-					DisablePlayerFiring(playerPed, false)
+					DisablePlayerFiring(PlayerId(), false)
 					EnableControlAction(0, 24, true)
 				else
-					DisablePlayerFiring(playerPed, true)
+					DisablePlayerFiring(PlayerId(), true)
 				end
 			end
 
@@ -124,13 +204,67 @@ Citizen.CreateThread(function()
 				coords.x, coords.y, coords.z, coords.radius, coords.name = nil, nil, nil, nil, nil
 				NetworkSetFriendlyFireOption(true)
 				DisableControlAction(2, 37, false)
-				DisablePlayerFiring(playerPed, false)
+				DisablePlayerFiring(PlayerId(), false)
 				EnableControlAction(0, 24, true)
 				DisableControlAction(0, 106, false)
-				SetPlayerInvincible(playerPed, false)
+				SetPlayerInvincible(PlayerId(), false)
 				SetEntityAlpha(pedid, 255, false)
 			end
 		end
+
+		-------------------------------------------------------
+		-- Big circle (zoneMap.Base) - THIS is where the DYS permit
+		-- matters. Reads zoneMap.Base.radius directly, so changing that
+		-- number is all it takes to resize this zone. Skipped entirely
+		-- while inside a small named zone above, since that one already
+		-- has full, absolute control over firing.
+		-------------------------------------------------------
+		if not coords.label then
+			local base = zoneMap.Base
+			local inBaseNow = base and Vdist(x, y, z, base.x, base.y, base.z) <= base.radius
+
+			if inBaseNow then
+				if not inBaseZone then
+					inBaseZone = true
+					notifiedNoSuppressor = false
+					notifiedNoDys = false
+				end
+
+				if not isWhitelisted then
+					local currentWeapon = GetSelectedPedWeapon(playerPed)
+					local hasDysAccess = hasDysLicense and HasSuppressorEquipped(playerPed, currentWeapon)
+
+					if hasDysAccess then
+						DisablePlayerFiring(PlayerId(), false)
+					else
+						DisablePlayerFiring(PlayerId(), true)
+						DisableControlAction(0, 24, true)  -- Attack
+						DisableControlAction(0, 257, true) -- Attack2
+
+						if hasDysLicense then
+							if not notifiedNoSuppressor then
+								ESX.ShowNotification('~r~Baraye tirandazi dar in mantaghe bayad ~y~Silencer~r~ ru aslahetun dashte bashid')
+								notifiedNoSuppressor = true
+							end
+						else
+							if not notifiedNoDys then
+								ESX.ShowNotification('~r~Shoma mojavez ~y~DYS~r~ nadarid')
+								notifiedNoDys = true
+							end
+						end
+					end
+				end
+			else
+				if inBaseZone then
+					inBaseZone = false
+					notifiedNoSuppressor = false
+					notifiedNoDys = false
+					DisablePlayerFiring(PlayerId(), false)
+				end
+			end
+		end
+
+		UpdateHudVisibility()
 	end
 end)
 

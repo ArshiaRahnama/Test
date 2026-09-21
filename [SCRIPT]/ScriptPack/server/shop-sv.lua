@@ -201,6 +201,20 @@ ESX.RegisterServerCallback('getitemsForSaleGunshop', function(source, cb)
         })
     end
 
+    -- Permits (see ShopConfig.itemsForSaleGunshopPermits) -- not weapons or
+    -- real items, they grant a row in user_licenses (licenseConfig.licenses)
+    -- instead. See gunshop_item:buy_permit below.
+    for itemName, itemData in pairs(ShopConfig.itemsForSaleGunshopPermits) do
+        local licenseInfo = licenseConfig.licenses[itemData.licenseType]
+        table.insert(itemsForSaleGunshop, {
+            name = itemName,
+            label = licenseInfo and licenseInfo.label or itemName,
+            price = itemData.price,
+            category = itemData.category,
+            itemType = 'permit'
+        })
+    end
+
     cb(itemsForSaleGunshop)
 end)
 
@@ -252,6 +266,63 @@ AddEventHandler('gunshop_item:buy_gunshop', function(itemName, amount)
 
         TriggerClientEvent('esx:showNotification', source, 'Shoma Pool Kafi Nadarid.')
     end
+end)
+
+-- Buys a permit/license (see ShopConfig.itemsForSaleGunshopPermits), e.g.
+-- the DYS permit that lets a player fire a suppressed weapon inside the NCZ
+-- (see client/ncz-cl.lua). This does NOT go through the normal
+-- server/licensemenu-sv.lua 'license:add' event (that one is F6/staff-only
+-- and doesn't take payment) -- it writes to user_licenses directly here,
+-- always permanent, then asks licensemenu-sv.lua to push the refreshed
+-- license list to the buyer via the 'license:internalPush' event.
+RegisterServerEvent('gunshop_item:buy_permit')
+AddEventHandler('gunshop_item:buy_permit', function(itemName)
+    local source = source
+    if isRateLimited(source) then return end
+
+    local xPlayer = ESX.GetPlayerFromId(source)
+    if not xPlayer then return end
+
+    local itemData = ShopConfig.itemsForSaleGunshopPermits[itemName]
+    if not itemData then return end
+
+    local licenseType = itemData.licenseType
+    local licenseInfo = licenseConfig.licenses[licenseType]
+    if not licenseInfo then return end
+
+    local identifier = GetPlayerIdentifier(source, 0)
+
+    MySQL.Async.fetchAll('SELECT 1 FROM user_licenses WHERE owner = @owner AND type = @type', {
+        ['@owner'] = identifier,
+        ['@type']  = licenseType
+    }, function(rows)
+        if rows[1] then
+            TriggerClientEvent('esx:showNotification', source, 'Shoma az ghabl in mojavez ra darid.')
+            return
+        end
+
+        if not xPlayer.canAfford(itemData.price) then
+            TriggerClientEvent('esx:showNotification', source, 'Shoma Pool Kafi Nadarid.')
+            return
+        end
+
+        xPlayer.payAny(itemData.price)
+
+        MySQL.Async.execute('INSERT INTO user_licenses (owner, type, expire, granted_by, description, created_at) VALUES (@owner, @type, 0, @granted_by, @description, @created_at)', {
+            ['@owner']       = identifier,
+            ['@type']        = licenseType,
+            ['@granted_by']  = 'Gun Shop',
+            ['@description'] = 'Kharide shode az Gun Shop',
+            ['@created_at']  = os.time()
+        }, function(rowsChanged)
+            if rowsChanged and rowsChanged > 0 then
+                xPlayer.showNotification(('~g~Shoma %s ra kharidid!'):format(licenseInfo.label))
+                TriggerEvent('license:internalPush', source)
+
+                TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'AMoneyLog', '```css\n[ Player : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Player Steam : '..xPlayer.identifier..' ]\n[ Bought Permit : '..tostring(licenseType)..' ]\n[ Cost : '..tostring(itemData.price)..' ]\n```', 'user', true, source, false)
+            end
+        end)
+    end)
 end)
 
 -- Buys a stack of ammo (a real item, xPlayer.addInventoryItem) rather

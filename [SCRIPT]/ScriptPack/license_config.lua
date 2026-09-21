@@ -149,5 +149,35 @@ licenseConfig = {
             viewAccess   = { ['police'] = true, ['sheriff'] = true, ['mt'] = true, ['cid'] = true, ['cia'] = true, ['marshal'] = true, ['fbi'] = true, ['doa'] = true, ['judge'] = true },
             removeAccess = { ['police'] = true, ['sheriff'] = true, ['mt'] = true, ['cid'] = true, ['cia'] = true, ['marshal'] = true, ['fbi'] = true, ['doa'] = true, ['judge'] = true }
         },
-    }
+
+        ['dys'] = { -- Mojaveze DYS - tirandazi dar Base zone (zoneMap.Base) ba silencer
+            -- addAccess = police/sheriff/mt (your WhitelistJobs in ncz-cl.lua,
+            -- the "military organizations") can now grant this free via F6,
+            -- same as any other license. It's ALSO still buyable at the Gun
+            -- Shop for $150,000 (server/shop-sv.lua's gunshop_item:buy_permit) -
+            -- both paths write the same license_type row.
+            label = 'Mojaveze DYS (Tirandazi dar Base Zone)',
+            timing = { permanent = true, time = {1, 1} },
+            description = true,
+            addAccess    = { ['police'] = true, ['sheriff'] = true, ['mt'] = true },
+            viewAccess   = { ['police'] = true, ['sheriff'] = true, ['mt'] = true, ['cid'] = true, ['cia'] = true, ['marshal'] = true, ['fbi'] = true, ['doa'] = true, ['judge'] = true },
+            removeAccess = { ['police'] = true, ['sheriff'] = true, ['mt'] = true, ['cid'] = true, ['cia'] = true, ['marshal'] = true, ['fbi'] = true, ['doa'] = true, ['judge'] = true }
+        },
+    },
+
+    -- Fixed display order for every menu (self /license, F6 view, F6 add).
+    -- The scroll/reorder glitch you saw is Lua's pairs() having no
+    -- guaranteed order over a table keyed by strings -- the item list could
+    -- come back in a different order each time the menu opened, which looks
+    -- like a scrolling bug. client/license-cl.lua now iterates THIS list
+    -- instead of pairs(licenseConfig.licenses), so the order is always the
+    -- same. Add new license types to both the table above and here.
+    order = {
+        'drive_1', 'drive_2', 'drive_3', 'drive_4', 'drive_5', 'drive_6', 'drive_7',
+        'hunt_l1',
+        'stepson_1', 'marriage_1', 'ceremony_1',
+        'mojavezgun_1', 'mojavezvest_1',
+        'salamateravan',
+        'dys',
+    },
 }

@@ -301,6 +301,9 @@ $(document).ready(function () {
               nomeTrunckChest = _0x24ece6.nameCar
               $('#box-menu-item-chest').html('')
               $('.name-car').html(nomeTrunckChest)
+              fitChestTitleLine()
+              setTimeout(fitChestTitleLine, 150)
+              document.fonts && document.fonts.ready && document.fonts.ready.then(fitChestTitleLine)
               for (
                 let _0x59804a = 0;
                 _0x59804a < _0x24ece6.slots;
@@ -1523,6 +1526,20 @@ var SERIAL_SOURCES = {
   DOJ: 'Police Armory',
   GANG: 'Gang Armory',
 }
+
+// The line next to the second-inventory title used to start at a fixed 13.5vw,
+// which is right for a plate ("48LKR840") but ran straight through longer
+// titles such as "GLOVEBOX | 48LKR840". Start it after the title instead.
+function fitChestTitleLine() {
+  var $t = $('.name-car')
+  if (!$t.length || !$t[0].getBoundingClientRect) return
+  var vw = window.innerWidth / 100
+  var titleWidth = $t[0].getBoundingClientRect().width / vw
+  var left = Math.max(13.5, 5.2 + titleWidth + 1.5) // 5.2vw = .name-car left + margin
+  var right = 66.5 // where the line always ended (13.5vw + 53vw)
+  $('.line-chest').css({ left: left + 'vw', width: Math.max(0, right - left) + 'vw' })
+}
+
 function escapeHtml(str) {
   return $('<div>').text(String(str)).html()
 }

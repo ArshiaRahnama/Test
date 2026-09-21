@@ -6,14 +6,16 @@
     --gold-dim: rgba(212, 175, 55, 0.35);
     --ink: #050505;
     --ink-soft: #0c0c0c;
-    /* How far the whole inventory (identity card, item grid, filter panel,
-       chest/trunk view...) is shifted left. Tweak this one value to move
-       everything left/right together. --right-menu-x is separate and
-       controls only the money/pocket-space/action panel on the right,
-       which is tuned independently so it doesn't drift with the rest. */
-    --ui-shift-x: -7vw;
+    /* Horizontal placement of the inventory (all values in vw, so it scales
+       with the screen). Measured layout at 1920x1080:
+         - chest/trunk grid  = 5vw + --ui-shift-x   -> must stay >= 0
+         - right panel edge  = 100vw + --right-menu-x -> must stay <= 100
+       -7vw pushed the trunk/glovebox grid to -2vw (its first column was cut
+       off by the screen edge); -4vw keeps ~1vw of margin on both sides.
+       --chest-title-x keeps the plate/title lined up with the grid's edge. */
+    --ui-shift-x: -4vw;
     --right-menu-x: -4vw;
-    --chest-title-x: -3vw;
+    --chest-title-x: -4vw;
 }
 
 .ui-shift{
@@ -24,11 +26,12 @@
     transform: translateX(var(--right-menu-x));
 }
 
+/* NOTE: do NOT put a transform on .chest-title-menu. A transform makes it the
+   containing block of the absolutely-positioned title / line / Esc hint
+   inside it, which dropped the line under the title ~3.5vw down across the
+   top of the item grid. The title is already lined up by --ui-shift-x
+   (it lives inside .ui-shift), so no extra offset is needed. */
 .chest-title-menu{
-    /* Keeps the trunk view's plate/title text at a safe, always-visible
-       position (--chest-title-x) no matter how far --ui-shift-x pushes
-       the rest of the content left. */
-    transform: translateX(calc(var(--chest-title-x) - var(--ui-shift-x)));
 }
 
 body{

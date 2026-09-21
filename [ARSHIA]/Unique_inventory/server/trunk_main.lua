@@ -13,6 +13,59 @@ local function clampMax(plate, max)
   return max
 end
 
+local function normPlate(p)
+  local s = tostring(p or ""):gsub("%s+", "")
+  return s:upper()
+end
+
+local warnedNoVehicles = false
+
+-- Server-side "are you really at this vehicle?" check. Before this, any
+-- client could read/put/take from ANY vehicle's trunk by plate, from anywhere
+-- on the map (the plate is just a string in the event). Now:
+--   trunk    -> a vehicle with that plate must be within TrunkAccessDistance
+--   glovebox -> a vehicle with that plate must be within GloveboxAccessDistance
+--               (i.e. you are sitting in it)
+-- Needs OneSync (GetAllVehicles). If it isn't available the check is skipped
+-- (fail-open, with one console warning) so the trunk never breaks entirely.
+-- Turn off with TrunkConfig.ServerProximityCheck = false.
+local function canAccessStorage(src, key)
+  if not TrunkConfig.ServerProximityCheck then return true end
+  if type(key) ~= "string" or key == "" then return false end
+
+  local prefix = TrunkConfig.GlovePrefix
+  local isGlove = key:sub(1, #prefix) == prefix
+  local want = normPlate(isGlove and key:sub(#prefix + 1) or key)
+  if want == "" then return false end
+
+  local ped = GetPlayerPed(src)
+  if not ped or ped == 0 then return false end
+  local pcoords = GetEntityCoords(ped)
+
+  local ok, vehicles = pcall(GetAllVehicles)
+  if not ok or type(vehicles) ~= "table" then
+    if not warnedNoVehicles then
+      warnedNoVehicles = true
+      print("^3[Unique_inventory]^0 GetAllVehicles unavailable (OneSync off?) - trunk proximity check disabled")
+    end
+    return true
+  end
+
+  local maxDist = isGlove and TrunkConfig.GloveboxAccessDistance or TrunkConfig.TrunkAccessDistance
+  for _, veh in ipairs(vehicles) do
+    if normPlate(GetVehicleNumberPlateText(veh)) == want then
+      if #(pcoords - GetEntityCoords(veh)) <= maxDist then
+        return true
+      end
+    end
+  end
+  return false
+end
+
+local function tooFar(src)
+  TriggerClientEvent("esx:showNotification", src, "You are too far from the vehicle")
+end
+
 TriggerEvent(
   "esx:getSharedObject",
   function(obj)
@@ -109,6 +162,10 @@ RegisterServerCallbackSafe(
     if not plate then
       return
     end
+    if not canAccessStorage(source, plate) then
+      tooFar(source)
+      return cb({blackMoney = 0, items = {}, weapons = {}, weight = 0})
+    end
     TriggerEvent(
       "esx_trunk:getSharedDataStore",
       plate,
@@ -131,7 +188,8 @@ RegisterServerCallbackSafe(
             name = v.name,
             label = ESX.GetWeaponLabel(v.name),
             count = v.ammo,
-            filter = 'arma'
+            filter = 'arma',
+            serial = v.serial or ''
           })
         end
       
@@ -159,6 +217,8 @@ AddEventHandler(
   function(plate, type, item, count, max, owned)
     local _source = source
     max = clampMax(plate, max)
+    if not canAccessStorage(_source, plate) then return tooFar(_source) end
+    count = tonumber(count) or 0
     local xPlayer = ESX.GetPlayerFromId(_source)
     if not plate then
       return
@@ -266,23 +326,26 @@ AddEventHandler(
             storeWeapons = {}
           end
 
-          local weaponName = nil
-          local ammo = nil
+          local weaponName, ammo, serial = nil, nil, nil
 
           for i = 1, #storeWeapons, 1 do
             if storeWeapons[i].name == item then
               weaponName = storeWeapons[i].name
               ammo = storeWeapons[i].ammo
-
+              serial = storeWeapons[i].serial -- keep the weapon's serial number
               table.remove(storeWeapons, i)
 
               break
             end
           end
 
+          -- FIX: used to call addWeapon(nil, nil) (script error) when the
+          -- weapon wasn't in the trunk.
+          if not weaponName then return end
+
           store.set("weapons", storeWeapons)
 
-          xPlayer.addWeapon(weaponName, ammo)
+          xPlayer.addWeapon(weaponName, ammo, serial)
 
           local blackMoney = 0
           local items = {}
@@ -316,6 +379,8 @@ AddEventHandler(
   function(plate, type, item, count, max, owned, label)
     local _source = source
     max = clampMax(plate, max)
+    if not canAccessStorage(_source, plate) then return tooFar(_source) end
+    count = tonumber(count) or 0
     local xPlayer = ESX.GetPlayerFromId(_source)
     local xPlayerOwner = ESX.GetPlayerFromIdentifier(owner)
     if not plate then
@@ -329,6 +394,17 @@ AddEventHandler(
           "esx_trunk:getSharedDataStore",
           plate,
           function(store)
+            -- FIX (dupe): the old code raised coffre[i].count / inserted the
+            -- item FIRST and checked the capacity afterwards. store.get()
+            -- returns the live table, so when the trunk was full the player
+            -- got "insufficient space" but the item was ALREADY in the store
+            -- (and still in their pockets) - the next save persisted it.
+            -- Check the capacity first; only then touch anything.
+            if (getTotalInventoryWeight(plate) + (getItemWeight(item) * count)) > max then
+              TriggerClientEvent("esx:showNotification", _source, _U("insufficient_space"))
+              return
+            end
+
             local found = false
             local coffre = (store.get("coffre") or {})
 
@@ -347,21 +423,18 @@ AddEventHandler(
                 }
               )
             end
-            if (getTotalInventoryWeight(plate) + (getItemWeight(item) * count)) > max then
-              TriggerClientEvent("esx:showNotification", _source, _U("insufficient_space"))
-            else
-              -- Checks passed, storing the item.
-              store.set("coffre", coffre)
-              xPlayer.removeInventoryItem(item, count)
 
-              MySQL.Async.execute(
-                "UPDATE trunk_inventory SET owned = @owned WHERE plate = @plate",
-                {
-                  ["@plate"] = plate,
-                  ["@owned"] = owned
-                }
-              )
-            end
+            -- Checks passed, storing the item.
+            store.set("coffre", coffre)
+            xPlayer.removeInventoryItem(item, count)
+
+            MySQL.Async.execute(
+              "UPDATE trunk_inventory SET owned = @owned WHERE plate = @plate",
+              {
+                ["@plate"] = plate,
+                ["@owned"] = owned
+              }
+            )
           end
         )
       else
@@ -378,61 +451,24 @@ AddEventHandler(
           plate,
           function(store)
             local blackMoney = (store.get("black_money") or nil)
-            if blackMoney ~= nil then
-              blackMoney[1].amount = blackMoney[1].amount + count
-            else
-              blackMoney = {}
-              table.insert(blackMoney, {amount = count})
-            end
+            local oldAmount = (blackMoney ~= nil and blackMoney[1] and blackMoney[1].amount) or 0
+            local newAmount = oldAmount + count
 
-            if (getTotalInventoryWeight(plate) + blackMoney[1].amount / 10) > max then
+            -- capacity first (the total weight already counts oldAmount / 10)
+            if (getTotalInventoryWeight(plate) - oldAmount / 10 + newAmount / 10) > max then
               TriggerClientEvent("esx:showNotification", _source, _U("insufficient_space"))
-            else
-              -- Checks passed. Storing the item.
-              xPlayer.removeAccountMoney(item, count)
-              store.set("black_money", blackMoney)
-
-              MySQL.Async.execute(
-                "UPDATE trunk_inventory SET owned = @owned WHERE plate = @plate",
-                {
-                  ["@plate"] = plate,
-                  ["@owned"] = owned
-                }
-              )
+              return
             end
-          end
-        )
-      else
-        TriggerClientEvent("esx:showNotification", _source, _U("invalid_amount"))
-      end
-    end
 
-    if type == "item_weapon" then
-      if not xPlayer.hasWeapon(item) then return end
-      
-      TriggerEvent(
-        "esx_trunk:getSharedDataStore",
-        plate,
-        function(store)
-          local storeWeapons = store.get("weapons")
+            if blackMoney ~= nil and blackMoney[1] then
+              blackMoney[1].amount = newAmount
+            else
+              blackMoney = {{amount = newAmount}}
+            end
 
-          if storeWeapons == nil then
-            storeWeapons = {}
-          end
-      
-          table.insert(
-            storeWeapons,
-            {
-              name = item,
-              label = label,
-              ammo = xPlayer.hasWeapon(item).ammo
-            }
-          )
-          if (getTotalInventoryWeight(plate) + (getItemWeight(item))) > max then
-            TriggerClientEvent("esx:showNotification", _source, _U("invalid_amount"))
-          else
-            store.set("weapons", storeWeapons)
-            xPlayer.removeWeapon(item)
+            -- Checks passed. Storing the item.
+            xPlayer.removeAccountMoney(item, count)
+            store.set("black_money", blackMoney)
 
             MySQL.Async.execute(
               "UPDATE trunk_inventory SET owned = @owned WHERE plate = @plate",
@@ -442,6 +478,52 @@ AddEventHandler(
               }
             )
           end
+        )
+      else
+        TriggerClientEvent("esx:showNotification", _source, _U("invalid_amount"))
+      end
+    end
+
+    if type == "item_weapon" then
+      local carried = xPlayer.hasWeapon(item)
+      if not carried then return end
+
+      TriggerEvent(
+        "esx_trunk:getSharedDataStore",
+        plate,
+        function(store)
+          local storeWeapons = store.get("weapons")
+
+          if storeWeapons == nil then
+            storeWeapons = {}
+          end
+
+          -- FIX (dupe): capacity is checked BEFORE the weapon is added to the
+          -- (live) store table, not after.
+          if (getTotalInventoryWeight(plate) + getItemWeight(item)) > max then
+            TriggerClientEvent("esx:showNotification", _source, _U("insufficient_space"))
+            return
+          end
+
+          table.insert(
+            storeWeapons,
+            {
+              name = item,
+              label = label,
+              ammo = carried.ammo,
+              serial = carried.serial -- serial number travels with the weapon
+            }
+          )
+          store.set("weapons", storeWeapons)
+          xPlayer.removeWeapon(item, nil, carried.serial)
+
+          MySQL.Async.execute(
+            "UPDATE trunk_inventory SET owned = @owned WHERE plate = @plate",
+            {
+              ["@plate"] = plate,
+              ["@owned"] = owned
+            }
+          )
         end
       )
     end
