@@ -203,6 +203,13 @@ AddEventHandler("openInventoryHud", function()
     --if ESX.isDead() then return end
     --if ESX.GetPlayerData().IsDead or ESX.GetPlayerData().IsDead == -1 then return end
     if IsPedFalling(PlayerPedId()) then return SetNuiFocus(false, false) end
+
+    -- sitting in a vehicle -> open its glovebox next to the pockets
+    local ped = PlayerPedId()
+    if IsPedInAnyVehicle(ped, false) and OpenGlovebox(GetVehiclePedIsIn(ped, false)) then
+        return
+    end
+
     secondInventory = nil
     SetNuiFocus(true, true)
     TriggerScreenblurFadeIn(1000)
@@ -227,7 +234,7 @@ end)
 Citizen.CreateThread(function()
     while true do
         Citizen.Wait(1)
-        if IsControlPressed(0, 289) then
+        if IsControlJustPressed(0, 289) then
          
             if not inPaintBall then
                 if not NewLife then
@@ -325,11 +332,24 @@ local CustomLimit = {
     {model = GetHashKey('lex570'), limit = 500000},
 }
 
-function openmenuvehicle(_)
+-- entity: optional vehicle handle (from ox_target or Config.vehicleMenu).
+-- Without it (Alt key) we fall back to the old "vehicle 4m in front of you"
+-- raycast. That raycast is why the trunk was so hard to open before: it only
+-- worked when you stood exactly behind the car facing it.
+function openmenuvehicle(entity)
     local playerPed = PlayerPedId()
-    local vehicle   = VehicleInFront()
-    -- vehicle = _
-    print(vehicle)
+    local vehicle
+
+    if type(entity) == 'number' and entity ~= 0 and DoesEntityExist(entity) and IsEntityAVehicle(entity) then
+        vehicle = entity
+        -- must actually be standing at the trunk, not just looking at the car
+        local boot = GetEntityBoneIndexByName(vehicle, 'boot')
+        local ref  = boot ~= -1 and GetWorldPositionOfEntityBone(vehicle, boot) or GetEntityCoords(vehicle)
+        if #(GetEntityCoords(playerPed) - ref) > 4.5 then return end
+    else
+        vehicle = VehicleInFront()
+    end
+
     if vehicle == 0 then return end
 
     local locked    = GetVehicleDoorsLockedForPlayer(vehicle)
@@ -397,9 +417,50 @@ function openmenuvehicle(_)
     end
   end
   
-function openTrunk(_)
+-- ===================== GLOVEBOX =====================
+-- Opens the vehicle's glovebox as the "second inventory", exactly like the
+-- trunk does, but keyed as GLOVE:<plate> and capped by TrunkConfig.GloveboxLimit.
+-- Returns true if it opened (so the caller skips the plain inventory).
+local lastGloveOpen = 0
+function OpenGlovebox(vehicle)
+    if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return false end
+    if TrunkConfig.GloveboxNoClass[GetVehicleClass(vehicle)] then return false end
+
+    local plate = GetVehicleNumberPlateText(vehicle)
+    if not plate or plate == '' then return false end
+    plate = ESX.Math.Trim(plate)
+
+    -- debounce: the key can fire several times in a row
+    if GetGameTimer() - lastGloveOpen < 800 then return true end
+    lastGloveOpen = GetGameTimer()
+
+    trunkData = {
+        plate    = TrunkConfig.GlovePrefix .. plate,
+        max      = TrunkConfig.GloveboxLimit,
+        myVeh    = vehicle,
+        glovebox = true,
+        title    = 'GLOVEBOX | ' .. plate,
+    }
+    secondInventory = "trunckChest"
+    SetNuiFocus(true, true)
+    TriggerScreenblurFadeIn(1000)
+    SetCursorLocation(0.5, 0.5)
+    SendNUIMessage({
+        action = "openInventory",
+        secondAction = "trunckChest",
+        url = 'nui://Unique_inventory/html/img/items/'
+    })
+    return true
+end
+exports("openGlovebox", function()
+    local ped = PlayerPedId()
+    if IsPedInAnyVehicle(ped, false) then return OpenGlovebox(GetVehiclePedIsIn(ped, false)) end
+    return false
+end)
+
+function openTrunk(entity)
     if ESX and not CloseToVehicle then
-        openmenuvehicle(_)
+        openmenuvehicle(entity)
     end
 end
 
@@ -547,6 +608,7 @@ RegisterNUICallback("requestItemSecondInventory", function(data, cb)
     local tipo = data.tipo
     if tipo then
         if tipo == "trunckChest" then 
+            local plateKey = trunkData.plate
             ESX.TriggerServerCallback('esx_trunk:getInventoryV', function(tableItem, maxWeight, weight)
                 cb({
                     chest = "TrunckChest",
@@ -554,9 +616,9 @@ RegisterNUICallback("requestItemSecondInventory", function(data, cb)
                     slots = 120,
                     tamanhoChest = trunkData.max,
                     tamanhoMyInv = tableItem.weight,
-                    nameCar = ESX.Math.Trim(GetVehicleNumberPlateText(CloseToVehicle))
+                    nameCar = trunkData.title or ESX.Math.Trim(GetVehicleNumberPlateText(CloseToVehicle))
                 })
-            end, GetVehicleNumberPlateText(CloseToVehicle))
+            end, plateKey)
         elseif tipo == "house" then
             -- if not AdminOpenning then
             if event == 'esx_inventoryhud:GetHouseItems' then
@@ -678,7 +740,6 @@ RegisterNUICallback("colocarItemHouse", function(data)
     name = item
     count = tonumber(data.amount)
     AS.count = AS.count + 1
-    print(event)
     if event == 'esx_inventoryhud:GetHouseItems' then
         TriggerServerEvent("esx_property:putItem", PlayerData.identifier, type, name, count)
         dPN.closeInventoryPlayer()
@@ -746,8 +807,7 @@ RegisterNUICallback("retirarItemHouse", function(data)
         -- if SpamCheck() then return end
         AS.count = AS.count + 1
         local item = string.upper(data.item)
-        print(event)
-        -- TriggerServerEvent(getEvent, currentUser or houseID or PlayerData.identifier, data.item, data.oldSlot, data.newSlot, data.amount, data.chest, second)
+            -- TriggerServerEvent(getEvent, currentUser or houseID or PlayerData.identifier, data.item, data.oldSlot, data.newSlot, data.amount, data.chest, second)
         local type = item:find("WEAPON_") and "item_weapon" or "item_standard"
         if event == 'esx_inventoryhud:GetHouseItems' then
             TriggerServerEvent("esx_property:getItem", PlayerData.identifier, type, item, tonumber(data.amount))
@@ -879,7 +939,6 @@ RegisterNUICallback("enviarItem", function(data)
         dPN.closeInventoryPlayer()
         local aPlayers = ESX.Game.GetPlayersInArea(GetEntityCoords(PlayerPedId()), 3.0)
         SelectPlayer(function(cP)
-            print(GetPlayerServerId(cP))
             -- TriggerServerEvent("esx_inventoryhud:GiveItem", GetPlayerServerId(cP), data.item, data.amount, data.slot)
             TriggerServerEvent("esx:giveInventoryItem", GetPlayerServerId(cP), type, data.item, data.amount)
             AS.count = AS.count + 1

@@ -1,3 +1,25 @@
+-- ---------------------------------------------------------------------------
+-- Money ledger hook (Unique_AdminPanel). Reports every cash/bank change with the name
+-- of the RESOURCE that caused it, by walking the Lua call stack up to the first file
+-- outside essentialmode. TriggerEvent is a local event (clients cannot fire it) and is
+-- a no-op if Unique_AdminPanel isn't running.
+local function LedgerCaller()
+    if not debug or not debug.getinfo then return 'unknown' end
+    for level = 3, 9 do
+        local info = debug.getinfo(level, 'S')
+        if not info then break end
+        local res = (info.source or ''):match('^@([^/\\]+)[/\\]')
+        if res and res ~= 'essentialmode' then return res end
+    end
+    return 'essentialmode'
+end
+
+local function LedgerRecord(self, account, before, after)
+    if before ~= after and self.identifier then
+        TriggerEvent('Unique_AdminPanel:ledger', self.identifier, account, after - before, after, LedgerCaller())
+    end
+end
+
 function CreatePlayer(
     source,
     permission_level,
@@ -307,31 +329,39 @@ function CreatePlayer(
 
     self.addMoney = function(m)
         if type(m) == "number" and m > 0 then
+            local before = self.money
             local newMoney = self.money + m
             self.money = newMoney
+            LedgerRecord(self, 'money', before, newMoney)
         end
         TriggerClientEvent("moneyUpdate", self.source, self.money)
     end
 
     self.removeMoney = function(m)
         if type(m) == "number" and m > 0 then
+            local before = self.money
             local newMoney = self.money - m
             self.money = newMoney
+            LedgerRecord(self, 'money', before, newMoney)
         end
         TriggerClientEvent("moneyUpdate", self.source, self.money)
     end
 
     self.setMoney = function(m)
         if type(m) == "number" then
+            local before = self.money
             self.money = m
+            LedgerRecord(self, 'money', before, m)
         end
         TriggerClientEvent("moneyUpdate", self.source, self.money)
     end
 
     self.addBank = function(m)
         if type(m) == "number" and m > 0 then
+            local before = self.bank
             local newBank = self.bank + m
             self.bank = newBank
+            LedgerRecord(self, 'bank', before, newBank)
             TriggerClientEvent("gcphone:setUiPhone", self.source, self.bank)
             TriggerClientEvent("bankUpdate", self.source, self.bank)
 
@@ -340,7 +370,9 @@ function CreatePlayer(
 
     self.setBank = function(m)
         if type(m) == "number" then
+            local before = self.bank
             self.bank = m
+            LedgerRecord(self, 'bank', before, m)
             TriggerClientEvent("gcphone:setUiPhone", self.source, self.bank)
             TriggerClientEvent("bankUpdate", self.source, self.bank)
 
@@ -349,8 +381,10 @@ function CreatePlayer(
 
     self.removeBank = function(m)
         if type(m) == "number" and m > 0 then
+            local before = self.bank
             local newBank = self.bank - m
             self.bank = newBank
+            LedgerRecord(self, 'bank', before, newBank)
             TriggerClientEvent("gcphone:setUiPhone", self.source, self.bank)
             TriggerClientEvent("bankUpdate", self.source, self.bank)
         end

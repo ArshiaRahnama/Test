@@ -156,3 +156,17 @@ back the target's name alongside their licenses).
 
 
 
+
+## Test command
+Added a temporary `/testlicense` command so you can debug without needing to
+be near a player or match a job in F6:
+- `/testlicense` — opens the menu targeting yourself
+- `/testlicense <id>` — opens it targeting another player's server id
+  (same server-side rule as F6: you only see their licenses if your job has
+  add/view/remove access to at least one license type)
+
+It goes through the exact same server code as F6 (`license:getData`,
+`license:add`, `license:remove`), so anything you find with it is a real
+bug, not a test-command artifact. It's marked in `client/license-cl.lua` as
+temporary — delete that `RegisterCommand('testlicense', ...)` block once
+you're done testing.

@@ -37,6 +37,7 @@ function openPanel(title, showSearch) {
   document.getElementById('panelTitle').textContent = title;
   document.getElementById('panelSearchWrap').classList.toggle('hidden', !showSearch);
   document.getElementById('panelSearch').value = '';
+  document.getElementById('panelSearch').placeholder = 'Search...';
 }
 
 function closePanel() {
@@ -221,6 +222,7 @@ document.getElementById('panelClose').addEventListener('click', closePanel);
 document.getElementById('panelSearch').addEventListener('input', (e) => {
   const q = e.target.value.toLowerCase();
   const title = document.getElementById('panelTitle').textContent;
+  if (title === 'Global Search') { searchDebounced(e.target.value); return; }
   if (title === 'Chat Log') {
     drawChatLog(currentChatLog.filter(m =>
       (m.message || '').toLowerCase().includes(q) || (m.name || '').toLowerCase().includes(q)
@@ -312,6 +314,12 @@ window.addEventListener('message', (event) => {
     case 'proximity': renderProximity(data); break;
     case 'economychart': renderEconomyChart(data); break;
     case 'factionchart': renderFactionChart(data); break;
+    case 'casefile': renderCaseFile(data); break;
+    case 'search': renderSearch(); break;
+    case 'searchResults': drawSearchResults(data); break;
+    case 'ledger': renderLedger(data); break;
+    case 'ledgertop': renderLedgerTop(data); break;
+    case 'evidence': renderEvidence(data); break;
   }
 });
 
@@ -422,3 +430,238 @@ function renderFactionChart(data) {
   document.getElementById('panelBody').innerHTML = buildLineChartSVG(totals) +
     `<div class="rMeta" style="padding-top:8px;">${points.length} snapshots</div>`;
 }
+
+
+// ============================================================================
+// CASE FILE / GLOBAL SEARCH / MONEY LEDGER / REPORT EVIDENCE
+// (data comes from server/casefile.lua; all access checks happen on the server)
+// ============================================================================
+const KIND_META = {
+  ban:      { label: 'Ban',        color: '#c85450', icon: '⛔' },
+  jail:     { label: 'Jail',       color: '#d9822b', icon: '⛓️' },
+  cs:       { label: 'Comm. service', color: '#c9a24b', icon: '🧹' },
+  warning:  { label: 'Warning',    color: '#e0b84a', icon: '⚠️' },
+  kick:     { label: 'Kick',       color: '#d9822b', icon: '👢' },
+  report:   { label: 'Report',     color: '#4a9fd9', icon: '📨' },
+  flag:     { label: 'Flag',       color: '#c85450', icon: '🚩' },
+  note:     { label: 'Note',       color: '#9a9a95', icon: '📝' },
+  impound:  { label: 'Impound',    color: '#8a6fd1', icon: '🚧' },
+  transfer: { label: 'Transfer',   color: '#8a6fd1', icon: '🔁' },
+  money:    { label: 'Money',      color: '#5fae72', icon: '💰' },
+  admin:    { label: 'Admin action', color: '#6b7785', icon: '🛠️' },
+};
+const kindMeta = (k) => KIND_META[k] || { label: k, color: '#6b7785', icon: '•' };
+
+function fmtTime(t) {
+  if (!t) return '?';
+  const d = new Date(t * 1000);
+  const p = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+function fmtAgo(t) {
+  if (!t) return '';
+  const s = Math.max(0, Math.floor(Date.now() / 1000 - t));
+  if (s < 3600) return Math.floor(s / 60) + 'm ago';
+  if (s < 86400) return Math.floor(s / 3600) + 'h ago';
+  return Math.floor(s / 86400) + 'd ago';
+}
+const money = (n) => (Number(n) || 0).toLocaleString('en-US');
+
+// ---------------------------------------------------------------- SEARCH ---
+let _searchTimer = null;
+function searchDebounced(v) {
+  clearTimeout(_searchTimer);
+  const q = (v || '').trim();
+  if (q.length < 2) {
+    document.getElementById('panelBody').innerHTML = '<div class="infoRow"><span>Type at least 2 characters</span></div>';
+    return;
+  }
+  _searchTimer = setTimeout(() => post('globalSearch', { q }), 250);
+}
+
+function renderSearch() {
+  openPanel('Global Search', true);
+  const inp = document.getElementById('panelSearch');
+  inp.placeholder = 'Name, identifier, phone, IBAN, plate, server id...';
+  document.getElementById('panelBody').innerHTML =
+    '<div class="infoRow"><span>Search players, phones, IBANs, plates and bans. Click a result to open the case file.</span></div>';
+  setTimeout(() => inp.focus(), 50);
+}
+
+function drawSearchResults(res) {
+  if (document.getElementById('panelTitle').textContent !== 'Global Search') return;
+  const list = (res && res.results) || [];
+  const body = document.getElementById('panelBody');
+  if (!list.length) { body.innerHTML = '<div class="infoRow"><span>No results</span></div>'; return; }
+  const icons = { online: '🟢', player: '👤', vehicle: '🚗', ban: '⛔' };
+  body.innerHTML = list.map((r, i) => `
+    <div class="srCard" data-i="${i}">
+      <div class="srIcon">${icons[r.kind] || '•'}</div>
+      <div class="srText"><div class="srTitle">${escapeHtml(r.title)}</div><div class="srSub">${escapeHtml(r.sub || '')}</div></div>
+    </div>`).join('');
+  body.querySelectorAll('.srCard').forEach((el) => el.addEventListener('click', () => {
+    const r = list[Number(el.dataset.i)];
+    if (r && r.identifier) post('openCaseFile', { identifier: r.identifier });
+  }));
+}
+
+// ------------------------------------------------------------- CASE FILE ---
+function renderCaseFile(data) {
+  window._case = { data, filter: 'all' };
+  openPanel(`Case File: ${data.name}`, false);
+  drawCaseFile();
+}
+
+function drawCaseFile() {
+  const { data, filter } = window._case;
+  const counts = data.counts || {};
+  const events = (data.events || []).filter((e) => filter === 'all' || e.kind === filter);
+
+  let h = `<div class="cfHead">
+    <div class="cfName">${escapeHtml(data.name)} ${data.online ? `<span class="cfOn">online · id ${data.online}</span>` : '<span class="cfOff">offline</span>'}</div>
+    <div class="cfId">${escapeHtml(data.identifier)}</div>
+    <div class="cfMeta">
+      ${data.job ? `<span>💼 ${escapeHtml(data.job)}</span>` : ''}
+      ${data.phone ? `<span>📞 ${escapeHtml(data.phone)}</span>` : ''}
+      ${data.iban ? `<span>🏦 ${escapeHtml(data.iban)}</span>` : ''}
+      <span>💵 ${money(data.money)}</span><span>🏧 ${money(data.bank)}</span>
+    </div>
+    <div class="cfActions">
+      ${data.canLedger ? '<button class="cfBtn" id="cfLedger">Money ledger</button>' : ''}
+      <button class="cfBtn" id="cfRefresh">Refresh</button>
+    </div>
+  </div>`;
+
+  h += '<div class="chipRow">';
+  h += `<button class="chip ${filter === 'all' ? 'on' : ''}" data-k="all">All (${(data.events || []).length})</button>`;
+  (data.kinds || Object.keys(counts)).forEach((k) => {
+    if (!counts[k]) return;
+    const m = kindMeta(k);
+    h += `<button class="chip ${filter === k ? 'on' : ''}" data-k="${k}" style="--c:${m.color}">${m.icon} ${m.label} (${counts[k]})</button>`;
+  });
+  h += '</div>';
+
+  if (!events.length) {
+    h += '<div class="infoRow"><span>Nothing recorded for this filter.</span></div>';
+  } else {
+    h += '<div class="tl">' + events.map((e, i) => {
+      const m = kindMeta(e.kind);
+      return `<div class="tlItem" data-i="${i}" style="--c:${m.color}">
+        <div class="tlDot">${m.icon}</div>
+        <div class="tlBody">
+          <div class="tlTop"><span class="tlTitle">${escapeHtml(e.title)}</span>${e.status ? `<span class="tlTag">${escapeHtml(e.status)}</span>` : ''}<span class="tlTime" title="${fmtTime(e.t)}">${fmtAgo(e.t)}</span></div>
+          <div class="tlSub">${escapeHtml(m.label)}${e.by ? ' · by ' + escapeHtml(e.by) : ''} · ${fmtTime(e.t)}</div>
+          <div class="tlDetail hidden">${escapeHtml(e.detail || '(no details)')}${e.reportId && e.hasEvidence ? `<br><button class="cfBtn evBtn" data-r="${e.reportId}">Open evidence</button>` : ''}</div>
+        </div>
+      </div>`;
+    }).join('') + '</div>';
+  }
+
+  const body = document.getElementById('panelBody');
+  body.innerHTML = h;
+  body.querySelectorAll('.chip').forEach((c) => c.addEventListener('click', () => { window._case.filter = c.dataset.k; drawCaseFile(); }));
+  body.querySelectorAll('.tlItem').forEach((el) => el.addEventListener('click', (ev) => {
+    if (ev.target.closest('.evBtn')) return;
+    el.querySelector('.tlDetail').classList.toggle('hidden');
+    el.classList.toggle('open');
+  }));
+  body.querySelectorAll('.evBtn').forEach((b) => b.addEventListener('click', () => post('openEvidence', { reportId: Number(b.dataset.r) })));
+  const lg = document.getElementById('cfLedger');
+  if (lg) lg.addEventListener('click', () => post('openLedger', { identifier: data.identifier, hours: 24 }));
+  document.getElementById('cfRefresh').addEventListener('click', () => post('openCaseFile', { identifier: data.identifier }));
+}
+
+// ---------------------------------------------------------------- LEDGER ---
+function renderLedger(data) {
+  window._ledger = { data, confirming: null };
+  openPanel(`Money Ledger: ${data.name}`, false);
+  drawLedger();
+}
+
+function drawLedger() {
+  const { data, confirming } = window._ledger;
+  let h = `<div class="cfActions" style="margin-bottom:8px">
+    ${[1, 6, 24, 168].map((hr) => `<button class="chip ${data.hours === hr ? 'on' : ''}" data-h="${hr}">${hr < 24 ? hr + 'h' : (hr / 24) + 'd'}</button>`).join('')}
+    <button class="cfBtn" id="lgCase">Case file</button>
+  </div>`;
+
+  if ((data.bySource || []).length) {
+    h += '<div class="sectionTitle">Net by source (last ' + data.hours + 'h)</div><div class="chipRow">' +
+      data.bySource.map((s) => `<span class="chip static" style="--c:${Number(s.net) >= 0 ? '#5fae72' : '#c85450'}">${escapeHtml(s.source)}: ${Number(s.net) >= 0 ? '+' : ''}${money(s.net)} (${s.n})</span>`).join('') + '</div>';
+  }
+
+  if (!(data.rows || []).length) {
+    h += '<div class="infoRow"><span>No money changes recorded in this period.</span></div>';
+  } else {
+    h += '<table class="lgTable"><tr><th>Time</th><th></th><th>Change</th><th>Balance</th><th>Source</th><th></th></tr>' +
+      data.rows.map((r) => {
+        const d = Number(r.delta);
+        const reverted = r.reverted === 1 || r.reverted === true;
+        const btn = !data.canRevert || reverted || (r.account !== 'money' && r.account !== 'bank') ? (reverted ? '<span class="tlTag">reverted</span>' : '')
+          : (confirming === r.id ? `<button class="cfBtn danger" data-do="${r.id}">Confirm</button>` : `<button class="cfBtn" data-rv="${r.id}">Revert</button>`);
+        return `<tr class="${reverted ? 'dim' : ''}"><td title="${fmtTime(r.t)}">${fmtAgo(r.t)}</td><td>${r.account === 'bank' ? '🏧' : '💵'}</td>
+          <td class="${d >= 0 ? 'pos' : 'neg'}">${d >= 0 ? '+' : ''}${money(d)}</td><td>${money(r.balance_after)}</td><td>${escapeHtml(r.source)}</td><td>${btn}</td></tr>`;
+      }).join('') + '</table>';
+  }
+
+  const body = document.getElementById('panelBody');
+  body.innerHTML = h;
+  body.querySelectorAll('[data-h]').forEach((b) => b.addEventListener('click', () => post('openLedger', { identifier: data.identifier, hours: Number(b.dataset.h) })));
+  const cf = document.getElementById('lgCase');
+  if (cf) cf.addEventListener('click', () => post('openCaseFile', { identifier: data.identifier }));
+  body.querySelectorAll('[data-rv]').forEach((b) => b.addEventListener('click', () => { window._ledger.confirming = Number(b.dataset.rv); drawLedger(); }));
+  body.querySelectorAll('[data-do]').forEach((b) => b.addEventListener('click', () => {
+    post('revertLedger', { id: Number(b.dataset.do) });
+    window._ledger.confirming = null;
+    setTimeout(() => post('openLedger', { identifier: data.identifier, hours: data.hours }), 700);
+  }));
+}
+
+function renderLedgerTop(data) {
+  openPanel(`Top money gainers (last ${data.hours}h)`, false);
+  const rows = data.rows || [];
+  const body = document.getElementById('panelBody');
+  if (!rows.length) { body.innerHTML = '<div class="infoRow"><span>No unusual gains recorded.</span></div>'; return; }
+  body.innerHTML = '<div class="infoRow"><span>Admin grants and reverts are excluded. Click a row for the ledger.</span></div>' +
+    rows.map((r, i) => `<div class="srCard" data-i="${i}"><div class="srIcon">#${i + 1}</div>
+      <div class="srText"><div class="srTitle">${escapeHtml(r.name)} <span class="pos">+${money(r.net)}</span></div>
+      <div class="srSub">${r.n} changes · biggest +${money(r.biggest)} · mostly from ${escapeHtml(r.topSource)}</div></div></div>`).join('');
+  body.querySelectorAll('.srCard').forEach((el) => el.addEventListener('click', () => post('openLedger', { identifier: rows[Number(el.dataset.i)].identifier, hours: data.hours })));
+}
+
+// -------------------------------------------------------------- EVIDENCE ---
+function renderEvidence(d) {
+  const rep = d.report || {};
+  openPanel(`Evidence: report #${d.reportId}`, false);
+  let h = `<div class="infoRow"><span>${escapeHtml(rep.title || '')}</span><span>${escapeHtml(rep.status || '')}</span></div>`;
+  if (d.context) {
+    const c = d.context;
+    h += `<div class="sectionTitle">Context when accepted</div>
+      <div class="infoRow"><span>Position</span><span>${c.coords ? `${c.coords.x}, ${c.coords.y}, ${c.coords.z}` : '?'}</span></div>
+      <div class="infoRow"><span>Job / health / armour</span><span>${escapeHtml(c.job || '-')} / ${c.health ?? '?'} / ${c.armour ?? '?'}</span></div>
+      ${c.plate ? `<div class="infoRow"><span>Vehicle plate</span><span>${escapeHtml(c.plate)}</span></div>` : ''}`;
+  }
+  if (d.screenshot) h += `<div class="sectionTitle">Screenshot</div><img class="screenshotImg" src="${d.screenshot}" alt="screenshot">`;
+  if (d.nearby) {
+    h += `<div class="sectionTitle">Players within 50m (${d.nearby.length})</div>` +
+      (d.nearby.length ? d.nearby.map((p, i) => `<div class="srCard" data-n="${i}"><div class="srIcon">👤</div><div class="srText"><div class="srTitle">[${p.id}] ${escapeHtml(p.name || '?')}</div><div class="srSub">${p.distance} m</div></div></div>`).join('') : '<div class="infoRow"><span>Nobody nearby</span></div>');
+  }
+  if (d.chat) {
+    h += `<div class="sectionTitle">Reporter's last ${d.chat.length} chat lines</div>` +
+      d.chat.map((m) => `<div class="logLine"><span class="who">${escapeHtml(m.playername || '')}</span> <span class="time">${fmtTime(m.t)}</span><br>${escapeHtml(m.message)}</div>`).join('');
+  }
+  const body = document.getElementById('panelBody');
+  body.innerHTML = h;
+  body.querySelectorAll('[data-n]').forEach((el) => el.addEventListener('click', () => {
+    const p = d.nearby[Number(el.dataset.n)];
+    if (p && p.identifier) post('openCaseFile', { identifier: p.identifier });
+  }));
+}
+
+// Ctrl+K: global search from inside any panel of this frame
+document.addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {
+    e.preventDefault();
+    renderSearch();
+  }
+});

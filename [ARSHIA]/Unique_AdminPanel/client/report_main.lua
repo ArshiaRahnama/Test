@@ -259,6 +259,20 @@ RegisterNUICallback('chat', function(data, rawCb)
     ESX.TriggerServerCallback('Unique_Report:chat', cb, data.id, data.text)
 end)
 
+RegisterNUICallback('macros', function(_, rawCb)
+    local cb = cbWrap(rawCb)
+    if not ESX then return cb({ r = false }) end
+    ESX.TriggerServerCallback('Unique_Report:getMacros', function(list)
+        cb({ r = true, data = list or {} })
+    end)
+end)
+
+RegisterNUICallback('macro', function(data, rawCb)
+    local cb = cbWrap(rawCb)
+    if not ESX then return cb({ r = false }) end
+    ESX.TriggerServerCallback('Unique_Report:macro', cb, data.id, data.key)
+end)
+
 RegisterNUICallback('rate', function(data, rawCb)
     local cb = cbWrap(rawCb)
     if not ESX then return cb({ r = false }) end

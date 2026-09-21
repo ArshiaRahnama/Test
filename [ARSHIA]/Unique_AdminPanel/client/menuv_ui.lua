@@ -409,6 +409,12 @@ CreateMenu('player_econ', 'Economy & Job', function(m)
 end)
 
 CreateMenu('player_investigate', 'Investigate', function(m)
+    Button(m, '🗂️', 'Case File (Timeline)', 'Every note, warning, ban, jail, report and admin action on one timeline', function()
+        OpenCaseFile(target())
+    end)
+    LButton(2, m, '💹', 'Money Ledger', 'Every cash/bank change and which resource caused it', function()
+        OpenLedger(target(), 24)
+    end)
     Button(m, '🪪', 'Inspect', 'Full profile: vehicles, warnings, money', function()
         local id = target()
         ESX.TriggerServerCallback('Unique_AdminPanel:InspectPlayer', function(data)
@@ -685,6 +691,7 @@ end)
 -- ----------------------------------------------------------- SERVER TOOLS --
 
 CreateMenu('server_tools', 'Server Tools', function(m)
+    LButton(2, m, '🔎', 'Global Search', 'Name, identifier, phone, IBAN, plate  (hotkey F6, Ctrl+K in panels)', function() OpenGlobalSearch() end)
     SubMenu(m, '📢', 'Communication', 'Announcements and admin chat', 'server_comms')
     SubMenu(m, '📊', 'Reports & Logs', 'Reports, dashboards, history and audits', 'server_reports')
     if Allowed('btn_bulk') then
@@ -696,6 +703,29 @@ CreateMenu('server_tools', 'Server Tools', function(m)
             if r and r[1] ~= '' then ExecuteCommand('arestart ' .. r[1]) end
         end)
     end
+end)
+
+CreateMenu('report_macros', 'Report Macros', function(m)
+    Button(m, '➕', 'Add macro', 'Variables: {admin} {player} {id} {server}', function()
+        local r = Ask('Add Report Macro', {
+            { type = 'input', label = 'Button label', required = true, max = 60 },
+            { type = 'textarea', label = 'Reply text', required = true, max = 500 },
+            { type = 'checkbox', label = 'Also close the report after sending' },
+        })
+        if r then TriggerServerEvent('Unique_AdminPanel:AddMacro', r[1], r[2], r[3] and true or false) end
+    end)
+    ESX.TriggerServerCallback('Unique_AdminPanel:ListMacros', function(list)
+        for _, mc in ipairs(list or {}) do
+            local closes = (mc.close == 1 or mc.close == true)
+            Button(m, closes and '✅' or '💬', mc.label, (closes and '[closes report] ' or '') .. mc.text, function()
+                if Confirm('Delete macro', ('Delete "%s"?'):format(mc.label)) then
+                    TriggerServerEvent('Unique_AdminPanel:DeleteMacro', mc.key)
+                    Wait(400)
+                    Go('report_macros')
+                end
+            end)
+        end
+    end)
 end)
 
 CreateMenu('server_bulk', 'Bulk Actions (All Players)', function(m)
@@ -735,6 +765,16 @@ end)
 
 CreateMenu('server_reports', 'Reports & Logs', function(m)
     Button(m, '📨', 'Report Queue', '', Leave(OpenReportsMenu))
+    Button(m, '📎', 'Report Evidence', 'Chat, nearby players and screenshot saved when a report was accepted', function()
+        local r = Ask('Report Evidence', { { type = 'number', label = 'Report ID', min = 1, required = true } })
+        if r then OpenEvidence(math.floor(r[1])) end
+    end)
+    LButton(2, m, '📊', 'Top Money Gainers', 'Who gained the most money recently (find exploits)', function()
+        local r = Ask('Top Money Gainers', { { type = 'select', label = 'Period', default = '24', options = {
+            { value = '1', label = 'Last hour' }, { value = '6', label = 'Last 6 hours' }, { value = '24', label = 'Last 24 hours' }, { value = '168', label = 'Last 7 days' } } } })
+        if r then OpenLedgerTop(tonumber(r[1]) or 24) end
+    end)
+    if Lvl(5) then SubMenu(m, '💬', 'Report Macros', 'Add / delete canned replies', 'report_macros') end
     Button(m, '🗒️', 'Chat Log', '', function()
         ESX.TriggerServerCallback('Unique_AdminPanel:GetChatLog', function(log)
             MenuV:CloseAll()

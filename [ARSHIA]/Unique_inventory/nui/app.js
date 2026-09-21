@@ -490,17 +490,6 @@ $(document).ready(function () {
         } else {
           _0x56c24c.admin === false && $('.itens-identity.admin').hide()
         }
-        $('.money').html(
-          '\n                <div class="carteira-box">\n                    <div class="title-carteira">Cash Amount</div>\n                    <div class="saldinho saldo-carteira" data-count="' +
-            _0x56c24c.carteira +
-            '"> ' +
-            formatter.format(_0x56c24c.carteira) +
-            '</div>\n                </div>\n                <div class="banco-box">\n                    <div class="title-banco">Bank Amount</div>\n                    <div class="saldinho saldo-banco" data-count="' +
-            _0x56c24c.banco +
-            '"> ' +
-            formatter.format(_0x56c24c.banco) +
-            '</div>\n                </div>\n            '
-        )
         update === false &&
           $('.saldinho').each(function () {
             var _0x30cf2b = $(this),
@@ -565,6 +554,8 @@ $(document).ready(function () {
                       _0x498f3d.index +
                       '" data-item-peso="' +
                       _0x498f3d.peso +
+                      '" data-item-serial="' +
+                      (_0x498f3d.serial || '') +
                       '" data-item-key="' +
                       _0x498f3d.name +
                       '" data-item-name="' +
@@ -588,7 +579,7 @@ $(document).ready(function () {
                       '.png\');">\n                                        <div class="top-item">\n                                            <div class="amount">' +
                       _0x498f3d.count +
                       'x</div>\n                                            <div class="peso">' +
-                      (_0x498f3d.peso * _0x498f3d.count).toFixed(1) +
+                      (_0x498f3d.type === 'item_weapon' ? Number(_0x498f3d.peso) : _0x498f3d.peso * _0x498f3d.count).toFixed(1) +
                       'kg</div>\n                                        </div>\n                                        <div class="bottom-item">\n                                            <div class="name-item">' +
                       _0x498f3d.label +
                       '\n                                                <div class="typeFilter">' +
@@ -610,6 +601,8 @@ $(document).ready(function () {
                       _0x498f3d.index +
                       '" data-item-peso="' +
                       _0x498f3d.peso +
+                      '" data-item-serial="' +
+                      (_0x498f3d.serial || '') +
                       '" data-item-key="' +
                       _0x498f3d.name +
                       '" data-item-name="' +
@@ -633,7 +626,7 @@ $(document).ready(function () {
                       '.png\');">\n                                        <div class="top-item">\n                                            <div class="amount">' +
                       _0x498f3d.count +
                       'x</div>\n                                            <div class="peso">' +
-                      (_0x498f3d.peso * _0x498f3d.count).toFixed(1) +
+                      (_0x498f3d.type === 'item_weapon' ? Number(_0x498f3d.peso) : _0x498f3d.peso * _0x498f3d.count).toFixed(1) +
                       'kg</div>\n                                        </div>\n                                        <div class="bottom-item">\n                                            <div class="name-item">' +
                       _0x498f3d.label +
                       '\n                                            <div class="typeFilter">' +
@@ -1524,6 +1517,42 @@ function updateDragCraft() {
     },
   })
 }
+
+var SERIAL_SOURCES = {
+  LAW: 'Registered Weapon',
+  DOJ: 'Police Armory',
+  GANG: 'Gang Armory',
+}
+function escapeHtml(str) {
+  return $('<div>').text(String(str)).html()
+}
+function formatSerial(serial) {
+  if (!serial || serial === 'undefined' || serial === 'null') {
+    return '<span class="serial-none">UNREGISTERED</span>'
+  }
+  var m = String(serial).match(/^([A-Za-z]+)-(.+)$/)
+  if (!m) return '<span class="serial-num">' + escapeHtml(serial) + '</span>'
+  var prefix = m[1].toUpperCase()
+  return (
+    '<span class="serial-tag serial-' +
+    escapeHtml(prefix) +
+    '">' +
+    escapeHtml(prefix) +
+    '</span><span class="serial-num">' +
+    escapeHtml(m[2]) +
+    '</span>'
+  )
+}
+function showWeaponSerial($item) {
+  var serial = $item.attr('data-item-serial')
+  var m = String(serial || '').match(/^([A-Za-z]+)-/)
+  var source = m ? SERIAL_SOURCES[m[1].toUpperCase()] || 'Registered Weapon' : 'No registration'
+  $('.serial-value').html(formatSerial(serial))
+  $('.serial-source').text(source)
+  $('.serial-ammo').text($item.attr('data-item-amount') + ' rounds')
+  $('.serial-weight').text(Number($item.attr('data-item-peso')).toFixed(1) + ' kg')
+  $('.desc-serial').show()
+}
 function getHover() {
   $('.item-player').hover(
     function () {
@@ -1538,6 +1567,7 @@ function getHover() {
       $('#box-menu-item').css('height', '29vw')
       $('.desc-normal').hide()
       $('.desc-weapon').hide()
+      $('.desc-serial').hide()
       $('.descricao-menu').show()
       var _0x5a7c0e = $(this).data('item-name'),
         _0x12314a = $(this).data('item-peso'),
@@ -1551,6 +1581,10 @@ function getHover() {
         'background-image',
         'url("' + ip + '/' + _0x2ddf63 + '.png")'
       )
+      if (_0xb8ab4c === 'item_weapon' && $(this).attr('data-item-serial') !== undefined) {
+        showWeaponSerial($(this))
+        return
+      }
       if (
         _0xb8ab4c === 'usar' ||
         _0x5935b2 ===

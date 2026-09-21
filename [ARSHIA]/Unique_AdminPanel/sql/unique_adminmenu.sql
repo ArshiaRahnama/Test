@@ -211,3 +211,42 @@ CREATE TABLE IF NOT EXISTS `admin_faction_snapshots` (
   INDEX (`account_name`),
   INDEX (`taken_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ---------------------------------------------------------------------------
+-- Case file / money ledger / report evidence / report macros (server/casefile.lua
+-- creates these automatically too; kept here for a manual install).
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `admin_money_ledger` (
+  `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+  `identifier` VARCHAR(60) NOT NULL,
+  `account` VARCHAR(10) NOT NULL,
+  `delta` BIGINT NOT NULL,
+  `balance_after` BIGINT NOT NULL,
+  `source` VARCHAR(80) NOT NULL DEFAULT 'unknown',
+  `reverted` TINYINT(1) NOT NULL DEFAULT 0,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX `idx_ident_time` (`identifier`, `created_at`),
+  INDEX `idx_time` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `admin_report_evidence` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `report_id` INT NOT NULL,
+  `kind` VARCHAR(20) NOT NULL,
+  `data` MEDIUMTEXT NULL,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX `idx_report` (`report_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `admin_report_macros` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `mkey` VARCHAR(40) NOT NULL UNIQUE,
+  `label` VARCHAR(60) NOT NULL,
+  `text` VARCHAR(500) NOT NULL,
+  `close_report` TINYINT(1) NOT NULL DEFAULT 0,
+  `sort_order` INT NOT NULL DEFAULT 100,
+  `created_by` VARCHAR(100) NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- speeds up the case-file timeline (safe to skip if the index already exists)
+-- ALTER TABLE `admin_action_log` ADD INDEX `idx_target` (`target_identifier`);

@@ -2,10 +2,11 @@ fx_version 'adamant'
 game 'gta5'
 
 description 'Unique_inventory - merged esx_inventory + esx_inventoryhud + esx_inventoryhud_trunk'
-version '1.0.0'
+version '1.2.0'
 
 dependency 'essentialmode'
 dependency 'oxmysql'
+dependency 'ox_target'
 
 ui_page 'nui/index.html'
 
@@ -21,6 +22,7 @@ client_scripts {
     'client/inventory_main.lua',
     'client/hud_keys.lua',
     'client/trunk_client.lua',
+    'client/vehicle_target.lua',
 }
 
 server_scripts {

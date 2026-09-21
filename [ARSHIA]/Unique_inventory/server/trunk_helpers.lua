@@ -52,6 +52,10 @@ end
 
 function getOwnedVehicule(plate)
   local found = false
+  -- glovebox rows are stored as "GLOVE:<plate>"; ownership is of the real plate
+  if type(plate) == "string" then
+    plate = (plate:gsub("^" .. TrunkConfig.GlovePrefix, ""))
+  end
   if listPlate then
     for k, v in pairs(listPlate) do
       if plate ~= nil and string.find(plate, v) ~= nil then

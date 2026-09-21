@@ -122,6 +122,8 @@ function hideAll() {
 function applyConfig(cfg) {
   if (!cfg) return;
   S.cfg = Object.assign(S.cfg, cfg);
+  // editable macros (DB) replace the static canned list; falls back to it if the call fails
+  nui('macros').then(r => { if (r && r.r && Array.isArray(r.data) && r.data.length) S.cfg.canned = r.data; });
   $('#brandNameUser').textContent  = S.cfg.server;
   $('#brandNameAdmin').textContent = S.cfg.server;
   $$('#siteLinkUser span, #siteLinkAdmin span').forEach(el => { el.textContent = S.cfg.site; });
@@ -671,7 +673,7 @@ async function renderActive(body) {
       <div class="thread scroller" id="adminThread"></div>
 
       <div class="canned">
-        ${(S.cfg.canned || []).map(c => `<button class="canned__chip" data-canned="${esc(c.key)}">${esc(c.label)}</button>`).join('')}
+        ${(S.cfg.canned || []).map(c => `<button class="canned__chip" data-canned="${esc(c.key)}" title="${(c.close == 1 || c.close === true) ? 'ارسال و بستن ریپورت' : 'ارسال پاسخ'}">${esc(c.label)}${(c.close == 1 || c.close === true) ? ' ✓' : ''}</button>`).join('')}
       </div>
 
       <div class="composer">
@@ -770,9 +772,11 @@ async function renderActive(body) {
     const preset = (S.cfg.canned || []).find(c => c.key === chip.dataset.canned);
     if (!preset) return;
     chip.disabled = true;
-    const r = await nui('chat', { id: d.ID, text: preset.text });
+    // the server expands {admin} {player} {id} {server} and, for macros marked ✓, closes the report
+    const r = await nui('macro', { id: d.ID, key: preset.key });
     chip.disabled = false;
-    if (r && r.r) renderActive(body);
+    if (r && r.r && r.closed) { toast('پاسخ ارسال و ریپورت بسته شد.', 'ok'); S.adminView = 'queue'; renderAdmin(); }
+    else if (r && r.r) renderActive(body);
     else toast((r && r.msg) || 'ارسال نشد.', 'bad');
   }));
 

@@ -3,7 +3,7 @@ game 'gta5'
 
 author 'Arshia'
 description 'Unique_AdminPanel - merged from Admin_Menu + esx_aduty + UNIQUE_AC anti-cheat'
-version '3.1.0'
+version '3.2.0'
 
 -- Loaded on BOTH client and server, before client_scripts/server_scripts below
 -- (migrated from UNIQUE_AC/configs/fire-config.lua and UNIQUE_AC/tables/*.lua -
@@ -49,6 +49,7 @@ client_scripts {
 	'client/admin_tools_menu.lua',
 	'client/data_weapons.lua',
 	'client/devtools.lua',
+	'client/casefile.lua',
 	'client/menuv_ui.lua',
 	'client/nui_panel.lua',
 	'client/expansion.lua',
@@ -105,6 +106,7 @@ server_scripts {
 	'server/main.lua',
 	'server/admin_tools.lua',
 	'server/expansion.lua',
+	'server/casefile.lua',
 	'server/admin_tag.lua',
 	'server/duty_log.lua',
 	'server/settings.lua',

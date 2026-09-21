@@ -2,6 +2,26 @@ ESX = nil
 
 TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
 
+-- FIX (hardening): helpers used by the events/callbacks below.
+local function playersClose(a, b, maxDist)
+	local pa, pb = GetPlayerPed(a), GetPlayerPed(b)
+	if not pa or pa == 0 or not pb or pb == 0 then return false end
+	return #(GetEntityCoords(pa) - GetEntityCoords(pb)) <= (maxDist or 6.0)
+end
+
+-- A player may read another player's inventory only if it is themselves,
+-- they are standing next to them (frisk/search), or they are staff.
+-- Before, the `target` sent by the client was trusted blindly, so anyone
+-- could read anybody's items and money from anywhere on the map.
+local function canViewInventory(src, target)
+	target = tonumber(target)
+	if not target then return false end
+	if target == src then return true end
+	local xSrc = ESX.GetPlayerFromId(src)
+	if xSrc and (xSrc.permission_level or 0) > 1 then return true end
+	return playersClose(src, target, 6.0)
+end
+
 RegisterServerEvent('esx_inventoryhud:getOwnerVehicle')
 AddEventHandler('esx_inventoryhud:getOwnerVehicle', function()
 	local _source = source
@@ -138,76 +158,62 @@ end)
 
 RegisterServerEvent('esx_inventoryhud:updateKey')
 AddEventHandler('esx_inventoryhud:updateKey', function(target, type, itemName)
-
 	local _source = source
+	target = tonumber(target)
+
+	-- FIX (hardening): validate everything the client sent.
+	if not target or target == _source then return end
+	if type ~= "item_key" and type ~= "item_keyhouse" then return end
+	if itemName == nil then return end
 
 	local sourceXPlayer = ESX.GetPlayerFromId(_source)
 	local targetXPlayer = ESX.GetPlayerFromId(target)
+	if not sourceXPlayer or not targetXPlayer then return end
+	if not playersClose(_source, target, 8.0) then
+		TriggerClientEvent('esx:showNotification', _source, 'The player is too far away')
+		return
+	end
 
-	local identifier = GetPlayerIdentifiers(source)[1]
-	local identifier_target = GetPlayerIdentifiers(target)[1]
-	if type == "item_key" then -- MEETA GiveKey
+	-- use the same identifier the rest of the resource uses for owned_* tables
+	-- (was GetPlayerIdentifiers()[1], which is not always xPlayer.identifier)
+	local identifier = sourceXPlayer.identifier
+	local identifier_target = targetXPlayer.identifier
 
+	if type == "item_key" then -- vehicle key
 		MySQL.Async.execute("UPDATE owned_vehicles SET owner = @newplayer, buyer = @newplayer WHERE owner = @identifier AND plate = @plate",
 		{
-			['@identifier']		= identifier,
-			['@newplayer']		= identifier_target,
+			['@identifier']	= identifier,
+			['@newplayer']	= identifier_target,
 			['@plate']		= itemName
 		})
-		
-		TriggerClientEvent("pNotify:SendNotification", source, {
-			text = 'ส่ง <strong class="amber-text">กุญแจรถ</strong> ทะเบียน <strong class="yellow-text">'..itemName..'</strong>',
-			type = "success",
-			timeout = 3000,
-			layout = "bottomCenter",
-			queue = "global"
-		})
-		TriggerClientEvent("pNotify:SendNotification", target, {
-			text = 'ได้รับ <strong class="amber-text">กุญแจรถ</strong> ทะเบียน <strong class="yellow-text">'..itemName..'</strong>',
-			type = "success",
-			timeout = 3000,
-			layout = "bottomCenter",
-			queue = "global"
-		})
-		
-		TriggerClientEvent("esx_inventoryhud:getOwnerVehicle", source)
-		TriggerClientEvent("esx_inventoryhud:getOwnerVehicle", target)
-		
-		-- TriggerClientEvent("esx_trunk_inventory:getOwnedVehicule", source)
-		-- TriggerClientEvent("esx_trunk_inventory:getOwnedVehicule", target)
-		
-	elseif type == "item_keyhouse" then -- MEETA GiveKeyHouse
 
+		-- pNotify is not installed on this server (see client/inventory_main.lua),
+		-- and the old texts were Thai. Using the built-in notification.
+		TriggerClientEvent('esx:showNotification', _source, 'You gave the vehicle key ~y~' .. tostring(itemName))
+		TriggerClientEvent('esx:showNotification', target, 'You received the vehicle key ~y~' .. tostring(itemName))
+
+		TriggerClientEvent("esx_inventoryhud:getOwnerVehicle", _source)
+		TriggerClientEvent("esx_inventoryhud:getOwnerVehicle", target)
+
+	elseif type == "item_keyhouse" then -- house key
 		MySQL.Async.execute("UPDATE owned_properties SET owner = @newplayer WHERE owner = @identifier AND id = @id",
 		{
-			['@identifier']		= identifier,
-			['@newplayer']		= identifier_target,
-			['@id']		= itemName
+			['@identifier']	= identifier,
+			['@newplayer']	= identifier_target,
+			['@id']			= itemName
 		})
 
-		TriggerClientEvent("pNotify:SendNotification", source, {
-			text = 'ส่ง <strong class="amber-text">กุญแจบ้าน</strong>',
-			type = "success",
-			timeout = 3000,
-			layout = "bottomCenter",
-			queue = "global"
-		})
-		TriggerClientEvent("pNotify:SendNotification", target, {
-			text = 'ได้รับ <strong class="amber-text">กุญแจบ้าน</strong>',
-			type = "success",
-			timeout = 3000,
-			layout = "bottomCenter",
-			queue = "global"
-		})
+		TriggerClientEvent('esx:showNotification', _source, 'You gave a house key')
+		TriggerClientEvent('esx:showNotification', target, 'You received a house key')
 
-		TriggerClientEvent("esx_inventoryhud:getOwnerHouse", source)
+		TriggerClientEvent("esx_inventoryhud:getOwnerHouse", _source)
 		TriggerClientEvent("esx_inventoryhud:getOwnerHouse", target)
-
 	end
 end)
 
 RegisterServerCallbackSafe("esx_inventoryhud:getPlayerInventory", function(source, cb, target)
 
+	if not canViewInventory(source, target) then return cb(nil) end
 	local xPlayer = ESX.GetPlayerFromId(target)
 --	local Inventory = targetXPlayer.inventory
 
@@ -263,7 +269,10 @@ RegisterServerCallbackSafe("esx_inventoryhud:getPlayerInventory2323", function(s
 					label = v.label,
 					count = v.ammo,
 					peso = ESX.getWeaponWeight and ESX.getWeaponWeight(v.name) or 2,
-					filter = 'arma'
+					filter = 'arma',
+					-- serial generated by essentialmode (ESX.GenerateWeaponSerial):
+					-- LAW-xxxxx-xxxx / DOJ-... / GANG-...
+					serial = v.serial or ''
 				})
 			end
 		end
@@ -289,9 +298,17 @@ RegisterServerCallbackSafe("esx_inventoryhud:getPlayerInventory2323", function(s
 	-- circle as a static "1000.0/4000.0" that never moved). Now computed
 	-- for real: sum of each item's peso * count, against a configurable
 	-- cap.
+	-- FIX: a weapon's "count" is its AMMO, not a stack size. Multiplying the
+	-- weapon weight by the ammo made every gun weigh e.g. 2kg x 154 = 308kg
+	-- (that's how the pocket showed 3254.5/90). A weapon weighs its own
+	-- weight once - same as essentialmode's player.lua does.
 	local totalWeight = 0
 	for k, v in ipairs(items) do
-		totalWeight = totalWeight + ((v.peso or 0) * (v.count or 1))
+		if v.type == 'item_weapon' then
+			totalWeight = totalWeight + (v.peso or 0)
+		else
+			totalWeight = totalWeight + ((v.peso or 0) * (v.count or 1))
+		end
 	end
 
 
@@ -312,8 +329,15 @@ end)
 
 RegisterServerCallbackSafe("esx_inventoryhud:getPlayerInventory1", function(source, cb, target, data)
 
+	if not canViewInventory(source, target) then return cb(nil) end
 	local xPlayer = ESX.GetPlayerFromId(target)
-	local Inventory = xPlayer.inventory
+	if xPlayer == nil then return cb(nil) end
+
+	-- FIX: this used to be `Inventory = xPlayer.inventory` and then table.insert()
+	-- keys/accessories straight into it - i.e. into the player's LIVE inventory,
+	-- duplicating those entries again on every call. Work on a copy instead.
+	local Inventory = {}
+	for _, it in ipairs(xPlayer.inventory or {}) do Inventory[#Inventory + 1] = it end
 
 	if data == nil then
 		if xPlayer ~= nil then
@@ -468,7 +492,7 @@ RegisterServerCallbackSafe("esx_inventoryhud:getPlayerInventory1", function(sour
 		end
 	end
 
-end)--]]
+end)
 
 RegisterServerCallbackSafe("esx_inventoryhud:GetHouseItems", function(source, cb)
 	local xPlayer = ESX.GetPlayerFromId(source)

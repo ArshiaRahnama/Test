@@ -380,8 +380,7 @@ CreateThread(function()
     -- نسخه قبلی هیچ چکی نداشت. الان: باید یا صاحب ریپورت باشی یا ادمینِ
     -- تخصیص‌داده‌شده به همون ریپورت. نقش (user/admin) هم از روی خودِ سرور
     -- تعیین میشه نه از روی چیزی که کلاینت فرستاده.
-    RegisterServerCallbackSafe('Unique_Report:chat', function(source, cb, id, text)
-        local src = source
+    local function DoChat(src, cb, id, text)
         if not guard(src, cb) then return end
 
         local rep = Rep.GetReport(id)
@@ -426,6 +425,45 @@ CreateThread(function()
         end
 
         cb({ r = true })
+    end
+
+    RegisterServerCallbackSafe('Unique_Report:chat', function(source, cb, id, text)
+        DoChat(source, cb, id, text)
+    end)
+
+    -- ------------------------------------------------- پاسخ‌های آماده (DB) ---
+    -- Macros live in admin_report_macros (server/casefile.lua) and are editable from
+    -- F4 > Server Tools > Reports & Logs. {admin} {player} {id} {server} are expanded here.
+    RegisterServerCallbackSafe('Unique_Report:getMacros', function(source, cb)
+        if not Rep.HasAccess(source, Config_Shared.accessToAdminCommand) then return cb({}) end
+        cb(GetReportMacros and GetReportMacros() or {})
+    end)
+
+    RegisterServerCallbackSafe('Unique_Report:macro', function(source, cb, id, key)
+        local src = source
+        if not guard(src, cb) then return end
+        if not Rep.HasAccess(src, Config_Shared.accessToAdminCommand) then return cb({ r = false, msg = ReportLan.notAccess }) end
+        local rep = Rep.GetReport(id)
+        if not rep then return cb({ r = false, msg = ReportLan.reportnotfound }) end
+
+        local macro
+        for _, m in ipairs(GetReportMacros and GetReportMacros() or {}) do
+            if m.key == key then macro = m break end
+        end
+        if not macro then return cb({ r = false }) end
+
+        local xUser = Rep.GetPlayerByIdentifier(rep.identifier)
+        local text = ExpandMacroText(macro.text, rep, Rep.GetName(src), xUser and Rep.GetName(xUser.source) or nil)
+        DoChat(src, function(res)
+            if res and res.r and (macro.close == 1 or macro.close == true) then
+                CloseReport(src, id, function(r2)
+                    res.closed = r2 and r2.r or false
+                    cb(res)
+                end)
+            else
+                cb(res)
+            end
+        end, id, text)
     end)
 
     -- ------------------------------------------------- امتیازدهی کاربر ---
@@ -691,6 +729,8 @@ function AcceptReport(src, reportId, cb)
         Rep.Notify(src, ReportLan.Accept:format(rep.ID))
         Rep.RefreshAdminLists()
         Rep.LogAccept(rep.ID, adminName, Rep.GetPermission(src), now - (tonumber(rep.created_at) or now))
+        -- auto evidence: chat lines, nearby players, context, screenshot (server/casefile.lua)
+        if CollectReportEvidence then CollectReportEvidence(rep, xUser, src) end
         cb({ r = true, id = rep.ID })
     end)
 end

@@ -3,6 +3,16 @@ local arrayWeight = TrunkConfig.localWeight
 local VehicleList = {}
 local VehicleInventory = {}
 
+-- Glovebox rows are keyed "GLOVE:<plate>". Their capacity is enforced HERE:
+-- the `max` argument comes from the client and can't be trusted.
+local function clampMax(plate, max)
+  local prefix = TrunkConfig.GlovePrefix
+  if type(plate) == "string" and plate:sub(1, #prefix) == prefix then
+    return TrunkConfig.GloveboxLimit
+  end
+  return max
+end
+
 TriggerEvent(
   "esx:getSharedObject",
   function(obj)
@@ -148,6 +158,7 @@ AddEventHandler(
   "esx_trunk:getItem",
   function(plate, type, item, count, max, owned)
     local _source = source
+    max = clampMax(plate, max)
     local xPlayer = ESX.GetPlayerFromId(_source)
     if not plate then
       return
@@ -172,17 +183,7 @@ AddEventHandler(
 
                   break
                 else
-                  TriggerClientEvent(
-                    "pNotify:SendNotification",
-                    _source,
-                    {
-                      text = _U("invalid_quantity"),
-                      type = "error",
-                      queue = "trunk",
-                      timeout = 3000,
-                      layout = "bottomCenter"
-                    }
-                  )
+                  TriggerClientEvent("esx:showNotification", _source, _U("invalid_quantity"))
                 end
               end
             end
@@ -212,17 +213,7 @@ AddEventHandler(
           end
         )
       else
-        TriggerClientEvent(
-          "pNotify:SendNotification",
-          _source,
-          {
-            text = _U("player_inv_no_space"),
-            type = "error",
-            queue = "trunk",
-            timeout = 3000,
-            layout = "bottomCenter"
-          }
-        )
+        TriggerClientEvent("esx:showNotification", _source, _U("player_inv_no_space"))
       end
     end
 
@@ -258,17 +249,7 @@ AddEventHandler(
             data = {plate = plate, max = max, myVeh = owned, text = text}
             TriggerClientEvent("esx_inventoryhud:refreshTrunkInventory", _source, data, blackMoney, items, weapons)
           else
-            TriggerClientEvent(
-              "pNotify:SendNotification",
-              _source,
-              {
-                text = _U("invalid_amount"),
-                type = "error",
-                queue = "trunk",
-                timeout = 3000,
-                layout = "bottomCenter"
-              }
-            )
+            TriggerClientEvent("esx:showNotification", _source, _U("invalid_amount"))
           end
         end
       )
@@ -334,12 +315,12 @@ AddEventHandler(
   "esx_trunk:putItem",
   function(plate, type, item, count, max, owned, label)
     local _source = source
+    max = clampMax(plate, max)
     local xPlayer = ESX.GetPlayerFromId(_source)
     local xPlayerOwner = ESX.GetPlayerFromIdentifier(owner)
     if not plate then
       return
     end
-    print(type)
     if type == "item_standard" then
       local playerItemCount = xPlayer.getInventoryItem(item).count
 
@@ -367,17 +348,7 @@ AddEventHandler(
               )
             end
             if (getTotalInventoryWeight(plate) + (getItemWeight(item) * count)) > max then
-              TriggerClientEvent(
-                "pNotify:SendNotification",
-                _source,
-                {
-                  text = _U("insufficient_space"),
-                  type = "error",
-                  queue = "trunk",
-                  timeout = 3000,
-                  layout = "bottomCenter"
-                }
-              )
+              TriggerClientEvent("esx:showNotification", _source, _U("insufficient_space"))
             else
               -- Checks passed, storing the item.
               store.set("coffre", coffre)
@@ -394,17 +365,7 @@ AddEventHandler(
           end
         )
       else
-        TriggerClientEvent(
-          "pNotify:SendNotification",
-          _source,
-          {
-            text = _U("invalid_quantity"),
-            type = "error",
-            queue = "trunk",
-            timeout = 3000,
-            layout = "bottomCenter"
-          }
-        )
+        TriggerClientEvent("esx:showNotification", _source, _U("invalid_quantity"))
       end
     end
 
@@ -425,17 +386,7 @@ AddEventHandler(
             end
 
             if (getTotalInventoryWeight(plate) + blackMoney[1].amount / 10) > max then
-              TriggerClientEvent(
-                "pNotify:SendNotification",
-                _source,
-                {
-                  text = _U("insufficient_space"),
-                  type = "error",
-                  queue = "trunk",
-                  timeout = 3000,
-                  layout = "bottomCenter"
-                }
-              )
+              TriggerClientEvent("esx:showNotification", _source, _U("insufficient_space"))
             else
               -- Checks passed. Storing the item.
               xPlayer.removeAccountMoney(item, count)
@@ -452,17 +403,7 @@ AddEventHandler(
           end
         )
       else
-        TriggerClientEvent(
-          "pNotify:SendNotification",
-          _source,
-          {
-            text = _U("invalid_amount"),
-            type = "error",
-            queue = "trunk",
-            timeout = 3000,
-            layout = "bottomCenter"
-          }
-        )
+        TriggerClientEvent("esx:showNotification", _source, _U("invalid_amount"))
       end
     end
 
@@ -488,17 +429,7 @@ AddEventHandler(
             }
           )
           if (getTotalInventoryWeight(plate) + (getItemWeight(item))) > max then
-            TriggerClientEvent(
-              "pNotify:SendNotification",
-              _source,
-              {
-                text = _U("invalid_amount"),
-                type = "error",
-                queue = "trunk",
-                timeout = 3000,
-                layout = "bottomCenter"
-              }
-            )
+            TriggerClientEvent("esx:showNotification", _source, _U("invalid_amount"))
           else
             store.set("weapons", storeWeapons)
             xPlayer.removeWeapon(item)

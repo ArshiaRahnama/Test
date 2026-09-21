@@ -226,7 +226,14 @@ TrunkConfig.VehiclePlate = {
 
 
 
--- 
+--
 
-
-
+-- ===================== GLOVEBOX (داشبورد) =====================
+-- Sitting in a vehicle and pressing the inventory key (F2) opens that
+-- vehicle's glovebox next to your pockets. It is stored per plate with this
+-- prefix in the same trunk_inventory table (run install.sql once so the
+-- plate column is wide enough).
+TrunkConfig.GlovePrefix = 'GLOVE:'
+TrunkConfig.GloveboxLimit = 5000 -- grams, same unit as the trunk limits above (5 kg)
+-- vehicle classes with NO glovebox (8 = motorcycles, 13 = cycles, 21 = trains)
+TrunkConfig.GloveboxNoClass = { [8] = true, [13] = true, [21] = true }

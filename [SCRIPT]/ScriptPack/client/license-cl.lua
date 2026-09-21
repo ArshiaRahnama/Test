@@ -258,6 +258,30 @@ local function openLicenseMenu(target)
     end, target)
 end
 
+-------------------------------------------------------
+-- TEMPORARY test command - lets you open the exact same menu that F6 opens,
+-- without needing to be near a player in-game or have the right job to see
+-- the F6 button. Goes through the exact same server code (license:getData,
+-- license:add, license:remove) as the real F6 flow, so bugs you find here
+-- are real bugs, not test-command artifacts.
+--
+-- /testlicense        -> opens it targeting yourself
+-- /testlicense <id>   -> opens it targeting another player's server id
+--                        (server-side still only lets you see someone
+--                        else's licenses if your current job has add/view/
+--                        remove access to at least one license type - same
+--                        rule F6 uses)
+--
+-- Remove this whole block once you're done testing.
+-------------------------------------------------------
+RegisterCommand('testlicense', function(source, args)
+    local target = tonumber(args[1])
+    if not target then
+        target = GetPlayerServerId(PlayerId())
+    end
+    openLicenseMenu(target)
+end, false)
+
 exports('openLicenseMenu', openLicenseMenu)
 exports('getLicenseConfig', function()
     return licenseConfig

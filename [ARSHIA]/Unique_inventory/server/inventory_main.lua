@@ -85,47 +85,50 @@ RegisterServerCallbackSafe("Parzival:getGangINV", function(source, cb)
     cb(items)
 end)
 
+local BlockedWeapons = {
+    WEAPON_SNIPERRIFLE = true,
+    WEAPON_HEAVYSNIPER = true,
+}
+
+-- Single source of truth for "which armory weapons may THIS player take".
+-- Used by BOTH the UI list (getJobINV1) and the take-weapon event below, so a
+-- client can never request a weapon the menu wouldn't have shown it.
+local function getAuthorizedJobWeapons(src, xPlayer)
+    local list = {}
+    if not xPlayer or not xPlayer.job then return list end
+    local grade, job = xPlayer.job.grade, xPlayer.job.name
+
+    TriggerEvent('esx_policejob:getArmoryWeapons', src, function(weapons)
+        TriggerEvent('esx_society:getWeapons', src, grade, job, function(authorizedWeapons)
+            if type(weapons) ~= 'table' or type(authorizedWeapons) ~= 'table' then return end
+            for i = 1, #weapons do
+                for _, shared in ipairs(authorizedWeapons) do
+                    if shared.model == weapons[i].name and shared.status == true then
+                        if not BlockedWeapons[string.upper(weapons[i].name)] then
+                            list[#list + 1] = weapons[i].name
+                        end
+                        break
+                    end
+                end
+            end
+        end)
+    end)
+
+    return list
+end
+
 RegisterServerCallbackSafe("Parzival:getJobINV1", function(source, cb)
     local xPlayer = ESX.GetPlayerFromId(source)
     local items = {}
-        local grade = xPlayer.job.grade
-        local job = xPlayer.job.name
-        TriggerEvent('esx_policejob:getArmoryWeapons', source, function(weapons)
-            TriggerEvent('esx_society:getWeapons', source, grade, job, function(authorizedWeapons)
-                local elements = {}
-                for i=1, #weapons, 1 do
-                    local found = false
-                    --if weapons[i].count > 0 then
-                        if authorizedWeapons ~= nil then
-                            for _,sharedWeapons in ipairs(authorizedWeapons) do
-                                if found then break end
-                                if sharedWeapons.model == weapons[i].name and sharedWeapons.status == true then
-                                    wname = ESX.GetWeaponLabel(weapons[i].name)
-                                    table.insert(elements, {label = wname, value = weapons[i].name})
-                                    found = true
-                                end
-                            end
-                        end
-                    --end
-                end
 
-                for i=1, #elements, 1 do
-                    if string.lower(elements[i].value) == 'weapon_sniperrifle' then
-
-                    elseif string.lower(elements[i].value) == 'weapon_heavysniper' then
-            
-                    else
-                        table.insert(items, {
-                            type = 'item_weapon',
-                            name = elements[i].value,
-                            label = ESX.GetWeaponLabel(elements[i].value),
-                            count = 1
-                        })
-                    end
-                end
-                
-            end)
-        end)
+    for _, name in ipairs(getAuthorizedJobWeapons(source, xPlayer)) do
+        table.insert(items, {
+            type = 'item_weapon',
+            name = name,
+            label = ESX.GetWeaponLabel(name),
+            count = 1
+        })
+    end
 
     cb(items)
 end)
@@ -159,55 +162,48 @@ RegisterServerCallbackSafe("Parzival:getJobINV2", function(source, cb)
 end)
 
 RegisterNetEvent('Parzival:GetJobWeapon', function(item)
-    local xPlayer = ESX.GetPlayerFromId(source)
-    print('1')
-    if not xPlayer.hasWeapon(item) then
-        print('123')
-               
-        -- TriggerEvent('DiscordBot:ToDiscord', 'policearmory', xPlayer.name, 'Withdrawn ' .. weaponName ,'user', source, true, false)
-        -- TriggerEvent('esx_datastore:getSharedDataStore', 'society_'..xPlayer.job.name, function(store)
-    
-        --     local weapons = store.get('weapons')
-    
-        --     if weapons == nil then
-        --         weapons = {}
-        --     end
-    
-        
-         
-           
-        --     for i=1, #weapons, 1 do
-        --         if weapons[i].name == item and weapons[i].count == item.count then
+    local _source = source
+    local xPlayer = ESX.GetPlayerFromId(_source)
+    if not xPlayer or type(item) ~= 'string' then return end
 
-        --             table.remove(weapons, i)
-        --             break
-        --         end
-        --     end
-            
-            xPlayer.addWeapon(item, 250)
-            TriggerEvent('DiscordBot:ToDiscord', xPlayer.job.name, xPlayer.name, 'Bardasht '..item ,'user', source, true, false)
-            -- store.set('weapons', weapons)
-        
-        -- end)
+    item = string.upper(item)
+    if BlockedWeapons[item] then return end
+
+    -- FIX (exploit): this event used to trust the weapon name from the client
+    -- with no checks at all, so any player could trigger it and receive any
+    -- weapon with 250 ammo. The weapon must now be in the player's own
+    -- authorized armory list (same list the menu shows).
+    local allowed = false
+    for _, name in ipairs(getAuthorizedJobWeapons(_source, xPlayer)) do
+        if string.upper(name) == item then allowed = true break end
     end
+    if not allowed then
+        print(('^3[Unique_inventory]^0 blocked Parzival:GetJobWeapon from %s (%s) -> %s'):format(
+            _source, GetPlayerName(_source) or '?', item))
+        return
+    end
+
+    if xPlayer.hasWeapon(item) then return end
+
+    -- armory weapons carry a DOJ- serial (see essentialmode/server/common.lua)
+    local serial = ESX.GenerateWeaponSerial and ESX.GenerateWeaponSerial('DOJ') or nil
+    xPlayer.addWeapon(item, 250, serial)
+    TriggerEvent('DiscordBot:ToDiscord', xPlayer.job.name, xPlayer.name,
+        'Bardasht ' .. item .. (serial and (' [' .. serial .. ']') or ''), 'user', _source, true, false)
 end)
 
 RegisterNetEvent('Parzival:PutJobWeapon', function(item)
-    local xPlayer = ESX.GetPlayerFromId(source)
+    local _source = source
+    local xPlayer = ESX.GetPlayerFromId(_source)
+    if not xPlayer or type(item) ~= 'string' then return end
+
     if xPlayer.hasWeapon(item) then
-        local loadoutNum,  testest = xPlayer.getWeapon(item)
-        TriggerEvent('esx_datastore:getSharedDataStore', 'society_'..xPlayer.job.name, function(store)
-
-            local weapons = store.get('weapons')
-
-            if weapons == nil then
-                weapons = {}
-            end
-
-            
+        local loadoutNum, weaponData = xPlayer.getWeapon(item)
+        TriggerEvent('esx_datastore:getSharedDataStore', 'society_' .. xPlayer.job.name, function(store)
+            local weapons = store.get('weapons') or {}
             local foundWeapon = false
 
-            for i=1, #weapons, 1 do
+            for i = 1, #weapons, 1 do
                 if weapons[i].name == item then
                     weapons[i].count = weapons[i].count + 10
                     foundWeapon = true
@@ -218,20 +214,17 @@ RegisterNetEvent('Parzival:PutJobWeapon', function(item)
             if not foundWeapon then
                 table.insert(weapons, {
                     name  = item,
-                    count = testest.ammo
+                    count = weaponData.ammo
                 })
             end
 
-            
-
-
             store.set('weapons', weapons)
-            xPlayer.removeWeapon(item) 
-            TriggerEvent('DiscordBot:ToDiscord', xPlayer.job.name, xPlayer.name, 'Gozashtan ' .. item ,'user', source, true, false)
-    
+            xPlayer.removeWeapon(item)
+            TriggerEvent('DiscordBot:ToDiscord', xPlayer.job.name, xPlayer.name, 'Gozashtan ' .. item, 'user', _source, true, false)
         end)
-    else 
-        TriggerClientEvent('inventory:notify', src, 'error', 'in aslahe ro nadari')
+    else
+        -- FIX: this used an undefined variable `src` (always nil -> notification never sent)
+        TriggerClientEvent('esx:showNotification', _source, 'in aslahe ro nadari')
     end
 end)
 
