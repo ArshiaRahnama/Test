@@ -134,7 +134,7 @@ local function runMigration()
         -- نصب کاملاً تازه‌ست - sql/reports.sql هنوز اصلاً اجرا نشده. اینجا
         -- کاری نمی‌کنیم (خودِ CREATE TABLE اصلی تو reports.sql هست)، فقط
         -- هشدار واضح می‌دیم تا معلوم باشه مشکل از کجاست.
-        print(('^1[%s]^0 جدولِ `reports` اصلاً وجود نداره. sql/reports.sql رو import کن، بعد ریسورس رو ری‌استارت کن.'):format(RES))
+        dprint(('^1[%s]^0 جدولِ `reports` اصلاً وجود نداره. sql/reports.sql رو import کن، بعد ریسورس رو ری‌استارت کن.'):format(RES))
         return
     end
 
@@ -149,12 +149,12 @@ local function runMigration()
             end)
             if alterOk then
                 addedCols = addedCols + 1
-                print(('^3[%s]^0 ستونِ جدید اضافه شد: %s.%s'):format(RES, table_, column))
+                dprint(('^3[%s]^0 ستونِ جدید اضافه شد: %s.%s'):format(RES, table_, column))
             else
-                print(('^1[%s]^0 نتونستم ستونِ %s.%s رو اضافه کنم: %s'):format(RES, table_, column, tostring(err)))
+                dprint(('^1[%s]^0 نتونستم ستونِ %s.%s رو اضافه کنم: %s'):format(RES, table_, column, tostring(err)))
             end
         elseif not ok then
-            print(('^1[%s]^0 چکِ وجودِ ستونِ %s.%s ناموفق بود: %s'):format(RES, table_, column, tostring(exists)))
+            dprint(('^1[%s]^0 چکِ وجودِ ستونِ %s.%s ناموفق بود: %s'):format(RES, table_, column, tostring(exists)))
         end
     end
 
@@ -175,14 +175,14 @@ local function runMigration()
     for _, createSql in ipairs(CREATE_TABLES) do
         local ok, err = pcall(function() MySQL.Sync.execute(createSql, {}) end)
         if not ok then
-            print(('^1[%s]^0 ساختِ یکی از جدول‌های آماری ناموفق بود: %s'):format(RES, tostring(err)))
+            dprint(('^1[%s]^0 ساختِ یکی از جدول‌های آماری ناموفق بود: %s'):format(RES, tostring(err)))
         else
             addedTables = addedTables + 1
         end
     end
 
     if addedCols > 0 or addedIdx > 0 then
-        print(('^2[%s]^0 اسکیمای دیتابیس خودکار به‌روز شد: %d ستونِ جدید، %d ایندکسِ جدید.'):format(RES, addedCols, addedIdx))
+        dprint(('^2[%s]^0 اسکیمای دیتابیس خودکار به‌روز شد: %d ستونِ جدید، %d ایندکسِ جدید.'):format(RES, addedCols, addedIdx))
     end
 
     SchemaGuard.ready = true
@@ -194,16 +194,16 @@ end
 MySQL.ready(function()
     local ok, err = pcall(runMigration)
     if not ok then
-        print(('^1[%s]^0 SchemaGuard با خطا مواجه شد: %s'):format(RES, tostring(err)))
-        print(('^1[%s]^0 برای رفع دستی: sql/reports.sql رو مستقیم روی دیتابیس اجرا کن.'):format(RES))
+        dprint(('^1[%s]^0 SchemaGuard با خطا مواجه شد: %s'):format(RES, tostring(err)))
+        dprint(('^1[%s]^0 برای رفع دستی: sql/reports.sql رو مستقیم روی دیتابیس اجرا کن.'):format(RES))
     end
 end)
 
 RegisterCommand('reportschema', function(source)
     if source ~= 0 then return end
-    print(('[%s] SchemaGuard ready: %s'):format(RES, tostring(SchemaGuard.ready)))
+    dprint(('[%s] SchemaGuard ready: %s'):format(RES, tostring(SchemaGuard.ready)))
     for _, def in ipairs(REQUIRED_COLUMNS) do
         local exists = columnExists(def[1], def[2])
-        print(('   %s %s.%s'):format(exists and '✓' or '✗', def[1], def[2]))
+        dprint(('   %s %s.%s'):format(exists and '✓' or '✗', def[1], def[2]))
     end
 end, true)

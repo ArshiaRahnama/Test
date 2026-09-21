@@ -39,7 +39,7 @@ local function HudColourToTable(r,g,b,a) return { r, g, b, a or 255 } end
 
 local function debugPrint(text)
     if JayMenu.debug then
-        Citizen.Trace('[JayMenu] '..tostring(text))
+        dprint('[JayMenu] '..tostring(text))
     end
 end
 

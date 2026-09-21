@@ -9,7 +9,7 @@
 RegisterServerEvent('Unique_AdminPanel:SetHealth')
 AddEventHandler('Unique_AdminPanel:SetHealth', function(targetId, pct)
     local source = source
-    if not IsOnDutyAdmin(source) then return end
+    if not IsOnDutyAdmin(source) or not AdminMinLevel(source, 2) then return end
     targetId = tonumber(targetId)
     pct = tonumber(pct)
     if not targetId or not ESX.GetPlayerFromId(targetId) or not pct then return end
@@ -22,7 +22,7 @@ end)
 RegisterServerEvent('Unique_AdminPanel:SetArmor')
 AddEventHandler('Unique_AdminPanel:SetArmor', function(targetId, pct)
     local source = source
-    if not IsOnDutyAdmin(source) then return end
+    if not IsOnDutyAdmin(source) or not AdminMinLevel(source, 2) then return end
     targetId = tonumber(targetId)
     pct = tonumber(pct)
     if not targetId or not ESX.GetPlayerFromId(targetId) or not pct then return end
@@ -36,6 +36,7 @@ end)
 -- player id, not just the caller - so target-godmode needs no client toggle
 -- at all, unlike the self-godmode in main.lua's RequestToggle.
 local TargetGodmode = {}
+AddEventHandler('playerDropped', function() TargetGodmode[source] = nil end) -- ids get reused
 RegisterServerEvent('Unique_AdminPanel:ToggleTargetGodmode')
 AddEventHandler('Unique_AdminPanel:ToggleTargetGodmode', function(targetId)
     local source = source
@@ -44,7 +45,8 @@ AddEventHandler('Unique_AdminPanel:ToggleTargetGodmode', function(targetId)
     if not targetId or not ESX.GetPlayerFromId(targetId) then return end
 
     TargetGodmode[targetId] = not TargetGodmode[targetId]
-    SetPlayerInvincible(targetId, TargetGodmode[targetId])
+    -- applied by the target's own client (server-side SetPlayerInvincible can crash FXServer)
+    TriggerClientEvent('Unique_AdminPanel:ApplyTargetGodmode', targetId, TargetGodmode[targetId] and true or false)
     TriggerClientEvent('esx:showNotification', targetId, TargetGodmode[targetId] and "~g~An admin enabled God Mode on you" or "~r~An admin disabled God Mode on you")
     LogAdminAction(source, "toggle-target-godmode", ("target: %s -> %s"):format(GetPlayerName(targetId), tostring(TargetGodmode[targetId])), ESX.GetPlayerFromId(targetId).identifier, GetPlayerName(targetId))
 end)
@@ -52,7 +54,7 @@ end)
 RegisterServerEvent('Unique_AdminPanel:ToggleCuff')
 AddEventHandler('Unique_AdminPanel:ToggleCuff', function(targetId)
     local source = source
-    if not IsOnDutyAdmin(source) then return end
+    if not IsOnDutyAdmin(source) or not AdminMinLevel(source, 2) then return end
     targetId = tonumber(targetId)
     if not targetId or not ESX.GetPlayerFromId(targetId) then return end
 
@@ -129,7 +131,7 @@ AddEventHandler('Unique_AdminPanel:ScreenshotTarget', function(targetId)
         end)
     end)
     if not ok then
-        print("[Unique_AdminPanel] screenshot-basic export call failed: " .. tostring(err))
+        dprint("[Unique_AdminPanel] screenshot-basic export call failed: " .. tostring(err))
         TriggerClientEvent('esx:showNotification', source, "~r~screenshot-basic doesn't expose requestClientScreenshot - check that resource is the official, up-to-date build")
         return
     end
@@ -224,7 +226,7 @@ end)
 RegisterServerEvent('Unique_AdminPanel:GiveVehicle')
 AddEventHandler('Unique_AdminPanel:GiveVehicle', function(targetId, model)
     local source = source
-    if not IsOnDutyAdmin(source) then return end
+    if not IsOnDutyAdmin(source) or not AdminMinLevel(source, 20) then return end
     targetId = tonumber(targetId)
     if not targetId or not ESX.GetPlayerFromId(targetId) then return end
     if type(model) ~= 'string' or model == '' then return end
@@ -294,7 +296,7 @@ end)
 RegisterServerEvent('Unique_AdminPanel:AnnounceWithSound')
 AddEventHandler('Unique_AdminPanel:AnnounceWithSound', function(message)
     local source = source
-    if not IsOnDutyAdmin(source) then return end
+    if not IsOnDutyAdmin(source) or not AdminMinLevel(source, 4) then return end
     if type(message) ~= 'string' or message == '' then return end
 
     TriggerClientEvent('chatMessage', -1, "[ANNOUNCE]", { 255, 165, 0 }, message)
@@ -387,7 +389,7 @@ RegisterServerCallbackSafe('Unique_AdminPanel:GetDashboard', function(source, cb
                                                     source = src,
                                                     dutyMinutes = start and math.floor((os.time() - start) / 60) or 0,
                                                     actions = actionsByName[names[i]] or 0,
-                                                    satisfaction = r and math.floor((r.avg / 3) * 100) or nil,
+                                                    satisfaction = r and math.min(100, math.floor((r.avg / 5) * 100)) or nil,
                                                     ratingCount = r and r.cnt or 0,
                                                     avgResponseMinutes = rt and math.floor(rt.avgSeconds / 60) or nil,
                                                 }
@@ -421,7 +423,7 @@ end)
 RegisterServerEvent('Unique_AdminPanel:MuteTarget')
 AddEventHandler('Unique_AdminPanel:MuteTarget', function(targetId, muted)
     local source = source
-    if not IsOnDutyAdmin(source) then return end
+    if not IsOnDutyAdmin(source) or not AdminMinLevel(source, 2) then return end
     targetId = tonumber(targetId)
     if not GetPlayerName(targetId) then return end
     if targetId == source then
@@ -439,7 +441,7 @@ end)
 RegisterServerEvent('Unique_AdminPanel:GiveWeaponTarget')
 AddEventHandler('Unique_AdminPanel:GiveWeaponTarget', function(targetId, weapon, ammo)
     local source = source
-    if not IsOnDutyAdmin(source) then return end
+    if not IsOnDutyAdmin(source) or not AdminMinLevel(source, 5) then return end
     local Target = ESX.GetPlayerFromId(tonumber(targetId))
     if not Target then return end
     if type(weapon) ~= 'string' or weapon == '' then return end
@@ -453,7 +455,7 @@ end)
 RegisterServerEvent('Unique_AdminPanel:RemoveWeaponTarget')
 AddEventHandler('Unique_AdminPanel:RemoveWeaponTarget', function(targetId, weapon)
     local source = source
-    if not IsOnDutyAdmin(source) then return end
+    if not IsOnDutyAdmin(source) or not AdminMinLevel(source, 5) then return end
     local Target = ESX.GetPlayerFromId(tonumber(targetId))
     if not Target then return end
     if type(weapon) ~= 'string' or weapon == '' then return end
@@ -481,7 +483,7 @@ end)
 RegisterServerEvent('Unique_AdminPanel:ClearLoadoutTarget')
 AddEventHandler('Unique_AdminPanel:ClearLoadoutTarget', function(targetId)
     local source = source
-    if not IsOnDutyAdmin(source) then return end
+    if not IsOnDutyAdmin(source) or not AdminMinLevel(source, 5) then return end
     local Target = ESX.GetPlayerFromId(tonumber(targetId))
     if not Target then return end
 
@@ -535,7 +537,11 @@ RegisterServerEvent('Unique_AdminPanel:LogClientAction')
 AddEventHandler('Unique_AdminPanel:LogClientAction', function(action, details)
     local source = source
     if not IsOnDutyAdmin(source) then return end
-    LogAdminAction(source, tostring(action), tostring(details or ''))
+    -- client-reported: tag it so nobody can pass it off as a server-verified
+    -- action, and keep the fields short / printable (log + webhook safe)
+    action = tostring(action or ''):gsub('[^%w_%-]', ''):sub(1, 30)
+    if action == '' then return end
+    LogAdminAction(source, 'client:' .. action, tostring(details or ''):gsub('[%c`@]', ' '):sub(1, 200))
 end)
 
 -- --------------------------------------------------- JAIL / CS RELAY ---
@@ -571,11 +577,97 @@ end)
 RegisterServerEvent('Unique_AdminPanel:LaunchTarget')
 AddEventHandler('Unique_AdminPanel:LaunchTarget', function(targetId)
     local source = source
-    if not IsOnDutyAdmin(source) then return end
+    if not IsOnDutyAdmin(source) or not AdminMinLevel(source, 2) then return end
     targetId = tonumber(targetId)
     local Target = ESX.GetPlayerFromId(targetId)
     if not Target then return end
 
     TriggerClientEvent('Unique_AdminPanel:ApplyLaunch', targetId)
     LogAdminAction(source, "launch", ("target: %s"):format(GetPlayerName(targetId)), Target.identifier, GetPlayerName(targetId))
+end)
+
+
+-- =========================================================================
+-- Added with the MenuV menu (ported from esx_adminmenu): Kill target and
+-- Sit-in-target's-vehicle. Unlike the original esx_adminmenu events these
+-- are gated server-side (on-duty admin + minimum level), so a modified
+-- client can't trigger them.
+-- =========================================================================
+local function AdminHasLevel(src, level)
+    local x = ESX.GetPlayerFromId(src)
+    return x ~= nil and (x.permission_level or 0) >= level
+end
+
+RegisterServerEvent('Unique_AdminPanel:SlayTarget')
+AddEventHandler('Unique_AdminPanel:SlayTarget', function(targetId)
+    local source = source
+    if not IsOnDutyAdmin(source) or not AdminHasLevel(source, 2) then return end
+    targetId = tonumber(targetId)
+    local Target = targetId and ESX.GetPlayerFromId(targetId)
+    if not Target then return end
+
+    TriggerClientEvent('Unique_AdminPanel:ApplySlay', targetId)
+    LogAdminAction(source, "slay", ("target: %s"):format(GetPlayerName(targetId)), Target.identifier, GetPlayerName(targetId))
+end)
+
+RegisterServerEvent('Unique_AdminPanel:IntoVehicle')
+AddEventHandler('Unique_AdminPanel:IntoVehicle', function(targetId)
+    local source = source
+    if not IsOnDutyAdmin(source) or not AdminHasLevel(source, 2) then return end
+    targetId = tonumber(targetId)
+    local Target = targetId and ESX.GetPlayerFromId(targetId)
+    if not Target or targetId == source then return end
+
+    local vehicle = GetVehiclePedIsIn(GetPlayerPed(targetId), false)
+    if vehicle == 0 then
+        TriggerClientEvent('Unique_AdminPanel:MenuNotify', source, "~r~That player is not in a vehicle")
+        return
+    end
+
+    local seat = -2
+    for i = -1, 6 do
+        if GetPedInVehicleSeat(vehicle, i) == 0 then seat = i break end
+    end
+    if seat == -2 then
+        TriggerClientEvent('Unique_AdminPanel:MenuNotify', source, "~r~No free seat in that vehicle")
+        return
+    end
+
+    -- the admin's own client does the warp (server-side ped natives are crash-prone)
+    TriggerClientEvent('Unique_AdminPanel:WarpIntoVehicle', source, NetworkGetNetworkIdFromEntity(vehicle), seat)
+    LogAdminAction(source, "intovehicle", ("target: %s"):format(GetPlayerName(targetId)), Target.identifier, GetPlayerName(targetId))
+end)
+
+-- Vehicle spawn-name -> display-name list for the "Spawn by Category" menu.
+-- Read from essentialmode's own vehicle_names.json (server-side, cached).
+local vehicleNamesCache
+RegisterServerCallbackSafe('Unique_AdminPanel:GetVehicleNames', function(source, cb)
+    if not IsOnDutyAdmin(source) then cb({}) return end
+    if not vehicleNamesCache then
+        local raw = LoadResourceFile('essentialmode', 'shared/data/vehicle_names.json')
+        local ok, data = pcall(json.decode, raw or '{}')
+        vehicleNamesCache = (ok and type(data) == 'table' and data.names) or {}
+    end
+    cb(vehicleNamesCache)
+end)
+
+-- --------------------------------------------------- DATA RETENTION ---
+-- The chat archive had no retention at all: every chat line ever typed was
+-- kept forever (big table, slow LIKE searches, and a privacy liability).
+-- Keep 30 days; delete in small batches so the DB is never locked for long.
+local CHAT_ARCHIVE_DAYS = 30
+
+CreateThread(function()
+    Wait(60 * 1000)
+    while true do
+        local deleted
+        repeat
+            deleted = MySQL.Sync.execute(
+                "DELETE FROM `admin_chat_archive` WHERE `created_at` < DATE_SUB(NOW(), INTERVAL @d DAY) LIMIT 5000",
+                { ['@d'] = CHAT_ARCHIVE_DAYS }
+            ) or 0
+            Wait(500)
+        until deleted < 5000
+        Wait(24 * 60 * 60 * 1000)
+    end
 end)

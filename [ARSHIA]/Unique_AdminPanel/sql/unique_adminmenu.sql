@@ -165,8 +165,10 @@ CREATE TABLE IF NOT EXISTS `admin_chat_archive` (
   `playername` VARCHAR(100) DEFAULT NULL,
   `message` VARCHAR(500) DEFAULT NULL,
   `created_at` DATETIME DEFAULT NULL,
-  INDEX (`identifier`)
+  INDEX (`identifier`),
+  INDEX (`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+-- existing installs: ALTER TABLE `admin_chat_archive` ADD INDEX `created_at` (`created_at`);
 
 -- Impound yard: a real log of every impound (plate/model/reason/date),
 -- separate from the vehicle actually being deleted client-side, with a

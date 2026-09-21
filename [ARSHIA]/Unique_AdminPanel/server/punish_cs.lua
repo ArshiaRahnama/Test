@@ -8,7 +8,7 @@ TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
 -- on release or disconnect.
 ActiveCS = {}
 
-TriggerEvent('es:addAdminCommand', 'cs', 1, function(source, args, user)
+TriggerEvent('es:addAdminCommand', 'cs', 2, function(source, args, user)
     if args[1] and GetPlayerName(args[1]) ~= nil and tonumber(args[2]) then
         local targetId = tonumber(args[1])
         local count = tonumber(args[2])
@@ -94,7 +94,7 @@ TriggerEvent('es:addAdminCommand', 'uncs', 8, function(source, args, user)
 
 
             TriggerEvent('esx_communityGGservice:endCommunityServiceCommand', targetId)
-			TriggerClientEvent('esx_dpemote:DisableEmotes', target, false)
+			TriggerClientEvent('esx_dpemote:DisableEmotes', targetId, false)
 
             local webhook = "PUT_YOUR_DISCORD_WEBHOOK_URL_HERE"
             local message = {
@@ -124,16 +124,23 @@ end, function(source, args, user)
     TriggerClientEvent('chat:addMessage', source, { args = { "System", "Dastresi Nadarid" } })
 end, {help = "Payan Dadan Be Comserv", params = {{name = "id", help = "ID"}}})
 
-RegisterServerEvent('esx_communityGGservice:endCommunityServiceCommand')
-AddEventHandler('esx_communityGGservice:endCommunityServiceCommand', function(source)
-	if source ~= nil then
-		releaseFromCommunityService(source)
+-- SECURITY FIX: these two were RegisterServerEvent (network-callable). The first
+-- took its target from the event's first argument (shadowing the real
+-- `source`), so ANY player could free ANY player - or themselves - from
+-- community service with one TriggerServerEvent. The second let a player
+-- free themselves outright. Both are now server-internal only (plain
+-- AddEventHandler, no RegisterServerEvent): /uncs and the server-side
+-- completion check still work, clients can no longer call them.
+AddEventHandler('esx_communityGGservice:endCommunityServiceCommand', function(target)
+	if target ~= nil then
+		releaseFromCommunityService(target)
 	end
 end)
 
-RegisterServerEvent('esx_communityGGservice:finishCommunityService')
-AddEventHandler('esx_communityGGservice:finishCommunityService', function()
-	releaseFromCommunityService(source)
+AddEventHandler('esx_communityGGservice:finishCommunityService', function(target)
+	if target ~= nil then
+		releaseFromCommunityService(target)
+	end
 end)
 
 RegisterServerEvent('esx_communityGGservice:completeService')
@@ -255,6 +262,7 @@ function SendToCommunityService(adminSource, target, actions_count, reason)
 	MySQL.Async.fetchAll('SELECT playerName FROM users WHERE identifier = @identifier',  {
 		['@identifier'] = identifier
 	}, function(result2)
+		if not result2 or not result2[1] then return end -- unknown identifier: nothing to announce
 
 		TriggerClientEvent('chat:addMessage', -1, {
 			template = '<div style="padding: 0.5vw; margin: 0.5vw; background-color: rgba(255, 131, 0, 0.4); border-radius: 3px;"><i class="fas fa-exclamation-triangle"></i> Comserv<br>  {1}</div>',
@@ -365,7 +373,7 @@ AddEventHandler('esx_communityGGservice:checkIfSentenced', function()
 			TriggerClientEvent('esx_communityGGservice:inCommunityService_reason', _source, result[1].reason)
 
 			local currentJob = xPlayer.job.name
-			if currentJob ~= "nojob"  then
+			if currentJob ~= "nojob" and not tostring(currentJob):find("^off") then
 				xPlayer.setJob("off"..currentJob, xPlayer.job.grade)
 				TriggerClientEvent('esx:showNotification', _source, "Shoma Off Duty Shodid")
 			end
@@ -443,7 +451,7 @@ local function PenalizeEscape(targetSource, identifier, detectedBy)
 	if LogAdminAction then
 		LogAdminAction(targetSource, "cs-escape-attempt", ("detected by: %s | +%s actions"):format(detectedBy, PunishConfig.ServiceExtensionOnEscape))
 	else
-		print(("[Unique_Punishment] CS escape attempt: %s (id:%s) detected by %s, +%s actions"):format(GetPlayerName(targetSource) or '?', targetSource, detectedBy, PunishConfig.ServiceExtensionOnEscape))
+		dprint(("[Unique_Punishment] CS escape attempt: %s (id:%s) detected by %s, +%s actions"):format(GetPlayerName(targetSource) or '?', targetSource, detectedBy, PunishConfig.ServiceExtensionOnEscape))
 	end
 end
 

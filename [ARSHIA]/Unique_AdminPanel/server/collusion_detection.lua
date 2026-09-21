@@ -94,7 +94,7 @@ local function CheckCollusion(fromIdentifier, toIdentifier)
 
             for _, id in ipairs({ fromIdentifier, toIdentifier }) do
                 MySQL.Async.execute(
-                    "INSERT INTO `admin_player_flags` (`identifier`, `note`, `admin_name`, `created_at`) VALUES (@identifier, @note, @admin, @createdat) ON DUPLICATE KEY UPDATE `note` = @note, `admin_name` = @admin, `created_at` = @createdat",
+                    "INSERT INTO `admin_player_flags` (`identifier`, `note`, `admin_name`, `created_at`) VALUES (@identifier, @note, @admin, @createdat) ON DUPLICATE KEY UPDATE `note` = IF(`admin_name` = 'SYSTEM', @note, `note`), `created_at` = IF(`admin_name` = 'SYSTEM', @createdat, `created_at`)",
                     { ['@identifier'] = id, ['@note'] = note, ['@admin'] = 'SYSTEM', ['@createdat'] = os.date('%Y-%m-%d %H:%M:%S') }
                 )
             end
@@ -107,7 +107,7 @@ local function CheckCollusion(fromIdentifier, toIdentifier)
                     })
                 end
             end
-            print('[Unique_AdminPanel] SYSTEM auto-flag (collusion): ' .. note)
+            dprint('[Unique_AdminPanel] SYSTEM auto-flag (collusion): ' .. note)
         end)
     end)
 end

@@ -6,6 +6,7 @@ RegisterServerEvent('esx_skin:save')
 AddEventHandler('esx_skin:save', function(skin)
 
   local xPlayer = ESX.GetPlayerFromId(source)
+  if not xPlayer then return end
 
   exports.oxmysql:execute(
     'UPDATE users SET `skin` = @skin WHERE identifier = @identifier',
@@ -20,17 +21,24 @@ end)
 RegisterServerEvent('esx_skin:responseSaveSkin')
 AddEventHandler('esx_skin:responseSaveSkin', function(skin)
 
-  local file = io.open('resources/[esx]/esx_skin/skins.txt', "a")
+  -- FIX: this used io.open('resources/[esx]/esx_skin/skins.txt') - a path relative
+  -- to wherever the server was started, so on your server the file was nil
+  -- ("attempt to index a nil value (local 'file')"). It is now written with
+  -- SaveResourceFile, which always resolves inside this resource.
+  -- It was also callable by ANY client (free disk writes), so only staff may use it.
+  local xPlayer = ESX.GetPlayerFromId(source)
+  if not xPlayer or (xPlayer.permission_level or 0) < 1 then return end
+  if type(skin) ~= 'table' then return end
 
-  file:write(json.encode(skin) .. "\n\n")
-  file:flush()
-  file:close()
+  local old = LoadResourceFile(GetCurrentResourceName(), 'skins.txt') or ''
+  SaveResourceFile(GetCurrentResourceName(), 'skins.txt', old .. json.encode(skin) .. "\n\n", -1)
 
 end)
 
 ESX.RegisterServerCallback('esx_skin:getPlayerSkin', function(source, cb)
 
   local xPlayer = ESX.GetPlayerFromId(source)
+  if not xPlayer then cb(nil, {}) return end
 
   exports.oxmysql:execute(
     'SELECT * FROM users WHERE identifier = @identifier',
@@ -39,7 +47,8 @@ ESX.RegisterServerCallback('esx_skin:getPlayerSkin', function(source, cb)
     },
     function(users)
 
-      local user = users[1]
+      local user = users and users[1]
+      if not user then cb(nil, {}) return end
       local skin = nil
 
       local jobSkin = {

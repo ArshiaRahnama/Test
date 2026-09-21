@@ -15,11 +15,12 @@ function ExemptFromAntiCheat(targetId, ms, kinds)
 end
 
 local FrozenPlayers = {}
+AddEventHandler('playerDropped', function() FrozenPlayers[source] = nil end) -- server ids get reused
 
 RegisterServerEvent('Unique_AdminPanel:FreezePlayer')
 AddEventHandler('Unique_AdminPanel:FreezePlayer', function(targetId)
     local source = source
-    if not IsOnDutyAdmin(source) then return end
+    if not IsOnDutyAdmin(source) or not AdminMinLevel(source, 2) then return end
     targetId = tonumber(targetId)
     if not targetId or not ESX.GetPlayerFromId(targetId) then return end
 
@@ -56,6 +57,7 @@ RegisterServerCallbackSafe('Unique_AdminPanel:GetMyPermissionLevel', function(so
 end)
 
 RegisterServerCallbackSafe('Unique_AdminPanel:GetButtonPerms', function(source, cb)
+    if not IsOnDutyAdmin(source) then cb({}) return end
     MySQL.Async.fetchAll('SELECT button_id, min_level FROM admin_button_perms', {}, function(rows)
         local perms = {}
         for _, r in ipairs(rows or {}) do perms[r.button_id] = r.min_level end
@@ -169,7 +171,26 @@ function IssueBan(source, targetId, durationArg, reason)
     TriggerClientEvent('Unique_AdminPanel:PlayBanScene', targetId, reason)
 
     SetTimeout(12000, function()
-        if not GetPlayerName(targetId) then return end -- disconnected during the scene
+        -- FIX: if the target quit during the scene the ban used to be silently
+        -- dropped (free ban evasion: just alt-F4 when the scene starts). Now the
+        -- ban is still recorded, and enforced on reconnect by the license/IP
+        -- check in playerConnecting below ("permanent" = 10 years there).
+        if not GetPlayerName(targetId) then
+            local expireAt = os.time() + (permanent and (10 * 365 * 86400) or (minutes * 60))
+            MySQL.Async.execute(
+                "INSERT INTO `unique_adminmenu_bans` (`identifier`, `license`, `ip`, `playername`, `admin_name`, `reason`, `banned_at`, `expire_at`, `active`) VALUES (@identifier, @license, @ip, @playername, @adminname, @reason, @bannedat, @expireat, 1)",
+                {
+                    ['@identifier'] = identifier, ['@license'] = license, ['@ip'] = playerip,
+                    ['@playername'] = targetName, ['@adminname'] = adminName, ['@reason'] = reason,
+                    ['@bannedat'] = os.date('%Y-%m-%d %H:%M:%S'), ['@expireat'] = expireAt,
+                }
+            )
+            LogAdminAction(source, "ban", ("target: %s | %s | reason: %s | (left during ban scene, recorded offline)"):format(targetName, permanent and 'PERMANENT' or (minutes .. ' minutes'), reason), identifier, targetName)
+            if GetPlayerName(source) then
+                TriggerClientEvent('esx:showNotification', source, "~y~Target left during the ban scene - ban recorded, enforced on reconnect.")
+            end
+            return
+        end
 
         if permanent then
             -- Real, enforced ban: Unique_Login's playerConnecting checks
@@ -271,8 +292,8 @@ AddEventHandler('playerConnecting', function(name, setKickReason, deferrals)
     local ip = GetPlayerEndpoint(src) or ''
 
     MySQL.Async.fetchAll(
-        "SELECT * FROM `unique_adminmenu_bans` WHERE `active` = 1 AND `expire_at` IS NOT NULL AND `expire_at` > @now AND (`license` = @license OR `ip` = @ip) ORDER BY `expire_at` DESC LIMIT 1",
-        { ['@now'] = os.time(), ['@license'] = license, ['@ip'] = ip },
+        "SELECT * FROM `unique_adminmenu_bans` WHERE `active` = 1 AND `expire_at` IS NOT NULL AND `expire_at` > @now AND (`license` = @license OR (@useip = 1 AND `ip` = @ip)) ORDER BY `expire_at` DESC LIMIT 1",
+        { ['@now'] = os.time(), ['@license'] = license, ['@ip'] = ip, ['@useip'] = (Config.BanByIP and 1 or 0) },
         function(rows)
             local row = rows and rows[1]
             if row then
@@ -327,7 +348,9 @@ RegisterCommand('awarn', function(source, args)
 end, false)
 
 RegisterCommand('asetjob', function(source, args)
-    if not IsOnDutyAdmin(source) then return end
+    -- was: any on-duty rank-1 admin could give anyone (incl. themselves) any
+    -- job. Now requires the same level as the /setjob command (8).
+    if not IsOnDutyAdmin(source) or not AdminMinLevel(source, 8) then return end
     local targetId = tonumber(args[1])
     local job = args[2]
     local grade = tonumber(args[3]) or 0
@@ -358,6 +381,9 @@ RegisterCommand('agivemoney', function(source, args)
     local Target = ESX.GetPlayerFromId(targetId)
     if not Target then return end
 
+    amount = math.floor(amount)
+    if amount <= 0 or amount > 100000000 then return end
+    AdminMoneyGrant[Target.identifier] = os.time()
     if account == 'money' then Target.addMoney(amount) else Target.addBank(amount) end
     LogAdminAction(source, "give-money", ("target: %s | %s: +%s | reason: %s"):format(GetPlayerName(targetId), account, amount, reason), Target.identifier, GetPlayerName(targetId))
 end, false)
@@ -519,7 +545,7 @@ AddEventHandler('esx:playerLoaded', function(playerId, xPlayer)
                     names[#names + 1] = row.playername or row.identifier
                 end
                 local msg = ("[Multi-Account] %s just connected from the same IP as: %s"):format(playername, table.concat(names, ', '))
-                print("[Unique_AdminPanel] " .. msg)
+                dprint("[Unique_AdminPanel] " .. msg)
 
                 for _, adminId in ipairs(ESX.GetPlayers()) do
                     if IsOnDutyAdmin(adminId) then
@@ -553,6 +579,11 @@ AddEventHandler('Unique_AdminPanel:VehicleAction', function(action)
     LogAdminAction(source, "vehicle-" .. action, nil)
 end)
 
+-- targetId -> {reason, admin, expires}: an admin's impound order waiting for the
+-- target's client to report the plate. Without this, ImpoundRecorded could be
+-- fired by ANY player to write fake records into the impound yard.
+local PendingImpound = {}
+
 RegisterServerEvent('Unique_AdminPanel:ImpoundTarget')
 AddEventHandler('Unique_AdminPanel:ImpoundTarget', function(targetId, reason)
     local source = source
@@ -561,6 +592,7 @@ AddEventHandler('Unique_AdminPanel:ImpoundTarget', function(targetId, reason)
     if not targetId or not ESX.GetPlayerFromId(targetId) then return end
     reason = (type(reason) == 'string' and reason ~= '') and reason or 'No reason specified'
 
+    PendingImpound[targetId] = { reason = reason:sub(1, 200), admin = GetPlayerName(source), expires = os.time() + 20 }
     TriggerClientEvent('Unique_AdminPanel:ApplyImpound', targetId, reason, GetPlayerName(source))
 end)
 
@@ -573,7 +605,12 @@ AddEventHandler('Unique_AdminPanel:ImpoundRecorded', function(plate, modelLabel,
     local source = source
     local xPlayer = ESX.GetPlayerFromId(source)
     if not xPlayer then return end
+    local pending = PendingImpound[source]
+    PendingImpound[source] = nil
+    if not pending or pending.expires < os.time() then return end
+    reason, adminName = pending.reason, pending.admin -- trust the server's copy, not the client's
     plate = tostring(plate or ''):sub(1, 12)
+    modelLabel = tostring(modelLabel or ''):sub(1, 60)
     if plate == '' then return end
     local ownerName = GetPlayerName(source)
 
@@ -629,7 +666,7 @@ end)
 RegisterServerEvent('Unique_AdminPanel:BringTarget')
 AddEventHandler('Unique_AdminPanel:BringTarget', function(targetId)
     local source = source
-    if not IsOnDutyAdmin(source) then return end
+    if not IsOnDutyAdmin(source) or not AdminMinLevel(source, 2) then return end
     targetId = tonumber(targetId)
     local Target = ESX.GetPlayerFromId(targetId)
     if not Target then return end
@@ -674,6 +711,9 @@ RegisterServerEvent('Unique_AdminPanel:AntiCheatExempt')
 AddEventHandler('Unique_AdminPanel:AntiCheatExempt', function(ms, kinds)
     local source = source
     if not IsOnDutyAdmin(source) then return end
+    -- clamp: the duration used to be whatever the client sent, i.e. an admin
+    -- could exempt themselves from the anti-cheat for hours
+    ms = math.min(math.max(tonumber(ms) or 3000, 500), 10000)
     ExemptFromAntiCheat(source, ms, kinds)
 end)
 
@@ -700,8 +740,8 @@ AddEventHandler('Unique_AdminPanel:SaveLocation', function(name, x, y, z)
 end)
 
 RegisterCommand('aannounce', function(source, args)
-    if source ~= 0 and not IsOnDutyAdmin(source) then return end
-    local message = table.concat(args, ' ')
+    if source ~= 0 and (not IsOnDutyAdmin(source) or not AdminMinLevel(source, 4)) then return end -- same level as /announce
+    local message = table.concat(args, ' '):sub(1, 200)
     if message == '' then return end
 
     TriggerClientEvent('chatMessage', -1, "[ANNOUNCE]", { 255, 165, 0 }, message)
@@ -719,7 +759,9 @@ RegisterCommand('arestart', function(source, args)
         return
     end
     local resourceName = args[1]
-    if not resourceName then return end
+    -- only plain resource names: ExecuteCommand would otherwise run anything
+    -- after a ';' (e.g. "/arestart foo;quit")
+    if not resourceName or not resourceName:match('^[%w_%-%.]+$') then return end
 
     LogAdminAction(source, "restart-resource", resourceName)
     ExecuteCommand('restart ' .. resourceName)

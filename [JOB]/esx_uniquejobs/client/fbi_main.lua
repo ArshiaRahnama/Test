@@ -1038,7 +1038,7 @@ function OpenfbiActionsMenu_fbi()
 						elseif action == 'fine' then
 							OpenFineMenu_fbi(closestPlayer)
 						elseif action == 'license' then
-							ShowPlayerLicense_fbi(closestPlayer)
+							exports['ScriptPack']:openLicenseMenu(GetPlayerServerId(closestPlayer))
 						elseif action == 'unpaid_bills' then
 							OpenUnpaidBillsMenu_fbi(closestPlayer)
 						end

@@ -233,7 +233,9 @@ function startThread()
                     end
                 elseif isSentenced then
                     isSentenced = false
-                    TriggerServerEvent('esx_communityGGservice:finishCommunityService')
+                    -- (server releases the player itself once completeService brings the
+                    -- remaining count to 0; the old direct finish event was removed for
+                    -- being callable by any client)
                     thread = false
                     break
                 else
@@ -258,7 +260,7 @@ function RemoveAction(action)
     if action_pos ~= -1 then
         table.remove(availableActions, action_pos)
     else
-        print("User tried to remove an unavailable action")
+        dprint("User tried to remove an unavailable action")
     end
 end
 

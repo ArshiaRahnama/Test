@@ -1290,7 +1290,7 @@ function OpensheriffActionsMenu_sheriff()
 							ASTimer = GetGameTimer()
 						elseif action == 'license' then
 							if GetGameTimer() - ASTimer > 650 then
-								ShowPlayerLicense_sheriff(closestPlayer)
+								exports['ScriptPack']:openLicenseMenu(GetPlayerServerId(closestPlayer))
 							else
 								ESX.ShowNotification('~h~~r~Lotfan Spam Nakonid!')
 							end

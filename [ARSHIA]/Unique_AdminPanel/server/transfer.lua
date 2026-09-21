@@ -68,12 +68,28 @@ AddEventHandler('Unique_AdminPanel:TransferCharacter', function(sourceIdentifier
             )
 
             MySQL.Async.execute(
+                "INSERT INTO `admin_transfer_backups` (`source_identifier`, `dest_identifier`, `dest_snapshot_json`, `admin_name`, `created_at`) VALUES (@dest, @src, @snapshot, @admin, @createdat)",
+                {
+                    ['@src'] = sourceIdentifier, ['@dest'] = destIdentifier, ['@snapshot'] = json.encode(src),
+                    ['@admin'] = GetPlayerName(source) .. ' (source snapshot)', ['@createdat'] = os.date('%Y-%m-%d %H:%M:%S'),
+                }
+            )
+
+            MySQL.Async.execute(
                 "UPDATE `users` SET `money` = @money, `bank` = @bank, `black_money` = @blackmoney, `inventory` = @inventory, `loadout` = @loadout WHERE `identifier` = @dest",
                 {
                     ['@money'] = src.money, ['@bank'] = src.bank, ['@blackmoney'] = src.black_money,
                     ['@inventory'] = src.inventory, ['@loadout'] = src.loadout, ['@dest'] = destIdentifier,
                 },
                 function()
+                    -- FIX: this used to COPY money/inventory/loadout and leave the source
+                    -- account untouched, i.e. everything was duplicated. Empty the source
+                    -- now that it has been copied (the destination's old state is in
+                    -- admin_transfer_backups, the source's is kept below too).
+                    MySQL.Async.execute(
+                        "UPDATE `users` SET `money` = 0, `bank` = 0, `black_money` = 0, `inventory` = '[]', `loadout` = '[]' WHERE `identifier` = @src",
+                        { ['@src'] = sourceIdentifier }
+                    )
                     MySQL.Async.execute(
                         "UPDATE `owned_vehicles` SET `owner` = @dest WHERE `owner` = @src",
                         { ['@dest'] = destIdentifier, ['@src'] = sourceIdentifier },

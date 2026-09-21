@@ -20,16 +20,9 @@
 -- SubmitReportRating handler below is kept for backwards compatibility with
 -- anything still calling it directly.
 
-RegisterServerEvent('Unique_AdminPanel:SubmitReportRating')
-AddEventHandler('Unique_AdminPanel:SubmitReportRating', function(reportId, rating, adminName)
-    rating = tonumber(rating)
-    if not rating or rating < 1 or rating > 5 then return end -- 1..5 (سیستم جدید ۵ ستاره‌ای است)
-
-    MySQL.Async.execute(
-        "INSERT INTO `admin_report_ratings` (`report_id`, `admin_name`, `rating`, `created_at`) VALUES (@rid, @admin, @rating, @createdat)",
-        { ['@rid'] = tostring(reportId), ['@admin'] = adminName, ['@rating'] = rating, ['@createdat'] = os.date('%Y-%m-%d %H:%M:%S') }
-    )
-end)
+-- (Unique_AdminPanel:SubmitReportRating removed: it had no authentication, so any
+-- player could insert unlimited fake ratings for any admin. Ratings now only
+-- come in through the report system's own validated rating flow.)
 
 RegisterServerCallbackSafe('Unique_AdminPanel:GetReportSatisfaction', function(source, cb)
     if not IsOnDutyAdmin(source) then cb({}) return end

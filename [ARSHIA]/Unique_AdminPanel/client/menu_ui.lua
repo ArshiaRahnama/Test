@@ -9,7 +9,6 @@ noclip = false
 superjump = false
 fastrun = false
 blipdool = false
-local show2 = false
 PlayersCache = {}
 lastspec = 0
 godmode = false
@@ -21,7 +20,7 @@ end)
 
 RegisterNetEvent('esx_aduty:ChangeMenuStatus')
 AddEventHandler('esx_aduty:ChangeMenuStatus', function(boolean)
-  WarMenu.ForceCloseAll()
+  CloseAdminMenu()
   aduty = boolean
   if aduty and OffDuty == nil then
     AdminM()
@@ -33,24 +32,12 @@ AddEventHandler('esx_aduty:ChangeMenuStatus', function(boolean)
   end
 end)
 
--- F4 toggles the admin menu. If we're already sitting at the top-level
--- 'main' menu, it closes fully. If we're closed, or deep inside a submenu,
--- it resets cleanly straight back to 'main' in one step. Previously this
--- called WarMenu.CloseMenu() (a two-step toggle meant for Backspace) and
--- then immediately reopened the menu, which could leave it flagged as
--- "about to close" - so the very next frame would silently close it again
--- right after opening (the open/close flicker). ForceCloseAll() closes
--- everything in one shot, so that can't happen anymore.
+-- F4 toggles the admin menu (MenuV version - see client/menuv_ui.lua).
+-- Closed -> opens the main menu. Open anywhere (even deep in a submenu) ->
+-- closes everything in one step.
 AddEventHandler("onKeyDown", function(key)
   if key ~= "f4" or not aduty then return end
-
-  if WarMenu.CurrentMenu() == 'main' then
-    WarMenu.ForceCloseAll()
-  else
-    WarMenu.ForceCloseAll()
-    WarMenu.OpenMenu('main')
-    AdminMenu()
-  end
+  ToggleAdminMenu()
 end)
 
 function AdminM()
@@ -82,13 +69,6 @@ function Infinity()
   end)
 end
 
-Citizen.CreateThread(function ()
-  WarMenu.CreateMenu('main', 'Admin Menu')
-  WarMenu.CreateSubMenu('spectate', 'main', 'Spectate Players')
-  WarMenu.CreateSubMenu('teleport_player', 'main', 'Teleport to Spectated')
-  WarMenu.CreateSubMenu('player_menu', 'main', 'My Abilities')
-end)
-
 RegisterNetEvent('AdminMenu:SlapPlayers')
 AddEventHandler('AdminMenu:SlapPlayers', function()
   ApplyForceToEntity(PlayerPedId(), 1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0, true, true, true, true, true)
@@ -107,97 +87,7 @@ function invisibility2th2()
   end)
 end
 
-function AdminMenu()
-  local mOpen = false
-
-
-
-  if WarMenu.IsMenuOpened('main') then
-    mOpen = true
-
-    -- Grouped so related tools sit together: player-facing tools first,
-    -- then vehicle/world/server tools. Player Tools and Spectate Menu pull
-    -- a fresh player list from the server the instant you open them, so
-    -- the list always reflects who's actually online right now instead of
-    -- whatever the last background refresh happened to catch.
-    if WarMenu.MenuButton('» My Abilities', 'player_menu') then end
-    if WarMenu.MenuButton('» Player Tools', 'select_target') then AdminM() end
-    if WarMenu.MenuButton('» Spectate Menu', 'spectate') then AdminM() end
-    WarMenu.MenuButton('» Teleport to Spectated', 'teleport_player')
-    WarMenu.MenuButton('» Vehicle Tools', 'vehicle_tools')
-    WarMenu.MenuButton('» World Tools', 'world_tools')
-    WarMenu.MenuButton('» Server Tools', 'server_tools')
-
-    WarMenu.Display()
-
-
-
-  elseif WarMenu.IsMenuOpened('player_menu') then
-    mOpen = true
-    if WarMenu.CheckBox("Invis", invisibility, function(checked) end) then
-      RequestInvisibility()
-    elseif WarMenu.CheckBox("Invis2", invisibility2, function(checked) end) then
-      RequestInvisibility2()
-    elseif WarMenu.CheckBox("Player Blip", blipdool, function(checked) end) then
-      RequestBlip()
-    elseif WarMenu.CheckBox("superjump", superjump, function(checked) end) then
-      RequestSuperjump()
-    elseif WarMenu.CheckBox("Show ID 2", show2, function(checked) show2 = checked end) then
-      ExecuteCommand('esp')
-    elseif WarMenu.CheckBox("GodMode", godmode, function(checked) end) then
-      RequestGodmode()
-    elseif WarMenu.CheckBox("fast run", fastrun, function(checked) end) then
-      RequestFastrun()
-    elseif WarMenu.CheckBox("Noclip", noclip, function(checked) end) then
-      RequestNoclip()
-    end
-    WarMenu.Display()
-
-
-
-  elseif WarMenu.IsMenuOpened('spectate') then
-    mOpen = true
-    for i=1, GetLast(PlayersCache) do
-      if PlayersCache[i] then
-        if WarMenu.CheckBox("["..i.."] "..PlayersCache[i], spec[i], function(checked) spec[i] = checked end) then
-          if spec[i] then
-            spec[lastspec] = false
-            lastspec = i
-            if not spectate(lastspec) then
-              drawNotification("~r~Fard mored nazar online nist.")
-              spec[i] = false
-              lastspec = 0
-            end
-          else
-            lastspec = 0
-            resetNormalCamera()
-          end
-        end
-      end
-    end
-    WarMenu.Display()
-
-
-
-  elseif WarMenu.IsMenuOpened('teleport_player') then
-    mOpen = true
-    if TargetSpectate then
-      WarMenu.ForceCloseAll()
-      teleportToPlayer(TargetSpectate)
-      spec[TargetSpectate] = false
-      InSpectatorMode = false
-      lastspec = 0
-      TargetSpectate = nil
-    else
-      drawNotification("~r~Spectate a player first (Spectate Menu), then use this to teleport to them.")
-      WarMenu.OpenMenu('main')
-    end
-    WarMenu.Display()
-  end
-  if mOpen then
-    SetTimeout(0, AdminMenu)
-  end
-end
+-- (old immediate-mode render loop removed: replaced by client/menuv_ui.lua)
 
 sp = 0
 RegisterNetEvent('Admin_Menu:spec')

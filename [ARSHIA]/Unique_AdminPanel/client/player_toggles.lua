@@ -20,6 +20,7 @@ AddEventHandler('Unique_AdminPanel:ApplyToggle', function(feature, newValue)
 
 
 
+    SetPlayerInvincible(PlayerId(), godmode)
     SetEntityInvincible(PlayerPedId(), godmode)
     drawNotification(godmode and "~b~God mode activated" or "~r~God mode deactivated")
 
@@ -100,3 +101,11 @@ function ActiveStamina()
     infStamina = not aduty and false or infStamina
   end)
 end
+
+-- God mode set on us by an admin (Player Control > Toggle God Mode). Done here on
+-- the client instead of with the server-side native, which could crash FXServer.
+RegisterNetEvent('Unique_AdminPanel:ApplyTargetGodmode')
+AddEventHandler('Unique_AdminPanel:ApplyTargetGodmode', function(state)
+  SetPlayerInvincible(PlayerId(), state and true or false)
+  SetEntityInvincible(PlayerPedId(), state and true or false)
+end)

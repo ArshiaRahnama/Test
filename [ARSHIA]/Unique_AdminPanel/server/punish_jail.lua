@@ -205,7 +205,7 @@ AddEventHandler('arshia_jail:UpdateTime',function (time)
 			sentences[identifier] = nil
 			ClearJail(identifier)
 		else
-			print(('arshia_jail: %s attempted to self-release from jail early!'):format(identifier))
+			dprint(('arshia_jail: %s attempted to self-release from jail early!'):format(identifier))
 			TriggerEvent('DiscordBot:ToDiscord', 'adminmenu', 'JobSuspiciousLog', '```css\n[ Resource : arshia_jail ]\n[ Player Steam : '..tostring(identifier)..' ]\n[ Attempted : to self-release from jail early! ]\n[ Reason Blocked : not authorized / invalid data ]\n```', 'user', true, source, false)
 		end
 	end
@@ -213,6 +213,8 @@ end)
 
 RegisterServerCallbackSafe('arshia_jail:retriveJail', function(source, cb, id)
 	local xPlayer = ESX.GetPlayerFromId(source)
+	if not xPlayer then cb(nil) return end
+	if id and id ~= source and (xPlayer.permission_level or 0) < 2 then id = nil end
 	if id then
 		if ESX.GetPlayerFromId(id) then
 			cb(sentences[ESX.GetPlayerFromId(id).identifier])
@@ -238,6 +240,16 @@ AddEventHandler("arshia_jail:UnjailPlayer", function(id)
 	end
 	local yPlayer = ESX.GetPlayerFromId(id)
 	if not yPlayer then return end
+	-- Release rights follow the sentence type (same levels as /aunjail 5 and
+	-- /icunjail 8 used to require, but the menu button is gated by btn_jail):
+	--   admin jail   -> on-duty admin allowed to use the jail button
+	--   faction jail -> level 8, or a member of an allowed faction job
+	local sentence = yPlayer.identifier and sentences[yPlayer.identifier]
+	if sentence and sentence.type == 'faction' then
+		if zPlayer.permission_level < 8 and not IsJobAllowed(zPlayer.job.name) then return end
+	elseif not IsOnDutyAdminFor(source, 'btn_jail') then
+		return
+	end
 	if yPlayer.identifier then
 		PendingRelease[yPlayer.identifier] = true
 	end
@@ -292,7 +304,9 @@ TriggerEvent('es:addAdminCommand', 'ajailoffline', 3, function(source, args, use
 		{["@identifier"] = args[1]},
 		function(data)
 			if data[1] then
-				local sentence = {type = 'admin', time = time, unjail = PunishConfig.AdminJail.unjail, reason = reason}
+				-- startedAt was missing here: UpdateTime() does arithmetic on it, so offline-jailed
+				-- players could never be released by the timer (nil arithmetic error).
+				local sentence = {type = 'admin', time = time, unjail = PunishConfig.AdminJail.unjail, reason = reason, startedAt = os.time()}
 				sentences[identifier] = sentence
 				PersistJail(identifier, sentence)
 				TriggerClientEvent('chatMessage', -1, "[Admin Jail]", {255, 0, 0}, "^1"..data[1].playerName:gsub("_", " ").."^0 Tavasote ^2"..GetPlayerName(source).."^0 Be Modate ^2"..time.." ^0Daghighe Jail Shod be Dalile : ^1"..reason)

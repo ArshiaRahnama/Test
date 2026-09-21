@@ -6,6 +6,10 @@ TriggerEvent('esx:getSharedObject',function(b)ESX=b end)
 
 RegisterServerEvent("AdminArea:setCoords")
 AddEventHandler("AdminArea:setCoords",function(c,d)
+local src=source
+local who=ESX.GetPlayerFromId(src)
+-- was callable by anyone: only staff may move an admin-area blip
+if not who or (who.permission_level or 0)<1 then return end
 
 if not d then
 
@@ -15,11 +19,7 @@ if a[c]then
 
 a[c].coords=d
 
-else
-
-print("Exception happened blip id: "..tostring(c).." does not exist")
-
-	end
+end
 end)
 
 RegisterCommand('rpp',function(e,f)

@@ -3,13 +3,14 @@ game 'gta5'
 
 author 'Arshia'
 description 'Unique_AdminPanel - merged from Admin_Menu + esx_aduty + UNIQUE_AC anti-cheat'
-version '3.0.0'
+version '3.1.0'
 
 -- Loaded on BOTH client and server, before client_scripts/server_scripts below
 -- (migrated from UNIQUE_AC/configs/fire-config.lua and UNIQUE_AC/tables/*.lua -
 -- ac_core.lua/ac_client.lua/ac_menu.lua/ac_webhook.lua all read from the
 -- `UNIQUE_AC` table this creates, so it must load first)
 shared_scripts {
+	'shared/dprint.lua',
 	'shared/ac_config.lua',
 	'shared/tables/*.lua',
 	-- migrated from esx_aduty's Config.lua, which the original esx_aduty
@@ -38,13 +39,17 @@ client_scripts {
 	'client/aduty_spectate.lua',
 	'client/aduty_carp.lua',
 	-- original Unique_AdminPanel
-	'client/warmenu.lua',
+	-- MenuV (embedded, see client/menuv/menuv.lua) - replaces client/warmenu.lua
+	'client/menuv/menuv.lua',
 	'client/general_utils.lua',
 	'client/admin_area.lua',
 	'client/spectate_teleport_noclip.lua',
 	'client/menu_ui.lua',
 	'client/player_toggles.lua',
 	'client/admin_tools_menu.lua',
+	'client/data_weapons.lua',
+	'client/devtools.lua',
+	'client/menuv_ui.lua',
 	'client/nui_panel.lua',
 	'client/expansion.lua',
 	'client/admin_tag.lua',
@@ -172,6 +177,10 @@ files {
 	'html/adminmenu.html',
 	'html/style.css',
 	'html/app.js',
+	-- embedded MenuV NUI page (own iframe in html/index.html)
+	'html/menuv/menuv.html',
+	'html/menuv/assets/**/*',
+	'html/menuv/vendor/**/*',
 	'ui/*.html',
 	'ui/css/*.css',
 	'ui/js/*.js',
@@ -222,3 +231,4 @@ dependencies {
 -- three resources' SQL tables (audit, reports, uniqueac_banlist,
 -- jail-related columns on `users`, etc.) - this resource still uses all
 -- of them under their original table/column names.
+

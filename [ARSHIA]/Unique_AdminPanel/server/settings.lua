@@ -112,13 +112,14 @@ Citizen.CreateThread(function()
         -- Wait until the next real-world Monday 09:00 server time, then
         -- repeat every 7 days from there.
         local now = os.date("*t")
-        local daysUntilMonday = (8 - now.wday) % 7 -- os.date wday: 1=Sunday..7=Saturday
+        local daysUntilMonday = (9 - now.wday) % 7 -- os.date wday: 1=Sunday..7=Saturday, Monday = 2 (was (8 - wday): fired on Sunday)
         if daysUntilMonday == 0 and now.hour >= 9 then daysUntilMonday = 7 end
         local target = os.time({ year = now.year, month = now.month, day = now.day, hour = 9, min = 0, sec = 0 }) + daysUntilMonday * 86400
         local waitSeconds = target - os.time()
         Citizen.Wait(math.max(waitSeconds, 60) * 1000)
         PostWeeklyLeaderboard()
-        Citizen.Wait(7 * 24 * 60 * 60 * 1000)
+        -- (was Wait(7 days) here, which combined with the recompute above made it post every 2nd week)
+        Citizen.Wait(120 * 1000)
     end
 end)
 

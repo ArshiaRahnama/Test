@@ -221,7 +221,8 @@ end)
 
 Citizen.CreateThread(function()
     while true do
-        Citizen.Wait(0)
+        -- per-frame natives are only needed while a non-default density is active
+        if TrafficLevel == 'normal' then Citizen.Wait(500) else Citizen.Wait(0) end
         if TrafficLevel ~= 'normal' then
             local mult = DensityByLevel[TrafficLevel] or 1.0
             SetVehicleDensityMultiplierThisFrame(mult)

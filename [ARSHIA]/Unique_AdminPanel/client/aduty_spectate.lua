@@ -7,14 +7,19 @@ Citizen.CreateThread(function()
 	end
 
 	while true do
-		if IsControlJustPressed(0, 243) then
-			if LastPosition then
-				ExecuteCommand('csp')
-			elseif spect2s then
-				TriggerEvent('Admin_Menu:spec')
+		-- only staff use this hotkey: idle cheaply for everybody else
+		if aduty or spect2s or LastPosition then
+			if IsControlJustPressed(0, 243) then
+				if LastPosition then
+					ExecuteCommand('csp')
+				elseif spect2s then
+					TriggerEvent('Admin_Menu:spec')
+				end
 			end
+			Wait(0)
+		else
+			Wait(500)
 		end
-		Wait(1)
 	end
 end)
 
@@ -144,7 +149,7 @@ function OpenAdminActionMenu(player)
         GangLabel = 'Gang : ' .. data.gang.name
       end
 
-	  print(data.sex)
+	  dprint(data.sex)
       if data.sex ~= nil then
         if data.sex == 0 then
           sex = 'Male'
@@ -242,7 +247,7 @@ end
 
 RegisterNetEvent('es_admin:setGroup')
 AddEventHandler('es_admin:setGroup', function(g)
-	print('group setted ' .. g)
+	dprint('group setted ' .. g)
 	group = g
 end)
 
@@ -270,13 +275,13 @@ AddEventHandler('esx_spectate:AdutySpectate', function()
 end)
 
 RegisterNUICallback('select', function(data, cb)
-	print("select UI " .. json.encode(data))
+	dprint("select UI " .. json.encode(data))
 	AdutySpectate(data.id)
 	SetNuiFocus(false)
 end)
 
 RegisterNUICallback('close', function(data, cb)
-	print("closing UI")
+	dprint("closing UI")
 	SetNuiFocus(false)
 end)
 
@@ -295,7 +300,7 @@ Citizen.CreateThread(function()
 
   	while true do
 
-		Wait(10)
+		Wait(InSpectatorMode and 10 or 300) -- idle cheaply when nobody is spectating
 
 		if InSpectatorMode then
 

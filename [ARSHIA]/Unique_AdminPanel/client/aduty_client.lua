@@ -225,17 +225,10 @@ end)
 local loaded = false
 local oldPos
 
-Citizen.CreateThread(function()
-	while true do
-		Citizen.Wait(1000)
-		local pos = GetEntityCoords(PlayerPedId())
-		local heading = GetEntityHeading(PlayerPedId())
-		if(oldPos ~= pos)then
-			TriggerServerEvent('updatePositions', pos.x, pos.y, pos.z, heading)
-			oldPos = pos
-		end
-	end
-end)
+-- (removed: a second copy of essentialmode's own position reporter. It sent
+-- 'updatePositions' every second from every player WITHOUT essentialmode's
+-- `UpdatePos == true` gate - double the network traffic, and it could write a
+-- position before the character had actually spawned.)
 
 RegisterNetEvent("AdminOffDuty")
 AddEventHandler("AdminOffDuty",function()
@@ -389,7 +382,7 @@ end)
 RegisterNetEvent("aduty:pedHandler")
 AddEventHandler("aduty:pedHandler",function(PlayerID, skin)
    local player2 = GetPlayerFromServerId(PlayerID)
-    print("this is just a debug")
+    dprint("this is just a debug")
     Citizen.CreateThread(function()
     local model = GetHashKey(skin)
     RequestModel(model)
@@ -489,7 +482,7 @@ RegisterNetEvent("aduty:forceStatus")
 AddEventHandler("aduty:forceStatus", function(status)
 
   ForceToVisible = status
-  print(ForceToVisible)
+  dprint(ForceToVisible)
   visibility()
 
 end)
@@ -537,13 +530,9 @@ AddEventHandler("aduty:vanish", function()
 
 end)
 
-CreateThread(function()
-  while true do
-    Wait(1)
-
-    SetEntityLocallyInvisible(entity)
-  end
-end)
+-- (removed: a per-millisecond loop calling SetEntityLocallyInvisible on a global
+-- `entity` that is never set - it did nothing for every connected client except
+-- burn CPU. The actual vanish logic is in the aduty:vanish handler above.)
 
 RegisterNetEvent("aduty:visibleForce")
 AddEventHandler("aduty:visibleForce", function()
@@ -566,7 +555,7 @@ AddEventHandler('aduty:setEventCoords', function()
             if coords ~= nil then
                 TriggerServerEvent('aduty:setEventCoords', coords)
             else
-                print("Theere was a problem with getting coords")
+                dprint("Theere was a problem with getting coords")
             end
         end
 
@@ -588,7 +577,7 @@ AddEventHandler('aduty:tpEvent', function()
             TriggerServerEvent('esx_aduty:AntiCheatExempt', 5000, { teleport = true, speed = true, noclip = true })
             SetEntityCoords(PlayerPedId(), coords)
         else
-            print("problem with getting coords")
+            dprint("problem with getting coords")
         end
 
     end)
@@ -602,7 +591,7 @@ AddEventHandler('aduty:setEventCoords', function()
             if coords ~= nil then
                 TriggerServerEvent('aduty:setEventCoords', coords)
             else
-                print("Theere was a problem with getting coords")
+                dprint("Theere was a problem with getting coords")
             end
         end
 

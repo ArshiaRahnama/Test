@@ -59,7 +59,7 @@ AddEventHandler(
                 },
                 function(result)
                     if not result or result.affectedRows <= 0 then
-                        print("Failed to save " .. name .. "Exit log!")
+                        dprint("Failed to save " .. name .. "Exit log!")
                     end
                 end
             )
@@ -100,7 +100,7 @@ AddEventHandler(
             },
             function(result)
                 if not result or result.affectedRows <= 0 then
-                    print("Failed to save " .. name .. "Enter log!")
+                    dprint("Failed to save " .. name .. "Enter log!")
                 end
             end
         )
@@ -162,6 +162,8 @@ AddEventHandler(
 RegisterServerCallbackSafe(
     "esx_aduty:checkdutystatus",
     function(source, cb, target)
+        -- only staff may ask about other people's duty state (it reveals admins)
+        if tonumber(target) ~= source and not IsOnDutyAdmin(source) then cb(false) return end
         CheckPlayerDutyStatus(target, cb)
     end
 )
@@ -235,11 +237,26 @@ RegisterServerCallbackSafe(
     end
 )
 
+-- /w and /sl are normal player commands, but the server never validated the
+-- target: TriggerServerEvent('aduty:sendMessage', -1, "...") broadcast a
+-- spoofed "Whisper(id)" chat line to EVERYONE. Now the target must be a single
+-- real player standing next to the sender (the client already requires < 2m).
+local function IsNearbyPlayer(src, target, maxDist)
+    target = tonumber(target)
+    if not target or target < 0 or not GetPlayerName(target) then return false end
+    if target == src then return true end
+    local a, b = GetEntityCoords(GetPlayerPed(src)), GetEntityCoords(GetPlayerPed(target))
+    return #(a - b) <= (maxDist or 4.0)
+end
+
 RegisterServerEvent("aduty:sendMessage")
 AddEventHandler(
     "aduty:sendMessage",
     function(target, message)
-        TriggerClientEvent("chatMessage", target, "Whisper(" .. source .. ")", {255, 197, 0}, message)
+        local src = source
+        if type(message) ~= 'string' or message == '' then return end
+        if not IsNearbyPlayer(src, target, 4.0) then return end
+        TriggerClientEvent("chatMessage", tonumber(target), "Whisper(" .. src .. ")", {255, 197, 0}, message:sub(1, 200))
     end
 )
 
@@ -248,8 +265,11 @@ AddEventHandler(
     "aduty:showlicense",
     function(target)
         local _source = source
+        if not IsNearbyPlayer(_source, target, 4.0) then return end
+        target = tonumber(target)
         local identifier = GetPlayerIdentifier(_source)
         local xPlayer = ESX.GetPlayerFromId(_source)
+        if not xPlayer then return end
         TriggerClientEvent("chatMessage", target, "", {255, 0, 0}, "^0^*------ ^3List Madarek ^0------")
         TriggerClientEvent(
             "chatMessage",

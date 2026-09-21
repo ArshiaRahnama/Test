@@ -238,7 +238,7 @@ function DeleteAccounts()
         count = count + 1
     end
 
-    print("Total Deleted users: " .. tostring(count))
+    dprint("Total Deleted users: " .. tostring(count))
 end
 
 function CK(target, iniator, reason)

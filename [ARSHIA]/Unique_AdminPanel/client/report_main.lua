@@ -82,7 +82,7 @@ end
 --      خودمون می‌بندیمش - یک تورِ ایمنیِ آخر
 CreateThread(function()
     while true do
-        Wait(0)
+        Wait(nuiFocusActive and 0 or 250) -- was Wait(0) for every player all the time
         if nuiFocusActive then
             DisableControlAction(0, 200, true)   -- INPUT_FRONTEND_PAUSE
             DisableControlAction(0, 322, true)   -- INPUT_FRONTEND_CANCEL

@@ -945,7 +945,7 @@ MySQL.ready(function()
 
     if Config_Server.afterRestartCleanAllReport then
         MySQL.Async.execute("DELETE FROM reports", {}, function()
-            print("^3[Unique Report]^0 همه ریپورت‌ها پاک شدند (afterRestartCleanAllReport = true).")
+            dprint("^3[Unique Report]^0 همه ریپورت‌ها پاک شدند (afterRestartCleanAllReport = true).")
         end)
     else
         -- ریپورت‌های نیمه‌باز از ری‌استارت قبلی رو به حالت انتظار برمیگردونیم
@@ -965,6 +965,6 @@ MySQL.ready(function()
         ]], { ['@cut'] = os.time() - (days * 86400) })
     end
 
-    print(("^2[Unique Report]^0 سیستم ریپورت %s آماده است. (%s)")
+    dprint(("^2[Unique Report]^0 سیستم ریپورت %s آماده است. (%s)")
         :format(Config_Shared.ServerName, Config_Shared.ServerSite))
 end)

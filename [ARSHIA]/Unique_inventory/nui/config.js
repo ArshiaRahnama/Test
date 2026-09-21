@@ -5,7 +5,7 @@ config = {
 	sobrenome: "Sobrenome",
 	idade: "Steam Hex:",
 	passaporte: "National ID: ",
-	registro: "Bitcoin:",
+	registro: "Coin:",
 	telefone: "Phone Number: ",
 	profissao: "Job: ",
 	vip: "VIP:",

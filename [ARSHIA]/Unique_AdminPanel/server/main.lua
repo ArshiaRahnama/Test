@@ -13,7 +13,15 @@ Config = {
 
 
     MinPermissionLevel = 1,
+
+    -- Also match temp bans by IP on connect. Off by default: many players share
+    -- one IP (CGNAT/ISP), so IP matching banned innocent people.
+    BanByIP = false,
 }
+
+-- identifier -> os.time() of the last admin money grant (so the wealth-spike
+-- scanner doesn't flag legit /agivemoney payouts)
+AdminMoneyGrant = {}
 
 local AdminToggleState = {}
 
@@ -66,6 +74,16 @@ end)
 -- buttonId may be nil (falls back to the plain Config.MinPermissionLevel
 -- gate, same as IsOnDutyAdmin) - lets every call site pass a catalog id
 -- without needing a special case for the ungated ones.
+-- Hard level floor for powerful actions. The per-button levels (btn_*) are
+-- editable by admins in the panel and default to Config.MinPermissionLevel (1);
+-- several handlers only checked "is on-duty admin", so a rank-1 helper could
+-- e.g. set jobs or hand out weapons. The floors below mirror the levels of the
+-- equivalent chat commands (/setjob 8, /giveweapon 5, /announce 4 ...).
+function AdminMinLevel(source, level)
+    local xPlayer = ESX.GetPlayerFromId(source)
+    return xPlayer ~= nil and (xPlayer.permission_level or 0) >= level
+end
+
 function IsOnDutyAdminFor(source, buttonId)
     local xPlayer = ESX.GetPlayerFromId(source)
     if not xPlayer then return false end
@@ -94,7 +112,7 @@ function LogAdminAction(source, action, details, targetIdentifier, targetName)
     local line = ('[Unique_AdminPanel] %s (id:%s) -> %s%s'):format(
         name, tostring(source), action, details and (' | ' .. details) or ''
     )
-    print(line)
+    dprint(line)
 
     if Config.DiscordWebhook ~= "" then
         local embeds = {
@@ -166,11 +184,9 @@ AddEventHandler('Unique_AdminPanel:RequestToggle', function(feature)
     state[feature] = not state[feature]
     local newValue = state[feature]
 
-    if feature == 'godmode' then
-
-
-        SetPlayerInvincible(source, newValue)
-    end
+    -- (godmode is applied on the client, see ApplyToggle. The server-side
+    -- SetPlayerInvincible(source, false) that used to be called here is a known
+    -- FXServer crash trigger (SIGSEGV when turning it OFF), so it was removed.)
 
     LogAdminAction(source, "toggle:" .. feature, "new state: " .. tostring(newValue))
     TriggerClientEvent('Unique_AdminPanel:ApplyToggle', source, feature, newValue)

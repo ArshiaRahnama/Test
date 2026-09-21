@@ -72,11 +72,22 @@
 <iframe id="admin-frame" src="adminmenu.html"></iframe>
 <iframe id="ac-frame" src="../ui/index.html"></iframe>
 <iframe id="report-frame" src="../ui/report/index.html"></iframe>
+<!-- MenuV (F4 admin menu). Never takes pointer events: it is keyboard-driven and NUI focus stays off. -->
+<iframe id="menuv-frame" src="menuv/menuv.html"></iframe>
 <script>
   var RES = 'Unique_AdminPanel';
 
   window.addEventListener('message', function (event) {
     var data = event.data || {};
+
+    // MenuV traffic (tagged _menuv by client/menuv/menuv.lua) goes ONLY to the
+    // MenuV iframe - it must not activate/focus the other panels nor be
+    // broadcast to them (menus resend whole item lists, that's wasted work).
+    if (data._menuv) {
+      var menuvFrame = document.getElementById('menuv-frame');
+      if (menuvFrame && menuvFrame.contentWindow) menuvFrame.contentWindow.postMessage(data, '*');
+      return;
+    }
     var adminFrame = document.getElementById('admin-frame');
     var acFrame = document.getElementById('ac-frame');
     var reportFrame = document.getElementById('report-frame');

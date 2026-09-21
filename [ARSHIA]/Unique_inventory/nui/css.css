@@ -1,3 +1,36 @@
+:root{
+    --gold: #d4af37;
+    --gold-light: #f5d67d;
+    --gold-dark: #8a6d1f;
+    --gold-text: #f2e8c9;
+    --gold-dim: rgba(212, 175, 55, 0.35);
+    --ink: #050505;
+    --ink-soft: #0c0c0c;
+    /* How far the whole inventory (identity card, item grid, filter panel,
+       chest/trunk view...) is shifted left. Tweak this one value to move
+       everything left/right together. --right-menu-x is separate and
+       controls only the money/pocket-space/action panel on the right,
+       which is tuned independently so it doesn't drift with the rest. */
+    --ui-shift-x: -7vw;
+    --right-menu-x: -4vw;
+    --chest-title-x: -3vw;
+}
+
+.ui-shift{
+    transform: translateX(var(--ui-shift-x));
+}
+
+.right-menu{
+    transform: translateX(var(--right-menu-x));
+}
+
+.chest-title-menu{
+    /* Keeps the trunk view's plate/title text at a safe, always-visible
+       position (--chest-title-x) no matter how far --ui-shift-x pushes
+       the rest of the content left. */
+    transform: translateX(calc(var(--chest-title-x) - var(--ui-shift-x)));
+}
+
 body{
     user-select: none;
     overflow: hidden;
@@ -86,7 +119,8 @@ body{
 
 .escolha-menu{
     font-family: AdventPro;
-    color: #ff0044;
+    color: var(--gold);
+    text-shadow: 0 0 0.8vw rgba(212,175,55,0.35);
     float: left;
     left: 7.5vw;
     position: relative;
@@ -114,7 +148,7 @@ body{
     left: 27vw;
     width: 44vw;
     height: 0.1vw;
-    background-color: rgba(255, 255, 255, 0.3);
+    background-color: rgba(212,175,55,0.22);
 }
 
 .top-menu .line2{
@@ -123,7 +157,7 @@ body{
     left: 80.5vw;
     width: 3vw;
     height: 0.1vw;
-    background-color: rgba(255, 255, 255, 0.3);
+    background-color: rgba(212,175,55,0.22);
 }
 
 .top-menu .esc{
@@ -132,7 +166,8 @@ body{
     top: 0vw;
     width: 3vw;
     height: 1.5vw;
-    background-color: rgba(0, 0, 0, 0.377);
+    background-color: rgba(0, 0, 0, 0.55);
+    border: 1px solid rgba(212,175,55,0.25);
     border-radius: 0.5vw;
 
 }
@@ -160,7 +195,8 @@ body{
     width: 7vw;
     height: 0.2vw;
     transition: 0.5s;
-    background-color: #ff0044;
+    background: linear-gradient(90deg, var(--gold-light), var(--gold) 70%, var(--gold-dark));
+    box-shadow: 0 0 0.8vw rgba(212,175,55,0.7);
 }
 
 .person-menu{
@@ -172,36 +208,176 @@ body{
 
 .identity-inicial{
     position: relative;
-    /* left: 10vw; */
     left: 0;
-    background-color: rgba(255, 255, 255, 0.048);
     top: 1.3vw;
     display: none;
     height: 60.1vh;
     width: 24vw;
-    border-radius: 0.2vw;
+    border-radius: 0.6vw;
+    overflow: hidden;
+    isolation: isolate;
     transition: 1s;
+    background:
+        repeating-linear-gradient(135deg, rgba(212,175,55,0.035) 0px, rgba(212,175,55,0.035) 1px, transparent 1px, transparent 14px),
+        linear-gradient(160deg, rgba(255,255,255,0.05), rgba(255,255,255,0.015) 45%, rgba(0,0,0,0.55) 100%),
+        radial-gradient(120% 60% at 50% -10%, rgba(212,175,55,0.22), rgba(212,175,55,0) 60%),
+        linear-gradient(180deg, var(--ink-soft), var(--ink));
+    border: 1px solid rgba(212,175,55,0.28);
+    box-shadow:
+        inset 0 0 0 1px rgba(212,175,55,0.16),
+        inset 0 1.5vw 2vw rgba(0,0,0,0.5),
+        0 1vw 2.4vw rgba(0,0,0,0.6),
+        0 0 2.4vw rgba(212,175,55,0.14);
 }
 
-.itens-identity{
-    top: 6vw;
+.identity-inicial::before{
+    content: "";
+    position: absolute;
+    top: 0; left: 8%;
+    width: 84%;
+    height: 0.14vw;
+    background: linear-gradient(90deg, rgba(212,175,55,0), var(--gold-light) 50%, rgba(212,175,55,0));
+    box-shadow: 0 0 1vw rgba(212,175,55,0.85);
+    z-index: 2;
+}
+
+.identity-inicial::after{
+    content: "";
+    position: absolute;
+    left: 0; right: 0;
+    top: -30%;
+    height: 45%;
+    background: linear-gradient(180deg, rgba(212,175,55,0.14), rgba(212,175,55,0) 80%);
+    transform: rotate(4deg);
+    animation: identityScan 6s ease-in-out infinite;
+    pointer-events: none;
+    z-index: 1;
+}
+
+@keyframes identityScan{
+    0%   { top: -40%; opacity: 0; }
+    12%  { opacity: 0.6; }
+    55%  { top: 105%; opacity: 0.6; }
+    70%  { opacity: 0; }
+    100% { top: 105%; opacity: 0; }
+}
+
+.id-card-chip{
+    position: absolute;
+    top: 1vw;
+    left: 1.2vw;
+    width: 2.6vw;
+    height: 1.9vw;
+    border-radius: 0.3vw;
+    background: linear-gradient(135deg, var(--gold-light), var(--gold) 45%, var(--gold-dark) 100%);
+    box-shadow: 0 0.15vw 0.5vw rgba(0,0,0,0.55), inset 0 0 0.3vw rgba(255,255,255,0.45);
+    z-index: 3;
+}
+
+.id-card-chip::before{
+    content: "";
+    position: absolute;
+    inset: 0.3vw;
+    border-radius: 0.15vw;
+    background-image:
+        linear-gradient(90deg, rgba(0,0,0,0.35) 1px, transparent 1px),
+        linear-gradient(0deg, rgba(0,0,0,0.35) 1px, transparent 1px);
+    background-size: 0.55vw 0.5vw;
+}
+
+.identidade-js{
     position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    box-sizing: border-box;
+    padding: 1.6vw 1.7vw 1.2vw;
 }
 
 .title-identity{
     font-family: AdventPro;
     color: white;
-    line-height: 1.2vw;
     position: relative;
     text-transform: uppercase;
     text-align: center;
-    top: 2.6vw;
     font-weight: 500;
     font-size: 1.6vw;
+    margin-bottom: 1vw;
+    padding-bottom: 1vw;
+    border-bottom: 1px solid rgba(212,175,55,0.2);
 }
 
 .title-identity img{
-    width: 6.4vw;
+    width: 4.6vw;
+    height: 4.6vw;
+    object-fit: contain;
+    padding: 0.7vw;
+    box-sizing: border-box;
+    border-radius: 50%;
+    background: radial-gradient(circle at 32% 28%, rgba(212,175,55,0.35), rgba(0,0,0,0.4) 70%);
+    border: 1.5px solid rgba(212,175,55,0.6);
+    box-shadow: 0 0 1.4vw rgba(212,175,55,0.4), inset 0 0 0.6vw rgba(212,175,55,0.3);
+}
+
+.title-identity::after{
+    content: "UNIQUE  •  IDENTITY CARD";
+    display: block;
+    margin-top: 0.6vw;
+    font-size: 0.62vw;
+    letter-spacing: 0.22vw;
+    font-weight: 400;
+    color: rgba(230,197,110,0.7);
+}
+
+.itens-identity{
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1vw;
+    padding: 0.75vw 0.3vw;
+    border-bottom: 1px solid rgba(212,175,55,0.12);
+    transition: background 0.25s ease;
+}
+
+.itens-identity:last-of-type{
+    border-bottom: none;
+}
+
+.itens-identity::before{
+    content: "";
+    position: absolute;
+    left: -1.7vw;
+    top: 0.15vw;
+    bottom: 0.15vw;
+    width: 0.16vw;
+    background: linear-gradient(180deg, var(--gold-light), var(--gold));
+    box-shadow: 0 0 0.6vw rgba(212,175,55,0.85);
+    transform: scaleY(0);
+    transform-origin: center;
+    transition: transform 0.25s ease;
+}
+
+.itens-identity:hover{
+    background: linear-gradient(90deg, rgba(212,175,55,0.14), rgba(212,175,55,0) 70%);
+}
+
+.itens-identity:hover::before{
+    transform: scaleY(1);
+}
+
+.identidade-js::after{
+    content: "";
+    margin-top: auto;
+    height: 1vw;
+    border-radius: 0.15vw;
+    opacity: 0.55;
+    background-image: repeating-linear-gradient(90deg,
+        rgba(212,175,55,0.55) 0, rgba(212,175,55,0.55) 2px,
+        transparent 2px, transparent 5px,
+        rgba(212,175,55,0.25) 5px, rgba(212,175,55,0.25) 6px,
+        transparent 6px, transparent 10px);
 }
 
 .primeiro-identity{
@@ -209,29 +385,45 @@ body{
     color: white;
     line-height: 1.2vw;
     text-transform: uppercase;
-    text-align: center;
     font-weight: 400;
-    width: 50%;
-    margin-bottom: 1.2vw;
+    width: auto;
+    margin-bottom: 0;
     font-size: 1vw;
     text-shadow: 0px 2px 5px  rgb(0, 0, 0);
-
 }
 
 .primeiro{
-    float: left;
+    float: none;
     text-align: left;
-    left: 1.4vw;
+    left: 0;
     position: relative;
     opacity: 0.6;
+    font-size: 0.8vw;
+    letter-spacing: 0.04vw;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+}
 
+.primeiro::before{
+    content: "▹";
+    color: var(--gold);
+    margin-right: 0.45vw;
+    opacity: 1;
+    text-shadow: 0 0 0.5vw rgba(212,175,55,0.85);
 }
 
 .segundo{
     text-align: right;
-    right: 1.4vw;
+    right: 0;
     position: relative;
-    float: left;
+    float: none;
+    font-weight: 600;
+    color: var(--gold-text);
+    text-shadow: 0 2px 6px rgba(0,0,0,0.7), 0 0 0.4vw rgba(212,175,55,0.15);
+    max-width: 60%;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .identity-secundaria{
@@ -357,12 +549,15 @@ body{
     width: 2vw;
     height: 2vw;
     border-radius: 100vw;
-    background-color: rgba(0, 0, 0, 0.616);
+    background-color: rgba(212,175,55,0.08);
+    border: 1px solid rgba(212,175,55,0.18);
     transition: 0.4s;
 }
 
 .filtro-button:hover{
-    background-color: rgba(92, 92, 92, 0.795);
+    background-color: var(--gold-dim);
+    border-color: rgba(212,175,55,0.6);
+    box-shadow: 0 0 0.7vw rgba(212,175,55,0.35);
 }
 
 .clear-filter{
@@ -375,14 +570,16 @@ body{
     right: 1vw;
     top: 1vw;
     line-height: 1vw;
-    background-color: rgba(0, 0, 0, 0.616);
-    color: white;
+    background-color: rgba(212,175,55,0.15);
+    border: 1px solid rgba(212,175,55,0.2);
+    color: var(--gold-text);
     border-radius: 0.2vw;
     transition: 0.2s;
 }
 
 .clear-filter:hover{
-    transform: scale(1.1)
+    transform: scale(1.1);
+    border-color: rgba(212,175,55,0.6);
 }
 
 #box-menu-item{
@@ -410,11 +607,11 @@ body{
 
 
 #box-menu-item::-webkit-scrollbar-thumb:hover {
-    background-color: rgba(215, 215, 215, 0.527);
+    background-color: var(--gold-light);
 }
 
 #box-menu-item::-webkit-scrollbar-thumb {
-    background: #ffffffda;
+    background: var(--gold);
     border-radius: 5vw;
     border-radius: 1vw;
 }
@@ -435,7 +632,7 @@ body{
 .number-keyBind{
     font-family: AdventPro;
     font-weight: 200;
-    color: rgba(255, 255, 255, 0.653);
+    color: var(--gold-text);
     font-size: 1.4vw;
     position: relative;
     top: 0.5vw;
@@ -444,7 +641,7 @@ body{
     height: 2vw;
     text-align: center;
     border-radius: 0.3vw;
-    border: solid 0.1vw rgba(255, 255, 255, 0.653);
+    border: solid 0.1vw var(--gold-dim);
 }
 
 .keyBind-usade{
@@ -452,9 +649,9 @@ body{
     bottom: 2vw;
     left: 1.5vw;
     font-family: AdventPro;
-    color: rgba(255, 255, 255, 0.753);
+    color: var(--gold-text);
     font-size: 0.6vw;
-    background-color: rgba(0, 0, 0, 0.507);
+    background-color: rgba(212,175,55,0.15);
     width: 4vw;
     height: 1vw;
     line-height: 1vw;
@@ -469,15 +666,15 @@ body{
     position: relative;
     bottom: 0.7vw;
     margin: 0.2vw;
-    border: solid 0.1vw rgba(255, 255, 255, 0);
+    border: solid 0.1vw rgba(212,175,55,0.15);
     float: left;
-    background-color: rgba(255, 255, 255, 0.13);
+    background-color: rgba(212,175,55,0.08);
     transition: 0.5s;
 }
 
 .slot:hover{
-    background-color: rgba(255, 255, 255, 0.329);
-    border: solid 0.1vw rgba(255, 255, 255, 0.473);
+    background-color: rgba(212,175,55,0.2);
+    border: solid 0.1vw var(--gold-dim);
 }
 
 .item-player{
@@ -490,7 +687,7 @@ body{
     background-size: 5vw;
     background-repeat: no-repeat;
     background-position: center;
-    background-color: rgba(255, 255, 255, 0.13);
+    background-color: rgba(212,175,55,0.08);
 
 }
 
@@ -630,12 +827,13 @@ body{
 }
 
 .title-carteira{
-    color: white;
+    color: var(--gold-text);
     font-size: 0.9vw;
 }
 
 .saldo-carteira{
-    color: white;
+    color: var(--gold);
+    text-shadow: 0 0 0.6vw rgba(212,175,55,0.3);
     letter-spacing: 0.12vw;
     font-size: 1.2vw;
 }
@@ -648,12 +846,13 @@ body{
 }
 
 .title-banco{
-    color: white;
+    color: var(--gold-text);
     font-size: 0.9vw;
 }
 
 .saldo-banco{
-    color: white;
+    color: var(--gold);
+    text-shadow: 0 0 0.6vw rgba(212,175,55,0.3);
     letter-spacing: 0.12vw;
     font-size: 1.2vw;
 }
@@ -674,7 +873,7 @@ body{
 }
 
 #barra-pesquisa::placeholder{
-    color:  rgba(255, 255, 255, 0.678);
+    color: rgba(212,175,55,0.55);
     font-family: poppinslight;
     font-size: 0.8vw;
 }
@@ -728,21 +927,22 @@ body{
 .action{
     width: 11vw;
     text-align: center;
-    color: white;
+    color: var(--gold-text);
     height: 2.3vw;
     border-radius: 0.1vw;
     line-height: 2.3vw;
     font-family: poppinslight;
-    border: 0.1px solid rgba(255, 255, 255, 0.164);
+    border: 0.1px solid rgba(212,175,55,0.22);
     font-size: 1vw;
     margin-bottom: 1vw;
-    background-color: rgba(255, 255, 255, 0.048);
+    background-color: rgba(212,175,55,0.06);
     transition: 0.5s;
 }
 
 .actionDropp{
-    background-color: rgba(255, 255, 255, 0.267);
-    border: 0.1px solid rgba(151, 121, 121, 0.712);
+    background-color: var(--gold-dim);
+    border: 0.1px solid rgba(212,175,55,0.6);
+    color: white;
     transform: translateY(-2px);
 
     transition: 0.5s;
@@ -1150,7 +1350,7 @@ body{
 .circle-mochila{
     width: 1.6vw;
     height: 0.5vw;
-    background-color: rgba(133, 133, 133, 0.356);
+    background-color: rgba(212,175,55,0.25);
     border-radius: 100vw;
     float: left;
     margin: 0.5vw;
@@ -1164,7 +1364,7 @@ body{
     margin: 0.2vw;
     border: solid 0.1vw transparent;
     float: left;
-    background-color: rgba(255, 255, 255, 0.13);
+    background-color: rgba(212,175,55,0.08);
     transition: 0.5s;
 }
 
@@ -1218,7 +1418,8 @@ body{
 
 .name-car{
     font-family: poppinsSemiBold;
-    color: #ff0044;
+    color: var(--gold);
+    text-shadow: 0 0 0.8vw rgba(212,175,55,0.35);
     float: left;
     left: 3.2vw;
     position: absolute;
@@ -1230,7 +1431,8 @@ body{
 
 .name-inventory{
     font-family: poppinsSemiBold;
-    color: #ff0044;
+    color: var(--gold);
+    text-shadow: 0 0 0.8vw rgba(212,175,55,0.35);
     float: left;
     left: 67.3vw;
     position: absolute;
@@ -1255,6 +1457,10 @@ body{
     left: 86.1vw;
     width: 10vw;
     height: 16vw;
+    /* Cancels the extra part of --ui-shift-x beyond --right-menu-x, so this
+       stays lined up with the Pocket Space ring in .right-menu instead of
+       drifting further left with the rest of the trunk view. */
+    transform: translateX(calc(var(--right-menu-x) - var(--ui-shift-x)));
 }
 
 .line-circle{
@@ -1553,70 +1759,4 @@ body{
     top: 4vw;
     right: 13vw;
     width: 3vw;
-}
-/* ============================================================
-   UNIQUE theme override (matches the server's existing HUD
-   branding - dark charcoal panels, gold accent instead of the
-   original red). Appended at the end so it wins the cascade.
-   ============================================================ */
-:root {
-    --unique-gold: #d4af37;
-    --unique-gold-soft: #f2e8c9;
-    --unique-gold-dim: rgba(212, 175, 55, 0.35);
-}
-
-.escolha-menu {
-    color: var(--unique-gold) !important;
-}
-
-.barra-preenchida {
-    background-color: var(--unique-gold) !important;
-}
-
-.slot {
-    background-color: rgba(212, 175, 55, 0.08) !important;
-    border-color: rgba(212, 175, 55, 0.15) !important;
-}
-
-.slot:hover {
-    background-color: rgba(212, 175, 55, 0.2) !important;
-    border: solid 0.1vw var(--unique-gold-dim) !important;
-}
-
-.item-player {
-    background-color: rgba(212, 175, 55, 0.08) !important;
-}
-
-.title-carteira,
-.title-banco {
-    color: var(--unique-gold-soft) !important;
-}
-
-.saldo-carteira,
-.saldo-banco {
-    color: var(--unique-gold) !important;
-}
-
-.filtro-button:hover {
-    background-color: var(--unique-gold-dim) !important;
-}
-
-.clear-filter,
-.keyBind-usade {
-    background-color: rgba(212, 175, 55, 0.15) !important;
-    color: var(--unique-gold-soft) !important;
-}
-
-.number-keyBind {
-    border-color: var(--unique-gold-dim) !important;
-    color: var(--unique-gold-soft) !important;
-}
-
-#box-menu-item::-webkit-scrollbar-thumb,
-#box-menu-item::-webkit-scrollbar-thumb:hover {
-    background: var(--unique-gold) !important;
-}
-
-#barra-pesquisa::placeholder {
-    color: rgba(212, 175, 55, 0.55) !important;
 }

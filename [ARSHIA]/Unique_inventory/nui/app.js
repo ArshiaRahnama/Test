@@ -554,8 +554,6 @@ $(document).ready(function () {
                 var _0x36bfc2 = $(this).attr('data-slotNovo')
                 if (Number(i) === Number(_0x36bfc2)) {
                   if (_0x36bfc2 <= 4) {
-                    console.log(ip + '' + _0x498f3d.name + '.png');
-                    
                     const _0x36f94d =
                       '\n                                    <div class="item-player inventory"  data-item-antigo="' +
                       i +
@@ -1599,16 +1597,16 @@ circulo = new ProgressBar.Circle(circle, {
   strokeWidth: 10,
   easing: 'easeInOut',
   duration: 1400,
-  color: '#ffffff',
-  trailColor: '#8080802c',
+  color: '#d4af37',
+  trailColor: '#8a6d1f26',
   trailWidth: 8.5,
 })
 circulochest = new ProgressBar.Circle(circleChest, {
   strokeWidth: 10,
   easing: 'easeInOut',
   duration: 1400,
-  color: '#ffffff',
-  trailColor: '#8080802c',
+  color: '#d4af37',
+  trailColor: '#8a6d1f26',
   trailWidth: 8.5,
 })
 function updatePesoChest(_0x2dd103, _0x33b2c9) {
@@ -1619,25 +1617,25 @@ function updatePesoChest(_0x2dd103, _0x33b2c9) {
   $('.peso-texto-chest').html(_0x2dd103.toFixed(1) + '/' + _0x33b2c9.toFixed(1))
 }
 function updatePeso(_0x327bdb, _0x5621a6) {
-  $('.circle-mochila').css('background', 'rgba(133, 133, 133, 0.356)')
+  $('.circle-mochila').css('background', 'rgba(212, 175, 55, 0.25)')
   $('.circle-mochila').css('box-shadow', '')
   circulo.animate(_0x327bdb)
   if (_0x5621a6 === 90) {
-    $('.circle-mochila').css('background', 'white')
-    $('.circle-mochila').css('box-shadow', '0px 0px 7px 1px #ffffffb0')
+    $('.circle-mochila').css('background', '#d4af37')
+    $('.circle-mochila').css('box-shadow', '0px 0px 7px 1px #d4af37b0')
   } else {
     if (_0x5621a6 === 75) {
-      $('.circle-mochila.1').css('background', 'white')
-      $('.circle-mochila.2').css('background', 'white')
-      $('.circle-mochila.1').css('box-shadow', '0px 0px 7px 1px #ffffffb0')
-      $('.circle-mochila.2').css('box-shadow', '0px 0px 7px 1px #ffffffb0')
+      $('.circle-mochila.1').css('background', '#d4af37')
+      $('.circle-mochila.2').css('background', '#d4af37')
+      $('.circle-mochila.1').css('box-shadow', '0px 0px 7px 1px #d4af37b0')
+      $('.circle-mochila.2').css('box-shadow', '0px 0px 7px 1px #d4af37b0')
     } else {
       if (_0x5621a6 === 51) {
-        $('.circle-mochila.1').css('background', 'white')
-        $('.circle-mochila.1').css('box-shadow', '0px 0px 7px 1px #ffffffb0')
+        $('.circle-mochila.1').css('background', '#d4af37')
+        $('.circle-mochila.1').css('box-shadow', '0px 0px 7px 1px #d4af37b0')
       } else {
         _0x5621a6 === 6 &&
-          ($('.circle-mochila').css('background', 'rgba(133, 133, 133, 0.356)'),
+          ($('.circle-mochila').css('background', 'rgba(212, 175, 55, 0.25)'),
           $('.circle-mochila').css('box-shadow', ''))
       }
     }

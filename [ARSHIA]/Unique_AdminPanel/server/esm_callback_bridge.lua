@@ -76,7 +76,7 @@ AddEventHandler('essentialmode:relayServerCallback:' .. RES, function(name, requ
     -- و مهم‌تر: تا کلاینت بدون جواب معلق نمونه.
     local ok, err = pcall(fn, source, reply, ...)
     if not ok then
-        print(('^1[%s]^0 خطا داخل کال‌بک "%s": %s'):format(RES, tostring(name), tostring(err)))
+        dprint(('^1[%s]^0 خطا داخل کال‌بک "%s": %s'):format(RES, tostring(name), tostring(err)))
         reply(nil)
     end
 end)
@@ -98,10 +98,10 @@ end
 --- امضاش دقیقاً همونه، پس کدِ موجود بدون تغییر کار میکنه.
 function RegisterServerCallbackSafe(name, cb)
     if type(name) ~= 'string' or name == '' then
-        return print(('^1[%s]^0 RegisterServerCallbackSafe: نام نامعتبر'):format(RES))
+        return dprint(('^1[%s]^0 RegisterServerCallbackSafe: نام نامعتبر'):format(RES))
     end
     if type(cb) ~= 'function' then
-        return print(('^1[%s]^0 RegisterServerCallbackSafe(%s): کال‌بک تابع نیست'):format(RES, name))
+        return dprint(('^1[%s]^0 RegisterServerCallbackSafe(%s): کال‌بک تابع نیست'):format(RES, name))
     end
 
     LocalCallbacks[name] = cb
@@ -153,10 +153,10 @@ RegisterCommand('reportbridge', function(source)
         total = total + 1
         if Registered[name] then ok = ok + 1 end
     end
-    print(('^5[%s]^0 پل کال‌بک: %d از %d ثبت شده. essentialmode: %s')
+    dprint(('^5[%s]^0 پل کال‌بک: %d از %d ثبت شده. essentialmode: %s')
         :format(RES, ok, total, GetResourceState('essentialmode')))
     for name in pairs(LocalCallbacks) do
-        print(('   %s %s'):format(Registered[name] and '^2✓^0' or '^1✗^0', name))
+        dprint(('   %s %s'):format(Registered[name] and '^2✓^0' or '^1✗^0', name))
     end
 end, true)
 
@@ -169,8 +169,8 @@ CreateThread(function()
     end
     if total == 0 then return end
     if ok == total then
-        print(('^2[%s]^0 هر %d کال‌بک سرور با موفقیت به essentialmode وصل شد.'):format(RES, total))
+        dprint(('^2[%s]^0 هر %d کال‌بک سرور با موفقیت به essentialmode وصل شد.'):format(RES, total))
     else
-        print(('^1[%s]^0 فقط %d از %d کال‌بک وصل شد. برای جزئیات تو کنسول بزن: reportbridge'):format(RES, ok, total))
+        dprint(('^1[%s]^0 فقط %d از %d کال‌بک وصل شد. برای جزئیات تو کنسول بزن: reportbridge'):format(RES, ok, total))
     end
 end)

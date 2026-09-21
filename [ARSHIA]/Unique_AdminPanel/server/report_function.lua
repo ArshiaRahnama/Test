@@ -59,7 +59,7 @@ CreateThread(function()
         Wait(250)
     end
     if not Rep.ESX() then
-        print("^1[Unique Report]^0 ESX پیدا نشد. مطمئن شو es_extended قبل از Unique_AdminPanel استارت میشه.")
+        dprint("^1[Unique Report]^0 ESX پیدا نشد. مطمئن شو es_extended قبل از Unique_AdminPanel استارت میشه.")
     end
 end)
 

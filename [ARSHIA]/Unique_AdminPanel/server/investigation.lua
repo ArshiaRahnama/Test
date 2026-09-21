@@ -90,10 +90,10 @@ Citizen.CreateThread(function()
                 local total = money + bank
                 local last = LastKnownTotal[xPlayer.identifier]
 
-                if last and (total - last) > Config_MoneySpike.Threshold then
+                if last and (total - last) > Config_MoneySpike.Threshold and not (AdminMoneyGrant[xPlayer.identifier] and (os.time() - AdminMoneyGrant[xPlayer.identifier]) < 600) then
                     local note = ("Auto-flag: wealth jumped +%s in <=5min (possible dupe/exploit)"):format(total - last)
                     MySQL.Async.execute(
-                        "INSERT INTO `admin_player_flags` (`identifier`, `note`, `admin_name`, `created_at`) VALUES (@identifier, @note, @admin, @createdat) ON DUPLICATE KEY UPDATE `note` = @note, `admin_name` = @admin, `created_at` = @createdat",
+                        "INSERT INTO `admin_player_flags` (`identifier`, `note`, `admin_name`, `created_at`) VALUES (@identifier, @note, @admin, @createdat) ON DUPLICATE KEY UPDATE `note` = IF(`admin_name` = 'SYSTEM', @note, `note`), `created_at` = IF(`admin_name` = 'SYSTEM', @createdat, `created_at`)",
                         { ['@identifier'] = xPlayer.identifier, ['@note'] = note, ['@admin'] = 'SYSTEM', ['@createdat'] = os.date('%Y-%m-%d %H:%M:%S') }
                     )
                     for _, src in ipairs(ESX.GetPlayers()) do
@@ -104,7 +104,7 @@ Citizen.CreateThread(function()
                             })
                         end
                     end
-                    print(("[Unique_AdminPanel] SYSTEM auto-flag: %s (id:%s) -> %s"):format(GetPlayerName(playerId), playerId, note))
+                    dprint(("[Unique_AdminPanel] SYSTEM auto-flag: %s (id:%s) -> %s"):format(GetPlayerName(playerId), playerId, note))
                 end
 
                 LastKnownTotal[xPlayer.identifier] = total
@@ -128,20 +128,18 @@ Citizen.CreateThread(function()
     while true do
         Citizen.Wait(24 * 60 * 60 * 1000) -- once a day
         MySQL.Async.execute(
-            "DELETE FROM `admin_player_flags` WHERE `created_at` < DATE_SUB(NOW(), INTERVAL @days DAY)",
-            { ['@days'] = Config_FlagMaxAgeDays },
-            function(rowsAffected)
-                if rowsAffected and rowsAffected > 0 then
-                    print(("[Unique_AdminPanel] Auto-cleared %s flag(s) older than %s days."):format(rowsAffected, Config_FlagMaxAgeDays))
-                end
-            end
+            -- only the automatic flags expire; a flag an admin set by hand stays until
+            -- someone clears it (it used to be deleted after 14 days too)
+            "DELETE FROM `admin_player_flags` WHERE `admin_name` = 'SYSTEM' AND `created_at` < DATE_SUB(NOW(), INTERVAL @days DAY)",
+            { ['@days'] = Config_FlagMaxAgeDays }
         )
     end
 end)
 
 RegisterCommand('acleanflags', function(source, args)
     if not IsOnDutyAdmin(source) then return end
-    local days = tonumber(args[1]) or Config_FlagMaxAgeDays
+    -- clamp: a negative number turned the query into 'delete every flag'
+    local days = math.max(1, math.floor(tonumber(args[1]) or Config_FlagMaxAgeDays))
     MySQL.Async.execute(
         "DELETE FROM `admin_player_flags` WHERE `created_at` < DATE_SUB(NOW(), INTERVAL @days DAY)",
         { ['@days'] = days },

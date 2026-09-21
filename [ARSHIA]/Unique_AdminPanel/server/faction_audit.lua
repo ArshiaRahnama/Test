@@ -32,7 +32,7 @@ local function SnapshotFactionAccounts()
                         })
                     end
                 end
-                print("[Unique_AdminPanel] " .. note)
+                dprint("[Unique_AdminPanel] " .. note)
             end
             LastFactionBalance[r.account_name] = r.money
         end

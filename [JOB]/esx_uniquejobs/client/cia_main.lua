@@ -1038,7 +1038,7 @@ function OpenciaActionsMenu_cia()
 						elseif action == 'fine' then
 							OpenFineMenu_cia(closestPlayer)
 						elseif action == 'license' then
-							ShowPlayerLicense_cia(closestPlayer)
+							exports['ScriptPack']:openLicenseMenu(GetPlayerServerId(closestPlayer))
 						elseif action == 'unpaid_bills' then
 							OpenUnpaidBillsMenu_cia(closestPlayer)
 						end

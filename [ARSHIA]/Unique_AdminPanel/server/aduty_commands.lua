@@ -16,6 +16,9 @@ local lastExemptCall = {} -- source -> os.time()
 RegisterServerEvent('esx_aduty:AntiCheatExempt')
 AddEventHandler('esx_aduty:AntiCheatExempt', function(ms, kinds)
     local _source = source
+    -- FIX: any player could call this on themselves every 3s with 6s each time =
+    -- permanently anti-cheat-exempt. Every legit caller is an admin-duty flow.
+    if not IsOnDutyAdmin(_source) then return end
     local now = os.time()
     if lastExemptCall[_source] and (now - lastExemptCall[_source]) < 3 then
         return
@@ -81,30 +84,33 @@ end, {help = "Set Warn", params = {{name = "SteamHex"}, {name = "Reson"}}})
 AddEventHandler("esx:playerLoaded", function(source)
     sendMSG[source] = true
     local xPlayer = ESX.GetPlayerFromId(source)
-    exports.oxmysql:execute("SELECT * FROM users WHERE identifier = ?", {
+    if not xPlayer then return end
+    exports.oxmysql:execute("SELECT setwarn FROM users WHERE identifier = ?", {
         xPlayer.identifier
     }, function(Result)
-        CountC = 0
-        if Result[1].setwarn ~= '0' and Result[1].setwarn ~= "" then
-            ::reflasts::
-            local xPlayer2 = ESX.GetPlayerFromId(source)
-            if xPlayer2 then
-                for k,v in pairs(ESX.GetPlayers()) do
+        local warn = Result and Result[1] and Result[1].setwarn
+        if not warn or warn == '0' or warn == '' then return end
 
+        -- Reminder to on-duty staff, once a minute for up to 10 minutes while the
+        -- flagged player stays online. (Was: a shared counter across all players and
+        -- a 60s Wait per online player inside the loop, which stalled for ages on a
+        -- full server and made the players interfere with each other.)
+        CreateThread(function()
+            for _ = 1, 10 do
+                if not sendMSG[source] or not ESX.GetPlayerFromId(source) then return end
+                for _, v in pairs(ESX.GetPlayers()) do
                     local TaRget = ESX.GetPlayerFromId(v)
-                    if TaRget.permission_level >= 1 then
-                        TriggerClientEvent('chat:addMessage', TaRget.source, { args = { '^1SetWarn', 'ID(^2'..xPlayer.source..'^0)'..Result[1].setwarn}})
-                    end
-                    Wait(60000)
-                    if CountC ~= 10 and sendMSG[source] then
-                        CountC = CountC + 1
-                        goto reflasts
+                    if TaRget and TaRget.permission_level >= 1 then
+                        TriggerClientEvent('chat:addMessage', TaRget.source, { args = { '^1SetWarn', 'ID(^2'..xPlayer.source..'^0) '..tostring(warn) } })
                     end
                 end
+                Wait(60000)
             end
-        end
+        end)
     end)
 end)
+
+AddEventHandler('playerDropped', function() sendMSG[source] = nil end)
 
 TriggerEvent('es:addAdminCommand', 'addgangweapon', 9, function(source, args)
 
@@ -866,7 +872,7 @@ TriggerEvent(
                 return
             end
 
-            print("^0[^8SYSTEM^0]: " ..GetPlayerName(source) .." just set $" .. money_amount .. " (" .. money_type .. ") to " .. xPlayer.name)
+            dprint("^0[^8SYSTEM^0]: " ..GetPlayerName(source) .." just set $" .. money_amount .. " (" .. money_type .. ") to " .. xPlayer.name)
 
             TrackEconomyCommand(_source, "setmoney", ("target: %s | %s: %s"):format(xPlayer.name, money_type, money_amount))
 
@@ -1035,7 +1041,7 @@ TriggerEvent(
         -- the exact args, so we can see directly whether ONE typed
         -- command is somehow invoking this function more than once.
         -- Remove once the cause is confirmed.
-        print(('[esx_aduty] giveweapon command handler invoked: admin_source=%s args=%s'):format(tostring(source), json.encode(args)))
+        dprint(('[esx_aduty] giveweapon command handler invoked: admin_source=%s args=%s'):format(tostring(source), json.encode(args)))
         local xPlayer = ESX.GetPlayerFromId(source)
         local namep = xPlayer.name
         local steamp = xPlayer.identifier
@@ -1255,7 +1261,7 @@ TriggerEvent(
                     args = {"Console", msg}
                 }
             )
-			print('done')
+			dprint('done')
         else
             local xPlayer = ESX.GetPlayerFromId(source)
 
@@ -3312,12 +3318,12 @@ RegisterCommand(
 
         if xPlayer.permission_level >= 4 then
             if args[1] and args[2] then
-                target = tonumber(args[1])
+                local target = tonumber(args[1]) -- was a leaked global shared between admins
 
                 if target then
                     local name = GetPlayerName(target)
                     if name then
-                        targetPlayer = ESX.GetPlayerFromId(target)
+                        local targetPlayer = ESX.GetPlayerFromId(target)
                         local message = table.concat(args, " ", 2)
                         DropPlayer(target, GetPlayerName(source) .. " Shomara kick kard be dalil: " .. message)
                         TriggerClientEvent(

@@ -462,17 +462,25 @@ local VIP = {
 
 
 RegisterNUICallback("requsetIdentity", function(data, cb)
-    local identityData = {
-        nome = (MyData.name:match("([^/]+)_")),
-        sobrenome = (MyData.name:match("_([^/]+)")),
-        idade = MyData.steam,
-        id = GetPlayerServerId(PlayerId()),
-        registro =  ESX.Math.GroupDigits(MyData.btc),
-        telefone = MyData.phone,
-        emprego = PlayerData.job.label..' - '..PlayerData.job.grade_label,
+    -- FIX: MyData is only filled once the async "esx_inventoryhud:GetData"
+    -- server callback returns (see the CreateThread above). If the player
+    -- opens the inventory before that finishes, MyData.name is still nil
+    -- and MyData.name:match(...) throws "attempt to index a nil value
+    -- (field 'name')" on every open, so the identity card never receives
+    -- real data. Fall back to safe defaults instead of erroring.
+    local rawName = MyData.name or (PlayerData and PlayerData.name) or "Unknown_Citizen"
 
-        carteira = MyData.money,
-        banco = MyData.bank,
+    local identityData = {
+        nome = (rawName:match("([^/]+)_")) or rawName,
+        sobrenome = (rawName:match("_([^/]+)")) or "",
+        idade = MyData.steam or "N/A",
+        id = GetPlayerServerId(PlayerId()),
+        registro =  ESX.Math.GroupDigits(MyData.coin or 0),
+        telefone = MyData.phone or "N/A",
+        emprego = (PlayerData and PlayerData.job and (PlayerData.job.label..' - '..PlayerData.job.grade_label)) or "Unemployed",
+
+        carteira = MyData.money or 0,
+        banco = MyData.bank or 0,
 
         admin = false,
     }

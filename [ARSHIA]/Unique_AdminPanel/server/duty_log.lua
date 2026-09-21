@@ -3,6 +3,15 @@
 -- which only backs the live Staff Dashboard). Hooked into the same
 -- esx_aduty:ChangeMenuStatus signal admin_tag.lua already listens for.
 
+-- FIX: a crash / hard restart left sessions open forever; the next GoOffDuty
+-- then measured from the crash time (days) and inflated the leaderboard and
+-- dashboard. Nobody is online when the resource starts, so every open row is
+-- stale - drop them.
+CreateThread(function()
+    Wait(3000)
+    MySQL.Async.execute('DELETE FROM admin_duty WHERE offduty IS NULL', {})
+end)
+
 local function GoOnDuty(source)
     local xPlayer = ESX.GetPlayerFromId(source)
     if not xPlayer then return end
@@ -35,7 +44,7 @@ local function GoOffDuty(identifier, source)
             -- Too short to bother keeping (e.g. an accidental duty toggle).
             MySQL.Async.execute('DELETE FROM admin_duty WHERE identifier = @id AND offduty IS NULL', { ['@id'] = identifier })
         else
-            local totalMinutes = math.floor(durationSeconds / 60)
+            local totalMinutes = math.min(math.floor(durationSeconds / 60), 1440) -- a single session can't exceed 24h
             MySQL.Async.execute('UPDATE admin_duty SET offduty = @endTime, totaltime = @totalMinutes WHERE identifier = @id AND onduty = @startTime', {
                 ['@endTime'] = endTime, ['@totalMinutes'] = totalMinutes, ['@id'] = identifier, ['@startTime'] = startTime,
             })
@@ -48,6 +57,15 @@ AddEventHandler('Unique_AdminPanel:DutyLogToggle', function(isOnDuty)
     local source = source
     local xPlayer = ESX.GetPlayerFromId(source)
     if not xPlayer then return end
+    -- FIX: this was fully client-trusted - any player could log duty hours
+    -- (or an admin could pad theirs while AFK). The server already knows the
+    -- real duty state (set by the duty toggle itself), so only accept a call
+    -- that matches it.
+    if (xPlayer.permission_level or 0) < 1 then return end
+    -- going ON duty must match the server's own state; going OFF only closes the
+    -- caller's own session, which is always safe (high-level admins keep the
+    -- 'aduty' flag set even while off duty, so it can't be compared there)
+    if isOnDuty and not xPlayer.get('aduty') then return end
 
     if isOnDuty then
         GoOnDuty(source)

@@ -517,16 +517,41 @@ end)
 
 RegisterServerCallbackSafe("esx_inventoryhud:GetData", function(source, cb)
 	local xPlayer = ESX.GetPlayerFromId(source)
-	MySQL.Async.fetchAll('SELECT btc, phone FROM users WHERE identifier = @identifier', {['@identifier'] = xPlayer.identifier}, function(data)
-        if data[1] then
-           
+	if xPlayer == nil then
+		cb({})
+		return
+	end
 
-			cb({ steam = xPlayer.identifier, btc = data[1].btc, phone = data[1].phone, money = xPlayer.money, bank = xPlayer.bank, name = xPlayer.name })
-            
-            
-        end
-    end)
+	-- FIX: this used to run `SELECT btc, phone FROM users ...`, but the
+	-- `users` table has no `btc` column at all, so that query errored
+	-- out and the MySQL callback never ran -> cb() was never called ->
+	-- MyData stayed an empty table for the whole session (that's why
+	-- Phone Number / Steam Hex showed "N/A" and Bitcoin showed "0" no
+	-- matter what). Selecting real columns fixes that, and the identity
+	-- card's old "Bitcoin" row now shows the player's actual Coin
+	-- balance (see config.js: registro label).
+	MySQL.Async.fetchAll('SELECT coin, phone FROM users WHERE identifier = @identifier', {['@identifier'] = xPlayer.identifier}, function(data)
+		local row = (data and data[1]) or {}
 
-	
+		-- xPlayer.identifier follows the server's configured primary
+		-- identifier (could be license/discord/etc), so pull the actual
+		-- steam: identifier explicitly for the "Steam Hex" field.
+		local steamHex = xPlayer.identifier
+		for _, id in ipairs(GetPlayerIdentifiers(source)) do
+			if string.sub(id, 1, 6) == "steam:" then
+				steamHex = id
+				break
+			end
+		end
+
+		cb({
+			steam = steamHex,
+			coin = row.coin or 0,
+			phone = row.phone or "N/A",
+			money = xPlayer.money,
+			bank = xPlayer.bank,
+			name = xPlayer.name
+		})
+	end)
 end)
 

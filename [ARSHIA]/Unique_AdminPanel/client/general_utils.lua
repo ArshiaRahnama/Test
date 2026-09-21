@@ -71,7 +71,7 @@ end
 -- convenience, not the only line of defense.
 --
 -- To gate a new button: wrap it with AButton(id, label) instead of
--- WarMenu.Button(label) - same return value, same usage - and add a row
+-- ButtonAllowed(id) inside the MenuV builder (client/menuv_ui.lua) and add a row
 -- for `id` to the ButtonCatalog list at the bottom of this file so it shows
 -- up in the Button Permissions settings panel (Server Tools -> Settings).
 MyPermissionLevel = 0
@@ -87,13 +87,14 @@ Citizen.CreateThread(function()
     end)
 end)
 
-function AButton(id, label)
+-- MenuV version: the menu is built declaratively (see client/menuv_ui.lua),
+-- so instead of "draw the button and return whether it was clicked" this now
+-- just answers "is this button visible to me?" and the builder skips it if not.
+function ButtonAllowed(id)
     local required = ButtonPerms[id]
-    if required and MyPermissionLevel < required then
-        return false
-    end
-    return WarMenu.Button(label)
+    return not (required and MyPermissionLevel < required)
 end
+AButton = ButtonAllowed -- kept so any old call site doesn't hit a nil global
 
 -- id -> { label, category } - shown in the Button Permissions settings
 -- panel. Add an entry here whenever you gate a new button with AButton().

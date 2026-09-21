@@ -20,7 +20,7 @@ local function AutoFlag(identifier, playerId, note)
     DebouncedFlag[identifier] = now
 
     MySQL.Async.execute(
-        "INSERT INTO `admin_player_flags` (`identifier`, `note`, `admin_name`, `created_at`) VALUES (@identifier, @note, @admin, @createdat) ON DUPLICATE KEY UPDATE `note` = @note, `admin_name` = @admin, `created_at` = @createdat",
+        "INSERT INTO `admin_player_flags` (`identifier`, `note`, `admin_name`, `created_at`) VALUES (@identifier, @note, @admin, @createdat) ON DUPLICATE KEY UPDATE `note` = IF(`admin_name` = 'SYSTEM', @note, `note`), `created_at` = IF(`admin_name` = 'SYSTEM', @createdat, `created_at`)",
         { ['@identifier'] = identifier, ['@note'] = note, ['@admin'] = 'SYSTEM', ['@createdat'] = os.date('%Y-%m-%d %H:%M:%S') }
     )
     for _, src in ipairs(ESX.GetPlayers()) do
@@ -31,7 +31,7 @@ local function AutoFlag(identifier, playerId, note)
             })
         end
     end
-    print(("[Unique_AdminPanel] SYSTEM auto-flag: %s (id:%s) -> %s"):format(GetPlayerName(playerId) or '?', playerId, note))
+    dprint(("[Unique_AdminPanel] SYSTEM auto-flag: %s (id:%s) -> %s"):format(GetPlayerName(playerId) or '?', playerId, note))
 end
 
 -- ------------------------------------------------------- ITEM BURSTS ---

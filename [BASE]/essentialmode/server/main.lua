@@ -794,7 +794,7 @@ AddEventHandler("esx:confiscatePlayerItem", function(target, itemType, itemName,
                 if amount > 0 and targetItemCount >= amount then
                     if itemLimit ~= -1 and (sourceItemCount + amount) > itemLimit then
 
-                        TriggerClientEvent("esx:showNotification", sourceXPlayer.source, "Jib Shoma Ja Baraye In Tedad Item Nadard")
+                        TriggerClientEvent("esx:showNotification", _source, "Jib Shoma Ja Baraye In Tedad Item Nadard")
                     else
 
                         targetXPlayer.removeInventoryItem(itemName, amount)

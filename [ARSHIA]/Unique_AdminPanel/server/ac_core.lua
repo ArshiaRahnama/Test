@@ -13,10 +13,10 @@ local COLORS = math.random(1, 9)
 -- Routine/high-frequency console output (per-connection checks, trust-score churn,
 -- startup file listing) only prints when UNIQUE_AC.Debug is true. Security-relevant
 -- events (bans, kicks, unbans, tamper alerts, resource conflicts, quarantine) use
--- plain print(...) directly further down and are never suppressed.
+-- plain dprint(...) directly further down and are never suppressed.
 local function DebugPrint(msg)
     if UNIQUE_AC.Debug then
-        print(msg)
+        dprint(msg)
     end
 end
 
@@ -175,7 +175,7 @@ local function UNIQUE_AC_PostConnectValidation(src, playerName)
     if okBan and banData and banData[1] then
         local reason = tostring(banData[1].REASON or "Unknown")
         local banId = tostring(banData[1].BANID or "N/A")
-        print(("^%sUNIQUE_AC^0: ^1Blocked banned player ^3%s^0 | Ban ID: %s"):format(COLORS, playerName or GetPlayerName(src) or src, banId))
+        dprint(("^%sUNIQUE_AC^0: ^1Blocked banned player ^3%s^0 | Ban ID: %s"):format(COLORS, playerName or GetPlayerName(src) or src, banId))
         DropPlayer(src, ("\n[UNIQUE_AC]\nYou are banned from this server.\nReason: %s\nBan ID: #%s"):format(reason, banId))
         return
     elseif not okBan then
@@ -204,7 +204,7 @@ local function UNIQUE_AC_PostConnectValidation(src, playerName)
                 if ok and data and data.found and data.match and GetPlayerName(src) then
                     local reason = ("Banned on another server in your network (%s): %s"):format(
                         tostring(data.match.source_server or "sibling server"), tostring(data.match.reason or "Unknown"))
-                    print(("^1[UNIQUE_AC]^0 ^3%s^0 matched a cross-server ban | %s"):format(playerName or src, reason))
+                    dprint(("^1[UNIQUE_AC]^0 ^3%s^0 matched a cross-server ban | %s"):format(playerName or src, reason))
                     DropPlayer(src, ("\n[UNIQUE_AC]\n" .. reason))
                 end
             end)
@@ -253,7 +253,7 @@ CreateThread(function()
             local content = LoadResourceFile(resourceName, path)
             local currentHash = content and uniqueacChecksum(content) or nil
             if currentHash ~= originalHash then
-                print(("^1[UNIQUE_AC]^0 ^1INTEGRITY ALERT^0: `%s` changed on disk since startup — resource may have been tampered with. Restart to re-baseline once verified safe."):format(path))
+                dprint(("^1[UNIQUE_AC]^0 ^1INTEGRITY ALERT^0: `%s` changed on disk since startup — resource may have been tampered with. Restart to re-baseline once verified safe."):format(path))
                 UNIQUE_AC_ERROR(UNIQUE_AC.ServerConfig.Name, ("Integrity check failed: `%s` changed while the resource was running."):format(path))
                 baseline[path] = currentHash
             end
@@ -279,7 +279,7 @@ CreateThread(function()
         local stamp = os.date("%Y%m%d-%H%M%S")
         SaveResourceFile(resourceName, ("shared/backups/ac_config-%s.lua"):format(stamp), current, -1)
         SaveResourceFile(resourceName, "shared/backups/.last-hash", currentHash, -1)
-        print(("^2[UNIQUE_AC]^0 ac_config.lua changed since last boot — backup saved as shared/backups/ac_config-%s.lua"):format(stamp))
+        dprint(("^2[UNIQUE_AC]^0 ac_config.lua changed since last boot — backup saved as shared/backups/ac_config-%s.lua"):format(stamp))
 
 
 
@@ -297,7 +297,7 @@ CreateThread(function()
     end)
 
     if not ok then
-        print(("^3[UNIQUE_AC]^0 Config Backup skipped — SaveResourceFile isn't available on this build (%s)."):format(tostring(err)))
+        dprint(("^3[UNIQUE_AC]^0 Config Backup skipped — SaveResourceFile isn't available on this build (%s)."):format(tostring(err)))
     end
 end)
 
@@ -528,7 +528,7 @@ local function enterQuarantine(src, action, reason, details)
         playerName = playerName, at = os.time()
     }
     TriggerClientEvent("UNIQUE_AC:quarantineFreeze", src, true)
-    print(("^3[UNIQUE_AC]^0 ^3%s^0 sent to Quarantine for admin review | %s"):format(playerName, reason))
+    dprint(("^3[UNIQUE_AC]^0 ^3%s^0 sent to Quarantine for admin review | %s"):format(playerName, reason))
     UNIQUE_AC_SENDLOG(src, UNIQUE_AC.Webhooks and UNIQUE_AC.Webhooks.Ban or "", "QUARANTINE", reason, details)
     UNIQUE_AC_SCREENSHOT_BURST(src, reason, details, "WARN")
     uniqueacNotify(src, UNIQUE_AC_TR("quarantine"), { 255, 170, 0 })
@@ -560,7 +560,7 @@ function UNIQUE_AC_ENFORCE(src, action, reason, details)
 
     if reason == "Anti Aimbot Pattern" and UNIQUE_AC.AimbotWatch and UNIQUE_AC.AimbotWatch.NotifyAdminsOnFlag then
         local playerName = GetPlayerName(src) or ("ID " .. src)
-        print(("^3[UNIQUE_AC]^0 ^3Aimbot pattern flagged^0 for ^3%s^0 | %s | trust now %d"):format(playerName, details, st.trust))
+        dprint(("^3[UNIQUE_AC]^0 ^3Aimbot pattern flagged^0 for ^3%s^0 | %s | trust now %d"):format(playerName, details, st.trust))
         UNIQUE_AC_SENDLOG(src, UNIQUE_AC.Webhooks and UNIQUE_AC.Webhooks.Ban or "", "AIMBOT", reason, details)
         uniqueacNotifyAdmins(("🎯 %s shows an aimbot-like pattern (%s) — not punished automatically, please review."):format(playerName, details), { 255, 170, 0 })
     end
@@ -885,7 +885,7 @@ CreateThread(function()
         local name = GetResourceByFindIndex(i)
         if name then resourceBaseline[name] = true end
     end
-    print(("^2[UNIQUE_AC]^0 Resource baseline captured: %d resources."):format(GetNumResources()))
+    dprint(("^2[UNIQUE_AC]^0 Resource baseline captured: %d resources."):format(GetNumResources()))
 end)
 
 CreateThread(function()
@@ -901,7 +901,7 @@ CreateThread(function()
 
     for _, badName in ipairs(cfg.Resources or {}) do
         if running[badName] then
-            print(("^1[UNIQUE_AC]^0 ^1KNOWN CONFLICT DETECTED^0: `%s` is running on this server. This resource is known to be malicious or conflict with UNIQUE_AC — remove it."):format(badName))
+            dprint(("^1[UNIQUE_AC]^0 ^1KNOWN CONFLICT DETECTED^0: `%s` is running on this server. This resource is known to be malicious or conflict with UNIQUE_AC — remove it."):format(badName))
             UNIQUE_AC_ERROR(UNIQUE_AC.ServerConfig.Name, ("Known-conflicting resource detected: `%s`. Remove it — see UNIQUE_AC.KnownConflicts in the config for details."):format(badName))
         end
     end
@@ -912,7 +912,7 @@ AddEventHandler("onResourceStart", function(resourceName)
     if resourceName == GetCurrentResourceName() then return end
     if resourceBaseline[resourceName] or resourceIgnoreSet[resourceName] then return end
 
-    print(("^1[UNIQUE_AC]^0 ^1UNKNOWN RESOURCE STARTED^0: `%s` was not in the startup baseline."):format(resourceName))
+    dprint(("^1[UNIQUE_AC]^0 ^1UNKNOWN RESOURCE STARTED^0: `%s` was not in the startup baseline."):format(resourceName))
     UNIQUE_AC_ERROR(UNIQUE_AC.ServerConfig.Name, ("Unrecognized resource started mid-session: `%s`. Review it if you didn't start it yourself."):format(resourceName))
 
     if UNIQUE_AC.ResourceMonitor.NotifyAdminsOnFlag then
@@ -1710,7 +1710,7 @@ AddEventHandler("playerDropped", function(reason)
     local src = tonumber(source)
     local name = GetPlayerName(src) or ("ID " .. tostring(src))
     reason = tostring(reason or "Unknown")
-    print(("^%s[UNIQUE_AC]^0 ^1Player ^3%s ^1disconnected | ^0%s"):format(COLORS, name, reason))
+    dprint(("^%s[UNIQUE_AC]^0 ^1Player ^3%s ^1disconnected | ^0%s"):format(COLORS, name, reason))
     if GetPlayerName(src) then
         UNIQUE_AC_SENDLOG(src, UNIQUE_AC.Webhooks and UNIQUE_AC.Webhooks.Disconnect or "", "DISCONNECT", reason)
     end
@@ -2374,7 +2374,7 @@ local function uniqueacPresentCard(deferrals, step, total, title, detail, accent
 
     uniqueacDeferralWait()
     if not ok then
-        print("^3[UNIQUE_AC]^0 presentCard failed at Lua level; falling back to deferrals.update.")
+        dprint("^3[UNIQUE_AC]^0 presentCard failed at Lua level; falling back to deferrals.update.")
         return uniqueacStatus(deferrals, step, total, title, detail, 1)
     end
 
@@ -2439,7 +2439,7 @@ AddEventHandler("playerConnecting", function(playerName, setKickReason, deferral
     if okBan and banData and banData[1] then
         local reason = uniqueacText(banData[1].REASON, "Unknown", 160)
         local banId = uniqueacText(banData[1].BANID, "N/A", 48)
-        print(("^%sUNIQUE_AC^0: ^1Blocked banned player ^3%s^0 | Ban ID: %s"):format(COLORS, name, banId))
+        dprint(("^%sUNIQUE_AC^0: ^1Blocked banned player ^3%s^0 | Ban ID: %s"):format(COLORS, name, banId))
         pcall(UNIQUE_AC_SENDLOG, src, UNIQUE_AC.Webhooks and UNIQUE_AC.Webhooks.Connect or "", "TFJ", banId, reason)
         showStatus(4, 4, "Connection blocked", "Ban ID #" .. banId, 1, "Attention", true)
         Wait(600)
@@ -2454,7 +2454,7 @@ AddEventHandler("playerConnecting", function(playerName, setKickReason, deferral
         for _, blocked in ipairs(Names) do
             local needle = uniqueacNormalizeName(blocked)
             if needle ~= "" and normalizedName:find(needle, 1, true) then
-                print(("^%sUNIQUE_AC^0: ^1Player ^3%s ^3Try For Join ^0| ^3Black List Word in name: ^3%s^0"):format(COLORS, name, tostring(blocked)))
+                dprint(("^%sUNIQUE_AC^0: ^1Player ^3%s ^3Try For Join ^0| ^3Black List Word in name: ^3%s^0"):format(COLORS, name, tostring(blocked)))
                 pcall(UNIQUE_AC_SENDLOG, src, UNIQUE_AC.Webhooks and UNIQUE_AC.Webhooks.Connect or "", "BLN", "Black List Name", "Found " .. tostring(blocked) .. " in player name")
                 showStatus(4, 4, "Connection blocked", "Invalid player name", 1, "Attention", true)
                 Wait(600)
@@ -2501,7 +2501,7 @@ AddEventHandler("playerConnecting", function(playerName, setKickReason, deferral
                 local isp = uniqueacText(data.isp, "Unknown", 80)
                 local country = uniqueacText(data.country, "Unknown", 60)
                 local city = uniqueacText(data.city, "Unknown", 60)
-                print(("^%sUNIQUE_AC^0: ^1Player ^3%s ^3Try For Join ^0| ^3VPN/Hosting ^3 ISP: %s / Country: %s / City: %s^0"):format(COLORS, name, isp, country, city))
+                dprint(("^%sUNIQUE_AC^0: ^1Player ^3%s ^3Try For Join ^0| ^3VPN/Hosting ^3 ISP: %s / Country: %s / City: %s^0"):format(COLORS, name, isp, country, city))
                 pcall(UNIQUE_AC_SENDLOG, src, UNIQUE_AC.Webhooks and UNIQUE_AC.Webhooks.Connect or "", "VPN")
                 showStatus(4, 4, "Connection blocked", "VPN/proxy is not allowed", 1, "Attention", true)
                 Wait(600)
@@ -2685,8 +2685,8 @@ function StartAntiCheat()
     end
 
     if #missing > 0 then
-        print("^" .. COLORS .. "[UNIQUE_AC]^0: ^1 Some Files Of UNIQUE_AC Not Found! Please Replace or Repair Them^0")
-        print("^1[UNIQUE_AC]^0 Missing required files: " .. table.concat(missing, ", "))
+        dprint("^" .. COLORS .. "[UNIQUE_AC]^0: ^1 Some Files Of UNIQUE_AC Not Found! Please Replace or Repair Them^0")
+        dprint("^1[UNIQUE_AC]^0 Missing required files: " .. table.concat(missing, ", "))
         return false
     end
 
@@ -2694,8 +2694,8 @@ function StartAntiCheat()
 
     -- Full ASCII banner + links only in Debug mode, to keep a normal restart to one line.
     if UNIQUE_AC.Debug then
-        print("^" .. COLORS .. "")
-        print([[
+        dprint("^" .. COLORS .. "")
+        dprint([[
     #   # #   # #####  ###  #   # #####        ###   ####
     #   # ##  #   #   #   # #   # #           #   # #
     #   # # # #   #   #   # #   # #           #   # #
@@ -2704,22 +2704,22 @@ function StartAntiCheat()
     #   # #   #   #   #  ## #   # #           #   # #
      ###  #   # #####  ####  ###  ##### ##### #   #  ####
                     ]])
-        print("^3═════════════════════════════════════════════════════════════════════════════════")
-        print("^1★ ^3Arshia ^1-> ^5arshiahub.ir")
-        print("^1★ ^3Payamresan ^1-> ^5arshiahub.ir/payamresan")
-        print("^1★ ^3Derive ^1-> ^5arshiahub.ir/derive")
-        print("^1★ ^3Mail ^1-> ^5arshiahub.ir/mail")
-        print("^1★ ^3Music ^1-> ^5arshiahub.ir/music")
-        print("^3═════════════════════════════════════════════════════════════════════════════════")
-        print("^6This resource is Owner by ^5arshiahub.ir^6!")
+        dprint("^3═════════════════════════════════════════════════════════════════════════════════")
+        dprint("^1★ ^3Arshia ^1-> ^5arshiahub.ir")
+        dprint("^1★ ^3Payamresan ^1-> ^5arshiahub.ir/payamresan")
+        dprint("^1★ ^3Derive ^1-> ^5arshiahub.ir/derive")
+        dprint("^1★ ^3Mail ^1-> ^5arshiahub.ir/mail")
+        dprint("^1★ ^3Music ^1-> ^5arshiahub.ir/music")
+        dprint("^3═════════════════════════════════════════════════════════════════════════════════")
+        dprint("^6This resource is Owner by ^5arshiahub.ir^6!")
     end
 
     local configuredPort = tostring(UNIQUE_AC.ServerConfig.Port or "auto")
     local actualPort = GetConvar("netPort", configuredPort)
     local artifact = GetConvar("version", "unknown build")
 
-    print("^" .. COLORS .. "[UNIQUE_AC]^0: ^3Server Build : " .. tostring(artifact))
-    print("^" .. COLORS .. "[UNIQUE_AC]^0: ^2Version " .. tostring(UNIQUE_AC.Version) .. " started successfully on port " .. tostring(actualPort) .. ".^0")
+    dprint("^" .. COLORS .. "[UNIQUE_AC]^0: ^3Server Build : " .. tostring(artifact))
+    dprint("^" .. COLORS .. "[UNIQUE_AC]^0: ^2Version " .. tostring(UNIQUE_AC.Version) .. " started successfully on port " .. tostring(actualPort) .. ".^0")
 
     local webhook = UNIQUE_AC.Webhooks and UNIQUE_AC.Webhooks.Ban or ""
     if type(webhook) == "string" and webhook:match("^https?://") then
@@ -2917,14 +2917,14 @@ function UNIQUE_AC_DISCORD_SEND(url, payload, attemptsLeft)
                 UNIQUE_AC_DISCORD_SEND(url, payload, attemptsLeft - 1)
             end)
         elseif failed then
-            print(("^3[UNIQUE_AC]^0 Discord webhook failed after retries (last status: %s)."):format(tostring(statusCode)))
+            dprint(("^3[UNIQUE_AC]^0 Discord webhook failed after retries (last status: %s)."):format(tostring(statusCode)))
         end
     end, "POST", payload, { ["Content-Type"] = "application/json" })
 end
 
 function UNIQUE_AC_ERROR(SERVER_NAME, ERROR_MESSAGE)
     local message = tostring(ERROR_MESSAGE or "Unknown UNIQUE_AC error")
-    print(("^1[UNIQUE_AC ERROR]^0 %s"):format(message))
+    dprint(("^1[UNIQUE_AC ERROR]^0 %s"):format(message))
 
     local webhook = UNIQUE_AC.Webhooks and UNIQUE_AC.Webhooks.Error or ""
     if type(webhook) ~= "string" or not webhook:match("^https?://") then return end
@@ -3027,7 +3027,7 @@ function UNIQUE_AC_BAN_PLAYER(targetId, reason, issuer)
     local fireEmoji = Emoji and Emoji.Fire or "🔥"
 
     if banId then
-        print(("^1[UNIQUE_AC]^0 Banned ^3%s^0 | %s | By: %s | Ban ID: %s"):format(playerName, finalReason, finalIssuer, tostring(banId)))
+        dprint(("^1[UNIQUE_AC]^0 Banned ^3%s^0 | %s | By: %s | Ban ID: %s"):format(playerName, finalReason, finalIssuer, tostring(banId)))
         DropPlayer(target, ("\n[%s UNIQUE_AC %s]\n%s\nReason: %s\nBan ID: #%s"):format(fireEmoji, fireEmoji,
             (UNIQUE_AC.Message and UNIQUE_AC.Message.Ban ~= "" and UNIQUE_AC.Message.Ban) or UNIQUE_AC_TR("ban"), finalReason, tostring(banId)))
 
@@ -3068,7 +3068,7 @@ RegisterCommand("uniqueacban", function(src, args)
 
     local target = tonumber(args and args[1])
     if not target or not GetPlayerName(target) then
-        print("^1[UNIQUE_AC]^0 Usage: uniqueacban [server_id] [reason]")
+        dprint("^1[UNIQUE_AC]^0 Usage: uniqueacban [server_id] [reason]")
         return
     end
 
@@ -3090,14 +3090,14 @@ RegisterCommand("uniqueacunban", function(src, args)
 
     local banId = tonumber(args and args[1])
     if not banId then
-        print("^1[UNIQUE_AC]^0 Usage: uniqueacunban [ban_id]")
+        dprint("^1[UNIQUE_AC]^0 Usage: uniqueacunban [ban_id]")
         return
     end
 
     local issuer = executor > 0 and ("Admin " .. (GetPlayerName(executor) or tostring(executor)) .. " (" .. tostring(executor) .. ")") or "server console"
     local ok, result = UNIQUE_AC_UNBAN_PLAYER(banId, issuer)
     if not ok then
-        print(("^1[UNIQUE_AC]^0 Unban failed for Ban ID %s | %s"):format(tostring(banId), tostring(result)))
+        dprint(("^1[UNIQUE_AC]^0 Unban failed for Ban ID %s | %s"):format(tostring(banId), tostring(result)))
     end
 end, false)
 
@@ -3128,7 +3128,7 @@ function UNIQUE_AC_UNBAN_PLAYER(banId, issuer)
     local ok = UNIQUE_AC:UNBAN(id)
     if ok then
         local who = tostring(issuer or GetInvokingResource() or "server"):gsub("[%c]", " "):sub(1, 120)
-        print(("^2[UNIQUE_AC]^0 Unbanned Ban ID ^3%s^0 | By: %s"):format(tostring(id), who))
+        dprint(("^2[UNIQUE_AC]^0 Unbanned Ban ID ^3%s^0 | By: %s"):format(tostring(id), who))
         return true, id
     end
 
@@ -3277,7 +3277,7 @@ function UNIQUE_AC_ACTION(SRC, ACTION, REASON, DETAILS)
 
     if UNIQUE_AC.SandboxMode and UNIQUE_AC.SandboxMode.Enable then
         local playerName = GetPlayerName(src) or ("ID " .. src)
-        print(("^5[UNIQUE_AC SANDBOX]^0 Would have applied ^3%s^0 to ^3%s^0 | %s | %s (no action actually taken)"):format(action, playerName, reason, details))
+        dprint(("^5[UNIQUE_AC SANDBOX]^0 Would have applied ^3%s^0 to ^3%s^0 | %s | %s (no action actually taken)"):format(action, playerName, reason, details))
         uniqueacLogDetection(src, reason, details, "SANDBOX_" .. action)
         if UNIQUE_AC.SandboxMode.NotifyAdmins then
             uniqueacNotifyAdmins(("🧪 SANDBOX: would have %sed %s (%s) — no action taken."):format(action:lower(), playerName, reason), { 0, 209, 255 })
@@ -3297,7 +3297,7 @@ function UNIQUE_AC_ACTION(SRC, ACTION, REASON, DETAILS)
     UNIQUE_AC_MESSAGE(src, action, playerName, reason)
 
     if action == "WARN" then
-        print(("^3[UNIQUE_AC]^0 Warning for ^3%s^0 | %s"):format(playerName, reason))
+        dprint(("^3[UNIQUE_AC]^0 Warning for ^3%s^0 | %s"):format(playerName, reason))
         return true
     end
 
@@ -3305,7 +3305,7 @@ function UNIQUE_AC_ACTION(SRC, ACTION, REASON, DETAILS)
     if action == "BAN" then
         local banId = UNIQUE_AC_BAN(src, reason)
         if banId then
-            print(("^1[UNIQUE_AC]^0 Banned ^3%s^0 | %s | Ban ID: %s"):format(playerName, reason, banId))
+            dprint(("^1[UNIQUE_AC]^0 Banned ^3%s^0 | %s | Ban ID: %s"):format(playerName, reason, banId))
             DropPlayer(src, ("\n[%s UNIQUE_AC %s]\n%s\nReason: %s\nBan ID: #%s"):format(fireEmoji, fireEmoji,
                 (UNIQUE_AC.Message and UNIQUE_AC.Message.Ban ~= "" and UNIQUE_AC.Message.Ban) or UNIQUE_AC_TR("ban"), reason, banId))
         else
@@ -3316,7 +3316,7 @@ function UNIQUE_AC_ACTION(SRC, ACTION, REASON, DETAILS)
         return true
     end
 
-    print(("^1[UNIQUE_AC]^0 Kicked ^3%s^0 | %s"):format(playerName, reason))
+    dprint(("^1[UNIQUE_AC]^0 Kicked ^3%s^0 | %s"):format(playerName, reason))
     DropPlayer(src, ("\n[%s UNIQUE_AC %s]\n%s\nReason: %s"):format(fireEmoji, fireEmoji,
         (UNIQUE_AC.Message and UNIQUE_AC.Message.Kick ~= "" and UNIQUE_AC.Message.Kick) or UNIQUE_AC_TR("kick"), reason))
     return true
@@ -3513,7 +3513,7 @@ function UNIQUE_AC_SCREENSHOT(SRC, REASON, DETAILS, ACTION)
         exports["discord-screenshot"]:requestCustomClientScreenshotUploadToDiscord(src, webhook, options, payload)
     end)
     if not ok then
-        print(("^3[UNIQUE_AC]^0 Screenshot request failed: %s"):format(tostring(err)))
+        dprint(("^3[UNIQUE_AC]^0 Screenshot request failed: %s"):format(tostring(err)))
         return false
     end
     return true
@@ -3618,9 +3618,9 @@ RegisterCommand('funban', function(source, args)
         local unbaned = UNIQUE_AC:UNBAN(BAN_ID)
 
         if unbaned then
-            print("^" .. COLORS .. "[UNIQUE_AC]^0: You unbanned ^2" .. tostring(BAN_ID) .. "^0 !")
+            dprint("^" .. COLORS .. "[UNIQUE_AC]^0: You unbanned ^2" .. tostring(BAN_ID) .. "^0 !")
         else
-            print("^" .. COLORS .. "[UNIQUE_AC]^0: ^1 unban failed !^0")
+            dprint("^" .. COLORS .. "[UNIQUE_AC]^0: ^1 unban failed !^0")
         end
     else
         if UNIQUE_AC_UNBANACCESS(source) then
@@ -3644,9 +3644,9 @@ RegisterCommand('unban', function(source, args)
     if source == 0 then
         local unbaned = UNIQUE_AC:UNBAN(BAN_ID)
         if unbaned then
-            print("^" .. COLORS .. "[UNIQUE_AC]^0: You unbanned ^2" .. tostring(BAN_ID) .. "^0 !")
+            dprint("^" .. COLORS .. "[UNIQUE_AC]^0: You unbanned ^2" .. tostring(BAN_ID) .. "^0 !")
         else
-            print("^" .. COLORS .. "[UNIQUE_AC]^0: ^1 unban failed !^0")
+            dprint("^" .. COLORS .. "[UNIQUE_AC]^0: ^1 unban failed !^0")
         end
     elseif UNIQUE_AC_UNBANACCESS(source) then
         local unbaned = UNIQUE_AC:UNBAN(BAN_ID)
@@ -3671,16 +3671,16 @@ RegisterCommand('addadmin', function(source, args)
                 TRUSTED_ADMINS[PLAYER_ID] = true
                 invalidatePermissionCache(PLAYER_ID)
                 UNIQUE_AC_CHANGE_TEMP_WHHITELIST(PLAYER_ID, true, 120000)
-                print("^" ..
+                dprint("^" ..
                     COLORS ..
                     "[UNIQUE_AC]^0: You added ^2" .. GetPlayerName(PLAYER_ID) .. "(" .. PLAYER_ID .. ")^0 to admin list^0 !")
                 TriggerClientEvent("UNIQUE_AC:clientGrace", PLAYER_ID, 120000)
                 TriggerClientEvent("UNIQUE_AC:allowToOpen", PLAYER_ID, true)
             else
-                print("^" .. COLORS .. "[UNIQUE_AC]^0: ^1 add admin failed !^0")
+                dprint("^" .. COLORS .. "[UNIQUE_AC]^0: ^1 add admin failed !^0")
             end
         else
-            print("^" .. COLORS .. "[UNIQUE_AC]^0: ^1 This player isn't online !^0")
+            dprint("^" .. COLORS .. "[UNIQUE_AC]^0: ^1 This player isn't online !^0")
         end
     end
 end)
@@ -3696,14 +3696,14 @@ RegisterCommand('addwhitelist', function(source, args)
                 invalidatePermissionCache(PLAYER_ID)
                 UNIQUE_AC_CHANGE_TEMP_WHHITELIST(PLAYER_ID, true, 120000)
                 TriggerClientEvent("UNIQUE_AC:clientGrace", PLAYER_ID, 120000)
-                print("^" ..
+                dprint("^" ..
                     COLORS ..
                     "[UNIQUE_AC]^0: You added ^2" .. GetPlayerName(PLAYER_ID) .. "(" .. PLAYER_ID .. ")^0 to whitelist^0 !")
             else
-                print("^" .. COLORS .. "[UNIQUE_AC]^0: ^1 failed to add access !^0")
+                dprint("^" .. COLORS .. "[UNIQUE_AC]^0: ^1 failed to add access !^0")
             end
         else
-            print("^" .. COLORS .. "[UNIQUE_AC]^0: ^1 This player isn't online !^0")
+            dprint("^" .. COLORS .. "[UNIQUE_AC]^0: ^1 This player isn't online !^0")
         end
     end
 end)
@@ -3713,7 +3713,7 @@ RegisterCommand('uniqueachealth', function(source)
     local h = UNIQUE_AC_GET_HEALTH()
     local hours = math.floor(h.uptimeSeconds / 3600)
     local mins = math.floor((h.uptimeSeconds % 3600) / 60)
-    print(("^2[UNIQUE_AC]^0 Uptime: %dh %dm | Resources: %d | Approx. frame drift: %dms (lower is healthier, this is an estimate — FiveM doesn't expose real TPS/RAM to resources)")
+    dprint(("^2[UNIQUE_AC]^0 Uptime: %dh %dm | Resources: %d | Approx. frame drift: %dms (lower is healthier, this is an estimate — FiveM doesn't expose real TPS/RAM to resources)")
         :format(hours, mins, h.resourceCount, h.avgFrameDriftMs))
 end, false)
 
@@ -3725,15 +3725,15 @@ RegisterCommand('addunban', function(source, args)
             local addedAdmin = UNIQUE_AC:ADDUNBAN(PLAYER_ID)
 
             if addedAdmin then
-                print("^" ..
+                dprint("^" ..
                     COLORS ..
                     "[UNIQUE_AC]^0: You added ^2" ..
                     GetPlayerName(PLAYER_ID) .. "(" .. PLAYER_ID .. ")^0 to unban access^0 !")
             else
-                print("^" .. COLORS .. "[UNIQUE_AC]^0: ^1 failed to add access !^0")
+                dprint("^" .. COLORS .. "[UNIQUE_AC]^0: ^1 failed to add access !^0")
             end
         else
-            print("^" .. COLORS .. "[UNIQUE_AC]^0: ^1 This player isn't online !^0")
+            dprint("^" .. COLORS .. "[UNIQUE_AC]^0: ^1 This player isn't online !^0")
         end
     end
 end)
@@ -3750,7 +3750,7 @@ RegisterCommand('exportplayerdata', function(source, args)
     if source ~= 0 then return end
     local identifier = uniqueacResolveIdentifierArg(args[1])
     if not identifier or identifier == "" then
-        print("Usage: exportplayerdata [license:xxxx or online ServerID]")
+        dprint("Usage: exportplayerdata [license:xxxx or online ServerID]")
         return
     end
 
@@ -3763,10 +3763,10 @@ RegisterCommand('exportplayerdata', function(source, args)
         local fileName = "exports/player-" .. identifier:gsub("[^%w]", "_") .. ".json"
         local ok = pcall(SaveResourceFile, GetCurrentResourceName(), fileName, json.encode(exportData), -1)
         if ok then
-            print(("^2[UNIQUE_AC]^0 Export saved to %s/%s"):format(GetCurrentResourceName(), fileName))
+            dprint(("^2[UNIQUE_AC]^0 Export saved to %s/%s"):format(GetCurrentResourceName(), fileName))
         else
-            print("^1[UNIQUE_AC]^0 Export failed — SaveResourceFile isn't available on this build. Printing to console instead:")
-            print(json.encode(exportData))
+            dprint("^1[UNIQUE_AC]^0 Export failed — SaveResourceFile isn't available on this build. Printing to console instead:")
+            dprint(json.encode(exportData))
         end
     end
 
@@ -3781,7 +3781,7 @@ RegisterCommand('deleteplayerdata', function(source, args)
     if source ~= 0 then return end
     local identifier = uniqueacResolveIdentifierArg(args[1])
     if not identifier or identifier == "" then
-        print("Usage: deleteplayerdata [license:xxxx or online ServerID]")
+        dprint("Usage: deleteplayerdata [license:xxxx or online ServerID]")
         return
     end
 
@@ -3795,7 +3795,7 @@ RegisterCommand('deleteplayerdata', function(source, args)
     MySQL.Async.execute("DELETE FROM uniqueac_appeals WHERE identifier = @id", { ["@id"] = identifier })
     MySQL.Async.execute("DELETE FROM uniqueac_admin_log WHERE target_identifier = @id", { ["@id"] = identifier })
 
-    print(("^2[UNIQUE_AC]^0 Deleted UNIQUE_AC-held data for %s (trust, notes, detections, appeals, and admin-log entries where they were the target). Ban records were NOT deleted — use /uniqueacunban separately if that's also intended."):format(identifier))
+    dprint(("^2[UNIQUE_AC]^0 Deleted UNIQUE_AC-held data for %s (trust, notes, detections, appeals, and admin-log entries where they were the target). Ban records were NOT deleted — use /uniqueacunban separately if that's also intended."):format(identifier))
 end)
 
 RegisterCommand((UNIQUE_AC.PlayerTransparency and UNIQUE_AC.PlayerTransparency.Command) or "mystatus", function(source)
