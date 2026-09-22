@@ -7,6 +7,10 @@ ALTER TABLE `job_grades`
   ADD COLUMN `perm_vehicle_custom`      TINYINT(1) NOT NULL DEFAULT 0 AFTER `perm_employee_management`,
   ADD COLUMN `perms`                    LONGTEXT DEFAULT NULL AFTER `perm_vehicle_custom`;
 
+-- Optional custom icon (image URL) per division, shown in the division pickers.
+ALTER TABLE `divisions`
+  ADD COLUMN `icon` VARCHAR(255) DEFAULT NULL AFTER `label`;
+
 -- Vehicles added live via the /addcarjob command (in-game), on top of the static
 -- Config.Garage list. Deleted via the DeleteCar icon_menu.
 CREATE TABLE IF NOT EXISTS `job_vehicles_custom` (

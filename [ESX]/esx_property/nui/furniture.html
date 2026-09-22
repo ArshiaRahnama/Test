@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<title>Furniture Placement</title>
+<style>
+	* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Vazirmatn', Tahoma, sans-serif; user-select: none; }
+	html, body { width: 100%; height: 100%; background: transparent; overflow: hidden; }
+
+	#panel {
+		position: absolute;
+		bottom: 36px;
+		left: 50%;
+		transform: translateX(-50%) translateY(30px);
+		background: rgba(15, 17, 22, 0.85);
+		border: 1px solid rgba(255,255,255,0.08);
+		border-radius: 16px;
+		padding: 14px 18px;
+		min-width: 420px;
+		text-align: center;
+		color: #fff;
+		opacity: 0;
+		transition: opacity .18s ease, transform .18s ease;
+		box-shadow: 0 12px 34px rgba(0,0,0,0.4);
+	}
+	#panel.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+	#label {
+		font-size: 15px;
+		font-weight: 700;
+		color: #f1c40f;
+		margin-bottom: 10px;
+		letter-spacing: .3px;
+	}
+
+	#controls {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 6px;
+		margin-bottom: 10px;
+	}
+	.btn {
+		width: 40px;
+		height: 40px;
+		border-radius: 10px;
+		background: rgba(255,255,255,0.06);
+		border: 1px solid rgba(255,255,255,0.10);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 17px;
+		cursor: pointer;
+		transition: background .12s ease, transform .08s ease;
+	}
+	.btn:hover  { background: rgba(255,255,255,0.16); }
+	.btn:active { transform: scale(0.92); }
+	.btn.confirm { background: rgba(46, 204, 113, 0.18); border-color: rgba(46, 204, 113, 0.4); color: #2ecc71; }
+	.btn.confirm:hover { background: rgba(46, 204, 113, 0.3); }
+	.btn.cancel  { background: rgba(231, 76, 60, 0.18); border-color: rgba(231, 76, 60, 0.4); color: #e74c3c; }
+	.btn.cancel:hover { background: rgba(231, 76, 60, 0.3); }
+	.sep { width: 1px; height: 26px; background: rgba(255,255,255,0.12); margin: 0 4px; }
+
+	#hint {
+		font-size: 11.5px;
+		color: rgba(255,255,255,0.6);
+		line-height: 1.6;
+	}
+	#scaleRow {
+		margin-top: 6px;
+		font-size: 12px;
+		color: #2ecc71;
+		font-weight: 600;
+	}
+	.key {
+		display: inline-block;
+		background: rgba(255,255,255,0.1);
+		border: 1px solid rgba(255,255,255,0.15);
+		border-radius: 4px;
+		padding: 1px 6px;
+		margin: 0 2px;
+		font-size: 10.5px;
+	}
+</style>
+</head>
+<body>
+	<div id="panel">
+		<div id="label">در حال جانمایی...</div>
+
+		<div id="controls">
+			<div class="btn" data-action="move_forward" title="جلو">↑</div>
+			<div class="btn" data-action="move_backward" title="عقب">↓</div>
+			<div class="btn" data-action="move_left" title="چپ">←</div>
+			<div class="btn" data-action="move_right" title="راست">→</div>
+			<div class="btn" data-action="move_up" title="بالا">⤒</div>
+			<div class="btn" data-action="move_down" title="پایین">⤓</div>
+
+			<div class="sep"></div>
+
+			<div class="btn" data-action="rotate_left" title="چرخش چپ">⟲</div>
+			<div class="btn" data-action="rotate_right" title="چرخش راست">⟳</div>
+
+			<div class="sep"></div>
+
+			<div class="btn" data-action="scale_down" title="کوچیک‌تر">－</div>
+			<div class="btn" data-action="scale_up" title="بزرگ‌تر">＋</div>
+
+			<div class="sep"></div>
+
+			<div class="btn confirm" data-action="confirm" title="تایید">✔</div>
+			<div class="btn cancel" data-action="cancel" title="لغو">✕</div>
+		</div>
+
+		<div id="hint">
+			برای کلیک روی دکمه‌ها <span class="key">Left Alt</span> رو نگه‌دار تا ماوس فعال بشه — یا مستقیم با
+			<span class="key">WASD</span> / <span class="key">PageUp-PageDown</span> / <span class="key">اسکرول</span> کنترل کن
+		</div>
+		<div id="scaleRow">اندازه: <span id="scaleVal">1.00</span>x</div>
+	</div>
+
+<script>
+	const panel    = document.getElementById('panel');
+	const label    = document.getElementById('label');
+	const hint     = document.getElementById('hint');
+	const scaleVal = document.getElementById('scaleVal');
+
+	function post(action, extra) {
+		fetch(`https://${GetParentResourceName()}/placement_action`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json; charset=UTF-8' },
+			body: JSON.stringify(Object.assign({action}, extra || {}))
+		}).catch(() => {});
+	}
+
+	document.querySelectorAll('.btn').forEach((btn) => {
+		btn.addEventListener('click', () => post(btn.dataset.action));
+	});
+
+	window.addEventListener('message', (event) => {
+		const data = event.data;
+
+		if (data.action === 'show') {
+			label.innerText = data.label || 'در حال جانمایی...';
+			panel.classList.add('visible');
+		} else if (data.action === 'update') {
+			if (typeof data.scale === 'number') scaleVal.innerText = data.scale.toFixed(2);
+		} else if (data.action === 'hide') {
+			panel.classList.remove('visible');
+		}
+	});
+</script>
+</body>
+</html>

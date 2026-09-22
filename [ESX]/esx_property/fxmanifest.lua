@@ -17,7 +17,9 @@ server_scripts {
 	'locales/sv.lua',
 	'locales/pl.lua',
 	'config.lua',
-	'server/main.lua'
+	'config_plus.lua',
+	'server/main.lua',
+	'server/plus.lua'
 }
 
 client_scripts {
@@ -31,6 +33,15 @@ client_scripts {
 	'locales/sv.lua',
 	'locales/pl.lua',
 	'config.lua',
-	'client/main.lua'
+	'config_plus.lua',
+	'client/main.lua',
+	'client/plus.lua',
+	'client/furniture.lua'
+}
+
+ui_page 'nui/furniture.html'
+
+files {
+	'nui/furniture.html'
 }
 

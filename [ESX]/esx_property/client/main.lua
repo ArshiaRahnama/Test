@@ -1,4 +1,5 @@
-local OwnedProperties, Blips, CurrentActionData = {}, {}, {}
+local OwnedProperties, CurrentActionData = {}, {}
+Blips = {} -- global (client/plus.lua هم برای رنگ بلیپ‌ها بهش دسترسی لازم داره)
 local CurrentProperty, CurrentPropertyOwner, LastProperty, LastPart, CurrentAction, CurrentActionMsg
 local firstSpawn, hasChest, hasAlreadyEnteredMarker = true, false, false
 ESX = nil
@@ -129,6 +130,10 @@ function EnterProperty(name, owner)
 		SetEntityCoords(playerPed, property.inside.x, property.inside.y, property.inside.z)
 		DoScreenFadeIn(800)
 		DrawSub(property.label, 5000)
+
+		if LoadFurnitureForProperty then
+			LoadFurnitureForProperty(name)
+		end
 	end)
 
 end
@@ -165,6 +170,10 @@ function ExitProperty(name)
 		end
 
 		DoScreenFadeIn(800)
+
+		if UnloadFurniture then
+			UnloadFurniture()
+		end
 	end)
 end
 
@@ -246,16 +255,29 @@ function OpenPropertyMenu(property)
 	if PropertyIsOwned(property) then
 		table.insert(elements, {label = _U('enter'), value = 'enter'})
 		table.insert(elements, {label = 'Pet Menu', value = 'pet'})
+		table.insert(elements, {label = '💰 فروش خونه', value = 'sell_menu'})
 
 		if not Config.EnablePlayerManagement then
 
 
 		end
 	else
+		local status      = PropertyStatuses and PropertyStatuses[property.name]
+		local ownedBySomeoneElse = status ~= nil
+
 		if not Config.EnablePlayerManagement then
-			table.insert(elements, {label = _U('buy')..": " .. property.price .. " $", value = 'buy'})
+			if ownedBySomeoneElse then
+				if status.for_sale == 1 then
+					table.insert(elements, {label = ('🛒 خرید از بازیکن: %s$'):format(ESX.Math.GroupDigits(status.sale_price)), value = 'buy_from_player'})
+				end
+			else
+				table.insert(elements, {label = _U('buy')..": " .. property.price .. " $", value = 'buy'})
 
-
+				if ConfigPlus and ConfigPlus.Mortgage.enabled then
+					local down = math.floor(property.price * (ConfigPlus.Mortgage.downPaymentPercent / 100))
+					table.insert(elements, {label = ('🏦 خرید اقساطی (پیش‌پرداخت %s$)'):format(ESX.Math.GroupDigits(down)), value = 'buy_mortgage'})
+				end
+			end
 		end
 
 		table.insert(elements, {label = _U('visit'), value = 'visit'})
@@ -281,6 +303,12 @@ function OpenPropertyMenu(property)
 			TriggerServerEvent('esx_property:rentProperty', property.name, property.storage_data)
 		elseif data.current.value == 'visit' then
 			TriggerEvent('instance:create', 'property', {property = property.name, owner = ESX.GetPlayerData().identifier})
+		elseif data.current.value == 'sell_menu' then
+			OpenSellMenu(property)
+		elseif data.current.value == 'buy_mortgage' then
+			BuyPropertyMortgage(property)
+		elseif data.current.value == 'buy_from_player' then
+			BuyListedProperty(property)
 		end
 	end, function(data, menu)
 		menu.close()
@@ -428,6 +456,8 @@ function OpenRoomMenu(property, owner)
 		table.insert(elements, {label = _U('player_clothes'), value = 'player_dressing'})
 		table.insert(elements, {label = _U('remove_cloth'), value = 'remove_cloth'})
 		table.insert(elements, {label = '🔄 Reload Clothe', value = 'reload_cloth'})
+		table.insert(elements, {label = '⬆ ارتقای انبار / گاوصندوق', value = 'upgrades'})
+		table.insert(elements, {label = '🛋 فرنیچر', value = 'furniture'})
 	end
 	table.insert(elements, {label = _U('invite_player'),  value = 'invite_player'})
 
@@ -523,6 +553,12 @@ function OpenRoomMenu(property, owner)
 		elseif data.current.value == "property_inventory" then
 		    menu.close()
 		    OpenPropertyInventoryMenu(property, owner)
+		elseif data.current.value == 'upgrades' then
+			menu.close()
+			OpenUpgradesMenu(property)
+		elseif data.current.value == 'furniture' then
+			menu.close()
+			OpenFurnitureCatalogMenu(property, owner)
 		end
 
 	end, function(data, menu)

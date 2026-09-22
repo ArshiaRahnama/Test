@@ -15,6 +15,42 @@ local uwuNoWeaponJobs = {
 	meridian = true, blacktide = true, cratecarry = true, turfco = true,
 }
 
+-- Weapon pool for a job's armory permission menus. Built server-side
+-- (esx_society:getArmoryWeaponPool) by merging Config.Armory[society] with
+-- whatever's actually stocked in the job's shared addon-inventory account --
+-- no separate resource needed. cb receives (weaponList, stockCounts), where
+-- stockCounts[MODEL] = how many are currently in the society's armory stock
+-- (nil for weapons that are only configured, not stocked).
+function GetArmoryWeaponPool(society, cb)
+	ESX.TriggerServerCallback('esx_society:getArmoryWeaponPool', function(pool)
+		if pool and pool.list and #pool.list > 0 then
+			cb(pool.list, pool.stock or {})
+		else
+			cb(Config.Armory[society], {})
+		end
+	end, society)
+end
+
+-- Small grey "(x N)" badge for a weapon row, showing how many are currently
+-- in the society's armory stock. Empty string when the weapon is only in
+-- Config.Armory and hasn't actually been stocked.
+function StockBadge(stock, model)
+	local count = stock and stock[string.upper(model)]
+	if count then
+		return ' <font color=silver>(x' .. tostring(count) .. ')</font>'
+	end
+	return ''
+end
+
+-- Prefixes a division's label with its custom icon (if one's been set via
+-- Taghir Icon in the edit-division menu). Safe no-op when icon is nil/empty.
+function DivIcon(icon)
+	if icon and icon ~= '' then
+		return '<img src="' .. icon .. '" style="width:16px;height:16px;border-radius:3px;vertical-align:middle;margin-right:4px;">'
+	end
+	return ''
+end
+
 Citizen.CreateThread(function()
 	while ESX == nil do
 		TriggerEvent(Config.ESXtrigger, function(obj) ESX = obj end)
@@ -438,7 +474,7 @@ function OpenDivisionItemsManagment(society)
 
 		for i = 1, #DVilist, 1 do
 
-			table.insert(elements, {label = '('..DVilist[i].name..')  | '..DVilist[i].label, value = DVilist[i].name})
+			table.insert(elements, {label = DivIcon(DVilist[i].icon) .. '('..DVilist[i].name..')  | '..DVilist[i].label, value = DVilist[i].name})
 
 
 		end
@@ -527,7 +563,7 @@ function OpenDivisionweaponsManagment(society)
 
 		for i = 1, #DVilist, 1 do
 
-			table.insert(elements, {label = '('..DVilist[i].name..')  | '..DVilist[i].label, value = DVilist[i].name})
+			table.insert(elements, {label = DivIcon(DVilist[i].icon) .. '('..DVilist[i].name..')  | '..DVilist[i].label, value = DVilist[i].name})
 
 		end
 
@@ -548,7 +584,7 @@ end
 
 function ChangeWeaponDivisionPerm(society,DivisionName)
 
-	local authorizedWeapons = Config.Armory[society]
+	GetArmoryWeaponPool(society, function(authorizedWeapons, stock)
 	if authorizedWeapons then
 		ESX.TriggerServerCallback('esx_society:getWeaponsdivisions', function(weapons)
 			local rows = {}
@@ -556,15 +592,16 @@ function ChangeWeaponDivisionPerm(society,DivisionName)
 			for k, society_weapons in ipairs(authorizedWeapons) do
 
 				local found = false
+				local badge = StockBadge(stock, society_weapons)
 
 				if weapons then
 
 					for k2, weapon_state in ipairs(weapons) do
 						if string.lower(society_weapons) == string.lower(weapon_state.model) then
 							if weapon_state.status == true then
-								table.insert(rows, { label = GetModelLabel(weapon_state.model) .. " | [<font color=Lime>✅</font>]", model = weapon_state.model, value = weapon_state.status })
+								table.insert(rows, { label = GetModelLabel(weapon_state.model) .. badge .. " | [<font color=Lime>✅</font>]", model = weapon_state.model, value = weapon_state.status })
 							elseif weapon_state.status == false then
-								table.insert(rows, { label = GetModelLabel(weapon_state.model) .. " | [<font color=red>❌</font>]", model = weapon_state.model, value = weapon_state.status })
+								table.insert(rows, { label = GetModelLabel(weapon_state.model) .. badge .. " | [<font color=red>❌</font>]", model = weapon_state.model, value = weapon_state.status })
 							end
 
 							found = true
@@ -574,7 +611,7 @@ function ChangeWeaponDivisionPerm(society,DivisionName)
 				end
 
 				if not found then
-					table.insert(rows, { label = GetModelLabel(society_weapons) .. " | [<font color=red>❌</font>]", model = society_weapons, value = false })
+					table.insert(rows, { label = GetModelLabel(society_weapons) .. badge .. " | [<font color=red>❌</font>]", model = society_weapons, value = false })
 				end
 			end
 			ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'manage_grades_weapons_' .. society .. '', {
@@ -609,6 +646,7 @@ function ChangeWeaponDivisionPerm(society,DivisionName)
 	else
 		ESX.ShowNotification("Error loading Weapons !")
 	end
+	end)
 
 end
 
@@ -619,7 +657,7 @@ function OpenDivisionHelissManagment(society)
 
 		for i = 1, #DVilist, 1 do
 
-			table.insert(elements, {label = '('..DVilist[i].name..')  | '..DVilist[i].label, value = DVilist[i].name})
+			table.insert(elements, {label = DivIcon(DVilist[i].icon) .. '('..DVilist[i].name..')  | '..DVilist[i].label, value = DVilist[i].name})
 
 
 		end
@@ -713,7 +751,7 @@ function OpenDivisionVehiclesManagment(society)
 
 		for i = 1, #DVilist, 1 do
 
-			table.insert(elements, {label = '('..DVilist[i].name..')  | '..DVilist[i].label, value = DVilist[i].name})
+			table.insert(elements, {label = DivIcon(DVilist[i].icon) .. '('..DVilist[i].name..')  | '..DVilist[i].label, value = DVilist[i].name})
 
 
 		end
@@ -1073,7 +1111,7 @@ function OpenMenuEditDivision(society)
 
 		for i=tonumber(1), #division, tonumber(1) do
 			local divisionLabel = (division[i].label == '' and division.label or division[i].label)
-			table.insert(elements, {label = '('..division[i].name..')  | '..divisionLabel, division = division[i].name, dvlabel = divisionLabel, dvid = division[i].id})
+			table.insert(elements, {label = DivIcon(division[i].icon) .. '('..division[i].name..')  | '..divisionLabel, division = division[i].name, dvlabel = divisionLabel, dvid = division[i].id})
 		end
 		  ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'manage_division_edit', {
 			title    = _U('manage_division_edit'),
@@ -1156,6 +1194,30 @@ function OpenMenuEditDivision(society)
 								lib.showContext('change_menu')
 							end
 						end
+					},
+					{
+						title = 'Taghir Icon',
+						onSelect = function()
+							local inputIcon = lib.inputDialog('Link icon ra vared konid (http/https)', {'Icon URL'})
+							if not inputIcon then
+								lib.showContext('change_menu')
+								return
+							end
+							local newIcon = inputIcon[1]
+							if newIcon ~= "" then
+								if not newIcon:find('^https?://') then
+									TriggerEvent('chat:addMessage', {args = {'^1SYSTEM', 'Link bayad ba http:// ya https:// shoru beshe'}})
+									lib.showContext('change_menu')
+									return
+								end
+
+								ESX.TriggerServerCallback('esx_society:ChangeDivision', function(caalback)
+									OpenMenuEditDivision(society)
+								end,society, data.current.dvid, newIcon, 'icon')
+							else
+								lib.showContext('change_menu')
+							end
+						end
 					}
 
 				}
@@ -1175,7 +1237,7 @@ function OpenMenuRemoveDivision(society)
 
 		for i=tonumber(1), #division, tonumber(1) do
 			local divisionLabel = (division[i].label == '' and division.label or division[i].label)
-			table.insert(elements, {label = '('..division[i].name..')  | '..divisionLabel, division = division[i].name, dvlabel = divisionLabel})
+			table.insert(elements, {label = DivIcon(division[i].icon) .. '('..division[i].name..')  | '..divisionLabel, division = division[i].name, dvlabel = divisionLabel})
 		end
 		  ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'remove_division', {
 			title    = 'Hazf Kardan Division',
@@ -1649,7 +1711,7 @@ end
 
 function ChangeWeaponPerm(society,rank)
 
-	local authorizedWeapons = Config.Armory[society]
+	GetArmoryWeaponPool(society, function(authorizedWeapons, stock)
 	if authorizedWeapons then
 		ESX.TriggerServerCallback('esx_society:getWeapons', function(weapons)
 			local rows = {}
@@ -1657,15 +1719,16 @@ function ChangeWeaponPerm(society,rank)
 			for k, society_weapons in ipairs(authorizedWeapons) do
 
 				local found = false
+				local badge = StockBadge(stock, society_weapons)
 
 				if weapons then
 
 					for k2, weapon_state in ipairs(weapons) do
 						if string.lower(society_weapons) == string.lower(weapon_state.model) then
 							if weapon_state.status == true then
-								table.insert(rows, { label = GetModelLabel(weapon_state.model) .. " | [<font color=Lime>✅</font>]", model = weapon_state.model, value = weapon_state.status })
+								table.insert(rows, { label = GetModelLabel(weapon_state.model) .. badge .. " | [<font color=Lime>✅</font>]", model = weapon_state.model, value = weapon_state.status })
 							elseif weapon_state.status == false then
-								table.insert(rows, { label = GetModelLabel(weapon_state.model) .. " | [<font color=red>❌</font>]", model = weapon_state.model, value = weapon_state.status })
+								table.insert(rows, { label = GetModelLabel(weapon_state.model) .. badge .. " | [<font color=red>❌</font>]", model = weapon_state.model, value = weapon_state.status })
 							end
 
 							found = true
@@ -1675,7 +1738,7 @@ function ChangeWeaponPerm(society,rank)
 				end
 
 				if not found then
-					table.insert(rows, { label = GetModelLabel(society_weapons) .. " | [<font color=red>❌</font>]", model = society_weapons, value = false })
+					table.insert(rows, { label = GetModelLabel(society_weapons) .. badge .. " | [<font color=red>❌</font>]", model = society_weapons, value = false })
 				end
 			end
 			ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'manage_grades_weapons_' .. society .. '', {
@@ -1710,6 +1773,7 @@ function ChangeWeaponPerm(society,rank)
 	else
 		ESX.ShowNotification("Error loading Weapons !")
 	end
+	end)
 
 end
 
@@ -2103,7 +2167,7 @@ function OpenOutfitMdivision(society)
 		for i=tonumber(1), #division, tonumber(1) do
 			local divisionLabel = (division[i].label == '' and division.label or division[i].label)
 
-			table.insert(elements, {label = '('..division[i].name..')  | '..divisionLabel, division = division[i].name})
+			table.insert(elements, {label = DivIcon(division[i].icon) .. '('..division[i].name..')  | '..divisionLabel, division = division[i].name})
 
 		end
 		  ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'manage_division_outfit', {
@@ -2159,7 +2223,7 @@ function OpenOutfitFdivision(society)
 		for i=tonumber(1), #division, tonumber(1) do
 			local divisionLabel = (division[i].label == '' and division.label or division[i].label)
 
-			table.insert(elements, {label = '('..division[i].name..')  | '..divisionLabel, division = division[i].name})
+			table.insert(elements, {label = DivIcon(division[i].icon) .. '('..division[i].name..')  | '..divisionLabel, division = division[i].name})
 
 		end
 		  ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'manage_division_outfit', {

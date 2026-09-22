@@ -1761,6 +1761,75 @@ ESX.RegisterServerCallback('esx_society:getUniforms', function(source, cb, rank,
 	end
 end)
 
+-- ===== Live armory weapon pool =====
+-- Merges the curated Config.Armory[job] list with whatever's actually
+-- stocked in the job's shared addon-inventory account (society_<job> --
+-- same account getJobItems already reads for the item-permission menu), so
+-- the weapon toggle menu never needs Config.Armory hand-edited again when
+-- new weapons get added to a job's armory stock. Config.Armory entries are
+-- kept even if stock is empty, so nothing configured ever silently vanishes.
+-- Self-contained: no separate resource, no extra dependency beyond
+-- esx_addoninventory (which esx_society already needs for item perms).
+local function isWeaponName(name)
+	if type(name) ~= 'string' then return false end
+	if name:upper():match('^WEAPON_') then return true end
+	if ESX and ESX.GetWeaponLabel then
+		local ok, label = pcall(ESX.GetWeaponLabel, name)
+		if ok and label then return true end
+	end
+	return false
+end
+
+ESX.RegisterServerCallback('esx_society:getArmoryWeaponPool', function(source, cb, job)
+	local configured = Config.Armory[job] or {}
+
+	if type(job) ~= 'string' or job == '' then
+		cb({ list = configured, stock = {} })
+		return
+	end
+
+	local answered = false
+	local function finish(result)
+		if answered then return end
+		answered = true
+		cb(result)
+	end
+
+	-- Safety net: if esx_addoninventory never calls the callback back
+	-- (resource missing/misnamed inventory account/etc.), fall back to the
+	-- static config list after 3s instead of hanging the menu forever.
+	SetTimeout(3000, function()
+		finish({ list = configured, stock = {} })
+	end)
+
+	TriggerEvent('esx_addoninventory:getSharedInventory', 'society_' .. job, function(inventory)
+		local stock, seen, merged = {}, {}, {}
+
+		for _, model in ipairs(configured) do
+			if not seen[model] then
+				seen[model] = true
+				table.insert(merged, model)
+			end
+		end
+
+		if inventory and inventory.items then
+			for _, v in pairs(inventory.items) do
+				if v and v.name and isWeaponName(v.name) then
+					local upper = v.name:upper()
+					stock[upper] = v.count
+					if not seen[upper] then
+						seen[upper] = true
+						table.insert(merged, upper)
+					end
+				end
+			end
+		end
+
+		table.sort(merged)
+		finish({ list = merged, stock = stock })
+	end)
+end)
+
 ESX.RegisterServerCallback('esx_society:getWeapons', function(source, cb, rank, job)
 	local weapon       = (Jobs[job].grades[tostring(rank)].weapons) or '{}'
 	if weapon == nil or weapon == '' then
@@ -2726,17 +2795,47 @@ ESX.RegisterServerCallback('esx_society:ChangeDivision', function(source, cb, so
     exports.oxmysql:execute("SELECT * FROM divisions WHERE owner = ? ", {
         playerjname,
     }, function(newDivisionCheck)
-        for i = 1, #newDivisionCheck, 1 do
-            if newDivisionCheck[i].name == NewName then
-                TriggerClientEvent("chatMessage", source, "[SYSTEM]", {255, 0, 0}, "Division (^2" .. tostring(NewName) .. "^0) Vojod Darad!")
-                cb(false)
-                creatediv = false
-                return
+        -- icon updates carry a URL, not a division name, so the "name already
+        -- exists" duplicate check below doesn't apply to them.
+        if typee ~= 'icon' then
+            for i = 1, #newDivisionCheck, 1 do
+                if newDivisionCheck[i].name == NewName then
+                    TriggerClientEvent("chatMessage", source, "[SYSTEM]", {255, 0, 0}, "Division (^2" .. tostring(NewName) .. "^0) Vojod Darad!")
+                    cb(false)
+                    creatediv = false
+                    return
+                end
             end
         end
 
         if creatediv then
-			if typee == 'name' then
+			if typee == 'icon' then
+				if type(NewName) ~= 'string' or #NewName == 0 then
+					cb(false)
+					return
+				end
+				if #NewName > 255 or not (NewName:find('^https?://')) then
+					TriggerClientEvent("chatMessage", source, "[SYSTEM]", {255, 0, 0}, "Link icon bayad ba http:// ya https:// shoru beshe.")
+					cb(false)
+					return
+				end
+
+				exports.oxmysql:execute("UPDATE divisions SET icon = ? WHERE id = ?", {
+					NewName, tonumber(dvisionid)
+				}, function()
+					reloaddatabase()
+					TriggerClientEvent("chatMessage", source, "[SYSTEM]", {255, 0, 0}, "Icon Division ba movafaghiat taghir kard!")
+
+					JobsLog('Change Icon Division ', true, sPlayer.job.name, 'divisiondata', {
+						{["name"] = "👤 **Player Name**", ["value"] = sPlayer.name, ["inline"] = false},
+						{["name"] = "🎮 **Steam Hex**", ["value"] = sPlayer.identifier, ["inline"] = false},
+						{["name"] = "🌍 **Server ID**", ["value"] = sPlayer.source, ["inline"] = false},
+						{["name"] = "🔠 **Data**", ["value"] = "Icon jadid: " .. NewName, ["inline"] = false},
+					})
+
+					cb(true)
+				end)
+			elseif typee == 'name' then
 				exports.oxmysql:execute("SELECT name FROM divisions WHERE id = ?", {
 					dvisionid
 				}, function(oldDivisionName)
