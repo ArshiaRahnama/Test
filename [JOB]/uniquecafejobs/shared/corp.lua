@@ -67,6 +67,12 @@ Corp = {
 			totfarangi = 120, yakh = 60,      water = 60,              bread = 60,
 			vanil = 120, tamshak = 105,       powdr_matcha = 120,      oreo = 60,
 			nodel_kham = 180, khame = 90,
+			-- bakery/bar/pizza/icecream/sushi/carwash/restaurant raw materials
+			-- (see the fix note in shared/menu.lua) - same ~40% wholesale cut.
+			khamir_shirini = 120, mive_mix = 120,   khamir_pizza = 120, sos_gojeh = 90,
+			panir_pizza = 120,    khame_yakhi = 120, berenj_sushi = 120, maahi_khaam = 180,
+			nori = 90,            soap_foam = 90,    microfiber_cloth = 90,
+			steak_raw = 240,      pasta_dry = 90,    seafood_mix = 240,  truffle = 360,
 		},
 	},
 

@@ -172,6 +172,15 @@ ConfigCrafting = {
 	['carwashZarfShoe'] = { Label = 'Detail Bay', Image = 'cupcake', Jobs = {'carwash'} },
 	['carwashGaz'] = { Label = 'Tire & Finish Bay', Image = 'cupcake', Jobs = {'carwash'} },
 
+	-- Restaurant (Ember/Anchor/Crimson) - used to share MenuGroup='cafe' with
+	-- the actual coffee shops, i.e. these 3 restaurants had zero food of
+	-- their own and just sold cafe drinks/desserts. See Recipes below for
+	-- the 6 new dishes (steak, pasta, seafood, fine dining).
+	['restaurantHamzan'] = { Label = 'Prep Station', Image = 'cupcake', Jobs = {'ember', 'anchor', 'crimson'} },
+	['restaurantGhahvesaz'] = { Label = 'Sauce & Simmer', Image = 'cupcake', Jobs = {'ember', 'anchor', 'crimson'} },
+	['restaurantZarfShoe'] = { Label = 'Plating Station', Image = 'cupcake', Jobs = {'ember', 'anchor', 'crimson'} },
+	['restaurantGaz'] = { Label = 'Grill & Oven', Image = 'cupcake', Jobs = {'ember', 'anchor', 'crimson'} },
+
 
 
 
@@ -247,6 +256,74 @@ ConfigCrafting = {
 			Amount = 1,
 			Ingredients = {
 				['microfiber_cloth'] = 2,
+			},
+		},
+
+		-- Restaurant (Ember/Anchor/Crimson) - see the Categories note above.
+		['steak_grilled'] = {
+			Category = 'restaurantHamzan',
+			Label = 'Grilled Steak',
+			Image = 'steak_grilled',
+			Level = 0,
+			Time = 8,
+			Amount = 1,
+			Ingredients = {
+				['steak_raw'] = 2,
+			},
+		},
+		['pasta_alfredo'] = {
+			Category = 'restaurantHamzan',
+			Label = 'Pasta Alfredo',
+			Image = 'pasta_alfredo',
+			Level = 0,
+			Time = 8,
+			Amount = 1,
+			Ingredients = {
+				['pasta_dry'] = 2,
+			},
+		},
+		['seafood_platter'] = {
+			Category = 'restaurantGhahvesaz',
+			Label = 'Seafood Platter',
+			Image = 'seafood_platter',
+			Level = 0,
+			Time = 8,
+			Amount = 1,
+			Ingredients = {
+				['seafood_mix'] = 2,
+			},
+		},
+		['clam_chowder'] = {
+			Category = 'restaurantGhahvesaz',
+			Label = 'Clam Chowder',
+			Image = 'clam_chowder',
+			Level = 0,
+			Time = 8,
+			Amount = 1,
+			Ingredients = {
+				['seafood_mix'] = 2,
+			},
+		},
+		['truffle_risotto'] = {
+			Category = 'restaurantZarfShoe',
+			Label = 'Truffle Risotto',
+			Image = 'truffle_risotto',
+			Level = 0,
+			Time = 8,
+			Amount = 1,
+			Ingredients = {
+				['truffle'] = 2,
+			},
+		},
+		['filet_mignon'] = {
+			Category = 'restaurantGaz',
+			Label = 'Filet Mignon',
+			Image = 'filet_mignon',
+			Level = 0,
+			Time = 8,
+			Amount = 1,
+			Ingredients = {
+				['truffle'] = 2,
 			},
 		},
 

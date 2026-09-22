@@ -44,4 +44,12 @@ NewBizItems = {
 	{ name = 'air_freshener_pine', label = 'Air Freshener Pine', prop = 'prop_air_freshner_01' },
 	{ name = 'ceramic_coat', label = 'Ceramic Coat', prop = 'prop_cs_spray_can' },
 	{ name = 'tire_shine', label = 'Tire Shine', prop = 'prop_cleaning_bottle' },
+
+	-- Restaurant (Ember/Anchor/Crimson) - see shared/configcrafting.lua.
+	{ name = 'steak_grilled', label = 'Grilled Steak', prop = 'prop_cs_dish_02' },
+	{ name = 'pasta_alfredo', label = 'Pasta Alfredo', prop = 'prop_cs_dish_02' },
+	{ name = 'seafood_platter', label = 'Seafood Platter', prop = 'prop_cs_dish_02' },
+	{ name = 'clam_chowder', label = 'Clam Chowder', prop = 'prop_food_bowl_01' },
+	{ name = 'truffle_risotto', label = 'Truffle Risotto', prop = 'prop_cs_dish_02' },
+	{ name = 'filet_mignon', label = 'Filet Mignon', prop = 'prop_cs_dish_02' },
 }

@@ -486,14 +486,19 @@ end
 
 do
 ESX = nil
-local RobberyCode = 0
-local Robs ={}
-local RobsInProgress = {}
-local RobCases = {}      -- [_source] = esx_uniquejobs DOJ case id opened for the current robbery
-local DispatchCode = {}  -- [_source] = esx_uniquejobs rob_manager.lua dispatch/accept code
+-- NOTE: these five used to be `local` to this do-block. Promoted to plain
+-- globals (still only ever written from this file) so Unique_OilRig.lua --
+-- loaded as an extra file of THIS SAME resource -- can plug into the exact
+-- same in-progress/case/dispatch tracking and cop-job check instead of
+-- duplicating them. Pure visibility change, no behavior change here.
+RobberyCode = 0
+Robs = {}
+RobsInProgress = {}
+RobCases = {}      -- [_source] = esx_uniquejobs DOJ case id opened for the current robbery
+DispatchCode = {}  -- [_source] = esx_uniquejobs rob_manager.lua dispatch/accept code
 TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
 
-local function IsPoliceJob(jobname)
+function IsPoliceJob(jobname)
     for i = 1, #Config.Rob.PoliceJobs do
         if Config.Rob.PoliceJobs[i] == jobname then
             return true
@@ -628,23 +633,17 @@ AddEventHandler('Morphy_RobSystem:robberyNeeds', function(robname)
     TriggerClientEvent('Morphy_RobSystem:StartHack', _source,robname,Config.Rob.RobTypes[Config.Rob.Robs[robname].type].hacktype)
 end)
 
-RegisterServerEvent('Morphy_RobSystem:robberyStarted')
-AddEventHandler('Morphy_RobSystem:robberyStarted', function(robname)
-    local _source = source
-
-    -- CRITICAL BUGFIX (money exploit): this handler used to trust
-    -- `robname` unconditionally. Because it's a RegisterServerEvent, any
-    -- client could call it directly -- skipping every check in
-    -- robberyNeeds (police-job check, off-duty check, cops-required,
-    -- team-required, item-required, cooldown, location) -- and then
-    -- immediately fire robberySuccess to collect the reward for free.
-    -- robberyNeeds is the ONLY place that sets RobsInProgress[_source]
-    -- BEFORE the hack starts, so requiring it to already equal `robname`
-    -- here proves the player actually passed those checks.
-    if not Config.Rob.Robs[robname] or RobsInProgress[_source] ~= robname then
-        return
-    end
-
+-- Everything a "robbery has genuinely started" needs to do: alert police
+-- (+ open a real /acceptrob dispatch code), log to Discord, open the DOJ
+-- case, and stamp both cooldown timestamps. Pulled out of the
+-- robberyStarted handler below so Unique_OilRig.lua can reuse the exact
+-- same dispatch/case/cooldown behavior at RIG ARRIVAL (not at the initial
+-- ped interaction) without also getting the single-marker
+-- StartProgressBar that follows it here -- that progress bar measures
+-- distance against Config.Rob.Robs[robname].position (the start point),
+-- which for the oil rig is ~3km from where the player actually is by then
+-- and would self-cancel the heist within a second.
+function StartRobberyDispatch(robname, _source)
     local xPlayer  = ESX.GetPlayerFromId(_source)
 	local xPlayers = ESX.GetPlayers()
     SetAlarmPolice(robname , "start",_source)
@@ -656,9 +655,8 @@ AddEventHandler('Morphy_RobSystem:robberyStarted', function(robname)
             TriggerClientEvent('Morphy_RobSystem:setBlip', xPlayers[i], robname, Config.Rob.Robs[robname].position)
         end
     end
-    TriggerEvent('DiscordBot:ToDiscord', 'rob', "Robbery System", "```css\n[ID] : ".._source.."\n[IC Name] : "..xPlayer.name.."\n[Steam Name] : "..GetPlayerName(source).."\n[Gang Name] : "..xPlayer.gang.name.."\n[Gang Grade] : "..xPlayer.gang.grade.."\n[Steam Hex] : "..xPlayer.identifier.."\n[Rob Name] : "..robname.."\n[Rob Code] : "..RobberyCode.."\n[Status] : Started\n```",'user', _source, true, false)
+    TriggerEvent('DiscordBot:ToDiscord', 'rob', "Robbery System", "```css\n[ID] : ".._source.."\n[IC Name] : "..xPlayer.name.."\n[Steam Name] : "..GetPlayerName(_source).."\n[Gang Name] : "..xPlayer.gang.name.."\n[Gang Grade] : "..xPlayer.gang.grade.."\n[Steam Hex] : "..xPlayer.identifier.."\n[Rob Name] : "..robname.."\n[Rob Code] : "..RobberyCode.."\n[Status] : Started\n```",'user', _source, true, false)
     TriggerClientEvent('esx:showNotification', _source, "Robbery Start Shod !",'success')
-    TriggerClientEvent('Morphy_RobSystem:StartProgressBar', _source, robname, RobberyCode)
 
     -- Open a real, persistent case on esx_uniquejobs' /doj board for this
     -- attempt, with the robber pre-filled as a suspect. robberySuccess
@@ -682,6 +680,28 @@ AddEventHandler('Morphy_RobSystem:robberyStarted', function(robname)
     Config.Rob.RobTypes[Config.Rob.Robs[robname].type].lastRobbed = os.time()
     Config.Rob.Robs[robname].lastRobbed = os.time()
 
+    return RobberyCode
+end
+
+RegisterServerEvent('Morphy_RobSystem:robberyStarted')
+AddEventHandler('Morphy_RobSystem:robberyStarted', function(robname)
+    local _source = source
+
+    -- CRITICAL BUGFIX (money exploit): this handler used to trust
+    -- `robname` unconditionally. Because it's a RegisterServerEvent, any
+    -- client could call it directly -- skipping every check in
+    -- robberyNeeds (police-job check, off-duty check, cops-required,
+    -- team-required, item-required, cooldown, location) -- and then
+    -- immediately fire robberySuccess to collect the reward for free.
+    -- robberyNeeds is the ONLY place that sets RobsInProgress[_source]
+    -- BEFORE the hack starts, so requiring it to already equal `robname`
+    -- here proves the player actually passed those checks.
+    if not Config.Rob.Robs[robname] or RobsInProgress[_source] ~= robname then
+        return
+    end
+
+    local code = StartRobberyDispatch(robname, _source)
+    TriggerClientEvent('Morphy_RobSystem:StartProgressBar', _source, robname, code)
 end)
 
 RegisterServerEvent('Morphy_RobSystem:robberyHackFail')

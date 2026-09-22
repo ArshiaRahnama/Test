@@ -244,19 +244,38 @@ Config.Rob.Robs = {
         someonerobbing = false,
     },
 
+    -- Biggest heist in the system. Just a normal Robs entry like everything
+    -- above -- it gets the same marker/blip/status-export treatment for
+    -- free. Everything past the initial marker (travel to the rig, hack,
+    -- guards, crates, escape) is handled by oilrig_client.lua and
+    -- oilrig_server.lua, which plug into the SAME
+    -- robberyNeeds/robberyCancel/robberySuccess pipeline every other rob
+    -- type here uses -- hacktype 3 is reserved for it (see StartHack in
+    -- client.lua and oilrig_client.lua).
+    ["OilRig_1"] = {
+        nameofrob = "Oil Rig Heist",
+        type = "OilRig",
+        position = vector3(346.798, 3405.46, 36.8516),
+        lastRobbed = 0,
+        available = true,
+        someonerobbing = false,
+    },
+
 }
 
 -- Maps each Config.Rob.Robs[x].type to a code from esx_uniquejobs'
 -- law codebook (server/law_codebook.lua), so a successful robbery
 -- auto-files the matching charge on the DOJ case opened for it.
 -- §7 = Sereghat (Theft), §8 = Sereghat-e Mosallahane (Armed Theft),
--- §9 = Hamle-ye Dozdi / Grand Theft Auto.
+-- §9 = Hamle-ye Dozdi / Grand Theft Auto, §13 = the Oil Rig's own,
+-- heavier code (see esx_uniquejobs/server/law_codebook.lua).
 Config.Rob.LawCode = {
     ["Shop"] = "§7",
     ["Minibank"] = "§8",
     ["Jewerlly"] = "§8",
     ["Life_Invader"] = "§9",
     ["Palateo_Bank"] = "§9",
+    ["OilRig"] = "§13",
 }
 
 -- Rob types serious enough that catching the suspect auto-schedules a
@@ -265,6 +284,7 @@ Config.Rob.LawCode = {
 Config.Rob.CourtHearingTypes = {
     ["Life_Invader"] = true,
     ["Palateo_Bank"] = true,
+    ["OilRig"] = true,
 }
 Config.Rob.CourtHearingMinutes = 45
 
@@ -367,5 +387,33 @@ Config.Rob.RobTypes ={
         blipsprite = 207,
         hacktype = 2,
         teammatesrequired = 5,
+    },
+    -- Biggest heist. hacktype = 3 tells client.lua's StartHack dispatcher
+    -- to hand off to oilrig_client.lua's own multi-phase flow (travel,
+    -- laptop hack, guards, crates, escape) instead of firing a plain
+    -- ps-ui minigame + the generic single-marker progress bar.
+    -- reward.blackmoney below is the BASE range -- oilrig_server.lua
+    -- scales it up at delivery time by online cops + party size
+    -- (see Config.OilRig.scaling in oilrig_config.lua) before letting
+    -- the normal robberySuccess handler pay it out.
+    ["OilRig"] ={
+        reward = {
+            ["blackmoney"] = {min = 3000000, max = 4500000},
+            ["xprig"] = 1,
+        },
+        lessreward = {
+            ["blackmoney"] = {min = 900000, max = 1300000},
+        },
+        itemneed = {
+            ["laptophack"] = 1,
+        },
+        successtime = 2700, -- 45 min: how long this rob TYPE stays "in progress" for the generic re-start-cooldown check
+        cooldown = 7200,    -- 2h location cooldown, same convention as everything else here
+        copsrequired = 7,   -- BASE minimum to even start; more online cops = bigger reward + more guards, see scaling
+        cancelDistance = 9999.0, -- unused (oilrig_client.lua doesn't call the generic StartProgressBar), kept for shape consistency
+        lastRobbed = 0,
+        blipsprite = 621,
+        hacktype = 3,
+        teammatesrequired = 4, -- BASE minimum; larger party = more guards + bigger reward
     },
 }

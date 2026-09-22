@@ -22,6 +22,8 @@ shared_scripts {
 	'shared/customnames.lua',
 	'shared/customblips.lua',
 	'shared/corp.lua',
+	'shared/takeover.lua',
+	'shared/ipo.lua',
 	'shared/turfco.lua',
 }
 
@@ -34,6 +36,8 @@ client_scripts {
 	'client/crafting_cl.lua',
 	'client/market_client.lua',
 	'client/corp_client.lua',
+	'client/takeover_cl.lua',
+	'client/ipo_cl.lua',
 	'client/turfco_client.lua',
 }
 
@@ -48,6 +52,8 @@ server_scripts {
 	'server/market_config.lua',
 	'server/market_server.lua',
 	'server/corp_server.lua',
+	'server/takeover_sv.lua',
+	'server/ipo_sv.lua',
 	'server/turfco_server.lua',
 }
 

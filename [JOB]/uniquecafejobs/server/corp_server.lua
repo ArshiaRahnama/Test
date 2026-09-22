@@ -136,9 +136,12 @@ end)
 local BusinessState = {}
 local lastCollect = {}
 
+-- Ownership check for a single business job. Goes through
+-- GetBusinessHolding() (server/takeover_sv.lua) so a completed Takeover War
+-- auction is reflected immediately, not just cafe.Holding's compile-time default.
 local function ownerOf(businessJob)
 	local cafe = GetCafeForJob(businessJob)
-	return cafe and cafe.Holding or nil
+	return cafe and GetBusinessHolding(cafe) or nil
 end
 
 -- ── Per-holding rank ladders ──
@@ -236,7 +239,7 @@ AddEventHandler('uniquecafejobs:corp:requestPortfolio', function()
 
 	local myJobs = {}
 	for _, cafe in pairs(Cafes) do
-		if cafe.Holding == holding.Job then table.insert(myJobs, cafe) end
+		if GetBusinessHolding(cafe) == holding.Job then table.insert(myJobs, cafe) end
 	end
 
 	local rows = {}
@@ -280,26 +283,50 @@ AddEventHandler('uniquecafejobs:corp:collectFranchiseFee', function()
 	end
 	lastCollect[holding.Job] = os.time()
 
-	local collectedFrom = 0
+	local myJobs = {}
 	for _, cafe in pairs(Cafes) do
-		if cafe.Holding == holding.Job then
-			collectedFrom = collectedFrom + 1
-			local feePercent = findRank(holding.Job, BusinessState[cafe.Job].rank).feePercent
-			TriggerEvent('esx_addonaccount:getSharedAccount', 'society_' .. cafe.Job, function(account)
-				local fee = math.floor(account.money * feePercent / 100)
-				if fee > 0 then
-					account.removeMoney(fee)
-					TriggerEvent('esx_addonaccount:getSharedAccount', 'society_' .. holding.Job, function(hAccount)
-						hAccount.addMoney(fee)
-					end)
-				end
-			end)
+		if GetBusinessHolding(cafe) == holding.Job then table.insert(myJobs, cafe) end
+	end
+
+	local collectedFrom = #myJobs
+	local totalCollected = 0
+	local pending = #myJobs
+
+	local function finish()
+		TriggerClientEvent('esx:showNotification', src, ('Franchise fees collected from %d businesses.'):format(collectedFrom))
+		if collectedFrom > 0 then
+			TriggerEvent('quest-cafe:collectfee')
+		end
+		-- IPO dividends are a % of THIS cycle's total, paid out of the
+		-- holding's own society account right after collection - see
+		-- server/ipo_sv.lua. No-op if this holding never launched an IPO.
+		if totalCollected > 0 then
+			PayIPODividends(holding.Job, totalCollected)
 		end
 	end
 
-	TriggerClientEvent('esx:showNotification', src, ('Franchise fees collected from %d businesses.'):format(collectedFrom))
-	if collectedFrom > 0 then
-		TriggerEvent('quest-cafe:collectfee')
+	if pending == 0 then
+		finish()
+		return
+	end
+
+	for _, cafe in ipairs(myJobs) do
+		local feePercent = findRank(holding.Job, BusinessState[cafe.Job].rank).feePercent
+		TriggerEvent('esx_addonaccount:getSharedAccount', 'society_' .. cafe.Job, function(account)
+			local fee = account and math.floor(account.money * feePercent / 100) or 0
+			if fee > 0 then
+				account.removeMoney(fee)
+				totalCollected = totalCollected + fee
+				TriggerEvent('esx_addonaccount:getSharedAccount', 'society_' .. holding.Job, function(hAccount)
+					if hAccount then hAccount.addMoney(fee) end
+					pending = pending - 1
+					if pending == 0 then finish() end
+				end)
+			else
+				pending = pending - 1
+				if pending == 0 then finish() end
+			end
+		end)
 	end
 end)
 
@@ -312,7 +339,7 @@ AddEventHandler('uniquecafejobs:corp:requestManagePortfolio', function()
 
 	local rows = {}
 	for _, cafe in pairs(Cafes) do
-		if cafe.Holding == holding.Job then
+		if GetBusinessHolding(cafe) == holding.Job then
 			local state = BusinessState[cafe.Job]
 			local current = findRank(holding.Job, state.rank)
 			local nextRank = getNextRank(holding.Job, current.id)
@@ -394,7 +421,7 @@ AddEventHandler('uniquecafejobs:corp:requestManageRanks', function()
 	for _, r in ipairs(ranks) do
 		local inUse = 0
 		for _, cafe in pairs(Cafes) do
-			if cafe.Holding == xPlayer.job.name and BusinessState[cafe.Job].rank == r.id then
+			if GetBusinessHolding(cafe) == xPlayer.job.name and BusinessState[cafe.Job].rank == r.id then
 				inUse = inUse + 1
 			end
 		end
@@ -523,7 +550,7 @@ AddEventHandler('uniquecafejobs:corp:removeRank', function(rankId)
 	local fallback = ranks[removeIndex - 1] or ranks[removeIndex + 1]
 	local reassigned = 0
 	for _, cafe in pairs(Cafes) do
-		if cafe.Holding == job and BusinessState[cafe.Job].rank == removedId then
+		if GetBusinessHolding(cafe) == job and BusinessState[cafe.Job].rank == removedId then
 			BusinessState[cafe.Job].rank = fallback.id
 			saveBusinessState(cafe.Job)
 			reassigned = reassigned + 1
@@ -562,7 +589,7 @@ AddEventHandler('uniquecafejobs:corp:requestSupplyBusinessList', function()
 
 	local rows = {}
 	for _, cafe in pairs(Cafes) do
-		if cafe.Holding == xPlayer.job.name then
+		if GetBusinessHolding(cafe) == xPlayer.job.name then
 			table.insert(rows, { job = cafe.Job, label = GetDisplayLabel(cafe.Job, cafe.Label) })
 		end
 	end
@@ -639,7 +666,7 @@ AddEventHandler('uniquecafejobs:corp:requestOwnedBusinessList', function()
 
 	local rows = {}
 	for _, cafe in pairs(Cafes) do
-		if cafe.Holding == xPlayer.job.name then
+		if GetBusinessHolding(cafe) == xPlayer.job.name then
 			table.insert(rows, { job = cafe.Job, label = GetDisplayLabel(cafe.Job, cafe.Label) })
 		end
 	end
@@ -677,7 +704,7 @@ AddEventHandler('uniquecafejobs:corp:requestManageStaffList', function()
 
 	local rows = {}
 	for _, cafe in pairs(Cafes) do
-		if cafe.Holding == xPlayer.job.name then
+		if GetBusinessHolding(cafe) == xPlayer.job.name then
 			table.insert(rows, { job = cafe.Job, label = GetDisplayLabel(cafe.Job, cafe.Label) })
 		end
 	end
@@ -901,7 +928,7 @@ AddEventHandler('uniquecafejobs:corp:requestToggleList', function()
 
 	local rows = {}
 	for _, cafe in pairs(Cafes) do
-		if cafe.Holding == xPlayer.job.name then
+		if GetBusinessHolding(cafe) == xPlayer.job.name then
 			table.insert(rows, {
 				job = cafe.Job,
 				label = GetDisplayLabel(cafe.Job, cafe.Label),

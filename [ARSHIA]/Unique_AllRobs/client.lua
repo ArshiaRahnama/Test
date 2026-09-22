@@ -508,6 +508,13 @@ AddEventHandler('Morphy_RobSystem:StartHack', function(robname,hacktype)
                 TriggerServerEvent('Morphy_RobSystem:robberyHackFail', robname)
             end
         end, "alphanumeric", 30, 0)
+    elseif hacktype == 3 then
+        -- Oil Rig: not a plain minigame-then-progressbar rob. robberyNeeds
+        -- already passed (cops/party/cooldown/item), so hand off to
+        -- oilrig_client.lua's own travel -> arrival -> hack -> loot ->
+        -- escape flow instead of the generic robberyStarted/StartProgressBar.
+        TriggerServerEvent('oilrig:server:begin')
+        TriggerEvent('oilrig:client:begin')
     else
         TriggerServerEvent('Morphy_RobSystem:robberyStarted', robname)
     end

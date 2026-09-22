@@ -149,10 +149,12 @@ function craft(src, item, retrying)
                                 if xMoney >= Maliat then 
                                     xPlayer.removeMoney(Maliat)
                                     account.addMoney(1500)
+                                    RecordSale(xPlayer.job.name, 1500) -- Takeover War revenue tracking (server/takeover_sv.lua)
                                     RemoveMaliat = true
                                 elseif xBank >= Maliat then 
                                     xPlayer.removeBank(Maliat)
                                     account.addMoney(1500)
+                                    RecordSale(xPlayer.job.name, 1500)
                                     RemoveMaliat = true
                                 else
                                     RemoveMaliat = false

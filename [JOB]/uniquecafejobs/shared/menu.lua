@@ -91,5 +91,29 @@ Config.UwUShopItem = {
     {label = 'Nodel Kham', icon = Config.itemIconsPath .. 'nodel_kham.png', price = 300, args = 'nodel_kham'},
     {label = 'Khame', icon = Config.itemIconsPath .. 'khame.png', price = 150, args = 'khame'},
 
+    -- BUG FIX: the bakery/bar/pizza/icecream/sushi/carwash recipes in
+    -- shared/configcrafting.lua all reference raw ingredients (khamir_pizza,
+    -- berenj_sushi, soap_foam, etc.) that were registered as valid items in
+    -- uniquecafejobs_COMPLETE.sql but were never actually FOR SALE anywhere -
+    -- not here, not in Corp.Meridian.SupplyPrices. Every one of those
+    -- 6 business types' crafting stations was unusable in practice (no way
+    -- to ever obtain the ingredients). Added below, plus the new restaurant
+    -- raw ingredients for Ember/Anchor/Crimson.
+    {label = 'Khamir Shirini', icon = Config.itemIconsPath .. 'khamir_shirini.png', price = 200, args = 'khamir_shirini'},
+    {label = 'Mive Mix', icon = Config.itemIconsPath .. 'mive_mix.png', price = 200, args = 'mive_mix'},
+    {label = 'Khamir Pizza', icon = Config.itemIconsPath .. 'khamir_pizza.png', price = 200, args = 'khamir_pizza'},
+    {label = 'Sos Gojeh', icon = Config.itemIconsPath .. 'sos_gojeh.png', price = 150, args = 'sos_gojeh'},
+    {label = 'Panir Pizza', icon = Config.itemIconsPath .. 'panir_pizza.png', price = 200, args = 'panir_pizza'},
+    {label = 'Khame Yakhi', icon = Config.itemIconsPath .. 'khame_yakhi.png', price = 200, args = 'khame_yakhi'},
+    {label = 'Berenj Sushi', icon = Config.itemIconsPath .. 'berenj_sushi.png', price = 200, args = 'berenj_sushi'},
+    {label = 'Maahi Khaam', icon = Config.itemIconsPath .. 'maahi_khaam.png', price = 300, args = 'maahi_khaam'},
+    {label = 'Nori', icon = Config.itemIconsPath .. 'nori.png', price = 150, args = 'nori'},
+    {label = 'Soap Foam', icon = Config.itemIconsPath .. 'soap_foam.png', price = 150, args = 'soap_foam'},
+    {label = 'Microfiber Cloth', icon = Config.itemIconsPath .. 'microfiber_cloth.png', price = 150, args = 'microfiber_cloth'},
+    {label = 'Steak Raw', icon = Config.itemIconsPath .. 'steak_raw.png', price = 400, args = 'steak_raw'},
+    {label = 'Pasta Dry', icon = Config.itemIconsPath .. 'pasta_dry.png', price = 150, args = 'pasta_dry'},
+    {label = 'Seafood Mix', icon = Config.itemIconsPath .. 'seafood_mix.png', price = 400, args = 'seafood_mix'},
+    {label = 'Truffle', icon = Config.itemIconsPath .. 'truffle.png', price = 600, args = 'truffle'},
+
 }
 

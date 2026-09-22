@@ -111,6 +111,52 @@ CREATE TABLE IF NOT EXISTS `holding_owner` (
 	PRIMARY KEY (`holding_job`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+-- ═══════════════ Holding Takeover War (see shared/takeover.lua) ═══════════════
+CREATE TABLE IF NOT EXISTS `business_holding_override` (
+	`business_job` varchar(50) NOT NULL,
+	`holding_job` varchar(50) NOT NULL,
+	PRIMARY KEY (`business_job`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE IF NOT EXISTS `takeover_weekly_sales` (
+	`business_job` varchar(50) NOT NULL,
+	`week_total` int(11) NOT NULL DEFAULT 0,
+	PRIMARY KEY (`business_job`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE IF NOT EXISTS `takeover_state` (
+	`id` tinyint(1) NOT NULL DEFAULT 1,
+	`last_run_at` bigint(20) NOT NULL DEFAULT 0,
+	PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE IF NOT EXISTS `takeover_auctions` (
+	`business_job` varchar(50) NOT NULL,
+	`opened_at` bigint(20) NOT NULL,
+	`closes_at` bigint(20) NOT NULL,
+	`seller_holding` varchar(50) NOT NULL,
+	`highest_bid` int(11) NOT NULL DEFAULT 0,
+	`highest_bidder` varchar(50) DEFAULT NULL,
+	PRIMARY KEY (`business_job`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- ═══════════════ Holding IPO (see shared/ipo.lua) ═══════════════
+CREATE TABLE IF NOT EXISTS `holding_ipo` (
+	`holding_job` varchar(50) NOT NULL,
+	`offer_percent` int(11) NOT NULL DEFAULT 0,
+	`price_per_share` int(11) NOT NULL DEFAULT 0,
+	`shares_sold` int(11) NOT NULL DEFAULT 0,
+	PRIMARY KEY (`holding_job`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE IF NOT EXISTS `holding_shares` (
+	`holding_job` varchar(50) NOT NULL,
+	`identifier` varchar(60) NOT NULL,
+	`owner_name` varchar(100) NOT NULL,
+	`shares` int(11) NOT NULL DEFAULT 0,
+	PRIMARY KEY (`holding_job`, `identifier`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 -- 36 finished items
 REPLACE INTO `items` (`name`, `label`, `limit`, `rare`, `can_remove`) VALUES
 	('croissant_kareii', 'Croissant Kareii', 10, 0, 1),
@@ -148,9 +194,16 @@ REPLACE INTO `items` (`name`, `label`, `limit`, `rare`, `can_remove`) VALUES
 	('rim_polish', 'Rim Polish', 10, 0, 1),
 	('air_freshener_pine', 'Air Freshener Pine', 10, 0, 1),
 	('ceramic_coat', 'Ceramic Coat', 10, 0, 1),
-	('tire_shine', 'Tire Shine', 10, 0, 1);
+	('tire_shine', 'Tire Shine', 10, 0, 1),
+	('steak_grilled', 'Grilled Steak', 10, 0, 1),
+	('pasta_alfredo', 'Pasta Alfredo', 10, 0, 1),
+	('seafood_platter', 'Seafood Platter', 10, 0, 1),
+	('clam_chowder', 'Clam Chowder', 10, 0, 1),
+	('truffle_risotto', 'Truffle Risotto', 10, 0, 1),
+	('filet_mignon', 'Filet Mignon', 10, 0, 1);
 
--- 12 raw ingredients
+-- 16 raw ingredients (12 original bakery/bar/pizza/icecream/sushi/carwash +
+-- 4 new for the restaurant recipes above)
 REPLACE INTO `items` (`name`, `label`, `limit`, `rare`, `can_remove`) VALUES
 	('khamir_shirini', 'Khamir Shirini', 30, 0, 1),
 	('soda_water', 'Soda Water', 30, 0, 1),
@@ -163,7 +216,11 @@ REPLACE INTO `items` (`name`, `label`, `limit`, `rare`, `can_remove`) VALUES
 	('maahi_khaam', 'Maahi Khaam', 30, 0, 1),
 	('nori', 'Nori', 30, 0, 1),
 	('soap_foam', 'Soap Foam', 30, 0, 1),
-	('microfiber_cloth', 'Microfiber Cloth', 30, 0, 1);
+	('microfiber_cloth', 'Microfiber Cloth', 30, 0, 1),
+	('steak_raw', 'Steak Raw', 30, 0, 1),
+	('pasta_dry', 'Pasta Dry', 30, 0, 1),
+	('seafood_mix', 'Seafood Mix', 30, 0, 1),
+	('truffle', 'Truffle', 30, 0, 1);
 
 -- All 17 business jobs (whitelisted=0 -> visible in the F6 job center)
 REPLACE INTO `jobs` (`name`, `label`, `whitelisted`, `handyservice`, `hasapp`, `onlyboss`) VALUES

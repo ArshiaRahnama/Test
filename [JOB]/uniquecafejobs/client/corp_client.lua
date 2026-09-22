@@ -73,6 +73,7 @@ local function openHoldingBossMenu(job, label)
 	if job ~= Corp.Meridian.Job then
 		table.insert(elements, { label = 'Buy Raw Materials (Meridian Supply) (Director+)', value = 'supply' })
 	end
+	table.insert(elements, { label = 'Takeover War Auctions (Director+)', value = 'takeover' })
 	if PlayerData.job.grade_name == 'boss' then
 		table.insert(elements, { label = 'Manage Ranks (Owner Only)', value = 'manage_ranks' })
 		table.insert(elements, { label = 'Set Work Uniform', value = 'set_uniform' })
@@ -99,6 +100,9 @@ local function openHoldingBossMenu(job, label)
 		elseif data.current.value == 'supply' then
 			menu.close()
 			TriggerServerEvent('uniquecafejobs:corp:requestSupplyBusinessList')
+		elseif data.current.value == 'takeover' then
+			menu.close()
+			TriggerServerEvent('uniquecafejobs:takeover:requestAuctions')
 		elseif data.current.value == 'rename' then
 			local input = lib.inputDialog('Rename Holding', {
 				{ type = 'input', label = 'New name (3-30 chars)', required = true },
@@ -492,9 +496,9 @@ AddEventHandler('uniquecafejobs:corp:openRemoteBossMenu', function(job)
 end)
 
 -- ── Any holding: physical Boss Action access at EVERY business it owns ──
--- Ownership is fixed (cafe.Holding in shared/cafes.lua), so no server sync
--- needed - Director+ (grade>=5) can walk up to any of their own businesses'
--- Boss Action marker directly, on top of the remote "Manage Staff" menu.
+-- Ownership can now change at runtime via Takeover War auctions (see
+-- client/takeover_cl.lua), so this reads HoldingOverrides (synced from the
+-- server) instead of the static cafe.Holding default.
 CreateThread(function()
 	while true do
 		Citizen.Wait(0)
@@ -502,7 +506,7 @@ CreateThread(function()
 			local playerCoords = GetEntityCoords(PlayerPedId())
 
 			for _, cafe in pairs(Cafes) do
-				if cafe.Holding == PlayerData.job.name then
+				if (HoldingOverrides[cafe.Job] or cafe.Holding) == PlayerData.job.name then
 					local dist = #(playerCoords - vector3(cafe.BossAction.Pos.x, cafe.BossAction.Pos.y, cafe.BossAction.Pos.z))
 					if dist < 10.0 then
 						DrawMarker(29, cafe.BossAction.Pos.x, cafe.BossAction.Pos.y, cafe.BossAction.Pos.z - 0.9, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.6, 0.6, 0.6, 0, 255, 120, 100, false, true, 2, false, nil, nil, false)

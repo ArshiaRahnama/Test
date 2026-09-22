@@ -177,7 +177,7 @@ Cafes = {
 	-- other business/HQ, but confirm/move in-game before going live.
 	Ember = {
 		Type    = 'restaurant',
-		MenuGroup = 'cafe',
+		MenuGroup = 'restaurant',
 		Job     = 'ember',
 		Holding = 'meridian',
 		Society = 'ember',
@@ -224,7 +224,7 @@ Cafes = {
 	-- PLACEHOLDER location (Del Perro pier, seafood/dockside vibe) - move in-game.
 	Anchor = {
 		Type    = 'restaurant',
-		MenuGroup = 'cafe',
+		MenuGroup = 'restaurant',
 		Job     = 'anchor',
 		Holding = 'meridian',
 		Society = 'anchor',
@@ -274,7 +274,7 @@ Cafes = {
 	-- confirm/move in-game before going live.
 	Crimson = {
 		Type    = 'restaurant',
-		MenuGroup = 'cafe',
+		MenuGroup = 'restaurant',
 		Job     = 'crimson',
 		Holding = 'meridian',
 		Society = 'crimson',
