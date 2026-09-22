@@ -315,6 +315,7 @@ window.addEventListener('message', (event) => {
     case 'economychart': renderEconomyChart(data); break;
     case 'factionchart': renderFactionChart(data); break;
     case 'casefile': renderCaseFile(data); break;
+    case 'uapToast': showUapToast(data); break;
     case 'search': renderSearch(); break;
     case 'searchResults': drawSearchResults(data); break;
     case 'ledger': renderLedger(data); break;
@@ -448,6 +449,8 @@ const KIND_META = {
   impound:  { label: 'Impound',    color: '#8a6fd1', icon: '🚧' },
   transfer: { label: 'Transfer',   color: '#8a6fd1', icon: '🔁' },
   money:    { label: 'Money',      color: '#5fae72', icon: '💰' },
+  vdm:      { label: 'VDM',        color: '#ff3b5c', icon: '🚗' },
+  nlr:      { label: 'New Life',   color: '#e0a03a', icon: '🕓' },
   admin:    { label: 'Admin action', color: '#6b7785', icon: '🛠️' },
 };
 const kindMeta = (k) => KIND_META[k] || { label: k, color: '#6b7785', icon: '•' };
@@ -665,3 +668,44 @@ document.addEventListener('keydown', (e) => {
     renderSearch();
   }
 });
+
+
+// ============================================================================
+// FANCY TOASTS  (type 'uapToast' - VDM, New Life and other server-rule notices)
+// Passive: never moves NUI focus or pointer events (see PASSIVE_TYPES in index.html).
+// ============================================================================
+const TOAST_STYLE = {
+  victim: { icon: '💚', c: '#3ddc97' },
+  driver: { icon: '🚗💥', c: '#ff3b5c' },
+  admin:  { icon: '🛡️', c: '#5aa9ff' },
+  warn:   { icon: '⚠️', c: '#ffb020' },
+  danger: { icon: '⛔', c: '#ff3b5c' },
+  ok:     { icon: '✔', c: '#3ddc97' },
+};
+
+function showUapToast(d) {
+  d = d || {};
+  let host = document.getElementById('uapToastHost');
+  if (!host) {
+    host = document.createElement('div');
+    host.id = 'uapToastHost';
+    document.body.appendChild(host);
+  }
+  while (host.children.length >= 3) host.removeChild(host.firstChild);
+
+  const st = TOAST_STYLE[d.variant] || TOAST_STYLE.warn;
+  const dur = Math.min(Math.max(Number(d.duration) || 7000, 2500), 20000);
+  const el = document.createElement('div');
+  el.className = 'uapToast';
+  el.style.setProperty('--tc', st.c);
+  el.style.setProperty('--dur', dur + 'ms');
+  el.innerHTML = `
+    <div class="uapToastIcon">${st.icon}</div>
+    <div class="uapToastBody" dir="auto">
+      <div class="uapToastTitle">${escapeHtml(d.title || '')}</div>
+      ${(d.lines || []).map((l) => `<div class="uapToastLine">${escapeHtml(l)}</div>`).join('')}
+    </div>
+    <div class="uapToastBar"><i></i></div>`;
+  host.appendChild(el);
+  setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 450); }, dur);
+}

@@ -117,7 +117,7 @@
     // AC panel the admin was actually using (its clicks then fell on a transparent iframe).
     // Only messages that OPEN or focus a panel may move pointer-events; background updates
     // (stats, alerts, list/chat refreshes, pings, data pushes) must leave them alone.
-    var PASSIVE_TYPES = { stats: 1, newReportAlert: 1, searchResults: 1 };
+    var PASSIVE_TYPES = { stats: 1, newReportAlert: 1, searchResults: 1, uapToast: 1 };
     var PASSIVE_ACTIONS = { refreshList: 1, refreshChat: 1, ping: 1, activeClosed: 1,
                             updateAdminLog: 1, updateAppeals: 1, updateBranding: 1,
                             updatePlayerProfile: 1, forceClose: 1 };

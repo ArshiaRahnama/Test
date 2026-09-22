@@ -83,7 +83,6 @@ files {
 	'html/ncz_hud/style.css',
 	'html/ncz_hud/script.js',
 	'html/ncz_hud/HeadingNowTrial-67Extrabold.ttf',
-	'html/ncz_hud/AtlantaCollegeRegular-1Gva2.ttf',
 }
 
 server_exports {

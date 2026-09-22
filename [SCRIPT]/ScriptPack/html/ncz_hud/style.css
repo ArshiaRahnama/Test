@@ -1,117 +1,51 @@
-/* NCZ HUD - gold & black */
+/* AbtinQX */
+
+@import url('https://fonts.cdnfonts.com/css/akrobat');
+
+
+@font-face {
+	font-family: higha;
+	src: url(Merich.otf);
+}
 
 @font-face {
 	font-family: abtin;
 	src: url(HeadingNowTrial-67Extrabold.ttf);
 }
 
-@font-face {
-	font-family: atlanta;
-	src: url(AtlantaCollegeRegular-1Gva2.ttf);
-}
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@700&display=swap');
 
-* {
-	margin: 0;
-	padding: 0;
-	box-sizing: border-box;
-}
-
-html, body {
-	width: 100vw;
-	height: 100vh;
-	background: transparent;
-	overflow: hidden;
-}
 
 #hud {
 	position: absolute;
 	width: 100vw;
 	height: 100vh;
 	top: 0;
-	left: 0;
+	right: 0;
+	box-shadow: inset 0 0 12px 5px rgb(212, 175, 55);
 	display: flex;
 	justify-content: center;
 	align-items: flex-start;
-	pointer-events: none;
 }
 
-#badge {
+#batman {
 	position: relative;
-	margin-top: 2vh;
-	padding: 0.9vh 1.6vw;
+	width: 6%;
+	height: 4%;
+	margin-top: 0.5vh;
+	box-shadow: inset 0 0 6px 2px rgb(212, 175, 55);
+	background: rgb(20, 20, 20);
+	border: 1px solid rgb(212, 175, 55);
+	border-radius: 0.5vw;
 	display: flex;
+	justify-content: center;
 	align-items: center;
-	gap: 0.8vw;
-
-	background: linear-gradient(180deg, #1a1a1a 0%, #050505 100%);
-	border: 1px solid #d4af37;
-	border-radius: 0.6vw;
-
-	box-shadow:
-		0 0 8px 1px rgba(212, 175, 55, 0.55),
-		0 0 22px 4px rgba(212, 175, 55, 0.25),
-		inset 0 0 10px rgba(212, 175, 55, 0.15);
-
-	animation: badgePulse 2.4s ease-in-out infinite;
 }
 
-#badge-glow {
-	position: absolute;
-	inset: -1px;
-	border-radius: 0.6vw;
-	pointer-events: none;
-	background: linear-gradient(120deg, transparent 20%, rgba(212, 175, 55, 0.35) 50%, transparent 80%);
-	background-size: 200% 100%;
-	animation: badgeShine 3.2s linear infinite;
-	mix-blend-mode: overlay;
-}
-
-#badge-icon {
-	font-size: 1.3vw;
-	line-height: 1;
-	filter: drop-shadow(0 0 4px rgba(212, 175, 55, 0.8));
-}
-
-#badge-text {
-	display: flex;
-	flex-direction: column;
-	line-height: 1.15;
-}
-
-#title {
-	font-family: abtin, sans-serif;
-	font-size: 0.95vw;
-	letter-spacing: 0.08vw;
-	color: #f4d97b;
-	text-shadow: 0 0 6px rgba(212, 175, 55, 0.7);
-	white-space: nowrap;
-}
-
-#subtitle {
-	font-family: atlanta, sans-serif;
-	font-size: 0.55vw;
-	letter-spacing: 0.03vw;
-	color: #cfcfcf;
-	white-space: nowrap;
-	margin-top: 0.15vh;
-}
-
-@keyframes badgePulse {
-	0%, 100% {
-		box-shadow:
-			0 0 8px 1px rgba(212, 175, 55, 0.55),
-			0 0 22px 4px rgba(212, 175, 55, 0.25),
-			inset 0 0 10px rgba(212, 175, 55, 0.15);
-	}
-	50% {
-		box-shadow:
-			0 0 12px 2px rgba(212, 175, 55, 0.85),
-			0 0 30px 8px rgba(212, 175, 55, 0.4),
-			inset 0 0 14px rgba(212, 175, 55, 0.25);
-	}
-}
-
-@keyframes badgeShine {
-	0% { background-position: 200% 0; }
-	100% { background-position: -200% 0; }
+#matn {
+	color: rgb(212, 175, 55);
+	font-size: 0.6vw;
+	font-family: abtin;
+	text-align: center;
 }

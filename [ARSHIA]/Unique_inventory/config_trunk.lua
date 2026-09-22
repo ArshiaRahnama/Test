@@ -244,3 +244,12 @@ TrunkConfig.GloveboxNoClass = { [8] = true, [13] = true, [21] = true }
 TrunkConfig.ServerProximityCheck = true
 TrunkConfig.TrunkAccessDistance = 10.0    -- standing at the boot (long trucks need room)
 TrunkConfig.GloveboxAccessDistance = 6.0  -- sitting inside
+
+-- ===================== ox_target trunk option =====================
+-- The "open trunk" option shows while you aim at ANY PART of a vehicle
+-- (bumper, door, roof, wherever), as long as you are within TrunkReach
+-- metres of the vehicle itself.
+TrunkConfig.TrunkReach = 4.0
+-- Rear/mid-engine cars have their storage in the FRONT (the "bonnet" bone).
+-- Add their model names here (lowercase spawn names), e.g. { 'comet2', 'neon' }.
+TrunkConfig.FrontTrunkModels = {}

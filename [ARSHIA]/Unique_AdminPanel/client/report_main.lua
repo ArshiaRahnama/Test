@@ -381,11 +381,7 @@ end)
 
 RegisterNetEvent('Unique_Report:doRevive')
 AddEventHandler('Unique_Report:doRevive', function()
-    local ped = PlayerPedId()
-    NetworkResurrectLocalPlayer(GetEntityCoords(ped), GetEntityHeading(ped), GetPedModel(ped), true, false)
-    SetEntityHealth(ped, GetEntityMaxHealth(ped))
-    ClearPedBloodDamage(ped)
-    ClearPedTasksImmediately(ped)
+    FullRevive() -- ambulance-aware revive (see client/general_utils.lua)
     SetPlayerInvincible(PlayerId(), false)
 end)
 

@@ -179,7 +179,9 @@ RegisterServerCallbackSafe(
 
         local coffre = (store.get("coffre") or {})
         for i = 1, #coffre, 1 do
-          table.insert(items, {name = coffre[i].name, count = coffre[i].count, label = ESX.GetItemLabel(coffre[i].name), filter = 'food'})
+          -- peso = weight of ONE unit in kg. The NUI computes peso * count for the card;
+          -- without it the card showed "NaNkg".
+          table.insert(items, {name = coffre[i].name, count = coffre[i].count, label = ESX.GetItemLabel(coffre[i].name), filter = 'food', peso = getItemWeight(coffre[i].name) / 1000})
         end
        
         for k,v in pairs(weapons) do
@@ -189,6 +191,7 @@ RegisterServerCallbackSafe(
             label = ESX.GetWeaponLabel(v.name),
             count = v.ammo,
             filter = 'arma',
+            peso = getItemWeight(v.name) / 1000, -- a weapon weighs its own weight once (count = ammo)
             serial = v.serial or ''
           })
         end
@@ -214,8 +217,9 @@ RegisterServerCallbackSafe(
 RegisterServerEvent("esx_trunk:getItem")
 AddEventHandler(
   "esx_trunk:getItem",
-  function(plate, type, item, count, max, owned)
+  function(plate, type, item, count, max, owned, serial)
     local _source = source
+    if serial == "" or serial == false then serial = nil end
     max = clampMax(plate, max)
     if not canAccessStorage(_source, plate) then return tooFar(_source) end
     count = tonumber(count) or 0
@@ -326,13 +330,14 @@ AddEventHandler(
             storeWeapons = {}
           end
 
-          local weaponName, ammo, serial = nil, nil, nil
+          local weaponName, ammo, takenSerial = nil, nil, nil
 
           for i = 1, #storeWeapons, 1 do
-            if storeWeapons[i].name == item then
+            -- `serial` (from the UI) picks the exact copy when several are stored
+            if storeWeapons[i].name == item and (not serial or storeWeapons[i].serial == serial) then
               weaponName = storeWeapons[i].name
               ammo = storeWeapons[i].ammo
-              serial = storeWeapons[i].serial -- keep the weapon's serial number
+              takenSerial = storeWeapons[i].serial -- keep the weapon's serial number
               table.remove(storeWeapons, i)
 
               break
@@ -345,7 +350,7 @@ AddEventHandler(
 
           store.set("weapons", storeWeapons)
 
-          xPlayer.addWeapon(weaponName, ammo, serial)
+          xPlayer.addWeapon(weaponName, ammo, takenSerial)
 
           local blackMoney = 0
           local items = {}
@@ -376,8 +381,9 @@ AddEventHandler(
 RegisterServerEvent("esx_trunk:putItem")
 AddEventHandler(
   "esx_trunk:putItem",
-  function(plate, type, item, count, max, owned, label)
+  function(plate, type, item, count, max, owned, label, serial)
     local _source = source
+    if serial == "" or serial == false then serial = nil end
     max = clampMax(plate, max)
     if not canAccessStorage(_source, plate) then return tooFar(_source) end
     count = tonumber(count) or 0
@@ -485,7 +491,8 @@ AddEventHandler(
     end
 
     if type == "item_weapon" then
-      local carried = xPlayer.hasWeapon(item)
+      -- `serial` = the exact copy the player picked in the UI (several copies are allowed)
+      local carried = xPlayer.hasWeapon(item, serial)
       if not carried then return end
 
       TriggerEvent(

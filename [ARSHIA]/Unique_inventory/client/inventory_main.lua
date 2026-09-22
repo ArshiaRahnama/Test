@@ -285,15 +285,9 @@ AddEventHandler("esx_inventoryhud:closeInventory", function()
     dPN.closeInventoryPlayer()
 end)
 
-AddEventHandler("onKeyUP",function(key)
-
-	if key == "lmenu" then
-
-		openmenuvehicle()
-
-	end
-
-end)
+-- The trunk is opened with ox_target now (client/vehicle_target.lua), and the
+-- glovebox with the inventory key while seated. The old Left-Alt shortcut
+-- (a raycast 4m in front of you) was removed on purpose.
 
 local function VehicleInFront()
     local pos = GetEntityCoords(GetPlayerPed(-1))
@@ -332,6 +326,27 @@ local CustomLimit = {
     {model = GetHashKey('lex570'), limit = 500000},
 }
 
+-- Where the storage of a vehicle is: the "boot" bone (rear), or the "bonnet" bone
+-- for the models listed in TrunkConfig.FrontTrunkModels. Falls back to the
+-- rear/front end of the model when the bone doesn't exist.
+local frontTrunk = nil
+function GetTrunkPosition(vehicle)
+    if not frontTrunk then
+        frontTrunk = {}
+        for _, name in ipairs(TrunkConfig.FrontTrunkModels or {}) do
+            frontTrunk[GetHashKey(name)] = true
+        end
+    end
+    local model = GetEntityModel(vehicle)
+    local isFront = frontTrunk[model] == true
+    local bone = GetEntityBoneIndexByName(vehicle, isFront and 'bonnet' or 'boot')
+    if bone ~= -1 then
+        return GetWorldPositionOfEntityBone(vehicle, bone)
+    end
+    local min, max = GetModelDimensions(model)
+    return GetOffsetFromEntityInWorldCoords(vehicle, 0.0, isFront and max.y or min.y, 0.0)
+end
+
 -- entity: optional vehicle handle (from ox_target or Config.vehicleMenu).
 -- Without it (Alt key) we fall back to the old "vehicle 4m in front of you"
 -- raycast. That raycast is why the trunk was so hard to open before: it only
@@ -342,10 +357,9 @@ function openmenuvehicle(entity)
 
     if type(entity) == 'number' and entity ~= 0 and DoesEntityExist(entity) and IsEntityAVehicle(entity) then
         vehicle = entity
-        -- must actually be standing at the trunk, not just looking at the car
-        local boot = GetEntityBoneIndexByName(vehicle, 'boot')
-        local ref  = boot ~= -1 and GetWorldPositionOfEntityBone(vehicle, boot) or GetEntityCoords(vehicle)
-        if #(GetEntityCoords(playerPed) - ref) > 4.5 then return end
+        -- no longer requires standing at the trunk specifically - matches the
+        -- ox_target option, which now shows from anywhere on the vehicle.
+        if #(GetEntityCoords(playerPed) - GetEntityCoords(vehicle)) > TrunkConfig.TrunkReach then return end
     else
         vehicle = VehicleInFront()
     end
@@ -422,7 +436,7 @@ function openmenuvehicle(entity)
 -- trunk does, but keyed as GLOVE:<plate> and capped by TrunkConfig.GloveboxLimit.
 -- Returns true if it opened (so the caller skips the plain inventory).
 local lastGloveOpen = 0
-function OpenGlovebox(vehicle)
+function OpenGlovebox(vehicle, force)
     if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return false end
     if TrunkConfig.GloveboxNoClass[GetVehicleClass(vehicle)] then return false end
 
@@ -431,7 +445,7 @@ function OpenGlovebox(vehicle)
     plate = ESX.Math.Trim(plate)
 
     -- debounce: the key can fire several times in a row
-    if GetGameTimer() - lastGloveOpen < 800 then return true end
+    if not force and GetGameTimer() - lastGloveOpen < 800 then return true end
     lastGloveOpen = GetGameTimer()
 
     trunkData = {
@@ -452,6 +466,18 @@ function OpenGlovebox(vehicle)
     })
     return true
 end
+-- After putting/taking an item the inventory is closed and re-opened. That used to
+-- call openmenuvehicle() (trunk) unconditionally - inside a car it does nothing,
+-- so the glovebox just closed on you after every move.
+function ReopenSecondInventory()
+    if trunkData and trunkData.glovebox and trunkData.myVeh and DoesEntityExist(trunkData.myVeh)
+        and IsPedInAnyVehicle(PlayerPedId(), false) then
+        OpenGlovebox(trunkData.myVeh, true)
+    else
+        openmenuvehicle()
+    end
+end
+
 exports("openGlovebox", function()
     local ped = PlayerPedId()
     if IsPedInAnyVehicle(ped, false) then return OpenGlovebox(GetVehiclePedIsIn(ped, false)) end
@@ -614,8 +640,10 @@ RegisterNUICallback("requestItemSecondInventory", function(data, cb)
                     chest = "TrunckChest",
                     tableChest = tableItem.items,
                     slots = 120,
-                    tamanhoChest = trunkData.max,
-                    tamanhoMyInv = tableItem.weight,
+                    -- weights are stored in grams; the cards / info text show kg,
+                    -- so the ring must too ("1000.0/10000.0" -> "1.0/10.0")
+                    tamanhoChest = trunkData.max / 1000,
+                    tamanhoMyInv = tableItem.weight / 1000,
                     nameCar = trunkData.title or ESX.Math.Trim(GetVehicleNumberPlateText(CloseToVehicle))
                 })
             end, plateKey)
@@ -722,10 +750,10 @@ RegisterNUICallback("colocarItemTrunkInventory", function(data)
         if data.item:find("money") then return end
         local type = item:find("WEAPON_") and "item_weapon" or item:find("cash") and "item_money" or "item_standard"
         -- TriggerServerEvent("esx_inventoryhud:AddItemToTrunk", item, data.oldSlot, data.newSlot, data.amount, data.chest)
-        TriggerServerEvent("esx_trunk:putItem", trunkData.plate, type, item, data.amount, trunkData.max, trunkData.myVeh, item)
+        TriggerServerEvent("esx_trunk:putItem", trunkData.plate, type, item, data.amount, trunkData.max, trunkData.myVeh, item, data.serial)
         dPN.closeInventoryPlayer()
                 Wait(100)
-                openmenuvehicle()
+                ReopenSecondInventory()
     end
 end)
 
@@ -794,10 +822,10 @@ RegisterNUICallback("retirarItemTrunk", function(data)
         --if (PlayerData.job.name == "police" or PlayerData.job.name == "sheriff" or PlayerData.job.name == "forces" or PlayerData.job.name == "fbi") and data.item:find("gangcoin") then return end
         -- TriggerServerEvent("esx_inventoryhud:removeFromTrunk", data.item, data.oldSlot, data.newSlot, data.amount, data.chest)
         local type = item:find("WEAPON_") and "item_weapon" or "item_standard"
-        TriggerServerEvent("esx_trunk:getItem", trunkData.plate, type, item, tonumber(data.amount), trunkData.max, trunkData.myVeh)
+        TriggerServerEvent("esx_trunk:getItem", trunkData.plate, type, item, tonumber(data.amount), trunkData.max, trunkData.myVeh, data.serial)
         dPN.closeInventoryPlayer()
                 Wait(100)
-                openmenuvehicle()
+                ReopenSecondInventory()
     end
 end)
 
@@ -974,7 +1002,7 @@ RegisterNUICallback("droparItem", function(data)
         end
         -- -- if SpamCheck() then return end
      
-                TriggerServerEvent("esx:removeInventoryItem", type, data.item, data.amount)
+                TriggerServerEvent("esx:removeInventoryItem", type, data.item, data.amount, data.serial)
                 dPN.closeInventoryPlayer()
                 Wait(100)
                 TriggerEvent('openInventoryHud')

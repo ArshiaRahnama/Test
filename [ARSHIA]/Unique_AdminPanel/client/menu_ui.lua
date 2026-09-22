@@ -22,6 +22,7 @@ RegisterNetEvent('esx_aduty:ChangeMenuStatus')
 AddEventHandler('esx_aduty:ChangeMenuStatus', function(boolean)
   CloseAdminMenu()
   aduty = boolean
+  SetTimeout(1500, function() RefreshPermissions() end) -- duty changes what GetButtonPerms returns
   if aduty and OffDuty == nil then
     AdminM()
   else

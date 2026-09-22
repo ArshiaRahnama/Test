@@ -66,3 +66,9 @@ Config.BackpackWeight = {
     ['backpack_medium'] = 20,
     ['backpack_large'] = 35,
 }
+
+-- How many copies of the SAME weapon type one player may carry (each copy keeps
+-- its own serial number). 1 = the old "one weapon per type" rule.
+-- GTA itself only knows "ped has WEAPON_PISTOL: yes/no", so the copies share one
+-- ammo pool on the client; the server tracks every copy + serial separately.
+Config.MaxSameWeapon = 3

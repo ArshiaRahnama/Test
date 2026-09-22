@@ -3,7 +3,7 @@ game 'gta5'
 
 author 'Arshia'
 description 'Unique_AdminPanel - merged from Admin_Menu + esx_aduty + UNIQUE_AC anti-cheat'
-version '3.2.1'
+version '3.3.2'
 
 -- Loaded on BOTH client and server, before client_scripts/server_scripts below
 -- (migrated from UNIQUE_AC/configs/fire-config.lua and UNIQUE_AC/tables/*.lua -
@@ -11,6 +11,7 @@ version '3.2.1'
 -- `UNIQUE_AC` table this creates, so it must load first)
 shared_scripts {
 	'shared/dprint.lua',
+	'shared/rules_config.lua',
 	'shared/ac_config.lua',
 	'shared/tables/*.lua',
 	-- migrated from esx_aduty's Config.lua, which the original esx_aduty
@@ -50,6 +51,9 @@ client_scripts {
 	'client/data_weapons.lua',
 	'client/devtools.lua',
 	'client/casefile.lua',
+	'client/toast.lua',
+	'client/vdm.lua',
+	'client/nlr.lua',
 	'client/menuv_ui.lua',
 	'client/nui_panel.lua',
 	'client/expansion.lua',
@@ -107,6 +111,9 @@ server_scripts {
 	'server/admin_tools.lua',
 	'server/expansion.lua',
 	'server/casefile.lua',
+	'server/rules_common.lua',
+	'server/nlr.lua',
+	'server/vdm.lua',
 	'server/admin_tag.lua',
 	'server/duty_log.lua',
 	'server/settings.lua',

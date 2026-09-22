@@ -1267,7 +1267,16 @@ AddEventHandler("esx_inventoryhud:openBoxInventory", function(data)
 end)
 
 RegisterNetEvent("esx_inventoryhud:refreshTrunkInventory")
-AddEventHandler("esx_inventoryhud:refreshTrunkInventory", function(data, inventory, weapons)
+-- FIX: server/trunk_main.lua triggers this with FOUR arguments
+--   (data, blackMoney, items, weapons)
+-- but this handler only declared three, so `inventory` received the blackMoney
+-- NUMBER and `pairs(inventory)` threw
+--   "bad argument #1 to 'for iterator' (table expected, got number)"
+-- after every put/take in a trunk or glovebox.
+AddEventHandler("esx_inventoryhud:refreshTrunkInventory", function(data, blackMoney, inventory, weapons)
+    if type(data) ~= "table" then return end
+    if type(inventory) ~= "table" then inventory = nil end
+    if type(weapons) ~= "table" then weapons = nil end
     setTrunkInventoryData(data, inventory, weapons)
 end)
 

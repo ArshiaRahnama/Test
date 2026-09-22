@@ -8,6 +8,21 @@ local PBPlayers = {}
 
 local PBJobAccess = {}
 
+local WeaponPrices = {
+	pumpshotgun = 13000, snspistol = 5000, pistol_mk2 = 5000, revolver_mk2 = 12000,
+	bullpuprifle = 15000, mg = 20000, combatmg_mk2 = 22000, appistol = 7000,
+	minigun = 25000, revolver = 10000, carbinerifle = 10000, bullpupshotgun = 15000,
+	assaultrifle_mk2 = 12000, gusenberg = 16000, advancedrifle = 10000, assaultrifle = 10000,
+	combatmg = 20000, heavypistol = 5000, snspistol_mk2 = 6000, heavysniper_mk2 = 25000,
+	combatpistol = 5000, specialcarbine_mk2 = 16000, assaultsmg = 11000, carbinerifle_mk2 = 13000,
+	marksmanpistol = 12000, vintagepistol = 5000, specialcarbine = 15000, bullpuprifle_mk2 = 18000,
+	smg_mk2 = 12000, marksmanrifle = 16000, compactrifle = 11000, sawnoffshotgun = 13000,
+	pistol50 = 8000, pistol = 5000, smg = 10000, minismg = 15000, microsmg = 13000,
+	marksmanrifle_mk2 = 18000, musket = 25000, machinepistol = 10000, heavysniper = 23000,
+	doubleaction = 10000, autoshotgun = 18000, assaultshotgun = 13000, heavyshotgun = 25000,
+	dbshotgun = 16000, combatpdw = 13000, pumpshotgun_mk2 = 15000
+}
+
 CreateThread(function()
 	MySQL.query.await('CREATE TABLE IF NOT EXISTS paintball_job_access (job_name VARCHAR(50) NOT NULL PRIMARY KEY, min_grade INT NOT NULL DEFAULT 0)', {})
 	local rows = MySQL.query.await('SELECT job_name, min_grade FROM paintball_job_access', {})
@@ -74,18 +89,27 @@ function CreateLobby(xPlayer, data)
 
 	local mapName = tostring(data.mapName)
 
+	local RTime = tonumber(data.rtime)
+	if not RTime or RTime < 30 or RTime > 300 then RTime = 120 end
+
+	local HeadBox = tonumber(data.headbox)
+	if HeadBox ~= 1 then HeadBox = 0 end
+
+	LobbyCounter = LobbyCounter + 1
+	local NewLobbyId = LobbyCounter
+
 	table.insert(LobbyList,
 	{
 		lobbyOwner = xPlayer,
-		LobbyId = #LobbyList + 1,
+		LobbyId = NewLobbyId,
 		name = LobbyName,
 		map = mapName,
 		weapon = data.weaponModel,
 		pass = LobbyPass,
 		armor = data.armor,
 		gunattachs = data.gunattachs,
-		rtime = data.rtime,
-		headbox = data.headbox,
+		rtime = RTime,
+		headbox = HeadBox,
 		friendlyFire = data.friendlyFire,
 		roundNum = RoundNum,
 		teams = { {}, {}, {} },
@@ -94,9 +118,8 @@ function CreateLobby(xPlayer, data)
 		LobbyCounter = LobbyCounter,
 		Kills = {}
 	})
-	LobbyCounter = LobbyCounter + 1
 
-	return #LobbyList
+	return NewLobbyId
 end
 
 function FindLobby(LobbyId)
@@ -298,7 +321,17 @@ ESX.RegisterServerCallback('esx_paintball:CreateLobby', function(source, cb, dat
 	if not xPlayer then return end
 	if DoesOwnerHasLobby(xPlayer.identifier) then cb({}) return end
 
-
+	-- 'jail' and 'island' don't have real, verified spawn/area data yet (see MapData in
+	-- client.lua) -- 'jail' currently reuses '1v1's coordinates and 'island' reuses
+	-- 'bank's, so letting a match start on either would spawn both teams on top of an
+	-- unrelated, already-running match. Block them until real coordinates are captured
+	-- in-game and MapData is filled in properly.
+	local BrokenMaps = { jail = true, island = true }
+	if BrokenMaps[tostring(data.mapName)] then
+		TriggerClientEvent('esx_paintball:Notify', source, 'This map is not configured yet, pick another one.')
+		cb({})
+		return
+	end
 
 	local ok, reservedGang = pcall(function()
 		return exports['uniquecafejobs']:GetMapReservation(tostring(data.mapName))
@@ -312,7 +345,10 @@ ESX.RegisterServerCallback('esx_paintball:CreateLobby', function(source, cb, dat
 
 	local createdLobbyID = CreateLobby({source = xPlayer.source, identifier = xPlayer.identifier, name = string.gsub(xPlayer.name, "_", " ")}, data)
 	cb(createdLobbyID)
-	table.insert(LobbyList[createdLobbyID].teams[1], { source = source, ready = true })
+	local lobbyKey = FindLobby(createdLobbyID)
+	if lobbyKey then
+		table.insert(LobbyList[lobbyKey].teams[1], { source = source, ready = true })
+	end
 	TriggerClientEvent('esx_paintball:JoinLobby', source, 0, GetTeamHTMLValue(0, source, true))
 	TriggerClientEvent('esx_paintball:RefreshLobbies', -1, createdLobbyID)
 end)
@@ -321,7 +357,7 @@ ESX.RegisterServerCallback('esx_paintball:GetLobbyList', function(source, cb, da
 	local newLobbyListTable = {}
 	for k, v in pairs(LobbyList) do
 		if not v.started then
-			table.insert(newLobbyListTable, { LobbyId = v.LobbyId, name = v.name, map = v.map, weapon = v.weapon, pass = v.pass })
+			table.insert(newLobbyListTable, { LobbyId = v.LobbyId, name = v.name, map = v.map, weapon = v.weapon, hasPassword = (v.pass ~= "" and v.pass ~= nil) })
 		end
 	end
 	cb(json.encode(newLobbyListTable))
@@ -379,21 +415,20 @@ AddEventHandler('esx_paintball:SetPlayerReqs', function(LobbyId)
 		local CurrentTeamID, PlayerIndex, Player = FindPlayerInLobby(LobbyId, source)
 		if CurrentTeamID then
 			local xPlayer = ESX.GetPlayerFromId(source)
+			if not PlayerLoadouts[source] then
+				local price = WeaponPrices[string.lower(tostring(Lobby.weapon))] or 0
+				if price > 0 and xPlayer then
+					if xPlayer.getMoney() >= price then
+						xPlayer.removeMoney(price)
+						TriggerClientEvent('esx_paintball:Notify', source, ('You paid $%s for your %s.'):format(price, tostring(Lobby.weapon)))
+					else
+						TriggerClientEvent('esx_paintball:Notify', source, 'Not enough money to cover the weapon cost, but you have been let in anyway.')
+					end
+				end
+			end
 			PlayerLoadouts[source] = true
 
 			SetPlayerRoutingBucket(source, 100 + LobbyId)
-		end
-	end
-end)
-
-RegisterServerEvent('esx_paintball:StartRound')
-AddEventHandler('esx_paintball:StartRound', function(LobbyId)
-	local _, Lobby = FindLobby(LobbyId)
-	if Lobby and Lobby.started then
-		local CurrentTeamID, PlayerIndex, Player = FindPlayerInLobby(LobbyId, source)
-		if CurrentTeamID then
-			local weaponName = string.upper("weapon_" .. LobbyList[_].weapon)
-			TriggerClientEvent('esx:addPBWeapon', source, weaponName, 250)
 		end
 	end
 end)
@@ -452,12 +487,20 @@ AddEventHandler('esx_paintball:onPBDeath', function(LobbyId, data)
 	local _source = source
 	local victimPlayer = _source
 	local killerPlayer = nil
-	if data.killerServerId then killerPlayer = data.killerServerId end
 
 	local _, Lobby = FindLobby(LobbyId)
 	if Lobby and Lobby.started then
 		local CurrentTeamID, PlayerIndex, Player = FindPlayerInLobby(LobbyId, _source)
 		if CurrentTeamID then
+			-- Only trust a killer reported by the client if the server itself recorded
+			-- that player actually damaging this victim a moment ago (weaponDamageEvent).
+			if data.killerServerId then
+				local recent = RecentAttackers[_source]
+				if recent and recent.source == data.killerServerId and (GetGameTimer() - recent.time) < 8000 then
+					killerPlayer = data.killerServerId
+				end
+			end
+			RecentAttackers[_source] = nil
 			LobbyList[_].teams[CurrentTeamID][PlayerIndex].alive = false
 			LobbyList[_].teams[CurrentTeamID][PlayerIndex].deaths = LobbyList[_].teams[CurrentTeamID][PlayerIndex].deaths + 1
 			if killerPlayer then
@@ -554,7 +597,9 @@ function StartRound(PlayerId, LobbyId, RoundWinner, _)
 	local TempRound = LobbyList[_].roundCounter
 	local TempLobbyCounter = LobbyList[_].LobbyCounter
 
-	SetTimeout(((7 * 60) + 1) * 1000, function()
+	local RoundTimeoutMs = ((tonumber(LobbyValue.rtime) or 120) + 30) * 1000
+
+	SetTimeout(RoundTimeoutMs, function()
 		local LobbyKey2, LobbyValue2 = FindLobby(LobbyId)
 		if LobbyValue2 and LobbyValue2.started then
 			if LobbyValue.lobbyOwner.source == LobbyValue2.lobbyOwner.source and LobbyValue.LobbyId == LobbyValue2.LobbyId then
@@ -654,9 +699,23 @@ AddEventHandler('playerDropped', function()
 	end
 end)
 
+local RecentAttackers = {}
+
 AddEventHandler("weaponDamageEvent", function(sender, data)
 	if IsPlayerInPB(sender) then
-		if IsPlayerInPB(data.hitGlobalId) then
+		local victim = data.hitGlobalId
+		if IsPlayerInPB(victim) then
+			local LobbyId = GetPlayerRoutingBucket(sender) - 100
+			local _, Lobby = FindLobby(LobbyId)
+			if Lobby then
+				local senderTeam = FindPlayerInLobby(LobbyId, sender)
+				local victimTeam = FindPlayerInLobby(LobbyId, victim)
+				if senderTeam and victimTeam and senderTeam == victimTeam and not Lobby.friendlyFire then
+					CancelEvent()
+					return
+				end
+				RecentAttackers[victim] = { source = sender, time = GetGameTimer() }
+			end
 			return
 		end
 		CancelEvent()
@@ -677,13 +736,25 @@ AddEventHandler('unique_paintball:inPaintBall', function(state)
 end)
 
 AddEventHandler('playerDropped', function(resoan)
-	local steamhex = GetPlayerIdentifier(source)
+	local _source = source
+	local steamhex = GetPlayerIdentifier(_source)
+	-- Capture whatever pre-match loadout we saved for this player right away,
+	-- before the 15s wait, since `source` can be reused by another connecting
+	-- player during that window.
+	local savedLoadout = mainloadout[_source]
 	Wait(15000)
 	if InGame[steamhex] then
-		MySQL.update.await('UPDATE users SET loadout = @inPaintball WHERE identifier = @identifier', {
-			['@identifier'] = steamhex,
-			['@inPaintball'] = "[]"
-		})
+		-- Restore the loadout the player had before joining paintball instead of
+		-- wiping their weapons to an empty array; if we never captured one
+		-- (e.g. the server restarted mid-match) leave their DB loadout untouched.
+		if savedLoadout then
+			MySQL.update.await('UPDATE users SET loadout = @loadout WHERE identifier = @identifier', {
+				['@identifier'] = steamhex,
+				['@loadout'] = json.encode(savedLoadout)
+			})
+		end
 		InGame[steamhex] = nil
+		mainloadout[_source] = nil
+		PlayerLoadouts[_source] = nil
 	end
 end)

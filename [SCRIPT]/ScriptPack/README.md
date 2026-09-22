@@ -314,3 +314,170 @@ Fixed by switching every `DisablePlayerFiring(playerPed, ...)` in
 `SetPlayerInvincible` the same way (`Player`, not `Ped`, per its real
 signature too) - not reported broken, but same category of bug and safe to
 correct alongside it.
+
+## Bug fix: SCRIPT ERROR in server/license-sv.lua (nil index)
+The error `@ScriptPack/server/license-sv.lua:62: attempt to index a nil
+value` was the exact compatibility issue flagged earlier: that file looks up
+each license type's label in the separate `licenses` table, and `install_license_menu.sql`
+originally seeded every NEW type EXCEPT `dys` - because `dys` was added to
+`license_config.lua` in a later message, after that SQL file was already
+written. The moment a player actually had a `dys` row (bought or granted),
+`license-sv.lua` crashed trying to look up its label. Fixed: `dys` added to
+the seed list. **Re-run the updated `install_license_menu.sql`** (it's a
+`REPLACE INTO`, safe to run again even though the other rows already
+exist).
+
+## Confirming: NCZ badge show/hide (re: your note on the appearance)
+To be explicit about this, since you flagged that I should not skip past
+it: the gold/black badge (design as built, not reverted) already does
+exactly what you described - `client/ncz-cl.lua`'s `UpdateHudVisibility()`
+shows it the instant you enter either a small named NCZ zone or the big
+`zoneMap.Base` circle, and hides it the instant you leave both. That part
+needed no further change; your screenshot from two messages ago already
+showed it working (the badge visible with "NO COMBAT ZONE / Silencer + DYS
+Permit Required" while you were inside the zone). And to close the loop on
+the earlier "could still shoot" report: that was your own police job being
+in `WhitelistJobs` (police/sheriff/fbi/mt are always exempt, by design,
+same as the small zones) - not a bug.
+
+## Bug fix: SCRIPT ERROR ncz-cl.lua:161 (nil field 'job')
+Race condition between this file's two threads: the enforcement loop starts
+on its own `Citizen.CreateThread` and begins reading the global `PlayerData`
+almost immediately, while a SEPARATE thread is the one responsible for
+waiting on ESX and actually setting `PlayerData` - both threads start at
+basically the same moment when the resource loads, so the enforcement loop
+can (and, especially right after a resource restart, often does) run its
+first pass before `PlayerData` exists yet, crashing on `PlayerData.job.name`.
+This was likely always latent in the original file, just surfaced now from
+restarting `ScriptPack` repeatedly while testing.
+
+Fixed by wrapping the entire enforcement loop body in
+`if PlayerData and PlayerData.job then ... end` - it simply skips that tick
+(does nothing, waits 1ms, tries again) until the other thread has finished
+setting it up, instead of crashing.
+
+## Debugging: HUD badge not showing at all
+Re-verified everything on my end (the iframe, the relay rule in
+`html/index.html`, the files{} list in `fxmanifest.lua`, `html/ncz_hud/`
+itself) - all correct and consistent. The most likely explanation is that
+the `html/` files weren't actually copied to the live server - these are a
+new file type compared to the `.lua` files you've been swapping so far, easy
+to miss:
+
+**Exact checklist - all 3 of these are required, not just the .lua files:**
+1. `[SCRIPT]/ScriptPack/html/index.html` replaced (the shell - gained the
+   5th iframe + relay rule)
+2. `[SCRIPT]/ScriptPack/html/ncz_hud/` - this whole folder copied in as a
+   new folder (5 files: `index.html`, `style.css`, `script.js`, and the 2
+   font files)
+3. `[SCRIPT]/ScriptPack/fxmanifest.lua` replaced (has the 5 new
+   `html/ncz_hud/*` lines in the `files {}` block under `ui_page`)
+
+Added `/testncz` to `client/ncz-cl.lua` - toggles the badge on/off directly,
+completely bypassing zone detection. Run it anywhere:
+- **Shows the badge** -> the NUI/html wiring is fine, so the real problem is
+  in the zone detection itself (wrong coordinates, wrong radius, etc.) -
+  come back with what you tried and I'll dig into that instead.
+- **Shows nothing** -> confirms it's the file checklist above - go through
+  those 3 items again.
+
+Remove the `RegisterCommand('testncz', ...)` block once this is sorted.
+
+## NCZ badge reverted to your original purple design
+Per your latest message, `html/ncz_hud/index.html`, `style.css` and
+`script.js` are now exactly the files you uploaded (purple "You Are In NCZ"
+badge) - my gold/black reskin from earlier is gone. Removed the now-unused
+`AtlantaCollegeRegular-1Gva2.ttf` reference from `fxmanifest.lua`'s
+`files {}` list too, since the original CSS never used it. The
+`HeadingNowTrial-67Extrabold.ttf` font stays (your CSS's `abtin` font-face
+uses it); the `higha`/`Merich.otf` font-face in your CSS still points at a
+file that's never been uploaded in this whole conversation, so that one
+font-face just silently fails to load - same as it would on its own, not
+something I introduced.
+
+The message contract between `client/ncz-cl.lua` and this HTML didn't
+change (still `{action: 'enable'|'disable'}`), so no other file needed
+touching for this part.
+
+## All DOJ + Law Enforcement jobs now fire freely without DYS
+`WhitelistJobs` in `client/ncz-cl.lua` was only `police`/`sheriff`/`fbi`/`mt`.
+Expanded to the full list from your message:
+- **Law Enforcement**: `police`, `sheriff`, `mt`
+- **Department Of Justice**: `cid`, `cia`, `marshal`, `fbi`, `judge`, `doa`
+
+All 9 now bypass the DYS/suppressor requirement entirely inside the big
+`zoneMap.Base` circle, exactly like they already did in the small named NCZ
+zones.
+
+## Color changed back to gold (kept your original layout/structure)
+`html/ncz_hud/style.css` - only the colors changed (purple `rgb(88,0,170)`
+-> gold `rgb(212,175,55)`, badge background now dark/black with a gold
+border for contrast, text gold). Same `#hud`/`#batman`/`#matn` structure and
+layout as your uploaded files - this is a recolor, not a redesign.
+
+## About "doesn't disappear when leaving NCZ"
+Before changing anything here, worth checking first: the badge is tied to
+`coords.label` (small zones) **or** `inBaseZone` (the big `zoneMap.Base`
+circle) - and `zoneMap.Base`'s radius is 1500 units, which covers most of
+downtown LS. Re-checked the exit logic in `client/ncz-cl.lua` line by line -
+it's correct (`inBaseZone` does get set back to `false` the moment you're
+actually outside that 1500-unit radius). So walking to a different street
+that's still within 1500 units of the Base center (`-115.583, -919.272`)
+will never make the badge disappear - only traveling far enough out of the
+city core will.
+
+Added `/nczdebug` to `client/ncz-cl.lua` to settle this for certain - it
+prints your live distance to the Base center vs. the radius, and the
+current `inBaseZone`/`coords.label` state. Run it wherever you are:
+- If it says `INSIDE` and the badge is showing - that's correct behavior,
+  not a bug. If you actually wanted a smaller zone, tell me the radius (or
+  coordinates) you want and I'll change `zoneMap.Base` itself.
+- If it says `outside` and the badge is still showing - that IS a real bug,
+  and different from what I checked above; come back with what it printed
+  and I'll dig further.
+
+Remove both `/testncz` and `/nczdebug` once this is sorted.
+
+## Badge now only shows for NCZ (the small zones), not the Base safe zone
+Confirmed per your message: `zone` (Police, PoliceVienwood, Paintball,
+ParkingMarkazi, ParkingMarkazi2, Medic, Sheriff1, Mechanic, UWUCafe,
+Sheriff2) is "NCZ"; `zoneMap.Base` (the 1500-radius circle) is a separate
+"safe zone" concept for the DYS permit, not NCZ. That's exactly why the
+badge looked like it "wouldn't go away" - it was tied to both. Fixed:
+`UpdateHudVisibility()` in `client/ncz-cl.lua` now only shows the badge for
+`coords.label` (the small zones) - the Base zone no longer affects it at
+all. The DYS/suppressor firing logic for the Base zone itself is unchanged,
+only the badge's trigger condition changed.
+
+## DYS: no more permanent, kill-revoke scoped to the safe zone, live notifications
+Per your latest message, three changes:
+
+1. **Not permanent anymore.** `license_config.lua`'s `dys` entry is now
+   `timing = { permanent = false, time = {1, 7} }` - this disables the
+   "Permanent" checkbox in F6's add flow entirely (already wired to
+   `config.timing.permanent`), so staff can only grant 1-7 days. The Gun
+   Shop purchase (`server/shop-sv.lua`) now grants a flat **7 days** instead
+   of forever - controlled by `local DYS_PERMIT_DAYS = 7` right above the
+   `buy_permit` handler, change that one number for a different duration.
+
+2. **Kill-revoke scoped to the safe zone.** Earlier this revoked on ANY
+   kill anywhere while holding the license; per your message ("وقتی یکی رو
+   تو سیف زون میکشی") it's now scoped to kills that happen **while you're
+   inside `zoneMap.Base`** (`client/ncz-cl.lua`'s `gameEventTriggered`
+   handler now checks `inBaseZone` too).
+
+3. **Live "no permit" notifications on weapon draw.** Previously the
+   notification only fired once per zone visit. Now `client/ncz-cl.lua`
+   tracks the currently-equipped weapon and resets the notification the
+   moment it changes - so drawing a weapon (or switching weapons) while
+   lacking the permit/suppressor tells you immediately, every time, instead
+   of only the first time you drew a gun after entering the zone. No
+   notification while unarmed (holstered), since there's nothing to warn
+   about yet.
+
+## All licenses now support up to 30 days
+Only `dys` was capped lower (`{1, 7}`) - every other license type already
+allowed `{1, 30}`. Brought `dys` up to match: `license_config.lua`'s time
+range is now `{1, 30}` for it too (F6 staff can grant 1-30 days), and the
+Gun Shop purchase (`server/shop-sv.lua`'s `DYS_PERMIT_DAYS`) now grants a
+flat 30 days instead of 7, so the purchase matches F6's new max.

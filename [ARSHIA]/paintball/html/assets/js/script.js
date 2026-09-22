@@ -88,6 +88,17 @@ let weaponsprice = {
 let maps = { "bank": "bank.jpg", "bimeh": "bimeh.jpg", "cargo": "cargo.jpg", "skyscraper": "skyscraper.jpg", "shop1": "shop1.jpg", "shop2": "shop2.jpg", "javaheri": "javaheri.jpg", "1v1": "1v1.jpg", "island": "island.jpg", "jail": "jail.jpg" }
 var lobbyID, TeamID, mapping, SWeapon, lobbyname, friendlyFire, roundNum, TotalPlayers, timer, head, armor;
 var page = 0;
+var pbToastTimer = null;
+
+function popupkon(title, msg) {
+    $('#pbToastTitle').text(title || '');
+    $('#pbToastMsg').text(msg || '');
+    $('#pbToast').css('display', 'block');
+    if (pbToastTimer) clearTimeout(pbToastTimer);
+    pbToastTimer = setTimeout(function () {
+        $('#pbToast').css('display', 'none');
+    }, 4000);
+};
 
 // Create Lobby Functions
 function onCreateLobby() {
@@ -169,8 +180,8 @@ function onSubmit() {
                     roundNum: roundNum.val(),
                     Password: lobbypass.val(),
                     armor: armor.val(),
-                    timer: timer.val(),
-                    head: head,
+                    rtime: timer.val(),
+                    headbox: head,
                 })
             }).then(resp => resp.json()).then(lobid => {
                 lobbyID = lobid
@@ -205,7 +216,7 @@ function onJoinLobby() {
         var jdata = JSON.parse(data);
         if (jdata.length != 0) {
             for (var i = 0; i < jdata.length; i++) {
-                if (jdata[i].pass == null || jdata[i].pass == "") {
+                if (!jdata[i].hasPassword) {
                     $('.boxlobbeys').append('<h1 class="lobbeys" id="Lobby-' + jdata[i].LobbyId + '" onclick="onSelectLobby(this.id)">' + jdata[i].name + ' | ' + jdata[i].map + ' | ' + jdata[i].weapon + '</h1>');
                 } else {
                     $('.boxlobbeys').append('<h1 class="lobbeys" id="Lobby-' + jdata[i].LobbyId + '-locked" onclick="onSelectLobby(this.id)">' + jdata[i].name + ' | ' + jdata[i].map + ' | Locked</h1>');

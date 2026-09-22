@@ -273,8 +273,10 @@ end)
 -- (see client/ncz-cl.lua). This does NOT go through the normal
 -- server/licensemenu-sv.lua 'license:add' event (that one is F6/staff-only
 -- and doesn't take payment) -- it writes to user_licenses directly here,
--- always permanent, then asks licensemenu-sv.lua to push the refreshed
--- license list to the buyer via the 'license:internalPush' event.
+-- then asks licensemenu-sv.lua to push the refreshed license list to the
+-- buyer via the 'license:internalPush' event.
+local DYS_PERMIT_DAYS = 30 -- matches license_config.lua's dys time range {1,30} - change this number for a different duration
+
 RegisterServerEvent('gunshop_item:buy_permit')
 AddEventHandler('gunshop_item:buy_permit', function(itemName)
     local source = source
@@ -308,15 +310,18 @@ AddEventHandler('gunshop_item:buy_permit', function(itemName)
 
         xPlayer.payAny(itemData.price)
 
-        MySQL.Async.execute('INSERT INTO user_licenses (owner, type, expire, granted_by, description, created_at) VALUES (@owner, @type, 0, @granted_by, @description, @created_at)', {
+        local expire = os.time() + (DYS_PERMIT_DAYS * 86400)
+
+        MySQL.Async.execute('INSERT INTO user_licenses (owner, type, expire, granted_by, description, created_at) VALUES (@owner, @type, @expire, @granted_by, @description, @created_at)', {
             ['@owner']       = identifier,
             ['@type']        = licenseType,
+            ['@expire']      = expire,
             ['@granted_by']  = 'Gun Shop',
-            ['@description'] = 'Kharide shode az Gun Shop',
+            ['@description'] = ('Kharide shode az Gun Shop (%d ruz)'):format(DYS_PERMIT_DAYS),
             ['@created_at']  = os.time()
         }, function(rowsChanged)
             if rowsChanged and rowsChanged > 0 then
-                xPlayer.showNotification(('~g~Shoma %s ra kharidid!'):format(licenseInfo.label))
+                xPlayer.showNotification(('~g~Shoma %s ra kharidid! (%d ruz)'):format(licenseInfo.label, DYS_PERMIT_DAYS))
                 TriggerEvent('license:internalPush', source)
 
                 TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'AMoneyLog', '```css\n[ Player : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Player Steam : '..xPlayer.identifier..' ]\n[ Bought Permit : '..tostring(licenseType)..' ]\n[ Cost : '..tostring(itemData.price)..' ]\n```', 'user', true, source, false)

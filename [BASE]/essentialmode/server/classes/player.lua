@@ -957,14 +957,26 @@ function CreatePlayer(
         TriggerClientEvent("esx:addWeaponComponent", self.source, weaponName, weaponComponent)
     end
 
+    -- how many copies of this weapon type are in the pockets (each has its own serial)
+    self.countWeapon = function(weaponNamex)
+        local name = string.upper(weaponNamex)
+        local n = 0
+        for i = 1, #self.loadout, 1 do
+            if self.loadout[i].name == name then n = n + 1 end
+        end
+        return n
+    end
+
     self.removeWeapon = function(weaponNamex, ammo, serial)
-		weaponName = string.upper(weaponNamex)
+        local weaponName = string.upper(weaponNamex)
         local weaponLabel
+        local removedAmmo = 0
         ammo = tonumber(ammo) or 0
 
         for i = 1, #self.loadout, 1 do
             if self.loadout[i].name == weaponName and (not serial or self.loadout[i].serial == serial) then
                 weaponLabel = self.loadout[i].label
+                removedAmmo = tonumber(self.loadout[i].ammo) or 0
                 table.remove(self.loadout, i)
                 break
             end
@@ -972,7 +984,12 @@ function CreatePlayer(
 
         if weaponLabel then
             weaponLabel = tostring(weaponLabel)
-            TriggerClientEvent("esx:removeWeapon", self.source, weaponName, ammo)
+            -- Several copies are allowed (Config.MaxSameWeapon). If another copy of this
+            -- weapon is still carried, the ped must KEEP the weapon and only give up this
+            -- copy's share of the ammo - otherwise GTA would strip the weapon completely
+            -- while the server still lists the other copy (desync).
+            local stillHas = self.hasWeapon(weaponName) and true or nil
+            TriggerClientEvent("esx:removeWeapon", self.source, weaponName, stillHas and removedAmmo or ammo, stillHas)
             TriggerClientEvent("esx:removeInventoryItem", self.source, {label = weaponLabel}, 1)
         end
     end

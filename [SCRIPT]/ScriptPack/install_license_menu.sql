@@ -34,5 +34,6 @@ REPLACE INTO `licenses` (`type`, `label`) VALUES
     ('ceremony_1', 'Bargozari Marasem'),
     ('mojavezgun_1', 'Mojaveze hamle aslahe'),
     ('salamateravan', 'Govahi Salamate Ravan'),
-    ('mojavezvest_1', 'Mojaveze pooshidane vest');
+    ('mojavezvest_1', 'Mojaveze pooshidane vest'),
+    ('dys', 'Mojaveze DYS (Tirandazi dar Base Zone)');
 

@@ -340,3 +340,25 @@ html, body { width: 100%; height: 100%; background: transparent; overflow: hidde
 .lgTable th { text-align: left; color: var(--text-dim); font-weight: 600; padding: 4px 6px; border-bottom: 1px solid rgba(255,255,255,0.1); }
 .lgTable td { padding: 4px 6px; border-bottom: 1px solid rgba(255,255,255,0.04); } .lgTable tr.dim { opacity: 0.45; }
 .pos { color: var(--good); font-weight: 700; } .neg { color: var(--danger); font-weight: 700; }
+
+
+/* ============================ FANCY TOASTS ============================ */
+#uapToastHost { position: fixed; top: 22px; left: 50%; transform: translateX(-50%); z-index: 99999;
+  display: flex; flex-direction: column; gap: 10px; align-items: center; pointer-events: none; width: 460px; max-width: 92vw; }
+.uapToast { position: relative; width: 100%; display: flex; gap: 14px; align-items: center; padding: 14px 18px 18px 16px; overflow: hidden;
+  background: linear-gradient(135deg, rgba(14,16,24,0.96), rgba(24,27,38,0.94)); border: 1px solid color-mix(in srgb, var(--tc) 55%, transparent);
+  border-left: 5px solid var(--tc); border-radius: 12px; color: #f2f4f8;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.55), 0 0 22px color-mix(in srgb, var(--tc) 35%, transparent);
+  animation: uapIn 0.45s cubic-bezier(.2,.9,.25,1.15) both, uapGlow 1.6s ease-in-out 0.45s 3; }
+.uapToast.out { animation: uapOut 0.45s ease-in both; }
+.uapToastIcon { flex: 0 0 auto; width: 52px; height: 52px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px;
+  background: radial-gradient(circle, color-mix(in srgb, var(--tc) 30%, transparent), transparent 70%); border: 2px solid var(--tc); }
+.uapToastBody { flex: 1; min-width: 0; }
+.uapToastTitle { font-size: 18px; font-weight: 800; letter-spacing: 0.3px; color: var(--tc); text-shadow: 0 0 10px color-mix(in srgb, var(--tc) 60%, transparent); }
+.uapToastLine { font-size: 14px; line-height: 1.5; opacity: 0.92; word-break: break-word; }
+.uapToastBar { position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: rgba(255,255,255,0.08); }
+.uapToastBar i { display: block; height: 100%; background: var(--tc); transform-origin: left; animation: uapBar var(--dur) linear both; }
+@keyframes uapIn  { from { opacity: 0; transform: translateY(-40px) scale(0.92); } to { opacity: 1; transform: none; } }
+@keyframes uapOut { to { opacity: 0; transform: translateY(-30px) scale(0.95); } }
+@keyframes uapBar { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+@keyframes uapGlow { 50% { box-shadow: 0 8px 30px rgba(0,0,0,0.55), 0 0 38px color-mix(in srgb, var(--tc) 65%, transparent); } }

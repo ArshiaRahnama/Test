@@ -260,6 +260,8 @@ $(document).ready(function () {
                         _0x286660.index +
                         '" data-item-peso="' +
                         _0x286660.peso +
+                        '" data-item-serial="' +
+                        (_0x286660.serial || '') +
                         '" data-item-key="' +
                         _0x286660.name +
                         '" data-item-name="' +
@@ -283,7 +285,7 @@ $(document).ready(function () {
                         '.png\');">\n                                        <div class="top-item">\n                                            <div class="amount">' +
                         _0x286660.count +
                         'x</div>\n                                            <div class="peso">' +
-                        (_0x286660.peso * _0x286660.count).toFixed(1) +
+                        (_0x286660.type === 'item_weapon' ? (Number(_0x286660.peso) || 0) : (Number(_0x286660.peso) || 0) * (Number(_0x286660.count) || 0)).toFixed(1) +
                         'kg</div>\n                                        </div>\n                                        <div class="bottom-item">\n                                            <div class="name-item">' +
                         _0x286660.label +
                         '\n                                            <div class="typeFilter">' +
@@ -334,6 +336,8 @@ $(document).ready(function () {
                           _0x286660.index +
                           '" data-item-peso="' +
                           _0x286660.peso +
+                          '" data-item-serial="' +
+                          (_0x286660.serial || '') +
                           '" data-item-key="' +
                           _0x286660.name +
                           '" data-item-name="' +
@@ -357,7 +361,7 @@ $(document).ready(function () {
                           '.png\');">\n                                        <div class="top-item">\n                                            <div class="amount">' +
                           _0x286660.count +
                           'x</div>\n                                            <div class="peso">' +
-                          (_0x286660.peso * _0x286660.count).toFixed(1) +
+                          (_0x286660.type === 'item_weapon' ? (Number(_0x286660.peso) || 0) : (Number(_0x286660.peso) || 0) * (Number(_0x286660.count) || 0)).toFixed(1) +
                           'kg</div>\n                                        </div>\n                                        <div class="bottom-item">\n                                            <div class="name-item">' +
                           _0x286660.label +
                           '\n                                            <div class="typeFilter">' +
@@ -405,6 +409,8 @@ $(document).ready(function () {
                             _0x286660.index +
                             '" data-item-peso="' +
                             _0x286660.peso +
+                            '" data-item-serial="' +
+                            (_0x286660.serial || '') +
                             '" data-item-key="' +
                             _0x286660.name +
                             '" data-item-name="' +
@@ -428,7 +434,7 @@ $(document).ready(function () {
                             '.png\');">\n                                        <div class="top-item">\n                                            <div class="amount">' +
                             _0x286660.count +
                             'x</div>\n                                            <div class="peso">' +
-                            (_0x286660.peso * _0x286660.count).toFixed(1) +
+                            (_0x286660.type === 'item_weapon' ? (Number(_0x286660.peso) || 0) : (Number(_0x286660.peso) || 0) * (Number(_0x286660.count) || 0)).toFixed(1) +
                             'kg</div>\n                                        </div>\n                                        <div class="bottom-item">\n                                            <div class="name-item">' +
                             _0x286660.label +
                             '\n                                            <div class="typeFilter">' +
@@ -950,6 +956,7 @@ function getDrag() {
                           newSlot: _0x896661,
                           amount: parseInt(_0x2fd6f0),
                           chest: nomeTrunckChest,
+                          serial: _0x513672.draggable.attr('data-item-serial') || '',
                         })
                       )
                       var _0x35a197 = new Audio('slot.ogg')
@@ -1117,6 +1124,7 @@ function getDrag() {
                       newSlot: _0x3f436c,
                       amount: parseInt(_0x3e2039),
                       chest: nomeTrunckChest,
+                      serial: _0x4427d0.draggable.attr('data-item-serial') || '',
                     })
                   )
                   var _0x31371a = new Audio('slot.ogg')
@@ -1423,6 +1431,7 @@ function getDrag() {
                   item: _0x17c58c,
                   amount: parseInt(_0x2f20e3),
                   slot: _0x51395b,
+                  serial: _0x4aba03.draggable.attr('data-item-serial') || '',
                 })
               )
           }

@@ -31,10 +31,7 @@ end)
 
 RegisterNetEvent('Unique_AdminPanel:ApplyRevive')
 AddEventHandler('Unique_AdminPanel:ApplyRevive', function()
-    local ped = PlayerPedId()
-    NetworkResurrectLocalPlayer(GetEntityCoords(ped), GetEntityHeading(ped), true, false)
-    SetEntityHealth(ped, GetEntityMaxHealth(ped))
-    ClearPedBloodDamage(ped)
+    FullRevive()
     drawNotification("~b~You have been revived by an admin")
 end)
 

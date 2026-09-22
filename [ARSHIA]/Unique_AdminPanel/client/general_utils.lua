@@ -77,14 +77,35 @@ end
 MyPermissionLevel = 0
 ButtonPerms = {}
 
-Citizen.CreateThread(function()
-    while ESX == nil do Citizen.Wait(50) end
+-- BUG FIX: the level and the button permissions used to be fetched ONCE when the resource
+-- started - usually before the character had loaded (level 0) and before going on duty
+-- (button perms come back empty when off duty). Every button with a level floor
+-- (Bring, Freeze, Kill, Clear New Life ...) then stayed hidden until the next restart.
+-- They are now refreshed every time the menu opens and when duty changes.
+local refreshing = false
+function RefreshPermissions(cb)
+    if ESX == nil then if cb then cb() end return end
+    local pending, finished = 2, false
+    local function done()
+        pending = pending - 1
+        if pending <= 0 and not finished then finished = true if cb then cb() end end
+    end
     ESX.TriggerServerCallback('Unique_AdminPanel:GetMyPermissionLevel', function(level)
-        MyPermissionLevel = level or 0
+        MyPermissionLevel = tonumber(level) or 0
+        done()
     end)
     ESX.TriggerServerCallback('Unique_AdminPanel:GetButtonPerms', function(perms)
         ButtonPerms = perms or {}
+        done()
     end)
+    -- never leave the caller hanging if the server doesn't answer
+    SetTimeout(2000, function() if not finished then finished = true if cb then cb() end end end)
+end
+
+Citizen.CreateThread(function()
+    while ESX == nil do Citizen.Wait(50) end
+    Citizen.Wait(8000)
+    RefreshPermissions()
 end)
 
 -- MenuV version: the menu is built declaratively (see client/menuv_ui.lua),
@@ -159,4 +180,26 @@ function DeleteVehiclesInRange(range)
         drawNotification("~y~No vehicles found in that range")
     end
     TriggerServerEvent('Unique_AdminPanel:LogClientAction', "dvrange", ("range: %s | deleted: %s"):format(range, deleted))
+end
+
+-- ---------------------------------------------------------------------------
+-- Revive that works with the server's ambulance script.
+-- The panel used to only call NetworkResurrectLocalPlayer: the ped got up, but the ambulance
+-- script (death screen / "isDead" state / bleed-out timer) never learned about it, so F4 > Revive
+-- looked broken while the F7 menu (which triggers the ambulance events) worked.
+-- Order: revivexIfDead -> revivex -> raw resurrect, each tried only if the player is still dead.
+function FullRevive()
+    TriggerEvent('esx_ambulancejob:revivexIfDead')
+    CreateThread(function()
+        Wait(1500)
+        if IsEntityDead(PlayerPedId()) then TriggerEvent('esx_ambulancejob:revivex') end
+        Wait(1500)
+        local ped = PlayerPedId()
+        if IsEntityDead(ped) then
+            NetworkResurrectLocalPlayer(GetEntityCoords(ped), GetEntityHeading(ped), true, false)
+            SetEntityHealth(ped, GetEntityMaxHealth(ped))
+            ClearPedBloodDamage(ped)
+            ClearPedTasksImmediately(ped)
+        end
+    end)
 end

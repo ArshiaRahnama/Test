@@ -57,7 +57,8 @@ function ToggleAdminMenu()
     if MenuV.CurrentMenu ~= nil then
         MenuV:CloseAll()
     else
-        Go('main')
+        -- re-read the level / button permissions first, so the menu is always up to date
+        RefreshPermissions(function() Go('main') end)
     end
 end
 
@@ -257,6 +258,9 @@ CreateMenu('player_quick', 'Quick Actions', function(m)
     end)
     LButton(2, m, '🚀', 'Launch Into Air', 'Throw the player upward', function()
         TriggerServerEvent('Unique_AdminPanel:LaunchTarget', target())
+    end)
+    LButton(2, m, '🕓', 'Clear New Life', 'Remove the New Life (NLR) restriction from this player', function()
+        TriggerServerEvent('Unique_AdminPanel:ClearNewLife', target())
     end)
     Button(m, '👕', 'Open Clothing Menu', 'Opens the /skin menu on this player', function()
         ExecuteCommand('skin ' .. target())

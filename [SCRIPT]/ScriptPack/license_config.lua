@@ -156,8 +156,16 @@ licenseConfig = {
             -- same as any other license. It's ALSO still buyable at the Gun
             -- Shop for $150,000 (server/shop-sv.lua's gunshop_item:buy_permit) -
             -- both paths write the same license_type row.
+            --
+            -- Not permanent, on purpose - timing.permanent = false disables
+            -- the "Permanent" checkbox in F6's add flow entirely (it's
+            -- already wired to config.timing.permanent). time = {1,30}
+            -- matches every other license type's range now - F6 staff can
+            -- grant 1-30 days. The Gun Shop purchase grants a flat 30 days
+            -- too (server/shop-sv.lua's DYS_PERMIT_DAYS) - change that
+            -- number if you want the purchase to differ from F6's max.
             label = 'Mojaveze DYS (Tirandazi dar Base Zone)',
-            timing = { permanent = true, time = {1, 1} },
+            timing = { permanent = false, time = {1, 30} },
             description = true,
             addAccess    = { ['police'] = true, ['sheriff'] = true, ['mt'] = true },
             viewAccess   = { ['police'] = true, ['sheriff'] = true, ['mt'] = true, ['cid'] = true, ['cia'] = true, ['marshal'] = true, ['fbi'] = true, ['doa'] = true, ['judge'] = true },

@@ -253,7 +253,7 @@ end)
 -- 1. CASE FILE
 -- =========================================================================
 
-local KIND_ORDER = { 'ban', 'jail', 'cs', 'warning', 'kick', 'report', 'flag', 'note', 'impound', 'transfer', 'money', 'admin' }
+local KIND_ORDER = { 'ban', 'jail', 'cs', 'warning', 'kick', 'vdm', 'nlr', 'report', 'flag', 'note', 'impound', 'transfer', 'money', 'admin' }
 
 RegisterServerCallbackSafe('Unique_AdminPanel:GetCaseFile', function(source, cb, target)
     if not staff(source, 1) or throttled(source, 'case', 800) then cb(nil) return end
@@ -303,7 +303,8 @@ RegisterServerCallbackSafe('Unique_AdminPanel:GetCaseFile', function(source, cb,
         add('transfer', r.t, 'Character transfer', r.admin_name, (r.source_identifier == identifier and 'Source: moved to ' .. tostring(r.dest_identifier)) or ('Destination: received from ' .. tostring(r.source_identifier)))
     end
     for _, r in ipairs(q('SELECT id, action, details, admin_name, UNIX_TIMESTAMP(created_at) t FROM admin_action_log WHERE target_identifier=@i ORDER BY id DESC LIMIT 150', P)) do
-        add('admin', r.t, r.action, r.admin_name, r.details)
+        local kind = (tostring(r.action):find('^vdm') and 'vdm') or (tostring(r.action):find('^nlr') and 'nlr') or 'admin'
+        add(kind, r.t, r.action, r.admin_name, r.details)
     end
 
     -- reports the player filed (+ which have evidence)

@@ -24,7 +24,8 @@ local PBData =
 	CurrentRound = -1,
 	MaxRounds = 0,
 	headbox = 0,
-	armor = 0
+	armor = 0,
+	RTime = 120
 }
 
 ESX, Config = nil, {}
@@ -91,9 +92,16 @@ local MapData =
 		["team2"] = { x = -139.52, y = -952.93, z = 254.13, h = 159.49 },
 		["eteam1"] = { x = -161.05, y = -995.09, z = 254.13, h = 340.75 },
 		["eteam2"] = { x = -158.08, y = -988.08, z = 254.13, h = 157.8 },
+		["area"] =
+		{
+			["Pos"] = { x = -156.88, y = -987.02, z = 254.13 },
+			["Size"] = { x = 60.0, y = 90.0, z = 15.0 },
+		},
 	},
 	["island"] =
 	{
+		-- TODO: placeholder, currently a copy of 'bank'. Server blocks lobbies on this
+		-- map until real team1/team2/eteam1/eteam2/area coordinates are captured in-game.
 		["team1"] = { x = 244.43, y = 202.98, z = 105.21, h = 73.86 },
 		["team2"] = { x = 254.34, y = 225.39, z = 106.29, h = 163.04 },
 	},
@@ -148,6 +156,8 @@ local MapData =
 
 	["jail"] =
 	{
+		-- TODO: placeholder, currently identical to '1v1'. Server blocks lobbies on this
+		-- map until real team1/team2/eteam1/eteam2/area coordinates are captured in-game.
 		["team1"] = { x = -2100.9, y = 3095.54, z = 32.81, h = 332.33 },
 		["team2"] = { x = -2074.5, y = 3141.4, z = 32.81, h = 148.7 },
 		["eteam1"] = { x = -2100.78, y = 3095.96, z = 33.81, h = 327.91 },
@@ -197,12 +207,19 @@ local function EvaluatePBAccess(entry, PD)
 		local required = PBRequiredGrade[entry.Job] or 0
 		return (PD.job.grade or 0) >= required
 	end
-	return false
+	-- No Condition and no Job restriction means the marker is open to everyone.
+	return true
 end
+
+local PBBlips = {}
 
 function RebuildPBZones()
 	CreatedArray = {}
 	RunThread = false
+	for _, blip in pairs(PBBlips) do
+		RemoveBlip(blip)
+	end
+	PBBlips = {}
 	for k, v in pairs(Config.PBS) do
 		if EvaluatePBAccess(v, PlayerData) then
 			RunThread = true
@@ -211,6 +228,7 @@ function RebuildPBZones()
 				v["Label"],
 				v["Color"]
 			}
+			table.insert(PBBlips, CreateBlip(vector3(v["Enter"]["x"], v["Enter"]["y"], v["Enter"]["z"]), v["Label"]))
 		end
 	end
 	if RunThread then LoadMarkers() end
@@ -286,12 +304,10 @@ end)
 
 Config.PBS = {
 
-
-
 	{
-		Job = "police",
+		-- No Job/Condition set -> open to every player, not job-restricted.
 		Enter = { x = -1616.23, y = 5109.02, z = 54.65 },
-		Label = "Police Paintball",
+		Label = "Paintball",
 		Color = { r = 30, g = 100, b = 255 },
 	},
 
@@ -553,11 +569,13 @@ RegisterCommand("pbmsd", function()
 end)
 
 RegisterNetEvent('esx_paintball:StartMatch')
-AddEventHandler('esx_paintball:StartMatch', function(LobbyId, mapName, weaponName, teamID, teammates, MaxRounds, Arm, Head, time)
+AddEventHandler('esx_paintball:StartMatch', function(LobbyId, mapName, weaponName, teamID, teammates, MaxRounds, Arm, RTime, GunAttachs, HeadBox)
 	if PBData.LobbyId == LobbyId then
 		PBData.InPB = true
+		PBData.RTime = tonumber(RTime) or 120
+		PBData.headbox = HeadBox
 		SendNUIMessage({action = "ShowGameHUD", value = true})
-		SendNUIMessage({action = "ResetRoundTimer", value = 180, r = 0, g = 200, b = 0})
+		SendNUIMessage({action = "ResetRoundTimer", value = PBData.RTime, r = 0, g = 200, b = 0})
 
 		PBData.TeamID = teamID
 		PBData.LastPos = teamID
@@ -596,7 +614,7 @@ AddEventHandler('esx_paintball:StartMatch', function(LobbyId, mapName, weaponNam
 		EquipGun = weaponName
 		TriggerEvent('Paintball', true)
 		StartWhile = true
-		timer = 190
+		timer = PBData.RTime + 10
 	end
 end)
 
@@ -612,7 +630,7 @@ RegisterNetEvent('esx_paintball:StartRound')
 AddEventHandler('esx_paintball:StartRound', function(LobbyId, RoundWinner, Arm, Head, time)
 	if PBData.LobbyId == LobbyId then
 		SendNUIMessage({action = "ShowGameHUD", value = true})
-		SendNUIMessage({action = "ResetRoundTimer", value = 180, r = 0, g = 200, b = 0})
+		SendNUIMessage({action = "ResetRoundTimer", value = PBData.RTime, r = 0, g = 200, b = 0})
 		TriggerEvent('holsterweapon:ResetAll')
 		isDead = false
 		TriggerEvent('es_admin:freezePlayer', true)
@@ -649,6 +667,16 @@ AddEventHandler('esx_paintball:StartRound', function(LobbyId, RoundWinner, Arm, 
 		Citizen.Wait(1000)
 		SetEntityCoords(playerPed, PBData.TeamPos.x, PBData.TeamPos.y, PBData.TeamPos.z)
 		RespawnPed(playerPed, PBData.TeamPos.x, PBData.TeamPos.y, PBData.TeamPos.z, PBData.TeamPos.h)
+		-- The ambulance job's revive resets the ped's clothes to the player's real
+		-- outfit, wiping the paintball team uniform applied at StartMatch. Reapply it
+		-- for the (possibly new, after a team swap) spawn side every round.
+		TriggerEvent('skinchanger:getSkin', function(skin)
+			if tonumber(skin.sex) == 0 then
+				TriggerEvent('skinchanger:loadClothes', skin, json.decode(ClothesData["team" .. PBData.TeamID]["male"]))
+			elseif tonumber(skin.sex) == 1 then
+				TriggerEvent('skinchanger:loadClothes', skin, json.decode(ClothesData["team" .. PBData.TeamID]["female"]))
+			end
+		end)
 		TriggerEvent('es_admin:freezePlayer', true)
 		Citizen.Wait(300)
 		TriggerServerEvent('esx_paintball:StartRound', PBData.LobbyId)
@@ -657,7 +685,7 @@ AddEventHandler('esx_paintball:StartRound', function(LobbyId, RoundWinner, Arm, 
 		Wait(2000)
 		TriggerEvent('es_admin:freezePlayer', false)
 		StartWhile = true
-		timer = 190
+		timer = PBData.RTime + 10
 	end
 end)
 
@@ -1040,20 +1068,6 @@ AddEventHandler('esx_paintball:setTopKillers', function(LobbyId, topKillers)
 	end
 end)
 
-function CreateBlip2(coords, name)
-	local blip = AddBlipForCoord(coords)
-	SetBlipSprite  (blip, 437)
-	SetBlipDisplay (blip, 4)
-	SetBlipScale(blip, 0.7)
-	SetBlipCategory(blip, 3)
-	SetBlipColour  (blip, 46)
-	SetBlipAsShortRange(blip, true)
-
-	BeginTextCommandSetBlipName("STRING")
-	AddTextComponentString(name)
-	EndTextCommandSetBlipName(blip)
-  end
-
 function CreateBlip(coords, name)
 	local blip = AddBlipForCoord(coords)
 	SetBlipSprite  (blip, 437)
@@ -1066,35 +1080,10 @@ function CreateBlip(coords, name)
 	BeginTextCommandSetBlipName("STRING")
 	AddTextComponentString(name)
 	EndTextCommandSetBlipName(blip)
+  return blip
   end
 
-  Citizen.CreateThread(function()
-	CreateBlip(PBMarker.Pos, 'Paint Ball')
-	SetNuiFocus(false,false)
+Citizen.CreateThread(function()
+	SetNuiFocus(false, false)
 	NetworkSetInSpectatorMode(false, 0)
-	while true do
-	  local PlayerPed = GetPlayerPed(-1)
-	  local coords    = GetEntityCoords(PlayerPed)
-
-	  if GetDistanceBetweenCoords(coords, PBMarker.Pos, false) < 100.0 then
-		Wait(0)
-		DrawMarker(tonumber(PBMarker.Type), tonumber(PBMarker.Pos.x), tonumber(PBMarker.Pos.y), tonumber(PBMarker.Pos.z), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 10.0, 10.0, 2.0, tonumber(PBMarker.Color.r), tonumber(PBMarker.Color.g), tonumber(PBMarker.Color.b), 100, false, true, 2, false, false, false, false)
-		if GetDistanceBetweenCoords(coords, PBMarker.Pos, false) < 5.0 then
-		  if not isLBOpen then
-			ESX.ShowFloatingHelpNotification("~INPUT_CONTEXT~ Baz Kardan Menu", tonumber(PBMarker.Pos.x), tonumber(PBMarker.Pos.y), tonumber(PBMarker.Pos.z)+1)
-		  end
-		  if IsControlJustPressed(1, Keys['E']) then
-			isLBOpen = true
-			OpenLobbyMenu(true)
-		  end
-		elseif isLBOpen then
-		  isLBOpen = false
-		  OpenLobbyMenu(false)
-		end
-	  else
-
-
-		Wait(1000)
-	  end
-	end
 end)

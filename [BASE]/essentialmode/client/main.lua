@@ -483,9 +483,17 @@ AddEventHandler('esx:addWeaponComponent', function(weaponName, weaponComponent)
 end)
 
 RegisterNetEvent('esx:removeWeapon')
-AddEventHandler('esx:removeWeapon', function(weaponName, ammo)
+AddEventHandler('esx:removeWeapon', function(weaponName, ammo, keep)
 	local playerPed  = PlayerPedId()
 	local weaponHash = GetHashKey(weaponName)
+
+	-- keep = another copy of this weapon is still in the pockets: the ped keeps
+	-- the weapon and only loses this copy's share of the (shared) ammo pool.
+	if keep then
+		local pedAmmo = GetAmmoInPedWeapon(playerPed, weaponHash)
+		SetPedAmmo(playerPed, weaponHash, math.max(0, math.floor(pedAmmo - (tonumber(ammo) or 0))))
+		return
+	end
 
 	if ammo then
 		local pedAmmo = GetAmmoInPedWeapon(playerPed, weaponHash)

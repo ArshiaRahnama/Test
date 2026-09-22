@@ -978,11 +978,13 @@ AddEventHandler(
                 TriggerClientEvent("esx:showNotification", _source, _U("imp_invalid_amount"))
             end
         elseif type == "item_weapon" then
-            if sourceXPlayer.hasWeapon(itemName) then
-                if not targetXPlayer.hasWeapon(itemName) then
-                    Components = sourceXPlayer.hasWeapon(itemName).components
-                    sourceXPlayer.removeWeapon(itemName)
-                    targetXPlayer.addWeapon(itemName, itemCount)
+            local weaponLabel = ESX.GetWeaponLabel(itemName)
+            local carried = sourceXPlayer.hasWeapon(itemName)
+            if carried then
+                if targetXPlayer.countWeapon(itemName) < (Config.MaxSameWeapon or 1) then
+                    Components = carried.components or {}
+                    sourceXPlayer.removeWeapon(itemName, nil, carried.serial)
+                    targetXPlayer.addWeapon(itemName, itemCount, carried.serial) -- serial goes with the weapon
 					Wait(100)
 					for _,v in pairs(Components) do
 						targetXPlayer.addWeaponComponent(itemName, v)
@@ -1028,8 +1030,10 @@ AddEventHandler(
 RegisterServerEvent("esx:removeInventoryItem")
 AddEventHandler(
     "esx:removeInventoryItem",
-    function(type, itemName, itemCount)
+    function(type, itemName, itemCount, serial)
         local _source = source
+        -- serial (optional) = which copy of the weapon the player picked in the UI
+        if serial == "" or serial == false then serial = nil end
 
         if type == "item_standard" then
             if itemCount == nil or itemCount < 1 then
@@ -1096,7 +1100,7 @@ AddEventHandler(
             local xPlayer = ESX.GetPlayerFromId(source)
             -- FIX: hasWeapon() returns false when the weapon isn't carried;
             -- indexing it (.ammo) threw a script error. Also keep the serial.
-            local carried = xPlayer and xPlayer.hasWeapon(itemName)
+            local carried = xPlayer and xPlayer.hasWeapon(itemName, serial)
             local ammo = carried and carried.ammo
             local components = carried and carried.components
             local serial = carried and carried.serial
@@ -1104,7 +1108,7 @@ AddEventHandler(
             if ammo then
                 local weaponLabel = ESX.GetWeaponLabel(itemName)
 
-                xPlayer.removeWeapon(itemName, nil, serial)
+                xPlayer.removeWeapon(itemName, nil, carried.serial)
 				if weaponLabel ~= nil then
 					TriggerEvent(
 						"DiscordBot:ToDiscord",
@@ -1116,7 +1120,7 @@ AddEventHandler(
 						true,
 						false
 					)
-					ESX.CreatePickup("item_weapon", string.upper(itemName), {ammo = ammo, components = components, serial = serial}, weaponLabel, _source)
+					ESX.CreatePickup("item_weapon", string.upper(itemName), {ammo = ammo, components = components, serial = carried.serial}, weaponLabel, _source)
 					TriggerClientEvent("esx:showNotification", _source, _U("threw_weapon_ammo", weaponLabel, ammo))
 				end
             end
@@ -1206,10 +1210,11 @@ AddEventHandler(
                 xPlayer.addMoney(pickup.count)
                 ESX.Pickups[id] = nil
             elseif pickup.type == "item_weapon" then
-                -- one weapon of each type per player (same rule as before)
-                local alreadyHas = xPlayer.hasWeapon(pickup.name)
+                -- up to Config.MaxSameWeapon copies of the same weapon type (each keeps its serial)
+                local maxSame = Config.MaxSameWeapon or 1
+                local atLimit = xPlayer.countWeapon(pickup.name) >= maxSame
 
-                if not alreadyHas then
+                if not atLimit then
                     TriggerEvent(
                         "DiscordBot:ToDiscord",
                         "pickup",
@@ -1234,7 +1239,9 @@ AddEventHandler(
                     -- FIX: this branch used `sourceXPlayer.source` - an undefined variable
                     -- ("attempt to index a nil value (global 'sourceXPlayer')") - so the
                     -- error aborted the handler before anything else ran.
-                    TriggerClientEvent("esx:showNotification", _source, "Jib Shoma Az In Aslahe Vojod Darad")
+                    TriggerClientEvent("esx:showNotification", _source,
+                        maxSame > 1 and ("You can't carry more than " .. maxSame .. " of this weapon")
+                                     or "Jib Shoma Az In Aslahe Vojod Darad")
                     -- The weapon simply stays where it is for someone else. Tell THIS
                     -- client to re-enable its "press E" prompt: it sets inRange=true the
                     -- moment E is pressed and only esx:pickupUpdate resets it, so before
