@@ -12,6 +12,22 @@ local Keys = {
 
 ESX = nil
 INPUT_CONTEXT = 51
+
+-- SAFETY NET: teleports the ped to `coords`, then checks the actual ground height the
+-- game engine reports at that x/y and snaps to it if it's close enough to what's
+-- configured (within 25 units) to trust. Guards against the exact "spawns in water/mid-
+-- air" failure mode - a slightly-off Z in PunishConfig, a sloped/rebuilt bit of terrain,
+-- etc. - without blindly teleporting into some unrelated point (basement, cave, ocean
+-- floor) if the ground probe comes back wildly different from what was configured.
+local function TeleportToGround(entity, coords, cb)
+    ESX.Game.Teleport(entity, coords, function()
+        local found, groundZ = GetGroundZFor_3dCoord(coords.x, coords.y, coords.z + 50.0, false)
+        if found and math.abs(groundZ - coords.z) < 25.0 then
+            SetEntityCoords(entity, coords.x, coords.y, groundZ + 0.2, false, false, false, true)
+        end
+        if cb ~= nil then cb() end
+    end)
+end
 local thread = false
 local reason = ''
 local isSentenced, communityServiceFinished, disable_actions, actionsRemaining, vassour_net, spatula_net, availableActions = false, false, false, 0, nil, nil, {}
@@ -78,7 +94,7 @@ AddEventHandler('esx_communityGGservice:inCommunityService', function(actions_re
     FillActionTable()
     ApplyPrisonerSkin()
     TriggerServerEvent('Unique_Punishment:AntiCheatExempt', 5000, { teleport = true, speed = true })
-    ESX.Game.Teleport(playerPed, PunishConfig.ServiceLocation)
+    TeleportToGround(playerPed, PunishConfig.ServiceLocation)
     communityServiceFinished = false
     if not isSentenced then
         isSentenced = true
@@ -105,7 +121,7 @@ AddEventHandler('esx_communityGGservice:inCommunityService', function(actions_re
                         ClearPedTasksImmediately(playerPed)
                     end
                     TriggerServerEvent('Unique_Punishment:AntiCheatExempt', 5000, { teleport = true, speed = true })
-                    ESX.Game.Teleport(playerPed, PunishConfig.ServiceLocation)
+                    TeleportToGround(playerPed, PunishConfig.ServiceLocation)
                     TriggerServerEvent('esx_communityGGservice:extendService')
                 end
                 Citizen.Wait(250)
@@ -128,7 +144,7 @@ AddEventHandler('esx_communityGGservice:finishCommunityService', function(source
     ESX.SetPlayerData('inCS', false)
     actionsRemaining = 0
     TriggerServerEvent('Unique_Punishment:AntiCheatExempt', 5000, { teleport = true, speed = true })
-    ESX.Game.Teleport(PlayerPedId(), PunishConfig.ReleaseLocation)
+    TeleportToGround(PlayerPedId(), PunishConfig.ReleaseLocation)
     -- Tell the server we actually made it, so its retry/never-bug fallback
     -- (server/cs.lua releaseFromCommunityService) knows not to resend this.
     TriggerServerEvent('Unique_Punishment:CS_ReleaseAck')
@@ -157,7 +173,7 @@ AddEventHandler('Unique_Punishment:CS_ForceReturn', function()
         Citizen.Wait(150)
         ClearPedTasksImmediately(playerPed)
     end
-    ESX.Game.Teleport(playerPed, PunishConfig.ServiceLocation)
+    TeleportToGround(playerPed, PunishConfig.ServiceLocation)
 end)
 
 function startThread()
@@ -177,7 +193,7 @@ function startThread()
                     local pCoords    = GetEntityCoords(PlayerPedId())
                     for i = 1, #availableActions do
                         local distance = GetDistanceBetweenCoords(pCoords, availableActions[i].coords, true)
-                        if distance < 1.5 then
+                        if distance < 1.5 and not disable_actions then
                             DisplayHelpText(_U('press_to_start'))
                             if(IsControlJustReleased(1, 38))then
                                 local suka = true

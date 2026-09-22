@@ -46,6 +46,8 @@ document.addEventListener('DOMContentLoaded', function () {
   const lbPanels = {
     players: document.getElementById('lb_players'),
     gangs: document.getElementById('lb_gangs'),
+    jobs: document.getElementById('lb_jobs'),
+    gangwatch: document.getElementById('lb_gangwatch'),
   };
 
   function activateLbSubtab(subName) {

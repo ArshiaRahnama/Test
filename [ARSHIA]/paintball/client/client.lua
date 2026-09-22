@@ -440,7 +440,11 @@ AddEventHandler('esx:addPBWeapon', function(weaponName, ammo)
 		local playerPed  = PlayerPedId()
 		local weaponHash = GetHashKey(weaponName)
 		local weaponTint = math.random(1, 7)
-		if string.find(weaponName, "MK2") ~= nil then weaponTint = math.random(1, 31) end
+		-- weaponName is always lowercase (e.g. "weapon_carbinerifle_mk2"), but
+		-- this was matching against uppercase "MK2". string.find is
+		-- case-sensitive, so it never matched and MK2 weapons always got the
+		-- base tint range instead of their extended 1-31 range.
+		if string.find(string.upper(weaponName), "MK2") ~= nil then weaponTint = math.random(1, 31) end
 		PEDWEAPON = weaponHash
 		GiveWeaponToPed(playerPed, weaponHash, ammo, false, true, weaponTint)
 		SetCanPedEquipAllWeapons(playerPed, false)
@@ -571,6 +575,12 @@ end)
 RegisterNetEvent('esx_paintball:StartMatch')
 AddEventHandler('esx_paintball:StartMatch', function(LobbyId, mapName, weaponName, teamID, teammates, MaxRounds, Arm, RTime, GunAttachs, HeadBox)
 	if PBData.LobbyId == LobbyId then
+		-- isDead is global and gets set true by ANY player death (not just
+		-- paintball ones -- see esx:onPlayerDeath below). If the player died
+		-- from something unrelated right before joining, isDead was still
+		-- true here, and the round-timer thread only counts down while
+		-- `not isDead`, so the round timer would silently never tick.
+		isDead = false
 		PBData.InPB = true
 		PBData.RTime = tonumber(RTime) or 120
 		PBData.headbox = HeadBox
@@ -1007,8 +1017,13 @@ AddEventHandler('esx_paintball:PlayerDisconnected', function(LobbyId, PlayerId)
 		if PBData.LobbyId == LobbyId then
 			local _, Teammate = GetTeammate(PlayerId)
 			if Teammate then
-				PBData.Teammates[_] = nil
-				if PBData.MouseScroll == _ then
+				local wasSpectatingThem = (PBData.MouseScroll == _)
+				-- table.remove, not `[_] = nil`: setting an entry to nil left a
+				-- hole in PBData.Teammates, and #PBData.Teammates (used by the
+				-- pbmsu/pbmsd spectate-scroll commands) is undefined on a
+				-- table with holes.
+				table.remove(PBData.Teammates, _)
+				if wasSpectatingThem then
 					ToggleSpec(true)
 				end
 			end

@@ -182,6 +182,8 @@
           <div class="subtabs">
             <button class="subtab active" data-lbsub="players">TOP 10 PLAYER</button>
             <button class="subtab" data-lbsub="gangs">TOP 10 GANG</button>
+            <button class="subtab" data-lbsub="jobs">PER JOB</button>
+            <button class="subtab" data-lbsub="gangwatch">GANG WATCH</button>
           </div>
 
           <div class="panel2" id="lb_players">
@@ -190,6 +192,27 @@
 
           <div class="panel2 hidden" id="lb_gangs">
             <div class="board-list" id="lb_gangs_list"></div>
+          </div>
+
+          <div class="panel2 hidden" id="lb_jobs">
+            <div class="jobLbPeriodToggle standalone">
+              <button class="jobLbPeriodBtn active" data-period="week">این هفته</button>
+              <button class="jobLbPeriodBtn" data-period="month">این ماه</button>
+            </div>
+
+            <div class="jobChampionsGrid" id="jobChampionsGrid"></div>
+
+            <div class="jobLbDetail hidden" id="jobLbDetail">
+              <button class="jobLbBackBtn" id="jobLbBackBtn"><i class="fa-solid fa-arrow-right"></i> برگشت به همه‌ی شغل‌ها</button>
+              <div class="jobLbTitle" id="jobLb_title"></div>
+              <div class="jobLbPodium" id="jobLb_podium"></div>
+              <div class="board-list" id="jobLb_list"></div>
+            </div>
+          </div>
+
+          <div class="panel2 hidden" id="lb_gangwatch">
+            <div class="gangWatchNote"><i class="fa-solid fa-triangle-exclamation"></i> ۵ گنگی که اعضاشون این ماه بیشترین کامیونیتی‌سرویس رو خوردن</div>
+            <div class="board-list" id="lb_gangwatch_list"></div>
           </div>
         </div>
 

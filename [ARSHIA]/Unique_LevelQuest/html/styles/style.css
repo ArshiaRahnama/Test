@@ -540,6 +540,17 @@ html, body {
 .panel {
   height: 100%;
   overflow-y: auto;
+  /* FIX: with only overflow-y set, the CSS spec forces the computed
+     overflow-x to 'auto' too (an unset axis can't stay 'visible' once
+     the other axis scrolls) — so the moment ANY child overflows
+     horizontally by even a sub-pixel (flex gap + border rounding is a
+     common culprit), a full-width horizontal scrollbar appears,
+     styled in the theme's orange scrollbar-thumb color from above —
+     which reads as a stray orange/red bar across the bottom of the
+     panel. Nothing in this HUD is meant to scroll sideways, so this
+     axis is pinned to hidden outright instead of chasing down
+     whichever pixel is currently causing it. */
+  overflow-x: hidden;
 }
 
 /* Collections has its own inner scrolling sub-panel (.panel2) — the

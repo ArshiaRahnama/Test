@@ -70,6 +70,9 @@ local function openHoldingBossMenu(job, label)
 		{ label = 'Open/Close Businesses (Director+)', value = 'toggle' },
 		{ label = 'Rename Holding', value = 'rename' },
 	}
+	if job ~= Corp.Meridian.Job then
+		table.insert(elements, { label = 'Buy Raw Materials (Meridian Supply) (Director+)', value = 'supply' })
+	end
 	if PlayerData.job.grade_name == 'boss' then
 		table.insert(elements, { label = 'Manage Ranks (Owner Only)', value = 'manage_ranks' })
 		table.insert(elements, { label = 'Set Work Uniform', value = 'set_uniform' })
@@ -93,6 +96,9 @@ local function openHoldingBossMenu(job, label)
 			TriggerServerEvent('uniquecafejobs:corp:requestManageStaffList')
 		elseif data.current.value == 'toggle' then
 			TriggerServerEvent('uniquecafejobs:corp:requestToggleList')
+		elseif data.current.value == 'supply' then
+			menu.close()
+			TriggerServerEvent('uniquecafejobs:corp:requestSupplyBusinessList')
 		elseif data.current.value == 'rename' then
 			local input = lib.inputDialog('Rename Holding', {
 				{ type = 'input', label = 'New name (3-30 chars)', required = true },
@@ -306,6 +312,52 @@ AddEventHandler('uniquecafejobs:corp:showOwnedBusinessList', function(rows)
 		menu.close()
 		if data.current.value == 'noop' then return end
 		TriggerServerEvent('uniquecafejobs:corp:selfAssignJob', data.current.value)
+	end, function(data, menu)
+		menu.close()
+	end)
+end)
+
+RegisterNetEvent('uniquecafejobs:corp:showSupplyBusinessList')
+AddEventHandler('uniquecafejobs:corp:showSupplyBusinessList', function(rows)
+	local elements = {}
+	for _, row in ipairs(rows) do
+		table.insert(elements, { label = row.label, value = row.job })
+	end
+	if #elements == 0 then
+		table.insert(elements, { label = 'No businesses in this holding', value = 'noop', disabled = true })
+	end
+
+	ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'holding_supply_list', {
+		title    = 'Restock Which Business?',
+		align    = 'top-left',
+		elements = elements,
+	}, function(data, menu)
+		menu.close()
+		if data.current.value == 'noop' then return end
+		TriggerServerEvent('uniquecafejobs:corp:openSupplyContract', data.current.value)
+	end, function(data, menu)
+		menu.close()
+	end)
+end)
+
+RegisterNetEvent('uniquecafejobs:corp:showSupplyContract')
+AddEventHandler('uniquecafejobs:corp:showSupplyContract', function(businessJob, businessLabel, stock)
+	local elements = {}
+	for _, s in ipairs(stock) do
+		table.insert(elements, { label = ('%s — $%d/unit'):format(s.name, s.price), value = s.name })
+	end
+
+	ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'meridian_supply_menu', {
+		title    = 'Meridian Supply — ' .. businessLabel,
+		align    = 'top-left',
+		elements = elements,
+	}, function(data, menu)
+		local input = lib.inputDialog('Buy From Meridian', {
+			{ type = 'number', label = 'Quantity (max ' .. Corp.Meridian.SupplyBuyLimit .. ')', default = 1 },
+		})
+		if input and input[1] then
+			TriggerServerEvent('uniquecafejobs:corp:buySupplyContract', businessJob, data.current.value, tonumber(input[1]))
+		end
 	end, function(data, menu)
 		menu.close()
 	end)

@@ -8,8 +8,18 @@
 	the rest of the server's job resources.
 
 	Only "UwU Café" keeps its original coordinates (that's the one that
-	already existed and works). The 2 new cafes use PLACEHOLDER coordinates -
-	move them in-game to wherever you actually want them.
+	already existed and works). All 16 other businesses below use PLACEHOLDER
+	coordinates - move them in-game to wherever you actually want them.
+
+	Checked: none of the 16 placeholder anchor points below are within ~150m
+	of each other, "UwU", or any of the 4 holding HQs in shared/corp.lua /
+	shared/turfco.lua, so there's no risk of two businesses' freezer/crafting/
+	spawn clusters overlapping each other. What's NOT verified (no way to
+	render the actual map from here) is whether any single anchor happens to
+	land inside a building, underwater, etc. - each block's comment now names
+	the real Los Santos neighborhood its numbers actually fall in (a couple
+	were mislabeled - e.g. "Rockford Hills" was actually Pacific Bluffs) so
+	you know roughly where to teleport to when fine-tuning in-game.
 ]]
 
 Cafes = {
@@ -61,7 +71,10 @@ Cafes = {
 	},
 
 	-- ── Café #2: Obsidian Brew ──
-	-- PLACEHOLDER location (Rockford Hills area) - move in-game.
+	-- PLACEHOLDER location - these coords actually sit on the Pacific Bluffs
+	-- coastline near Vespucci (not Rockford Hills as originally noted) -
+	-- still not overlapping any other business/HQ below, but confirm/move
+	-- in-game before going live.
 	Obsidian = {
 		Type    = 'cafe',
 		MenuGroup = 'cafe',
@@ -108,7 +121,10 @@ Cafes = {
 	},
 
 	-- ── Café #3: Voltage Coffee Co. ──
-	-- PLACEHOLDER location (Textile City / industrial area) - move in-game.
+	-- PLACEHOLDER location - these coords actually sit near Cypress Flats /
+	-- Elysian Island (east LS industrial, not Textile City as originally
+	-- noted) - still not overlapping any other business/HQ, but
+	-- confirm/move in-game before going live.
 	Voltage = {
 		Type    = 'cafe',
 		MenuGroup = 'cafe',
@@ -155,7 +171,10 @@ Cafes = {
 	},
 
 	-- ── Restaurant #1: Ember & Ash ──
-	-- PLACEHOLDER location (Vinewood Hills grill spot) - move in-game.
+	-- PLACEHOLDER location - these coords actually sit near the Pacific
+	-- Bluffs / GWC Golfing Society area (not Vinewood Hills as originally
+	-- noted; z=30.3 is too low for the Hills) - still not overlapping any
+	-- other business/HQ, but confirm/move in-game before going live.
 	Ember = {
 		Type    = 'restaurant',
 		MenuGroup = 'cafe',
@@ -249,7 +268,10 @@ Cafes = {
 	},
 
 	-- ── Restaurant #3: Crimson Fork ──
-	-- PLACEHOLDER location (Rodeo Drive, upscale fine-dining vibe) - move in-game.
+	-- PLACEHOLDER location - these coords actually sit near Pillbox Hill /
+	-- Textile City downtown high-rises (not Rodeo Drive as originally
+	-- noted) - still not overlapping any other business/HQ, but
+	-- confirm/move in-game before going live.
 	Crimson = {
 		Type    = 'restaurant',
 		MenuGroup = 'cafe',
@@ -296,7 +318,7 @@ Cafes = {
 	},
 
 	-- ── Bakery: Flourish Bakery ──
-	-- PLACEHOLDER location - move in-game.
+	-- PLACEHOLDER location (Vinewood Hills, high elevation) - move in-game.
 	Flourish = {
 		Type    = 'bakery',
 		MenuGroup = 'bakery',
@@ -342,7 +364,7 @@ Cafes = {
 		},
 	},
 	-- ── Bakery: Gold Crust Bakehouse ──
-	-- PLACEHOLDER location - move in-game.
+	-- PLACEHOLDER location (Power Street / east Textile City edge) - move in-game.
 	GoldCrust = {
 		Type    = 'bakery',
 		MenuGroup = 'bakery',
@@ -388,7 +410,7 @@ Cafes = {
 		},
 	},
 	-- ── Bar: Static Lounge ──
-	-- PLACEHOLDER location - move in-game.
+	-- PLACEHOLDER location (Pacific Bluffs, near the golf club) - move in-game.
 	Static = {
 		Type    = 'bar',
 		MenuGroup = 'bar',
@@ -434,7 +456,7 @@ Cafes = {
 		},
 	},
 	-- ── Bar: Nightjar Pub ──
-	-- PLACEHOLDER location - move in-game.
+	-- PLACEHOLDER location (Vinewood Hills, near the sign) - move in-game.
 	Nightjar = {
 		Type    = 'bar',
 		MenuGroup = 'bar',
@@ -480,7 +502,7 @@ Cafes = {
 		},
 	},
 	-- ── Pizza: Firebrick Pizza Co. ──
-	-- PLACEHOLDER location - move in-game.
+	-- PLACEHOLDER location (Rockford Hills / Pillbox Hill border) - move in-game.
 	Firebrick = {
 		Type    = 'pizza',
 		MenuGroup = 'pizza',
@@ -526,7 +548,7 @@ Cafes = {
 		},
 	},
 	-- ── Pizza: Slice Society ──
-	-- PLACEHOLDER location - move in-game.
+	-- PLACEHOLDER location (Power Street industrial strip) - move in-game.
 	Slice = {
 		Type    = 'pizza',
 		MenuGroup = 'pizza',
@@ -572,7 +594,7 @@ Cafes = {
 		},
 	},
 	-- ── Icecream: Frostbite Creamery ──
-	-- PLACEHOLDER location - move in-game.
+	-- PLACEHOLDER location (Vinewood Hills, high elevation) - move in-game.
 	Frostbite = {
 		Type    = 'icecream',
 		MenuGroup = 'icecream',
@@ -618,7 +640,7 @@ Cafes = {
 		},
 	},
 	-- ── Icecream: Sundae Funday ──
-	-- PLACEHOLDER location - move in-game.
+	-- PLACEHOLDER location (Pacific Bluffs area) - move in-game.
 	Sundae = {
 		Type    = 'icecream',
 		MenuGroup = 'icecream',
@@ -664,7 +686,7 @@ Cafes = {
 		},
 	},
 	-- ── Sushi: Koi Sushi House ──
-	-- PLACEHOLDER location - move in-game.
+	-- PLACEHOLDER location (south Textile City, near the LS River) - move in-game.
 	Koi = {
 		Type    = 'sushi',
 		MenuGroup = 'sushi',
@@ -710,7 +732,7 @@ Cafes = {
 		},
 	},
 	-- ── Sushi: Wasabi & Co. ──
-	-- PLACEHOLDER location - move in-game.
+	-- PLACEHOLDER location (Pacific Bluffs area) - move in-game.
 	Wasabi = {
 		Type    = 'sushi',
 		MenuGroup = 'sushi',
@@ -757,7 +779,7 @@ Cafes = {
 	},
 
 	-- ── Carwash: Suds & Cash ──
-	-- PLACEHOLDER location - move in-game.
+	-- PLACEHOLDER location (Power Street industrial strip) - move in-game.
 	Suds = {
 		Type    = 'carwash',
 		MenuGroup = 'carwash',

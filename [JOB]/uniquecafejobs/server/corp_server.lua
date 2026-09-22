@@ -542,6 +542,94 @@ AddEventHandler('uniquecafejobs:corp:removeRank', function(rankId)
 	TriggerClientEvent('esx:showNotification', src, msg)
 end)
 
+-- ══════════════════════════ Meridian Supply Contract ══════════════════════════
+-- Sells straight off Corp.Meridian.SupplyPrices (an uncapped wholesale price
+-- list, not existing stock like CrateCarry's wholesale/resale) to the OTHER
+-- 3 holdings. Money flows buying-holding -> Meridian; items land directly in
+-- the CHOSEN business's own inventory (society_<businessJob>), never the
+-- buying holding's own account. Meridian itself is excluded as a buyer -
+-- it's the supplier, not a customer of its own contract.
+RegisterNetEvent('uniquecafejobs:corp:requestSupplyBusinessList')
+AddEventHandler('uniquecafejobs:corp:requestSupplyBusinessList', function()
+	local src = source
+	local xPlayer = ESX.GetPlayerFromId(src)
+	local holding = xPlayer and GetHoldingConfig(xPlayer.job.name)
+	if not holding or holding.Job == Corp.Meridian.Job then return end
+	if xPlayer.job.grade < 5 then
+		TriggerClientEvent('esx:showNotification', src, 'Director rank or higher required.')
+		return
+	end
+
+	local rows = {}
+	for _, cafe in pairs(Cafes) do
+		if cafe.Holding == xPlayer.job.name then
+			table.insert(rows, { job = cafe.Job, label = GetDisplayLabel(cafe.Job, cafe.Label) })
+		end
+	end
+	table.sort(rows, function(a, b) return a.label < b.label end)
+	TriggerClientEvent('uniquecafejobs:corp:showSupplyBusinessList', src, rows)
+end)
+
+RegisterNetEvent('uniquecafejobs:corp:openSupplyContract')
+AddEventHandler('uniquecafejobs:corp:openSupplyContract', function(businessJob)
+	local src = source
+	local xPlayer = ESX.GetPlayerFromId(src)
+	local holding = xPlayer and GetHoldingConfig(xPlayer.job.name)
+	if not holding or holding.Job == Corp.Meridian.Job then return end
+	if xPlayer.job.grade < 5 then return end
+	if ownerOf(businessJob) ~= xPlayer.job.name then return end
+
+	local cafe = GetCafeForJob(businessJob)
+	if not cafe then return end
+
+	local stock = {}
+	for item, price in pairs(Corp.Meridian.SupplyPrices) do
+		table.insert(stock, { name = item, price = price })
+	end
+	table.sort(stock, function(a, b) return a.name < b.name end)
+
+	TriggerClientEvent('uniquecafejobs:corp:showSupplyContract', src, businessJob, GetDisplayLabel(businessJob, cafe.Label), stock)
+end)
+
+RegisterNetEvent('uniquecafejobs:corp:buySupplyContract')
+AddEventHandler('uniquecafejobs:corp:buySupplyContract', function(businessJob, itemName, quantity)
+	local src = source
+	local xPlayer = ESX.GetPlayerFromId(src)
+	local holding = xPlayer and GetHoldingConfig(xPlayer.job.name)
+	if not holding or holding.Job == Corp.Meridian.Job then return end
+	if xPlayer.job.grade < 5 then return end
+	if ownerOf(businessJob) ~= xPlayer.job.name then return end
+
+	local unitPrice = Corp.Meridian.SupplyPrices[itemName]
+	if not unitPrice then return end
+
+	quantity = tonumber(quantity)
+	if not quantity or quantity <= 0 or quantity ~= math.floor(quantity) or quantity > Corp.Meridian.SupplyBuyLimit then
+		TriggerClientEvent('esx:showNotification', src, 'Meghdar motabar nist.')
+		return
+	end
+
+	local cost = quantity * unitPrice
+
+	TriggerEvent('esx_addonaccount:getSharedAccount', 'society_' .. holding.Job, function(buyerAccount)
+		if not buyerAccount or buyerAccount.money < cost then
+			TriggerClientEvent('esx:showNotification', src, ('Pool sosayeti %s kafi nist.'):format(holding.Label))
+			return
+		end
+		buyerAccount.removeMoney(cost)
+
+		TriggerEvent('esx_addonaccount:getSharedAccount', 'society_' .. Corp.Meridian.Job, function(meridianAccount)
+			if meridianAccount then meridianAccount.addMoney(cost) end
+		end)
+
+		TriggerEvent('esx_addoninventory:getSharedInventory', 'society_' .. businessJob, function(inventory)
+			if not inventory then return end
+			inventory.addItem(itemName, quantity)
+			TriggerClientEvent('esx:showNotification', src, ('%dx %s az Meridian kharidari shod.'):format(quantity, itemName))
+		end)
+	end)
+end)
+
 RegisterNetEvent('uniquecafejobs:corp:requestOwnedBusinessList')
 AddEventHandler('uniquecafejobs:corp:requestOwnedBusinessList', function()
 	local src = source

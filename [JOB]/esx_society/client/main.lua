@@ -207,6 +207,17 @@ function OpenBossMenu(society, close, options)
 		table.insert(elements, {label = '🎯 Dastresi Paintball (Hadaghal Grade)', value = 'paintball_access'})
 	end
 
+	-- Society Pay: dokme-ye "Vaariz-haye Daryafti" -- faghat Boss-e ordan-haye DOJ va LAW
+	-- (tedad-e vaariz-haye emrooz ham roye dokme neshoon dade mishe).
+	if ESX.PlayerData.job.grade_name == 'boss' and Pay and Pay.findOrg(ESX.PlayerData.job.name) then
+		local label = '💳 Vaariz-haye Daryafti'
+		local okCount, todayCount = pcall(lib.callback.await, 'esx_society:pay:todayCount', false)
+		if okCount and tonumber(todayCount) and tonumber(todayCount) > 0 then
+			label = label .. ' (' .. tostring(todayCount) .. ' emrooz)'
+		end
+		table.insert(elements, {label = label, value = 'open_society_pay'})
+	end
+
 	ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'boss_actions_' .. society, {
 		title    = _U('boss_menu'),
 		align    = 'top-left',
@@ -249,6 +260,9 @@ function OpenBossMenu(society, close, options)
 		elseif data.current.value == 'open_logpanel' then
 			menu.close()
 			TriggerEvent('LogPanel:OpenBossPanel')
+		elseif data.current.value == 'open_society_pay' then
+			menu.close()
+			OpenPayBossPanel()
 		elseif data.current.value == 'paintball_access' then
 			menu.close()
 			-- FEATURE ADDED: shows the currently-set minimum grade (0 if never
@@ -272,10 +286,21 @@ function OpenBossMenu(society, close, options)
 		end
 
 	end, function(data, menu)
-		menu.close(data, menu)
+		menu.close()
 
-
-
+		-- FIX: in-ja ghablan `menu.close(data, menu)` seda zade mishod ke faghat
+		-- khode UI.Menu ro mibandad. Job script-ha (police_main.lua va baghie)
+		-- yek closure be onvan-e 2-omin parametr (`close`) mifrestand ta vaghti
+		-- boss menu baste shod, CurrentAction dobare set beshe ('boss_actions')
+		-- va dokme-ye E dobare kar kone. Chon in closure hich vaght seda zade
+		-- nemishod, baad az yek bar baz/baste kardan-e boss menu, dokme-ye E
+		-- moatal mimand ta bazikon az marker biroon bere va dobare biad tu.
+		if type(close) == 'function' then
+			local ok, err = pcall(close, data, menu)
+			if not ok then
+				print(('^1[esx_society]^0 boss menu close callback error: %s'):format(tostring(err)))
+			end
+		end
 	end)
 
 end

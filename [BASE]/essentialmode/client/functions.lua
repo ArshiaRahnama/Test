@@ -373,9 +373,20 @@ end
 ESX.Game.Teleport = function(entity, coords, cb)
     RequestCollisionAtCoord(coords.x, coords.y, coords.z)
 
-    while not HasCollisionLoadedAroundEntity(entity) do
-        RequestCollisionAtCoord(coords.x, coords.x, coords.x)
+    -- BUG FIX: this used to re-request RequestCollisionAtCoord(coords.x, coords.x, coords.x)
+    -- on every retry (x,x,x instead of x,y,z) - a typo that meant every retry after the very
+    -- first one asked the engine to load collision at the wrong point in space. On a long-
+    -- distance teleport (jail, community service, admin /tp, etc.) where collision isn't
+    -- already streamed in, this could leave HasCollisionLoadedAroundEntity stuck false
+    -- indefinitely, or loop until it eventually loaded by coincidence - during which the
+    -- entity had already been left sitting with no ground under it. Also capped at 5s so a
+    -- genuinely collision-less destination (open water, out-of-bounds coords) can't hang
+    -- this loop forever; it falls through to SetEntityCoords either way, same as before.
+    local waited = 0
+    while not HasCollisionLoadedAroundEntity(entity) and waited < 5000 do
+        RequestCollisionAtCoord(coords.x, coords.y, coords.z)
         Citizen.Wait(1)
+        waited = waited + 1
     end
 
     SetEntityCoords(entity, coords.x, coords.y, coords.z)

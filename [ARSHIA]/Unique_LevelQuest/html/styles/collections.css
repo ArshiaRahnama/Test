@@ -56,7 +56,14 @@
   color: #1a1005;
 }
 
-.panel2 { height: calc(100% - 56px); overflow-y: auto; }
+.panel2 {
+  height: calc(100% - 56px);
+  overflow-y: auto;
+  /* Same overflow-x-forced-to-auto spec quirk as .panel in style.css —
+     .panel2 is shared by every subtab (leaderboard's included), so
+     it gets the same fix here. */
+  overflow-x: hidden;
+}
 
 .gridCards {
   display: grid;

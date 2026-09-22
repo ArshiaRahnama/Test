@@ -23,6 +23,22 @@ local WeaponPrices = {
 	dbshotgun = 16000, combatpdw = 13000, pumpshotgun_mk2 = 15000
 }
 
+-- Escapes text before it is embedded into an HTML string sent to the NUI.
+-- Without this, a player display name or a lobby name containing HTML
+-- (e.g. "<img src=x onerror=...>") would be injected verbatim into the
+-- lobby browser / team list markup (see GetTeamHTMLValue and the
+-- 'name' field returned by esx_paintball:GetLobbyList, both rendered with
+-- $(...).append()/innerHTML on the client).
+function EscapeHTML(str)
+	str = tostring(str or "")
+	str = str:gsub("&", "&amp;")
+	str = str:gsub("<", "&lt;")
+	str = str:gsub(">", "&gt;")
+	str = str:gsub('"', "&quot;")
+	str = str:gsub("'", "&#39;")
+	return str
+end
+
 CreateThread(function()
 	MySQL.query.await('CREATE TABLE IF NOT EXISTS paintball_job_access (job_name VARCHAR(50) NOT NULL PRIMARY KEY, min_grade INT NOT NULL DEFAULT 0)', {})
 	local rows = MySQL.query.await('SELECT job_name, min_grade FROM paintball_job_access', {})
@@ -82,10 +98,16 @@ function CreateLobby(xPlayer, data)
 
 	local LobbyName = tostring(data.lobbyName)
 	if #LobbyName < 3 or #LobbyName > 15 then LobbyName = "Just a name" end
+	-- The lobby browser (onJoinLobby in script.js) inserts this name straight
+	-- into the DOM with $(...).append(html). Escape it once here so every
+	-- future read of Lobby.name is already safe to render.
+	LobbyName = EscapeHTML(LobbyName)
 
 	local LobbyPass = tostring(data.Password)
-	if #LobbyPass > 10 then LobbyPass = "" end
-	local BulletProof = tonumber(data.lobbyName)
+	-- Previously a password longer than 10 chars was silently wiped to "",
+	-- which quietly turned a "protected" lobby public without telling the
+	-- owner. Truncate instead so a password always stays a password.
+	if #LobbyPass > 10 then LobbyPass = string.sub(LobbyPass, 1, 10) end
 
 	local mapName = tostring(data.mapName)
 
@@ -94,6 +116,12 @@ function CreateLobby(xPlayer, data)
 
 	local HeadBox = tonumber(data.headbox)
 	if HeadBox ~= 1 then HeadBox = 0 end
+
+	-- Armor was previously stored straight from client input with no
+	-- validation at all (unlike RTime/HeadBox above).
+	local Armor = tonumber(data.armor)
+	if not Armor or Armor < 0 then Armor = 0 end
+	if Armor > 100 then Armor = 100 end
 
 	LobbyCounter = LobbyCounter + 1
 	local NewLobbyId = LobbyCounter
@@ -106,7 +134,7 @@ function CreateLobby(xPlayer, data)
 		map = mapName,
 		weapon = data.weaponModel,
 		pass = LobbyPass,
-		armor = data.armor,
+		armor = Armor,
 		gunattachs = data.gunattachs,
 		rtime = RTime,
 		headbox = HeadBox,
@@ -143,7 +171,7 @@ end
 function GetTeamHTMLValue(teamID, playerId, readyState)
 	local tempStr = '<h2 class="player'
 	if readyState then tempStr = tempStr .. ' ready' end
-	tempStr = tempStr .. ' team-' .. tostring(teamID) .. '" id="' .. tostring(playerId) .. '">' .. GetPlayerName(playerId) .. '</h2>'
+	tempStr = tempStr .. ' team-' .. tostring(teamID) .. '" id="' .. tostring(playerId) .. '">' .. EscapeHTML(GetPlayerName(playerId)) .. '</h2>'
 	return tempStr
 end
 
@@ -191,12 +219,16 @@ end
 function QuitLobby(LobbyId, TeamID, PlayerId)
 	local _, Lobby = FindLobby(LobbyId)
 	if Lobby then
+		-- Always remove from the player's ACTUAL team (LastTeamID/PlayerIndex,
+		-- found by looking the player up), never from the caller-supplied
+		-- TeamID. The old code removed from teams[TeamID + 1] first using
+		-- PlayerIndex from a *different* team's lookup -- if TeamID didn't
+		-- match the player's real team (stale client state, race after a
+		-- SwitchTeam), it deleted a random, unrelated player who happened to
+		-- sit at that same index in the wrong team array.
 		local LastTeamID, PlayerIndex, Player = FindPlayerInLobby(LobbyId, PlayerId)
 		if LastTeamID then
-			table.remove(LobbyList[_].teams[TeamID + 1], PlayerIndex)
-			if LobbyList[_].teams[LastTeamID][PlayerIndex] then
-				table.remove(LobbyList[_].teams[LastTeamID], PlayerIndex)
-			end
+			table.remove(LobbyList[_].teams[LastTeamID], PlayerIndex)
 		end
 		for teamID, teamData in pairs(LobbyList[_].teams) do
 			for playerIndex, playerData in pairs(teamData) do
@@ -206,7 +238,12 @@ function QuitLobby(LobbyId, TeamID, PlayerId)
 		end
 		if Lobby.lobbyOwner.source == PlayerId then
 			TriggerClientEvent('esx_paintball:ForceExit', -1, LobbyId)
-			LobbyList[_] = nil
+			-- table.remove (not `LobbyList[_] = nil`): setting an index to nil
+			-- leaves a hole in the array part of the table, which makes the
+			-- length operator `#LobbyList` undefined. CreateLobby relies on
+			-- `#LobbyList` (via table.insert) to place new lobbies, so a hole
+			-- could make a brand new lobby land on/overwrite an existing one.
+			table.remove(LobbyList, _)
 		end
 	end
 end
@@ -319,7 +356,11 @@ end
 ESX.RegisterServerCallback('esx_paintball:CreateLobby', function(source, cb, data)
 	local xPlayer = ESX.GetPlayerFromId(source)
 	if not xPlayer then return end
-	if DoesOwnerHasLobby(xPlayer.identifier) then cb({}) return end
+	if DoesOwnerHasLobby(xPlayer.identifier) then
+		TriggerClientEvent('esx_paintball:Notify', source, 'You already have an open lobby.')
+		cb({})
+		return
+	end
 
 	-- 'jail' and 'island' don't have real, verified spawn/area data yet (see MapData in
 	-- client.lua) -- 'jail' currently reuses '1v1's coordinates and 'island' reuses
@@ -364,6 +405,18 @@ ESX.RegisterServerCallback('esx_paintball:GetLobbyList', function(source, cb, da
 end)
 
 ESX.RegisterServerCallback('esx_paintball:JoinLobby', function(source, cb, data)
+	local _, Lobby = FindLobby(tonumber(data.LobbyId))
+	if not Lobby then cb(json.encode({})) return end
+	-- GetLobbyPassword (below) only exists so the UI can flash the password
+	-- field red before it lets the player continue -- it was never actually
+	-- enforced here. A client calling this endpoint directly (skipping the
+	-- UI check) could join a "password protected" lobby with no password at
+	-- all. Enforce it server-side too.
+	if Lobby.pass ~= "" and Lobby.pass ~= tostring(data.Password or "") then
+		TriggerClientEvent('esx_paintball:Notify', source, 'Incorrect lobby password.')
+		cb(json.encode({}))
+		return
+	end
 	cb(json.encode(JoinLobby(tonumber(data.LobbyId), source)))
 end)
 
@@ -459,7 +512,9 @@ AddEventHandler('esx_paintball:QuitPaintBall', function(LobbyId, winnerTeam)
 				end
 			end
 			Wait(1000)
-			LobbyList[_] = nil
+			-- Same sparse-array hazard as in QuitLobby -- use table.remove.
+			local removeKey = select(1, FindLobby(LobbyId))
+			if removeKey then table.remove(LobbyList, removeKey) end
 		end
 	end
 end)
@@ -528,12 +583,12 @@ AddEventHandler('esx_paintball:onPBDeath', function(LobbyId, data)
 			local RoundWinner = nil
 			if aliveCount[1] > aliveCount[2] and aliveCount[2] == 0 then
 				LobbyList[_].winRounds[1] = LobbyList[_].winRounds[1] + 1
-				LobbyList[_].loseRounds[2] = LobbyList[_].winRounds[2] + 1
+				LobbyList[_].loseRounds[2] = LobbyList[_].loseRounds[2] + 1
 				LobbyList[_].roundCounter = LobbyList[_].roundCounter + 1
 				RoundWinner = 1
 			elseif aliveCount[2] > aliveCount[1] and aliveCount[1] == 0 then
 				LobbyList[_].winRounds[2] = LobbyList[_].winRounds[2] + 1
-				LobbyList[_].loseRounds[1] = LobbyList[_].winRounds[1] + 1
+				LobbyList[_].loseRounds[1] = LobbyList[_].loseRounds[1] + 1
 				LobbyList[_].roundCounter = LobbyList[_].roundCounter + 1
 				RoundWinner = 2
 			end
@@ -654,12 +709,12 @@ AddEventHandler('playerDropped', function()
 						local RoundWinner = nil
 						if aliveCount[1] > aliveCount[2] and aliveCount[2] == 0 then
 							LobbyList[_].winRounds[1] = LobbyList[_].winRounds[1] + 1
-							LobbyList[_].loseRounds[2] = LobbyList[_].winRounds[2] + 1
+							LobbyList[_].loseRounds[2] = LobbyList[_].loseRounds[2] + 1
 							LobbyList[_].roundCounter = LobbyList[_].roundCounter + 1
 							RoundWinner = 1
 						elseif aliveCount[2] > aliveCount[1] and aliveCount[1] == 0 then
 							LobbyList[_].winRounds[2] = LobbyList[_].winRounds[2] + 1
-							LobbyList[_].loseRounds[1] = LobbyList[_].winRounds[1] + 1
+							LobbyList[_].loseRounds[1] = LobbyList[_].loseRounds[1] + 1
 							LobbyList[_].roundCounter = LobbyList[_].roundCounter + 1
 							RoundWinner = 2
 						end
@@ -683,12 +738,21 @@ AddEventHandler('playerDropped', function()
 						end
 					end
 
-					LobbyList[_].teams[CurrentTeamID][PlayerIndex] = nil
+					-- table.remove, not `[PlayerIndex] = nil`: the latter leaves a
+					-- hole in this team's array, which makes #teams[i] (used
+					-- right below, and by JoinLobby/SwitchTeam's table.insert)
+					-- undefined.
+					table.remove(LobbyList[_].teams[CurrentTeamID], PlayerIndex)
 					TriggerClientEvent('esx_paintball:PlayerDisconnected', -1, LobbyId, _source)
 
 					if #LobbyList[_].teams[2] == 0 or #LobbyList[_].teams[3] == 0 then
 						local PBWinner = nil
-						if LobbyList[_].teams[2] == 0 then PBWinner = 2
+						-- Was comparing a TABLE (LobbyList[_].teams[2]) to the
+						-- number 0, which is always false -- missing the `#`
+						-- length operator. That made this branch unreachable,
+						-- so QuitPaintBall was always told team 1 won, even
+						-- when team 1 was the side that had just emptied out.
+						if #LobbyList[_].teams[2] == 0 then PBWinner = 2
 						else PBWinner = 1
 						end
 						TriggerEvent('esx_paintball:QuitPaintBall', LobbyId, PBWinner)

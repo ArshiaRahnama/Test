@@ -472,7 +472,8 @@ document.onkeyup = function(data) {
                                 'Content-Type': 'application/json; charset=UTF-8',
                             },
                             body: JSON.stringify({
-                                LobbyId: lobbyID
+                                LobbyId: lobbyID,
+                                Password: pass
                             })
                         }).then(resp => resp.json()).then(data => {
                             var jdata = JSON.parse(data);

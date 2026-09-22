@@ -75,10 +75,27 @@ function craft(src, item, retrying)
 
 	local cancraft = true
 
-	local count = ConfigCrafting.Recipes[item].Amount
+	local recipe = ConfigCrafting.Recipes[item]
+	if not recipe then
+		return TriggerClientEvent('esx:showNotification', src, "Recipe motabar nist.")
+	end
 
-	if not IsCafeJob(xPlayer.job.name) then
-		return TriggerClientEvent('esx:showNotification', src, "Shoma Dastresi Az Estefade Az Crafting Ra Nadarid!")
+	local count = recipe.Amount
+
+	-- SECURITY FIX: this used to only check IsCafeJob(xPlayer.job.name), i.e.
+	-- "is this ANY of the 17 business jobs" - NOT that the recipe being
+	-- crafted actually belongs to THIS player's own business. The client UI
+	-- only shows recipes matching myCafe.MenuGroup (see client/crafting_cl.lua
+	-- openWorkbench calls), but that's cosmetic only - a raw
+	-- TriggerServerEvent('AH_uwucafejob:craft', item) with any recipe key
+	-- used to go through for any of the 17 jobs regardless of business type
+	-- (e.g. a carwash worker crafting a cake). Recipe.Category keys are
+	-- always '<MenuGroup><Station>' (see shared/configcrafting.lua), so
+	-- re-derive the expected MenuGroup from the player's ACTUAL job
+	-- server-side and reject anything whose recipe category doesn't match it.
+	local myCafe = GetCafeForJob(xPlayer.job.name)
+	if not myCafe or not recipe.Category or recipe.Category:sub(1, #myCafe.MenuGroup) ~= myCafe.MenuGroup then
+		return TriggerClientEvent('esx:showNotification', src, "In recipe baraye shoghle shoma nist!")
 	end
 
 	if not retrying then
@@ -122,7 +139,12 @@ function craft(src, item, retrying)
                         local xBank  = xPlayer.bank
                         local xMoney = xPlayer.money
                         if xMoney >= Maliat or xBank >= Maliat then 
-                            TriggerEvent('esx_addonaccount:getSharedAccount', 'society_uwucafe', function(account)
+                            -- BUG FIX: this always paid into society_uwucafe no
+                            -- matter which of the 17 businesses the crafter
+                            -- actually worked for (every other business's
+                            -- crafting tax was silently funding UwU). Pay into
+                            -- the crafter's own business instead.
+                            TriggerEvent('esx_addonaccount:getSharedAccount', 'society_' .. xPlayer.job.name, function(account)
 
                                 if xMoney >= Maliat then 
                                     xPlayer.removeMoney(Maliat)

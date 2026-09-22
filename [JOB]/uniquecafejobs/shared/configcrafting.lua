@@ -29,140 +29,148 @@ ConfigCrafting = {
 
 	
 	
+	-- Every business type's 4 stations (Hamzan/Ghahvesaz/ZarfShoe/Gaz) used to
+	-- share the exact same repeated Label across all 4 (e.g. cafe = "Item UwU"
+	-- x4, sushi = "Sushi" x4), so crafting felt identical everywhere no matter
+	-- which station you were physically at. Each station below now has a
+	-- distinct role per business type, matching what its recipes actually are
+	-- (see Recipes below) - e.g. pizza's Gaz = "Pizza Oven" (Gaz literally
+	-- means "gas" in Farsi, fits a gas oven), sushi's Gaz = "Broth Station"
+	-- (miso_soup lives there).
 	Categories = {
 	
 	['cafeHamzan'] = {
-		Label = 'Item UwU',
+		Label = 'Mixing Station',
 		Image = 'cupcake',
 		Jobs = ANY_CAFE_JOB,
 	
 	},
 	
 	['cafeGhahvesaz'] = {
-		Label = 'Item UwU',
+		Label = 'Coffee Bar',
 		Image = 'cupcake',
 		Jobs = ANY_CAFE_JOB,
 	
 	},
 	
 	['cafeZarfShoe'] = {
-		Label = 'Item UwU',
+		Label = 'Plating Station',
 		Image = 'cupcake',
 		Jobs = ANY_CAFE_JOB,
 	
 	},
 	
 	['cafeGaz'] = {
-		Label = 'Item UwU',
+		Label = 'Oven',
 		Image = 'cupcake',
 		Jobs = ANY_CAFE_JOB,
 	
 	},
 	['bakeryHamzan'] = {
-		Label = 'Bakery',
+		Label = 'Dough Station',
 		Image = 'cupcake',
 		Jobs = {'bakery1', 'bakery2'}, -- placeholder, unused (see note above)
 	},
 	['bakeryGhahvesaz'] = {
-		Label = 'Bakery',
+		Label = 'Filling & Icing',
 		Image = 'cupcake',
 		Jobs = {'bakery1', 'bakery2'}, -- placeholder, unused (see note above)
 	},
 	['bakeryZarfShoe'] = {
-		Label = 'Bakery',
+		Label = 'Shaping Station',
 		Image = 'cupcake',
 		Jobs = {'bakery1', 'bakery2'}, -- placeholder, unused (see note above)
 	},
 	['bakeryGaz'] = {
-		Label = 'Bakery',
+		Label = 'Oven',
 		Image = 'cupcake',
 		Jobs = {'bakery1', 'bakery2'}, -- placeholder, unused (see note above)
 	},
 	['barHamzan'] = {
-		Label = 'Bar',
+		Label = 'Mixing Station',
 		Image = 'cupcake',
 		Jobs = {'bar1', 'bar2'}, -- placeholder, unused (see note above)
 	},
 	['barGhahvesaz'] = {
-		Label = 'Bar',
+		Label = 'Garnish Bar',
 		Image = 'cupcake',
 		Jobs = {'bar1', 'bar2'}, -- placeholder, unused (see note above)
 	},
 	['barZarfShoe'] = {
-		Label = 'Bar',
+		Label = 'Glassware & Serve',
 		Image = 'cupcake',
 		Jobs = {'bar1', 'bar2'}, -- placeholder, unused (see note above)
 	},
 	['barGaz'] = {
-		Label = 'Bar',
+		Label = 'Carbonation Rig',
 		Image = 'cupcake',
 		Jobs = {'bar1', 'bar2'}, -- placeholder, unused (see note above)
 	},
 	['pizzaHamzan'] = {
-		Label = 'Pizza',
+		Label = 'Dough Station',
 		Image = 'cupcake',
 		Jobs = {'pizza1', 'pizza2'}, -- placeholder, unused (see note above)
 	},
 	['pizzaGhahvesaz'] = {
-		Label = 'Pizza',
+		Label = 'Sauce Station',
 		Image = 'cupcake',
 		Jobs = {'pizza1', 'pizza2'}, -- placeholder, unused (see note above)
 	},
 	['pizzaZarfShoe'] = {
-		Label = 'Pizza',
+		Label = 'Topping Station',
 		Image = 'cupcake',
 		Jobs = {'pizza1', 'pizza2'}, -- placeholder, unused (see note above)
 	},
 	['pizzaGaz'] = {
-		Label = 'Pizza',
+		Label = 'Pizza Oven',
 		Image = 'cupcake',
 		Jobs = {'pizza1', 'pizza2'}, -- placeholder, unused (see note above)
 	},
 	['icecreamHamzan'] = {
-		Label = 'Ice Cream',
+		Label = 'Mix & Churn',
 		Image = 'cupcake',
 		Jobs = {'icecream1', 'icecream2'}, -- placeholder, unused (see note above)
 	},
 	['icecreamGhahvesaz'] = {
-		Label = 'Ice Cream',
+		Label = 'Flavor Station',
 		Image = 'cupcake',
 		Jobs = {'icecream1', 'icecream2'}, -- placeholder, unused (see note above)
 	},
 	['icecreamZarfShoe'] = {
-		Label = 'Ice Cream',
+		Label = 'Scoop & Plate',
 		Image = 'cupcake',
 		Jobs = {'icecream1', 'icecream2'}, -- placeholder, unused (see note above)
 	},
 	['icecreamGaz'] = {
-		Label = 'Ice Cream',
+		Label = 'Blast Freezer',
 		Image = 'cupcake',
 		Jobs = {'icecream1', 'icecream2'}, -- placeholder, unused (see note above)
 	},
 	['sushiHamzan'] = {
-		Label = 'Sushi',
+		Label = 'Rice Station',
 		Image = 'cupcake',
 		Jobs = {'sushi1', 'sushi2'}, -- placeholder, unused (see note above)
 	},
 	['sushiGhahvesaz'] = {
-		Label = 'Sushi',
+		Label = 'Fish Prep',
 		Image = 'cupcake',
 		Jobs = {'sushi1', 'sushi2'}, -- placeholder, unused (see note above)
 	},
 	['sushiZarfShoe'] = {
-		Label = 'Sushi',
+		Label = 'Rolling & Plating',
 		Image = 'cupcake',
 		Jobs = {'sushi1', 'sushi2'}, -- placeholder, unused (see note above)
 	},
 	['sushiGaz'] = {
-		Label = 'Sushi',
+		Label = 'Broth Station',
 		Image = 'cupcake',
 		Jobs = {'sushi1', 'sushi2'}, -- placeholder, unused (see note above)
 	},
 
-	['carwashHamzan'] = { Label = 'Car Wash', Image = 'cupcake', Jobs = {'carwash'} },
-	['carwashGhahvesaz'] = { Label = 'Car Wash', Image = 'cupcake', Jobs = {'carwash'} },
-	['carwashZarfShoe'] = { Label = 'Car Wash', Image = 'cupcake', Jobs = {'carwash'} },
-	['carwashGaz'] = { Label = 'Car Wash', Image = 'cupcake', Jobs = {'carwash'} },
+	['carwashHamzan'] = { Label = 'Wash Bay', Image = 'cupcake', Jobs = {'carwash'} },
+	['carwashGhahvesaz'] = { Label = 'Polish Bay', Image = 'cupcake', Jobs = {'carwash'} },
+	['carwashZarfShoe'] = { Label = 'Detail Bay', Image = 'cupcake', Jobs = {'carwash'} },
+	['carwashGaz'] = { Label = 'Tire & Finish Bay', Image = 'cupcake', Jobs = {'carwash'} },
 
 
 

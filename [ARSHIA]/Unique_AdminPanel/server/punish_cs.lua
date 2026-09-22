@@ -8,6 +8,28 @@ TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
 -- on release or disconnect.
 ActiveCS = {}
 
+-- BUG FIX: demote/restore duty status around CS, used from every place a sentence
+-- starts (online /cs, offline /cs applied on next login via checkIfSentenced) and
+-- every place it ends (releaseFromCommunityService), so a player never gets stuck
+-- on an "off"+job they can't get out of, and never keeps full on-duty access while
+-- serving a sentence either.
+local function DemoteForCS(xPlayer)
+	if not xPlayer then return end
+	local currentJob = xPlayer.job.name
+	if currentJob ~= "nojob" and not tostring(currentJob):find("^off") then
+		xPlayer.setJob("off"..currentJob, xPlayer.job.grade)
+		TriggerClientEvent('esx:showNotification', xPlayer.source, "Shoma Off Duty Shodid")
+	end
+end
+
+local function RestoreDutyAfterCS(xPlayer)
+	if not xPlayer then return end
+	local currentJob = xPlayer.job.name
+	if tostring(currentJob):find("^off") then
+		xPlayer.setJob(currentJob:sub(4), xPlayer.job.grade)
+	end
+end
+
 TriggerEvent('es:addAdminCommand', 'cs', 2, function(source, args, user)
     if args[1] and GetPlayerName(args[1]) ~= nil and tonumber(args[2]) then
         local targetId = tonumber(args[1])
@@ -275,6 +297,7 @@ function SendToCommunityService(adminSource, target, actions_count, reason)
 
 	TriggerClientEvent('esx_policejob:unrestrain', target)
 	ActiveCS[target] = true
+	DemoteForCS(xTarget)
 	TriggerClientEvent('esx_communityGGservice:inCommunityService', target, actions_count)
 	TriggerClientEvent('esx_communityGGservice:inCommunityService_reason', target, reason)
 end
@@ -372,11 +395,7 @@ AddEventHandler('esx_communityGGservice:checkIfSentenced', function()
 			TriggerClientEvent('esx_communityGGservice:inCommunityService', _source, tonumber(result[1].actions_remaining))
 			TriggerClientEvent('esx_communityGGservice:inCommunityService_reason', _source, result[1].reason)
 
-			local currentJob = xPlayer.job.name
-			if currentJob ~= "nojob" and not tostring(currentJob):find("^off") then
-				xPlayer.setJob("off"..currentJob, xPlayer.job.grade)
-				TriggerClientEvent('esx:showNotification', _source, "Shoma Off Duty Shodid")
-			end
+			DemoteForCS(xPlayer)
 		end
 	end)
 end)
@@ -387,6 +406,7 @@ function releaseFromCommunityService(target)
 	if not xTarget then return end
 	local identifier = xTarget.identifier
 	ActiveCS[target] = nil
+	RestoreDutyAfterCS(xTarget)
 
 	MySQL.Async.fetchAll('SELECT * FROM communityservice WHERE identifier = @identifier', {
 		['@identifier'] = identifier

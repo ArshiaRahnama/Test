@@ -70,6 +70,13 @@ PunishConfig.cutscene = {
 PunishConfig.ServiceExtensionOnEscape = 8
 PunishConfig.DistanceExtension = 50.0
 
+-- Reverted to the original coordinates per confirmation that this platform exists
+-- in-game (built outside this repo - not in any ymap/ytyp tracked here). The actual
+-- bug was never this location itself: it was the essentialmode ESX.Game.Teleport
+-- collision-request typo (see essentialmode/client/functions.lua) combined with no
+-- ground-snap safety net (see TeleportToGround in client/punish_cs.lua) - both are
+-- fixed now, so teleporting here correctly waits for the platform's collision to
+-- load before dropping the player, instead of racing ahead into the ocean below it.
 PunishConfig.ServiceLocation = vec(-3451.93, -3464.14, 462.35)
 PunishConfig.ReleaseLocation = vec(-255.97, -973.38, 31.22)
 

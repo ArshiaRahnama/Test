@@ -10,7 +10,15 @@
 	Every holding's Boss Action gives the SAME generic management toolkit
 	over ONLY the businesses it owns: Portfolio Dashboard, Rank Up (fee %),
 	Manage Staff, Open/Close, Rename - see server/corp_server.lua. On top of
-	that, Blacktide/CrateCarry/TurfCo each keep their own special mechanic.
+	that, every holding also keeps its own special mechanic:
+	Blacktide = money laundering, CrateCarry = wholesale reseller,
+	TurfCo = paintball turf rental, Meridian = raw-material Supply
+	Contract (see Corp.Meridian.SupplyPrices below + the
+	'uniquecafejobs:corp:*SupplyContract' events in server/corp_server.lua) -
+	Meridian sells straight off that price list to the OTHER 3 holdings, at
+	roughly 40% below the Config.UwUShopItem retail price (shared/menu.lua),
+	so a Director+ of Blacktide/CrateCarry/TurfCo can restock one of THEIR
+	OWN businesses in bulk instead of only ever paying full NPC price.
 
 	All HQ coordinates are PLACEHOLDERS - move them in-game.
 ]]
@@ -46,6 +54,20 @@ Corp = {
 		DeleteMarker = { x = -55.0, y = -813.0, z = 243.8 },
 
 		CollectCooldownMins = 30,
+
+		-- Supply Contract: wholesale raw-ingredient price list Meridian
+		-- sells to the other 3 holdings (see the file header note above).
+		-- ~40% below the matching Config.UwUShopItem retail price.
+		SupplyBuyLimit = 50, -- max units per single purchase
+		SupplyPrices = {
+			aard = 60,   abporteghal = 3000, ice_coffee_matcha = 2700, bastani = 3000,
+			nutela = 120, chaee = 3000,       bakingpowder = 120,      daneghahve = 120,
+			egg = 60,    fenjon = 60,         kare = 120,              kase = 60,
+			limo = 60,   podrcacao = 120,     shekar = 60,             shir = 120,
+			totfarangi = 120, yakh = 60,      water = 60,              bread = 60,
+			vanil = 120, tamshak = 105,       powdr_matcha = 120,      oreo = 60,
+			nodel_kham = 180, khame = 90,
+		},
 	},
 
 	Blacktide = {
