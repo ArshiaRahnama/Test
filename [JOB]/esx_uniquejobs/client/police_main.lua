@@ -3942,7 +3942,16 @@ function mainThreads_police()
 						DeleteEntity(CurrentActionData.entity)
 					end
 
-					CurrentAction = nil
+					-- FIX: 'boss_actions'/'menu_boss_actions' is a marker-driven state
+					-- (set by esx_policejob:hasEnteredMarker-style events, cleared by
+					-- hasExitedMarker), not a one-shot action -- it must stay valid while
+					-- the boss is still standing in the marker. esx_society's boss menu has
+					-- many nested submenus that don't reliably signal back when closed, so
+					-- nil'ing it here made the E key stop working until you walked out of
+					-- the marker and back in. Only clear it for genuine one-shot actions.
+					if CurrentAction ~= 'boss_actions' and CurrentAction ~= 'menu_boss_actions' then
+						CurrentAction = nil
+					end
 				end
 			end
 
