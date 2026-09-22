@@ -417,30 +417,15 @@
 
 .gwLogo.hasImage { color: transparent; }
 
-.gwInfo { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
-
 .gwName {
+  flex: 1;
+  min-width: 0;
   font-weight: 700;
   font-size: 12.5px;
   color: #f0f0f3;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.gwBarTrack {
-  width: 100%;
-  height: 5px;
-  background: rgba(255, 255, 255, 0.06);
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.gwBarFill {
-  height: 100%;
-  border-radius: 4px;
-  background: linear-gradient(90deg, #ffb199, #e2564a);
-  transition: width 0.4s ease;
 }
 
 .gwCount {

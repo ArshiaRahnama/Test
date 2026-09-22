@@ -173,10 +173,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ============================================================= //
     // GANG WATCH — top 5 gangs by member community-service this month.
-    // Rank icon escalates (warning → fire → skull for #1) and a
-    // severity bar shows each gang's count relative to the worst
-    // offender, so the scale of the gap is visible at a glance, not
-    // just the raw numbers.
+    // Rank icon escalates (fire → skull for #1) so the worst offender
+    // stands out without needing a separate bar/graph.
     // ============================================================= //
     if (data.type === 'loadGangWatch') {
       const gwList = document.getElementById('lb_gangwatch_list');
@@ -187,7 +185,6 @@ document.addEventListener('DOMContentLoaded', () => {
         gwList.innerHTML = `<div class="jobLbEmpty">این ماه هیچ گنگی کامیونیتی‌سرویس نخورده</div>`;
         return;
       }
-      const maxCount = entries[0].count || 1;
       const RANK_ICON = { 1: 'fa-skull', 2: 'fa-fire', 3: 'fa-fire' };
 
       entries.forEach(entry => {
@@ -197,15 +194,11 @@ document.addEventListener('DOMContentLoaded', () => {
           ? `<div class="gwLogo hasImage" style="background-image:url('${entry.logoUrl}')"></div>`
           : `<div class="gwLogo"><i class="fa-solid fa-people-group"></i></div>`;
         const rankIcon = RANK_ICON[entry.position] || 'fa-triangle-exclamation';
-        const pct = Math.max(6, Math.round((entry.count / maxCount) * 100));
 
         row.innerHTML = `
           <div class="gwRank"><i class="fa-solid ${rankIcon}"></i>#${entry.position}</div>
           ${logoHtml}
-          <div class="gwInfo">
-            <div class="gwName">${entry.name}</div>
-            <div class="gwBarTrack"><div class="gwBarFill" style="width:${pct}%"></div></div>
-          </div>
+          <div class="gwName">${entry.name}</div>
           <div class="gwCount"><i class="fa-solid fa-handcuffs"></i>${entry.count}</div>
         `;
         gwList.appendChild(row);
