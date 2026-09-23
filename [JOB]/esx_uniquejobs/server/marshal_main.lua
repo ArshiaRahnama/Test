@@ -22,6 +22,8 @@ AddEventHandler('esx_marshaljob:giveWeapon', function(weapon, ammo)
 	xPlayer.addWeapon(weapon, ammo)
 end)
 
+local PendingLegitUncuff = {}
+
 RegisterServerEvent('esx_marshaljob:requestrelease')
 AddEventHandler('esx_marshaljob:requestrelease', function(targetid, playerheading, playerCoords, playerlocation)
 	local source = source
@@ -40,6 +42,11 @@ AddEventHandler('esx_marshaljob:requestrelease', function(targetid, playerheadin
 		if #(GetEntityCoords(GetPlayerPed(source)) - GetEntityCoords(GetPlayerPed(tonumber(targetid)))) < 15.0 then
 			if cPlayer.get("Cuff") then
 
+				-- SECURITY FIX: this file never recorded that a release was
+				-- requested (unlike police_main.lua's PendingLegitUncuff),
+				-- so esx_marshaljob:SetCuffStatus below had nothing to check
+				-- against and accepted any self-reported uncuff at face value.
+				PendingLegitUncuff[tonumber(targetid)] = { officer = source, time = GetGameTimer() }
 				TriggerClientEvent("esx_marshaljob:getuncuffed", targetid, playerheading, playerCoords, playerlocation)
 				TriggerClientEvent("esx_marshaljob:douncuffing", source)
 
@@ -560,11 +567,31 @@ end)
 
 
 
+-- SECURITY FIX: identical hole to esx_policejob:SetCuffStatus (see the long
+-- comment on that one in server/police_main.lua) -- accepted any self-reported
+-- uncuff unconditionally, and this copy did not even log it. Same fix: an
+-- uncuff (wasCuffed true, status false) only applies if a marshal actually
+-- requested this exact release in the last 15 seconds.
 RegisterServerEvent('esx_marshaljob:SetCuffStatus')
 AddEventHandler('esx_marshaljob:SetCuffStatus', function(status)
 	local source = source
 	local xPlayer = ESX.GetPlayerFromId(source)
-	xPlayer.set('Cuff', status)
+	if not xPlayer then return end
+	local wasCuffed = xPlayer.get('Cuff')
+
+	if wasCuffed and not status then
+		local pending = PendingLegitUncuff[source]
+		if pending and (GetGameTimer() - pending.time) < 15000 then
+			xPlayer.set('Cuff', status)
+			TriggerEvent('DiscordBot:ToDiscord', 'cuff', 'CuffLog', '```css\n[ Player : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Event : UNCUFFED ]\n[ By Officer : '..GetPlayerName(pending.officer)..'(' .. pending.officer .. ') ]\n```', 'user', true, source, false)
+			PendingLegitUncuff[source] = nil
+		else
+			TriggerClientEvent('esx:showNotification', source, '~r~Khata: Dastband Faghat Tavassot-e Yek Afsar Baz Mishavad')
+			TriggerEvent('DiscordBot:ToDiscord', 'cuffescape', 'CuffEscapeLog', '```css\n[ Player : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Event : BLOCKED UNCUFF (no matching officer release request) ]\n[ Possible Escape/Exploit ]\n```', 'user', true, source, false)
+		end
+	else
+		xPlayer.set('Cuff', status)
+	end
 end)
 
 ESX.RegisterServerCallback('esx_marshaljob:IsHandCuffed', function(source, cb, target)

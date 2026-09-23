@@ -556,21 +556,48 @@ end)
 
 
 
+-- SECURITY FIX: this used to set xPlayer.set('Cuff', status) UNCONDITIONALLY
+-- and only logged a "suspicious" Discord message afterwards if there was no
+-- matching PendingLegitUncuff entry -- the self-uncuff always succeeded
+-- either way, the log was purely informational. A modified client could
+-- fire this event directly (skipping the whole officer
+-- requestrelease -> getuncuffed -> removeHandcuffFull/unrestrain chain
+-- above) and simply uncuff itself at will. Now an uncuff (wasCuffed true,
+-- status false) is only actually applied if a real officer requested this
+-- exact release in the last 15 seconds; anything else is rejected, the
+-- player stays cuffed, and it's logged as a blocked attempt rather than
+-- just a suspicious one. Re-cuffing (status = true/job name) is never
+-- blocked -- only the transition to uncuffed needs an officer behind it.
 RegisterServerEvent('esx_policejob:SetCuffStatus')
 AddEventHandler('esx_policejob:SetCuffStatus', function(status)
 	local source = source
 	local xPlayer = ESX.GetPlayerFromId(source)
+	if not xPlayer then return end
 	local wasCuffed = xPlayer.get('Cuff')
-	xPlayer.set('Cuff', status)
 
 	if wasCuffed and not status then
 		local pending = PendingLegitUncuff[source]
 		if pending and (GetGameTimer() - pending.time) < 15000 then
+			xPlayer.set('Cuff', status)
 			TriggerEvent('DiscordBot:ToDiscord', 'cuff', 'CuffLog', '```css\n[ Player : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Event : UNCUFFED ]\n[ By Officer : '..GetPlayerName(pending.officer)..'(' .. pending.officer .. ') ]\n```', 'user', true, source, false)
 			PendingLegitUncuff[source] = nil
 		else
-			TriggerEvent('DiscordBot:ToDiscord', 'cuffescape', 'CuffEscapeLog', '```css\n[ Player : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Event : SUSPICIOUS UNCUFF (no matching officer release request) ]\n[ Possible Escape/Exploit ]\n```', 'user', true, source, false)
+			-- blocked: no legit officer release matched this attempt. The
+			-- server's own Cuff flag (what every other system -- IsHandCuffed
+			-- callback, courthouse booking, evidence custody, Job Watch's own
+			-- inspections -- actually reads) is left exactly as it was, so it
+			-- can never be talked into recording an uncuff that no officer
+			-- authorized. NOTE: this resource has no server-authoritative
+			-- movement/weapon lock for cuffed players (SetEnableHandcuffs /
+			-- DisablePlayerFiring are plain client calls with nothing
+			-- server-side re-checking them), so this does not by itself stop
+			-- a fully modified client from moving -- it stops the Cuff record
+			-- itself from being falsified.
+			TriggerClientEvent('esx:showNotification', source, '~r~Khata: Dastband Faghat Tavassot-e Yek Afsar Baz Mishavad')
+			TriggerEvent('DiscordBot:ToDiscord', 'cuffescape', 'CuffEscapeLog', '```css\n[ Player : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Event : BLOCKED UNCUFF (no matching officer release request) ]\n[ Possible Escape/Exploit ]\n```', 'user', true, source, false)
 		end
+	else
+		xPlayer.set('Cuff', status)
 	end
 end)
 

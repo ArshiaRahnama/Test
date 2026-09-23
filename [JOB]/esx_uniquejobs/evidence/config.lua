@@ -3,7 +3,7 @@ Config_evidence = {
 	-- Adds /evidencetest for trying the whole flow solo: sets your job to fbi grade 6,
 	-- gives you a UV Light, and spawns a blood + bullet-shell evidence pair at your feet.
 	-- Turn this OFF before the resource goes live on a real server.
-	Debug = true,
+	Debug = false, -- was left on true; the module's own docs (EVIDENCE_MERGE.md) flag this as required-off before going live
 	--
 
 	-- IMPORTANT! To configure report text navigate to /html/script.js and find the text you want to replace

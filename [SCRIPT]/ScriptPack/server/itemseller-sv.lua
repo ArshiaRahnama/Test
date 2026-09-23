@@ -1,6 +1,31 @@
 ESX = nil
 TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
 
+-- ============================================================
+-- esx_uniquejobs' oversight/ module (Job Watch: judge + marshal
+-- management of fisherman/fueler/lumberjack/slaughterer/tailor/
+-- miner) is optional. When it's running, every sale of a job item
+-- here gets its tax + price-multiplier applied and is reported to
+-- the live worker stats / anomaly flags; when it isn't, OvSellPrice
+-- just returns the plain price and OvSellReport is a no-op, so
+-- these NPC shops behave exactly as before.
+-- ============================================================
+local OVERSIGHT_RESOURCE = 'esx_uniquejobs'
+
+local function OvUp()
+	return GetResourceState(OVERSIGHT_RESOURCE) == 'started'
+end
+
+-- gross -> net, tax-and-multiplier adjusted; net is what actually
+-- gets paid, and this also records the sale (item + net income)
+-- against the worker's Job Watch stats.
+local function OvSell(source, itemName, gross, amount)
+	if not OvUp() then return gross end
+	local ok, result = pcall(function() return exports[OVERSIGHT_RESOURCE]:ProcessJobSale(source, itemName, gross, amount) end)
+	if not ok or type(result) ~= 'table' or not result.net then return gross end
+	return result.net
+end
+
 ESX.RegisterServerCallback('getInventoryWithImagesTailor', function(source, cb)
     local xPlayer = ESX.GetPlayerFromId(source)
     local inventory = xPlayer.inventory
@@ -30,9 +55,10 @@ RegisterServerEvent('item_shop_tailor:handleSell')
 AddEventHandler('item_shop_tailor:handleSell', function(itemName, amount)
     local xPlayer = ESX.GetPlayerFromId(source)
     local Src = source
+    amount = tonumber(amount)
 
 
-    if SellerConfig.itemsForSaleTailor[itemName] then
+    if SellerConfig.itemsForSaleTailor[itemName] and amount and amount > 0 and amount == math.floor(amount) then
         local pricePerItem = SellerConfig.itemsForSaleTailor[itemName].price
         local totalPrice = pricePerItem * amount
         local itemLabel = xPlayer.getInventoryItem(itemName).label
@@ -44,8 +70,9 @@ AddEventHandler('item_shop_tailor:handleSell', function(itemName, amount)
             xPlayer.removeInventoryItem(itemName, amount)
 
 
-            xPlayer.addMoney(totalPrice)
-            TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'AMoneyLog', '```css\n[ Player : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Player Steam : '..xPlayer.identifier..' ]\n[ Sold : '..tostring(itemName)..' x'..tostring(amount)..' ]\n[ Earned : '..tostring(totalPrice)..' ]\n```', 'user', true, source, false)
+            local netPrice = OvSell(source, itemName, totalPrice, amount)
+            xPlayer.addMoney(netPrice)
+            TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'AMoneyLog', '```css\n[ Player : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Player Steam : '..xPlayer.identifier..' ]\n[ Sold : '..tostring(itemName)..' x'..tostring(amount)..' ]\n[ Earned : '..tostring(netPrice)..' ]\n```', 'user', true, source, false)
 
 
 
@@ -54,7 +81,7 @@ AddEventHandler('item_shop_tailor:handleSell', function(itemName, amount)
                 multiline = true,
                 args = {
                     "[System]",
-                    'Shoma ^2$^2' .. totalPrice .. ' ^0Brai Froush ^1' .. amount .. '^1x ^1'.. itemLabel .. ' ^0Daryaft Kardid'
+                    'Shoma ^2$^2' .. netPrice .. ' ^0Brai Froush ^1' .. amount .. '^1x ^1'.. itemLabel .. ' ^0Daryaft Kardid'
                 }
             })
             TriggerClientEvent("Task_System:AddCompleteQuest", Src, tonumber(amount), tostring(itemName))
@@ -98,8 +125,9 @@ RegisterServerEvent('item_shop_lumberjack:handleSell')
 AddEventHandler('item_shop_lumberjack:handleSell', function(itemName, amount)
     local xPlayer = ESX.GetPlayerFromId(source)
     local Src = source
+    amount = tonumber(amount)
 
-    if SellerConfig.itemsForSaleLumberjack[itemName] then
+    if SellerConfig.itemsForSaleLumberjack[itemName] and amount and amount > 0 and amount == math.floor(amount) then
         local pricePerItem = SellerConfig.itemsForSaleLumberjack[itemName].price
         local totalPrice = pricePerItem * amount
         local itemLabel = xPlayer.getInventoryItem(itemName).label
@@ -111,8 +139,9 @@ AddEventHandler('item_shop_lumberjack:handleSell', function(itemName, amount)
             xPlayer.removeInventoryItem(itemName, amount)
 
 
-            xPlayer.addMoney(totalPrice)
-            TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'AMoneyLog', '```css\n[ Player : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Player Steam : '..xPlayer.identifier..' ]\n[ Sold : '..tostring(itemName)..' x'..tostring(amount)..' ]\n[ Earned : '..tostring(totalPrice)..' ]\n```', 'user', true, source, false)
+            local netPrice = OvSell(source, itemName, totalPrice, amount)
+            xPlayer.addMoney(netPrice)
+            TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'AMoneyLog', '```css\n[ Player : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Player Steam : '..xPlayer.identifier..' ]\n[ Sold : '..tostring(itemName)..' x'..tostring(amount)..' ]\n[ Earned : '..tostring(netPrice)..' ]\n```', 'user', true, source, false)
 
 
 
@@ -121,7 +150,7 @@ AddEventHandler('item_shop_lumberjack:handleSell', function(itemName, amount)
                 multiline = true,
                 args = {
                     "[System]",
-                    'Shoma ^2$^2' .. totalPrice .. ' ^0Brai Froush ^1' .. amount .. '^1x ^1' .. itemLabel .. ' ^0Daryaft Kardid'
+                    'Shoma ^2$^2' .. netPrice .. ' ^0Brai Froush ^1' .. amount .. '^1x ^1' .. itemLabel .. ' ^0Daryaft Kardid'
                 }
             })
             TriggerClientEvent("Task_System:AddCompleteQuest", Src, tonumber(amount), tostring(itemName))
@@ -165,9 +194,10 @@ RegisterServerEvent('item_shop_slaughterer:handleSell')
 AddEventHandler('item_shop_slaughterer:handleSell', function(itemName, amount)
     local xPlayer = ESX.GetPlayerFromId(source)
     local Src = source
+    amount = tonumber(amount)
 
 
-    if SellerConfig.itemsForSaleSlaughterer[itemName] then
+    if SellerConfig.itemsForSaleSlaughterer[itemName] and amount and amount > 0 and amount == math.floor(amount) then
         local pricePerItem = SellerConfig.itemsForSaleSlaughterer[itemName].price
         local totalPrice = pricePerItem * amount
         local itemLabel = xPlayer.getInventoryItem(itemName).label
@@ -179,8 +209,9 @@ AddEventHandler('item_shop_slaughterer:handleSell', function(itemName, amount)
             xPlayer.removeInventoryItem(itemName, amount)
 
 
-            xPlayer.addMoney(totalPrice)
-            TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'AMoneyLog', '```css\n[ Player : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Player Steam : '..xPlayer.identifier..' ]\n[ Sold : '..tostring(itemName)..' x'..tostring(amount)..' ]\n[ Earned : '..tostring(totalPrice)..' ]\n```', 'user', true, source, false)
+            local netPrice = OvSell(source, itemName, totalPrice, amount)
+            xPlayer.addMoney(netPrice)
+            TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'AMoneyLog', '```css\n[ Player : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Player Steam : '..xPlayer.identifier..' ]\n[ Sold : '..tostring(itemName)..' x'..tostring(amount)..' ]\n[ Earned : '..tostring(netPrice)..' ]\n```', 'user', true, source, false)
 
 
 
@@ -189,7 +220,7 @@ AddEventHandler('item_shop_slaughterer:handleSell', function(itemName, amount)
                 multiline = true,
                 args = {
                     "[System]",
-                    'Shoma ^2$^2' .. totalPrice .. ' ^0Brai Froush ^1' .. amount .. '^1x ^1' .. itemLabel .. ' ^0Daryaft Kardid'
+                    'Shoma ^2$^2' .. netPrice .. ' ^0Brai Froush ^1' .. amount .. '^1x ^1' .. itemLabel .. ' ^0Daryaft Kardid'
                 }
             })
             TriggerClientEvent("Task_System:AddCompleteQuest", Src, tonumber(amount), tostring(itemName))
@@ -233,9 +264,10 @@ RegisterServerEvent('item_shop_fueler:handleSell')
 AddEventHandler('item_shop_fueler:handleSell', function(itemName, amount)
     local xPlayer = ESX.GetPlayerFromId(source)
     local Src = source
+    amount = tonumber(amount)
 
 
-    if SellerConfig.itemsForSaleFueler[itemName] then
+    if SellerConfig.itemsForSaleFueler[itemName] and amount and amount > 0 and amount == math.floor(amount) then
         local pricePerItem = SellerConfig.itemsForSaleFueler[itemName].price
         local totalPrice = pricePerItem * amount
         local itemLabel = xPlayer.getInventoryItem(itemName).label
@@ -247,8 +279,9 @@ AddEventHandler('item_shop_fueler:handleSell', function(itemName, amount)
             xPlayer.removeInventoryItem(itemName, amount)
 
 
-            xPlayer.addMoney(totalPrice)
-            TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'AMoneyLog', '```css\n[ Player : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Player Steam : '..xPlayer.identifier..' ]\n[ Sold : '..tostring(itemName)..' x'..tostring(amount)..' ]\n[ Earned : '..tostring(totalPrice)..' ]\n```', 'user', true, source, false)
+            local netPrice = OvSell(source, itemName, totalPrice, amount)
+            xPlayer.addMoney(netPrice)
+            TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'AMoneyLog', '```css\n[ Player : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Player Steam : '..xPlayer.identifier..' ]\n[ Sold : '..tostring(itemName)..' x'..tostring(amount)..' ]\n[ Earned : '..tostring(netPrice)..' ]\n```', 'user', true, source, false)
 
 
 
@@ -257,7 +290,7 @@ AddEventHandler('item_shop_fueler:handleSell', function(itemName, amount)
                 multiline = true,
                 args = {
                     "[System]",
-                    'Shoma ^2$^2' .. totalPrice .. ' ^0Brai Froush ^1' .. amount .. '^1x ^1' .. itemLabel .. ' ^0Daryaft Kardid'
+                    'Shoma ^2$^2' .. netPrice .. ' ^0Brai Froush ^1' .. amount .. '^1x ^1' .. itemLabel .. ' ^0Daryaft Kardid'
                 }
             })
             TriggerClientEvent("Task_System:AddCompleteQuest", Src, tonumber(amount), tostring(itemName))
@@ -299,6 +332,7 @@ RegisterServerEvent('item_shop_laster:handleSell')
 AddEventHandler('item_shop_laster:handleSell', function(itemName, amount)
     local xPlayer = ESX.GetPlayerFromId(source)
     local Src = source
+    amount = tonumber(amount)
 
     if SellerConfig.itemsForSaleLaster[itemName] then
         local pricePerItem = SellerConfig.itemsForSaleLaster[itemName].price
@@ -359,9 +393,10 @@ RegisterServerEvent('item_miner:handleSell')
 AddEventHandler('item_miner:handleSell', function(itemName, amount)
     local xPlayer = ESX.GetPlayerFromId(source)
     local Src = source
+    amount = tonumber(amount)
 
 
-    if SellerConfig.itemsForSaleMiner[itemName] then
+    if SellerConfig.itemsForSaleMiner[itemName] and amount and amount > 0 and amount == math.floor(amount) then
         local pricePerItem = SellerConfig.itemsForSaleMiner[itemName].price
         local totalPrice = pricePerItem * amount
         local itemLabel = xPlayer.getInventoryItem(itemName).label
@@ -372,8 +407,9 @@ AddEventHandler('item_miner:handleSell', function(itemName, amount)
             xPlayer.removeInventoryItem(itemName, amount)
 
 
-            xPlayer.addMoney(totalPrice)
-            TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'AMoneyLog', '```css\n[ Player : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Player Steam : '..xPlayer.identifier..' ]\n[ Sold : '..tostring(itemName)..' x'..tostring(amount)..' ]\n[ Earned : '..tostring(totalPrice)..' ]\n```', 'user', true, source, false)
+            local netPrice = OvSell(source, itemName, totalPrice, amount)
+            xPlayer.addMoney(netPrice)
+            TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'AMoneyLog', '```css\n[ Player : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Player Steam : '..xPlayer.identifier..' ]\n[ Sold : '..tostring(itemName)..' x'..tostring(amount)..' ]\n[ Earned : '..tostring(netPrice)..' ]\n```', 'user', true, source, false)
 
 
 
@@ -382,7 +418,7 @@ AddEventHandler('item_miner:handleSell', function(itemName, amount)
                 multiline = true,
                 args = {
                     "[System]",
-                    'Shoma ^2$^2' .. totalPrice .. ' ^0Brai Froush ^1' .. amount .. '^1x ^1' .. itemLabel .. ' ^0Daryaft Kardid'
+                    'Shoma ^2$^2' .. netPrice .. ' ^0Brai Froush ^1' .. amount .. '^1x ^1' .. itemLabel .. ' ^0Daryaft Kardid'
                 }
             })
             TriggerClientEvent("Task_System:AddCompleteQuest", Src, tonumber(amount), tostring(itemName))
@@ -425,8 +461,9 @@ RegisterServerEvent('item_shop_separated:handleSell')
 AddEventHandler('item_shop_separated:handleSell', function(itemName, amount)
     local xPlayer = ESX.GetPlayerFromId(source)
     local Src = source
+    amount = tonumber(amount)
 
-    if SellerConfig.itemsForSaleSeparated[itemName] then
+    if SellerConfig.itemsForSaleSeparated[itemName] and amount and amount > 0 and amount == math.floor(amount) then
         local pricePerItem = SellerConfig.itemsForSaleSeparated[itemName].price
         local totalPrice = pricePerItem * amount
         local itemLabel = xPlayer.getInventoryItem(itemName).label
@@ -438,8 +475,9 @@ AddEventHandler('item_shop_separated:handleSell', function(itemName, amount)
             xPlayer.removeInventoryItem(itemName, amount)
 
 
-            xPlayer.addMoney(totalPrice)
-            TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'AMoneyLog', '```css\n[ Player : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Player Steam : '..xPlayer.identifier..' ]\n[ Sold : '..tostring(itemName)..' x'..tostring(amount)..' ]\n[ Earned : '..tostring(totalPrice)..' ]\n```', 'user', true, source, false)
+            local netPrice = OvSell(source, itemName, totalPrice, amount)
+            xPlayer.addMoney(netPrice)
+            TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'AMoneyLog', '```css\n[ Player : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Player Steam : '..xPlayer.identifier..' ]\n[ Sold : '..tostring(itemName)..' x'..tostring(amount)..' ]\n[ Earned : '..tostring(netPrice)..' ]\n```', 'user', true, source, false)
 
 
 
@@ -448,7 +486,7 @@ AddEventHandler('item_shop_separated:handleSell', function(itemName, amount)
                 multiline = true,
                 args = {
                     "[System]",
-                    'Shoma ^2$^2' .. totalPrice .. ' ^0Brai Froush ^1' .. amount .. '^1x ^1' .. itemLabel .. ' ^0Daryaft Kardid'
+                    'Shoma ^2$^2' .. netPrice .. ' ^0Brai Froush ^1' .. amount .. '^1x ^1' .. itemLabel .. ' ^0Daryaft Kardid'
                 }
             })
             TriggerClientEvent("Task_System:AddCompleteQuest", Src, tonumber(amount), tostring(itemName))
@@ -492,6 +530,7 @@ RegisterServerEvent('item_shop_drugdealer2:handleSell')
 AddEventHandler('item_shop_drugdealer2:handleSell', function(itemName, amount)
     local xPlayer = ESX.GetPlayerFromId(source)
     local Src = source
+    amount = tonumber(amount)
 
     if SellerConfig.itemsForSaleDrugdealer2[itemName] then
         local pricePerItem = SellerConfig.itemsForSaleDrugdealer2[itemName].price

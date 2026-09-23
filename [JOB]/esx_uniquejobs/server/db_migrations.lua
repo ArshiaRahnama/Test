@@ -361,6 +361,133 @@ CreateThread(function()
 			`doj_case_id` INT(11) DEFAULT NULL,
 			PRIMARY KEY (`id`)
 		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4]],
+
+		-- oversight/ module: judge + marshal management of the civilian
+		-- jobs handled by esx_jobs (fisherman, fueler, lumberjack,
+		-- slaughterer, tailor, miner).
+		[[CREATE TABLE IF NOT EXISTS `oversight_settings` (
+			`job` VARCHAR(20) NOT NULL,
+			`tax_rate` DECIMAL(5,4) NOT NULL DEFAULT 0,
+			`price_mult` DECIMAL(5,3) NOT NULL DEFAULT 1,
+			`updated_by` VARCHAR(255) DEFAULT NULL,
+			`updated_at` INT(11) DEFAULT NULL,
+			PRIMARY KEY (`job`)
+		)]],
+
+		[[CREATE TABLE IF NOT EXISTS `oversight_permits` (
+			`identifier` VARCHAR(255) NOT NULL,
+			`name` VARCHAR(255) NOT NULL,
+			`job` VARCHAR(20) NOT NULL,
+			`issued_by` VARCHAR(255) NOT NULL,
+			`issued_at` INT(11) NOT NULL,
+			`expires_at` INT(11) NOT NULL,
+			PRIMARY KEY (`identifier`, `job`),
+			KEY `expires_at` (`expires_at`)
+		)]],
+
+		[[CREATE TABLE IF NOT EXISTS `oversight_suspensions` (
+			`id` INT(11) NOT NULL AUTO_INCREMENT,
+			`identifier` VARCHAR(255) NOT NULL,
+			`name` VARCHAR(255) NOT NULL,
+			`job` VARCHAR(20) NOT NULL,
+			`reason` VARCHAR(255) NOT NULL,
+			`by_name` VARCHAR(255) NOT NULL,
+			`by_job` VARCHAR(20) NOT NULL,
+			`created_at` INT(11) NOT NULL,
+			`expires_at` INT(11) NOT NULL,
+			`active` TINYINT(1) NOT NULL DEFAULT 1,
+			`lifted_by` VARCHAR(255) DEFAULT NULL,
+			PRIMARY KEY (`id`),
+			KEY `identifier` (`identifier`),
+			KEY `active_expires` (`active`, `expires_at`)
+		)]],
+
+		[[CREATE TABLE IF NOT EXISTS `oversight_offences` (
+			`id` INT(11) NOT NULL AUTO_INCREMENT,
+			`identifier` VARCHAR(255) NOT NULL,
+			`name` VARCHAR(255) NOT NULL,
+			`job` VARCHAR(20) NOT NULL,
+			`kind` VARCHAR(20) NOT NULL,
+			`reason` VARCHAR(255) NOT NULL,
+			`amount` INT(11) DEFAULT NULL,
+			`by_name` VARCHAR(255) NOT NULL,
+			`by_job` VARCHAR(20) NOT NULL,
+			`created_at` INT(11) NOT NULL,
+			PRIMARY KEY (`id`),
+			KEY `identifier` (`identifier`)
+		)]],
+
+		[[CREATE TABLE IF NOT EXISTS `oversight_flags` (
+			`id` INT(11) NOT NULL AUTO_INCREMENT,
+			`identifier` VARCHAR(255) NOT NULL,
+			`name` VARCHAR(255) NOT NULL,
+			`job` VARCHAR(20) NOT NULL,
+			`kind` VARCHAR(20) NOT NULL,
+			`detail` VARCHAR(255) DEFAULT NULL,
+			`x` FLOAT DEFAULT NULL,
+			`y` FLOAT DEFAULT NULL,
+			`z` FLOAT DEFAULT NULL,
+			`status` VARCHAR(20) NOT NULL DEFAULT 'open',
+			`handled_by` VARCHAR(255) DEFAULT NULL,
+			`case_id` INT(11) DEFAULT NULL,
+			`created_at` INT(11) NOT NULL,
+			PRIMARY KEY (`id`),
+			KEY `status` (`status`)
+		)]],
+
+		[[CREATE TABLE IF NOT EXISTS `oversight_complaints` (
+			`id` INT(11) NOT NULL AUTO_INCREMENT,
+			`identifier` VARCHAR(255) NOT NULL,
+			`name` VARCHAR(255) NOT NULL,
+			`target_name` VARCHAR(255) DEFAULT NULL,
+			`text` VARCHAR(500) NOT NULL,
+			`status` VARCHAR(20) NOT NULL DEFAULT 'open',
+			`note` VARCHAR(255) DEFAULT NULL,
+			`handled_by` VARCHAR(255) DEFAULT NULL,
+			`case_id` INT(11) DEFAULT NULL,
+			`created_at` INT(11) NOT NULL,
+			PRIMARY KEY (`id`),
+			KEY `status` (`status`)
+		)]],
+
+		[[CREATE TABLE IF NOT EXISTS `oversight_stats` (
+			`identifier` VARCHAR(255) NOT NULL,
+			`job` VARCHAR(20) NOT NULL,
+			`day` DATE NOT NULL,
+			`name` VARCHAR(255) NOT NULL,
+			`items` INT(11) NOT NULL DEFAULT 0,
+			`income` INT(11) NOT NULL DEFAULT 0,
+			`seconds` INT(11) NOT NULL DEFAULT 0,
+			`sales` INT(11) NOT NULL DEFAULT 0,
+			PRIMARY KEY (`identifier`, `job`, `day`),
+			KEY `job_day` (`job`, `day`)
+		)]],
+
+		[[CREATE TABLE IF NOT EXISTS `oversight_bonus_log` (
+			`id` INT(11) NOT NULL AUTO_INCREMENT,
+			`job` VARCHAR(20) NOT NULL,
+			`paid_by` VARCHAR(255) NOT NULL,
+			`total` INT(11) NOT NULL,
+			`created_at` INT(11) NOT NULL,
+			PRIMARY KEY (`id`),
+			KEY `job_created` (`job`, `created_at`)
+		)]],
+
+		[[CREATE TABLE IF NOT EXISTS `oversight_spectate_log` (
+			`id` INT(11) NOT NULL AUTO_INCREMENT,
+			`spectator_identifier` VARCHAR(255) NOT NULL,
+			`spectator_name` VARCHAR(255) NOT NULL,
+			`spectator_job` VARCHAR(20) NOT NULL,
+			`target_identifier` VARCHAR(255) NOT NULL,
+			`target_name` VARCHAR(255) NOT NULL,
+			`target_job` VARCHAR(20) DEFAULT NULL,
+			`started_at` INT(11) NOT NULL,
+			`ended_at` INT(11) DEFAULT NULL,
+			`reason` VARCHAR(20) DEFAULT NULL,
+			PRIMARY KEY (`id`),
+			KEY `spectator` (`spectator_identifier`),
+			KEY `target` (`target_identifier`)
+		)]],
 	}
 
 	for _, sql in ipairs(createStatements) do

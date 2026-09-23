@@ -1,6 +1,60 @@
 ESX = nil
 TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
 
+-- ============================================================
+-- esx_uniquejobs' oversight/ module (Job Watch) is optional -- see
+-- server/main.lua's copy of this same wrapper for the full
+-- explanation. Duplicated here (rather than shared) because Lua
+-- resources can't require() each other's files across a boundary.
+-- ============================================================
+local OVERSIGHT_RESOURCE = 'esx_uniquejobs'
+local function OvUp() return GetResourceState(OVERSIGHT_RESOURCE) == 'started' end
+local function OvPayout(source, job, gross)
+	if not OvUp() then return gross end
+	local ok, result = pcall(function() return exports[OVERSIGHT_RESOURCE]:ProcessJobPayout(source, job, gross) end)
+	if not ok or type(result) ~= 'table' or not result.net then return gross end
+	return result.net
+end
+local function OvReport(source, job, items, money)
+	if not OvUp() then return end
+	TriggerEvent('esx_uniquejobs:oversight:activity', source, job, 'tick', items, money, 'mine')
+end
+
+-- ============================================================
+-- SECURITY NOTE (read before touching SellStone / WashStonePieces /
+-- PutStoneInVehicle below):
+--
+-- The real vehicle trunk lives in a resource called `lgdddd`, which
+-- is NOT part of this repository (grep the whole repo for "lgdddd"
+-- -- only this file and its client twin reference it; there is no
+-- `RegisterServerCallback('lgdddd:getChestVehicle', ...)` anywhere
+-- to re-query it server-side). That means these three handlers
+-- cannot independently verify "does this player's trunk actually
+-- contain the stone/stone_piece they claim" the way, say,
+-- Unique_inventory's `esx_trunk:getSharedDataStore` event would let
+-- an in-repo handler do. Until `lgdddd` (or whatever replaces it)
+-- exposes a server-to-server way to read a trunk's contents, the
+-- mitigations below (hard per-call caps + a cooldown + Job Watch
+-- rate/income anomaly flags) are what stands between this event and
+-- an unlimited money/item duplication exploit -- they reduce the
+-- damage a modified client can do per minute, they do not close the
+-- hole. Wiring in a real check the moment `lgdddd` exposes one
+-- should be treated as a priority fix, not a nice-to-have.
+-- ============================================================
+local MAX_WASH_PER_CALL = 300   -- matches the TaskSystem:GharbaleSang threshold at 290 below
+local MAX_SELL_PER_CALL = 500
+local lastCall = {} -- lastCall[source][event] = os.time()
+
+local function OnCooldown(source, key, seconds)
+	lastCall[source] = lastCall[source] or {}
+	local now = os.time()
+	if lastCall[source][key] and now - lastCall[source][key] < seconds then return true end
+	lastCall[source][key] = now
+	return false
+end
+
+AddEventHandler('playerDropped', function() lastCall[source] = nil end)
+
 local PLayersOnduty = {}
 RegisterNetEvent('Miner:SetDuty')
 AddEventHandler('Miner:SetDuty',function(status)
@@ -37,6 +91,7 @@ AddEventHandler('mining:PutStoneInVehicle', function(plate, minerSkill, class)
 		TriggerClientEvent('esx:showNotification', source, "~r~You need to be a miner to do this.")
 		return
 	end
+	if OnCooldown(source, 'mine', 2) then return end
 
 	local count = 1
 	if minerSkill == 100 then
@@ -50,6 +105,7 @@ AddEventHandler('mining:PutStoneInVehicle', function(plate, minerSkill, class)
 	xPlayer.addInventoryItem("stone", count)
 	TriggerEvent("lgdddd:actionItem", plate, class, "deposit", count, "stone")
 	TriggerEvent('quest-miner:mine')
+	OvReport(source, 'miner', { stone = count }, 0)
 end)
 
 RegisterServerEvent('mining:SellStone')
@@ -62,7 +118,9 @@ AddEventHandler('mining:SellStone', function(plate, class, count)
 	end
 
 	count = tonumber(count) or 0
-	if count <= 0 then return end
+	if count <= 0 or count ~= math.floor(count) then return end
+	count = math.min(count, MAX_SELL_PER_CALL) -- see the SECURITY NOTE above -- this is a damage cap, not a real balance check
+	if OnCooldown(source, 'sell', 2) then return end
 
 	-- "remove" hands `count` stone_piece from the real trunk into the
 	-- player's own inventory (that's how lgdddd:actionItem works) -- take
@@ -70,11 +128,13 @@ AddEventHandler('mining:SellStone', function(plate, class, count)
 	TriggerEvent("lgdddd:actionItem", plate, class, "remove", count, "stone_piece")
 	xPlayer.removeInventoryItem('stone_piece', count)
 
-	local poull = count * 500
-	xPlayer.addMoney(poull)
+	local gross = count * 500
+	local net = OvPayout(source, 'miner', gross)
+	xPlayer.addMoney(net)
+	OvReport(source, 'miner', { stone_piece = count }, net)
 	TriggerEvent('quest-miner:sell')
-	TriggerClientEvent('esx:showNotification', source, 'Shoma ~g~'..poull..'~w~ Pool Az Frosh Ajor Daryaft Kardid')
-	TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'AMoneyLog', '```css\n[ Player : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Player Steam : '..xPlayer.identifier..' ]\n[ Job : Miner ]\n[ Sold Count : '..tostring(count)..' ]\n[ Earned : '..tostring(poull)..' ]\n```', 'user', true, source, false)
+	TriggerClientEvent('esx:showNotification', source, 'Shoma ~g~'..net..'~w~ Pool Az Frosh Ajor Daryaft Kardid')
+	TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'AMoneyLog', '```css\n[ Player : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Player Steam : '..xPlayer.identifier..' ]\n[ Job : Miner ]\n[ Sold Count : '..tostring(count)..' ]\n[ Earned : '..tostring(net)..' ]\n```', 'user', true, source, false)
 end)
 
 RegisterServerEvent('mining:WashStonePieces')
@@ -87,7 +147,9 @@ AddEventHandler('mining:WashStonePieces', function(plate, class, count)
 	end
 
 	local Tedad = tonumber(count) or 0
-	if Tedad == 0 then return end
+	if Tedad <= 0 or Tedad ~= math.floor(Tedad) then return end
+	Tedad = math.min(Tedad, MAX_WASH_PER_CALL) -- see the SECURITY NOTE above -- this is a damage cap, not a real balance check
+	if OnCooldown(source, 'wash', 5) then return end
 
 	if Tedad >= 290 then
 		TriggerClientEvent('TaskSystem:GharbaleSang', source)
@@ -102,13 +164,17 @@ AddEventHandler('mining:WashStonePieces', function(plate, class, count)
 	TriggerEvent("lgdddd:actionItem", plate, class, "remove", Tedad, "stone")
 	xPlayer.removeInventoryItem('stone', Tedad)
 
-	-- NOTE: the original condition here ("Tedad >= 200 or Tedad <= 300")
-	-- was true for literally every number, so the original "else" branch
-	-- was unreachable dead code either way -- kept the reward math as-is.
-	local count1 = math.random(5, 60)
-	local count2 = math.random(5, 50)
-	local count3 = math.random(5, 40)
-	local count4 = math.random(0, 7)
+	-- Reward is scaled to Tedad (out of a max wash batch of 300), not a flat
+	-- random roll independent of how much stone was actually claimed -- the
+	-- original version handed out full random rolls (stone_piece up to 60,
+	-- iron up to 50, gold up to 40, diamond up to 7) no matter what `count`
+	-- was, which is what let this event be spammed with any nonzero count
+	-- for max reward every time.
+	local scale = Tedad / MAX_WASH_PER_CALL
+	local count1 = math.floor(math.random(5, 60) * scale)
+	local count2 = math.floor(math.random(5, 50) * scale)
+	local count3 = math.floor(math.random(5, 40) * scale)
+	local count4 = (math.random() < (0.25 * scale)) and 1 or 0 -- diamond stays rare regardless of batch size
 
 	if count1 > 0 then
 		xPlayer.addInventoryItem('stone_piece', count1)
@@ -126,6 +192,8 @@ AddEventHandler('mining:WashStonePieces', function(plate, class, count)
 		xPlayer.addInventoryItem('diamond', count4)
 		TriggerEvent("lgdddd:actionItem", plate, class, "deposit", count4, "diamond")
 	end
+
+	OvReport(source, 'miner', { stone = Tedad, stone_piece = count1, iron_piece = count2, gold_piece = count3, diamond = count4 }, 0)
 end)
 
 RegisterServerEvent('mining:MeltItems')

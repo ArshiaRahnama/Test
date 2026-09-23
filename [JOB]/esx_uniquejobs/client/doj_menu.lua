@@ -367,6 +367,18 @@ function OpenDojMenu()
 				OpenWarrantsMenu()
 			end,
 		}
+
+		-- oversight/ module: judge + marshal management of esx_jobs'
+		-- civilian jobs (fisherman, fueler, lumberjack, slaughterer,
+		-- tailor, miner). Also reachable directly with /jobwatch.
+		options[#options + 1] = {
+			title = 'Job Watch (Nezarat Bar Shoghl-ha)',
+			description = 'Fisherman, Fueler, Lumberjack, Slaughterer, Tailor, Miner -- Spectate, Jarime, Mojavez, Eghtesad',
+			icon = 'user-tie',
+			onSelect = function()
+				if OpenJobWatchMenu then OpenJobWatchMenu() end
+			end,
+		}
 	end
 
 	if dojJob == 'fbi' or dojJob == 'cia' then

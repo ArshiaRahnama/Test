@@ -25,6 +25,16 @@ shared_scripts {
 
 	-- K9 (merged in from the standalone k9 resource)
 	'shared/k9_config.lua',
+
+	-- oversight (Job Watch) -- judge + marshal management of the
+	-- civilian jobs handled by esx_jobs. Shared within THIS resource
+	-- because both oversight/client/*.lua and oversight/server/*.lua
+	-- read Config_oversight. esx_jobs (a separate resource) never
+	-- loads this file directly -- it only reaches Job Watch through
+	-- the exports in oversight/server/core.lua (CanPlayerWork,
+	-- ProcessJobPayout, ProcessJobSale, ...), guarded so esx_jobs still
+	-- works normally if this resource is stopped or not installed.
+	'oversight/config.lua',
 }
 
 client_scripts {
@@ -138,6 +148,11 @@ client_scripts {
 	'lscustom/locales/en.lua',
 	'lscustom/client/main.lua',
 	'lscustom/client/colorPicker.lua',
+
+	-- oversight (Job Watch)
+	'oversight/client/main.lua',
+	'oversight/client/menu.lua',
+	'oversight/client/spectate.lua',
 }
 
 server_scripts {
@@ -155,6 +170,15 @@ server_scripts {
 	'server/doj_manager.lua',
 	'server/doj_cases.lua',
 	'server/law_codebook.lua',
+
+	-- oversight (Job Watch) -- loaded after doj_cases.lua/records_manager.lua
+	-- above (Ov.OpenCase/actions.lua call their CreateExternalCase /
+	-- LogCriminalRecord globals) and after config_judge.lua/config_marshal.lua
+	-- below only matter for their client_scripts twin; the server side
+	-- only needs ESX + MySQL, already loaded above.
+	'oversight/server/core.lua',
+	'oversight/server/actions.lua',
+	'oversight/server/spectate.lua',
 
 	'server/server_time.lua',
 	'server/case_timeline.lua',

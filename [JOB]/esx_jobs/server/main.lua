@@ -1,5 +1,6 @@
 local PlayersWorking = {}
 local vehicles = {}
+local Deposits = {} -- Deposits[source] = amount currently held in the 'caution' addon account for their spawned job vehicle
 local allowedJobs = {
 	'fisherman',
 	'tailor',
@@ -21,6 +22,65 @@ function IsAllowed(job)
 	end
 
 	return false
+end
+
+-- SECURITY FIX: the caution (vehicle deposit) amount is looked up here,
+-- server-side, from Config.Jobs -- never trusted from the client's
+-- cautionAmount parameter (esx_jobs:cautionss used to ignore that
+-- parameter entirely and never actually moved any money either way,
+-- so vehicles were both free to take AND impossible to get a deposit
+-- back from -- see the handler below for the real fix).
+local function GetJobCaution(job)
+	local jobData = Config.Jobs[job]
+	if not jobData or not jobData.Zones then return 0 end
+	for _, zone in pairs(jobData.Zones) do
+		if zone.Type == 'vehspawner' and zone.Caution then
+			return tonumber(zone.Caution) or 0
+		end
+	end
+	return 0
+end
+
+-- ============================================================
+-- esx_uniquejobs' oversight/ module (Job Watch: judge + marshal
+-- management of these jobs) is optional -- everything below still
+-- works with plain esx_jobs behaviour if that resource is stopped,
+-- not installed, or hasn't started yet. Every call goes through
+-- these three wrappers so nothing here has to pcall by hand.
+-- ============================================================
+local OVERSIGHT_RESOURCE = 'esx_uniquejobs'
+
+local function OvUp()
+	return GetResourceState(OVERSIGHT_RESOURCE) == 'started'
+end
+
+-- may this player run a work/delivery tick on this job right now?
+-- returns true, or false + a reason string to show the player.
+local function OvCanWork(source, job)
+	if not OvUp() then return true end
+	local ok, result = pcall(function() return exports[OVERSIGHT_RESOURCE]:CanPlayerWork(source, job) end)
+	if not ok or type(result) ~= 'table' then return true end
+	return result.ok, result.reason
+end
+
+-- gross delivery/sale amount in, tax-and-multiplier-adjusted net out.
+-- Never touches the player's money itself -- the caller still does
+-- xPlayer.addMoney(net) exactly like before.
+local function OvPayout(source, job, gross)
+	if not OvUp() then return gross end
+	local ok, result = pcall(function() return exports[OVERSIGHT_RESOURCE]:ProcessJobPayout(source, job, gross) end)
+	if not ok or type(result) ~= 'table' or not result.net then return gross end
+	return result.net
+end
+
+-- tells Job Watch's live roster / stats / anomaly-flags about a
+-- production or delivery tick. items = { db_name = count }, money =
+-- what the player actually received (post-tax), 0 for a pure
+-- production step. Server-only event (esx_uniquejobs' core.lua does
+-- NOT RegisterNetEvent it), so this is the only way in.
+local function OvReport(source, job, items, money, zoneKey)
+	if not OvUp() then return end
+	TriggerEvent('esx_uniquejobs:oversight:activity', source, job, 'tick', items, money, zoneKey)
 end
 
 -- Runs one production/delivery tick for a player and, as long as they're
@@ -53,6 +113,17 @@ local function Work(source, job, zoneKey)
 			return
 		end
 
+		-- Job Watch (esx_uniquejobs/oversight): a judge/marshal suspension
+		-- or a temporary closure stops the tick here, before anything is
+		-- produced or paid. A missing permit (jobs that require one --
+		-- none of the six by default) behaves the same way.
+		local canWork, blockReason = OvCanWork(source, job)
+		if not canWork then
+			TriggerClientEvent('esx:showNotification', source, blockReason or _U('not_enough', ''))
+			Work(source, job, zoneKey) -- re-arm the timer; work auto-resumes once the block clears (no item/money this tick)
+			return
+		end
+
 		for i=1, #item, 1 do
 			local entry = item[i]
 
@@ -81,6 +152,7 @@ local function Work(source, job, zoneKey)
 					-- a server-side call chain that started from this player's
 					-- 'esx_jobs:startWork', so the ambient `source` is still theirs.
 					TriggerEvent('quest-' .. job .. ':produce')
+					OvReport(source, job, { [entry.db_name] = entry.add }, 0, zoneKey)
 				end
 			else
 				-- delivery step: sells "requires" for money, nothing is added to the inventory
@@ -89,7 +161,9 @@ local function Work(source, job, zoneKey)
 				else
 					xPlayer.removeInventoryItem(entry.requires, entry.remove)
 					if entry.price then
-						xPlayer.addMoney(entry.price)
+						local net = OvPayout(source, job, entry.price)
+						xPlayer.addMoney(net)
+						OvReport(source, job, { [entry.requires] = entry.remove }, net, zoneKey)
 					end
 					TriggerEvent('quest-' .. job .. ':deliver')
 				end
@@ -167,6 +241,17 @@ AddEventHandler('esx_jobs:setJob', function(job)
 
 	local wasNojob = (currentJob == 'nojob')
 
+	-- Job Watch (esx_uniquejobs/oversight): a judge/marshal suspension
+	-- blocks TAKING the job too, not just working it (a closure or a
+	-- missing permit only block the work itself -- see OvCanWork above).
+	if OvUp() then
+		local ok, result = pcall(function() return exports[OVERSIGHT_RESOURCE]:CanTakeJob(source, job) end)
+		if ok and type(result) == 'table' and result.ok == false then
+			TriggerClientEvent('esx:showNotification', source, result.reason or '~r~Shoma Az In Shoghl Tarigh Shodid')
+			return
+		end
+	end
+
 	xPlayer.setJob(job, 0)
 	TriggerClientEvent("esx:inJob", xPlayer.source, job)
 	TriggerClientEvent("startJob", xPlayer.source, job)
@@ -224,23 +309,71 @@ AddEventHandler('esx:playerLoaded', function(source)
 end)
 
 -- renamed to match client/main.lua's ESX.TriggerServerEvent('esx_jobs:cautionss', ...) calls
+--
+-- SECURITY / FUNCTIONAL FIX: both branches used to call
+-- esx_addonaccount:getAccount and then do absolutely nothing inside the
+-- callback -- no money ever left the player on "take" and none was ever
+-- returned on "give_back". That meant job vehicles were effectively free
+-- (no deposit enforced) AND a deposit could never be refunded even if one
+-- had been charged some other way. This version actually moves money
+-- through the player's personal 'caution' addon account, uses the
+-- server's own Config-derived amount (GetJobCaution) instead of trusting
+-- the client's cautionAmount parameter, tracks exactly how much is
+-- currently held per player in `Deposits`, and only lets the vehicle
+-- spawn once the deposit has actually been taken.
 RegisterServerEvent('esx_jobs:cautionss')
 AddEventHandler('esx_jobs:cautionss', function(cautionType, cautionAmount, spawnPoint, vehicle)
 	local xPlayer = ESX.GetPlayerFromId(source)
 	if not xPlayer then return end
 
 	if cautionType == "take" then
-		TriggerEvent('esx_addonaccount:getAccount', 'caution', xPlayer.identifier, function(account)
+		if Deposits[source] then
+			TriggerClientEvent('esx:showNotification', xPlayer.source, '~r~Shoma Az Ghabl Yek Vasile Ba Vadie Darid')
+			return
+		end
 
+		local amount = GetJobCaution(xPlayer.job.name)
+		if amount <= 0 then
+			-- this job's vehspawner has no Caution configured: nothing to charge
+			TriggerClientEvent('esx_jobs:spawnJobVehicle', source, spawnPoint, vehicle)
+			return
+		end
+
+		if xPlayer.getMoney() < amount then
+			TriggerClientEvent('esx:showNotification', xPlayer.source, '~r~Pool-e Kafi Baraye Vadie-ye $' .. amount .. ' Nadarid')
+			return
+		end
+
+		TriggerEvent('esx_addonaccount:getAccount', 'caution', xPlayer.identifier, function(account)
+			if not account then
+				TriggerClientEvent('esx:showNotification', xPlayer.source, '~r~Khata Dar Sabt-e Vadie')
+				return
+			end
+
+			xPlayer.removeMoney(amount)
+			account.addMoney(amount)
+			Deposits[source] = amount
+
+			TriggerClientEvent('esx:showNotification', xPlayer.source, '~y~$' .. amount .. ' Vadie Kasr Shod (Moghe Bargasht Vasile Bar Migardad)')
+			TriggerClientEvent('esx_jobs:spawnJobVehicle', source, spawnPoint, vehicle)
 		end)
-
-		TriggerClientEvent('esx_jobs:spawnJobVehicle', source, spawnPoint, vehicle)
 	elseif cautionType == "give_back" then
+		local amount = Deposits[source]
+		if not amount then return end -- nothing was ever charged (or it was already refunded)
 
 		TriggerEvent('esx_addonaccount:getAccount', 'caution', xPlayer.identifier, function(account)
-
+			if account and account.money >= amount then
+				account.removeMoney(amount)
+			end
+			xPlayer.addMoney(amount)
+			Deposits[source] = nil
+			TriggerClientEvent('esx:showNotification', xPlayer.source, '~g~$' .. amount .. ' Vadie Bargasht Dade Shod')
 		end)
 	end
+end)
+
+AddEventHandler('playerDropped', function()
+	Deposits[source] = nil
 end)
 
 -- ===== Admin uniform editor (pads next to each cloakroom, client-side via ox_target) =====
