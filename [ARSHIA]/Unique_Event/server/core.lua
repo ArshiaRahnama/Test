@@ -6,8 +6,7 @@
 
 UE.Modules = {}       -- [eventName] = { Status, Stats, Leaderboard, ... } (registered by each module)
 UE.Actions = {}       -- [eventName][action] = function(src, data)   (hub buttons)
-UE.InEvent = {}       -- [src] = 'capture' | 'gungame' | 'warzone' | 'spectate'
-UE.Label.spectate = 'Spectating'
+UE.InEvent = {}       -- [src] = 'capture' | 'gungame' | 'warzone'
 
 -- ============================================================
 -- ESX bootstrap (with a retry loop so load order never matters)
@@ -170,7 +169,7 @@ function UE.Level(src)
     return x and tonumber(x.permission_level) or 0
 end
 
---- true when the player has the admin level of that event ('capture', 'gungame', 'warzone', 'spectate')
+--- true when the player has the admin level of that event ('capture', 'gungame', 'warzone')
 function UE.CanAdmin(src, name)
     local need = Config.Perm[permKey(name)]
     if not need then return false end

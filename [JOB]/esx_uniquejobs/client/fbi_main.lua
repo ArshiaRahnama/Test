@@ -41,6 +41,14 @@ local LastEntity              = nil
 local CurrentAction           = nil
 local CurrentActionMsg        = ''
 local CurrentActionData       = {}
+-- FIX: debounce for the boss-menu marker specifically. Without this,
+-- holding/mashing E while standing in the marker re-fires the whole
+-- open flow (2 server round trips + a DB COUNT query + a full NUI
+-- rebuild) on every single press, which is real, avoidable load if
+-- someone spams the key or uses a macro. This only throttles how
+-- often the menu can be (re)opened -- it does not bring back the old
+-- bug where E stopped working entirely.
+local LastBossMenuOpen = -100000 -- manfi: baraye inke avvalin bar hamishe kar kone
 local IsHandcuffed            = false
 local HandcuffTimer           = {}
 local DragStatus              = {}
@@ -2469,13 +2477,16 @@ Citizen.CreateThread(function()
 					ESX.Game.DeleteVehicle(CurrentActionData.vehicle)
 
 				elseif CurrentAction == 'menu_boss_actions' then
-					ESX.UI.Menu.CloseAll()
-					TriggerEvent('esx_society:openBosscarysMenu', 'fbi', function(data, menu)
+					if (GetGameTimer() - LastBossMenuOpen) >= 800 then
+						LastBossMenuOpen = GetGameTimer()
+						ESX.UI.Menu.CloseAll()
+						TriggerEvent('esx_society:openBosscarysMenu', 'fbi', function(data, menu)
 						menu.close()
 						CurrentAction     = 'menu_boss_actions'
 						CurrentActionMsg  = _U('open_bossmenu')
 						CurrentActionData = {}
-					end, { wash = false })
+						end, { wash = false })
+					end
 
 				elseif CurrentAction == 'remove_entity' then
 					DeleteEntity(CurrentActionData.entity)

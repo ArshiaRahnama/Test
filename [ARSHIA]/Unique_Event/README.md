@@ -40,13 +40,10 @@ was intentionally left out of this build, per request.
 |---|---|---|
 | `/uevent` (or `/events`) | everyone | Opens the main hub — join/leave any event, see leaderboards, squad up, admin tools |
 | `/eventfix` | everyone | Emergency reset: clears a stuck NUI focus/HUD if something ever goes wrong |
-| `/spectate` | admin (level ≥ 11) | Free-camera spectate over any player currently in an event |
 
 Every other action (joining Capture, starting a GunGame arena queue, dropping into
 WarZone, starting/ending rounds, inviting to a WarZone squad, admin round control...)
 is done from inside the `/uevent` menu — there are no other chat commands to memorize.
-
-**Spectate controls:** `←`/`→` switch target, `TAB` toggles the player list, `BACKSPACE` leaves.
 
 ---
 
@@ -57,7 +54,6 @@ is done from inside the `/uevent` menu — there are no other chat commands to m
 | Capture round control (start/end/reset zones) | ≥ 11 |
 | GunGame | ≥ 9 (no manual admin controls needed — arenas start automatically) |
 | WarZone force-start/force-end | ≥ 16 |
-| `/spectate` | ≥ 11 |
 
 ---
 
@@ -127,13 +123,13 @@ Unique_Event/
 ├─ shared/shared.lua     -- small helpers used everywhere
 ├─ server/
 │  ├─ core.lua          -- ESX bootstrap, DB helpers, permissions, one-event-at-a-time guard
-│  ├─ hub.lua           -- /uevent data + action router + admin spectate
+│  ├─ hub.lua           -- /uevent data + action router
 │  ├─ capture.lua
 │  ├─ gungame.lua
 │  └─ warzone.lua
 ├─ client/
 │  ├─ core.lua          -- NUI bridge, generic menu/dialog/progress bar, interactions
-│  ├─ hub.lua           -- /uevent command + spectate camera
+│  ├─ hub.lua           -- /uevent command
 │  ├─ capture.lua
 │  ├─ gungame.lua
 │  └─ warzone.lua

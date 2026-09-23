@@ -33,7 +33,7 @@ Config.Hub = {
 Config.Enable = { Capture = true, GunGame = true, WarZone = true }
 
 -- Minimum ESX permission_level (>=) needed for admin actions of each event.
-Config.Perm = { Capture = 11, GunGame = 9, WarZone = 16, Spectate = 11 }
+Config.Perm = { Capture = 11, GunGame = 9, WarZone = 16 }
 
 -- Jobs that can't join GunGame/WarZone while on duty (prevents griefing while "working").
 Config.RestrictedJobs = { police = true, sheriff = true, ambulance = true, mechanic = true }
@@ -48,7 +48,6 @@ Config.Buckets = {
     WarZoneLobby = 200,
     WarZoneMatch = 201,
     WarZoneGulag = 202,
-    SpectateBase = 900,
 }
 
 -- ============================================================

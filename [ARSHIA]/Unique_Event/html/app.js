@@ -295,30 +295,6 @@ const WZ = {
 };
 
 /* ==========================================================
-   ADMIN SPECTATE HUD
-   ========================================================== */
-const SPEC = {
-  show(d) { show($('#specHud'), !!d.show); if (!d.show) show($('#specListBox'), false); },
-  card(d) {
-    $('#scName').textContent = d.name || '-'; $('#scSub').textContent = d.sub || '';
-    $('#specEvent').textContent = d.event || '-';
-    $('#scHp').style.width = clamp(num(d.hp), 0, 100) + '%'; $('#scHpText').textContent = Math.round(num(d.hp));
-    $('#scAr').style.width = clamp(num(d.armor), 0, 100) + '%'; $('#scArText').textContent = Math.round(num(d.armor));
-  },
-  list(d) {
-    const box = $('#specRows'); box.innerHTML = '';
-    if (!(d.players || []).length) box.innerHTML = '<div class="board-empty">Nobody is playing right now</div>';
-    (d.players || []).forEach((p) => {
-      const el = document.createElement('div'); el.className = 'spec-row' + (p.source === d.current ? ' cur' : '');
-      el.innerHTML = '<span>' + esc(p.name) + ' <small style="color:var(--dim)">#' + esc(p.source) + '</small></span><span class="ev">' + esc(p.label) + '</span>';
-      el.addEventListener('click', () => post('spec:select', { source: p.source }));
-      box.appendChild(el);
-    });
-  },
-  listToggle(d) { show($('#specListBox'), !!d.show); },
-};
-
-/* ==========================================================
    HUB  (/uevent)
    ========================================================== */
 const HUB = {
@@ -380,7 +356,7 @@ function renderNav() {
     b.addEventListener('click', () => { blip(500, 0.05); switchPage(it.id); });
     nav.appendChild(b);
   });
-  if (HUB.me && (HUB.me.admin.capture || HUB.me.admin.gungame || HUB.me.admin.warzone || HUB.me.admin.spectate)) {
+  if (HUB.me && (HUB.me.admin.capture || HUB.me.admin.gungame || HUB.me.admin.warzone)) {
     const sep = document.createElement('div'); sep.className = 'nav-sep'; nav.appendChild(sep);
     const b = document.createElement('button');
     b.className = 'nav-btn' + (HUB.page === 'admin' ? ' active' : ''); b.style.setProperty('--nc', 'var(--violet)');
@@ -604,9 +580,6 @@ function renderAdmin() {
   if (me.admin.warzone) {
     html += '<div class="card"><h3>WARZONE</h3><div class="tag-row"><button class="btn primary sm" data-a="warzone:start">FORCE START MATCH</button><button class="btn danger sm" data-a="warzone:end">END MATCH</button></div></div>';
   }
-  if (me.admin.spectate) {
-    html += '<div class="card"><h3>SPECTATE</h3><p style="color:var(--muted);font:600 13px var(--font);margin-bottom:8px">Close this menu and type <b>/spectate</b> to watch any running event.</p></div>';
-  }
   html += '</div>';
   c.innerHTML = html;
   $$('[data-a]', c).forEach((btn) => {
@@ -661,7 +634,6 @@ const ROUTES = {
   capShow: CAP.show, capData: CAP.data, capBoards: CAP.boards, capZones: CAP.zones, capProgress: CAP.progress, capProgressHide: CAP.progressHide, capKill: CAP.kill,
   ggShow: GG.show, ggCountdown: GG.countdown, ggCountdownHide: GG.countdownHide, ggTimer: GG.timer, ggTimerHide: GG.timerHide, ggLevel: GG.level, ggBoard: GG.board, ggBoardToggle: GG.boardToggle, ggKill: GG.kill, ggMvp: GG.mvp, ggMvpHide: GG.mvpHide,
   wzShow: WZ.show, wzCounts: WZ.counts, wzStats: WZ.stats, wzSquad: WZ.squad, wzKill: WZ.kill, wzDowned: WZ.downed, wzLobby: WZ.lobby, wzZone: WZ.zone, wzSpec: WZ.spec, wzWinner: WZ.winner, wzWinnerHide: WZ.winnerHide,
-  specShow: SPEC.show, specCard: SPEC.card, specList: SPEC.list, specListToggle: SPEC.listToggle,
   hubOpen: hubOpenUI, hubClose: hubCloseUI, hubData: hubSetData, hubPage: hubPageData,
   closeAll: () => { show($('#menu'), false); show($('#dialog'), false); hubCloseUI(); },
 };
