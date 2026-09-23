@@ -54,7 +54,7 @@ AddEventHandler('ue:gungame:go', function()
     SetEntityHealth(PlayerPedId(), 200)
     if Config.GunGame.GiveParachuteOnSpawn then GiveWeaponToPed(PlayerPedId(), GetHashKey('GADGET_PARACHUTE'), 1, false, true) end
     if Config.GunGame.Sounds.MatchStart ~= '' then UE.Sound(Config.GunGame.Sounds.MatchStart, 0.5) end
-    UE.WatchDeath(function() return GG.inArena end, function() TriggerServerEvent('ue:gungame:died') end)
+    UE.WatchDeath(function() return GG.inArena end, function(ped) TriggerServerEvent('ue:gungame:died', UE.ResolveKiller(ped)) end)
 end)
 
 RegisterNetEvent('ue:gungame:respawn')

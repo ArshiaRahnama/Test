@@ -353,6 +353,17 @@ RegisterServerCallbackSafe('Unique_Ticket:setPriority', function(source, cb, tic
     cb({ r = true })
 end)
 
+-- Lets ui/report/js/script.js show "این ریپورت تیکت #42 داره" instead of a
+-- blind "تبدیل به تیکت" button, and avoid admins accidentally spawning five
+-- duplicate tickets off the same report.
+RegisterServerCallbackSafe('Unique_Ticket:getReportTicketIds', function(source, cb, reportId)
+    if not isTicketAdmin(source) then return cb({ r = false, data = {} }) end
+    local rows = MySQL.Sync.fetchAll(
+        'SELECT `id`,`status` FROM `tickets` WHERE `source_report_id` = @r ORDER BY `id` DESC',
+        { ['@r'] = reportId })
+    cb({ r = true, data = rows or {} })
+end)
+
 -- ---------------------------------------------------------- linked report ---
 -- Read-only preview of the report a ticket was created from - queries the
 -- `reports` table directly (its schema is documented in sql/reports.sql)

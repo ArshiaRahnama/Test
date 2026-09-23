@@ -328,16 +328,15 @@ end)
 -- Combat: kills, deaths, damage
 -- ---------------------------------------------------------------------------
 RegisterNetEvent('ue:capture:died')
-AddEventHandler('ue:capture:died', function()
+AddEventHandler('ue:capture:died', function(killerId)
     local src = source
     if UE.InEvent[src] ~= 'capture' then return end
-    local ped = GetPlayerPed(src)
-    local killer = UE.ResolveKiller(ped)
+    local killer = (UE.InEvent[killerId] == 'capture' and UE.PlausibleKiller(src, killerId)) and killerId or 0
     local victimGang = gangOf(src)
     local vIdentifier = playerIdentifier(src)
     if vIdentifier then bumpStat(vIdentifier, UE.Name(src), 'deaths', 1) end
 
-    if killer ~= 0 and killer ~= src and UE.InEvent[killer] == 'capture' then
+    if killer ~= 0 then
         local killerGang = gangOf(killer)
         local kIdentifier = playerIdentifier(killer)
         if kIdentifier then bumpStat(kIdentifier, UE.Name(killer), 'kills', 1) end

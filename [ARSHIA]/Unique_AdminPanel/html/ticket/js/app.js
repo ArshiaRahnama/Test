@@ -1,6 +1,14 @@
 (function () {
   'use strict';
 
+  var ICON = {
+    link: '<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 14.5 14.5 9.5"/><path d="M11 6.5 12.6 4.9a3.5 3.5 0 1 1 5 5L16 11.4"/><path d="M13 17.5 11.4 19a3.5 3.5 0 1 1-5-5L8 12.6"/></svg>',
+    shield: '<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4.5 6v6c0 4.5 3.2 7.6 7.5 9 4.3-1.4 7.5-4.5 7.5-9V6Z"/></svg>',
+    lock: '<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>',
+    check: '<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7 10 18l-5-5"/></svg>',
+    bell: '<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 1 0-12 0c0 5-2 6-2 6h16s-2-1-2-6"/><path d="M10 21a2 2 0 0 0 4 0"/></svg>',
+  };
+
   var state = {
     isAdmin: false,
     categories: [], priorities: [], statuses: [],
@@ -25,8 +33,14 @@
   }
 
   // ----------------------------------------------------------- NUI bridge --
+  // Every RegisterNUICallback in client/ticket_client.lua lives under the
+  // 'ticket:' namespace so it can never collide with report_main.lua's own
+  // callback names (both 'create', 'getAll', 'getMine', 'exit', ... existed
+  // in both systems - NUI callback names are global per resource, not per
+  // iframe, so an unprefixed name here would have silently overwritten or
+  // fought with the report panel's handler).
   function post(action, data) {
-    return fetch('https://Unique_AdminPanel/' + action, {
+    return fetch('https://Unique_AdminPanel/ticket:' + action, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json; charset=UTF-8' },
       body: JSON.stringify(data || {}),
@@ -82,7 +96,7 @@
       state.statuses = res.statuses || [];
 
       $('newCategory').innerHTML = state.categories.map(function (c) {
-        return '<option value="' + c.id + '">' + c.icon + ' ' + c.label + '</option>';
+        return '<option value="' + c.id + '">' + c.label + '</option>';
       }).join('');
 
       var prioOpts = state.priorities.map(function (p) {
@@ -103,7 +117,7 @@
   }
   function categoryLabel(id) {
     var c = state.categories.filter(function (x) { return x.id === id; })[0];
-    return c ? (c.icon + ' ' + c.label) : id;
+    return c ? c.label : id;
   }
   function priorityLabel(id) {
     var p = state.priorities.filter(function (x) { return x.id === parseInt(id, 10); })[0];
@@ -189,7 +203,7 @@
     var reportBtn = $('dReportLink');
     if (t.sourceReportId) {
       reportBtn.classList.remove('hidden');
-      reportBtn.textContent = '🔗 گزارش مبدأ ' + formatId(t.sourceReportId).replace('#', '#R');
+      $('dReportLinkText').textContent = 'گزارش مبدأ ' + formatId(t.sourceReportId).replace('#', '#R');
       reportBtn.onclick = function () { openLinkedReport(t.sourceReportId); };
     } else {
       reportBtn.classList.add('hidden');
@@ -198,7 +212,7 @@
     var closedInfo = $('dClosedInfo');
     if (t.status === 'closed' && t.closedAt) {
       closedInfo.classList.remove('hidden');
-      closedInfo.textContent = '🔒 بسته‌شده توسط ' + (t.closedBy || '-') + ' در ' + fmtTime(t.closedAt);
+      closedInfo.innerHTML = ICON.lock + '<span>بسته‌شده توسط ' + escapeHtml(t.closedBy || '-') + ' در ' + fmtTime(t.closedAt) + '</span>';
     } else {
       closedInfo.classList.add('hidden');
     }
@@ -212,7 +226,7 @@
     }).join('') || '<span class="chip">—</span>';
 
     $('adminChips').innerHTML = (detail.admins || []).map(function (a) {
-      return '<span class="chip admin-chip">🛡️ ' + escapeHtml(a.name || a.identifier) + '</span>';
+      return '<span class="chip admin-chip">' + ICON.shield + escapeHtml(a.name || a.identifier) + '</span>';
     }).join('') || '<span class="chip">—</span>';
 
     renderThread(detail.messages || []);
@@ -227,7 +241,7 @@
       var cls = m.is_admin ? 'from-admin' : 'from-player';
       return (
         '<div class="msg ' + cls + '">' +
-          '<div class="m-meta">' + escapeHtml(m.name || '') + (m.is_admin ? ' 🛡️' : '') + '</div>' +
+          '<div class="m-meta">' + escapeHtml(m.name || '') + (m.is_admin ? ' ' + ICON.shield : '') + '</div>' +
           escapeHtml(m.message) +
         '</div>'
       );
@@ -427,7 +441,7 @@
     host.innerHTML = list.map(function (a) {
       return (
         '<div class="pick-row">' +
-          '<div>🛡️ ' + escapeHtml(a.name || a.identifier) + '</div>' +
+          '<div>' + ICON.shield + escapeHtml(a.name || a.identifier) + '</div>' +
           '<button class="btn btn-sm btn-danger" data-remove-admin="' + a.identifier + '">حذف</button>' +
         '</div>'
       );
@@ -459,7 +473,7 @@
   function toast(msg) {
     var el = document.createElement('div');
     el.className = 'toast';
-    el.textContent = msg;
+    el.innerHTML = ICON.bell + '<span>' + escapeHtml(msg) + '</span>';
     $('toastHost').appendChild(el);
     setTimeout(function () { el.remove(); }, 4000);
   }

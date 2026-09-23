@@ -138,6 +138,7 @@ function renderUser() {
   if (S.userView === 'compose') return renderCompose(body);
   if (S.userView === 'mine')    return renderMine(body);
   if (S.userView === 'board')   return renderBoard(body);
+  if (S.userView === 'ticket')  return renderTicketCompose(body);
 }
 
 function renderCompose(body) {
@@ -248,6 +249,136 @@ async function submitReport(ev) {
     renderUser();
   } else {
     toast((res && res.msg) || 'ثبت ریپورت انجام نشد.', 'bad');
+  }
+}
+
+/* ============================================================= TICKET ===
+   Lets a player open a general-purpose ticket without leaving /report - own
+   render/submit functions, own state slice (S.ticketCompose), own config
+   fetch (ticket:config), own submit endpoint (ticket:create). Nothing here
+   reads or writes S.compose / S.cfg / submitReport, so it can never bleed
+   into the report flow above. Full ticket management (thread, participants,
+   assigned admins, closing) stays in the dedicated /ticket & /atickets panel
+   - this tab is intentionally just "start one", to keep this screen simple.
+=========================================================================== */
+
+async function renderTicketCompose(body) {
+  body.className = 'body scroller';
+
+  if (!S.ticketCfg) {
+    body.innerHTML = `<div class="empty"><i class="fa-solid fa-circle-notch fa-spin"></i></div>`;
+    const res = await nui('ticket:config');
+    if (!res || !res.r) {
+      body.innerHTML = `<div class="empty"><i class="fa-solid fa-triangle-exclamation"></i>
+        <h3>سیستم تیکت در دسترس نیست</h3><p>یک بار دیگه امتحان کن.</p></div>`;
+      return;
+    }
+    S.ticketCfg = res;
+  }
+  if (S.userView !== 'ticket') return;   // تب عوض شده تا fetch بالا تموم شه
+
+  const cats = S.ticketCfg.categories || [];
+  const prios = S.ticketCfg.priorities || [];
+  if (!S.ticketCompose) S.ticketCompose = { category: cats[0] && cats[0].id, priority: 2 };
+
+  body.innerHTML = `
+    <form class="compose" id="ticketComposeForm" novalidate>
+      <p class="compose__lede">
+        این بخش برای موضوعاتِ عمومیه (سوال، مشکلِ مالی، باگ، اعتراض به مجازات...) - نه گزارشِ یک بازیکنِ خاص.
+        اگه میخوای یک بازیکن رو گزارش بدی، از تبِ «ریپورت جدید» استفاده کن.
+      </p>
+
+      <div class="field">
+        <label class="field__label" for="tTitle">عنوان</label>
+        <input class="input" id="tTitle" maxlength="120" placeholder="مثلاً: پول خریدم ولی به حسابم نیومد" autocomplete="off">
+        <div class="counter" id="tTitleCount">0 / 120</div>
+      </div>
+
+      <div class="field">
+        <span class="field__label">دسته‌بندی</span>
+        <div class="cats" id="tCats">
+          ${cats.map(c => `<button type="button" class="cat cat--sky" data-key="${esc(c.id)}"><span>${esc(c.label)}</span></button>`).join('')}
+        </div>
+      </div>
+
+      <div class="field">
+        <span class="field__label">اولویت</span>
+        <div class="cats" id="tPrios">
+          ${prios.map(p => `<button type="button" class="cat cat--sky" data-key="${esc(p.id)}" style="--pc:${esc(p.color)}"><span>${esc(p.label)}</span></button>`).join('')}
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="tInfo">توضیحات</label>
+        <textarea class="textarea" id="tInfo" maxlength="1000" placeholder="کامل توضیح بده تا سریع‌تر بهت رسیدگی بشه..."></textarea>
+        <div class="counter" id="tInfoCount">0 / 1000</div>
+      </div>
+
+      <button class="btn btn--go btn--sky" id="tSend" type="submit">
+        <i class="fa-solid fa-paper-plane"></i> ثبت تیکت
+      </button>
+    </form>`;
+
+  $$('#tCats .cat').forEach(btn => {
+    btn.classList.toggle('is-on', btn.dataset.key === S.ticketCompose.category);
+    btn.addEventListener('click', () => {
+      S.ticketCompose.category = btn.dataset.key;
+      $$('#tCats .cat').forEach(b => b.classList.toggle('is-on', b === btn));
+    });
+  });
+  $$('#tPrios .cat').forEach(btn => {
+    btn.classList.toggle('is-on', Number(btn.dataset.key) === S.ticketCompose.priority);
+    btn.addEventListener('click', () => {
+      S.ticketCompose.priority = Number(btn.dataset.key);
+      $$('#tPrios .cat').forEach(b => b.classList.toggle('is-on', b === btn));
+    });
+  });
+
+  const bind = (inputId, countId, max) => {
+    const inp = $(`#${inputId}`), out = $(`#${countId}`);
+    const upd = () => { out.textContent = `${len(inp.value)} / ${max}`; };
+    inp.addEventListener('input', upd);
+    upd();
+  };
+  bind('tTitle', 'tTitleCount', 120);
+  bind('tInfo', 'tInfoCount', 1000);
+
+  $('#ticketComposeForm').addEventListener('submit', submitTicket);
+}
+
+async function submitTicket(ev) {
+  ev.preventDefault();
+  const title = $('#tTitle').value.trim();
+  const message = $('#tInfo').value.trim();
+
+  const fail = (el, msg) => {
+    el.classList.add('is-bad');
+    setTimeout(() => el.classList.remove('is-bad'), 1200);
+    toast(msg, 'bad');
+  };
+
+  if (len(title) < 5)   return fail($('#tTitle'), 'عنوان باید حداقل ۵ کاراکتر باشه.');
+  if (len(message) < 10) return fail($('#tInfo'), 'توضیحات باید حداقل ۱۰ کاراکتر باشه.');
+
+  const btn = $('#tSend');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> در حال ارسال';
+
+  const res = await nui('ticket:create', {
+    title, message,
+    category: S.ticketCompose.category,
+    priority: S.ticketCompose.priority,
+  });
+
+  btn.disabled = false;
+  btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> ثبت تیکت';
+
+  if (res && res.r) {
+    toast(`تیکت #${res.id} ثبت شد - برای پیگیری و چت با ادمین از دستور /ticket استفاده کن.`, 'ok');
+    $('#ticketComposeForm').reset();
+    S.ticketCompose = { category: (S.ticketCfg.categories[0] || {}).id, priority: 2 };
+  } else {
+    toast((res && res.msg) || 'ثبت تیکت انجام نشد.', 'bad');
   }
 }
 
@@ -539,6 +670,7 @@ function paintDetail() {
           ? `<button class="btn btn--ghost btn--sm" data-do="open"><i class="fa-solid fa-comments"></i> باز کردن چت</button>`
           : ''}
         <button class="btn btn--ghost btn--sm" data-do="archive"><i class="fa-solid fa-box-archive"></i> بایگانی</button>
+        <button class="btn btn--ghost btn--sm" data-do="ticketize" data-report-id="${esc(t.ID)}"><i class="fa-solid fa-ticket"></i> تبدیل به تیکت</button>
         ${canDelete ? `<button class="btn btn--rust btn--sm" data-do="delete"><i class="fa-solid fa-trash"></i> حذف</button>` : ''}
       </div>
     </div>
@@ -560,12 +692,40 @@ function paintDetail() {
     </div>`;
 
   $$('[data-do]', pane).forEach(btn => btn.addEventListener('click', () => detailAction(btn.dataset.do, t)));
+
+  // Ticket System link (ticket:getReportTicketIds, server/ticket_main.lua) -
+  // non-blocking: the pane renders immediately, this just swaps the button
+  // label in place once it knows whether a ticket already exists.
+  nui('ticket:getReportTicketIds', { reportId: t.ID }).then(res => {
+    const btn = $('[data-do="ticketize"]', pane);
+    if (!btn || !res || !res.r) return;
+    if (res.data && res.data.length) {
+      const first = res.data[0];
+      btn.innerHTML = `<i class="fa-solid fa-ticket"></i> تیکت #${esc(first.id)} (${esc(first.status)})`;
+      btn.title = res.data.length > 1 ? `${res.data.length} تیکت از این ریپورت ساخته شده` : 'روی این ریپورت قبلاً تیکتی ساخته شده - کلیک برای ساخت یک تیکت جدید دیگر';
+    }
+  });
 }
 
 async function detailAction(what, t) {
   if (what === 'open') { S.adminView = 'active'; return renderAdmin(); }
 
   if (what === 'delete' && !confirm(`ریپورت #${t.ID} برای همیشه حذف بشه؟`)) return;
+
+  // Ticket System link - own endpoint/payload shape (ticket:createFromReport
+  // takes { reportId }, not { id }), and unlike the actions below it doesn't
+  // change the report's own status, so the report stays selected/open and
+  // only the pane's ticket badge needs a refresh, not the whole queue.
+  if (what === 'ticketize') {
+    const res = await nui('ticket:createFromReport', { reportId: t.ID });
+    if (res && res.r) {
+      toast(`تیکت #${res.id} از این ریپورت ساخته شد.`, 'ok');
+      paintDetail();
+    } else {
+      toast((res && res.msg) || 'ساخت تیکت ناموفق بود.', 'bad');
+    }
+    return;
+  }
 
   const res = await nui(what, { id: t.ID });
   if (res && res.r) {

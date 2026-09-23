@@ -128,6 +128,17 @@ button { cursor: pointer; background: none; border: none; }
 }
 .tab:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
 
+/* Ticket tab - its own accent (sky, not amber) and a divider before it, so
+   it reads as "a different feature" and not another report filter. */
+.tab--ticket { margin-inline-start: 10px; padding-inline-start: 16px; }
+.tab--ticket::before {
+  content: ''; position: absolute; inset-inline-start: 0; top: 6px; bottom: 6px;
+  width: 1px; background: var(--edge-2);
+}
+.tab--ticket:hover { color: #7dd3fc; background: rgba(56,189,248,.08); }
+.tab--ticket.is-on { color: #7dd3fc; background: rgba(56,189,248,.12); }
+.tab--ticket.is-on::after { background: #38bdf8; }
+
 .iconbtn {
   width: 32px; height: 32px; border-radius: var(--r-sm);
   color: var(--dim); display: grid; place-items: center;
@@ -217,6 +228,11 @@ button { cursor: pointer; background: none; border: none; }
 .cat:hover { border-color: var(--edge-2); }
 .cat.is-on { border-color: var(--amber); background: rgba(232,163,61,.07); color: var(--ink); }
 .cat.is-on i { color: var(--amber); }
+.cat--sky.is-on { border-color: var(--pc, #38bdf8); background: rgba(56,189,248,.08); color: var(--pc, #7dd3fc); }
+.cat--sky.is-on i { color: var(--pc, #38bdf8); }
+
+.btn--sky    { background: #38bdf8; color: #04202b; }
+.btn--sky:hover { background: #5ecbfa; }
 
 /* ---------------------------------------------------------- buttons --- */
 

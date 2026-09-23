@@ -102,109 +102,115 @@ local function cbWrap(cb)
     end
 end
 
-RegisterNUICallback('create', function(data, rawCb)
+RegisterNUICallback('ticket:create', function(data, rawCb)
     local cb = cbWrap(rawCb)
     if not ESX then return cb({ r = false }) end
     ESX.TriggerServerCallback('Unique_Ticket:create', cb, data)
 end)
 
-RegisterNUICallback('createFromReport', function(data, rawCb)
+RegisterNUICallback('ticket:createFromReport', function(data, rawCb)
     local cb = cbWrap(rawCb)
     if not ESX then return cb({ r = false }) end
     ESX.TriggerServerCallback('Unique_Ticket:createFromReport', cb, data.reportId)
 end)
 
-RegisterNUICallback('listOpenReports', function(_, rawCb)
+RegisterNUICallback('ticket:listOpenReports', function(_, rawCb)
     local cb = cbWrap(rawCb)
     if not ESX then return cb({ r = false, data = {} }) end
     ESX.TriggerServerCallback('Unique_Ticket:listOpenReports', cb)
 end)
 
-RegisterNUICallback('getMine', function(_, rawCb)
+RegisterNUICallback('ticket:getMine', function(_, rawCb)
     local cb = cbWrap(rawCb)
     if not ESX then return cb({ r = false, data = {} }) end
     ESX.TriggerServerCallback('Unique_Ticket:getMine', cb)
 end)
 
-RegisterNUICallback('getAll', function(data, rawCb)
+RegisterNUICallback('ticket:getAll', function(data, rawCb)
     local cb = cbWrap(rawCb)
     if not ESX then return cb({ r = false, data = {} }) end
     ESX.TriggerServerCallback('Unique_Ticket:getAll', cb, data)
 end)
 
-RegisterNUICallback('getDetail', function(data, rawCb)
+RegisterNUICallback('ticket:getDetail', function(data, rawCb)
     local cb = cbWrap(rawCb)
     if not ESX then return cb({ r = false }) end
     ESX.TriggerServerCallback('Unique_Ticket:getDetail', cb, data.id)
 end)
 
-RegisterNUICallback('sendMessage', function(data, rawCb)
+RegisterNUICallback('ticket:sendMessage', function(data, rawCb)
     local cb = cbWrap(rawCb)
     if not ESX then return cb({ r = false }) end
     ESX.TriggerServerCallback('Unique_Ticket:sendMessage', cb, data.id, data.text)
 end)
 
-RegisterNUICallback('setStatus', function(data, rawCb)
+RegisterNUICallback('ticket:setStatus', function(data, rawCb)
     local cb = cbWrap(rawCb)
     if not ESX then return cb({ r = false }) end
     ESX.TriggerServerCallback('Unique_Ticket:setStatus', cb, data.id, data.status)
 end)
 
-RegisterNUICallback('setPriority', function(data, rawCb)
+RegisterNUICallback('ticket:setPriority', function(data, rawCb)
     local cb = cbWrap(rawCb)
     if not ESX then return cb({ r = false }) end
     ESX.TriggerServerCallback('Unique_Ticket:setPriority', cb, data.id, data.priority)
 end)
 
-RegisterNUICallback('getLinkedReport', function(data, rawCb)
+RegisterNUICallback('ticket:getLinkedReport', function(data, rawCb)
     local cb = cbWrap(rawCb)
     if not ESX then return cb({ r = false }) end
     ESX.TriggerServerCallback('Unique_Ticket:getLinkedReport', cb, data.reportId)
 end)
 
-RegisterNUICallback('searchPlayer', function(data, rawCb)
+RegisterNUICallback('ticket:getReportTicketIds', function(data, rawCb)
+    local cb = cbWrap(rawCb)
+    if not ESX then return cb({ r = false, data = {} }) end
+    ESX.TriggerServerCallback('Unique_Ticket:getReportTicketIds', cb, data.reportId)
+end)
+
+RegisterNUICallback('ticket:searchPlayer', function(data, rawCb)
     local cb = cbWrap(rawCb)
     if not ESX then return cb({ r = false, data = {} }) end
     ESX.TriggerServerCallback('Unique_Ticket:searchPlayer', cb, data.query)
 end)
 
-RegisterNUICallback('addParticipant', function(data, rawCb)
+RegisterNUICallback('ticket:addParticipant', function(data, rawCb)
     local cb = cbWrap(rawCb)
     if not ESX then return cb({ r = false }) end
     ESX.TriggerServerCallback('Unique_Ticket:addParticipant', cb, data.id, data.identifier, data.name)
 end)
 
-RegisterNUICallback('removeParticipant', function(data, rawCb)
+RegisterNUICallback('ticket:removeParticipant', function(data, rawCb)
     local cb = cbWrap(rawCb)
     if not ESX then return cb({ r = false }) end
     ESX.TriggerServerCallback('Unique_Ticket:removeParticipant', cb, data.id, data.identifier)
 end)
 
-RegisterNUICallback('getOnlineAdmins', function(_, rawCb)
+RegisterNUICallback('ticket:getOnlineAdmins', function(_, rawCb)
     local cb = cbWrap(rawCb)
     if not ESX then return cb({ r = false, data = {} }) end
     ESX.TriggerServerCallback('Unique_Ticket:getOnlineAdmins', cb)
 end)
 
-RegisterNUICallback('assignAdmin', function(data, rawCb)
+RegisterNUICallback('ticket:assignAdmin', function(data, rawCb)
     local cb = cbWrap(rawCb)
     if not ESX then return cb({ r = false }) end
     ESX.TriggerServerCallback('Unique_Ticket:assignAdmin', cb, data.id, data.identifier, data.name)
 end)
 
-RegisterNUICallback('unassignAdmin', function(data, rawCb)
+RegisterNUICallback('ticket:unassignAdmin', function(data, rawCb)
     local cb = cbWrap(rawCb)
     if not ESX then return cb({ r = false }) end
     ESX.TriggerServerCallback('Unique_Ticket:unassignAdmin', cb, data.id, data.identifier)
 end)
 
-RegisterNUICallback('exit', function(_, rawCb)
+RegisterNUICallback('ticket:exit', function(_, rawCb)
     local cb = cbWrap(rawCb)
     if nuiFocusActive then setFocus(false) end
     cb({ ok = true })
 end)
 
-RegisterNUICallback('config', function(_, rawCb)
+RegisterNUICallback('ticket:config', function(_, rawCb)
     local cb = cbWrap(rawCb)
     cb({
         r = true,

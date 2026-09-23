@@ -17,7 +17,7 @@
       <!-- ================================================== TOP BAR ==== -->
       <header class="topbar">
         <div class="topbar-brand">
-          <span class="brand-icon">🎫</span>
+          <span class="brand-icon"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4Z"/><path d="M13 6v12" stroke-dasharray="2 2"/></svg></span>
           <div>
             <div class="brand-title">Unique Tickets</div>
             <div id="brandSub" class="brand-sub">پنل بازیکن</div>
@@ -33,7 +33,7 @@
         <!-- ============================================== SIDEBAR ==== -->
         <aside class="sidebar">
           <div class="sidebar-top">
-            <button id="btnNew" class="btn btn-accent btn-block">＋ تیکت جدید</button>
+            <button id="btnNew" class="btn btn-accent btn-block"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><span>تیکت جدید</span></button>
           </div>
 
           <div id="adminTabs" class="tabs hidden">
@@ -45,7 +45,7 @@
           </div>
 
           <div id="fromReportBox" class="from-report hidden">
-            <button id="btnFromReport" class="btn btn-ghost btn-block">🚩 ساخت تیکت از یک گزارش باز</button>
+            <button id="btnFromReport" class="btn btn-ghost btn-block"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3v18"/><path d="M5 4h11l-2.5 4L16 12H5"/></svg><span>ساخت تیکت از یک گزارش باز</span></button>
           </div>
 
           <div id="ticketList" class="ticket-list"></div>
@@ -54,7 +54,7 @@
         <!-- =============================================== DETAIL ==== -->
         <main class="detail">
           <div id="emptyState" class="empty-state">
-            <div class="empty-icon">🎫</div>
+            <div class="empty-icon"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4Z"/><path d="M13 6v12" stroke-dasharray="2 2"/></svg></div>
             <div>یک تیکت را از لیست انتخاب کنید، یا یک تیکت جدید بسازید.</div>
           </div>
 
@@ -73,15 +73,15 @@
                 <span id="dId"></span>
                 <span id="dCategory"></span>
                 <span id="dCreator"></span>
-                <button id="dReportLink" class="chip chip-link hidden">🔗 مشاهده گزارش مبدأ</button>
+                <button id="dReportLink" class="chip chip-link hidden"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 14.5 14.5 9.5"/><path d="M11 6.5 12.6 4.9a3.5 3.5 0 1 1 5 5L16 11.4"/><path d="M13 17.5 11.4 19a3.5 3.5 0 1 1-5-5L8 12.6"/></svg><span id="dReportLinkText">مشاهده گزارش مبدأ</span></button>
               </div>
               <div id="dClosedInfo" class="closed-info hidden"></div>
 
               <div id="adminControls" class="admin-controls hidden">
                 <select id="statusSelect" class="select"></select>
                 <select id="prioritySelect" class="select"></select>
-                <button id="btnManagePlayers" class="btn btn-ghost">👥 بازیکن‌ها</button>
-                <button id="btnManageAdmins" class="btn btn-ghost">🛡️ ادمین‌ها</button>
+                <button id="btnManagePlayers" class="btn btn-ghost"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M2 20c0-3.3 2.7-6 7-6s7 2.7 7 6"/><path d="M16 6.2a3 3 0 0 1 0 5.8"/><path d="M18.5 14c2.6.5 4.5 2.5 4.5 6"/></svg><span>بازیکن‌ها</span></button>
+                <button id="btnManageAdmins" class="btn btn-ghost"><svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4.5 6v6c0 4.5 3.2 7.6 7.5 9 4.3-1.4 7.5-4.5 7.5-9V6Z"/></svg><span>ادمین‌ها</span></button>
               </div>
             </header>
 
@@ -176,7 +176,7 @@
   </div>
 
   <div id="modalConfirmClose" class="modal modal-sm hidden">
-    <h3>⚠️ بستن تیکت</h3>
+    <h3><svg class="icon-svg icon-warn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5 22 20H2Z"/><path d="M12 10v4"/><circle cx="12" cy="17" r=".2" fill="currentColor"/></svg><span>بستن تیکت</span></h3>
     <p class="confirm-text">این تیکت بسته میشه و دیگه تو صفِ «باز» نمایش داده نمیشه. مطمئنی؟<br>
       <span class="dim">فقط یک ادمین میتونه تیکت رو ببنده؛ تیکت‌ها خودشون هیچوقت بسته نمیشن.</span></p>
     <div class="modal-actions">

@@ -196,15 +196,14 @@ end)
 -- Kills
 -- ---------------------------------------------------------------------------
 RegisterNetEvent('ue:gungame:died')
-AddEventHandler('ue:gungame:died', function()
+AddEventHandler('ue:gungame:died', function(killerId)
     local src = source
     local id = PlayerArena[src]
     if not id or not Arenas[id] or Arenas[id].state ~= 'live' then return end
     local arena = Arenas[id]
-    local ped = GetPlayerPed(src)
-    local killer = UE.ResolveKiller(ped)
+    local killer = (arena.players[killerId] and UE.PlausibleKiller(src, killerId)) and killerId or 0
 
-    if killer ~= 0 and killer ~= src and arena.players[killer] then
+    if killer ~= 0 then
         local kp = arena.players[killer]
         kp.kills = kp.kills + 1
         local wasTop = (kp.level >= WEAPON_COUNT)

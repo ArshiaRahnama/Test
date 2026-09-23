@@ -9,8 +9,9 @@ local WZ = { inMatch = false, crates = {}, squad = {}, hp = 100, armor = 0, cash
 -- Lobby
 -- ---------------------------------------------------------------------------
 RegisterNetEvent('ue:warzone:joinLobby')
-AddEventHandler('ue:warzone:joinLobby', function()
+AddEventHandler('ue:warzone:joinLobby', function(lobbyCoord)
     UE.SetEvent('warzone')
+    UE.Teleport(lobbyCoord.x + math.random(-5, 5) + 0.0, lobbyCoord.y + math.random(-5, 5) + 0.0, lobbyCoord.z)
     UE.Send('wzShow', { show = true })
     UE.Send('wzLobby', { show = true, players = 1, needed = Config.WarZone.MinPlayers })
 end)
@@ -58,8 +59,8 @@ AddEventHandler('ue:warzone:matchStart', function(data)
 
     WZ.Push()
     WZ.PushSquad()
-    UE.WatchDeath(function() return WZ.inMatch and not WZ.inGulag end, function()
-        TriggerServerEvent('ue:warzone:died')
+    UE.WatchDeath(function() return WZ.inMatch and not WZ.inGulag end, function(ped)
+        TriggerServerEvent('ue:warzone:died', UE.ResolveKiller(ped))
     end)
 end)
 
@@ -294,7 +295,7 @@ AddEventHandler('ue:warzone:gulagReturn', function(center, radius)
     GiveWeaponToPed(PlayerPedId(), GetHashKey('gadget_parachute'), 1, false, true)
     Wait(200)
     UE.Fade(false, 600)
-    UE.WatchDeath(function() return WZ.inMatch and not WZ.inGulag end, function() TriggerServerEvent('ue:warzone:died') end)
+    UE.WatchDeath(function() return WZ.inMatch and not WZ.inGulag end, function(ped) TriggerServerEvent('ue:warzone:died', UE.ResolveKiller(ped)) end)
 end)
 
 RegisterNetEvent('ue:warzone:matchEnd')

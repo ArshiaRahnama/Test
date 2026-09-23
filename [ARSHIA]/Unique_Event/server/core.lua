@@ -54,6 +54,29 @@ function UE.Name(src)
     return GetPlayerName(src) or ('#' .. tostring(src))
 end
 
+--- Server-side distance between two connected players' peds. Returns nil if either
+--- ped can't be resolved (disconnected, not streamed on the server's entity list yet).
+function UE.PlayerDistance(a, b)
+    local pedA, pedB = GetPlayerPed(a), GetPlayerPed(b)
+    if not pedA or pedA == 0 or not pedB or pedB == 0 then return nil end
+    local cA, cB = GetEntityCoords(pedA), GetEntityCoords(pedB)
+    return #(cA - cB)
+end
+
+--- Sanity-checks a client-reported killer id before trusting it for a kill credit.
+--- The client resolves *who* killed it (GetPedSourceOfDeath is client-only, so the
+--- server can't determine that on its own) - this only verifies the claim is plausible:
+--- the claimed killer is a real connected player, isn't the victim, and isn't absurdly
+--- far away (a spoofed/free kill from across the map). maxDist defaults to 120 units,
+--- generous enough for any weapon in these game modes.
+function UE.PlausibleKiller(victim, killerSrc, maxDist)
+    if not killerSrc or killerSrc == 0 or killerSrc == victim then return false end
+    if not UE.GetPlayer(killerSrc) then return false end
+    local dist = UE.PlayerDistance(victim, killerSrc)
+    if not dist then return false end
+    return dist <= (maxDist or 120.0)
+end
+
 function UE.Gang(src)
     local x = UE.GetPlayer(src)
     return (x and x.gang and x.gang.name) or 'nogang'

@@ -87,16 +87,24 @@ standing wins and splits the win reward.
 
 ## What's actually different from the original three resources
 
-This is a rewrite, not a copy-paste merge — every gameplay-affecting value (kills,
-weapons, money, zone ownership, match results) is now decided and validated on the
-**server**, not trusted from the client. Concretely, this fixes:
+This is a rewrite, not a copy-paste merge — every gameplay-affecting value (weapons,
+zone ownership, gang points, match state) is now decided and validated on the
+**server**, not trusted from the client. Kill *attribution* is the one exception worth
+being upfront about: FiveM has no way for the server to independently know who fired
+the shot that killed someone (`GetPedSourceOfDeath` only exists client-side), so the
+killer is still reported by the dying player's own client - but the server now sanity-checks
+that report (the claimed killer must be a real connected player, currently in the same
+event/arena, and within a plausible distance) before crediting a kill, instead of trusting
+it blindly like the original resources did. Concretely, this fixes:
 
 - **WarZone:** the old `setweapons`/kill/cash events trusted whatever the client sent
-  (a straightforward exploit). Weapons, kills and cash are now server-authoritative.
+  with no checks at all (a straightforward exploit - any value, any distance, any target).
+  Weapons and cash are now server-controlled, and kills go through the distance/plausibility
+  check above.
 - **WarZone:** revive previously called a non-existent `esx_ambulancejob:revive` event;
   it now calls the server's real `esx_ambulancejob:revivex`.
 - **GunGame:** kills (and therefore weapon-ladder progress) were reported by the killer's
-  own client. Kills are now resolved server-side from the game's own death event.
+  own client with zero server-side check. They now go through the same plausibility check.
 - **Capture:** zone ownership and the capture timer are now fully server-driven, so a
   modified client can no longer claim a zone it isn't actually standing in.
 - Every match/arena/round now cleans up properly (routing buckets freed, timers

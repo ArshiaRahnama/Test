@@ -85,14 +85,48 @@ CreateThread(function()
                     ['@note']   = ('بسته شدن خودکار: هیچ ادمینی طی %d دقیقه این ریپورت را قبول نکرد.'):format(minutesOpen),
                 })
 
+                -- Ticket System link - a real, workable item instead of a
+                -- toast that's gone the moment everyone's screen scrolls.
+                -- High priority (3) on purpose: this report was already
+                -- missed once, it shouldn't sit unclaimed a second time.
+                -- Additive/read-only toward `reports` itself: only reads
+                -- columns reports.sql already defines, inserts only into
+                -- the ticket tables from sql/tickets.sql.
+                local ticketOk, ticketId = pcall(function()
+                    return MySQL.Sync.insert([[
+                        INSERT INTO `tickets`
+                            (`title`,`category`,`priority`,`status`,`creator_identifier`,`creator_name`,`source_report_id`,`created_at`,`updated_at`)
+                        VALUES (@title,'report',3,'open',@ident,@name,@rid,@t,@t)
+                    ]], {
+                        ['@title'] = ('پیگیری خودکار: ریپورت #%s بدون پاسخ بسته شد'):format(r.ID),
+                        ['@ident'] = r.identifier,
+                        ['@name']  = 'نامشخص',
+                        ['@rid']   = r.ID,
+                        ['@t']     = closedAt,
+                    })
+                end)
+                if not ticketOk then ticketId = nil end
+                if ticketId then
+                    if r.identifier then
+                        MySQL.Async.execute(
+                            'INSERT IGNORE INTO `ticket_participants` (`ticket_id`,`identifier`,`name`,`role`,`added_by`,`added_at`) VALUES (@t,@i,\'نامشخص\',\'creator\',\'System (Auto-Close)\',@c)',
+                            { ['@t'] = ticketId, ['@i'] = r.identifier, ['@c'] = closedAt })
+                    end
+                    MySQL.Async.execute(
+                        'INSERT INTO `ticket_messages` (`ticket_id`,`identifier`,`name`,`is_admin`,`is_system`,`message`,`created_at`) VALUES (@t,NULL,\'System\',1,1,@m,@c)',
+                        { ['@t'] = ticketId, ['@m'] = ('ریپورت #%s (%s) بعد از %d دقیقه بدون پاسخ خودکار بسته شد و این تیکت برای پیگیری ساخته شد.'):format(r.ID, r.category or r.title or '-', minutesOpen), ['@c'] = closedAt })
+                end
+
                 -- ۱) اطلاع عمومی به همه‌ی ادمین‌های آنلاین که این ریپورت خودکار بسته شد
                 Rep.NotifyAllAdmins(
                     ('⛔ ریپورت #%s به دلیل عدم پیگیری بعد از %d دقیقه، خودکار بسته شد.'):format(r.ID, minutesOpen), 1)
 
-                -- ۲) اطلاع جداگانه و واضح‌تر فقط برای رنک‌های بالا، تا بررسی کنن چرا پیگیری نشده
+                -- ۲) اطلاع جداگانه و واضح‌تر فقط برای رنک‌های بالا + شماره‌ی تیکتِ پیگیری
                 Rep.NotifyAllAdmins(
-                    ('🔺 توجه رنک بالا: ریپورت #%s (%s) توسط هیچ ادمینی طی %d دقیقه بررسی نشد و خودکار بسته شد - لطفاً پیگیری کنید.')
-                        :format(r.ID, r.category or r.title or '-', minutesOpen),
+                    (ticketId
+                        and '🔺 توجه رنک بالا: ریپورت #%s (%s) بدون پاسخ بسته شد - یک تیکت پیگیری (#%d) براتون ساخته شد.'
+                        or  '🔺 توجه رنک بالا: ریپورت #%s (%s) بدون پاسخ بسته شد - لطفاً پیگیری کنید.')
+                        :format(r.ID, r.category or r.title or '-', ticketId or 0),
                     Config_Server.autoCloseNotifyLevel)
 
                 -- ۳) لاگ دائمی تو دیتابیس - حتی اگه هیچ ادمینی آنلاین نبود، بازم قابل پیگیریه

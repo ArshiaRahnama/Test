@@ -99,9 +99,8 @@ local function tryJoinLobby(src)
     Lobby[#Lobby + 1] = src
     UE.Enter(src, 'warzone')
     UE.SetBucket(src, Config.Buckets.WarZoneLobby)
-    UE.Teleport(Config.WarZone.LobbyCoord.x + math.random(-5, 5) + 0.0, Config.WarZone.LobbyCoord.y + math.random(-5, 5) + 0.0, Config.WarZone.LobbyCoord.z)
     newSquadFor(src)
-    TriggerClientEvent('ue:warzone:joinLobby', src)
+    TriggerClientEvent('ue:warzone:joinLobby', src, UE.Vec(Config.WarZone.LobbyCoord))
     UE.Notify(src, ('Joined the WarZone lobby (%d/%d).'):format(#Lobby, Config.WarZone.MinPlayers), 'success')
     pushLobby()
     startCountdownIfReady()
@@ -497,14 +496,13 @@ AddEventHandler('ue:warzone:reviveRequest', function(targetSrc)
 end)
 
 RegisterNetEvent('ue:warzone:died')
-AddEventHandler('ue:warzone:died', function()
+AddEventHandler('ue:warzone:died', function(killerId)
     local src = source
     local p = Match and Match.players[src]
     if not p or not p.alive then return end
-    local ped = GetPlayerPed(src)
-    local killer = UE.ResolveKiller(ped)
+    local killer = (Match.players[killerId] and UE.PlausibleKiller(src, killerId, 300.0)) and killerId or 0
 
-    if killer ~= 0 and killer ~= src and Match.players[killer] then
+    if killer ~= 0 then
         Match.players[killer].kills = Match.players[killer].kills + 1
         Match.players[killer].cash = Match.players[killer].cash + Config.WarZone.KillCashReward
         for s in pairs(Match.players) do

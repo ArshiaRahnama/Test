@@ -61,6 +61,13 @@ function UE.UI.Set(panel, state)
     UE.UI.Update()
 end
 
+-- registers a command under one or several names (mirrors the server-side UE.Command helper)
+function UE.Command(names, fn, restricted)
+    for _, n in ipairs(UE.Names(names)) do
+        RegisterCommand(n, fn, restricted or false)
+    end
+end
+
 -- always leave a way out if something goes wrong
 RegisterCommand(Config.Hub.FixCommand, function()
     UE.UI.open = { hub = false, menu = false, dialog = false, spec = false }

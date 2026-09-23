@@ -40,8 +40,8 @@ AddEventHandler('ue:capture:join', function(data)
     UE.SetEvent('capture')
     if data.entry then UE.Teleport(data.entry.x, data.entry.y, data.entry.z) end
     Cap.Show(true)
-    UE.WatchDeath(function() return Cap.active end, function()
-        TriggerServerEvent('ue:capture:died')
+    UE.WatchDeath(function() return Cap.active end, function(ped)
+        TriggerServerEvent('ue:capture:died', UE.ResolveKiller(ped))
     end)
 end)
 

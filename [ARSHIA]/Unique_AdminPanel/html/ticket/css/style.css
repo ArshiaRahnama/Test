@@ -264,14 +264,40 @@ textarea { resize: vertical; }
 .report-view-body .rv-row { margin-bottom: 8px; }
 .report-view-body .rv-label { color: var(--dim); font-size: 11px; }
 
-/* ---------------------------------------------------------------- toast --- */
-.toast-host { position: fixed; bottom: 20px; left: 20px; display: flex; flex-direction: column; gap: 8px; z-index: 40; }
-.toast {
-  background: var(--shell); border: 1px solid var(--amber-d); border-radius: 10px;
-  padding: 10px 14px; font-size: 13px; box-shadow: 0 6px 18px rgba(0,0,0,.4);
-  animation: fadein .15s ease-out;
+/* ------------------------------------------------------------ svg icons --- */
+.icon-svg {
+  width: 15px; height: 15px; flex-shrink: 0;
+  display: inline-block; vertical-align: -3px;
 }
-@keyframes fadein { from { opacity: 0; transform: translateY(6px);} to { opacity: 1; transform: translateY(0);} }
+.icon-warn { color: var(--rust); width: 20px; height: 20px; vertical-align: -5px; }
+
+.btn, .chip-link, .tab { display: inline-flex; align-items: center; gap: 7px; }
+.detail-sub { align-items: center; }
+.closed-info { display: flex; align-items: center; gap: 7px; }
+.modal h3 { display: flex; align-items: center; gap: 8px; }
+.brand-icon .icon-svg { width: 18px; height: 18px; vertical-align: middle; margin: 0; }
+.empty-icon .icon-svg { width: 40px; height: 40px; opacity: .5; }
+.admin-chip .icon-svg, .chip .icon-svg { vertical-align: -2px; }
+
+/* ---------------------------------------------------------------- toast --- */
+.toast-host {
+  position: fixed; bottom: 34px; left: 50%; transform: translateX(-50%);
+  display: flex; flex-direction: column; align-items: center; gap: 8px; z-index: 40;
+  pointer-events: none;
+}
+.toast {
+  display: flex; align-items: center; gap: 9px;
+  background: linear-gradient(155deg, #1d232d, #12161d);
+  border: 1px solid var(--amber-d); border-radius: 999px;
+  padding: 10px 20px; font-size: 13px; color: var(--ink);
+  box-shadow: 0 14px 34px rgba(0,0,0,.5), 0 0 0 1px rgba(232,163,61,.08);
+  animation: toastIn .18s cubic-bezier(.2,.9,.25,1);
+  white-space: nowrap;
+}
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(14px) scale(.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
 
 .thread::-webkit-scrollbar, .ticket-list::-webkit-scrollbar, .pick-list::-webkit-scrollbar, .modal::-webkit-scrollbar {
   width: 8px;
