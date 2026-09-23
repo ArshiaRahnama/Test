@@ -88,6 +88,7 @@ Config_cs.EvidenceCountByFamily = {
 	Jaw          = 3,
 	Life_Invader = 4,
 	Palateo_Bank = 5,
+	OilRig       = 6, -- biggest heist in Unique_AllRobs, leaves the most evidence behind
 	default      = 2,
 }
 

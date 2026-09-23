@@ -412,7 +412,7 @@ Config.Rob.RobTypes ={
         copsrequired = 7,   -- BASE minimum to even start; more online cops = bigger reward + more guards, see scaling
         cancelDistance = 9999.0, -- unused (oilrig_client.lua doesn't call the generic StartProgressBar), kept for shape consistency
         lastRobbed = 0,
-        blipsprite = 621,
+        blipsprite = 851, -- radar_oil_tanker: was 621 (radar_pickup_dtb_health, a Deathmatch health-pack icon -- wrong)
         hacktype = 3,
         teammatesrequired = 4, -- BASE minimum; larger party = more guards + bigger reward
     },

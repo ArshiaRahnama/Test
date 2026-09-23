@@ -48,6 +48,7 @@ local DEFAULT_LAWS = {
 	{ code = '§10', title = 'Negah-dari-e Mavad-e Mokhader', category = 'drug', fine = 4000, jail = 20 },
 	{ code = '§11', title = 'Ghachagh-e Mavad-e Mokhader', category = 'drug', fine = 10000, jail = 60 },
 	{ code = '§12', title = 'Negah-dari-e Salah-e Gheir-e Mojaz', category = 'weapons', fine = 5000, jail = 25 },
+	{ code = '§13', title = 'Sereghat-e Mosallahane Dar Meghyas-e Bozorg (Oil Rig Heist)', category = 'property', fine = 20000, jail = 90 },
 }
 
 CreateThread(function()

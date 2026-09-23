@@ -643,7 +643,13 @@ end)
 -- distance against Config.Rob.Robs[robname].position (the start point),
 -- which for the oil rig is ~3km from where the player actually is by then
 -- and would self-cancel the heist within a second.
-function StartRobberyDispatch(robname, _source)
+-- alertPosition overrides where the police setBlip pulse points to --
+-- defaults to the Robs entry's own marker position (correct for every
+-- normal rob type, where the marker IS the crime scene). The Oil Rig
+-- passes its actual rig coordinates here, since its marker is a depot
+-- ~3km from where the heist is really happening.
+function StartRobberyDispatch(robname, _source, alertPosition)
+    alertPosition = alertPosition or Config.Rob.Robs[robname].position
     local xPlayer  = ESX.GetPlayerFromId(_source)
 	local xPlayers = ESX.GetPlayers()
     SetAlarmPolice(robname , "start",_source)
@@ -652,7 +658,7 @@ function StartRobberyDispatch(robname, _source)
         local yPlayer = ESX.GetPlayerFromId(xPlayers[i])
         if IsPoliceJob(yPlayer.job.name) then
             TriggerClientEvent('esx:showNotification', xPlayers[i],"Yek Robbery Dar "..Config.Rob.Robs[robname].nameofrob.." Start Shod")
-            TriggerClientEvent('Morphy_RobSystem:setBlip', xPlayers[i], robname, Config.Rob.Robs[robname].position)
+            TriggerClientEvent('Morphy_RobSystem:setBlip', xPlayers[i], robname, alertPosition)
         end
     end
     TriggerEvent('DiscordBot:ToDiscord', 'rob', "Robbery System", "```css\n[ID] : ".._source.."\n[IC Name] : "..xPlayer.name.."\n[Steam Name] : "..GetPlayerName(_source).."\n[Gang Name] : "..xPlayer.gang.name.."\n[Gang Grade] : "..xPlayer.gang.grade.."\n[Steam Hex] : "..xPlayer.identifier.."\n[Rob Name] : "..robname.."\n[Rob Code] : "..RobberyCode.."\n[Status] : Started\n```",'user', _source, true, false)

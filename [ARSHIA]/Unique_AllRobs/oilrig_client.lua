@@ -107,7 +107,7 @@ end
 
 RegisterNetEvent('oilrig:client:begin', function()
     if rigBlip and DoesBlipExist(rigBlip) then RemoveBlip(rigBlip) end
-    rigBlip = addBlip(C.middleArea, 621, 1, 'Oil Rig')
+    rigBlip = addBlip(C.middleArea, 851, 1, 'Oil Rig')
     SetNewWaypoint(C.middleArea.x, C.middleArea.y)
     notify(C.strings.heist_info)
     watchArrival()

@@ -179,7 +179,7 @@ AddEventHandler('oilrig:server:arrived', function()
     -- shared RobberyCode global at delivery time) because RobberyCode
     -- keeps incrementing for OTHER robberies that can start and finish
     -- during this heist's long hack/loot/escape phase.
-    State.code = StartRobberyDispatch(ROBNAME, _source)
+    State.code = StartRobberyDispatch(ROBNAME, _source, C.middleArea)
 
     -- Pick crates
     local idxs = {}
