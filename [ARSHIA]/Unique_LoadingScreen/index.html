@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Unique RP | Loading</title>
+  <link rel="stylesheet" href="assets/fonts/Inter/inter.css" />
+  <link rel="stylesheet" href="assets/css/style.css" />
+  <link rel="stylesheet" href="assets/css/extra.css" />
+  <link rel="icon" type="image/png" href="assets/icon.png" />
+  <meta name="theme-color" content="#0a0a0a" />
+</head>
+<body>
+  <div class="bg-overlay">
+    <video class="bg-video" autoplay muted loop playsinline preload="auto">
+      <source src="assets/background.mp4" type="video/mp4">
+    </video>
+    <div class="bg-depth">
+      <div class="bg-light"></div>
+      <div class="bg-glow bg-glow-1"></div>
+      <div class="bg-glow bg-glow-2"></div>
+      <div class="bg-particles"></div>
+    </div>
+    <div class="bg-grade"></div>
+    <div class="bg-noise"></div>
+    <div class="bg-vignette"></div>
+  </div>
+
+  <div class="container">
+    <header class="top">
+      <div class="logo"><img src="assets/logo.png" alt="Unique RP"></div>
+      <div class="title">
+        <h1>Unique RP</h1>
+        <p data-i18n="tagline"></p>
+      </div>
+      <div class="top-right">
+        <div class="chip" id="statsChip" hidden><i class="dot"></i><span id="statsText">0/0</span><small data-i18n="online"></small></div>
+        <button class="chip chip-btn" id="langBtn" aria-label="Language">EN</button>
+        <button class="chip chip-btn" id="liteBtn" aria-label="Lite mode" data-i18n="lowperf"></button>
+      </div>
+    </header>
+
+    <section class="center">
+      <div class="showcase">
+        <span class="showcase-tag" data-i18n="feat"></span>
+        <h2 id="featTitle"></h2>
+        <p id="featDesc"></p>
+        <div class="dots" id="featDots"></div>
+      </div>
+    </section>
+
+    <aside class="side-panel">
+      <div class="card"><h3 data-i18n="tips"></h3><p id="tipCard"></p></div>
+      <div class="card"><h3 data-i18n="rules"></h3><p data-i18n="rulesText"></p></div>
+      <div class="card highlight"><h3 data-i18n="news"></h3><p data-i18n="newsText"></p></div>
+    </aside>
+
+    <footer class="bottom">
+      <div class="music-player">
+        <div class="music-info">
+          <div class="music-title" data-i18n="music"></div>
+          <div class="music-track" data-i18n="track"></div>
+        </div>
+        <div class="music-controls">
+          <button id="muteBtn" class="music-btn" aria-label="Mute audio">
+            <svg viewBox="0 0 24 24"><path d="M16.5 12c0-1.77-1-3.29-2.5-4.03v8.05c1.5-.73 2.5-2.25 2.5-4.02zM3 9v6h4l5 5V4L7 9H3z" /></svg>
+          </button>
+        </div>
+        <div class="music-volume"><input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="0.5"></div>
+        <div class="music-wave"><span></span><span></span><span></span><span></span><span></span></div>
+      </div>
+
+      <div class="loading-hud">
+        <div class="loading-meta">
+          <span class="loading-status" id="statusText"></span>
+          <span class="loading-percent" id="progressPercent">0%</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+        <div class="loading-hint"><span id="tipText"></span></div>
+      </div>
+
+      <div class="socials" id="socials"></div>
+    </footer>
+  </div>
+
+  <div class="cursor-dot" aria-hidden="true"></div>
+  <div class="cursor-ring" aria-hidden="true"></div>
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/script.js"></script>
+  <script src="assets/js/extra.js"></script>
+</body>
+</html>
