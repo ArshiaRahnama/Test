@@ -158,6 +158,13 @@ CreateMenu('main', 'Admin Menu', function(m)
     SubMenu(m, '🌍', 'World Tools', 'Weather, time, traffic and teleports', 'world_tools')
     SubMenu(m, '🎮', 'Server Tools', 'Announcements, reports, logs and bulk actions', 'server_tools')
     SubMenu(m, '🔧', 'Developer Tools', 'Coordinates, entity view and vehicle info', 'dev_tools')
+    -- Ticket System (new) - just runs /atickets (client/ticket_client.lua),
+    -- so the permission check stays in exactly one place, same as every
+    -- other command this menu wraps.
+    Button(m, '🎫', 'Tickets', 'Open the ticket system (players, assigned admins, linked reports)', function()
+        MenuV:CloseAll()
+        if OpenTicketPanel then OpenTicketPanel() end
+    end)
 end)
 
 -- ------------------------------------------------------------ ABILITIES ----

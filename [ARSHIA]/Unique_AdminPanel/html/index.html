@@ -72,6 +72,10 @@
 <iframe id="admin-frame" src="adminmenu.html"></iframe>
 <iframe id="ac-frame" src="../ui/index.html"></iframe>
 <iframe id="report-frame" src="../ui/report/index.html"></iframe>
+<!-- Ticket System panel (new) - tagged _uniqueTicket by client/ticket_client.lua's
+     send(), same isolation pattern as the report frame above: its own DOM,
+     its own script.js, routed by that tag instead of `type`/`action`. -->
+<iframe id="ticket-frame" src="ticket/index.html"></iframe>
 <!-- MenuV (F4 admin menu). Never takes pointer events: it is keyboard-driven and NUI focus stays off. -->
 <iframe id="menuv-frame" src="menuv/menuv.html"></iframe>
 <script>
@@ -91,6 +95,7 @@
     var adminFrame = document.getElementById('admin-frame');
     var acFrame = document.getElementById('ac-frame');
     var reportFrame = document.getElementById('report-frame');
+    var ticketFrame = document.getElementById('ticket-frame');
 
     function activate(frame, others) {
       if (frame) {
@@ -122,19 +127,30 @@
                             updateAdminLog: 1, updateAppeals: 1, updateBranding: 1,
                             updatePlayerProfile: 1, forceClose: 1 };
 
-    if (data._uniqueReport) {
+    // Ticket panel traffic (tagged _uniqueTicket by client/ticket_client.lua's
+    // send()) - own branch, same shape as _uniqueReport above. uticket:'close'
+    // is this panel's own "hide me" message (sent on Esc / exit).
+    if (data._uniqueTicket) {
+      if (data.uticket === 'close') {
+        if (ticketFrame) ticketFrame.style.pointerEvents = 'none';
+      } else if (data.uticket === 'open') {
+        activate(ticketFrame, [adminFrame, acFrame, reportFrame]);
+      }
+      // 'live' pushes (background ticket/message updates) intentionally do
+      // NOT touch pointer-events - same reasoning as PASSIVE_ACTIONS below.
+    } else if (data._uniqueReport) {
       if (data.action === 'hideAll') {
         if (reportFrame) reportFrame.style.pointerEvents = 'none';
       } else if (!PASSIVE_ACTIONS[data.action]) {
-        activate(reportFrame, [adminFrame, acFrame]);
+        activate(reportFrame, [adminFrame, acFrame, ticketFrame]);
       }
     } else if (typeof data.type !== 'undefined') {
-      if (!PASSIVE_TYPES[data.type]) activate(adminFrame, [acFrame, reportFrame]);
+      if (!PASSIVE_TYPES[data.type]) activate(adminFrame, [acFrame, reportFrame, ticketFrame]);
     } else if (typeof data.action !== 'undefined') {
       if (data.action === 'forceClose') {
         if (acFrame) acFrame.style.pointerEvents = 'none';
       } else if (!PASSIVE_ACTIONS[data.action]) {
-        activate(acFrame, [adminFrame, reportFrame]);
+        activate(acFrame, [adminFrame, reportFrame, ticketFrame]);
       }
     }
 
@@ -146,6 +162,9 @@
     }
     if (reportFrame && reportFrame.contentWindow) {
       reportFrame.contentWindow.postMessage(event.data, '*');
+    }
+    if (ticketFrame && ticketFrame.contentWindow) {
+      ticketFrame.contentWindow.postMessage(event.data, '*');
     }
   });
 

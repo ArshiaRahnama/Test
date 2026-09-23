@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>Unique Tickets</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app" class="hidden">
+
+  <!-- ===================================================== SIDEBAR ==== -->
+  <aside class="sidebar">
+    <div class="sidebar-head">
+      <div class="brand">🎫 <span>سیستم تیکت</span></div>
+      <button id="btnNew" class="btn btn-accent">+ تیکت جدید</button>
+    </div>
+
+    <div id="adminTabs" class="tabs hidden">
+      <button class="tab active" data-status="all">همه</button>
+      <button class="tab" data-status="open">باز</button>
+      <button class="tab" data-status="in_progress">درحال‌بررسی</button>
+      <button class="tab" data-status="closed">بسته‌شده</button>
+      <button class="tab" data-mine="1">تیکت‌های من</button>
+    </div>
+
+    <div id="fromReportBox" class="from-report hidden">
+      <button id="btnFromReport" class="btn btn-ghost btn-block">🚩 ساخت تیکت از یک گزارش باز</button>
+    </div>
+
+    <div id="ticketList" class="ticket-list"></div>
+  </aside>
+
+  <!-- ====================================================== DETAIL ===== -->
+  <main class="detail">
+    <div id="emptyState" class="empty-state">
+      <div class="empty-icon">🎫</div>
+      <div>یک تیکت را از لیست انتخاب کنید، یا یک تیکت جدید بسازید.</div>
+    </div>
+
+    <div id="ticketView" class="ticket-view hidden">
+      <header class="detail-head">
+        <div class="detail-title">
+          <span id="dTitle">-</span>
+          <span id="dStatus" class="badge">-</span>
+        </div>
+        <div class="detail-sub">
+          <span id="dCategory"></span> · <span id="dCreator"></span> · <span id="dId"></span>
+        </div>
+        <div id="adminControls" class="admin-controls hidden">
+          <select id="statusSelect" class="select"></select>
+          <button id="btnManagePlayers" class="btn btn-ghost">👥 بازیکن‌ها</button>
+          <button id="btnManageAdmins" class="btn btn-ghost">🛡️ ادمین‌ها</button>
+        </div>
+      </header>
+
+      <div class="chips-row">
+        <div class="chip-group">
+          <span class="chip-label">بازیکن‌ها:</span>
+          <span id="participantChips" class="chips"></span>
+        </div>
+        <div class="chip-group">
+          <span class="chip-label">ادمین‌های مسئول:</span>
+          <span id="adminChips" class="chips"></span>
+        </div>
+      </div>
+
+      <div id="thread" class="thread"></div>
+
+      <form id="replyForm" class="reply-form">
+        <input id="replyInput" type="text" maxlength="1000" placeholder="پیام خود را بنویسید..." autocomplete="off">
+        <button type="submit" class="btn btn-accent">ارسال</button>
+      </form>
+    </div>
+  </main>
+</div>
+
+<!-- ==================================================== MODALS ======== -->
+<div id="modalBackdrop" class="modal-backdrop hidden">
+
+  <div id="modalNew" class="modal hidden">
+    <h3>تیکت جدید</h3>
+    <label>عنوان</label>
+    <input id="newTitle" type="text" maxlength="120">
+    <label>دسته‌بندی</label>
+    <select id="newCategory" class="select"></select>
+    <label>توضیحات</label>
+    <textarea id="newMessage" maxlength="1000" rows="5"></textarea>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" data-close>انصراف</button>
+      <button id="btnSubmitNew" class="btn btn-accent">ثبت تیکت</button>
+    </div>
+  </div>
+
+  <div id="modalFromReport" class="modal hidden">
+    <h3>ساخت تیکت از گزارش</h3>
+    <div id="reportList" class="pick-list"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" data-close>بستن</button>
+    </div>
+  </div>
+
+  <div id="modalPlayers" class="modal hidden">
+    <h3>مدیریت بازیکن‌های تیکت</h3>
+    <div class="search-row">
+      <input id="playerSearch" type="text" placeholder="جستجوی نام یا آیدی بازیکن...">
+    </div>
+    <div id="playerResults" class="pick-list"></div>
+    <h4>بازیکن‌های حاضر در تیکت</h4>
+    <div id="playerCurrent" class="pick-list"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" data-close>بستن</button>
+    </div>
+  </div>
+
+  <div id="modalAdmins" class="modal hidden">
+    <h3>مدیریت ادمین‌های تیکت</h3>
+    <div id="adminOnlineList" class="pick-list"></div>
+    <h4>ادمین‌های مسئول این تیکت</h4>
+    <div id="adminCurrent" class="pick-list"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" data-close>بستن</button>
+    </div>
+  </div>
+
+</div>
+
+<div id="toastHost" class="toast-host"></div>
+
+<script src="js/app.js"></script>
+</body>
+</html>

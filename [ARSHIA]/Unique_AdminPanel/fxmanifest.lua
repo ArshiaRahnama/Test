@@ -30,6 +30,10 @@ shared_scripts {
 	-- Report System (merged from standalone PNG_ReportSystem) - Config_Shared
 	-- is read by both server/report_main.lua and client/report_main.lua
 	'shared/report_shared_config.lua',
+	-- Ticket System (new) - shared category/priority/status labels, same
+	-- reasoning as report_shared_config.lua above: both client and server
+	-- need to agree on what id 'bug' or priority 2 means.
+	'shared/ticket_config.lua',
 }
 
 client_scripts {
@@ -74,6 +78,8 @@ client_scripts {
 	-- client/aduty_reports.lua / server/aduty_reports.lua)
 	'shared/report_client_config.lua',
 	'client/report_main.lua',
+	-- Ticket System (new) - own NUI iframe/panel, see client/ticket_client.lua header
+	'client/ticket_client.lua',
 }
 
 server_scripts {
@@ -105,6 +111,16 @@ server_scripts {
 	'server/report_schema_guard.lua',
 	'server/report_function.lua',
 	'server/report_main.lua',
+	-- MUST load after report_server_config.lua (extends Config_Server) and
+	-- report_function.lua (extends Rep) - see that file's own header. Fixes:
+	-- pending reports with no admin follow-up now auto-close after 30 min
+	-- (configurable), notify on-duty admins + senior ranks separately, and
+	-- leave a permanent audit row in report_autoclose_log.
+	'server/report_autoclose.lua',
+	-- Ticket System (new) - additive only, reads the report system through
+	-- exports.Unique_AdminPanel:GetReports() (same export admin_tools.lua's
+	-- GetServerStats already uses), never edits report_main.lua directly.
+	'server/ticket_main.lua',
 	-- original Unique_AdminPanel
 	'server/admin_area.lua',
 	'server/main.lua',
@@ -202,6 +218,12 @@ files {
 	'ui/report/js/*.js',
 	'ui/report/font/*.*',
 	'ui/report/img/*.*',
+	-- Ticket System UI (new) - own iframe in html/index.html, own subfolder
+	-- for the same reason ui/report/ has its own: no collisions with the
+	-- other panels' HTML/CSS/JS.
+	'html/ticket/*.html',
+	'html/ticket/css/*.css',
+	'html/ticket/js/*.js',
 }
 
 -- FIX: server/aduty_commands.lua (migrated from esx_aduty) registers ~36 of its
