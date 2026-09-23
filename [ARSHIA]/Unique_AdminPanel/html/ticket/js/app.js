@@ -8,9 +8,21 @@
     current: null,       // full detail of the open ticket
     filterStatus: 'all',
     filterMine: false,
+    pendingCloseId: null,
   };
 
   var $ = function (id) { return document.getElementById(id); };
+
+  function formatId(n) {
+    n = parseInt(n, 10) || 0;
+    return '#' + String(n).padStart(4, '0');
+  }
+
+  function fmtTime(ts) {
+    if (!ts) return '';
+    var d = new Date(ts * 1000);
+    return d.toLocaleString('fa-IR', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' });
+  }
 
   // ----------------------------------------------------------- NUI bridge --
   function post(action, data) {
@@ -27,12 +39,13 @@
 
     if (data.uticket === 'open') {
       state.isAdmin = !!data.admin;
-      $('app').classList.remove('hidden');
+      $('backdrop').classList.remove('hidden');
+      $('brandSub').textContent = state.isAdmin ? 'پنل مدیریت تیکت‌ها' : 'پنل بازیکن';
       $('adminTabs').classList.toggle('hidden', !state.isAdmin);
       $('fromReportBox').classList.toggle('hidden', !state.isAdmin);
       loadConfig().then(refreshList);
     } else if (data.uticket === 'close') {
-      $('app').classList.add('hidden');
+      $('backdrop').classList.add('hidden');
       closeAllModals();
     } else if (data.uticket === 'live') {
       if (state.current && state.current.ticket.id === data.id) {
@@ -45,9 +58,21 @@
   document.addEventListener('keydown', function (e) {
     if (e.key !== 'Escape') return;
     if (!$('modalBackdrop').classList.contains('hidden')) { closeAllModals(); return; }
-    post('exit');
-    $('app').classList.add('hidden');
+    requestClose();
   });
+
+  function requestClose() {
+    post('exit');
+    $('backdrop').classList.add('hidden');
+  }
+  $('btnClose').addEventListener('click', requestClose);
+
+  // ------------------------------------------------------------- live clock --
+  function tickClock() {
+    $('liveClock').textContent = new Date().toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  }
+  setInterval(tickClock, 1000);
+  tickClock();
 
   // --------------------------------------------------------------- config --
   function loadConfig() {
@@ -56,13 +81,17 @@
       state.priorities = res.priorities || [];
       state.statuses = res.statuses || [];
 
-      var catSel = $('newCategory');
-      catSel.innerHTML = state.categories.map(function (c) {
+      $('newCategory').innerHTML = state.categories.map(function (c) {
         return '<option value="' + c.id + '">' + c.icon + ' ' + c.label + '</option>';
       }).join('');
 
-      var statusSel = $('statusSelect');
-      statusSel.innerHTML = state.statuses.map(function (s) {
+      var prioOpts = state.priorities.map(function (p) {
+        return '<option value="' + p.id + '">' + p.label + '</option>';
+      }).join('');
+      $('newPriority').innerHTML = prioOpts;
+      $('prioritySelect').innerHTML = prioOpts;
+
+      $('statusSelect').innerHTML = state.statuses.map(function (s) {
         return '<option value="' + s.id + '">' + s.label + '</option>';
       }).join('');
     });
@@ -75,6 +104,10 @@
   function categoryLabel(id) {
     var c = state.categories.filter(function (x) { return x.id === id; })[0];
     return c ? (c.icon + ' ' + c.label) : id;
+  }
+  function priorityLabel(id) {
+    var p = state.priorities.filter(function (x) { return x.id === parseInt(id, 10); })[0];
+    return p ? p.label : id;
   }
 
   // ------------------------------------------------------------ list load --
@@ -100,10 +133,13 @@
       return (
         '<div class="ticket-card status-' + t.status + active + '" data-id="' + t.id + '">' +
           '<div class="tc-top">' +
-            '<span class="tc-title">#' + t.id + ' - ' + escapeHtml(t.title) + '</span>' +
-            '<span class="status-dot"></span>' +
+            '<span class="tc-title">' + escapeHtml(t.title) + '</span>' +
+            '<span class="tc-num">' + formatId(t.id) + '</span>' +
           '</div>' +
-          '<div class="tc-meta"><span>' + categoryLabel(t.category) + '</span><span>' + escapeHtml(t.creator.name || '') + '</span></div>' +
+          '<div class="tc-meta">' +
+            '<span><span class="tc-prio badge prio-' + t.priority + '" style="width:6px;height:6px;padding:0;border:none;background:currentColor;"></span>' + categoryLabel(t.category) + '</span>' +
+            '<span>' + escapeHtml(t.creator.name || '') + '</span>' +
+          '</div>' +
         '</div>'
       );
     }).join('');
@@ -141,15 +177,35 @@
     state.current = detail;
     var t = detail.ticket;
 
-    $('dTitle').textContent = '#' + t.id + ' - ' + t.title;
+    $('dTitle').textContent = t.title;
+    $('dId').textContent = formatId(t.id);
     $('dStatus').textContent = statusLabel(t.status);
     $('dStatus').className = 'badge st-' + t.status;
+    $('dPriority').textContent = priorityLabel(t.priority);
+    $('dPriority').className = 'badge prio-' + t.priority;
     $('dCategory').textContent = categoryLabel(t.category);
-    $('dCreator').textContent = t.creator.name || '-';
-    $('dId').textContent = t.sourceReportId ? ('از گزارش #' + t.sourceReportId) : '';
+    $('dCreator').textContent = '👤 ' + (t.creator.name || '-');
+
+    var reportBtn = $('dReportLink');
+    if (t.sourceReportId) {
+      reportBtn.classList.remove('hidden');
+      reportBtn.textContent = '🔗 گزارش مبدأ ' + formatId(t.sourceReportId).replace('#', '#R');
+      reportBtn.onclick = function () { openLinkedReport(t.sourceReportId); };
+    } else {
+      reportBtn.classList.add('hidden');
+    }
+
+    var closedInfo = $('dClosedInfo');
+    if (t.status === 'closed' && t.closedAt) {
+      closedInfo.classList.remove('hidden');
+      closedInfo.textContent = '🔒 بسته‌شده توسط ' + (t.closedBy || '-') + ' در ' + fmtTime(t.closedAt);
+    } else {
+      closedInfo.classList.add('hidden');
+    }
 
     $('adminControls').classList.toggle('hidden', !state.isAdmin);
     $('statusSelect').value = t.status;
+    $('prioritySelect').value = t.priority;
 
     $('participantChips').innerHTML = (detail.participants || []).map(function (p) {
       return '<span class="chip">' + escapeHtml(p.name || p.identifier) + '</span>';
@@ -179,9 +235,32 @@
     host.scrollTop = host.scrollHeight;
   }
 
+  // Status changes to 'closed' always go through a confirm modal - tickets
+  // never close themselves, only an explicit admin confirmation does.
   $('statusSelect').addEventListener('change', function () {
     if (!state.current) return;
-    post('setStatus', { id: state.current.ticket.id, status: this.value });
+    var newStatus = this.value;
+    if (newStatus === 'closed') {
+      state.pendingCloseId = state.current.ticket.id;
+      this.value = state.current.ticket.status; // revert until confirmed
+      openModal('modalConfirmClose');
+      return;
+    }
+    post('setStatus', { id: state.current.ticket.id, status: newStatus });
+  });
+
+  $('btnConfirmClose').addEventListener('click', function () {
+    if (!state.pendingCloseId) return;
+    post('setStatus', { id: state.pendingCloseId, status: 'closed' }).then(function () {
+      closeAllModals();
+      toast('تیکت ' + formatId(state.pendingCloseId) + ' بسته شد.');
+      state.pendingCloseId = null;
+    });
+  });
+
+  $('prioritySelect').addEventListener('change', function () {
+    if (!state.current) return;
+    post('setPriority', { id: state.current.ticket.id, priority: parseInt(this.value, 10) });
   });
 
   $('replyForm').addEventListener('submit', function (e) {
@@ -200,12 +279,12 @@
     var title = $('newTitle').value.trim();
     var message = $('newMessage').value.trim();
     if (!title || !message) return toast('عنوان و توضیحات را کامل کنید.');
-    post('create', { title: title, category: $('newCategory').value, message: message }).then(function (res) {
+    post('create', { title: title, category: $('newCategory').value, priority: parseInt($('newPriority').value, 10), message: message }).then(function (res) {
       if (res && res.r) {
         $('newTitle').value = ''; $('newMessage').value = '';
         closeAllModals();
         refreshList();
-        toast('تیکت #' + res.id + ' ثبت شد.');
+        toast('تیکت ' + formatId(res.id) + ' ثبت شد.');
       } else {
         toast((res && res.msg) || 'خطا در ثبت تیکت.');
       }
@@ -222,7 +301,7 @@
       host.innerHTML = list.map(function (r) {
         return (
           '<div class="pick-row">' +
-            '<div><div>#' + r.id + ' - ' + escapeHtml(r.category || '-') + '</div>' +
+            '<div><div>#R' + r.id + ' - ' + escapeHtml(r.category || '-') + '</div>' +
             '<div class="pr-sub">' + escapeHtml(r.owner) + ' - ' + escapeHtml((r.detail || '').slice(0, 60)) + '</div></div>' +
             '<button class="btn btn-sm btn-accent" data-report="' + r.id + '">ساخت تیکت</button>' +
           '</div>'
@@ -233,7 +312,7 @@
           post('createFromReport', { reportId: btn.dataset.report }).then(function (res2) {
             if (res2 && res2.r) {
               closeAllModals(); refreshList(); openTicket(res2.id);
-              toast('تیکت #' + res2.id + ' از گزارش ساخته شد.');
+              toast('تیکت ' + formatId(res2.id) + ' از گزارش ساخته شد.');
             } else {
               toast((res2 && res2.msg) || 'خطا.');
             }
@@ -242,6 +321,23 @@
       });
     });
   });
+
+  // --------------------------------------------------------- linked report --
+  function openLinkedReport(reportId) {
+    openModal('modalReportView');
+    $('reportViewBody').innerHTML = '<div class="pick-empty">در حال بارگذاری...</div>';
+    post('getLinkedReport', { reportId: reportId }).then(function (res) {
+      if (!res || !res.r) { $('reportViewBody').innerHTML = '<div class="pick-empty">گزارش پیدا نشد.</div>'; return; }
+      var r = res.report;
+      $('reportViewBody').innerHTML =
+        '<div class="rv-row"><div class="rv-label">عنوان</div>' + escapeHtml(r.title || '-') + '</div>' +
+        '<div class="rv-row"><div class="rv-label">دسته</div>' + escapeHtml(r.category || '-') + '</div>' +
+        '<div class="rv-row"><div class="rv-label">توضیحات</div>' + escapeHtml(r.detail || '-') + '</div>' +
+        '<div class="rv-row"><div class="rv-label">وضعیت</div>' + escapeHtml(r.status || '-') + '</div>' +
+        (r.adminName ? '<div class="rv-row"><div class="rv-label">ادمین رسیدگی‌کننده</div>' + escapeHtml(r.adminName) + '</div>' : '') +
+        '<div class="rv-row"><div class="rv-label">تاریخ ثبت</div>' + fmtTime(r.createdAt) + '</div>';
+    });
+  }
 
   // ------------------------------------------------------------- players --
   $('btnManagePlayers').addEventListener('click', function () {

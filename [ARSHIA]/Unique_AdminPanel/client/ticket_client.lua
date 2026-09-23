@@ -150,6 +150,18 @@ RegisterNUICallback('setStatus', function(data, rawCb)
     ESX.TriggerServerCallback('Unique_Ticket:setStatus', cb, data.id, data.status)
 end)
 
+RegisterNUICallback('setPriority', function(data, rawCb)
+    local cb = cbWrap(rawCb)
+    if not ESX then return cb({ r = false }) end
+    ESX.TriggerServerCallback('Unique_Ticket:setPriority', cb, data.id, data.priority)
+end)
+
+RegisterNUICallback('getLinkedReport', function(data, rawCb)
+    local cb = cbWrap(rawCb)
+    if not ESX then return cb({ r = false }) end
+    ESX.TriggerServerCallback('Unique_Ticket:getLinkedReport', cb, data.reportId)
+end)
+
 RegisterNUICallback('searchPlayer', function(data, rawCb)
     local cb = cbWrap(rawCb)
     if not ESX then return cb({ r = false, data = {} }) end

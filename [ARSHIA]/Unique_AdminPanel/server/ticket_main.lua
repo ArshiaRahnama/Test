@@ -104,6 +104,8 @@ local function ticketSummaryRow(row)
         sourceReportId = row.source_report_id,
         createdAt = tonumber(row.created_at) or 0,
         updatedAt = tonumber(row.updated_at) or 0,
+        closedAt  = tonumber(row.closed_at) or 0,
+        closedBy  = row.closed_by,
     }
 end
 
@@ -178,12 +180,17 @@ RegisterServerCallbackSafe('Unique_Ticket:create', function(source, cb, payload)
     for _, c in ipairs(Ticket_Config.Categories) do if c.id == category then valid = true break end end
     if not valid then category = 'other' end
 
+    local priority = tonumber(payload.priority) or 1
+    local validPrio = false
+    for _, p in ipairs(Ticket_Config.Priorities) do if p.id == priority then validPrio = true break end end
+    if not validPrio then priority = 1 end
+
     local identifier, name = getIdentifier(source), getName(source)
     if not identifier then return cb({ r = false, msg = 'خطا در شناسایی حساب.' }) end
 
     local id = MySQL.Sync.insert(
-        'INSERT INTO `tickets` (`title`,`category`,`priority`,`status`,`creator_identifier`,`creator_name`,`created_at`,`updated_at`) VALUES (@title,@cat,1,\'open\',@ident,@name,@t,@t)',
-        { ['@title'] = title, ['@cat'] = category, ['@ident'] = identifier, ['@name'] = name, ['@t'] = now() })
+        'INSERT INTO `tickets` (`title`,`category`,`priority`,`status`,`creator_identifier`,`creator_name`,`created_at`,`updated_at`) VALUES (@title,@cat,@prio,\'open\',@ident,@name,@t,@t)',
+        { ['@title'] = title, ['@cat'] = category, ['@prio'] = priority, ['@ident'] = identifier, ['@name'] = name, ['@t'] = now() })
 
     if not id then return cb({ r = false, msg = 'خطای دیتابیس.' }) end
 
@@ -332,7 +339,47 @@ RegisterServerCallbackSafe('Unique_Ticket:sendMessage', function(source, cb, tic
     cb({ r = true })
 end)
 
+-- -------------------------------------------------------------- priority ---
+RegisterServerCallbackSafe('Unique_Ticket:setPriority', function(source, cb, ticketId, priority)
+    if not isTicketAdmin(source) then return cb({ r = false }) end
+    priority = tonumber(priority)
+    local valid = false
+    for _, p in ipairs(Ticket_Config.Priorities) do if p.id == priority then valid = true break end end
+    if not valid then return cb({ r = false }) end
+    MySQL.Async.execute('UPDATE `tickets` SET `priority` = @p, `updated_at` = @c WHERE `id` = @t',
+        { ['@p'] = priority, ['@t'] = ticketId, ['@c'] = now() })
+    logSystemMessage(ticketId, ('%s اولویت تیکت را تغییر داد.'):format(getName(source)))
+    broadcastTicketUpdate(ticketId)
+    cb({ r = true })
+end)
+
+-- ---------------------------------------------------------- linked report ---
+-- Read-only preview of the report a ticket was created from - queries the
+-- `reports` table directly (its schema is documented in sql/reports.sql)
+-- instead of exports.Unique_AdminPanel:GetReports(), because that export
+-- only returns still-open reports and a linked report may since have been
+-- closed/archived by an admin elsewhere.
+RegisterServerCallbackSafe('Unique_Ticket:getLinkedReport', function(source, cb, reportId)
+    local rows = MySQL.Sync.fetchAll(
+        'SELECT ID, title, sub, category, status, admin_name, created_at, closed_at FROM reports WHERE ID = @id',
+        { ['@id'] = reportId })
+    local r = rows and rows[1]
+    if not r then return cb({ r = false }) end
+    cb({ r = true, report = {
+        id = r.ID, title = r.title, detail = r.sub, category = r.category,
+        status = r.status, adminName = r.admin_name,
+        createdAt = tonumber(r.created_at) or 0, closedAt = tonumber(r.closed_at) or 0,
+    } })
+end)
+
 -- ---------------------------------------------------------------- status ---
+-- IMPORTANT: this is the ONLY code path in this entire file that can set a
+-- ticket's status to 'closed' - there is no background thread, no timeout,
+-- nothing else touches `tickets`.`status`. A ticket stays open/in_progress
+-- indefinitely until an on-duty admin explicitly calls this with
+-- status = 'closed' (isTicketAdmin(source) below, same gate as every other
+-- admin-only callback in this file). Unlike server/report_autoclose.lua,
+-- there is intentionally NO auto-close timer for tickets.
 RegisterServerCallbackSafe('Unique_Ticket:setStatus', function(source, cb, ticketId, status)
     if not isTicketAdmin(source) then return cb({ r = false }) end
     local valid = false
