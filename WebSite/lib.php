@@ -48,6 +48,21 @@ const CFG = [
 
   // نگاشت مقدار ستون group به عنوان فارسی نمایشی
   'roles' => ['superadmin' => 'مدیر ارشد', 'admin' => 'ادمین', 'moderator' => 'مدیر', 'mod' => 'مدیر', 'gm' => 'گیم مستر', 'owner' => 'مالک'],
+  // رنک‌هایی که توی صفحه‌ی کادر نمایش داده می‌شن (permission_level جدول users؛ همون اسم‌های Config_Shared.Rank در Unique_AdminPanel).
+  // سطحِ بین دو رنک به رنکِ پایین‌تر گرد می‌شه. هر کس با permission_level کمتر از team_min_perm توی صفحه‌ی کادر نمیاد.
+  'team_min_perm' => 9,
+  // حداقل permission_level برای دسترسی مدیریتی داشبورد (بررسی درخواست‌ها، تیکت‌ها، لیست حساب‌ها)
+  'dash_admin_perm' => 9,
+  'perm_ranks' => [9 => 'Moderator', 10 => 'Supervisor', 11 => 'Administrator', 16 => 'Manager', 17 => 'Owner', 100 => 'Developer'],
+  // هر رنک یه بخش جدا توی صفحه‌ی کادر (از بالا به پایین)
+  'perm_tiers' => [
+    ['min' => 100, 'key' => 'dev',  'fa' => 'Developer',     'desc' => 'توسعه و زیرساخت شهر',            'color' => '#b48cff'],
+    ['min' => 17,  'key' => 'own',  'fa' => 'Owner',         'desc' => 'مالکیت و تصمیم‌گیری نهایی',       'color' => '#ff6b6b'],
+    ['min' => 16,  'key' => 'mgr',  'fa' => 'Manager',       'desc' => 'مدیریت کل تیم و سرور',           'color' => '#ff9f43'],
+    ['min' => 11,  'key' => 'adm',  'fa' => 'Administrator', 'desc' => 'اداره‌ی امور اجرایی و ادمین‌ها', 'color' => '#ffc107'],
+    ['min' => 10,  'key' => 'sup',  'fa' => 'Supervisor',    'desc' => 'نظارت بر عملکرد کادر',           'color' => '#7dd3fc'],
+    ['min' => 9,   'key' => 'mod',  'fa' => 'Moderator',     'desc' => 'رسیدگی به گزارش‌ها و تخلفات',    'color' => '#3ddc84'],
+  ],
 ];
 
 session_set_cookie_params(['httponly' => true, 'samesite' => 'Lax']);
@@ -97,7 +112,12 @@ function site_install(PDO $p, bool $my): void {
   $p->exec("CREATE TABLE IF NOT EXISTS web_msgs(id $pk, ticket_id INT NOT NULL, user_id INT NOT NULL, body TEXT NOT NULL, created INT NOT NULL)$tail");
   // درخواست‌های عضویت (گنگ / ارگان) که از داشبورد ثبت می‌شن
   $p->exec("CREATE TABLE IF NOT EXISTS web_apps(id $pk, user_id INT NOT NULL, kind $t NOT NULL, target $t NOT NULL, body TEXT NOT NULL, status $t NOT NULL, note TEXT, created INT NOT NULL, updated INT NOT NULL)$tail");
+  // اتصال پروفایلِ سایت به حساب بازی (login_users.id)
+  try { $p->exec('ALTER TABLE web_accounts ADD COLUMN login_id INT NULL'); } catch (Throwable $e) { /* ستون از قبل هست */ }
+  $p->exec("CREATE TABLE IF NOT EXISTS web_rate(k $t NOT NULL PRIMARY KEY, cnt INT NOT NULL, ws INT NOT NULL)$tail");
   if (!$my) {
+    // در سرور واقعی این جدول رو ریسورس Unique_Login (sql/install.sql) می‌سازه؛ اینجا فقط برای حالت دمو خالی ساخته می‌شه (هیچ حساب پیش‌فرضی وجود نداره)
+    $p->exec("CREATE TABLE IF NOT EXISTS login_users(id $pk, username TEXT NOT NULL UNIQUE, password TEXT NOT NULL, password_salt TEXT NOT NULL DEFAULT '', phone TEXT UNIQUE, license TEXT NOT NULL UNIQUE, device_license TEXT, security_hold INT NOT NULL DEFAULT 0, created_at TEXT DEFAULT CURRENT_TIMESTAMP)");
     // این‌ها فقط برای حالت دمو (وقتی به دیتابیس واقعی سرور وصل نیستیم) لازمن
     $p->exec("CREATE TABLE IF NOT EXISTS demo_top(id $pk, cat $t NOT NULL, name $t NOT NULL, val $t NOT NULL)");
     $p->exec("CREATE TABLE IF NOT EXISTS demo_gangs(id $pk, name $t NOT NULL, lvl INT NOT NULL, open INT NOT NULL)");
@@ -131,20 +151,24 @@ function site_stats(): array {
         $h = crc32($d['label']); $tot = 12 + $h % 70; $on = $h % 6;
         return [$d['label'], $on, $tot, $on > 0 ? 1 : 0, $d['group']];
       }, CFG['depts']),
-      'staff' => $q('SELECT name,role FROM demo_staff ORDER BY id'),
+      'staff' => array_map(function ($r) { $perm = ['Manager' => 16, 'Game Master' => 9][$r[1]] ?? 9; return [$r[0], rank_label($perm), $perm, (int)(crc32($r[0]) % 2)]; }, $q('SELECT name,role FROM demo_staff ORDER BY id')),
     ];
   }
 
   // ----- دیتای واقعی سرور -----
   $win = (int)CFG['online_window'];
   $top = [];
-  $top['سطح'] = array_map(fn($r) => [trim($r['firstname'] . ' ' . $r['lastname']) ?: $r['identifier'], 'Level ' . (int)$r['level']],
-    $p->query("SELECT firstname,lastname,identifier,level FROM users ORDER BY level DESC LIMIT 8")->fetchAll());
-  $top['ساعت بازی'] = array_map(fn($r) => [trim($r['firstname'] . ' ' . $r['lastname']) ?: $r['identifier'], number_format(intdiv((int)$r['playtime'], 60)) . ' ساعت'],
-    $p->query("SELECT firstname,lastname,identifier,playtime FROM users ORDER BY playtime DESC LIMIT 8")->fetchAll());
+  // اسمِ داخل‌بازی = playerName؛ سطح واقعی = `rank` (+ xp)؛ ساعت بازی = timePlay (ثانیه) — همون‌هایی که Unique_LevelQuest و esx_idoverhead می‌نویسن.
+  $top = ['سطح' => [], 'ساعت بازی' => []];
+  $cols = 'playerName,name,firstname,lastname,`rank`,xp,timePlay';
+  foreach ($p->query("SELECT $cols FROM users ORDER BY `rank` DESC, xp DESC LIMIT 40")->fetchAll() as $r)
+    if (($n = pname($r)) !== '' && count($top['سطح']) < 8) $top['سطح'][] = [$n, 'Level ' . max(1, (int)$r['rank'])];
+  foreach ($p->query("SELECT $cols FROM users ORDER BY timePlay DESC LIMIT 40")->fetchAll() as $r)
+    if (($n = pname($r)) !== '' && count($top['ساعت بازی']) < 8) $top['ساعت بازی'][] = [$n, number_format(intdiv((int)$r['timePlay'], 3600)) . ' ساعت'];
 
-  $gangs = array_map(fn($r) => [$r['name'], 'Level ' . (int)$r['level'], $r['disband'] ? 0 : 1],
-    $p->query("SELECT name,level,disband FROM gangs WHERE name<>'nogang' ORDER BY level DESC LIMIT 8")->fetchAll());
+  try { $gr = $p->query("SELECT name,label,level,disband FROM gangs WHERE name<>'nogang' ORDER BY level DESC LIMIT 8")->fetchAll(); }
+  catch (Throwable $e) { $gr = $p->query("SELECT name,name AS label,level,disband FROM gangs WHERE name<>'nogang' ORDER BY level DESC LIMIT 8")->fetchAll(); }
+  $gangs = array_map(fn($r) => [trim((string)$r['label']) ?: $r['name'], 'Level ' . (int)$r['level'], $r['disband'] ? 0 : 1], $gr);
 
   $depts = []; $jobs = array_column(CFG['depts'], 'job'); $by = [];
   if ($jobs) {
@@ -158,16 +182,21 @@ function site_stats(): array {
     $depts[] = [$d['label'], $on, (int)($r['total'] ?? 0), $on > 0 ? 1 : 0, $d['group']];
   }
 
-  $roles = CFG['roles'];
-  $staff = array_map(function ($r) use ($roles) {
-    $name = trim($r['firstname'] . ' ' . $r['lastname']) ?: $r['identifier'];
-    $role = $roles[$r['group']] ?? $r['group'];
-    return [$name, $role];
-  }, $p->query("SELECT firstname,lastname,identifier,`group` FROM users WHERE `group` NOT IN ('user','') ORDER BY level DESC LIMIT 8")->fetchAll());
+  // کادر: هر کسی که permission_level بالای صفر داره (همون ستونی که essentialmode و پنل ادمین می‌خونن)
+  // اسمِ داخل‌بازی (playerName، مثل Arshia_Mtz)؛ اگه خالی بود name و بعد اسم و فامیل. هرگز identifier/license نمایش داده نمی‌شه.
+  $staff = [];
+  $sq = $p->prepare("SELECT playerName,name,firstname,lastname,permission_level, (last_seen >= (NOW() - INTERVAL {$win} SECOND)) AS online FROM users WHERE permission_level >= ? ORDER BY permission_level DESC, `rank` DESC LIMIT 120");
+  $sq->execute([(int)CFG['team_min_perm']]);
+  foreach ($sq->fetchAll() as $r) {
+    $nm = pname($r);
+    if ($nm === '') continue;
+    $perm = (int)$r['permission_level'];
+    $staff[] = [$nm, rank_label($perm), $perm, (int)$r['online']];
+  }
 
   return [
     'citizens' => (int)$p->query('SELECT COUNT(*) FROM users')->fetchColumn(),
-    'staffCount' => (int)$p->query("SELECT COUNT(*) FROM users WHERE `group` NOT IN ('user','')")->fetchColumn(),
+    'staffCount' => count($staff),
     'gangCount' => (int)$p->query("SELECT COUNT(*) FROM gangs WHERE name<>'nogang'")->fetchColumn(),
     'top' => $top, 'gangs' => $gangs, 'depts' => $depts, 'staff' => $staff,
   ];
@@ -177,11 +206,86 @@ function e($s): string { return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'
 function go(string $u): never { header("Location: $u"); exit; }
 function csrf(): string { return $_SESSION['csrf'] ??= bin2hex(random_bytes(16)); }
 function csrf_field(): string { return '<input type="hidden" name="csrf" value="' . csrf() . '">'; }
-function csrf_check(): void { if (!hash_equals($_SESSION['csrf'] ?? '', $_POST['csrf'] ?? '')) { http_response_code(419); exit('نشست منقضی شده؛ صفحه را دوباره بارگذاری کن.'); } }
+function csrf_check(): void { $t = $_SESSION['csrf'] ?? ''; if ($t === '' || !hash_equals($t, (string)($_POST['csrf'] ?? ''))) { http_response_code(419); exit('نشست منقضی شده؛ صفحه را دوباره بارگذاری کن.'); } }
+/* ===== ورود یکپارچه با حساب بازی (Unique_Login) ===== */
+function game_hash(string $pw, string $salt): string { return hash('sha256', $pw . $salt); }   // همون SHA2(CONCAT(password, salt), 256) ریسورس
+/** شماره‌ی موبایل ایرانی => فرم ۱۰ رقمی بدون صفر (مثل داخل بازی)؛ نامعتبر => null */
+function phone10(string $raw): ?string {
+  $d = digits($raw);
+  if (str_starts_with($d, '98') && strlen($d) === 12) $d = substr($d, 2);
+  if (str_starts_with($d, '0')) $d = substr($d, 1);
+  return preg_match('/^9\d{9}$/', $d) ? $d : null;
+}
+/** شمارنده‌ی نرخ: rate_full = آیا سقف پر شده؟ (فقط می‌خونه) — rate_hit = یک بار می‌شمره */
+function rate_full(string $key, int $max, int $win): bool {
+  $s = db()->prepare('SELECT cnt,ws FROM web_rate WHERE k=?'); $s->execute([sha1($key)]); $r = $s->fetch();
+  return $r && time() - (int)$r['ws'] < $win && (int)$r['cnt'] >= $max;
+}
+function rate_hit(string $key, int $win): void {
+  $db = db(); $k = sha1($key); $now = time();
+  $s = $db->prepare('SELECT ws FROM web_rate WHERE k=?'); $s->execute([$k]); $r = $s->fetch();
+  if (!$r || $now - (int)$r['ws'] >= $win) { $db->prepare('DELETE FROM web_rate WHERE k=?')->execute([$k]); $db->prepare('INSERT INTO web_rate(k,cnt,ws) VALUES(?,1,?)')->execute([$k, $now]); }
+  else $db->prepare('UPDATE web_rate SET cnt=cnt+1 WHERE k=?')->execute([$k]);
+}
+/** ورود با نام کاربری یا شماره‌ی حساب بازی. موفق => ردیف login_users؛ ناموفق => null و پیام در $err */
+function game_login(string $ident, string $pass, ?string &$err = null): ?array {
+  $ip = $_SERVER['REMOTE_ADDR'] ?? '0'; $ident = trim($ident);
+  if ($ident === '' || $pass === '') { $err = 'نام کاربری و رمز عبور را وارد کن.'; return null; }
+  if (rate_full('lf-user:' . strtolower($ident), 5, 900) || rate_full("lf-ip:$ip", 20, 900)) { $err = 'به‌خاطر تلاش‌های ناموفق زیاد، ورود موقتاً قفل شده؛ ۱۵ دقیقه بعد دوباره امتحان کن.'; return null; }
+  $db = db(); $u = null;
+  try {
+    $q = $db->prepare('SELECT * FROM login_users WHERE username=? LIMIT 1'); $q->execute([$ident]); $u = $q->fetch() ?: null;
+    if (!$u && ($ph = phone10($ident))) { $q = $db->prepare('SELECT * FROM login_users WHERE phone=? LIMIT 1'); $q->execute([$ph]); $u = $q->fetch() ?: null; }
+  } catch (Throwable $e) { error_log('[UniqueRP] login_users lookup failed: ' . $e->getMessage()); $err = 'ورود موقتاً در دسترس نیست.'; return null; }
+  if (!$u || !hash_equals((string)$u['password'], game_hash($pass, (string)$u['password_salt']))) {
+    rate_hit('lf-user:' . strtolower($ident), 900); rate_hit("lf-ip:$ip", 900); usleep(500000);
+    $err = 'نام کاربری/شماره یا رمز عبور اشتباه است. (حساب فقط داخل بازی ساخته می‌شه.)'; return null;
+  }
+  if ((int)$u['security_hold'] === 1) { $err = 'این حساب به‌خاطر فعالیت مشکوک قفل امنیتی داره؛ داخل بازی از «فراموشی رمز عبور» استفاده کن.'; return null; }
+  return $u;
+}
+/** پروفایل کاراکتر از جدول users (وصل‌شده با device_license = license واقعی فایواِم). بدون کاراکتر => null */
+function game_profile(array $lu): ?array {
+  if (empty($lu['device_license'])) return null;
+  try {
+    $q = db()->prepare('SELECT playerName,name,firstname,lastname,sex,`rank`,xp,permission_level,job,gang,money,bank,timePlay,last_seen,account_num,iban FROM users WHERE identifier=? OR license=? LIMIT 1');
+    $q->execute([$lu['device_license'], $lu['device_license']]); return $q->fetch() ?: null;
+  } catch (Throwable $e) { return null; }
+}
+/** پروفایل سایت (web_accounts) رو به حساب بازی وصل می‌کنه؛ اگه نبود می‌سازه. تیکت/درخواست‌های قدیمی با همون شماره حفظ می‌شن. */
+function sync_web_account(array $lu, string $display): int {
+  $db = db(); $ph = $lu['phone'] ? '0' . $lu['phone'] : 'lu' . $lu['id'];
+  $q = $db->prepare('SELECT id FROM web_accounts WHERE login_id=?'); $q->execute([$lu['id']]); $id = (int)$q->fetchColumn();
+  if (!$id) { $q = $db->prepare('SELECT id FROM web_accounts WHERE phone=? AND login_id IS NULL'); $q->execute([$ph]); $id = (int)$q->fetchColumn();
+    if ($id) $db->prepare('UPDATE web_accounts SET login_id=? WHERE id=?')->execute([$lu['id'], $id]); }
+  if (!$id) {
+    $db->prepare('INSERT INTO web_accounts(phone,pass,fullname,gender,acc,cid,role,created,login_id) VALUES(?,?,?,?,?,?,?,?,?)')
+       ->execute([$ph, password_hash(bin2hex(random_bytes(16)), PASSWORD_DEFAULT), $display, 'مذکر', random_int(100, 999) . '-' . random_int(100, 999), '', 'user', time(), $lu['id']]);
+    $id = (int)$db->lastInsertId();
+    $db->prepare('UPDATE web_accounts SET cid=? WHERE id=?')->execute([str_pad((string)$id, 8, '0', STR_PAD_LEFT), $id]);
+  }
+  return $id;
+}
+function display_name(array $lu, ?array $g): string {
+  if ($g && ($n = pname($g)) !== '') return $n;
+  return (string)$lu['username'];
+}
 function me(): ?array {
-  if (empty($_SESSION['uid'])) return null;
-  $s = db()->prepare('SELECT * FROM web_accounts WHERE id=?'); $s->execute([$_SESSION['uid']]);
-  return $s->fetch() ?: null;
+  static $cache = null; if ($cache !== null) return $cache ?: null;
+  if (empty($_SESSION['uid']) || empty($_SESSION['lid'])) return null;
+  $db = db();
+  $q = $db->prepare('SELECT * FROM login_users WHERE id=?'); $q->execute([$_SESSION['lid']]); $lu = $q->fetch();
+  $q = $db->prepare('SELECT * FROM web_accounts WHERE id=? AND login_id=?'); $q->execute([$_SESSION['uid'], $_SESSION['lid']]); $w = $q->fetch();
+  if (!$lu || !$w || (int)$lu['security_hold'] === 1) { $cache = false; return null; }
+  $g = game_profile($lu); $perm = $g ? (int)$g['permission_level'] : 0;
+  $role = $perm >= (int)CFG['dash_admin_perm'] ? 'admin' : 'user';
+  $name = display_name($lu, $g); $gender = $g && $g['sex'] === 'f' ? 'مونث' : 'مذکر';
+  if ($w['role'] !== $role || $w['fullname'] !== $name || $w['gender'] !== $gender)
+    $db->prepare('UPDATE web_accounts SET role=?,fullname=?,gender=? WHERE id=?')->execute([$role, $name, $gender, $w['id']]);
+  $win = (int)CFG['online_window']; $seen = $g && $g['last_seen'] ? strtotime((string)$g['last_seen']) : 0;
+  return $cache = array_merge($w, ['role' => $role, 'fullname' => $name, 'gender' => $gender, 'username' => $lu['username'], 'lid' => (int)$lu['id'], 'perm' => $perm,
+    'rank' => $perm >= (int)CFG['team_min_perm'] ? rank_label($perm) : ($perm > 0 ? 'Staff' : null), 'game' => $g, 'online' => $seen && time() - $seen < $win, 'seen' => $seen,
+    'level' => $g ? max(1, (int)$g['rank']) : 1]);
 }
 function need_login(): array {
   if ($u = me()) return $u;
@@ -189,19 +293,25 @@ function need_login(): array {
   go('auth.php');
 }
 function digits(string $s): string { return preg_replace('/\D/', '', strtr($s, ['۰'=>'0','۱'=>'1','۲'=>'2','۳'=>'3','۴'=>'4','۵'=>'5','۶'=>'6','۷'=>'7','۸'=>'8','۹'=>'9'])); }
-/** ساخت حساب — فقط از داشبورد ادمین یا اسکریپت create_account.php صدا زده می‌شه؛ ثبت‌نام عمومی وجود نداره. */
-function make_account(string $phone, string $pass, string $name, string $gender = 'm', string $role = 'user'): int {
-  $db = db(); $acc = random_int(100, 999) . '-' . random_int(100, 999);
-  $db->prepare('INSERT INTO web_accounts(phone,pass,fullname,gender,acc,cid,role,created) VALUES(?,?,?,?,?,?,?,?)')
-     ->execute([$phone, password_hash($pass, PASSWORD_DEFAULT), $name, $gender === 'f' ? 'مونث' : 'مذکر', $acc, '', $role === 'admin' ? 'admin' : 'user', time()]);
-  $id = (int)$db->lastInsertId();
-  $db->prepare('UPDATE web_accounts SET cid=? WHERE id=?')->execute([str_pad((string)$id, 8, '0', STR_PAD_LEFT), $id]);
-  return $id;
-}
 /** فهرست اهداف قابل‌درخواست: گنگ‌های باز + همه‌ی ارگان‌ها */
 function apply_targets(): array {
   $st = site_stats(); $o = ['gang' => [], 'org' => []];
   foreach ($st['gangs'] as $g) if ($g[2]) $o['gang'][] = $g[0];
   foreach (CFG['depts'] as $d) $o['org'][$d['group']][] = $d['label'];
   return $o;
+}
+
+/** اسم داخل‌بازی: playerName، بعد name، بعد اسم+فامیل. خالی => '' (هرگز license/identifier نمایش داده نمی‌شه) */
+function pname(array $r): string {
+  return trim((string)($r['playerName'] ?? '')) ?: trim((string)($r['name'] ?? '')) ?: trim(trim((string)($r['firstname'] ?? '')) . ' ' . trim((string)($r['lastname'] ?? '')));
+}
+
+/* ===== رنک و دسته‌ی کادر بر اساس permission_level ===== */
+function rank_label(int $perm): string {
+  $best = ''; foreach (CFG['perm_ranks'] as $lv => $name) if ($lv <= $perm) $best = $name;
+  return $best ?: 'Staff';
+}
+function tier_of(int $perm): array {
+  foreach (CFG['perm_tiers'] as $t) if ($perm >= $t['min']) return $t;
+  $all = CFG['perm_tiers']; return end($all);
 }

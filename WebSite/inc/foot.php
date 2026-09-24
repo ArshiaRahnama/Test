@@ -11,7 +11,7 @@
   <div><h4>سرور</h4><ul><li><a href="gallery.php">گالری</a></li><li><a href="rules.php">قوانین</a></li><li><a href="team.php">درباره ما</a></li><li><a href="index.php#guide">راهنمای ورود</a></li></ul></div>
   <div><h4>ارتباط با ما</h4><ul><li><a data-discord href="#">دیسکورد</a></li><li><a data-panel href="#">پنل کاربری</a></li><li><a data-discord href="#">پشتیبانی و تیکت</a></li></ul></div>
  </div>
- <div class="copy"><span>© 2026 <span data-brand>Unique RP</span> — تمامی حقوق محفوظ است</span><span>Powered by <a href="https://arshiahud.ir" target="_blank" rel="noopener" class="pw">arshiahud.ir</a></span></div>
+ <div class="copy"><span>© 2026 <span data-brand>Unique RP</span> — تمامی حقوق محفوظ است</span><span>Powered by <a href="https://arshiahub.ir" target="_blank" rel="noopener" class="pw">arshiahub.ir</a></span></div>
 </div></footer>
 
 <script>

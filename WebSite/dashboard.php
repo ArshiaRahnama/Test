@@ -37,10 +37,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       go("dashboard.php?p=ticket&id=$id");
     }
   } elseif ($a === 'pass') {
-    $p = 'settings';
-    if (!password_verify($_POST['old'] ?? '', $u['pass'])) $flash = 'رمز فعلی اشتباه است.';
-    elseif (strlen($_POST['new'] ?? '') < 6) $flash = 'رمز جدید حداقل ۶ کاراکتر باشد.';
-    else { $db->prepare('UPDATE web_accounts SET pass=? WHERE id=?')->execute([password_hash($_POST['new'], PASSWORD_DEFAULT), $u['id']]); $ok = 'رمز عبور تغییر کرد.'; }
+    $p = 'settings'; $lq = $db->prepare('SELECT password,password_salt FROM login_users WHERE id=?'); $lq->execute([$u['lid']]); $lr = $lq->fetch(); $nw = $_POST['new'] ?? '';
+    if (rate_full('pw-' . $u['lid'], 5, 900)) $flash = 'تلاش‌های زیاد؛ ۱۵ دقیقه بعد دوباره امتحان کن.';
+    elseif (!$lr || !hash_equals((string)$lr['password'], game_hash($_POST['old'] ?? '', (string)$lr['password_salt']))) { rate_hit('pw-' . $u['lid'], 900); $flash = 'رمز فعلی اشتباه است.'; }
+    elseif (strlen($nw) < 6 || !preg_match('/\d/', $nw) || !preg_match('/[A-Za-z]/', $nw)) $flash = 'رمز جدید حداقل ۶ کاراکتر و شامل یک حرف انگلیسی و یک عدد باشد.';
+    else { $salt = bin2hex(random_bytes(16)); $db->prepare('UPDATE login_users SET password=?,password_salt=? WHERE id=?')->execute([game_hash($nw, $salt), $salt, $u['lid']]); $ok = 'رمز عبور تغییر کرد؛ از این به بعد داخل بازی هم با همین رمز وارد می‌شی.'; }
 
   } elseif ($a === 'apply') {                                     // ثبت درخواست عضویت
     $p = 'apply'; [$kind, $target] = array_pad(explode(':', $_POST['target'] ?? '', 2), 2, '');
@@ -68,23 +69,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $st = ($_POST['d'] ?? '') === 'accept' ? 'accepted' : 'rejected';
     $db->prepare("UPDATE web_apps SET status=?,note=?,updated=? WHERE id=? AND status='pending'")->execute([$st, mb_substr(trim($_POST['note'] ?? ''), 0, 500), time(), (int)($_POST['id'] ?? 0)]);
     go('dashboard.php?p=review');
-  } elseif ($a === 'mkuser' && $admin) {                          // ساخت حساب توسط مدیر
-    $p = 'users'; $ph = digits($_POST['phone'] ?? ''); $nm = trim($_POST['fullname'] ?? ''); $pw = $_POST['pass'] ?? '';
-    $ex = $db->prepare('SELECT 1 FROM web_accounts WHERE phone=?'); $ex->execute([$ph]);
-    if (!preg_match('/^09\d{9}$/', $ph)) $flash = 'شماره موبایل باید به شکل 09xxxxxxxxx باشد.';
-    elseif (mb_strlen($nm) < 3 || mb_strlen($nm) > 40) $flash = 'نام باید بین ۳ تا ۴۰ حرف باشد.';
-    elseif (strlen($pw) < 6) $flash = 'رمز عبور حداقل ۶ کاراکتر باشد.';
-    elseif ($ex->fetch()) $flash = 'این شماره قبلاً حساب دارد.';
-    else { make_account($ph, $pw, $nm, $_POST['gender'] ?? 'm', ($_POST['role'] ?? '') === 'admin' ? 'admin' : 'user'); $ok = "حساب $nm ساخته شد."; }
-  } elseif ($a === 'role' && $admin) {
-    $id = (int)($_POST['id'] ?? 0);
-    if ($id !== (int)$u['id']) $db->prepare("UPDATE web_accounts SET role=CASE WHEN role='admin' THEN 'user' ELSE 'admin' END WHERE id=?")->execute([$id]);
-    go('dashboard.php?p=users');
   }
 }
 if (($_GET['done'] ?? '') === '1' && $p === 'apps') $ok = 'درخواستت ثبت شد؛ نتیجه‌ی بررسی همین‌جا نمایش داده می‌شه.';
 
-$mask = substr($u['phone'], 0, 4) . '***' . substr($u['phone'], -4);
+$mask = preg_match('/^09\d{9}$/', $u['phone']) ? substr($u['phone'], 0, 4) . '***' . substr($u['phone'], -4) : '—';
+function job_label(string $j): string { foreach (CFG['depts'] as $d) if ($d['job'] === $j) return $d['label']; return $j === 'unemployed' ? 'بیکار' : $j; }
+function ago(int $t): string { $s = max(0, time() - $t); return $s < 90 ? 'همین الان' : ($s < 3600 ? intdiv($s, 60) . ' دقیقه پیش' : ($s < 172800 ? intdiv($s, 3600) . ' ساعت پیش' : intdiv($s, 86400) . ' روز پیش')); }
+const AUDIT = ['login_success' => 'ورود موفق به سرور', 'login_fail' => 'تلاش ناموفق برای ورود', 'register' => 'ساخت حساب', 'password_reset' => 'بازیابی رمز', 'password_change' => 'تغییر رمز از داخل بازی', 'new_device' => 'ورود از دستگاه جدید', 'logout_all' => 'خروج از همه‌ی دستگاه‌ها', 'security_hold' => 'قفل امنیتی فعال شد', 'security_hold_cleared' => 'قفل امنیتی باز شد'];
 $st = ['open' => 'باز', 'answered' => 'پاسخ داده شد', 'closed' => 'بسته'];
 $cnt = fn($sql, $args = []) => (function () use ($db, $sql, $args) { $s = $db->prepare($sql); $s->execute($args); return (int)$s->fetchColumn(); })();
 $myPend = $cnt("SELECT COUNT(*) FROM web_apps WHERE user_id=? AND status='pending'", [$u['id']]);
@@ -99,7 +91,7 @@ $I = [ // آیکون‌ها
  'settings' => '<circle cx="12" cy="12" r="3"/><path d="M19.400 15a1.700 1.700 0 0 0 .3 1.800l.1.1a2 2 0 1 1-2.800 2.800l-.1-.1a1.700 1.700 0 0 0-1.800-.3 1.700 1.700 0 0 0-1 1.500V21a2 2 0 1 1-4 0v-.1a1.700 1.700 0 0 0-1.100-1.500 1.700 1.700 0 0 0-1.800.3l-.1.1a2 2 0 1 1-2.800-2.800l.1-.1a1.700 1.700 0 0 0 .3-1.800 1.700 1.700 0 0 0-1.500-1H3a2 2 0 1 1 0-4h.1a1.700 1.700 0 0 0 1.500-1.100 1.700 1.700 0 0 0-.3-1.800l-.1-.1a2 2 0 1 1 2.800-2.800l.1.1a1.700 1.700 0 0 0 1.800.3H9a1.700 1.700 0 0 0 1-1.500V3a2 2 0 1 1 4 0v.1a1.700 1.700 0 0 0 1 1.500 1.700 1.700 0 0 0 1.800-.3l.1-.1a2 2 0 1 1 2.800 2.800l-.1.1a1.700 1.700 0 0 0-.3 1.800V9a1.700 1.700 0 0 0 1.500 1H21a2 2 0 1 1 0 4h-.1a1.700 1.700 0 0 0-1.500 1Z"/>',
 ];
 $nav = ['home' => 'نمای کلی', 'info' => 'کارت شهروندی', 'apply' => 'ثبت درخواست عضویت', 'apps' => 'درخواست‌های من', 'tickets' => 'پشتیبانی (تیکت)', 'settings' => 'تنظیمات'];
-$adm = ['review' => 'بررسی درخواست‌ها', 'users' => 'مدیریت حساب‌ها'];
+$adm = ['review' => 'بررسی درخواست‌ها', 'users' => 'حساب‌های بازی'];
 $ico = fn($k) => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' . $I[$k] . '</svg>';
 function app_card(array $x, bool $review = false, bool $mine = true): void {
   $b = json_decode($x['body'], true) ?: []; $g = $x['kind'] === 'org' ? org_group($x['target']) : 'گنگ'; ?>
@@ -131,7 +123,7 @@ function app_card(array $x, bool $review = false, bool $mine = true): void {
   <a class="btn" href="index.php">صفحه اصلی</a><a class="btn" href="auth.php?out=1">خروج</a></div>
 <div class="dlayout">
 <aside class="side">
-  <div class="ucard"><div class="av"><?= e(mb_substr($u['fullname'], 0, 1)) ?></div><b><?= e($u['fullname']) ?></b><small><?= e($mask) ?></small><span class="rolebadge"><?= $admin ? 'مدیر سایت' : 'شهروند' ?></span></div>
+  <div class="ucard"><div class="av"><?= e(mb_substr($u['fullname'], 0, 1)) ?></div><b dir="ltr"><?= e($u['fullname']) ?></b><small dir="ltr">@<?= e($u['username']) ?></small><span class="rolebadge"><?= e($u['rank'] ?: 'شهروند') ?></span></div>
   <div class="dnav">
     <?php foreach ($nav as $k => $l): ?><a href="dashboard.php?p=<?= $k ?>" class="<?= ($p === $k || ($p === 'ticket' && $k === 'tickets')) ? 'on' : '' ?>"><?= $ico($k) ?><?= $l ?><?= $k === 'apps' && $myPend ? '<span class="cnt">' . $myPend . '</span>' : '' ?></a><?php endforeach; ?>
     <?php if ($admin): ?><hr><?php foreach ($adm as $k => $l): ?><a href="dashboard.php?p=<?= $k ?>" class="<?= $p === $k ? 'on' : '' ?>"><?= $ico($k) ?><?= $l ?><?= $k === 'review' && $revPend ? '<span class="cnt">' . $revPend . '</span>' : '' ?></a><?php endforeach; endif; ?>
@@ -145,11 +137,32 @@ function app_card(array $x, bool $review = false, bool $mine = true): void {
   $tot = $cnt('SELECT COUNT(*) FROM web_apps WHERE user_id=?', [$u['id']]); $acc = $cnt("SELECT COUNT(*) FROM web_apps WHERE user_id=? AND status='accepted'", [$u['id']]);
   $tk = $cnt("SELECT COUNT(*) FROM web_tickets WHERE user_id=? AND status<>'closed'", [$u['id']]);
   $last = $db->prepare('SELECT * FROM web_apps WHERE user_id=? ORDER BY id DESC LIMIT 3'); $last->execute([$u['id']]); ?>
-  <h2>سلام، <span class="gt"><?= e($u['fullname']) ?></span> 👋</h2>
-  <p class="lead">از اینجا برای گنگ‌ها و ارگان‌های شهر درخواست بده و وضعیتشون رو پیگیری کن.</p>
+  <?php $g = $u['game']; $lv = (int)$u['level']; $act = [];
+    try { $aq = $db->prepare('SELECT action,created_at FROM login_audit WHERE username=? ORDER BY created_at DESC LIMIT 5'); $aq->execute([$u['username']]); $act = $aq->fetchAll(); } catch (Throwable $e) {} ?>
+  <section class="pro">
+    <div class="pro-av <?= $u['online'] ? 'on' : '' ?>"><span><?= e(mb_substr($u['fullname'], 0, 1)) ?></span></div>
+    <div class="pro-body">
+      <small class="mut">خوش اومدی</small>
+      <h2 class="gt" dir="ltr"><?= e($u['fullname']) ?></h2>
+      <div class="chips"><span>@<?= e($u['username']) ?></span>
+        <?php if ($u['rank']): ?><span class="gold"><?= e($u['rank']) ?></span><?php endif; ?>
+        <?php if ($g): ?><span><?= e(job_label((string)$g['job'])) ?></span><?php if ($g['gang'] && $g['gang'] !== 'none'): ?><span><?= e($g['gang']) ?></span><?php endif; ?><?php endif; ?>
+        <span class="<?= $u['online'] ? 'live' : '' ?>"><?= $u['online'] ? 'آنلاین در شهر' : 'آفلاین' ?></span></div>
+      <?php if ($g): ?><div class="xp"><i style="width:<?= min(100, (int)round($lv / max(50, $lv) * 100)) ?>%"></i></div><small class="mut" dir="ltr">Level <?= $lv ?> · XP <?= number_format((int)$g['xp']) ?></small><?php endif; ?>
+    </div>
+  </section>
+  <?php if ($g): ?>
+  <div class="tiles">
+    <div><span>پول نقد</span><b dir="ltr">$<?= number_format((int)$g['money']) ?></b></div>
+    <div><span>موجودی بانک</span><b dir="ltr">$<?= number_format((int)$g['bank']) ?></b></div>
+    <div><span>ساعت بازی</span><b><?= number_format(intdiv((int)$g['timePlay'], 3600)) ?></b></div>
+    <div><span>آخرین حضور</span><b><?= $u['online'] ? 'الان' : ($u['seen'] ? ago($u['seen']) : '—') ?></b></div>
+  </div>
+  <?php else: ?><div class="dcardx"><h3>هنوز کاراکتری به این حساب وصل نیست</h3><p class="mut">بعد از اولین ورود به سرور با همین حساب، اطلاعات کاراکترت (پول، سطح، شغل، گنگ) اینجا نمایش داده می‌شه.</p></div><?php endif; ?>
   <div class="kpis"><div class="kpi"><b><?= $tot ?></b><span>کل درخواست‌ها</span></div><div class="kpi"><b><?= $myPend ?></b><span>در انتظار بررسی</span></div><div class="kpi"><b><?= $acc ?></b><span>پذیرفته‌شده</span></div><div class="kpi"><b><?= $tk ?></b><span>تیکت باز</span></div></div>
   <?php if ($admin && $revPend): ?><div class="dcardx" style="border-color:#ffc10755"><h3>🔔 <?= $revPend ?> درخواست منتظر بررسی توئه</h3><a class="btn gold" href="dashboard.php?p=review">رفتن به بررسی درخواست‌ها</a></div><?php endif; ?>
   <div class="dcardx"><h3>شروع سریع</h3><div class="row-actions"><a class="btn pri" href="dashboard.php?p=apply">ثبت درخواست عضویت</a><a class="btn" href="join.php">دیدن گنگ‌ها و ارگان‌ها</a><a class="btn" href="dashboard.php?p=info">کارت شهروندی</a></div></div>
+  <?php if ($act): ?><div class="dcardx"><h3>آخرین فعالیت‌های حساب</h3><ul class="acts"><?php foreach ($act as $x): ?><li class="<?= in_array($x['action'], ['login_fail', 'security_hold'], true) ? 'bad' : '' ?>"><span><?= e(AUDIT[$x['action']] ?? $x['action']) ?></span><small><?= e(ago((int)strtotime((string)$x['created_at']))) ?></small></li><?php endforeach; ?></ul></div><?php endif; ?>
   <h3 style="margin:26px 0 12px">آخرین درخواست‌ها</h3>
   <?php $n = 0; foreach ($last as $x) { app_card($x); $n++; } if (!$n) echo '<div class="empty2">هنوز درخواستی ثبت نکردی. از «ثبت درخواست عضویت» شروع کن.</div>'; ?>
 
@@ -157,7 +170,7 @@ function app_card(array $x, bool $review = false, bool $mine = true): void {
   <h2>کارت شهروندی</h2><p class="lead">اطلاعات حساب و کاراکتر تو.</p>
   <section class="notice"><h2>ورود به شهر <?= e(CFG['fa']) ?> در لانچر VMP</h2>
     <p>برای ورود به شهر، اطلاعات زیر را در لانچر VMP وارد کنید:</p>
-    <p class="cred"><span>نام کاربری</span> <b dir="ltr"><?= e($mask) ?></b> <span>رمز عبور</span> <b>رمز عبور همین سایت</b></p></section>
+    <p class="cred"><span>نام کاربری</span> <b dir="ltr"><?= e($u['username']) ?></b> <span>رمز عبور</span> <b>همون رمزی که موقع ساخت حساب داخل بازی گذاشتی</b></p></section>
   <div class="head"><h2>اطلاعات کاراکتر</h2><button class="btn" onclick="window.print()">دانلود کارت شناسایی</button></div>
   <article class="idcard">
     <div class="ch"><b><?= e(strtoupper(CFG['name'])) ?></b><span>کارت شناسایی شهروندی</span><small>CITIZEN IDENTITY CARD</small></div>
@@ -165,9 +178,9 @@ function app_card(array $x, bool $review = false, bool $mine = true): void {
       <dt>نام و نام خانوادگی:</dt><dd><?= e($u['fullname']) ?></dd>
       <dt>جنسیت:</dt><dd><?= e($u['gender']) ?></dd>
       <dt>سطح تجربه:</dt><dd><?= (int)$u['level'] ?></dd>
-      <dt>شماره تماس:</dt><dd dir="ltr"><?= e($u['phone']) ?></dd>
-      <dt>شماره حساب:</dt><dd dir="ltr"><?= e($u['acc']) ?></dd></dl>
-      <div class="cid"><small>شماره شناسایی</small><b dir="ltr"><?= e($u['cid']) ?></b></div></div>
+      <dt>شماره تماس:</dt><dd dir="ltr"><?= e($mask) ?></dd>
+      <dt>شماره حساب:</dt><dd dir="ltr"><?= e(($u['game']['iban'] ?? '') ?: $u['acc']) ?></dd></dl>
+      <div class="cid"><small>شماره شناسایی</small><b dir="ltr"><?= e($u['game'] ? str_pad((string)(int)$u['game']['account_num'], 8, '0', STR_PAD_LEFT) : $u['cid']) ?></b></div></div>
   </article>
 
 <?php elseif ($p === 'apply'): $T = apply_targets(); $sel = ($_POST['target'] ?? '') ?: (($_GET['kind'] ?? '') . ':' . ($_GET['target'] ?? '')); ?>
@@ -201,20 +214,16 @@ function app_card(array $x, bool $review = false, bool $mine = true): void {
   foreach ($q as $x) { app_card($x, true, false); $n++; }
   if (!$n) echo '<div class="empty2">درخواستی برای نمایش نیست 🎉</div>'; ?>
 
-<?php elseif ($p === 'users' && $admin): ?>
-  <h2>مدیریت حساب‌ها</h2><p class="lead">ثبت‌نام عمومی در سایت غیرفعاله؛ حساب‌ها فقط از اینجا ساخته می‌شن.</p>
-  <form method="post" class="dcardx"><?= csrf_field() ?><input type="hidden" name="a" value="mkuser"><h3>ساخت حساب جدید</h3>
-    <div class="fgrid"><label>شماره موبایل<input name="phone" dir="ltr" inputmode="numeric" placeholder="09xxxxxxxxx" required></label>
-      <label>نام و نام خانوادگی کاراکتر<input name="fullname" maxlength="40" required></label>
-      <label>رمز عبور<input type="password" name="pass" dir="ltr" minlength="6" required autocomplete="new-password"></label>
-      <label>جنسیت<select name="gender"><option value="m">مذکر</option><option value="f">مونث</option></select></label>
-      <label>نقش<select name="role"><option value="user">شهروند</option><option value="admin">مدیر سایت</option></select></label></div>
-    <button class="btn pri">ساخت حساب</button></form>
-  <div class="dcardx" style="overflow-x:auto"><h3>حساب‌ها</h3><table class="utable"><tr><th>نام</th><th>موبایل</th><th>نقش</th><th>ساخت</th><th></th></tr>
-  <?php foreach ($db->query('SELECT id,fullname,phone,role,created FROM web_accounts ORDER BY id DESC LIMIT 200') as $x): ?>
-    <tr><td><?= e($x['fullname']) ?></td><td dir="ltr"><?= e($x['phone']) ?></td><td><?= $x['role'] === 'admin' ? '<span class="rolebadge" style="margin:0">مدیر</span>' : 'شهروند' ?></td><td><?= date('Y/m/d', (int)$x['created']) ?></td>
-      <td><?php if ((int)$x['id'] !== (int)$u['id']): ?><form method="post" style="margin:0"><?= csrf_field() ?><input type="hidden" name="a" value="role"><input type="hidden" name="id" value="<?= (int)$x['id'] ?>"><button class="btn" style="padding:4px 14px;font-size:.78rem"><?= $x['role'] === 'admin' ? 'تبدیل به شهروند' : 'ارتقا به مدیر' ?></button></form><?php endif; ?></td></tr>
-  <?php endforeach; ?></table></div>
+<?php elseif ($p === 'users' && $admin): $qs = trim($_GET['q'] ?? ''); $lk = '%' . addcslashes($qs, '%_\\') . '%'; ?>
+  <h2>حساب‌های بازی</h2><p class="lead">فهرست حساب‌های Unique_Login و کاراکتر وصل‌شده به هرکدوم. حساب فقط داخل بازی ساخته می‌شه.</p>
+  <form class="dcardx" method="get" style="display:flex;gap:10px;flex-wrap:wrap"><input type="hidden" name="p" value="users"><input name="q" value="<?= e($qs) ?>" placeholder="جستجوی نام کاربری یا اسم کاراکتر" style="flex:1;min-width:200px"><button class="btn pri">جستجو</button></form>
+  <div class="dcardx" style="overflow-x:auto"><table class="utable"><tr><th>نام کاربری</th><th>کاراکتر</th><th>رنک</th><th>موبایل</th><th>وضعیت</th><th>ساخت</th></tr>
+  <?php try { $uq = $db->prepare('SELECT l.username,l.phone,l.security_hold,l.created_at,c.playerName,c.permission_level FROM login_users l LEFT JOIN users c ON c.identifier=l.device_license ' . ($qs !== '' ? 'WHERE l.username LIKE ? OR c.playerName LIKE ? ' : '') . 'ORDER BY l.id DESC LIMIT 200'); $uq->execute($qs !== '' ? [$lk, $lk] : []); $rows = $uq->fetchAll();
+    } catch (Throwable $e) { $uq = $db->prepare('SELECT username,phone,security_hold,created_at FROM login_users ' . ($qs !== '' ? 'WHERE username LIKE ? ' : '') . 'ORDER BY id DESC LIMIT 200'); $uq->execute($qs !== '' ? [$lk] : []); $rows = $uq->fetchAll(); }
+  foreach ($rows as $x): $pl = (int)($x['permission_level'] ?? 0); ?>
+    <tr><td dir="ltr"><?= e($x['username']) ?></td><td dir="ltr"><?= e($x['playerName'] ?? '—') ?></td><td><?= $pl >= (int)CFG['team_min_perm'] ? '<span class="rolebadge" style="margin:0">' . e(rank_label($pl)) . '</span>' : ($pl > 0 ? 'Staff' : 'شهروند') ?></td>
+      <td dir="ltr"><?= $x['phone'] ? e('0' . substr($x['phone'], 0, 3) . '***' . substr($x['phone'], -4)) : '—' ?></td><td><?= (int)$x['security_hold'] ? '<span class="tag rejected">قفل امنیتی</span>' : 'عادی' ?></td><td><?= e(date('Y/m/d', (int)strtotime((string)$x['created_at']))) ?></td></tr>
+  <?php endforeach; if (!$rows) echo '<tr><td colspan="6" class="mut">حسابی پیدا نشد.</td></tr>'; ?></table></div>
 
 <?php elseif ($p === 'tickets'): ?>
   <h2>پشتیبانی (تیکت)</h2><p class="lead">برای سوال یا مشکل، از اینجا تیکت بفرست.</p>
@@ -240,10 +249,10 @@ function app_card(array $x, bool $review = false, bool $mine = true): void {
   <?php endif; ?>
 
 <?php elseif ($p === 'settings'): ?>
-  <h2>تنظیمات</h2><p class="lead">امنیت حساب.</p>
+  <h2>تنظیمات</h2><p class="lead">رمز حساب بازی و سایت یکیه؛ اینجا عوضش کنی، داخل بازی هم همون معتبره.</p>
   <form method="post" class="dcardx" style="max-width:480px"><?= csrf_field() ?><input type="hidden" name="a" value="pass"><h3>تغییر رمز عبور</h3>
     <label>رمز عبور فعلی<input type="password" name="old" dir="ltr" required autocomplete="current-password"></label>
-    <label>رمز عبور جدید<input type="password" name="new" dir="ltr" minlength="6" required autocomplete="new-password"></label>
+    <label>رمز عبور جدید<input type="password" name="new" dir="ltr" minlength="6" required autocomplete="new-password"></label><p class="hint">حداقل ۶ کاراکتر، شامل حداقل یک حرف انگلیسی و یک عدد.</p>
     <button class="btn pri">تغییر رمز عبور</button></form>
 <?php else: go('dashboard.php'); endif; ?>
 </main></div></body></html>
