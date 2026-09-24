@@ -6,14 +6,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>قوانین شهر | یونیک رول پلی</title>
 <meta name="description" content="قوانین کامل شهر یونیک؛ احترام، رول‌پلی واقعی، تقلب و باگ، قوانین گنگ و دپارتمان.">
-<meta name="theme-color" content="#05070d">
+<meta name="theme-color" content="#050505">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M16 8v28a16 16 0 0 0 32 0V8' fill='none' stroke='%23ffc107' stroke-width='11' stroke-linecap='round'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800;900&display=swap">
 <link rel="stylesheet" href="style.css">
 <style>
 .rcats{display:grid;gap:16px;margin-top:32px}
-.rcat{background:linear-gradient(165deg,var(--panel),#0a1122);border:1px solid var(--line2);border-radius:var(--r);overflow:hidden}
+.rcat{background:linear-gradient(165deg,var(--panel),#0a0906);border:1px solid var(--line2);border-radius:var(--r);overflow:hidden}
 .rcat summary{list-style:none;cursor:pointer;padding:22px 24px;display:flex;align-items:center;gap:16px;font-weight:800;font-size:1.02rem}
 .rcat summary::-webkit-details-marker{display:none}
 .rcat summary .ictile{margin:0;flex:none}
@@ -23,7 +23,7 @@
 .rcat ol li::marker{color:var(--cyan);font-weight:800}
 .rcat ol li b{color:var(--text);font-weight:700}
 .punish{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-top:30px}
-.pstep{background:linear-gradient(165deg,var(--panel),#0a1122);border:1px solid var(--line2);border-radius:var(--r-sm);padding:18px}
+.pstep{background:linear-gradient(165deg,var(--panel),#0a0906);border:1px solid var(--line2);border-radius:var(--r-sm);padding:18px}
 .pstep b{display:block;color:var(--gold);font-size:.85rem;margin-bottom:6px}
 .pstep p{color:var(--mut);font-size:.88rem}
 </style>

@@ -12,7 +12,7 @@
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
--- حساب‌های کاربری سایت (ثبت‌نام/ورود با شماره موبایل)
+-- حساب‌های کاربری سایت (ورود با شماره موبایل؛ ثبت‌نام عمومی نداریم — ساخت حساب با create_account.php یا داشبورد ادمین)
 CREATE TABLE IF NOT EXISTS `web_accounts` (
   `id`       INT AUTO_INCREMENT PRIMARY KEY,
   `phone`    VARCHAR(190) NOT NULL UNIQUE,
@@ -42,6 +42,19 @@ CREATE TABLE IF NOT EXISTS `web_msgs` (
   `user_id`   INT NOT NULL,
   `body`      TEXT NOT NULL,
   `created`   INT NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- درخواست‌های عضویت گنگ/ارگان که از داشبورد ثبت می‌شن
+CREATE TABLE IF NOT EXISTS `web_apps` (
+  `id`      INT AUTO_INCREMENT PRIMARY KEY,
+  `user_id` INT NOT NULL,
+  `kind`    VARCHAR(190) NOT NULL,   -- gang | org
+  `target`  VARCHAR(190) NOT NULL,
+  `body`    TEXT NOT NULL,           -- JSON: پیش‌زمینه، دلیل، سوابق، ساعت فعالیت
+  `status`  VARCHAR(190) NOT NULL,   -- pending | accepted | rejected | cancelled
+  `note`    TEXT NULL,
+  `created` INT NOT NULL,
+  `updated` INT NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 SET FOREIGN_KEY_CHECKS = 1;

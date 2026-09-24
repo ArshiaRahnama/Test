@@ -23,12 +23,27 @@ const CFG = [
   // بازه‌ای که یک بازیکن «آنلاین» حساب می‌شه (برحسب ثانیه) بر اساس آخرین last_seen ثبت‌شده در دیتابیس
   'online_window' => 300,
 
-  // دپارتمان‌هایی که می‌خوایم از روی ستون job واقعی کاربرا بشماریم
+  // گروه‌بندی ارگان‌ها (سه دسته‌ی اصلی شهر)
+  'org_groups' => [
+    'doj'  => ['label' => 'Department Of Justice', 'fa' => 'وزارت دادگستری'],
+    'law'  => ['label' => 'Law Enforcement',       'fa' => 'نیروی انتظامی'],
+    'svc'  => ['label' => 'Organ Services',        'fa' => 'ارگان‌های خدماتی'],
+  ],
+  // ارگان‌ها: 'job' باید دقیقاً با ستون job جدول users (و جدول jobs) سرورت یکی باشه؛ فقط 'label' نمایشی‌ه.
   'depts' => [
-    ['job' => 'police',    'label' => 'Police Department'],
-    ['job' => 'ambulance', 'label' => 'Medical Center'],
-    ['job' => 'mechanic',  'label' => 'Mechanic Central'],
-    ['job' => 'taxi',      'label' => 'Taxi Department'],
+    ['group' => 'doj', 'job' => 'cid',       'label' => 'CID'],
+    ['group' => 'doj', 'job' => 'cia',       'label' => 'CIA'],
+    ['group' => 'doj', 'job' => 'marshal',   'label' => 'Marshal'],
+    ['group' => 'doj', 'job' => 'fbi',       'label' => 'FBI'],
+    ['group' => 'doj', 'job' => 'judge',     'label' => 'Judge'],
+    ['group' => 'doj', 'job' => 'doa',       'label' => 'DOA'],
+    ['group' => 'law', 'job' => 'police',    'label' => 'Police'],
+    ['group' => 'law', 'job' => 'sheriff',   'label' => 'Sheriff'],
+    ['group' => 'law', 'job' => 'mt',        'label' => 'MT'],
+    ['group' => 'svc', 'job' => 'taxi',      'label' => 'Taxi'],
+    ['group' => 'svc', 'job' => 'mechanic',  'label' => 'Mechanic'],
+    ['group' => 'svc', 'job' => 'ambulance', 'label' => 'Medic'],
+    ['group' => 'svc', 'job' => 'weazel',    'label' => 'Weazel'],
   ],
 
   // نگاشت مقدار ستون group به عنوان فارسی نمایشی
@@ -80,6 +95,8 @@ function site_install(PDO $p, bool $my): void {
   $p->exec("CREATE TABLE IF NOT EXISTS web_accounts(id $pk, phone $t NOT NULL UNIQUE, pass $t NOT NULL, fullname $t NOT NULL, gender $t NOT NULL, level INT NOT NULL DEFAULT 1, acc $t NOT NULL, cid $t NOT NULL, role $t NOT NULL DEFAULT 'user', created INT NOT NULL)$tail");
   $p->exec("CREATE TABLE IF NOT EXISTS web_tickets(id $pk, user_id INT NOT NULL, subject $t NOT NULL, status $t NOT NULL, created INT NOT NULL)$tail");
   $p->exec("CREATE TABLE IF NOT EXISTS web_msgs(id $pk, ticket_id INT NOT NULL, user_id INT NOT NULL, body TEXT NOT NULL, created INT NOT NULL)$tail");
+  // درخواست‌های عضویت (گنگ / ارگان) که از داشبورد ثبت می‌شن
+  $p->exec("CREATE TABLE IF NOT EXISTS web_apps(id $pk, user_id INT NOT NULL, kind $t NOT NULL, target $t NOT NULL, body TEXT NOT NULL, status $t NOT NULL, note TEXT, created INT NOT NULL, updated INT NOT NULL)$tail");
   if (!$my) {
     // این‌ها فقط برای حالت دمو (وقتی به دیتابیس واقعی سرور وصل نیستیم) لازمن
     $p->exec("CREATE TABLE IF NOT EXISTS demo_top(id $pk, cat $t NOT NULL, name $t NOT NULL, val $t NOT NULL)");
@@ -110,7 +127,10 @@ function site_stats(): array {
       'gangCount' => (int)$p->query('SELECT COUNT(*) FROM demo_gangs')->fetchColumn(),
       'top' => $top,
       'gangs' => array_map(fn($r) => [$r[0], 'Level ' . $r[1], (int)$r[2]], $q('SELECT name,lvl,open FROM demo_gangs ORDER BY id')),
-      'depts' => array_map(fn($r) => [$r[0], (int)$r[1], (int)$r[2], (int)$r[3]], $q('SELECT name,online,total,duty FROM demo_depts ORDER BY id')),
+      'depts' => array_map(function ($d) {   // اعداد دمو: ثابت و بر پایه‌ی اسم ارگان
+        $h = crc32($d['label']); $tot = 12 + $h % 70; $on = $h % 6;
+        return [$d['label'], $on, $tot, $on > 0 ? 1 : 0, $d['group']];
+      }, CFG['depts']),
       'staff' => $q('SELECT name,role FROM demo_staff ORDER BY id'),
     ];
   }
@@ -126,12 +146,16 @@ function site_stats(): array {
   $gangs = array_map(fn($r) => [$r['name'], 'Level ' . (int)$r['level'], $r['disband'] ? 0 : 1],
     $p->query("SELECT name,level,disband FROM gangs WHERE name<>'nogang' ORDER BY level DESC LIMIT 8")->fetchAll());
 
-  $depts = [];
+  $depts = []; $jobs = array_column(CFG['depts'], 'job'); $by = [];
+  if ($jobs) {
+    $in = implode(',', array_fill(0, count($jobs), '?'));
+    $s = $p->prepare("SELECT job, COUNT(*) total, SUM(CASE WHEN last_seen >= (NOW() - INTERVAL {$win} SECOND) THEN 1 ELSE 0 END) online FROM users WHERE job IN ($in) GROUP BY job");
+    $s->execute($jobs);
+    foreach ($s->fetchAll() as $r) $by[$r['job']] = $r;
+  }
   foreach (CFG['depts'] as $d) {
-    $s = $p->prepare("SELECT COUNT(*) total, SUM(CASE WHEN last_seen >= (NOW() - INTERVAL {$win} SECOND) THEN 1 ELSE 0 END) online FROM users WHERE job=?");
-    $s->execute([$d['job']]);
-    $r = $s->fetch();
-    $depts[] = [$d['label'], (int)($r['online'] ?? 0), (int)($r['total'] ?? 0), ((int)($r['online'] ?? 0)) > 0 ? 1 : 0];
+    $r = $by[$d['job']] ?? []; $on = (int)($r['online'] ?? 0);
+    $depts[] = [$d['label'], $on, (int)($r['total'] ?? 0), $on > 0 ? 1 : 0, $d['group']];
   }
 
   $roles = CFG['roles'];
@@ -159,4 +183,25 @@ function me(): ?array {
   $s = db()->prepare('SELECT * FROM web_accounts WHERE id=?'); $s->execute([$_SESSION['uid']]);
   return $s->fetch() ?: null;
 }
-function need_login(): array { return me() ?? go('auth.php'); }
+function need_login(): array {
+  if ($u = me()) return $u;
+  $_SESSION['next'] = basename($_SERVER['SCRIPT_NAME']) . ($_SERVER['QUERY_STRING'] ? '?' . $_SERVER['QUERY_STRING'] : '');
+  go('auth.php');
+}
+function digits(string $s): string { return preg_replace('/\D/', '', strtr($s, ['۰'=>'0','۱'=>'1','۲'=>'2','۳'=>'3','۴'=>'4','۵'=>'5','۶'=>'6','۷'=>'7','۸'=>'8','۹'=>'9'])); }
+/** ساخت حساب — فقط از داشبورد ادمین یا اسکریپت create_account.php صدا زده می‌شه؛ ثبت‌نام عمومی وجود نداره. */
+function make_account(string $phone, string $pass, string $name, string $gender = 'm', string $role = 'user'): int {
+  $db = db(); $acc = random_int(100, 999) . '-' . random_int(100, 999);
+  $db->prepare('INSERT INTO web_accounts(phone,pass,fullname,gender,acc,cid,role,created) VALUES(?,?,?,?,?,?,?,?)')
+     ->execute([$phone, password_hash($pass, PASSWORD_DEFAULT), $name, $gender === 'f' ? 'مونث' : 'مذکر', $acc, '', $role === 'admin' ? 'admin' : 'user', time()]);
+  $id = (int)$db->lastInsertId();
+  $db->prepare('UPDATE web_accounts SET cid=? WHERE id=?')->execute([str_pad((string)$id, 8, '0', STR_PAD_LEFT), $id]);
+  return $id;
+}
+/** فهرست اهداف قابل‌درخواست: گنگ‌های باز + همه‌ی ارگان‌ها */
+function apply_targets(): array {
+  $st = site_stats(); $o = ['gang' => [], 'org' => []];
+  foreach ($st['gangs'] as $g) if ($g[2]) $o['gang'][] = $g[0];
+  foreach (CFG['depts'] as $d) $o['org'][$d['group']][] = $d['label'];
+  return $o;
+}

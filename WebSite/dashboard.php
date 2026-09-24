@@ -1,14 +1,20 @@
 <?php
 require __DIR__ . '/lib.php';
-$u = need_login(); $db = db(); $p = $_GET['p'] ?? 'info'; $flash = '';
+$u = need_login(); $db = db(); $p = $_GET['p'] ?? 'home'; $flash = ''; $ok = '';
 $admin = $u['role'] === 'admin';
+if (!$admin && in_array($p, ['review', 'users'], true)) $p = 'home';
 
+const APP_ST = ['pending' => 'در انتظار بررسی', 'accepted' => 'پذیرفته شد', 'rejected' => 'رد شد', 'cancelled' => 'لغو شده'];
 function ticket_of(int $id, array $u): ?array {
   $s = db()->prepare('SELECT * FROM web_tickets WHERE id=?'); $s->execute([$id]); $t = $s->fetch();
   return ($t && ($t['user_id'] == $u['id'] || $u['role'] === 'admin')) ? $t : null;
 }
 function add_msg(int $tid, int $uid, string $b): void {
   db()->prepare('INSERT INTO web_msgs(ticket_id,user_id,body,created) VALUES(?,?,?,?)')->execute([$tid, $uid, mb_substr($b, 0, 2000), time()]);
+}
+function org_group(string $label): string {
+  foreach (CFG['depts'] as $d) if ($d['label'] === $label) return CFG['org_groups'][$d['group']]['label'];
+  return '';
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -34,30 +40,121 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $p = 'settings';
     if (!password_verify($_POST['old'] ?? '', $u['pass'])) $flash = 'رمز فعلی اشتباه است.';
     elseif (strlen($_POST['new'] ?? '') < 6) $flash = 'رمز جدید حداقل ۶ کاراکتر باشد.';
-    else { $db->prepare('UPDATE web_accounts SET pass=? WHERE id=?')->execute([password_hash($_POST['new'], PASSWORD_DEFAULT), $u['id']]); $flash = 'رمز عبور تغییر کرد.'; }
+    else { $db->prepare('UPDATE web_accounts SET pass=? WHERE id=?')->execute([password_hash($_POST['new'], PASSWORD_DEFAULT), $u['id']]); $ok = 'رمز عبور تغییر کرد.'; }
+
+  } elseif ($a === 'apply') {                                     // ثبت درخواست عضویت
+    $p = 'apply'; [$kind, $target] = array_pad(explode(':', $_POST['target'] ?? '', 2), 2, '');
+    $T = apply_targets(); $valid = $kind === 'gang' ? in_array($target, $T['gang'], true)
+      : ($kind === 'org' && in_array($target, array_merge(...array_values($T['org'])), true));
+    $f = ['bg' => trim($_POST['bg'] ?? ''), 'why' => trim($_POST['why'] ?? ''), 'exp' => trim($_POST['exp'] ?? ''), 'hours' => trim($_POST['hours'] ?? '')];
+    $pend = $db->prepare("SELECT COUNT(*) FROM web_apps WHERE user_id=? AND status='pending'"); $pend->execute([$u['id']]);
+    $dup = $db->prepare("SELECT COUNT(*) FROM web_apps WHERE user_id=? AND kind=? AND target=? AND status='pending'"); $dup->execute([$u['id'], $kind, $target]);
+    $cool = $db->prepare("SELECT COUNT(*) FROM web_apps WHERE user_id=? AND kind=? AND target=? AND status='rejected' AND updated>?"); $cool->execute([$u['id'], $kind, $target, time() - 86400]);
+    if (!$valid) $flash = 'مقصد انتخاب‌شده معتبر نیست یا عضوگیری‌اش بسته است.';
+    elseif (mb_strlen($f['bg']) < 30 || mb_strlen($f['why']) < 20) $flash = 'پیش‌زمینه‌ی کاراکتر (حداقل ۳۰ حرف) و دلیل درخواست (حداقل ۲۰ حرف) رو کامل بنویس.';
+    elseif (array_sum(array_map('mb_strlen', $f)) > 4000) $flash = 'متن درخواست خیلی طولانیه.';
+    elseif ((int)$dup->fetchColumn() > 0) $flash = 'برای این مورد یه درخواست در انتظار بررسی داری.';
+    elseif ((int)$pend->fetchColumn() >= 3) $flash = 'حداکثر ۳ درخواست هم‌زمان در انتظار بررسی می‌تونی داشته باشی.';
+    elseif ((int)$cool->fetchColumn() > 0) $flash = 'درخواستت برای این مورد به‌تازگی رد شده؛ ۲۴ ساعت بعد دوباره تلاش کن.';
+    else {
+      $db->prepare("INSERT INTO web_apps(user_id,kind,target,body,status,note,created,updated) VALUES(?,?,?,?,'pending','',?,?)")
+         ->execute([$u['id'], $kind, $target, json_encode($f, JSON_UNESCAPED_UNICODE), time(), time()]);
+      go('dashboard.php?p=apps&done=1');
+    }
+  } elseif ($a === 'cancel_app') {
+    $db->prepare("UPDATE web_apps SET status='cancelled',updated=? WHERE id=? AND user_id=? AND status='pending'")->execute([time(), (int)($_POST['id'] ?? 0), $u['id']]);
+    go('dashboard.php?p=apps');
+  } elseif ($a === 'decide' && $admin) {                          // تصمیم مدیر
+    $st = ($_POST['d'] ?? '') === 'accept' ? 'accepted' : 'rejected';
+    $db->prepare("UPDATE web_apps SET status=?,note=?,updated=? WHERE id=? AND status='pending'")->execute([$st, mb_substr(trim($_POST['note'] ?? ''), 0, 500), time(), (int)($_POST['id'] ?? 0)]);
+    go('dashboard.php?p=review');
+  } elseif ($a === 'mkuser' && $admin) {                          // ساخت حساب توسط مدیر
+    $p = 'users'; $ph = digits($_POST['phone'] ?? ''); $nm = trim($_POST['fullname'] ?? ''); $pw = $_POST['pass'] ?? '';
+    $ex = $db->prepare('SELECT 1 FROM web_accounts WHERE phone=?'); $ex->execute([$ph]);
+    if (!preg_match('/^09\d{9}$/', $ph)) $flash = 'شماره موبایل باید به شکل 09xxxxxxxxx باشد.';
+    elseif (mb_strlen($nm) < 3 || mb_strlen($nm) > 40) $flash = 'نام باید بین ۳ تا ۴۰ حرف باشد.';
+    elseif (strlen($pw) < 6) $flash = 'رمز عبور حداقل ۶ کاراکتر باشد.';
+    elseif ($ex->fetch()) $flash = 'این شماره قبلاً حساب دارد.';
+    else { make_account($ph, $pw, $nm, $_POST['gender'] ?? 'm', ($_POST['role'] ?? '') === 'admin' ? 'admin' : 'user'); $ok = "حساب $nm ساخته شد."; }
+  } elseif ($a === 'role' && $admin) {
+    $id = (int)($_POST['id'] ?? 0);
+    if ($id !== (int)$u['id']) $db->prepare("UPDATE web_accounts SET role=CASE WHEN role='admin' THEN 'user' ELSE 'admin' END WHERE id=?")->execute([$id]);
+    go('dashboard.php?p=users');
   }
 }
+if (($_GET['done'] ?? '') === '1' && $p === 'apps') $ok = 'درخواستت ثبت شد؛ نتیجه‌ی بررسی همین‌جا نمایش داده می‌شه.';
 
 $mask = substr($u['phone'], 0, 4) . '***' . substr($u['phone'], -4);
 $st = ['open' => 'باز', 'answered' => 'پاسخ داده شد', 'closed' => 'بسته'];
-$nav = ['info' => 'اطلاعات من', 'tickets' => 'سیستم تیکت', 'settings' => 'تنظیمات'];
+$cnt = fn($sql, $args = []) => (function () use ($db, $sql, $args) { $s = $db->prepare($sql); $s->execute($args); return (int)$s->fetchColumn(); })();
+$myPend = $cnt("SELECT COUNT(*) FROM web_apps WHERE user_id=? AND status='pending'", [$u['id']]);
+$revPend = $admin ? $cnt("SELECT COUNT(*) FROM web_apps WHERE status='pending'") : 0;
+$I = [ // آیکون‌ها
+ 'home' => '<path d="M3 11 12 3l9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1v-9Z"/>',
+ 'info' => '<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="M14 10h4M14 14h4M6 16c.5-1.5 1.5-2 3-2s2.500.5 3 2"/>',
+ 'apply' => '<path d="M12 5v14M5 12h14"/>', 'apps' => '<path d="M9 5h10M9 12h10M9 19h10M4 5h.01M4 12h.01M4 19h.01"/>',
+ 'review' => '<path d="M9 12l2 2 4-4"/><rect x="4" y="3" width="16" height="18" rx="2"/>',
+ 'users' => '<circle cx="9" cy="8" r="3.500"/><path d="M2 20a7 7 0 0 1 14 0M17 11a3 3 0 1 0 0-6M22 20a6 6 0 0 0-4-5.600"/>',
+ 'tickets' => '<path d="M21 11.500a8.400 8.400 0 0 1-8.400 8.400 8.600 8.600 0 0 1-3.800-.9L3 20l1-5.600a8.400 8.400 0 0 1-.9-3.900A8.400 8.400 0 0 1 11.500 2 8.600 8.600 0 0 1 21 11.500Z"/>',
+ 'settings' => '<circle cx="12" cy="12" r="3"/><path d="M19.400 15a1.700 1.700 0 0 0 .3 1.800l.1.1a2 2 0 1 1-2.800 2.800l-.1-.1a1.700 1.700 0 0 0-1.800-.3 1.700 1.700 0 0 0-1 1.500V21a2 2 0 1 1-4 0v-.1a1.700 1.700 0 0 0-1.100-1.500 1.700 1.700 0 0 0-1.800.3l-.1.1a2 2 0 1 1-2.800-2.800l.1-.1a1.700 1.700 0 0 0 .3-1.800 1.700 1.700 0 0 0-1.500-1H3a2 2 0 1 1 0-4h.1a1.700 1.700 0 0 0 1.500-1.100 1.700 1.700 0 0 0-.3-1.800l-.1-.1a2 2 0 1 1 2.800-2.800l.1.1a1.700 1.700 0 0 0 1.800.3H9a1.700 1.700 0 0 0 1-1.500V3a2 2 0 1 1 4 0v.1a1.700 1.700 0 0 0 1 1.500 1.700 1.700 0 0 0 1.800-.3l.1-.1a2 2 0 1 1 2.800 2.800l-.1.1a1.700 1.700 0 0 0-.3 1.800V9a1.700 1.700 0 0 0 1.500 1H21a2 2 0 1 1 0 4h-.1a1.700 1.700 0 0 0-1.500 1Z"/>',
+];
+$nav = ['home' => 'نمای کلی', 'info' => 'کارت شهروندی', 'apply' => 'ثبت درخواست عضویت', 'apps' => 'درخواست‌های من', 'tickets' => 'پشتیبانی (تیکت)', 'settings' => 'تنظیمات'];
+$adm = ['review' => 'بررسی درخواست‌ها', 'users' => 'مدیریت حساب‌ها'];
+$ico = fn($k) => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' . $I[$k] . '</svg>';
+function app_card(array $x, bool $review = false, bool $mine = true): void {
+  $b = json_decode($x['body'], true) ?: []; $g = $x['kind'] === 'org' ? org_group($x['target']) : 'گنگ'; ?>
+  <div class="app <?= e($x['status']) ?>">
+    <div class="ahead"><h3><?= e($x['target']) ?><small><?= e($g) ?><?= $review ? ' · ' . e($x['fullname'] ?? '') : '' ?></small></h3>
+      <span class="tag <?= e($x['status']) ?>"><?= APP_ST[$x['status']] ?? '' ?></span></div>
+    <small class="mut"><?= date('Y/m/d H:i', (int)$x['created']) ?></small>
+    <details <?= $review && $x['status'] === 'pending' ? 'open' : '' ?>><summary>مشاهده‌ی متن درخواست</summary>
+      <div class="qa"><div><b>پیش‌زمینه‌ی کاراکتر</b><p><?= e($b['bg'] ?? '') ?></p></div><div><b>دلیل درخواست</b><p><?= e($b['why'] ?? '') ?></p></div>
+        <?php if (!empty($b['exp'])): ?><div><b>سوابق</b><p><?= e($b['exp']) ?></p></div><?php endif; ?>
+        <?php if (!empty($b['hours'])): ?><div><b>ساعت فعالیت روزانه</b><p><?= e($b['hours']) ?></p></div><?php endif; ?></div></details>
+    <?php if ($x['note'] !== '' && $x['note'] !== null): ?><div class="reply"><small>پاسخ مدیریت</small><?= nl2br(e($x['note'])) ?></div><?php endif; ?>
+    <?php if ($x['status'] === 'pending' && $review): ?>
+      <form method="post" class="row-actions"><?= csrf_field() ?><input type="hidden" name="a" value="decide"><input type="hidden" name="id" value="<?= (int)$x['id'] ?>">
+        <label style="flex:1;min-width:200px;margin:0"><input name="note" maxlength="500" placeholder="توضیح برای کاربر (اختیاری)"></label>
+        <button class="btn ok" name="d" value="accept">پذیرش</button><button class="btn no" name="d" value="reject">رد</button></form>
+    <?php elseif ($x['status'] === 'pending' && $mine): ?>
+      <form method="post" class="row-actions" onsubmit="return confirm('درخواست لغو بشه؟')"><?= csrf_field() ?><input type="hidden" name="a" value="cancel_app"><input type="hidden" name="id" value="<?= (int)$x['id'] ?>"><button class="btn no">لغو درخواست</button></form>
+    <?php endif; ?>
+  </div><?php
+}
 ?><!DOCTYPE html>
 <html lang="fa" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>داشبورد شهروندی | <?= e(CFG['name']) ?></title>
+<title>داشبورد شهروندی | <?= e(CFG['name']) ?></title><meta name="theme-color" content="#050505">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700;900&display=swap">
 <link rel="stylesheet" href="style.css"></head>
 <body class="dash">
-<header class="top"><a href="index.php" class="logo">U <b><?= e(CFG['name']) ?></b></a>
-  <span class="who"><?= e($u['fullname']) ?><?= $admin ? ' · ادمین' : '' ?></span></header>
-<div class="layout">
-<aside><nav>
-  <?php foreach ($nav as $k => $l): ?><a href="dashboard.php?p=<?= $k ?>" class="<?= ($p === $k || ($p === 'ticket' && $k === 'tickets')) ? 'on' : '' ?>"><?= $l ?></a><?php endforeach; ?>
-  <a href="index.php">صفحه اصلی</a><a href="<?= e(CFG['discord']) ?>" target="_blank" rel="noopener">دیسکورد</a><a href="auth.php?out=1">خروج</a>
-</nav></aside>
-<main>
+<div class="dtop"><a href="index.php" class="logo"><svg viewBox="0 0 64 64"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffe08a"/><stop offset="1" stop-color="#d18f00"/></linearGradient></defs><path d="M16 8v28a16 16 0 0 0 32 0V8" fill="none" stroke="url(#g)" stroke-width="11" stroke-linecap="round"/></svg><span><?= e(strtok(CFG['name'], ' ')) ?> <b><?= e(trim(strstr(CFG['name'], ' '))) ?></b></span></a>
+  <a class="btn" href="index.php">صفحه اصلی</a><a class="btn" href="auth.php?out=1">خروج</a></div>
+<div class="dlayout">
+<aside class="side">
+  <div class="ucard"><div class="av"><?= e(mb_substr($u['fullname'], 0, 1)) ?></div><b><?= e($u['fullname']) ?></b><small><?= e($mask) ?></small><span class="rolebadge"><?= $admin ? 'مدیر سایت' : 'شهروند' ?></span></div>
+  <div class="dnav">
+    <?php foreach ($nav as $k => $l): ?><a href="dashboard.php?p=<?= $k ?>" class="<?= ($p === $k || ($p === 'ticket' && $k === 'tickets')) ? 'on' : '' ?>"><?= $ico($k) ?><?= $l ?><?= $k === 'apps' && $myPend ? '<span class="cnt">' . $myPend . '</span>' : '' ?></a><?php endforeach; ?>
+    <?php if ($admin): ?><hr><?php foreach ($adm as $k => $l): ?><a href="dashboard.php?p=<?= $k ?>" class="<?= $p === $k ? 'on' : '' ?>"><?= $ico($k) ?><?= $l ?><?= $k === 'review' && $revPend ? '<span class="cnt">' . $revPend . '</span>' : '' ?></a><?php endforeach; endif; ?>
+  </div>
+</aside>
+<main class="dmain">
 <?php if ($flash): ?><p class="err" role="alert"><?= e($flash) ?></p><?php endif; ?>
+<?php if ($ok): ?><p class="ok-msg" role="status"><?= e($ok) ?></p><?php endif; ?>
 
-<?php if ($p === 'info'): ?>
+<?php if ($p === 'home'):
+  $tot = $cnt('SELECT COUNT(*) FROM web_apps WHERE user_id=?', [$u['id']]); $acc = $cnt("SELECT COUNT(*) FROM web_apps WHERE user_id=? AND status='accepted'", [$u['id']]);
+  $tk = $cnt("SELECT COUNT(*) FROM web_tickets WHERE user_id=? AND status<>'closed'", [$u['id']]);
+  $last = $db->prepare('SELECT * FROM web_apps WHERE user_id=? ORDER BY id DESC LIMIT 3'); $last->execute([$u['id']]); ?>
+  <h2>سلام، <span class="gt"><?= e($u['fullname']) ?></span> 👋</h2>
+  <p class="lead">از اینجا برای گنگ‌ها و ارگان‌های شهر درخواست بده و وضعیتشون رو پیگیری کن.</p>
+  <div class="kpis"><div class="kpi"><b><?= $tot ?></b><span>کل درخواست‌ها</span></div><div class="kpi"><b><?= $myPend ?></b><span>در انتظار بررسی</span></div><div class="kpi"><b><?= $acc ?></b><span>پذیرفته‌شده</span></div><div class="kpi"><b><?= $tk ?></b><span>تیکت باز</span></div></div>
+  <?php if ($admin && $revPend): ?><div class="dcardx" style="border-color:#ffc10755"><h3>🔔 <?= $revPend ?> درخواست منتظر بررسی توئه</h3><a class="btn gold" href="dashboard.php?p=review">رفتن به بررسی درخواست‌ها</a></div><?php endif; ?>
+  <div class="dcardx"><h3>شروع سریع</h3><div class="row-actions"><a class="btn pri" href="dashboard.php?p=apply">ثبت درخواست عضویت</a><a class="btn" href="join.php">دیدن گنگ‌ها و ارگان‌ها</a><a class="btn" href="dashboard.php?p=info">کارت شهروندی</a></div></div>
+  <h3 style="margin:26px 0 12px">آخرین درخواست‌ها</h3>
+  <?php $n = 0; foreach ($last as $x) { app_card($x); $n++; } if (!$n) echo '<div class="empty2">هنوز درخواستی ثبت نکردی. از «ثبت درخواست عضویت» شروع کن.</div>'; ?>
+
+<?php elseif ($p === 'info'): ?>
+  <h2>کارت شهروندی</h2><p class="lead">اطلاعات حساب و کاراکتر تو.</p>
   <section class="notice"><h2>ورود به شهر <?= e(CFG['fa']) ?> در لانچر VMP</h2>
     <p>برای ورود به شهر، اطلاعات زیر را در لانچر VMP وارد کنید:</p>
     <p class="cred"><span>نام کاربری</span> <b dir="ltr"><?= e($mask) ?></b> <span>رمز عبور</span> <b>رمز عبور همین سایت</b></p></section>
@@ -73,9 +170,55 @@ $nav = ['info' => 'اطلاعات من', 'tickets' => 'سیستم تیکت', 'se
       <div class="cid"><small>شماره شناسایی</small><b dir="ltr"><?= e($u['cid']) ?></b></div></div>
   </article>
 
+<?php elseif ($p === 'apply'): $T = apply_targets(); $sel = ($_POST['target'] ?? '') ?: (($_GET['kind'] ?? '') . ':' . ($_GET['target'] ?? '')); ?>
+  <h2>ثبت درخواست عضویت</h2><p class="lead">فرم رو با دقت پر کن؛ مدیریت درخواستت رو بررسی می‌کنه و نتیجه تو همین داشبورد نمایش داده می‌شه.</p>
+  <form method="post" class="dcardx"><?= csrf_field() ?><input type="hidden" name="a" value="apply">
+    <div class="fgrid">
+      <label class="full">می‌خوای به کجا بپیوندی؟
+        <select name="target" required>
+          <?php if ($T['gang']): ?><optgroup label="گنگ‌ها (عضوگیری باز)"><?php foreach ($T['gang'] as $g): ?><option value="gang:<?= e($g) ?>" <?= $sel === "gang:$g" ? 'selected' : '' ?>><?= e($g) ?></option><?php endforeach; ?></optgroup><?php endif; ?>
+          <?php foreach ($T['org'] as $gk => $ls): ?><optgroup label="<?= e(CFG['org_groups'][$gk]['label']) ?>"><?php foreach ($ls as $l): ?><option value="org:<?= e($l) ?>" <?= $sel === "org:$l" ? 'selected' : '' ?>><?= e($l) ?></option><?php endforeach; ?></optgroup><?php endforeach; ?>
+        </select></label>
+      <label class="full">پیش‌زمینه‌ی کاراکتر<textarea name="bg" required minlength="30" maxlength="1500" placeholder="داستان و شخصیت کاراکترت رو مختصر بنویس..."><?= e($_POST['bg'] ?? '') ?></textarea><span class="hint">حداقل ۳۰ حرف</span></label>
+      <label class="full">چرا می‌خوای عضو این مجموعه بشی؟<textarea name="why" required minlength="20" maxlength="1500"><?= e($_POST['why'] ?? '') ?></textarea><span class="hint">حداقل ۲۰ حرف</span></label>
+      <label>سوابق رول‌پلی (اختیاری)<input name="exp" maxlength="300" value="<?= e($_POST['exp'] ?? '') ?>" placeholder="مثلاً: ۳ ماه پلیس در سرور X"></label>
+      <label>ساعت فعالیت روزانه<select name="hours"><?php foreach (['کمتر از ۲ ساعت', '۲ تا ۴ ساعت', '۴ تا ۶ ساعت', 'بیشتر از ۶ ساعت'] as $h): ?><option <?= ($_POST['hours'] ?? '') === $h ? 'selected' : '' ?>><?= $h ?></option><?php endforeach; ?></select></label>
+    </div>
+    <button class="btn pri">ارسال درخواست</button>
+    <span class="hint" style="display:inline-block;margin-inline-start:12px">هر نفر حداکثر ۳ درخواست هم‌زمان می‌تونه داشته باشه.</span>
+  </form>
+
+<?php elseif ($p === 'apps'): ?>
+  <h2>درخواست‌های من</h2><p class="lead">وضعیت همه‌ی درخواست‌هایی که ثبت کردی.</p>
+  <?php $q = $db->prepare('SELECT * FROM web_apps WHERE user_id=? ORDER BY id DESC LIMIT 100'); $q->execute([$u['id']]); $n = 0;
+  foreach ($q as $x) { app_card($x); $n++; }
+  if (!$n) echo '<div class="empty2">هنوز درخواستی ثبت نکردی.<br><br><a class="btn pri" href="dashboard.php?p=apply">ثبت اولین درخواست</a></div>'; ?>
+
+<?php elseif ($p === 'review' && $admin): $f = ($_GET['s'] ?? 'pending') === 'all' ? 'all' : 'pending'; ?>
+  <h2>بررسی درخواست‌ها</h2><p class="lead">درخواست‌های عضویت گنگ‌ها و ارگان‌ها.</p>
+  <div class="seg"><button class="<?= $f === 'pending' ? 'on' : '' ?>" onclick="location='dashboard.php?p=review'">در انتظار (<?= $revPend ?>)</button><button class="<?= $f === 'all' ? 'on' : '' ?>" onclick="location='dashboard.php?p=review&s=all'">همه</button></div>
+  <?php $q = $db->query('SELECT a.*,u.fullname FROM web_apps a JOIN web_accounts u ON u.id=a.user_id ' . ($f === 'pending' ? "WHERE a.status='pending' " : '') . 'ORDER BY a.id DESC LIMIT 100'); $n = 0;
+  foreach ($q as $x) { app_card($x, true, false); $n++; }
+  if (!$n) echo '<div class="empty2">درخواستی برای نمایش نیست 🎉</div>'; ?>
+
+<?php elseif ($p === 'users' && $admin): ?>
+  <h2>مدیریت حساب‌ها</h2><p class="lead">ثبت‌نام عمومی در سایت غیرفعاله؛ حساب‌ها فقط از اینجا ساخته می‌شن.</p>
+  <form method="post" class="dcardx"><?= csrf_field() ?><input type="hidden" name="a" value="mkuser"><h3>ساخت حساب جدید</h3>
+    <div class="fgrid"><label>شماره موبایل<input name="phone" dir="ltr" inputmode="numeric" placeholder="09xxxxxxxxx" required></label>
+      <label>نام و نام خانوادگی کاراکتر<input name="fullname" maxlength="40" required></label>
+      <label>رمز عبور<input type="password" name="pass" dir="ltr" minlength="6" required autocomplete="new-password"></label>
+      <label>جنسیت<select name="gender"><option value="m">مذکر</option><option value="f">مونث</option></select></label>
+      <label>نقش<select name="role"><option value="user">شهروند</option><option value="admin">مدیر سایت</option></select></label></div>
+    <button class="btn pri">ساخت حساب</button></form>
+  <div class="dcardx" style="overflow-x:auto"><h3>حساب‌ها</h3><table class="utable"><tr><th>نام</th><th>موبایل</th><th>نقش</th><th>ساخت</th><th></th></tr>
+  <?php foreach ($db->query('SELECT id,fullname,phone,role,created FROM web_accounts ORDER BY id DESC LIMIT 200') as $x): ?>
+    <tr><td><?= e($x['fullname']) ?></td><td dir="ltr"><?= e($x['phone']) ?></td><td><?= $x['role'] === 'admin' ? '<span class="rolebadge" style="margin:0">مدیر</span>' : 'شهروند' ?></td><td><?= date('Y/m/d', (int)$x['created']) ?></td>
+      <td><?php if ((int)$x['id'] !== (int)$u['id']): ?><form method="post" style="margin:0"><?= csrf_field() ?><input type="hidden" name="a" value="role"><input type="hidden" name="id" value="<?= (int)$x['id'] ?>"><button class="btn" style="padding:4px 14px;font-size:.78rem"><?= $x['role'] === 'admin' ? 'تبدیل به شهروند' : 'ارتقا به مدیر' ?></button></form><?php endif; ?></td></tr>
+  <?php endforeach; ?></table></div>
+
 <?php elseif ($p === 'tickets'): ?>
-  <h2>سیستم تیکت</h2>
-  <form method="post" class="panel"><?= csrf_field() ?><input type="hidden" name="a" value="new">
+  <h2>پشتیبانی (تیکت)</h2><p class="lead">برای سوال یا مشکل، از اینجا تیکت بفرست.</p>
+  <form method="post" class="dcardx"><?= csrf_field() ?><input type="hidden" name="a" value="new">
     <label>موضوع<input name="subject" maxlength="120" required></label>
     <label>توضیحات<textarea name="body" rows="4" maxlength="2000" required></textarea></label>
     <button class="btn pri">ارسال تیکت</button></form>
@@ -84,22 +227,21 @@ $nav = ['info' => 'اطلاعات من', 'tickets' => 'سیستم تیکت', 'se
   <div class="list"><?php foreach ($rows as $t): ?>
     <a class="row" href="dashboard.php?p=ticket&id=<?= (int)$t['id'] ?>"><b>#<?= (int)$t['id'] ?> <?= e($t['subject']) ?></b>
       <?= $admin ? '<small>' . e($t['fullname']) . '</small>' : '' ?><span class="tag <?= e($t['status']) ?>"><?= $st[$t['status']] ?></span></a>
-  <?php endforeach; if (!$rows) echo '<p class="mut">هنوز تیکتی نساخته‌ای. از فرم بالا اولین تیکتت را بفرست.</p>'; ?></div>
+  <?php endforeach; if (!$rows) echo '<p class="mut">هنوز تیکتی نساخته‌ای.</p>'; ?></div>
 
 <?php elseif ($p === 'ticket' && ($t = ticket_of((int)($_GET['id'] ?? 0), $u))): ?>
   <h2>#<?= (int)$t['id'] ?> <?= e($t['subject']) ?> <span class="tag <?= e($t['status']) ?>"><?= $st[$t['status']] ?></span></h2>
   <?php $m = $db->prepare('SELECT m.*,u.fullname,u.role FROM web_msgs m JOIN web_accounts u ON u.id=m.user_id WHERE ticket_id=? ORDER BY m.id'); $m->execute([$t['id']]); ?>
   <div class="chat"><?php foreach ($m as $x): ?><div class="msg <?= $x['role'] === 'admin' ? 'staff' : '' ?>"><small><?= e($x['fullname']) ?> · <?= date('Y/m/d H:i', (int)$x['created']) ?></small><p><?= nl2br(e($x['body'])) ?></p></div><?php endforeach; ?></div>
   <?php if ($t['status'] !== 'closed'): ?>
-  <form method="post" class="panel"><?= csrf_field() ?><input type="hidden" name="id" value="<?= (int)$t['id'] ?>">
+  <form method="post" class="dcardx"><?= csrf_field() ?><input type="hidden" name="id" value="<?= (int)$t['id'] ?>">
     <textarea name="body" rows="3" maxlength="2000" required aria-label="پاسخ"></textarea>
-    <button class="btn pri" name="a" value="reply">ارسال پاسخ</button>
-    <button class="btn" name="a" value="close" formnovalidate>بستن تیکت</button></form>
+    <div class="row-actions" style="margin-top:10px"><button class="btn pri" name="a" value="reply">ارسال پاسخ</button><button class="btn" name="a" value="close" formnovalidate>بستن تیکت</button></div></form>
   <?php endif; ?>
 
 <?php elseif ($p === 'settings'): ?>
-  <h2>تنظیمات</h2>
-  <form method="post" class="panel"><?= csrf_field() ?><input type="hidden" name="a" value="pass">
+  <h2>تنظیمات</h2><p class="lead">امنیت حساب.</p>
+  <form method="post" class="dcardx" style="max-width:480px"><?= csrf_field() ?><input type="hidden" name="a" value="pass"><h3>تغییر رمز عبور</h3>
     <label>رمز عبور فعلی<input type="password" name="old" dir="ltr" required autocomplete="current-password"></label>
     <label>رمز عبور جدید<input type="password" name="new" dir="ltr" minlength="6" required autocomplete="new-password"></label>
     <button class="btn pri">تغییر رمز عبور</button></form>
