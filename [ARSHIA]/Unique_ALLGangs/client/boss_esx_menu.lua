@@ -73,6 +73,7 @@ function OpenBossActionsMenu()
                     {label = 'Manage Gang Members', value = 'employees'},
                     {label = 'Manage Rank Access', value = 'rankaccess'},
                     {label = 'Gang Settings', value = 'settings'},
+                    {label = 'Territory Control', value = 'territory'},
                 }
 
                 ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'boss_actions_' .. gang, {
@@ -92,6 +93,13 @@ function OpenBossActionsMenu()
                     elseif data.current.value == 'settings' then
                         menu.close()
                         OpenBossGangSettingsMenu(gang)
+                    elseif data.current.value == 'territory' then
+                        -- Defined in client/territory.lua (loaded after this
+                        -- file, but that's fine - this only runs once the
+                        -- player actually clicks it, long after every
+                        -- client script has finished loading).
+                        menu.close()
+                        OpenTerritoryBossMenu(gang)
                     end
                 end, function(data, menu)
                     menu.close()

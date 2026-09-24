@@ -414,7 +414,7 @@ SqlCheck = function()
   Houses = (Houses or {})
 
   local found_allhousing = false
-  local has_column = SqlFetch("SELECT * FROM information_schema.COLUMNS",{})
+  local has_column = SqlFetch("SELECT * FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?",{(HousingConfig and HousingConfig.AllhousingTable) or "allhousing"})
   if has_column and type(has_column) == "table" then
     for k,v in pairs(has_column) do
       if v.TABLE_NAME == ((HousingConfig and HousingConfig.AllhousingTable) or "allhousing") then
@@ -1005,7 +1005,7 @@ GetMortgageInfo = function(source,house)
 end
 
 GetFurniture = function(source,house_id)
-  if not house_id or not Houses or not Houses[house_id] then return; end
+  if not house_id or not Houses or not Houses[house_id] or not Houses[house_id].Furniture then return {}; end
   return Houses[house_id].Furniture
 end
 

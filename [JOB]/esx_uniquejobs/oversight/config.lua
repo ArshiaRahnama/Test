@@ -220,17 +220,17 @@ Config_oversight.SupplyChain = {
 Config_oversight.SupplyChainStrength = 0.5 -- 0..1: how much of the supplier's own pressure carries over
 
 -- ------------------------------------------------------------
--- Black market (the "fence"). Any watched-job worker can call the
--- fence (Command below) to sell job items for more than the legal
+-- Black market (the "fence"). A physical ped (Ped below, ox_target
+-- interaction, no command) buys job items for more than the legal
 -- price, off the books -- no tax, no judge multiplier. Every sale
 -- raises the seller's Heat; higher Heat means a higher chance the
--- sale gets flagged to marshal/judge (server/blackmarket.lua). The
--- fence is only open on a random cycle, so it's never a guaranteed
--- income source -- it's a standing temptation, not a shop.
+-- sale gets flagged to marshal/judge (server/blackmarket.lua). He's
+-- only open for business on a random cycle -- his own idle animation
+-- and the marker above his head show which -- so it's never a
+-- guaranteed income source, it's a standing temptation to go find.
 -- ------------------------------------------------------------
 Config_oversight.BlackMarket = {
 	Enabled = true,
-	Command = 'fence',
 	BonusMult = 1.35,             -- pays 35% more than the current legal (market-adjusted) price
 	HeatPerSale = 18,             -- 0-100 meter, per identifier, memory-only (resets on restart, like a wanted level)
 	HeatCap = 100,
@@ -253,6 +253,20 @@ Config_oversight.BlackMarket = {
 		clothe = 1500, essence = 300, packaged_plank = 1200, packaged_chicken = 200,
 		iron = 12000, gold = 20000, diamond = 5000,
 		mahigoli = 800, ghezelala = 1100, hamoor = 1000, salomon = 600, meygoo = 850, jolbak = 300,
+	},
+	-- A physical fence -- no command, find him and target him (ox_target,
+	-- already a dependency of this resource). The Coords below are a
+	-- generic, out-of-the-way vanilla-map spot (the open storm drain on
+	-- Elysian Island) chosen specifically because it's unlikely to be
+	-- built over by a custom MLO -- if it clips into something on your
+	-- map, this is the one line to move.
+	Ped = {
+		Model = 's_m_y_dealer_01',           -- GTA's classic hoodie street-dealer ped
+		Coords = vector4(1013.65, -3149.35, 5.90, 130.0),
+		ScenarioOpen = 'WORLD_HUMAN_SMOKING',           -- relaxed -- he's open for business
+		ScenarioClosed = 'WORLD_HUMAN_STAND_IMPATIENT', -- checking a watch, arms crossed -- not today
+		MarkerDistance = 20.0,        -- the open/closed marker only renders this close (no map-wide spoiler)
+		PollSeconds = 12,             -- how often nearby clients re-check open/closed
 	},
 }
 

@@ -107,7 +107,7 @@ end
 
 RegisterNetEvent('oilrig:client:begin', function()
     if rigBlip and DoesBlipExist(rigBlip) then RemoveBlip(rigBlip) end
-    rigBlip = addBlip(C.middleArea, 851, 1, 'Oil Rig')
+    rigBlip = addBlip(C.middleArea, 59, 1, 'Oil Rig') -- radar_heist
     SetNewWaypoint(C.middleArea.x, C.middleArea.y)
     notify(C.strings.heist_info)
     watchArrival()
@@ -418,34 +418,16 @@ CreateThread(function()
 end)
 
 -- ------------------------------------------------------------------
--- Legendary Mode: hall-of-fame board. Pure DrawMarker (type 6 -- the
--- exact marker type Config.Rob.Marker already uses for every robbery
--- marker on this server, so it's proven to render) + floating 3D text.
--- No CreateObject/prop model involved anywhere, so there's no risk of
--- the kind of "invalid id" bug a guessed prop hash or blip sprite can
--- cause -- these are the same handful of natives every rob marker here
--- already relies on.
+-- Legendary Mode: hall-of-fame board. A real ped, interacted via
+-- ox_target (same way every other interaction point in this heist
+-- works) instead of always-on 3D world text -- the constant DrawText3D
+-- overlapped and became unreadable at a distance/angle. Interacting
+-- prints a clean, formatted message straight into the player's own
+-- chat instead.
 -- ------------------------------------------------------------------
 local LG = C.legendary
 local LegendaryState = { available = false, nextAvailableText = '', holder = nil }
-
-local function draw3DText(coords, lines, scale)
-    local onScreen, sx, sy = World3dToScreen2d(coords.x, coords.y, coords.z)
-    if not onScreen then return end
-    SetTextScale(scale or 0.35, scale or 0.35)
-    SetTextFont(4)
-    SetTextProportional(true)
-    SetTextColour(255, 255, 255, 215)
-    SetTextDropshadow(0, 0, 0, 0, 255)
-    SetTextEdge(2, 0, 0, 0, 150)
-    SetTextOutline()
-    SetTextCentre(true)
-    for i, line in ipairs(lines) do
-        BeginTextCommandDisplayText('STRING')
-        AddTextComponentSubstringPlayerName(line)
-        EndTextCommandDisplayText(sx, sy + (i - 1) * 0.025)
-    end
-end
+local boardPed = nil
 
 local function formatMoney(n)
     n = math.floor(n or 0)
@@ -462,28 +444,52 @@ RegisterNetEvent('oilrig:client:legendarySync', function(state)
     LegendaryState = state or LegendaryState
 end)
 
-CreateThread(function()
-    while true do
-        local coords = LG.board.coords
-        local dist = #(GetEntityCoords(PlayerPedId()) - coords)
-        if dist <= LG.board.renderDistance then
-            DrawMarker(Config.Rob.Marker.Type, coords.x, coords.y, coords.z - 1.0,
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.2, 1.2, 1.5, 255, 195, 0, 180, false, true, 2, false, false, false, false)
-
-            local lines = { LG.strings.board_title }
-            if LegendaryState.holder then
-                lines[#lines + 1] = '🏆 ' .. tostring(LegendaryState.holder.gangLabel or LegendaryState.holder.gang)
-                lines[#lines + 1] = 'Ta $' .. formatMoney(LegendaryState.holder.amountMax) .. ' -- ' .. tostring(LegendaryState.holder.dateText or '')
-            else
-                lines[#lines + 1] = LG.strings.board_empty
-            end
-            lines[#lines + 1] = LegendaryState.available and LG.strings.board_available
-                or ('Bar-gardi Badi: ' .. tostring(LegendaryState.nextAvailableText or ''))
-
-            draw3DText(coords + vector3(0.0, 0.0, 1.6), lines, 0.35)
-            Wait(0)
-        else
-            Wait(1500)
-        end
+local function showLegendaryBoard()
+    local body
+    if LegendaryState.holder then
+        body = ('🏆 %s\nJayeze: Ta $%s\nTarikh: %s\n%s'):format(
+            tostring(LegendaryState.holder.gangLabel or LegendaryState.holder.gang),
+            formatMoney(LegendaryState.holder.amountMax),
+            tostring(LegendaryState.holder.dateText or ''),
+            LegendaryState.available and LG.strings.board_available
+                or ('Bargardi Badi: ' .. tostring(LegendaryState.nextAvailableText or ''))
+        )
+    else
+        body = LG.strings.board_empty .. '\n' .. (LegendaryState.available and LG.strings.board_available
+            or ('Bargardi Badi: ' .. tostring(LegendaryState.nextAvailableText or '')))
     end
+
+    TriggerEvent('chat:addMessage', {
+        color = { 255, 195, 0 },
+        multiline = true,
+        args = { '🛢️ ' .. LG.strings.board_title, body },
+    })
+end
+
+CreateThread(function()
+    local hash = GetHashKey(LG.board.ped)
+    if loadModel(hash) then
+        local c = LG.board.coords
+        boardPed = CreatePed(4, hash, c.x, c.y, c.z - 1.0, LG.board.heading or 0.0, false, true)
+        FreezeEntityPosition(boardPed, true)
+        SetEntityInvincible(boardPed, true)
+        SetBlockingOfNonTemporaryEvents(boardPed, true)
+        TaskStartScenarioInPlace(boardPed, 'WORLD_HUMAN_CLIPBOARD', 0, true)
+        SetModelAsNoLongerNeeded(hash)
+
+        exports.ox_target:addLocalEntity(boardPed, {
+            {
+                name = 'oilrig_legendary_board',
+                icon = 'fa-solid fa-trophy',
+                label = LG.strings.board_target,
+                distance = 2.5,
+                onSelect = showLegendaryBoard,
+            },
+        })
+    end
+end)
+
+AddEventHandler('onResourceStop', function(res)
+    if res ~= GetCurrentResourceName() then return end
+    if boardPed and DoesEntityExist(boardPed) then DeleteEntity(boardPed) end
 end)

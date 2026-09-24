@@ -15,6 +15,33 @@ Config.PlateLetters  = 1
 Config.PlateNumbers  = 1
 Config.PlateUseSpace = true
 
+-- ---------------------------------------------------------------------------
+-- Modern showroom UI (new)
+-- ---------------------------------------------------------------------------
+Config.UseModernShopUI = true -- false = fall back to the old text menu (OpenShopMenu)
+
+Config.TestDrive = {
+	Enable       = true,
+	Duration     = 120,  -- seconds the player gets to drive before it's recalled
+	MaxDistance  = 350.0, -- driving further than this from the showroom ends the test drive early
+	EndKey       = 177,   -- INPUT_FRONTEND_DELETE ("Backspace") - manually end the test drive
+}
+
+Config.Financing = {
+	Enable                 = true,
+	MinDownPaymentPercent  = 20,  -- % of the (post trade-in) price required up front
+	InterestPercent        = 12,  -- added on top of the remaining balance
+	Installments           = 4,   -- number of installments the remaining balance is split into
+	PaymentIntervalHours   = 24,  -- real-time hours between each installment charge
+	MaxMissedPayments      = 3,   -- consecutive missed installments before repossession
+	CheckIntervalMinutes   = 15,  -- how often the server checks for due installments
+}
+
+Config.TradeIn = {
+	Enable        = true,
+	PayoutPercent = 50, -- % of the traded-in vehicle's catalog price credited toward the new one
+}
+
 Config.Zones = {
 
 	ShopEntering = {

@@ -764,6 +764,9 @@
               break;
               case "display":
                 SetAlpha(event.data.enabled?1:0)
+                if (event.data.enabled == false){
+                  Overlay(false,"")
+                }
               break;
               case "focus":
                 Focus(event.data)

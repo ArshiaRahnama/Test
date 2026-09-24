@@ -25,7 +25,6 @@ Config.OilRig.arriveRadius = 100.0
 -- (Config.Rob.Robs.OilRig_1.position) -- the marker itself, from the
 -- generic loop in client.lua, is what actually handles the interaction.
 Config.OilRig.startPeds = {
-    { pos = vector3(346.798, 3405.46, 36.8516), heading = 21.85,  ped = 's_m_m_highsec_01' },
     { pos = vector3(347.701, 3406.21, 36.4559), heading = 111.78, ped = 's_m_m_highsec_02' },
     { pos = vector3(345.771, 3405.33, 36.4573), heading = 292.42, ped = 's_m_m_fiboffice_02' },
 }
@@ -193,9 +192,12 @@ Config.OilRig.legendary = {
     announceCheckEvery   = 5 * 60, -- seconds between checks for "did the week just turn over"
 
     board = {
-        -- Legion Square, in front of City Hall -- adjust to whatever
-        -- plaza/landmark you'd rather use, it's just a coordinate.
-        coords = vector3(199.7, -933.3, 30.7),
+        -- Right next to the Oil Rig start marker/depot (346.798, 3405.46),
+        -- a few meters back so it doesn't sit on top of the marker itself.
+        -- Nudge this if it clips into the wall/steps on your install.
+        coords = vector3(343.4, 3403.2, 36.85),
+        heading = 110.0,
+        ped = 'a_m_m_business_01', -- the "board keeper" -- swap for any ped model you like
         renderDistance = 60.0,
     },
 
@@ -206,6 +208,7 @@ Config.OilRig.legendary = {
         board_title      = 'FATEHAN-E OIL RIG ASTOOREI',
         board_empty      = 'Hanooz Hich Gang-i In Sereghat Ra Nabord-e. Avalin Nafar Bash!',
         board_available  = 'HAL-E HAZER FAAL AST',
+        board_target     = 'Mashahede Board-e Afsanei',
     },
 }
 

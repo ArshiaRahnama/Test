@@ -26,3 +26,23 @@ UPDATE `owned_vehicles` SET `engine` = 1000 WHERE `engine` IS NULL OR `engine` =
 UPDATE `owned_vehicles` SET `body`   = 1000 WHERE `body`   IS NULL OR `body`   = 0;
 UPDATE `owned_vehicles` SET `fuel`   = 100  WHERE `fuel`   IS NULL OR `fuel`   = 0;
 UPDATE `owned_vehicles` SET `stored` = 1    WHERE `stored` IS NULL;
+
+-- New: installment/finance loans created by the modern showroom UI (client/shop_nui.lua +
+-- server/shop_nui.lua). One row per active loan, looked up by plate for billing and by
+-- owner for the player's own loan list. Safe to run more than once.
+CREATE TABLE IF NOT EXISTS `vehicleshop_financing` (
+	`id`                 INT NOT NULL AUTO_INCREMENT,
+	`owner`              VARCHAR(60) NOT NULL,
+	`plate`              VARCHAR(12) NOT NULL,
+	`vehicle_name`       VARCHAR(60) NOT NULL,
+	`total_price`        INT NOT NULL,
+	`remaining_balance`  INT NOT NULL,
+	`installment_amount` INT NOT NULL,
+	`installments_left`  INT NOT NULL,
+	`missed_payments`    INT NOT NULL DEFAULT 0,
+	`next_due`           DATETIME NOT NULL,
+	`created_at`         DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	PRIMARY KEY (`id`),
+	KEY `owner` (`owner`),
+	KEY `plate` (`plate`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

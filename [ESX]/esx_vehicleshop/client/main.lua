@@ -901,14 +901,8 @@ local Keys = {
 
 			  if IsControlJustReleased(0, Keys['E']) then
 				  if CurrentAction == 'shop_menu' then
-					  if Config.LicenseEnable then
-
-
-								  OpenShopMenu()
-
-
-
-
+					  if Config.UseModernShopUI then
+						  OpenShopMenuNUI()
 					  else
 						  OpenShopMenu()
 					  end

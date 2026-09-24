@@ -46,7 +46,7 @@ CreateThread(function()
 end)
 
 -- open/closed cycle. Deliberately no player-facing announcement when
--- it flips -- workers only find out by actually calling the fence, and
+-- it flips -- workers only find out by actually finding him and
 -- overseers only see it via the (out-of-character) Job Watch screen or
 -- the Discord log, never a toast that would spoil the mystery.
 local function randRange(a, b) return math.random(a * 60, b * 60) end
@@ -142,6 +142,15 @@ AddEventHandler('esx_uniquejobs:oversight:blackmarketSell', function(itemName, a
 			})
 		end
 	end
+end)
+
+-- ungated on purpose: any player standing next to the fence ped can see
+-- whether he's open the same way they'd see it in-character (the ped's
+-- own idle animation), so the client marker/scenario below just mirrors
+-- that. The gated getBlackMarketStatus below stays judge/marshal-only
+-- because IT'S the out-of-character staff screen (Ov.OpenBlackMarketInfo).
+ESX.RegisterServerCallback('esx_uniquejobs:oversight:blackmarketIsOpen', function(source, cb)
+	cb(IsOpen)
 end)
 
 ESX.RegisterServerCallback('esx_uniquejobs:oversight:getBlackMarketStatus', function(source, cb)

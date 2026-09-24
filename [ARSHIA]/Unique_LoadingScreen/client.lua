@@ -6,7 +6,7 @@ local function closeLoadscreen()
     if closed then return end
     closed = true
     SendLoadingScreenMessage(json.encode({ eventName = 'unique:closing' }))
-    Wait(900)
+    Wait(700)
     ShutdownLoadingScreenNui()
 end
 

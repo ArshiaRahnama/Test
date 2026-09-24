@@ -579,13 +579,14 @@ GetPlayerCash = function()
   if FurniConfig.UsingESX then
     PlayerData = GetPlayerData()
     if FurniConfig["UsingESX_V1.2.0"] then
-      for k,v in pairs(PlayerData.accounts) do
+      for k,v in pairs(PlayerData.accounts or {}) do
         if v.name == FurniConfig.CashAccountName then
-          return v.money
+          return v.money or 0
         end
       end
+      return 0
     else
-      return PlayerData.money
+      return PlayerData.money or 0
     end
   else
     -- NON-ESX USERS ADD HERE
@@ -595,12 +596,23 @@ end
 GetPlayerBank = function()
   if FurniConfig.UsingESX then
     PlayerData = GetPlayerData()
-    for k,v in pairs(PlayerData.accounts) do
-      if v.name == FurniConfig.BankAccountName then
-        return v.money
+    if FurniConfig["UsingESX_V1.2.0"] then
+      for k,v in pairs(PlayerData.accounts or {}) do
+        if v.name == FurniConfig.BankAccountName then
+          return v.money or 0
+        end
       end
+      return 0
+    else
+      -- NOTE: this server's essentialmode does not include "bank" in the
+      -- client-side esx:playerLoaded payload (only "money"), so
+      -- PlayerData.bank is never actually populated client-side. This is
+      -- only used as a client-side pre-check anyway (the real check/deduct
+      -- happens server-side in server/furni/main.lua), so falling back to 0
+      -- here is safe - worst case the "afford via bank" pre-check is
+      -- conservative, it never lets a purchase through it shouldn't.
+      return PlayerData.bank or 0
     end
-    return 0
   else
     -- NON-ESX USERS ADD HERE
   end

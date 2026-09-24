@@ -473,6 +473,7 @@ SpawnHouse = function(d)
   end
 
   local furni = Callback("Allhousing:GetFurniture",d.Id)
+  if type(furni) ~= "table" then furni = {}; end
   local pos   = vector3(d.Entry.x,d.Entry.y,d.Entry.z)
 
   for k,v in pairs(furni) do

@@ -17,13 +17,15 @@
     if (U.refreshStatus) U.refreshStatus();
   }
 
+  const fmt = (t) => t.replace(/`([^`]+)`/g, '<code class="cmd">$1</code>');
+
   function fade(el, fn) { el.style.opacity = "0"; setTimeout(() => { fn(); el.style.opacity = "1"; }, 250); }
 
   function renderFeature(animate = true) {
     const list = U.dict().features, f = list[featIdx % list.length];
     const box = document.querySelector(".showcase");
     const set = () => {
-      $("featTitle").textContent = f[0]; $("featDesc").textContent = f[1];
+      $("featTitle").textContent = f[0]; $("featDesc").innerHTML = fmt(f[1]);
       $("featDots").innerHTML = list.map((_, i) => `<i class="${i === featIdx % list.length ? "on" : ""}"></i>`).join("");
     };
     if (!animate) return set();
@@ -31,7 +33,7 @@
   }
 
   function renderTip(animate = true) {
-    const list = U.dict().tipList, set = () => { $("tipCard").textContent = list[tipIdx % list.length]; };
+    const list = U.dict().tipList, set = () => { $("tipCard").innerHTML = fmt(list[tipIdx % list.length]); };
     animate ? fade($("tipCard"), set) : set();
   }
 
@@ -65,7 +67,20 @@
     safeSet("unique_ls_lite", on ? "1" : "0");
   }
 
+  // Near the end FiveM is busy streaming the world: strip everything heavy so the game thread isn't starved.
+  function boost() {
+    if (document.body.classList.contains("is-boosted")) return;
+    document.body.classList.add("lite", "is-boosted");
+    document.dispatchEvent(new Event("unique:boost"));
+  }
+
   function init() {
+    window.addEventListener("message", (e) => {
+      const d = e.data;
+      if (!d || typeof d !== "object") return;
+      if (d.eventName === "loadProgress" && Number(d.loadFraction) >= (C.boostAt || 0.85)) boost();
+      if (d.eventName === "unique:closing") boost();
+    });
     U.onLang.push(applyI18n);
     $("langBtn").addEventListener("click", () => U.setLang(U.lang === "fa" ? "en" : "fa"));
     $("liteBtn").addEventListener("click", () => setLite(!document.body.classList.contains("lite")));
@@ -75,6 +90,34 @@
     setLite(saved === null ? (navigator.hardwareConcurrency || 8) <= 4 : saved === "1");
 
     applyI18n();
+
+    const t0 = Date.now();
+    setInterval(() => {
+      const sec = Math.floor((Date.now() - t0) / 1000);
+      $("timer").textContent = String((sec / 60) | 0).padStart(2, "0") + ":" + String(sec % 60).padStart(2, "0");
+    }, 1000);
+
+    const G = C.gallery || [];
+    if (G.length) {
+      const g = $("gallery");
+      g.innerHTML = G.map((src, i) => `<img src="${src}" alt="" class="${i ? "" : "on"}">`).join("");
+      let gi = 0;
+      setInterval(() => {
+        const old = g.children[gi];
+        old.classList.remove("on"); old.classList.add("prev");
+        setTimeout(() => old.classList.remove("prev"), 1900);
+        gi = (gi + 1) % G.length; g.children[gi].classList.add("on");
+      }, C.galleryMs || 8000);
+    }
+
+    const stepFeat = (d) => { featIdx = (featIdx + d + 1000 * U.dict().features.length) ; renderFeature(); };
+    document.querySelector(".showcase").addEventListener("click", () => stepFeat(1));
+    $("tipCard").parentElement.addEventListener("click", () => { tipIdx++; renderTip(); });
+    document.addEventListener("keydown", (e) => {
+      if (e.code === "ArrowRight") stepFeat(1);
+      if (e.code === "ArrowLeft") stepFeat(-1);
+    });
+
     setInterval(() => { featIdx++; renderFeature(); }, C.showcaseMs);
     setInterval(() => { tipIdx++; renderTip(); }, C.tipsMs);
     refreshStats(); setInterval(refreshStats, C.statsRefreshMs);

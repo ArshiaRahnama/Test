@@ -278,6 +278,7 @@ LoadInterior = function(d)
   InsideHouse.Extras  = {}
 
   local furni = Callback("Allhousing:GetFurniture",d.Id)
+  if type(furni) ~= "table" then furni = {}; end
   for k,v in pairs(furni) do
     local objHash = GetHashKey(v.model)
     LoadModel(objHash)

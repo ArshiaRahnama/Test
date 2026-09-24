@@ -15,7 +15,8 @@ server_scripts {
 	'locales/sv.lua',
 	'locales/pl.lua',
 	'config.lua',
-	'server/main.lua'
+	'server/main.lua',
+	'server/shop_nui.lua'
 }
 
 client_scripts {
@@ -28,7 +29,16 @@ client_scripts {
 	'locales/pl.lua',
 	'config.lua',
 	'client/utils.lua',
-	'client/main.lua'
+	'client/main.lua',
+	'client/shop_nui.lua'
+}
+
+ui_page 'html/index.html'
+
+files {
+	'html/index.html',
+	'html/style.css',
+	'html/app.js'
 }
 
 export 'GeneratePlate'

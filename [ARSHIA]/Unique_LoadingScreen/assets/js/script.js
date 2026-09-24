@@ -88,7 +88,7 @@ document.addEventListener("DOMContentLoaded", () => {
     statusText: document.getElementById("statusText"),
     tipText: document.getElementById("tipText"),
 
-    video: document.querySelector(".bg-video"),
+    video: document.querySelector(".bg-audio"),
 
     playBtn: document.getElementById("playBtn"),
     muteBtn: document.getElementById("muteBtn"),
@@ -106,7 +106,7 @@ document.addEventListener("DOMContentLoaded", () => {
     ["progressPercent", el.progressText],
     ["statusText", el.statusText],
     ["tipText", el.tipText],
-    ["bg-video", el.video],
+    ["bg-audio", el.video],
     ["muteBtn", el.muteBtn],
     ["volumeSlider", el.volume],
   ];
@@ -418,7 +418,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     el.video.play().catch(() => {
-      console.warn("[Unique Loading] Silent video autoplay was blocked.");
+      console.warn("[Unique Loading] Silent audio autoplay was blocked.");
     });
 
     document.addEventListener("pointerdown", unlockAudio, { once: true });
@@ -502,7 +502,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const stage = STAGES[state.status] || STAGES.CONNECTING;
     const hints = stage.hints || [];
 
-    if (hints.length === 0) return;
+    if (hints.length === 0 || Date.now() < (state.logUntil || 0)) return;
 
     let nextHint = hints[Math.floor(Math.random() * hints.length)];
 
@@ -591,6 +591,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!clean) return;
 
     lastLogAt = now;
+    state.logUntil = now + 2600;
     clearTimeout(state.hintTimer);
     el.tipText.textContent = clean;
     state.hintTimer = window.setTimeout(updateHint, 2600);

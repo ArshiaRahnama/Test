@@ -36,11 +36,18 @@ SetPlayerJob = function(job)
 end
 
 GetPlayerCash = function()
-  return PlayerData.money
+  PlayerData = GetPlayerData()
+  return (PlayerData and PlayerData.money) or 0
 end
 
 GetPlayerBank = function()
-  return PlayerData.bank
+  PlayerData = GetPlayerData()
+  -- NOTE: this server's essentialmode does not include "bank" in the
+  -- client-side esx:playerLoaded payload, so PlayerData.bank is never
+  -- actually populated client-side. This is only used as a client-side
+  -- pre-check anyway (money is always deducted/validated server-side),
+  -- so falling back to 0 here is safe rather than crashing.
+  return (PlayerData and PlayerData.bank) or 0
 end
 
 CheckForLockpick = function()

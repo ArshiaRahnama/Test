@@ -29,6 +29,40 @@ html[lang="fa"] *, html[lang="fa"] *::before { font-family: "Peyda", "Inter", Ta
 
 body.is-closing .container, body.is-closing .bg-overlay { opacity: 0; transition: opacity .8s ease; }
 body.lite .bg-particles, body.lite .bg-glow, body.lite .bg-noise, body.lite .bg-light { display: none; }
-body.lite * { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; animation-duration: 0s !important; }
+body.lite * { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
 @media (prefers-reduced-motion: reduce) { .bg-particles, .bg-glow { display: none; } }
 @media (max-width: 900px) { .center { display: none; } .top-right .chip-btn:last-child { display: none; } }
+
+.gallery { position: absolute; inset: 0; overflow: hidden; background: #050505; }
+.gallery img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transform: scale(1.02); transition: opacity 1.7s ease; will-change: opacity, transform; }
+.gallery img.on { opacity: 1; z-index: 2; }
+.gallery img.on, .gallery img.prev { animation: kenburns 13s ease-out forwards; }
+.gallery img:nth-child(even) { --kx: 1.6%; --ky: -1%; }
+@keyframes kenburns { to { transform: scale(1.13) translate(var(--kx, -1.6%), var(--ky, 1%)); } }
+body.lite .gallery img.on, body.lite .gallery img.prev { animation: none; }
+.showcase, .card { cursor: none; }
+.game { position: fixed; z-index: 60; left: 50%; top: 46%; transform: translate(-50%, -50%); padding: 14px; border-radius: var(--radius);
+  background: rgba(8,8,8,.86); border: 1px solid var(--border-hover); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 30px 90px rgba(0,0,0,.6), 0 0 40px var(--primary-glow); }
+.game canvas { display: block; width: min(400px, 80vw); height: auto; border-radius: 12px; background: #0b0b0b; cursor: none; }
+.game p { margin-top: 10px; font-size: 12px; color: var(--text-muted); text-align: center; unicode-bidi: plaintext; }
+body.lite * { animation-iteration-count: 1 !important; }
+.kbd { padding: 1px 7px; border-radius: 6px; border: 1px solid var(--border-hover); font-size: 11px; }
+.cmd { direction: ltr; unicode-bidi: isolate; white-space: nowrap; display: inline-block; color: var(--primary); font-family: Consolas, "Courier New", monospace !important; }
+
+/* readable UI over any photo */
+.gallery::after { content: ""; position: absolute; inset: 0; z-index: 3; pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(0,0,0,.6), transparent 24%),
+    linear-gradient(0deg, rgba(0,0,0,.82), transparent 38%),
+    linear-gradient(90deg, rgba(0,0,0,.5), rgba(0,0,0,.08) 45%, rgba(0,0,0,.5)); }
+.card, .showcase, .chip, .loading-hud, .music-player, .socials { background: rgba(10,10,10,.62); }
+.card p, .showcase p, .loading-hint, .music-title { color: rgba(255,255,255,.82); }
+h1, h2, h3, .title p, .loading-status { text-shadow: 0 2px 14px rgba(0,0,0,.65); }
+
+/* anti-lag / no black screen at the end of loading */
+body.is-boosted .game { display: none !important; }
+body.is-boosted .gallery img { transition: none; }
+body.is-boosted * { animation: none !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+body.is-closing, html:has(body.is-closing) { background: transparent !important; }
+body.is-closing .gallery, body.is-closing .bg-overlay, body.is-closing .container { opacity: 0; transition: opacity .6s ease; }

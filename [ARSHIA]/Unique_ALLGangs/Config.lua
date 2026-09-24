@@ -397,4 +397,166 @@ Config.LogCategories = {
     'Boss Action',
     'Garage',
     'Locker',
+    'Territory',
+}
+
+-------------------------------------------------------------------
+-- Territory Control add-on (server/territory.lua, client/territory.lua)
+-- Splits the map into a handful of fixed zones gangs can capture by
+-- physically holding them (alone) for CaptureSeconds. Owned zones pay
+-- dirty money (blackmoney) into the gang every IncomeIntervalMinutes,
+-- which has to go through the SAME washMoney flow as any other dirty
+-- money (server/boss.lua) - so more territory naturally means more
+-- laundering, which is what feeds Config.FederalCase.WashMoneyThreshold
+-- below. A random zone is flagged "vulnerable" every so often
+-- (faster to capture, and the owner gets warned) to keep a reason to
+-- keep checking back even outside active wars. Everything about WHO
+-- currently controls a zone is decided server-side only, from
+-- distance-validated client pings (see Territory:Ping) - a client can
+-- never claim a zone by lying about its own position or a timer.
+--
+-- The coordinates below are generic Los Santos landmarks and are only
+-- placeholders - replace `coord` for each zone with real spots on
+-- YOUR map/server before going live.
+-------------------------------------------------------------------
+Config.Territory = {
+    Enabled = true,
+
+    Zones = {
+        { key = 'grove_street',        label = 'خیابان گروو',            coord = vector3(-170.0,  -1609.0,  34.0), radius = 40.0, tier = 1 },
+        { key = 'vespucci_beach',      label = 'ساحل وسپوچی',            coord = vector3(-1180.0, -1520.0,   4.0), radius = 45.0, tier = 1 },
+        { key = 'la_mesa_industrial',  label = 'منطقه صنعتی لامسا',      coord = vector3(850.0,   -1940.0,  31.0), radius = 50.0, tier = 2 },
+        { key = 'del_perro_pier',      label = 'اسکله دل‌پرو',           coord = vector3(-1850.0, -1230.0,  13.0), radius = 45.0, tier = 2 },
+        { key = 'sandy_shores',        label = 'سندی شورز',              coord = vector3(1961.0,   3740.0,  32.0), radius = 55.0, tier = 2 },
+        { key = 'paleto_bay',          label = 'خلیج پالتو',             coord = vector3(-448.0,   6008.0,  31.0), radius = 60.0, tier = 3 },
+    },
+
+    TierIncome = { -- dirty money ($) paid per zone every IncomeIntervalMinutes
+        [1] = 1500,
+        [2] = 3000,
+        [3] = 6000,
+    },
+    IncomeIntervalMinutes = 60,
+
+    CaptureSeconds          = 240, -- must be the ONLY gang present in the zone for this long, continuously
+    VulnerableCaptureSeconds = 120, -- faster capture time while a zone is flagged vulnerable
+    TickIntervalMs           = 5000, -- how often the server evaluates who's holding each zone
+    PingStaleSeconds         = 12,   -- a client ping older than this no longer counts as "present"
+    MaxZonesPerGang          = 3,    -- a gang stops being able to make progress on new zones past this
+
+    VulnerableEventMinMinutes = 90,  -- a random owned zone goes "vulnerable" every 90-180 min
+    VulnerableEventMaxMinutes = 180,
+    VulnerableWindowSeconds   = 600, -- how long that window lasts
+
+    -- The regular 6 zones above stay exactly as they were - everything
+    -- below is additive, off a single Enabled switch each, so any of
+    -- these 6 systems can be turned off independently without touching
+    -- the base capture loop at all.
+
+    -------------------------------------------------------------------
+    -- 1) UPGRADES - a boss spends the gang's CLEAN money (not the
+    -- territory blackmoney itself - has to actually be laundered
+    -- first) to permanently improve a zone THEY currently own.
+    -- Upgrades belong to the zone, not the gang - losing the zone to
+    -- someone else wipes them (see CaptureZone), so holding a zone
+    -- long-term is what pays off, not just owning it briefly.
+    -------------------------------------------------------------------
+    Upgrades = {
+        Enabled = true,
+        alarm = {
+            label = 'سیستم هشدار', maxLevel = 1, cost = { 5000 },
+            -- effect handled directly in the tick: level 1 = instant
+            -- notify to the owner the moment a rival gang enters, not
+            -- just when they finish capturing.
+        },
+        production = {
+            label = 'خط تولید', maxLevel = 3, cost = { 8000, 15000, 25000 },
+            incomeBonusPerLevel = 0.25, -- +25% zone income per level (stacks)
+        },
+        fortify = {
+            label = 'استحکامات', maxLevel = 3, cost = { 8000, 15000, 25000 },
+            captureTimeBonusPerLevel = 0.20, -- +20% capture time needed for a challenger, per level (stacks)
+        },
+    },
+
+    -------------------------------------------------------------------
+    -- 2) ESPIONAGE - scouting is low-risk/low-reward (peek at a rival
+    -- zone's headcount + upgrades), sabotage is higher-risk (temporary
+    -- income hit on a rival zone without having to fight for it) - a
+    -- lever for smaller gangs who can't win a straight fight.
+    -------------------------------------------------------------------
+    Scout = {
+        Enabled = true,
+        Cooldown = 600,          -- per player, seconds
+        DetectionChance = 25,    -- % chance the target gang gets notified someone scouted them
+        RequireInsideZone = true,
+    },
+    Sabotage = {
+        Enabled = true,
+        Cooldown = 3600,             -- per zone per gang, seconds
+        DetectionChance = 40,        -- % chance the target gang is told who did it
+        IncomeReductionPercent = 50, -- -50% income from that zone while active
+        DurationSeconds = 7200,      -- 2 hours
+        RequireInsideZone = true,
+    },
+
+    -------------------------------------------------------------------
+    -- 3) CATCH-UP - a gang well below the average zones-per-gang (or
+    -- holding zero) captures faster, so one dominant gang can't lock
+    -- everyone else out permanently. Never affects DEFENDING your own
+    -- zone, only how fast you can take a new one.
+    -------------------------------------------------------------------
+    CatchUp = {
+        Enabled = true,
+        ZeroZonesMultiplier = 0.5,     -- 50% of normal capture time while owning 0 zones
+        BelowAverageMultiplier = 0.75, -- 75% while owning fewer than the average
+    },
+
+    -------------------------------------------------------------------
+    -- 4) BOSS ZONE - a 7th, unowned zone that only opens on a weekly
+    -- schedule and needs a much longer hold to take. Reuses the exact
+    -- same capture/contest logic as every other zone (it's just
+    -- Config.Territory.Zones[7] with bossZone=true) - the tick loop
+    -- only skips it outside its weekly window. `openDay` follows
+    -- Lua's os.date('*t').wday (1=Sunday, 2=Monday, ... 7=Saturday).
+    -- Placeholder coords - put it somewhere suitably dramatic on your map.
+    -------------------------------------------------------------------
+    BossZone = {
+        Enabled = true,
+        key = 'boss_zone', label = 'قلمروی پادشاه', coord = vector3(2565.0, 2585.0, 37.9), radius = 70.0, tier = 3,
+        bossZone = true,
+        openDay = 6,           -- Friday
+        openHour = 20,         -- 20:00 server time
+        openDurationHours = 3,
+        captureSeconds = 600,  -- must hold ALONE for 10 minutes straight
+        guardCount = 4,        -- hostile NPCs guarding it while open (client-side, cosmetic difficulty)
+        rewardBlackMoney = 25000,
+        titleReward = 'فرمانروای جزیره', -- cosmetic, shown on HUD/leaderboard for whoever holds it
+    },
+
+    -------------------------------------------------------------------
+    -- 5) ALLIANCES - two gangs can formally ally; while allied, their
+    -- members no longer count as "a second gang" toward each other in
+    -- the contest check (server/territory.lua ProcessTerritoryTick), so
+    -- they can garrison and defend each other's zones together instead
+    -- of freezing progress by just standing near each other.
+    -------------------------------------------------------------------
+    Alliance = {
+        Enabled = true,
+    },
+
+    -------------------------------------------------------------------
+    -- 6) WAR NIGHT - a fixed weekly window where capture is faster and
+    -- income is doubled everywhere at once, so there's a standing
+    -- reason for the whole server to be online at the same time. Same
+    -- `wday` convention as BossZone above.
+    -------------------------------------------------------------------
+    WarNight = {
+        Enabled = true,
+        day = 6,          -- Friday
+        startHour = 20,
+        endHour = 23,
+        captureMultiplier = 0.5, -- capture needs half the usual time
+        incomeMultiplier = 2.0,  -- income doubled
+    },
 }

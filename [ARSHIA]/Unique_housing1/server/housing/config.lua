@@ -60,8 +60,8 @@ HousingConfig = {
   UseZoneSprites    = false,  -- if you want to set the blip sprite by zone.
   UseZoneColoring   = false,  -- if you want to set the blip color by zone.
 
-  BlipEmptyColor      = 1,     -- must be set regardless of option above.
-  BlipOwnerColor      = 2,     -- must be set regardless of option above.
+  BlipEmptyColor      = 2,     -- must be set regardless of option above.
+  BlipOwnerColor      = 1,     -- must be set regardless of option above.
   BlipOwnedColor      = 3,     -- must be set regardless of option above.
   ZoneBlipColors      = {      -- set house blip colors based on zone. Optional.
     [9] = {
@@ -76,9 +76,9 @@ HousingConfig = {
     }
   },
 
-  BlipEmptySprite   = 350,    -- must be set regardless of option above.
+  BlipEmptySprite   = 40,    -- must be set regardless of option above.
   BlipOwnerSprite   = 40,     -- must be set regardless of option above.
-  BlipOwnedSprite   = 357,    -- must be set regardless of option above.
+  BlipOwnedSprite   = 40,    -- must be set regardless of option above.
   ZoneBlipSprites   = {       -- set house blip colors sprites on zone. Optional.
     [9] = {
       EmptySprite  = 350,

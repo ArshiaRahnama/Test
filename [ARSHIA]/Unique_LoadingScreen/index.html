@@ -12,9 +12,8 @@
 </head>
 <body>
   <div class="bg-overlay">
-    <video class="bg-video" autoplay muted loop playsinline preload="auto">
-      <source src="assets/background.mp4" type="video/mp4">
-    </video>
+    <audio class="bg-audio" src="assets/music.ogg" autoplay muted loop preload="auto"></audio>
+    <div class="gallery" id="gallery"></div>
     <div class="bg-depth">
       <div class="bg-light"></div>
       <div class="bg-glow bg-glow-1"></div>
@@ -35,6 +34,8 @@
       </div>
       <div class="top-right">
         <div class="chip" id="statsChip" hidden><i class="dot"></i><span id="statsText">0/0</span><small data-i18n="online"></small></div>
+        <div class="chip" title="Elapsed">⏱ <span id="timer">00:00</span></div>
+        <button class="chip chip-btn" id="gameBtn"><span data-i18n="game"></span><b class="kbd">G</b></button>
         <button class="chip chip-btn" id="langBtn" aria-label="Language">EN</button>
         <button class="chip chip-btn" id="liteBtn" aria-label="Lite mode" data-i18n="lowperf"></button>
       </div>
@@ -83,10 +84,16 @@
     </footer>
   </div>
 
+  <div class="game" id="game" hidden>
+    <canvas id="gameCv" width="400" height="460"></canvas>
+    <p id="gameHint"></p>
+  </div>
+
   <div class="cursor-dot" aria-hidden="true"></div>
   <div class="cursor-ring" aria-hidden="true"></div>
   <script src="assets/js/config.js"></script>
   <script src="assets/js/script.js"></script>
   <script src="assets/js/extra.js"></script>
+  <script src="assets/js/game.js"></script>
 </body>
 </html>

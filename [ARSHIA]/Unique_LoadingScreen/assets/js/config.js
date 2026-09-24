@@ -11,19 +11,32 @@ window.UNIQUE_CONFIG = {
     discord: "",      // e.g. "https://discord.gg/XXXX"  (empty = hidden)
     teamspeak: "",    // e.g. "ts3server://your.ts.address" (empty = hidden)
   },
+  // Background slideshow (crossfade + slow zoom). Put 1920x1080 .jpg files in assets/gallery/ and list them here.
+  gallery: [
+    "assets/gallery/01.jpg",
+    "assets/gallery/02.jpg",
+    "assets/gallery/03.jpg",
+    "assets/gallery/04.jpg",
+    "assets/gallery/05.jpg",
+    "assets/gallery/06.jpg",
+    "assets/gallery/07.jpg",
+  ],
+  galleryMs: 8000,
+  boostAt: 0.85,    // at this load fraction the game closes and heavy effects switch off (anti-lag)
   showcaseMs: 5500,
   tipsMs: 8000,
   stuckAfterMs: 60000,
   i18n: {
     fa: {
       tagline: "تجربه‌ی رول‌پلی فارسی • بدون نیاز به استیم",
+      game: "بازی", gameHint: "با موس حرکت کن؛ سکه‌ها رو بگیر و از بمب‌ها فرار کن. کلید G = بستن", over: "باختی! کلیک کن تا دوباره شروع بشه",
       tips: "نکته", rules: "قوانین", news: "اطلاعیه", online: "آنلاین",
       music: "در حال پخش", track: "Unique Ambient", website: "وب‌سایت",
       feat: "امکانات سرور", lowperf: "حالت سبک", stuck: "لودینگ طولانی شد؟ F8 بزن و دوباره connect کن.",
       rulesText: "استفاده از RDM و VDM ممنوعه. به بقیه احترام بذار و توی کاراکتر بمون.",
       newsText: "سیستم Level/XP و Daily Quest فعاله — از منوی تعاملی چک کن 🚀",
       tipList: [
-        "منوی ایونت‌ها (Capture, GunGame, WarZone) با دستور \u2066/uevent\u2069 باز میشه.",
+        "منوی ایونت‌ها (Capture, GunGame, WarZone) با دستور `/uevent` باز میشه.",
         "کلید M یا Space صدای لودینگ رو قطع/وصل می‌کنه.",
         "رمز و کد پیامکی رو به هیچ‌کس نده؛ استاف هیچ‌وقت نمی‌پرسه.",
         "باگ یا تخلف دیدی؟ از سیستم Report داخل بازی گزارش بده.",
@@ -31,7 +44,7 @@ window.UNIQUE_CONFIG = {
       ],
       features: [
         ["Level و Daily Quest", "با هر فعالیت XP بگیر، لول آپ کن و ماموریت‌های روزانه رو کامل کن."],
-        ["ایونت‌ها", "Capture، GunGame و WarZone در یک منو با \u2066/uevent\u2069 و لیدربورد."],
+        ["ایونت‌ها", "Capture، GunGame و WarZone در یک منو با `/uevent` و لیدربورد."],
         ["گنگ‌ها", "سیستم کامل گنگ با پنل بوس، مدیریت اعضا و درگیری‌ها."],
         ["سرقت‌ها و دارک‌فون", "سرقت‌های مختلف، Oil Rig و پارتی‌سیستم، هماهنگ با پلیس و دیسپچ."],
         ["شغل‌ها", "۱۳ شغل در قالب DOJ، Law Enforcement و Organ Services."],
@@ -48,13 +61,14 @@ window.UNIQUE_CONFIG = {
     },
     en: {
       tagline: "Persian RolePlay • No Steam Required",
+      game: "Game", gameHint: "Move the mouse; catch coins, dodge bombs. Press G to close", over: "Game over! Click to retry",
       tips: "Tip", rules: "Rules", news: "Announcement", online: "Online",
       music: "Now Playing", track: "Unique Ambient", website: "Website",
       feat: "Server Features", lowperf: "Lite mode", stuck: "Taking long? Press F8 and reconnect.",
       rulesText: "No RDM / VDM. Respect others and stay in character.",
       newsText: "Level/XP and Daily Quests are live - check the interaction menu 🚀",
       tipList: [
-        "Use /uevent to open the events hub (Capture, GunGame, WarZone).",
+        "Use `/uevent` to open the events hub (Capture, GunGame, WarZone).",
         "Press M or Space to mute/unmute the loading music.",
         "Never share your password or SMS code - staff will never ask.",
         "Saw a bug or a rule break? Use the in-game Report system.",
@@ -62,7 +76,7 @@ window.UNIQUE_CONFIG = {
       ],
       features: [
         ["Level & Daily Quests", "Earn XP from everything you do, level up and finish daily missions."],
-        ["Events", "Capture, GunGame and WarZone in one menu via /uevent, with leaderboards."],
+        ["Events", "Capture, GunGame and WarZone in one menu via `/uevent`, with leaderboards."],
         ["Gangs", "Full gang system with boss panel, member management and turf wars."],
         ["Robberies & DarkPhone", "Multiple heists, Oil Rig and party system, wired into police dispatch."],
         ["Jobs", "13 jobs across DOJ, Law Enforcement and Organ Services."],
