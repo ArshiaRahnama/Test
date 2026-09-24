@@ -1037,6 +1037,7 @@ const TS = {
   filter: 'all', mine: false, search: '',
   list: [], selectedId: null, detail: null,
   cfg: null, open: { players: false, admins: false },
+  gen: 0,   // bumped by every paintTicketDetail() call; stale async work checks against it and bails
 };
 
 function ticketStatusPill(s) {
@@ -1086,13 +1087,24 @@ async function renderTicketAdmin(body) {
     </div>`;
 
   $('#tqSearch').addEventListener('input', e => { TS.search = e.target.value; paintTicketQueue(); });
+  syncTicketFilterButtons();
   $$('.filt', $('#tqList').closest('.queue')).forEach(b => b.addEventListener('click', () => {
     if (b.dataset.tf === 'mine') { TS.mine = !TS.mine; }
     else { TS.mine = false; TS.filter = b.dataset.tf; }
+    syncTicketFilterButtons();
     loadTicketQueue();
   }));
 
   await loadTicketQueue();
+}
+
+function syncTicketFilterButtons() {
+  const bar = $('#tqSearch');
+  if (!bar) return;
+  $$('.filt', bar.closest('.queue')).forEach(b => {
+    const on = b.dataset.tf === 'mine' ? TS.mine : (!TS.mine && b.dataset.tf === TS.filter);
+    b.classList.toggle('is-on', on);
+  });
 }
 
 async function loadTicketQueue() {
@@ -1148,6 +1160,8 @@ function paintTicketQueue() {
 async function paintTicketDetail() {
   const pane = $('#tqDetail');
   if (!pane) return;
+  const myGen = ++TS.gen;   // this call "owns" myGen; anyone else bumping TS.gen makes us stale
+
   if (!TS.selectedId) {
     pane.innerHTML = `<div class="empty"><i class="fa-solid fa-ticket"></i>
       <h3>یک تیکت رو انتخاب کن</h3><p>جزئیات، چت و اپشن‌هاش اینجا میاد.</p></div>`;
@@ -1155,6 +1169,7 @@ async function paintTicketDetail() {
   }
 
   const res = await nui('ticket:getDetail', { id: TS.selectedId });
+  if (myGen !== TS.gen) return;   // یک render جدیدتر تو همین فاصله شروع شده - این یکی رو رها کن
   if (!res || !res.r) {
     pane.innerHTML = `<div class="empty"><i class="fa-solid fa-triangle-exclamation"></i><h3>پیدا نشد</h3></div>`;
     return;
@@ -1170,7 +1185,7 @@ async function paintTicketDetail() {
       <div class="pane__who">
         <div class="pane__name">#${esc(String(t.id).padStart(4, '0'))} - ${esc(t.title)}</div>
         <div class="pane__sub">
-          <span>${esc(ticketCatLabel(t.category))}</span>
+          <span><span class="tpri-dot" style="background:${esc(ticketPriColor(t.priority))}"></span> ${esc(ticketCatLabel(t.category))}</span>
           <span>${esc(t.creator.name || '-')}</span>
           ${t.sourceReportId ? `<span id="tLinkedReport" class="pill" style="cursor:pointer"><i class="fa-solid fa-link"></i> گزارش #${esc(t.sourceReportId)}</span>` : ''}
         </div>
@@ -1180,7 +1195,7 @@ async function paintTicketDetail() {
       </div>
     </div>
 
-    <div class="queue__tools" style="border-bottom:1px solid var(--edge,#2a323f)">
+    <div class="queue__tools">
       <div class="filters" style="flex-wrap:wrap">
         <select class="input" id="tStatusSel" style="width:auto">
           ${stats.map(s => `<option value="${esc(s.id)}" ${s.id === t.status ? 'selected' : ''}>${esc(s.label)}</option>`).join('')}
@@ -1194,28 +1209,27 @@ async function paintTicketDetail() {
     </div>
 
     ${TS.open.players ? `
-    <div class="queue__tools" id="tPlayersBox">
-      <input class="search" id="tPlayerSearch" placeholder="جستجوی نام یا آیدی بازیکن…" autocomplete="off">
-      <div id="tPlayerResults" style="margin-top:8px; display:flex; flex-direction:column; gap:6px;"></div>
-      <div style="margin-top:10px; display:flex; flex-direction:column; gap:6px;">
-        ${res.participants.map(p => `
-          <div class="tk" style="padding:6px 10px; display:flex; justify-content:space-between; align-items:center;">
-            <span>${esc(p.name || p.identifier)} <small style="color:var(--dim,#7c8698)">(${esc(p.role)})</small></span>
-            ${p.role !== 'creator' ? `<button class="filt" data-rm-player="${esc(p.identifier)}"><i class="fa-solid fa-xmark"></i></button>` : ''}
-          </div>`).join('') || '<p style="color:var(--dim,#7c8698); font-size:12px;">بازیکنی اضافه نشده.</p>'}
-      </div>
+    <div class="tpanel" id="tPlayersBox">
+      <input class="search tpanel__search" id="tPlayerSearch" placeholder="جستجوی نام یا آیدی بازیکن…" autocomplete="off">
+      <div id="tPlayerResults" class="tpanel__results"></div>
+      <div class="tpanel__sectitle">بازیکن‌های حاضر در تیکت</div>
+      ${res.participants.map(p => `
+        <div class="tpanel__row">
+          <span>${esc(p.name || p.identifier)}<span class="tpanel__role">(${esc(p.role)})</span></span>
+          ${p.role !== 'creator' ? `<button class="tpanel__remove" data-rm-player="${esc(p.identifier)}"><i class="fa-solid fa-xmark"></i></button>` : ''}
+        </div>`).join('') || '<p class="tpanel__empty">بازیکنی اضافه نشده.</p>'}
     </div>` : ''}
 
     ${TS.open.admins ? `
-    <div class="queue__tools" id="tAdminsBox">
-      <div id="tAdminOnline" style="display:flex; flex-direction:column; gap:6px;"></div>
-      <div style="margin-top:10px; display:flex; flex-direction:column; gap:6px;">
-        ${res.admins.map(a => `
-          <div class="tk" style="padding:6px 10px; display:flex; justify-content:space-between; align-items:center;">
-            <span><i class="fa-solid fa-shield"></i> ${esc(a.name || a.identifier)}</span>
-            <button class="filt" data-rm-admin="${esc(a.identifier)}"><i class="fa-solid fa-xmark"></i></button>
-          </div>`).join('') || '<p style="color:var(--dim,#7c8698); font-size:12px;">هنوز ادمینی مسئول نیست.</p>'}
-      </div>
+    <div class="tpanel" id="tAdminsBox">
+      <div class="tpanel__sectitle">ادمین‌های آنلاین</div>
+      <div id="tAdminOnline" class="tpanel__results"></div>
+      <div class="tpanel__sectitle">ادمین‌های مسئول این تیکت</div>
+      ${res.admins.map(a => `
+        <div class="tpanel__row">
+          <span><i class="fa-solid fa-shield"></i> ${esc(a.name || a.identifier)}</span>
+          <button class="tpanel__remove" data-rm-admin="${esc(a.identifier)}"><i class="fa-solid fa-xmark"></i></button>
+        </div>`).join('') || '<p class="tpanel__empty">هنوز ادمینی مسئول نیست.</p>'}
     </div>` : ''}
 
     <div class="thread scroller" id="tThread"></div>
@@ -1252,15 +1266,20 @@ async function paintTicketDetail() {
       clearTimeout(deb);
       const q = e.target.value.trim();
       deb = setTimeout(async () => {
-        if (q.length < 2) { $('#tPlayerResults').innerHTML = ''; return; }
+        const resultsBox = $('#tPlayerResults');
+        if (!resultsBox) return;
+        if (q.length < 2) { resultsBox.innerHTML = ''; return; }
         const r = await nui('ticket:searchPlayer', { query: q });
+        if (myGen !== TS.gen) return;   // پنل عوض شده تا جواب جستجو برگرده
+        const resultsBox2 = $('#tPlayerResults');
+        if (!resultsBox2) return;
         const found = (r && r.data) || [];
-        $('#tPlayerResults').innerHTML = found.map(p => `
-          <div class="tk" style="padding:6px 10px; display:flex; justify-content:space-between; align-items:center;">
+        resultsBox2.innerHTML = found.map(p => `
+          <div class="tpanel__row">
             <span>${esc(p.name)}${p.online ? ' 🟢' : ''}</span>
-            <button class="filt" data-add-player="${esc(p.identifier)}" data-name="${esc(p.name)}">افزودن</button>
-          </div>`).join('') || '<p style="color:var(--dim,#7c8698); font-size:12px;">نتیجه‌ای نبود.</p>';
-        $$('[data-add-player]', $('#tPlayerResults')).forEach(btn => btn.addEventListener('click', async () => {
+            <button class="tpanel__add" data-add-player="${esc(p.identifier)}" data-name="${esc(p.name)}">افزودن</button>
+          </div>`).join('') || '<p class="tpanel__empty">نتیجه‌ای نبود.</p>';
+        $$('[data-add-player]', resultsBox2).forEach(btn => btn.addEventListener('click', async () => {
           await nui('ticket:addParticipant', { id: t.id, identifier: btn.dataset.addPlayer, name: btn.dataset.name });
           paintTicketDetail();
         }));
@@ -1274,12 +1293,15 @@ async function paintTicketDetail() {
 
   if (TS.open.admins) {
     const r = await nui('ticket:getOnlineAdmins');
+    if (myGen !== TS.gen) return;   // پنل عوض شده تا این await برگرده - دیگه چیزی رو ننویس
+    const onlineBox = $('#tAdminOnline');
+    if (!onlineBox) return;   // محافظِ اضافه: حتی اگه gen درست بود ولی DOM جابه‌جا شده بود
     const found = (r && r.data) || [];
-    $('#tAdminOnline').innerHTML = found.map(a => `
-      <div class="tk" style="padding:6px 10px; display:flex; justify-content:space-between; align-items:center;">
+    onlineBox.innerHTML = found.map(a => `
+      <div class="tpanel__row">
         <span>${esc(a.name)}</span>
-        <button class="filt" data-add-admin="${esc(a.identifier)}" data-name="${esc(a.name)}">افزودن به تیکت</button>
-      </div>`).join('') || '<p style="color:var(--dim,#7c8698); font-size:12px;">ادمین آنلاینی نیست.</p>';
+        <button class="tpanel__add" data-add-admin="${esc(a.identifier)}" data-name="${esc(a.name)}">افزودن به تیکت</button>
+      </div>`).join('') || '<p class="tpanel__empty">ادمین آنلاینی نیست.</p>';
     $$('[data-add-admin]', pane).forEach(btn => btn.addEventListener('click', async () => {
       await nui('ticket:assignAdmin', { id: t.id, identifier: btn.dataset.addAdmin, name: btn.dataset.name });
       paintTicketDetail();
@@ -1421,6 +1443,17 @@ window.addEventListener('message', ev => {
       applyConfig(d.config);
       showStage('#adminPanel');
       renderAdmin();
+      break;
+
+    // Sent by the F4 admin menu's "🎫 Tickets" button (client/ticket_client
+    // .lua's OpenTicketPanel) right after it runs /areport. Setting
+    // S.adminView first (not just calling renderAdmin) means this works
+    // whether it lands before or after 'showAdminPanel' - the access-check
+    // round trip before the panel opens is async, so the arrival order
+    // between the two messages isn't guaranteed.
+    case 'openTicketsTab':
+      S.adminView = 'tickets';
+      if (!$('#adminPanel').classList.contains('hidden')) renderAdmin();
       break;
 
     case 'hideAll':

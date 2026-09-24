@@ -67,7 +67,10 @@ you must physically be at one of your gang's boss markers to join — checked ag
 same `boss` locations your gang system already stores, not a separate config list.
 Gangs fight over a configurable list of zones (`Config.Capture.DefaultZones`). Standing
 alone — no rival gang member nearby — at a zone's capture point for
-`Config.Capture.TimeToCaptureZone` seconds gives your gang that zone. The owning gang
+`Config.Capture.TimeToCaptureZone` seconds gives your gang that zone. Once a gang loses
+a zone, they can't immediately take it back — `Config.Capture.ZoneRecaptureCooldown`
+seconds must pass first (other gangs aren't affected and can contest it right away).
+The owning gang
 scores a point every `Config.Capture.PointInterval` seconds. Kills, gang points and an
 all-time weighted leaderboard (`Kills*2 + GangPoints*1 - Deaths*1` by default) are all
 tracked and shown in `/uevent`. Zone ownership persists across restarts (`zones.json`).

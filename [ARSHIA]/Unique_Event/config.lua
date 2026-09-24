@@ -101,7 +101,10 @@ Config.Capture = {
         { Name = 'Bronze', Min = 0 }, { Name = 'Silver', Min = 50 }, { Name = 'Gold', Min = 150 }, { Name = 'Legend', Min = 400 },
     },
 
-    LeaveZonePenaltySeconds = 180,
+    -- After a gang loses a zone, that SAME gang can't immediately recapture it - gives the
+    -- new owner a real window to defend it instead of an instant back-and-forth flip.
+    -- Other gangs are unaffected and can still contest/capture it normally.
+    ZoneRecaptureCooldown = 180,
     SeasonAutoResetDays = 30,
 }
 

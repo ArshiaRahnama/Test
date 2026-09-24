@@ -190,12 +190,13 @@ const CAP = {
   },
   progress(d) {
     const el = $('#capProgress'); show(el, true);
-    el.classList.remove('contested', 'holding');
+    el.classList.remove('contested', 'holding', 'locked');
     if (d.state === 'contested') el.classList.add('contested');
     if (d.state === 'holding') el.classList.add('holding');
+    if (d.state === 'locked') el.classList.add('locked');
     $('#cpZone').textContent = String(d.zone || '').toUpperCase();
-    $('#cpText').textContent = d.state === 'contested' ? 'CONTESTED!' : (d.state === 'holding' ? 'HOLDING ZONE' : 'CAPTURING  ' + num(d.sec) + ' / ' + num(d.need));
-    $('#cpFill').style.width = clamp(d.state === 'holding' ? 100 : (num(d.sec) / Math.max(1, num(d.need))) * 100, 0, 100) + '%';
+    $('#cpText').textContent = d.state === 'contested' ? 'CONTESTED!' : d.state === 'locked' ? 'LOCKED - ' + UE_fmtTime(d.sec) + ' LEFT' : (d.state === 'holding' ? 'HOLDING ZONE' : 'CAPTURING  ' + num(d.sec) + ' / ' + num(d.need));
+    $('#cpFill').style.width = clamp(d.state === 'holding' ? 100 : d.state === 'locked' ? 100 : (num(d.sec) / Math.max(1, num(d.need))) * 100, 0, 100) + '%';
   },
   progressHide() { show($('#capProgress'), false); },
   kill(d) {

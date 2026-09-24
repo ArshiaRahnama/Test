@@ -117,6 +117,7 @@ input{font-family:inherit;outline:none}
 .cp-track i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--red2),var(--gold));transition:width .9s linear;background-size:200% 100%;animation:shine 1.4s linear infinite}
 .cap-progress.contested #cpText{color:var(--red);animation:shake .3s infinite}
 .cap-progress.holding #cpText{color:var(--green)}.cap-progress.holding .cp-track i{background:linear-gradient(90deg,#1b9c52,var(--green))}
+.cap-progress.locked #cpText{color:var(--violet)}.cap-progress.locked .cp-track i{background:linear-gradient(90deg,#4a2e99,var(--violet));animation:none}
 
 /* ==========================================================
    GUNGAME HUD

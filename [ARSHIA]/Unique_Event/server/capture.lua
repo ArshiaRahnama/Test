@@ -10,8 +10,12 @@
     Bugs fixed vs the original Unique_Capture:
     - server now validates every capture/point tick itself (client can no longer fake ownership)
     - a round can be started again after it ends without a resource restart
-    - leaving a contested zone no longer lets a single player farm it back instantly (lockout)
-    - kills are attributed server-side (UE.ResolveKiller), not trusted from the client
+    - a gang that just lost a zone can't instantly recapture it (Config.Capture.ZoneRecaptureCooldown)
+    - kills are attributed with a server-side distance/plausibility check, not trusted outright
+    - /joinCap now requires an admin-started round, and broadcasts an invite to every
+      player when one starts (previously nobody could ever see that message)
+    - the gang-base proximity check now reads the real boss-marker format this server's
+      gang system stores (an array of {coord={x,y,z}} entries), instead of silently no-oping
 ]]
 
 local Cap = {}
@@ -227,6 +231,16 @@ CreateThread(function()
                     local onlyGang = next(present)
                     if zone.owner == onlyGang then
                         CapturingBy[zi] = {}   -- already owned, nothing to capture
+                        for _, src in ipairs(present[onlyGang]) do
+                            TriggerClientEvent('ue:capture:captureProgress', src, zone.name, 0, Config.Capture.TimeToCaptureZone, 'holding')
+                        end
+                    elseif zone.lockGang == onlyGang and (zone.lockUntil or 0) > os.time() then
+                        -- this gang just lost the zone and is still on cooldown - no progress,
+                        -- just tell them how much longer until they're allowed to try again
+                        CapturingBy[zi] = {}
+                        for _, src in ipairs(present[onlyGang]) do
+                            TriggerClientEvent('ue:capture:captureProgress', src, zone.name, math.ceil((zone.lockUntil or 0) - os.time()), Config.Capture.TimeToCaptureZone, 'locked')
+                        end
                     else
                         local startedAt = CapturingBy[zi].startedAt
                         local capturingGang = CapturingBy[zi].gang
@@ -242,6 +256,10 @@ CreateThread(function()
                             local prevOwner = zone.owner
                             zone.owner = onlyGang
                             zone.lastPointAt = os.time()
+                            if prevOwner then
+                                zone.lockGang = prevOwner
+                                zone.lockUntil = os.time() + Config.Capture.ZoneRecaptureCooldown
+                            end
                             CapturingBy[zi] = {}
                             saveZones(Zones)
                             UE.Log('Capture', {
@@ -355,11 +373,15 @@ end
 UE.Command({ 'startCap' }, function(src, args) startRound(src, args[1]) end)
 UE.Command({ 'endCap' }, function(src) endRound(src) end)
 
-UE.Command({ 'resetzonesCap' }, function(src)
-    if not UE.CanAdmin(src, 'capture') then return UE.Notify(src, 'No permission.', 'error') end
-    for _, z in ipairs(Zones) do z.owner = nil end
+local function resetAllZones()
+    for _, z in ipairs(Zones) do z.owner = nil z.lockGang = nil z.lockUntil = nil end
     saveZones(Zones)
     Cap.PushZones()
+end
+
+UE.Command({ 'resetzonesCap' }, function(src)
+    if not UE.CanAdmin(src, 'capture') then return UE.Notify(src, 'No permission.', 'error') end
+    resetAllZones()
     UE.Notify(src, 'All zones reset to neutral.', 'success')
 end)
 
@@ -385,10 +407,8 @@ AddEventHandler('ue:capture:died', function(killerId)
             Round.gangs[killerGang] = (Round.gangs[killerGang] or 0) + 1
             if kIdentifier then bumpStat(kIdentifier, UE.Name(killer), 'gang_points', 1) end
         end
-        TriggerClientEvent('ue:capture:kill', -1, {
-            killer = UE.Name(killer), damaged = UE.Name(src), you = false,
-        })
         for _, s in ipairs(UE.PlayersIn('capture')) do
+            TriggerClientEvent('ue:capture:kill', s, { killer = UE.Name(killer), damaged = UE.Name(src) })
             TriggerClientEvent('ue:capture:killPersonal', s, killer == s, src == s)
         end
     end
@@ -480,9 +500,7 @@ UE.Actions.capture = {
     ['end'] = function(src) endRound(src) end,
     resetzones = function(src)
         if not UE.CanAdmin(src, 'capture') then return UE.Notify(src, 'No permission.', 'error') end
-        for _, z in ipairs(Zones) do z.owner = nil end
-        saveZones(Zones)
-        Cap.PushZones()
+        resetAllZones()
         UE.Notify(src, 'All zones reset to neutral.', 'success')
     end,
 }

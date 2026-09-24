@@ -81,7 +81,18 @@ end
 
 -- Called from client/menuv_ui.lua's "🎫 Tickets" button (F4 menu) - same
 -- entry point as the command, so permissions stay in exactly one place.
-function OpenTicketPanel() ExecuteCommand(Ticket_Config.CommandForAdmin) end
+-- Called from client/menuv_ui.lua's "🎫 Tickets" button (F4 menu). Opens
+-- /areport - which now has a full "🎫 تیکت‌ها" tab with every ticket option
+-- (list, status, priority, participants, assigned admins, linked report,
+-- chat) - rather than the older standalone /atickets panel, so admins land
+-- in one consolidated place instead of two separate ticket UIs.
+-- 'openTicketsTab' is sent through the REPORT panel's own _uniqueReport/
+-- ureport message protocol (see ui/report/js/script.js's message switch),
+-- not the ticket: one, since it's the report panel's DOM that needs to react.
+function OpenTicketPanel()
+    ExecuteCommand(Client_Config and Client_Config.CommandForAdmin or 'areport')
+    SendNUIMessage({ _uniqueReport = true, ureport = 'openTicketsTab' })
+end
 
 -- ---------------------------------------------------------- live pushes ---
 -- server/ticket_main.lua's broadcastTicketUpdate() sends this to anyone
