@@ -15,3 +15,7 @@ end
 function SendMarketNUI(msg)
 	SendNUIMessage({ __routeTo = 'market', payload = msg })
 end
+
+function SendShopNUI(msg)
+	SendNUIMessage({ __routeTo = 'shop', payload = msg })
+end

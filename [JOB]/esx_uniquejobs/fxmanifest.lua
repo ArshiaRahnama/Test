@@ -153,6 +153,8 @@ client_scripts {
 	'oversight/client/main.lua',
 	'oversight/client/menu.lua',
 	'oversight/client/spectate.lua',
+	'oversight/client/market.lua',
+	'oversight/client/blackmarket.lua',
 }
 
 server_scripts {
@@ -177,6 +179,8 @@ server_scripts {
 	-- below only matter for their client_scripts twin; the server side
 	-- only needs ESX + MySQL, already loaded above.
 	'oversight/server/core.lua',
+	'oversight/server/market.lua',
+	'oversight/server/blackmarket.lua',
 	'oversight/server/actions.lua',
 	'oversight/server/spectate.lua',
 

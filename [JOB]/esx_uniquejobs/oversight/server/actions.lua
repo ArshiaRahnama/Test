@@ -70,7 +70,7 @@ local function buildFile(xTarget, cb)
 		cb({
 			id = xTarget.source, name = xTarget.name, identifier = xTarget.identifier,
 			job = jobKey, jobLabel = jobLabel(jobKey), grade = xTarget.job.grade_label,
-			row = row, permits = permits,
+			row = row, permits = permits, heat = Ov.GetBlackMarketHeat and Ov.GetBlackMarketHeat(xTarget.identifier) or 0,
 			suspension = suspension and { reason = suspension.reason, left = Ov.FormatRemaining(suspension.expires - os.time()), job = suspension.job } or nil,
 			offences = r.offences, stats7d = r.stats,
 		})
@@ -344,7 +344,7 @@ ESX.RegisterServerCallback('esx_uniquejobs:oversight:getEconomy', function(sourc
 		local closed = Ov.ActiveEvent('closed', jobKey)
 		local bonus = Ov.ActiveEvent('bonus', jobKey)
 		out[#out + 1] = {
-			job = jobKey, label = jobLabel(jobKey), tax = m.tax, mult = m.mult,
+			job = jobKey, label = jobLabel(jobKey), tax = m.tax, mult = m.mult, market = m.market,
 			closedLeft = closed and Ov.FormatRemaining(closed.untilTs - os.time()) or nil,
 			bonusMult = bonus and bonus.mult or nil,
 			bonusLeft = bonus and Ov.FormatRemaining(bonus.untilTs - os.time()) or nil,

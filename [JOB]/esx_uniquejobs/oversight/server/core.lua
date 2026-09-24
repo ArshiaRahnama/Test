@@ -326,6 +326,7 @@ local FlagLabels = {
 	income = 'Daramad-e Gheyr-e Manteghi',
 	offjob = 'Kar Bedoon-e Shoghl',
 	nopermit = 'Kar Bedoon-e Mojavez',
+	blackmarket = 'Foroush Be Bazar-e Siah',
 }
 Ov.FlagLabels = FlagLabels
 
@@ -422,6 +423,14 @@ function Ov.RecordActivity(src, jobKey, kind, items, money, zone)
 	end
 	w.itemsTotal = w.itemsTotal + total
 	w.pendItems = w.pendItems + total
+
+	-- feed the live market (server/market.lua) -- guarded because
+	-- market.lua defines this at its own file's load time; if it's
+	-- ever missing (resource partially updated, etc.) production/sales
+	-- reporting here must never break over it.
+	if total > 0 and Ov.MarketFeed then
+		Ov.MarketFeed(jobKey, total)
+	end
 
 	money = math.floor(tonumber(money) or 0)
 	if money > 0 then
@@ -563,10 +572,15 @@ end
 local function GetMods(jobKey)
 	local s = Settings[jobKey]
 	local bonus = ActiveEvent('bonus', jobKey)
+	-- Ov.GetMarketMult is defined by server/market.lua (guarded the same
+	-- way Ov.MarketFeed is above -- see that file for why the live
+	-- market and the supply-chain ripple both live there instead of here).
+	local market = (Ov.GetMarketMult and Ov.GetMarketMult(jobKey)) or 1.0
 	return {
 		tax = s and s.tax or Cfg.Economy.DefaultTaxRate,
 		mult = s and s.mult or 1.0,
 		bonus = bonus and bonus.mult or 1.0,
+		market = market,
 		closed = ActiveEvent('closed', jobKey) ~= nil,
 	}
 end
@@ -582,7 +596,7 @@ local function Payout(src, jobKey, gross)
 	end
 
 	local m = GetMods(jobKey)
-	local adjusted = math.floor(gross * m.mult * m.bonus + 0.5)
+	local adjusted = math.floor(gross * m.mult * m.market * m.bonus + 0.5)
 	local tax = math.floor(adjusted * m.tax)
 	local net = adjusted - tax
 
@@ -592,9 +606,12 @@ local function Payout(src, jobKey, gross)
 		end)
 	end
 
-	if src and (tax > 0 or m.mult ~= 1.0 or m.bonus ~= 1.0) then
+	if src and (tax > 0 or m.mult ~= 1.0 or m.bonus ~= 1.0 or math.abs(m.market - 1.0) >= 0.03) then
 		local parts = {}
 		if m.mult ~= 1.0 then parts[#parts + 1] = 'Zarib-e Gheymat x' .. string.format('%.2f', m.mult) end
+		if math.abs(m.market - 1.0) >= 0.03 then
+			parts[#parts + 1] = (m.market < 1.0 and '~r~Bazar: Arze Ziad x' or '~g~Bazar: Kambood x') .. string.format('%.2f', m.market) .. '~w~'
+		end
 		if m.bonus ~= 1.0 then parts[#parts + 1] = '~g~Event x' .. string.format('%.2f', m.bonus) .. '~w~' end
 		if tax > 0 then parts[#parts + 1] = '~r~Maliat ' .. math.floor(m.tax * 100 + 0.5) .. '% (-$' .. tax .. ')~w~' end
 		Ov.Notify(src, table.concat(parts, ' | '))

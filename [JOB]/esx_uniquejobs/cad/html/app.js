@@ -709,7 +709,7 @@ window.addEventListener('message', function(event) {
                             <p>${element['reason']}</p>
                         </div>
                         <div style="float: right;">
-                            <button class="Data_Delete_Button" onclick="DeleteData(${element['id']}, \`${element['steam']}\`)">✖</button>
+                            <button class="Data_Delete_Button" onclick="DeleteData(${element['id']}, \`${element['steam']}\`)"><svg class="icon"><use href="#icon-close"></use></svg></button>
                         </div>
                     </div>
                 `);
@@ -720,7 +720,7 @@ window.addEventListener('message', function(event) {
         $('#Page_Training').empty()
         $('#Page_Training').append(
             '<div class="Training_Header">' +
-                '<span class="Training_HeaderIcon">🎓</span>' +
+                '<span class="Training_HeaderIcon"><svg class="icon"><use href="#icon-cap"></use></svg></span>' +
                 '<div>' +
                     '<p class="Training_HeaderTitle">Training &amp; SOP Manual</p>' +
                     '<p class="Training_HeaderSub">Department procedures and CAD reference guide</p>' +
@@ -743,7 +743,7 @@ window.addEventListener('message', function(event) {
             let sectionMatch = text.match(/^<b>\s*===\s*(.*?)\s*===\s*<\/b>\s*(\(.*\))?$/i)
             if (sectionMatch) {
                 $('#Page_Training').append(
-                    '<div class="Training_Section"><span class="Training_SectionIcon">📘</span><p>' +
+                    '<div class="Training_Section"><span class="Training_SectionIcon"><svg class="icon"><use href="#icon-book"></use></svg></span><p>' +
                     sectionMatch[1] +
                     (sectionMatch[2] ? ' <span class="Training_SectionTag">' + sectionMatch[2] + '</span>' : '') +
                     '</p></div>'
@@ -764,7 +764,7 @@ window.addEventListener('message', function(event) {
 
             if (text.indexOf('<b>') === 0) {
                 $('#Page_Training').append(
-                    '<div class="Training_Section"><span class="Training_SectionIcon">📘</span><p>' + text.replace(/<\/?b>/g, '') + '</p></div>'
+                    '<div class="Training_Section"><span class="Training_SectionIcon"><svg class="icon"><use href="#icon-book"></use></svg></span><p>' + text.replace(/<\/?b>/g, '') + '</p></div>'
                 )
                 return
             }
@@ -814,7 +814,7 @@ window.addEventListener('message', function(event) {
         // CONNECTED: shows whether this robbery/warrant case has a real DOJ
         // investigation case linked, and if not, a button to create/link one.
         if (caseRow.linked_dept_case_id) {
-            $('#CS_CaseStatus_P').append(' <span style="color: var(--accent-color, #6cf);">| 🔗 DOJ Case #' + caseRow.linked_dept_case_id + '</span>')
+            $('#CS_CaseStatus_P').append(' <span style="color: var(--accent-color, #6cf);">| <svg class="icon"><use href="#icon-link"></use></svg> DOJ Case #' + caseRow.linked_dept_case_id + '</span>')
         }
 
         $('#CS_SuspectsList').empty()
@@ -852,7 +852,7 @@ window.addEventListener('message', function(event) {
                 actionsHtml += '<button class="ExitButton" style="margin-right:6px;margin-bottom:6px;" onclick="CS_RequestWarrant()">Request Warrant</button>'
             }
             if (!caseRow.linked_dept_case_id) {
-                actionsHtml += '<button class="ExitButton" style="margin-right:6px;margin-bottom:6px;" onclick="CS_OpenDojCase()">📂 Open DOJ Case</button>'
+                actionsHtml += '<button class="ExitButton" style="margin-right:6px;margin-bottom:6px;" onclick="CS_OpenDojCase()"><svg class="icon"><use href="#icon-folder"></use></svg> Open DOJ Case</button>'
             }
         }
         if (CS_playerJob === 'judge' && caseRow.warrant_status === 'requested') {
@@ -871,7 +871,7 @@ window.addEventListener('message', function(event) {
 
     } else if (data.type === 'CS_PlayerNamePreview') {
         if (data.name) {
-            $('#CS_BookTargetPreview').css('color', 'var(--ok)').text('✓ ' + data.name)
+            $('#CS_BookTargetPreview').css('color', 'var(--ok)').html('<svg class="icon"><use href="#icon-check"></use></svg> ' + data.name)
         } else {
             $('#CS_BookTargetPreview').css('color', 'var(--danger)').text('No player online with that ID')
         }
@@ -881,14 +881,14 @@ window.addEventListener('message', function(event) {
         if (!data.list.length) $('#CS_WantedList').append('<p style="color: var(--text-dim);">No repeat codes yet</p>')
         data.list.forEach(row => {
             let severity = row.hits >= 5 ? 'var(--danger)' : (row.hits >= 3 ? 'var(--gold)' : 'var(--text)')
-            $('#CS_WantedList').append('<div class="List_Row List_Row_Wanted"><p>#' + row.suspect_hint_id + '</p><p style="color: ' + severity + '; font-weight: 700;">🔥 ' + row.hits + ' Hits</p><p>Last Seen: ' + (row.last_seen || '?') + '</p></div>')
+            $('#CS_WantedList').append('<div class="List_Row List_Row_Wanted"><p>#' + row.suspect_hint_id + '</p><p style="color: ' + severity + '; font-weight: 700;"><svg class="icon"><use href="#icon-flame"></use></svg> ' + row.hits + ' Hits</p><p>Last Seen: ' + (row.last_seen || '?') + '</p></div>')
         })
 
     } else if (data.type === 'CS_Bolos') {
         $('#CS_BoloList').empty()
         if (!data.list.length) $('#CS_BoloList').append('<p style="color: var(--text-dim);">No active BOLOs</p>')
         data.list.forEach(row => {
-            $('#CS_BoloList').append('<div class="List_Row List_Row_Wanted"><p>🚔 ' + row.plate + '</p><p>Case #' + row.caseId + '</p><p>' + (row.issuedBy || '') + ' -- ' + CS_TimeAgo(row.issuedAt) + '</p></div>')
+            $('#CS_BoloList').append('<div class="List_Row List_Row_Wanted"><p><svg class="icon"><use href="#icon-car"></use></svg> ' + row.plate + '</p><p>Case #' + row.caseId + '</p><p>' + (row.issuedBy || '') + ' -- ' + CS_TimeAgo(row.issuedAt) + '</p></div>')
         })
 
     } else if (data.type === 'CS_PlateCheckResult') {
@@ -915,12 +915,12 @@ window.addEventListener('message', function(event) {
     } else if (data.type === 'CS_Leaderboard') {
         $('#CS_LeaderInvestigators').empty()
         ;(data.data.investigators || []).forEach((row, i) => {
-            let rank = i === 0 ? '🥇' : (i === 1 ? '🥈' : (i === 2 ? '🥉' : '#' + (i + 1)))
+            let rank = i === 0 ? '<svg class="icon icon-medal-gold"><use href="#icon-medal"></use></svg>' : (i === 1 ? '<svg class="icon icon-medal-silver"><use href="#icon-medal"></use></svg>' : (i === 2 ? '<svg class="icon icon-medal-bronze"><use href="#icon-medal"></use></svg>' : '#' + (i + 1)))
             $('#CS_LeaderInvestigators').append('<div class="List_Row"><p>' + rank + '</p><p>' + row.name + '</p><p>' + row.score + '</p></div>')
         })
         $('#CS_LeaderOfficers').empty()
         ;(data.data.officers || []).forEach((row, i) => {
-            let rank = i === 0 ? '🥇' : (i === 1 ? '🥈' : (i === 2 ? '🥉' : '#' + (i + 1)))
+            let rank = i === 0 ? '<svg class="icon icon-medal-gold"><use href="#icon-medal"></use></svg>' : (i === 1 ? '<svg class="icon icon-medal-silver"><use href="#icon-medal"></use></svg>' : (i === 2 ? '<svg class="icon icon-medal-bronze"><use href="#icon-medal"></use></svg>' : '#' + (i + 1)))
             $('#CS_LeaderOfficers').append('<div class="List_Row"><p>' + rank + '</p><p>' + row.name + '</p><p>' + row.score + '</p></div>')
         })
 
@@ -944,7 +944,7 @@ window.addEventListener('message', function(event) {
         data.list.forEach(row => {
             $('#CS_OfficerActivityList').append(
                 '<div class="List_Row" style="flex-direction: column; align-items: flex-start; gap: 4px;">' +
-                  '<div style="display: flex; width: 100%; justify-content: space-between;"><p>👮 ' + (row.booked_by_name || '?') + '</p><p>Booked ' + row.suspect_name + '</p><p>' + row.charges + '</p></div>' +
+                  '<div style="display: flex; width: 100%; justify-content: space-between;"><p><svg class="icon"><use href="#icon-police"></use></svg> ' + (row.booked_by_name || '?') + '</p><p>Booked ' + row.suspect_name + '</p><p>' + row.charges + '</p></div>' +
                   '<p style="font-size: 11px; color: var(--text-dim);">' + (row.created_at || '') + '</p>' +
                 '</div>'
             )

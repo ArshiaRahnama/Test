@@ -107,6 +107,36 @@
   box-sizing: border-box;
 }
 
+/* Icon sprite usage -- <svg class="icon"><use href="#icon-x"/></svg>.
+   Sized off font-size/line-height so it drops into buttons, labels and
+   headers at whatever scale the surrounding text already uses, and
+   inherits color via currentColor so it never needs its own color rule. */
+.icon {
+  width: 1em;
+  height: 1em;
+  flex-shrink: 0;
+  vertical-align: -0.15em;
+  color: inherit;
+}
+
+/* Small solid status dot -- replaces the plain-text bullet/emoji "online"
+   markers with one consistent component. */
+.Status_Dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ok);
+  box-shadow: 0 0 6px var(--ok-glow);
+  animation: pulseGlow 2.2s ease-in-out infinite;
+  vertical-align: middle;
+  margin-right: 3px;
+}
+
+.icon-medal-gold   { color: var(--gold); }
+.icon-medal-silver { color: #c7ccd1; }
+.icon-medal-bronze { color: #c4813f; }
+
 html, body {
   width: 100%;
   height: 100%;
@@ -326,6 +356,52 @@ html, body {
   margin-top: 14px;
   font-size: 11px;
   color: var(--text-dim);
+}
+
+#LoginContent {
+  animation: fadeIn 260ms var(--ease);
+}
+
+/* Boot sequence -- see the inline script at the bottom of index.html.
+   Purely decorative typed log shown before the real login card. */
+.Boot_Sequence {
+  padding: 30px 4px 8px;
+  text-align: left;
+  min-height: 96px;
+}
+
+.Boot_Log {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.Boot_Line {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--gold-soft);
+  letter-spacing: 0.2px;
+}
+
+.Boot_Line::before {
+  content: '> ';
+  color: var(--text-dim);
+}
+
+.Boot_Line_Ok {
+  color: var(--ok);
+}
+
+.Boot_Cursor {
+  display: inline-block;
+  margin-left: 3px;
+  color: var(--gold);
+  animation: blinkCursor 0.9s steps(1) infinite;
+}
+
+@keyframes blinkCursor {
+  0%, 50%  { opacity: 1; }
+  51%, 100% { opacity: 0; }
 }
 
 /* ==========================================================================
@@ -578,6 +654,66 @@ html, body {
 /* ==========================================================================
    Main panel dashboard (greeting/clock, stat cards, quick actions)
    ========================================================================== */
+#Page_MainPanel {
+  position: relative;
+}
+
+/* Live radar -- a spinning sweep + a couple of blips that fade in and out
+   on their own timers, purely decorative (no data behind it). */
+.Dashboard_Radar {
+  position: absolute;
+  top: 4px;
+  right: 18px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid var(--border-soft);
+  background:
+    repeating-radial-gradient(circle, transparent 0, transparent 9px, var(--border) 10px);
+  box-shadow: 0 0 8px -3px var(--gold-glow);
+  overflow: hidden;
+}
+
+.Dashboard_Radar::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: conic-gradient(from 0deg, var(--gold-glow), transparent 30%);
+  animation: radarSpin 2.6s linear infinite;
+}
+
+.Dashboard_Radar::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--gold);
+  box-shadow: 0 0 6px var(--gold-glow);
+  transform: translate(-50%, -50%);
+}
+
+@keyframes radarSpin {
+  to { transform: rotate(360deg); }
+}
+
+.Radar_Blip {
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--cyan);
+  box-shadow: 0 0 6px var(--cyan-glow);
+  animation: radarBlip 3s ease-in-out infinite;
+}
+
+@keyframes radarBlip {
+  0%, 100% { opacity: 0; }
+  50%      { opacity: 1; }
+}
+
 .Dashboard_Top {
   display: flex;
   flex-direction: row;

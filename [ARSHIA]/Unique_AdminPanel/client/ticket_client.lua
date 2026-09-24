@@ -93,12 +93,16 @@ end)
 
 -- ============================================================ callbacks ===
 
+-- If the server callback errors or never replies, esm_callback_bridge.lua's
+-- pcall wrapper replies with nil. THIS MUST MAP TO A FAILURE, not a fake
+-- success - defaulting nil to {r = true} is exactly what turned a server-
+-- side Lua error into a "تیکت #undefined ثبت شد" toast with no real id.
 local function cbWrap(cb)
     local done = false
     return function(result)
         if done then return end
         done = true
-        cb(result == nil and { r = true } or result)
+        cb(result == nil and { r = false, msg = 'ارتباط با سرور برقرار نشد. دوباره امتحان کن.' } or result)
     end
 end
 

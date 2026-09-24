@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<title>Unique Cafe - Product Menu</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="hud-hint">ESC — Close Menu</div>
+  <div class="panel" id="panel">
+    <div class="top-row">
+      <div class="brand">
+        <div class="brand-mark">U</div>
+        <div class="brand-text">
+          <span class="name">UNIQUE CAFE</span>
+          <span class="sub">arshiahub.ir &nbsp;·&nbsp; PRODUCT MENU</span>
+        </div>
+      </div>
+      <button class="exit-btn" id="exitBtn">✕</button>
+    </div>
+    <div class="body-row">
+      <div class="tabs">
+        <div class="tab" data-tab="drinks">🥤 Drinks</div>
+        <div class="tab" data-tab="desserts">🍰 Desserts</div>
+      </div>
+      <div class="items-grid" id="itemsGrid"></div>
+      <div class="basket">
+        <div class="basket-title">YOUR CART</div>
+        <div class="basket-list" id="basketList"></div>
+        <div class="totals"><span id="totalsCount">0 items</span><span class="amt" id="totalsAmt">$0</span></div>
+        <button class="pay-btn pay-cash" id="checkoutBtn">Checkout</button>
+      </div>
+    </div>
+  </div>
+  <script src="script.js"></script>
+</body>
+</html>

@@ -188,25 +188,32 @@ RegisterServerCallbackSafe('Unique_Ticket:create', function(source, cb, payload)
     local identifier, name = getIdentifier(source), getName(source)
     if not identifier then return cb({ r = false, msg = 'خطا در شناسایی حساب.' }) end
 
-    local id = MySQL.Sync.insert(
+    -- MySQL.Sync.insert does not exist on this server's DB wrapper - only
+    -- MySQL.Async.insert(query, params, callback) does, and it hands back
+    -- the new row's id through that callback (exactly like server/report_
+    -- main.lua's own report INSERT does). Everything that needs `id` has to
+    -- live inside this callback.
+    MySQL.Async.insert(
         'INSERT INTO `tickets` (`title`,`category`,`priority`,`status`,`creator_identifier`,`creator_name`,`created_at`,`updated_at`) VALUES (@title,@cat,@prio,\'open\',@ident,@name,@t,@t)',
-        { ['@title'] = title, ['@cat'] = category, ['@prio'] = priority, ['@ident'] = identifier, ['@name'] = name, ['@t'] = now() })
+        { ['@title'] = title, ['@cat'] = category, ['@prio'] = priority, ['@ident'] = identifier, ['@name'] = name, ['@t'] = now() },
+        function(insertId)
+            local id = tonumber(insertId) or 0
+            if id == 0 then return cb({ r = false, msg = 'خطای دیتابیس.' }) end
 
-    if not id then return cb({ r = false, msg = 'خطای دیتابیس.' }) end
+            MySQL.Async.execute(
+                'INSERT INTO `ticket_participants` (`ticket_id`,`identifier`,`name`,`role`,`added_by`,`added_at`) VALUES (@t,@i,@n,\'creator\',@i,@c)',
+                { ['@t'] = id, ['@i'] = identifier, ['@n'] = name, ['@c'] = now() })
 
-    MySQL.Async.execute(
-        'INSERT INTO `ticket_participants` (`ticket_id`,`identifier`,`name`,`role`,`added_by`,`added_at`) VALUES (@t,@i,@n,\'creator\',@i,@c)',
-        { ['@t'] = id, ['@i'] = identifier, ['@n'] = name, ['@c'] = now() })
+            MySQL.Async.execute(
+                'INSERT INTO `ticket_messages` (`ticket_id`,`identifier`,`name`,`is_admin`,`message`,`created_at`) VALUES (@t,@i,@n,0,@m,@c)',
+                { ['@t'] = id, ['@i'] = identifier, ['@n'] = name, ['@m'] = message, ['@c'] = now() })
 
-    MySQL.Async.execute(
-        'INSERT INTO `ticket_messages` (`ticket_id`,`identifier`,`name`,`is_admin`,`message`,`created_at`) VALUES (@t,@i,@n,0,@m,@c)',
-        { ['@t'] = id, ['@i'] = identifier, ['@n'] = name, ['@m'] = message, ['@c'] = now() })
+            notifyAllAdmins('warn', 'تیکت جدید', { ('#%d - %s'):format(id, title), 'از طرف: ' .. name })
+            pushDiscord({ title = '🎫 تیکت جدید #' .. id, description = title, color = 0x38bdf8,
+                fields = { { name = 'بازیکن', value = name, inline = true }, { name = 'دسته', value = category, inline = true } } })
 
-    notifyAllAdmins('warn', 'تیکت جدید', { ('#%d - %s'):format(id, title), 'از طرف: ' .. name })
-    pushDiscord({ title = '🎫 تیکت جدید #' .. id, description = title, color = 0x38bdf8,
-        fields = { { name = 'بازیکن', value = name, inline = true }, { name = 'دسته', value = category, inline = true } } })
-
-    cb({ r = true, id = id })
+            cb({ r = true, id = id })
+        end)
 end)
 
 -- ------------------------------------------------- create from a report ---
@@ -221,7 +228,7 @@ RegisterServerCallbackSafe('Unique_Ticket:createFromReport', function(source, cb
     local rep = reports[tostring(reportId)]
     local adminIdent, adminName = getIdentifier(source), getName(source)
 
-    local id = MySQL.Sync.insert(
+    MySQL.Async.insert(
         [[INSERT INTO `tickets` (`title`,`category`,`priority`,`status`,`creator_identifier`,`creator_name`,`source_report_id`,`created_at`,`updated_at`)
           VALUES (@title,'report',2,'open',@ident,@name,@rid,@t,@t)]],
         {
@@ -230,8 +237,10 @@ RegisterServerCallbackSafe('Unique_Ticket:createFromReport', function(source, cb
             ['@name']  = rep.owner and rep.owner.name or 'نامشخص',
             ['@rid']   = reportId,
             ['@t']     = now(),
-        })
-    if not id then return cb({ r = false, msg = 'خطای دیتابیس.' }) end
+        },
+        function(insertId)
+    local id = tonumber(insertId) or 0
+    if id == 0 then return cb({ r = false, msg = 'خطای دیتابیس.' }) end
 
     if rep.owner and rep.owner.identifier then
         MySQL.Async.execute(
@@ -247,6 +256,7 @@ RegisterServerCallbackSafe('Unique_Ticket:createFromReport', function(source, cb
     logSystemMessage(id, ('%s این تیکت را از گزارش #%s ساخت.'):format(adminName, tostring(reportId)))
 
     cb({ r = true, id = id })
+        end)
 end)
 
 -- ------------------------------------------------------------- lists ---
@@ -478,9 +488,13 @@ RegisterServerCallbackSafe('Unique_Ticket:assignAdmin', function(source, cb, tic
     MySQL.Async.execute(
         'INSERT IGNORE INTO `ticket_admins` (`ticket_id`,`identifier`,`name`,`assigned_by`,`assigned_at`) VALUES (@t,@i,@n,@a,@c)',
         { ['@t'] = ticketId, ['@i'] = identifier, ['@n'] = name, ['@a'] = getName(source), ['@c'] = now() })
-    if MySQL.Sync.fetchScalar('SELECT `status` FROM `tickets` WHERE `id` = @t', { ['@t'] = ticketId }) == 'open' then
-        MySQL.Async.execute('UPDATE `tickets` SET `status` = \'in_progress\', `updated_at` = @c WHERE `id` = @t', { ['@t'] = ticketId, ['@c'] = now() })
-    end
+    -- MySQL.Sync.fetchScalar doesn't exist on this server's DB wrapper
+    -- either - fold the "only bump status if it was still open" check into
+    -- the UPDATE's WHERE clause instead of reading first, which is both
+    -- simpler and avoids a read-then-write race.
+    MySQL.Async.execute(
+        "UPDATE `tickets` SET `status` = 'in_progress', `updated_at` = @c WHERE `id` = @t AND `status` = 'open'",
+        { ['@t'] = ticketId, ['@c'] = now() })
     logSystemMessage(ticketId, ('%s، %s را به تیکت اضافه کرد.'):format(getName(source), name))
     broadcastTicketUpdate(ticketId)
     cb({ r = true })

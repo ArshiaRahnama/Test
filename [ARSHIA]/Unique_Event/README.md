@@ -60,13 +60,17 @@ is done from inside the `/uevent` menu — there are no other chat commands to m
 ## How each event works
 
 ### Capture
+An admin starts a round first (Admin tab in `/uevent`, or `/startCap [minutes]`) — every
+online player gets a banner + chat message inviting them to join. Nobody can `/joinCap`
+before a round is running, and (if `Config.Capture.RequireGangBoss` is on, the default)
+you must physically be at one of your gang's boss markers to join — checked against the
+same `boss` locations your gang system already stores, not a separate config list.
 Gangs fight over a configurable list of zones (`Config.Capture.DefaultZones`). Standing
 alone — no rival gang member nearby — at a zone's capture point for
 `Config.Capture.TimeToCaptureZone` seconds gives your gang that zone. The owning gang
 scores a point every `Config.Capture.PointInterval` seconds. Kills, gang points and an
 all-time weighted leaderboard (`Kills*2 + GangPoints*1 - Deaths*1` by default) are all
 tracked and shown in `/uevent`. Zone ownership persists across restarts (`zones.json`).
-An admin starts/ends rounds from the Admin tab in `/uevent`.
 
 ### GunGame
 Queue up from `/uevent`. Once `Config.GunGame.PlayersPerArena` players are queued, a new

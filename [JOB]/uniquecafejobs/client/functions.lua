@@ -487,8 +487,12 @@ function UwUCafeMenuAction()
         })
     end
 
-    table.insert(options, {title = 'Menu Cake', value = 'menu_cakes', onSelect = function() lib.showContext('cake_menu') end})
-    table.insert(options, {title = 'Menu Noshidani', value = 'menu_noshidani', onSelect = function() lib.showContext('noshidani_menu') end})
+    -- Menu Cake / Menu Noshidani used to open 'cake_menu' / 'noshidani_menu'
+    -- ox_lib contexts whose items onSelect'd straight back into the same
+    -- list (see git history) - no purchase was ever possible. Both now open
+    -- the real NUI shop (client/shop_client.lua) on the matching tab.
+    table.insert(options, {title = 'Menu Cake', value = 'menu_cakes', onSelect = function() OpenUniqueShop('desserts') end})
+    table.insert(options, {title = 'Menu Noshidani', value = 'menu_noshidani', onSelect = function() OpenUniqueShop('drinks') end})
 
     Citizen.Wait(2000)
     lib.registerContext({
@@ -500,62 +504,6 @@ function UwUCafeMenuAction()
     })
 end
 
-
-Citizen.CreateThread(function()
-    local options1 = {}
-    
-    for i, item in ipairs(Config.UwUMenu_Cake_Item) do
-      table.insert(options1, {
-            title = item.title,
-            description = 'Price: $' .. item.price,
-            icon = item.image,
-            image = item.image,
-            onSelect = function()
-             
-              lib.showContext('cake_menu')
-            end
-      })
-    end
- 
-    lib.registerContext({
-        id = 'cake_menu',
-        title = 'Cake Items',
-        menu = 'uwu_menu',
-        onBack = function()
-          
-         
-        end,
-        options = options1
-    })
-
-    local options2 = {}
-    
-    for i, item in ipairs(Config.UwUMenu_Noshidani_Item) do
-      table.insert(options2, {
-            title = item.title,
-            description = 'Price: $' .. item.price,
-            icon = item.image,
-            image = item.image,
-            onSelect = function()
-              
-              lib.showContext('noshidani_menu')
-            end
-      })
-    end
- 
-    lib.registerContext({
-        id = 'noshidani_menu',
-        title = 'Noshidani Items',
-        menu = 'uwu_menu',
-        onBack = function()
-        
-        end,
-        options = options2
-    })
-
-    
-end)
-  
     
 local prop = nil
 function OpenMobileuwueActionsMenu()

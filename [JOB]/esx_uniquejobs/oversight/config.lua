@@ -187,6 +187,75 @@ Config_oversight.LogFinesToRapSheet = true      -- fines/suspensions also land i
 
 Config_oversight.BlipRefreshMs = 4000
 
+-- ------------------------------------------------------------
+-- Live market (dynamic pricing). Every legit sale nudges that job's
+-- price down for a while (oversupply); the market drifts back to
+-- 1.0x on its own if nobody's selling. This multiplier STACKS with
+-- the judge's own manual Eghtesad multiplier (Ov.GetMods in
+-- server/core.lua) -- the judge is no longer setting the only
+-- price in town, they're negotiating against a live market.
+-- ------------------------------------------------------------
+Config_oversight.Market = {
+	Enabled = true,
+	WindowMinutes = 30,           -- rolling window used to measure how much has been sold
+	TickSeconds = 60,             -- how often the market recomputes
+	PressurePerUnit = 0.006,      -- each unit sold in the window pushes price down by this much (before clamping)
+	MaxSwing = 0.35,              -- price can drift at most +/-35% from 1.0x on its own
+	RecoveryPerTick = 0.04,       -- how fast an idle market drifts back toward 1.0x each tick
+}
+
+-- ------------------------------------------------------------
+-- Supply chain (price-linked, not recipe-linked): a consuming job's
+-- market price is nudged UP when its supplier job is under heavy
+-- sale pressure (raw material getting scarce) and drifts back down
+-- when the supplier is quiet. This does NOT touch esx_jobs' actual
+-- production recipes/items -- it's a pure economic ripple effect,
+-- so it's safe to turn on without risking the delivery/production
+-- flow of either job. See CHANGES.md for why it's scoped this way.
+-- ------------------------------------------------------------
+Config_oversight.SupplyChain = {
+	tailor = { 'lumberjack' },   -- fabric/thread gets pricier when wood is scarce (feels like looms/spindles)
+	fueler = { 'miner' },        -- refining gets pricier when ore is scarce
+}
+Config_oversight.SupplyChainStrength = 0.5 -- 0..1: how much of the supplier's own pressure carries over
+
+-- ------------------------------------------------------------
+-- Black market (the "fence"). Any watched-job worker can call the
+-- fence (Command below) to sell job items for more than the legal
+-- price, off the books -- no tax, no judge multiplier. Every sale
+-- raises the seller's Heat; higher Heat means a higher chance the
+-- sale gets flagged to marshal/judge (server/blackmarket.lua). The
+-- fence is only open on a random cycle, so it's never a guaranteed
+-- income source -- it's a standing temptation, not a shop.
+-- ------------------------------------------------------------
+Config_oversight.BlackMarket = {
+	Enabled = true,
+	Command = 'fence',
+	BonusMult = 1.35,             -- pays 35% more than the current legal (market-adjusted) price
+	HeatPerSale = 18,             -- 0-100 meter, per identifier, memory-only (resets on restart, like a wanted level)
+	HeatCap = 100,
+	HeatDecayPerMinute = 2.5,
+	DetectionBaseChance = 0.12,   -- chance to get flagged at 0 heat
+	DetectionMaxChance = 0.85,    -- chance to get flagged at max heat
+	OpenMinMinutes = 15,
+	OpenMaxMinutes = 35,
+	ClosedMinMinutes = 10,
+	ClosedMaxMinutes = 25,
+	MaxSellPerCall = 40,
+	-- Mirrors the real per-unit legal prices from
+	-- ScriptPack/itemseller_config.lua for exactly the items listed in
+	-- Config_oversight.Economy.SaleItems above, so the fence's prices
+	-- feel like real prices-plus-a-cut rather than a flat made-up rate.
+	-- ScriptPack is a separate resource with no price-lookup export, so
+	-- this is a deliberate, documented duplication -- if those prices
+	-- ever change, update both places.
+	BasePrices = {
+		clothe = 1500, essence = 300, packaged_plank = 1200, packaged_chicken = 200,
+		iron = 12000, gold = 20000, diamond = 5000,
+		mahigoli = 800, ghezelala = 1100, hamoor = 1000, salomon = 600, meygoo = 850, jolbak = 300,
+	},
+}
+
 -- Simple shared helper: role + grade check for a job name
 function Ov.IsOversightJob(jobName)
 	return Config_oversight.Roles[jobName] ~= nil

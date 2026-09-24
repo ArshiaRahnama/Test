@@ -518,6 +518,7 @@ function renderAdmin() {
   if (S.adminView === 'archive') return renderQueue(body, true);
   if (S.adminView === 'active')  return renderActive(body);
   if (S.adminView === 'stats')   return renderStats(body);
+  if (S.adminView === 'tickets') return renderTicketAdmin(body);
 }
 
 async function renderQueue(body, archived) {
@@ -1022,7 +1023,328 @@ async function renderStats(body) {
   }
 }
 
-/* ========================================================= RATING CARD === */
+/* ================================================= TICKET ADMIN TAB ===
+   "همه اپشن‌هاش" - full ticket management embedded directly in /areport:
+   list + filters, detail w/ status+priority, participants, assigned admins,
+   linked-report view, chat thread. Reuses this file's existing .split/
+   .queue/.tk/.pane/.thread/.composer classes (same ones renderQueue/
+   paintDetail use above) so it looks like one UI, not a bolted-on panel.
+   Talks ONLY through the ticket: namespace - never touches S.tickets,
+   S.selected, or any report-specific state.
+=========================================================================== */
+
+const TS = {
+  filter: 'all', mine: false, search: '',
+  list: [], selectedId: null, detail: null,
+  cfg: null, open: { players: false, admins: false },
+};
+
+function ticketStatusPill(s) {
+  if (s === 'open')        return '<span class="pill pill--wait">باز</span>';
+  if (s === 'in_progress') return '<span class="pill pill--live">درحال‌بررسی</span>';
+  return '<span class="pill pill--done">بسته‌شده</span>';
+}
+function ticketPriColor(p) {
+  const found = ((TS.cfg && TS.cfg.priorities) || []).find(x => x.id === Number(p));
+  return (found && found.color) || '#7c8698';
+}
+function ticketPriLabel(p) {
+  const found = ((TS.cfg && TS.cfg.priorities) || []).find(x => x.id === Number(p));
+  return (found && found.label) || '—';
+}
+function ticketCatLabel(c) {
+  const found = ((TS.cfg && TS.cfg.categories) || []).find(x => x.id === c);
+  return (found && found.label) || c || '—';
+}
+
+async function renderTicketAdmin(body) {
+  body.className = 'body';
+  body.innerHTML = `<div class="split"><div class="queue">${SKEL}</div><div class="pane"></div></div>`;
+
+  if (!TS.cfg) {
+    const cfgRes = await nui('ticket:config');
+    if (cfgRes && cfgRes.r) TS.cfg = cfgRes;
+  }
+  if (S.adminView !== 'tickets') return;
+
+  body.innerHTML = `
+    <div class="split">
+      <div class="queue">
+        <div class="queue__tools">
+          <input class="search" id="tqSearch" placeholder="جستجو در عنوان یا شماره…" value="${esc(TS.search)}" autocomplete="off">
+          <div class="filters">
+            <button class="filt ${TS.filter === 'all' && !TS.mine ? 'is-on' : ''}" data-tf="all">همه</button>
+            <button class="filt ${TS.filter === 'open' ? 'is-on' : ''}" data-tf="open">باز</button>
+            <button class="filt ${TS.filter === 'in_progress' ? 'is-on' : ''}" data-tf="in_progress">درحال‌بررسی</button>
+            <button class="filt ${TS.filter === 'closed' ? 'is-on' : ''}" data-tf="closed">بسته‌شده</button>
+            <button class="filt ${TS.mine ? 'is-on' : ''}" data-tf="mine">تیکت‌های من</button>
+          </div>
+        </div>
+        <div class="list scroller" id="tqList"></div>
+      </div>
+      <div class="pane" id="tqDetail"></div>
+    </div>`;
+
+  $('#tqSearch').addEventListener('input', e => { TS.search = e.target.value; paintTicketQueue(); });
+  $$('.filt', $('#tqList').closest('.queue')).forEach(b => b.addEventListener('click', () => {
+    if (b.dataset.tf === 'mine') { TS.mine = !TS.mine; }
+    else { TS.mine = false; TS.filter = b.dataset.tf; }
+    loadTicketQueue();
+  }));
+
+  await loadTicketQueue();
+}
+
+async function loadTicketQueue() {
+  const res = await nui('ticket:getAll', { status: TS.mine ? 'all' : TS.filter, mine: TS.mine });
+  TS.list = (res && res.r && res.data) || [];
+  paintTicketQueue();
+  paintTicketDetail();
+}
+
+function visibleTicketRows() {
+  const q = TS.search.trim().toLowerCase();
+  if (!q) return TS.list;
+  return TS.list.filter(t => String(t.id).includes(q) || String(t.title || '').toLowerCase().includes(q));
+}
+
+function paintTicketQueue() {
+  const list = $('#tqList');
+  if (!list) return;
+  const rows = visibleTicketRows();
+
+  if (!rows.length) {
+    list.innerHTML = `<div class="empty"><i class="fa-solid fa-ticket"></i>
+      <h3>تیکتی نیست</h3><p>با این فیلتر چیزی پیدا نشد.</p></div>`;
+    return;
+  }
+
+  list.innerHTML = rows.map(t => `
+    <div class="tk tk__grid ${t.status === 'open' ? 'tk--wait' : ''} ${TS.selectedId === t.id ? 'is-sel' : ''}" data-tid="${esc(t.id)}">
+      <span class="tk__spine" style="background:${esc(ticketPriColor(t.priority))};color:${esc(ticketPriColor(t.priority))}"></span>
+      <span class="tk__ava">${esc(String(t.creator.name || '?').trim().charAt(0).toUpperCase() || '?')}</span>
+      <div class="tk__main">
+        <div class="tk__top">
+          <span class="tk__id">#${esc(String(t.id).padStart(4, '0'))}</span>
+          <span class="tk__title">${esc(t.title)}</span>
+        </div>
+        <div class="tk__meta">
+          <span>${esc(ticketCatLabel(t.category))}</span>
+          <span>${esc(t.creator.name || '')}</span>
+          ${t.sourceReportId ? `<span><i class="fa-solid fa-link"></i> ریپورت #${esc(t.sourceReportId)}</span>` : ''}
+        </div>
+      </div>
+      <div class="tk__side">${ticketStatusPill(t.status)}</div>
+    </div>`).join('');
+
+  $$('.tk', list).forEach(row => row.addEventListener('click', () => {
+    TS.selectedId = Number(row.dataset.tid);
+    TS.open = { players: false, admins: false };
+    paintTicketQueue();
+    paintTicketDetail();
+  }));
+}
+
+async function paintTicketDetail() {
+  const pane = $('#tqDetail');
+  if (!pane) return;
+  if (!TS.selectedId) {
+    pane.innerHTML = `<div class="empty"><i class="fa-solid fa-ticket"></i>
+      <h3>یک تیکت رو انتخاب کن</h3><p>جزئیات، چت و اپشن‌هاش اینجا میاد.</p></div>`;
+    return;
+  }
+
+  const res = await nui('ticket:getDetail', { id: TS.selectedId });
+  if (!res || !res.r) {
+    pane.innerHTML = `<div class="empty"><i class="fa-solid fa-triangle-exclamation"></i><h3>پیدا نشد</h3></div>`;
+    return;
+  }
+  TS.detail = res;
+  const t = res.ticket;
+  const prios = (TS.cfg && TS.cfg.priorities) || [];
+  const stats = (TS.cfg && TS.cfg.statuses) || [];
+
+  pane.innerHTML = `
+    <div class="pane__head">
+      <span class="tk__ava" style="width:40px;height:40px">${esc(String(t.creator.name || '?').charAt(0).toUpperCase())}</span>
+      <div class="pane__who">
+        <div class="pane__name">#${esc(String(t.id).padStart(4, '0'))} - ${esc(t.title)}</div>
+        <div class="pane__sub">
+          <span>${esc(ticketCatLabel(t.category))}</span>
+          <span>${esc(t.creator.name || '-')}</span>
+          ${t.sourceReportId ? `<span id="tLinkedReport" class="pill" style="cursor:pointer"><i class="fa-solid fa-link"></i> گزارش #${esc(t.sourceReportId)}</span>` : ''}
+        </div>
+      </div>
+      <div class="pane__acts">
+        ${ticketStatusPill(t.status)}
+      </div>
+    </div>
+
+    <div class="queue__tools" style="border-bottom:1px solid var(--edge,#2a323f)">
+      <div class="filters" style="flex-wrap:wrap">
+        <select class="input" id="tStatusSel" style="width:auto">
+          ${stats.map(s => `<option value="${esc(s.id)}" ${s.id === t.status ? 'selected' : ''}>${esc(s.label)}</option>`).join('')}
+        </select>
+        <select class="input" id="tPrioSel" style="width:auto">
+          ${prios.map(p => `<option value="${esc(p.id)}" ${p.id === t.priority ? 'selected' : ''}>${esc(p.label)}</option>`).join('')}
+        </select>
+        <button class="filt ${TS.open.players ? 'is-on' : ''}" id="tTogglePlayers"><i class="fa-solid fa-users"></i> بازیکن‌ها (${res.participants.length})</button>
+        <button class="filt ${TS.open.admins ? 'is-on' : ''}" id="tToggleAdmins"><i class="fa-solid fa-shield"></i> ادمین‌ها (${res.admins.length})</button>
+      </div>
+    </div>
+
+    ${TS.open.players ? `
+    <div class="queue__tools" id="tPlayersBox">
+      <input class="search" id="tPlayerSearch" placeholder="جستجوی نام یا آیدی بازیکن…" autocomplete="off">
+      <div id="tPlayerResults" style="margin-top:8px; display:flex; flex-direction:column; gap:6px;"></div>
+      <div style="margin-top:10px; display:flex; flex-direction:column; gap:6px;">
+        ${res.participants.map(p => `
+          <div class="tk" style="padding:6px 10px; display:flex; justify-content:space-between; align-items:center;">
+            <span>${esc(p.name || p.identifier)} <small style="color:var(--dim,#7c8698)">(${esc(p.role)})</small></span>
+            ${p.role !== 'creator' ? `<button class="filt" data-rm-player="${esc(p.identifier)}"><i class="fa-solid fa-xmark"></i></button>` : ''}
+          </div>`).join('') || '<p style="color:var(--dim,#7c8698); font-size:12px;">بازیکنی اضافه نشده.</p>'}
+      </div>
+    </div>` : ''}
+
+    ${TS.open.admins ? `
+    <div class="queue__tools" id="tAdminsBox">
+      <div id="tAdminOnline" style="display:flex; flex-direction:column; gap:6px;"></div>
+      <div style="margin-top:10px; display:flex; flex-direction:column; gap:6px;">
+        ${res.admins.map(a => `
+          <div class="tk" style="padding:6px 10px; display:flex; justify-content:space-between; align-items:center;">
+            <span><i class="fa-solid fa-shield"></i> ${esc(a.name || a.identifier)}</span>
+            <button class="filt" data-rm-admin="${esc(a.identifier)}"><i class="fa-solid fa-xmark"></i></button>
+          </div>`).join('') || '<p style="color:var(--dim,#7c8698); font-size:12px;">هنوز ادمینی مسئول نیست.</p>'}
+      </div>
+    </div>` : ''}
+
+    <div class="thread scroller" id="tThread"></div>
+    <div class="composer">
+      <input class="input" id="tMsg" placeholder="پیامت رو بنویس…" maxlength="1000" autocomplete="off">
+      <button class="sendbtn" id="tSend"><i class="fa-solid fa-paper-plane"></i></button>
+    </div>`;
+
+  paintTicketThread(res.messages || []);
+
+  $('#tStatusSel').addEventListener('change', async e => {
+    const val = e.target.value;
+    if (val === 'closed' && !confirm(`تیکت #${t.id} برای همیشه بسته بشه؟ فقط از این راه بسته میشه.`)) {
+      e.target.value = t.status;
+      return;
+    }
+    await nui('ticket:setStatus', { id: t.id, status: val });
+    loadTicketQueue();
+  });
+  $('#tPrioSel').addEventListener('change', async e => {
+    await nui('ticket:setPriority', { id: t.id, priority: Number(e.target.value) });
+    loadTicketQueue();
+  });
+
+  $('#tTogglePlayers').addEventListener('click', () => { TS.open.players = !TS.open.players; TS.open.admins = false; paintTicketDetail(); });
+  $('#tToggleAdmins').addEventListener('click', () => { TS.open.admins = !TS.open.admins; TS.open.players = false; paintTicketDetail(); });
+
+  const reportLink = $('#tLinkedReport');
+  if (reportLink) reportLink.addEventListener('click', () => openLinkedReportView(t.sourceReportId));
+
+  if (TS.open.players) {
+    let deb = null;
+    $('#tPlayerSearch').addEventListener('input', e => {
+      clearTimeout(deb);
+      const q = e.target.value.trim();
+      deb = setTimeout(async () => {
+        if (q.length < 2) { $('#tPlayerResults').innerHTML = ''; return; }
+        const r = await nui('ticket:searchPlayer', { query: q });
+        const found = (r && r.data) || [];
+        $('#tPlayerResults').innerHTML = found.map(p => `
+          <div class="tk" style="padding:6px 10px; display:flex; justify-content:space-between; align-items:center;">
+            <span>${esc(p.name)}${p.online ? ' 🟢' : ''}</span>
+            <button class="filt" data-add-player="${esc(p.identifier)}" data-name="${esc(p.name)}">افزودن</button>
+          </div>`).join('') || '<p style="color:var(--dim,#7c8698); font-size:12px;">نتیجه‌ای نبود.</p>';
+        $$('[data-add-player]', $('#tPlayerResults')).forEach(btn => btn.addEventListener('click', async () => {
+          await nui('ticket:addParticipant', { id: t.id, identifier: btn.dataset.addPlayer, name: btn.dataset.name });
+          paintTicketDetail();
+        }));
+      }, 300);
+    });
+    $$('[data-rm-player]', pane).forEach(btn => btn.addEventListener('click', async () => {
+      await nui('ticket:removeParticipant', { id: t.id, identifier: btn.dataset.rmPlayer });
+      paintTicketDetail();
+    }));
+  }
+
+  if (TS.open.admins) {
+    const r = await nui('ticket:getOnlineAdmins');
+    const found = (r && r.data) || [];
+    $('#tAdminOnline').innerHTML = found.map(a => `
+      <div class="tk" style="padding:6px 10px; display:flex; justify-content:space-between; align-items:center;">
+        <span>${esc(a.name)}</span>
+        <button class="filt" data-add-admin="${esc(a.identifier)}" data-name="${esc(a.name)}">افزودن به تیکت</button>
+      </div>`).join('') || '<p style="color:var(--dim,#7c8698); font-size:12px;">ادمین آنلاینی نیست.</p>';
+    $$('[data-add-admin]', pane).forEach(btn => btn.addEventListener('click', async () => {
+      await nui('ticket:assignAdmin', { id: t.id, identifier: btn.dataset.addAdmin, name: btn.dataset.name });
+      paintTicketDetail();
+    }));
+    $$('[data-rm-admin]', pane).forEach(btn => btn.addEventListener('click', async () => {
+      await nui('ticket:unassignAdmin', { id: t.id, identifier: btn.dataset.rmAdmin });
+      paintTicketDetail();
+    }));
+  }
+
+  const doSend = async () => {
+    const inp = $('#tMsg');
+    const text = inp.value.trim();
+    if (!text) return;
+    inp.value = '';
+    const r = await nui('ticket:sendMessage', { id: t.id, text });
+    if (r && r.r) paintTicketDetail();
+    else { toast((r && r.msg) || 'پیام ارسال نشد.', 'bad'); inp.value = text; }
+  };
+  $('#tSend').addEventListener('click', doSend);
+  $('#tMsg').addEventListener('keydown', e => { if (e.key === 'Enter') doSend(); });
+}
+
+function paintTicketThread(messages) {
+  const box = $('#tThread');
+  if (!box) return;
+  if (!messages.length) {
+    box.innerHTML = `<div class="empty"><p>هنوز پیامی نیست.</p></div>`;
+    return;
+  }
+  box.innerHTML = messages.map(m => {
+    if (m.is_system) return `<div class="msg msg--sys"><div class="msg__body">${esc(m.message)}</div></div>`;
+    const side = m.is_admin ? 'msg--me' : 'msg--them';
+    return `<div class="msg ${side}">
+      <div class="msg__who">${esc(m.name || '')}${m.is_admin ? ' <i class="fa-solid fa-shield"></i>' : ''}</div>
+      <div class="msg__body">${esc(m.message)}</div>
+    </div>`;
+  }).join('');
+  box.scrollTop = box.scrollHeight;
+}
+
+async function openLinkedReportView(reportId) {
+  const r = await nui('ticket:getLinkedReport', { reportId });
+  if (!r || !r.r) return toast('گزارش پیدا نشد.', 'bad');
+  const rp = r.report;
+
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'position:fixed;inset:0;z-index:80;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.55);backdrop-filter:blur(3px);';
+  wrap.innerHTML = `
+    <div style="width:420px;max-height:70vh;overflow:auto;background:#151a22;border:1px solid #2a323f;border-radius:14px;padding:18px;color:#dfe5ee;font-size:13px;line-height:1.9;box-shadow:0 20px 50px rgba(0,0,0,.5);">
+      <div style="font-weight:800;font-size:15px;margin-bottom:10px;display:flex;align-items:center;gap:8px;">
+        <i class="fa-solid fa-link"></i> گزارش #${esc(rp.id)}
+      </div>
+      <div style="color:#7c8698;font-size:11px;">عنوان</div><div>${esc(rp.title || '-')}</div>
+      <div style="color:#7c8698;font-size:11px;margin-top:8px;">دسته</div><div>${esc(rp.category || '-')}</div>
+      <div style="color:#7c8698;font-size:11px;margin-top:8px;">توضیحات</div><div>${esc(rp.detail || '-')}</div>
+      <div style="color:#7c8698;font-size:11px;margin-top:8px;">وضعیت</div><div>${esc(rp.status || '-')}</div>
+      ${rp.adminName ? `<div style="color:#7c8698;font-size:11px;margin-top:8px;">ادمین رسیدگی‌کننده</div><div>${esc(rp.adminName)}</div>` : ''}
+      <button id="tReportViewClose" style="margin-top:16px;width:100%;padding:8px;border-radius:8px;border:1px solid #3a4553;background:#1d232d;color:#dfe5ee;cursor:pointer;">بستن</button>
+    </div>`;
+  document.body.appendChild(wrap);
+  const close = () => wrap.remove();
+  wrap.addEventListener('click', e => { if (e.target === wrap) close(); });
+  $('#tReportViewClose', wrap).addEventListener('click', close);
+}
 
 function openRating(id, adminName) {
   S.rating = { id, value: 0 };

@@ -23,6 +23,7 @@ local lastRoster = {}
 local function can(perm) return Ov.Perms ~= nil and Ov.Perms[perm] == true end
 local function money(n) return '$' .. tostring(math.floor(tonumber(n) or 0)) end
 local function clean(name) return (tostring(name or '?'):gsub('_', ' ')) end
+Ov.Money, Ov.CleanName = money, clean
 local function ago(ts) return ts end
 
 local function jobOptions(includeAll)
@@ -41,10 +42,12 @@ local function show(id, title, back, options)
 	lib.registerContext({ id = id, title = title, menu = back, options = options })
 	lib.showContext(id)
 end
+Ov.ShowMenu = show
 
 local function empty(text)
 	return { { title = text, disabled = true, icon = 'circle-info' } }
 end
+Ov.EmptyMenu = empty
 
 -- ============================================================
 -- Main menu
@@ -72,9 +75,11 @@ function Ov.OpenMainMenu()
 		if can('dashboard') then
 			o[#o + 1] = { title = 'Karegaran-e Online (Live)', description = 'Vaziat-e Zende, Spectate, Bazresi, Akhtar, Jarime', icon = 'users', onSelect = function() Ov.OpenRoster() end }
 			o[#o + 1] = { title = 'Dashboard', description = 'Daramad, Kar-e Hafte, Amar-e Koli', icon = 'chart-column', onSelect = function() Ov.OpenDashboard() end }
+			o[#o + 1] = { title = 'Bazar-e Zende', description = 'Arze/Taghaza-ye Zende + Zanjire-ye Ta\'min Bein-e Shoghl-ha', icon = 'chart-line', onSelect = function() Ov.OpenMarket() end }
 		end
 		if can('flags') then
 			o[#o + 1] = { title = 'Hoshdar-ha (Flags)', description = 'Kar-e Gheyr-e Manteghi, Bedoon-e Mojavez, Daramad-e Ajib', icon = 'triangle-exclamation', onSelect = function() Ov.OpenFlags() end }
+			o[#o + 1] = { title = 'Bazar-e Siah (Etela\'at)', description = 'Vaziat-e Baz/Baste -- Faghat Ettela-resani, Chizi Be Karegaran Nemige', icon = 'user-secret', onSelect = function() Ov.OpenBlackMarketInfo() end }
 			if Ov.LastAlert then
 				o[#o + 1] = { title = 'GPS Be Akharin Hoshdar', description = clean(Ov.LastAlert.name), icon = 'location-dot', onSelect = function()
 					SetNewWaypoint(Ov.LastAlert.x + 0.0, Ov.LastAlert.y + 0.0)
@@ -197,6 +202,9 @@ function Ov.OpenWorkerMenu(id, back)
 		if f.suspension then
 			o[#o + 1] = { title = 'TARIGH: ' .. f.suspension.left .. ' Baghi', description = f.suspension.reason, icon = 'user-slash', iconColor = 'red', disabled = true }
 		end
+		if f.heat and f.heat >= 20 then
+			o[#o + 1] = { title = 'Heat (Ehtemal-e Ertebat Ba Bazar-e Siah): ' .. math.floor(f.heat) .. '/100', icon = 'fire', iconColor = f.heat >= 60 and 'red' or 'orange', disabled = true }
+		end
 		for _, p in ipairs(f.permits or {}) do
 			o[#o + 1] = { title = 'Mojavez ' .. p.label .. ': ' .. (p.has and 'Darad' or 'NADARAD'), icon = 'id-badge', iconColor = p.has and 'green' or 'red', disabled = true }
 		end
@@ -293,6 +301,9 @@ function Ov.Inspect(id)
 		o[#o + 1] = { title = clean(f.name) .. ' [' .. f.id .. ']', description = f.jobLabel .. ' | ' .. tostring(f.grade or '-'), icon = 'id-card', disabled = true }
 		if f.suspension then
 			o[#o + 1] = { title = 'TARIGH-SHODE (' .. f.suspension.left .. ')', description = f.suspension.reason, icon = 'user-slash', iconColor = 'red', disabled = true }
+		end
+		if f.heat and f.heat >= 20 then
+			o[#o + 1] = { title = 'Heat (Ehtemal-e Ertebat Ba Bazar-e Siah): ' .. math.floor(f.heat) .. '/100', icon = 'fire', iconColor = f.heat >= 60 and 'red' or 'orange', disabled = true }
 		end
 		for _, p in ipairs(f.permits or {}) do
 			o[#o + 1] = { title = 'Mojavez ' .. p.label .. ': ' .. (p.has and 'Darad' or 'NADARAD'), icon = 'id-badge', iconColor = p.has and 'green' or 'red', disabled = true }
@@ -511,7 +522,10 @@ function Ov.OpenEconomy()
 		if not e then return end
 		local o = {}
 		for _, j in ipairs(e.jobs) do
-			local desc = 'Maliat: ' .. math.floor(j.tax * 100 + 0.5) .. '% | Gheymat: x' .. string.format('%.2f', j.mult)
+			local desc = 'Maliat: ' .. math.floor(j.tax * 100 + 0.5) .. '% | Zarib-e Man: x' .. string.format('%.2f', j.mult)
+			if j.market and math.abs(j.market - 1.0) >= 0.02 then
+				desc = desc .. ' | Bazar: x' .. string.format('%.2f', j.market) .. (j.market < 1.0 and ' (Arze Ziad)' or ' (Kambood)')
+			end
 			if j.bonusMult then desc = desc .. ' | EVENT x' .. string.format('%.2f', j.bonusMult) .. ' (' .. j.bonusLeft .. ')' end
 			if j.closedLeft then desc = desc .. ' | BASTE (' .. j.closedLeft .. ')' end
 			o[#o + 1] = {

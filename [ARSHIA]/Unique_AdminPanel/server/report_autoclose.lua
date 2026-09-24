@@ -92,8 +92,13 @@ CreateThread(function()
                 -- Additive/read-only toward `reports` itself: only reads
                 -- columns reports.sql already defines, inserts only into
                 -- the ticket tables from sql/tickets.sql.
-                local ticketOk, ticketId = pcall(function()
-                    return MySQL.Sync.insert([[
+                -- MySQL.Sync.insert doesn't exist on this server's DB
+                -- wrapper - only MySQL.Async.insert(query, params, callback)
+                -- does (same as server/report_main.lua's own report INSERT),
+                -- so everything that needs the new ticket's id has to live
+                -- inside that callback.
+                local ticketOk = pcall(function()
+                    MySQL.Async.insert([[
                         INSERT INTO `tickets`
                             (`title`,`category`,`priority`,`status`,`creator_identifier`,`creator_name`,`source_report_id`,`created_at`,`updated_at`)
                         VALUES (@title,'report',3,'open',@ident,@name,@rid,@t,@t)
@@ -103,31 +108,42 @@ CreateThread(function()
                         ['@name']  = 'نامشخص',
                         ['@rid']   = r.ID,
                         ['@t']     = closedAt,
-                    })
+                    }, function(insertId)
+                        local ticketId = tonumber(insertId) or 0
+                        if ticketId == 0 then ticketId = nil end
+
+                        if ticketId then
+                            if r.identifier then
+                                MySQL.Async.execute(
+                                    'INSERT IGNORE INTO `ticket_participants` (`ticket_id`,`identifier`,`name`,`role`,`added_by`,`added_at`) VALUES (@t,@i,\'نامشخص\',\'creator\',\'System (Auto-Close)\',@c)',
+                                    { ['@t'] = ticketId, ['@i'] = r.identifier, ['@c'] = closedAt })
+                            end
+                            MySQL.Async.execute(
+                                'INSERT INTO `ticket_messages` (`ticket_id`,`identifier`,`name`,`is_admin`,`is_system`,`message`,`created_at`) VALUES (@t,NULL,\'System\',1,1,@m,@c)',
+                                { ['@t'] = ticketId, ['@m'] = ('ریپورت #%s (%s) بعد از %d دقیقه بدون پاسخ خودکار بسته شد و این تیکت برای پیگیری ساخته شد.'):format(r.ID, r.category or r.title or '-', minutesOpen), ['@c'] = closedAt })
+                        end
+
+                        -- ۱) اطلاع عمومی به همه‌ی ادمین‌های آنلاین که این ریپورت خودکار بسته شد
+                        Rep.NotifyAllAdmins(
+                            ('⛔ ریپورت #%s به دلیل عدم پیگیری بعد از %d دقیقه، خودکار بسته شد.'):format(r.ID, minutesOpen), 1)
+
+                        -- ۲) اطلاع جداگانه و واضح‌تر فقط برای رنک‌های بالا + شماره‌ی تیکتِ پیگیری
+                        Rep.NotifyAllAdmins(
+                            (ticketId
+                                and '🔺 توجه رنک بالا: ریپورت #%s (%s) بدون پاسخ بسته شد - یک تیکت پیگیری (#%d) براتون ساخته شد.'
+                                or  '🔺 توجه رنک بالا: ریپورت #%s (%s) بدون پاسخ بسته شد - لطفاً پیگیری کنید.')
+                                :format(r.ID, r.category or r.title or '-', ticketId or 0),
+                            Config_Server.autoCloseNotifyLevel)
+                    end)
                 end)
-                if not ticketOk then ticketId = nil end
-                if ticketId then
-                    if r.identifier then
-                        MySQL.Async.execute(
-                            'INSERT IGNORE INTO `ticket_participants` (`ticket_id`,`identifier`,`name`,`role`,`added_by`,`added_at`) VALUES (@t,@i,\'نامشخص\',\'creator\',\'System (Auto-Close)\',@c)',
-                            { ['@t'] = ticketId, ['@i'] = r.identifier, ['@c'] = closedAt })
-                    end
-                    MySQL.Async.execute(
-                        'INSERT INTO `ticket_messages` (`ticket_id`,`identifier`,`name`,`is_admin`,`is_system`,`message`,`created_at`) VALUES (@t,NULL,\'System\',1,1,@m,@c)',
-                        { ['@t'] = ticketId, ['@m'] = ('ریپورت #%s (%s) بعد از %d دقیقه بدون پاسخ خودکار بسته شد و این تیکت برای پیگیری ساخته شد.'):format(r.ID, r.category or r.title or '-', minutesOpen), ['@c'] = closedAt })
+                if not ticketOk then
+                    -- Ticket System نصب نشده یا جدولش نیست - حداقل نوتیفِ خودِ ریپورت بره
+                    Rep.NotifyAllAdmins(
+                        ('⛔ ریپورت #%s به دلیل عدم پیگیری بعد از %d دقیقه، خودکار بسته شد.'):format(r.ID, minutesOpen), 1)
+                    Rep.NotifyAllAdmins(
+                        ('🔺 توجه رنک بالا: ریپورت #%s (%s) بدون پاسخ بسته شد - لطفاً پیگیری کنید.'):format(r.ID, r.category or r.title or '-'),
+                        Config_Server.autoCloseNotifyLevel)
                 end
-
-                -- ۱) اطلاع عمومی به همه‌ی ادمین‌های آنلاین که این ریپورت خودکار بسته شد
-                Rep.NotifyAllAdmins(
-                    ('⛔ ریپورت #%s به دلیل عدم پیگیری بعد از %d دقیقه، خودکار بسته شد.'):format(r.ID, minutesOpen), 1)
-
-                -- ۲) اطلاع جداگانه و واضح‌تر فقط برای رنک‌های بالا + شماره‌ی تیکتِ پیگیری
-                Rep.NotifyAllAdmins(
-                    (ticketId
-                        and '🔺 توجه رنک بالا: ریپورت #%s (%s) بدون پاسخ بسته شد - یک تیکت پیگیری (#%d) براتون ساخته شد.'
-                        or  '🔺 توجه رنک بالا: ریپورت #%s (%s) بدون پاسخ بسته شد - لطفاً پیگیری کنید.')
-                        :format(r.ID, r.category or r.title or '-', ticketId or 0),
-                    Config_Server.autoCloseNotifyLevel)
 
                 -- ۳) لاگ دائمی تو دیتابیس - حتی اگه هیچ ادمینی آنلاین نبود، بازم قابل پیگیریه
                 MySQL.Async.execute([[

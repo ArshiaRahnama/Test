@@ -52,6 +52,52 @@ local function countCops()
 end
 
 -- ------------------------------------------------------------------
+-- Legendary Mode persistence -- plain resource KVP (built into FiveM,
+-- survives resource/server restarts, no SQL migration needed). Two
+-- keys: when the week-long cooldown ends, and who currently holds the
+-- board (JSON-encoded).
+-- ------------------------------------------------------------------
+local KVP_NEXT = 'oilrig_legendary_next_available'
+local KVP_HOLDER = 'oilrig_legendary_holder'
+
+local function GetLegendaryNextAvailable()
+    local v = GetResourceKvpInt(KVP_NEXT)
+    return v or 0 -- 0 (or unset) means "available right now"
+end
+
+local function SetLegendaryNextAvailable(ts)
+    SetResourceKvpInt(KVP_NEXT, math.floor(ts))
+end
+
+local function GetLegendaryHolder()
+    local raw = GetResourceKvpString(KVP_HOLDER)
+    if not raw or raw == '' then return nil end
+    local ok, decoded = pcall(json.decode, raw)
+    if ok then return decoded end
+    return nil
+end
+
+local function SetLegendaryHolder(holder)
+    SetResourceKvp(KVP_HOLDER, json.encode(holder))
+end
+
+local function IsLegendaryAvailable()
+    return os.time() >= GetLegendaryNextAvailable()
+end
+
+local function BroadcastLegendaryState(target)
+    local holder = GetLegendaryHolder()
+    if holder then
+        holder.dateText = os.date('%Y-%m-%d', holder.date or 0)
+    end
+    TriggerClientEvent('oilrig:client:legendarySync', target or -1, {
+        available = IsLegendaryAvailable(),
+        nextAvailableText = os.date('%Y-%m-%d', GetLegendaryNextAvailable()),
+        holder = holder,
+    })
+end
+
+-- ------------------------------------------------------------------
 -- State (single instance -- OilRig_1 is the only Robs entry of this type)
 -- ------------------------------------------------------------------
 local function newState()
@@ -71,10 +117,12 @@ local function newState()
         guardsReported = false,
         pursuitFired  = false,
         code          = 0,      -- captured from StartRobberyDispatch at arrival
+        legendary     = false,  -- decided once, at oilrig:server:begin
     }
 end
 
 local State = newState()
+local legendaryAnnouncedOpen = false
 
 local function notifyParticipants(msg, typ)
     for src in pairs(State.participants) do
@@ -147,6 +195,10 @@ AddEventHandler('oilrig:server:begin', function()
     State.leader = _source
     State.participants[_source] = true
     State.startedAt = os.time()
+    State.legendary = IsLegendaryAvailable()
+    if State.legendary then
+        notify(_source, C.legendary.strings.run_is_legendary, 'success')
+    end
 
     -- Bring along whoever was close enough to count as "team" for the
     -- teammatesrequired check in robberyNeeds -- they get notified/synced
@@ -203,6 +255,9 @@ AddEventHandler('oilrig:server:arrived', function()
     local extraCops = math.max(0, cops - base.copsrequired)
     local extraMembers = math.max(0, partySize - base.teammatesrequired)
     local guardCount = math.min(#C.guards.peds, C.scaling.guardsBase + extraCops * C.scaling.extraGuardsPerCop + extraMembers * C.scaling.extraGuardsPerMember)
+    if State.legendary and C.legendary.forceFullGuards then
+        guardCount = #C.guards.peds
+    end
 
     TriggerClientEvent('oilrig:client:spawnGuards', _source, guardCount)
     notifyParticipants(C.strings.heist_info)
@@ -213,6 +268,7 @@ end)
 RegisterServerEvent('oilrig:server:requestState')
 AddEventHandler('oilrig:server:requestState', function()
     TriggerClientEvent('oilrig:client:sync', source, buildPayload())
+    BroadcastLegendaryState(source)
 end)
 
 RegisterServerEvent('oilrig:server:guards')
@@ -404,6 +460,9 @@ AddEventHandler('oilrig:server:deliver', function()
         C.scaling.rewardMultiplierCap - 1,
         cops * C.scaling.rewardPerCop + math.max(0, partySize - 1) * C.scaling.rewardPerPartyMember
     )
+    if State.legendary then
+        mult = math.min(C.legendary.totalMultiplierCap, mult * C.legendary.rewardMultiplier)
+    end
 
     local rt = Config.Rob.RobTypes['OilRig']
     local originalReward, originalLess = rt.reward.blackmoney, rt.lessreward.blackmoney
@@ -413,6 +472,36 @@ AddEventHandler('oilrig:server:deliver', function()
     TriggerEvent('Morphy_RobSystem:robberySuccess', ROBNAME, State.code)
 
     rt.reward.blackmoney, rt.lessreward.blackmoney = originalReward, originalLess
+
+    -- Legendary win: reset the weekly window and engrave the board.
+    -- A run that WASN'T legendary never touches any of this, so the
+    -- clock only resets on an actual legendary win, never on a normal one.
+    if State.legendary then
+        SetLegendaryNextAvailable(os.time() + C.legendary.cooldownDays * 86400)
+        SetLegendaryHolder({
+            gang      = xPlayer.gang and xPlayer.gang.name or 'nogang',
+            gangLabel = xPlayer.gang and (xPlayer.gang.label or xPlayer.gang.name) or 'Nogang',
+            playerName = xPlayer.name,
+            date      = os.time(),
+            amountMin = math.floor(base.reward.min * mult),
+            amountMax = math.floor(base.reward.max * mult),
+        })
+        legendaryAnnouncedOpen = false -- lets the watchdog announce again once the new window opens
+        BroadcastLegendaryState()
+
+        local wonMsg = C.legendary.strings.won:format(
+            xPlayer.gang and (xPlayer.gang.label or xPlayer.gang.name) or 'Nogang',
+            math.floor(base.reward.max * mult)
+        )
+        TriggerClientEvent('esx:showNotification', -1, wonMsg, 'success')
+        pcall(function()
+            TriggerClientEvent('chat:addMessage', -1, {
+                color = { 255, 215, 0 },
+                multiline = true,
+                args = { '🏆 OIL RIG ASTOOREI', wonMsg },
+            })
+        end)
+    end
 
     resetOilRig()
 end)
@@ -474,6 +563,31 @@ RegisterCommand('oilrigreset', function(source)
     FailHeist('Oil Rig Reset Shod (Admin).')
     if source ~= 0 then notify(source, 'Oil Rig Reset Shod.', 'success') end
 end, true)
+
+-- ------------------------------------------------------------------
+-- Legendary window watch: announces once, server-wide, the moment the
+-- week turns over. Runs independently of the main heist watchdog so a
+-- slow heist doesn't delay the check.
+-- ------------------------------------------------------------------
+legendaryAnnouncedOpen = IsLegendaryAvailable() -- don't re-announce a window that was already open before this restart
+
+CreateThread(function()
+    while true do
+        Wait(C.legendary.announceCheckEvery * 1000)
+        if not legendaryAnnouncedOpen and IsLegendaryAvailable() then
+            legendaryAnnouncedOpen = true
+            TriggerClientEvent('esx:showNotification', -1, C.legendary.strings.window_open, 'success')
+            pcall(function()
+                TriggerClientEvent('chat:addMessage', -1, {
+                    color = { 255, 215, 0 },
+                    multiline = true,
+                    args = { '🔥 OIL RIG ASTOOREI', C.legendary.strings.window_open },
+                })
+            end)
+            BroadcastLegendaryState()
+        end
+    end
+end)
 
 -- ------------------------------------------------------------------
 -- Watchdog: timeouts + stuck locks, mirrors the rest of the codebase's

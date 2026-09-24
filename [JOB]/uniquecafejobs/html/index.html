@@ -29,11 +29,13 @@
 <body>
     <iframe id="frame-cafe" src="cafe/form.html"></iframe>
     <iframe id="frame-market" src="market/index.html"></iframe>
+    <iframe id="frame-shop" src="shop/index.html"></iframe>
 
     <script>
         const frames = {
             cafe: document.getElementById('frame-cafe'),
             market: document.getElementById('frame-market'),
+            shop: document.getElementById('frame-shop'),
         };
 
         window.addEventListener('message', function (event) {

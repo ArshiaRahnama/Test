@@ -29,6 +29,42 @@
     <script src="./app.js"></script>
 </head>
     <body style="background: none;">
+        <!-- Icon sprite -- one set of custom line/solid icons replacing every
+             emoji in the UI, drawn to match the angular "cut corner" console
+             look (straight edges over soft curves). Referenced everywhere
+             below via <svg class="icon"><use href="#icon-name"/></svg>, and
+             from app.js's generated strings via the same markup. Never
+             rendered directly (display:none on the wrapper). -->
+        <svg style="display:none;" aria-hidden="true">
+          <defs>
+            <symbol id="icon-shield" viewBox="0 0 24 24"><path d="M12 2L4 5V11C4 16 7.5 20 12 22C16.5 20 20 16 20 11V5L12 2Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></symbol>
+            <symbol id="icon-monitor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="1" fill="none" stroke="currentColor" stroke-width="1.6"/><line x1="8" y1="20" x2="16" y2="20" stroke="currentColor" stroke-width="1.6"/><line x1="12" y1="16" x2="12" y2="20" stroke="currentColor" stroke-width="1.6"/></symbol>
+            <symbol id="icon-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.4" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M5 20C5 15.8 8.1 13 12 13C15.9 13 19 15.8 19 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
+            <symbol id="icon-car" viewBox="0 0 24 24"><path d="M4 17L5.2 11.5C5.5 10.3 6.6 9.5 7.8 9.5H16.2C17.4 9.5 18.5 10.3 18.8 11.5L20 17" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M2.5 17H21.5V18.5C21.5 19.1 21 19.5 20.4 19.5H19C18.4 19.5 18 19.1 18 18.5V18H6V18.5C6 19.1 5.6 19.5 5 19.5H3.6C3 19.5 2.5 19.1 2.5 18.5V17Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="7" cy="17.2" r="1.1" fill="currentColor" stroke="none"/><circle cx="17" cy="17.2" r="1.1" fill="currentColor" stroke="none"/></symbol>
+            <symbol id="icon-cap" viewBox="0 0 24 24"><path d="M12 4L2 8.5L12 13L22 8.5L12 4Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M6 10.5V15.5C6 17 8.7 18 12 18C15.3 18 18 17 18 15.5V10.5" fill="none" stroke="currentColor" stroke-width="1.6"/><line x1="22" y1="8.5" x2="22" y2="14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
+            <symbol id="icon-folder" viewBox="0 0 24 24"><path d="M3 6.5C3 5.7 3.7 5 4.5 5H9L11 7.5H19.5C20.3 7.5 21 8.2 21 9V17C21 17.8 20.3 18.5 19.5 18.5H4.5C3.7 18.5 3 17.8 3 17V6.5Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></symbol>
+            <symbol id="icon-archive" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="12" rx="1" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M3 7L5 3.5H19L21 7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><line x1="9.5" y1="12" x2="14.5" y2="12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
+            <symbol id="icon-snow" viewBox="0 0 24 24"><g stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><line x1="12" y1="2" x2="12" y2="22"/><line x1="4.2" y1="6" x2="19.8" y2="18"/><line x1="19.8" y1="6" x2="4.2" y2="18"/></g></symbol>
+            <symbol id="icon-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="5" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/></symbol>
+            <symbol id="icon-siren" viewBox="0 0 24 24"><path d="M12 3L22 20H2L12 3Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><line x1="12" y1="9.5" x2="12" y2="13.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="12" cy="16.3" r="0.9" fill="currentColor" stroke="none"/></symbol>
+            <symbol id="icon-clipboard" viewBox="0 0 24 24"><rect x="5" y="4.5" width="14" height="17" rx="1.2" fill="none" stroke="currentColor" stroke-width="1.6"/><rect x="9" y="3" width="6" height="3" rx="0.8" fill="none" stroke="currentColor" stroke-width="1.6"/><line x1="8" y1="10.5" x2="16" y2="10.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><line x1="8" y1="14" x2="16" y2="14" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><line x1="8" y1="17.5" x2="13" y2="17.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></symbol>
+            <symbol id="icon-trophy" viewBox="0 0 24 24"><path d="M8 4H16V10C16 12.8 14.2 15 12 15C9.8 15 8 12.8 8 10V4Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M8 6H5.5C5.5 8.5 7 10 8 10" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M16 6H18.5C18.5 8.5 17 10 16 10" fill="none" stroke="currentColor" stroke-width="1.6"/><line x1="12" y1="15" x2="12" y2="18" stroke="currentColor" stroke-width="1.6"/><line x1="8.5" y1="21" x2="15.5" y2="21" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><line x1="9.5" y1="18" x2="14.5" y2="18" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
+            <symbol id="icon-scales" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><line x1="12" y1="3" x2="12" y2="19"/><line x1="4" y1="6" x2="20" y2="6"/><path d="M4 6L2.2 11C2.2 12 3 12.8 4 12.8C5 12.8 5.8 12 5.8 11L4 6Z"/><path d="M20 6L18.2 11C18.2 12 19 12.8 20 12.8C21 12.8 21.8 12 21.8 11L20 6Z"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="19" x2="12" y2="21"/></g></symbol>
+            <symbol id="icon-star" viewBox="0 0 24 24"><path d="M12 2L14.5 8.5L21 9L16 13.5L17.5 20L12 16.5L6.5 20L8 13.5L3 9L9.5 8.5L12 2Z" fill="currentColor" stroke="none"/></symbol>
+            <symbol id="icon-police" viewBox="0 0 24 24"><path d="M12 3L5 6V11C5 15.5 8 19 12 21C16 19 19 15.5 19 11V6L12 3Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 8L13.2 10.5L16 10.8L14 12.7L14.5 15.5L12 14L9.5 15.5L10 12.7L8 10.8L10.8 10.5L12 8Z" fill="currentColor" stroke="none"/></symbol>
+            <symbol id="icon-close" viewBox="0 0 24 24"><g stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></g></symbol>
+            <symbol id="icon-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="1.6"/><line x1="15.3" y1="15.3" x2="21" y2="21" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
+            <symbol id="icon-pencil" viewBox="0 0 24 24"><path d="M4 20L4.8 16.2L15.5 5.5C16.1 4.9 17.1 4.9 17.7 5.5L18.8 6.6C19.4 7.2 19.4 8.2 18.8 8.8L8 19.5L4 20Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><line x1="13.8" y1="7.2" x2="17" y2="10.4" stroke="currentColor" stroke-width="1.6"/></symbol>
+            <symbol id="icon-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.6"/><line x1="12" y1="12" x2="12" y2="7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><line x1="12" y1="12" x2="16" y2="14.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
+            <symbol id="icon-document" viewBox="0 0 24 24"><path d="M6 3H14L18 7V21H6V3Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M14 3V7H18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><line x1="9" y1="12" x2="15" y2="12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><line x1="9" y1="15.5" x2="15" y2="15.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></symbol>
+            <symbol id="icon-book" viewBox="0 0 24 24"><path d="M4 5C4 4 5 3.2 6.5 3.2H11V19H6.5C5 19 4 19.8 4 20.8V5Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M20 5C20 4 19 3.2 17.5 3.2H13V19H17.5C19 19 20 19.8 20 20.8V5Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></symbol>
+            <symbol id="icon-link" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><line x1="9" y1="15" x2="15" y2="9"/><path d="M8 12.5L5.8 14.7C4.6 15.9 4.6 17.8 5.8 19C7 20.2 8.9 20.2 10.1 19L12.3 16.8"/><path d="M16 11.5L18.2 9.3C19.4 8.1 19.4 6.2 18.2 5C17 3.8 15.1 3.8 13.9 5L11.7 7.2"/></g></symbol>
+            <symbol id="icon-check" viewBox="0 0 24 24"><polyline points="4,12.5 9,17.5 20,6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+            <symbol id="icon-flame" viewBox="0 0 24 24"><path d="M12 2C12 2 7 8 7 13C7 16.9 9.2 20 12 20C14.8 20 17 16.9 17 13C17 11 16 9.5 15 8.5C15 10 14 11 13 11C13.5 8 12 2 12 2Z" fill="currentColor" stroke="none"/></symbol>
+            <symbol id="icon-medal" viewBox="0 0 24 24"><path d="M8 3L10 9H14L16 3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="14" r="6" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 11L13 13.2H15.2L13.4 14.6L14 17L12 15.6L10 17L10.6 14.6L8.8 13.2H11Z" fill="currentColor" stroke="none"/></symbol>
+          </defs>
+        </svg>
+
         <div class="tablet" style="display:none ;">
 
           <span class="bezel-camera"></span>
@@ -45,49 +81,60 @@
           </div>
 
             <div class="Login" id="LoginPage">
-              <img style="border-radius: 100%; width: 100%; height: 100%;" src="img/military.png">
-              <h1>🛡️ Military CAD</h1>
-              <button onclick="DuckMdt.Login()">Login</button>
-              <p style="text-align:center; opacity:0.55; font-size:11px; margin-top:10px;">Unique_Cad by Arshia | arshiahub.ir</p>
+              <div class="Boot_Sequence" id="BootSequence" style="display:none;">
+                <div class="Boot_Log" id="BootLog"></div>
+              </div>
+              <div id="LoginContent">
+                <img style="border-radius: 100%; width: 100%; height: 100%;" src="img/military.png">
+                <h1><svg class="icon"><use href="#icon-shield"></use></svg> Military CAD</h1>
+                <button onclick="DuckMdt.Login()">Login</button>
+                <p style="text-align:center; opacity:0.55; font-size:11px; margin-top:10px;">Unique_Cad by Arshia | arshiahub.ir</p>
+              </div>
             </div>
 
             <div class="MainPage" id="MainPage">
               <div class="Header">
                 <img style="border-radius: 100%;" src="img/military.png">
                 <h2>Military Organs CAD</h2>
-                <span style="color: var(--ok); font-size: 11px; font-weight: 600; letter-spacing: 0.5px; margin-right: 14px; white-space: nowrap;">🟢 SYSTEM ONLINE</span>
+                <span style="color: var(--ok); font-size: 11px; font-weight: 600; letter-spacing: 0.5px; margin-right: 14px; white-space: nowrap;"><span class="Status_Dot"></span> SYSTEM ONLINE</span>
                 <button class="ExitButton" onclick="ExitTablet()">Exit</button>
               </div>
 
               <div class="MainPageContent"></div>
                 <div class="MainPageTabs">
                     <div class="MainPageUserInfo">
-                        <span>●</span>
+                        <span class="Status_Dot" style="position:relative; bottom:1px;"></span>
                         <p id="username_mdt" style="word-wrap: break-word; font-size: 1.3vw;">UserName</p>
                         <br>
                         <p style="font-size: 1.5vw; flex-basis: 100%; position: relative; left: 40%; color: blanchedalmond;" id="Rank_mdt">Chief</p>
                     </div>
                     <div class="MainPageTabButtons">
-                      <button class="MainPageTabButton MainPageTabActiveButton" id="Page_Button_MainPanel" onclick="DuckMdt.TabSelected('MainPanel')">🖥️ Main panel</button>
-                      <button class="MainPageTabButton" id="Page_Button_CitizensList" onclick="DuckMdt.TabSelected('CitizensList')">👤 List of citizens</button>
-                      <button class="MainPageTabButton" id="Page_Button_VehiclesList" onclick="DuckMdt.TabSelected('VehiclesList')">🚗 List of vehicles</button>
-                      <button class="MainPageTabButton" id="Page_Button_Training" onclick="DuckMdt.TabSelected('Training')">🎓 Amozesh</button>
+                      <button class="MainPageTabButton MainPageTabActiveButton" id="Page_Button_MainPanel" onclick="DuckMdt.TabSelected('MainPanel')"><svg class="icon"><use href="#icon-monitor"></use></svg> Main panel</button>
+                      <button class="MainPageTabButton" id="Page_Button_CitizensList" onclick="DuckMdt.TabSelected('CitizensList')"><svg class="icon"><use href="#icon-user"></use></svg> List of citizens</button>
+                      <button class="MainPageTabButton" id="Page_Button_VehiclesList" onclick="DuckMdt.TabSelected('VehiclesList')"><svg class="icon"><use href="#icon-car"></use></svg> List of vehicles</button>
+                      <button class="MainPageTabButton" id="Page_Button_Training" onclick="DuckMdt.TabSelected('Training')"><svg class="icon"><use href="#icon-cap"></use></svg> Amozesh</button>
                       <!-- CrimeScene (Unique_CrimeScene) tabs -- hidden by default, CS_ApplyJobVisibility()
                            shows/hides the doj-tab / law-tab ones once we know the player's job group -->
-                      <button class="MainPageTabButton doj-tab" style="display:none;" id="Page_Button_CS_Cases" onclick="DuckMdt.TabSelected('CS_Cases')">📂 Cases</button>
-                      <button class="MainPageTabButton doj-tab" style="display:none;" id="Page_Button_CS_ColdCases" onclick="DuckMdt.TabSelected('CS_ColdCases')">❄️ Cold Cases</button>
-                      <button class="MainPageTabButton doj-tab" style="display:none;" id="Page_Button_CS_Wanted" onclick="DuckMdt.TabSelected('CS_Wanted')">🎯 Wanted Board</button>
-                      <button class="MainPageTabButton law-tab" style="display:none;" id="Page_Button_CS_Bolo" onclick="DuckMdt.TabSelected('CS_Bolo')">🚨 BOLO</button>
-                      <button class="MainPageTabButton law-tab" style="display:none;" id="Page_Button_CS_Booking" onclick="DuckMdt.TabSelected('CS_Booking')">📋 Booking</button>
-                      <button class="MainPageTabButton cs-tab" style="display:none;" id="Page_Button_CS_Records" onclick="DuckMdt.TabSelected('CS_Records')">📁 Records</button>
-                      <button class="MainPageTabButton cs-tab" style="display:none;" id="Page_Button_CS_Leaderboard" onclick="DuckMdt.TabSelected('CS_Leaderboard')">🏆 Leaderboard</button>
-                      <button class="MainPageTabButton cs-tab" style="display:none;" id="Page_Button_CS_IA" onclick="DuckMdt.TabSelected('CS_IA')">⚖️ Internal Affairs</button>
+                      <button class="MainPageTabButton doj-tab" style="display:none;" id="Page_Button_CS_Cases" onclick="DuckMdt.TabSelected('CS_Cases')"><svg class="icon"><use href="#icon-folder"></use></svg> Cases</button>
+                      <button class="MainPageTabButton doj-tab" style="display:none;" id="Page_Button_CS_ColdCases" onclick="DuckMdt.TabSelected('CS_ColdCases')"><svg class="icon"><use href="#icon-snow"></use></svg> Cold Cases</button>
+                      <button class="MainPageTabButton doj-tab" style="display:none;" id="Page_Button_CS_Wanted" onclick="DuckMdt.TabSelected('CS_Wanted')"><svg class="icon"><use href="#icon-target"></use></svg> Wanted Board</button>
+                      <button class="MainPageTabButton law-tab" style="display:none;" id="Page_Button_CS_Bolo" onclick="DuckMdt.TabSelected('CS_Bolo')"><svg class="icon"><use href="#icon-siren"></use></svg> BOLO</button>
+                      <button class="MainPageTabButton law-tab" style="display:none;" id="Page_Button_CS_Booking" onclick="DuckMdt.TabSelected('CS_Booking')"><svg class="icon"><use href="#icon-clipboard"></use></svg> Booking</button>
+                      <button class="MainPageTabButton cs-tab" style="display:none;" id="Page_Button_CS_Records" onclick="DuckMdt.TabSelected('CS_Records')"><svg class="icon"><use href="#icon-archive"></use></svg> Records</button>
+                      <button class="MainPageTabButton cs-tab" style="display:none;" id="Page_Button_CS_Leaderboard" onclick="DuckMdt.TabSelected('CS_Leaderboard')"><svg class="icon"><use href="#icon-trophy"></use></svg> Leaderboard</button>
+                      <button class="MainPageTabButton cs-tab" style="display:none;" id="Page_Button_CS_IA" onclick="DuckMdt.TabSelected('CS_IA')"><svg class="icon"><use href="#icon-scales"></use></svg> Internal Affairs</button>
                     </div>
                 </div>
 
                 <div class="MainPageTabContent" id="MainPageTabContent">
                       <div id="Page_MainPanel">
-                          <p style="font-size: 3vw;">🖥️ Main panel</p>
+                          <p style="font-size: 3vw;"><svg class="icon"><use href="#icon-monitor"></use></svg> Main panel</p>
+
+                          <div class="Dashboard_Radar" title="Patrol scan">
+                            <span class="Radar_Blip" style="top:32%; left:64%;"></span>
+                            <span class="Radar_Blip" style="top:60%; left:34%; animation-delay:1.2s;"></span>
+                            <span class="Radar_Blip" style="top:70%; left:68%; animation-delay:2.1s;"></span>
+                          </div>
 
                           <div class="Dashboard_Top">
                             <p class="Dashboard_Greeting">Welcome back, <span id="MainPanel_Greeting_Rank">-</span> <span id="MainPanel_Greeting_Name">-</span></p>
@@ -100,24 +147,24 @@
                           <div class="Dashboard_Stats">
                             <div class="Dashboard_StatCard">
                               <p class="Dashboard_StatValue" id="MainPanel_Stat_WantedPeople">0</p>
-                              <p class="Dashboard_StatLabel">🚨 Wanted Suspects</p>
+                              <p class="Dashboard_StatLabel"><svg class="icon"><use href="#icon-siren"></use></svg> Wanted Suspects</p>
                             </div>
                             <div class="Dashboard_StatCard">
                               <p class="Dashboard_StatValue" id="MainPanel_Stat_WantedCars">0</p>
-                              <p class="Dashboard_StatLabel">🚗 Wanted Vehicles</p>
+                              <p class="Dashboard_StatLabel"><svg class="icon"><use href="#icon-car"></use></svg> Wanted Vehicles</p>
                             </div>
                             <div class="Dashboard_StatCard">
                               <p class="Dashboard_StatValue" id="MainPanel_Stat_Rank">-</p>
-                              <p class="Dashboard_StatLabel">🎖️ Your Rank</p>
+                              <p class="Dashboard_StatLabel"><svg class="icon"><use href="#icon-star"></use></svg> Your Rank</p>
                             </div>
                           </div>
 
                           <div class="Dashboard_QuickActions">
-                            <button class="Dashboard_QuickAction" onclick="DuckMdt.TabSelected('CitizensList')">👤 Search Citizen</button>
-                            <button class="Dashboard_QuickAction" onclick="DuckMdt.TabSelected('VehiclesList')">🚗 Search Vehicle</button>
-                            <button class="Dashboard_QuickAction law-tab" style="display:none;" onclick="DuckMdt.TabSelected('CS_Bolo')">🚨 Issue BOLO</button>
-                            <button class="Dashboard_QuickAction law-tab" style="display:none;" onclick="DuckMdt.TabSelected('CS_Booking')">📋 New Booking</button>
-                            <button class="Dashboard_QuickAction doj-tab" style="display:none;" onclick="DuckMdt.TabSelected('CS_Cases')">📂 Open Cases</button>
+                            <button class="Dashboard_QuickAction" onclick="DuckMdt.TabSelected('CitizensList')"><svg class="icon"><use href="#icon-user"></use></svg> Search Citizen</button>
+                            <button class="Dashboard_QuickAction" onclick="DuckMdt.TabSelected('VehiclesList')"><svg class="icon"><use href="#icon-car"></use></svg> Search Vehicle</button>
+                            <button class="Dashboard_QuickAction law-tab" style="display:none;" onclick="DuckMdt.TabSelected('CS_Bolo')"><svg class="icon"><use href="#icon-siren"></use></svg> Issue BOLO</button>
+                            <button class="Dashboard_QuickAction law-tab" style="display:none;" onclick="DuckMdt.TabSelected('CS_Booking')"><svg class="icon"><use href="#icon-clipboard"></use></svg> New Booking</button>
+                            <button class="Dashboard_QuickAction doj-tab" style="display:none;" onclick="DuckMdt.TabSelected('CS_Cases')"><svg class="icon"><use href="#icon-folder"></use></svg> Open Cases</button>
                           </div>
 
                           <!--  -->
@@ -150,7 +197,7 @@
 
                       <div id="Page_CitizensList" style="display: none;"> 
                         <div class="MainPage_Header">
-                          <p style="font-size: 2vw;">👤 Citizens List</p>
+                          <p style="font-size: 2vw;"><svg class="icon"><use href="#icon-user"></use></svg> Citizens List</p>
                           <input type="text" id="CitizenSearch" placeholder="Search">
                         </div>
 
@@ -273,7 +320,7 @@
                                   <p>Rob Shop</p>
                                 </div>
                                 <div style="float: right;">
-                                  <button class="Data_Delete_Button">✖</button>
+                                  <button class="Data_Delete_Button"><svg class="icon"><use href="#icon-close"></use></svg></button>
                                 </div>
                               </div>
                             </div>
@@ -304,7 +351,7 @@
 
                       <div id="Page_VehiclesList" style="display: none;">
                         <div class="MainPage_Header">
-                          <p style="font-size: 2vw;">🚗 Vehicles List</p>
+                          <p style="font-size: 2vw;"><svg class="icon"><use href="#icon-car"></use></svg> Vehicles List</p>
                           <input type="text" id="VehicleSearch" placeholder="Search">
                         </div>
                         
@@ -383,7 +430,7 @@
                       <!-- ===================== CrimeScene: Cases (DOJ) ===================== -->
                       <div id="Page_CS_Cases" style="display: none;">
                         <div class="MainPage_Header">
-                          <p style="font-size: 2vw;">📂 DOJ Cases</p>
+                          <p style="font-size: 2vw;"><svg class="icon"><use href="#icon-folder"></use></svg> DOJ Cases</p>
                         </div>
                         <div id="CS_CasesList" class="MDT_List"></div>
                       </div>
@@ -436,7 +483,7 @@
                       <!-- ===================== CrimeScene: Cold Cases (DOJ) ===================== -->
                       <div id="Page_CS_ColdCases" style="display: none;">
                         <div class="MainPage_Header">
-                          <p style="font-size: 2vw;">❄️ Cold Cases</p>
+                          <p style="font-size: 2vw;"><svg class="icon"><use href="#icon-snow"></use></svg> Cold Cases</p>
                         </div>
                         <div id="CS_ColdCasesList" class="MDT_List"></div>
                       </div>
@@ -444,7 +491,7 @@
                       <!-- ===================== CrimeScene: Wanted Board (DOJ) ===================== -->
                       <div id="Page_CS_Wanted" style="display: none;">
                         <div class="MainPage_Header">
-                          <p style="font-size: 2vw;">🎯 Wanted Board</p>
+                          <p style="font-size: 2vw;"><svg class="icon"><use href="#icon-target"></use></svg> Wanted Board</p>
                         </div>
                         <div id="CS_WantedList" class="MDT_List"></div>
                       </div>
@@ -452,7 +499,7 @@
                       <!-- ===================== CrimeScene: BOLO (Law) ===================== -->
                       <div id="Page_CS_Bolo" style="display: none;">
                         <div class="MainPage_Header">
-                          <p style="font-size: 2vw;">🚨 Active BOLOs</p>
+                          <p style="font-size: 2vw;"><svg class="icon"><use href="#icon-siren"></use></svg> Active BOLOs</p>
                           <button class="ExitButton" onclick="CS_CheckNearestVehicle()">Check Nearest Vehicle</button>
                         </div>
                         <p id="CS_BoloResult" style="color: var(--danger); font-weight: 700; margin-bottom: 10px;"></p>
@@ -462,7 +509,7 @@
                       <!-- ===================== CrimeScene: Booking (Law) ===================== -->
                       <div id="Page_CS_Booking" style="display: none;">
                         <div class="MainPage_Header">
-                          <p style="font-size: 2vw;">📋 New Booking</p>
+                          <p style="font-size: 2vw;"><svg class="icon"><use href="#icon-clipboard"></use></svg> New Booking</p>
                         </div>
                         <div style="max-width: 480px;">
                           <input id="CS_BookTarget" type="number" placeholder="Player ID (optional, links to CAD)" style="width: 100%; margin-bottom: 4px;" oninput="CS_PreviewBookTarget()">
@@ -481,7 +528,7 @@
                       <!-- ===================== CrimeScene: Records (DOJ + Law) ===================== -->
                       <div id="Page_CS_Records" style="display: none;">
                         <div class="MainPage_Header">
-                          <p style="font-size: 2vw;">📁 Criminal Records</p>
+                          <p style="font-size: 2vw;"><svg class="icon"><use href="#icon-archive"></use></svg> Criminal Records</p>
                           <input id="CS_RecordsSearch" type="text" placeholder="Search by suspect name..." style="width: 30%;" oninput="CS_SearchRecords()">
                         </div>
                         <div id="CS_RecordsList" class="MDT_List"></div>
@@ -490,15 +537,15 @@
                       <!-- ===================== CrimeScene: Leaderboard (DOJ + Law) ===================== -->
                       <div id="Page_CS_Leaderboard" style="display: none;">
                         <div class="MainPage_Header">
-                          <p style="font-size: 2vw;">🏆 Leaderboard</p>
+                          <p style="font-size: 2vw;"><svg class="icon"><use href="#icon-trophy"></use></svg> Leaderboard</p>
                         </div>
                         <div style="display: flex; gap: 24px;">
                           <div style="flex: 1;">
-                            <p style="color: var(--text-dim); font-weight: 600; font-size: 13px; margin-bottom: 10px;">🔍 Top Investigators (DOJ)</p>
+                            <p style="color: var(--text-dim); font-weight: 600; font-size: 13px; margin-bottom: 10px;"><svg class="icon"><use href="#icon-search"></use></svg> Top Investigators (DOJ)</p>
                             <div id="CS_LeaderInvestigators" class="MDT_List"></div>
                           </div>
                           <div style="flex: 1;">
-                            <p style="color: var(--text-dim); font-weight: 600; font-size: 13px; margin-bottom: 10px;">👮 Top Officers (Law)</p>
+                            <p style="color: var(--text-dim); font-weight: 600; font-size: 13px; margin-bottom: 10px;"><svg class="icon"><use href="#icon-police"></use></svg> Top Officers (Law)</p>
                             <div id="CS_LeaderOfficers" class="MDT_List"></div>
                           </div>
                         </div>
@@ -507,11 +554,11 @@
                       <!-- ===================== CrimeScene: Internal Affairs ===================== -->
                       <div id="Page_CS_IA" style="display: none;">
                         <div class="MainPage_Header">
-                          <p style="font-size: 2vw;">⚖️ Internal Affairs</p>
+                          <p style="font-size: 2vw;"><svg class="icon"><use href="#icon-scales"></use></svg> Internal Affairs</p>
                         </div>
 
                         <div style="padding: 12px 20px; max-width: 480px;">
-                          <p style="color: var(--text-dim); font-weight: 600; font-size: 13px; margin-bottom: 8px;">📝 File a Report</p>
+                          <p style="color: var(--text-dim); font-weight: 600; font-size: 13px; margin-bottom: 8px;"><svg class="icon"><use href="#icon-pencil"></use></svg> File a Report</p>
                           <div style="position: relative; margin-bottom: 8px;">
                             <input id="CS_IATargetSearch" type="text" placeholder="Search officer by name..." style="width: 100%;" oninput="CS_SearchIAOfficer()">
                             <div id="CS_IAOfficerResults" style="display: none; position: absolute; top: 100%; left: 0; right: 0; z-index: 5; background: var(--bg-card); border: 1px solid var(--border); border-radius: 5px; max-height: 180px; overflow-y: auto; margin-top: 4px;"></div>
@@ -529,12 +576,12 @@
 
                         <div id="CS_IAReviewerSection" style="display: none;">
                           <div style="padding: 4px 20px;">
-                            <p style="color: var(--text-dim); font-weight: 600; font-size: 13px; margin-bottom: 8px;">🕒 Recent Officer Activity</p>
+                            <p style="color: var(--text-dim); font-weight: 600; font-size: 13px; margin-bottom: 8px;"><svg class="icon"><use href="#icon-clock"></use></svg> Recent Officer Activity</p>
                           </div>
                           <div id="CS_OfficerActivityList" class="MDT_List"></div>
 
                           <div style="padding: 12px 20px 4px;">
-                            <p style="color: var(--text-dim); font-weight: 600; font-size: 13px; margin-bottom: 8px;">📄 Reports</p>
+                            <p style="color: var(--text-dim); font-weight: 600; font-size: 13px; margin-bottom: 8px;"><svg class="icon"><use href="#icon-document"></use></svg> Reports</p>
                           </div>
                           <div id="CS_IAReportsList" class="MDT_List"></div>
                         </div>
@@ -550,4 +597,89 @@
             </div>
         </div>
     </body>
+
+    <!-- Cosmetic-only boot sequence for the login screen: types a short
+         "connecting / verifying / access granted" log before revealing the
+         actual login card. Kept entirely separate from app.js -- it just
+         watches #LoginPage's own display via MutationObserver, so however
+         DuckMdt shows/hides that page, this plays every time it becomes
+         visible and never touches game logic. -->
+    <script>
+    (function () {
+      var bootLines = ['CONNECTING TO UNIQUE SERVER...', 'VERIFYING CREDENTIALS...', 'ACCESS GRANTED. WELCOME.'];
+      var played = false;
+
+      function isVisible(el) {
+        return !!el && el.style.display !== 'none' && getComputedStyle(el).display !== 'none';
+      }
+
+      function typeSequence() {
+        var bootEl = document.getElementById('BootSequence');
+        var logEl = document.getElementById('BootLog');
+        var contentEl = document.getElementById('LoginContent');
+        if (!bootEl || !logEl || !contentEl) return;
+
+        bootEl.style.display = 'block';
+        contentEl.style.display = 'none';
+        logEl.innerHTML = '';
+
+        var li = 0;
+        function nextLine() {
+          if (li >= bootLines.length) {
+            setTimeout(function () {
+              bootEl.style.display = 'none';
+              contentEl.style.display = 'block';
+            }, 260);
+            return;
+          }
+          var p = document.createElement('p');
+          p.className = 'Boot_Line';
+          var textSpan = document.createElement('span');
+          textSpan.className = 'Boot_Text';
+          var cursor = document.createElement('span');
+          cursor.className = 'Boot_Cursor';
+          cursor.textContent = '▌';
+          p.appendChild(textSpan);
+          p.appendChild(cursor);
+          logEl.appendChild(p);
+
+          var full = bootLines[li];
+          var ci = 0;
+          function typeChar() {
+            if (ci <= full.length) {
+              textSpan.textContent = full.slice(0, ci);
+              ci++;
+              setTimeout(typeChar, 20);
+            } else {
+              cursor.remove();
+              if (li === bootLines.length - 1) p.classList.add('Boot_Line_Ok');
+              li++;
+              setTimeout(nextLine, 260);
+            }
+          }
+          typeChar();
+        }
+        nextLine();
+      }
+
+      var loginEl = document.getElementById('LoginPage');
+      if (!loginEl) return;
+
+      var observer = new MutationObserver(function () {
+        var visible = isVisible(loginEl);
+        if (visible && !played) {
+          played = true;
+          typeSequence();
+        } else if (!visible) {
+          played = false;
+        }
+      });
+      observer.observe(loginEl, { attributes: true, attributeFilter: ['style', 'class'] });
+
+      if (isVisible(loginEl)) {
+        played = true;
+        typeSequence();
+      }
+    })();
+    </script>
 </html>

@@ -33,6 +33,7 @@ client_scripts {
 	'client/items.lua',
 	'client/newbiz_items.lua',
 	'client/functions.lua',
+	'client/shop_client.lua',
 	'client/crafting_cl.lua',
 	'client/market_client.lua',
 	'client/corp_client.lua',
@@ -49,6 +50,7 @@ server_scripts {
 	'server/items.lua',
 	'server/newbiz_items.lua',
 	'server/crafting_sv.lua',
+	'server/shop_server.lua',
 	'server/market_config.lua',
 	'server/market_server.lua',
 	'server/corp_server.lua',
@@ -66,6 +68,10 @@ files {
 	'html/cafe/css.css',
 	'html/cafe/script.js',
 	'html/cafe/jquery-3.4.1.min.js',
+
+	'html/shop/index.html',
+	'html/shop/style.css',
+	'html/shop/script.js',
 
 	'html/market/index.html',
 	'html/market/css/*.css',

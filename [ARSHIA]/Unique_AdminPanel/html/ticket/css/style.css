@@ -270,6 +270,7 @@ textarea { resize: vertical; }
   display: inline-block; vertical-align: -3px;
 }
 .icon-warn { color: var(--rust); width: 20px; height: 20px; vertical-align: -5px; }
+.icon-3d { filter: drop-shadow(0 2px 3px rgba(0,0,0,.35)); }
 
 .btn, .chip-link, .tab { display: inline-flex; align-items: center; gap: 7px; }
 .detail-sub { align-items: center; }

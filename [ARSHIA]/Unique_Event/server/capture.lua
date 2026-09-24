@@ -83,14 +83,38 @@ end
 -- ---------------------------------------------------------------------------
 -- Gang helpers (gangmenu / gang_data table - adjust table/column names in Config if yours differ)
 -- ---------------------------------------------------------------------------
-local function gangBossCoord(gangName, cb)
+
+--- Unique_ALLGangs stores `boss` as a JSON ARRAY of marker entries
+--- ({ coord = {x=,y=,z=}, type=, marker=, ... }, one per boss point a gang has placed),
+--- not a single {x,y,z}. Returns a list of vector3 coords (possibly empty), never nil,
+--- so callers never have to special-case "couldn't decode".
+local function gangBossCoords(gangName, cb)
     UE.DB.One('SELECT ' .. Config.Capture.GangsBossColumn .. ' AS boss FROM ' .. Config.Capture.GangsTable ..
         ' WHERE ' .. Config.Capture.GangsNameColumn .. ' = ?', { gangName }, function(row)
-        if not row or not row.boss then return cb(nil) end
-        local ok, decoded = pcall(json.decode, row.boss)
-        if ok and decoded and decoded.x then return cb(vector3(decoded.x + 0.0, decoded.y + 0.0, (decoded.z or 0.0) + 0.0)) end
-        cb(nil)
+        local out = {}
+        if row and row.boss and row.boss ~= '' then
+            local ok, decoded = pcall(json.decode, row.boss)
+            if ok and type(decoded) == 'table' then
+                for _, entry in pairs(decoded) do
+                    local c = entry.coord or entry   -- tolerate a flat {x,y,z} too, just in case
+                    if type(c) == 'table' and c.x and c.y then
+                        out[#out + 1] = vector3(c.x + 0.0, c.y + 0.0, (c.z or 0.0) + 0.0)
+                    end
+                end
+            end
+        end
+        cb(out)
     end)
+end
+
+--- Distance from `pos` to the nearest of a list of boss coords. Returns nil if the list is empty.
+local function nearestBossDist(pos, coords)
+    local best = nil
+    for _, c in ipairs(coords) do
+        local d = UE.Dist(pos, c)
+        if not best or d < best then best = d end
+    end
+    return best
 end
 
 local function gangLogo(gangName, cb)
@@ -106,6 +130,10 @@ end
 local function tryJoin(src)
     local ok, reason = UE.CanJoin(src, 'capture')
     if not ok then return UE.Notify(src, reason, 'error') end
+
+    if not Round.active then
+        return UE.Notify(src, 'Capture has not been started by an admin yet.', 'error')
+    end
 
     local xPlayer = UE.GetPlayer(src)
     local gang = xPlayer.gang and xPlayer.gang.name
@@ -126,13 +154,17 @@ local function tryJoin(src)
     end
 
     if Config.Capture.RequireGangBoss then
-        gangBossCoord(gang, function(boss)
-            if not boss then return finish(nil) end
-            local pos = GetEntityCoords(GetPlayerPed(src))
-            if UE.Dist(pos, boss) > Config.Capture.GangBossJoinRadius then
-                return UE.Notify(src, 'You must be near your gang boss to join Capture.', 'error')
+        gangBossCoords(gang, function(bossCoords)
+            if #bossCoords == 0 then
+                -- gang hasn't placed a boss marker at all - nothing to check against, let them join
+                return finish(nil)
             end
-            finish(boss)
+            local pos = GetEntityCoords(GetPlayerPed(src))
+            local dist = nearestBossDist(pos, bossCoords)
+            if dist > Config.Capture.GangBossJoinRadius then
+                return UE.Notify(src, 'You must be near your gang base to join Capture.', 'error')
+            end
+            finish(nil)   -- already standing at/near their base, no teleport needed
         end)
     else
         finish(nil)
@@ -295,7 +327,14 @@ startRound = function(src, minutes)
     Round.endsAt = os.time() + (minutes * 60)
     Round.killers, Round.gangs, Round.killerNames = {}, {}, {}
     for _, z in ipairs(Zones) do z.lastPointAt = os.time() end
-    for _, s in ipairs(UE.PlayersIn('capture')) do UE.Announce(s, 'CAPTURE ROUND STARTED', 6, 'success') end
+    -- tell EVERY connected player, not just whoever already happens to be in Capture (nobody
+    -- can be, before the round starts - joining requires an active round) - this is the
+    -- notification that invites gangs to /joinCap in the first place.
+    for _, id in ipairs(GetPlayers()) do
+        local s = tonumber(id)
+        UE.Announce(s, 'CAPTURE HAS STARTED - /joinCap AT YOUR GANG BASE', 8, 'success')
+        UE.Chat(s, '^2[Capture]', 'A Capture round just started! Get to your gang base and type /joinCap to join.')
+    end
     UE.Log('Capture', { title = 'Round started', color = 0x39E07D, description = ('by %s - %d minutes'):format(UE.Name(src), minutes) })
 end
 

@@ -416,3 +416,74 @@ CreateThread(function()
     Wait(3000)
     TriggerServerEvent('oilrig:server:requestState')
 end)
+
+-- ------------------------------------------------------------------
+-- Legendary Mode: hall-of-fame board. Pure DrawMarker (type 6 -- the
+-- exact marker type Config.Rob.Marker already uses for every robbery
+-- marker on this server, so it's proven to render) + floating 3D text.
+-- No CreateObject/prop model involved anywhere, so there's no risk of
+-- the kind of "invalid id" bug a guessed prop hash or blip sprite can
+-- cause -- these are the same handful of natives every rob marker here
+-- already relies on.
+-- ------------------------------------------------------------------
+local LG = C.legendary
+local LegendaryState = { available = false, nextAvailableText = '', holder = nil }
+
+local function draw3DText(coords, lines, scale)
+    local onScreen, sx, sy = World3dToScreen2d(coords.x, coords.y, coords.z)
+    if not onScreen then return end
+    SetTextScale(scale or 0.35, scale or 0.35)
+    SetTextFont(4)
+    SetTextProportional(true)
+    SetTextColour(255, 255, 255, 215)
+    SetTextDropshadow(0, 0, 0, 0, 255)
+    SetTextEdge(2, 0, 0, 0, 150)
+    SetTextOutline()
+    SetTextCentre(true)
+    for i, line in ipairs(lines) do
+        BeginTextCommandDisplayText('STRING')
+        AddTextComponentSubstringPlayerName(line)
+        EndTextCommandDisplayText(sx, sy + (i - 1) * 0.025)
+    end
+end
+
+local function formatMoney(n)
+    n = math.floor(n or 0)
+    local s = tostring(n)
+    local out = ''
+    while #s > 3 do
+        out = ',' .. s:sub(-3) .. out
+        s = s:sub(1, -4)
+    end
+    return s .. out
+end
+
+RegisterNetEvent('oilrig:client:legendarySync', function(state)
+    LegendaryState = state or LegendaryState
+end)
+
+CreateThread(function()
+    while true do
+        local coords = LG.board.coords
+        local dist = #(GetEntityCoords(PlayerPedId()) - coords)
+        if dist <= LG.board.renderDistance then
+            DrawMarker(Config.Rob.Marker.Type, coords.x, coords.y, coords.z - 1.0,
+                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.2, 1.2, 1.5, 255, 195, 0, 180, false, true, 2, false, false, false, false)
+
+            local lines = { LG.strings.board_title }
+            if LegendaryState.holder then
+                lines[#lines + 1] = '🏆 ' .. tostring(LegendaryState.holder.gangLabel or LegendaryState.holder.gang)
+                lines[#lines + 1] = 'Ta $' .. formatMoney(LegendaryState.holder.amountMax) .. ' -- ' .. tostring(LegendaryState.holder.dateText or '')
+            else
+                lines[#lines + 1] = LG.strings.board_empty
+            end
+            lines[#lines + 1] = LegendaryState.available and LG.strings.board_available
+                or ('Bar-gardi Badi: ' .. tostring(LegendaryState.nextAvailableText or ''))
+
+            draw3DText(coords + vector3(0.0, 0.0, 1.6), lines, 0.35)
+            Wait(0)
+        else
+            Wait(1500)
+        end
+    end
+end)

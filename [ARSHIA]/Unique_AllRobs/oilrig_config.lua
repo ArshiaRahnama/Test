@@ -172,10 +172,42 @@ Config.OilRig.rareLoot = {
     { item = 'oilrig_relic',       chance = 3,  label = 'Ashyaye Kamyab' },
 }
 
--- Evidence scattered by the crime-scene system (Config_cs.EvidenceCountByFamily.OilRig
--- in esx_uniquejobs/cad/config_crimescene.lua) already uses evidence_print/
--- evidence_casing generically for every family -- nothing OilRig-specific
--- needed there beyond the family count, already added.
+-- ------------------------------------------------------------------
+-- Legendary Mode: once every `cooldownDays` (server-wide, real time,
+-- survives restarts via KVP), the NEXT successful Oil Rig run pays out
+-- a much bigger reward with a full guard roster, and permanently
+-- engraves the winning gang's name on a "hall of fame" board in the
+-- city -- until the next Legendary run is won.
+--
+-- The board is drawn purely with DrawMarker (type 6 -- the exact same
+-- marker type Config.Rob.Marker already uses for every robbery on this
+-- server, so it's proven to render) plus floating 3D text. No custom
+-- prop model is spawned, so there's no risk of an invalid-model-hash
+-- bug (unlike a blip sprite, a bad CreateObject hash can hard-error).
+-- ------------------------------------------------------------------
+Config.OilRig.legendary = {
+    cooldownDays        = 7,    -- days between legendary WINS (a failed attempt doesn't burn the week)
+    rewardMultiplier     = 3.0,  -- stacks with the normal cops/party multiplier
+    totalMultiplierCap   = 6.0,  -- hard cap on (normal multiplier * this), so it stays astronomical but not economy-breaking
+    forceFullGuards      = true, -- ignore the normal guard-scaling formula, always spawn every guard spot
+    announceCheckEvery   = 5 * 60, -- seconds between checks for "did the week just turn over"
+
+    board = {
+        -- Legion Square, in front of City Hall -- adjust to whatever
+        -- plaza/landmark you'd rather use, it's just a coordinate.
+        coords = vector3(199.7, -933.3, 30.7),
+        renderDistance = 60.0,
+    },
+
+    strings = {
+        window_open   = 'Hal-e Hazer Sereghat-e Oil Rig ASTOOREI Faal Ast! Har Time Ke In Bar Ra Ba Movafaghiat Tamoom Kone, Jayeze-ye Nejomi Migire Va Esmesh Rooye Board-e Shahr Sabt Mishe!',
+        run_is_legendary = 'IN TALASH ASTOOREI AST! Jayeze Bishtar, Negahban Bishtar.',
+        won              = 'Gang-e %s Sereghat-e Astoorei-e Oil Rig Ra Bord (Ta Saghf-e $%s)! Esmeshun Rooye Board-e Shahr Sabt Shod.',
+        board_title      = 'FATEHAN-E OIL RIG ASTOOREI',
+        board_empty      = 'Hanooz Hich Gang-i In Sereghat Ra Nabord-e. Avalin Nafar Bash!',
+        board_available  = 'HAL-E HAZER FAAL AST',
+    },
+}
 
 Config.OilRig.strings = {
     heist_info    = 'Ba Team Be Mahale Alamat Shode Roye GPS Beravid. Aslahe Va Zereh Ziad Ba Khod Bebarid.',
