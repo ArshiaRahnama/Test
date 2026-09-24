@@ -26,6 +26,19 @@
 .shot.c4{background:linear-gradient(200deg,#3ddc8477,#3a2a08 55%,#0b0a07)}
 .shot.c5{background:linear-gradient(200deg,#e6a40088,#2a1a05 55%,#0b0a07)}
 .shot.c6{background:linear-gradient(200deg,#ff5c3a77,#3a1a10 55%,#0b0a07)}
+.shot{cursor:zoom-in}
+.shot .shine{position:absolute;inset:0;z-index:1;background:linear-gradient(115deg,transparent 30%,#ffffff3a 48%,#ffffff55 50%,#ffffff3a 52%,transparent 70%);background-size:220% 220%;background-position:130% 130%;opacity:0;transition:opacity .35s,background-position .7s var(--ease)}
+.shot:hover .shine{opacity:1;background-position:-30% -30%}
+.shot .zoomico{position:absolute;top:12px;inset-inline-end:12px;z-index:1;width:30px;height:30px;border-radius:9px;background:#00000066;border:1px solid #ffffff2e;display:grid;place-items:center;opacity:0;transform:translateY(-4px);transition:.25s var(--ease)}
+.shot:hover .zoomico{opacity:1;transform:translateY(0)}
+#lightbox{position:fixed;inset:0;z-index:80;background:#000000e6;backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:40px;animation:lbin .25s var(--ease)}
+#lightbox.on{display:flex}
+@keyframes lbin{from{opacity:0}to{opacity:1}}
+#lightbox .lbcard{width:min(720px,100%);aspect-ratio:16/10;border-radius:var(--r-lg);position:relative;display:flex;align-items:flex-end;padding:26px;border:1px solid #ffc10744;box-shadow:0 40px 120px -20px #000c,0 0 0 1px #ffc10733;overflow:hidden}
+#lightbox .lbcard::after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,#000d,transparent 55%)}
+#lightbox .lbcard span{position:relative;z-index:1;font-weight:800;font-size:1.2rem;text-shadow:0 1px 8px #000}
+#lightbox .lbcard small{position:relative;z-index:1;display:block;color:#ffffffb0;margin-top:4px}
+#lightbox .lbclose{position:absolute;top:-46px;inset-inline-end:0;width:36px;height:36px;border-radius:10px;background:var(--panel);border:1px solid var(--line2);color:var(--text);display:grid;place-items:center;cursor:pointer}
 </style>
 </head>
 <body>
@@ -36,7 +49,7 @@
  <div class="orbp a"></div><div class="orbp b"></div>
  <div class="wrap">
   <div class="crumb"><a href="index.php">خانه</a><span>/</span><span>گالری</span></div>
-  <h1>گالری <span data-name>یونیک</span></h1>
+  <h1><span class="gt">گالری</span> <span data-name>یونیک</span></h1>
   <p>لحظه‌های ثبت‌شده توسط شهروندان شهر؛ از غروب‌های روی بلوار تا دورهمی‌های گنگ‌ها و رویدادهای رسمی.</p>
  </div>
 </section>
@@ -63,6 +76,7 @@
  </div>
 </div></section>
 
+<div id="lightbox"><div class="lbcard" id="lbcard"><div class="lbclose" id="lbclose">✕</div><span id="lbtitle"></span><br><small id="lbsub"></small></div></div>
 </main>
 
 <?php
@@ -72,6 +86,24 @@ document.querySelectorAll("#gtabs button").forEach(b=>b.onclick=()=>{
  const f=b.dataset.f;
  document.querySelectorAll("#gal .shot").forEach(s=>s.classList.toggle("hide", f!=="all" && s.dataset.cat!==f));
 });
+
+// خفن‌ترش کن: افکت درخشش روی هاور + کلیک برای بزرگ‌نمایی (لایت‌باکس)
+document.querySelectorAll("#gal .shot").forEach(s=>{
+ s.insertAdjacentHTML("beforeend", '<i class="shine"></i><span class="zoomico"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#fff" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3M11 8v6M8 11h6"/></svg></span>');
+ s.onclick=()=>{
+  const title=s.querySelector("span:not(.zoomico)")?.textContent||"";
+  const sub=s.querySelector("small")?.textContent||"";
+  const lb=document.getElementById("lightbox"), card=document.getElementById("lbcard");
+  card.className="lbcard "+[...s.classList].find(c=>c.startsWith("c"));
+  document.getElementById("lbtitle").textContent=title;
+  document.getElementById("lbsub").textContent=sub;
+  lb.classList.add("on");
+ };
+});
+const closeLb=()=>document.getElementById("lightbox").classList.remove("on");
+document.getElementById("lbclose").onclick=closeLb;
+document.getElementById("lightbox").onclick=e=>{ if(e.target.id==="lightbox") closeLb(); };
+document.addEventListener("keydown",e=>{ if(e.key==="Escape") closeLb(); });
 JS;
 require __DIR__.'/inc/foot.php';
 ?>

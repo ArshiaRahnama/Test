@@ -2007,6 +2007,38 @@ end
 -- catches the real case (same account logged in twice from two different places).
 local activeLicenseSessions = {} -- login_users.license (this resource's own account id) -> src
 
+-- BUG FIX: the website dashboard (WebSite/dashboard.php) reads `users.last_seen`
+-- to show "آخرین حضور" (last seen) AND to decide whether the player counts as
+-- "آنلاین" (online). Nothing in this resource — or anywhere else in the
+-- server — was ever writing to that column, so it stayed NULL forever and
+-- the site always showed "—". Fixed with two pieces:
+--   1. activeRealLicenseBySrc tracks the real FiveM license (== essentialmode
+--      users.identifier/license) for every currently logged-in player.
+--   2. A heartbeat thread below touches last_seen for everyone in that table
+--      every Config.LastSeen.HeartbeatSeconds, well under the website's
+--      300-second online window, so "آنلاین" stays accurate while connected —
+--      and playerDropped does one last update so "last seen X پیش" is correct
+--      right after they log out too.
+local activeRealLicenseBySrc = {} -- src -> real license: identifier
+
+local function touchLastSeen(realLicense)
+    if not realLicense then return end
+    MySQL.Async.execute(
+        "UPDATE users SET last_seen = NOW() WHERE identifier = @lic OR license = @lic",
+        { ["@lic"] = realLicense }
+    )
+end
+
+CreateThread(function()
+    local intervalMs = (Config.LastSeen and Config.LastSeen.HeartbeatSeconds or 60) * 1000
+    while true do
+        Wait(intervalMs)
+        for _, realLicense in pairs(activeRealLicenseBySrc) do
+            touchLastSeen(realLicense)
+        end
+    end
+end)
+
 -- ─────────────────────────────────────────────────────────
 -- EXPANSION: unified entry point, no more Steam special-case.
 --
@@ -2142,6 +2174,12 @@ AddEventHandler('playerDropped', function()
             activeLicenseSessions[lic] = nil
         end
     end
+
+    -- BUG FIX (last_seen): final touch on disconnect so the dashboard's
+    -- "آخرین حضور" starts counting from the real moment they left, not from
+    -- whenever the last heartbeat happened to fire.
+    touchLastSeen(activeRealLicenseBySrc[src])
+    activeRealLicenseBySrc[src] = nil
 end)
 
 function formPassed(deferrals)
@@ -2165,6 +2203,14 @@ function formPassed(deferrals)
     -- DIFFERENT device — that's either the player on a new PC, or someone
     -- else with their password — so it's worth an alert.
     local realLicense = getIdentifierPrefix(deferrals.src, "license:")
+
+    -- BUG FIX (last_seen): remember this login's real license so the
+    -- heartbeat thread and playerDropped above can keep users.last_seen
+    -- fresh, and stamp it immediately so it's correct from the moment they
+    -- connect (not just after the first heartbeat interval).
+    activeRealLicenseBySrc[deferrals.src] = realLicense
+    touchLastSeen(realLicense)
+
     if realLicense and deferrals.identifier then
         MySQL.Async.fetchAll(
             "SELECT username, device_license FROM login_users WHERE license = @lic LIMIT 1",

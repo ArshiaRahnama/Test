@@ -1,6 +1,18 @@
 <?php
 require __DIR__ . '/lib.php';
-$u = need_login(); $db = db(); $p = $_GET['p'] ?? 'home'; $flash = ''; $ok = '';
+$u = need_login();
+
+// BUG FIX: صفحه فقط یه‌بار موقع لود سرور-ساید رندر می‌شه، برای همین اگه بازیکن بعد از
+// باز موندن تب آفلاین بشه (یا کل سرور بازی کرش کنه)، بج «آنلاین/آخرین حضور» بدون رفرش
+// دستی صفحه هیچ‌وقت خودش به‌روز نمی‌شد. این یه اندپوینت سبک JSON اضافه می‌کنه که جاوااسکریپت
+// پایین صفحه هر ۲۰ ثانیه صداش می‌زنه و فقط همین دوتا مقدار رو، بدون رفرش کامل، آپدیت می‌کنه.
+if (($_GET['ajax'] ?? '') === 'status') {
+  header('Content-Type: application/json; charset=utf-8');
+  echo json_encode(['online' => (bool)$u['online'], 'seenText' => $u['online'] ? 'الان' : ($u['seenSecsAgo'] !== null ? ago_secs($u['seenSecsAgo']) : '—')], JSON_UNESCAPED_UNICODE);
+  exit;
+}
+
+$db = db(); $p = $_GET['p'] ?? 'home'; $flash = ''; $ok = '';
 $admin = $u['role'] === 'admin';
 if (!$admin && in_array($p, ['review', 'users'], true)) $p = 'home';
 
@@ -76,6 +88,18 @@ if (($_GET['done'] ?? '') === '1' && $p === 'apps') $ok = 'درخواستت ثب
 $mask = preg_match('/^09\d{9}$/', $u['phone']) ? substr($u['phone'], 0, 4) . '***' . substr($u['phone'], -4) : '—';
 function job_label(string $j): string { foreach (CFG['depts'] as $d) if ($d['job'] === $j) return $d['label']; return $j === 'unemployed' ? 'بیکار' : $j; }
 function ago(int $t): string { $s = max(0, time() - $t); return $s < 90 ? 'همین الان' : ($s < 3600 ? intdiv($s, 60) . ' دقیقه پیش' : ($s < 172800 ? intdiv($s, 3600) . ' ساعت پیش' : intdiv($s, 86400) . ' روز پیش')); }
+// BUG FIX: تایل «ساعت بازی» فقط یه عدد خام (مثلاً «52») نشون می‌داد بدون واحد و بدون تناسب با اندازه‌ی مقدار.
+// این تابع timePlay (ثانیه) رو مثل ago() بالا، متناسب با اندازه‌ش به دقیقه/ساعت/روز (+ ساعت باقی‌مونده) نمایش می‌ده.
+// BUG FIX: نسخه‌ی «ago» که به‌جای یه timestamp، مستقیم تعداد ثانیه‌ی سپری‌شده (که خودِ
+// MySQL حساب کرده، نه PHP) می‌گیره — همون چیزی که me() الان توی seenSecsAgo برمی‌گردونه.
+function ago_secs(int $s): string { $s = max(0, $s); return $s < 90 ? 'همین الان' : ($s < 3600 ? intdiv($s, 60) . ' دقیقه پیش' : ($s < 172800 ? intdiv($s, 3600) . ' ساعت پیش' : intdiv($s, 86400) . ' روز پیش')); }
+function playdur(int $sec): string {
+  $sec = max(0, $sec);
+  if ($sec < 3600) return number_format(intdiv($sec, 60)) . ' دقیقه';
+  if ($sec < 86400) return number_format(intdiv($sec, 3600)) . ' ساعت';
+  $d = intdiv($sec, 86400); $h = intdiv($sec % 86400, 3600);
+  return number_format($d) . ' روز' . ($h > 0 ? ' و ' . $h . ' ساعت' : '');
+}
 const AUDIT = ['login_success' => 'ورود موفق به سرور', 'login_fail' => 'تلاش ناموفق برای ورود', 'register' => 'ساخت حساب', 'password_reset' => 'بازیابی رمز', 'password_change' => 'تغییر رمز از داخل بازی', 'new_device' => 'ورود از دستگاه جدید', 'logout_all' => 'خروج از همه‌ی دستگاه‌ها', 'security_hold' => 'قفل امنیتی فعال شد', 'security_hold_cleared' => 'قفل امنیتی باز شد'];
 $st = ['open' => 'باز', 'answered' => 'پاسخ داده شد', 'closed' => 'بسته'];
 $cnt = fn($sql, $args = []) => (function () use ($db, $sql, $args) { $s = $db->prepare($sql); $s->execute($args); return (int)$s->fetchColumn(); })();
@@ -140,14 +164,19 @@ function app_card(array $x, bool $review = false, bool $mine = true): void {
   <?php $g = $u['game']; $lv = (int)$u['level']; $act = [];
     try { $aq = $db->prepare('SELECT action,created_at FROM login_audit WHERE username=? ORDER BY created_at DESC LIMIT 5'); $aq->execute([$u['username']]); $act = $aq->fetchAll(); } catch (Throwable $e) {} ?>
   <section class="pro">
-    <div class="pro-av <?= $u['online'] ? 'on' : '' ?>"><span><?= e(mb_substr($u['fullname'], 0, 1)) ?></span></div>
+    <div class="pro-av <?= $u['online'] ? 'on' : '' ?>" id="proAv"><span><?= e(mb_substr($u['fullname'], 0, 1)) ?></span></div>
     <div class="pro-body">
       <small class="mut">خوش اومدی</small>
       <h2 class="gt" dir="ltr"><?= e($u['fullname']) ?></h2>
       <div class="chips"><span>@<?= e($u['username']) ?></span>
-        <?php if ($u['rank']): ?><span class="gold"><?= e($u['rank']) ?></span><?php endif; ?>
-        <?php if ($g): ?><span><?= e(job_label((string)$g['job'])) ?></span><?php if ($g['gang'] && $g['gang'] !== 'none'): ?><span><?= e($g['gang']) ?></span><?php endif; ?><?php endif; ?>
-        <span class="<?= $u['online'] ? 'live' : '' ?>"><?= $u['online'] ? 'آنلاین در شهر' : 'آفلاین' ?></span></div>
+        <?php // BUG FIX: این بج فقط برای کادر/ادمین‌ها پر می‌شه — چون $u['rank'] برای بازیکن‌های عادی
+        // (permission_level == 0) توی me() از قبل null هست، کاربر عادی اصلاً این بج رو نمی‌بینه. ?>
+        <?php if ($u['rank']): ?><span class="gold">Rank Admin: <?= e($u['rank']) ?></span><?php endif; ?>
+        <?php if ($g): ?>
+          <span>Job: <?= e(job_label((string)$g['job'])) ?> - <?= e(job_grade_label((string)$g['job'], (int)$g['job_grade'])) ?> (<?= (int)$g['job_grade'] ?>)</span>
+          <?php if ($g['gang'] && $g['gang'] !== 'none' && $g['gang'] !== 'nogang'): ?><span>Gang: <?= e(gang_label((string)$g['gang'])) ?></span><?php endif; ?>
+        <?php endif; ?>
+        <span class="<?= $u['online'] ? 'live' : '' ?>" id="onlineBadge"><?= $u['online'] ? 'آنلاین در شهر' : 'آفلاین' ?></span></div>
       <?php if ($g): ?><div class="xp"><i style="width:<?= min(100, (int)round($lv / max(50, $lv) * 100)) ?>%"></i></div><small class="mut" dir="ltr">Level <?= $lv ?> · XP <?= number_format((int)$g['xp']) ?></small><?php endif; ?>
     </div>
   </section>
@@ -155,9 +184,23 @@ function app_card(array $x, bool $review = false, bool $mine = true): void {
   <div class="tiles">
     <div><span>پول نقد</span><b dir="ltr">$<?= number_format((int)$g['money']) ?></b></div>
     <div><span>موجودی بانک</span><b dir="ltr">$<?= number_format((int)$g['bank']) ?></b></div>
-    <div><span>ساعت بازی</span><b><?= number_format(intdiv((int)$g['timePlay'], 3600)) ?></b></div>
-    <div><span>آخرین حضور</span><b><?= $u['online'] ? 'الان' : ($u['seen'] ? ago($u['seen']) : '—') ?></b></div>
+    <div><span>ساعت بازی</span><b><?= playdur((int)$g['timePlay']) ?></b></div>
+    <div><span>آخرین حضور</span><b id="seenText"><?= $u['online'] ? 'الان' : ($u['seenSecsAgo'] !== null ? ago_secs($u['seenSecsAgo']) : '—') ?></b></div>
   </div>
+  <script>
+  // BUG FIX: هر ۲۰ ثانیه وضعیت آنلاین/آخرین حضور رو از سرور می‌گیره و بدون رفرش کامل صفحه
+  // آپدیت می‌کنه — اگه بازیکن قطع بشه یا کل سرور بازی کرش کنه، تب باز بدون این هیچ‌وقت
+  // خودش به‌روز نمی‌شد و همیشه همون وضعیت لحظه‌ی لود صفحه رو نشون می‌داد.
+  function pollOnlineStatus(){
+    fetch('dashboard.php?ajax=status', {cache:'no-store'}).then(r=>r.json()).then(d=>{
+      const badge=document.getElementById('onlineBadge'), av=document.getElementById('proAv'), seen=document.getElementById('seenText');
+      if(badge){ badge.textContent = d.online ? 'آنلاین در شهر' : 'آفلاین'; badge.className = d.online ? 'live' : ''; }
+      if(av){ av.classList.toggle('on', !!d.online); }
+      if(seen){ seen.textContent = d.seenText; }
+    }).catch(()=>{});
+  }
+  setInterval(pollOnlineStatus, 20000);
+  </script>
   <?php else: ?><div class="dcardx"><h3>هنوز کاراکتری به این حساب وصل نیست</h3><p class="mut">بعد از اولین ورود به سرور با همین حساب، اطلاعات کاراکترت (پول، سطح، شغل، گنگ) اینجا نمایش داده می‌شه.</p></div><?php endif; ?>
   <div class="kpis"><div class="kpi"><b><?= $tot ?></b><span>کل درخواست‌ها</span></div><div class="kpi"><b><?= $myPend ?></b><span>در انتظار بررسی</span></div><div class="kpi"><b><?= $acc ?></b><span>پذیرفته‌شده</span></div><div class="kpi"><b><?= $tk ?></b><span>تیکت باز</span></div></div>
   <?php if ($admin && $revPend): ?><div class="dcardx" style="border-color:#ffc10755"><h3>🔔 <?= $revPend ?> درخواست منتظر بررسی توئه</h3><a class="btn gold" href="dashboard.php?p=review">رفتن به بررسی درخواست‌ها</a></div><?php endif; ?>

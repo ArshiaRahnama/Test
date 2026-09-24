@@ -46,8 +46,13 @@ $ladder = array_reverse(CFG['perm_ranks'], true);   // بالاترین رنک �
 .tstats div{min-width:130px;padding:14px 22px;border-radius:var(--r);background:var(--glass);border:1px solid var(--line2);backdrop-filter:blur(14px)}
 .tstats b{display:block;font-size:1.8rem;line-height:1.4;color:var(--gold)}.tstats span{font-size:.8rem;color:var(--mut)}
 .empty{text-align:center;padding:60px 20px;border:1px dashed var(--line2);border-radius:var(--r);background:var(--panel);color:var(--mut)}
+.ladder li.top{color:var(--gold);font-weight:900}
+.ladder li.top .crown{margin-inline-end:4px}
+.sc.on .av{box-shadow:0 0 0 3px color-mix(in srgb,var(--c) 55%,transparent),0 0 22px -4px var(--c);animation:avpulse 2.4s ease-in-out infinite}
+@keyframes avpulse{0%,100%{box-shadow:0 0 0 3px color-mix(in srgb,var(--c) 55%,transparent),0 0 14px -4px var(--c)}50%{box-shadow:0 0 0 5px color-mix(in srgb,var(--c) 30%,transparent),0 0 26px -2px var(--c)}}
+.tier:first-of-type .sc{border-image:linear-gradient(165deg,var(--c),transparent) 1;box-shadow:0 0 0 1px color-mix(in srgb,var(--c) 25%,transparent)}
 @media(max-width:900px){.tm{grid-template-columns:1fr}.ladder{position:static}}
-@media(prefers-reduced-motion:reduce){.sc,.sc .dot{animation:none;transition:none}}
+@media(prefers-reduced-motion:reduce){.sc,.sc .dot,.sc.on .av{animation:none;transition:none}}
 </style>
 </head>
 <body>
@@ -58,7 +63,7 @@ $ladder = array_reverse(CFG['perm_ranks'], true);   // بالاترین رنک �
  <div class="orbp a"></div><div class="orbp b"></div>
  <div class="wrap">
   <div class="crumb"><a href="index.php">خانه</a><span>/</span><span>کادر مدیریت</span></div>
-  <h1>کادر مدیریت شهر</h1>
+  <h1><span class="gt">کادر مدیریت</span> شهر</h1>
   <p>کسانی که پشت صحنه، شهر رو می‌سازن و بهش نظم می‌دن. اسم هر نفر همون اسم داخل بازیشه و رنکش از permission_level خودش تو سرور خونده می‌شه.</p>
   <div class="tstats">
    <div><b data-n="<?= count($staff) ?>"><?= count($staff) ?></b><span>عضو کادر</span></div>
@@ -76,9 +81,9 @@ $ladder = array_reverse(CFG['perm_ranks'], true);   // بالاترین رنک �
   <aside class="ladder" aria-label="نردبان رنک‌ها">
    <h3>نردبان رنک‌ها</h3><p>رنک‌های پررنگ یعنی همین الان عضو دارن.</p>
    <ol>
-   <?php foreach ($ladder as $lv => $name): $t = tier_of($lv); $n = $byRank[$name] ?? 0; ?>
-    <li class="<?= $n ? 'has' : '' ?>" style="--c:<?= e($t['color']) ?>"><span><?= e($name) ?></span><?= $n ? '<em>' . $n . ' نفر</em>' : '' ?></li>
-   <?php endforeach; ?>
+   <?php $first = true; foreach ($ladder as $lv => $name): $t = tier_of($lv); $n = $byRank[$name] ?? 0; ?>
+    <li class="<?= trim(($n ? 'has ' : '') . ($first ? 'top' : '')) ?>" style="--c:<?= e($t['color']) ?>"><?php if ($first): ?><span class="crown">👑</span><?php endif; ?><span><?= e($name) ?></span><?= $n ? '<em>' . $n . ' نفر</em>' : '' ?></li>
+   <?php $first = false; endforeach; ?>
    </ol>
   </aside>
 

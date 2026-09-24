@@ -20,8 +20,11 @@ const CFG = [
   // اگه پر بشه، تعداد آنلاین واقعی سرور بالای هدر نمایش داده می‌شه.
   'cfxcode' => '',
 
-  // بازه‌ای که یک بازیکن «آنلاین» حساب می‌شه (برحسب ثانیه) بر اساس آخرین last_seen ثبت‌شده در دیتابیس
-  'online_window' => 300,
+  // بازه‌ای که یک بازیکن «آنلاین» حساب می‌شه (برحسب ثانیه) بر اساس آخرین last_seen ثبت‌شده در دیتابیس.
+  // این عدد باید از Config.LastSeen.HeartbeatSeconds توی Unique_Login بزرگ‌تر باشه (وگرنه بازیکن‌های
+  // واقعاً آنلاین بین دو تا heartbeat لحظه‌ای «آفلاین» نشون داده می‌شن)، ولی زیاد بزرگش هم نکن — هرچی
+  // بزرگ‌تر باشه، بعد از قطع واقعی/کرش سرور بازی، بیشتر طول می‌کشه تا سایت واقعاً «آفلاین» نشونش بده.
+  'online_window' => 150,
 
   // گروه‌بندی ارگان‌ها (سه دسته‌ی اصلی شهر)
   'org_groups' => [
@@ -248,7 +251,13 @@ function game_login(string $ident, string $pass, ?string &$err = null): ?array {
 function game_profile(array $lu): ?array {
   if (empty($lu['device_license'])) return null;
   try {
-    $q = db()->prepare('SELECT playerName,name,firstname,lastname,sex,`rank`,xp,permission_level,job,gang,money,bank,timePlay,last_seen,account_num,iban FROM users WHERE identifier=? OR license=? LIMIT 1');
+    // BUG FIX: «آنلاین/آخرین حضور» رو با TIMESTAMPDIFF خودِ MySQL می‌سنجیم، نه با
+    // strtotime()+time() سمت PHP — چون last_seen با NOW()ِ MySQL نوشته می‌شه؛ اگه ساعت
+    // سرور PHP با ساعت سرور MySQL یکی نباشه (خیلی رایجه، مخصوصاً روی هاست/داکر جدا)،
+    // مقایسه‌ی سمت PHP می‌تونست بازیکن رو دقیقه‌ها (یا حتی بعد از قطع/کرش کامل سرور بازی)
+    // اشتباهاً «آنلاین» نشون بده. این‌جوری همه‌چی رو خودِ MySQL، با ساعت خودش، حساب می‌کنه —
+    // دقیقاً همون روشی که site_stats() برای دپارتمان‌ها و کادر مدیریت همیشه استفاده می‌کرده.
+    $q = db()->prepare('SELECT playerName,name,firstname,lastname,sex,`rank`,xp,permission_level,job,job_grade,gang,gang_grade,money,bank,timePlay,last_seen,TIMESTAMPDIFF(SECOND,last_seen,NOW()) AS seen_secs_ago,account_num,iban FROM users WHERE identifier=? OR license=? LIMIT 1');
     $q->execute([$lu['device_license'], $lu['device_license']]); return $q->fetch() ?: null;
   } catch (Throwable $e) { return null; }
 }
@@ -282,9 +291,12 @@ function me(): ?array {
   $name = display_name($lu, $g); $gender = $g && $g['sex'] === 'f' ? 'مونث' : 'مذکر';
   if ($w['role'] !== $role || $w['fullname'] !== $name || $w['gender'] !== $gender)
     $db->prepare('UPDATE web_accounts SET role=?,fullname=?,gender=? WHERE id=?')->execute([$role, $name, $gender, $w['id']]);
-  $win = (int)CFG['online_window']; $seen = $g && $g['last_seen'] ? strtotime((string)$g['last_seen']) : 0;
+  $win = (int)CFG['online_window'];
+  $secsAgo = ($g && $g['last_seen'] && $g['seen_secs_ago'] !== null) ? max(0, (int)$g['seen_secs_ago']) : null;
+  $seen = $g && $g['last_seen'] ? strtotime((string)$g['last_seen']) : 0; // فقط برای نمایش/سازگاری قدیمی؛ برای آنلاین‌بودن دیگه استفاده نمی‌شه
   return $cache = array_merge($w, ['role' => $role, 'fullname' => $name, 'gender' => $gender, 'username' => $lu['username'], 'lid' => (int)$lu['id'], 'perm' => $perm,
-    'rank' => $perm >= (int)CFG['team_min_perm'] ? rank_label($perm) : ($perm > 0 ? 'Staff' : null), 'game' => $g, 'online' => $seen && time() - $seen < $win, 'seen' => $seen,
+    'rank' => $perm >= (int)CFG['team_min_perm'] ? rank_label($perm) : ($perm > 0 ? 'Staff' : null), 'game' => $g, 'online' => $secsAgo !== null && $secsAgo < $win,
+    'seen' => $seen, 'seenSecsAgo' => $secsAgo,
     'level' => $g ? max(1, (int)$g['rank']) : 1]);
 }
 function need_login(): array {
@@ -304,6 +316,31 @@ function apply_targets(): array {
 /** اسم داخل‌بازی: playerName، بعد name، بعد اسم+فامیل. خالی => '' (هرگز license/identifier نمایش داده نمی‌شه) */
 function pname(array $r): string {
   return trim((string)($r['playerName'] ?? '')) ?: trim((string)($r['name'] ?? '')) ?: trim(trim((string)($r['firstname'] ?? '')) . ' ' . trim((string)($r['lastname'] ?? '')));
+}
+
+/** لیبل درجه‌ی شغلی (job_grades.label)؛ مثلاً job='judge', grade=1 => 'Judge Officer 1'. اگه پیدا نشه، خودِ عدد درجه برمی‌گرده. */
+function job_grade_label(string $job, int $grade): string {
+  static $cache = [];
+  $key = $job . '#' . $grade;
+  if (array_key_exists($key, $cache)) return $cache[$key];
+  try {
+    $q = db()->prepare('SELECT label FROM job_grades WHERE job_name=? AND grade=? LIMIT 1');
+    $q->execute([$job, $grade]);
+    $label = (string)($q->fetchColumn() ?: '');
+  } catch (Throwable $e) { $label = ''; }
+  return $cache[$key] = ($label !== '' ? $label : (string)$grade);
+}
+/** لیبل نمایشی گنگ (gangs.label)؛ اگه پیدا نشه یا 'nogang' باشه، خودِ مقدار خام برمی‌گرده. */
+function gang_label(string $gang): string {
+  static $cache = [];
+  if ($gang === '' || $gang === 'none' || $gang === 'nogang') return '';
+  if (array_key_exists($gang, $cache)) return $cache[$gang];
+  try {
+    $q = db()->prepare('SELECT label FROM gangs WHERE name=? LIMIT 1');
+    $q->execute([$gang]);
+    $label = (string)($q->fetchColumn() ?: '');
+  } catch (Throwable $e) { $label = ''; }
+  return $cache[$gang] = ($label !== '' ? $label : $gang);
 }
 
 /* ===== رنک و دسته‌ی کادر بر اساس permission_level ===== */

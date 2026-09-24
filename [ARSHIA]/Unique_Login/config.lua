@@ -43,6 +43,14 @@ Config.SuspiciousDeviceLock = {
     WindowSeconds = 600, -- 10 minutes
 }
 
+-- BUG FIX: how often (seconds) this resource refreshes `users.last_seen`
+-- for every currently logged-in player. Keep this comfortably under the
+-- website's `online_window` (WebSite/lib.php, CFG['online_window'] = 150s)
+-- or players will flicker to "آفلاین" on the dashboard between heartbeats.
+Config.LastSeen = {
+    HeartbeatSeconds = 60,
+}
+
 -- EXPANSION: login_audit grows forever otherwise. Rows older than this get
 -- deleted automatically once a day. Set to 0 to disable cleanup entirely.
 Config.AuditLogRetentionDays = 90

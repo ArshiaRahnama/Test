@@ -4,8 +4,6 @@
  <a href="index.php#home" class="logo" id="brand"></a>
  <div class="links" id="links">
   <a href="index.php#home"<?=$cls('home')?>>خانه</a>
-  <a href="index.php#top">رنک سرور</a>
-  <a href="index.php#guide">راهنما</a>
   <a href="join.php"<?=$cls('join')?>>عضوگیری و دپارتمان</a>
   <a href="gallery.php"<?=$cls('gallery')?>>گالری</a>
   <a href="rules.php"<?=$cls('rules')?>>قوانین</a>

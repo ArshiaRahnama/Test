@@ -19,11 +19,19 @@
 .rcat summary .ictile{margin:0;flex:none}
 .rcat summary .chev{margin-inline-start:auto;transition:transform .25s var(--ease);color:var(--mut)}
 .rcat[open] summary .chev{transform:rotate(180deg)}
-.rcat ol{padding:0 24px 24px 60px;display:grid;gap:10px;color:var(--mut);font-size:.92rem}
-.rcat ol li::marker{color:var(--cyan);font-weight:800}
+.rcat[open]{border-color:#ffc10744;box-shadow:0 0 0 1px #ffc10722,0 20px 50px -20px #000c}
+.rcat summary .ictile{transition:transform .3s var(--ease),background .3s,border-color .3s}
+.rcat[open] summary .ictile{background:#ffc10726;border-color:#ffc10766;transform:rotate(-8deg) scale(1.06)}
+.rcat ol{list-style:none;padding:0 24px 24px 24px;display:grid;gap:10px;color:var(--mut);font-size:.92rem;counter-reset:rn}
+.rcat ol li{position:relative;padding-inline-start:38px;counter-increment:rn}
+.rcat ol li::before{content:counter(rn);position:absolute;inset-inline-start:0;top:-1px;width:24px;height:24px;border-radius:8px;background:#ffc10716;border:1px solid #ffc10740;color:var(--gold);font-weight:800;font-size:.72rem;display:grid;place-items:center}
 .rcat ol li b{color:var(--text);font-weight:700}
-.punish{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-top:30px}
-.pstep{background:linear-gradient(165deg,var(--panel),#0a0906);border:1px solid var(--line2);border-radius:var(--r-sm);padding:18px}
+.punish{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-top:30px;position:relative}
+.punish::before{content:"";position:absolute;top:32px;inset-inline:6%;height:2px;background:linear-gradient(90deg,#ffc10788,#ff5c3a88,#e6000088);z-index:0;opacity:.5}
+.pstep{background:linear-gradient(165deg,var(--panel),#0a0906);border:1px solid var(--line2);border-radius:var(--r-sm);padding:18px;position:relative;z-index:1;transition:transform .25s var(--ease),border-color .25s}
+.pstep:hover{transform:translateY(-5px);border-color:#ffc10755}
+.pstep:last-child{border-color:#ff5c3a55;background:linear-gradient(165deg,#2a120a,#0a0906)}
+.pstep:last-child b{color:#ff8a5c}
 .pstep b{display:block;color:var(--gold);font-size:.85rem;margin-bottom:6px}
 .pstep p{color:var(--mut);font-size:.88rem}
 </style>
@@ -36,7 +44,7 @@
  <div class="orbp a"></div><div class="orbp b"></div>
  <div class="wrap">
   <div class="crumb"><a href="index.php">خانه</a><span>/</span><span>قوانین</span></div>
-  <h1>قوانین شهر <span data-name>یونیک</span></h1>
+  <h1><span class="gt">قوانین شهر</span> <span data-name>یونیک</span></h1>
   <p>قبل از ورود به شهر، این قوانین رو بخون. رعایت‌شون تجربه‌ی رول‌پلی بهتری برای همه می‌سازه.</p>
  </div>
 </section>
