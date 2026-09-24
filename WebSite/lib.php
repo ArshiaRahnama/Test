@@ -4,53 +4,149 @@ declare(strict_types=1);
 const CFG = [
   'name' => 'Unique RP', 'fa' => 'یونیک',
   'discord' => 'https://discord.gg/rwBHcCqzJB',
-  'driver' => 'sqlite',                       // 'sqlite' (بدون نیاز به تنظیم) یا 'mysql'
-  'mysql' => ['host' => '127.0.0.1', 'db' => 'unique_web', 'user' => 'root', 'pass' => ''],
+
+  // 'mysql' سایت رو به دیتابیس واقعی سرور (ESX/essentialmode) وصل می‌کنه.
+  // اگه اتصال برقرار نشه، سایت خودکار روی دیتای دمو (sqlite) فال‌بک می‌کنه و از کار نمی‌افته.
+  'driver' => 'mysql',
+  'mysql' => [
+    'host' => '127.0.0.1',        // آی‌پی/هاست دیتابیس سرورت
+    'db'   => 'essentialmode',    // اسم دیتابیس ESX (طبق دامپ ریپو همینه؛ اگه فرق داره عوضش کن)
+    'user' => 'root',             // یوزر دیتابیس
+    'pass' => '',                 // پسورد دیتابیس
+    'port' => 3306,
+  ],
+
+  // کد اتصال سرور (join code) روی cfx.re — مثلاً از لینک cfx.re/join/xxxxx همون xxxxx رو بذار.
+  // اگه پر بشه، تعداد آنلاین واقعی سرور بالای هدر نمایش داده می‌شه.
+  'cfxcode' => '',
+
+  // بازه‌ای که یک بازیکن «آنلاین» حساب می‌شه (برحسب ثانیه) بر اساس آخرین last_seen ثبت‌شده در دیتابیس
+  'online_window' => 300,
+
+  // دپارتمان‌هایی که می‌خوایم از روی ستون job واقعی کاربرا بشماریم
+  'depts' => [
+    ['job' => 'police',    'label' => 'Police Department'],
+    ['job' => 'ambulance', 'label' => 'Medical Center'],
+    ['job' => 'mechanic',  'label' => 'Mechanic Central'],
+    ['job' => 'taxi',      'label' => 'Taxi Department'],
+  ],
+
+  // نگاشت مقدار ستون group به عنوان فارسی نمایشی
+  'roles' => ['superadmin' => 'مدیر ارشد', 'admin' => 'ادمین', 'moderator' => 'مدیر', 'mod' => 'مدیر', 'gm' => 'گیم مستر', 'owner' => 'مالک'],
 ];
 
 session_set_cookie_params(['httponly' => true, 'samesite' => 'Lax']);
 session_start();
 
+/* ===== اتصال دیتابیس با فال‌بک امن ===== */
 function db(): PDO {
   static $p = null; if ($p) return $p;
-  $my = CFG['driver'] === 'mysql';
-  if ($my) {
-    $c = CFG['mysql'];
-    $x = new PDO("mysql:host={$c['host']};charset=utf8mb4", $c['user'], $c['pass']);
-    $x->exec("CREATE DATABASE IF NOT EXISTS `{$c['db']}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
-    $p = new PDO("mysql:host={$c['host']};dbname={$c['db']};charset=utf8mb4", $c['user'], $c['pass']);
-  } else {
-    $d = __DIR__ . '/data';
-    if (!is_dir($d)) { mkdir($d, 0750, true); file_put_contents("$d/.htaccess", "Require all denied\nDeny from all\n"); }
-    $p = new PDO('sqlite:' . $d . '/unique.sqlite');
-    $p->exec('PRAGMA foreign_keys=ON');
+  if (CFG['driver'] === 'mysql') {
+    try {
+      $c = CFG['mysql'];
+      $p = new PDO("mysql:host={$c['host']};port={$c['port']};dbname={$c['db']};charset=utf8mb4", $c['user'], $c['pass'], [
+        PDO::ATTR_TIMEOUT => 3,
+      ]);
+      $p->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+      $p->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+      $GLOBALS['__live_db'] = true;
+      site_install($p, true);
+      return $p;
+    } catch (Throwable $e) {
+      // اتصال به سرور اصلی ناموفق بود؛ می‌ریم سراغ دیتای دمو تا سایت هیچ‌وقت خراب نشه
+      error_log('[UniqueRP] mysql connect failed, falling back to demo db: ' . $e->getMessage());
+    }
   }
+  $d = __DIR__ . '/data';
+  if (!is_dir($d)) { mkdir($d, 0750, true); file_put_contents("$d/.htaccess", "Require all denied\nDeny from all\n"); }
+  $p = new PDO('sqlite:' . $d . '/unique.sqlite');
+  $p->exec('PRAGMA foreign_keys=ON');
   $p->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
   $p->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
-  install($p, $my);
+  $GLOBALS['__live_db'] = false;
+  site_install($p, false);
   return $p;
 }
 
-function install(PDO $p, bool $my): void {
+/** آیا الان واقعاً به دیتابیس سرور وصلیم یا داریم دمو نشون می‌دیم؟ */
+function is_live(): bool { db(); return $GLOBALS['__live_db'] ?? false; }
+
+/* ===== جداول اختصاصیِ خود وب‌سایت (لاگین سایت، تیکت‌ها) ===== */
+function site_install(PDO $p, bool $my): void {
   $pk = $my ? 'INT AUTO_INCREMENT PRIMARY KEY' : 'INTEGER PRIMARY KEY AUTOINCREMENT';
   $t = $my ? 'VARCHAR(190)' : 'TEXT';
   $tail = $my ? ' ENGINE=InnoDB DEFAULT CHARSET=utf8mb4' : '';
-  $p->exec("CREATE TABLE IF NOT EXISTS users(id $pk, phone $t NOT NULL UNIQUE, pass $t NOT NULL, fullname $t NOT NULL, gender $t NOT NULL, level INT NOT NULL DEFAULT 1, acc $t NOT NULL, cid $t NOT NULL, role $t NOT NULL DEFAULT 'user', created INT NOT NULL)$tail");
-  $p->exec("CREATE TABLE IF NOT EXISTS tickets(id $pk, user_id INT NOT NULL, subject $t NOT NULL, status $t NOT NULL, created INT NOT NULL)$tail");
-  $p->exec("CREATE TABLE IF NOT EXISTS msgs(id $pk, ticket_id INT NOT NULL, user_id INT NOT NULL, body TEXT NOT NULL, created INT NOT NULL)$tail");
-  $p->exec("CREATE TABLE IF NOT EXISTS top(id $pk, cat $t NOT NULL, name $t NOT NULL, val $t NOT NULL)$tail");
-  $p->exec("CREATE TABLE IF NOT EXISTS gangs(id $pk, name $t NOT NULL, lvl INT NOT NULL, open INT NOT NULL)$tail");
-  $p->exec("CREATE TABLE IF NOT EXISTS depts(id $pk, name $t NOT NULL, online INT NOT NULL, total INT NOT NULL, duty INT NOT NULL)$tail");
-  $p->exec("CREATE TABLE IF NOT EXISTS staff(id $pk, name $t NOT NULL, role $t NOT NULL)$tail");
-  if ((int)$p->query('SELECT COUNT(*) FROM staff')->fetchColumn() > 0) return;
-  $ins = fn($sql, $rows) => array_map(fn($r) => $p->prepare($sql)->execute($r), $rows);
-  $ins('INSERT INTO top(cat,name,val) VALUES(?,?,?)', [
-    ['لول','Surena Gh','Level 50'],['لول','Richard Miller','Level 50'],['لول','Kenshin Himura','Level 50'],['لول','Amir Mn','Level 50'],['لول','Nima Ahmadi','Level 50'],
-    ['تایم پلی','Reza Neo','412 ساعت'],['تایم پلی','Homy Baba','390 ساعت'],['تایم پلی','Mahla Majidi','356 ساعت'],['تایم پلی','Yousef Azimi','331 ساعت'],['تایم پلی','Moon Child','320 ساعت'],
-    ['استریمر','Javad Malek','58 ساعت پخش'],['استریمر','Hadeir Marshall','51 ساعت پخش'],['استریمر','Delarose Lumi','44 ساعت پخش'],['استریمر','Kourosh Prime','39 ساعت پخش'],['استریمر','General Amir','30 ساعت پخش']]);
-  $ins('INSERT INTO gangs(name,lvl,open) VALUES(?,?,?)', [['Ballas',19,1],['North_Kids',20,1],['SAVAGE',20,0],['Khalifa',21,1],['GroveStreet',26,0],['Vision',18,0]]);
-  $ins('INSERT INTO depts(name,online,total,duty) VALUES(?,?,?,?)', [['Police Department',5,83,1],['Sheriff Department',1,57,1],['Special Forces',1,44,1],['Medical Center',3,84,1],['Mechanic Central',2,25,1],['Justice',0,28,0],['Taxi Department',0,48,0],['Weazel News',0,7,0]]);
-  $ins('INSERT INTO staff(name,role) VALUES(?,?)', [['Mohammad','Game Master'],['Ahmad','Game Master'],['Hamid','Game Master'],['Payam','Game Master'],['Mehrdad','Manager'],['Maxmat','Manager']]);
+  // جداول سایت با پیشوند web_ ساخته می‌شن تا با جداول اصلی سرور (users, gangs, ...) قاطی نشن
+  $p->exec("CREATE TABLE IF NOT EXISTS web_accounts(id $pk, phone $t NOT NULL UNIQUE, pass $t NOT NULL, fullname $t NOT NULL, gender $t NOT NULL, level INT NOT NULL DEFAULT 1, acc $t NOT NULL, cid $t NOT NULL, role $t NOT NULL DEFAULT 'user', created INT NOT NULL)$tail");
+  $p->exec("CREATE TABLE IF NOT EXISTS web_tickets(id $pk, user_id INT NOT NULL, subject $t NOT NULL, status $t NOT NULL, created INT NOT NULL)$tail");
+  $p->exec("CREATE TABLE IF NOT EXISTS web_msgs(id $pk, ticket_id INT NOT NULL, user_id INT NOT NULL, body TEXT NOT NULL, created INT NOT NULL)$tail");
+  if (!$my) {
+    // این‌ها فقط برای حالت دمو (وقتی به دیتابیس واقعی سرور وصل نیستیم) لازمن
+    $p->exec("CREATE TABLE IF NOT EXISTS demo_top(id $pk, cat $t NOT NULL, name $t NOT NULL, val $t NOT NULL)");
+    $p->exec("CREATE TABLE IF NOT EXISTS demo_gangs(id $pk, name $t NOT NULL, lvl INT NOT NULL, open INT NOT NULL)");
+    $p->exec("CREATE TABLE IF NOT EXISTS demo_depts(id $pk, name $t NOT NULL, online INT NOT NULL, total INT NOT NULL, duty INT NOT NULL)");
+    $p->exec("CREATE TABLE IF NOT EXISTS demo_staff(id $pk, name $t NOT NULL, role $t NOT NULL)");
+    if ((int)$p->query('SELECT COUNT(*) FROM demo_staff')->fetchColumn() > 0) return;
+    $ins = fn($sql, $rows) => array_map(fn($r) => $p->prepare($sql)->execute($r), $rows);
+    $ins('INSERT INTO demo_top(cat,name,val) VALUES(?,?,?)', [
+      ['سطح','Surena Gh','Level 50'],['سطح','Richard Miller','Level 50'],['سطح','Kenshin Himura','Level 50'],['سطح','Amir Mn','Level 50'],['سطح','Nima Ahmadi','Level 50'],
+      ['ساعت بازی','Reza Neo','412 ساعت'],['ساعت بازی','Homy Baba','390 ساعت'],['ساعت بازی','Mahla Majidi','356 ساعت'],['ساعت بازی','Yousef Azimi','331 ساعت'],['ساعت بازی','Moon Child','320 ساعت']]);
+    $ins('INSERT INTO demo_gangs(name,lvl,open) VALUES(?,?,?)', [['Ballas',19,1],['North_Kids',20,1],['SAVAGE',20,0],['Khalifa',21,1],['GroveStreet',26,0],['Vision',18,0]]);
+    $ins('INSERT INTO demo_depts(name,online,total,duty) VALUES(?,?,?,?)', [['Police Department',5,83,1],['Medical Center',3,84,1],['Mechanic Central',2,25,1],['Taxi Department',0,48,0]]);
+    $ins('INSERT INTO demo_staff(name,role) VALUES(?,?)', [['Mohammad','Game Master'],['Ahmad','Game Master'],['Hamid','Game Master'],['Payam','Manager']]);
+  }
+}
+
+/* ===== آمار سایت: در حالت live از جداول واقعی سرور می‌خونه، وگرنه از دمو ===== */
+function site_stats(): array {
+  $p = db();
+  if (!is_live()) {
+    $q = fn($s) => $p->query($s)->fetchAll(PDO::FETCH_NUM);
+    $top = [];
+    foreach ($q('SELECT cat,name,val FROM demo_top ORDER BY id') as [$c, $n, $v]) $top[$c][] = [$n, $v];
+    return [
+      'citizens' => (int)$p->query('SELECT COUNT(*) FROM web_accounts')->fetchColumn(),
+      'staffCount' => (int)$p->query('SELECT COUNT(*) FROM demo_staff')->fetchColumn(),
+      'gangCount' => (int)$p->query('SELECT COUNT(*) FROM demo_gangs')->fetchColumn(),
+      'top' => $top,
+      'gangs' => array_map(fn($r) => [$r[0], 'Level ' . $r[1], (int)$r[2]], $q('SELECT name,lvl,open FROM demo_gangs ORDER BY id')),
+      'depts' => array_map(fn($r) => [$r[0], (int)$r[1], (int)$r[2], (int)$r[3]], $q('SELECT name,online,total,duty FROM demo_depts ORDER BY id')),
+      'staff' => $q('SELECT name,role FROM demo_staff ORDER BY id'),
+    ];
+  }
+
+  // ----- دیتای واقعی سرور -----
+  $win = (int)CFG['online_window'];
+  $top = [];
+  $top['سطح'] = array_map(fn($r) => [trim($r['firstname'] . ' ' . $r['lastname']) ?: $r['identifier'], 'Level ' . (int)$r['level']],
+    $p->query("SELECT firstname,lastname,identifier,level FROM users ORDER BY level DESC LIMIT 8")->fetchAll());
+  $top['ساعت بازی'] = array_map(fn($r) => [trim($r['firstname'] . ' ' . $r['lastname']) ?: $r['identifier'], number_format(intdiv((int)$r['playtime'], 60)) . ' ساعت'],
+    $p->query("SELECT firstname,lastname,identifier,playtime FROM users ORDER BY playtime DESC LIMIT 8")->fetchAll());
+
+  $gangs = array_map(fn($r) => [$r['name'], 'Level ' . (int)$r['level'], $r['disband'] ? 0 : 1],
+    $p->query("SELECT name,level,disband FROM gangs WHERE name<>'nogang' ORDER BY level DESC LIMIT 8")->fetchAll());
+
+  $depts = [];
+  foreach (CFG['depts'] as $d) {
+    $s = $p->prepare("SELECT COUNT(*) total, SUM(CASE WHEN last_seen >= (NOW() - INTERVAL {$win} SECOND) THEN 1 ELSE 0 END) online FROM users WHERE job=?");
+    $s->execute([$d['job']]);
+    $r = $s->fetch();
+    $depts[] = [$d['label'], (int)($r['online'] ?? 0), (int)($r['total'] ?? 0), ((int)($r['online'] ?? 0)) > 0 ? 1 : 0];
+  }
+
+  $roles = CFG['roles'];
+  $staff = array_map(function ($r) use ($roles) {
+    $name = trim($r['firstname'] . ' ' . $r['lastname']) ?: $r['identifier'];
+    $role = $roles[$r['group']] ?? $r['group'];
+    return [$name, $role];
+  }, $p->query("SELECT firstname,lastname,identifier,`group` FROM users WHERE `group` NOT IN ('user','') ORDER BY level DESC LIMIT 8")->fetchAll());
+
+  return [
+    'citizens' => (int)$p->query('SELECT COUNT(*) FROM users')->fetchColumn(),
+    'staffCount' => (int)$p->query("SELECT COUNT(*) FROM users WHERE `group` NOT IN ('user','')")->fetchColumn(),
+    'gangCount' => (int)$p->query("SELECT COUNT(*) FROM gangs WHERE name<>'nogang'")->fetchColumn(),
+    'top' => $top, 'gangs' => $gangs, 'depts' => $depts, 'staff' => $staff,
+  ];
 }
 
 function e($s): string { return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
@@ -60,7 +156,7 @@ function csrf_field(): string { return '<input type="hidden" name="csrf" value="
 function csrf_check(): void { if (!hash_equals($_SESSION['csrf'] ?? '', $_POST['csrf'] ?? '')) { http_response_code(419); exit('نشست منقضی شده؛ صفحه را دوباره بارگذاری کن.'); } }
 function me(): ?array {
   if (empty($_SESSION['uid'])) return null;
-  $s = db()->prepare('SELECT * FROM users WHERE id=?'); $s->execute([$_SESSION['uid']]);
+  $s = db()->prepare('SELECT * FROM web_accounts WHERE id=?'); $s->execute([$_SESSION['uid']]);
   return $s->fetch() ?: null;
 }
 function need_login(): array { return me() ?? go('auth.php'); }

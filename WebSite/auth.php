@@ -15,20 +15,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (mb_strlen($name) < 3 || mb_strlen($name) > 40) $err = 'نام و نام خانوادگی باید بین ۳ تا ۴۰ حرف باشد.';
     elseif (strlen($pass) < 6) $err = 'رمز عبور حداقل ۶ کاراکتر باشد.';
     else {
-      $s = $db->prepare('SELECT 1 FROM users WHERE phone=?'); $s->execute([$phone]);
+      $s = $db->prepare('SELECT 1 FROM web_accounts WHERE phone=?'); $s->execute([$phone]);
       if ($s->fetch()) $err = 'این شماره قبلاً ثبت‌نام کرده است.';
       else {
-        $first = (int)$db->query('SELECT COUNT(*) FROM users')->fetchColumn() === 0;   // اولین کاربر = ادمین
+        $first = (int)$db->query('SELECT COUNT(*) FROM web_accounts')->fetchColumn() === 0;   // اولین کاربر = ادمین
         $acc = random_int(100, 999) . '-' . random_int(100, 999);
-        $db->prepare('INSERT INTO users(phone,pass,fullname,gender,acc,cid,role,created) VALUES(?,?,?,?,?,?,?,?)')
+        $db->prepare('INSERT INTO web_accounts(phone,pass,fullname,gender,acc,cid,role,created) VALUES(?,?,?,?,?,?,?,?)')
            ->execute([$phone, password_hash($pass, PASSWORD_DEFAULT), $name, $g, $acc, '', $first ? 'admin' : 'user', time()]);
         $id = (int)$db->lastInsertId();
-        $db->prepare('UPDATE users SET cid=? WHERE id=?')->execute([str_pad((string)$id, 8, '0', STR_PAD_LEFT), $id]);
+        $db->prepare('UPDATE web_accounts SET cid=? WHERE id=?')->execute([str_pad((string)$id, 8, '0', STR_PAD_LEFT), $id]);
         session_regenerate_id(true); $_SESSION['uid'] = $id; go('dashboard.php');
       }
     }
   } else {
-    $s = $db->prepare('SELECT * FROM users WHERE phone=?'); $s->execute([$phone]); $u = $s->fetch();
+    $s = $db->prepare('SELECT * FROM web_accounts WHERE phone=?'); $s->execute([$phone]); $u = $s->fetch();
     if ($u && password_verify($pass, $u['pass'])) { session_regenerate_id(true); $_SESSION['uid'] = (int)$u['id']; go('dashboard.php'); }
     usleep(600000); $err = 'شماره یا رمز عبور اشتباه است.';
   }
