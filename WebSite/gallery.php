@@ -8,8 +8,6 @@
 <meta name="description" content="لحظه‌های ثبت‌شده توسط شهروندان شهر یونیک؛ عکس‌های شهر، خودروها، گنگ‌ها و رویدادها.">
 <meta name="theme-color" content="#050505">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M16 8v28a16 16 0 0 0 32 0V8' fill='none' stroke='%23ffc107' stroke-width='11' stroke-linecap='round'/%3E%3C/svg%3E">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800;900&display=swap">
 <link rel="stylesheet" href="style.css">
 <style>
 .gal{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px;margin-top:32px}
@@ -77,6 +75,27 @@
 </div></section>
 
 <div id="lightbox"><div class="lbcard" id="lbcard"><div class="lbclose" id="lbclose">✕</div><span id="lbtitle"></span><br><small id="lbsub"></small></div></div>
+
+<section style="padding-top:10px"><div class="wrap rv">
+ <h2 style="margin-bottom:4px">اخبار وزیل‌نیوز</h2><p class="mut" style="margin-top:0">آخرین اخبار منتشرشده توسط خبرگزاری Weazel News.</p>
+ <div class="list">
+  <?php foreach (news_list(12) as $n): ?>
+   <div class="row" style="align-items:flex-start;flex-wrap:wrap">
+    <?php if (!empty($n['image_url'])): ?><img src="<?= e($n['image_url']) ?>" alt="" style="width:64px;height:64px;object-fit:cover;border-radius:10px;flex-shrink:0"><?php endif; ?>
+    <div style="flex:1;min-width:200px"><b><?= e($n['title']) ?></b><p class="mut" style="margin:4px 0 0"><?= nl2br(e(mb_substr((string)$n['body'], 0, 300))) ?></p><small class="mut"><?= e($n['author_name']) ?> · <?= date('Y/m/d', (int)$n['created']) ?></small></div>
+   </div>
+  <?php endforeach; if (!news_list(1)) echo '<p class="mut">هنوز خبری منتشر نشده.</p>'; ?>
+ </div>
+</div></section>
+
+<section style="padding-top:10px"><div class="wrap rv">
+ <h2 style="margin-bottom:4px">تخته‌ی تحت‌تعقیب</h2><p class="mut" style="margin-top:0">پرونده‌های باز پلیس با مشکوکِ شناسایی‌شده؛ هنوز بازداشت نشدن.</p>
+ <div class="list">
+  <?php foreach (wanted_board(20) as $w): ?>
+   <div class="row"><b><?= e($w['suspect_name']) ?></b><small>سرقت از <?= e($w['rob_name']) ?></small><span class="tag open"><?= $w['status'] === 'cold' ? 'سرد شده' : 'تحت تعقیب' ?></span></div>
+  <?php endforeach; if (!wanted_board(1)) echo '<p class="mut">در حال حاضر کسی تحت تعقیب نیست.</p>'; ?>
+ </div>
+</div></section>
 </main>
 
 <?php

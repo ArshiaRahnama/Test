@@ -14,8 +14,6 @@ $ladder = array_reverse(CFG['perm_ranks'], true);   // بالاترین رنک �
 <meta name="description" content="کادر مدیریت شهر یونیک؛ رنک‌ها و اعضای فعال، لحظه‌ای از دیتابیس سرور.">
 <meta name="theme-color" content="#050505">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M16 8v28a16 16 0 0 0 32 0V8' fill='none' stroke='%23ffc107' stroke-width='11' stroke-linecap='round'/%3E%3C/svg%3E">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800;900&display=swap">
 <link rel="stylesheet" href="style.css">
 <style>
 .tm{display:grid;grid-template-columns:270px 1fr;gap:34px;align-items:start}

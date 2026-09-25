@@ -1,3 +1,13 @@
+/* فونت Vazirmatn به‌صورت لوکال از پوشه‌ی fonts/ سایت لود می‌شه (نه از فونت گوگل) —
+   چون فونت گوگل داخل ایران گاهی خیلی کند بار می‌شه یا اصلاً لود نمی‌شه. یک فایل
+   وریابل (variable) با تمام وزن‌ها (۱۰۰ تا ۹۰۰)، بدون درخواست شبکه‌ی خارجی. */
+@font-face{
+  font-family:'Vazirmatn';
+  src:url('fonts/Vazirmatn.woff2') format('woff2-variations'), url('fonts/Vazirmatn.woff2') format('woff2');
+  font-weight:100 900;
+  font-style:normal;
+  font-display:swap;
+}
 :root{
  --bg:#050505;--bg2:#0a0906;--panel:#100e09;--panel2:#18150d;--line:#2b2514;--line2:rgba(255,255,255,.07);
  --cyan:#ffd24a;--cyan2:#f29900;--gold:#ffc107;--gold2:#ffe08a;--violet:#e6a400;

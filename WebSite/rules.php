@@ -8,8 +8,6 @@
 <meta name="description" content="قوانین کامل شهر یونیک؛ احترام، رول‌پلی واقعی، تقلب و باگ، قوانین گنگ و دپارتمان.">
 <meta name="theme-color" content="#050505">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M16 8v28a16 16 0 0 0 32 0V8' fill='none' stroke='%23ffc107' stroke-width='11' stroke-linecap='round'/%3E%3C/svg%3E">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800;900&display=swap">
 <link rel="stylesheet" href="style.css">
 <style>
 .rcats{display:grid;gap:16px;margin-top:32px}

@@ -12,8 +12,6 @@ $logged=(bool)me(); $open=count(array_filter($ST['gangs'],fn($g)=>$g[2])); $onli
 <meta name="description" content="آگهی‌های عضوگیری گنگ‌ها و وضعیت لحظه‌ای دپارتمان‌های رسمی شهر یونیک؛ همه در یک صفحه.">
 <meta name="theme-color" content="#050505">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M16 8v28a16 16 0 0 0 32 0V8' fill='none' stroke='%23ffc107' stroke-width='11' stroke-linecap='round'/%3E%3C/svg%3E">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800;900&display=swap">
 <link rel="stylesheet" href="style.css">
 <style>
 .summary{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;max-width:760px;margin:38px auto 0;position:relative}
