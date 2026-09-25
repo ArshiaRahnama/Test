@@ -25,6 +25,18 @@ Config_fbi.fbiStations = {
 
 	fbi = {
 
+		-- FIX: bounding zone for the FBI HQ building (covers the ground
+		-- floor, cloakroom/armory floor and the heli pad above it). Used
+		-- server-side (server/agent_speact.lua) so agents can only start a
+		-- DOJ/FBI spectate session while physically inside the building,
+		-- instead of from anywhere on the map.
+		Zone = {
+			center = { x = 115.08, y = -748.52 },
+			radius = 75.0,
+			minZ = 20.0,
+			maxZ = 290.0,
+		},
+
 		Blip = {
 			Pos     = { x = 115.08, y = -748.52, z = 45.76 },
 			Sprite  = 88,

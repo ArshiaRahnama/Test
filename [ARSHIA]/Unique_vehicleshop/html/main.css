@@ -738,3 +738,132 @@ ul#loader li {
 #dark-blue {
   background: rgba(50, 50, 255, 1);
 }
+
+/* ===================================================================
+   Vehicle rental - countdown ring widget, migrated in full from the old
+   standalone Unique_Rent resource. Shown/hidden via "show_timer" /
+   "hide_timer" postMessages from rent_client.lua - see the bottom of js.js.
+   Kept fully self-contained (own --rent-* tokens, own class names below)
+   so nothing here overlaps the showroom styles above it.
+=================================================================== */
+
+:root {
+  --rent-void: #060504;
+  --rent-panel: rgba(12, 10, 7, 0.55);
+  --rent-hairline: rgba(232, 183, 60, 0.28);
+  --rent-gold-2: #e8b73c;
+  --rent-cream: #f3ead2;
+  --rent-muted: #9a927e;
+  --rent-danger: #ff5a4e;
+}
+
+html, body {
+  background: transparent !important;
+  background-color: rgba(0, 0, 0, 0) !important;
+}
+
+.rent-ui {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent !important;
+  pointer-events: none;
+}
+
+.rent-container-timer {
+  position: fixed;
+  left: 42px;
+  bottom: 235px; /* clears the default GTA minimap (~230px tall) so the pill sits above it instead of on top of it */
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: var(--rent-panel);
+  border: 1px solid var(--rent-hairline);
+  border-radius: 100px;
+  padding: 10px 26px 10px 10px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+  animation: rent-timer-in 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes rent-timer-in {
+  from { opacity: 0; transform: scale(0.92) translateY(10px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.rent-ring-wrap {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  flex-shrink: 0;
+}
+
+.rent-ring-svg {
+  width: 64px;
+  height: 64px;
+  transform: rotate(-90deg);
+}
+
+.rent-ring-track {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.08);
+  stroke-width: 8;
+}
+
+.rent-ring-progress {
+  fill: none;
+  stroke: var(--rent-gold-2);
+  stroke-width: 8;
+  stroke-linecap: round;
+  stroke-dasharray: 326.726; /* 2 * PI * r(52), matches RING_CIRCUMFERENCE in js.js */
+  stroke-dashoffset: 0;
+  transition: stroke-dashoffset 1s linear, stroke 0.3s ease;
+}
+
+.rent-ring-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.rent-ring-center #rent-icon {
+  font-size: 12px;
+  color: var(--rent-gold-2);
+  margin-bottom: 1px;
+}
+
+.rent-time {
+  font-family: "Akrobat ExtraBold", sans-serif;
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: 0.5px;
+  color: var(--rent-cream);
+}
+
+.rent-info-title {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--rent-cream);
+}
+
+.rent-info-sub {
+  margin-top: 3px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--rent-muted);
+}
+
+@keyframes rent-alert {
+  0%   { color: var(--rent-cream); }
+  50%  { color: var(--rent-danger); }
+  100% { color: var(--rent-cream); }
+}
+
+.rent-ring-progress.is-critical { stroke: var(--rent-danger); }

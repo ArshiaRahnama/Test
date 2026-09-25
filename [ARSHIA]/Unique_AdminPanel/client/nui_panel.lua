@@ -2,7 +2,11 @@
 
 InAdminNui = false
 
-RegisterKeyMapping('adminradial', 'Open Admin Quick Actions Radial Menu', 'keyboard', 'F7')
+-- FIX: removed the F7 "Admin Quick Actions" radial (per request). F7 was
+-- only ever captured here to relay the press into esx_billing's own bills
+-- menu (see the old adminradial command below) - esx_billing already polls
+-- F7 itself (client/main.lua), so removing this keymapping just lets that
+-- poll see the key press again, with no admin-only functionality lost.
 RegisterKeyMapping('adminreports', 'Open Admin Report Queue', 'keyboard', 'F12')
 
 -- FIX (یکی‌سازی): این تابع قبلاً یک لیست ریپورتِ کاملاً جداگانه با ox_lib
@@ -331,20 +335,9 @@ end
 
 RegisterCommand('adminduty', OpenDutyHistory, false)
 
-RegisterCommand('adminradial', function()
-    -- Both this admin radial AND the bills menu (esx_billing) are bound to
-    -- F7. RegisterKeyMapping wins the physical key over esx_billing's own
-    -- IsControlJustPressed poll, so that poll never sees the press - this
-    -- call is what actually opens the bills menu now, for every player
-    -- (admin or not), before the admin-only check below.
-    TriggerEvent('esx_blling:OpenMenuBlling')
-
-    if not aduty then return end
-    if InAdminNui then return end
-    InAdminNui = true
-    SetNuiFocus(true, true)
-    SendNUIMessage({ type = 'showRadial' })
-end, false)
+-- FIX: 'adminradial' (F7 quick-actions radial) removed by request, along
+-- with its RegisterKeyMapping above. F7 now goes straight to esx_billing's
+-- own key poll again.
 
 RegisterNUICallback('closePanel', function(_, cb)
     InAdminNui = false

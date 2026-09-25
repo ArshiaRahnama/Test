@@ -1065,6 +1065,13 @@ TriggerEvent(
                 if weaponName:sub(1, 7) ~= "WEAPON_" then
                     weaponName = "WEAPON_" .. weaponName
                 end
+                -- FIX: /giveweapon could hand out blacklisted weapons
+                -- (shared/tables/fire-weapon.lua) same as the admin-panel
+                -- give-weapon tool used to; same server-side check as there.
+                if type(isBlacklistedWeapon) == "function" and isBlacklistedWeapon(weaponName) then
+                    TriggerClientEvent("esx:showNotification", source, "~r~" .. weaponName .. " is blacklisted and can't be given.")
+                    return
+                end
                 xPlayer.addWeapon(weaponName, ammo)
                 TriggerEvent('DiscordBot:ToDiscord', 'addweapon', "Gived By Admin", "```css\nAdmin: "..namep.."("..source..")("..steamp.. ")\nBaraye: "..xPlayer.name.."("..tonumber(args[1])..")("..xPlayer.identifier..") \nWeapon : "..weaponName.." ("..ammo..") Add Kard \n```",'user', true, source, false)
             else

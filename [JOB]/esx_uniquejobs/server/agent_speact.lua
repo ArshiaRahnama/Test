@@ -22,6 +22,26 @@ local function isAgent(jobname)
 	return AGENT_JOBS[jobname] == true
 end
 
+-- FIX: DOJ/FBI spectate could be started from anywhere on the map since
+-- only the job was checked. Now also requires the agent to be physically
+-- inside the FBI building (Config_fbi.fbiStations.fbi.Zone, config_fbi.lua),
+-- checked server-side off the player's real ped coords so it can't be
+-- spoofed from the client.
+local function isInsideFBIBuilding(source)
+	local zone = Config_fbi and Config_fbi.fbiStations and Config_fbi.fbiStations.fbi and
+		Config_fbi.fbiStations.fbi.Zone
+	if not zone then return true end -- fail open if config wasn't loaded, rather than break the job
+
+	local ped = GetPlayerPed(source)
+	if not ped or ped == 0 then return false end
+
+	local coords = GetEntityCoords(ped)
+	if coords.z < zone.minZ or coords.z > zone.maxZ then return false end
+
+	local dx, dy = coords.x - zone.center.x, coords.y - zone.center.y
+	return (dx * dx + dy * dy) <= (zone.radius * zone.radius)
+end
+
 ESX.RegisterServerCallback('esx_uniquejobs:checkAgentJob', function(source, cb)
 	local xPlayer = ESX.GetPlayerFromId(source)
 	cb(xPlayer and isAgent(xPlayer.job.name) and xPlayer.job.name or false)
@@ -70,6 +90,11 @@ AddEventHandler('esx_uniquejobs:agentStartSpectate', function(targetId)
 	local source = source
 	local xPlayer = ESX.GetPlayerFromId(source)
 	if not xPlayer or not isAgent(xPlayer.job.name) then return end
+
+	if not isInsideFBIBuilding(source) then
+		TriggerClientEvent('esx:showNotification', source, "❌ Baraye Spectate Bayad Dakhele Sakhteman-e FBI Bashid!")
+		return
+	end
 
 	local target = ESX.GetPlayerFromId(targetId)
 	if not target then return end

@@ -92,8 +92,9 @@ end)
 
 -- ------------------------------------------------------------- shortcut ----
 -- Ctrl+K inside any open panel opens the search too (handled in html/app.js).
--- In-game hotkey: F6 (rebind in Settings > Key Bindings > FiveM).
+-- In-game hotkey: F11 (rebind in Settings > Key Bindings > FiveM).
+-- FIX: was F6, which collided with other resources bound to that key.
 RegisterCommand('uap_globalsearch', function()
     if aduty then OpenGlobalSearch() end
 end, false)
-RegisterKeyMapping('uap_globalsearch', 'Admin panel: Global search', 'keyboard', 'F6')
+RegisterKeyMapping('uap_globalsearch', 'Admin panel: Global search', 'keyboard', 'F11')

@@ -223,9 +223,22 @@ RegisterNUICallback('menuClosed', function(_, cb)
     SetNuiFocus(false, false)
     menuIsOpen = false
 
+    -- FIX: this used to call ClearPedTasks/ClearPedTasksImmediately
+    -- unconditionally to stop the 'think3' emote (esx_dpemote) played when
+    -- the menu opened. ClearPedTasksImmediately also clears the ped's
+    -- "seated in vehicle" task, which is what was throwing players out of
+    -- their car every time they closed the menu with I. Only clear tasks
+    -- when NOT in a vehicle; while in a vehicle, just stop the emote
+    -- animation directly instead, which doesn't touch the driving task.
     local ped = PlayerPedId()
-    ClearPedTasks(ped)
-    ClearPedTasksImmediately(ped)
+    if IsPedInAnyVehicle(ped, false) then
+        -- Stops the emote's secondary/facial task without touching the
+        -- ped's vehicle task, so the player stays seated.
+        ClearPedSecondaryTask(ped)
+    else
+        ClearPedTasks(ped)
+        ClearPedTasksImmediately(ped)
+    end
 
     cb('ok')
 end)

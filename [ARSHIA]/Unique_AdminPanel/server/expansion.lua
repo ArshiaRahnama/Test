@@ -438,6 +438,19 @@ end)
 
 -- ------------------------------------------------- WEAPON / INVENTORY ---
 
+-- FIX: blacklisted weapons (shared/tables/fire-weapon.lua, the same list
+-- the anti-cheat uses to strip these off players) could still be handed
+-- out through this admin tool by naming them manually. Server-side check
+-- so it can't be bypassed from the NUI, is the source of truth regardless
+-- of admin level, and doesn't touch normal/allowed weapons at all.
+function isBlacklistedWeapon(weaponName)
+    if type(Weapon) ~= "table" then return false end
+    for _, banned in ipairs(Weapon) do
+        if banned == weaponName then return true end
+    end
+    return false
+end
+
 RegisterServerEvent('Unique_AdminPanel:GiveWeaponTarget')
 AddEventHandler('Unique_AdminPanel:GiveWeaponTarget', function(targetId, weapon, ammo)
     local source = source
@@ -448,6 +461,13 @@ AddEventHandler('Unique_AdminPanel:GiveWeaponTarget', function(targetId, weapon,
     ammo = tonumber(ammo) or 250
 
     local weaponName = "WEAPON_" .. string.upper(weapon):gsub("^WEAPON_", "")
+
+    if isBlacklistedWeapon(weaponName) then
+        TriggerClientEvent('esx:showNotification', source, ("~r~%s is blacklisted and can't be given."):format(weaponName))
+        LogAdminAction(source, "give-weapon-blocked", ("target: %s | %s (blacklisted)"):format(GetPlayerName(targetId), weaponName), Target.identifier, GetPlayerName(targetId))
+        return
+    end
+
     Target.addWeapon(weaponName, ammo)
     LogAdminAction(source, "give-weapon", ("target: %s | %s (%s ammo)"):format(GetPlayerName(targetId), weaponName, ammo), Target.identifier, GetPlayerName(targetId))
 end)

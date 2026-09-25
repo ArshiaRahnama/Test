@@ -114,6 +114,33 @@
       <div class="buy-button" onclick="buy()">BUY</div>
       <div class="test-button" onclick="test()">TEST DRIVE</div>
     </div>
+
+    <!--
+      Vehicle rental countdown ring - migrated in full from the old standalone
+      Unique_Rent resource's html/index.html. Shown/hidden independently of
+      the showroom above (no SetNuiFocus involved - it's a passive HUD that
+      stays visible while driving around), via the "show_timer" / "hide_timer"
+      postMessages handled at the bottom of js.js.
+    -->
+    <div class="rent-ui" style="display: none;">
+      <div class="rent-container-timer" style="display: none;">
+        <div class="rent-ring-wrap">
+          <svg class="rent-ring-svg" viewBox="0 0 120 120">
+            <circle class="rent-ring-track" cx="60" cy="60" r="52"></circle>
+            <circle id="rent-ring-progress" class="rent-ring-progress" cx="60" cy="60" r="52"></circle>
+          </svg>
+          <div class="rent-ring-center">
+            <i id="rent-icon" class="fa-solid fa-stopwatch"></i>
+            <div class="rent-time" id="rent-timer">--</div>
+          </div>
+        </div>
+        <div class="rent-info">
+          <h1 class="rent-info-title" id="rent-timer-vehicle">Rental Active</h1>
+          <div class="rent-info-sub" id="rent-timer-sub">Return the vehicle to the marker</div>
+        </div>
+      </div>
+    </div>
+
     <script src="nui://game/ui/jquery.js" type="text/javascript"></script>
     <script src="js/fontawesome.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/tomik23/circular-progress-bar@1.1.9/dist/circularProgressBar.min.js"></script>

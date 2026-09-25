@@ -258,3 +258,78 @@ function buy() {
   $(".bg").css("display", "none");
   $.post(`https://${RESOURCE_NAME}/buy`);
 }
+
+// ===================================================================
+// Vehicle rental - countdown ring widget, migrated in full from the old
+// standalone Unique_Rent resource (its own html/js/index.js + functions.js).
+// rent_client.lua posts "show_timer" / "hide_timer" here via SendNUIMessage.
+// Uses the shared RESOURCE_NAME constant from the top of this file, so the
+// NUI callback URL below is correct however this resource ends up named.
+// ===================================================================
+
+window.addEventListener("message", function (event) {
+  if (event.data.action == "show_timer") {
+    rentTimerMenu(event.data.content.time, event.data.content.vehicle);
+  } else if (event.data.action == "hide_timer") {
+    rentHideTimerMenu();
+  }
+});
+
+let rentTimeLeft = 0;
+let rentTotalTime = 0;
+let rentTimerInterval = null;
+
+const RENT_RING_CIRCUMFERENCE = 2 * Math.PI * 52; // r=52 from the SVG circle in ui.html
+
+function setRentRingProgress(fraction) {
+  $("#rent-ring-progress").css("stroke-dashoffset", RENT_RING_CIRCUMFERENCE * (1 - fraction));
+}
+
+function rentTimerMenu(time, vehicle) {
+  $(".rent-ui").fadeIn();
+  $(".rent-container-timer").css("display", "flex");
+
+  $("#rent-timer").html("");
+  $("#rent-ring-progress").removeClass("is-critical");
+
+  // Defensive: clear any interval from a previous rentTimerMenu() call so
+  // two countdowns can never run stacked on top of each other.
+  clearInterval(rentTimerInterval);
+
+  if (vehicle && vehicle.label) {
+    $("#rent-timer-vehicle").html(vehicle.label);
+    $("#rent-timer-sub").html("Rented · return to the marker");
+  } else {
+    $("#rent-timer-vehicle").html("Rental Active");
+    $("#rent-timer-sub").html("Return the vehicle to the marker");
+  }
+
+  rentTimeLeft = time;
+  rentTotalTime = time;
+  setRentRingProgress(1);
+
+  rentTimerInterval = setInterval(function () {
+    if (rentTimeLeft <= 0) {
+      $(".rent-container-timer").fadeOut();
+      $(".rent-ui").fadeOut();
+      clearInterval(rentTimerInterval);
+      $.post(`https://${RESOURCE_NAME}/finish`, JSON.stringify({}));
+      return;
+    } else if (rentTimeLeft <= 10) {
+      $("#rent-ring-progress").addClass("is-critical");
+      $("#rent-timer").css("animation", "rent-alert 0.6s infinite");
+    }
+
+    $("#rent-timer").html(`${rentTimeLeft}s`);
+    setRentRingProgress(rentTotalTime > 0 ? rentTimeLeft / rentTotalTime : 0);
+    rentTimeLeft -= 1;
+  }, 1000);
+}
+
+function rentHideTimerMenu() {
+  $("#rent-timer").html("");
+  $(".rent-container-timer").fadeOut();
+  $(".rent-ui").fadeOut();
+  clearInterval(rentTimerInterval);
+  rentTimeLeft = 0;
+}

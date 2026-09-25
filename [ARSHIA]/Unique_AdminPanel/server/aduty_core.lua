@@ -260,6 +260,14 @@ AddEventHandler(
     end
 )
 
+-- FIX (unify with /sl + esx_license): this used to check six
+-- hardcoded license types one at a time (drive_bike, drive_truck, drive,
+-- dmv, weapon, fly) via nested esx_license:checkLicense calls. Any license
+-- type added later (admin panel, DB, esx_dmvschool, etc.) was invisible to
+-- /sl since it was never in this list. Now it asks esx_license itself
+-- (ScriptPack/server/license-sv.lua, GetLicenses) for the player's ACTUAL
+-- license rows, and prints whatever that returns - so /sl always matches
+-- reality with zero maintenance when new license types are added.
 RegisterServerEvent("aduty:showlicense")
 AddEventHandler(
     "aduty:showlicense",
@@ -267,168 +275,35 @@ AddEventHandler(
         local _source = source
         if not IsNearbyPlayer(_source, target, 4.0) then return end
         target = tonumber(target)
-        local identifier = GetPlayerIdentifier(_source)
         local xPlayer = ESX.GetPlayerFromId(_source)
         if not xPlayer then return end
-        TriggerClientEvent("chatMessage", target, "", {255, 0, 0}, "^0^*------ ^3List Madarek ^0------")
-        TriggerClientEvent(
-            "chatMessage",
-            target,
-            "",
-            {255, 0, 0},
-            "^4^*Cart Shenasaei:^0 " .. string.gsub(xPlayer.name, "_", " ")
-        )
-        TriggerEvent(
-            "esx_license:checkLicense",
-            _source,
-            "drive_bike",
-            function(bike)
-                TriggerEvent(
-                    "esx_license:checkLicense",
-                    _source,
-                    "drive_truck",
-                    function(truck)
-                        TriggerEvent(
-                            "esx_license:checkLicense",
-                            _source,
-                            "drive",
-                            function(driveing)
-                                TriggerEvent(
-                                    "esx_license:checkLicense",
-                                    _source,
-                                    "dmv",
-                                    function(aiinname)
-                                        TriggerEvent(
-                                            "esx_license:checkLicense",
-                                            _source,
-                                            "weapon",
-                                            function(Weapon)
-                                                TriggerEvent(
-                                                    "esx_license:checkLicense",
-                                                    _source,
-                                                    "fly",
-                                                    function(fly)
-                                                        if driveing then
-                                                            TriggerClientEvent(
-                                                                "chatMessage",
-                                                                target,
-                                                                "",
-                                                                {255, 0, 0},
-                                                                "^4^*Govahiname: ^2Darad"
-                                                            )
-                                                        else
-                                                            TriggerClientEvent(
-                                                                "chatMessage",
-                                                                target,
-                                                                "",
-                                                                {255, 0, 0},
-                                                                "^4^*Govahiname: ^8Nadarad"
-                                                            )
-                                                        end
-                                                        if truck then
-                                                            TriggerClientEvent(
-                                                                "chatMessage",
-                                                                target,
-                                                                "",
-                                                                {255, 0, 0},
-                                                                "^4^*Govahiname Kamyon Savari: ^2Darad"
-                                                            )
-                                                        else
-                                                            TriggerClientEvent(
-                                                                "chatMessage",
-                                                                target,
-                                                                "",
-                                                                {255, 0, 0},
-                                                                "^4^*Govahiname Kamyon Savari: ^8Nadarad"
-                                                            )
-                                                        end
-                                                        if bike then
-                                                            TriggerClientEvent(
-                                                                "chatMessage",
-                                                                target,
-                                                                "",
-                                                                {255, 0, 0},
-                                                                "^4^*Govahiname Motor Savari: ^2Darad"
-                                                            )
-                                                        else
-                                                            TriggerClientEvent(
-                                                                "chatMessage",
-                                                                target,
-                                                                "",
-                                                                {255, 0, 0},
-                                                                "^4^*Govahiname Motor Savari: ^8Nadarad"
-                                                            )
-                                                        end
-                                                        if aiinname then
-                                                            TriggerClientEvent(
-                                                                "chatMessage",
-                                                                target,
-                                                                "",
-                                                                {255, 0, 0},
-                                                                "^4^*Emtehane Aiinname: ^2Dade"
-                                                            )
-                                                        else
-                                                            TriggerClientEvent(
-                                                                "chatMessage",
-                                                                target,
-                                                                "",
-                                                                {255, 0, 0},
-                                                                "^4^*Emtehane Aiinname: ^2Nadade"
-                                                            )
-                                                        end
-                                                        if fly then
-                                                            TriggerClientEvent(
-                                                                "chatMessage",
-                                                                target,
-                                                                "",
-                                                                {255, 0, 0},
-                                                                "^4^*Mojavez Parvaz: ^2Darad"
-                                                            )
-                                                        else
-                                                            TriggerClientEvent(
-                                                                "chatMessage",
-                                                                target,
-                                                                "",
-                                                                {255, 0, 0},
-                                                                "^4^*Mojavez Parvaz: ^8Nadarad"
-                                                            )
-                                                        end
-                                                        if Weapon then
-                                                            TriggerClientEvent(
-                                                                "chatMessage",
-                                                                target,
-                                                                "",
-                                                                {255, 0, 0},
-                                                                "^4^*Mojavez aslahe: ^2Darad"
-                                                            )
-                                                        else
-                                                            TriggerClientEvent(
-                                                                "chatMessage",
-                                                                target,
-                                                                "",
-                                                                {255, 0, 0},
-                                                                "^4^*Mojavez aslahe: ^8Nadarad"
-                                                            )
-                                                        end
-                                                        TriggerClientEvent(
-                                                            "chatMessage",
-                                                            target,
-                                                            "",
-                                                            {255, 0, 0},
-                                                            "^0^*------ ^3List Madarek ^0------"
-                                                        )
-                                                    end
-                                                )
-                                            end
-                                        )
-                                    end
-                                )
-                            end
-                        )
-                    end
-                )
+
+        TriggerEvent("esx_license:getLicenses", _source, function(licenses)
+            TriggerClientEvent("chatMessage", target, "", {255, 0, 0}, "^0^*------ ^3List Madarek ^0------")
+            TriggerClientEvent(
+                "chatMessage",
+                target,
+                "",
+                {255, 0, 0},
+                "^4^*Cart Shenasaei:^0 " .. string.gsub(xPlayer.name, "_", " ")
+            )
+
+            if not licenses or #licenses == 0 then
+                TriggerClientEvent("chatMessage", target, "", {255, 0, 0}, "^4^*Madarek: ^8Hich Madareki Nadarad")
+            else
+                for _, license in ipairs(licenses) do
+                    TriggerClientEvent(
+                        "chatMessage",
+                        target,
+                        "",
+                        {255, 0, 0},
+                        "^4^*" .. (license.label or license.type) .. ": ^2Darad"
+                    )
+                end
             end
-        )
+
+            TriggerClientEvent("chatMessage", target, "", {255, 0, 0}, "^0^*------ ^3List Madarek ^0------")
+        end)
     end
 )
 
