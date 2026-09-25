@@ -1,0 +1,725 @@
+@import url("https://fonts.cdnfonts.com/css/akrobat");
+
+.bg {
+  position: absolute;
+  display: none;
+  left: 0%;
+  right: 0%;
+  top: 0%;
+  bottom: 0%;
+  width: 100%;
+  opacity: 0.99;
+  height: 100%;
+  background-repeat: no-repeat;
+  background-size: cover;
+  background: radial-gradient(
+      31.39% 31.39% at 50% 0%,
+      #000000 0%,
+      rgba(0, 0, 0, 0) 100%
+    ),
+    radial-gradient(
+      45.99% 145.35% at 112.27% 86.34%,
+      rgba(255, 193, 7, 0.28) 0%,
+      rgba(255, 193, 7, 0) 89.8%
+    ),
+    radial-gradient(
+      59.01% 186.5% at -10.34% -5.69%,
+      rgba(255, 193, 7, 0.28) 0%,
+      rgba(255, 193, 7, 0) 89.8%
+    ),
+    linear-gradient(270deg, rgba(0, 0, 0, 0.67) 0%, rgba(0, 0, 0, 0) 48.05%),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.67) 0%, rgba(0, 0, 0, 0) 51.95%),
+    linear-gradient(270deg, #000000 -18.54%, rgba(0, 0, 0, 0) 25.36%),
+    linear-gradient(90deg, #000000 0%, rgba(0, 0, 0, 0) 51.95%);
+  overflow: hidden;
+}
+
+.big-name {
+  font-family: "Akrobat ExtraBold";
+  font-style: normal;
+  font-weight: 800;
+  font-size: 3.2vw;
+  margin-left: 1.2vw;
+  margin-top: 2.3vw;
+  color: #ffc107;
+}
+
+.server-logo {
+  position: absolute;
+  width: 2.4vw;
+  height: 2.4vw;
+  margin-left: 1.2vw;
+  margin-top: 0.4vw;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.big-name span {
+  font-family: "Akrobat SemiBold";
+  font-style: normal;
+  font-weight: 500;
+  font-size: 3.2vw;
+  color: #ffffff;
+}
+
+.name-shop {
+  width: 8vw;
+  height: 2vw;
+  margin-left: 1.4vw;
+  font-family: "Akrobat ExtraBold";
+  font-style: normal;
+  font-weight: 800;
+  font-size: 1.65vw;
+  text-align: center;
+  color: rgba(0, 0, 0, 0.56);
+  background: linear-gradient(
+    180deg,
+    #ffc107 -47.5%,
+    rgba(255, 193, 7, 0) 132.5%
+  );
+  border-radius: 5px;
+}
+
+.line {
+  width: 19vw;
+  margin-left: 1.4vw;
+  margin-top: 0.9vw;
+  height: 0.12vw;
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.dec {
+  height: 5vw;
+  width: 20.5vw;
+  font-family: "Akrobat";
+  font-style: normal;
+  font-weight: 300;
+  font-size: 1.2vw;
+  margin-top: 0.5vw;
+  color: rgba(255, 255, 255, 0.66);
+  margin-left: 1.5vw;
+}
+
+.searchBox {
+  position: absolute;
+  width: 30vw;
+  height: 6vw;
+  left: -0.2vw;
+  top: 0.2vw;
+}
+
+.SearchBox i {
+  position: absolute;
+}
+
+.SearchBox {
+  width: 100%;
+  margin-bottom: 1vw;
+}
+
+.SearchInput {
+  width: 100%;
+  padding: 1vw 1vw;
+  text-align: center;
+  box-sizing: border-box;
+  position: absolute;
+  width: 19vw;
+  height: 3.2vw;
+  left: 1.7vw;
+  font-size: 1vw;
+  top: 15.5vw;
+  background: rgba(255, 255, 255, 0.3);
+  color: rgba(255, 255, 255, 0.47);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 0.1vw;
+}
+
+.SearchInput::placeholder {
+  text-align: left;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 1.3vw;
+  text-align: center;
+  line-height: 2vw;
+  color: rgba(255, 255, 255, 0.47);
+}
+
+.car-list-bg {
+  height: 34.2vw;
+  width: 20vw;
+  margin-top: 4.8vw;
+  margin-left: 1.51vw;
+  overflow-y: scroll;
+  overflow-x: hidden;
+}
+
+.car {
+  position: relative;
+  width: 19vw;
+  margin: 1vw;
+  font-size: 0vw;
+  display: inline-block;
+  transition: 0.5s;
+  margin-left: 0vw;
+  margin-top: 0vw;
+  height: 4.8vw;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(10.5px);
+  border-radius: 0.3vw;
+}
+
+.car:hover {
+  position: relative;
+  width: 19vw;
+  margin: 1vw;
+  font-size: 0vw;
+  display: inline-block;
+  margin-left: 0vw;
+  margin-top: 0vw;
+  height: 4.8vw;
+  cursor: pointer;
+  background: radial-gradient(
+      132% 132% at 50% 0%,
+      rgba(255, 193, 7, 0.22) 0%,
+      rgba(255, 193, 7, 0) 100%
+    ),
+    rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(10.5px);
+  border-radius: 0.3vw;
+}
+
+::-webkit-scrollbar {
+  width: 0.3vw;
+  border-radius: 0.4vw;
+}
+
+::-webkit-scrollbar-track {
+  border-radius: 0.4vw;
+  background: rgba(255, 255, 255, 0.33);
+}
+
+::-webkit-scrollbar-thumb {
+  border-radius: 0.4vw;
+  background: #ffc107;
+}
+
+.car-left {
+  width: 5.2vw;
+  height: 4.8vw;
+  background: rgba(255, 255, 255, 0.11);
+  border-radius: 4px 0px 0px 4px;
+}
+
+.car-cat-img {
+  background-repeat: no-repeat;
+  background-image: url("./img/sedan.png");
+  background-position: center;
+  display: inline-block;
+  width: 3.2vw;
+  margin-top: 0.7vw;
+  height: 3vw;
+  margin-left: 0.97vw;
+}
+
+.car-name {
+  font-family: "Akrobat";
+  font-style: normal;
+  font-weight: 700;
+  font-size: 1.8vw;
+  margin-top: -4vw;
+  margin-left: 6.3vw;
+  color: #ffffff;
+}
+
+.car-price {
+  width: 4.3vw;
+  height: 1.1vw;
+  font-family: "Akrobat";
+  font-style: normal;
+  font-weight: 700;
+  font-size: 0.85vw;
+  color: #ffc107;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: 0.2vw;
+  margin-left: 6.3vw;
+}
+
+.fav {
+  background-repeat: no-repeat;
+  background-image: url("./img/fav.png");
+  background-position: center;
+  display: inline-block;
+  width: 3.2vw;
+  margin-top: -5.25vw;
+  height: 3vw;
+  margin-left: 15.97vw;
+}
+
+.fav-non {
+  background-repeat: no-repeat;
+  background-image: url("./img/fav-non.png");
+  background-position: center;
+  display: inline-block;
+  width: 3.2vw;
+  margin-top: -5.25vw;
+  height: 3vw;
+  margin-left: 15.97vw;
+}
+
+#speed {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 1vw;
+  margin-left: 16vw;
+  margin-top: -0.6vw;
+}
+
+.speed-text {
+  font-family: "Akrobat";
+  font-style: normal;
+  font-weight: 700;
+  font-size: 16px;
+  margin-left: 17.3vw;
+  margin-top: -1.05vw;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.cattegory {
+  margin-top: -50.75vw;
+  width: auto;
+  overflow: hidden;
+  height: 95px;
+  justify-content: center;
+  display: flex;
+}
+
+.cattegory-item {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.29) 0%,
+    rgba(255, 255, 255, 0) 119.19%
+  );
+  border-radius: 4px;
+  margin-left: 0.4vw;
+  width: 5vw;
+  height: 5vw;
+}
+
+.cattegory-img {
+  background-repeat: no-repeat;
+  background-position: center;
+  display: inline-block;
+  width: 4.2vw;
+  height: 4vw;
+}
+
+.cattegory-text {
+  font-family: "Akrobat";
+  font-style: normal;
+  font-weight: 700;
+  font-size: 0.8vw;
+  display: inline-block;
+  margin-top: -0.5vw;
+  text-align: center;
+  color: #ffffff;
+  text-align: center;
+}
+
+.cattegory-item-sellect {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.29) 0%,
+    rgba(255, 255, 255, 0) 119.19%
+  );
+  transition: 1s;
+  border-radius: 4px;
+  margin-left: 0.4vw;
+  width: 5vw;
+  height: 5vw;
+}
+.cattegory-item-sellect:hover {
+  cursor: pointer;
+  background: radial-gradient(
+      100% 100% at 50% 0%,
+      rgba(255, 193, 7, 0.59) 0%,
+      rgba(255, 193, 7, 0) 100%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.29) 0%,
+      rgba(255, 255, 255, 0) 119.19%
+    );
+  border-radius: 4px;
+  margin-left: 0.4vw;
+  width: 5vw;
+  height: 5vw;
+}
+
+.img {
+  position: absolute;
+  background-repeat: no-repeat;
+  background-image: url("./img/sag-ust.png");
+  background-position: center;
+  width: 50vw;
+  margin-left: 55vw;
+  height: 35vw;
+}
+
+.img2 {
+  position: fixed;
+  background-repeat: no-repeat;
+  background-image: url("./img/sol-alt.png");
+  background-position: center;
+  width: 50vw;
+  margin-left: -4vw;
+  margin-top: 22vw;
+  height: 35vw;
+}
+
+.exit {
+  position: absolute;
+  font-family: "Akrobat";
+  font-style: normal;
+  font-weight: 700;
+  font-size: 1.3vw;
+  margin-left: 94vw;
+  margin-top: -5vw;
+  text-transform: uppercase;
+  color: #ffffff;
+}
+
+.exit-img {
+  position: absolute;
+  background-repeat: no-repeat;
+  background-image: url("./img/exit.png");
+  background-position: center;
+  display: inline-block;
+  width: 2.5vw;
+  margin-top: -0.3vw;
+  margin-left: 0.5vw;
+  height: 2.5vw;
+}
+
+.car-cat-show {
+  background-repeat: no-repeat;
+  background-image: url("./img/sedan.png");
+  background-position: center;
+  display: inline-block;
+  width: 6.2vw;
+  height: 6vw;
+  margin-left: 94vw;
+  margin-top: -2vw;
+}
+
+.car-cat-name {
+  font-family: "Akrobat";
+  font-style: normal;
+  font-weight: 700;
+  font-size: 2.5vw;
+  text-transform: uppercase;
+  color: #ffffff;
+  margin-left: 87vw;
+  margin-top: -4.6vw;
+  width: 9vw;
+  overflow: hidden;
+}
+
+.price-text {
+  font-family: "Akrobat";
+  font-style: normal;
+  font-weight: 700;
+  font-size: 1vw;
+  text-transform: uppercase;
+  color: #ffffff;
+  margin-left: 96.2vw;
+  margin-top: 1.6vw;
+}
+
+.price-main {
+  font-family: "Akrobat";
+  font-style: normal;
+  font-weight: 700;
+  font-size: 2.1vw;
+  margin-left: 90.5vw;
+  margin-top: 0.2vw;
+  width: 8.2vw;
+  height: 3vw;
+  text-transform: uppercase;
+  color: #ffc107;
+}
+
+.price-main span {
+  display: inline-block;
+  float: right;
+}
+
+.engine-menu {
+  width: 18vw;
+  height: 19vw;
+  float: right;
+  display: inline-block;
+  margin-right: 1.2vw;
+  margin-top: 1vw;
+}
+
+.engine-icon {
+  background-repeat: no-repeat;
+  background-image: url("./img/engine.png");
+  background-position: center;
+  display: inline-block;
+  width: 1.4vw;
+  height: 1.4vw;
+}
+
+.engine-text {
+  font-family: "Akrobat";
+  font-style: normal;
+  font-weight: 700;
+  font-size: 0.9vw;
+  margin-left: 2vw;
+  margin-top: -1.2vw;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.bar {
+  width: 17vw;
+  height: 2.2vw;
+  margin-top: 0.5vw;
+  background: rgba(255, 255, 255, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+
+.bar-r {
+  height: 80%;
+  margin-top: 0.25vw;
+  margin-left: 0.35vw;
+  width: 96%;
+}
+
+ul#loader {
+  width: 16.7vw;
+  margin-top: -0vw;
+  margin-left: -2.55vw;
+  list-style: none;
+  display: flex;
+  align-items: center;
+}
+
+ul#loader li {
+  width: 1.7vw;
+  margin-left: 0.4vw;
+  border-radius: 4px;
+  height: 1.7vw;
+  animation-delay: calc(2s * var(--i));
+}
+
+.brake-icon {
+  background-repeat: no-repeat;
+  background-image: url("./img/brake.png");
+  background-position: center;
+  display: inline-block;
+  width: 1.4vw;
+  margin-top: 1.2vw;
+  height: 1.4vw;
+}
+
+.brake-text {
+  font-family: "Akrobat";
+  font-style: normal;
+  font-weight: 700;
+  font-size: 0.9vw;
+  margin-left: 2vw;
+  margin-top: -1.2vw;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.torque-icon {
+  background-repeat: no-repeat;
+  background-image: url("./img/brake.png");
+  background-position: center;
+  display: inline-block;
+  width: 1.4vw;
+  margin-top: 1.2vw;
+  height: 1.4vw;
+}
+
+.torque-text {
+  font-family: "Akrobat";
+  font-style: normal;
+  font-weight: 700;
+  font-size: 0.9vw;
+  margin-left: 2vw;
+  margin-top: -1.2vw;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.power-icon {
+  background-repeat: no-repeat;
+  background-image: url("./img/brake.png");
+  background-position: center;
+  display: inline-block;
+  width: 1.4vw;
+  margin-top: 1.2vw;
+  height: 1.4vw;
+}
+
+.power-text {
+  font-family: "Akrobat";
+  font-style: normal;
+  font-weight: 700;
+  font-size: 0.9vw;
+  margin-left: 2vw;
+  margin-top: -1.2vw;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.color-menu {
+  width: 17.2vw;
+  height: 11vw;
+  float: right;
+  display: inline-block;
+  margin-right: -17.2vw;
+  margin-top: 21.5vw;
+}
+
+.car-color-text {
+  font-family: "Akrobat";
+  font-style: normal;
+  font-weight: 800;
+  font-size: 1.7vw;
+  text-transform: uppercase;
+  color: #ffffff;
+}
+
+.color-bar {
+  width: 17.2vw;
+  height: 9.5vw;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.38) 0%,
+    rgba(255, 255, 255, 0) 123.4%
+  );
+  border-radius: 5px;
+  overflow-x: hidden;
+  overflow-y: scroll;
+}
+
+.color {
+  width: 2.2vw;
+  float: left;
+  margin-left: 0.75vw;
+  margin-top: 0.5vw;
+  height: 2.2vw;
+  background: #ffc107;
+  border: 3px solid rgba(0, 0, 0, 0.2);
+  border-radius: 45px;
+  flex: none;
+  order: 1;
+  flex-grow: 0;
+}
+
+.buy-button {
+  width: 12vw;
+  height: 3.28vw;
+  display: inline-block;
+  background: linear-gradient(
+    180deg,
+    #ffc107 0%,
+    rgba(230, 164, 0, 0) 143.28%
+  );
+  border: 2px solid rgba(0, 0, 0, 0.24);
+  border-radius: 5px;
+  margin-right: -12.2vw;
+  margin-top: 33.8vw;
+  font-family: "Akrobat ExtraBold";
+  font-style: normal;
+  font-weight: 800;
+  line-height: 3.2vw;
+  font-size: 2vw;
+  text-transform: uppercase;
+  color: rgba(0, 0, 0, 0.54);
+  text-align: center;
+  float: right;
+}
+
+.test-button {
+  width: 93px;
+  height: 3.28vw;
+  display: inline-block;
+  background: linear-gradient(
+    180deg,
+    #2b2514 0%,
+    rgba(43, 37, 20, 0) 156.72%
+  );
+  border: 2px solid #ffc10755;
+  border-radius: 5px;
+  margin-right: -17.5vw;
+  margin-top: 33.8vw;
+  font-family: "Akrobat ExtraBold";
+  font-style: normal;
+  font-weight: 800;
+  line-height: 3.2vw;
+  font-family: "Akrobat";
+  font-style: normal;
+  font-weight: 800;
+  font-size: 1vw;
+  text-transform: uppercase;
+  color: #ffe08a;
+  text-align: center;
+  float: right;
+}
+
+#anan {
+  display: block;
+}
+
+#white {
+  background: rgba(255, 255, 255, 1);
+}
+
+#black {
+  background: rgba(0, 0, 0, 1);
+}
+
+#grey {
+  background: rgb(93 92 92);
+}
+
+#yellow {
+  background: rgb(255 187 0);
+}
+
+#green {
+  background: rgb(132 236 14);
+}
+
+#blue {
+  background: rgb(0 31 255);
+}
+
+#red {
+  background: rgb(255 3 3);
+}
+
+#purple {
+  background: rgb(219 8 255);
+}
+
+#petrol {
+  background: rgb(4 255 23);
+}
+
+#cyan {
+  background: rgb(10 197 243);
+}
+
+#orange {
+  background: rgb(253 127 1);
+}
+
+#dark-blue {
+  background: rgba(50, 50, 255, 1);
+}

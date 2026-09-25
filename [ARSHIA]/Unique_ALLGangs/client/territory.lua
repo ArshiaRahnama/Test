@@ -53,14 +53,14 @@ local function RefreshBlip(zoneKey)
     local radiusBlip = AddBlipForRadius(cfg.coord.x, cfg.coord.y, cfg.coord.z, cfg.radius + 0.0)
     SetBlipColour(radiusBlip, color)
     SetBlipAlpha(radiusBlip, 110)
-    SetBlipAsShortRange(radiusBlip, true)
+    SetBlipAsShortRange(radiusBlip, false) -- MUST be false: true hides it on the full pause-menu map, only showing up close on the minimap
 
     local markerBlip = AddBlipForCoord(cfg.coord.x, cfg.coord.y, cfg.coord.z)
     SetBlipSprite(markerBlip, 84)
     SetBlipDisplay(markerBlip, 4)
     SetBlipScale(markerBlip, 0.9)
     SetBlipColour(markerBlip, color)
-    SetBlipAsShortRange(markerBlip, true)
+    SetBlipAsShortRange(markerBlip, false) -- same reason - the pin should always be visible on the full map too
     BeginTextCommandSetBlipName("STRING")
     AddTextComponentString('Ghalamro: ' .. cfg.label .. (state.owner and (' | ' .. state.owner) or ' | Azad'))
     EndTextCommandSetBlipName(markerBlip)
