@@ -15,7 +15,7 @@ client_scripts {
 }
 
 server_scripts {
-	'@oxmysql/lib/MySQL.lua', -- سرور شما mysql-async نداره، oxmysql داره (همون کتابخانه سازگاری که esx_vehicleshop خودتون هم استفاده می‌کنه)
+	'@oxmysql/lib/MySQL.lua', -- this server uses oxmysql, not mysql-async
 	'shared/config.lua',
 	'server.lua',
 	'shared/server.lua',

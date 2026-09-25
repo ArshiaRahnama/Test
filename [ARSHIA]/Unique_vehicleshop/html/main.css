@@ -209,7 +209,22 @@
   width: 5.2vw;
   height: 4.8vw;
   background: rgba(255, 255, 255, 0.11);
-  border-radius: 4px 0px 0px 4px;
+  border-radius: 0.3vw 0px 0px 0.3vw;
+}
+
+.car {
+  cursor: pointer;
+}
+
+.no-result {
+  display: none;
+  width: 19vw;
+  margin-top: 1.5vw;
+  text-align: center;
+  font-family: "Akrobat";
+  font-weight: 600;
+  font-size: 1vw;
+  color: rgba(255, 255, 255, 0.5);
 }
 
 .car-cat-img {

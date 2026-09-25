@@ -5,32 +5,78 @@ vehicle = nil
 model = nil
 price = nil
 
+-- Map blips for every shop defined in Config.vehicleshop
+Citizen.CreateThread(function()
+	for k,v in pairs(Config.vehicleshop) do
+		if v.blip then
+			local blip = AddBlipForCoord(v.coord.x, v.coord.y, v.coord.z)
+			SetBlipSprite(blip, v.blip.sprite or 225)
+			SetBlipDisplay(blip, 4)
+			SetBlipScale(blip, v.blip.scale or 0.8)
+			SetBlipColour(blip, v.blip.color or 5)
+			SetBlipAsShortRange(blip, true)
+			BeginTextCommandSetBlipName("STRING")
+			AddTextComponentString(v.blip.label or v.galeryname)
+			EndTextCommandSetBlipName(blip)
+		end
+	end
+end)
+
 Citizen.CreateThread(function()
 	while true do
 		local sleep = 1500
 			local playercoord = GetEntityCoords(PlayerPedId())
 			for k,v in pairs(Config.vehicleshop) do
-			local dst = #(playercoord - vector3(v.coord.x,v.coord.y,v.coord.z))
-			if dst < 3 then
+			local shopCoord = vector3(v.coord.x,v.coord.y,v.coord.z)
+			local dst = #(playercoord - shopCoord)
+			local mk = v.marker
+			local drawRadius = mk and mk.radius or 5.0
+			local interactRadius = mk and mk.interactRadius or 3.0
+
+			if dst < drawRadius then
 				sleep = 1
-				if Config.drawtextorfloating then
-				DrawText3D(v.coord.x, v.coord.y, v.coord.z, v.lang.openmenu)
-				else
-				ShowFloatingHelpNotification(Config.lang.openmenu, v.coord,dst)
+
+				-- Fun 3D marker: a spinning marker with a pulse effect (grows/shrinks)
+				if mk then
+					local pulse = (math.sin(GetGameTimer() / 250.0) + 1.0) / 2.0 -- 0..1
+					local baseSize = mk.size or vector3(1.4, 1.4, 1.0)
+					local pulseSize = vector3(
+						baseSize.x + (pulse * 0.25),
+						baseSize.y + (pulse * 0.25),
+						baseSize.z
+					)
+					local rotation = (GetGameTimer() / 10) % 360.0
+					DrawMarker(
+						mk.type or 27,
+						shopCoord.x, shopCoord.y, shopCoord.z + (mk.offsetZ or -0.98),
+						0.0, 0.0, 0.0,
+						0.0, 0.0, rotation,
+						pulseSize.x, pulseSize.y, pulseSize.z,
+						mk.color.r, mk.color.g, mk.color.b, mk.color.a,
+						false, true, 2, true, nil, nil, false
+					)
 				end
-				if IsControlJustReleased(0,38) then
-					IsInShopMenu = true
-					SetNuiFocus(true,true)
-					currentShopId = k
-					sellectcar = Config.vehicleshop[k]
-					SendNUIMessage({
-						action = "openmenu",
-						shopname = sellectcar.galeryname,
-						dec = sellectcar.dec
-					})
-					initGarage(k)
-					vehiclelist()
-					cattegorylist()
+
+				if dst < interactRadius then
+					if Config.drawtextorfloating then
+					DrawText3D(v.coord.x, v.coord.y, v.coord.z, v.lang.openmenu)
+					else
+					ShowFloatingHelpNotification(Config.lang.openmenu, v.coord,dst)
+					end
+					if IsControlJustReleased(0,38) then
+						IsInShopMenu = true
+						SetNuiFocus(true,true)
+						currentShopId = k
+						sellectcar = Config.vehicleshop[k]
+						SendNUIMessage({
+							action = "openmenu",
+							shopname = sellectcar.galeryname,
+							dec = sellectcar.dec
+						})
+						initGarage(k)
+						vehiclelist()
+						cattegorylist()
+					end
 				end
 			end
 		end
@@ -56,7 +102,7 @@ function initGarage(x)
 	actrion = "update-deta-veh",
    })
 
-   -- به‌جای هاردکد "blista"، اولین وسیله‌ی همون فروشگاه (ماشین/قایق/هلیکوپتر) رو پیش‌نمایش می‌کنیم
+   -- Preview the shop's first vehicle (car/boat/heli) instead of hardcoding "blista"
    local firstCategory = (sellectcar.categories or {})[1]
    local firstVehicle = firstCategory and Config.Vehicles[firstCategory] and Config.Vehicles[firstCategory][1]
 
@@ -258,20 +304,6 @@ end
 		end
 	end)
 
-	isTestDriving = false
-	function startTestDrive(dealer_object)
-		if isTestDriving then
-			return
-		end
-		if vehicle and DoesEntityExist(vehicle) then
-			FreezeEntityPosition(vehicle,false)
-			SetVehicleUndriveable(vehicle,false)
-			SetPedIntoVehicle(PlayerPedId(), vehicle, -1)
-			SetPedCoordsKeepVehicle(PlayerPedId(), Config.TestDrive.coords)
-			SendNUIMessage({ action = "startTest" })
-		end
-	end
-
 	RegisterNUICallback("testdv", function(data, cb)
 		SetEntityCoords(PlayerPedId(), sellectcar.coord)
 		IsInShopMenu = false
@@ -297,8 +329,9 @@ end
 			SetVehicleUndriveable(vehicle,false)
 			SetPedIntoVehicle(PlayerPedId(), vehicle, -1)
 			SetPedCoordsKeepVehicle(PlayerPedId(), Config.TestDrive.coords)
+			SendNUIMessage({ action = "startTest" })
 		end
-		
+
 		local finished = nil
 		CreateThread(function()
 			local start = GetGameTimer()/1000
@@ -351,7 +384,7 @@ end
 		plate= GetVehicleNumberPlateText(vehicle)
 		addkey(plate)
 		buy = getvehicle(vehicle)
-		-- توجه: قیمت دیگه از اینجا فرستاده نمیشه؛ سرور خودش با model و shopId قیمت واقعی رو از Config در میاره
+		-- Note: price is no longer sent from here; the server looks up the real price via model + shopId
 		TriggerServerEvent("Unique_vehicleshop:buyvehicle", buy, model, currentShopId)
 		RequestCollisionAtCoord(sellectcar.buyspawn.x, sellectcar.buyspawn.y, sellectcar.buyspawn.z)
 	end)

@@ -1,7 +1,7 @@
 Config = {}
 Config.Vehicles = {}
 ------------------------------------------------------------------------------------
-Config.Mysql = "oxmysql" -- سرور شما از oxmysql استفاده می‌کند (طبق server.cfg)
+Config.Mysql = "oxmysql" -- this server uses oxmysql (per server.cfg)
 Config.lang = {
     openmenu = "~g~[E]~w~ Open Galery",
     noperm = "No Permission",
@@ -18,33 +18,102 @@ Config.vehicleshop = {
         galeryname = "UNIQUE VEHICLE",
         dec = "Lorem ipsum dolor sit amet consectetur. Consectetur condimentum erat sed fringilla lacinia bibendum.",
         type = "car",
-        minRank = 0, -- حداقل permission_level لازم برای استفاده از این فروشگاه (essentialmode: 0 = برای همه پلیرها، هرچی بیشتر = فقط استاف/رنک بالاتر). برای فروشگاه‌های تست/استاف‌ فقط این عدد رو ببرید بالا، مثلاً 2 یا 8.
+        minRank = 0, -- minimum permission_level required to use this shop (essentialmode: 0 = everyone, higher = staff/admin only). Raise this for staff/test shops, e.g. 2 or 8.
         categories = {"compacts","coupes","motorcycles","muscle","offroad","sedans","sports","sportsclassics","super","suvs","vans"},
         coord = vector3(-32.785, -1102.3, 26.4223),
         buyspawn = vector3(-8.8265, -1082.0, 26.2381),
         vehspawn = vector3(-99.3386230469, -1049.10900878906, 26.756130218506),
+        blip = {
+            sprite = 225,      -- car mod shop icon
+            color = 5,         -- yellow (matches the UI theme)
+            scale = 0.85,
+            label = "Vehicle Shop",
+        },
+        marker = {
+            type = 27,         -- spinning arrow marker (way more fun than a flat circle)
+            color = {r = 255, g = 193, b = 7, a = 130},
+            size = vector3(1.4, 1.4, 1.0),
+            offsetZ = -0.98,
+            radius = 5.0,      -- distance at which the marker becomes visible
+            interactRadius = 3.0, -- distance at which [E] activates
+        },
     },
     [2] = {
-        -- مختصات از esx_boat/config.lua خودتون گرفته شده (Zones.BoatShops[1]) تا دقیقاً کنار همون اسکله باشه
+        -- Self-contained boat shop (no longer depends on esx_boat)
         galeryname = "UNIQUE BOATS",
-        dec = "نمایشگاه قایق - بهترین شناورهای دریایی رو از اینجا بخر.",
+        dec = "Boat showroom - buy the best watercraft in the city right here.",
         type = "boat",
         minRank = 0,
         categories = {"boats"},
         coord = vector3(-40.7176, -1094.69, 27.274),
         buyspawn = vector3(-792.78, -1501.01, -0.47),
         vehspawn = vector3(-792.78, -1501.01, -0.47),
+        blip = {
+            sprite = 410,      -- boat icon
+            color = 3,         -- light blue
+            scale = 0.85,
+            label = "Boat Shop",
+        },
+        marker = {
+            type = 27,
+            color = {r = 10, g = 197, b = 243, a = 130},
+            size = vector3(1.4, 1.4, 1.0),
+            offsetZ = -0.98,
+            radius = 5.0,
+            interactRadius = 3.0,
+        },
     },
     [3] = {
-        -- مختصات از esx_heli/config.lua خودتون گرفته شده (Zones.AirShops[1])
+        -- Self-contained heli shop (no longer depends on esx_heli)
         galeryname = "UNIQUE AIR",
-        dec = "نمایشگاه هلیکوپتر - سریع‌ترین راه برای جابجایی تو آسمون شهر.",
+        dec = "Helicopter showroom - the fastest way to move around the city skies.",
         type = "helicopter",
         minRank = 0,
         categories = {"helicopters"},
         coord = vector3(-38.7102, -1100.23, 27.274),
         buyspawn = vector3(-1405.34, -3212.34, 13.944),
         vehspawn = vector3(-1405.34, -3212.34, 13.944),
+        blip = {
+            sprite = 43,       -- helicopter icon
+            color = 5,
+            scale = 0.85,
+            label = "Air Shop",
+        },
+        marker = {
+            type = 27,
+            color = {r = 219, g = 8, b = 255, a = 130},
+            size = vector3(1.4, 1.4, 1.0),
+            offsetZ = -0.98,
+            radius = 5.0,
+            interactRadius = 3.0,
+        },
+    },
+    [4] = {
+        -- Self-contained plane shop (no longer depends on esx_air).
+        -- Coords match esx_air/config.lua: Zones.AirShops[1].Outside for the entrance,
+        -- and Zones.AirShops[1].Inside for the preview/buy spawn (same airfield as the heli shop).
+        galeryname = "UNIQUE PLANES",
+        dec = "Aircraft showroom - fixed-wing planes for the pilots of the city.",
+        type = "airplane",
+        minRank = 0,
+        categories = {"planes"},
+        coord = vector3(-51.4241, -1094.91, 27.274),
+        buyspawn = vector3(-1405.34, -3212.34, 13.944),
+        vehspawn = vector3(-1405.34, -3212.34, 13.944),
+        blip = {
+            sprite = 307,      -- plane icon
+            color = 2,         -- green
+            scale = 0.85,
+            label = "Plane Shop",
+        },
+        marker = {
+            type = 27,
+            color = {r = 4, g = 255, b = 23, a = 130},
+            size = vector3(1.4, 1.4, 1.0),
+            offsetZ = -0.98,
+            radius = 5.0,
+            interactRadius = 3.0,
+        },
     },
 }
 
@@ -301,7 +370,7 @@ Config.Vehicles["compacts"] = {
     { label = "Youga VN", name = "youga2", price = 20000 },
     } 
 
-    -- قیمت‌ها دقیقاً از [ESX]/esx_boat/config.lua خودتون کپی شده تا با اقتصاد فعلی سرورتون هماهنگ باشه
+    -- Boat prices (self-contained, no esx_boat dependency)
     Config.Vehicles["boats"] = {
     { label = "Jetmax", name = "jetmax", price = 10000000 },
     { label = "Marquis", name = "marquis", price = 60000000 },
@@ -314,7 +383,7 @@ Config.Vehicles["compacts"] = {
     { label = "Dinghy", name = "dinghy4", price = 50000000 },
     }
 
-    -- قیمت‌ها دقیقاً از [ESX]/esx_heli/config.lua خودتون کپی شده تا با اقتصاد فعلی سرورتون هماهنگ باشه
+    -- Helicopter prices (self-contained, no esx_heli dependency)
     Config.Vehicles["helicopters"] = {
     { label = "Volatus", name = "volatus", price = 750000000 },
     { label = "Swift2", name = "swift2", price = 70000000 },
@@ -322,6 +391,15 @@ Config.Vehicles["compacts"] = {
     { label = "Buzzard2", name = "buzzard2", price = 35000000 },
     { label = "Seasparrow", name = "seasparrow", price = 30000000 },
     { label = "Havok", name = "havok", price = 20000000 },
+    }
+
+    -- Plane prices (self-contained, no esx_air dependency)
+    Config.Vehicles["planes"] = {
+    { label = "Nimbus", name = "nimbus", price = 100000000 },
+    { label = "Vestra", name = "vestra", price = 70000000 },
+    { label = "Dodo", name = "dodo", price = 50000000 },
+    { label = "Mammatus", name = "mammatus", price = 30000000 },
+    { label = "Microlight", name = "microlight", price = 10000000 },
     }
 
     Config.TestDrive = {

@@ -182,6 +182,21 @@ local function runAfkCheck(jobName)
         ExecuteCommand('f Man Be Dalil Afk OffDuty Shodam')
         TriggerServerEvent('esx_duty:setjob', jobName)
         -- BUG FIX: esx_duty:setjob2 (dead, no server handler) removed here too.
+
+        -- BUG FIX (repeated/duplicate AFK Check popups): this branch used to
+        -- leave afkLastMoveTime untouched. playerData.job only updates once
+        -- the server's ESX shared object round-trips back to the client, so
+        -- for the next few 30s loop ticks isOnDutyOrganJob(jobName) can still
+        -- read the OLD (on-duty) job. Since afkLastMoveTime was still stuck
+        -- in the past (>= Config_AfkCheckInterval), the very next tick saw
+        -- "still on duty + still over the interval" and fired runAfkCheck()
+        -- again immediately -- which is why the math question kept
+        -- reappearing (and 'Man Off Duty Shodam' got logged more than once)
+        -- instead of firing once every 15 minutes. Resetting the timer here,
+        -- same as the success path does, stops it from re-arming until the
+        -- player is actually confirmed on-duty and idle again.
+        afkLastMoveTime = GetGameTimer()
+        afkLastCoords = GetEntityCoords(PlayerPedId())
     end
 
     afkCheckRunning = false

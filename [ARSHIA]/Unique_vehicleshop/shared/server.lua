@@ -1,15 +1,15 @@
 ------------------------------------------------------------------------------------
--- Unique_vehicleshop - نسخه اصلاح‌شده و امن‌شده بک‌اند (بر پایه‌ی Debux_vehicleshop)
--- تغییرات نسبت به نسخه‌ی اصلی:
---  1) قیمت دیگه از کلاینت گرفته نمیشه؛ سرور خودش از Config.Vehicles قیمت واقعی رو
---     پیدا می‌کنه. (نسخه اصلی به کلاینت اعتماد می‌کرد و هرکسی می‌تونست با تغییر
---     متغیر price تو کلاینت، ماشین رو مجانی یا خیلی ارزون بخره.)
---  2) شاپ خریداری‌شده (shopId) هم سمت سرور با Config.vehicleshop چک میشه، به‌جای
---     اینکه کل جدول sellectcar از کلاینت با اعتماد کامل قبول بشه.
---  3) هر فروشگاه یک Config.vehicleshop[id].minRank داره؛ اگه permission_level پلیر
---     کمتر از این رنک باشه، خرید رد میشه (برای فروشگاه‌های استاف/تست کاربرد داره).
---  4) کوئری‌های SQL پارامتری شدن (به‌جای string concat) تا از SQL Injection جلوگیری بشه.
---  5) از oxmysql (که روی سرور شما نصبه) استفاده می‌کنه، نه mysql-async.
+-- Unique_vehicleshop - hardened backend build (based on Debux_vehicleshop)
+-- Changes vs the original:
+--  1) Price is no longer trusted from the client; the server looks up the real
+--     price from Config.Vehicles itself. (The original trusted the client's
+--     price variable, so anyone could buy a car for free/cheap by editing it.)
+--  2) The purchased shop (shopId) is also validated server-side against
+--     Config.vehicleshop, instead of blindly trusting the client's sellectcar table.
+--  3) Every shop has a Config.vehicleshop[id].minRank; if the player's
+--     permission_level is below it, the purchase is rejected (useful for staff/test shops).
+--  4) SQL queries are parameterized (instead of string concat) to prevent SQL Injection.
+--  5) Uses oxmysql (installed on this server), not mysql-async.
 ------------------------------------------------------------------------------------
 
 ESX = nil
@@ -20,7 +20,7 @@ CreateThread(function()
 	end
 end)
 
--- جدول قیمت واقعی و دسته‌بندی هر مدل رو یک بار می‌سازیم تا لازم نباشه هر بار کل Config.Vehicles رو پیمایش کنیم
+-- Build the real price/category lookup once, so we don't loop through all of Config.Vehicles every time
 local VehiclePriceByModel   = {}
 local VehicleCategoryByModel = {}
 
@@ -50,40 +50,40 @@ RegisterNetEvent('Unique_vehicleshop:buyvehicle', function(props, modelName, sho
 
 	if xPlayer == nil then return end
 
-	-- ۱) شاپ باید واقعاً در کانفیگ سرور وجود داشته باشه
+	-- 1) The shop must actually exist in the server config
 	local shop = Config.vehicleshop[shopId]
 	if not shop then
-		log(('%s تلاش کرد با یک shopId نامعتبر (%s) خرید انجام بده'):format(xPlayer.identifier, tostring(shopId)))
+		log(('%s tried to buy with an invalid shopId (%s)'):format(xPlayer.identifier, tostring(shopId)))
 		TriggerClientEvent('Unique_vehicleshop:deletevehicle', src)
 		return
 	end
 
-	-- ۲) رنک/سطح دسترسی پلیر باید با حداقل رنک لازم برای این فروشگاه (Config.vehicleshop[id].minRank) بخونه
+	-- 2) The player's rank/permission level must meet this shop's minimum rank (Config.vehicleshop[id].minRank)
 	local permission_level = xPlayer.permission_level or 0
 	if permission_level < (shop.minRank or 0) then
-		log(('%s (permission_level %s) بدون داشتن رنک کافی برای فروشگاه %s تلاش کرد خرید کنه'):format(xPlayer.identifier, tostring(permission_level), tostring(shopId)))
+		log(('%s (permission_level %s) tried to buy at shop %s without enough rank'):format(xPlayer.identifier, tostring(permission_level), tostring(shopId)))
 		TriggerClientEvent('esx:showNotification', src, Config.lang.noperm, 'error')
 		TriggerClientEvent('Unique_vehicleshop:deletevehicle', src)
 		return
 	end
 
-	-- ۳) مدل ماشین باید داخل لیست قیمت‌های همین فروشگاه باشه (مثلاً نمایشگاه قایق نباید بتونه ماشین بفروشه)
+	-- 3) The vehicle model must be in this shop's own price list (e.g. the boat shop shouldn't be able to sell cars)
 	local price = VehiclePriceByModel[modelName]
 	local category = VehicleCategoryByModel[modelName]
 	if not price or not categoryAllowedForShop(shop, category) then
-		log(('%s تلاش کرد یک مدل نامعتبر/خارج از دسته‌بندی این فروشگاه (%s) بخره'):format(xPlayer.identifier, tostring(modelName)))
+		log(('%s tried to buy an invalid model / one outside this shop\'s category (%s)'):format(xPlayer.identifier, tostring(modelName)))
 		TriggerClientEvent('Unique_vehicleshop:deletevehicle', src)
 		return
 	end
 
-	-- ۴) داده‌ی وسیله (رنگ/مدل و ...) باید یک جدول معتبر باشه
+	-- 4) The vehicle data (color/model/etc.) must be a valid table
 	if type(props) ~= 'table' or type(props.plate) ~= 'string' or props.plate == '' then
-		log(('%s داده‌ی خودرو نامعتبری ارسال کرد'):format(xPlayer.identifier))
+		log(('%s sent invalid vehicle data'):format(xPlayer.identifier))
 		TriggerClientEvent('Unique_vehicleshop:deletevehicle', src)
 		return
 	end
 
-	-- ۵) بررسی و کسر پول کاملاً سمت سرور، با قیمت واقعی کانفیگ (نه چیزی که کلاینت فرستاده)
+	-- 5) Money check and deduction is fully server-side, using the real config price (not whatever the client sent)
 	if xPlayer.getMoney() < price then
 		TriggerClientEvent('esx:showNotification', src, Config.lang.nomoney, 'error')
 		TriggerClientEvent('Unique_vehicleshop:deletevehicle', src)
@@ -92,7 +92,7 @@ RegisterNetEvent('Unique_vehicleshop:buyvehicle', function(props, modelName, sho
 
 	xPlayer.removeMoney(price)
 
-	-- ۶) درج امن (پارامتری) در owned_vehicles - دقیقاً هم‌ساختار با جدول دیتابیس شما
+	-- 6) Safe (parameterized) insert into owned_vehicles - matches your database table structure exactly
 	MySQL.Async.execute('INSERT INTO owned_vehicles (owner, plate, vehicle, type) VALUES (@owner, @plate, @vehicle, @type)', {
 		['@owner']   = xPlayer.identifier,
 		['@plate']   = props.plate,
@@ -102,9 +102,9 @@ RegisterNetEvent('Unique_vehicleshop:buyvehicle', function(props, modelName, sho
 		if rowsChanged and rowsChanged > 0 then
 			TriggerClientEvent('esx:showNotification', src, Config.lang.buyvehicle, 'success')
 		else
-			-- اگه ثبت تو دیتابیس شکست خورد، پول رو برگردون که پلیر ضرر نکنه
+			-- If the database insert fails, refund the player so they don't lose money
 			xPlayer.addMoney(price)
-			TriggerClientEvent('esx:showNotification', src, 'خطا در ثبت خودرو، مبلغ بازگردانده شد', 'error')
+			TriggerClientEvent('esx:showNotification', src, 'Failed to register vehicle, amount refunded', 'error')
 			TriggerClientEvent('Unique_vehicleshop:deletevehicle', src)
 		end
 	end)
