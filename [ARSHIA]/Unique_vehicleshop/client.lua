@@ -5,20 +5,29 @@ vehicle = nil
 model = nil
 price = nil
 
--- Map blips for every shop defined in Config.vehicleshop
+-- One combined map blip for the whole complex (car/boat/heli/plane shops sit
+-- right next to each other, so instead of 4 stacked icons we drop a single
+-- blip in the middle of them all - see Config.MainBlip)
 Citizen.CreateThread(function()
+	local sumX, sumY, sumZ, count = 0.0, 0.0, 0.0, 0
 	for k,v in pairs(Config.vehicleshop) do
-		if v.blip then
-			local blip = AddBlipForCoord(v.coord.x, v.coord.y, v.coord.z)
-			SetBlipSprite(blip, v.blip.sprite or 225)
-			SetBlipDisplay(blip, 4)
-			SetBlipScale(blip, v.blip.scale or 0.8)
-			SetBlipColour(blip, v.blip.color or 5)
-			SetBlipAsShortRange(blip, true)
-			BeginTextCommandSetBlipName("STRING")
-			AddTextComponentString(v.blip.label or v.galeryname)
-			EndTextCommandSetBlipName(blip)
-		end
+		sumX = sumX + v.coord.x
+		sumY = sumY + v.coord.y
+		sumZ = sumZ + v.coord.z
+		count = count + 1
+	end
+
+	if count > 0 and Config.MainBlip then
+		local centerX, centerY, centerZ = sumX / count, sumY / count, sumZ / count
+		local blip = AddBlipForCoord(centerX, centerY, centerZ)
+		SetBlipSprite(blip, Config.MainBlip.sprite or 225)
+		SetBlipDisplay(blip, 4)
+		SetBlipScale(blip, Config.MainBlip.scale or 1.0)
+		SetBlipColour(blip, Config.MainBlip.color or 5)
+		SetBlipAsShortRange(blip, true)
+		BeginTextCommandSetBlipName("STRING")
+		AddTextComponentString(Config.MainBlip.label or "Unique Vehicleshop")
+		EndTextCommandSetBlipName(blip)
 	end
 end)
 
@@ -382,7 +391,8 @@ end
 		SetVehicleNeedsToBeHotwired(vehicle, false)
 		SetVehRadioStation(vehicle, 'OFF')
 		plate= GetVehicleNumberPlateText(vehicle)
-		addkey(plate)
+		-- Key handoff happens server-side now (shared/server.lua), right after
+		-- the DB insert succeeds, using the real plate the server just saved.
 		buy = getvehicle(vehicle)
 		-- Note: price is no longer sent from here; the server looks up the real price via model + shopId
 		TriggerServerEvent("Unique_vehicleshop:buyvehicle", buy, model, currentShopId)

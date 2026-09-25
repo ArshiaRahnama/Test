@@ -18,11 +18,6 @@ function getvehicle(vehicle)
 end
 
 -------------------------------- 
-function addkey(plate)
-  -- Trigger
-end
-
--------------------------------- 
 
 function notify(text)
       ESX.ShowNotification(text)

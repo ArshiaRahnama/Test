@@ -13,6 +13,17 @@ Config.drawtextorfloating = false
 Config.table = "esx" -- esx , qb , other 
 
 
+-- ONE clean map blip for the whole complex (car + boat + heli + plane shops are
+-- all right next to each other, so 4 separate blips just stacked on top of each
+-- other and looked messy). The in-game 3D markers at each shop's own door are
+-- unaffected - only the map-wide blip icons got merged into this single one.
+Config.MainBlip = {
+    sprite = 225,        -- vehicle dealership icon
+    color = 5,           -- gold, matches the UI's brand color
+    scale = 1.0,
+    label = "Unique Vehicleshop",
+}
+
 Config.vehicleshop = {
     [1] = {
         galeryname = "UNIQUE VEHICLE",
@@ -23,12 +34,6 @@ Config.vehicleshop = {
         coord = vector3(-32.785, -1102.3, 26.4223),
         buyspawn = vector3(-8.8265, -1082.0, 26.2381),
         vehspawn = vector3(-99.3386230469, -1049.10900878906, 26.756130218506),
-        blip = {
-            sprite = 225,      -- car mod shop icon
-            color = 5,         -- yellow (matches the UI theme)
-            scale = 0.85,
-            label = "Vehicle Shop",
-        },
         marker = {
             type = 27,         -- spinning arrow marker (way more fun than a flat circle)
             color = {r = 255, g = 193, b = 7, a = 130},
@@ -48,12 +53,6 @@ Config.vehicleshop = {
         coord = vector3(-40.7176, -1094.69, 27.274),
         buyspawn = vector3(-792.78, -1501.01, -0.47),
         vehspawn = vector3(-792.78, -1501.01, -0.47),
-        blip = {
-            sprite = 410,      -- boat icon
-            color = 3,         -- light blue
-            scale = 0.85,
-            label = "Boat Shop",
-        },
         marker = {
             type = 27,
             color = {r = 10, g = 197, b = 243, a = 130},
@@ -73,12 +72,6 @@ Config.vehicleshop = {
         coord = vector3(-38.7102, -1100.23, 27.274),
         buyspawn = vector3(-1405.34, -3212.34, 13.944),
         vehspawn = vector3(-1405.34, -3212.34, 13.944),
-        blip = {
-            sprite = 43,       -- helicopter icon
-            color = 5,
-            scale = 0.85,
-            label = "Air Shop",
-        },
         marker = {
             type = 27,
             color = {r = 219, g = 8, b = 255, a = 130},
@@ -100,12 +93,6 @@ Config.vehicleshop = {
         coord = vector3(-51.4241, -1094.91, 27.274),
         buyspawn = vector3(-1405.34, -3212.34, 13.944),
         vehspawn = vector3(-1405.34, -3212.34, 13.944),
-        blip = {
-            sprite = 307,      -- plane icon
-            color = 2,         -- green
-            scale = 0.85,
-            label = "Plane Shop",
-        },
         marker = {
             type = 27,
             color = {r = 4, g = 255, b = 23, a = 130},

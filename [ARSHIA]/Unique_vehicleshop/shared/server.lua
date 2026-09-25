@@ -100,6 +100,11 @@ RegisterNetEvent('Unique_vehicleshop:buyvehicle', function(props, modelName, sho
 		['@type']    = shop.type or 'car',
 	}, function(rowsChanged)
 		if rowsChanged and rowsChanged > 0 then
+			-- Hand over the actual key item so Unique_Garage's lock system
+			-- (carlock_sv.lua / parkmeter_sv.lua) recognizes this plate as owned
+			-- and lets the player lock/unlock it later. Same convention used
+			-- everywhere else: a 'vehicle_keys' item carrying info.plate.
+			xPlayer.addInventoryItem('vehicle_keys', 1, nil, { plate = props.plate, label = 'Keys: ' .. props.plate })
 			TriggerClientEvent('esx:showNotification', src, Config.lang.buyvehicle, 'success')
 		else
 			-- If the database insert fails, refund the player so they don't lose money
