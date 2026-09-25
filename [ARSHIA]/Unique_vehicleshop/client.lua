@@ -73,23 +73,103 @@ Citizen.CreateThread(function()
 					ShowFloatingHelpNotification(Config.lang.openmenu, v.coord,dst)
 					end
 					if IsControlJustReleased(0,38) then
-						IsInShopMenu = true
-						SetNuiFocus(true,true)
-						currentShopId = k
-						sellectcar = Config.vehicleshop[k]
-						SendNUIMessage({
-							action = "openmenu",
-							shopname = sellectcar.galeryname,
-							dec = sellectcar.dec
-						})
-						initGarage(k)
-						vehiclelist()
-						cattegorylist()
+						OpenVehicleShop(k)
 					end
 				end
 			end
 		end
 		Citizen.Wait(sleep)
+	end
+end)
+
+-- Shared "open this shop's menu" logic, used by both the old walk-in+[E] flow
+-- and the new salesman-ped ox_target interaction below, so there's only one
+-- place that ever needs to change.
+function OpenVehicleShop(shopId)
+	local shop = Config.vehicleshop[shopId]
+	if not shop then return end
+
+	IsInShopMenu = true
+	SetNuiFocus(true,true)
+	currentShopId = shopId
+	sellectcar = shop
+	SendNUIMessage({
+		action = "openmenu",
+		shopname = sellectcar.galeryname,
+		dec = sellectcar.dec
+	})
+	initGarage(shopId)
+	vehiclelist()
+	cattegorylist()
+end
+
+-- Salesman NPCs: one professional-looking, idle-animated ped per shop (see
+-- Config.vehicleshop[x].ped), targetable with ox_target. This is now the main
+-- way players open a shop - it feels far better than the old "stand in a circle
+-- and mash [E]" and, since the 4 shops sit right on top of each other, it also
+-- makes sure you always open the shop you actually meant to.
+ShopPeds = {}
+
+Citizen.CreateThread(function()
+	if GetResourceState('ox_target') ~= 'started' then
+		print('^1[Unique_vehicleshop]^7 ox_target is not running - salesman NPCs were not spawned, falling back to [E] only.')
+		return
+	end
+
+	for k, v in pairs(Config.vehicleshop) do
+		local pedData = v.ped
+		if pedData then
+			local hash = GetHashKey(pedData.model)
+			RequestModel(hash)
+			local timeout = 0
+			while not HasModelLoaded(hash) and timeout < 500 do
+				Citizen.Wait(10)
+				timeout = timeout + 1
+			end
+
+			if HasModelLoaded(hash) then
+				local c = pedData.coord
+				local npc = CreatePed(4, hash, c.x, c.y, c.z, c.w or 0.0, false, true)
+
+				SetEntityInvincible(npc, true)
+				SetPedCanRagdoll(npc, false)
+				SetPedDiesWhenInjured(npc, false)
+				SetPedSuffersCriticalHits(npc, false)
+				SetBlockingOfNonTemporaryEvents(npc, true)
+				SetPedFleeAttributes(npc, 0, false)
+				SetPedCanBeTargetted(npc, false) -- no getting shot at by griefers
+				FreezeEntityPosition(npc, true)
+				SetEntityAsMissionEntity(npc, true, true)
+
+				if pedData.scenario then
+					TaskStartScenarioInPlace(npc, pedData.scenario, 0, true)
+				end
+
+				SetModelAsNoLongerNeeded(hash)
+				ShopPeds[k] = npc
+
+				exports.ox_target:addLocalEntity(npc, {
+					{
+						name = 'Unique_vehicleshop_' .. tostring(k),
+						icon = pedData.icon or 'fa-solid fa-car',
+						label = pedData.label or Config.lang.openmenu,
+						distance = 2.5,
+						onSelect = function()
+							OpenVehicleShop(k)
+						end,
+					}
+				})
+			end
+		end
+	end
+end)
+
+AddEventHandler('onResourceStop', function(resource)
+	if resource ~= GetCurrentResourceName() then return end
+	for _, npc in pairs(ShopPeds) do
+		if DoesEntityExist(npc) then
+			DeleteEntity(npc)
+		end
 	end
 end)
 

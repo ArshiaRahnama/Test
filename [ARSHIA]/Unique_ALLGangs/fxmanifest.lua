@@ -53,6 +53,7 @@ client_scripts {
     'client/boss_esx_menu.lua', -- boss actions via ESX default menu (top-left), styled like the old Unique_Gangs system - this is what the boss NPC opens now
     'client/gangwar.lua',       -- shootout detection -> live FBI/CIA dispatch (see Config.GangWar, README #45)
     'client/territory.lua',     -- Territory Control add-on (see Config.Territory) - loads after boss.lua so the global `PlayerData` it reads is already set up
+    'client/territory_zombies.lua', -- ambient zombies inside territory zones (see Config.Territory.ZombieTiers) - loads after territory.lua since it listens for the same Territory:BossZoneState event
 }
 
 ui_page 'web/ui.html'

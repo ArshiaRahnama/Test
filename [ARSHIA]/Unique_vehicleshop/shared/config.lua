@@ -42,6 +42,18 @@ Config.vehicleshop = {
             radius = 5.0,      -- distance at which the marker becomes visible
             interactRadius = 3.0, -- distance at which [E] activates
         },
+        -- Salesman NPC: stands where the marker is (same x/y, feet at coord.z - 1.0,
+        -- matching the marker's own -0.98 ground offset above). Interact with him
+        -- via ox_target to open the shop - no more "walk into the circle" feel.
+        -- Heading (the 4th number) is a starting guess; tweak it in-game so he's
+        -- facing the customer path.
+        ped = {
+            model = "a_m_y_business_03", -- suited salesman
+            coord = vector4(-32.785, -1102.3, 25.4423, 200.0),
+            scenario = "WORLD_HUMAN_CLIPBOARD", -- looks busy/professional, not idle
+            label = "Browse & Buy Vehicles",
+            icon = "fa-solid fa-car",
+        },
     },
     [2] = {
         -- Self-contained boat shop (no longer depends on esx_boat)
@@ -61,6 +73,13 @@ Config.vehicleshop = {
             radius = 5.0,
             interactRadius = 3.0,
         },
+        ped = {
+            model = "s_m_y_dockwork_01", -- dockhand, fits a boat showroom
+            coord = vector4(-40.7176, -1094.69, 26.294, 20.0),
+            scenario = "WORLD_HUMAN_CLIPBOARD",
+            label = "Browse & Buy Boats",
+            icon = "fa-solid fa-ship",
+        },
     },
     [3] = {
         -- Self-contained heli shop (no longer depends on esx_heli)
@@ -79,6 +98,13 @@ Config.vehicleshop = {
             offsetZ = -0.98,
             radius = 5.0,
             interactRadius = 3.0,
+        },
+        ped = {
+            model = "s_m_y_pilot_01", -- pilot uniform
+            coord = vector4(-38.7102, -1100.23, 26.294, 20.0),
+            scenario = "WORLD_HUMAN_CLIPBOARD",
+            label = "Browse & Buy Helicopters",
+            icon = "fa-solid fa-helicopter",
         },
     },
     [4] = {
@@ -100,6 +126,13 @@ Config.vehicleshop = {
             offsetZ = -0.98,
             radius = 5.0,
             interactRadius = 3.0,
+        },
+        ped = {
+            model = "s_m_y_pilot_01", -- pilot uniform
+            coord = vector4(-51.4241, -1094.91, 26.294, 340.0),
+            scenario = "WORLD_HUMAN_CLIPBOARD",
+            label = "Browse & Buy Planes",
+            icon = "fa-solid fa-plane",
         },
     },
 }

@@ -24,6 +24,7 @@ server_scripts {
 dependencies {
 	'essentialmode',
 	'oxmysql',
+	'ox_target', -- salesperson NPCs at each shop use this to open the menu (already present in [BASE]/ox_target)
 }
 
 files {

@@ -60,7 +60,7 @@ local function RefreshBlip(zoneKey)
     SetBlipDisplay(markerBlip, 4)
     SetBlipScale(markerBlip, 0.9)
     SetBlipColour(markerBlip, color)
-    SetBlipAsShortRange(markerBlip, false) -- same reason - the pin should always be visible on the full map too
+    SetBlipAsShortRange(markerBlip, true) -- unlike the radius circle, the named pin/skull icon should ONLY show on the minimap when nearby - otherwise it clutters the minimap from anywhere on the map
     BeginTextCommandSetBlipName("STRING")
     AddTextComponentString('Ghalamro: ' .. cfg.label .. (state.owner and (' | ' .. state.owner) or ' | Azad'))
     EndTextCommandSetBlipName(markerBlip)
@@ -492,76 +492,7 @@ function OpenTerritoryViewAlliesMenu(gang)
 end
 
 -------------------------------------------------------------------
--- SYSTEM 4 (cont.): BOSS ZONE guard peds - purely cosmetic difficulty,
--- spawned/despawned client-side off the server's open/close signal.
--- Only actually spawns them for a player once they get near the zone
--- (and despawns if they wander off or the window closes), so this
--- never runs for players who aren't anywhere near it.
+-- Zombie spawning/attacking for every territory zone (regular zones
+-- and the Boss Zone) now lives in its own file - see
+-- client/territory_zombies.lua.
 -------------------------------------------------------------------
-local BossZoneOpen = false
-local BossZoneGuards = {}
-
-local function DespawnBossZoneGuards()
-    for _, ped in ipairs(BossZoneGuards) do
-        if DoesEntityExist(ped) then DeleteEntity(ped) end
-    end
-    BossZoneGuards = {}
-end
-
-RegisterNetEvent('Territory:BossZoneState')
-AddEventHandler('Territory:BossZoneState', function(open)
-    BossZoneOpen = open
-    if not open then DespawnBossZoneGuards() end
-end)
-
-if Config.Territory.BossZone and Config.Territory.BossZone.Enabled then
-    -- Guarantee the guards are actually hostile regardless of whatever
-    -- relationship groups other parts of the server may have set up -
-    -- set once at resource start, not per-spawn.
-    CreateThread(function()
-        local hash = GetHashKey('AMBIENT_GANG_LOST')
-        SetRelationshipBetweenGroups(5, hash, GetHashKey('PLAYER')) -- 5 = hate
-        SetRelationshipBetweenGroups(5, GetHashKey('PLAYER'), hash)
-    end)
-
-    CreateThread(function()
-        local bz = Config.Territory.BossZone
-        while true do
-            Wait(3000)
-            if BossZoneOpen then
-                local coords = GetEntityCoords(PlayerPedId())
-                local dist = #(coords - bz.coord)
-                if dist <= bz.radius + 50.0 and #BossZoneGuards == 0 then
-                    for i = 1, (bz.guardCount or 4) do
-                        local angle = (i / (bz.guardCount or 4)) * 2 * math.pi
-                        local px = bz.coord.x + math.cos(angle) * (bz.radius * 0.5)
-                        local py = bz.coord.y + math.sin(angle) * (bz.radius * 0.5)
-                        local model = GetHashKey('g_m_y_lost_01')
-                        RequestModel(model)
-                        local waited = 0
-                        while not HasModelLoaded(model) and waited < 3000 do Wait(50) waited = waited + 50 end
-                        if HasModelLoaded(model) then
-                            local ped = CreatePed(4, model, px, py, bz.coord.z, 0.0, true, true)
-                            SetPedRelationshipGroupHash(ped, GetHashKey('AMBIENT_GANG_LOST'))
-                            GiveWeaponToPed(ped, GetHashKey('WEAPON_MICROSMG'), 250, false, true)
-                            SetPedCombatAttributes(ped, 46, true)
-                            SetPedFleeAttributes(ped, 0, false)
-                            SetPedAccuracy(ped, 35)
-                            SetEntityAsMissionEntity(ped, true, true)
-                            BossZoneGuards[#BossZoneGuards + 1] = ped
-                        end
-                        SetModelAsNoLongerNeeded(model)
-                    end
-                elseif dist > bz.radius + 150.0 and #BossZoneGuards > 0 then
-                    DespawnBossZoneGuards() -- wandered off - despawn, will respawn fresh if they come back
-                end
-            end
-        end
-    end)
-end
-
-AddEventHandler('onResourceStop', function(resourceName)
-    if GetCurrentResourceName() == resourceName then
-        DespawnBossZoneGuards()
-    end
-end)

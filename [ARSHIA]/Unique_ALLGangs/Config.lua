@@ -423,12 +423,12 @@ Config.Territory = {
     Enabled = true,
 
     Zones = {
-        { key = 'grove_street',        label = 'Khiaboone Grove',            coord = vector3(-170.0,  -1609.0,  34.0), radius = 40.0, tier = 1 },
-        { key = 'vespucci_beach',      label = 'Sahele Vespucci',            coord = vector3(-1180.0, -1520.0,   4.0), radius = 45.0, tier = 1 },
-        { key = 'la_mesa_industrial',  label = 'Mantaghe Sanati La Mesa',      coord = vector3(850.0,   -1940.0,  31.0), radius = 50.0, tier = 2 },
-        { key = 'del_perro_pier',      label = 'Eskele Del Perro',           coord = vector3(-1850.0, -1230.0,  13.0), radius = 45.0, tier = 2 },
-        { key = 'sandy_shores',        label = 'Sandy Shores',              coord = vector3(1961.0,   3740.0,  32.0), radius = 55.0, tier = 2 },
-        { key = 'paleto_bay',          label = 'Khalije Paleto',             coord = vector3(-448.0,   6008.0,  31.0), radius = 60.0, tier = 3 },
+        { key = 'grove_street',        label = 'Khiaboone Grove',            coord = vector3(-170.0,  -1609.0,  34.0), radius = 40.0, tier = 1, zombieTier = 'normal' },
+        { key = 'vespucci_beach',      label = 'Sahele Vespucci',            coord = vector3(-1180.0, -1520.0,   4.0), radius = 45.0, tier = 1, zombieTier = 'normal' },
+        { key = 'la_mesa_industrial',  label = 'Mantaghe Sanati La Mesa',      coord = vector3(850.0,   -1940.0,  31.0), radius = 50.0, tier = 2, zombieTier = 'normal' },
+        { key = 'del_perro_pier',      label = 'Eskele Del Perro',           coord = vector3(-1850.0, -1230.0,  13.0), radius = 45.0, tier = 2, zombieTier = 'normal' },
+        { key = 'sandy_shores',        label = 'Sandy Shores',              coord = vector3(1961.0,   3740.0,  32.0), radius = 55.0, tier = 2, zombieTier = 'normal' },
+        { key = 'paleto_bay',          label = 'Khalije Paleto',             coord = vector3(-448.0,   6008.0,  31.0), radius = 60.0, tier = 3, zombieTier = 'normal' },
     },
 
     TierIncome = { -- dirty money ($) paid per zone every IncomeIntervalMinutes
@@ -529,7 +529,7 @@ Config.Territory = {
         openHour = 20,         -- 20:00 server time
         openDurationHours = 3,
         captureSeconds = 600,  -- must hold ALONE for 10 minutes straight
-        guardCount = 4,        -- hostile NPCs guarding it while open (client-side, cosmetic difficulty)
+        zombieTier = 'hard',   -- see ZombieTiers below - only spawns while the zone is open (client/territory_zombies.lua)
         rewardBlackMoney = 25000,
         titleReward = 'Farmanravaye Jazire', -- cosmetic, shown on HUD/leaderboard for whoever holds it
     },
@@ -558,5 +558,43 @@ Config.Territory = {
         endHour = 23,
         captureMultiplier = 0.5, -- capture needs half the usual time
         incomeMultiplier = 2.0,  -- income doubled
+    },
+
+    -------------------------------------------------------------------
+    -- 7) ZOMBIES - ambient danger inside territory itself, read only by
+    -- client/territory_zombies.lua. Every regular zone above is tagged
+    -- zombieTier='normal' (always active); the Boss Zone is tagged
+    -- 'hard' and only actually spawns zombies while that zone is open
+    -- (client/territory_zombies.lua listens for the same
+    -- Territory:BossZoneState broadcast the boss-zone open/close
+    -- announcement thread already sends). Zombies are local/per-player,
+    -- not synced between players - see that file's header comment for
+    -- why, and how to ask for a synced version instead.
+    -------------------------------------------------------------------
+    ZombieTiers = {
+        normal = {
+            maxAlive = 6,            -- zombies alive at once per zone, per player
+            spawnRadius = 70.0,      -- spawn them within this distance of the player
+            despawnRadius = 160.0,   -- delete them once farther than this from the player
+            detectRange = 30.0,      -- start chasing the player within this range
+            health = 150,
+            moveRate = 0.75,         -- < 1.0 = slower shambling walk
+            models = {
+                'a_m_y_hippy_01', 'a_m_m_hillbilly_01', 'a_f_y_hippie_01',
+                'a_m_y_beachvesp_01', 'a_f_y_beachvesp_01', 'a_m_m_farmer_01',
+            },
+        },
+        hard = {
+            maxAlive = 12,
+            spawnRadius = 90.0,
+            despawnRadius = 200.0,
+            detectRange = 45.0,
+            health = 280,
+            moveRate = 0.95,
+            models = {
+                'a_m_y_hippy_01', 'a_m_m_hillbilly_01', 'a_f_y_hippie_01',
+                'a_m_m_farmer_01', 'a_m_y_gentransport', 'a_m_m_ktown_01',
+            },
+        },
     },
 }
