@@ -210,7 +210,7 @@ function Ov.OpenWorkerMenu(id, back)
 		end
 
 		if can('spectate') then
-			o[#o + 1] = { title = 'Nezarat (Spectate)', description = 'Deedan-e Zende-ye Karegar', icon = 'eye', onSelect = function() Ov.StartSpectate(f.id) end }
+			o[#o + 1] = { title = 'Nezarat (Spectate)', description = Cfg.Spectate.RequireZone.Enabled and 'Deedan-e Zende-ye Karegar -- Faghat Az Dakhel-e DOJ' or 'Deedan-e Zende-ye Karegar', icon = 'eye', onSelect = function() Ov.StartSpectate(f.id) end }
 		end
 		if can('inspect') then
 			o[#o + 1] = { title = 'Bazresi (Inspect)', description = 'Bayad Nazdik Bashid -- Mojavez, Sabeghe, Item-haye Mashkook', icon = 'magnifying-glass', onSelect = function() Ov.Inspect(f.id) end }

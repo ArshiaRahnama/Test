@@ -159,6 +159,18 @@ Config_oversight.Spectate = {
 	ShowFullInventory = false,     -- false = only the job's own items in the info panel
 	NotifyTarget = false,          -- true = tell the worker they are being watched
 	Hud = true,                    -- on-screen shift stats while spectating
+	-- If Enabled, spectate can only be STARTED while the judge/marshal is
+	-- physically standing inside this zone (e.g. inside the DOJ building).
+	-- Checked server-side (server/spectate.lua), so it can't be bypassed
+	-- from the client. Only gates the very first start of a session --
+	-- switching target mid-session (LEFT/RIGHT) is not re-checked, since
+	-- the officer's own ped is already parked at whatever target they're
+	-- currently watching by then, not at the zone.
+	RequireZone = {
+		Enabled = false,                     -- off until you set real Coords below, then flip to true
+		Coords = vector3(0.0, 0.0, 0.0),     -- SET THIS to your DOJ building (interior or front desk)
+		Radius = 15.0,
+	},
 }
 
 Config_oversight.Inspect = { Distance = 8.0 }

@@ -372,7 +372,7 @@ function CaptureZone(zoneKey, newGang, actorSource)
                 ON DUPLICATE KEY UPDATE title = @title, earned_at = @ts
             ]], { ['@gang'] = newGang, ['@title'] = bz.titleReward, ['@ts'] = state.captured_at })
         end
-        TriggerClientEvent(Config.showAdvancedNotification, -1, '~p~قلمروی پادشاه', '~p~فتح شد!', 'گنگ "' .. newGang .. '" قلمروی پادشاه را تصرف کرد و لقب "' .. (bz.titleReward or '') .. '" را به دست آورد!', 'CHAR_MP_DETONATEPHONE', 9)
+        TriggerClientEvent(Config.showAdvancedNotification, -1, '~p~Ghalamroye Padeshah', '~p~Fath shod!', 'Gang "' .. newGang .. '" Ghalamroye Padeshah ro tasarrof kard va laghabe "' .. (bz.titleReward or '') .. '" ro be dast avard!', 'CHAR_MP_DETONATEPHONE', 9)
     end
 
     BroadcastTerritoryState()
@@ -381,9 +381,9 @@ function CaptureZone(zoneKey, newGang, actorSource)
         local xTarget = ESX.GetPlayerFromId(playerId)
         if xTarget and xTarget.gang then
             if xTarget.gang.name == newGang then
-                TriggerClientEvent(Config.showAdvancedNotification, playerId, '~g~قلمرو', '~g~تصرف شد', 'گنگ شما منطقه "' .. cfg.label .. '" را تصرف کرد!', 'CHAR_MP_DETONATEPHONE', 9)
+                TriggerClientEvent(Config.showAdvancedNotification, playerId, '~g~Ghalamro', '~g~Tasarrof shod', 'Gang-e shoma mantaghe "' .. cfg.label .. '" ro tasarrof kard!', 'CHAR_MP_DETONATEPHONE', 9)
             elseif oldGang and xTarget.gang.name == oldGang then
-                TriggerClientEvent(Config.showAdvancedNotification, playerId, '~r~قلمرو', '~r~از دست رفت', 'منطقه "' .. cfg.label .. '" از کنترل گنگ شما خارج شد!', 'CHAR_MP_DETONATEPHONE', 9)
+                TriggerClientEvent(Config.showAdvancedNotification, playerId, '~r~Ghalamro', '~r~Az dast raft', 'Mantaghe "' .. cfg.label .. '" az control-e gang-e shoma kharej shod!', 'CHAR_MP_DETONATEPHONE', 9)
             end
         end
     end
@@ -460,7 +460,7 @@ local function ProcessTerritoryTick()
                     for _, playerId in ipairs(ESX.GetPlayers()) do
                         local xTarget = ESX.GetPlayerFromId(playerId)
                         if xTarget and xTarget.gang and xTarget.gang.name == state.owner then
-                            TriggerClientEvent(Config.showAdvancedNotification, playerId, '~r~هشدار!', '~r~نفوذ شناسایی شد', 'یه گروه ناشناس وارد قلمرو "' .. cfg.label .. '" شده!', 'CHAR_MP_DETONATEPHONE', 9)
+                            TriggerClientEvent(Config.showAdvancedNotification, playerId, '~r~Hoshdar!', '~r~Nofooz shenasaei shod', 'Ye grouh-e nashenas vared-e ghalamro "' .. cfg.label .. '" shode!', 'CHAR_MP_DETONATEPHONE', 9)
                         end
                     end
                 end
@@ -571,7 +571,7 @@ local function DistributeTerritoryIncome()
             for _, playerId in ipairs(ESX.GetPlayers()) do
                 local xTarget = ESX.GetPlayerFromId(playerId)
                 if xTarget and xTarget.gang and xTarget.gang.name == gang then
-                    TriggerClientEvent(Config.showAdvancedNotification, playerId, '~y~قلمرو', '~y~درآمد قلمرو', 'قلمروهای گنگ شما $' .. amount .. ' پول کثیف واریز کرد.', 'CHAR_MP_DETONATEPHONE', 9)
+                    TriggerClientEvent(Config.showAdvancedNotification, playerId, '~y~Ghalamro', '~y~Daramad-e ghalamro', 'Ghalamro-haye gang-e shoma $' .. amount .. ' pool-e kasif variz kard.', 'CHAR_MP_DETONATEPHONE', 9)
                 end
             end
         end
@@ -609,7 +609,7 @@ local function TriggerVulnerableEvent()
     for _, playerId in ipairs(ESX.GetPlayers()) do
         local xTarget = ESX.GetPlayerFromId(playerId)
         if xTarget and xTarget.gang and xTarget.gang.name == state.owner then
-            TriggerClientEvent(Config.showAdvancedNotification, playerId, '~r~هشدار قلمرو', '~r~در خطر!', 'منطقه "' .. cfg.label .. '" هدف حمله احتمالی قرار گرفته - از آن دفاع کنید!', 'CHAR_MP_DETONATEPHONE', 9)
+            TriggerClientEvent(Config.showAdvancedNotification, playerId, '~r~Hoshdar-e ghalamro', '~r~Dar khatar!', 'Mantaghe "' .. cfg.label .. '" hadaf-e hamle-ye ehtemali gharar gerefte - az an defa konid!', 'CHAR_MP_DETONATEPHONE', 9)
         end
     end
 
@@ -732,24 +732,24 @@ local function HasBossAccess(xPlayer)
 end
 
 ESX.RegisterServerCallback('Territory:PurchaseUpgrade', function(source, cb, zoneKey, upgradeType)
-    if not Config.Territory.Upgrades or not Config.Territory.Upgrades.Enabled then return cb(false, 'سیستم آپگرید غیرفعال است') end
+    if not Config.Territory.Upgrades or not Config.Territory.Upgrades.Enabled then return cb(false, 'Sisteme upgrade gheyrefaal ast') end
     local upgradeCfg = Config.Territory.Upgrades[upgradeType]
     local state = Territories[zoneKey]
-    if not upgradeCfg or not state then return cb(false, 'درخواست نامعتبر') end
+    if not upgradeCfg or not state then return cb(false, 'Darkhaste namotabar') end
 
     local xPlayer = ESX.GetPlayerFromId(source)
-    if not xPlayer or not xPlayer.gang or xPlayer.gang.name == 'nogang' then return cb(false, 'شما در گنگی نیستید') end
-    if state.owner ~= xPlayer.gang.name then return cb(false, 'این قلمرو متعلق به گنگ شما نیست') end
-    if not HasBossAccess(xPlayer) then return cb(false, 'شما دسترسی مدیریتی ندارید') end
+    if not xPlayer or not xPlayer.gang or xPlayer.gang.name == 'nogang' then return cb(false, 'Shoma dar gang-i nistid') end
+    if state.owner ~= xPlayer.gang.name then return cb(false, 'In ghalamro motaalegh be gang-e shoma nist') end
+    if not HasBossAccess(xPlayer) then return cb(false, 'Shoma dastrasi-e modiriati nadarid') end
 
     local currentLevel = GetUpgradeLevel(zoneKey, upgradeType)
-    if currentLevel >= upgradeCfg.maxLevel then return cb(false, 'این آپگرید به حداکثر سطح رسیده') end
+    if currentLevel >= upgradeCfg.maxLevel then return cb(false, 'In upgrade be hadeaksar-e sath reside') end
 
     local cost = upgradeCfg.cost[currentLevel + 1]
-    if not cost then return cb(false, 'هزینه‌ی این سطح مشخص نیست') end
+    if not cost then return cb(false, 'Hazine-ye in sath moshakhas nist') end
 
     if not RemoveGangMoney(xPlayer.gang.name, cost) then
-        return cb(false, 'پول تمیز کافی در خزانه‌ی گنگ نیست (نیاز: $' .. cost .. ')')
+        return cb(false, 'Pool-e tamiz-e kafi dar khazane-ye gang nist (niaz: $' .. cost .. ')')
     end
 
     local newLevel = currentLevel + 1
@@ -770,7 +770,7 @@ ESX.RegisterServerCallback('Territory:PurchaseUpgrade', function(source, cb, zon
         Webhook = GetCategoryWebhook(xPlayer.gang.name, 'Territory'),
     })
 
-    cb(true, upgradeCfg.label .. ' به سطح ' .. newLevel .. ' ارتقا یافت')
+    cb(true, upgradeCfg.label .. ' be sath-e ' .. newLevel .. ' ertegha yaft')
 end)
 
 -------------------------------------------------------------------
@@ -780,29 +780,29 @@ end)
 -- and are on their own cooldowns so they can't be spammed.
 -------------------------------------------------------------------
 ESX.RegisterServerCallback('Territory:Scout', function(source, cb, zoneKey)
-    if not Config.Territory.Scout or not Config.Territory.Scout.Enabled then return cb(false, 'سیستم شناسایی غیرفعال است') end
+    if not Config.Territory.Scout or not Config.Territory.Scout.Enabled then return cb(false, 'Sisteme shenasaei gheyrefaal ast') end
     local cfg = ZoneConfigByKey[zoneKey]
     local state = Territories[zoneKey]
-    if not cfg or not state then return cb(false, 'منطقه نامعتبر') end
-    if not state.owner then return cb(false, 'این منطقه صاحب ندارد') end
+    if not cfg or not state then return cb(false, 'Mantaghe namotabar') end
+    if not state.owner then return cb(false, 'In mantaghe saheb nadarad') end
 
     local xPlayer = ESX.GetPlayerFromId(source)
-    if not xPlayer or not xPlayer.gang or xPlayer.gang.name == 'nogang' then return cb(false, 'شما در گنگی نیستید') end
+    if not xPlayer or not xPlayer.gang or xPlayer.gang.name == 'nogang' then return cb(false, 'Shoma dar gang-i nistid') end
     if state.owner == xPlayer.gang.name or AreGangsAllied(state.owner, xPlayer.gang.name) then
-        return cb(false, 'این قلمرو متعلق به شما یا هم‌پیمانتونه')
+        return cb(false, 'In ghalamro motaalegh be shoma ya hampeymanetoone')
     end
 
     local now = os.time()
     if (ScoutCooldown[source] or 0) + (Config.Territory.Scout.Cooldown or 600) > now then
-        return cb(false, 'هنوز در کول‌داون شناسایی هستید')
+        return cb(false, 'Hanooz dar cooldown-e shenasaei hastid')
     end
 
     local ped = GetPlayerPed(source)
-    if not ped or ped == 0 then return cb(false, 'خطای داخلی') end
+    if not ped or ped == 0 then return cb(false, 'Khataye dakheli') end
     local pcoords = GetEntityCoords(ped)
     local dx, dy, dz = pcoords.x - cfg.coord.x, pcoords.y - cfg.coord.y, pcoords.z - cfg.coord.z
     if math.sqrt(dx * dx + dy * dy + dz * dz) > (cfg.radius + 10.0) then
-        return cb(false, 'باید داخل خود منطقه باشید')
+        return cb(false, 'Bayad dakhele khod-e mantaghe bashid')
     end
 
     ScoutCooldown[source] = now
@@ -824,7 +824,7 @@ ESX.RegisterServerCallback('Territory:Scout', function(source, cb, zoneKey)
         for _, playerId in ipairs(ESX.GetPlayers()) do
             local xTarget = ESX.GetPlayerFromId(playerId)
             if xTarget and xTarget.gang and xTarget.gang.name == state.owner then
-                TriggerClientEvent(Config.showAdvancedNotification, playerId, '~o~هشدار', '~o~جاسوس شناسایی شد', 'گنگ "' .. xPlayer.gang.name .. '" در حال شناسایی قلمرو "' .. cfg.label .. '" شماست!', 'CHAR_MP_DETONATEPHONE', 9)
+                TriggerClientEvent(Config.showAdvancedNotification, playerId, '~o~Hoshdar', '~o~Jasoos shenasaei shod', 'Gang "' .. xPlayer.gang.name .. '" dar hale shenasaei-e ghalamro "' .. cfg.label .. '" shomast!', 'CHAR_MP_DETONATEPHONE', 9)
             end
         end
     end
@@ -843,13 +843,13 @@ AddEventHandler('Territory:Sabotage', function(zoneKey)
     local xPlayer = ESX.GetPlayerFromId(src)
     if not xPlayer or not xPlayer.gang or xPlayer.gang.name == 'nogang' then return end
     if state.owner == xPlayer.gang.name or AreGangsAllied(state.owner, xPlayer.gang.name) then
-        return TriggerClientEvent(Config.showNotification, src, 'این قلمرو متعلق به شما یا هم‌پیمانتونه', 'error')
+        return TriggerClientEvent(Config.showNotification, src, 'In ghalamro motaalegh be shoma ya hampeymanetoone', 'error')
     end
 
     local key = xPlayer.gang.name .. ':' .. zoneKey
     local now = os.time()
     if (SabotageCooldown[key] or 0) + (Config.Territory.Sabotage.Cooldown or 3600) > now then
-        return TriggerClientEvent(Config.showNotification, src, 'این خرابکاری هنوز در کول‌داونه', 'error')
+        return TriggerClientEvent(Config.showNotification, src, 'In kharabkari hanooz dar cooldoone', 'error')
     end
 
     local ped = GetPlayerPed(src)
@@ -857,22 +857,22 @@ AddEventHandler('Territory:Sabotage', function(zoneKey)
     local pcoords = GetEntityCoords(ped)
     local dx, dy, dz = pcoords.x - cfg.coord.x, pcoords.y - cfg.coord.y, pcoords.z - cfg.coord.z
     if math.sqrt(dx * dx + dy * dy + dz * dz) > (cfg.radius + 10.0) then
-        return TriggerClientEvent(Config.showNotification, src, 'باید داخل خود منطقه باشید', 'error')
+        return TriggerClientEvent(Config.showNotification, src, 'Bayad dakhele khod-e mantaghe bashid', 'error')
     end
 
     SabotageCooldown[key] = now
     state.sabotagedUntil = now + (Config.Territory.Sabotage.DurationSeconds or 7200)
 
-    TriggerClientEvent(Config.showNotification, src, 'خرابکاری با موفقیت انجام شد - درآمد این منطقه برای مدتی کاهش می‌یابد', 'success')
+    TriggerClientEvent(Config.showNotification, src, 'Kharabkari ba movafaghiat anjam shod - daramad-e in mantaghe baraye moddati kahesh miyabad', 'success')
 
     local detected = math.random(1, 100) <= (Config.Territory.Sabotage.DetectionChance or 0)
     for _, playerId in ipairs(ESX.GetPlayers()) do
         local xTarget = ESX.GetPlayerFromId(playerId)
         if xTarget and xTarget.gang and xTarget.gang.name == state.owner then
             local text = detected
-                and ('گنگ "' .. xPlayer.gang.name .. '" در قلمرو "' .. cfg.label .. '" خرابکاری کرد!')
-                or ('یک نفر ناشناس در قلمرو "' .. cfg.label .. '" خرابکاری کرد!')
-            TriggerClientEvent(Config.showAdvancedNotification, playerId, '~r~خرابکاری!', '~r~درآمد کاهش یافت', text, 'CHAR_MP_DETONATEPHONE', 9)
+                and ('Gang "' .. xPlayer.gang.name .. '" dar ghalamro "' .. cfg.label .. '" kharabkari kard!')
+                or ('Yek nafar-e nashenas dar ghalamro "' .. cfg.label .. '" kharabkari kard!')
+            TriggerClientEvent(Config.showAdvancedNotification, playerId, '~r~Kharabkari!', '~r~Daramad kahesh yaft', text, 'CHAR_MP_DETONATEPHONE', 9)
         end
     end
 
@@ -894,33 +894,33 @@ end)
 local PendingAlliances = {} -- PendingAlliances['gangA:gangB'] = true (A proposed to B)
 
 ESX.RegisterServerCallback('Territory:ProposeAlliance', function(source, cb, targetGang)
-    if not Config.Territory.Alliance or not Config.Territory.Alliance.Enabled then return cb(false, 'سیستم اتحاد غیرفعال است') end
+    if not Config.Territory.Alliance or not Config.Territory.Alliance.Enabled then return cb(false, 'Sisteme etehad gheyrefaal ast') end
     local xPlayer = ESX.GetPlayerFromId(source)
-    if not xPlayer or not xPlayer.gang or xPlayer.gang.name == 'nogang' then return cb(false, 'شما در گنگی نیستید') end
-    if not HasBossAccess(xPlayer) then return cb(false, 'شما دسترسی مدیریتی ندارید') end
-    if not Gangs[targetGang] or targetGang == xPlayer.gang.name then return cb(false, 'گنگ مقصد نامعتبر است') end
-    if AreGangsAllied(xPlayer.gang.name, targetGang) then return cb(false, 'شما از قبل با این گنگ متحد هستید') end
+    if not xPlayer or not xPlayer.gang or xPlayer.gang.name == 'nogang' then return cb(false, 'Shoma dar gang-i nistid') end
+    if not HasBossAccess(xPlayer) then return cb(false, 'Shoma dastrasi-e modiriati nadarid') end
+    if not Gangs[targetGang] or targetGang == xPlayer.gang.name then return cb(false, 'Gang-e maghsad namotabar ast') end
+    if AreGangsAllied(xPlayer.gang.name, targetGang) then return cb(false, 'Shoma az ghabl ba in gang mottahed hastid') end
 
     PendingAlliances[xPlayer.gang.name .. ':' .. targetGang] = true
 
     for _, playerId in ipairs(ESX.GetPlayers()) do
         local xTarget = ESX.GetPlayerFromId(playerId)
         if xTarget and xTarget.gang and xTarget.gang.name == targetGang and HasBossAccess(xTarget) then
-            TriggerClientEvent(Config.showAdvancedNotification, playerId, '~b~پیشنهاد اتحاد', '~b~درخواست جدید', 'گنگ "' .. xPlayer.gang.name .. '" پیشنهاد اتحاد داده - با /allyaccept ' .. xPlayer.gang.name .. ' قبول کنید', 'CHAR_MP_DETONATEPHONE', 9)
+            TriggerClientEvent(Config.showAdvancedNotification, playerId, '~b~Pishnahade etehad', '~b~Darkhaste jadid', 'Gang "' .. xPlayer.gang.name .. '" pishnahade etehad dade - az menuye Boss Actions ghabool konid', 'CHAR_MP_DETONATEPHONE', 9)
         end
     end
 
-    cb(true, 'پیشنهاد اتحاد ارسال شد')
+    cb(true, 'Pishnahade etehad ersal shod')
 end)
 
 ESX.RegisterServerCallback('Territory:AcceptAlliance', function(source, cb, proposerGang)
-    if not Config.Territory.Alliance or not Config.Territory.Alliance.Enabled then return cb(false, 'سیستم اتحاد غیرفعال است') end
+    if not Config.Territory.Alliance or not Config.Territory.Alliance.Enabled then return cb(false, 'Sisteme etehad gheyrefaal ast') end
     local xPlayer = ESX.GetPlayerFromId(source)
-    if not xPlayer or not xPlayer.gang or xPlayer.gang.name == 'nogang' then return cb(false, 'شما در گنگی نیستید') end
-    if not HasBossAccess(xPlayer) then return cb(false, 'شما دسترسی مدیریتی ندارید') end
+    if not xPlayer or not xPlayer.gang or xPlayer.gang.name == 'nogang' then return cb(false, 'Shoma dar gang-i nistid') end
+    if not HasBossAccess(xPlayer) then return cb(false, 'Shoma dastrasi-e modiriati nadarid') end
 
     if not PendingAlliances[proposerGang .. ':' .. xPlayer.gang.name] then
-        return cb(false, 'پیشنهاد اتحادی از این گنگ پیدا نشد')
+        return cb(false, 'Pishnahade etehadi az in gang peyda nashod')
     end
     PendingAlliances[proposerGang .. ':' .. xPlayer.gang.name] = nil
 
@@ -937,18 +937,18 @@ ESX.RegisterServerCallback('Territory:AcceptAlliance', function(source, cb, prop
     for _, playerId in ipairs(ESX.GetPlayers()) do
         local xTarget = ESX.GetPlayerFromId(playerId)
         if xTarget and xTarget.gang and (xTarget.gang.name == proposerGang or xTarget.gang.name == xPlayer.gang.name) then
-            TriggerClientEvent(Config.showAdvancedNotification, playerId, '~b~اتحاد', '~b~برقرار شد', 'گنگ‌های "' .. proposerGang .. '" و "' .. xPlayer.gang.name .. '" اکنون متحد هستند!', 'CHAR_MP_DETONATEPHONE', 9)
+            TriggerClientEvent(Config.showAdvancedNotification, playerId, '~b~Etehad', '~b~Barghar shod', 'Gang-haye "' .. proposerGang .. '" va "' .. xPlayer.gang.name .. '" aknoon mottahed hastand!', 'CHAR_MP_DETONATEPHONE', 9)
         end
     end
 
-    cb(true, 'اتحاد با موفقیت برقرار شد')
+    cb(true, 'Etehad ba movafaghiat barghar shod')
 end)
 
 ESX.RegisterServerCallback('Territory:BreakAlliance', function(source, cb, otherGang)
     local xPlayer = ESX.GetPlayerFromId(source)
-    if not xPlayer or not xPlayer.gang or xPlayer.gang.name == 'nogang' then return cb(false, 'شما در گنگی نیستید') end
-    if not HasBossAccess(xPlayer) then return cb(false, 'شما دسترسی مدیریتی ندارید') end
-    if not AreGangsAllied(xPlayer.gang.name, otherGang) then return cb(false, 'اتحادی با این گنگ وجود ندارد') end
+    if not xPlayer or not xPlayer.gang or xPlayer.gang.name == 'nogang' then return cb(false, 'Shoma dar gang-i nistid') end
+    if not HasBossAccess(xPlayer) then return cb(false, 'Shoma dastrasi-e modiriati nadarid') end
+    if not AreGangsAllied(xPlayer.gang.name, otherGang) then return cb(false, 'Etehadi ba in gang vojood nadarad') end
 
     if Alliances[xPlayer.gang.name] then Alliances[xPlayer.gang.name][otherGang] = nil end
     if Alliances[otherGang] then Alliances[otherGang][xPlayer.gang.name] = nil end
@@ -957,7 +957,7 @@ ESX.RegisterServerCallback('Territory:BreakAlliance', function(source, cb, other
         ['@a'] = xPlayer.gang.name, ['@b'] = otherGang,
     })
 
-    cb(true, 'اتحاد لغو شد')
+    cb(true, 'Etehad laghv shod')
 end)
 
 ESX.RegisterServerCallback('Territory:GetAlliances', function(source, cb)
@@ -1001,10 +1001,10 @@ CreateThread(function()
         if Config.Territory.WarNight and Config.Territory.WarNight.Enabled then
             local active = IsWarNight()
             if active and not wasActive then
-                TriggerClientEvent(Config.showAdvancedNotification, -1, '~r~شب جنگ!', '~r~شروع شد', 'زمان تصرف نصف و درآمد قلمروها دوبرابر شد - وقت جنگیدنه!', 'CHAR_MP_DETONATEPHONE', 9)
+                TriggerClientEvent(Config.showAdvancedNotification, -1, '~r~Shabe jang!', '~r~Shoroo shod', 'Zamane tasarrof nesf va daramade ghalamro-ha dobarabar shod - vaghte jangidane!', 'CHAR_MP_DETONATEPHONE', 9)
                 SendLog({ playerid = 'SYSTEM', identifier = '-', discord = '-', category = 'Territory', Text = 'War Night started (half capture time, double income)', gang = '-', Webhook = GetCategoryWebhook(nil, 'Territory') })
             elseif not active and wasActive then
-                TriggerClientEvent(Config.showAdvancedNotification, -1, '~y~شب جنگ', '~y~تمام شد', 'زمان تصرف و درآمد قلمروها به حالت عادی برگشت.', 'CHAR_MP_DETONATEPHONE', 9)
+                TriggerClientEvent(Config.showAdvancedNotification, -1, '~y~Shabe jang', '~y~Tamam shod', 'Zamane tasarrof va daramade ghalamro-ha be halate adi bargasht.', 'CHAR_MP_DETONATEPHONE', 9)
             end
             wasActive = active
         end
@@ -1026,10 +1026,10 @@ if Config.Territory.BossZone and Config.Territory.BossZone.Enabled then
             Wait(30000)
             local open = IsBossZoneOpen()
             if open and not wasOpen then
-                TriggerClientEvent(Config.showAdvancedNotification, -1, '~p~قلمروی پادشاه', '~p~باز شد!', 'قلمروی پادشاه برای ' .. Config.Territory.BossZone.openDurationHours .. ' ساعت آینده باز است - نگهبانان مسلح از آن دفاع می‌کنند!', 'CHAR_MP_DETONATEPHONE', 9)
+                TriggerClientEvent(Config.showAdvancedNotification, -1, '~p~Ghalamroye Padeshah', '~p~Baz shod!', 'Ghalamroye Padeshah baraye ' .. Config.Territory.BossZone.openDurationHours .. ' saat-e ayande baz ast - negahbanane mosallah az an defa mikonand!', 'CHAR_MP_DETONATEPHONE', 9)
                 TriggerClientEvent('Territory:BossZoneState', -1, true)
             elseif not open and wasOpen then
-                TriggerClientEvent(Config.showAdvancedNotification, -1, '~p~قلمروی پادشاه', '~p~بسته شد', 'قلمروی پادشاه تا هفته‌ی آینده بسته است.', 'CHAR_MP_DETONATEPHONE', 9)
+                TriggerClientEvent(Config.showAdvancedNotification, -1, '~p~Ghalamroye Padeshah', '~p~Baste shod', 'Ghalamroye Padeshah ta hafte-ye ayande baste ast.', 'CHAR_MP_DETONATEPHONE', 9)
                 TriggerClientEvent('Territory:BossZoneState', -1, false)
             end
             wasOpen = open

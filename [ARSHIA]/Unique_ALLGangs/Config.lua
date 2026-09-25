@@ -423,12 +423,12 @@ Config.Territory = {
     Enabled = true,
 
     Zones = {
-        { key = 'grove_street',        label = 'خیابان گروو',            coord = vector3(-170.0,  -1609.0,  34.0), radius = 40.0, tier = 1 },
-        { key = 'vespucci_beach',      label = 'ساحل وسپوچی',            coord = vector3(-1180.0, -1520.0,   4.0), radius = 45.0, tier = 1 },
-        { key = 'la_mesa_industrial',  label = 'منطقه صنعتی لامسا',      coord = vector3(850.0,   -1940.0,  31.0), radius = 50.0, tier = 2 },
-        { key = 'del_perro_pier',      label = 'اسکله دل‌پرو',           coord = vector3(-1850.0, -1230.0,  13.0), radius = 45.0, tier = 2 },
-        { key = 'sandy_shores',        label = 'سندی شورز',              coord = vector3(1961.0,   3740.0,  32.0), radius = 55.0, tier = 2 },
-        { key = 'paleto_bay',          label = 'خلیج پالتو',             coord = vector3(-448.0,   6008.0,  31.0), radius = 60.0, tier = 3 },
+        { key = 'grove_street',        label = 'Khiaboone Grove',            coord = vector3(-170.0,  -1609.0,  34.0), radius = 40.0, tier = 1 },
+        { key = 'vespucci_beach',      label = 'Sahele Vespucci',            coord = vector3(-1180.0, -1520.0,   4.0), radius = 45.0, tier = 1 },
+        { key = 'la_mesa_industrial',  label = 'Mantaghe Sanati La Mesa',      coord = vector3(850.0,   -1940.0,  31.0), radius = 50.0, tier = 2 },
+        { key = 'del_perro_pier',      label = 'Eskele Del Perro',           coord = vector3(-1850.0, -1230.0,  13.0), radius = 45.0, tier = 2 },
+        { key = 'sandy_shores',        label = 'Sandy Shores',              coord = vector3(1961.0,   3740.0,  32.0), radius = 55.0, tier = 2 },
+        { key = 'paleto_bay',          label = 'Khalije Paleto',             coord = vector3(-448.0,   6008.0,  31.0), radius = 60.0, tier = 3 },
     },
 
     TierIncome = { -- dirty money ($) paid per zone every IncomeIntervalMinutes
@@ -464,17 +464,17 @@ Config.Territory = {
     Upgrades = {
         Enabled = true,
         alarm = {
-            label = 'سیستم هشدار', maxLevel = 1, cost = { 5000 },
+            label = 'Sisteme Hoshdar', maxLevel = 1, cost = { 5000 },
             -- effect handled directly in the tick: level 1 = instant
             -- notify to the owner the moment a rival gang enters, not
             -- just when they finish capturing.
         },
         production = {
-            label = 'خط تولید', maxLevel = 3, cost = { 8000, 15000, 25000 },
+            label = 'Khatte Tolid', maxLevel = 3, cost = { 8000, 15000, 25000 },
             incomeBonusPerLevel = 0.25, -- +25% zone income per level (stacks)
         },
         fortify = {
-            label = 'استحکامات', maxLevel = 3, cost = { 8000, 15000, 25000 },
+            label = 'Estehkamat', maxLevel = 3, cost = { 8000, 15000, 25000 },
             captureTimeBonusPerLevel = 0.20, -- +20% capture time needed for a challenger, per level (stacks)
         },
     },
@@ -523,7 +523,7 @@ Config.Territory = {
     -------------------------------------------------------------------
     BossZone = {
         Enabled = true,
-        key = 'boss_zone', label = 'قلمروی پادشاه', coord = vector3(2565.0, 2585.0, 37.9), radius = 70.0, tier = 3,
+        key = 'boss_zone', label = 'Ghalamroye Padeshah', coord = vector3(2565.0, 2585.0, 37.9), radius = 70.0, tier = 3,
         bossZone = true,
         openDay = 6,           -- Friday
         openHour = 20,         -- 20:00 server time
@@ -531,7 +531,7 @@ Config.Territory = {
         captureSeconds = 600,  -- must hold ALONE for 10 minutes straight
         guardCount = 4,        -- hostile NPCs guarding it while open (client-side, cosmetic difficulty)
         rewardBlackMoney = 25000,
-        titleReward = 'فرمانروای جزیره', -- cosmetic, shown on HUD/leaderboard for whoever holds it
+        titleReward = 'Farmanravaye Jazire', -- cosmetic, shown on HUD/leaderboard for whoever holds it
     },
 
     -------------------------------------------------------------------

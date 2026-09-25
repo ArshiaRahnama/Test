@@ -14,7 +14,8 @@ server_scripts {
 	'locales/en.lua',
 	'locales/sv.lua',
 	'config.lua',
-	'server/main.lua'
+	'server/main.lua',
+	'server/showroom.lua'
 }
 
 client_scripts {
@@ -24,7 +25,16 @@ client_scripts {
 	'locales/sv.lua',
 	'config.lua',
 	'client/main.lua',
-	'client/marker.lua'
+	'client/marker.lua',
+	'client/showroom.lua'
+}
+
+ui_page 'html/index.html'
+
+files {
+	'html/index.html',
+	'html/style.css',
+	'html/app.js'
 }
 
 dependencies {

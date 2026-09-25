@@ -192,11 +192,10 @@ Config.OilRig.legendary = {
     announceCheckEvery   = 5 * 60, -- seconds between checks for "did the week just turn over"
 
     board = {
-        -- Right next to the Oil Rig start marker/depot (346.798, 3405.46),
-        -- a few meters back so it doesn't sit on top of the marker itself.
-        -- Nudge this if it clips into the wall/steps on your install.
-        coords = vector3(343.4, 3403.2, 36.85),
-        heading = 110.0,
+        -- Exact spot the user placed it at via /coords, right next to
+        -- the Oil Rig start marker/depot.
+        coords = vector3(349.83, 3406.74, 36.43),
+        heading = 21.61,
         ped = 'a_m_m_business_01', -- the "board keeper" -- swap for any ped model you like
         renderDistance = 60.0,
     },

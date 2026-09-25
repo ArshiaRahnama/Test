@@ -98,3 +98,15 @@ Config.Vehicles = {
 	{model = 'longfin', label = 'Longfin', price = 60000000},
 	{model = 'dinghy4', label = 'Dinghy', price = 50000000},
 }
+
+-- ---------------------------------------------------------------------------
+-- Modern showroom UI (new)
+-- ---------------------------------------------------------------------------
+Config.UseModernShopUI = true -- false = fall back to the old text menu (OpenBoatShop)
+
+Config.TestDrive = {
+	Enable      = true,
+	Duration    = 120,  -- seconds
+	MaxDistance = 350.0,
+	EndKey      = 177,  -- INPUT_FRONTEND_DELETE ("Backspace")
+}

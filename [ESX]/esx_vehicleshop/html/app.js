@@ -30,6 +30,23 @@
 		return ICONS.car;
 	}
 
+	const CATEGORY_FA = {
+		compacts: 'کامپکت',
+		coupes: 'کوپه',
+		motorcycles: 'موتور',
+		muscle: 'ماسل',
+		offroad: 'آفرود',
+		sedans: 'سدان',
+		sports: 'اسپرت',
+		sportsclassics: 'اسپرت کلاسیک',
+		super: 'سوپر',
+		suvs: 'شاسی‌بلند',
+		vans: 'ون',
+	};
+	function categoryLabelFa(name, fallback) {
+		return CATEGORY_FA[name] || fallback || name;
+	}
+
 	const state = {
 		open: false,
 		categories: [],
@@ -54,7 +71,7 @@
 
 	function renderCategoryTabs() {
 		const tabs = [{ name: 'all', label: 'همه' }].concat(
-			state.categories.map(c => ({ name: c.name, label: c.label }))
+			state.categories.map(c => ({ name: c.name, label: categoryLabelFa(c.name, c.label) }))
 		);
 
 		el.categoryTabs.innerHTML = '';
@@ -73,7 +90,7 @@
 
 	function categoryLabel(name) {
 		const c = state.categories.find(c => c.name === name);
-		return c ? c.label : name;
+		return categoryLabelFa(name, c ? c.label : name);
 	}
 
 	function renderVehicleList() {

@@ -15,12 +15,20 @@ Citizen.CreateThread(function()
 			if IsControlJustReleased(0, 38) then
 				if CurrentAction == 'air_shop' then
 					if not Config.LicenseEnable then
-						OpenAirShop(Config.Zones.AirShops[CurrentActionData.zoneNum])
+						if Config.UseModernShopUI and OpenAirShopNUI then
+							OpenAirShopNUI(Config.Zones.AirShops[CurrentActionData.zoneNum])
+						else
+							OpenAirShop(Config.Zones.AirShops[CurrentActionData.zoneNum])
+						end
 					else
 
 						ESX.TriggerServerCallback('esx_license:checkLicense', function(hasAirLicense)
 							if hasAirLicense then
-								OpenAirShop(Config.Zones.AirShops[CurrentActionData.zoneNum])
+								if Config.UseModernShopUI and OpenAirShopNUI then
+									OpenAirShopNUI(Config.Zones.AirShops[CurrentActionData.zoneNum])
+								else
+									OpenAirShop(Config.Zones.AirShops[CurrentActionData.zoneNum])
+								end
 							else
 								OpenLicenceMenu(Config.Zones.AirShops[CurrentActionData.zoneNum])
 							end

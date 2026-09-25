@@ -83,6 +83,20 @@ AddEventHandler('esx_uniquejobs:oversight:spectateStart', function(targetId)
 	-- switching target inside a session is allowed; a fresh start is rate limited
 	if not prev and Ov.Throttle(src, 'spectate', Cfg.Spectate.CooldownSeconds) then return end
 
+	-- zone gate: only checked on a FRESH start, never on a mid-session
+	-- target switch (by then the officer's own ped is parked wherever the
+	-- spectate loop last put it -- near the target, not the zone -- so
+	-- re-checking here would fail every switch even for a legit session).
+	if not prev and Cfg.Spectate.RequireZone.Enabled then
+		local ped = GetPlayerPed(src)
+		local coords = (ped and ped ~= 0) and GetEntityCoords(ped) or nil
+		local zone = Cfg.Spectate.RequireZone
+		if not coords or #(coords - zone.Coords) > zone.Radius then
+			Ov.Notify(src, '~r~Baraye Nezarat Bayad Dakhel-e Mahdoode-ye DOJ Bashid')
+			return
+		end
+	end
+
 	local xTarget = ESX.GetPlayerFromId(targetId)
 	if not xTarget then
 		Ov.Notify(src, '~r~Bazikon Peida Nashod')

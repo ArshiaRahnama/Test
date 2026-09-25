@@ -15,12 +15,20 @@ Citizen.CreateThread(function()
 			if IsControlJustReleased(0, 38) then
 				if CurrentAction == 'boat_shop' then
 					if not Config.LicenseEnable then
-						OpenBoatShop(Config.Zones.BoatShops[CurrentActionData.zoneNum])
+						if Config.UseModernShopUI and OpenBoatShopNUI then
+							OpenBoatShopNUI(Config.Zones.BoatShops[CurrentActionData.zoneNum])
+						else
+							OpenBoatShop(Config.Zones.BoatShops[CurrentActionData.zoneNum])
+						end
 					else
 
 						ESX.TriggerServerCallback('esx_license:checkLicense', function(hasBoatLicense)
 							if hasBoatLicense then
-								OpenBoatShop(Config.Zones.BoatShops[CurrentActionData.zoneNum])
+								if Config.UseModernShopUI and OpenBoatShopNUI then
+									OpenBoatShopNUI(Config.Zones.BoatShops[CurrentActionData.zoneNum])
+								else
+									OpenBoatShop(Config.Zones.BoatShops[CurrentActionData.zoneNum])
+								end
 							else
 								OpenLicenceMenu(Config.Zones.BoatShops[CurrentActionData.zoneNum])
 							end

@@ -56,6 +56,16 @@ function Ov.StartSpectate(targetId)
 		ESX.ShowNotification('~r~Aval Az Vasile-ye Naghliye Piyade Shavid')
 		return
 	end
+	-- cheap client-side pre-check so the officer gets instant feedback
+	-- instead of waiting on a round trip -- the server (server/spectate.lua)
+	-- re-checks this for real regardless, this is purely UX.
+	if not Spec.active and Cfg.Spectate.RequireZone.Enabled then
+		local zone = Cfg.Spectate.RequireZone
+		if #(GetEntityCoords(ped) - zone.Coords) > zone.Radius then
+			ESX.ShowNotification('~r~Baraye Nezarat Bayad Dakhel-e Mahdoode-ye DOJ Bashid')
+			return
+		end
+	end
 	TriggerServerEvent('esx_uniquejobs:oversight:spectateStart', targetId)
 end
 

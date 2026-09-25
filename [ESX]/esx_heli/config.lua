@@ -47,3 +47,15 @@ Config.Vehicles = {
 	{model = 'seasparrow', label = 'Seasparrow', price = 30000000},
 	{model = 'havok', label = 'Havok', price = 20000000},
 }
+
+-- ---------------------------------------------------------------------------
+-- Modern showroom UI (new)
+-- ---------------------------------------------------------------------------
+Config.UseModernShopUI = true -- false = fall back to the old text menu (OpenAirShop)
+
+Config.TestDrive = {
+	Enable      = true,
+	Duration    = 120,  -- seconds
+	MaxDistance = 500.0, -- helicopters cover ground fast, give a bigger leash
+	EndKey      = 177,  -- INPUT_FRONTEND_DELETE ("Backspace")
+}

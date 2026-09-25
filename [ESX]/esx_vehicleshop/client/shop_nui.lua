@@ -3,6 +3,8 @@
 -- (the NUI itself has a transparent background - the "photo" is the real car),
 -- orbits a camera around it, and runs test drives.
 
+print('^2[esx_vehicleshop]^7 client/shop_nui.lua loaded - modern showroom UI is available')
+
 local ShowroomOpen      = false
 local PreviewVehicle     = nil
 local PreviewCam         = nil

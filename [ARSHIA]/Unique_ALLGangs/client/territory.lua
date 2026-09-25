@@ -62,7 +62,7 @@ local function RefreshBlip(zoneKey)
     SetBlipColour(markerBlip, color)
     SetBlipAsShortRange(markerBlip, true)
     BeginTextCommandSetBlipName("STRING")
-    AddTextComponentString('قلمرو: ' .. cfg.label .. (state.owner and (' | ' .. state.owner) or ' | آزاد'))
+    AddTextComponentString('Ghalamro: ' .. cfg.label .. (state.owner and (' | ' .. state.owner) or ' | Azad'))
     EndTextCommandSetBlipName(markerBlip)
 
     ZoneBlips[zoneKey] = { radius = radiusBlip, marker = markerBlip }
@@ -130,13 +130,13 @@ CreateThread(function()
                     local state = ZoneState[zoneKey] or {}
                     local statusText
                     if state.contested then
-                        statusText = '~r~درگیری فعال - منطقه مورد مناقشه است'
+                        statusText = '~r~Dargiri faal - mantaghe morede monazee ast'
                     elseif state.owner == PlayerData.gang.name then
-                        statusText = '~g~قلمرو گنگ شما' .. (state.vulnerable and ' ~r~(هدف حمله!)' or '')
+                        statusText = '~g~Ghalamro-ye gang-e shoma' .. (state.vulnerable and ' ~r~(hadafe hamle!)' or '')
                     elseif state.owner then
-                        statusText = '~y~متعلق به: ' .. state.owner .. (state.vulnerable and ' ~r~(آسیب‌پذیر)' or '')
+                        statusText = '~y~Motaalegh be: ' .. state.owner .. (state.vulnerable and ' ~r~(asib-pazir)' or '')
                     else
-                        statusText = '~w~آزاد - در حال تصرف...'
+                        statusText = '~w~Azad - dar hale tasarrof...'
                     end
 
                     Draw3DText(cfg.coord.x, cfg.coord.y, cfg.coord.z + 1.0, cfg.label .. '\n' .. statusText, 4, 0.35, 0.35)
@@ -156,7 +156,7 @@ RegisterCommand('territories', function()
     if not Config.Territory or not Config.Territory.Enabled then return end
     ESX.TriggerServerCallback('Territory:GetLeaderboard', function(list)
         if not list or #list == 0 then
-            ESX.ShowNotification('هنوز هیچ گنگی قلمرویی تصرف نکرده است')
+            ESX.ShowNotification('Hanooz hich gangi ghalamroei tasarrof nakarde ast')
             return
         end
 
@@ -255,7 +255,7 @@ end
 -------------------------------------------------------------------
 function OpenTerritoryUpgradePicker(gang)
     if not Config.Territory.Upgrades or not Config.Territory.Upgrades.Enabled then
-        ESX.ShowNotification('سیستم آپگرید غیرفعال است')
+        ESX.ShowNotification('Sisteme upgrade gheyrefaal ast')
         return OpenTerritoryBossMenu(gang)
     end
 
@@ -319,7 +319,7 @@ function OpenTerritoryTargetPicker(gang, mode)
     local enabled = (mode == 'scout' and Config.Territory.Scout and Config.Territory.Scout.Enabled)
                  or (mode == 'sabotage' and Config.Territory.Sabotage and Config.Territory.Sabotage.Enabled)
     if not enabled then
-        ESX.ShowNotification('این سیستم غیرفعال است')
+        ESX.ShowNotification('In sisteme gheyrefaal ast')
         return OpenTerritoryBossMenu(gang)
     end
 

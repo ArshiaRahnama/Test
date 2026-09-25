@@ -1,0 +1,331 @@
+:root {
+	--void:        transparent;
+	--panel:       rgba(16, 16, 18, 0.86);
+	--panel-soft:  rgba(16, 16, 18, 0.55);
+	--edge:        rgba(255, 255, 255, 0.09);
+	--edge-strong: rgba(255, 255, 255, 0.16);
+	--gold:        #c9a24b;
+	--gold-soft:   rgba(201, 162, 75, 0.16);
+	--text:        #edeae3;
+	--text-dim:    #9b9791;
+	--danger:      #c0453d;
+	--finance:     #6f93bd;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+	margin: 0;
+	width: 100vw;
+	height: 100vh;
+	background: var(--void);
+	color: var(--text);
+	font-family: 'Vazirmatn', sans-serif;
+	overflow: hidden;
+	user-select: none;
+}
+
+.hidden { display: none !important; }
+
+/* ---------------------------------------------------------------- topbar */
+/* Each piece is its own independent fixed-position island, pinned with
+   plain physical left/top/right values (never flex order), so nothing
+   depends on the page's rtl direction and nothing drifts into a corner
+   where the game's own HUD (minimap, phone widgets, notifications)
+   usually lives. .topbar itself has no size - it only exists so the
+   three children are grouped in the markup. */
+
+.topbar {
+	position: fixed;
+	top: 0; left: 0; right: 0;
+	height: 0;
+	z-index: 30;
+	pointer-events: none;
+}
+.topbar > * { pointer-events: auto; }
+
+.icon-btn {
+	position: fixed;
+	top: 24px; left: 30px;
+	width: 40px; height: 40px;
+	border-radius: 50%;
+	border: 1px solid var(--edge-strong);
+	background: rgba(18,18,20,0.85);
+	color: var(--text);
+	font-size: 15px;
+	cursor: pointer;
+	display: flex; align-items: center; justify-content: center;
+	transition: background .15s, transform .15s;
+	backdrop-filter: blur(8px);
+}
+.icon-btn:hover { background: rgba(255,255,255,0.14); transform: scale(1.05); }
+
+.category-tabs {
+	position: fixed;
+	top: 24px;
+	left: 50%;
+	transform: translateX(-50%);
+	display: flex;
+	gap: 6px;
+	padding: 6px;
+	max-width: min(64vw, 880px);
+	overflow-x: auto;
+	background: rgba(10,10,11,0.72);
+	border: 1px solid var(--edge);
+	border-radius: 999px;
+	backdrop-filter: blur(8px);
+}
+.category-tabs::-webkit-scrollbar { height: 0; }
+
+.category-tab {
+	padding: 9px 18px;
+	border-radius: 999px;
+	border: none;
+	background: transparent;
+	color: var(--text-dim);
+	font-family: inherit;
+	font-size: 14px;
+	font-weight: 500;
+	cursor: pointer;
+	white-space: nowrap;
+	flex: none;
+	transition: background .15s, color .15s;
+}
+.category-tab:hover { color: var(--text); }
+.category-tab.active {
+	background: var(--gold);
+	color: #171410;
+	font-weight: 700;
+}
+
+.shop-title {
+	position: fixed;
+	top: 24px;
+	left: 50%;
+	transform: translateX(-50%);
+	margin: 0;
+	font-size: 16px;
+	font-weight: 700;
+	color: var(--text);
+	background: rgba(10,10,11,0.72);
+	border: 1px solid var(--edge);
+	border-radius: 999px;
+	padding: 12px 26px;
+	backdrop-filter: blur(8px);
+	white-space: nowrap;
+}
+
+.wallet {
+	position: fixed;
+	top: 24px; right: 30px;
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	background: rgba(10,10,11,0.72);
+	border: 1px solid var(--edge);
+	border-radius: 12px;
+	padding: 8px 16px;
+	backdrop-filter: blur(8px);
+	min-width: 150px;
+}
+.wallet-row { display: flex; justify-content: space-between; gap: 14px; font-size: 13px; }
+.wallet-label { color: var(--text-dim); }
+.wallet-row span:last-child { font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* ------------------------------------------------------------ vehicle rail */
+/* Self-contained panel (own background/border) so it reads as one distinct
+   card instead of loose floating rows, inset well clear of the right edge
+   (where phone/notification widgets usually sit) and started low enough
+   to clear the topbar row above it. */
+
+.vehicle-rail {
+	position: fixed;
+	top: 92px; bottom: 258px; right: 30px;
+	width: 250px;
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	z-index: 25;
+	background: rgba(10,10,11,0.6);
+	border: 1px solid var(--edge);
+	border-radius: 16px;
+	padding: 14px;
+	backdrop-filter: blur(8px);
+}
+
+.search-input {
+	background: rgba(255,255,255,0.05);
+	border: 1px solid var(--edge);
+	border-radius: 10px;
+	padding: 10px 14px;
+	color: var(--text);
+	font-family: inherit;
+	font-size: 13px;
+}
+.search-input::placeholder { color: var(--text-dim); }
+
+.vehicle-list {
+	overflow-y: auto;
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	padding-left: 2px;
+}
+.vehicle-list::-webkit-scrollbar { width: 4px; }
+.vehicle-list::-webkit-scrollbar-thumb { background: var(--edge-strong); border-radius: 4px; }
+
+.vehicle-card {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 10px 12px;
+	border-radius: 10px;
+	border: 1px solid var(--edge);
+	background: rgba(255,255,255,0.03);
+	cursor: pointer;
+	transition: background .15s, border-color .15s;
+}
+.vehicle-card:hover { background: rgba(255,255,255,0.07); }
+.vehicle-card.active {
+	border-color: var(--gold);
+	background: var(--gold-soft);
+}
+.vehicle-card .icon { width: 22px; height: 22px; flex: none; color: var(--text-dim); }
+.vehicle-card.active .icon { color: var(--gold); }
+.vehicle-card .info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.vehicle-card .name { font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vehicle-card .price { font-size: 11px; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+
+/* --------------------------------------------------------------- rotate */
+
+.rotate-hint {
+	position: fixed;
+	bottom: 244px;
+	left: 50%;
+	transform: translateX(-50%);
+	z-index: 26;
+}
+
+.pill-btn {
+	padding: 9px 18px;
+	border-radius: 999px;
+	border: 1px solid var(--edge-strong);
+	background: rgba(10,10,11,0.7);
+	color: var(--text);
+	font-family: inherit;
+	font-size: 12px;
+	cursor: pointer;
+	backdrop-filter: blur(8px);
+}
+.pill-btn:hover { background: rgba(255,255,255,0.1); }
+
+/* ---------------------------------------------------------- bottom panel */
+/* A single inset, rounded "island" card rather than an edge-to-edge bar -
+   this is what keeps it clear of the minimap (always bottom-left in
+   FiveM) and any bottom-right chat/notification stack. */
+
+.bottom-panel {
+	position: fixed;
+	left: 260px; right: 40px; bottom: 22px;
+	padding: 20px 30px 24px;
+	background: rgba(10,10,11,0.9);
+	border: 1px solid var(--edge);
+	border-radius: 20px;
+	backdrop-filter: blur(10px);
+	box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+	z-index: 25;
+}
+
+.empty-state {
+	text-align: center;
+	color: var(--text-dim);
+	font-size: 15px;
+	padding: 20px 0 6px;
+}
+
+.vehicle-heading { display: flex; align-items: baseline; gap: 14px; margin-bottom: 14px; }
+.vehicle-heading h1 { margin: 0; font-size: 30px; font-weight: 900; }
+.category-pill {
+	border: 1px solid var(--gold);
+	color: var(--gold);
+	border-radius: 999px;
+	padding: 4px 14px;
+	font-size: 12px;
+	font-weight: 700;
+}
+
+.stats-row { display: flex; gap: 26px; margin-bottom: 16px; align-items: center; flex-wrap: wrap; }
+.stat { width: 140px; }
+.stat-plain-wrap { width: auto; }
+.stat-label { display: block; font-size: 11px; color: var(--text-dim); margin-bottom: 6px; }
+.stat-bar { height: 6px; border-radius: 3px; background: rgba(255,255,255,0.08); overflow: hidden; }
+.stat-fill { height: 100%; width: 0%; border-radius: 3px; background: linear-gradient(to left, var(--gold), #8a6d2c); transition: width .4s; }
+.stat-plain { font-size: 18px; font-weight: 700; }
+
+.price-row { display: flex; align-items: flex-end; gap: 30px; margin-bottom: 14px; flex-wrap: wrap; }
+.price-block { display: flex; flex-direction: column; gap: 6px; }
+.price-label { font-size: 11px; color: var(--text-dim); }
+.price-value { font-size: 24px; font-weight: 900; font-variant-numeric: tabular-nums; }
+.price-value.accent { color: var(--gold); }
+
+#tradeInSelect {
+	background: rgba(255,255,255,0.05);
+	border: 1px solid var(--edge-strong);
+	color: var(--text);
+	border-radius: 8px;
+	padding: 8px 10px;
+	font-family: inherit;
+	font-size: 13px;
+	max-width: 220px;
+}
+
+.finance-breakdown {
+	border: 1px solid rgba(111,147,189,0.4);
+	background: rgba(111,147,189,0.1);
+	color: var(--finance);
+	border-radius: 10px;
+	padding: 10px 14px;
+	font-size: 12.5px;
+	margin-bottom: 14px;
+	line-height: 1.8;
+}
+
+.actions-row { display: flex; gap: 12px; flex-wrap: wrap; }
+.action-btn {
+	flex: 1;
+	min-width: 140px;
+	padding: 15px;
+	border-radius: 10px;
+	border: 1px solid var(--edge-strong);
+	background: rgba(255,255,255,0.04);
+	color: var(--text);
+	font-family: inherit;
+	font-size: 14.5px;
+	font-weight: 700;
+	cursor: pointer;
+	transition: background .15s, transform .1s;
+}
+.action-btn:hover { background: rgba(255,255,255,0.1); transform: translateY(-1px); }
+.action-btn:disabled { opacity: 0.38; cursor: not-allowed; transform: none; }
+.action-btn.primary { background: var(--gold); border-color: var(--gold); color: #171410; }
+.action-btn.primary:hover { background: #d9b25c; }
+
+/* ------------------------------------------------------------ test drive */
+
+.test-drive-hud {
+	position: fixed;
+	top: 26px; left: 50%;
+	transform: translateX(-50%);
+	display: flex;
+	align-items: center;
+	gap: 16px;
+	padding: 10px 22px;
+	background: rgba(8,8,9,0.8);
+	border: 1px solid var(--edge-strong);
+	border-radius: 14px;
+	backdrop-filter: blur(8px);
+	z-index: 40;
+}
+.test-drive-label { font-size: 12px; color: var(--text-dim); }
+#testDriveTimer { font-size: 22px; font-weight: 900; color: var(--gold); font-variant-numeric: tabular-nums; }
+.test-drive-hint { font-size: 12px; color: var(--text-dim); }
