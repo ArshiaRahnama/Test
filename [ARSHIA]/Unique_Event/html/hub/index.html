@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>Unique Events Hub</title>
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+        width: 100%; height: 100%;
+        background: transparent;
+        font-family: 'Bahnschrift', 'Vazirmatn', 'Segoe UI', Tahoma, sans-serif;
+        overflow: hidden;
+        user-select: none;
+    }
+
+    #root {
+        width: 100%; height: 100%;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+    }
+    #root.visible { display: flex; }
+
+    #overlay {
+        position: absolute; inset: 0;
+        background: radial-gradient(circle at 50% 20%, rgba(40, 5, 10, 0.55), rgba(4, 2, 3, 0.88) 70%);
+        backdrop-filter: blur(6px);
+        opacity: 0;
+        transition: opacity .35s ease;
+    }
+    #root.visible #overlay { opacity: 1; }
+
+    #overlay::before {
+        content: "";
+        position: absolute; inset: 0;
+        background-image:
+            linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+        background-size: 42px 42px;
+        pointer-events: none;
+    }
+
+    #hub {
+        position: relative;
+        width: min(1180px, 92vw);
+        max-height: 88vh;
+        opacity: 0;
+        transform: translateY(24px) scale(.97);
+        transition: opacity .38s cubic-bezier(.2,.9,.25,1), transform .38s cubic-bezier(.2,.9,.25,1);
+        display: flex;
+        flex-direction: column;
+        gap: 22px;
+    }
+    #root.visible #hub { opacity: 1; transform: translateY(0) scale(1); }
+
+    #hub-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 18px 26px;
+        background: linear-gradient(135deg, rgba(20,10,12,.92), rgba(10,6,7,.92));
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 16px;
+        box-shadow: 0 18px 40px rgba(0,0,0,.55), inset 0 0 60px rgba(192,38,58,.06);
+        position: relative;
+        overflow: hidden;
+    }
+    #hub-header::after {
+        content:"";
+        position:absolute; top:0; right:-40%;
+        width: 60%; height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,84,104,.14), transparent);
+        animation: sweep 5s linear infinite;
+    }
+    @keyframes sweep {
+        0% { transform: translateX(0); }
+        100% { transform: translateX(-160%); }
+    }
+
+    #hub-title-left { display: flex; align-items: center; gap: 14px; z-index: 1; }
+
+    #hub-back {
+        width: 38px; height: 38px;
+        border-radius: 10px;
+        background: rgba(255,255,255,.05);
+        border: 1px solid rgba(255,255,255,.12);
+        color: #d6d6d6;
+        font-size: 17px;
+        display: none;
+        align-items: center; justify-content: center;
+        cursor: pointer;
+        transition: all .18s ease;
+        flex: none;
+    }
+    #hub-back:hover { background: var(--hub-accent-soft, rgba(255,84,104,.18)); border-color: var(--hub-accent, rgba(255,84,104,.5)); color: #fff; }
+    #root.view-stats #hub-back { display: flex; }
+
+    #hub-title-wrap { display:flex; flex-direction: column; gap: 4px; z-index: 1; }
+    #hub-title {
+        font-size: 30px;
+        font-weight: 800;
+        letter-spacing: 2px;
+        background: linear-gradient(90deg, #fff 10%, #ff5468 55%, #ff9d2f 90%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        text-shadow: 0 0 26px rgba(255,84,104,.25);
+    }
+    #hub-sub {
+        font-size: 12.5px;
+        color: #9aa0a6;
+        letter-spacing: .5px;
+    }
+
+    #hub-close {
+        z-index: 1;
+        width: 38px; height: 38px;
+        border-radius: 10px;
+        background: rgba(255,255,255,.05);
+        border: 1px solid rgba(255,255,255,.12);
+        color: #d6d6d6;
+        font-size: 17px;
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer;
+        transition: all .18s ease;
+    }
+    #hub-close:hover {
+        background: rgba(255,84,104,.18);
+        border-color: rgba(255,84,104,.5);
+        color: #fff;
+        transform: rotate(90deg);
+    }
+
+    #cards {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 18px;
+    }
+
+    #view-stats { display: none; flex-direction: column; gap: 14px; }
+    #root.view-stats #view-cards { display: none; }
+    #root.view-stats #view-stats { display: flex; }
+
+    .stats-panel {
+        --accent: #ff5468;
+        --accent-soft: rgba(255,84,104,.16);
+        background: linear-gradient(160deg, rgba(22,13,14,.94), rgba(12,7,8,.96));
+        border: 1px solid rgba(255,255,255,.07);
+        border-radius: 18px;
+        padding: 22px 24px;
+        box-shadow: 0 14px 30px rgba(0,0,0,.45), inset 0 0 40px var(--accent-soft);
+        min-height: 320px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .stats-title { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 700; color: #fff; }
+    .stats-title .card-icon { width: 34px; height: 34px; font-size: 16px; }
+
+    table.stats-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+    table.stats-table thead th {
+        text-align: right;
+        color: #9aa0a6;
+        font-weight: 600;
+        padding: 8px 10px;
+        border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+    table.stats-table thead th:first-child { width: 42px; text-align: center; }
+    table.stats-table tbody td {
+        padding: 9px 10px;
+        color: #dfe2e6;
+        border-bottom: 1px solid rgba(255,255,255,.04);
+    }
+    table.stats-table tbody tr:hover { background: rgba(255,255,255,.03); }
+    table.stats-table tbody td:first-child { text-align: center; font-weight: 800; color: var(--accent); }
+    table.stats-table tbody tr:nth-child(1) td:first-child { color: #ffd76a; }
+    table.stats-table tbody tr:nth-child(2) td:first-child { color: #d7dbe0; }
+    table.stats-table tbody tr:nth-child(3) td:first-child { color: #d99a63; }
+
+    .stats-empty, .stats-loading {
+        margin: auto;
+        color: #7d8186;
+        font-size: 13px;
+        text-align: center;
+        padding: 30px 0;
+    }
+
+    .card {
+        --accent: #ff5468;
+        --accent-soft: rgba(255,84,104,.16);
+        position: relative;
+        background: linear-gradient(160deg, rgba(22,13,14,.94), rgba(12,7,8,.96));
+        border: 1px solid rgba(255,255,255,.07);
+        border-radius: 18px;
+        padding: 22px 20px 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        overflow: hidden;
+        opacity: 0;
+        transform: translateY(16px);
+        animation: cardIn .45s ease forwards;
+        box-shadow: 0 14px 30px rgba(0,0,0,.45);
+        transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease;
+    }
+    .card:hover {
+        border-color: var(--accent);
+        box-shadow: 0 18px 36px rgba(0,0,0,.55), 0 0 0 1px var(--accent-soft), 0 0 30px var(--accent-soft);
+        transform: translateY(-3px);
+    }
+    .card:nth-child(1) { animation-delay: .05s; }
+    .card:nth-child(2) { animation-delay: .13s; }
+    .card:nth-child(3) { animation-delay: .21s; }
+    @keyframes cardIn { to { opacity: 1; transform: translateY(0); } }
+
+    .card::before {
+        content:"";
+        position: absolute; top: -40%; left: -20%;
+        width: 60%; height: 180%;
+        background: var(--accent-soft);
+        filter: blur(30px);
+        opacity: .5;
+        pointer-events: none;
+    }
+
+    .card-top { display: flex; align-items: center; gap: 12px; z-index: 1; }
+    .card-icon {
+        width: 46px; height: 46px;
+        border-radius: 12px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 22px;
+        background: var(--accent-soft);
+        border: 1px solid var(--accent);
+        box-shadow: 0 0 18px var(--accent-soft);
+    }
+    .card-title-wrap { display: flex; flex-direction: column; }
+    .card-title { font-size: 17px; font-weight: 700; color: #fff; }
+    .card-title-en { font-size: 10.5px; letter-spacing: 3px; color: var(--accent); font-weight: 700; }
+
+    .card-desc {
+        font-size: 12.5px;
+        line-height: 1.9;
+        color: #b6b9bd;
+        z-index: 1;
+        min-height: 44px;
+    }
+
+    .card-badge {
+        z-index: 1;
+        align-self: flex-start;
+        font-size: 10.5px;
+        padding: 3px 10px;
+        border-radius: 20px;
+        background: var(--accent-soft);
+        border: 1px solid var(--accent);
+        color: #fff;
+        letter-spacing: .5px;
+    }
+
+    .card-actions { display: flex; flex-direction: column; gap: 8px; z-index: 1; margin-top: auto; }
+
+    .btn {
+        border: none;
+        border-radius: 10px;
+        padding: 10px 14px;
+        font-family: inherit;
+        font-size: 13px;
+        font-weight: 700;
+        cursor: pointer;
+        display: flex; align-items: center; justify-content: center; gap: 6px;
+        transition: transform .15s ease, filter .15s ease, box-shadow .15s ease;
+    }
+    .btn:active { transform: scale(.97); }
+
+    .btn-primary {
+        background: linear-gradient(135deg, var(--accent), rgba(255,255,255,0.06));
+        color: #100405;
+        box-shadow: 0 8px 18px var(--accent-soft);
+    }
+    .btn-primary:hover { filter: brightness(1.1); box-shadow: 0 10px 22px var(--accent-soft); }
+
+    .btn-outline {
+        background: rgba(255,255,255,.04);
+        border: 1px solid rgba(255,255,255,.14);
+        color: #dfe2e6;
+    }
+    .btn-outline:hover { border-color: var(--accent); color: #fff; background: var(--accent-soft); }
+
+    .btn-row { display: flex; gap: 8px; }
+    .btn-row .btn-outline { flex: 1; }
+
+    #hub-footer {
+        text-align: center;
+        font-size: 11px;
+        color: #6d7176;
+        letter-spacing: .5px;
+    }
+    #hub-footer b { color: #a7abb0; }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,84,104,.4); border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<div id="root">
+    <div id="overlay"></div>
+    <div id="hub">
+        <div id="hub-header">
+            <div id="hub-title-left">
+                <div id="hub-back">→</div>
+                <div id="hub-title-wrap">
+                    <div id="hub-title">UNIQUE EVENTS</div>
+                    <div id="hub-sub">مرکز رویدادهای سرور &nbsp;•&nbsp; همه‌چیز از یه‌جا</div>
+                </div>
+            </div>
+            <div id="hub-close">✕</div>
+        </div>
+
+        <div id="view-cards">
+            <div id="cards"></div>
+        </div>
+
+        <div id="view-stats">
+            <div class="stats-panel">
+                <div class="stats-title">
+                    <div class="card-icon" id="stats-icon"></div>
+                    <span id="stats-heading"></span>
+                </div>
+                <div id="stats-body"></div>
+            </div>
+        </div>
+
+        <div id="hub-footer">برای پیوستن به هر رویداد فقط کافیه دکمه‌ی <b>پیوستن</b> رو بزنی • دکمه‌ی <b>شروع</b> فقط برای ادمین‌هاست • خروج: <b>Esc</b></div>
+    </div>
+</div>
+
+<script>
+    const root = document.getElementById('root');
+    const cardsEl = document.getElementById('cards');
+    const closeBtn = document.getElementById('hub-close');
+    const backBtn = document.getElementById('hub-back');
+    const hubTitle = document.getElementById('hub-title');
+    const hubSub = document.getElementById('hub-sub');
+    const statsIcon = document.getElementById('stats-icon');
+    const statsHeading = document.getElementById('stats-heading');
+    const statsBody = document.getElementById('stats-body');
+    const statsPanelEl = document.querySelector('.stats-panel');
+
+    let currentEvents = [];
+
+    function post(name, data) {
+        return fetch(`https://Unique_Event/${name}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json; charset=UTF-8' },
+            body: JSON.stringify(data || {}),
+        }).then((r) => r.json().catch(() => null)).catch(() => null);
+    }
+
+    function runCommand(cmd) {
+        post('runCommand', { cmd });
+    }
+
+    function closeMenu() {
+        root.classList.remove('visible');
+        post('closeMenu', {});
+    }
+
+    function showCardsView() {
+        root.classList.remove('view-stats');
+        hubTitle.textContent = 'UNIQUE EVENTS';
+        hubSub.textContent = 'مرکز رویدادهای سرور  •  همه‌چیز از یه‌جا';
+    }
+
+    async function openStats(ev) {
+        root.classList.add('view-stats');
+        hubTitle.textContent = ev.name;
+        hubSub.textContent = ev.nameEn + '  •  Top 10';
+        statsIcon.textContent = ev.icon;
+        statsHeading.textContent = 'برترین‌های ' + ev.name;
+        statsPanelEl.style.setProperty('--accent', ev.color);
+        statsPanelEl.style.setProperty('--accent-soft', ev.colorSoft);
+        backBtn.style.setProperty('--hub-accent', ev.color);
+        backBtn.style.setProperty('--hub-accent-soft', ev.colorSoft);
+        statsBody.innerHTML = '<div class="stats-loading">در حال بارگذاری…</div>';
+
+        const result = await post('getStats', { id: ev.id });
+        const cols = (result && result.cols) || [];
+        const rows = (result && result.rows) || [];
+
+        if (!rows.length) {
+            statsBody.innerHTML = '<div class="stats-empty">هنوز آماری برای ' + ev.name + ' ثبت نشده.</div>';
+            return;
+        }
+
+        const head = '<th>#</th><th>نام</th>' + cols.map((c) => `<th>${c.label}</th>`).join('');
+        const body = rows.map((row, i) => {
+            const cells = cols.map((c) => `<td>${row[c.key] ?? 0}</td>`).join('');
+            return `<tr><td>${i + 1}</td><td>${row.name ?? '-'}</td>${cells}</tr>`;
+        }).join('');
+
+        statsBody.innerHTML = `<table class="stats-table"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`;
+    }
+
+    closeBtn.addEventListener('click', closeMenu);
+    backBtn.addEventListener('click', showCardsView);
+
+    document.addEventListener('keyup', (e) => {
+        if (e.key !== 'Escape') return;
+        if (root.classList.contains('view-stats')) showCardsView();
+        else closeMenu();
+    });
+
+    function renderCards(events) {
+        currentEvents = events;
+        cardsEl.innerHTML = '';
+        events.forEach((ev) => {
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.style.setProperty('--accent', ev.color);
+            card.style.setProperty('--accent-soft', ev.colorSoft);
+
+            const badge = ev.canStart
+                ? `<div class="card-badge">دسترسی ادمین فعاله</div>`
+                : `<div class="card-badge" style="opacity:.65">حالت پلیر</div>`;
+
+            const startBtn = ev.canStart
+                ? `<button class="btn btn-outline" data-cmd="start" data-id="${ev.id}" style="border-color:var(--accent);color:#fff;">🛠 شروع رویداد</button>`
+                : '';
+
+            card.innerHTML = `
+                <div class="card-top">
+                    <div class="card-icon">${ev.icon}</div>
+                    <div class="card-title-wrap">
+                        <div class="card-title">${ev.name}</div>
+                        <div class="card-title-en">${ev.nameEn}</div>
+                    </div>
+                </div>
+                <div class="card-desc">${ev.desc}</div>
+                ${badge}
+                <div class="card-actions">
+                    <button class="btn btn-primary" data-cmd="join" data-id="${ev.id}">🚀 پیوستن</button>
+                    <div class="btn-row">
+                        <button class="btn btn-outline" data-cmd="stats" data-id="${ev.id}">📊 آمار</button>
+                        <button class="btn btn-outline" data-cmd="panel" data-id="${ev.id}">🎛 منوی اصلی</button>
+                    </div>
+                    ${startBtn}
+                </div>
+            `;
+            cardsEl.appendChild(card);
+        });
+
+        cardsEl.querySelectorAll('button[data-cmd]').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                const id = btn.dataset.id;
+                const action = btn.dataset.cmd;
+                const ev = currentEvents.find((e) => e.id === id);
+                if (!ev) return;
+
+                if (action === 'stats') {
+                    openStats(ev);
+                    return;
+                }
+
+                root.classList.remove('visible');
+                if (action === 'join') runCommand(ev.joinCmd);
+                if (action === 'start') runCommand(ev.startCmd);
+                if (action === 'panel') runCommand(ev.panelCmd);
+            });
+        });
+    }
+
+    window.addEventListener('message', (e) => {
+        const data = e.data;
+        if (!data || !data.action) return;
+
+        if (data.action === 'hubOpen') {
+            showCardsView();
+            renderCards(data.events || []);
+            root.classList.add('visible');
+        }
+
+        if (data.action === 'hubClose') {
+            root.classList.remove('visible');
+        }
+    });
+</script>
+</body>
+</html>
+

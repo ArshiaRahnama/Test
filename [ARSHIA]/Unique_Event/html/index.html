@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Unique_Event</title>
+<style>
+    html, body {
+        margin: 0; padding: 0;
+        width: 100%; height: 100%;
+        background: transparent;
+        overflow: hidden;
+    }
+
+    /*
+        هر بازی توی iframe جدا لود میشه - دقیقاً همون HTML/CSS/JS خودشو
+        داره، بدون هیچ تغییری در منطق. صفر تداخل بین استایل‌ها/آیدی‌ها/
+        متغیرهای جاوااسکریپتشون. pointer-events پیش‌فرض none هست (پایین‌تر
+        توضیح داده شده چطور فقط وقتی لازمه auto میشه).
+    */
+    .game-frame {
+        position: fixed;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        border: none;
+        background: transparent;
+        pointer-events: none;
+    }
+</style>
+</head>
+<body>
+
+    <iframe id="frame-warzone" class="game-frame" src="warzone/ui.html"></iframe>
+    <iframe id="frame-gungame" class="game-frame" src="gungame/index.html"></iframe>
+    <iframe id="frame-capture" class="game-frame" src="capture/index.html"></iframe>
+
+    <!-- منوی جدید /event -->
+    <iframe id="frame-hub" class="game-frame" src="hub/index.html"></iframe>
+
+<script>
+    const frames = {
+        warzone: document.getElementById('frame-warzone'),
+        gungame: document.getElementById('frame-gungame'),
+        capture: document.getElementById('frame-capture'),
+        hub:     document.getElementById('frame-hub'),
+    };
+
+    /*
+        پیام‌هایی که از لوا با SendNUIMessage میان، همون‌طوری که همیشه
+        بودن دست‌نخورده به هر سه iframe بازی پخش میشن (broadcast).
+        هر بازی داخل خودش فقط پیام‌های مخصوص خودشو تشخیص میده:
+          - WarZone   -> با فیلد "message"
+          - GunGame   -> با فیلد "action" (showCountdown/showTimer/...)
+          - Capture   -> با فیلد "action" (updateData/openDashboard/...)
+        این سه مجموعه value هیچ‌جا با هم برخورد ندارن، پس broadcast کردن
+        کاملاً امنه و هرکدوم فقط چیزی که مال خودشه رو اجرا میکنه.
+
+        پیام‌های خودِ منوی /event با action:"hubOpen"/"hubClose" جدا تگ
+        میشن و فقط برای frame-hub فرستاده میشن.
+    */
+    /*
+        هر چهارتا iframe پیش‌فرض pointer-events:none هستن (کلیک از روشون
+        رد میشه رد بشه سمت زیرین/بازی). هرکدوم وقتی چیزی واقعاً روی
+        صفحه نشونش میده (لابی وارزون، پنل ادمین وارزون، داشبورد کپچر،
+        یا خودِ منوی هاب) با یه پیام کوچیک به این صفحه خبر میده، و فقط
+        اون‌موقع pointer-events:auto میشه تا کلیک‌ها بهش برسه. GunGame
+        اصلاً دکمه‌ای نداره (فقط HUD غیرفعاله) پس همیشه none میمونه.
+    */
+    function setInteractive(name, on) {
+        const f = frames[name];
+        if (!f) return;
+        f.style.pointerEvents = on ? 'auto' : 'none';
+        if (on) { try { f.contentWindow.focus(); } catch (e) {} }
+        else { try { window.focus(); } catch (e) {} }
+    }
+
+    window.addEventListener('message', (event) => {
+        const data = event.data;
+        if (!data) return;
+
+        // پینگ‌های داخلیِ لایه‌بندی (فقط برای این صفحه‌ی مرکزی، به هیچ iframe ای فوروارد نمیشن)
+        if (data.__frame) {
+            setInteractive(data.__frame, !!data.__visible);
+            return;
+        }
+
+        if (data.action === 'hubOpen' || data.action === 'hubClose') {
+            setInteractive('hub', data.action === 'hubOpen');
+            frames.hub.contentWindow.postMessage(data, '*');
+            return;
+        }
+
+        // پیام‌های خود بازی‌ها (کاملاً دست‌نخورده، دقیقاً مثل قبل) پخش میشه به هر سه؛
+        // هرکدوم فقط چیزی که مال خودشه رو تشخیص میده (namespace هاشون تداخل نداره)
+        frames.warzone.contentWindow.postMessage(data, '*');
+        frames.gungame.contentWindow.postMessage(data, '*');
+        frames.capture.contentWindow.postMessage(data, '*');
+    });
+
+    // اگه هاب چیزی نیاز داشت به لوا برسونه (مثل اجرای یه کامند)، مستقیم
+    // با fetch به خودِ ریسورس (Unique_Event) میره - نیازی به رله نیست.
+</script>
+</body>
+</html>

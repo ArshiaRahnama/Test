@@ -4,10 +4,25 @@
 -- now lives here). Event names keep their original 'unique_rent:' prefix, so
 -- nothing about the client<->server contract changed.
 --
--- ESX is NOT re-fetched here - shared/server.lua (loaded earlier) already
--- does `ESX = nil` + the esx:getSharedObject wait-loop for the whole
--- resource, so this file just uses that same global.
+-- BUGFIX: this used to assume shared/server.lua (loaded earlier) would have
+-- ESX ready by the time this file needed it, since it's loaded after
+-- shared/server.lua in fxmanifest.lua. That's true for the event handlers
+-- below (RegisterServerEvent/AddEventHandler bodies only run later, once ESX
+-- is definitely set) - but NOT for the ESX.RegisterServerCallback(...) call
+-- further down, which runs immediately as this file loads. shared/server.lua
+-- fetches ESX inside a CreateThread, which only *schedules* that fetch for
+-- the next tick rather than blocking - so at the exact moment this file's
+-- top-level code runs, ESX could still be nil, and indexing
+-- ESX.RegisterServerCallback on a nil ESX is exactly the crash this caused
+-- (`attempt to index a nil value (global 'ESX')` at rent_server.lua:54). This
+-- fetch is synchronous (TriggerEvent, not a Wait-loop) and resolves
+-- immediately since essentialmode is a dependency and is already running by
+-- the time any of this resource's scripts load, so ESX is guaranteed to be
+-- set below.
 ------------------------------------------------------------------------------------
+if not ESX then
+	TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
+end
 
 -- SECURITY: price is never trusted from the client. It's always recomputed
 -- here from Config.RentVehicles (base price for the model) ×

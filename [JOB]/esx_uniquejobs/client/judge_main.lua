@@ -2546,7 +2546,12 @@ function OpenFinev2Menu_judge(PlayerId)
 									if closestPlayer == -1 or closestDistance > 3.0 then
 										ESX.ShowNotification("~r~ Kasi Baraye Jarime Nazdike Shoma Nist.")
 									else
-										TriggerServerEvent('esx_billing:send2Bill', PlayerId, 'society_judge', 'Jarime: '..dalilfine, mablaghejarime)
+										-- BUGFIX: was billed to 'society_judge' - that name is only ever
+										-- registered as the armory/evidence datastore, never as the actual
+										-- esx_addonaccount money account (that's 'society_doj', see
+										-- server/judge_main.lua's registerSociety call). Fines were landing
+										-- nowhere spendable.
+										TriggerServerEvent('esx_billing:send2Bill', PlayerId, 'society_doj', 'Jarime: '..dalilfine, mablaghejarime)
 										TriggerServerEvent("JudgeBillingWebhook", Playerid, mablaghejarime, dalilfine)
 										if mablaghejarime >= 100 then
 
@@ -2622,6 +2627,13 @@ function ShowPlayerLicense_judge(player)
 		function(data, menu)
 			ESX.ShowNotification(_U('licence_you_revoked', data.current.label, targetName))
 			TriggerServerEvent('esx_judgejob:message', GetPlayerServerId(player), _U('license_revoked', data.current.label))
+
+			-- Revocation fee (added per request): billed to the citizen whose
+			-- license this is, straight into society_doj. Its own event
+			-- (not esx_billing:send2Bill) so it doesn't also count as a
+			-- "fine" for the Coin/XP quest bridge - this is a license action,
+			-- not a citation.
+			TriggerServerEvent('esx_judgejob:licenseRevocationFee', GetPlayerServerId(player), data.current.label)
 
 			TriggerServerEvent('esx_license:removeLicense', GetPlayerServerId(player), data.current.value)
 

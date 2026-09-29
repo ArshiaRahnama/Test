@@ -136,6 +136,19 @@ $(document).on('click', '.phone-application', function(e){
         return;
     }
 
+    // Discord opens its own full-screen UI (the .discord-backdrop in
+    // index.html, a body-level sibling of .container — like a real desktop
+    // Discord window) instead of the old cramped screen embedded in the
+    // phone frame. Same handoff pattern as Bank above, just without needing
+    // a separate resource since the UI lives right here.
+    if (PressedApplication == "discord") {
+        if (CanOpenApp && MI.Phone.Data.currentApplication == null) {
+            MI.Phone.Functions.Close();
+            $.post('http://Unique_Phone/OpenExternalDiscord', JSON.stringify({}));
+        }
+        return;
+    }
+
     var AppObject = $("."+PressedApplication+"-app");
 
     if (AppObject.length !== 0) {
@@ -697,6 +710,57 @@ $(document).ready(function(){
                 break;
             case "RefreshWhatsappAlerts":
                 MI.Phone.Functions.ReloadWhatsappAlerts(event.data.Chats);
+                break;
+            case "Discord_Open":
+                if (typeof Discord_Init === "function") { Discord_Init(event.data.myName); }
+                break;
+            case "DiscordNewMessage":
+                if (typeof Discord_HandleIncomingMessage === "function") { Discord_HandleIncomingMessage(event.data.data); }
+                break;
+            case "DiscordNewChannel":
+                if (typeof Discord_HandleNewChannel === "function") { Discord_HandleNewChannel(event.data.data); }
+                break;
+            case "DiscordServerDeleted":
+                if (typeof Discord_HandleServerDeleted === "function") { Discord_HandleServerDeleted(event.data.data); }
+                break;
+            case "DiscordChannelDeleted":
+                if (typeof Discord_HandleChannelDeleted === "function") { Discord_HandleChannelDeleted(event.data.data); }
+                break;
+            case "DiscordReactionsUpdated":
+                if (typeof Discord_HandleReactionsUpdated === "function") { Discord_HandleReactionsUpdated(event.data.data); }
+                break;
+            case "DiscordMessageEdited":
+                if (typeof Discord_HandleMessageEdited === "function") { Discord_HandleMessageEdited(event.data.data); }
+                break;
+            case "DiscordMessageDeleted":
+                if (typeof Discord_HandleMessageDeleted === "function") { Discord_HandleMessageDeleted(event.data.data); }
+                break;
+            case "DiscordMessagePinToggled":
+                if (typeof Discord_HandleMessagePinToggled === "function") { Discord_HandleMessagePinToggled(event.data.data); }
+                break;
+            case "DiscordMemberKicked":
+                if (typeof Discord_HandleMemberKicked === "function") { Discord_HandleMemberKicked(event.data.data); }
+                break;
+            case "DiscordYouWereKicked":
+                if (typeof Discord_HandleYouWereKicked === "function") { Discord_HandleYouWereKicked(event.data.data); }
+                break;
+            case "DiscordServerUpdated":
+                if (typeof Discord_HandleServerUpdated === "function") { Discord_HandleServerUpdated(event.data.data); }
+                break;
+            case "DiscordMemberAdminToggled":
+                if (typeof Discord_HandleMemberAdminToggled === "function") { Discord_HandleMemberAdminToggled(event.data.data); }
+                break;
+            case "DiscordBanned":
+                if (typeof Discord_HandleBanned === "function") { Discord_HandleBanned(event.data.data); }
+                break;
+            case "DiscordChannelUpdated":
+                if (typeof Discord_HandleChannelUpdated === "function") { Discord_HandleChannelUpdated(event.data.data); }
+                break;
+            case "DiscordProfileUpdated":
+                if (typeof Discord_HandleProfileUpdated === "function") { Discord_HandleProfileUpdated(event.data.data); }
+                break;
+            case "DiscordTyping":
+                if (typeof Discord_HandleTyping === "function") { Discord_HandleTyping(event.data.data); }
                 break;
             case "CancelOutgoingCall":
                 $.post('http://Unique_Phone/HasPhone', JSON.stringify({}), function(HasPhone){

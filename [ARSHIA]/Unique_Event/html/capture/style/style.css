@@ -1,0 +1,744 @@
+#slot-1, #slot-2, #slot-3, #slot-4 {
+    display: none;
+}
+  
+.team {
+color: blue;
+}
+
+.enemy {
+color: orange;
+}
+
+.self {
+color: purple;
+}
+  
+
+.back {
+    width: 220px;
+    height: 27px;
+    left: 0px;
+    top: 1.07px;
+    position: absolute;
+    background: linear-gradient(90deg, rgba(22.07, 208.66, 193.11, 0.45) 0%, rgba(30.70, 205.96, 130.01, 0.45) 50%, rgba(45.81, 142.21, 100.44, 0.45) 75%, rgba(11.99, 138.53, 83.70, 0.45) 100%);
+    border-radius: 5px;
+  }
+  
+  .damaged_span {
+    font-size: 14px;
+    font-family: Arial, Helvetica, sans-serif;
+    font-weight: 400;
+    word-wrap: break-word;
+  }
+  
+  .damaged {
+    width: 79px;
+    height: 17px;
+    left: 132px;
+    top: 6.07px;
+    position: absolute;
+  }
+  
+  .killer_span {
+    font-size: 14px;
+    font-family: Arial, Helvetica, sans-serif;
+    font-weight: 400;
+    word-wrap: break-word;
+  }
+  
+  .killer {
+    width: 58px;
+    height: 17px;
+    left: 9px;
+    top: 6.07px;
+    position: absolute;
+  }
+  
+  .pistol-icon {
+    width: 18px;
+    height: 18px;
+    left: 80px;
+    top: 6.07px;
+    position: absolute;
+    display: none;
+  }
+  
+  .rifle-icon {
+    width: 22.60px;
+    height: 21.23px;
+    left: 81.92px;
+    top: 0px;
+    position: absolute;
+    transform: rotate(45deg);
+    transform-origin: top left;
+    display: none;
+  }
+  
+  .back_01 {
+    width: 220px;
+    height: 27px;
+    left: 0px;
+    top: 1.07px;
+    position: absolute;
+    background: linear-gradient(90deg, rgba(22.07, 208.66, 193.11, 0.45) 0%, rgba(30.70, 205.96, 130.01, 0.45) 50%, rgba(45.81, 142.21, 100.44, 0.45) 75%, rgba(11.99, 138.53, 83.70, 0.45) 100%);
+    border-radius: 5px;
+  }
+  
+  .damaged_01_span {
+    font-size: 14px;
+        font-family: Arial, Helvetica, sans-serif;
+    font-weight: 400;
+    word-wrap: break-word;
+  }
+  
+  .damaged_01 {
+    width: 79px;
+    height: 17px;
+    left: 132px;
+    top: 6.07px;
+    position: absolute;
+  }
+  
+  .killer_01_span {
+    font-size: 14px;
+        font-family: Arial, Helvetica, sans-serif;
+    font-weight: 400;
+    word-wrap: break-word;
+  }
+  
+  .killer_01 {
+    width: 58px;
+    height: 17px;
+    left: 9px;
+    top: 6.07px;
+    position: absolute;
+  }
+  
+  .pistol-icon_01 {
+    width: 18px;
+    height: 18px;
+    left: 80px;
+    top: 6.07px;
+    position: absolute;
+    display: none;
+  }
+  
+  .rifle-icon_01 {
+    width: 22.60px;
+    height: 21.23px;
+    left: 81.92px;
+    top: 0px;
+    position: absolute;
+    transform: rotate(45deg);
+    transform-origin: top left;
+    display: none;
+  }
+  
+  .back_02 {
+    width: 220px;
+    height: 27px;
+    left: 0px;
+    top: 1.07px;
+    position: absolute;
+    background: linear-gradient(90deg, rgba(22.07, 208.66, 193.11, 0.45) 0%, rgba(30.70, 205.96, 130.01, 0.45) 50%, rgba(45.81, 142.21, 100.44, 0.45) 75%, rgba(11.99, 138.53, 83.70, 0.45) 100%);
+    border-radius: 5px;
+  }
+  
+  .damaged_02_span {
+    font-size: 14px;
+        font-family: Arial, Helvetica, sans-serif;
+    font-weight: 400;
+    word-wrap: break-word;
+  }
+  
+  .damaged_02 {
+    width: 79px;
+    height: 17px;
+    left: 132px;
+    top: 6.07px;
+    position: absolute;
+  }
+  
+  .killer_02_span {
+    font-size: 14px;
+        font-family: Arial, Helvetica, sans-serif;
+    font-weight: 400;
+    word-wrap: break-word;
+  }
+  
+  .killer_02 {
+    width: 58px;
+    height: 17px;
+    left: 9px;
+    top: 6.07px;
+    position: absolute;
+  }
+  
+  .pistol-icon_02 {
+    width: 18px;
+    height: 18px;
+    left: 80px;
+    top: 6.07px;
+    position: absolute;
+    display: none;
+  }
+  
+  .rifle-icon_02 {
+    width: 22.60px;
+    height: 21.23px;
+    left: 81.92px;
+    top: 0px;
+    position: absolute;
+    transform: rotate(45deg);
+    transform-origin: top left;
+    display: none;
+  }
+  
+  .back_03 {
+    width: 220px;
+    height: 27px;
+    left: 0px;
+    top: 1.07px;
+    position: absolute;
+    background: linear-gradient(90deg, rgba(22.07, 208.66, 193.11, 0.45) 0%, rgba(30.70, 205.96, 130.01, 0.45) 50%, rgba(45.81, 142.21, 100.44, 0.45) 75%, rgba(11.99, 138.53, 83.70, 0.45) 100%);
+    border-radius: 5px;
+  }
+  
+  .damaged_03_span {
+    font-size: 14px;
+        font-family: Arial, Helvetica, sans-serif;
+    font-weight: 400;
+    word-wrap: break-word;
+  }
+  
+  .damaged_03 {
+    width: 79px;
+    height: 17px;
+    left: 132px;
+    top: 6.07px;
+    position: absolute;
+  }
+  
+  .killer_03_span {
+    font-size: 14px;
+        font-family: Arial, Helvetica, sans-serif;
+    font-weight: 400;
+    word-wrap: break-word;
+  }
+  
+  .killer_03 {
+    width: 58px;
+    height: 17px;
+    left: 9px;
+    top: 6.07px;
+    position: absolute;
+  }
+  
+  .pistol-icon_03 {
+    width: 18px;
+    height: 18px;
+    left: 80px;
+    top: 6.07px;
+    position: absolute;
+    display: none;
+  }
+  
+  .rifle-icon_03 {
+    width: 22.60px;
+    height: 21.23px;
+    left: 81.92px;
+    top: 0px;
+    position: absolute;
+    transform: rotate(45deg);
+    transform-origin: top left;
+    display: none;
+  }
+  
+  .component-4 {
+    width: 220px;
+    height: 30.99px;
+    left: 65px;
+    top: 114.93px;
+    position: absolute;
+    animation: slideInFromLeft 0.4s ease-out forwards;
+  }
+  
+  .component-3 {
+    width: 220px;
+    height: 30.99px;
+    left: 65px;
+    top: 84px;
+    position: absolute;
+    animation: slideInFromLeft 0.4s ease-out forwards;
+  }
+  
+  .component-2 {
+    width: 220px;
+    height: 30.99px;
+    left: 65px;
+    top: 54px;
+    position: absolute;
+    animation: slideInFromLeft 0.4s ease-out forwards;
+  }
+  
+  .component-1 {
+    width: 220px;
+    height: 30.99px;
+    left: 65px;
+    top: 24px;
+    position: absolute;
+    animation: slideInFromLeft 0.4s ease-out forwards;
+  }
+  
+  .log {
+    width: 350px;
+    height: 150px;
+    position: fixed;
+    background: transparent;
+    overflow: hidden;
+    bottom: 500px;
+    left: 80%;
+  }
+
+  .animate {
+    animation: slideInFromLeft 0.4s ease-out forwards;
+  }
+  
+  @keyframes slideInFromLeft {
+    from {
+      transform: translateX(-100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+  
+  @keyframes fadeOut {
+    from { opacity: 1; transform: translateX(0); }
+    to { opacity: 0; transform: translateX(50px); }
+  }
+  
+  .fade-out {
+    animation: fadeOut 0.5s forwards;
+  }
+  
+
+  .log-slot {
+    overflow: hidden;
+  }
+  
+  @keyframes slideUp {
+    from {
+      transform: translateY(30px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+  
+  .slide-up {
+    animation: slideUp 0.4s ease-out forwards;
+  }
+
+/* Top Killer */
+/* ============================================================================================= */
+
+.main-box {
+    width: 390px;
+    height: 117.58px;
+    left: 0px;
+    top: 46.42px;
+    position: absolute;
+    background: rgba(82.14, 79.77, 79.77, 0.20);
+    border-radius: 5px;
+  }
+  
+  .time-box {
+    width: 150.57px;
+    height: 41.77px;
+    left: 0px;
+    top: 0px;
+    position: absolute;
+    background: rgba(82.14, 79.77, 79.77, 0.20);
+    border-radius: 5px;
+  }
+  
+  .title-box {
+    width: 229.56px;
+    height: 41.77px;
+    left: 160.44px;
+    top: 0px;
+    position: absolute;
+    background: rgba(82.14, 79.77, 79.77, 0.20);
+    border-radius: 5px;
+  }
+  
+  .player-point5 {
+    width: 39px;
+    height: 18.09px;
+    left: 0px;
+    top: 85.91px;
+    position: absolute;
+    background: linear-gradient(180deg, rgba(44, 5, 67, 0.45) 0%, rgba(139, 20, 157, 0.45) 50%, rgba(111, 11, 169, 0.45) 100%);
+    border-radius: 10px;
+  }
+  
+  .player-point4 {
+    width: 39px;
+    height: 19.59px;
+    left: 0px;
+    top: 63.30px;
+    position: absolute;
+    background: linear-gradient(180deg, rgba(44, 5, 67, 0.45) 0%, rgba(139, 20, 157, 0.45) 50%, rgba(111, 11, 169, 0.45) 100%);
+    border-radius: 10px;
+  }
+  
+  .player-point3 {
+    width: 39px;
+    height: 18.09px;
+    left: 0px;
+    top: 42.20px;
+    position: absolute;
+    background: linear-gradient(180deg, rgba(44, 5, 67, 0.45) 0%, rgba(139, 20, 157, 0.45) 50%, rgba(111, 11, 169, 0.45) 100%);
+    border-radius: 10px;
+  }
+  
+  .player-point2 {
+    width: 39px;
+    height: 18.09px;
+    left: 0px;
+    top: 21.10px;
+    position: absolute;
+    background: linear-gradient(180deg, rgba(44, 5, 67, 0.45) 0%, rgba(139, 20, 157, 0.45) 50%, rgba(111, 11, 169, 0.45) 100%);
+    border-radius: 10px;
+  }
+  
+  .player-point1 {
+    width: 39px;
+    height: 18.09px;
+    left: 0px;
+    top: 0px;
+    position: absolute;
+    background: linear-gradient(180deg, rgba(44, 5, 67, 0.45) 0%, rgba(139, 20, 157, 0.45) 50%, rgba(111, 11, 169, 0.45) 100%);
+    border-radius: 10px;
+  }
+  
+  .pointcallback5_span {
+    color: white;
+    font-size: 15px;
+    font-family: Arial, Helvetica, sans-serif;    font-weight: 400;
+    word-wrap: break-word;
+  }
+  
+  .pointcallback5 {
+    width: 29px;
+    height: 8px;
+    left: 4px;
+    top: 91px;
+    position: absolute;
+    text-align: center;
+    justify-content: center;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .pointcallback4_span {
+    color: white;
+    font-size: 15px;
+    font-family: Arial, Helvetica, sans-serif;    font-weight: 400;
+    word-wrap: break-word;
+  }
+  
+  .pointcallback4 {
+    width: 29px;
+    height: 8px;
+    left: 4px;
+    top: 68px;
+    position: absolute;
+    text-align: center;
+    justify-content: center;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .pointcallback3_span {
+    color: white;
+    font-size: 15px;
+    font-family: Arial, Helvetica, sans-serif;    font-weight: 400;
+    word-wrap: break-word;
+  }
+  
+  .pointcallback3 {
+    width: 29px;
+    height: 8px;
+    left: 4px;
+    top: 47px;
+    position: absolute;
+    text-align: center;
+    justify-content: center;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .pointcallback2_span {
+    color: white;
+    font-size: 15px;
+    font-family: Arial, Helvetica, sans-serif;    font-weight: 400;
+    word-wrap: break-word;
+  }
+  
+  .pointcallback2 {
+    width: 29px;
+    height: 8px;
+    left: 4px;
+    top: 26px;
+    position: absolute;
+    text-align: center;
+    justify-content: center;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .pointcallback1_span {
+    color: white;
+    font-size: 15px;
+    font-family: Arial, Helvetica, sans-serif;    font-weight: 400;
+    word-wrap: break-word;
+  }
+  
+  .pointcallback1 {
+    width: 29px;
+    height: 8px;
+    left: 4px;
+    top: 6px;
+    position: absolute;
+    text-align: center;
+    justify-content: center;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .player-name5 {
+    width: 158px;
+    height: 18.09px;
+    left: 0px;
+    top: 85.91px;
+    position: absolute;
+    background: linear-gradient(180deg, rgba(44.37, 4.54, 67.43, 0.45) 0%, rgba(138.62, 19.62, 156.92, 0.45) 50%, rgba(111.49, 11.40, 169.43, 0.45) 100%);
+    border-radius: 10px;
+  }
+  
+  .player-name4 {
+    width: 158px;
+    height: 19.59px;
+    left: 0px;
+    top: 63.30px;
+    position: absolute;
+    background: linear-gradient(180deg, rgba(44.37, 4.54, 67.43, 0.45) 0%, rgba(138.62, 19.62, 156.92, 0.45) 50%, rgba(111.49, 11.40, 169.43, 0.45) 100%);
+    border-radius: 10px;
+  }
+  
+  .player-name3 {
+    width: 158px;
+    height: 18.09px;
+    left: 0px;
+    top: 42.20px;
+    position: absolute;
+    background: linear-gradient(180deg, rgba(44.37, 4.54, 67.43, 0.45) 0%, rgba(138.62, 19.62, 156.92, 0.45) 50%, rgba(111.49, 11.40, 169.43, 0.45) 100%);
+    border-radius: 10px;
+  }
+  
+  .player-name2 {
+    width: 158px;
+    height: 18.09px;
+    left: 0px;
+    top: 21.10px;
+    position: absolute;
+    background: linear-gradient(180deg, rgba(44.37, 4.54, 67.43, 0.45) 0%, rgba(138.62, 19.62, 156.92, 0.45) 50%, rgba(111.49, 11.40, 169.43, 0.45) 100%);
+    border-radius: 10px;
+  }
+  
+  .player-name1 {
+    width: 158px;
+    height: 18.09px;
+    left: 0px;
+    top: 0px;
+    position: absolute;
+    background: linear-gradient(180deg, rgba(44.37, 4.54, 67.43, 0.45) 0%, rgba(138.62, 19.62, 156.92, 0.45) 50%, rgba(111.49, 11.40, 169.43, 0.45) 100%);
+    border-radius: 10px;
+  }
+  
+  .playercallback5_span {
+    color: black;
+    font-size: 15px;
+    font-family: Arial, Helvetica, sans-serif;    font-weight: 400;
+    word-wrap: break-word;
+  }
+  
+  .playercallback5 {
+    width: 139px;
+    height: 9px;
+    left: 7px;
+    top: 90px;
+    position: absolute;
+    justify-content: center;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .playercallback4_span {
+    color: black;
+    font-size: 15px;
+    font-family: Arial, Helvetica, sans-serif;    font-weight: 400;
+    word-wrap: break-word;
+  }
+  
+  .playercallback4 {
+    width: 139px;
+    height: 9px;
+    left: 7px;
+    top: 68px;
+    position: absolute;
+    justify-content: center;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .playercallback3_span {
+    color: black;
+    font-size: 15px;
+    font-family: Arial, Helvetica, sans-serif;    font-weight: 400;
+    word-wrap: break-word;
+  }
+  
+  .playercallback3 {
+    width: 139px;
+    height: 9px;
+    left: 7px;
+    top: 47px;
+    position: absolute;
+    justify-content: center;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .playercallback2_span {
+    color: black;
+    font-size: 15px;
+    font-family: Arial, Helvetica, sans-serif;    font-weight: 400;
+    word-wrap: break-word;
+  }
+  
+  .playercallback2 {
+    width: 139px;
+    height: 9px;
+    left: 7px;
+    top: 25px;
+    position: absolute;
+    justify-content: center;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .playercallback1_span {
+    color: black;
+    font-size: 15px;
+    font-family: Arial, Helvetica, sans-serif;    font-weight: 400;
+    word-wrap: break-word;
+  }
+  
+  .playercallback1 {
+    width: 139px;
+    height: 9px;
+    left: 7px;
+    top: 4px;
+    position: absolute;
+    justify-content: center;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .topkiller_span {
+    color: black;
+    font-size: 30px;
+    font-family: Arial, Helvetica, sans-serif;    font-weight: 400;
+    word-wrap: break-word;
+  }
+  
+  .top-killer {
+    width: 182px;
+    height: 33px;
+    left: 214px;
+    top: 22px;
+    position: absolute;
+    text-align: center;
+    justify-content: center;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .time_span {
+    color: black;
+    font-size: 32px;
+    font-family: Arial, Helvetica, sans-serif;    font-weight: 400;
+    word-wrap: break-word;
+  }
+  
+  .time {
+    width: 118px;
+    height: 33px;
+    left: 46px;
+    top: 22px;
+    position: absolute;
+    text-align: center;
+    justify-content: center;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .cp3 {
+    width: 390px;
+    height: 164px;
+    left: 30px;
+    top: 18px;
+    position: absolute;
+  }
+  
+  .cp2 {
+    width: 39px;
+    height: 104px;
+    left: 348px;
+    top: 72px;
+    position: absolute;
+  }
+  
+  .cp1 {
+    width: 158px;
+    height: 104px;
+    left: 50px;
+    top: 72px;
+    position: absolute;
+  }
+  
+  
+  .data-box {
+    width: 450px;
+    height: 200px;
+    position: fixed;
+    background: transparent;
+    overflow: hidden;
+    bottom: 20px;
+    left: 75%;
+    animation: slideUp 0.4s ease-out forwards;
+    display: none;
+  }
+
+  .small-font {
+    font-size: 12px; /* یا هر سایزی که خواستی */
+  }
+  

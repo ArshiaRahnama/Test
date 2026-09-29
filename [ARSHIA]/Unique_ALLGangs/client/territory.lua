@@ -25,6 +25,8 @@ end
 local ZoneState = {} -- ZoneState[zoneKey] = { owner, contested, vulnerable }
 local ZoneBlips = {} -- ZoneBlips[zoneKey] = { radius = blip, marker = blip }
 local GangColorCache = {}
+local ZoneCelebrateUntil = {} -- ZoneCelebrateUntil[zoneKey] = GetGameTimer() timestamp - drives the flashing blip + big 3D banner after a real capture
+local ZoneCelebrateGang = {}  -- ZoneCelebrateGang[zoneKey] = gang name that just captured it
 
 local function ColorForGang(gang)
     if not gang or gang == 'nogang' or gang == '' then return 0 end -- white/neutral = unclaimed
@@ -66,11 +68,84 @@ local function RefreshBlip(zoneKey)
     EndTextCommandSetBlipName(markerBlip)
 
     ZoneBlips[zoneKey] = { radius = radiusBlip, marker = markerBlip }
+
+    -- re-apply an in-progress flash to the freshly recreated blip
+    -- handles too, so a capture that happens to trigger a second
+    -- refresh mid-celebration (e.g. a vulnerable-window toggle) doesn't
+    -- silently stop flashing
+    if ZoneCelebrateUntil[zoneKey] and GetGameTimer() < ZoneCelebrateUntil[zoneKey] then
+        SetBlipFlashes(radiusBlip, true)
+        SetBlipFlashes(markerBlip, true)
+    end
 end
 
 local function RefreshAllBlips()
     for zoneKey in pairs(ZoneConfigByKey) do RefreshBlip(zoneKey) end
 end
+
+-------------------------------------------------------------------
+-- Capture celebration: flashes both of the zone's blips and plays a
+-- sound for CelebrateSeconds, and flags the zone so the loop below
+-- draws a big banner with the capturing gang's name for anyone nearby
+-- - on top of (not instead of) the existing native notification every
+-- online member of both gangs already gets from the server.
+-------------------------------------------------------------------
+local CelebrateSeconds = 15
+
+local function CelebrateCapture(zoneKey, gangName)
+    ZoneCelebrateUntil[zoneKey] = GetGameTimer() + (CelebrateSeconds * 1000)
+    ZoneCelebrateGang[zoneKey] = gangName
+
+    local blips = ZoneBlips[zoneKey]
+    if blips then
+        if blips.radius and DoesBlipExist(blips.radius) then SetBlipFlashes(blips.radius, true) end
+        if blips.marker and DoesBlipExist(blips.marker) then SetBlipFlashes(blips.marker, true) end
+    end
+
+    PlaySoundFrontend(-1, 'CHECKPOINT_PERFECT', 'HUD_MINI_GAME_SOUNDSET', true)
+
+    SetTimeout(CelebrateSeconds * 1000, function()
+        local currentBlips = ZoneBlips[zoneKey] -- re-fetch: RefreshBlip may have swapped the handles since
+        if currentBlips then
+            if currentBlips.radius and DoesBlipExist(currentBlips.radius) then SetBlipFlashes(currentBlips.radius, false) end
+            if currentBlips.marker and DoesBlipExist(currentBlips.marker) then SetBlipFlashes(currentBlips.marker, false) end
+        end
+    end)
+end
+
+-------------------------------------------------------------------
+-- Big 3D banner for anyone near a zone mid-celebration - deliberately
+-- NOT gated behind gang membership (unlike the per-tick status loop
+-- below), so a capture is a visible event for everyone nearby, not
+-- just gang members.
+-------------------------------------------------------------------
+CreateThread(function()
+    while true do
+        local sleep = 1000
+        local now = GetGameTimer()
+        local coords = nil
+
+        for zoneKey, until_ in pairs(ZoneCelebrateUntil) do
+            if now >= until_ then
+                ZoneCelebrateUntil[zoneKey] = nil
+                ZoneCelebrateGang[zoneKey] = nil
+            else
+                local cfg = ZoneConfigByKey[zoneKey]
+                if cfg then
+                    coords = coords or GetEntityCoords(PlayerPedId())
+                    if #(coords - cfg.coord) <= cfg.radius + 80.0 then
+                        sleep = 0
+                        Draw3DText(cfg.coord.x, cfg.coord.y, cfg.coord.z + 2.2,
+                            '~p~*** ' .. (ZoneCelebrateGang[zoneKey] or '?') .. ' ***\n~w~Ghalamro ro tasarrof kard: ' .. cfg.label,
+                            4, 0.55, 0.55)
+                    end
+                end
+            end
+        end
+
+        Wait(sleep)
+    end
+end)
 
 -------------------------------------------------------------------
 -- The server broadcasts this every tick (every few seconds) so
@@ -84,8 +159,10 @@ AddEventHandler('Territory:SyncState', function(state)
     for zoneKey, s in pairs(state) do
         local prev = ZoneState[zoneKey]
         local colourChanged = (not prev) or prev.owner ~= s.owner or prev.contested ~= s.contested
+        local realCapture = prev and prev.owner ~= s.owner and s.owner -- an actual capture to a new owner, not the initial load and not going neutral
         ZoneState[zoneKey] = s
         if colourChanged then RefreshBlip(zoneKey) end
+        if realCapture then CelebrateCapture(zoneKey, s.owner) end
     end
 end)
 

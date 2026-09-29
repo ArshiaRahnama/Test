@@ -31,60 +31,8 @@ Citizen.CreateThread(function()
 	end
 end)
 
-Citizen.CreateThread(function()
-	while true do
-		local sleep = 1500
-			local playercoord = GetEntityCoords(PlayerPedId())
-			for k,v in pairs(Config.vehicleshop) do
-			local shopCoord = vector3(v.coord.x,v.coord.y,v.coord.z)
-			local dst = #(playercoord - shopCoord)
-			local mk = v.marker
-			local drawRadius = mk and mk.radius or 5.0
-			local interactRadius = mk and mk.interactRadius or 3.0
-
-			if dst < drawRadius then
-				sleep = 1
-
-				-- Fun 3D marker: a spinning marker with a pulse effect (grows/shrinks)
-				if mk then
-					local pulse = (math.sin(GetGameTimer() / 250.0) + 1.0) / 2.0 -- 0..1
-					local baseSize = mk.size or vector3(1.4, 1.4, 1.0)
-					local pulseSize = vector3(
-						baseSize.x + (pulse * 0.25),
-						baseSize.y + (pulse * 0.25),
-						baseSize.z
-					)
-					local rotation = (GetGameTimer() / 10) % 360.0
-					DrawMarker(
-						mk.type or 27,
-						shopCoord.x, shopCoord.y, shopCoord.z + (mk.offsetZ or -0.98),
-						0.0, 0.0, 0.0,
-						0.0, 0.0, rotation,
-						pulseSize.x, pulseSize.y, pulseSize.z,
-						mk.color.r, mk.color.g, mk.color.b, mk.color.a,
-						false, true, 2, true, nil, nil, false
-					)
-				end
-
-				if dst < interactRadius then
-					if Config.drawtextorfloating then
-					DrawText3D(v.coord.x, v.coord.y, v.coord.z, v.lang.openmenu)
-					else
-					ShowFloatingHelpNotification(Config.lang.openmenu, v.coord,dst)
-					end
-					if IsControlJustReleased(0,38) then
-						OpenVehicleShop(k)
-					end
-				end
-			end
-		end
-		Citizen.Wait(sleep)
-	end
-end)
-
--- Shared "open this shop's menu" logic, used by both the old walk-in+[E] flow
--- and the new salesman-ped ox_target interaction below, so there's only one
--- place that ever needs to change.
+-- Shared "open this shop's menu" logic, called from whichever shop the player
+-- picks from the salesman ped's ox_target menu below.
 function OpenVehicleShop(shopId)
 	local shop = Config.vehicleshop[shopId]
 	if not shop then return end
@@ -96,90 +44,93 @@ function OpenVehicleShop(shopId)
 	SendNUIMessage({
 		action = "openmenu",
 		shopname = sellectcar.galeryname,
-		dec = sellectcar.dec
+		dec = sellectcar.dec,
 	})
 	initGarage(shopId)
 	vehiclelist()
 	cattegorylist()
 end
 
--- Salesman NPCs: one professional-looking, idle-animated ped per shop (see
--- Config.vehicleshop[x].ped), targetable with ox_target. This is now the main
--- way players open a shop - it feels far better than the old "stand in a circle
--- and mash [E]" and, since the 4 shops sit right on top of each other, it also
--- makes sure you always open the shop you actually meant to.
-ShopPeds = {}
+-- Salesman NPC: ONE professional-looking, idle-animated ped for the whole
+-- dealership (see Config.Shopkeeper), targetable with ox_target. Interacting
+-- with him shows one option per shop (car/boat/heli/plane) - ox_target shows
+-- a picker automatically whenever more than one option is registered on the
+-- same entity - and picking one opens that shop's menu. Replaces the old
+-- one-ped-per-shop setup: 4 peds standing on top of each other in a small
+-- room (plus the leftover walk-in+[E] prompt from before that) looked messy;
+-- one ped with a clean "which section?" choice doesn't.
+local shopIcons = {
+	car = "fa-solid fa-car",
+	boat = "fa-solid fa-ship",
+	helicopter = "fa-solid fa-helicopter",
+	airplane = "fa-solid fa-plane",
+}
+
+ShopkeeperPed = nil
 
 Citizen.CreateThread(function()
+	local pedData = Config.Shopkeeper
+	if not pedData then return end
+
 	if GetResourceState('ox_target') ~= 'started' then
-		print('^1[Unique_vehicleshop]^7 ox_target is not running - salesman NPCs were not spawned, falling back to [E] only.')
+		print('^1[Unique_vehicleshop]^7 ox_target is not running - the salesman NPC was not spawned. No other way to open the shops is set up, so fix this before going live.')
 		return
 	end
 
-	for k, v in pairs(Config.vehicleshop) do
-		local pedData = v.ped
-		if pedData then
-			local hash = GetHashKey(pedData.model)
-			RequestModel(hash)
-			local timeout = 0
-			while not HasModelLoaded(hash) and timeout < 500 do
-				Citizen.Wait(10)
-				timeout = timeout + 1
-			end
-
-			if HasModelLoaded(hash) then
-				local c = pedData.coord
-				local npc = CreatePed(4, hash, c.x, c.y, c.z, c.w or 0.0, false, true)
-
-				SetEntityInvincible(npc, true)
-				SetPedCanRagdoll(npc, false)
-				SetPedDiesWhenInjured(npc, false)
-				SetPedSuffersCriticalHits(npc, false)
-				SetBlockingOfNonTemporaryEvents(npc, true)
-				SetPedFleeAttributes(npc, 0, false)
-				SetPedCanBeTargetted(npc, false) -- no getting shot at by griefers
-				FreezeEntityPosition(npc, true)
-				SetEntityAsMissionEntity(npc, true, true)
-
-				if pedData.scenario then
-					TaskStartScenarioInPlace(npc, pedData.scenario, 0, true)
-				end
-
-				SetModelAsNoLongerNeeded(hash)
-				ShopPeds[k] = npc
-
-				exports.ox_target:addLocalEntity(npc, {
-					{
-						name = 'Unique_vehicleshop_' .. tostring(k),
-						icon = pedData.icon or 'fa-solid fa-car',
-						label = pedData.label or Config.lang.openmenu,
-						distance = 2.5,
-						onSelect = function()
-							OpenVehicleShop(k)
-						end,
-					}
-				})
-			end
-		end
+	local hash = GetHashKey(pedData.model)
+	RequestModel(hash)
+	local timeout = 0
+	while not HasModelLoaded(hash) and timeout < 500 do
+		Citizen.Wait(10)
+		timeout = timeout + 1
 	end
+	if not HasModelLoaded(hash) then return end
+
+	local c = pedData.coord
+	local npc = CreatePed(4, hash, c.x, c.y, c.z, c.w or 0.0, false, true)
+
+	SetEntityInvincible(npc, true)
+	SetPedCanRagdoll(npc, false)
+	SetPedDiesWhenInjured(npc, false)
+	SetPedSuffersCriticalHits(npc, false)
+	SetBlockingOfNonTemporaryEvents(npc, true)
+	SetPedFleeAttributes(npc, 0, false)
+	SetPedCanBeTargetted(npc, false) -- no getting shot at by griefers
+	FreezeEntityPosition(npc, true)
+	SetEntityAsMissionEntity(npc, true, true)
+
+	if pedData.scenario then
+		TaskStartScenarioInPlace(npc, pedData.scenario, 0, true)
+	end
+
+	SetModelAsNoLongerNeeded(hash)
+	ShopkeeperPed = npc
+
+	-- ipairs (not pairs), so the picker always lists the shops in
+	-- Config.vehicleshop's own [1],[2],[3],[4] order instead of an
+	-- unspecified table-iteration order that could shuffle between servers.
+	local options = {}
+	for k, v in ipairs(Config.vehicleshop) do
+		options[#options + 1] = {
+			name = 'Unique_vehicleshop_' .. tostring(k),
+			icon = shopIcons[v.type] or 'fa-solid fa-car',
+			label = v.galeryname,
+			distance = 2.5,
+			onSelect = function()
+				OpenVehicleShop(k)
+			end,
+		}
+	end
+
+	exports.ox_target:addLocalEntity(npc, options)
 end)
 
 AddEventHandler('onResourceStop', function(resource)
 	if resource ~= GetCurrentResourceName() then return end
-	for _, npc in pairs(ShopPeds) do
-		if DoesEntityExist(npc) then
-			DeleteEntity(npc)
-		end
+	if ShopkeeperPed and DoesEntityExist(ShopkeeperPed) then
+		DeleteEntity(ShopkeeperPed)
 	end
 end)
-
-function ShowFloatingHelpNotification(msg, coords,r)
-    AddTextEntry('FloatingHelpNotification'..'_'..r, msg)
-    SetFloatingHelpTextWorldPosition(1, coords.x,coords.y,coords.z)
-    SetFloatingHelpTextStyle(1, 1, 2, -1, 3, 0)
-    BeginTextCommandDisplayHelp('FloatingHelpNotification'..'_'..r)
-    EndTextCommandDisplayHelp(2, false, false, -1)
-end
 
 cam = nil
 function initGarage(x)
@@ -230,6 +181,7 @@ function vehiclelist()
 					label = v.label,
 					carimg = catName..".png",
 					price = v.price,
+					currency = v.currency or "cash",
 					name = v.name,
 					speed = math.ceil(GetVehicleModelEstimatedMaxSpeed(v.name)*4.605936),
 				})
@@ -261,6 +213,7 @@ RegisterNUICallback("catlist", function (data)
 			label = v.label, 
 			carimg = data.id..".png",
 			price = v.price,
+			currency = v.currency or "cash",
 			name = v.name,
 			speed = math.ceil(GetVehicleModelEstimatedMaxSpeed(v.name)*4.605936),
 		})
@@ -278,6 +231,7 @@ RegisterNUICallback("getcar", function (data)
 					action = "updatela",
 					label = v.label, 
 					price = v.price,
+					currency = v.currency or "cash",
 				})	
 			end
 		end
@@ -417,6 +371,14 @@ end
 			FreezeEntityPosition(vehicle,false)
 			SetVehicleUndriveable(vehicle,false)
 			SetPedIntoVehicle(PlayerPedId(), vehicle, -1)
+			-- This server's key/lock system (Unique_Garage's carlock_cl.lua)
+			-- halts and hotwire-locks any vehicle the player doesn't hold a
+			-- 'vehicle_keys' inventory item for - which a test-drive vehicle
+			-- never gets, since it isn't actually bought. CarLock already has
+			-- a built-in "temporary key" event for exactly this situation
+			-- (it's plate-based and purely client-side, no inventory item
+			-- involved), so fire it now that the player is actually seated.
+			TriggerEvent('CarLock:enableVehicleTemporarily')
 			SetPedCoordsKeepVehicle(PlayerPedId(), Config.TestDrive.coords)
 			SendNUIMessage({ action = "startTest" })
 		end
@@ -447,36 +409,43 @@ end
 	end
 	
 	RegisterNUICallback("buy", function ()
-		buy = getvehicle(vehicle)
-		SetEntityCoords(PlayerPedId(), sellectcar.coord)
+		-- Every purchase now goes straight into a garage instead of being
+		-- physically spawned at the shop - see shared/server.lua. This callback
+		-- just captures the preview vehicle's customization, cleans up the
+		-- showroom, and asks (if the player's actually in a gang) whether it
+		-- should go to their personal garage or their gang's.
+		local buyProps = getvehicle(vehicle)
 		IsInShopMenu = false
 		DisplayRadar(1)
 		SetNuiFocus(false, false)
-		SetEntityCoords(vehicle, sellectcar.buyspawn)
-		DeleteEntity(vehicle)
 		SetEntityVisible(PlayerPedId(), 1)
-		SetNuiFocus(0, 0)
 		if DoesCamExist(cam) then
 			DestroyCam(cam, true)
 			RenderScriptCams(false, true, 1)
 			cam = nil
 		end
 		DeleteEntity(vehicle)
-		model = model
-		vehicle = CreateVehicle(model, sellectcar.buyspawn, true, true)
-		SetPedIntoVehicle(PlayerPedId(), vehicle, -1)
-		local timeout = 0
-		SetEntityAsMissionEntity(vehicle, true, false)
-		SetVehicleHasBeenOwnedByPlayer(vehicle, true)
-		SetVehicleNeedsToBeHotwired(vehicle, false)
-		SetVehRadioStation(vehicle, 'OFF')
-		plate= GetVehicleNumberPlateText(vehicle)
-		-- Key handoff happens server-side now (shared/server.lua), right after
-		-- the DB insert succeeds, using the real plate the server just saved.
-		buy = getvehicle(vehicle)
-		-- Note: price is no longer sent from here; the server looks up the real price via model + shopId
-		TriggerServerEvent("Unique_vehicleshop:buyvehicle", buy, model, currentShopId)
-		RequestCollisionAtCoord(sellectcar.buyspawn.x, sellectcar.buyspawn.y, sellectcar.buyspawn.z)
+		SetEntityCoords(PlayerPedId(), sellectcar.coord)
+
+		-- Ask the server for the player's REAL gang (never trust a client-side
+		-- gang value even if one were available - see the note in
+		-- Unique_ALLGangs/client/boss_esx_menu.lua about ESX.PlayerData.gang
+		-- not being reliable on this server's bridge; this asks essentialmode's
+		-- own xPlayer.gang directly instead, server-side, where it's trustworthy).
+		ESX.TriggerServerCallback('Unique_vehicleshop:getGangName', function(gangName)
+			local toGang = false
+			if gangName then
+				local choice = lib.alertDialog({
+					header = 'Where should this vehicle go?',
+					content = ('Send it to your personal garage, or to your gang\'s (**%s**) garage?'):format(gangName),
+					centered = true,
+					cancel = true,
+					labels = { confirm = 'My Garage', cancel = gangName .. ' Garage' },
+				})
+				toGang = (choice == 'cancel')
+			end
+			TriggerServerEvent("Unique_vehicleshop:buyvehicle", buyProps, model, currentShopId, toGang)
+		end)
 	end)
 
 	RegisterNetEvent("Unique_vehicleshop:deletevehicle")

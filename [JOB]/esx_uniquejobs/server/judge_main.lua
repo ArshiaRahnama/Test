@@ -284,10 +284,16 @@ end)
 
 ESX.RegisterServerCallback('esx_judgejob:buy', function(source, cb, amount)
 
-
 	TriggerEvent('esx_addonaccount:getSharedAccount', 'society_doj', function(account)
 		if account.money >= amount then
 			account.removeMoney(amount)
+			-- Oversight transparency log (added per request): every armory
+			-- purchase from society_doj gets a Discord entry, same system
+			-- already used for job-watch flags elsewhere in this resource.
+			local xPlayer = ESX.GetPlayerFromId(source)
+			if Ov and Ov.Log then
+				Ov.Log(xPlayer, 'DOJ Armory Purchase', '[ Amount : $' .. tostring(amount) .. ' ]\n[ society_doj balance after : $' .. tostring(account.money - amount) .. ' ]\n')
+			end
 			cb(true)
 		else
 			TriggerClientEvent('chat:addMessage', source, {color = { 255, 0, 0}, multiline = false, args = {"^1[^1^*SYSTEM^1]: ^0".."Money Boss Action Baraye Kharid In Tedad Weapon Kafi Nist!" }})
@@ -295,6 +301,39 @@ ESX.RegisterServerCallback('esx_judgejob:buy', function(source, cb, amount)
 		end
 	end)
 
+end)
+
+-- License revocation fee (added per request): billed directly to the
+-- citizen whose license was revoked, into society_doj, as its own invoice -
+-- not through esx_billing:send2Bill, so it doesn't also trigger the
+-- Coin/XP quest bridge's "fine" reward (this is a license action, not a
+-- citation). Only a real judge (server-checked, not trusted from the
+-- client) can charge this.
+RegisterServerEvent('esx_judgejob:licenseRevocationFee')
+AddEventHandler('esx_judgejob:licenseRevocationFee', function(targetId, licenseLabel)
+	local _source = source
+	local xPlayer = ESX.GetPlayerFromId(_source)
+	if not xPlayer or xPlayer.job.name ~= 'judge' then return end
+
+	local xTarget = ESX.GetPlayerFromId(targetId)
+	if not xTarget then return end
+
+	local fee = (Config_judge and Config_judge.LicenseRevocationFee) or 0
+	if fee <= 0 then return end
+
+	MySQL.Async.execute('INSERT INTO billing (identifier, sender, target_type, target, label, amount) VALUES (@identifier, @sender, @target_type, @target, @label, @amount)', {
+		['@identifier']  = xTarget.identifier,
+		['@sender']      = xPlayer.identifier,
+		['@target_type'] = 'society',
+		['@target']      = 'society_doj',
+		['@label']       = 'License Revocation Fee: ' .. tostring(licenseLabel),
+		['@amount']      = fee,
+	}, function()
+		TriggerClientEvent('chat:addMessage', xTarget.source, { args = { '^1SYSTEM', 'You received an invoice.' } })
+		if Ov and Ov.Log then
+			Ov.Log(xPlayer, 'DOJ License Revocation Fee', '[ Target : ' .. tostring(GetPlayerName(targetId)) .. ' ]\n[ License : ' .. tostring(licenseLabel) .. ' ]\n[ Amount : $' .. tostring(fee) .. ' ]\n')
+		end
+	end)
 end)
 
 ESX.RegisterServerCallback('esx_judgejob:getStockItems', function(source, cb)

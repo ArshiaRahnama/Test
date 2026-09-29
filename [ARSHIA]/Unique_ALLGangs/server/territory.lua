@@ -388,6 +388,27 @@ function CaptureZone(zoneKey, newGang, actorSource)
         end
     end
 
+    -- Bystanders get the "something just happened here" heads-up too,
+    -- but only if they're actually near the zone when it flips - not
+    -- the whole server. Members of the two gangs involved are excluded
+    -- here since they already got their own personalized message above.
+    if not cfg.bossZone then -- the Boss Zone already sent its own server-wide banner above
+        for _, playerId in ipairs(ESX.GetPlayers()) do
+            local xTarget = ESX.GetPlayerFromId(playerId)
+            local isInvolved = xTarget and xTarget.gang and (xTarget.gang.name == newGang or xTarget.gang.name == oldGang)
+            if xTarget and not isInvolved then
+                local ped = GetPlayerPed(playerId)
+                if ped and ped ~= 0 then
+                    local pcoords = GetEntityCoords(ped)
+                    local dx, dy, dz = pcoords.x - cfg.coord.x, pcoords.y - cfg.coord.y, pcoords.z - cfg.coord.z
+                    if math.sqrt(dx * dx + dy * dy + dz * dz) <= cfg.radius then -- strictly inside the zone itself, no buffer
+                        TriggerClientEvent(Config.showAdvancedNotification, playerId, '~b~Ghalamro', '~b~Taghir-e malekiat', 'Gang "' .. newGang .. '" mantaghe "' .. cfg.label .. '" ro tasarrof kard.', 'CHAR_MP_DETONATEPHONE', 9)
+                    end
+                end
+            end
+        end
+    end
+
     if actorSource then
         local xActor = ESX.GetPlayerFromId(actorSource)
         if xActor then

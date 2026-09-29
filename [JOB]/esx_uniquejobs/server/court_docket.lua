@@ -80,6 +80,25 @@ local function scheduleHearing(caseId, minutesFromNow, createdByName, cb)
 		function(docketId)
 			LogCaseEvent(caseId, 'docket', 'Jalase-ye Dadgah Baraye ' .. minutesFromNow .. ' Daghighe Digar Zamanbandi Shod', createdByName)
 
+			-- Court filing fee: a real operating cost, taken from society_doj
+			-- itself (not billed to anyone) every time a case actually reaches
+			-- the docket - added per your request. Doesn't block the hearing
+			-- if society_doj can't cover it (justice shouldn't stall over an
+			-- empty account); it just skips the deduction and logs it.
+			local fee = Config_judge.CourtFilingFee or 0
+			if fee > 0 then
+				TriggerEvent('esx_addonaccount:getSharedAccount', 'society_doj', function(account)
+					if account and account.money >= fee then
+						account.removeMoney(fee)
+						if Ov and Ov.Log then
+							Ov.Log(nil, 'DOJ Court Filing Fee', '[ Docket : #' .. tostring(docketId) .. ' ]\n[ Case : #' .. tostring(caseId) .. ' ]\n[ Amount : $' .. tostring(fee) .. ' ]\n[ society_doj balance after : $' .. tostring(account.money - fee) .. ' ]\n')
+						end
+					else
+						print(('^3[esx_uniquejobs]^7 Court filing fee (%s) skipped for docket #%s - society_doj balance too low'):format(fee, tostring(docketId)))
+					end
+				end)
+			end
+
 			-- Notify online DOJ so a judge knows to show up
 			local xPlayers = ESX.GetPlayers()
 			for i = 1, #xPlayers do

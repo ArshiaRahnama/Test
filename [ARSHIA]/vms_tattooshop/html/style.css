@@ -1,0 +1,220 @@
+*, :focus, :hover {
+	outline: none;
+}
+
+::-webkit-scrollbar {
+    width: 5px;
+}
+                    
+::-webkit-scrollbar-track {
+    background-color: rgb(35, 36, 40);
+    border-radius: 15px;
+}
+                    
+::-webkit-scrollbar-thumb {
+    border-radius: 15px;
+    background: #7e0000;
+}
+
+body {
+    font-family: 'impact', sans-serif;
+	user-select: none;
+	background: transparent;
+	overflow: hidden;
+}
+
+.header {
+    position: absolute;
+    display: flex;
+    width: 570px;
+    height: 60px;
+    z-index: 100;
+    /* top: 12%; */
+    top: 6.3vw;
+    margin-left: 20px;
+}
+
+.headerName {
+    font-family: 'impact', sans-serif;
+    font-weight: bold;
+    font-size: 35px;
+    color: #7e0000;
+    padding-left: 20px;
+    padding-right: 20px;
+    background: #232428;
+    height: max-content;
+}
+
+.headerShop {
+    font-family: 'impact', sans-serif;
+    font-weight: bold;
+    font-size: 35px;
+    color: #7e0000;
+    margin-left: 8px;
+}
+
+.panel {
+    position: absolute;
+    width: 570px;
+    /* height: 41vw; */
+    height: 70%;
+    background: rgb(35, 36, 40);
+    z-index: 200;
+    margin-left: 20px;
+    /*top: 16.5%; */
+    top: 9vw;
+    border-top-right-radius: 12px; 
+    border-bottom-left-radius: 12px; 
+    border-bottom-right-radius: 12px;
+}
+
+.optionsCircle {
+    position: absolute;
+    display: grid;
+    top: 23%;
+    margin-left: 595px;
+}
+
+.fa-xmark {
+    color:#7e0000; 
+    font-size: 35px;
+    text-align: center;
+    margin-left: auto; 
+    margin-right: auto;
+}
+
+#panelInside {
+    transition: 0.25s;
+    height: 92%;
+    overflow-x: auto;
+    -webkit-mask-image: -webkit-gradient(linear, left top, left bottom, from(rgb(53 53 53)), to(rgb(0 0 0 / 84%)));
+}
+
+.tattoo-selected {
+    transition: 0.25s;
+    display: none;
+}
+
+.category-selected {
+    background: #7e0000 !important;
+}
+
+.category-selected > p {
+    filter: invert(2%) !important;
+}
+
+#hide {
+    display: inline-flex;
+    text-align: center;
+    width: 58px; 
+    height: 70px;
+    margin-left: auto;
+    text-align: center;
+    background: #232428;
+    border-radius: 15px;
+}
+
+.itemCircle {
+    width: 50px;
+    height: 50px;
+    border-radius: 15px;
+    margin: 3px;
+    background: rgb(35, 36, 40);
+    transition: 0.25s;
+    cursor: pointer;
+}
+
+.itemCircle:hover {
+    background: #7e0000;
+}
+
+.itemCircle:active {
+    background: #7e0000;
+}
+
+.itemCircle:active > .itemIcon {
+    filter: invert(100%);
+}
+
+.itemCircle > p {
+    font-family: 'impact', sans-serif;
+    font-weight: bold;
+    color: rgba(35, 36, 40, 1);
+    font-size: 180%;
+    text-align: center;
+    margin-block: 3px;
+    filter: invert(50%);
+}
+
+.itemCircle:hover > p {
+    filter: invert(17%);
+}
+
+.itemLabel {
+    color: #232428;
+    display: table-row;
+    font-family: 'impact', sans-serif;
+    font-size:15px
+}
+
+.itemIcon {
+    display: block;
+    filter: invert(50%);
+    align-self: center;
+    margin-left: auto;
+    margin-right: auto;
+    width: 50%;
+    transition: 0.45s;
+}
+
+.itemCircle:hover > .itemIcon {
+    filter: invert(87%);
+}
+
+.colour-selection {
+    width:22px; 
+    height:22px;
+    border-radius: 15px;
+    margin: 4px; 
+    border: 1px solid rgba(2, 202, 202, 0.512);
+    transition: 0.35s;
+}
+
+.colour-selection:hover {
+    border: 1px solid rgba(202, 2, 202, 0.832);
+    box-shadow: 0px 0px 10px rgba(228, 228, 8, 0.432);
+}
+
+.slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 12px;
+    border-radius: 15px;
+    background: #7e0000;
+    outline: none;
+    opacity: 0.85;
+    -webkit-transition: .2s;
+    transition: opacity .2s;
+}
+
+.slider:hover {
+    opacity: 1;
+}
+
+.slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 17px;
+    height: 17px;
+    border-radius: 15px;
+    background: #7e0000;
+    cursor: pointer;
+}
+
+.tattoosCategories {
+    display: table;
+    margin-bottom: 10px;
+    width: 100%;
+    justify-content: space-evenly;
+}

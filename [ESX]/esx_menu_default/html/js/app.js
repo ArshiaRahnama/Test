@@ -71,7 +71,7 @@
 		var menuSelected = $('#menu_' + namespace + '_' + name).find('.menu-item.selected')
 		if(menuSelected.length == 1)
 		{
-			menuSelected[0].scrollIntoView();
+			if (menuSelected[0]) menuSelected.each(function(i, el){ if(i===0 && el) el.scrollIntoView(); });
 		}
 	};
 
@@ -247,7 +247,7 @@
 							ESX_MENU.change(focused.namespace, focused.name, elem);
 							ESX_MENU.render();
 
-							$('#menu_' + focused.namespace + '_' + focused.name).find('.menu-item.selected')[0].scrollIntoView();
+							$('#menu_' + focused.namespace + '_' + focused.name).find('.menu-item.selected').each(function(i, el){ if(i===0 && el) el.scrollIntoView(); });
 						}
 
 						break;
@@ -282,7 +282,7 @@
 							ESX_MENU.change(focused.namespace, focused.name, elem);
 							ESX_MENU.render();
 
-							$('#menu_' + focused.namespace + '_' + focused.name).find('.menu-item.selected')[0].scrollIntoView();
+							$('#menu_' + focused.namespace + '_' + focused.name).find('.menu-item.selected').each(function(i, el){ if(i===0 && el) el.scrollIntoView(); });
 						}
 
 						break;
@@ -322,7 +322,7 @@
 								default: break;
 							}
 
-							$('#menu_' + focused.namespace + '_' + focused.name).find('.menu-item.selected')[0].scrollIntoView();
+							$('#menu_' + focused.namespace + '_' + focused.name).find('.menu-item.selected').each(function(i, el){ if(i===0 && el) el.scrollIntoView(); });
 						}
 
 						break;
@@ -374,7 +374,7 @@
 								default: break;
 							}
 
-							$('#menu_' + focused.namespace + '_' + focused.name).find('.menu-item.selected')[0].scrollIntoView();
+							$('#menu_' + focused.namespace + '_' + focused.name).find('.menu-item.selected').each(function(i, el){ if(i===0 && el) el.scrollIntoView(); });
 						}
 
 						break;

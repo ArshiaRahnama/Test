@@ -27,6 +27,10 @@ $(document).ready(function () {
     if (event.data.action == "update-deta-veh") {
     }
     if (event.data.action == "loadvehicle") {
+      let priceText =
+        event.data.currency == "coin"
+          ? '<i class="fa-solid fa-coins"></i> ' + event.data.price
+          : "$" + event.data.price;
       html =
         `
         <div class="sil" id="sil">
@@ -39,8 +43,8 @@ $(document).ready(function () {
     <div class="car-name">` +
         event.data.label +
         `</div>
-    <div class="car-price">$` +
-        event.data.price +
+    <div class="car-price">` +
+        priceText +
         `</div>
     <i id="speed" class="fa-solid fa-gauge-simple-high"></i>
     <div class="speed-text">` +
@@ -78,7 +82,11 @@ $(document).ready(function () {
       fillBar(".torque", torque, segment);
     }
     if (event.data.action == "updatela") {
-      $(".price-main span").html("$" + event.data.price);
+      $(".price-main span").html(
+        event.data.currency == "coin"
+          ? '<i class="fa-solid fa-coins"></i> ' + event.data.price
+          : "$" + event.data.price
+      );
       $(".car-cat-name").html(event.data.label);
     }
     if (event.data.action == "cattegory") {

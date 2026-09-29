@@ -1,5 +1,15 @@
 Config_judge                            = {}
 
+-- Court economy (added per your request): a flat operating cost taken from
+-- society_doj every time a case actually gets put on the docket, plus a cut
+-- DOJ takes from every police/sheriff/mt fine since the case runs through
+-- court either way. See server/court_docket.lua for the filing fee and
+-- Unique_LevelQuest/server/bridges.lua for the fine cut (same file that
+-- already hooks esx_billing:send2Bill for the Coin/XP quest system).
+Config_judge.CourtFilingFee              = 500
+Config_judge.CourtProcessingCutPercent   = 5 -- % of police/sheriff/mt fines, billed to the SAME citizen as a second invoice into society_doj
+Config_judge.LicenseRevocationFee        = 1500 -- billed to the citizen whose license the judge revokes
+
 Config_judge.DrawDistance               = 20.0
 Config_judge.MarkerType                 = 21
 Config_judge.MarkerTypeveh              = 36

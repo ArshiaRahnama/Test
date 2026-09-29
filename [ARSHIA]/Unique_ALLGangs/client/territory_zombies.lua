@@ -146,6 +146,15 @@ local function MaintainZone(zoneIndex, zone, playerCoords)
     end
 end
 
+-------------------------------------------------------------------
+-- Zombies must never chase the player outside their OWN zone's
+-- radius, no matter how big despawnRadius is - that's the whole
+-- point of "territory is dangerous, the rest of the map isn't". So
+-- this checks the player's distance from each zombie's HOME zone
+-- (not just raw distance from the zombie itself) and immediately
+-- drops/deletes it the moment the player steps outside that zone's
+-- boundary, before combat AI has a chance to drag it further.
+-------------------------------------------------------------------
 local function MaintainZombies(playerPed, playerCoords)
     for ped, data in pairs(ActiveZombies) do
         if not DoesEntityExist(ped) then
@@ -158,17 +167,28 @@ local function MaintainZombies(playerPed, playerCoords)
                 ActiveZombies[ped] = nil
             end
         else
-            local dist = #(GetEntityCoords(ped) - playerCoords)
-            if dist > data.tier.despawnRadius then
+            local zone = Zones[data.zoneIndex]
+            local outsideZone = zone and (#(playerCoords - zone.coords) > zone.radius + 15.0) -- small buffer so it isn't a hard line
+
+            if outsideZone then
+                -- player left this zombie's territory entirely - stop
+                -- the chase right now instead of letting TaskCombatPed
+                -- keep dragging it along at raw despawnRadius distance
                 DeleteEntity(ped)
                 ActiveZombies[ped] = nil
-            elseif dist <= data.tier.detectRange and not data.aggro then
-                data.aggro = true
-                TaskCombatPed(ped, playerPed, 0, 16)
-            elseif dist > data.tier.detectRange * 1.5 and data.aggro then
-                -- player broke distance by enough that it's not worth chasing anymore
-                data.aggro = false
-                TaskWanderStandard(ped, 10.0, 10)
+            else
+                local dist = #(GetEntityCoords(ped) - playerCoords)
+                if dist > data.tier.despawnRadius then
+                    DeleteEntity(ped)
+                    ActiveZombies[ped] = nil
+                elseif dist <= data.tier.detectRange and not data.aggro then
+                    data.aggro = true
+                    TaskCombatPed(ped, playerPed, 0, 16)
+                elseif dist > data.tier.detectRange * 1.5 and data.aggro then
+                    -- player broke distance by enough that it's not worth chasing anymore
+                    data.aggro = false
+                    TaskWanderStandard(ped, 10.0, 10)
+                end
             end
         end
     end

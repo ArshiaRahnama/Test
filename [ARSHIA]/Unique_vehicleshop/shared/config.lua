@@ -6,7 +6,10 @@ Config.lang = {
     openmenu = "~g~[E]~w~ Open Galery",
     noperm = "No Permission",
     nomoney = "Insufficient money",
-    buyvehicle = "Purchase successful"
+    buyvehicle = "Purchase successful",
+    nocoin = "Insufficient Coin",
+    deliveredPersonal = "Delivered to your garage - go pick it up from there.",
+    deliveredGang = "Delivered to your gang's garage - go pick it up from there.",
 }
 
 Config.drawtextorfloating = false
@@ -24,36 +27,26 @@ Config.MainBlip = {
     label = "Unique Vehicleshop",
 }
 
+-- Salesman NPC: one ped for the whole dealership floor - stands roughly in the
+-- middle of the 4 shop coords below. Talk to him via ox_target to pick which
+-- section (car/boat/heli/plane) to browse; see client.lua. Position/heading
+-- are a starting guess - fine-tune them in-game so he's facing the entrance.
+Config.Shopkeeper = {
+    model = "a_m_y_business_03", -- suited salesman
+    coord = vector4(-38.0, -1098.0, 26.294, 200.0),
+    scenario = "WORLD_HUMAN_CLIPBOARD", -- looks busy/professional, not idle
+}
+
 Config.vehicleshop = {
     [1] = {
         galeryname = "UNIQUE VEHICLE",
         dec = "Lorem ipsum dolor sit amet consectetur. Consectetur condimentum erat sed fringilla lacinia bibendum.",
         type = "car",
         minRank = 0, -- minimum permission_level required to use this shop (essentialmode: 0 = everyone, higher = staff/admin only). Raise this for staff/test shops, e.g. 2 or 8.
-        categories = {"compacts","coupes","motorcycles","muscle","offroad","sedans","sports","sportsclassics","super","suvs","vans"},
+        categories = {"compacts","coupes","motorcycles","muscle","offroad","sedans","sports","sportsclassics","super","suvs","vans","exclusive"},
         coord = vector3(-32.785, -1102.3, 26.4223),
         buyspawn = vector3(-8.8265, -1082.0, 26.2381),
         vehspawn = vector3(-99.3386230469, -1049.10900878906, 26.756130218506),
-        marker = {
-            type = 27,         -- spinning arrow marker (way more fun than a flat circle)
-            color = {r = 255, g = 193, b = 7, a = 130},
-            size = vector3(1.4, 1.4, 1.0),
-            offsetZ = -0.98,
-            radius = 5.0,      -- distance at which the marker becomes visible
-            interactRadius = 3.0, -- distance at which [E] activates
-        },
-        -- Salesman NPC: stands where the marker is (same x/y, feet at coord.z - 1.0,
-        -- matching the marker's own -0.98 ground offset above). Interact with him
-        -- via ox_target to open the shop - no more "walk into the circle" feel.
-        -- Heading (the 4th number) is a starting guess; tweak it in-game so he's
-        -- facing the customer path.
-        ped = {
-            model = "a_m_y_business_03", -- suited salesman
-            coord = vector4(-32.785, -1102.3, 25.4423, 200.0),
-            scenario = "WORLD_HUMAN_CLIPBOARD", -- looks busy/professional, not idle
-            label = "Browse & Buy Vehicles",
-            icon = "fa-solid fa-car",
-        },
     },
     [2] = {
         -- Self-contained boat shop (no longer depends on esx_boat)
@@ -65,21 +58,6 @@ Config.vehicleshop = {
         coord = vector3(-40.7176, -1094.69, 27.274),
         buyspawn = vector3(-792.78, -1501.01, -0.47),
         vehspawn = vector3(-792.78, -1501.01, -0.47),
-        marker = {
-            type = 27,
-            color = {r = 10, g = 197, b = 243, a = 130},
-            size = vector3(1.4, 1.4, 1.0),
-            offsetZ = -0.98,
-            radius = 5.0,
-            interactRadius = 3.0,
-        },
-        ped = {
-            model = "s_m_y_dockwork_01", -- dockhand, fits a boat showroom
-            coord = vector4(-40.7176, -1094.69, 26.294, 20.0),
-            scenario = "WORLD_HUMAN_CLIPBOARD",
-            label = "Browse & Buy Boats",
-            icon = "fa-solid fa-ship",
-        },
     },
     [3] = {
         -- Self-contained heli shop (no longer depends on esx_heli)
@@ -91,21 +69,6 @@ Config.vehicleshop = {
         coord = vector3(-38.7102, -1100.23, 27.274),
         buyspawn = vector3(-1405.34, -3212.34, 13.944),
         vehspawn = vector3(-1405.34, -3212.34, 13.944),
-        marker = {
-            type = 27,
-            color = {r = 219, g = 8, b = 255, a = 130},
-            size = vector3(1.4, 1.4, 1.0),
-            offsetZ = -0.98,
-            radius = 5.0,
-            interactRadius = 3.0,
-        },
-        ped = {
-            model = "s_m_y_pilot_01", -- pilot uniform
-            coord = vector4(-38.7102, -1100.23, 26.294, 20.0),
-            scenario = "WORLD_HUMAN_CLIPBOARD",
-            label = "Browse & Buy Helicopters",
-            icon = "fa-solid fa-helicopter",
-        },
     },
     [4] = {
         -- Self-contained plane shop (no longer depends on esx_air).
@@ -119,21 +82,6 @@ Config.vehicleshop = {
         coord = vector3(-51.4241, -1094.91, 27.274),
         buyspawn = vector3(-1405.34, -3212.34, 13.944),
         vehspawn = vector3(-1405.34, -3212.34, 13.944),
-        marker = {
-            type = 27,
-            color = {r = 4, g = 255, b = 23, a = 130},
-            size = vector3(1.4, 1.4, 1.0),
-            offsetZ = -0.98,
-            radius = 5.0,
-            interactRadius = 3.0,
-        },
-        ped = {
-            model = "s_m_y_pilot_01", -- pilot uniform
-            coord = vector4(-51.4241, -1094.91, 26.294, 340.0),
-            scenario = "WORLD_HUMAN_CLIPBOARD",
-            label = "Browse & Buy Planes",
-            icon = "fa-solid fa-plane",
-        },
     },
 }
 
@@ -390,6 +338,20 @@ Config.Vehicles["compacts"] = {
     { label = "Youga VN", name = "youga2", price = 20000 },
     } 
 
+    -- "Exclusive" tier: Coin-only supercars, sold from the same car shop /
+    -- salesman ped as everything else - just its own category tab. `currency`
+    -- is what marks these as Coin-priced instead of cash; shared/server.lua
+    -- reads this field to decide which balance to check/charge, and it's
+    -- Unique_LevelQuest's users.coin column that actually gets debited (see
+    -- rent/vehicleshop server code - no changes needed in Unique_LevelQuest
+    -- itself). Every other category above with no `currency` field is cash,
+    -- same as before.
+    Config.Vehicles["exclusive"] = {
+    { label = "Zorrusso", name = "zorrusso", price = 180, currency = "coin" },
+    { label = "Virtue", name = "virtue", price = 250, currency = "coin" },
+    { label = "Toreador", name = "toreador", price = 400, currency = "coin" },
+    }
+
     -- Boat prices (self-contained, no esx_boat dependency)
     Config.Vehicles["boats"] = {
     { label = "Jetmax", name = "jetmax", price = 10000000 },
@@ -427,6 +389,20 @@ Config.Vehicles["compacts"] = {
 		coords  = vector3(-942.64,-3365.96,12.95),
 		range   = 400,
 	}
+
+-- Optional "Deliver to Garage" purchase path for boat/heli/plane (see
+-- client.lua's buy flow + shared/server.lua). Skips physically spawning the
+-- vehicle at the shop entirely: it's registered straight into owned_vehicles
+-- as already stored, under the player's own garage, or their gang's if
+-- they're in one (xPlayer.gang.name ~= 'nogang') - so it shows up next time
+-- they open Unique_Garage, same as if they'd bought it and parked it
+-- themselves. Not offered for the car shop - buyspawn there is right next to
+-- the showroom already, so there's nothing to save a trip on.
+Config.DeliveryFee = {
+    boat = 15000,
+    helicopter = 25000,
+    airplane = 40000,
+}
 
 ------------------------------------------------------------------------------------
 -- Vehicle rental - migrated in full from the standalone Unique_Rent resource

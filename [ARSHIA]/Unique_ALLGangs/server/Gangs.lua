@@ -202,7 +202,8 @@ ESX.RegisterServerCallback('For5M:GetGangData', function(source, cb, name)
             local Expire = Gangs[name].expire
             local Expire_Day = Gangs[name].expire_day
             local Disband = Gangs[name].disband
-            local UnixExpire = (Expire- os.time()) / 86400
+            Expire_Day = tonumber(Expire_Day)
+            local UnixExpire = ((tonumber(Expire) or 0) - os.time()) / 86400
             local Az100 = (Expire_Day and Expire_Day > 0) and (100 / Expire_Day * UnixExpire) or 0
             if Az100 > 0 and Disband == 0 then
                 cb(true, Gangs[name])
@@ -224,6 +225,10 @@ ESX.RegisterServerCallback('FMGangs:CreateGang', function(source, cb, data)
         print('[Unique_ALLGangs] CreateGang ABORT: xPlayer is nil for source ' .. tostring(source))
         return cb(false, 'player not found')
     end
+    -- expire arrives from the NUI as a STRING ("30"). `data.expire * 86400` still works (Lua coerces it),
+    -- but storing the raw string into Gangs[..].expire_day made every later `expire_day > 0` compare blow up
+    -- with "attempt to compare number with string" for EVERY gang loop (GetGangsData/TopGangs/gang info).
+    if data and data.expire ~= nil then data.expire = tonumber(data.expire) end
     if data.name and data.label and data.expire and data.logo then
         if Gangs[data.name] == nil then
             print('[Unique_ALLGangs] CreateGang: creating new gang "' .. data.name .. '"')
@@ -1233,6 +1238,7 @@ function MaybeLeakGangChatTip(gang, message)
 end
 
 ESX.RegisterServerCallback('FMGangs:UpdateGang', function(source, cb, gangname, label, expire, logo , webhook)
+    expire = tonumber(expire) -- see CreateGang: must be a real number, never the raw NUI string
     if label and expire and logo then
         local DayToSecond = (expire * 86400) + os.time()
         MySQL.Async.execute('UPDATE gangs SET expire = @expire, expire_day = @expire_day, label = @label, logo = @logo , webhook = @webhook WHERE name = @name', 
@@ -1357,8 +1363,9 @@ ESX.RegisterServerCallback('FMGangs:GetPanelData', function(source, cb)
    
     for k,v in pairs(Gangs) do 
 
-        local UnixExpire = (v.expire - os.time()) / 86400
-        local Az100 = (v.expire_day and v.expire_day > 0) and (100 / v.expire_day * UnixExpire) or 0
+        local expireDay = tonumber(v.expire_day)
+        local UnixExpire = ((tonumber(v.expire) or 0) - os.time()) / 86400
+        local Az100 = (expireDay and expireDay > 0) and (100 / expireDay * UnixExpire) or 0
         table.insert(TopGangs, { Name = v.name, Level = v.level , XP = v.xp , Expire = v.expire_day, ExpirationDP = Az100 , logo = v.logo })
         AllMembers[v.name] = {}
         AllMembers[v.name]['online'] = {} 
@@ -1429,8 +1436,9 @@ ESX.RegisterServerCallback('FMGangs:GetGangsData', function(source, cb)
     local Expires = {}
     local AllMembers = {}
     for k,v in pairs(Gangs) do 
-        local UnixExpire = (v.expire - os.time()) / 86400
-        local Az100 = (v.expire_day and v.expire_day > 0) and (100 / v.expire_day * UnixExpire) or 0
+        local expireDay = tonumber(v.expire_day)
+        local UnixExpire = ((tonumber(v.expire) or 0) - os.time()) / 86400
+        local Az100 = (expireDay and expireDay > 0) and (100 / expireDay * UnixExpire) or 0
         Expires[v.name] = Az100
         AllMembers[v.name] = {}
         AllMembers[v.name]['online'] = {} 

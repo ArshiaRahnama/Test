@@ -1718,3 +1718,1325 @@ AddEventHandler('Unique_Phone:Delete_Message', function(PhoneNumber)
         PhoneNumber
     })
 end)
+
+-- ==========================================================================
+-- EXPANSION: Discord app — real servers/channels, messages persisted in the
+-- DB (phone_discord_* tables, see sql/discord.sql) and pushed live to every
+-- other online member of the server. Mirrors the existing style in this
+-- file: ExecuteSql(wait, query, params, cb) for reads, MySQL.Async.execute
+-- for fire-and-forget writes, ESX.GetPlayerFromIdentifier to find an online
+-- member's client to push to.
+-- ==========================================================================
+
+local DiscordIconPalette = {"#5865F2", "#EB459E", "#ED4245", "#FAA61A", "#57F287", "#3BA55D", "#00AFF4"}
+
+-- ---- identity / permission helpers -------------------------------------
+
+-- xPlayer.firstname/lastname are not reliable on this server (lastname came
+-- back nil and crashed server creation), so build the display name from every
+-- source we have, in order of trust, and never return nil.
+function Discord_GetDisplayName(src)
+    local xPlayer = ESX.GetPlayerFromId(src)
+    if xPlayer == nil then return "Player" end
+
+    local first, last = xPlayer.firstname, xPlayer.lastname
+    if type(first) == "string" and type(last) == "string" and first ~= "" and last ~= "" then
+        return first .. " " .. last
+    end
+
+    local raw = xPlayer.name
+    if (type(raw) ~= "string" or raw == "") and type(xPlayer.getName) == "function" then
+        local ok, res = pcall(xPlayer.getName, xPlayer)
+        if ok then raw = res end
+    end
+    if type(raw) == "string" and raw ~= "" and raw ~= GetPlayerName(src) then
+        return (raw:gsub("_", " "))
+    end
+
+    local rows = MySQL.Sync.fetchAll("SELECT firstname, lastname FROM users WHERE identifier = @id", { ['@id'] = xPlayer.identifier })
+    if rows[1] and rows[1].firstname and rows[1].firstname ~= "" then
+        return rows[1].firstname .. ((rows[1].lastname and rows[1].lastname ~= "") and (" " .. rows[1].lastname) or "")
+    end
+
+    if type(first) == "string" and first ~= "" then return first end
+    return GetPlayerName(src) or "Player"
+end
+
+-- Game staff. Same source of truth the Job Manager uses (Unique_AdminPanel's
+-- exported isAdmin), with the perm-level check other scripts here use as a
+-- fallback so it still works if that resource is stopped.
+function Discord_IsStaff(src)
+    local ok, res = pcall(function() return exports['Unique_AdminPanel']:isAdmin(src) end)
+    if ok and res == true then return true end
+
+    local xPlayer = ESX.GetPlayerFromId(src)
+    if xPlayer == nil then return false end
+    if (tonumber(xPlayer.perm) or tonumber(xPlayer.permission_level) or 0) >= 1 then return true end
+    if type(xPlayer.getGroup) == "function" then
+        local ok2, group = pcall(xPlayer.getGroup, xPlayer)
+        if ok2 and (group == "admin" or group == "superadmin" or group == "mod") then return true end
+    end
+    return false
+end
+
+-- Discord-wide bans, kept in memory (single source of truth is the table;
+-- this just avoids a query on every single Discord call).
+local DiscordBans = {}
+
+function Discord_GetBan(identifier)
+    local ban = DiscordBans[identifier]
+    if ban == nil then return nil end
+    if ban.expires_at ~= nil and ban.expires_at <= os.time() then
+        DiscordBans[identifier] = nil
+        MySQL.Async.execute("DELETE FROM phone_discord_bans WHERE identifier = @id", { ['@id'] = identifier })
+        return nil
+    end
+    return ban
+end
+
+Citizen.CreateThread(function()
+    Citizen.Wait(3000)
+    local rows = MySQL.Sync.fetchAll("SELECT * FROM phone_discord_bans", {})
+    for _, r in pairs(rows or {}) do DiscordBans[r.identifier] = r end
+
+    -- A failed server creation (before the name fix above) could leave a
+    -- server row with no members. Clean those up; FKs cascade the rest.
+    MySQL.Async.execute("DELETE FROM phone_discord_servers WHERE id NOT IN (SELECT DISTINCT server_id FROM phone_discord_members)", {})
+end)
+
+-- Every Discord endpoint gets its player through this, so a banned account
+-- is treated exactly like "no player" and every handler already returns
+-- its normal empty/false result.
+function Discord_GetPlayer(src)
+    local xPlayer = ESX.GetPlayerFromId(src)
+    if xPlayer == nil then return nil end
+    if Discord_GetBan(xPlayer.identifier) ~= nil then return nil end
+    return xPlayer
+end
+
+function Discord_GenerateInviteCode()
+    local chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+    local code = ""
+    for i = 1, 7 do
+        local idx = math.random(1, #chars)
+        code = code .. string.sub(chars, idx, idx)
+    end
+    return code
+end
+
+-- string.sub cuts by BYTE, not character. Server/channel names here are
+-- very often Persian (this whole server is), and every Persian character
+-- is 2+ bytes in UTF-8 — a byte-based sub can slice a character in half
+-- and corrupt it (and everything after it) into mojibake. This cuts on
+-- codepoint boundaries instead, using Lua 5.4's built-in utf8 library.
+function Discord_Utf8SafeSub(str, maxChars)
+    if str == nil or maxChars == nil then return str end
+
+    local ok, len = pcall(utf8.len, str)
+    if not ok or len == nil then
+        return string.sub(str, 1, maxChars) -- not valid UTF-8 at all — fall back
+    end
+    if len <= maxChars then return str end
+
+    local byteIndex = utf8.offset(str, maxChars + 1)
+    if byteIndex == nil then return str end
+    return string.sub(str, 1, byteIndex - 1)
+end
+
+function Discord_IconText(name)
+    local words = {}
+    for word in string.gmatch(name, "%S+") do
+        table.insert(words, word)
+    end
+
+    if #words >= 2 then
+        return string.upper(Discord_Utf8SafeSub(words[1], 1) .. Discord_Utf8SafeSub(words[2], 1))
+    elseif #words == 1 then
+        return string.upper(Discord_Utf8SafeSub(words[1], 2))
+    end
+
+    return "D"
+end
+
+function Discord_IsMember(identifier, serverId)
+    local result = ExecuteSql(true, "SELECT id FROM phone_discord_members WHERE server_id = @sid AND identifier = @id", {
+        ['@sid'] = serverId,
+        ['@id'] = identifier,
+    })
+    return result[1] ~= nil
+end
+
+function Discord_IsOwner(identifier, serverId)
+    local result = ExecuteSql(true, "SELECT id FROM phone_discord_servers WHERE id = @sid AND owner_identifier = @id", {
+        ['@sid'] = serverId,
+        ['@id'] = identifier,
+    })
+    return result[1] ~= nil
+end
+
+function Discord_IsAdmin(identifier, serverId)
+    local result = ExecuteSql(true, "SELECT id FROM phone_discord_members WHERE server_id = @sid AND identifier = @id AND is_admin = 1", {
+        ['@sid'] = serverId,
+        ['@id'] = identifier,
+    })
+    return result[1] ~= nil
+end
+
+-- Channel management (create/delete/pin) is owner-or-admin; server-level
+-- actions (delete server, kick, promote admins, settings) stay owner-only.
+function Discord_CanManageChannels(identifier, serverId)
+    return Discord_IsOwner(identifier, serverId) or Discord_IsAdmin(identifier, serverId)
+end
+
+function Discord_GetServerIdForChannel(channelId)
+    local result = ExecuteSql(true, "SELECT server_id FROM phone_discord_channels WHERE id = @cid", {['@cid'] = channelId})
+    if result[1] then return result[1].server_id end
+    return nil
+end
+
+-- Pushes a payload to every online member of a server (optionally skipping
+-- one source, e.g. the sender, who already updated their own UI locally).
+function Discord_BroadcastToServerMembers(serverId, eventName, payload, skipSource)
+    local members = ExecuteSql(true, "SELECT identifier FROM phone_discord_members WHERE server_id = @sid", {['@sid'] = serverId})
+    for _, member in pairs(members) do
+        local Ply = ESX.GetPlayerFromIdentifier(member.identifier)
+        if Ply ~= nil and Ply.source ~= skipSource then
+            TriggerClientEvent(eventName, Ply.source, payload)
+        end
+    end
+end
+
+ESX.RegisterServerCallback('Unique_Phone:server:Discord:GetServers', function(source, cb)
+    local xPlayer = Discord_GetPlayer(source)
+    if xPlayer == nil then cb({}) return end
+
+    local servers = ExecuteSql(true, [[
+        SELECT s.id, s.name, s.icon_text, s.icon_color, s.invite_code, s.owner_identifier, s.is_public, s.is_verified, m.is_admin
+        FROM phone_discord_servers s
+        INNER JOIN phone_discord_members m ON m.server_id = s.id
+        WHERE m.identifier = @id
+        ORDER BY s.id ASC
+    ]], {['@id'] = xPlayer.identifier})
+
+    for _, server in pairs(servers) do
+        server.isOwner = (server.owner_identifier == xPlayer.identifier)
+        server.isAdmin = (server.is_admin == 1 or server.is_admin == true)
+        server.isPublic = (server.is_public == 1 or server.is_public == true)
+        server.isVerified = (server.is_verified == 1 or server.is_verified == true)
+        server.is_verified = nil
+        server.owner_identifier = nil
+        server.is_admin = nil
+        server.is_public = nil
+    end
+
+    cb(servers)
+end)
+
+ESX.RegisterServerCallback('Unique_Phone:server:Discord:GetChannels', function(source, cb, serverId)
+    local xPlayer = Discord_GetPlayer(source)
+    if xPlayer == nil or serverId == nil or not Discord_IsMember(xPlayer.identifier, serverId) then
+        cb(false)
+        return
+    end
+
+    local channels = ExecuteSql(true, "SELECT id, name, position, is_verified, is_locked FROM phone_discord_channels WHERE server_id = @sid ORDER BY position ASC, id ASC", {
+        ['@sid'] = serverId,
+    })
+
+    for _, ch in pairs(channels) do
+        ch.isVerified = (ch.is_verified == 1 or ch.is_verified == true)
+        ch.isLocked = (ch.is_locked == 1 or ch.is_locked == true)
+        ch.is_verified, ch.is_locked = nil, nil
+    end
+
+    cb(channels)
+end)
+
+ESX.RegisterServerCallback('Unique_Phone:server:Discord:GetMessages', function(source, cb, channelId)
+    local xPlayer = Discord_GetPlayer(source)
+    local serverId = channelId ~= nil and Discord_GetServerIdForChannel(channelId) or nil
+
+    if xPlayer == nil or serverId == nil or not Discord_IsMember(xPlayer.identifier, serverId) then
+        cb(false)
+        return
+    end
+
+    local messages = ExecuteSql(true, "SELECT id, identifier, author_name, message, created_at, edited_at, is_pinned, is_announcement, reply_to_id FROM phone_discord_messages WHERE channel_id = @cid ORDER BY id ASC LIMIT 200", {
+        ['@cid'] = channelId,
+    })
+
+    -- One query for every reaction on this page of messages, then group by
+    -- message id in Lua — cheaper than N+1 queries per message.
+    local reactionsByMessage = {}
+    local replyPreviewById = {}
+    if #messages > 0 then
+        local idParts = {}
+        local replyIdParts = {}
+        for _, msg in pairs(messages) do
+            table.insert(idParts, tostring(msg.id))
+            if msg.reply_to_id ~= nil then table.insert(replyIdParts, tostring(msg.reply_to_id)) end
+        end
+
+        local reactions = ExecuteSql(true, "SELECT message_id, identifier, emoji FROM phone_discord_reactions WHERE message_id IN (" .. table.concat(idParts, ",") .. ")", {})
+
+        for _, r in pairs(reactions) do
+            reactionsByMessage[r.message_id] = reactionsByMessage[r.message_id] or {}
+            local byEmoji = reactionsByMessage[r.message_id]
+            byEmoji[r.emoji] = byEmoji[r.emoji] or { emoji = r.emoji, count = 0, reacted = false }
+            byEmoji[r.emoji].count = byEmoji[r.emoji].count + 1
+            if r.identifier == xPlayer.identifier then byEmoji[r.emoji].reacted = true end
+        end
+
+        if #replyIdParts > 0 then
+            local replied = ExecuteSql(true, "SELECT id, author_name, message FROM phone_discord_messages WHERE id IN (" .. table.concat(replyIdParts, ",") .. ")", {})
+            for _, r in pairs(replied) do
+                replyPreviewById[r.id] = { author_name = r.author_name, message = Discord_Utf8SafeSub(r.message, 80) }
+            end
+        end
+    end
+
+    local memberRowByIdentifier, verifiedByIdentifier = {}, {}
+    for _, m in pairs(ExecuteSql(true, "SELECT m.id, m.identifier, p.verified FROM phone_discord_members m LEFT JOIN phone_discord_profiles p ON p.identifier = m.identifier WHERE m.server_id = @sid", { ['@sid'] = serverId })) do
+        memberRowByIdentifier[m.identifier] = m.id
+        verifiedByIdentifier[m.identifier] = (m.verified == 1 or m.verified == true)
+    end
+
+    for _, msg in pairs(messages) do
+        msg.isMine = (msg.identifier == xPlayer.identifier)
+        msg.authorVerified = verifiedByIdentifier[msg.identifier] or false
+        msg.isAnnouncement = (msg.is_announcement == 1 or msg.is_announcement == true)
+        msg.is_announcement = nil
+        msg.authorMemberId = memberRowByIdentifier[msg.identifier] -- lets the UI open the author's profile without exposing identifiers
+        msg.identifier = nil -- don't leak other players' identifiers to the client
+
+        local list = {}
+        if reactionsByMessage[msg.id] then
+            for _, r in pairs(reactionsByMessage[msg.id]) do table.insert(list, r) end
+        end
+        msg.reactions = list
+
+        if msg.reply_to_id ~= nil then
+            msg.replyPreview = replyPreviewById[msg.reply_to_id] or nil
+        end
+    end
+
+    cb(messages)
+end)
+
+ESX.RegisterServerCallback('Unique_Phone:server:Discord:GetMembers', function(source, cb, serverId)
+    local xPlayer = Discord_GetPlayer(source)
+    if xPlayer == nil or serverId == nil or not Discord_IsMember(xPlayer.identifier, serverId) then
+        cb(false)
+        return
+    end
+
+    local server = ExecuteSql(true, "SELECT owner_identifier FROM phone_discord_servers WHERE id = @sid", {['@sid'] = serverId})
+    local ownerIdentifier = server[1] and server[1].owner_identifier or nil
+
+    local members = ExecuteSql(true, [[
+        SELECT m.id, m.identifier, m.nickname, m.is_admin, p.status, p.custom_status, p.verified
+        FROM phone_discord_members m
+        LEFT JOIN phone_discord_profiles p ON p.identifier = m.identifier
+        WHERE m.server_id = @sid
+        ORDER BY m.nickname ASC
+    ]], {
+        ['@sid'] = serverId,
+    })
+
+    for _, member in pairs(members) do
+        member.isOwner = (member.identifier == ownerIdentifier)
+        member.isAdmin = (member.is_admin == 1 or member.is_admin == true)
+        member.is_admin = nil
+        member.isVerified = (member.verified == 1 or member.verified == true)
+        member.verified = nil
+
+        -- "invisible" shows as offline to everyone else, like real Discord.
+        local status = member.status or "online"
+        local isConnected = ESX.GetPlayerFromIdentifier(member.identifier) ~= nil
+        member.isOnline = isConnected and status ~= "invisible"
+        member.status = member.isOnline and status or "offline"
+        member.customStatus = member.isOnline and member.custom_status or nil
+        member.custom_status = nil
+        member.identifier = nil
+    end
+
+    cb(members)
+end)
+
+ESX.RegisterServerCallback('Unique_Phone:server:Discord:SendMessage', function(source, cb, channelId, message, replyToId)
+    local xPlayer = Discord_GetPlayer(source)
+    if xPlayer == nil or type(message) ~= "string" then cb(false) return end
+
+    message = Discord_Utf8SafeSub(message, 1000)
+    if string.gsub(message, "%s+", "") == "" then cb(false) return end
+
+    local serverId = Discord_GetServerIdForChannel(channelId)
+    if serverId == nil or not Discord_IsMember(xPlayer.identifier, serverId) then cb(false) return end
+
+    -- Locked channels are read-only for regular members (announcement
+    -- channels etc.) — owner, server admins and game staff can still post.
+    local lockRow = ExecuteSql(true, "SELECT is_locked FROM phone_discord_channels WHERE id = @cid", { ['@cid'] = channelId })
+    if lockRow[1] and (lockRow[1].is_locked == 1 or lockRow[1].is_locked == true)
+        and not Discord_CanManageChannels(xPlayer.identifier, serverId) and not Discord_IsStaff(source) then
+        cb({ error = "LOCKED" })
+        return
+    end
+
+    if type(replyToId) ~= "number" then replyToId = nil end
+
+    local authorName = Discord_GetDisplayName(source)
+    local createdAt = os.time()
+
+    local newMessageId = MySQL.Sync.insert("INSERT INTO phone_discord_messages (channel_id, identifier, author_name, message, created_at, reply_to_id) VALUES (@cid, @id, @name, @msg, @time, @reply)", {
+        ['@cid'] = channelId,
+        ['@id'] = xPlayer.identifier,
+        ['@name'] = authorName,
+        ['@msg'] = message,
+        ['@time'] = createdAt,
+        ['@reply'] = replyToId,
+    })
+
+    local replyPreview = nil
+    if replyToId ~= nil then
+        local replied = ExecuteSql(true, "SELECT author_name, message FROM phone_discord_messages WHERE id = @rid", { ['@rid'] = replyToId })
+        if replied[1] then
+            replyPreview = { author_name = replied[1].author_name, message = Discord_Utf8SafeSub(replied[1].message, 80) }
+        end
+    end
+
+    local payload = {
+        id = newMessageId,
+        serverId = serverId,
+        channelId = channelId,
+        author_name = authorName,
+        message = message,
+        created_at = createdAt,
+        replyPreview = replyPreview,
+        authorVerified = (Discord_EnsureProfile(xPlayer.identifier).verified == 1 or Discord_EnsureProfile(xPlayer.identifier).verified == true),
+        authorMemberId = (ExecuteSql(true, "SELECT id FROM phone_discord_members WHERE server_id = @sid AND identifier = @id", { ['@sid'] = serverId, ['@id'] = xPlayer.identifier })[1] or {}).id,
+    }
+
+    -- Sender's own client already appended the message optimistically — it
+    -- just needs the id back (see below) to attach reactions/edit/delete to
+    -- it. Every other online member gets the full live payload.
+    Discord_BroadcastToServerMembers(serverId, 'Unique_Phone:client:Discord:NewMessage', payload, source)
+
+    cb({ id = newMessageId, created_at = createdAt, replyPreview = replyPreview })
+end)
+
+ESX.RegisterServerCallback('Unique_Phone:server:Discord:CreateServer', function(source, cb, serverName)
+    local xPlayer = Discord_GetPlayer(source)
+    if xPlayer == nil or type(serverName) ~= "string" then cb(false) return end
+
+    serverName = Discord_Utf8SafeSub(string.gsub(serverName, "^%s+", ""), 40)
+    if serverName == "" then cb(false) return end
+
+    local inviteCode = Discord_GenerateInviteCode()
+    local iconColor = DiscordIconPalette[math.random(1, #DiscordIconPalette)]
+    local iconText = Discord_IconText(serverName)
+    local createdAt = os.time()
+
+    local newServerId = MySQL.Sync.insert("INSERT INTO phone_discord_servers (name, icon_text, icon_color, owner_identifier, invite_code, created_at) VALUES (@name, @icon, @color, @owner, @code, @time)", {
+        ['@name'] = serverName,
+        ['@icon'] = iconText,
+        ['@color'] = iconColor,
+        ['@owner'] = xPlayer.identifier,
+        ['@code'] = inviteCode,
+        ['@time'] = createdAt,
+    })
+
+    MySQL.Sync.insert("INSERT INTO phone_discord_channels (server_id, name, position, created_at) VALUES (@sid, 'general', 0, @time)", {
+        ['@sid'] = newServerId,
+        ['@time'] = createdAt,
+    })
+
+    MySQL.Sync.insert("INSERT INTO phone_discord_members (server_id, identifier, nickname, joined_at) VALUES (@sid, @id, @nick, @time)", {
+        ['@sid'] = newServerId,
+        ['@id'] = xPlayer.identifier,
+        ['@nick'] = Discord_GetDisplayName(source),
+        ['@time'] = createdAt,
+    })
+
+    cb({
+        id = newServerId,
+        name = serverName,
+        icon_text = iconText,
+        icon_color = iconColor,
+        invite_code = inviteCode,
+        isOwner = true,
+    })
+end)
+
+ESX.RegisterServerCallback('Unique_Phone:server:Discord:CreateChannel', function(source, cb, serverId, channelName)
+    local xPlayer = Discord_GetPlayer(source)
+    if xPlayer == nil or serverId == nil or type(channelName) ~= "string" or not Discord_CanManageChannels(xPlayer.identifier, serverId) then
+        cb(false)
+        return
+    end
+
+    channelName = string.lower(string.gsub(Discord_Utf8SafeSub(string.gsub(channelName, "^%s+", ""), 30), "%s+", "-"))
+    if channelName == "" then cb(false) return end
+
+    local countResult = ExecuteSql(true, "SELECT COUNT(*) as count FROM phone_discord_channels WHERE server_id = @sid", {['@sid'] = serverId})
+    local position = countResult[1] and countResult[1].count or 0
+
+    local newChannelId = MySQL.Sync.insert("INSERT INTO phone_discord_channels (server_id, name, position, created_at) VALUES (@sid, @name, @pos, @time)", {
+        ['@sid'] = serverId,
+        ['@name'] = channelName,
+        ['@pos'] = position,
+        ['@time'] = os.time(),
+    })
+
+    local channel = { id = newChannelId, name = channelName, position = position }
+
+    Discord_BroadcastToServerMembers(serverId, 'Unique_Phone:client:Discord:NewChannel', { serverId = serverId, channel = channel }, source)
+
+    cb(channel)
+end)
+
+ESX.RegisterServerCallback('Unique_Phone:server:Discord:JoinServer', function(source, cb, inviteCode)
+    local xPlayer = Discord_GetPlayer(source)
+    if xPlayer == nil or type(inviteCode) ~= "string" then cb(false) return end
+
+    inviteCode = string.upper(string.gsub(inviteCode, "%s+", ""))
+
+    local server = ExecuteSql(true, "SELECT id, name, icon_text, icon_color, invite_code, owner_identifier, is_verified FROM phone_discord_servers WHERE invite_code = @code", {
+        ['@code'] = inviteCode,
+    })
+
+    if server[1] == nil then
+        cb({ error = "NOT_FOUND" })
+        return
+    end
+
+    server = server[1]
+
+    if Discord_IsMember(xPlayer.identifier, server.id) then
+        cb({ error = "ALREADY_MEMBER" })
+        return
+    end
+
+
+    MySQL.Sync.insert("INSERT INTO phone_discord_members (server_id, identifier, nickname, joined_at) VALUES (@sid, @id, @nick, @time)", {
+        ['@sid'] = server.id,
+        ['@id'] = xPlayer.identifier,
+        ['@nick'] = Discord_GetDisplayName(source),
+        ['@time'] = os.time(),
+    })
+
+    server.isOwner = (server.owner_identifier == xPlayer.identifier)
+    server.owner_identifier = nil
+    server.isVerified = (server.is_verified == 1 or server.is_verified == true)
+    server.is_verified = nil
+
+    cb(server)
+end)
+
+RegisterServerEvent('Unique_Phone:server:Discord:LeaveServer')
+AddEventHandler('Unique_Phone:server:Discord:LeaveServer', function(serverId)
+    local src = source
+    local xPlayer = ESX.GetPlayerFromId(src)
+    if xPlayer == nil or serverId == nil then return end
+    if Discord_IsOwner(xPlayer.identifier, serverId) then return end -- owner must delete the server instead
+
+    MySQL.Async.execute("DELETE FROM phone_discord_members WHERE server_id = @sid AND identifier = @id", {
+        ['@sid'] = serverId,
+        ['@id'] = xPlayer.identifier,
+    })
+end)
+
+ESX.RegisterServerCallback('Unique_Phone:server:Discord:DeleteServer', function(source, cb, serverId)
+    local xPlayer = Discord_GetPlayer(source)
+    if xPlayer == nil or serverId == nil or not Discord_IsOwner(xPlayer.identifier, serverId) then
+        cb(false)
+        return
+    end
+
+    Discord_BroadcastToServerMembers(serverId, 'Unique_Phone:client:Discord:ServerDeleted', { serverId = serverId }, source)
+
+    -- Foreign keys cascade channels/members/messages.
+    MySQL.Async.execute("DELETE FROM phone_discord_servers WHERE id = @sid", {['@sid'] = serverId})
+
+    cb(true)
+end)
+
+ESX.RegisterServerCallback('Unique_Phone:server:Discord:DeleteChannel', function(source, cb, channelId)
+    local xPlayer = Discord_GetPlayer(source)
+    local serverId = channelId ~= nil and Discord_GetServerIdForChannel(channelId) or nil
+
+    if xPlayer == nil or serverId == nil or not Discord_CanManageChannels(xPlayer.identifier, serverId) then
+        cb(false)
+        return
+    end
+
+    local countResult = ExecuteSql(true, "SELECT COUNT(*) as count FROM phone_discord_channels WHERE server_id = @sid", {['@sid'] = serverId})
+    if countResult[1] and countResult[1].count <= 1 then
+        cb({ error = "LAST_CHANNEL" })
+        return
+    end
+
+    MySQL.Async.execute("DELETE FROM phone_discord_channels WHERE id = @cid", {['@cid'] = channelId})
+
+    Discord_BroadcastToServerMembers(serverId, 'Unique_Phone:client:Discord:ChannelDeleted', { serverId = serverId, channelId = channelId }, source)
+
+    cb(true)
+end)
+
+-- ==========================================================================
+-- EXPANSION v2: reactions, edit/delete/pin, kicking members, server settings.
+-- ==========================================================================
+
+local DiscordAllowedEmoji = {
+    ["👍"] = true, ["❤️"] = true, ["😂"] = true, ["😮"] = true,
+    ["😢"] = true, ["🔥"] = true, ["🎉"] = true, ["👀"] = true,
+}
+
+function Discord_GetMessageOwnerAndServer(messageId)
+    local result = ExecuteSql(true, [[
+        SELECT m.identifier, c.server_id
+        FROM phone_discord_messages m
+        INNER JOIN phone_discord_channels c ON c.id = m.channel_id
+        WHERE m.id = @mid
+    ]], { ['@mid'] = messageId })
+
+    if result[1] then return result[1].identifier, result[1].server_id end
+    return nil, nil
+end
+
+function Discord_GetMessageReactions(messageId, viewerIdentifier)
+    local reactions = ExecuteSql(true, "SELECT identifier, emoji FROM phone_discord_reactions WHERE message_id = @mid", { ['@mid'] = messageId })
+    local byEmoji = {}
+
+    for _, r in pairs(reactions) do
+        byEmoji[r.emoji] = byEmoji[r.emoji] or { emoji = r.emoji, count = 0, reacted = false }
+        byEmoji[r.emoji].count = byEmoji[r.emoji].count + 1
+        if r.identifier == viewerIdentifier then byEmoji[r.emoji].reacted = true end
+    end
+
+    local list = {}
+    for _, r in pairs(byEmoji) do table.insert(list, r) end
+    return list
+end
+
+ESX.RegisterServerCallback('Unique_Phone:server:Discord:ToggleReaction', function(source, cb, messageId, emoji)
+    local xPlayer = Discord_GetPlayer(source)
+    if xPlayer == nil or messageId == nil or not DiscordAllowedEmoji[emoji] then cb(false) return end
+
+    local _, serverId = Discord_GetMessageOwnerAndServer(messageId)
+    if serverId == nil or not Discord_IsMember(xPlayer.identifier, serverId) then cb(false) return end
+
+    local existing = ExecuteSql(true, "SELECT id FROM phone_discord_reactions WHERE message_id = @mid AND identifier = @id AND emoji = @emoji", {
+        ['@mid'] = messageId, ['@id'] = xPlayer.identifier, ['@emoji'] = emoji,
+    })
+
+    if existing[1] then
+        MySQL.Async.execute("DELETE FROM phone_discord_reactions WHERE id = @id", { ['@id'] = existing[1].id })
+    else
+        MySQL.Async.execute("INSERT INTO phone_discord_reactions (message_id, identifier, emoji, created_at) VALUES (@mid, @id, @emoji, @time)", {
+            ['@mid'] = messageId, ['@id'] = xPlayer.identifier, ['@emoji'] = emoji, ['@time'] = os.time(),
+        })
+    end
+
+    -- Every member gets a fully-recomputed reaction list for this message —
+    -- cheap (one small query) and avoids drift from partial +1/-1 patches.
+    local members = ExecuteSql(true, [[
+        SELECT identifier FROM phone_discord_members WHERE server_id = @sid
+    ]], { ['@sid'] = serverId })
+
+    for _, member in pairs(members) do
+        local Ply = ESX.GetPlayerFromIdentifier(member.identifier)
+        if Ply ~= nil then
+            TriggerClientEvent('Unique_Phone:client:Discord:ReactionsUpdated', Ply.source, {
+                serverId = serverId,
+                messageId = messageId,
+                reactions = Discord_GetMessageReactions(messageId, member.identifier),
+            })
+        end
+    end
+
+    cb(true)
+end)
+
+ESX.RegisterServerCallback('Unique_Phone:server:Discord:EditMessage', function(source, cb, messageId, newText)
+    local xPlayer = Discord_GetPlayer(source)
+    if xPlayer == nil or messageId == nil or type(newText) ~= "string" then cb(false) return end
+
+    newText = Discord_Utf8SafeSub(newText, 1000)
+    if string.gsub(newText, "%s+", "") == "" then cb(false) return end
+
+    local authorIdentifier, serverId = Discord_GetMessageOwnerAndServer(messageId)
+    if serverId == nil or authorIdentifier ~= xPlayer.identifier then cb(false) return end -- only the author may edit
+
+    local editedAt = os.time()
+    MySQL.Async.execute("UPDATE phone_discord_messages SET message = @msg, edited_at = @time WHERE id = @mid", {
+        ['@msg'] = newText, ['@time'] = editedAt, ['@mid'] = messageId,
+    })
+
+    Discord_BroadcastToServerMembers(serverId, 'Unique_Phone:client:Discord:MessageEdited', {
+        serverId = serverId, messageId = messageId, message = newText, edited_at = editedAt,
+    })
+
+    cb(true)
+end)
+
+ESX.RegisterServerCallback('Unique_Phone:server:Discord:DeleteMessage', function(source, cb, messageId)
+    local xPlayer = Discord_GetPlayer(source)
+    if xPlayer == nil or messageId == nil then cb(false) return end
+
+    local authorIdentifier, serverId = Discord_GetMessageOwnerAndServer(messageId)
+    if serverId == nil then cb(false) return end
+
+    local canDelete = (authorIdentifier == xPlayer.identifier) or Discord_IsOwner(xPlayer.identifier, serverId) or Discord_IsStaff(source)
+    if not canDelete then cb(false) return end
+
+    MySQL.Async.execute("DELETE FROM phone_discord_messages WHERE id = @mid", { ['@mid'] = messageId })
+
+    Discord_BroadcastToServerMembers(serverId, 'Unique_Phone:client:Discord:MessageDeleted', {
+        serverId = serverId, messageId = messageId,
+    })
+
+    cb(true)
+end)
+
+ESX.RegisterServerCallback('Unique_Phone:server:Discord:TogglePinMessage', function(source, cb, messageId)
+    local xPlayer = Discord_GetPlayer(source)
+    if xPlayer == nil or messageId == nil then cb(false) return end
+
+    local _, serverId = Discord_GetMessageOwnerAndServer(messageId)
+    if serverId == nil or not (Discord_CanManageChannels(xPlayer.identifier, serverId) or Discord_IsStaff(source)) then cb(false) return end
+
+    local current = ExecuteSql(true, "SELECT is_pinned FROM phone_discord_messages WHERE id = @mid", { ['@mid'] = messageId })
+    if current[1] == nil then cb(false) return end
+
+    local newValue = (current[1].is_pinned == 1) and 0 or 1
+    MySQL.Async.execute("UPDATE phone_discord_messages SET is_pinned = @val WHERE id = @mid", { ['@val'] = newValue, ['@mid'] = messageId })
+
+    Discord_BroadcastToServerMembers(serverId, 'Unique_Phone:client:Discord:MessagePinToggled', {
+        serverId = serverId, messageId = messageId, isPinned = (newValue == 1),
+    })
+
+    cb({ isPinned = (newValue == 1) })
+end)
+
+ESX.RegisterServerCallback('Unique_Phone:server:Discord:GetPinnedMessages', function(source, cb, channelId)
+    local xPlayer = Discord_GetPlayer(source)
+    local serverId = channelId ~= nil and Discord_GetServerIdForChannel(channelId) or nil
+
+    if xPlayer == nil or serverId == nil or not Discord_IsMember(xPlayer.identifier, serverId) then
+        cb(false)
+        return
+    end
+
+    local pinned = ExecuteSql(true, "SELECT id, author_name, message, created_at FROM phone_discord_messages WHERE channel_id = @cid AND is_pinned = 1 ORDER BY id DESC", {
+        ['@cid'] = channelId,
+    })
+
+    cb(pinned)
+end)
+
+ESX.RegisterServerCallback('Unique_Phone:server:Discord:KickMember', function(source, cb, serverId, memberRowId)
+    local xPlayer = Discord_GetPlayer(source)
+    if xPlayer == nil or serverId == nil or memberRowId == nil or not Discord_IsOwner(xPlayer.identifier, serverId) then
+        cb(false)
+        return
+    end
+
+    local server = ExecuteSql(true, "SELECT owner_identifier FROM phone_discord_servers WHERE id = @sid", { ['@sid'] = serverId })
+    local target = ExecuteSql(true, "SELECT identifier, nickname FROM phone_discord_members WHERE id = @mid AND server_id = @sid", {
+        ['@mid'] = memberRowId, ['@sid'] = serverId,
+    })
+
+    if target[1] == nil or (server[1] and target[1].identifier == server[1].owner_identifier) then
+        cb(false) -- no such member, or trying to kick the owner
+        return
+    end
+
+    MySQL.Async.execute("DELETE FROM phone_discord_members WHERE id = @mid", { ['@mid'] = memberRowId })
+
+    local KickedPly = ESX.GetPlayerFromIdentifier(target[1].identifier)
+    if KickedPly ~= nil then
+        TriggerClientEvent('Unique_Phone:client:Discord:Kicked', KickedPly.source, { serverId = serverId })
+    end
+
+    Discord_BroadcastToServerMembers(serverId, 'Unique_Phone:client:Discord:MemberKicked', {
+        serverId = serverId, memberRowId = memberRowId, nickname = target[1].nickname,
+    }, source)
+
+    cb(true)
+end)
+
+ESX.RegisterServerCallback('Unique_Phone:server:Discord:UpdateServerSettings', function(source, cb, serverId, newName, newIconColor, regenerateInvite, isPublic)
+    local xPlayer = Discord_GetPlayer(source)
+    if xPlayer == nil or serverId == nil or not Discord_IsOwner(xPlayer.identifier, serverId) then
+        cb(false)
+        return
+    end
+
+    local updates, params = {}, {}
+
+    if type(newName) == "string" then
+        newName = Discord_Utf8SafeSub(string.gsub(newName, "^%s+", ""), 40)
+        if newName ~= "" then
+            table.insert(updates, "name = @name")
+            params['@name'] = newName
+            table.insert(updates, "icon_text = @icon")
+            params['@icon'] = Discord_IconText(newName)
+        end
+    end
+
+    if type(newIconColor) == "string" and DiscordIconPalette[1] ~= nil then
+        local isValidColor = false
+        for _, c in pairs(DiscordIconPalette) do if c == newIconColor then isValidColor = true end end
+        if isValidColor then
+            table.insert(updates, "icon_color = @color")
+            params['@color'] = newIconColor
+        end
+    end
+
+    local newInviteCode = nil
+    if regenerateInvite == true then
+        newInviteCode = Discord_GenerateInviteCode()
+        table.insert(updates, "invite_code = @code")
+        params['@code'] = newInviteCode
+    end
+
+    if type(isPublic) == "boolean" then
+        table.insert(updates, "is_public = @public")
+        params['@public'] = isPublic and 1 or 0
+    end
+
+    if #updates == 0 then cb(false) return end
+
+    params['@sid'] = serverId
+    MySQL.Async.execute("UPDATE phone_discord_servers SET " .. table.concat(updates, ", ") .. " WHERE id = @sid", params)
+
+    local updated = ExecuteSql(true, "SELECT name, icon_text, icon_color, invite_code, is_public FROM phone_discord_servers WHERE id = @sid", { ['@sid'] = serverId })
+    local server = updated[1]
+
+    Discord_BroadcastToServerMembers(serverId, 'Unique_Phone:client:Discord:ServerUpdated', {
+        serverId = serverId, name = server.name, icon_text = server.icon_text, icon_color = server.icon_color,
+    }, source)
+
+    cb({ name = server.name, icon_text = server.icon_text, icon_color = server.icon_color, invite_code = server.invite_code, isPublic = (server.is_public == 1 or server.is_public == true) })
+end)
+
+-- ==========================================================================
+-- EXPANSION v3: admin role, public server discovery,
+-- typing indicator.
+-- ==========================================================================
+
+ESX.RegisterServerCallback('Unique_Phone:server:Discord:ToggleAdmin', function(source, cb, serverId, memberRowId)
+    local xPlayer = Discord_GetPlayer(source)
+    if xPlayer == nil or serverId == nil or memberRowId == nil or not Discord_IsOwner(xPlayer.identifier, serverId) then
+        cb(false)
+        return
+    end
+
+    local member = ExecuteSql(true, "SELECT is_admin FROM phone_discord_members WHERE id = @mid AND server_id = @sid", { ['@mid'] = memberRowId, ['@sid'] = serverId })
+    if member[1] == nil then cb(false) return end
+
+    local newValue = (member[1].is_admin == 1 or member[1].is_admin == true) and 0 or 1
+    MySQL.Async.execute("UPDATE phone_discord_members SET is_admin = @val WHERE id = @mid", { ['@val'] = newValue, ['@mid'] = memberRowId })
+
+    Discord_BroadcastToServerMembers(serverId, 'Unique_Phone:client:Discord:MemberAdminToggled', {
+        serverId = serverId, memberRowId = memberRowId, isAdmin = (newValue == 1),
+    })
+
+    cb({ isAdmin = (newValue == 1) })
+end)
+
+ESX.RegisterServerCallback('Unique_Phone:server:Discord:GetPublicServers', function(source, cb)
+    local xPlayer = Discord_GetPlayer(source)
+    if xPlayer == nil then cb({}) return end
+
+    local servers = ExecuteSql(true, [[
+        SELECT s.id, s.name, s.icon_text, s.icon_color, s.is_verified,
+               (SELECT COUNT(*) FROM phone_discord_members m WHERE m.server_id = s.id) as memberCount
+        FROM phone_discord_servers s
+        WHERE s.is_public = 1
+          AND s.id NOT IN (SELECT server_id FROM phone_discord_members WHERE identifier = @id)
+        ORDER BY memberCount DESC
+        LIMIT 50
+    ]], { ['@id'] = xPlayer.identifier })
+
+    cb(servers)
+end)
+
+ESX.RegisterServerCallback('Unique_Phone:server:Discord:JoinPublicServer', function(source, cb, serverId)
+    local xPlayer = Discord_GetPlayer(source)
+    if xPlayer == nil or serverId == nil then cb(false) return end
+
+    local server = ExecuteSql(true, "SELECT id, name, icon_text, icon_color, invite_code, owner_identifier, is_public, is_verified FROM phone_discord_servers WHERE id = @sid", { ['@sid'] = serverId })
+    if server[1] == nil or server[1].is_public ~= 1 then cb(false) return end
+    if Discord_IsMember(xPlayer.identifier, serverId) then cb({ error = "ALREADY_MEMBER" }) return end
+
+    MySQL.Sync.insert("INSERT INTO phone_discord_members (server_id, identifier, nickname, joined_at) VALUES (@sid, @id, @nick, @time)", {
+        ['@sid'] = serverId, ['@id'] = xPlayer.identifier,
+        ['@nick'] = Discord_GetDisplayName(source), ['@time'] = os.time(),
+    })
+
+    local result = server[1]
+    result.isOwner = (result.owner_identifier == xPlayer.identifier)
+    result.owner_identifier = nil
+    result.is_public = nil
+    result.isVerified = (result.is_verified == 1 or result.is_verified == true)
+    result.is_verified = nil
+
+    cb(result)
+end)
+
+-- Typing indicator — ephemeral, nothing touches the database. The client
+-- throttles how often it sends this (see js/discord.js), so this stays cheap.
+RegisterServerEvent('Unique_Phone:server:Discord:Typing')
+AddEventHandler('Unique_Phone:server:Discord:Typing', function(channelId)
+    local xPlayer = Discord_GetPlayer(source)
+    local serverId = channelId ~= nil and Discord_GetServerIdForChannel(channelId) or nil
+    if xPlayer == nil or serverId == nil or not Discord_IsMember(xPlayer.identifier, serverId) then return end
+
+    Discord_BroadcastToServerMembers(serverId, 'Unique_Phone:client:Discord:Typing', {
+        serverId = serverId, channelId = channelId, name = (Discord_GetDisplayName(source):match("^(%S+)") or ""),
+    }, source)
+end)
+
+-- ==========================================================================
+-- EXPANSION v4: Discord account/profile. Discord-specific bits (bio, status,
+-- banner, privacy) live in phone_discord_profiles; the in-game info shown on
+-- a profile (name, phone, job, gender, birthdate) is read live from the
+-- character's own `users` / `jobs` / `job_grades` rows, so it can never go
+-- stale or be faked from the client.
+-- ==========================================================================
+
+local DiscordAllowedStatus = { online = true, idle = true, dnd = true, invisible = true }
+
+function Discord_EnsureProfile(identifier)
+    local rows = ExecuteSql(true, "SELECT * FROM phone_discord_profiles WHERE identifier = @id", { ['@id'] = identifier })
+    if rows[1] then return rows[1] end
+
+    local now = os.time()
+    MySQL.Sync.execute("INSERT IGNORE INTO phone_discord_profiles (identifier, discriminator, created_at, updated_at) VALUES (@id, @disc, @now, @now)", {
+        ['@id'] = identifier,
+        ['@disc'] = string.format("%04d", math.random(0, 9999)),
+        ['@now'] = now,
+    })
+
+    return ExecuteSql(true, "SELECT * FROM phone_discord_profiles WHERE identifier = @id", { ['@id'] = identifier })[1]
+end
+
+function Discord_GetInGameInfo(identifier)
+    local rows = ExecuteSql(true, [[
+        SELECT u.firstname, u.lastname, u.phone, u.dateofbirth, u.sex, u.job, u.job_grade,
+               j.label AS job_label, g.label AS grade_label
+        FROM users u
+        LEFT JOIN jobs j ON j.name = u.job
+        LEFT JOIN job_grades g ON g.job_name = u.job AND g.grade = u.job_grade
+        WHERE u.identifier = @id
+    ]], { ['@id'] = identifier })
+
+    local u = rows[1]
+    if u == nil then return {} end
+
+    -- Online players' names can differ from the users row (multichar), so
+    -- prefer the live ESX values when the player is connected.
+    local Ply = ESX.GetPlayerFromIdentifier(identifier)
+    local first = (Ply and Ply.firstname) or u.firstname or ""
+    local last = (Ply and Ply.lastname) or u.lastname or ""
+
+    local gender = nil
+    if u.sex == "m" or u.sex == "M" or u.sex == 0 or u.sex == "0" then gender = "Male"
+    elseif u.sex == "f" or u.sex == "F" or u.sex == 1 or u.sex == "1" then gender = "Female" end
+
+    return {
+        fullName = (first .. " " .. last):gsub("^%s+", ""),
+        phone = u.phone,
+        birthdate = u.dateofbirth,
+        gender = gender,
+        jobLabel = u.job_label or u.job,
+        gradeLabel = u.grade_label,
+    }
+end
+
+-- Builds the profile a *viewer* is allowed to see. Privacy toggles only
+-- apply to other people — you always see your own phone/job.
+function Discord_BuildProfile(targetIdentifier, viewerIdentifier)
+    local profile = Discord_EnsureProfile(targetIdentifier)
+    local info = Discord_GetInGameInfo(targetIdentifier)
+    local isSelf = (targetIdentifier == viewerIdentifier)
+
+    if not isSelf then
+        if profile.show_phone ~= 1 and profile.show_phone ~= true then info.phone = nil end
+        if profile.show_job ~= 1 and profile.show_job ~= true then info.jobLabel = nil; info.gradeLabel = nil end
+    end
+
+    local status = profile.status or "online"
+    local isConnected = ESX.GetPlayerFromIdentifier(targetIdentifier) ~= nil
+
+    return {
+        discriminator = profile.discriminator,
+        bio = profile.bio,
+        status = isSelf and status or ((isConnected and status ~= "invisible") and status or "offline"),
+        customStatus = profile.custom_status,
+        bannerColor = profile.banner_color,
+        showPhone = (profile.show_phone == 1 or profile.show_phone == true),
+        showJob = (profile.show_job == 1 or profile.show_job == true),
+        discordSince = profile.created_at,
+        verified = (profile.verified == 1 or profile.verified == true),
+        info = info,
+        isSelf = isSelf,
+    }
+end
+
+ESX.RegisterServerCallback('Unique_Phone:server:Discord:GetMyProfile', function(source, cb)
+    local xPlayer = ESX.GetPlayerFromId(source)
+    if xPlayer == nil then cb(false) return end
+
+    local ban = Discord_GetBan(xPlayer.identifier)
+    if ban then
+        cb({ banned = true, reason = ban.reason, expiresAt = ban.expires_at, bannedBy = ban.banned_by })
+        return
+    end
+
+    local profile = Discord_BuildProfile(xPlayer.identifier, xPlayer.identifier)
+    local count = ExecuteSql(true, "SELECT COUNT(*) as count FROM phone_discord_members WHERE identifier = @id", { ['@id'] = xPlayer.identifier })
+    profile.serverCount = count[1] and count[1].count or 0
+    profile.displayName = Discord_GetDisplayName(source)
+    profile.isStaff = Discord_IsStaff(source)
+
+    cb(profile)
+end)
+
+ESX.RegisterServerCallback('Unique_Phone:server:Discord:GetProfile', function(source, cb, serverId, memberRowId)
+    local xPlayer = Discord_GetPlayer(source)
+    if xPlayer == nil or serverId == nil or memberRowId == nil or not Discord_IsMember(xPlayer.identifier, serverId) then
+        cb(false)
+        return
+    end
+
+    local member = ExecuteSql(true, "SELECT identifier, nickname, is_admin, joined_at FROM phone_discord_members WHERE id = @mid AND server_id = @sid", {
+        ['@mid'] = memberRowId, ['@sid'] = serverId,
+    })
+    if member[1] == nil then cb(false) return end
+
+    local profile = Discord_BuildProfile(member[1].identifier, xPlayer.identifier)
+    profile.nickname = member[1].nickname
+    profile.isOwner = Discord_IsOwner(member[1].identifier, serverId)
+    profile.isAdmin = (member[1].is_admin == 1 or member[1].is_admin == true)
+    profile.memberSince = member[1].joined_at
+
+    cb(profile)
+end)
+
+ESX.RegisterServerCallback('Unique_Phone:server:Discord:UpdateMyProfile', function(source, cb, data)
+    local xPlayer = Discord_GetPlayer(source)
+    if xPlayer == nil or type(data) ~= "table" then cb(false) return end
+
+    Discord_EnsureProfile(xPlayer.identifier)
+
+    local bio = type(data.bio) == "string" and Discord_Utf8SafeSub(data.bio, 190) or ""
+    local customStatus = type(data.customStatus) == "string" and Discord_Utf8SafeSub(data.customStatus, 60) or ""
+    local status = DiscordAllowedStatus[data.status] and data.status or "online"
+
+    local bannerColor = DiscordIconPalette[1]
+    for _, c in pairs(DiscordIconPalette) do
+        if c == data.bannerColor then bannerColor = c end
+    end
+
+    MySQL.Sync.execute([[
+        UPDATE phone_discord_profiles
+        SET bio = @bio, custom_status = @cs, status = @status, banner_color = @banner,
+            show_phone = @sp, show_job = @sj, updated_at = @now
+        WHERE identifier = @id
+    ]], {
+        ['@bio'] = bio, ['@cs'] = customStatus, ['@status'] = status, ['@banner'] = bannerColor,
+        ['@sp'] = data.showPhone == false and 0 or 1,
+        ['@sj'] = data.showJob == false and 0 or 1,
+        ['@now'] = os.time(), ['@id'] = xPlayer.identifier,
+    })
+
+    -- Tell every server this player is in, so member lists refresh live.
+    local servers = ExecuteSql(true, "SELECT server_id FROM phone_discord_members WHERE identifier = @id", { ['@id'] = xPlayer.identifier })
+    for _, row in pairs(servers) do
+        Discord_BroadcastToServerMembers(row.server_id, 'Unique_Phone:client:Discord:ProfileUpdated', { serverId = row.server_id }, source)
+    end
+
+    cb(Discord_BuildProfile(xPlayer.identifier, xPlayer.identifier))
+end)
+
+-- ==========================================================================
+-- EXPANSION v5: Discord staff panel — for game admins only (same admin check
+-- as the Job Manager: Unique_AdminPanel's isAdmin, with a perm-level
+-- fallback). Everything goes through ONE callback, and every action re-checks
+-- staff status on the server, so nothing here can be reached by editing the
+-- client. Actions are written to phone_discord_audit.
+-- ==========================================================================
+
+function Discord_Audit(src, action, target)
+    MySQL.Async.execute("INSERT INTO phone_discord_audit (staff_name, action, target, created_at) VALUES (@n, @a, @t, @now)", {
+        ['@n'] = Discord_GetDisplayName(src), ['@a'] = action, ['@t'] = Discord_Utf8SafeSub(tostring(target or ""), 120), ['@now'] = os.time(),
+    })
+end
+
+local function likeQuery(q)
+    if type(q) ~= "string" then return "%" end
+    q = Discord_Utf8SafeSub(q, 40):gsub("[%%_\\]", "")
+    return "%" .. q .. "%"
+end
+
+local function toggleColumn(table_, column, idColumn, id)
+    local row = ExecuteSql(true, ("SELECT %s AS v FROM %s WHERE %s = @id"):format(column, table_, idColumn), { ['@id'] = id })
+    if row[1] == nil then return nil end
+    local new = (row[1].v == 1 or row[1].v == true) and 0 or 1
+    MySQL.Sync.execute(("UPDATE %s SET %s = @v WHERE %s = @id"):format(table_, column, idColumn), { ['@v'] = new, ['@id'] = id })
+    return new == 1
+end
+
+-- Puts one announcement row into a channel and pushes it live to the server.
+local function postAnnouncement(staffSrc, staffIdentifier, channelId, text)
+    local serverId = Discord_GetServerIdForChannel(channelId)
+    if serverId == nil then return false end
+
+    local now = os.time()
+    local id = MySQL.Sync.insert("INSERT INTO phone_discord_messages (channel_id, identifier, author_name, message, created_at, is_announcement) VALUES (@cid, @id, 'Discord Staff', @msg, @now, 1)", {
+        ['@cid'] = channelId, ['@id'] = staffIdentifier, ['@msg'] = text, ['@now'] = now,
+    })
+
+    Discord_BroadcastToServerMembers(serverId, 'Unique_Phone:client:Discord:NewMessage', {
+        id = id, serverId = serverId, channelId = channelId, author_name = "Discord Staff",
+        message = text, created_at = now, isAnnouncement = true, authorVerified = true,
+    })
+    return true
+end
+
+local DiscordStaffActions = {}
+
+DiscordStaffActions.Overview = function(src, data)
+    local function count(q) local r = ExecuteSql(true, q, {}) return r[1] and r[1].c or 0 end
+    return {
+        servers = count("SELECT COUNT(*) c FROM phone_discord_servers"),
+        verifiedServers = count("SELECT COUNT(*) c FROM phone_discord_servers WHERE is_verified = 1"),
+        channels = count("SELECT COUNT(*) c FROM phone_discord_channels"),
+        messages = count("SELECT COUNT(*) c FROM phone_discord_messages"),
+        accounts = count("SELECT COUNT(*) c FROM (SELECT identifier FROM phone_discord_members UNION SELECT identifier FROM phone_discord_profiles) a"),
+        verifiedAccounts = count("SELECT COUNT(*) c FROM phone_discord_profiles WHERE verified = 1"),
+        bans = count("SELECT COUNT(*) c FROM phone_discord_bans"),
+        messagesToday = count("SELECT COUNT(*) c FROM phone_discord_messages WHERE created_at > " .. (os.time() - 86400)),
+    }
+end
+
+DiscordStaffActions.Servers = function(src, data)
+    local rows = ExecuteSql(true, [[
+        SELECT s.id, s.name, s.icon_text, s.icon_color, s.is_verified, s.is_public, s.invite_code,
+               (SELECT COUNT(*) FROM phone_discord_members m WHERE m.server_id = s.id) AS memberCount,
+               (SELECT COUNT(*) FROM phone_discord_channels c WHERE c.server_id = s.id) AS channelCount,
+               (SELECT m2.nickname FROM phone_discord_members m2 WHERE m2.server_id = s.id AND m2.identifier = s.owner_identifier LIMIT 1) AS ownerName
+        FROM phone_discord_servers s
+        WHERE s.name LIKE @q OR s.invite_code LIKE @q
+        ORDER BY s.is_verified DESC, memberCount DESC
+        LIMIT 60
+    ]], { ['@q'] = likeQuery(data.query) })
+
+    for _, r in pairs(rows) do
+        r.isVerified = (r.is_verified == 1 or r.is_verified == true)
+        r.isPublic = (r.is_public == 1 or r.is_public == true)
+        r.is_verified, r.is_public = nil, nil
+    end
+    return rows
+end
+
+DiscordStaffActions.ServerChannels = function(src, data)
+    local rows = ExecuteSql(true, "SELECT id, name, is_verified, is_locked FROM phone_discord_channels WHERE server_id = @sid ORDER BY position ASC, id ASC", { ['@sid'] = data.serverId })
+    for _, r in pairs(rows) do
+        r.isVerified = (r.is_verified == 1 or r.is_verified == true)
+        r.isLocked = (r.is_locked == 1 or r.is_locked == true)
+        r.is_verified, r.is_locked = nil, nil
+    end
+    return rows
+end
+
+DiscordStaffActions.ToggleServerVerified = function(src, data)
+    local v = toggleColumn("phone_discord_servers", "is_verified", "id", data.serverId)
+    if v == nil then return false end
+    Discord_Audit(src, v and "Verified server" or "Unverified server", "server #" .. tostring(data.serverId))
+    Discord_BroadcastToServerMembers(data.serverId, 'Unique_Phone:client:Discord:ServerUpdated', { serverId = data.serverId, isVerified = v })
+    return { isVerified = v }
+end
+
+DiscordStaffActions.ToggleChannelVerified = function(src, data)
+    local v = toggleColumn("phone_discord_channels", "is_verified", "id", data.channelId)
+    if v == nil then return false end
+    Discord_Audit(src, v and "Verified channel" or "Unverified channel", "channel #" .. tostring(data.channelId))
+    local sid = Discord_GetServerIdForChannel(data.channelId)
+    if sid then Discord_BroadcastToServerMembers(sid, 'Unique_Phone:client:Discord:ChannelUpdated', { serverId = sid, channelId = data.channelId, isVerified = v }) end
+    return { isVerified = v }
+end
+
+DiscordStaffActions.ToggleChannelLocked = function(src, data)
+    local v = toggleColumn("phone_discord_channels", "is_locked", "id", data.channelId)
+    if v == nil then return false end
+    Discord_Audit(src, v and "Locked channel" or "Unlocked channel", "channel #" .. tostring(data.channelId))
+    local sid = Discord_GetServerIdForChannel(data.channelId)
+    if sid then Discord_BroadcastToServerMembers(sid, 'Unique_Phone:client:Discord:ChannelUpdated', { serverId = sid, channelId = data.channelId, isLocked = v }) end
+    return { isLocked = v }
+end
+
+DiscordStaffActions.DeleteChannel = function(src, data)
+    local sid = Discord_GetServerIdForChannel(data.channelId)
+    if sid == nil then return false end
+    local count = ExecuteSql(true, "SELECT COUNT(*) c FROM phone_discord_channels WHERE server_id = @sid", { ['@sid'] = sid })
+    if count[1] and count[1].c <= 1 then return { error = "LAST_CHANNEL" } end
+
+    MySQL.Sync.execute("DELETE FROM phone_discord_channels WHERE id = @id", { ['@id'] = data.channelId })
+    Discord_Audit(src, "Deleted channel", "channel #" .. tostring(data.channelId))
+    Discord_BroadcastToServerMembers(sid, 'Unique_Phone:client:Discord:ChannelDeleted', { serverId = sid, channelId = data.channelId })
+    return true
+end
+
+DiscordStaffActions.DeleteServer = function(src, data)
+    local row = ExecuteSql(true, "SELECT name FROM phone_discord_servers WHERE id = @id", { ['@id'] = data.serverId })
+    if row[1] == nil then return false end
+    Discord_BroadcastToServerMembers(data.serverId, 'Unique_Phone:client:Discord:ServerDeleted', { serverId = data.serverId })
+    MySQL.Sync.execute("DELETE FROM phone_discord_servers WHERE id = @id", { ['@id'] = data.serverId })
+    Discord_Audit(src, "Deleted server", row[1].name)
+    return true
+end
+
+DiscordStaffActions.Accounts = function(src, data)
+    local rows = ExecuteSql(true, [[
+        SELECT a.identifier, u.firstname, u.lastname, u.phone, p.discriminator, p.verified, p.status,
+               (SELECT nickname FROM phone_discord_members m WHERE m.identifier = a.identifier LIMIT 1) AS nickname,
+               (SELECT COUNT(*) FROM phone_discord_members m2 WHERE m2.identifier = a.identifier) AS serverCount,
+               b.reason AS banReason
+        FROM (SELECT identifier FROM phone_discord_members UNION SELECT identifier FROM phone_discord_profiles) a
+        LEFT JOIN users u ON u.identifier = a.identifier
+        LEFT JOIN phone_discord_profiles p ON p.identifier = a.identifier
+        LEFT JOIN phone_discord_bans b ON b.identifier = a.identifier
+        WHERE u.firstname LIKE @q OR u.lastname LIKE @q OR u.phone LIKE @q OR a.identifier LIKE @q
+           OR EXISTS (SELECT 1 FROM phone_discord_members m3 WHERE m3.identifier = a.identifier AND m3.nickname LIKE @q)
+        ORDER BY p.verified DESC, serverCount DESC
+        LIMIT 50
+    ]], { ['@q'] = likeQuery(data.query) })
+
+    for _, r in pairs(rows) do
+        local name = r.nickname
+        if (name == nil or name == "") and r.firstname then name = r.firstname .. " " .. (r.lastname or "") end
+        r.name = name or "Unknown"
+        r.isVerified = (r.verified == 1 or r.verified == true)
+        r.isBanned = r.banReason ~= nil
+        r.isOnline = ESX.GetPlayerFromIdentifier(r.identifier) ~= nil
+        r.verified, r.firstname, r.lastname, r.nickname = nil, nil, nil, nil
+    end
+    return rows
+end
+
+DiscordStaffActions.ToggleAccountVerified = function(src, data)
+    if type(data.identifier) ~= "string" then return false end
+    Discord_EnsureProfile(data.identifier)
+    local v = toggleColumn("phone_discord_profiles", "verified", "identifier", data.identifier)
+    if v == nil then return false end
+    Discord_Audit(src, v and "Verified account" or "Unverified account", data.identifier)
+
+    local servers = ExecuteSql(true, "SELECT server_id FROM phone_discord_members WHERE identifier = @id", { ['@id'] = data.identifier })
+    for _, row in pairs(servers) do
+        Discord_BroadcastToServerMembers(row.server_id, 'Unique_Phone:client:Discord:ProfileUpdated', { serverId = row.server_id })
+    end
+    return { isVerified = v }
+end
+
+DiscordStaffActions.ClearProfile = function(src, data)
+    if type(data.identifier) ~= "string" then return false end
+    MySQL.Sync.execute("UPDATE phone_discord_profiles SET bio = '', custom_status = '' WHERE identifier = @id", { ['@id'] = data.identifier })
+    Discord_Audit(src, "Cleared profile text", data.identifier)
+    return true
+end
+
+DiscordStaffActions.Ban = function(src, data)
+    if type(data.identifier) ~= "string" then return false end
+
+    local target = ESX.GetPlayerFromIdentifier(data.identifier)
+    if target and Discord_IsStaff(target.source) then return { error = "STAFF" } end -- never ban other staff from here
+
+    local reason = type(data.reason) == "string" and Discord_Utf8SafeSub(data.reason, 150) or ""
+    if reason == "" then reason = "Violation of the rules" end
+
+    local hours = tonumber(data.hours) or 0
+    local expiresAt = hours > 0 and (os.time() + math.floor(hours * 3600)) or nil
+
+    local nameRow = ExecuteSql(true, "SELECT (SELECT nickname FROM phone_discord_members WHERE identifier = @id LIMIT 1) AS nick", { ['@id'] = data.identifier })
+    local name = (nameRow[1] and nameRow[1].nick) or data.identifier
+
+    MySQL.Sync.execute([[
+        REPLACE INTO phone_discord_bans (identifier, name, reason, banned_by, created_at, expires_at)
+        VALUES (@id, @name, @reason, @by, @now, @exp)
+    ]], { ['@id'] = data.identifier, ['@name'] = name, ['@reason'] = reason, ['@by'] = Discord_GetDisplayName(src), ['@now'] = os.time(), ['@exp'] = expiresAt })
+
+    DiscordBans[data.identifier] = { identifier = data.identifier, name = name, reason = reason, banned_by = Discord_GetDisplayName(src), created_at = os.time(), expires_at = expiresAt }
+
+    if data.purge == true then
+        MySQL.Sync.execute("DELETE FROM phone_discord_messages WHERE identifier = @id", { ['@id'] = data.identifier })
+    end
+
+    if target then
+        TriggerClientEvent('Unique_Phone:client:Discord:Banned', target.source, { reason = reason, expiresAt = expiresAt, bannedBy = Discord_GetDisplayName(src) })
+    end
+
+    Discord_Audit(src, "Banned from Discord" .. (hours > 0 and (" (" .. hours .. "h)") or " (permanent)"), name .. " — " .. reason)
+    return true
+end
+
+DiscordStaffActions.Unban = function(src, data)
+    if type(data.identifier) ~= "string" then return false end
+    MySQL.Sync.execute("DELETE FROM phone_discord_bans WHERE identifier = @id", { ['@id'] = data.identifier })
+    DiscordBans[data.identifier] = nil
+    Discord_Audit(src, "Unbanned from Discord", data.identifier)
+    return true
+end
+
+DiscordStaffActions.Bans = function(src, data)
+    local rows = ExecuteSql(true, "SELECT identifier, name, reason, banned_by, created_at, expires_at FROM phone_discord_bans ORDER BY created_at DESC LIMIT 100", {})
+    return rows
+end
+
+-- scope: "channel" (one channel) | "server" (every channel of one server)
+--        | "global" (the first channel of every server)
+DiscordStaffActions.Announce = function(src, data)
+    local xPlayer = ESX.GetPlayerFromId(src)
+    local text = type(data.text) == "string" and Discord_Utf8SafeSub(data.text, 600) or ""
+    if string.gsub(text, "%s+", "") == "" then return false end
+
+    local channelIds = {}
+    if data.scope == "channel" then
+        channelIds = { data.channelId }
+    elseif data.scope == "server" then
+        for _, r in pairs(ExecuteSql(true, "SELECT id FROM phone_discord_channels WHERE server_id = @sid", { ['@sid'] = data.serverId })) do table.insert(channelIds, r.id) end
+    elseif data.scope == "global" then
+        for _, r in pairs(ExecuteSql(true, "SELECT MIN(id) AS id FROM phone_discord_channels GROUP BY server_id", {})) do table.insert(channelIds, r.id) end
+    else
+        return false
+    end
+
+    local posted = 0
+    for _, cid in pairs(channelIds) do
+        if cid and postAnnouncement(src, xPlayer.identifier, cid, text) then posted = posted + 1 end
+    end
+
+    Discord_Audit(src, "Announcement (" .. tostring(data.scope) .. ", " .. posted .. " channel(s))", text)
+    return { posted = posted }
+end
+
+DiscordStaffActions.Audit = function(src, data)
+    return ExecuteSql(true, "SELECT staff_name, action, target, created_at FROM phone_discord_audit ORDER BY id DESC LIMIT 80", {})
+end
+
+ESX.RegisterServerCallback('Unique_Phone:server:Discord:Staff', function(source, cb, action, data)
+    if not Discord_IsStaff(source) then cb(false) return end
+
+    local handler = DiscordStaffActions[action]
+    if handler == nil or type(data) ~= "table" then cb(false) return end
+
+    local ok, result = pcall(handler, source, data)
+    if not ok then
+        print(("[Unique_Phone] Discord staff action '%s' failed: %s"):format(tostring(action), tostring(result)))
+        cb(false)
+        return
+    end
+    cb(result)
+end)

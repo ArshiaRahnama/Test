@@ -214,6 +214,21 @@ Config.PhoneApplications = {
         Alerts = 0,
     },
 
+    -- EXPANSION: Discord app — server/channel text chat, persisted in the
+    -- DB and pushed live to other online members (see sql/discord.sql,
+    -- client/main.lua and server/main.lua for the "Discord:" handlers).
+    ["discord"] = {
+        app = "discord",
+        color = "#5865F2",
+        icon = "fab fa-discord",
+        tooltipText = "Discord",
+        tooltipPos = "top",
+        job = false,
+        blockedjobs = {},
+        slot = 11,
+        Alerts = 0,
+    },
+
 
 
 

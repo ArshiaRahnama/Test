@@ -187,6 +187,7 @@ server_scripts {
 	'server/server_time.lua',
 	'server/case_timeline.lua',
 	'server/court_docket.lua',
+	'server/doj_court_fee.lua', -- DOJ cut of police/sheriff/mt fines (added per request); needs Config_judge, already loaded via shared_scripts above
 	'server/stats_dashboard.lua',
 	'server/officer_performance.lua',
 	'server/traffic_stop_manager.lua',

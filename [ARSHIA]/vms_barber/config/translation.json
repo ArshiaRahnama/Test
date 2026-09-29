@@ -1,0 +1,905 @@
+{
+    "EN": {
+        "currency": "$",
+        "menu_header": "Barber Shop",
+        "pay_button": "Pay",
+        "rotate_help": "Use PPM",
+        "proceed_to_finalization": "Proceed to finalization",
+        "included_tax": "(Incuded tax)",
+        "total": "Total {0}{1}",
+        "payments": {
+            "cash": "CASH",
+            "bank": "BANK",
+            "receipt": "RECEIPT"
+        },
+        "hair": {
+            "name": "Hair",
+            "style": "Type",
+            "color": "Color",
+            "name2": "Hair Highlights",
+            "style2": "Style",
+            "color2": "Color",
+            "name3": "Hair Fade"
+        },
+        "beard": {
+            "name": "Beard",
+            "style": "Type",
+            "opacity": "Opacity",
+            "color": "Color"
+        },
+        "eyes": {
+            "name": "Lenses",
+            "color": "Type"
+        },
+        "eyebrows": {
+            "name": "Eyebrows",
+            "style": "Type",
+            "opacity": "Opacity",
+            "color": "Color"
+        },
+        "makeup": {
+            "name": "Make-up",
+            "style": "Type",
+            "opacity": "Opacity",
+            "color": "Primary Color",
+            "color2": "Second Color"
+        },
+        "lipstick": {
+            "name": "Lipstick",
+            "style": "Type",
+            "opacity": "Opacity",
+            "color": "Color"
+        },
+        "blush": {
+            "name": "Blush",
+            "style": "Type",
+            "opacity": "Opacity",
+            "color": "Color"
+        },
+        "receipt": {
+            "header": "BARBER SERVICES",
+            "item": "ITEM",
+            "amount": "AMOUNT",
+            "total": "TOTAL",
+            "pay_cash": "CASH",
+            "pay_bank": "BANK",
+            "cancel": "CANCEL"
+        },
+        "management_menu": {
+            "menu_title": "Barber Shop Management",
+            "sidebar": {
+                "main_title": "Main",
+                "main_description": "Home page, store information..",
+                "employees_title": "Employees",
+                "employees_description": "Manage your employees..",
+                "boss_management_title": "Management",
+                "boss_management_description": "Store management..",
+                "resumes_title": "Resumes",
+                "resumes_description": "Recruit new employees who have submitted resumes..",
+                "taxes_title": "Taxes",
+                "taxes_description": "Pay your taxes, check your business status..."
+            },
+            "main": {
+                "menu_total_customers_header": "Total Customers:",
+                "menu_total_earned_header": "Total Earned:",
+                "menu_announcements_header": "News",
+                "menu_announcements_title": "Announcements"
+            },
+            "employees": {
+                "table_employee": "Employee",
+                "table_grade": "Grade",
+                "table_option": "Option",
+                "menu_employees_no_players": "no players around",
+                "menu_employees_header": "Hire employees.",
+                "menu_employees_title": "Employees",
+                "menu_employees_btn": "SEARCH CLOSEST",
+                "citizen": "Citizen {0}",
+                "menu_option_hire_btn": "Hire",
+                "menu_option_bonus_btn": "Bonus",
+                "menu_option_setjob_btn": "Make him a ",
+                "menu_option_fire_btn": "Fire"
+            },
+            "management": {
+                "menu_balance_header": "Balance:",
+                "menu_balance_btn_withdraw": "WITHDRAW",
+                "menu_balance_btn_deposit": "DEPOSIT",
+                "menu_employees_header": "Employees:",
+                "menu_employees_btn_manage": "MANAGE",
+                "menu_announcement_header": "Write an announcement to your employees.",
+                "menu_announcement_title": "Announcement",
+                "menu_announcement_btn_send": "SEND"
+            },
+            "resumes": {
+                "list_header": "List of resumes received from citizens.",
+                "list_title": "Resumes list",
+                "manage_header": "Manage the ability to send resumes.",
+                "manage_title": "Manage applications",
+                "manage_description": "Applications for your company are now:",
+                "manage_description_not_active": "not active",
+                "manage_description_active": "active",
+                "manage_toggle_btn": "Toggle",
+                "table_citizen": "Citizen Name",
+                "table_date": "Date",
+                "table_option": "Option"
+            },
+            "taxes": {
+                "taxes_header": "Regulate taxes on your business.",
+                "taxes_title": "Taxes"
+            }
+        }
+    },
+    "CZ": {
+        "currency": "$",
+        "menu_header": "Kadeřnictví",
+        "pay_button": "Zaplatit",
+        "rotate_help": "Použijte PPM",
+        "proceed_to_finalization": "Pokračovat k dokončení",
+        "included_tax": "(Včetně daně)",
+        "total": "Celkem {0}{1}",
+        "payments": {
+            "cash": "HOTOVOST",
+            "bank": "BANKA",
+            "receipt": "POKLOP"
+        },
+        "hair": {
+            "name": "Vlasy",
+            "style": "Typ",
+            "color": "Barva",
+            "name2": "Vlasy s melíry",
+            "style2": "Styl",
+            "color2": "Barva",
+            "name3": "Vlasy se střihem"
+        },
+        "beard": {
+            "name": "Vousy",
+            "style": "Typ",
+            "opacity": "Průhlednost",
+            "color": "Barva"
+        },
+        "eyes": {
+            "name": "Čočky",
+            "color": "Typ"
+        },
+        "eyebrows": {
+            "name": "Obočí",
+            "style": "Typ",
+            "opacity": "Průhlednost",
+            "color": "Barva"
+        },
+        "makeup": {
+            "name": "Make-up",
+            "style": "Typ",
+            "opacity": "Průhlednost",
+            "color": "Základní barva",
+            "color2": "Druhá barva"
+        },
+        "lipstick": {
+            "name": "Rtěnka",
+            "style": "Typ",
+            "opacity": "Průhlednost",
+            "color": "Barva"
+        },
+        "blush": {
+            "name": "Rouge",
+            "style": "Typ",
+            "opacity": "Průhlednost",
+            "color": "Barva"
+        },
+        "receipt": {
+            "header": "SLUŽBY KADEŘNÍKA",
+            "item": "POLOŽKA",
+            "amount": "MNOŽSTVÍ",
+            "total": "CELKEM",
+            "pay_cash": "HOTOVĚ",
+            "pay_bank": "BANKOVNĚ",
+            "cancel": "ZRUŠIT"
+        },
+        "management_menu": {
+            "menu_title": "Správa kadeřnictví",
+            "sidebar": {
+                "main_title": "Hlavní",
+                "main_description": "Domovská stránka, informace o obchodě..",
+                "employees_title": "Zaměstnanci",
+                "employees_description": "Spravujte své zaměstnance..",
+                "boss_management_title": "Řízení",
+                "boss_management_description": "Řízení obchodu..",
+                "resumes_title": "Životopisy",
+                "resumes_description": "Najměte nové zaměstnance, kteří podali životopisy..",
+                "taxes_title": "Daně",
+                "taxes_description": "Zaplacení daně, zkontrolování stavu vašeho podnikání.."
+            },
+            "main": {
+                "menu_total_customers_header": "Celkem zákazníků:",
+                "menu_total_earned_header": "Celkový výdělek:",
+                "menu_announcements_header": "Novinky",
+                "menu_announcements_title": "Oznámení"
+            },
+            "employees": {
+                "table_employee": "Zaměstnanec",
+                "table_grade": "Třída",
+                "table_option": "Možnost",
+                "menu_employees_no_players": "žádní hráči kolem",
+                "menu_employees_header": "Najmout zaměstnance.",
+                "menu_employees_title": "Zaměstnanci",
+                "menu_employees_btn": "VYHLEDAT NEJBLIŽŠÍHO",
+                "citizen": "Obyvatel {0}",
+                "menu_option_hire_btn": "Najmout",
+                "menu_option_bonus_btn": "Bonus",
+                "menu_option_setjob_btn": "Udělat z něho ",
+                "menu_option_fire_btn": "Propustit"
+            },
+            "management": {
+                "menu_balance_header": "Zůstatek:",
+                "menu_balance_btn_withdraw": "VYBRAT",
+                "menu_balance_btn_deposit": "VLOŽIT",
+                "menu_employees_header": "Zaměstnanci:",
+                "menu_employees_btn_manage": "SPRÁVA",
+                "menu_announcement_header": "Napsat oznámení svým zaměstnancům.",
+                "menu_announcement_title": "Oznámení",
+                "menu_announcement_btn_send": "ODESLAT"
+            },
+            "resumes": {
+                "list_header": "Seznam životopisů obdržených od občanů.",
+                "list_title": "Seznam životopisů",
+                "manage_header": "Spravujte možnost odeslání životopisů.",
+                "manage_title": "Správa žádostí",
+                "manage_description": "Žádosti pro vaši společnost jsou nyní:",
+                "manage_description_not_active": "neaktivní",
+                "manage_description_active": "aktivní",
+                "manage_toggle_btn": "Přepnout",
+                "table_citizen": "Jméno občana",
+                "table_date": "Datum",
+                "table_option": "Možnost"
+            },
+            "taxes": {
+                "taxes_header": "Regulujte daně na vašem podnikání.",
+                "taxes_title": "Daně"
+            }
+        }
+    },
+    "DE": {
+        "currency": "$",
+        "menu_header": "Friseursalon",
+        "pay_button": "Bezahlen",
+        "rotate_help": "Mit PPM drehen",
+        "proceed_to_finalization": "Weiter zur Finalisierung",
+        "included_tax": "(inkl. Steuer)",
+        "total": "Gesamt {0}{1}",
+        "payments": {
+            "cash": "BAR",
+            "bank": "ÜBERWEISUNG",
+            "receipt": "BELEG"
+        },
+        "hair": {
+            "name": "Haare",
+            "style": "Typ",
+            "color": "Farbe",
+            "name2": "Haarsträhnen",
+            "style2": "Stil",
+            "color2": "Farbe",
+            "name3": "Haarverlauf"
+        },
+        "beard": {
+            "name": "Bart",
+            "style": "Typ",
+            "opacity": "Deckkraft",
+            "color": "Farbe"
+        },
+        "eyes": {
+            "name": "Linsen",
+            "color": "Typ"
+        },
+        "eyebrows": {
+            "name": "Augenbrauen",
+            "style": "Typ",
+            "opacity": "Deckkraft",
+            "color": "Farbe"
+        },
+        "makeup": {
+            "name": "Make-up",
+            "style": "Typ",
+            "opacity": "Deckkraft",
+            "color": "Primäre Farbe",
+            "color2": "Zweite Farbe"
+        },
+        "lipstick": {
+            "name": "Lippenstift",
+            "style": "Typ",
+            "opacity": "Deckkraft",
+            "color": "Farbe"
+        },
+        "blush": {
+            "name": "Rouge",
+            "style": "Typ",
+            "opacity": "Deckkraft",
+            "color": "Farbe"
+        },
+        "receipt": {
+            "header": "FRISEURDIENSTLEISTUNGEN",
+            "item": "POSTEN",
+            "amount": "MENGE",
+            "total": "GESAMT",
+            "pay_cash": "BAR",
+            "pay_bank": "ÜBERWEISUNG",
+            "cancel": "ABBRECHEN"
+        },
+        "management_menu": {
+            "menu_title": "Friseursalon Verwaltung",
+            "sidebar": {
+                "main_title": "Hauptmenü",
+                "main_description": "Startseite, Geschäftsinformationen..",
+                "employees_title": "Mitarbeiter",
+                "employees_description": "Verwalten Sie Ihre Mitarbeiter..",
+                "boss_management_title": "Management",
+                "boss_management_description": "Geschäftsleitung..",
+                "resumes_title": "Lebensläufe",
+                "resumes_description": "Neue Mitarbeiter einstellen, die Lebensläufe eingereicht haben..",
+                "taxes_title": "Steuern",
+                "taxes_description": "Zahlen Sie Ihre Steuern, überprüfen Sie den Status Ihres Unternehmens..."
+            },
+            "main": {
+                "menu_total_customers_header": "Gesamtkunden:",
+                "menu_total_earned_header": "Insgesamt verdient:",
+                "menu_announcements_header": "Neuigkeiten",
+                "menu_announcements_title": "Ankündigungen"
+            },
+            "employees": {
+                "table_employee": "Mitarbeiter",
+                "table_grade": "Grad",
+                "table_option": "Option",
+                "menu_employees_no_players": "Keine Spieler in der Nähe",
+                "menu_employees_header": "Mitarbeiter einstellen.",
+                "menu_employees_title": "Mitarbeiter",
+                "menu_employees_btn": "NÄCHSTEN SUCHEN",
+                "citizen": "Bürger {0}",
+                "menu_option_hire_btn": "Einstellen",
+                "menu_option_bonus_btn": "Bonus",
+                "menu_option_setjob_btn": "Zu einem {0} machen",
+                "menu_option_fire_btn": "Entlassen"
+            },
+            "management": {
+                "menu_balance_header": "Guthaben:",
+                "menu_balance_btn_withdraw": "ABHEBEN",
+                "menu_balance_btn_deposit": "EINZAHLEN",
+                "menu_employees_header": "Mitarbeiter:",
+                "menu_employees_btn_manage": "VERWALTEN",
+                "menu_announcement_header": "Eine Ankündigung an Ihre Mitarbeiter schreiben.",
+                "menu_announcement_title": "Ankündigung",
+                "menu_announcement_btn_send": "SENDEN"
+            },
+            "resumes": {
+                "list_header": "Liste von Lebensläufen von Bürgern erhalten.",
+                "list_title": "Lebenslauf Liste",
+                "manage_header": "Verwalten der Möglichkeit, Lebensläufe zu senden.",
+                "manage_title": "Anwendungen verwalten",
+                "manage_description": "Anwendungen für Ihr Unternehmen sind jetzt:",
+                "manage_description_not_active": "nicht aktiv",
+                "manage_description_active": "aktiv",
+                "manage_toggle_btn": "Umschalten",
+                "table_citizen": "Bürger Name",
+                "table_date": "Datum",
+                "table_option": "Option"
+            },
+            "taxes": {
+                "taxes_header": "Regulieren Sie die Steuern Ihres Unternehmens.",
+                "taxes_title": "Steuern"
+            }
+        }
+    },
+    "FR": {
+        "currency": "$",
+        "menu_header": "Salon de coiffure",
+        "pay_button": "Payer",
+        "rotate_help": "Utiliser PPM",
+        "proceed_to_finalization": "Procéder à la finalisation",
+        "included_tax": "(Taxes incluses)",
+        "total": "Total {0}{1}",
+        "payments": {
+            "cash": "ARGENT COMPTANT",
+            "bank": "BANQUE",
+            "receipt": "REÇU"
+        },
+        "hair": {
+            "name": "Cheveux",
+            "style": "Type",
+            "color": "Couleur",
+            "name2": "Mèches de cheveux",
+            "style2": "Style",
+            "color2": "Couleur",
+            "name3": "Dégradé de cheveux"
+        },
+        "beard": {
+            "name": "Barbe",
+            "style": "Type",
+            "opacity": "Opacité",
+            "color": "Couleur"
+        },
+        "eyes": {
+            "name": "Lentilles",
+            "color": "Type"
+        },
+        "eyebrows": {
+            "name": "Sourcils",
+            "style": "Type",
+            "opacity": "Opacité",
+            "color": "Couleur"
+        },
+        "makeup": {
+            "name": "Maquillage",
+            "style": "Type",
+            "opacity": "Opacité",
+            "color": "Couleur principale",
+            "color2": "Deuxième couleur"
+        },
+        "lipstick": {
+            "name": "Rouge à lèvres",
+            "style": "Type",
+            "opacity": "Opacité",
+            "color": "Couleur"
+        },
+        "blush": {
+            "name": "Fard à joues",
+            "style": "Type",
+            "opacity": "Opacité",
+            "color": "Couleur"
+        },
+        "receipt": {
+            "header": "SERVICES DE COIFFURE",
+            "item": "ARTICLE",
+            "amount": "QUANTITÉ",
+            "total": "TOTAL",
+            "pay_cash": "ARGENT COMPTANT",
+            "pay_bank": "BANQUE",
+            "cancel": "ANNULER"
+        },
+        "management_menu": {
+            "menu_title": "Gestion du salon de coiffure",
+            "sidebar": {
+                "main_title": "Principal",
+                "main_description": "Page d'accueil, informations sur le magasin..",
+                "employees_title": "Employés",
+                "employees_description": "Gérez vos employés..",
+                "boss_management_title": "Gestion",
+                "boss_management_description": "Gestion du magasin..",
+                "resumes_title": "CV",
+                "resumes_description": "Recrutez de nouveaux employés qui ont soumis leur CV..",
+                "taxes_title": "Taxes",
+                "taxes_description": "Payez vos taxes, vérifiez le statut de votre entreprise.."
+            },
+            "main": {
+                "menu_total_customers_header": "Nombre total de clients :",
+                "menu_total_earned_header": "Total gagné :",
+                "menu_announcements_header": "Actualités",
+                "menu_announcements_title": "Annonces"
+            },
+            "employees": {
+                "table_employee": "Employé",
+                "table_grade": "Grade",
+                "table_option": "Option",
+                "menu_employees_no_players": "aucun joueur autour",
+                "menu_employees_header": "Embaucher des employés.",
+                "menu_employees_title": "Employés",
+                "menu_employees_btn": "RECHERCHER LE PLUS PROCHE",
+                "citizen": "Citoyen {0}",
+                "menu_option_hire_btn": "Embaucher",
+                "menu_option_bonus_btn": "Bonus",
+                "menu_option_setjob_btn": "Le nommer ",
+                "menu_option_fire_btn": "Licencier"
+            },
+            "management": {
+                "menu_balance_header": "Solde :",
+                "menu_balance_btn_withdraw": "RETIRER",
+                "menu_balance_btn_deposit": "DÉPOSER",
+                "menu_employees_header": "Employés :",
+                "menu_employees_btn_manage": "GÉRER",
+                "menu_announcement_header": "Rédiger une annonce à vos employés.",
+                "menu_announcement_title": "Annonce",
+                "menu_announcement_btn_send": "ENVOYER"
+            },
+            "resumes": {
+                "list_header": "Liste des CV reçus des citoyens.",
+                "list_title": "Liste des CV",
+                "manage_header": "Gérer la possibilité d'envoyer des CV.",
+                "manage_title": "Gérer les candidatures",
+                "manage_description": "Les candidatures pour votre entreprise sont maintenant :",
+                "manage_description_not_active": "non actives",
+                "manage_description_active": "actives",
+                "manage_toggle_btn": "Basculer",
+                "table_citizen": "Nom du citoyen",
+                "table_date": "Date",
+                "table_option": "Option"
+            },
+            "taxes": {
+                "taxes_header": "Réguler les taxes de votre entreprise.",
+                "taxes_title": "Taxes"
+            }
+        }
+    },
+    "ES": {
+        "currency": "$",
+        "menu_header": "Barbería",
+        "pay_button": "Pagar",
+        "rotate_help": "Usar el botón del ratón",
+        "proceed_to_finalization": "Proceder a finalizar",
+        "included_tax": "(Impuestos incluidos)",
+        "total": "Total {0}{1}",
+        "payments": {
+            "cash": "EFECTIVO",
+            "bank": "BANCO",
+            "receipt": "RECIBO"
+        },
+        "hair": {
+            "name": "Cabello",
+            "style": "Tipo",
+            "color": "Color",
+            "name2": "Mechas",
+            "style2": "Estilo",
+            "color2": "Color",
+            "name3": "Degradado"
+        },
+        "beard": {
+            "name": "Barba",
+            "style": "Tipo",
+            "opacity": "Opacidad",
+            "color": "Color"
+        },
+        "eyes": {
+            "name": "Lentes de Contacto",
+            "color": "Tipo"
+        },
+        "eyebrows": {
+            "name": "Cejas",
+            "style": "Tipo",
+            "opacity": "Opacidad",
+            "color": "Color"
+        },
+        "makeup": {
+            "name": "Maquillaje",
+            "style": "Tipo",
+            "opacity": "Opacidad",
+            "color": "Color Primario",
+            "color2": "Segundo Color"
+        },
+        "lipstick": {
+            "name": "Labial",
+            "style": "Tipo",
+            "opacity": "Opacidad",
+            "color": "Color"
+        },
+        "blush": {
+            "name": "Rubor",
+            "style": "Tipo",
+            "opacity": "Opacidad",
+            "color": "Color"
+        },
+        "receipt": {
+            "header": "SERVICIOS DE BARBERÍA",
+            "item": "PRODUCTO",
+            "amount": "CANTIDAD",
+            "total": "TOTAL",
+            "pay_cash": "EFECTIVO",
+            "pay_bank": "BANCO",
+            "cancel": "CANCELAR"
+        },
+        "management_menu": {
+            "menu_title": "Gestión de Barbería",
+            "sidebar": {
+                "main_title": "Principal",
+                "main_description": "Página de inicio, información de la tienda..",
+                "employees_title": "Empleados",
+                "employees_description": "Administra tus empleados..",
+                "boss_management_title": "Gerencia",
+                "boss_management_description": "Gestión de la tienda..",
+                "resumes_title": "Currículums",
+                "resumes_description": "Contrata nuevos empleados que han enviado currículums..",
+                "taxes_title": "Impuestos",
+                "taxes_description": "Paga tus impuestos, verifica el estado de tu negocio..."
+            },
+            "main": {
+                "menu_total_customers_header": "Clientes Totales:",
+                "menu_total_earned_header": "Ingresos Totales:",
+                "menu_announcements_header": "Noticias",
+                "menu_announcements_title": "Anuncios"
+            },
+            "employees": {
+                "table_employee": "Empleado",
+                "table_grade": "Rango",
+                "table_option": "Opción",
+                "menu_employees_no_players": "no hay jugadores cerca",
+                "menu_employees_header": "Contrata empleados.",
+                "menu_employees_title": "Empleados",
+                "menu_employees_btn": "BUSCAR MÁS CERCANO",
+                "citizen": "Ciudadano {0}",
+                "menu_option_hire_btn": "Contratar",
+                "menu_option_bonus_btn": "Bonificación",
+                "menu_option_setjob_btn": "Cambiarlo a ",
+                "menu_option_fire_btn": "Despedir"
+            },
+            "management": {
+                "menu_balance_header": "Saldo:",
+                "menu_balance_btn_withdraw": "RETIRAR",
+                "menu_balance_btn_deposit": "DEPOSITAR",
+                "menu_employees_header": "Empleados:",
+                "menu_employees_btn_manage": "ADMINISTRAR",
+                "menu_announcement_header": "Escribe un anuncio para tus empleados.",
+                "menu_announcement_title": "Anuncio",
+                "menu_announcement_btn_send": "ENVIAR"
+            },
+            "resumes": {
+                "list_header": "Lista de currículums recibidos de ciudadanos.",
+                "list_title": "Lista de Currículums",
+                "manage_header": "Administra la capacidad de enviar currículums.",
+                "manage_title": "Administrar solicitudes",
+                "manage_description": "Las solicitudes para tu empresa están ahora:",
+                "manage_description_not_active": "inactivas",
+                "manage_description_active": "activas",
+                "manage_toggle_btn": "Alternar",
+                "table_citizen": "Nombre del Ciudadano",
+                "table_date": "Fecha",
+                "table_option": "Opción"
+            },
+            "taxes": {
+                "taxes_header": "Regula los impuestos de tu negocio.",
+                "taxes_title": "Impuestos"
+            }
+        }
+    },
+    "PT": {
+        "currency": "R$",
+        "menu_header": "Barbearia",
+        "pay_button": "Pagar",
+        "rotate_help": "Usar PPM",
+        "proceed_to_finalization": "Prosseguir para finalização",
+        "included_tax": "(Imposto incluído)",
+        "total": "Total {0}{1}",
+        "payments": {
+            "cash": "DINHEIRO",
+            "bank": "BANCO",
+            "receipt": "RECIBO"
+        },
+        "hair": {
+            "name": "Cabelo",
+            "style": "Tipo",
+            "color": "Cor",
+            "name2": "Mechas no Cabelo",
+            "style2": "Estilo",
+            "color2": "Cor",
+            "name3": "Corte de Cabelo"
+        },
+        "beard": {
+            "name": "Barba",
+            "style": "Tipo",
+            "opacity": "Opacidade",
+            "color": "Cor"
+        },
+        "eyes": {
+            "name": "Lentes",
+            "color": "Tipo"
+        },
+        "eyebrows": {
+            "name": "Sobrancelhas",
+            "style": "Tipo",
+            "opacity": "Opacidade",
+            "color": "Cor"
+        },
+        "makeup": {
+            "name": "Maquiagem",
+            "style": "Tipo",
+            "opacity": "Opacidade",
+            "color": "Cor Primária",
+            "color2": "Segunda Cor"
+        },
+        "lipstick": {
+            "name": "Batom",
+            "style": "Tipo",
+            "opacity": "Opacidade",
+            "color": "Cor"
+        },
+        "blush": {
+            "name": "Blush",
+            "style": "Tipo",
+            "opacity": "Opacidade",
+            "color": "Cor"
+        },
+        "receipt": {
+            "header": "SERVIÇOS DE BARBEARIA",
+            "item": "ITEM",
+            "amount": "QUANTIDADE",
+            "total": "TOTAL",
+            "pay_cash": "DINHEIRO",
+            "pay_bank": "BANCO",
+            "cancel": "CANCELAR"
+        },
+        "management_menu": {
+            "menu_title": "Gerenciamento da Barbearia",
+            "sidebar": {
+                "main_title": "Principal",
+                "main_description": "Página inicial, informações da loja..",
+                "employees_title": "Funcionários",
+                "employees_description": "Gerencie seus funcionários..",
+                "boss_management_title": "Gerenciamento",
+                "boss_management_description": "Gerenciamento da loja..",
+                "resumes_title": "Currículos",
+                "resumes_description": "Contrate novos funcionários que enviaram currículos..",
+                "taxes_title": "Impostos",
+                "taxes_description": "Pague seus impostos, verifique o status de negócios..."
+            },
+            "main": {
+                "menu_total_customers_header": "Total de Clientes:",
+                "menu_total_earned_header": "Total Arrecadado:",
+                "menu_announcements_header": "Notícias",
+                "menu_announcements_title": "Anúncios"
+            },
+            "employees": {
+                "table_employee": "Funcionário",
+                "table_grade": "Cargo",
+                "table_option": "Opção",
+                "menu_employees_no_players": "nenhum jogador por perto",
+                "menu_employees_header": "Contrate funcionários.",
+                "menu_employees_title": "Funcionários",
+                "menu_employees_btn": "BUSCAR O MAIS PRÓXIMO",
+                "citizen": "Cidadão {0}",
+                "menu_option_hire_btn": "Contratar",
+                "menu_option_bonus_btn": "Bônus",
+                "menu_option_setjob_btn": "Designar como ",
+                "menu_option_fire_btn": "Demitir"
+            },
+            "management": {
+                "menu_balance_header": "Saldo:",
+                "menu_balance_btn_withdraw": "SACAR",
+                "menu_balance_btn_deposit": "DEPOSITAR",
+                "menu_employees_header": "Funcionários:",
+                "menu_employees_btn_manage": "GERENCIAR",
+                "menu_announcement_header": "Escreva um anúncio para seus funcionários.",
+                "menu_announcement_title": "Anúncio",
+                "menu_announcement_btn_send": "ENVIAR"
+            },
+            "resumes": {
+                "list_header": "Lista de currículos recebidos de cidadãos.",
+                "list_title": "Lista de Currículos",
+                "manage_header": "Gerenciar a capacidade de enviar currículos.",
+                "manage_title": "Gerenciar inscrições",
+                "manage_description": "As inscrições para sua empresa estão atualmente:",
+                "manage_description_not_active": "não ativas",
+                "manage_description_active": "ativas",
+                "manage_toggle_btn": "Alternar",
+                "table_citizen": "Nome do Cidadão",
+                "table_date": "Data",
+                "table_option": "Opção"
+            },
+            "taxes": {
+                "taxes_header": "Regularize os impostos de sua empresa.",
+                "taxes_title": "Impostos"
+            }
+        }
+    },
+    "PL": {
+        "currency": "$",
+        "menu_header": "Barber Shop",
+        "pay_button": "Pay",
+        "rotate_help": "Use PPM",
+        "proceed_to_finalization": "Proceed to finalization",
+        "included_tax": "(Incuded tax)",
+        "total": "Total {0}{1}",
+        "payments": {
+            "cash": "CASH",
+            "bank": "BANK",
+            "receipt": "RECEIPT"
+        },
+        "hair": {
+            "name": "Hair",
+            "style": "Type",
+            "color": "Color",
+            "name2": "Hair Highlights",
+            "style2": "Style",
+            "color2": "Color",
+            "name3": "Hair Fade"
+        },
+        "beard": {
+            "name": "Beard",
+            "style": "Type",
+            "opacity": "Opacity",
+            "color": "Color"
+        },
+        "eyes": {
+            "name": "Lenses",
+            "color": "Type"
+        },
+        "eyebrows": {
+            "name": "Eyebrows",
+            "style": "Type",
+            "opacity": "Opacity",
+            "color": "Color"
+        },
+        "makeup": {
+            "name": "Make-up",
+            "style": "Type",
+            "opacity": "Opacity",
+            "color": "Primary Color",
+            "color2": "Second Color"
+        },
+        "lipstick": {
+            "name": "Lipstick",
+            "style": "Type",
+            "opacity": "Opacity",
+            "color": "Color"
+        },
+        "blush": {
+            "name": "Blush",
+            "style": "Type",
+            "opacity": "Opacity",
+            "color": "Color"
+        },
+        "receipt": {
+            "header": "BARBER SERVICES",
+            "item": "ITEM",
+            "amount": "AMOUNT",
+            "total": "TOTAL",
+            "pay_cash": "CASH",
+            "pay_bank": "BANK",
+            "cancel": "CANCEL"
+        },
+        "management_menu": {
+            "menu_title": "Barber Shop Management",
+            "sidebar": {
+                "main_title": "Main",
+                "main_description": "Home page, store information..",
+                "employees_title": "Employees",
+                "employees_description": "Manage your employees..",
+                "boss_management_title": "Management",
+                "boss_management_description": "Store management..",
+                "resumes_title": "Resumes",
+                "resumes_description": "Recruit new employees who have submitted resumes..",
+                "taxes_title": "Taxes",
+                "taxes_description": "Pay your taxes, check your business status..."
+            },
+            "main": {
+                "menu_total_customers_header": "Total Customers:",
+                "menu_total_earned_header": "Total Earned:",
+                "menu_announcements_header": "News",
+                "menu_announcements_title": "Announcements"
+            },
+            "employees": {
+                "table_employee": "Employee",
+                "table_grade": "Grade",
+                "table_option": "Option",
+                "menu_employees_no_players": "no players around",
+                "menu_employees_header": "Hire employees.",
+                "menu_employees_title": "Employees",
+                "menu_employees_btn": "SEARCH CLOSEST",
+                "citizen": "Citizen {0}",
+                "menu_option_hire_btn": "Hire",
+                "menu_option_bonus_btn": "Bonus",
+                "menu_option_setjob_btn": "Make him a ",
+                "menu_option_fire_btn": "Fire"
+            },
+            "management": {
+                "menu_balance_header": "Balance:",
+                "menu_balance_btn_withdraw": "WITHDRAW",
+                "menu_balance_btn_deposit": "DEPOSIT",
+                "menu_employees_header": "Employees:",
+                "menu_employees_btn_manage": "MANAGE",
+                "menu_announcement_header": "Write an announcement to your employees.",
+                "menu_announcement_title": "Announcement",
+                "menu_announcement_btn_send": "SEND"
+            },
+            "resumes": {
+                "list_header": "List of resumes received from citizens.",
+                "list_title": "Resumes list",
+                "manage_header": "Manage the ability to send resumes.",
+                "manage_title": "Manage applications",
+                "manage_description": "Applications for your company are now:",
+                "manage_description_not_active": "not active",
+                "manage_description_active": "active",
+                "manage_toggle_btn": "Toggle",
+                "table_citizen": "Citizen Name",
+                "table_date": "Date",
+                "table_option": "Option"
+            },
+            "taxes": {
+                "taxes_header": "Regulate taxes on your business.",
+                "taxes_title": "Taxes"
+            }
+        }
+    }
+}

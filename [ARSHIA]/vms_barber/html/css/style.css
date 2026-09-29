@@ -1,0 +1,731 @@
+:root {
+    --primary-text-color: #e7e7e7;
+    --secondary-text-color: #94a1b2;
+
+    --back-btn-color: #d1d1d130;
+    --back-btn-color-hover: #92929269;
+
+    --main-color: rgb(87, 60, 250);
+    --main-color-hover: rgb(69, 46, 199);
+    --main-color-active: rgb(41, 21, 156);
+
+    --ok-color: #4cdb28b3;
+    --ok-color-hover: #32b623b3;
+    --ok-color-active: #2a7116b3;
+    
+    --close-color: #db2828b3;
+    --close-color-hover: #a0101073;
+    --close-color-active: #64121273;
+
+    --scrollbar-color: #573cfa;
+    --scrollbar-color-hover: #452ec7;
+    --scrollbar-background: #07070cfa;
+
+    --menu-shadow-before-color: radial-gradient(circle, rgba(88, 60, 250, 0.65) 0%, rgba(255, 255, 255, 0.0) 70%);
+    --menu-shadow-after-color: radial-gradient(circle, rgba(69, 46, 199, 0.7) 0%, rgba(255, 255, 255, 0.0) 70%);
+
+    --menu-background: #07070cfa;
+    --submenu-background: #4d51850f;
+    --submenu-background-selected: rgb(36 37 42 / 37%);
+    --border-radius: 0.4em;
+}
+
+*,
+:focus,
+:hover {
+    outline: none;
+}
+
+* {
+    user-select: none;
+}
+
+::-webkit-scrollbar {
+    width: 3px;
+}
+
+::-webkit-scrollbar-track {
+    background-color: var(--scrollbar-background);
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+    border-radius: 10px;
+    background: var(--scrollbar-color);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--scrollbar-color-hover);
+}
+
+body {
+    overflow: hidden;
+    position: absolute;
+    font-family: 'Titillium Web', sans-serif;
+    background: transparent;
+    width: 100%;
+    height: 100%;
+}
+
+#barber {
+    display: none;
+    position: absolute;
+    align-items: center;
+    left: 0;
+    top: 0;
+    width: 27.5em;
+    height: 100%;
+    left: 4em;
+    animation: show 0.2s ease-in-out;
+}
+
+#barber.hide {
+    animation: hide 0.2s ease-in-out forwards;
+}
+
+
+#barber .header {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding-inline: 1em;
+    margin-top: 0.8em;
+    z-index: 100;
+}
+
+#barber .header > p {
+    font-family: 'Titillium Web', sans-serif;
+    font-size: 1.4em;
+    font-weight: 700;
+    color: var(--primary-text-color);
+    margin: 0;
+}
+
+#barber .header > #hide {
+    height: 1.8em;
+    width: 1.8em;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: var(--close-color);
+    border-radius: 0.3em;
+    font-weight: 600;
+    font-size: 1em;
+    transition: 0.2s;
+    cursor: pointer;
+}
+
+#barber .header > #hide:hover {
+    background: var(--close-color-hover);
+}
+
+#barber .header > #hide:active {
+    background: var(--close-color-active);
+}
+
+#barber .header>#hide>i {
+    color: var(--primary-text-color);
+}
+
+#barber .menu {
+    position: absolute;
+    width: 27.5em;
+    height: 45em;
+    background: var(--menu-background);
+    z-index: 200;
+    border-radius: 12px;
+}
+
+#barber .menu>#panel {
+    margin-top: 7em;
+    height: 34em;
+    border-radius: 0.4em;
+    overflow-x: auto;
+    scrollbar-gutter: stable both-edges;
+    -webkit-mask-image: -webkit-gradient(linear, left top, left bottom, from(rgb(53 53 53)), to(rgb(0 0 0 / 84%)));
+}
+
+#barber .categories {
+    position: absolute;
+    display: flex;
+    margin-top: 3.5em;
+    width: 100%;
+    gap: 1em;
+    padding-inline: 1em;
+}
+
+#barber .itemCircle:not(.camrotate_circle) {
+    cursor: pointer;
+}
+
+#barber .itemCircle {
+    width: 2.5em;
+    height: 2.5em;
+    border-radius: 0.4em;
+    transition: 0.2s;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: var(--submenu-background-selected);
+}
+
+#barber .itemCircle.camrotate_circle {
+    margin-left: auto;
+    width: 8em !important;
+}
+
+#barber .itemCircle.camrotate_circle > p {
+    margin: 0;
+    color: #7a7a7a;
+    margin-left: 0.5em;
+    font-weight: 600;
+    font-size: 1.1em;
+}
+
+#barber .itemCircle:not(.camrotate_circle):hover {
+    background: var(--main-color-hover);
+}
+
+#barber .itemCircle:not(.camrotate_circle):active {
+    background: var(--main-color-active);
+}
+
+#barber .itemCircle:not(.camrotate_circle):active>.itemIcon {
+    filter: invert(100%);
+}
+
+#barber .oneButton {
+    width: 100% !important;
+}
+
+#barber .itemLabel {
+    color: #e9e9e9cc;
+    margin-left: 0.3em;
+}
+
+#barber .itemPrice {
+    font-weight: 700;
+    color: #e9e9e9cc;
+    margin-left: auto;
+}
+
+#barber .itemIcon {
+    filter: invert(50%);
+    width: 1.5em;
+    height: inherit;
+}
+
+#barber .itemCircle:not(.camrotate_circle):hover>.itemIcon {
+    filter: invert(87%);
+}
+
+#barber .colour-selection {
+    width: 22px;
+    height: 22px;
+    border-radius: 4px;
+    margin: 4px;
+    border: 1px solid rgba(202, 202, 202, 0.512);
+    transition: 0.35s;
+}
+
+#barber .colour-selection:hover {
+    border: 1px solid rgba(202, 202, 202, 0.832);
+    box-shadow: 0px 0px 10px rgba(228, 228, 228, 0.432);
+}
+
+#barber .slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 12px;
+    margin-top: 1.5em;
+    border-radius: 0.2em;
+    background: var(--submenu-background-selected);
+    outline: none;
+    /* opacity: 0.85; */
+    -webkit-transition: .2s;
+    transition: opacity .2s;
+}
+
+#barber .slider:hover {
+    opacity: 1;
+}
+
+#barber .slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 1.5em;
+    border-radius: 0.2em;
+    height: 1.25em;
+    background: var(--main-color);
+    transition: 0.2s;
+    cursor: pointer;
+}
+
+#barber .slider::-webkit-slider-thumb:hover {
+    background: var(--main-color-hover);
+
+}
+
+#barber #panel span.name {
+    color: var(--primary-text-color);
+    font-size: 1.5em;
+    font-weight: 700;
+}
+
+#barber #panel > div {
+    height: fit-content;
+    display: grid;
+    gap: 1em;
+}
+
+#barber #panel > div > div {
+    background: var(--submenu-background);
+    border-radius: 0.4em;
+    margin-inline: 1em;
+}
+
+#barber #panel > div > div > div {
+    padding: 1em;
+}
+
+#barber #panel > div > div > div > div {
+    justify-content: space-between;
+    align-items: center;
+}
+
+#barber #panel > div > div > div > .main-two-sections > div > p,
+#barber #panel > div > div > div > div > p {
+    color: var(--primary-text-color);
+    margin: 0;
+    display: flex;
+    font-weight: 600;
+}
+
+#barber #panel > div > div > div > .main-two-sections > .sliders-menu {
+    margin-top: 2.2rem;
+    height: 4.5em;
+}
+
+#barber #panel > div > div > div > .main-two-sections > .sliders-menu > p {
+    margin-bottom: 0em;
+}
+
+#barber #panel > div > div > div > .main-two-sections {
+    display: grid;
+    grid-template-columns: 11.5em 11.5em;
+}
+
+#barber #panel > div > div > div > .main-two-sections > div > div,
+#barber #panel > div > div > div > .main > div {
+    display: flex;
+    margin-top: 0.5em;
+}
+
+#barber #panel > div > div > div > .colors,
+#barber #panel > div > div > div > .fades {
+    margin-top: 1em;
+}
+
+#barber #panel > div > div > div > .colors2 {
+    margin-top: 0 !important;
+}
+
+#barber #panel > div > div > div > .colors > .colors-list {
+    display: grid;
+    grid-template-columns: auto auto auto auto auto auto auto auto auto auto auto auto;
+}
+
+#barber #panel > div > div > div > .fades > .fades-list {
+    display: grid;
+    grid-template-columns: auto auto auto auto auto auto auto auto auto;
+}
+
+#barber #panel > div > div > div > .fades > .fades-list > .fade-selection {
+    width: 32px;
+    height: 32px;
+    border-radius: 4px;
+    margin: 4px;
+    border: 1px solid rgb(202 202 202 / 10%);
+    transition: 0.35s;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #ffffff94;
+    font-weight: 600;
+    background: var(--submenu-background-selected);
+    transition: 0.2s;
+}
+
+#barber #panel > div > div > div > .fades > .fades-list > .fade-selection:hover {
+    color: #ffffffe8;
+    border: 1px solid rgba(202, 202, 202, 0.832);
+    box-shadow: 0px 0px 10px rgba(228, 228, 228, 0.432);
+}
+
+#barber #panel > div > div > div > .fades > .fades-list > .fade-selection.active {
+    background: var(--main-color);
+    color: white;
+}
+
+#barber #panel button {
+    background: var(--main-color);
+    width: 2.5em;
+    height: 2.5em;
+    max-width: 2.5em;
+    min-width: 2.5em;
+    max-height: 2.5em;
+    min-height: 2.5em;
+    border-radius: 0.4em;
+    border: none;
+    outline: none;
+}
+
+#barber #panel i {
+    color: var(--primary-text-color);
+    font-size: 1.1em;
+}
+
+#barber #panel .buttons-text {
+    color: var(--primary-text-color);
+    font-size: 1.3em;
+    font-weight: 700;
+    width: 4em;
+    text-align: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0;
+}
+
+
+#barber #panel #basket {
+    height: 2.5em !important;
+    gap: 0.8em !important;
+}
+
+#barber #panel #basket > div {
+    display: flex;
+    align-items: center;
+    padding-right: 0.5em;
+    padding-left: 1em;
+    height: 2.5em;
+}
+
+#barber #panel #basket > div > .label {
+    font-weight: 600;
+    color: var(--primary-text-color);
+}
+
+#barber #panel #basket > div > .price {
+    font-weight: 500;
+    color: var(--secondary-text-color);
+    margin-left: 0.5em;
+}
+
+#barber #panel #basket > div > .remove-from-basket {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.8em;
+    height: 1.8em;
+    border-radius: 0.4em;
+    background: var(--close-color);
+    margin-left: auto;
+    padding: 0 !important;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+#barber #panel #basket > div > .remove-from-basket:hover {
+    background: var(--close-color-hover);
+}
+
+#barber #panel #basket > div > .remove-from-basket:active {
+    background: var(--close-color-active);
+}
+
+#barber #panel #basket > div > .remove-from-basket > i {
+    color: white;
+}
+
+
+#barber #total,
+#barber #buy {
+    position: absolute;
+    bottom: 0.9em;
+    height: 2.2em;
+    font-size: 1em;
+    font-family: 'Titillium Web', sans-serif;
+    letter-spacing: 1px;
+    width: 25.5em;
+    margin-left: 1em;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--submenu-background);
+    border-radius: 0.4em;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+#barber #total:hover,
+#barber #buy:hover {
+    background: var(--submenu-background-selected);
+}
+
+#barber #buy > i {
+    margin-right: 0.7em;
+    opacity: 0.7;
+    transition: 0.2s;
+}
+
+#barber #buy:hover > i {
+    opacity: 1;
+}
+
+#barber #total > p,
+#barber #buy > p {
+    margin: 0;
+    opacity: 0.7;
+    font-weight: 500;
+    transition: 0.2s;
+}
+
+#barber #total:hover > p,
+#barber #buy:hover > p {
+    opacity: 1;
+}
+
+#barber #payment {
+    height: 2.2em;
+    width: 25.5em;
+    position: absolute;
+    bottom: 0.9em;
+    margin-left: 1em;
+}
+
+#barber #payment > div {
+    display: flex;
+    gap: 1em;
+}
+
+#barber #payment > div > div {
+    background: var(--submenu-background);
+    border-radius: 0.3em;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    height: 2.2em;
+    transition: 0.2s;
+}
+
+#barber #payment > div > div:hover {
+    background: var(--submenu-background-selected);
+}
+
+#barber #payment > div > div > i,
+#barber #payment > div > div > p {
+    transition: 0.2s;
+}
+
+#barber #payment > div > div:hover > i,
+#barber #payment > div > div:hover > p {
+    opacity: 1.0;
+}
+
+
+#barber #payment > div > div[data-type="back"] {
+    width: 2.2em;
+    min-width: 2.2em;
+    max-width: 2.2em;
+}
+
+#barber #payment > div > div[data-type="cash"],
+#barber #payment > div > div[data-type="bank"],
+#barber #payment > div > div[data-type="receipt"] {
+    gap: 0.5em;
+}
+
+#barber #payment > div > div[data-type="cash"] {
+    width: 10.65em;
+    min-width: 10.65em;
+    max-width: 10.65em;
+}
+
+#barber #payment > div > div[data-type="bank"] {
+    width: 10.65em;
+    min-width: 10.65em;
+    max-width: 10.65em;
+}
+
+#barber #payment > div > div[data-type="receipt"] {
+    width: 100%;
+    /* width: 7em;
+    min-width: 7em;
+    max-width: 7em; */
+}
+
+#barber #payment > div > div > i {
+    color: var(--primary-text-color);
+    opacity: 0.8;
+}
+
+#barber #payment > div > div > p {
+    font-weight: 600;
+    color: var(--primary-text-color);
+    margin: 0;
+    opacity: 0.8;
+}
+
+#barber .tax-info {
+    color: white;
+    opacity: 0.25;
+    font-size: 0.7em;
+    margin-left: 0.35em;
+    margin-top: auto;
+    margin-bottom: 0.8em;
+}
+
+/* Receipt */
+
+.receipt {
+    display: none;
+    font-family: 'Fake Receipt', sans-serif !important;
+    position: absolute;
+    /* right: 5em;
+    top: 12em; */
+    right: 5em;
+    bottom: -1em;
+    z-index: 5000;
+    animation: print-receipt 1.5s ease-in-out;
+}
+
+.receipt-texts {
+    position: absolute;
+    width: 100%;
+    margin-top: 1em;
+    padding: 1em;
+}
+
+.receipt-texts > .header-label {
+    font-size: 1.5em;
+    font-weight: 700;
+    text-align: center;
+}
+
+.receipt-texts > .header-tuning {
+    font-size: 1.2em;
+    font-weight: 700;
+    text-align: center;
+}
+
+.receipt-texts > .legend {
+    display: flex;
+    justify-content: space-between;
+}
+
+.receipt-texts > .list {
+    max-height: 25em;
+    overflow: auto;
+}
+
+.receipt-texts > .list .product {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.7em;
+}
+
+.receipt-texts .receipt-discounted {
+    text-decoration: line-through;
+    color:rgba(0, 0, 0, 0.65) !important;
+    margin-left: 0.25em;
+}
+
+.receipt-texts > .total {
+    display: flex;
+    justify-content: space-between;
+}
+
+.receipt-texts > .total .total-discounted {
+    text-decoration: line-through;
+    color:rgba(0, 0, 0, 0.65) !important;
+}
+
+.receipt-texts > .buttons {
+    display: flex;
+    margin-inline: auto;
+}
+
+.receipt-texts > .buttons > .pay_cash,
+.receipt-texts > .buttons > .pay_bank {
+    padding-block: 0.5em;
+    padding-inline: 1.5em;
+    margin-left: auto;
+    margin-right: 1em;
+    color: white;
+    border: 2px solid transparent;
+    background: rgb(82 112 255 / 77%);
+    border-radius: 0.5em;
+    transition: 0.2s;
+}
+
+.receipt-texts > .buttons > .pay_cash:hover,
+.receipt-texts > .buttons > .pay_bank:hover {
+    scale: 1.05;
+    background: rgb(82 112 255 / 100%);
+}
+
+.receipt-texts > .buttons > .cancel {
+    padding-block: 0.5em;
+    padding-inline: 1.5em;
+    margin-right: auto;
+    margin-left: 1em;
+    color: rgb(82 112 255 / 77%);
+    border: 2px solid rgb(82 112 255 / 77%);
+    background: transparent;
+    border-radius: 0.5em;
+    transition: 0.2s;
+}
+
+.receipt-texts > .buttons > .cancel:hover {
+    scale: 1.05;
+    color: rgb(82 112 255 / 100%);
+    border: 2px solid rgb(82 112 255 / 100%);
+}
+
+
+.receipt .receipt-img {
+    width: 25em;
+}
+
+@keyframes print-receipt {
+    0% {
+        bottom: -45em;
+    }
+    100% {
+        bottom: -1em;
+    }
+}
+
+@keyframes show {
+    0% {
+        left: -20em;
+    }
+    100% {
+        left: 4em;
+    }
+}
+
+@keyframes hide {
+    0% {
+        left: 4em;
+    }
+    100% {
+        left: -20em;
+    }
+}

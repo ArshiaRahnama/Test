@@ -34,10 +34,9 @@ dependencies {
 files {
 	'html/ui.html',
 	'html/*.css',
-	'html/fonts/*.woff',
 	'html/*.js',
 	'html/img/*.png',
-	'html/font/*.otf',
+	'html/font/*.otf', -- the actual font files (html/fonts/*.woff never existed - that was a stray, mismatched line)
 	'html/img/*.jpg',
 	'html/img/*.gif',
 	'html/rent/*.png', -- rental vehicle preview images (shown in the ox_lib rent menu)

@@ -702,7 +702,7 @@ end)
 -- ----------------------------------------------------------- SERVER TOOLS --
 
 CreateMenu('server_tools', 'Server Tools', function(m)
-    LButton(2, m, '🔎', 'Global Search', 'Name, identifier, phone, IBAN, plate  (hotkey F6, Ctrl+K in panels)', function() OpenGlobalSearch() end)
+    LButton(2, m, '🔎', 'Global Search', 'Name, identifier, phone, IBAN, plate  (hotkey F11, Ctrl+K in panels)', function() OpenGlobalSearch() end)
     SubMenu(m, '📢', 'Communication', 'Announcements and admin chat', 'server_comms')
     SubMenu(m, '📊', 'Reports & Logs', 'Reports, dashboards, history and audits', 'server_reports')
     if Allowed('btn_bulk') then

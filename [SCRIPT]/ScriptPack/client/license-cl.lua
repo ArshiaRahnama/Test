@@ -6,7 +6,7 @@
 
       - waitForLoad() doesn't exist anywhere in your pack -> replaced with the
         same "while ESX == nil do ... end" loop every other file in this pack
-        uses (see client/barbershop-cl.lua, commands-client.lua, etc.).
+        uses (see commands-client.lua, etc.).
 
       - exports['sun-society']:doesHavePerm(...) doesn't exist on your server
         (you have esx_society, which is unrelated - it only handles job/society

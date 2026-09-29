@@ -531,6 +531,46 @@ RegisterNUICallback('OpenExternalBank', function(data, cb)
     cb('ok')
 end)
 
+-- EXPANSION: Discord's full-screen UI (html/css/js "discord-*", the
+-- .discord-backdrop in index.html) lives inside this same resource, as a
+-- body-level sibling of .container — so unlike Bank (which hands off to the
+-- separate new_banking resource), this just re-grants NUI focus and shows
+-- that overlay directly once the phone itself is out of the way.
+local DiscordExternalOpen = false
+
+RegisterNUICallback('OpenExternalDiscord', function(data, cb)
+    SetTimeout(300, function()
+        DiscordExternalOpen = true
+        SetNuiFocus(true, true)
+
+        -- Best-effort only: the server's own name (returned with the profile)
+        -- replaces this as soon as the UI loads, so labels always match.
+        local myName = "You"
+        local xPlayerData = ESX.GetPlayerData()
+        if xPlayerData and xPlayerData.charinfo and xPlayerData.charinfo.firstname and xPlayerData.charinfo.lastname then
+            myName = xPlayerData.charinfo.firstname .. " " .. xPlayerData.charinfo.lastname
+        elseif xPlayerData and type(xPlayerData.name) == "string" then
+            myName = (xPlayerData.name:gsub("_", " "))
+        end
+
+        SendNUIMessage({ action = 'Discord_Open', myName = myName })
+
+        Citizen.CreateThread(function()
+            while DiscordExternalOpen do
+                Citizen.Wait(0)
+                DisableAllControlActions(0)
+            end
+        end)
+    end)
+    cb('ok')
+end)
+
+RegisterNUICallback('Discord_Close', function(data, cb)
+    DiscordExternalOpen = false
+    SetNuiFocus(false, false)
+    if cb then cb('ok') end
+end)
+
 RegisterNUICallback('Close', function(data)
     if not PhoneData.CallData.InCall then
         DoPhoneAnimation('cellphone_text_out')
@@ -3013,4 +3053,248 @@ RegisterNUICallback('Delete_Message', function(data, cb)
     TriggerServerEvent('Unique_Phone:Delete_Message', data.phone_number)
     local ChatNumberK = GetKeyByNumber(data.phone_number)
     PhoneData.Chats[ChatNumberK] = nil
+end)
+
+-- ==========================================================================
+-- EXPANSION: Discord app — thin NUI <-> server bridge, all real work
+-- (membership checks, persistence, broadcasting) happens server-side.
+-- ==========================================================================
+
+RegisterNUICallback('GetDiscordServers', function(data, cb)
+    ESX.TriggerServerCallback('Unique_Phone:server:Discord:GetServers', function(servers)
+        cb(servers)
+    end)
+end)
+
+RegisterNUICallback('GetDiscordChannels', function(data, cb)
+    ESX.TriggerServerCallback('Unique_Phone:server:Discord:GetChannels', function(channels)
+        cb(channels)
+    end, data.serverId)
+end)
+
+RegisterNUICallback('GetDiscordMessages', function(data, cb)
+    ESX.TriggerServerCallback('Unique_Phone:server:Discord:GetMessages', function(messages)
+        cb(messages)
+    end, data.channelId)
+end)
+
+RegisterNUICallback('GetDiscordMembers', function(data, cb)
+    ESX.TriggerServerCallback('Unique_Phone:server:Discord:GetMembers', function(members)
+        cb(members)
+    end, data.serverId)
+end)
+
+RegisterNUICallback('SendDiscordMessage', function(data, cb)
+    ESX.TriggerServerCallback('Unique_Phone:server:Discord:SendMessage', function(result)
+        if cb then cb(result) end
+    end, data.channelId, data.message, data.replyToId)
+end)
+
+RegisterNUICallback('CreateDiscordServer', function(data, cb)
+    ESX.TriggerServerCallback('Unique_Phone:server:Discord:CreateServer', function(result)
+        cb(result)
+    end, data.name)
+end)
+
+RegisterNUICallback('CreateDiscordChannel', function(data, cb)
+    ESX.TriggerServerCallback('Unique_Phone:server:Discord:CreateChannel', function(result)
+        cb(result)
+    end, data.serverId, data.name)
+end)
+
+RegisterNUICallback('JoinDiscordServer', function(data, cb)
+    ESX.TriggerServerCallback('Unique_Phone:server:Discord:JoinServer', function(result)
+        cb(result)
+    end, data.inviteCode)
+end)
+
+RegisterNUICallback('LeaveDiscordServer', function(data, cb)
+    TriggerServerEvent('Unique_Phone:server:Discord:LeaveServer', data.serverId)
+    if cb then cb('ok') end
+end)
+
+RegisterNUICallback('DeleteDiscordServer', function(data, cb)
+    ESX.TriggerServerCallback('Unique_Phone:server:Discord:DeleteServer', function(result)
+        cb(result)
+    end, data.serverId)
+end)
+
+RegisterNUICallback('DeleteDiscordChannel', function(data, cb)
+    ESX.TriggerServerCallback('Unique_Phone:server:Discord:DeleteChannel', function(result)
+        cb(result)
+    end, data.channelId)
+end)
+
+-- EXPANSION v2: reactions, edit/delete/pin, kick, server settings.
+
+RegisterNUICallback('ToggleDiscordReaction', function(data, cb)
+    ESX.TriggerServerCallback('Unique_Phone:server:Discord:ToggleReaction', function(result)
+        cb(result)
+    end, data.messageId, data.emoji)
+end)
+
+RegisterNUICallback('EditDiscordMessage', function(data, cb)
+    ESX.TriggerServerCallback('Unique_Phone:server:Discord:EditMessage', function(result)
+        cb(result)
+    end, data.messageId, data.message)
+end)
+
+RegisterNUICallback('DeleteDiscordMessage', function(data, cb)
+    ESX.TriggerServerCallback('Unique_Phone:server:Discord:DeleteMessage', function(result)
+        cb(result)
+    end, data.messageId)
+end)
+
+RegisterNUICallback('TogglePinDiscordMessage', function(data, cb)
+    ESX.TriggerServerCallback('Unique_Phone:server:Discord:TogglePinMessage', function(result)
+        cb(result)
+    end, data.messageId)
+end)
+
+RegisterNUICallback('GetDiscordPinnedMessages', function(data, cb)
+    ESX.TriggerServerCallback('Unique_Phone:server:Discord:GetPinnedMessages', function(result)
+        cb(result)
+    end, data.channelId)
+end)
+
+RegisterNUICallback('KickDiscordMember', function(data, cb)
+    ESX.TriggerServerCallback('Unique_Phone:server:Discord:KickMember', function(result)
+        cb(result)
+    end, data.serverId, data.memberId)
+end)
+
+RegisterNUICallback('UpdateDiscordServerSettings', function(data, cb)
+    ESX.TriggerServerCallback('Unique_Phone:server:Discord:UpdateServerSettings', function(result)
+        cb(result)
+    end, data.serverId, data.name, data.iconColor, data.regenerateInvite, data.isPublic)
+end)
+
+-- EXPANSION v3: admin role, public server discovery, voice presence, typing.
+
+RegisterNUICallback('ToggleDiscordAdmin', function(data, cb)
+    ESX.TriggerServerCallback('Unique_Phone:server:Discord:ToggleAdmin', function(result)
+        cb(result)
+    end, data.serverId, data.memberId)
+end)
+
+RegisterNUICallback('GetDiscordPublicServers', function(data, cb)
+    ESX.TriggerServerCallback('Unique_Phone:server:Discord:GetPublicServers', function(result)
+        cb(result)
+    end)
+end)
+
+RegisterNUICallback('JoinDiscordPublicServer', function(data, cb)
+    ESX.TriggerServerCallback('Unique_Phone:server:Discord:JoinPublicServer', function(result)
+        cb(result)
+    end, data.serverId)
+end)
+
+RegisterNUICallback('SendDiscordTyping', function(data, cb)
+    TriggerServerEvent('Unique_Phone:server:Discord:Typing', data.channelId)
+    if cb then cb('ok') end
+end)
+
+-- Live push from the server whenever another online member does something.
+RegisterNetEvent('Unique_Phone:client:Discord:NewMessage')
+AddEventHandler('Unique_Phone:client:Discord:NewMessage', function(payload)
+    SendNUIMessage({ action = "DiscordNewMessage", data = payload })
+end)
+
+RegisterNetEvent('Unique_Phone:client:Discord:NewChannel')
+AddEventHandler('Unique_Phone:client:Discord:NewChannel', function(payload)
+    SendNUIMessage({ action = "DiscordNewChannel", data = payload })
+end)
+
+RegisterNetEvent('Unique_Phone:client:Discord:ServerDeleted')
+AddEventHandler('Unique_Phone:client:Discord:ServerDeleted', function(payload)
+    SendNUIMessage({ action = "DiscordServerDeleted", data = payload })
+end)
+
+RegisterNetEvent('Unique_Phone:client:Discord:ChannelDeleted')
+AddEventHandler('Unique_Phone:client:Discord:ChannelDeleted', function(payload)
+    SendNUIMessage({ action = "DiscordChannelDeleted", data = payload })
+end)
+
+RegisterNetEvent('Unique_Phone:client:Discord:ReactionsUpdated')
+AddEventHandler('Unique_Phone:client:Discord:ReactionsUpdated', function(payload)
+    SendNUIMessage({ action = "DiscordReactionsUpdated", data = payload })
+end)
+
+RegisterNetEvent('Unique_Phone:client:Discord:MessageEdited')
+AddEventHandler('Unique_Phone:client:Discord:MessageEdited', function(payload)
+    SendNUIMessage({ action = "DiscordMessageEdited", data = payload })
+end)
+
+RegisterNetEvent('Unique_Phone:client:Discord:MessageDeleted')
+AddEventHandler('Unique_Phone:client:Discord:MessageDeleted', function(payload)
+    SendNUIMessage({ action = "DiscordMessageDeleted", data = payload })
+end)
+
+RegisterNetEvent('Unique_Phone:client:Discord:MessagePinToggled')
+AddEventHandler('Unique_Phone:client:Discord:MessagePinToggled', function(payload)
+    SendNUIMessage({ action = "DiscordMessagePinToggled", data = payload })
+end)
+
+RegisterNetEvent('Unique_Phone:client:Discord:MemberKicked')
+AddEventHandler('Unique_Phone:client:Discord:MemberKicked', function(payload)
+    SendNUIMessage({ action = "DiscordMemberKicked", data = payload })
+end)
+
+RegisterNetEvent('Unique_Phone:client:Discord:Kicked')
+AddEventHandler('Unique_Phone:client:Discord:Kicked', function(payload)
+    SendNUIMessage({ action = "DiscordYouWereKicked", data = payload })
+end)
+
+RegisterNetEvent('Unique_Phone:client:Discord:ServerUpdated')
+AddEventHandler('Unique_Phone:client:Discord:ServerUpdated', function(payload)
+    SendNUIMessage({ action = "DiscordServerUpdated", data = payload })
+end)
+
+RegisterNetEvent('Unique_Phone:client:Discord:MemberAdminToggled')
+AddEventHandler('Unique_Phone:client:Discord:MemberAdminToggled', function(payload)
+    SendNUIMessage({ action = "DiscordMemberAdminToggled", data = payload })
+end)
+
+RegisterNUICallback('GetDiscordMyProfile', function(data, cb)
+    ESX.TriggerServerCallback('Unique_Phone:server:Discord:GetMyProfile', function(result)
+        cb(result)
+    end)
+end)
+
+RegisterNUICallback('GetDiscordProfile', function(data, cb)
+    ESX.TriggerServerCallback('Unique_Phone:server:Discord:GetProfile', function(result)
+        cb(result)
+    end, data.serverId, data.memberId)
+end)
+
+RegisterNUICallback('UpdateDiscordMyProfile', function(data, cb)
+    ESX.TriggerServerCallback('Unique_Phone:server:Discord:UpdateMyProfile', function(result)
+        cb(result)
+    end, data)
+end)
+
+RegisterNetEvent('Unique_Phone:client:Discord:ProfileUpdated')
+AddEventHandler('Unique_Phone:client:Discord:ProfileUpdated', function(payload)
+    SendNUIMessage({ action = "DiscordProfileUpdated", data = payload })
+end)
+
+RegisterNUICallback('DiscordStaff', function(data, cb)
+    ESX.TriggerServerCallback('Unique_Phone:server:Discord:Staff', function(result)
+        cb(result)
+    end, data.action, data.payload or {})
+end)
+
+RegisterNetEvent('Unique_Phone:client:Discord:Banned')
+AddEventHandler('Unique_Phone:client:Discord:Banned', function(payload)
+    SendNUIMessage({ action = "DiscordBanned", data = payload })
+end)
+
+RegisterNetEvent('Unique_Phone:client:Discord:ChannelUpdated')
+AddEventHandler('Unique_Phone:client:Discord:ChannelUpdated', function(payload)
+    SendNUIMessage({ action = "DiscordChannelUpdated", data = payload })
+end)
+
+RegisterNetEvent('Unique_Phone:client:Discord:Typing')
+AddEventHandler('Unique_Phone:client:Discord:Typing', function(payload)
+    SendNUIMessage({ action = "DiscordTyping", data = payload })
 end)

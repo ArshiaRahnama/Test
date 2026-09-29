@@ -21,6 +21,7 @@
     <link rel="stylesheet" href="./css/garage.css">
     <link rel="stylesheet" href="./css/security.css">
     <link rel="stylesheet" href="./css/browser.css">
+    <link rel="stylesheet" href="./css/discord.css">
     <link rel="stylesheet" href="./css/mail.css">
     <link rel="stylesheet" href="./css/meos.css">
     <link rel="stylesheet" href="./css/crypto.css">
@@ -1268,6 +1269,9 @@
                         </div>
                     </div>
 
+                    <!-- EXPANSION: Discord app — servers/channels backed by
+                    the phone_discord_* tables (see sql/discord.sql,
+                    client+server main.lua "Discord:" handlers, js/discord.js). -->
                     <div class="bank-app">
                         <div class="bank-app-loading">
                             <img src="../html/img/apps/bank-logo.png" class="bank-logo">
@@ -1403,6 +1407,328 @@
             <div class="screen-notification-content"><p>This is a test notification JOINK 222222222222222222222222222222</p></div>
         </div>
 
+        <!-- EXPANSION: Discord — a full-screen desktop-style UI, opened the
+        same way the phone's Bank icon opens new_banking's ATM UI (phone
+        closes itself, then this shows). Lives as a sibling of .container
+        (not nested inside it) so it stays visible while .container is
+        display:none. See client/main.lua's OpenExternalDiscord/Discord_Close
+        NUI callbacks and html/js/discord.js. -->
+        <div class="discord-backdrop" id="discord-backdrop">
+            <div class="discord-window">
+
+                <div class="discord-titlebar">
+                    <div class="discord-titlebar-left"><i class="fab fa-discord"></i><span>Discord</span>
+                        <div class="discord-titlebar-staff" id="discord-staff-btn" style="display:none;"><i class="fas fa-user-shield"></i> Staff Panel</div>
+                    </div>
+                    <div class="discord-titlebar-close" id="discord-close-btn" title="Close (Esc)"><i class="fas fa-xmark"></i></div>
+                </div>
+
+                <div class="discord-body">
+
+                    <div class="discord-rail">
+                        <div class="discord-rail-list" id="discord-server-rail-list"></div>
+                        <div class="discord-rail-divider"></div>
+                        <div class="discord-rail-icon discord-rail-action" id="discord-add-server-btn" title="Add a server"><i class="fas fa-plus"></i></div>
+                        <div class="discord-rail-icon discord-rail-action" id="discord-join-server-btn" title="Join a server"><i class="fas fa-compass"></i></div>
+                    </div>
+
+                    <div class="discord-channel-sidebar">
+                        <div class="discord-server-header" id="discord-server-menu-btn">
+                            <span id="discord-current-server-name">Select a server</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+
+                        <div class="discord-channel-list" id="discord-channel-list"></div>
+
+                        <div class="discord-add-channel-row" id="discord-add-channel-btn" style="display:none;">
+                            <i class="fas fa-plus"></i><span>Create Channel</span>
+                        </div>
+
+                        <div class="discord-user-footer" id="discord-user-footer" title="My profile">
+                            <div class="discord-user-avatar-wrap">
+                                <div class="discord-user-avatar" id="discord-my-avatar"><i class="fas fa-user"></i></div>
+                                <div class="discord-member-status-dot discord-status-online" id="discord-my-status-dot"></div>
+                            </div>
+                            <div class="discord-user-info">
+                                <div class="discord-user-name" id="discord-my-name">You</div>
+                                <div class="discord-user-tag" id="discord-my-tag">Online</div>
+                            </div>
+                            <i class="fas fa-cog discord-user-settings-icon"></i>
+                        </div>
+                    </div>
+
+                    <div class="discord-chat-column">
+
+                        <div class="discord-empty-state" id="discord-empty-state">
+                            <i class="fab fa-discord"></i>
+                            <h2>No servers yet</h2>
+                            <p>Create a server or join one with an invite code to get started.</p>
+                            <div class="discord-empty-buttons">
+                                <div class="discord-btn discord-btn-primary" id="discord-empty-create-btn">Create a Server</div>
+                                <div class="discord-btn discord-btn-secondary" id="discord-empty-join-btn">Join a Server</div>
+                            </div>
+                        </div>
+
+                        <div class="discord-channel-empty" id="discord-channel-empty">
+                            <i class="fas fa-hashtag"></i>
+                            <p>Pick a channel from the left to start chatting.</p>
+                        </div>
+
+                        <div class="discord-chat-active" id="discord-chat-active">
+                            <div class="discord-chat-header">
+                                <span class="discord-chat-hash">#</span>
+                                <span class="discord-chat-channel-name" id="discord-chat-channel-name">general</span>
+                                <div class="discord-chat-header-actions">
+                                    <i class="fas fa-thumbtack discord-chat-pins-btn" id="discord-chat-pins-btn" title="Pinned messages"></i>
+                                    <i class="fas fa-users discord-chat-members-toggle" id="discord-chat-members-toggle" title="Toggle member list"></i>
+                                </div>
+                            </div>
+
+                            <div class="discord-chat-messages" id="discord-chat-messages"></div>
+
+                            <div class="discord-typing-indicator" id="discord-typing-indicator"></div>
+
+                            <div class="discord-reply-preview-bar" id="discord-reply-preview-bar" style="display:none;">
+                                <div class="discord-reply-preview-text">Replying to <b id="discord-reply-preview-name"></b></div>
+                                <i class="fas fa-times" id="discord-reply-cancel-btn"></i>
+                            </div>
+
+                            <div class="discord-chat-input-row">
+                                <div class="discord-chat-emoji-btn" id="discord-emoji-btn" title="Emoji"><i class="far fa-smile"></i></div>
+                                <input type="text" id="discord-message-input" placeholder="Message #general" maxlength="500" spellcheck="false" dir="auto">
+                                <div class="discord-chat-send" id="discord-send-message-btn"><i class="fas fa-paper-plane"></i></div>
+                            </div>
+
+                            <!-- Reused for both "insert emoji into composer" and
+                            "react to a message" — see Discord.emojiPicker* state
+                            in js/discord.js. -->
+                            <div class="discord-emoji-picker" id="discord-emoji-picker"></div>
+                        </div>
+
+                    </div>
+
+                    <div class="discord-members-sidebar" id="discord-members-sidebar">
+                        <div class="discord-members-header" id="discord-members-header">Members</div>
+                        <div class="discord-members-list" id="discord-members-list"></div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Shown instead of the whole app when a staff member has banned
+            this account from Discord (see Discord_Init / Discord_HandleBanned). -->
+            <div class="discord-banned-screen" id="discord-banned-screen">
+                <i class="fas fa-ban"></i>
+                <h2>You have been banned from Discord</h2>
+                <p id="discord-banned-reason"></p>
+                <p class="discord-banned-meta" id="discord-banned-meta"></p>
+                <div class="discord-btn discord-btn-secondary" id="discord-banned-close-btn">Close</div>
+            </div>
+
+            <div class="discord-modal-overlay" id="discord-modal-overlay">
+
+                <div class="discord-modal" id="discord-modal-create-server">
+                    <div class="discord-modal-title">Create a Server</div>
+                    <input type="text" id="discord-new-server-name" placeholder="Server name" maxlength="40" spellcheck="false" dir="auto">
+                    <div class="discord-modal-buttons">
+                        <div class="discord-modal-btn discord-modal-cancel" data-discordmodalclose="1">Cancel</div>
+                        <div class="discord-modal-btn discord-modal-confirm" id="discord-confirm-create-server">Create</div>
+                    </div>
+                </div>
+
+                <div class="discord-modal" id="discord-modal-join-server">
+                    <div class="discord-modal-title">Join a Server</div>
+                    <div class="discord-modal-tabs">
+                        <div class="discord-modal-tab discord-modal-tab-active" data-tab="invite">By Invite Code</div>
+                        <div class="discord-modal-tab" data-tab="discover">Discover</div>
+                    </div>
+
+                    <div class="discord-modal-tab-pane discord-modal-tab-pane-active" id="discord-tab-invite">
+                        <input type="text" id="discord-join-code-input" placeholder="Invite code" maxlength="10" spellcheck="false">
+                        <div class="discord-modal-buttons">
+                            <div class="discord-modal-btn discord-modal-cancel" data-discordmodalclose="1">Cancel</div>
+                            <div class="discord-modal-btn discord-modal-confirm" id="discord-confirm-join-server">Join</div>
+                        </div>
+                    </div>
+
+                    <div class="discord-modal-tab-pane" id="discord-tab-discover">
+                        <div class="discord-discover-list" id="discord-discover-list"></div>
+                        <div class="discord-modal-buttons">
+                            <div class="discord-modal-btn discord-modal-cancel" data-discordmodalclose="1">Close</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="discord-modal" id="discord-modal-create-channel">
+                    <div class="discord-modal-title">Create Channel</div>
+                    <input type="text" id="discord-new-channel-name" placeholder="channel-name" maxlength="30" spellcheck="false">
+                    <div class="discord-modal-buttons">
+                        <div class="discord-modal-btn discord-modal-cancel" data-discordmodalclose="1">Cancel</div>
+                        <div class="discord-modal-btn discord-modal-confirm" id="discord-confirm-create-channel">Create</div>
+                    </div>
+                </div>
+
+                <div class="discord-modal" id="discord-modal-server-menu">
+                    <div class="discord-modal-title" id="discord-menu-server-name">Server</div>
+                    <div class="discord-modal-info-row">Invite code: <b id="discord-menu-invite-code">-------</b> <i class="fas fa-copy" id="discord-copy-invite" title="Copy"></i></div>
+                    <div class="discord-modal-buttons discord-modal-buttons-vertical">
+                        <div class="discord-modal-btn discord-modal-confirm" id="discord-create-channel-open-btn">Create Channel</div>
+                        <div class="discord-modal-btn discord-modal-confirm" id="discord-open-settings-btn" style="display:none;">Server Settings</div>
+                        <div class="discord-modal-btn discord-modal-danger" id="discord-leave-server-btn">Leave Server</div>
+                        <div class="discord-modal-btn discord-modal-danger" id="discord-delete-server-btn" style="display:none;">Delete Server</div>
+                        <div class="discord-modal-btn discord-modal-cancel" data-discordmodalclose="1">Close</div>
+                    </div>
+                </div>
+
+                <div class="discord-modal" id="discord-modal-server-settings">
+                    <div class="discord-modal-title">Server Settings</div>
+                    <input type="text" id="discord-settings-name-input" placeholder="Server name" maxlength="40" spellcheck="false" dir="auto">
+                    <div class="discord-settings-label">Icon color</div>
+                    <div class="discord-icon-palette" id="discord-icon-palette"></div>
+                    <div class="discord-settings-invite-row">
+                        <span>Invite code: <b id="discord-settings-invite-code">-------</b></span>
+                        <div class="discord-btn discord-btn-secondary discord-btn-small" id="discord-regenerate-invite-btn">Regenerate</div>
+                    </div>
+                    <div class="discord-settings-toggle-row" id="discord-settings-public-toggle">
+                        <span>Public (listed in Discover)</span>
+                        <div class="discord-toggle-switch" id="discord-public-toggle-switch"></div>
+                    </div>
+                    <div class="discord-modal-buttons">
+                        <div class="discord-modal-btn discord-modal-cancel" data-discordmodalclose="1">Cancel</div>
+                        <div class="discord-modal-btn discord-modal-confirm" id="discord-confirm-server-settings">Save</div>
+                    </div>
+                </div>
+
+                <div class="discord-modal discord-modal-profile" id="discord-modal-profile-view">
+                    <div class="discord-profile-banner" id="discord-pv-banner"></div>
+                    <div class="discord-profile-head">
+                        <div class="discord-profile-avatar-wrap">
+                            <div class="discord-profile-avatar" id="discord-pv-avatar"></div>
+                            <div class="discord-member-status-dot discord-profile-status-dot" id="discord-pv-status-dot"></div>
+                        </div>
+                        <div class="discord-profile-badges" id="discord-pv-badges"></div>
+                    </div>
+                    <div class="discord-profile-body">
+                        <div class="discord-profile-name" id="discord-pv-name"></div>
+                        <div class="discord-profile-tag" id="discord-pv-tag"></div>
+                        <div class="discord-profile-custom-status" id="discord-pv-custom-status"></div>
+
+                        <div class="discord-profile-section" id="discord-pv-bio-section">
+                            <div class="discord-profile-section-title">About me</div>
+                            <div class="discord-profile-bio" id="discord-pv-bio"></div>
+                        </div>
+
+                        <div class="discord-profile-section">
+                            <div class="discord-profile-section-title">In-game info</div>
+                            <div class="discord-profile-info" id="discord-pv-info"></div>
+                        </div>
+
+                        <div class="discord-profile-section">
+                            <div class="discord-profile-section-title">Discord</div>
+                            <div class="discord-profile-info" id="discord-pv-dates"></div>
+                        </div>
+
+                        <div class="discord-modal-buttons">
+                            <div class="discord-modal-btn discord-modal-confirm" id="discord-pv-edit-btn" style="display:none;">Edit Profile</div>
+                            <div class="discord-modal-btn discord-modal-cancel" data-discordmodalclose="1">Close</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="discord-modal discord-modal-profile-edit" id="discord-modal-profile-edit">
+                    <div class="discord-modal-title">My Discord Profile</div>
+
+                    <div class="discord-settings-label">Status</div>
+                    <div class="discord-status-picker" id="discord-status-picker">
+                        <div class="discord-status-option" data-status="online"><span class="discord-status-swatch discord-status-online"></span>Online</div>
+                        <div class="discord-status-option" data-status="idle"><span class="discord-status-swatch discord-status-idle"></span>Idle</div>
+                        <div class="discord-status-option" data-status="dnd"><span class="discord-status-swatch discord-status-dnd"></span>Do Not Disturb</div>
+                        <div class="discord-status-option" data-status="invisible"><span class="discord-status-swatch discord-status-offline"></span>Invisible</div>
+                    </div>
+
+                    <div class="discord-settings-label">Custom status</div>
+                    <input type="text" id="discord-pe-custom-status" placeholder="What's up?" maxlength="60" spellcheck="false" dir="auto">
+
+                    <div class="discord-settings-label">About me</div>
+                    <input type="text" id="discord-pe-bio" placeholder="Tell people about yourself" maxlength="190" spellcheck="false" dir="auto">
+
+                    <div class="discord-settings-label">Banner color</div>
+                    <div class="discord-icon-palette" id="discord-pe-banner-palette"></div>
+
+                    <div class="discord-settings-label">Shown to others</div>
+                    <div class="discord-settings-toggle-row"><span>Phone number</span><div class="discord-toggle-switch" id="discord-pe-show-phone"></div></div>
+                    <div class="discord-settings-toggle-row"><span>Job</span><div class="discord-toggle-switch" id="discord-pe-show-job"></div></div>
+
+                    <div class="discord-modal-buttons">
+                        <div class="discord-modal-btn discord-modal-cancel" data-discordmodalclose="1">Cancel</div>
+                        <div class="discord-modal-btn discord-modal-confirm" id="discord-pe-save-btn">Save</div>
+                    </div>
+                </div>
+
+                <div class="discord-modal discord-modal-staff" id="discord-modal-staff">
+                    <div class="discord-staff-header">
+                        <div class="discord-modal-title"><i class="fas fa-user-shield"></i> Discord Staff Panel</div>
+                        <div class="discord-staff-tabs" id="discord-staff-tabs">
+                            <div class="discord-staff-tab discord-staff-tab-active" data-stafftab="overview">Overview</div>
+                            <div class="discord-staff-tab" data-stafftab="servers">Servers</div>
+                            <div class="discord-staff-tab" data-stafftab="accounts">Accounts</div>
+                            <div class="discord-staff-tab" data-stafftab="bans">Bans</div>
+                            <div class="discord-staff-tab" data-stafftab="announce">Announce</div>
+                            <div class="discord-staff-tab" data-stafftab="audit">Audit Log</div>
+                        </div>
+                    </div>
+
+                    <div class="discord-staff-body">
+                        <div class="discord-staff-pane discord-staff-pane-active" id="discord-staffpane-overview"></div>
+
+                        <div class="discord-staff-pane" id="discord-staffpane-servers">
+                            <input type="text" class="discord-staff-search" id="discord-staff-server-search" placeholder="Search servers by name or invite code..." spellcheck="false" dir="auto">
+                            <div id="discord-staff-server-list"></div>
+                        </div>
+
+                        <div class="discord-staff-pane" id="discord-staffpane-accounts">
+                            <input type="text" class="discord-staff-search" id="discord-staff-account-search" placeholder="Search by name, phone number or license..." spellcheck="false" dir="auto">
+                            <div id="discord-staff-account-list"></div>
+                        </div>
+
+                        <div class="discord-staff-pane" id="discord-staffpane-bans"><div id="discord-staff-ban-list"></div></div>
+
+                        <div class="discord-staff-pane" id="discord-staffpane-announce">
+                            <div class="discord-settings-label">Send to</div>
+                            <select class="discord-staff-select" id="discord-announce-scope">
+                                <option value="global">Every server (first channel of each)</option>
+                                <option value="server">One server (all its channels)</option>
+                                <option value="channel">One channel</option>
+                            </select>
+                            <select class="discord-staff-select" id="discord-announce-server" style="display:none;"></select>
+                            <select class="discord-staff-select" id="discord-announce-channel" style="display:none;"></select>
+                            <div class="discord-settings-label">Announcement</div>
+                            <textarea class="discord-staff-textarea" id="discord-announce-text" maxlength="600" placeholder="Write the announcement..." dir="auto"></textarea>
+                            <div class="discord-staff-announce-actions">
+                                <div class="discord-btn discord-btn-primary" id="discord-announce-send-btn"><i class="fas fa-bullhorn"></i> Send announcement</div>
+                                <span class="discord-staff-announce-result" id="discord-announce-result"></span>
+                            </div>
+                        </div>
+
+                        <div class="discord-staff-pane" id="discord-staffpane-audit"><div id="discord-staff-audit-list"></div></div>
+                    </div>
+
+                    <div class="discord-modal-buttons">
+                        <div class="discord-modal-btn discord-modal-cancel" data-discordmodalclose="1">Close</div>
+                    </div>
+                </div>
+
+                <div class="discord-modal" id="discord-modal-pinned-messages">
+                    <div class="discord-modal-title">Pinned Messages</div>
+                    <div class="discord-pinned-list" id="discord-pinned-list"></div>
+                    <div class="discord-modal-buttons">
+                        <div class="discord-modal-btn discord-modal-cancel" data-discordmodalclose="1">Close</div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
         <div class="call-notifications">
             <div class="call-notifications-icon"><i class="fas fa-phone"></i></div>
             <div class="call-notifications-title"><p>Incoming Call</p></div>
@@ -1432,6 +1758,7 @@
         <script src="./js/garage.js"></script>
         <script src="./js/security.js"></script>
         <script src="./js/browser.js"></script>
+        <script src="./js/discord.js"></script>
         <script src="./js/mail.js"></script>
         <script src="./js/meos.js"></script>
         <script src="./js/crypto.js"></script>

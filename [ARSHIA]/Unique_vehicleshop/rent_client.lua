@@ -71,6 +71,13 @@ function Rent_RentVehicle(model, durationId, location)
 				ESX.Game.SpawnVehicle(model, spawn_coords, spawn_coords.h, function(vehicle)
 					SetEntityAsMissionEntity(vehicle, true, true)
 					TaskWarpPedIntoVehicle(GetPlayerPed(-1), vehicle, -1)
+					-- Same fix as the shop's test-drive: no plate was passed to
+					-- SpawnVehicle above, so this server's key system (Unique_Garage's
+					-- CarLock) never got a key for this plate and would otherwise halt
+					-- the vehicle and demand a hotwire. A rental isn't real ownership
+					-- either, so bypass it the same temporary, client-side way rather
+					-- than registering a permanent CarLock key for a rented plate.
+					TriggerEvent('CarLock:enableVehicleTemporarily')
 					Rent_Options.vehicle.hash = vehicle
 					Rent_Options.have_rented = true
 					-- Only release the lock once have_rented is actually true,

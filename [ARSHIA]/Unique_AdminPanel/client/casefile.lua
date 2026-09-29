@@ -93,8 +93,24 @@ end)
 -- ------------------------------------------------------------- shortcut ----
 -- Ctrl+K inside any open panel opens the search too (handled in html/app.js).
 -- In-game hotkey: F11 (rebind in Settings > Key Bindings > FiveM).
--- FIX: was F6, which collided with other resources bound to that key.
-RegisterCommand('uap_globalsearch', function()
+-- FIX: was 'uap_globalsearch' bound to F6. Changing RegisterKeyMapping's
+-- default key does NOT move it for anyone who already had this resource
+-- loaded, because FiveM saves each player's keybind per COMMAND NAME on
+-- their own machine once it's ever been registered - it doesn't matter what
+-- default the script asks for on later starts. Renaming the command to
+-- 'uap_globalsearch_v2' makes it a brand-new binding with no old F6 saved
+-- against it, so F11 actually takes effect for every player immediately.
+--
+-- The old 'uap_globalsearch' command name is deliberately NOT registered
+-- anymore (by request - F6 should do nothing at all now). Keeping it
+-- registered, even without a RegisterKeyMapping call, is exactly what was
+-- still letting F6 open the search: every player who ever had this
+-- resource loaded before already has F6 bound to that command name on
+-- their own machine, and FiveM fires a command by name whenever its bound
+-- key is pressed regardless of whether the resource still calls
+-- RegisterKeyMapping for it. With the command gone entirely, F6 has
+-- nothing left to trigger.
+RegisterCommand('uap_globalsearch_v2', function()
     if aduty then OpenGlobalSearch() end
 end, false)
-RegisterKeyMapping('uap_globalsearch', 'Admin panel: Global search', 'keyboard', 'F11')
+RegisterKeyMapping('uap_globalsearch_v2', 'Admin panel: Global search', 'keyboard', 'F11')
