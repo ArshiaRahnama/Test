@@ -460,6 +460,43 @@ function crime_case_notes(int $caseId): array {
   catch (Throwable $e) { return []; }
 }
 /** آخرین بازداشتی‌های ثبت‌شده توسط اعضای یک ارگان (doj_criminal_records — رپ‌شیت). */
+/** ماشین‌های یه شهروند (owned_vehicles واقعیِ essentialmode). اگه جدول نبود (حالت دمو) لیست خالی برمی‌گرده، نه خطا. */
+function owned_vehicles_of(string $identifier): array {
+  if ($identifier === '') return [];
+  try {
+    $q = db()->prepare('SELECT plate,type,job,stored,fuel,body,garagenum,police FROM owned_vehicles WHERE owner=? ORDER BY stored DESC, plate ASC LIMIT 60');
+    $q->execute([$identifier]); return $q->fetchAll();
+  } catch (Throwable $e) { return []; }
+}
+/** خونه/ملک‌های یه شهروند (owned_properties + کاتالوگ properties برای لیبل فارسی/آدرس). */
+function owned_properties_of(string $identifier): array {
+  if ($identifier === '') return [];
+  try {
+    $q = db()->prepare("SELECT op.name,op.price,op.rented,op.storage_level,op.safe_level,op.for_sale,op.sale_price,
+      op.mortgage_active,op.mortgage_remaining,op.mortgage_installment,op.mortgage_days_left,
+      COALESCE(p.label, op.name) AS label
+      FROM owned_properties op LEFT JOIN properties p ON p.name = op.name
+      WHERE op.owner=? ORDER BY op.name ASC LIMIT 60");
+    $q->execute([$identifier]); return $q->fetchAll();
+  } catch (Throwable $e) { return []; }
+}
+/** صورت‌حساب‌های در انتظار پرداختِ یه شهروند (جدول billing؛ پرداخت‌شده‌ها معمولاً حذف می‌شن، پس همه‌ی ردیف‌ها هنوز پرداخت‌نشده‌ن). */
+function billing_of(string $identifier): array {
+  if ($identifier === '') return [];
+  try {
+    $q = db()->prepare('SELECT id,sender,label,amount FROM billing WHERE identifier=? ORDER BY id DESC LIMIT 60');
+    $q->execute([$identifier]); return $q->fetchAll();
+  } catch (Throwable $e) { return []; }
+}
+/** جستجوی عمومی شهروندان برای پنل «جستجوی شهروندان» — فقط فیلدهای غیرحساس (نام، رنک، شغل/گنگِ رسمی)، بدون شماره تماس/حساب/آی‌پی. */
+function citizen_search(string $q): array {
+  $q = trim($q); if ($q === '') return [];
+  try {
+    $lk = '%' . addcslashes($q, '%_\\') . '%';
+    $s = db()->prepare("SELECT playerName,`rank`,xp,job,gang FROM users WHERE playerName LIKE ? ORDER BY xp DESC LIMIT 30");
+    $s->execute([$lk]); return $s->fetchAll();
+  } catch (Throwable $e) { return []; }
+}
 function dept_bookings_of(string $job): array {
   try {
     $q = db()->prepare('SELECT * FROM doj_criminal_records WHERE booked_by IN (SELECT identifier FROM users WHERE job=?) ORDER BY id DESC LIMIT 30');

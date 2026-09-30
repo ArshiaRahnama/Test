@@ -227,12 +227,11 @@ if (($_GET['done'] ?? '') === '1' && $p === 'apps') $ok = 'درخواستت ثب
 
 $mask = preg_match('/^09\d{9}$/', $u['phone']) ? substr($u['phone'], 0, 4) . '***' . substr($u['phone'], -4) : '—';
 function job_label(string $j): string { foreach (CFG['depts'] as $d) if ($d['job'] === $j) return $d['label']; return $j === 'unemployed' ? 'بیکار' : $j; }
-function ago(int $t): string { $s = max(0, time() - $t); return $s < 90 ? 'همین الان' : ($s < 3600 ? intdiv($s, 60) . ' دقیقه پیش' : ($s < 172800 ? intdiv($s, 3600) . ' ساعت پیش' : intdiv($s, 86400) . ' روز پیش')); }
-// BUG FIX: تایل «ساعت بازی» فقط یه عدد خام (مثلاً «52») نشون می‌داد بدون واحد و بدون تناسب با اندازه‌ی مقدار.
-// این تابع timePlay (ثانیه) رو مثل ago() بالا، متناسب با اندازه‌ش به دقیقه/ساعت/روز (+ ساعت باقی‌مونده) نمایش می‌ده.
-// BUG FIX: نسخه‌ی «ago» که به‌جای یه timestamp، مستقیم تعداد ثانیه‌ی سپری‌شده (که خودِ
-// MySQL حساب کرده، نه PHP) می‌گیره — همون چیزی که me() الان توی seenSecsAgo برمی‌گردونه.
-function ago_secs(int $s): string { $s = max(0, $s); return $s < 90 ? 'همین الان' : ($s < 3600 ? intdiv($s, 60) . ' دقیقه پیش' : ($s < 172800 ? intdiv($s, 3600) . ' ساعت پیش' : intdiv($s, 86400) . ' روز پیش')); }
+// فرمت مشترک «چند وقت پیش» — هم ago() (از روی timestamp) و هم ago_secs() (از روی ثانیه‌ی
+// آماده، مثلاً seenSecsAgo که خودِ MySQL حساب می‌کنه) از همین یکی استفاده می‌کنن تا منطق دوبار نگه‌داری نشه.
+function _ago_fmt(int $s): string { $s = max(0, $s); return $s < 90 ? 'همین الان' : ($s < 3600 ? intdiv($s, 60) . ' دقیقه پیش' : ($s < 172800 ? intdiv($s, 3600) . ' ساعت پیش' : intdiv($s, 86400) . ' روز پیش')); }
+function ago(int $t): string { return _ago_fmt(time() - $t); }
+function ago_secs(int $s): string { return _ago_fmt($s); }
 function playdur(int $sec): string {
   $sec = max(0, $sec);
   if ($sec < 3600) return number_format(intdiv($sec, 60)) . ' دقیقه';
@@ -249,6 +248,10 @@ $I = [ // آیکون‌ها
  'home' => '<path d="M3 11 12 3l9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1v-9Z"/>',
  'info' => '<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="M14 10h4M14 14h4M6 16c.5-1.5 1.5-2 3-2s2.500.5 3 2"/>',
  'apply' => '<path d="M12 5v14M5 12h14"/>', 'apps' => '<path d="M9 5h10M9 12h10M9 19h10M4 5h.01M4 12h.01M4 19h.01"/>',
+ 'garage' => '<path d="M3 21V10l9-6 9 6v11"/><path d="M5 21v-8h14v8M9 21v-5h6v5"/>',
+ 'property' => '<path d="M3 10.500 12 3l9 7.500"/><path d="M5 9.500V21h14V9.500"/><path d="M9 21v-6h6v6"/>',
+ 'billing' => '<rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 9h8M8 13h5M8 17h3"/>',
+ 'citizens' => '<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>',
  'review' => '<path d="M9 12l2 2 4-4"/><rect x="4" y="3" width="16" height="18" rx="2"/>',
  'users' => '<circle cx="9" cy="8" r="3.500"/><path d="M2 20a7 7 0 0 1 14 0M17 11a3 3 0 1 0 0-6M22 20a6 6 0 0 0-4-5.600"/>',
  'tickets' => '<path d="M21 11.500a8.400 8.400 0 0 1-8.400 8.400 8.600 8.600 0 0 1-3.800-.9L3 20l1-5.600a8.400 8.400 0 0 1-.9-3.900A8.400 8.400 0 0 1 11.500 2 8.600 8.600 0 0 1 21 11.500Z"/>',
@@ -260,7 +263,8 @@ $I = [ // آیکون‌ها
  'growth' => '<path d="M3 3v18h18"/><path d="M18.7 8 12 14.7 8.7 11.4 3 17"/>',
 ];
 $unreadCount = unread_notif_count($u['id']);
-$nav = ['home' => 'نمای کلی', 'info' => 'کارت شهروندی'];
+$nav = ['home' => 'نمای کلی', 'info' => 'کارت شهروندی', 'citizens' => 'جستجوی شهروندان'];
+if ($u['game']) { $nav['garage'] = 'گاراژ من'; $nav['property'] = 'املاک من'; $nav['billing'] = 'صورت‌حساب من'; }
 if ($myGang) $nav['gang'] = 'پنل گنگ من' . ($isGangBoss ? ' (باس)' : '');
 if ($myOrg) $nav['org'] = 'پنل ارگان من' . ($isOrgBoss ? ' (باس)' : '');
 $nav += ['apply' => 'ثبت درخواست عضویت', 'apps' => 'درخواست‌های من', 'tickets' => 'پشتیبانی (تیکت)', 'notif' => 'اعلان‌ها' . ($unreadCount ? " ($unreadCount)" : ''), 'settings' => 'تنظیمات'];
@@ -362,8 +366,8 @@ function app_card(array $x, bool $review = false, bool $mine = true): void {
   <section class="notice"><h2>ورود به شهر <?= e(CFG['fa']) ?> در لانچر VMP</h2>
     <p>برای ورود به شهر، اطلاعات زیر را در لانچر VMP وارد کنید:</p>
     <p class="cred"><span>نام کاربری</span> <b dir="ltr"><?= e($u['username']) ?></b> <span>رمز عبور</span> <b>همون رمزی که موقع ساخت حساب داخل بازی گذاشتی</b></p></section>
-  <div class="head"><h2>اطلاعات کاراکتر</h2><button class="btn" onclick="window.print()">دانلود کارت شناسایی</button></div>
-  <article class="idcard">
+  <div class="head"><h2>اطلاعات کاراکتر</h2><button class="btn" id="dlcard-btn" type="button">دانلود کارت شناسایی (تصویر)</button></div>
+  <article class="idcard" id="idcard-capture">
     <div class="ch"><b><?= e(strtoupper(CFG['name'])) ?></b><span>کارت شناسایی شهروندی</span><small>CITIZEN IDENTITY CARD</small></div>
     <div class="cb"><dl>
       <dt>نام و نام خانوادگی:</dt><dd><?= e($u['fullname']) ?></dd>
@@ -373,6 +377,89 @@ function app_card(array $x, bool $review = false, bool $mine = true): void {
       <dt>شماره حساب:</dt><dd dir="ltr"><?= e(($u['game']['iban'] ?? '') ?: $u['acc']) ?></dd></dl>
       <div class="cid"><small>شماره شناسایی</small><b dir="ltr"><?= e($u['game'] ? str_pad((string)(int)$u['game']['account_num'], 8, '0', STR_PAD_LEFT) : $u['cid']) ?></b></div></div>
   </article>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script>
+  (function(){
+    var btn = document.getElementById('dlcard-btn'), card = document.getElementById('idcard-capture');
+    if (!btn || !card) return;
+    btn.addEventListener('click', function(){
+      if (typeof html2canvas !== 'function') { window.print(); return; }
+      var old = btn.textContent; btn.textContent = 'در حال آماده‌سازی...'; btn.disabled = true;
+      html2canvas(card, {backgroundColor: '#0a0906', scale: 2}).then(function(canvas){
+        var a = document.createElement('a');
+        a.download = 'citizen-card.png';
+        a.href = canvas.toDataURL('image/png');
+        a.click();
+      }).catch(function(){ window.print(); }).finally(function(){ btn.textContent = old; btn.disabled = false; });
+    });
+  })();
+  </script>
+
+<?php elseif ($p === 'citizens'): $cq = trim($_GET['q'] ?? ''); $cres = $cq !== '' ? citizen_search($cq) : []; ?>
+  <h2>جستجوی شهروندان</h2><p class="lead">اسم کاراکتر رو بزن؛ رنک، شغل و گنگ رسمیش رو می‌بینی (اطلاعات تماس/حساب کسی اینجا نشون داده نمی‌شه).</p>
+  <form method="get" class="dcardx" style="display:flex;gap:10px;flex-wrap:wrap"><input type="hidden" name="p" value="citizens">
+    <input name="q" value="<?= e($cq) ?>" placeholder="اسم کاراکتر…" style="flex:1;min-width:200px" autofocus>
+    <button class="btn pri">جستجو</button>
+  </form>
+  <?php if ($cq !== ''): ?>
+  <div class="dcardx" style="overflow-x:auto"><table class="utable"><tr><th>کاراکتر</th><th>رنک</th><th>شغل</th><th>گنگ</th></tr>
+    <?php foreach ($cres as $c): ?>
+    <tr><td><?= e($c['playerName']) ?></td><td><?= (int)$c['rank'] ?></td><td><?= e(job_label($c['job'])) ?></td><td><?= $c['gang'] && $c['gang'] !== 'none' ? e(gang_label($c['gang'])) : '—' ?></td></tr>
+    <?php endforeach; if (!$cres) echo '<tr><td colspan="4" class="mut">شهروندی با این اسم پیدا نشد.</td></tr>'; ?>
+  </table></div>
+  <?php endif; ?>
+
+<?php elseif ($p === 'garage'): ?>
+  <h2>گاراژ من</h2><p class="lead">ماشین‌های ثبت‌شده روی کاراکترت.</p>
+  <?php if (!$u['game']): ?>
+    <div class="empty2">برای دیدن گاراژ باید یه بار داخل بازی وارد شده باشی تا کاراکترت به سایت وصل بشه.</div>
+  <?php else:
+    $VEH_TYPE = ['car' => 'خودرو', 'boat' => 'قایق', 'heli' => 'هلیکوپتر', 'plane' => 'هواپیما'];
+    $vehicles = owned_vehicles_of((string)$u['game']['identifier']);
+    if (!$vehicles): ?>
+    <div class="empty2">هنوز ماشینی روی این کاراکتر ثبت نشده.</div>
+  <?php else: ?>
+    <?php foreach ($vehicles as $v):
+      $stored = (int)$v['stored']; $stLabel = $stored === 1 ? 'تو گاراژ' : ($stored === 2 ? 'توقیف' : 'بیرون از گاراژ');
+      $stClass = $stored === 1 ? 'ok' : ($stored === 2 ? 'no' : ''); ?>
+    <div class="dcardx">
+      <div class="ahead"><h3 dir="ltr"><?= e($v['plate']) ?></h3><span class="tag <?= $stClass ?>"><?= $stLabel ?></span></div>
+      <p class="mut">نوع: <?= e($VEH_TYPE[$v['type']] ?? $v['type']) ?> · سوخت: <?= (int)$v['fuel'] ?>٪ · بدنه: <?= (int)$v['body'] ?>/1000<?php if (!empty($v['job'])): ?> · ماشین شغلی: <?= e(job_label($v['job'])) ?><?php endif; ?><?php if ((int)$v['police']): ?> · ردیابی پلیس: فعال<?php endif; ?></p>
+    </div>
+    <?php endforeach; ?>
+  <?php endif; endif; ?>
+
+<?php elseif ($p === 'property'): ?>
+  <h2>املاک من</h2><p class="lead">خونه/آپارتمان‌های ثبت‌شده روی کاراکترت.</p>
+  <?php if (!$u['game']): ?>
+    <div class="empty2">برای دیدن املاک باید یه بار داخل بازی وارد شده باشی تا کاراکترت به سایت وصل بشه.</div>
+  <?php else:
+    $props = owned_properties_of((string)$u['game']['identifier']);
+    if (!$props): ?>
+    <div class="empty2">هنوز ملکی روی این کاراکتر ثبت نشده.</div>
+  <?php else: ?>
+    <?php foreach ($props as $pr): ?>
+    <div class="dcardx">
+      <div class="ahead"><h3><?= e($pr['label']) ?></h3><?php if ((int)$pr['for_sale']): ?><span class="tag">برای فروش · <?= number_format((int)$pr['sale_price']) ?>$</span><?php endif; ?></div>
+      <p class="mut">ارزش: <?= number_format((int)$pr['price']) ?>$<?php if ((int)$pr['rented']): ?> · اجاره‌ای<?php endif; ?> · انباری سطح <?= (int)$pr['storage_level'] ?> · گاوصندوق سطح <?= (int)$pr['safe_level'] ?><?php if ((int)$pr['mortgage_active']): ?> · رهن فعال: <?= number_format((int)$pr['mortgage_remaining']) ?>$ مونده (<?= (int)$pr['mortgage_days_left'] ?> روز باقی‌مونده)<?php endif; ?></p>
+    </div>
+    <?php endforeach; ?>
+  <?php endif; endif; ?>
+
+<?php elseif ($p === 'billing'): ?>
+  <h2>صورت‌حساب من</h2><p class="lead">فاکتورهایی که برات صادر شده و هنوز داخل بازی پرداخت نکردی.</p>
+  <?php if (!$u['game']): ?>
+    <div class="empty2">برای دیدن صورت‌حساب باید یه بار داخل بازی وارد شده باشی تا کاراکترت به سایت وصل بشه.</div>
+  <?php else:
+    $bills = billing_of((string)$u['game']['identifier']);
+    if (!$bills): ?>
+    <div class="empty2">صورت‌حساب پرداخت‌نشده‌ای نداری.</div>
+  <?php else: ?>
+    <div class="dcardx" style="overflow-x:auto"><table class="utable"><tr><th>بابت</th><th>صادرکننده</th><th>مبلغ</th></tr>
+      <?php foreach ($bills as $b): ?><tr><td><?= e($b['label']) ?></td><td dir="ltr"><?= e($b['sender']) ?></td><td><?= number_format((int)$b['amount']) ?>$</td></tr><?php endforeach; ?>
+    </table></div>
+    <p class="mut" style="margin-top:10px">پرداخت این صورت‌حساب‌ها فقط داخل بازی از پنل موبایل/بانک انجام می‌شه.</p>
+  <?php endif; endif; ?>
 
 <?php elseif ($p === 'gang'):
   $gRow = gang_row($myGang); $members = gang_members($myGang); $terrTitle = gang_territory_title($myGang);

@@ -11,6 +11,8 @@ $logged=(bool)me(); $open=count(array_filter($ST['gangs'],fn($g)=>$g[2])); $onli
 <title>عضوگیری و دپارتمان‌ها | یونیک رول پلی</title>
 <meta name="description" content="آگهی‌های عضوگیری گنگ‌ها و وضعیت لحظه‌ای دپارتمان‌های رسمی شهر یونیک؛ همه در یک صفحه.">
 <meta name="theme-color" content="#050505">
+<link rel="canonical" href="https://example.com/join.php">
+<meta property="og:url" content="https://example.com/join.php">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M16 8v28a16 16 0 0 0 32 0V8' fill='none' stroke='%23ffc107' stroke-width='11' stroke-linecap='round'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="style.css">
 <style>

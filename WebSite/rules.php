@@ -7,6 +7,8 @@
 <title>قوانین شهر | یونیک رول پلی</title>
 <meta name="description" content="قوانین کامل شهر یونیک؛ احترام، رول‌پلی واقعی، تقلب و باگ، قوانین گنگ و دپارتمان.">
 <meta name="theme-color" content="#050505">
+<link rel="canonical" href="https://example.com/rules.php">
+<meta property="og:url" content="https://example.com/rules.php">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M16 8v28a16 16 0 0 0 32 0V8' fill='none' stroke='%23ffc107' stroke-width='11' stroke-linecap='round'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="style.css">
 <style>
@@ -32,6 +34,12 @@
 .pstep:last-child b{color:#ff8a5c}
 .pstep b{display:block;color:var(--gold);font-size:.85rem;margin-bottom:6px}
 .pstep p{color:var(--mut);font-size:.88rem}
+.rcards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-bottom:36px}
+.rcard{display:flex;flex-direction:column;gap:6px;background:linear-gradient(165deg,var(--panel),#0a0906);border:1px solid var(--line2);border-radius:var(--r);padding:22px;text-decoration:none;color:var(--text);position:relative;transition:transform .25s var(--ease),border-color .25s}
+.rcard:hover{transform:translateY(-5px);border-color:#ffc10766}
+.rcard .n{position:absolute;top:16px;left:18px;font-weight:900;font-size:1.6rem;color:#ffc10730}
+.rcard b{font-size:1rem}
+.rcard span:last-child{color:var(--mut);font-size:.85rem}
 </style>
 </head>
 <body>
@@ -48,9 +56,16 @@
 </section>
 
 <section style="padding-top:10px"><div class="wrap rv">
+  <div class="rcards">
+  <a class="rcard" href="#cat-general" data-jump="cat-general"><span class="n">1</span><b>قوانین عمومی و احترام</b><span>احترام، زبان مناسب و گزارش‌گیری درست</span></a>
+  <a class="rcard" href="#cat-roleplay" data-jump="cat-roleplay"><span class="n">2</span><b>رول‌پلی واقعی</b><span>منطق داستان، VDM، متاگیمینگ و NLR</span></a>
+  <a class="rcard" href="#cat-cheat" data-jump="cat-cheat"><span class="n">3</span><b>تقلب، باگ و ابزارهای غیرمجاز</b><span>چیت، سوءاستفاده از باگ و چندحسابی</span></a>
+  <a class="rcard" href="#cat-gang" data-jump="cat-gang"><span class="n">4</span><b>قوانین گنگ‌ها</b><span>قلمرو، سقف عضو و رفتار بین‌گنگی</span></a>
+  <a class="rcard" href="#cat-dept" data-jump="cat-dept"><span class="n">5</span><b>قوانین دپارتمان‌های رسمی</b><span>رفتار حرفه‌ای نیروهای رسمی شهر</span></a>
+  </div>
  <div class="rcats">
 
-  <details class="rcat" open>
+  <details class="rcat" id="cat-general" open>
    <summary>
     <div class="ictile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3 4 6v6c0 5 3.4 8.4 8 9 4.6-.6 8-4 8-9V6l-8-3Z"/></svg></div>
     <span>قوانین عمومی و احترام</span>
@@ -64,7 +79,7 @@
    </ol>
   </details>
 
-  <details class="rcat">
+  <details class="rcat" id="cat-roleplay">
    <summary>
     <div class="ictile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="3.2"/><path d="M5 20c1-3.6 4-5.5 7-5.5S18 16.4 19 20"/></svg></div>
     <span>رول‌پلی واقعی</span>
@@ -78,7 +93,7 @@
    </ol>
   </details>
 
-  <details class="rcat">
+  <details class="rcat" id="cat-cheat">
    <summary>
     <div class="ictile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="m6 6 12 12"/></svg></div>
     <span>تقلب، باگ و ابزارهای غیرمجاز</span>
@@ -91,7 +106,7 @@
    </ol>
   </details>
 
-  <details class="rcat">
+  <details class="rcat" id="cat-gang">
    <summary>
     <div class="ictile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.4 8.4 0 0 1-8.4 8.4 8.6 8.6 0 0 1-3.8-.9L3 20l1-5.6a8.4 8.4 0 0 1-.9-3.9A8.4 8.4 0 0 1 11.5 2 8.6 8.6 0 0 1 21 11.5Z"/></svg></div>
     <span>قوانین گنگ‌ها</span>
@@ -104,7 +119,7 @@
    </ol>
   </details>
 
-  <details class="rcat">
+  <details class="rcat" id="cat-dept">
    <summary>
     <div class="ictile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg></div>
     <span>قوانین دپارتمان‌های رسمی</span>
@@ -132,6 +147,17 @@
  <p style="margin-top:28px"><a class="btn pri" data-discord href="#">سوالی داری؟ تیکت بزن در دیسکورد</a></p>
 </div></section>
 </main>
+
+<script>
+document.querySelectorAll('.rcard').forEach(function(a){
+  a.addEventListener('click', function(e){
+    var id = a.getAttribute('data-jump'), el = document.getElementById(id);
+    if (!el) return;
+    document.querySelectorAll('.rcat[open]').forEach(function(d){ if (d !== el) d.open = false; });
+    el.open = true;
+  });
+});
+</script>
 
 <?php require __DIR__.'/inc/foot.php'; ?>
 </body>
