@@ -13,6 +13,24 @@ local LoadoutLoaded = false
 local IsPaused      = false
 local PlayerSpawned = false
 local LastLoadout   = {}
+
+-- FIX: this file used to call exports.esx_vehicleshop:GeneratePlate() for
+-- addDonationCar/similar. That resource doesn't exist anywhere in this
+-- codebase (replaced by Unique_vehicleshop, which never got that export) -
+-- the call throws a runtime error and aborts the whole handler, silently
+-- breaking donation/gang-car plate assignment. Self-contained fallback so
+-- this doesn't depend on any other resource's exports again. (The same
+-- fallback is duplicated in a few other files that had the same broken
+-- call - see essentialmode/client/main.lua for the original writeup.)
+local function GenerateRandomPlateFallback()
+    local chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+    local plate = ""
+    for i = 1, 8 do
+        local idx = math.random(1, #chars)
+        plate = plate .. chars:sub(idx, idx)
+    end
+    return plate
+end
 local Pickups       = {}
 local isDead        = false
 local UpdatePos		= true
@@ -191,7 +209,7 @@ AddEventHandler('addDonationCar', function(newOwner, plate, admin)
 	if plate then
 		newPlate = plate
 	else
-		newPlate = exports.esx_vehicleshop:GeneratePlate()
+		newPlate = GenerateRandomPlateFallback()
 	end
 	local vehicleProps = ESX.Game.GetVehicleProperties(vehicle)
 	vehicleProps.plate = newPlate
@@ -254,7 +272,7 @@ AddEventHandler('addGangCar', function(newOwner, plate, admin)
 	if plate then
 		newPlate = plate
 	else
-		newPlate = exports.esx_vehicleshop:GeneratePlate()
+		newPlate = GenerateRandomPlateFallback()
 	end
 	local vehicleProps = ESX.Game.GetVehicleProperties(vehicle)
 	vehicleProps.plate = newPlate

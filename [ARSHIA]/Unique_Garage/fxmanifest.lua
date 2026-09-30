@@ -25,7 +25,8 @@ server_scripts {
   "server/carlock_sv.lua",
   "server/lockpick_sv.lua",
   "server/addcar_sv.lua",
-  "server/removecar_sv.lua"
+  "server/removecar_sv.lua",
+  "server/vehicleshop_bridge_sv.lua"
 }
 
 files {

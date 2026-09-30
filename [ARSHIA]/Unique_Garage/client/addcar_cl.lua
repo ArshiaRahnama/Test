@@ -1,4 +1,22 @@
-
+-- FIX: this file used exports.esx_vehicleshop:GeneratePlate() and
+-- 'esx_vehicleshop:setVehicleOwnedscaryPlayerId' / 'setVehicleGang' /
+-- 'ChangeVehiclePlate' / 'DeleteVehicle' - a resource that doesn't exist
+-- anywhere in this codebase (replaced by Unique_vehicleshop, which never
+-- got any of these). The exports call errored outright (aborting the whole
+-- handler before anything else ran), and even where a plate was given
+-- manually, the server events had no listener - so /addcar, /addcargang,
+-- ChangeCarPlate and RemoveCar were all complete no-ops. The four server
+-- events now have real handlers in server/vehicleshop_bridge_sv.lua; this
+-- file just needs its own working plate generator.
+local function GenerateRandomPlateFallback()
+	local chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	local plate = ""
+	for i = 1, 8 do
+		local idx = math.random(1, #chars)
+		plate = plate .. chars:sub(idx, idx)
+	end
+	return plate
+end
 
 RegisterNetEvent('addDonationCar')
 AddEventHandler('addDonationCar', function(newOwner, plate, admin)
@@ -22,7 +40,7 @@ AddEventHandler('addDonationCar', function(newOwner, plate, admin)
 	if plate then
 		newPlate = plate
 	else
-		newPlate = exports.esx_vehicleshop:GeneratePlate()
+		newPlate = GenerateRandomPlateFallback()
 	end
 	local vehicleProps = ESX.Game.GetVehicleProperties(vehicle)
 	vehicleProps.plate = newPlate
@@ -92,7 +110,7 @@ AddEventHandler('addGangCar', function(newOwner, plate, admin)
 	if plate then
 		newPlate = plate
 	else
-		newPlate = exports.esx_vehicleshop:GeneratePlate()
+		newPlate = GenerateRandomPlateFallback()
 	end
 	local vehicleProps = ESX.Game.GetVehicleProperties(vehicle)
 	vehicleProps.plate = newPlate

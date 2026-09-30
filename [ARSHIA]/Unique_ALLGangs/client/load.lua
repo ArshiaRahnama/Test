@@ -1,5 +1,20 @@
 local ESX = nil
-local PlayerData , MyGangData  = {} , {} 
+local PlayerData , MyGangData  = {} , {}
+
+-- FIX: exports.esx_vehicleshop:GeneratePlate() (used below for gang vehicle
+-- spawning) targets a resource that doesn't exist anywhere in this codebase
+-- (replaced by Unique_vehicleshop, which never got that export) - the call
+-- errored and aborted gang-vehicle spawning entirely. Self-contained
+-- fallback, no cross-resource dependency.
+local function GenerateRandomPlateFallback()
+    local chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+    local plate = ""
+    for i = 1, 8 do
+        local idx = math.random(1, #chars)
+        plate = plate .. chars:sub(idx, idx)
+    end
+    return plate
+end
 local isDead = false
 local IsHandcuffed = false
 local DragStatus = {}
@@ -579,7 +594,7 @@ function OpenGangVehicleSpawner(spawnPoint, category, vehicleAccess)
         -- correct way to let a boss do this without needing admin
         -- rights.
         -------------------------------------------------------------
-        local plate = exports.esx_vehicleshop:GeneratePlate()
+        local plate = GenerateRandomPlateFallback()
         ESX.Game.SpawnVehicleJobs(model, vector3(spawnPoint.x, spawnPoint.y, spawnPoint.z), spawnPoint.h, function(vehicle)
             SetVehicleNumberPlateText(vehicle, plate)
             SetVehicleEngineHealth(vehicle, 1000.0)

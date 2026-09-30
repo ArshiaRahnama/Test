@@ -16,6 +16,21 @@ local function _U(str, ...)
 	return tostring(string.format(v, ...):gsub("^%l", string.upper))
 end
 
+-- FIX: exports['esx_vehicleshop']:GeneratePlate() (used below when buying a
+-- vehicle from the ambulance job's shop) targets a resource that doesn't
+-- exist anywhere in this codebase (replaced by Unique_vehicleshop, which
+-- never got that export) - the call errored and aborted the purchase.
+-- Self-contained fallback, no cross-resource dependency.
+local function GenerateRandomPlateFallback()
+	local chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	local plate = ""
+	for i = 1, 8 do
+		local idx = math.random(1, #chars)
+		plate = plate .. chars:sub(idx, idx)
+	end
+	return plate
+end
+
 
 Keys = {
 	["ESC"] = 322, ["F1"] = 288, ["F2"] = 289, ["F3"] = 170, ["F5"] = 166, ["F6"] = 167, ["F7"] = 168, ["F8"] = 169, ["F9"] = 56, ["F10"] = 57,
@@ -2708,7 +2723,7 @@ function OpenShopMenu_ambulance(elements, restoreCoords, shopCoords)
 
 			if data2.current.value == 'yes' then
 
-				local newPlate = exports['esx_vehicleshop']:GeneratePlate()
+				local newPlate = GenerateRandomPlateFallback()
 
 				local vehicle  = GetVehiclePedIsIn(playerPed, false)
 

@@ -132,8 +132,23 @@ end
 -- existing shell (see html/index.html and html/ncz_hud/) - same pattern
 -- already used here for headbag/babicz/changwinwood/synsit. That means this
 -- is just a normal SendNUIMessage now, no export/cross-resource call needed.
+-- FIX: this only messaged the NUI when shouldShow ~= hudShown, so a player
+-- who spawned outside every zone (false -> false, "no change") never got an
+-- explicit 'disable' and relied entirely on the HTML/CSS default being
+-- hidden - which it wasn't (see html/ncz_hud/style.css, now fixed too).
+-- Forcing one real message through on the first tick regardless of whether
+-- the state "changed" makes this correct even if that CSS regresses again.
+local nczHudInitialized = false
 local function UpdateHudVisibility()
 	local shouldShow = coords.label
+
+	if not nczHudInitialized then
+		nczHudInitialized = true
+		hudShown = shouldShow
+		SendNUIMessage({ action = shouldShow and 'enable' or 'disable' })
+		return
+	end
+
 	if shouldShow and not hudShown then
 		hudShown = true
 		SendNUIMessage({ action = 'enable' })
@@ -188,8 +203,6 @@ Citizen.CreateThread(function()
 
 						if not isWhitelisted then
 							ClearPlayerWantedLevel(PlayerId())
-							SetCurrentPedWeapon(playerPed, GetHashKey("WEAPON_UNARMED"), true)
-							BlockFiring(playerPed, true)
 							TriggerServerEvent('EventLogs:NCZEnter', i)
 						end
 
@@ -200,24 +213,31 @@ Citizen.CreateThread(function()
 
 			if coords.label then
 				local currentWeapon = GetSelectedPedWeapon(playerPed)
+				local isUnarmed = currentWeapon == GetHashKey("WEAPON_UNARMED")
+				local isStunGun = currentWeapon == GetHashKey("WEAPON_STUNGUN")
+				-- FIX: fists (punching) and the stun gun (tasing) are now
+				-- always allowed in these zones, for EVERYONE, DYS or not,
+				-- whitelisted job or not. Previously punching was blocked
+				-- outright for everyone here, and the stun gun could only
+				-- even be drawn by a whitelisted job (see the entry block
+				-- above, which used to force-disarm every non-whitelisted
+				-- player to unarmed the instant they walked in). Any other
+				-- weapon is still fully blocked, same as before.
+				local safeWeapon = isUnarmed or isStunGun
 
-				if not isWhitelisted then
+				if not safeWeapon then
 					BlockFiring(playerPed, true)
 					SetCurrentPedWeapon(playerPed, GetHashKey("WEAPON_UNARMED"), true)
 					DisableControlAction(0, 263, true)
 					DisableControlAction(0, 25, true)
-
-				else
-
-					if currentWeapon == GetHashKey("WEAPON_STUNGUN") then
-						BlockFiring(playerPed, false)
-						EnableControlAction(0, 24, true)
-					else
-						BlockFiring(playerPed, true)
-					end
+				elseif isStunGun then
+					BlockFiring(playerPed, false)
+					EnableControlAction(0, 24, true)
+				else -- unarmed
+					BlockFiring(playerPed, false)
 				end
 
-				if not (isWhitelisted and currentWeapon == GetHashKey("WEAPON_STUNGUN")) then
+				if not safeWeapon then
 					DisableControlAction(0, 24, true)
 					DisableControlAction(0, 257, true)
 					DisableControlAction(0, 140, true)
@@ -272,17 +292,29 @@ Citizen.CreateThread(function()
 							notifiedNoDys = false
 						end
 
-						local hasDysAccess = hasDysLicense and HasSuppressorEquipped(playerPed, currentWeapon)
 						local isUnarmed = currentWeapon == GetHashKey("WEAPON_UNARMED")
+						local isStunGun = currentWeapon == GetHashKey("WEAPON_STUNGUN")
 
-						if hasDysAccess then
+						-- FIX: fists and the stun gun never needed the DYS
+						-- permit - only real firearms did. This used to
+						-- disable Attack/Attack2 unconditionally whenever
+						-- hasDysAccess was false, which blocked punching
+						-- outright for everyone without DYS, AND made the
+						-- stun gun completely unusable for anyone (it can't
+						-- take a suppressor, so hasDysAccess was always
+						-- false for it, DYS or not).
+						if isUnarmed or isStunGun then
 							BlockFiring(playerPed, false)
 						else
-							BlockFiring(playerPed, true)
-							DisableControlAction(0, 24, true)  -- Attack
-							DisableControlAction(0, 257, true) -- Attack2
+							local hasDysAccess = hasDysLicense and HasSuppressorEquipped(playerPed, currentWeapon)
 
-							if not isUnarmed then
+							if hasDysAccess then
+								BlockFiring(playerPed, false)
+							else
+								BlockFiring(playerPed, true)
+								DisableControlAction(0, 24, true)  -- Attack
+								DisableControlAction(0, 257, true) -- Attack2
+
 								if hasDysLicense then
 									if not notifiedNoSuppressor then
 										ESX.ShowNotification('~r~Baraye tirandazi dar in mantaghe bayad ~y~Silencer~r~ ru aslahetun dashte bashid')

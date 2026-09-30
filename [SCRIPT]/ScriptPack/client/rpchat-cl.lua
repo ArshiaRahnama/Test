@@ -151,8 +151,8 @@ AddEventHandler('sendRollThatShit', function()
 			Citizen.Wait(1)
 		end
 	end
-	TriggerServerEvent('InteractSirrpound_SV:PlayWitirrphinDistance', 6.0, 'shake', 0.9)
-	TriggerServerEvent('InteractSirrpound_SV:PlayWitirrphinDistance', 6.0, 'drop', 0.9)
+	TriggerServerEvent('InteractSound_SV:PlayWithinDistance', 6.0, 'shake', 0.9)
+	TriggerServerEvent('InteractSound_SV:PlayWithinDistance', 6.0, 'drop', 0.9)
 	local playerPed = PlayerPedId()
 	local animation = 'mp_player_int_wank_01_enter'
 	local animation2 = 'mp_player_int_wank_01_exit'

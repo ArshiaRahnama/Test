@@ -1,4 +1,18 @@
-
+-- FIX: used exports.esx_vehicleshop:GeneratePlate() - a resource that
+-- doesn't exist anywhere in this codebase (replaced by Unique_vehicleshop,
+-- which never got that export), so this errored and aborted the handler.
+-- The 'esx_giveownedcar:setVehicle' event and 'esx_vehicleshop:isPlateTaken'
+-- callback used below also had no listener anywhere (same root cause);
+-- both now have real handlers in server/vehicleshop_bridge_sv.lua.
+local function GenerateRandomPlateFallback()
+	local chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	local plate = ""
+	for i = 1, 8 do
+		local idx = math.random(1, #chars)
+		plate = plate .. chars:sub(idx, idx)
+	end
+	return plate
+end
 
 TriggerEvent('chat:addSuggestion', '/removecar', 'Hazf Mashin Az Database', {
 	{ name="Plak", help="Plak Ro Hatman Vared Konid!" }
@@ -16,7 +30,7 @@ AddEventHandler('esx_giveownedcar:spawnVehicle', function(playerID, model, playe
 			SetEntityVisible(vehicle, false, false)
 			SetEntityCollision(vehicle, false)
 
-			local newPlate     = exports.esx_vehicleshop:GeneratePlate()
+			local newPlate     = GenerateRandomPlateFallback()
 			local vehicleProps = ESX.Game.GetVehicleProperties(vehicle)
 			vehicleProps.plate = newPlate
 			TriggerServerEvent('esx_giveownedcar:setVehicle', vehicleProps, playerID, vehicleType)

@@ -7,6 +7,20 @@ Citizen.CreateThread(function()
 	end
 end)
 
+-- FIX: used to call exports.esx_vehicleshop:GeneratePlate() - that resource
+-- doesn't exist anywhere in this codebase (replaced by Unique_vehicleshop,
+-- which never got that export), so the call errored and aborted the whole
+-- handler. Self-contained fallback, no cross-resource dependency.
+local function GenerateRandomPlateFallback()
+	local chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	local plate = ""
+	for i = 1, 8 do
+		local idx = math.random(1, #chars)
+		plate = plate .. chars:sub(idx, idx)
+	end
+	return plate
+end
+
 TriggerEvent('chat:addSuggestion', '/removecar', 'Hazf Mashin Az Database', {
 	{ name="Plak", help="Plak Ro Hatman Vared Konid!" }
 })
@@ -23,7 +37,7 @@ AddEventHandler('esx_giveownedcar:spawnVehicle', function(playerID, model, playe
 			SetEntityVisible(vehicle, false, false)
 			SetEntityCollision(vehicle, false)
 
-			local newPlate     = exports.esx_vehicleshop:GeneratePlate()
+			local newPlate     = GenerateRandomPlateFallback()
 			local vehicleProps = ESX.Game.GetVehicleProperties(vehicle)
 			vehicleProps.plate = newPlate
 			TriggerServerEvent('esx_giveownedcar:setVehicle', vehicleProps, playerID, vehicleType)

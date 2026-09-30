@@ -246,7 +246,7 @@ AddEventHandler("esx_vehiclecontol:toggleLock",function(vehicle)
 			SetVehicleDoorShut(vehicle, 4, false)
 			SetVehicleDoorShut(vehicle, 5, false)
 			PlayVehicleDoorCloseSound(vehicle, 1)
-			TriggerServerEvent("InteractSirrpound_SV:PlayWitirrphinDistance", 10, "lock", 0.5)
+			TriggerServerEvent("InteractSound_SV:PlayWithinDistance", 10, "lock", 0.5)
 
 		elseif islocked == 2 then
 			TriggerServerEvent("esx_vehiclecontrol:sync", NetId, false)
@@ -261,7 +261,7 @@ AddEventHandler("esx_vehiclecontol:toggleLock",function(vehicle)
 				TaskPlayAnim(PlayerPedId(), dict, "fob_click_fp", 8.0, 8.0, -1, 48, 1, false, false, false)
 			end
 			PlayVehicleDoorCloseSound(vehicle, 1)
-			TriggerServerEvent("InteractSirrpound_SV:PlayWitirrphinDistance", 10, "unlock", 0.5)
+			TriggerServerEvent("InteractSound_SV:PlayWithinDistance", 10, "unlock", 0.5)
 		end
 
 	end
