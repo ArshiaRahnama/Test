@@ -50,10 +50,21 @@ AddEventHandler("vms_housing:sv:fetchData", function()
     end
 
     -- === CLIENT SYNC (properties + furniture definitions) ===================
+    -- Debug: count how many properties server has
+    local propCount = 0
+    for _ in pairs(Properties) do propCount = propCount + 1 end
+    print(("[vms_housing] sv:fetchData -> sending " .. propCount .. " properties to src " .. tostring(src)))
+
+    local ok, propJson = pcall(json.encode, Properties)
+    if not ok or not propJson then
+        print("[vms_housing] ERROR: json.encode(Properties) failed: " .. tostring(propJson))
+        propJson = "{}"
+    end
+
     TriggerClientEvent(
         "vms_housing:cl:loadProperties",
         src,
-        json.encode(Properties) -- [ASYNC-like] big payload; client decodes
+        propJson
     )
 
     TriggerClientEvent(
@@ -69,6 +80,32 @@ AddEventHandler("vms_housing:sv:fetchData", function()
         Webhooks.OBJECTS_PHOTOS_TOOL,
         Webhooks.MARKETPLACE_PHOTOS
     )
+end)
+
+-- ============================================================================
+-- Direct property list for Housing Creator admin (bypasses client cache)
+-- ============================================================================
+RegisterNetEvent("vms_housing:sv:getAdminProperties")
+AddEventHandler("vms_housing:sv:getAdminProperties", function()
+    local src = source
+    local list = {}
+    for id, prop in pairs(Properties) do
+        list[id] = {
+            id          = prop.id,
+            type        = prop.type,
+            name        = prop.name,
+            address     = prop.address,
+            region      = prop.region,
+            owner       = prop.owner,
+            owner_name  = prop.owner_name,
+            renter      = prop.renter,
+            renter_name = prop.renter_name,
+        }
+    end
+    local count = 0
+    for _ in pairs(list) do count = count + 1 end
+    print("[vms_housing] sv:getAdminProperties -> " .. count .. " to src " .. src)
+    TriggerClientEvent("vms_housing:cl:adminProperties", src, json.encode(list))
 end)
 
 -- ============================================================================

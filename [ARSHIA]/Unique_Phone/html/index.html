@@ -1525,6 +1525,34 @@
                 <div class="discord-btn discord-btn-secondary" id="discord-banned-close-btn">Close</div>
             </div>
 
+            <!-- Shown instead of the app the first time someone opens Discord
+            (or after they log out). Links + verifies a mailbox on
+            arshiahub.ir/mail before letting them in. -->
+            <div class="discord-login-screen" id="discord-login-screen">
+                <div class="discord-login-box">
+                    <i class="fab fa-discord discord-login-logo"></i>
+                    <h2 id="discord-login-title">Create your Discord account</h2>
+                    <p id="discord-login-subtitle">Enter a mailbox name — your verification code will be sent to it on <b id="discord-login-site-link">arshiahub.ir/mail</b>.</p>
+
+                    <div id="discord-login-step-mailbox">
+                        <input type="text" id="discord-login-mailbox-input" placeholder="Mailbox name" maxlength="60" spellcheck="false">
+                        <div class="discord-modal-error" id="discord-login-mailbox-error"></div>
+                        <div class="discord-btn discord-btn-primary discord-login-btn" id="discord-login-send-code-btn">Send Code</div>
+                    </div>
+
+                    <div id="discord-login-step-code" style="display:none;">
+                        <p class="discord-login-code-hint">Code sent to <b id="discord-login-code-mailbox"></b> on <b id="discord-login-site-link-2">arshiahub.ir/mail</b>.</p>
+                        <input type="text" id="discord-login-code-input" placeholder="6-digit code" maxlength="6" inputmode="numeric" spellcheck="false">
+                        <div class="discord-modal-error" id="discord-login-code-error"></div>
+                        <div class="discord-btn discord-btn-primary discord-login-btn" id="discord-login-verify-btn">Verify</div>
+                        <div class="discord-login-secondary" id="discord-login-resend-btn">Resend code</div>
+                        <div class="discord-login-secondary" id="discord-login-back-btn">Use a different mailbox</div>
+                    </div>
+
+                    <div class="discord-login-esc-hint"><i class="fas fa-keyboard"></i> Press <b>ESC</b> to close this screen</div>
+                </div>
+            </div>
+
             <div class="discord-modal-overlay" id="discord-modal-overlay">
 
                 <div class="discord-modal" id="discord-modal-create-server">
@@ -1541,6 +1569,7 @@
                     <div class="discord-modal-tabs">
                         <div class="discord-modal-tab discord-modal-tab-active" data-tab="invite">By Invite Code</div>
                         <div class="discord-modal-tab" data-tab="discover">Discover</div>
+                        <div class="discord-modal-tab" data-tab="vip"><i class="fas fa-gem"></i> VIP</div>
                     </div>
 
                     <div class="discord-modal-tab-pane discord-modal-tab-pane-active" id="discord-tab-invite">
@@ -1553,6 +1582,14 @@
 
                     <div class="discord-modal-tab-pane" id="discord-tab-discover">
                         <div class="discord-discover-list" id="discord-discover-list"></div>
+                        <div class="discord-modal-buttons">
+                            <div class="discord-modal-btn discord-modal-cancel" data-discordmodalclose="1">Close</div>
+                        </div>
+                    </div>
+
+                    <div class="discord-modal-tab-pane" id="discord-tab-vip">
+                        <div class="discord-vip-intro"><i class="fas fa-gem"></i> Staff-picked servers, open for anyone to join.</div>
+                        <div class="discord-discover-list" id="discord-vip-list"></div>
                         <div class="discord-modal-buttons">
                             <div class="discord-modal-btn discord-modal-cancel" data-discordmodalclose="1">Close</div>
                         </div>
@@ -1629,6 +1666,7 @@
                         </div>
 
                         <div class="discord-modal-buttons">
+                            <div class="discord-modal-btn discord-modal-danger" id="discord-pv-logout-btn" style="display:none;">Log Out</div>
                             <div class="discord-modal-btn discord-modal-confirm" id="discord-pv-edit-btn" style="display:none;">Edit Profile</div>
                             <div class="discord-modal-btn discord-modal-cancel" data-discordmodalclose="1">Close</div>
                         </div>

@@ -2824,7 +2824,7 @@ end
 
 DiscordStaffActions.Servers = function(src, data)
     local rows = ExecuteSql(true, [[
-        SELECT s.id, s.name, s.icon_text, s.icon_color, s.is_verified, s.is_public, s.invite_code,
+        SELECT s.id, s.name, s.icon_text, s.icon_color, s.is_verified, s.is_public, s.is_featured, s.invite_code,
                (SELECT COUNT(*) FROM phone_discord_members m WHERE m.server_id = s.id) AS memberCount,
                (SELECT COUNT(*) FROM phone_discord_channels c WHERE c.server_id = s.id) AS channelCount,
                (SELECT m2.nickname FROM phone_discord_members m2 WHERE m2.server_id = s.id AND m2.identifier = s.owner_identifier LIMIT 1) AS ownerName
@@ -2837,7 +2837,8 @@ DiscordStaffActions.Servers = function(src, data)
     for _, r in pairs(rows) do
         r.isVerified = (r.is_verified == 1 or r.is_verified == true)
         r.isPublic = (r.is_public == 1 or r.is_public == true)
-        r.is_verified, r.is_public = nil, nil
+        r.isFeatured = (r.is_featured == 1 or r.is_featured == true)
+        r.is_verified, r.is_public, r.is_featured = nil, nil, nil
     end
     return rows
 end
@@ -3039,4 +3040,195 @@ ESX.RegisterServerCallback('Unique_Phone:server:Discord:Staff', function(source,
         return
     end
     cb(result)
+end)
+
+-- ==========================================================================
+-- EXPANSION v6: VIP (staff-featured) servers, and mandatory Discord account
+-- verification via a login code delivered through arshiahub.ir/mail.
+-- ==========================================================================
+
+DiscordStaffActions.ToggleServerFeatured = function(src, data)
+    local v = toggleColumn("phone_discord_servers", "is_featured", "id", data.serverId)
+    if v == nil then return false end
+    Discord_Audit(src, v and "Featured server (VIP)" or "Unfeatured server", "server #" .. tostring(data.serverId))
+    return { isFeatured = v }
+end
+
+ESX.RegisterServerCallback('Unique_Phone:server:Discord:GetVIPServers', function(source, cb)
+    local xPlayer = Discord_GetPlayer(source)
+    if xPlayer == nil then cb({}) return end
+
+    local servers = ExecuteSql(true, [[
+        SELECT s.id, s.name, s.icon_text, s.icon_color, s.is_verified,
+               (SELECT COUNT(*) FROM phone_discord_members m WHERE m.server_id = s.id) as memberCount
+        FROM phone_discord_servers s
+        WHERE s.is_featured = 1
+          AND s.id NOT IN (SELECT server_id FROM phone_discord_members WHERE identifier = @id)
+        ORDER BY memberCount DESC
+        LIMIT 50
+    ]], { ['@id'] = xPlayer.identifier })
+
+    for _, s in pairs(servers) do
+        s.isVerified = (s.is_verified == 1 or s.is_verified == true)
+        s.is_verified = nil
+    end
+
+    cb(servers)
+end)
+
+ESX.RegisterServerCallback('Unique_Phone:server:Discord:JoinVIPServer', function(source, cb, serverId)
+    local xPlayer = Discord_GetPlayer(source)
+    if xPlayer == nil or serverId == nil then cb(false) return end
+
+    local server = ExecuteSql(true, "SELECT id, name, icon_text, icon_color, invite_code, owner_identifier, is_featured, is_verified FROM phone_discord_servers WHERE id = @sid", { ['@sid'] = serverId })
+    if server[1] == nil or (server[1].is_featured ~= 1 and server[1].is_featured ~= true) then cb(false) return end
+    if Discord_IsMember(xPlayer.identifier, serverId) then cb({ error = "ALREADY_MEMBER" }) return end
+
+    MySQL.Sync.insert("INSERT INTO phone_discord_members (server_id, identifier, nickname, joined_at) VALUES (@sid, @id, @nick, @time)", {
+        ['@sid'] = serverId, ['@id'] = xPlayer.identifier,
+        ['@nick'] = Discord_GetDisplayName(source), ['@time'] = os.time(),
+    })
+
+    local result = server[1]
+    result.isOwner = (result.owner_identifier == xPlayer.identifier)
+    result.isVerified = (result.is_verified == 1 or result.is_verified == true)
+    result.owner_identifier, result.is_featured, result.is_verified = nil, nil, nil
+
+    cb(result)
+end)
+
+-- ---- Discord account: mailbox + login code via arshiahub.ir/mail --------
+
+local DiscordCodeCooldown = {} -- identifier -> last request timestamp (extra guard in front of the DB check)
+
+function Discord_SendMailCode(mailbox, code)
+    local cfg = Config.DiscordMailAPI
+    if cfg == nil or cfg.url == nil then return false end
+
+    local fields = { [cfg.fieldMailbox or "to"] = mailbox, [cfg.fieldCode or "code"] = code }
+    if cfg.fieldSubject then fields[cfg.fieldSubject] = cfg.subjectText or "Verification Code" end
+    for k, v in pairs(cfg.extraFields or {}) do fields[k] = v end
+
+    local headers, body
+    if cfg.bodyFormat == "form" then
+        headers = { ["Content-Type"] = "application/x-www-form-urlencoded" }
+        local parts = {}
+        for k, v in pairs(fields) do table.insert(parts, k .. "=" .. tostring(v)) end
+        body = table.concat(parts, "&")
+    else
+        headers = { ["Content-Type"] = "application/json" }
+        body = json.encode(fields)
+    end
+
+    local p = promise.new()
+    PerformHttpRequest(cfg.url, function(statusCode, response, respHeaders)
+        p:resolve(statusCode ~= nil and statusCode >= 200 and statusCode < 300)
+    end, cfg.method or "POST", body, headers)
+
+    return Citizen.Await(p)
+end
+
+function Discord_ValidMailbox(mailbox)
+    if type(mailbox) ~= "string" then return false end
+    return mailbox:match("^[%w._-]+$") ~= nil and #mailbox >= 3 and #mailbox <= 60
+end
+
+ESX.RegisterServerCallback('Unique_Phone:server:Discord:GetAccountStatus', function(source, cb)
+    local xPlayer = Discord_GetPlayer(source)
+    if xPlayer == nil then cb(false) return end
+
+    local row = ExecuteSql(true, "SELECT mailbox, logged_in FROM phone_discord_accounts WHERE identifier = @id", { ['@id'] = xPlayer.identifier })
+    if row[1] == nil then
+        cb({ hasAccount = false, loggedIn = false, siteUrl = Config.DiscordMailAPI.siteUrl })
+        return
+    end
+
+    cb({
+        hasAccount = true,
+        loggedIn = (row[1].logged_in == 1 or row[1].logged_in == true),
+        mailbox = row[1].mailbox,
+        siteUrl = Config.DiscordMailAPI.siteUrl,
+    })
+end)
+
+ESX.RegisterServerCallback('Unique_Phone:server:Discord:RequestLoginCode', function(source, cb, mailbox)
+    local xPlayer = Discord_GetPlayer(source)
+    if xPlayer == nil then cb(false) return end
+
+    if not Discord_ValidMailbox(mailbox) then cb({ error = "INVALID_MAILBOX" }) return end
+    mailbox = mailbox:lower()
+
+    local lastRequest = DiscordCodeCooldown[xPlayer.identifier]
+    if lastRequest and os.time() - lastRequest < 60 then
+        cb({ error = "COOLDOWN", retryIn = 60 - (os.time() - lastRequest) })
+        return
+    end
+
+    -- A verified mailbox already linked to a DIFFERENT character can't be
+    -- claimed again — one mailbox, one character.
+    local existing = ExecuteSql(true, "SELECT identifier FROM phone_discord_accounts WHERE mailbox = @m", { ['@m'] = mailbox })
+    if existing[1] and existing[1].identifier ~= xPlayer.identifier then
+        cb({ error = "MAILBOX_TAKEN" })
+        return
+    end
+
+    DiscordCodeCooldown[xPlayer.identifier] = os.time()
+
+    local code = tostring(math.random(100000, 999999))
+    local now = os.time()
+
+    MySQL.Sync.execute([[
+        REPLACE INTO phone_discord_login_codes (identifier, mailbox, code, attempts, requested_at, expires_at)
+        VALUES (@id, @mailbox, @code, 0, @now, @exp)
+    ]], { ['@id'] = xPlayer.identifier, ['@mailbox'] = mailbox, ['@code'] = code, ['@now'] = now, ['@exp'] = now + 600 })
+
+    local sent = Discord_SendMailCode(mailbox, code)
+    if not sent then
+        cb({ error = "MAIL_SEND_FAILED" })
+        return
+    end
+
+    cb({ ok = true, siteUrl = Config.DiscordMailAPI.siteUrl })
+end)
+
+ESX.RegisterServerCallback('Unique_Phone:server:Discord:VerifyLoginCode', function(source, cb, code)
+    local xPlayer = Discord_GetPlayer(source)
+    if xPlayer == nil or type(code) ~= "string" then cb(false) return end
+
+    local row = ExecuteSql(true, "SELECT * FROM phone_discord_login_codes WHERE identifier = @id", { ['@id'] = xPlayer.identifier })
+    if row[1] == nil then cb({ error = "NO_PENDING_CODE" }) return end
+    if row[1].expires_at <= os.time() then
+        MySQL.Async.execute("DELETE FROM phone_discord_login_codes WHERE identifier = @id", { ['@id'] = xPlayer.identifier })
+        cb({ error = "CODE_EXPIRED" })
+        return
+    end
+    if row[1].attempts >= 5 then cb({ error = "TOO_MANY_ATTEMPTS" }) return end
+
+    if code ~= row[1].code then
+        MySQL.Sync.execute("UPDATE phone_discord_login_codes SET attempts = attempts + 1 WHERE identifier = @id", { ['@id'] = xPlayer.identifier })
+        cb({ error = "WRONG_CODE", attemptsLeft = 5 - (row[1].attempts + 1) })
+        return
+    end
+
+    local now = os.time()
+    MySQL.Sync.execute([[
+        INSERT INTO phone_discord_accounts (identifier, mailbox, verified_at, logged_in, created_at)
+        VALUES (@id, @mailbox, @now, 1, @now)
+        ON DUPLICATE KEY UPDATE logged_in = 1, verified_at = @now
+    ]], { ['@id'] = xPlayer.identifier, ['@mailbox'] = row[1].mailbox, ['@now'] = now })
+
+    MySQL.Async.execute("DELETE FROM phone_discord_login_codes WHERE identifier = @id", { ['@id'] = xPlayer.identifier })
+    Discord_Audit(source, "Discord account verified", row[1].mailbox)
+
+    cb({ ok = true, mailbox = row[1].mailbox })
+end)
+
+-- Always keyed by `source` — there is no version of this that takes a
+-- target identifier, so a player can only ever log out their own session.
+ESX.RegisterServerCallback('Unique_Phone:server:Discord:Logout', function(source, cb)
+    local xPlayer = Discord_GetPlayer(source)
+    if xPlayer == nil then cb(false) return end
+
+    MySQL.Sync.execute("UPDATE phone_discord_accounts SET logged_in = 0 WHERE identifier = @id", { ['@id'] = xPlayer.identifier })
+    cb(true)
 end)

@@ -133,3 +133,31 @@ CREATE TABLE IF NOT EXISTS `phone_discord_audit` (
   `created_at` INT(11) NOT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- v6: VIP (staff-featured) servers + mandatory Discord account (verified via
+-- a login code delivered through arshiahub.ir/mail — see config.lua's
+-- Config.DiscordMailAPI and server/main.lua's Discord_SendLoginCode).
+ALTER TABLE `phone_discord_servers`
+  ADD COLUMN IF NOT EXISTS `is_featured` TINYINT(1) NOT NULL DEFAULT 0;
+
+CREATE TABLE IF NOT EXISTS `phone_discord_accounts` (
+  `identifier` VARCHAR(60) NOT NULL,
+  `mailbox` VARCHAR(60) NOT NULL,
+  `verified_at` INT(11) NOT NULL,
+  `logged_in` TINYINT(1) NOT NULL DEFAULT 1,
+  `created_at` INT(11) NOT NULL,
+  PRIMARY KEY (`identifier`),
+  UNIQUE KEY `mailbox` (`mailbox`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- One pending login code per character at a time; a new request overwrites
+-- the previous one (REPLACE INTO).
+CREATE TABLE IF NOT EXISTS `phone_discord_login_codes` (
+  `identifier` VARCHAR(60) NOT NULL,
+  `mailbox` VARCHAR(60) NOT NULL,
+  `code` VARCHAR(10) NOT NULL,
+  `attempts` INT(11) NOT NULL DEFAULT 0,
+  `requested_at` INT(11) NOT NULL,
+  `expires_at` INT(11) NOT NULL,
+  PRIMARY KEY (`identifier`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

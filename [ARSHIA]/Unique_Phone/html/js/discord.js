@@ -135,9 +135,153 @@ function Discord_Init(myName) {
     Discord_Post('GetDiscordMyProfile', {}, function(profile) {
         if (profile && profile.banned) { Discord_ShowBanned(profile); return; }
         if (profile) Discord_ApplyMyProfile(profile);
+
+        Discord_Post('GetDiscordAccountStatus', {}, function(status) {
+            if (!status || !status.loggedIn) { Discord_ShowLoginScreen(status); return; }
+            $("#discord-login-screen").removeClass("discord-visible");
+            Discord_LoadServers();
+        });
+    });
+}
+
+// ---------------------------------------------------------------------------
+// Discord account — mailbox + code login (arshiahub.ir/mail), required the
+// first time someone opens Discord and again after logging out.
+// ---------------------------------------------------------------------------
+
+function Discord_ShowLoginScreen(status) {
+    var siteUrl = (status && status.siteUrl) || "arshiahub.ir/mail";
+    var siteLabel = siteUrl.replace(/^https?:\/\//, "");
+    $("#discord-login-site-link, #discord-login-site-link-2").text(siteLabel);
+
+    var hasAccount = status && status.hasAccount;
+    $("#discord-login-title").text(hasAccount ? "Log back in to Discord" : "Create your Discord account");
+    $("#discord-login-mailbox-input").val(hasAccount && status.mailbox ? status.mailbox : "");
+
+    clearInterval(DiscordResendCooldownTimer);
+    $("#discord-login-resend-btn").removeClass("discord-secondary-disabled").text("Resend code");
+    $("#discord-login-step-code").hide();
+    $("#discord-login-step-mailbox").show();
+    $("#discord-login-mailbox-error, #discord-login-code-error").removeClass("discord-error-visible").text("");
+    $("#discord-login-screen").addClass("discord-visible");
+}
+
+function Discord_LoginError(step, text) {
+    $("#discord-login-" + step + "-error").text(text).addClass("discord-error-visible");
+    $(".discord-login-box").addClass("discord-shake");
+    setTimeout(function() { $(".discord-login-box").removeClass("discord-shake"); }, 400);
+}
+
+function Discord_SetBtnLoading(btnId, loading, label) {
+    var btn = $(btnId);
+    if (loading) { btn.data('label', btn.text()).text(label || "...").addClass("discord-btn-loading"); }
+    else { btn.text(btn.data('label') || btn.text()).removeClass("discord-btn-loading"); }
+}
+
+var DiscordResendCooldownTimer = null;
+function Discord_StartResendCooldown(seconds) {
+    var btn = $("#discord-login-resend-btn");
+    btn.addClass("discord-secondary-disabled");
+    clearInterval(DiscordResendCooldownTimer);
+
+    var remaining = seconds;
+    var tick = function() {
+        if (remaining <= 0) {
+            clearInterval(DiscordResendCooldownTimer);
+            btn.removeClass("discord-secondary-disabled").text("Resend code");
+        } else {
+            btn.text("Resend code (" + remaining + "s)");
+            remaining--;
+        }
+    };
+    tick();
+    DiscordResendCooldownTimer = setInterval(tick, 1000);
+}
+
+function Discord_RequestLoginCode() {
+    var mailbox = $("#discord-login-mailbox-input").val().trim();
+    $("#discord-login-mailbox-error").removeClass("discord-error-visible").text("");
+
+    if (mailbox === "") { Discord_LoginError("mailbox", "Enter a mailbox name."); return; }
+
+    Discord_SetBtnLoading("#discord-login-send-code-btn", true, "Sending...");
+
+    Discord_Post('RequestDiscordLoginCode', { mailbox: mailbox }, function(result) {
+        Discord_SetBtnLoading("#discord-login-send-code-btn", false);
+
+        if (!result || result.error) {
+            var messages = {
+                INVALID_MAILBOX: "That mailbox name isn't valid (letters, numbers, . _ - only).",
+                COOLDOWN: "Please wait " + ((result && result.retryIn) || 60) + "s before requesting another code.",
+                MAILBOX_TAKEN: "That mailbox is already linked to another account.",
+                MAIL_SEND_FAILED: "Couldn't send the code right now — try again shortly.",
+            };
+            Discord_LoginError("mailbox", (result && messages[result.error]) || "Something went wrong.");
+            return;
+        }
+
+        $("#discord-login-code-mailbox").text(mailbox);
+        $("#discord-login-step-mailbox").hide();
+        $("#discord-login-step-code").show();
+        $("#discord-login-code-input").val("").focus();
+        Discord_StartResendCooldown(60);
+    });
+}
+
+function Discord_ResendLoginCode() {
+    if ($("#discord-login-resend-btn").hasClass("discord-secondary-disabled")) return;
+    var mailbox = $("#discord-login-code-mailbox").text();
+    if (!mailbox) return;
+
+    Discord_Post('RequestDiscordLoginCode', { mailbox: mailbox }, function(result) {
+        if (!result || result.error) {
+            Discord_LoginError("code", "Couldn'''t resend — try again in a moment.");
+            return;
+        }
+        Discord_StartResendCooldown(60);
+    });
+}
+
+function Discord_VerifyLoginCode() {
+    var code = $("#discord-login-code-input").val().trim();
+    $("#discord-login-code-error").removeClass("discord-error-visible").text("");
+
+    if (code === "") { Discord_LoginError("code", "Enter the code."); return; }
+
+    Discord_SetBtnLoading("#discord-login-verify-btn", true, "Verifying...");
+
+    Discord_Post('VerifyDiscordLoginCode', { code: code }, function(result) {
+        Discord_SetBtnLoading("#discord-login-verify-btn", false);
+
+        if (!result || result.error) {
+            var messages = {
+                NO_PENDING_CODE: "Request a new code first.",
+                CODE_EXPIRED: "That code expired — request a new one.",
+                TOO_MANY_ATTEMPTS: "Too many wrong attempts — request a new code.",
+                WRONG_CODE: "Wrong code" + (result && result.attemptsLeft != null ? " (" + result.attemptsLeft + " attempts left)" : "") + ".",
+            };
+            Discord_LoginError("code", (result && messages[result.error]) || "Something went wrong.");
+            $("#discord-login-code-input").val("").focus();
+            return;
+        }
+
+        clearInterval(DiscordResendCooldownTimer);
+        $("#discord-login-screen").removeClass("discord-visible");
         Discord_LoadServers();
     });
 }
+
+function Discord_LogoutAccount() {
+    Discord_Post('LogoutDiscordAccount', {}, function(result) {
+        if (!result) return;
+        Discord_CloseModals();
+        Discord_ResetChatColumn();
+        Discord.servers = [];
+        Discord_RenderServerRail();
+        Discord_ShowLoginScreen({ hasAccount: true, siteUrl: (Discord.myProfile && Discord.myProfile.siteUrl) });
+    });
+}
+
 
 function Discord_LoadServers() {
     Discord_Post('GetDiscordServers', {}, function(servers) {
@@ -679,6 +823,30 @@ function Discord_LoadDiscoverList() {
     });
 }
 
+function Discord_LoadVIPList() {
+    $("#discord-vip-list").html('<div class="discord-discover-empty">Loading...</div>');
+
+    Discord_Post('GetDiscordVIPServers', {}, function(servers) {
+        if (!servers || servers.length === 0) {
+            $("#discord-vip-list").html('<div class="discord-discover-empty">No VIP servers right now.</div>');
+            return;
+        }
+
+        var html = "";
+        $.each(servers, function(i, server) {
+            html += '<div class="discord-discover-item">' +
+                    '<div class="discord-discover-icon" style="background-color:' + Discord_Escape(server.icon_color) + '">' + Discord_Escape(server.icon_text) + '</div>' +
+                    '<div class="discord-discover-info">' +
+                    '<div class="discord-discover-name">' + Discord_Escape(server.name) + Discord_VerifiedBadge(server.isVerified) + ' <i class="fas fa-gem" style="color:#b491ff;font-size:11px;"></i></div>' +
+                    '<div class="discord-discover-members">' + server.memberCount + ' member' + (server.memberCount == 1 ? '' : 's') + '</div>' +
+                    '</div>' +
+                    '<div class="discord-btn discord-btn-primary discord-btn-small discord-vip-join-btn" data-serverid="' + server.id + '">Join</div>' +
+                    '</div>';
+        });
+        $("#discord-vip-list").html(html);
+    });
+}
+
 // ---------------------------------------------------------------------------
 // Emoji picker (shared between "insert into composer" and "react")
 // ---------------------------------------------------------------------------
@@ -869,6 +1037,7 @@ function Discord_RenderProfileView(p) {
     $("#discord-pv-dates").html(datesHtml);
 
     $("#discord-pv-edit-btn").css("display", p.isSelf ? "block" : "none");
+    $("#discord-pv-logout-btn").css("display", p.isSelf ? "block" : "none");
 
     Discord_OpenModal("discord-modal-profile-view");
 }
@@ -1172,6 +1341,27 @@ $(document).ready(function() {
 
     $(document).on('click', '#discord-close-btn, #discord-banned-close-btn', function() { Discord_Close(); });
 
+    $(document).on('click', '#discord-login-send-code-btn', function() { Discord_RequestLoginCode(); });
+    $(document).on('keydown', '#discord-login-mailbox-input', function(e) { if (e.key === "Enter") Discord_RequestLoginCode(); });
+
+    $(document).on('click', '#discord-login-verify-btn', function() { Discord_VerifyLoginCode(); });
+    $(document).on('keydown', '#discord-login-code-input', function(e) { if (e.key === "Enter") Discord_VerifyLoginCode(); });
+
+    $(document).on('input', '#discord-login-code-input', function() {
+        var digitsOnly = $(this).val().replace(/\D/g, "").slice(0, 6);
+        $(this).val(digitsOnly);
+        if (digitsOnly.length === 6) Discord_VerifyLoginCode();
+    });
+
+    $(document).on('click', '#discord-login-resend-btn', function() { Discord_ResendLoginCode(); });
+
+    $(document).on('click', '#discord-login-back-btn', function() {
+        $("#discord-login-step-code").hide();
+        $("#discord-login-step-mailbox").show();
+    });
+
+    $(document).on('click', '#discord-pv-logout-btn', function() { Discord_LogoutAccount(); });
+
     // ----- profile -----
 
     $(document).on('click', '#discord-user-footer', function() { Discord_OpenMyProfile(); });
@@ -1358,6 +1548,7 @@ $(document).ready(function() {
         $("#discord-tab-" + tab).addClass("discord-modal-tab-pane-active");
 
         if (tab === "discover") Discord_LoadDiscoverList();
+        else if (tab === "vip") Discord_LoadVIPList();
     });
 
     $(document).on('click', '#discord-server-menu-btn', function() { Discord_OpenServerMenu(); });
@@ -1383,6 +1574,17 @@ $(document).ready(function() {
 
         Discord_Post('CreateDiscordServer', { name: name }, function(result) {
             if (!result || !result.id) { Discord_ShowModalError('discord-modal-create-server', 'Could not create the server.'); return; }
+            Discord.servers.push(result);
+            Discord_CloseModals();
+            Discord_SelectServer(result.id);
+        });
+    });
+
+    $(document).on('click', '.discord-vip-join-btn', function() {
+        var serverId = parseInt($(this).data('serverid'));
+
+        Discord_Post('JoinDiscordVIPServer', { serverId: serverId }, function(result) {
+            if (!result || result.error) return;
             Discord.servers.push(result);
             Discord_CloseModals();
             Discord_SelectServer(result.id);
@@ -1570,6 +1772,7 @@ function Discord_StaffLoadServers(query) {
                     '</div>' +
                     '<div class="discord-staff-row-actions">' +
                     '<div class="discord-staff-btn discord-staff-btn-blue discord-staff-toggle-server-verified" data-serverid="' + s.id + '">' + (s.isVerified ? 'Unverify' : 'Verify') + '</div>' +
+                    '<div class="discord-staff-btn discord-staff-toggle-server-featured" data-serverid="' + s.id + '" style="background-color:#b491ff;"><i class="fas fa-gem"></i> ' + (s.isFeatured ? 'Unfeature' : 'Feature (VIP)') + '</div>' +
                     '<div class="discord-staff-btn discord-staff-btn-danger discord-staff-delete-server" data-serverid="' + s.id + '">Delete</div>' +
                     '<div class="discord-staff-btn discord-staff-toggle-server-channels" data-serverid="' + s.id + '">Channels</div>' +
                     '</div></div>' +
@@ -1733,6 +1936,11 @@ $(document).ready(function() {
     $(document).on('click', '.discord-staff-toggle-server-verified', function() {
         var id = parseInt($(this).data('serverid'));
         Discord_Staff("ToggleServerVerified", { serverId: id }, function() { Discord_StaffLoadServers($("#discord-staff-server-search").val()); });
+    });
+
+    $(document).on('click', '.discord-staff-toggle-server-featured', function() {
+        var id = parseInt($(this).data('serverid'));
+        Discord_Staff("ToggleServerFeatured", { serverId: id }, function() { Discord_StaffLoadServers($("#discord-staff-server-search").val()); });
     });
 
     $(document).on('click', '.discord-staff-delete-server', function() {

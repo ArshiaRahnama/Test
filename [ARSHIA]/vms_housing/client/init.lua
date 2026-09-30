@@ -93,6 +93,24 @@ end
 -- Network notification passthrough
 RegisterNetEvent("vms_housing:notification", CL.Notification)
 
+-- Direct admin properties response (fallback when client cache is empty)
+RegisterNetEvent("vms_housing:cl:adminProperties")
+AddEventHandler("vms_housing:cl:adminProperties", function(propertiesJson)
+  if not propertiesJson or propertiesJson == "" then return end
+  local ok, decoded = pcall(json.decode, propertiesJson)
+  if ok and decoded then
+    -- merge into Properties without overwriting full data
+    for id, prop in pairs(decoded) do
+      if not Properties[id] then
+        Properties[id] = prop
+      end
+    end
+    local count = 0
+    for _ in pairs(Properties) do count = count + 1 end
+    print("[vms_housing] cl:adminProperties merged -> " .. count .. " total")
+  end
+end)
+
 -- Resource start: ensure framework object exists, then init if player is already loaded
 AddEventHandler("onResourceStart", function(resourceName)
   if resourceName ~= GetCurrentResourceName() then
@@ -172,7 +190,21 @@ end)
   Also registers door data for MLO properties that contain metadata.doors.
 ]]
 RegisterNetEvent("vms_housing:cl:loadProperties", function(propertiesJson)
-  Properties = json.decode(propertiesJson)
+  if not propertiesJson or propertiesJson == "" then
+    print("[vms_housing] cl:loadProperties received nil/empty payload!")
+    Properties = {}
+    return
+  end
+  local ok, decoded = pcall(json.decode, propertiesJson)
+  if not ok or not decoded then
+    print("[vms_housing] cl:loadProperties json.decode FAILED: " .. tostring(decoded))
+    Properties = {}
+    return
+  end
+  Properties = decoded
+  local count = 0
+  for _ in pairs(Properties) do count = count + 1 end
+  print("[vms_housing] cl:loadProperties OK - " .. count .. " properties loaded on client")
 
   -- Update cached CurrentPropertyData if we're already inside a property
   if CurrentProperty then

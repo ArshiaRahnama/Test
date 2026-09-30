@@ -1118,3 +1118,58 @@
 .discord-staff-announce-result { font-size: 13px; color: #3ba55d; }
 .discord-staff-empty { color: #72767d; font-size: 13px; text-align: center; padding: 30px 0; }
 .discord-window { position: relative; }
+
+/* ==========================================================================
+   v6: VIP tab, login/register screen
+   ========================================================================== */
+
+.discord-vip-intro { font-size: 13px; color: #96989d; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.discord-vip-intro i { color: #b491ff; }
+.discord-modal-tab i { color: #b491ff; margin-right: 4px; }
+
+.discord-login-screen {
+    display: none;
+    position: fixed; inset: 0; z-index: 2050;
+    background: #202225;
+    align-items: center; justify-content: center;
+    padding: 20px;
+}
+.discord-login-screen.discord-visible { display: flex; }
+.discord-login-box { width: 360px; max-width: 100%; text-align: center; color: #dcddde; }
+.discord-login-logo { font-size: 56px; color: #5865F2; margin-bottom: 16px; }
+.discord-login-box h2 { color: #fff; font-size: 20px; margin: 0 0 10px 0; }
+.discord-login-box p { font-size: 13px; color: #b9bbbe; margin: 0 0 18px 0; line-height: 19px; }
+.discord-login-box p b { color: #00aff4; }
+.discord-login-box input[type="text"] {
+    width: 100%; box-sizing: border-box; background: #2f3136; border: none; outline: none;
+    border-radius: 6px; padding: 12px; color: #dcddde; font-size: 14px; text-align: center;
+    letter-spacing: 1px; margin-bottom: 10px;
+}
+.discord-login-btn { width: 100%; box-sizing: border-box; padding: 12px; }
+.discord-login-code-hint { font-size: 13px; color: #b9bbbe; margin-bottom: 12px; }
+.discord-login-secondary { margin-top: 14px; font-size: 12px; color: #72767d; cursor: pointer; }
+.discord-login-secondary:hover { color: #dcddde; text-decoration: underline; }
+
+/* ---------- v6.1: login screen polish ---------- */
+
+.discord-login-esc-hint {
+    margin-top: 22px; font-size: 12px; color: #72767d;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+.discord-login-esc-hint b {
+    background: #2f3136; border: 1px solid #4f545c; border-radius: 4px;
+    padding: 1px 6px; color: #dcddde; font-family: inherit;
+}
+.discord-login-code-mailbox-fallback { color: #00aff4; }
+
+.discord-btn.discord-btn-loading { opacity: .6; pointer-events: none; }
+
+@keyframes discordShake {
+    10%, 90% { transform: translateX(-1px); }
+    20%, 80% { transform: translateX(2px); }
+    30%, 50%, 70% { transform: translateX(-4px); }
+    40%, 60% { transform: translateX(4px); }
+}
+.discord-login-box.discord-shake { animation: discordShake .4s; }
+
+.discord-login-secondary.discord-secondary-disabled { color: #4f545c; cursor: default; pointer-events: none; }

@@ -8,7 +8,26 @@ local myProp = nil
 local myProp2 = nil
 
 myStatistics = nil
-local myStamina = nil
+-- Self-tracked stamina (0-100), independent of the game's native stamina.
+-- The player is FreezeEntityPosition'd while exercising, and the native
+-- sprint-stamina natives (GetPlayerStamina / GetPlayerSprintStaminaRemaining)
+-- both read back as 0 for a frozen ped since the game only updates them
+-- during actual locomotion - that's why "out of breath" kept firing no
+-- matter what, even at full health with a fresh character. A plain script
+-- variable has no such dependency.
+local myStamina = 100.0
+local lastOutOfBreathNotify = 0
+CreateThread(function()
+    while true do
+        Citizen.Wait(3000)
+        if myStamina < 100.0 then
+            myStamina = math.min(100.0, myStamina + 2.0) -- regen ~2/3s when not exercising it away faster than that
+            if _pointTable then
+                SendNUIMessage({action = 'update', stamina = myStamina})
+            end
+        end
+    end
+end)
 
 local playerMemberships = {}
 local ownedMemberships = {}
@@ -643,12 +662,17 @@ startAction = function(gymId, pointId, pointTable)
         SetEntityCoords(PlayerPedId(), vec(ac.x, ac.y, ac.z))
     end
     FreezeEntityPosition(PlayerPedId(), true)
-    SetEntityCollision(PlayerPedId(), false, false)
+    -- SetEntityCollision(ped, false, false) used to be here. Disabling collision
+    -- on a frozen, just-teleported ped stops the engine from properly streaming
+    -- the world around it, which is what caused the "torn/duplicated world"
+    -- glitch for the whole duration of the exercise (not just the teleport
+    -- frame). FreezeEntityPosition alone already keeps the player from being
+    -- pushed around, so collision no longer gets turned off.
     for k, v in pairs(Config.Animations[pointTable.name]) do
         loadAnimDict(v[1])
     end
     TriggerServerEvent('vms_gym:sv:setTaken', _gymId, _pointId, true)
-    SendNUIMessage({action = 'openHelpKeys', stamina = GetPlayerSprintStaminaRemaining(PlayerId()) / 10.0})
+    SendNUIMessage({action = 'openHelpKeys', stamina = myStamina})
     if Config.Animations[pointTable.name].enter then
         TaskPlayAnim(PlayerPedId(), Config.Animations[pointTable.name].enter[1], Config.Animations[pointTable.name].enter[2], 8.0, -8.0, Config.Animations[pointTable.name].enter[3], 0, 0.0, 0, 0, 0)
         Citizen.Wait(Config.Animations[pointTable.name].enter[3])
@@ -671,10 +695,8 @@ startAction = function(gymId, pointId, pointTable)
         end
         while _pointTable do
             if IsControlJustPressed(0, Config.Keys['train']) then
-                myStamina = GetPlayerSprintStaminaRemaining(PlayerId()) / 10.0
                 local crashedSkillbar = false
-                -- Stamina cost per rep, on a 0-100 scale (GetPlayerSprintStaminaRemaining
-                -- is 0-1000, converted above). removeStamina is already a small value on that same scale
+                -- Stamina cost per rep, 0-100 scale. removeStamina is already a small value on that same scale
                 -- (1 to 8). The old formula multiplied it by 10, or by
                 -- 100/condition for a low condition skill, which for a brand
                 -- new character (condition = 0) demanded 10x-100x more
@@ -699,7 +721,7 @@ startAction = function(gymId, pointId, pointTable)
                         TaskPlayAnim(PlayerPedId(), Config.Animations[_pointTable.name].training[1], Config.Animations[_pointTable.name].training[2], 8.0, -8.0, Config.Animations[_pointTable.name].training[3], 0, 0.0, 0, 0, 0)
                         Citizen.Wait(Config.Animations[_pointTable.name].training[3])
                         TaskPlayAnim(PlayerPedId(), Config.Animations[_pointTable.name].idle[1], Config.Animations[_pointTable.name].idle[2], 8.0, -8.0, Config.Animations[_pointTable.name].idle[3], 1, 0.0, 0, 0, 0)
-                        RestorePlayerStamina(PlayerId(), (myStamina - staminaCost) * 10.0)
+                        myStamina = math.max(0.0, myStamina - staminaCost)
                         if _pointTable.addSkill and _pointTable.addSkill.skill and _pointTable.addSkill.value then
                             if type(_pointTable.addSkill.value) == 'number' then
                                 addSkill(_pointTable.addSkill.skill, _pointTable.addSkill.value/10)
@@ -709,7 +731,11 @@ startAction = function(gymId, pointId, pointTable)
                         end
                     end
                 else
-                    Config.Notification(Config.Translate[Config.Language]['notify.title.gym'], Config.Translate[Config.Language]['out_of_breath'], 3850, "fa-solid fa-dumbbell", 'info')
+                    local now = GetGameTimer()
+                    if now - lastOutOfBreathNotify > 3850 then
+                        lastOutOfBreathNotify = now
+                        Config.Notification(Config.Translate[Config.Language]['notify.title.gym'], Config.Translate[Config.Language]['out_of_breath'], 3850, "fa-solid fa-dumbbell", 'info')
+                    end
                     Citizen.Wait(1000)
                 end
             end
@@ -721,7 +747,7 @@ startAction = function(gymId, pointId, pointTable)
     end)
     Citizen.CreateThread(function()
         while _pointTable do
-            SendNUIMessage({action = 'update', stamina = GetPlayerSprintStaminaRemaining(PlayerId()) / 10.0})
+            SendNUIMessage({action = 'update', stamina = myStamina})
             Citizen.Wait(800)
         end
     end)

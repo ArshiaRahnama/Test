@@ -562,7 +562,24 @@ RegisterNUICallbackCompat("creator:getBuildingParking", function(data, cb)
 end)
 
 RegisterNUICallbackCompat("creator:getAllProperties", function(_, cb)
-  cb(Properties)
+  -- اگه Properties کلاینت خالیه، مستقیم از سرور بگیر
+  local count = 0
+  for _ in pairs(Properties) do count = count + 1 end
+
+  if count > 0 then
+    cb(Properties)
+  else
+    -- درخواست مستقیم از سرور
+    TriggerServerEvent("vms_housing:sv:getAdminProperties")
+    -- منتظر جواب بمون
+    local deadline = GetGameTimer() + 5000
+    while count == 0 and GetGameTimer() < deadline do
+      Citizen.Wait(100)
+      for _ in pairs(Properties) do count = count + 1 end
+    end
+    print("[vms_housing] getAllProperties fallback: " .. count .. " properties")
+    cb(Properties)
+  end
 end)
 
 RegisterNUICallbackCompat("creator:getAllFurniture", function(_, cb)

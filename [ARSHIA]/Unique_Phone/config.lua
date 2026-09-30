@@ -302,3 +302,23 @@ Config.PhoneApplications = {
 
 
 }
+
+-- EXPANSION: Discord account verification. First time someone opens
+-- Discord they must link + verify a mailbox on arshiahub.ir/mail before
+-- they can use it (see server/main.lua's Discord_SendLoginCode). Adjust
+-- the field names below to match that site's real API contract — this
+-- was built without access to its documentation, so the request shape
+-- is a best-effort guess and MUST be checked against the real API.
+Config.DiscordMailAPI = {
+    url = "https://arshiahub.ir/mail/api.php",
+    siteUrl = "https://arshiahub.ir/mail", -- shown to the player so they know where to look for their code
+    method = "POST",
+    bodyFormat = "json", -- "json" or "form"
+    fieldMailbox = "to",
+    fieldCode = "code",
+    fieldSubject = "subject",
+    subjectText = "Discord Verification Code",
+    -- Extra static fields to send every time (e.g. an API key), if the
+    -- site needs one: { key = "your-api-key" }
+    extraFields = {},
+}
