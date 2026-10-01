@@ -142,11 +142,26 @@ function OpenBossMenu(society, close, options)
 		end
 	end
 
+	-- FIX (requested): every section below used to gate on a hardcoded
+	-- ESX.PlayerData.job.grade NUMBER (>= 10, or >= 16 for police/sheriff/mt)
+	-- with no fallback. That works fine for jobs whose grade ladder actually
+	-- reaches that high, but any job whose top grade is numerically lower
+	-- (e.g. FBI, which only goes up to grade 7) could NEVER pass it - the
+	-- actual, real boss of that job (grade_name == 'boss') still lost every
+	-- one of these options (society money, withdraw, employee management,
+	-- manage job/division, change branch) even at their highest possible
+	-- rank. The grade_name == 'boss' fallback already existed for a handful
+	-- of items further down (LogPanel, paintball access, society pay) -
+	-- extended the same fallback here so being the real boss is always
+	-- sufficient, on top of (not instead of) the existing numeric
+	-- thresholds for jobs that use them.
+	local isBoss = ESX.PlayerData.job.grade_name == 'boss'
+
 	local wait = true
 	ESX.TriggerServerCallback('esx_society:getSocietyMoney', function(money)
-		if ESX.PlayerData.job.grade >= 10 then
+		if ESX.PlayerData.job.grade >= 10 or isBoss then
 			if ESX.PlayerData.job.name == 'police' or ESX.PlayerData.job.name == 'sheriff' or ESX.PlayerData.job.name == 'mt' then
-				if ESX.PlayerData.job.grade >= 16 then
+				if ESX.PlayerData.job.grade >= 16 or isBoss then
 					table.insert(elements ,{label = 'Society Money: <span style="color:green;">$'.. money .. '</span>', value = nil})
 				end
 			else
@@ -162,10 +177,10 @@ function OpenBossMenu(society, close, options)
 		Citizen.Wait(tonumber(5))
 	end
 
-	if options.withdraw and ESX.PlayerData.job.grade >= 10 then
+	if options.withdraw and (ESX.PlayerData.job.grade >= 10 or isBoss) then
 		if ESX.PlayerData.perm >= 15 then
 			if ESX.PlayerData.job.name == 'police' or ESX.PlayerData.job.name == 'sheriff' or ESX.PlayerData.job.name == 'mt' then
-				if ESX.PlayerData.job.grade >= 16 then
+				if ESX.PlayerData.job.grade >= 16 or isBoss then
 					table.insert(elements, {label = _U('withdraw_society_money'), value = 'withdraw_society_money'})
 				end
 
@@ -180,9 +195,9 @@ function OpenBossMenu(society, close, options)
 		table.insert(elements, {label = _U('deposit_society_money'), value = 'deposit_money'})
 	end
 
-	if options.employees and ESX.PlayerData.job.grade >= 10 then
+	if options.employees and (ESX.PlayerData.job.grade >= 10 or isBoss) then
 		if ESX.PlayerData.job.name == 'police' or ESX.PlayerData.job.name == 'sheriff' or ESX.PlayerData.job.name == 'mt' then
-			if ESX.PlayerData.job.grade >= 16 then
+			if ESX.PlayerData.job.grade >= 16 or isBoss then
 				table.insert(elements, {label = _U('employee_management'), value = 'manage_employees'})
 			end
 		else
@@ -190,9 +205,9 @@ function OpenBossMenu(society, close, options)
 		end
 	end
 
-	if options.job and ESX.PlayerData.job.grade >= 10 then
+	if options.job and (ESX.PlayerData.job.grade >= 10 or isBoss) then
 		if ESX.PlayerData.job.name == 'police' or ESX.PlayerData.job.name == 'sheriff' or ESX.PlayerData.job.name == 'mt' then
-			if ESX.PlayerData.job.grade >= 16 then
+			if ESX.PlayerData.job.grade >= 16 or isBoss then
 				table.insert(elements, {label = _U('manage_job'), value = 'manage_job'})
 				table.insert(elements, {label = _U('manage_job_division'), value = 'manage_job_division'})
 			end

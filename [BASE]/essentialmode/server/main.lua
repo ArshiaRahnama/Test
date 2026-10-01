@@ -891,8 +891,16 @@ RegisterServerEvent("esx:giveInventoryItem")
 AddEventHandler(
     "esx:giveInventoryItem",
     function(target, type, itemName, itemCount)
-        local _source = source
-
+        -- FIX (critical): this handler was completely empty - it received
+        -- the event and did nothing, so pressing "Give" in the inventory UI
+        -- silently removed nothing and gave nothing (no error, no feedback,
+        -- item just... didn't move). The full, working implementation
+        -- already existed a few lines below under "esx:giscaryveInventoryItem"
+        -- (an old typo/rename nobody ever pointed a client at) - forward to
+        -- it instead of duplicating ~130 lines of logic. `source` carries
+        -- through TriggerEvent within the same tick, so giscaryve's own
+        -- `local _source = source` still resolves to the real caller.
+        TriggerEvent("esx:giscaryveInventoryItem", target, type, itemName, itemCount)
     end
 )
 

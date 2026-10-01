@@ -517,7 +517,7 @@ RegisterServerCallbackSafe("esx_inventoryhud:GetHouseItems", function(source, cb
 			table.insert(items, {
 				type = 'item_weapon',
 				name = v.name,
-				label = ESX.GetWeaponLabel(v.name),
+				label = GetCachedWeaponLabel(v.name),
 				count = v.ammo.ammo
 			})
 		end

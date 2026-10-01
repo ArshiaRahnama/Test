@@ -30,6 +30,9 @@ server_scripts {
     -- (see the comment at the top of that file for why the old
     -- ESX.RegisterServerCallback pattern silently failed on this server)
     'server/callback_bridge.lua',
+    -- shared item/weapon label cache, used by every file below instead of
+    -- calling ESX.GetItemLabel/GetWeaponLabel (linear scan) in a loop
+    'server/label_cache.lua',
 
     '@essentialmode/locale.lua',
     '@oxmysql/lib/MySQL.lua',
@@ -38,7 +41,12 @@ server_scripts {
     'locales/fr.lua',
     'config_hud.lua',
     'config_trunk.lua',
+    'config_joblock.lua',
 
+    'server/spam_guard.lua',
+    -- IsGangItemLocked/IsJobItemLocked - must load before inventory_main.lua,
+    -- which calls them from getGangINV/getJobINV1/getJobINV2 and the take-item events
+    'server/job_gang_lock.lua',
     'server/inventory_main.lua',
     'server/hud_data.lua',
     'server/classes/c_trunk.lua',

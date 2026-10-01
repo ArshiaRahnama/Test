@@ -306,15 +306,16 @@ function OpenCloakroomMenu_cia()
 	end)
 end
 
+-- FIX (requested): opened an old ESX default list menu instead of
+-- Unique_inventory's real chest UI. Same underlying storage
+-- ('society_cia') either way - see fbi_main.lua's OpenArmoryMenu_fbi.
 function OpenArmoryMenu_cia(station)
 
 	if Config_cia.EnableArmoryManagement then
 
 		local elements = {
-			{label = _U('get_weapon'),     value = 'get_weapon'},
-			{label = _U('put_weapon'),     value = 'put_weapon'},
-			{label = _U('remove_object'),  value = 'get_stock'},
-			{label = _U('deposit_object'), value = 'put_stock'}
+			{label = _U('get_weapon') .. ' / ' .. _U('put_weapon'), value = 'weapons'},
+			{label = _U('remove_object') .. ' / ' .. _U('deposit_object'), value = 'stock'}
 		}
 
 		if PlayerData.job.grade_name == 'boss' then
@@ -329,17 +330,14 @@ function OpenArmoryMenu_cia(station)
 			align    = 'top-left',
 			elements = elements
 		}, function(data, menu)
+			menu.close()
 
-			if data.current.value == 'get_weapon' then
-				OpenGetWeaponMenu_cia()
-			elseif data.current.value == 'put_weapon' then
-				OpenPutWeaponMenu_cia()
+			if data.current.value == 'weapons' then
+				TriggerEvent('esx_inventoryhud:OpenJobInventory1')
+			elseif data.current.value == 'stock' then
+				TriggerEvent('esx_inventoryhud:OpenJobInventory2')
 			elseif data.current.value == 'buy_weapons' then
 				OpenBuyWeaponsMenu_cia(station)
-			elseif data.current.value == 'put_stock' then
-				OpenPutStocksMenu_cia()
-			elseif data.current.value == 'get_stock' then
-				OpenGetStocksMenu_cia()
 			end
 
 		end, function(data, menu)
@@ -351,35 +349,7 @@ function OpenArmoryMenu_cia(station)
 		end)
 
 	else
-
-		local elements = {}
-
-		for i=1, #Config_cia.ciaStations[station].AuthorizedWeapons, 1 do
-			local weapon = Config_cia.ciaStations[station].AuthorizedWeapons[i]
-			table.insert(elements, {
-				label = ESX.GetWeaponLabel(weapon.name),
-				value = weapon.name
-			})
-		end
-
-		ESX.UI.Menu.CloseAll()
-
-		ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'armory',
-		{
-			title    = _U('armory'),
-			align    = 'top-left',
-			elements = elements
-		}, function(data, menu)
-			local weapon = data.current.value
-			TriggerServerEvent('esx_cia_job:giveWeapon', weapon, 1000)
-		end, function(data, menu)
-			menu.close()
-
-			CurrentAction     = 'menu_armory'
-			CurrentActionMsg  = _U('open_armory')
-			CurrentActionData = {station = station}
-		end)
-
+		TriggerEvent('esx_inventoryhud:OpenJobInventory1')
 	end
 
 end

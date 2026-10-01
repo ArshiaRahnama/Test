@@ -306,15 +306,23 @@ function OpenCloakroomMenu_fbi()
 	end)
 end
 
+-- FIX (requested): the armory used to open its own old ESX default list
+-- menu (get_weapon/put_weapon/get_stock/put_stock, each a separate
+-- sub-menu) instead of Unique_inventory's real chest UI. Both systems
+-- already read/write the EXACT SAME shared store ('society_fbi' via
+-- esx_addoninventory/esx_datastore - see server/fbi_main.lua vs
+-- [ARSHIA]/Unique_inventory/server/inventory_main.lua's GetJobItem/
+-- GetJobWeapon/PutJobItem/PutJobWeapon), so nothing needs migrating -
+-- opening Unique_inventory's chest instead shows/edits the exact same
+-- armory stock and weapons, just through the proper inventory UI, with the
+-- per-grade lock badges Unique_inventory now applies to unauthorized items.
 function OpenArmoryMenu_fbi(station)
 
 	if Config_fbi.EnableArmoryManagement then
 
 		local elements = {
-			{label = _U('get_weapon'),     value = 'get_weapon'},
-			{label = _U('put_weapon'),     value = 'put_weapon'},
-			{label = _U('remove_object'),  value = 'get_stock'},
-			{label = _U('deposit_object'), value = 'put_stock'}
+			{label = _U('get_weapon') .. ' / ' .. _U('put_weapon'), value = 'weapons'},
+			{label = _U('remove_object') .. ' / ' .. _U('deposit_object'), value = 'stock'}
 		}
 
 		if PlayerData.job.grade_name == 'boss' then
@@ -329,17 +337,14 @@ function OpenArmoryMenu_fbi(station)
 			align    = 'top-left',
 			elements = elements
 		}, function(data, menu)
+			menu.close()
 
-			if data.current.value == 'get_weapon' then
-				OpenGetWeaponMenu_fbi()
-			elseif data.current.value == 'put_weapon' then
-				OpenPutWeaponMenu_fbi()
+			if data.current.value == 'weapons' then
+				TriggerEvent('esx_inventoryhud:OpenJobInventory1')
+			elseif data.current.value == 'stock' then
+				TriggerEvent('esx_inventoryhud:OpenJobInventory2')
 			elseif data.current.value == 'buy_weapons' then
 				OpenBuyWeaponsMenu_fbi(station)
-			elseif data.current.value == 'put_stock' then
-				OpenPutStocksMenu_fbi()
-			elseif data.current.value == 'get_stock' then
-				OpenGetStocksMenu_fbi()
 			end
 
 		end, function(data, menu)
@@ -351,35 +356,10 @@ function OpenArmoryMenu_fbi(station)
 		end)
 
 	else
-
-		local elements = {}
-
-		for i=1, #Config_fbi.fbiStations[station].AuthorizedWeapons, 1 do
-			local weapon = Config_fbi.fbiStations[station].AuthorizedWeapons[i]
-			table.insert(elements, {
-				label = ESX.GetWeaponLabel(weapon.name),
-				value = weapon.name
-			})
-		end
-
-		ESX.UI.Menu.CloseAll()
-
-		ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'armory',
-		{
-			title    = _U('armory'),
-			align    = 'top-left',
-			elements = elements
-		}, function(data, menu)
-			local weapon = data.current.value
-			TriggerServerEvent('esx_fbi_job:giveWeapon', weapon, 1000)
-		end, function(data, menu)
-			menu.close()
-
-			CurrentAction     = 'menu_armory'
-			CurrentActionMsg  = _U('open_armory')
-			CurrentActionData = {station = station}
-		end)
-
+		-- No sub-menu needed here at all - Unique_inventory's chest already
+		-- only lists AuthorizedWeapons-equivalent access itself (grade-based
+		-- lock, see getJobINV1), so just open it directly.
+		TriggerEvent('esx_inventoryhud:OpenJobInventory1')
 	end
 
 end

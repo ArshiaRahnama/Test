@@ -35,18 +35,18 @@ AddEventHandler('For5M:OpenPanel', function(data)
 	})
 end) 
 -------------------------------------------------------------------
--- esx_inventory CONVERSION (was IRV-inventory, before that ox_inventory):
--- the server can't open a stash for a specific player directly (the
--- inventory's live stash cache is private to its own resource), so it
--- asks this client to do it via the inventory's own exported client
--- function -- the same one it uses internally for job/gang stashes.
--- esx_inventory didn't ship a stash system at all, so a small one
--- (server/apps/system/stash.lua + client/apps/system/stash.lua) was
--- added to it, exposing the same exports('stash', ...) interface.
+-- FIX (live crash: "No such export stash in resource esx_inventory"):
+-- esx_inventory was never actually installed on this server (only
+-- Unique_inventory is), so this threw a hard script error every single
+-- time an armory was opened. server/Gangs.lua's 'For5M:OpenInventory'
+-- callback no longer triggers this event at all (it opens
+-- Unique_inventory's real gang chest directly now) - this handler is
+-- kept only as a safety net in case something else still fires the old
+-- event, redirecting to the same real chest instead of crashing.
 -------------------------------------------------------------------
 RegisterNetEvent('For5MGangs:openArmoryStash')
 AddEventHandler('For5MGangs:openArmoryStash', function(stashId, maxWeight, slot, label)
-	exports['esx_inventory']:stash(stashId, maxWeight, slot, label)
+	TriggerEvent('esx_inventoryhud:OpenGangInventory')
 end)
 RegisterNetEvent('For5M:OpenBossPanel')
 AddEventHandler('For5M:OpenBossPanel', function(data , GangName )

@@ -1,11 +1,16 @@
 CFG = {}
 
 CFG.FRAMEWORK = 'ESXOLD' -- 'QBCore', 'QBX', 'ESX', 'ESXOLD' or false to disable it
-CFG.INVENTORY = 'esx_inventory' -- 'qb-inventory', 'ox-inventory', 'qs-inventory', 'esx_inventory' or false to disable it
--- NOTE: 'esx_inventory' support added specifically for this server. It reads trunk
--- contents through a new export in esx_inventory/server/apps/system/trunk.lua
--- (see the patch provided alongside this script). esx_inventory has no glovebox
--- system, so k9searchcar will only ever detect items in the trunk, never the glovebox.
+CFG.INVENTORY = 'Unique_inventory' -- 'qb-inventory', 'ox-inventory', 'qs-inventory', 'esx_inventory', 'Unique_inventory' or false to disable it
+-- FIX: was 'esx_inventory', a resource that isn't installed on this server at
+-- all (only Unique_inventory is) - GetVehicleItems below fell into the
+-- 'esx_inventory' branch, called a pcall-guarded exports['esx_inventory']
+-- (nonexistent) and always returned nil, i.e. k9searchcar never found
+-- anything in ANY trunk. Now calls the real exports('GetTrunkItems', ...)
+-- added to Unique_inventory/server/trunk_helpers.lua. Unique_inventory has no
+-- separate glovebox item list either, so k9searchcar still only checks the
+-- trunk, never the glovebox - same limitation as before, just against a
+-- resource that actually exists now.
 CFG.TARGET = 'ox_target' -- 'qb-target', 'qtarget', 'ox_target' or false to disable it
 CFG.DATABASE = 'oxmysql' -- 'oxmysql', 'mysql-async' or false to disable
 CFG.NOTIFY = 'ox' -- 'ox', 'qb', 'esx', 'native' or false

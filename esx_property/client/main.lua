@@ -571,15 +571,28 @@ function OpenRoomMenu(property, owner)
 end
 
 function OpenPropertyInventoryMenu(property, owner)
-	-- Was ox_inventory's exports.ox_inventory:openInventory('stash', id).
-	-- esx_inventory's stash export (added specifically to support this kind
-	-- of call - see server/apps/system/stash.lua + client/apps/system/stash.lua
-	-- in esx_inventory) does the equivalent, just with maxWeight/slot/label
-	-- params instead of an inventory id string alone -- nil lets it fall
-	-- back to its own default of 100000 weight, same as any other
-	-- unconfigured esx_inventory stash.
-	exports['esx_inventory']:stash('property_' .. owner, nil, nil, property and property.label or ('Property ' .. owner))
+	-- FIX: was exports['esx_inventory']:stash(...) - esx_inventory isn't
+	-- installed on this server at all (only Unique_inventory is), so this
+	-- threw a hard "no such export" error client-side every single time
+	-- anyone clicked "Property Inventory" (unlike the k9 trunk lookup
+	-- elsewhere in this server, this call wasn't even pcall-guarded).
+	-- OpenRoomInventoryMenu below already implements the real, working
+	-- property inventory against essentialmode's own ESX-native
+	-- esx_property:getPropertyInventory callback - same (property, owner)
+	-- signature, same menu slot ("property_inventory") a few lines up just
+	-- calls this function - so just reuse it instead of inventing a second,
+	-- redundant Unique_inventory-specific stash concept.
+	OpenRoomInventoryMenu(property, owner)
 end
+
+-- FIX: matching half of the esx_property:adminOpenPropertyStash server event
+-- added for Unique_AdminPanel's "openproperty" command (see server/main.lua
+-- for why) - just opens the same real menu an owner would get, for an admin
+-- looking at someone else's property.
+RegisterNetEvent('esx_property:adminOpenPropertyStashClient')
+AddEventHandler('esx_property:adminOpenPropertyStashClient', function(property, owner)
+	OpenRoomInventoryMenu(property, owner)
+end)
 
 function OpenRoomInventoryMenu(property, owner)
 	ESX.TriggerServerCallback('esx_property:getPropertyInventory', function(inventory)

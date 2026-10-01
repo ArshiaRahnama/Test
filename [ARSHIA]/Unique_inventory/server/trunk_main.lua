@@ -181,14 +181,14 @@ RegisterServerCallbackSafe(
         for i = 1, #coffre, 1 do
           -- peso = weight of ONE unit in kg. The NUI computes peso * count for the card;
           -- without it the card showed "NaNkg".
-          table.insert(items, {name = coffre[i].name, count = coffre[i].count, label = ESX.GetItemLabel(coffre[i].name), filter = 'food', peso = getItemWeight(coffre[i].name) / 1000})
+          table.insert(items, {name = coffre[i].name, count = coffre[i].count, label = GetCachedItemLabel(coffre[i].name), filter = 'food', peso = getItemWeight(coffre[i].name) / 1000})
         end
        
         for k,v in pairs(weapons) do
           table.insert(items, {
             type = 'item_weapon',
             name = v.name,
-            label = ESX.GetWeaponLabel(v.name),
+            label = GetCachedWeaponLabel(v.name),
             count = v.ammo,
             filter = 'arma',
             peso = getItemWeight(v.name) / 1000, -- a weapon weighs its own weight once (count = ammo)
@@ -266,7 +266,7 @@ AddEventHandler(
 
             local coffre = (store.get("coffre") or {})
             for i = 1, #coffre, 1 do
-              table.insert(items, {name = coffre[i].name, count = coffre[i].count, label = ESX.GetItemLabel(coffre[i].name)})
+              table.insert(items, {name = coffre[i].name, count = coffre[i].count, label = GetCachedItemLabel(coffre[i].name)})
             end
 
             local weight = getTotalInventoryWeight(plate)
@@ -286,8 +286,13 @@ AddEventHandler(
         "esx_trunk:getSharedDataStore",
         plate,
         function(store)
-          local blackMoney = store.get("black_money")
-          if (blackMoney[1].amount >= count and count > 0) then
+          -- FIX (bug #2): store.get("black_money") returns nil when the trunk
+          -- never had any black money set, so blackMoney[1] would crash the
+          -- whole callback (nobody could open a trunk that had zero dirty
+          -- money). Default to an empty table like every other read of this
+          -- key already does.
+          local blackMoney = store.get("black_money") or {}
+          if (blackMoney[1] and blackMoney[1].amount >= count and count > 0) then
             blackMoney[1].amount = blackMoney[1].amount - count
             store.set("black_money", blackMoney)
             xPlayer.addAccountMoney(item, count)
@@ -304,7 +309,7 @@ AddEventHandler(
 
             local coffre = (store.get("coffre") or {})
             for i = 1, #coffre, 1 do
-              table.insert(items, {name = coffre[i].name, count = coffre[i].count, label = ESX.GetItemLabel(coffre[i].name)})
+              table.insert(items, {name = coffre[i].name, count = coffre[i].count, label = GetCachedItemLabel(coffre[i].name)})
             end
 
             local weight = getTotalInventoryWeight(plate)
@@ -364,7 +369,7 @@ AddEventHandler(
 
           local coffre = (store.get("coffre") or {})
           for i = 1, #coffre, 1 do
-            table.insert(items, {name = coffre[i].name, count = coffre[i].count, label = ESX.GetItemLabel(coffre[i].name)})
+            table.insert(items, {name = coffre[i].name, count = coffre[i].count, label = GetCachedItemLabel(coffre[i].name)})
           end
 
           local weight = getTotalInventoryWeight(plate)
@@ -551,7 +556,7 @@ AddEventHandler(
 
         local coffre = (store.get("coffre") or {})
         for i = 1, #coffre, 1 do
-          table.insert(items, {name = coffre[i].name, count = coffre[i].count, label = ESX.GetItemLabel(coffre[i].name)})
+          table.insert(items, {name = coffre[i].name, count = coffre[i].count, label = GetCachedItemLabel(coffre[i].name)})
         end
 
         local weight = getTotalInventoryWeight(plate)

@@ -511,6 +511,39 @@ ESX.RegisterServerCallback('esx_property:getLastProperty', function(source, cb)
 	end)
 end)
 
+-------------------------------------------------------------------------
+-- FIX: Unique_AdminPanel's "openproperty" admin command used to
+-- TriggerClientEvent('esx_aduty:openPlayerPropertyStash', admin, 'property_'
+-- .. targetIdentifier), whose client handler called
+-- exports['lc-inventory']:stash(...) - lc-inventory isn't installed on this
+-- server (only Unique_inventory is), so this threw immediately every time
+-- an admin ran the command. Added here (not in Unique_AdminPanel) because
+-- it needs GetProperty()/Config.Properties, which only exist in this
+-- resource. Unique_AdminPanel now triggers this event instead; the admin's
+-- own client opens the SAME real room-inventory menu an owner would see
+-- (OpenRoomInventoryMenu), just for the target's property.
+-------------------------------------------------------------------------
+RegisterServerEvent('esx_property:adminOpenPropertyStash')
+AddEventHandler('esx_property:adminOpenPropertyStash', function(targetIdentifier)
+	local adminSource = source
+	MySQL.Async.fetchAll('SELECT name FROM owned_properties WHERE owner = @owner LIMIT 1', {
+		['@owner'] = targetIdentifier
+	}, function(rows)
+		if not rows[1] then
+			TriggerClientEvent('esx:showNotification', adminSource, 'This player does not own any property')
+			return
+		end
+
+		local property = GetProperty(rows[1].name)
+		if not property then
+			TriggerClientEvent('esx:showNotification', adminSource, ('owned_properties has an orphaned row ("%s") for this player'):format(rows[1].name))
+			return
+		end
+
+		TriggerClientEvent('esx_property:adminOpenPropertyStashClient', adminSource, property, targetIdentifier)
+	end)
+end)
+
 ESX.RegisterServerCallback('esx_property:getPropertyInventory', function(source, cb, owner)
 	local xPlayer    = ESX.GetPlayerFromIdentifier(owner)
 	local items      = {}

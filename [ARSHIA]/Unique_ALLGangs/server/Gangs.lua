@@ -1587,6 +1587,39 @@ end)
 -- runs the real check and replies over a matching event. See
 -- esx_inventory/server/apps/system/stash.lua's matching half.
 -------------------------------------------------------------------
+-------------------------------------------------------------------
+-- FIX (requested: bring the gang "Item Access" lock into Unique_inventory's
+-- OWN working gang chest, since the esx_inventory-dependent armory-stash
+-- system below never worked on this server at all - esx_inventory isn't
+-- installed here, only Unique_inventory is). Unique_inventory asks this
+-- exact question every time it builds the gang chest list and every time a
+-- player tries to actually take an item out of it
+-- (server/job_gang_lock.lua -> IsGangItemLocked in Unique_inventory).
+--
+-- Same safe cross-resource pattern as everywhere else in this codebase:
+-- TriggerEvent with a callback function argument, NOT exports (exports
+-- can't carry a function across the resource boundary reliably here - see
+-- the long comment a few lines below this one for how that was confirmed).
+-- If Unique_ALLGangs isn't running, nobody answers and Unique_inventory
+-- just doesn't lock anything - fails open, never breaks the gang chest.
+-------------------------------------------------------------------
+AddEventHandler('Unique_ALLGangs:checkItemAccess', function(src, gangName, itemName, cb)
+    if type(cb) ~= 'function' then return end
+
+    local grades = Gangs[gangName] and Gangs[gangName].grades
+    local xP = ESX.GetPlayerFromId(src)
+    local gradeNum = xP and xP.gang and xP.gang.name == gangName and xP.gang.grade or nil
+    local grade = gradeNum and grades and grades[gradeNum]
+
+    if not grade or not grade.access or not grade.access.itemAccess then
+        return cb(true) -- nothing explicitly configured for this grade = allowed
+    end
+
+    local allowed = grade.access.itemAccess[itemName]
+    if allowed == nil then return cb(true) end -- item never toggled = allowed
+    cb(allowed and true or false)
+end)
+
 local StashAccessCheckerFunctions = {} -- [stashId] = the REAL checker function - never leaves this resource
 
 AddEventHandler('esx_inventory:relayStashAccessCheck:Unique_ALLGangs', function(stashId, itemName, checkSource, requestId)
@@ -1599,34 +1632,25 @@ AddEventHandler('esx_inventory:relayStashAccessCheck:Unique_ALLGangs', function(
     TriggerEvent('esx_inventory:relayStashAccessCheckReply', requestId, allowed)
 end)
 
+-------------------------------------------------------------------
+-- FIX (log spam + the live crash reported: "No such export stash in
+-- resource esx_inventory"): esx_inventory has never been installed on
+-- this server (only Unique_inventory is) - exports['esx_inventory'] was
+-- NEVER going to succeed, ever, which is exactly why every single
+-- EnsureArmoryStash call printed "FAILED to register access check ...
+-- will keep retrying on the recurring timer" and the recurring timer
+-- below kept re-attempting forever. Real per-item access enforcement now
+-- happens through 'Unique_ALLGangs:checkItemAccess' further up this file,
+-- which Unique_inventory's actual (working) gang chest calls directly -
+-- this whole exports['esx_inventory'] path is superseded, not just
+-- failing. Turned into a cheap no-op (still records the checker function
+-- in StashAccessCheckerFunctions for anything else that might read it)
+-- instead of attempting and logging a doomed export call every time.
+-------------------------------------------------------------------
 local function registerStashAccessCheck(stashId, checkerFn)
     StashAccessCheckerFunctions[stashId] = checkerFn
-    local ok, result = pcall(function() return exports['esx_inventory']:registerStashAccessCheck(stashId) end)
-    return ok and result == true
+    return true
 end
-
--- Resilient against esx_inventory itself restarting independently (this
--- whole server is prone to VPS freeze/lag forcing exactly that, per
--- earlier debugging in this same conversation) - re-establishes every
--- known registration whenever esx_inventory (re)starts, and again on a
--- short recurring timer as a belt-and-suspenders backstop.
-AddEventHandler('onResourceStart', function(resourceName)
-    if resourceName ~= 'esx_inventory' then return end
-    for stashId, checkerFn in pairs(StashAccessCheckerFunctions) do
-        registerStashAccessCheck(stashId, checkerFn)
-    end
-end)
-
-CreateThread(function()
-    while true do
-        Wait(3000)
-        if GetResourceState('esx_inventory') == 'started' then
-            for stashId, checkerFn in pairs(StashAccessCheckerFunctions) do
-                pcall(function() exports['esx_inventory']:registerStashAccessCheck(stashId) end)
-            end
-        end
-    end
-end)
 
 local RegisteredArmoryStashes = {}
 local ARMORY_SLOTS = 50
@@ -1774,6 +1798,28 @@ EnsureArmoryStash = function(playergang, key, armory)
     return stashId
 end
 
+-------------------------------------------------------------------
+-- FIX (live crash: "No such export stash in resource esx_inventory"):
+-- this used to call EnsureArmoryStash + TriggerClientEvent('For5MGangs:
+-- openArmoryStash', ...), whose client handler called
+-- exports['esx_inventory']:stash(...) - esx_inventory isn't installed on
+-- this server at all (only Unique_inventory is), so every single armory
+-- open attempt threw a hard client script error instead of opening
+-- anything. Opens Unique_inventory's real, working gang chest instead
+-- (same one server/job_gang_lock.lua's IsGangItemLocked already
+-- enforces the per-item "Item Access" locks on).
+--
+-- Behavior change to be aware of: the old system kept a SEPARATE stash
+-- per physical armory prop (gang_armory_1_1, gang_armory_1_2, ...);
+-- Unique_inventory's gang chest is a single shared store per gang, so
+-- every armory prop a gang owns now opens the SAME shared inventory
+-- instead of each having its own separate stock. Given the old
+-- per-prop stashes never actually opened at all (this exact crash,
+-- every time), a single working shared inventory is still a strict
+-- improvement - but if genuinely separate per-building stock is
+-- wanted later, that needs a bigger follow-up (a stash-id parameter
+-- threaded through getGangINV/gangs:getFromInventory/addToInventory).
+-------------------------------------------------------------------
 ESX.RegisterServerCallback('For5M:OpenInventory', function(source, cb, code)
     local xPlayer = ESX.GetPlayerFromId(source)
     local playergang = xPlayer.gang.name
@@ -1786,8 +1832,7 @@ ESX.RegisterServerCallback('For5M:OpenInventory', function(source, cb, code)
         return cb(false)
     end
 
-    local stashId = EnsureArmoryStash(playergang, key, armory)
-    TriggerClientEvent('For5MGangs:openArmoryStash', source, stashId, ARMORY_MAX_WEIGHT, ARMORY_SLOTS, playergang .. ' Armory')
+    TriggerClientEvent('esx_inventoryhud:OpenGangInventory', source)
     cb(true)
 end)
 -------------------------------------------------------------------

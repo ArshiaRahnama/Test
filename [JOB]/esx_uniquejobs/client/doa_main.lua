@@ -444,13 +444,14 @@ function OpenCloakroomMenu_doa()
 	end)
 end
 
+-- FIX (requested): opened an old ESX default list menu instead of
+-- Unique_inventory's real chest UI. Same underlying storage
+-- ('society_doa') either way - see fbi_main.lua's OpenArmoryMenu_fbi.
 function OpenArmoryMenu_doa(station)
 
 	local elements = {
-		{label = _U('get_weapon'),     value = 'get_weapon'},
-		{label = _U('put_weapon'),     value = 'put_weapon'},
-		{label = _U('remove_object'),  value = 'get_stock'},
-		{label = _U('deposit_object'), value = 'put_stock'}
+		{label = _U('get_weapon') .. ' / ' .. _U('put_weapon'), value = 'weapons'},
+		{label = _U('remove_object') .. ' / ' .. _U('deposit_object'), value = 'stock'}
 	}
 
 	if PlayerData.job.grade >= 16 then
@@ -468,13 +469,14 @@ function OpenArmoryMenu_doa(station)
 		elements = elements,
 	},
 	function(data, menu)
+		menu.close()
 
-		if data.current.value == 'get_weapon' then
-			OpenGetWeaponMenu_doa()
+		if data.current.value == 'weapons' then
+			TriggerEvent('esx_inventoryhud:OpenJobInventory1')
 		end
 
-		if data.current.value == 'put_weapon' then
-			OpenPutWeaponMenu_doa()
+		if data.current.value == 'stock' then
+			TriggerEvent('esx_inventoryhud:OpenJobInventory2')
 		end
 
 		if data.current.value == 'buy_weapons' then
@@ -483,14 +485,6 @@ function OpenArmoryMenu_doa(station)
 
 		if data.current.value == 'buy_items' then
 			OpenBuyItemsMenu_doa(station)
-		end
-
-		if data.current.value == 'put_stock' then
-			OpenPutStocksMenu_doa()
-		end
-
-		if data.current.value == 'get_stock' then
-			OpenGetStocksMenu_doa()
 		end
 
 	end,

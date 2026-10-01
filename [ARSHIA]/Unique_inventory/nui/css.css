@@ -695,6 +695,31 @@ body{
 }
 
 
+/* FIX (item-lock feature): gang/job armory items the player isn't
+   authorized for are shown (never hidden) but dimmed with a lock badge,
+   and pointer-events is off so a drag can't even start on them - the real
+   block is server-side (server/job_gang_lock.lua), this is just the
+   matching visual so the UI doesn't look like it silently failed. */
+.item-player.locked-item{
+    filter: grayscale(70%) brightness(0.55);
+    pointer-events: none;
+}
+
+.lock-badge{
+    position: absolute;
+    top: 0.15vw;
+    right: 0.15vw;
+    width: 1.3vw;
+    height: 1.3vw;
+    line-height: 1.3vw;
+    text-align: center;
+    font-size: 0.9vw;
+    background: rgba(0,0,0,0.55);
+    border-radius: 50%;
+    z-index: 5;
+    pointer-events: none;
+}
+
 .top-item{
     position: relative;
     top: 0.5vw;

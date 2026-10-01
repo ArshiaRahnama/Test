@@ -183,6 +183,26 @@ function GetVehicleItems(plate, type)
             return nil
         end
 
+    elseif CFG.INVENTORY == 'Unique_inventory' then
+        -- FIX: the server's real, working inventory. Uses the plain export
+        -- added to [ARSHIA]/Unique_inventory/server/trunk_helpers.lua - see
+        -- CFG.INVENTORY's comment in shared/k9_config.lua for why this
+        -- replaced the dead 'esx_inventory' branch above. Same pcall guard
+        -- in case Unique_inventory isn't started for some reason.
+        if type == 'trunk' then
+            local ok, result = pcall(function()
+                return exports['Unique_inventory']:GetTrunkItems(plate)
+            end)
+            if not ok then
+                print('^1[k9] Unique_inventory export "GetTrunkItems" not found - is Unique_inventory started?^0')
+                return nil
+            end
+            return result
+        else
+            -- Unique_inventory's trunk store has no separate glovebox key
+            return nil
+        end
+
     elseif CFG.INVENTORY == 'ox-inventory' then
         local get_inv = nil
         if type == 'trunk' then

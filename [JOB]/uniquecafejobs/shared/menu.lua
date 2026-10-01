@@ -1,5 +1,9 @@
 Config = Config or {}
-Config.itemIconsPath = "nui://ox_inventory/web/images/"
+-- FIX: ox_inventory isn't installed on this server (only Unique_inventory
+-- is). Pointed at Unique_inventory's real, existing html/img/items/ icon
+-- folder - see shared/market_products.lua for which product PNGs still need
+-- to be added there by hand.
+Config.itemIconsPath = "nui://Unique_inventory/html/img/items/"
 
 -- Shared product catalog / shop stock - identical menu at every cafe.
 

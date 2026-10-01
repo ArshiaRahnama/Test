@@ -13,9 +13,12 @@ TriggerEvent(
   end
 )
 
-AddEventHandler(
-  "onMySQLReady",
-  function()
+-- FIX (bug #3): 'onMySQLReady' is never fired by oxmysql's compat shim (only
+-- mysql-async fired that event; oxmysql exposes readiness as MySQL.ready(cb)
+-- instead - see the identical fix already applied in trunk_main.lua). This
+-- handler never ran, so the whole trunk_inventory table was never preloaded
+-- at boot; every plate paid a lazy SELECT+INSERT on its first access instead.
+MySQL.ready(function()
     local result = MySQL.Sync.fetchAll("SELECT * FROM trunk_inventory")
     local data = nil
     if #result ~= 0 then
@@ -27,8 +30,7 @@ AddEventHandler(
         SharedDataStores[plate] = dataStore
       end
     end
-  end
-)
+end)
 
 function loadInvent(plate)
   local result =
@@ -100,6 +102,32 @@ function GetSharedDataStore(plate)
   end
   return SharedDataStores[plate]
 end
+
+-------------------------------------------------------------------------
+-- FIX (requested: hook every other resource's dead "qb-inventory"/
+-- "ox_inventory"/"esx_inventory" trunk-reading calls up to the real,
+-- working Unique_inventory trunk data instead). This is a PLAIN export
+-- that returns a value immediately - not passing a callback function
+-- across the resource boundary, which is the specific thing documented
+-- elsewhere in this codebase as broken on this FXServer build. Any other
+-- resource (e.g. esx_uniquejobs' K9 search, [JOB]/esx_uniquejobs/server/
+-- k9/server_editable.lua) can call:
+--
+--     exports['Unique_inventory']:GetTrunkItems(plate)
+--
+-- and gets back { {name=..., count=...}, ... } - standard items only
+-- (weapons aren't relevant to a K9 drug search). Safe to call for a plate
+-- that has never been opened before - GetSharedDataStore lazily creates it.
+-------------------------------------------------------------------------
+exports('GetTrunkItems', function(plate)
+    local store = GetSharedDataStore(plate)
+    local coffre = store.get('coffre') or {}
+    local items = {}
+    for _, v in pairs(coffre) do
+        items[#items + 1] = { name = v.name, count = v.count }
+    end
+    return items
+end)
 
 AddEventHandler(
   "esx_trunk:getSharedDataStore",

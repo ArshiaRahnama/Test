@@ -394,13 +394,25 @@ $(document).ready(function () {
                   if (_0x24ece6.tableChest[i]) {
                     var _0x286660 = _0x24ece6.tableChest[i],
                       _0x5bc40d = $('.slotChest')
+                    // FIX (item-lock feature): gang/job armory items the
+                    // server flags locked=true are still shown (per the
+                    // requested UX: visible, but can't be taken) with a
+                    // lock badge + dimmed look. data-item-locked is read by
+                    // getDrag() below to actually block starting a
+                    // take-out drag; the real enforcement is server-side
+                    // (server/job_gang_lock.lua) regardless of this.
+                    var _0x1eLocked = _0x286660.locked === true
                     _0x5bc40d &&
                       $('.slotChest').each(function () {
                         var _0x1ab04d = $(this).attr('data-slotNovo')
                         if (Number(i) === Number(_0x1ab04d)) {
                           const _0x48fd16 =
-                            '\n                                    <div class="item-player house"  data-item-antigo="' +
+                            '\n                                    <div class="item-player house' +
+                            (_0x1eLocked ? ' locked-item' : '') +
+                            '"  data-item-antigo="' +
                             i +
+                            '" data-item-locked="' +
+                            (_0x1eLocked ? 'true' : 'false') +
                             '" data-item-amount="' +
                             _0x286660.count +
                             '" data-item-type="' +
@@ -431,7 +443,9 @@ $(document).ready(function () {
                             ip +
                             '/' +
                             _0x286660.name +
-                            '.png\');">\n                                        <div class="top-item">\n                                            <div class="amount">' +
+                            '.png\');">\n                                        ' +
+                            (_0x1eLocked ? '<div class="lock-badge" title="این آیتم برای شما قفل است">🔒</div>' : '') +
+                            '\n                                        <div class="top-item">\n                                            <div class="amount">' +
                             _0x286660.count +
                             'x</div>\n                                            <div class="peso">' +
                             (_0x286660.type === 'item_weapon' ? (Number(_0x286660.peso) || 0) : (Number(_0x286660.peso) || 0) * (Number(_0x286660.count) || 0)).toFixed(1) +
@@ -1139,7 +1153,11 @@ function getDrag() {
                 _0x241c9d = _0x4427d0.draggable.data('item-antigo')
               if (_0x3f436c) {
                 var _0x40ebe8 = _0x4427d0.draggable.data('item-key')
-                if (_0x40ebe8 && nomeHouse != null) {
+                if (
+                  _0x40ebe8 &&
+                  nomeHouse != null &&
+                  _0x4427d0.draggable.attr('data-item-locked') !== 'true'
+                ) {
                   var _0x3e2039 = document.getElementById('quantidade').value
                   if (metade === true && tudo === false) {
                     var _0x3e2039 =
@@ -1343,6 +1361,13 @@ function getDrag() {
     revert: 'invalid',
     opacity: 1,
     start: function (_0x4ad267, _0x1f9535) {
+      // FIX (item-lock feature): cancel the drag entirely for a locked
+      // gang/job-armory item instead of letting it drag and only failing on
+      // drop - matches the requested UX ("قفل باشه براش", not just "invisible
+      // fail"). Server still enforces this independently either way.
+      if ($(this).attr('data-item-locked') === 'true') {
+        return false
+      }
       $(this).children().children('img').hide()
       let _0x7c58cc = $(this)
       _0x7c58cc.addClass('active')

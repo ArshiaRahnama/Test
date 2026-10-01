@@ -704,12 +704,15 @@ TriggerEvent('es:addAdminCommand', 'openproperty', 6, function(source, args, use
 		return
 	end
 
-	-- Was TriggerClientEvent('ox_inventory:openInventory', source, 'stash', ...)
-	-- -- see esx_property/client/main.lua's OpenPropertyInventoryMenu for
-	-- the same IRV-inventory conversion. Handled by a small client event
-	-- (esx_aduty:openPlayerPropertyStash, added in Client/client.lua) since
-	-- IRV-inventory's stash export is client-side only.
-	TriggerClientEvent('esx_aduty:openPlayerPropertyStash', source, 'property_' .. xPlayer.identifier)
+	-- FIX: was TriggerClientEvent('esx_aduty:openPlayerPropertyStash', source,
+	-- 'property_' .. xPlayer.identifier), whose client handler
+	-- (client/aduty_client.lua) called exports['lc-inventory']:stash(...) -
+	-- lc-inventory isn't installed on this server (only Unique_inventory
+	-- is), so this errored every time. esx_property/server/main.lua now has
+	-- a real handler for exactly this ("esx_property:adminOpenPropertyStash")
+	-- that looks the target's actual property up and opens esx_property's
+	-- own working room-inventory menu on the admin's client instead.
+	TriggerEvent('esx_property:adminOpenPropertyStash', xPlayer.identifier, source)
 
 end, function(source, args, user)
 	TriggerClientEvent('chat:addMessage', source, {'^1SYSTEM', 'Insufficient Permissions.' } )

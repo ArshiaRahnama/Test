@@ -1,5 +1,13 @@
 MarketConfig = {}
-local url = 'nui://ox_inventory/web/images/'
+-- FIX: ox_inventory isn't installed on this server at all (only
+-- Unique_inventory is) - this URL 404'd for every single product image.
+-- Pointed at [ARSHIA]/Unique_inventory/html/img/items/, which genuinely
+-- exists and already ships 442 item PNGs (same folder client/inventory_main.lua
+-- serves the main inventory's icons from). Checked every product name below
+-- against it: only 'cupcake' has a matching file today - the other 30
+-- (cakebastani, caketotfarangi, shokolat, ...) still need their PNG added to
+-- that folder by hand; the path itself is now correct either way.
+local url = 'nui://Unique_inventory/html/img/items/'
 
 list_products = {
     { label = 'Cake Bastani', name = 'cakebastani', img = url..'cakebastani.png', price_recommended = 10000, Had_AKSAR = 10000},

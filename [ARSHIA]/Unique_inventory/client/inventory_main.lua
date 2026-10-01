@@ -378,7 +378,10 @@ function openmenuvehicle(entity)
     ESX.UI.Menu.CloseAll()
     if locked2 == 1 or locked2 == 0 then
         if not locked then
-        if plate ~= nil or plate ~= "" or plate ~= " " or not ESX.GetPlayerData().isSentenced then
+        -- FIX (bug #1): was 'or' between every condition, so the clause was always
+        -- true (plate ~= nil is always true here) and jailed players could still
+        -- open trunks. Must be 'and': valid, non-blank plate AND not sentenced.
+        if plate ~= nil and plate ~= "" and plate ~= " " and not ESX.GetPlayerData().isSentenced then
 
             
             CloseToVehicle = vehicle
@@ -968,7 +971,10 @@ RegisterNUICallback("enviarItem", function(data)
         local aPlayers = ESX.Game.GetPlayersInArea(GetEntityCoords(PlayerPedId()), 3.0)
         SelectPlayer(function(cP)
             -- TriggerServerEvent("esx_inventoryhud:GiveItem", GetPlayerServerId(cP), data.item, data.amount, data.slot)
-            TriggerServerEvent("esx:giveInventoryItem", GetPlayerServerId(cP), type, data.item, data.amount)
+            -- FIX: was TriggerServerEvent("esx:giveInventoryItem", ...) directly.
+            -- SpamCheck() below is client-only and bypassable; route through the
+            -- server-side rate limiter in server/spam_guard.lua instead.
+            TriggerServerEvent("Unique_inventory:giveItem", GetPlayerServerId(cP), type, data.item, data.amount)
             AS.count = AS.count + 1
         end, aPlayers, data)
     end
@@ -1002,7 +1008,11 @@ RegisterNUICallback("droparItem", function(data)
         end
         -- -- if SpamCheck() then return end
      
-                TriggerServerEvent("esx:removeInventoryItem", type, data.item, data.amount, data.serial)
+                -- FIX: was TriggerServerEvent("esx:removeInventoryItem", ...) directly.
+                -- AlreadyDroped below is a client-only counter and bypassable with a
+                -- mod; server/spam_guard.lua now enforces the same 3-per-2-minutes
+                -- limit for real, server-side.
+                TriggerServerEvent("Unique_inventory:dropItem", type, data.item, data.amount, data.serial)
                 dPN.closeInventoryPlayer()
                 Wait(100)
                 TriggerEvent('openInventoryHud')
