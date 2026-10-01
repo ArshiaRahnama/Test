@@ -258,6 +258,15 @@ textarea{resize:vertical;min-height:90px;line-height:1.9}
 .app .ahead{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}
 .app h3{font-size:1.05rem;direction:ltr;text-align:right}.app h3 small{color:var(--mut);font-weight:400;font-size:.78rem;margin:0 10px;direction:rtl;display:inline-block}
 .tag.pending{color:var(--gold);border-color:#ffc10766}.tag.accepted{color:#3ddc84;border-color:#3ddc8466}.tag.rejected{color:#ff8a8a;border-color:#ff6b6b66}.tag.cancelled{color:var(--mut2)}
+.tksum{display:flex;gap:10px;margin:18px 0 4px}
+.tksum .tag{padding:6px 16px;font-size:.82rem}
+.tksum .tag b{font-weight:800;margin-inline-start:6px}
+.tkrow{position:relative;border-inline-start:3px solid var(--line2)}
+.tkrow b{flex:1}
+.tkrow.st-open{border-inline-start-color:#ffc107}
+.tkrow.st-answered{border-inline-start-color:#3ddc84}
+.tkrow.st-closed{border-inline-start-color:var(--mut2)}
+.tkid{color:var(--mut2);font-size:.8rem;font-weight:700;margin-inline-start:6px}
 .app details{border-top:1px solid var(--line2);padding-top:10px}.app summary{cursor:pointer;color:var(--gold);font-size:.85rem}
 .qa{display:grid;gap:10px;margin-top:10px}.qa b{display:block;font-size:.8rem;color:var(--mut)}.qa p{font-size:.92rem;white-space:pre-line}
 .reply{padding:12px 16px;border-radius:12px;background:#ffc10710;border:1px solid #ffc10733;font-size:.9rem}

@@ -915,10 +915,16 @@ function app_card(array $x, bool $review = false, bool $mine = true): void {
     <label>توضیحات<textarea name="body" rows="4" maxlength="2000" required></textarea></label>
     <button class="btn pri">ارسال تیکت</button></form>
   <?php $q = $db->prepare('SELECT t.*,u.fullname FROM web_tickets t JOIN web_accounts u ON u.id=t.user_id ' . ($admin ? '' : 'WHERE t.user_id=? ') . 'ORDER BY t.id DESC LIMIT 100');
-        $q->execute($admin ? [] : [$u['id']]); $rows = $q->fetchAll(); ?>
-  <div class="list"><?php foreach ($rows as $t): ?>
-    <a class="row" href="dashboard.php?p=ticket&id=<?= (int)$t['id'] ?>"><b>#<?= (int)$t['id'] ?> <?= e($t['subject']) ?></b>
-      <?= $admin ? '<small>' . e($t['fullname']) . '</small>' : '' ?><span class="tag <?= e($t['status']) ?>"><?= $st[$t['status']] ?></span></a>
+        $q->execute($admin ? [] : [$u['id']]); $rows = $q->fetchAll();
+        $cOpen = 0; $cClosed = 0; foreach ($rows as $r) { if ($r['status'] === 'closed') $cClosed++; else $cOpen++; } ?>
+  <div class="tksum"><span class="tag open">باز <b><?= $cOpen ?></b></span><span class="tag closed">بسته <b><?= $cClosed ?></b></span></div>
+  <div class="list tklist"><?php foreach ($rows as $t): ?>
+    <a class="row tkrow st-<?= e($t['status']) ?>" href="dashboard.php?p=ticket&id=<?= (int)$t['id'] ?>">
+      <b><?= e($t['subject']) ?></b>
+      <?= $admin ? '<small>' . e($t['fullname']) . '</small>' : '' ?>
+      <span class="tag <?= e($t['status']) ?>"><?= $st[$t['status']] ?></span>
+      <span class="tkid">#<?= (int)$t['id'] ?></span>
+    </a>
   <?php endforeach; if (!$rows) echo '<p class="mut">هنوز تیکتی نساخته‌ای.</p>'; ?></div>
 
 <?php elseif ($p === 'ticket' && ($t = ticket_of((int)($_GET['id'] ?? 0), $u))): ?>
