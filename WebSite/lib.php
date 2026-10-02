@@ -53,6 +53,8 @@ const CFG = [
   'roles' => ['superadmin' => 'مدیر ارشد', 'admin' => 'ادمین', 'moderator' => 'مدیر', 'mod' => 'مدیر', 'gm' => 'گیم مستر', 'owner' => 'مالک'],
   // رنک‌هایی که توی صفحه‌ی کادر نمایش داده می‌شن (permission_level جدول users؛ همون اسم‌های Config_Shared.Rank در Unique_AdminPanel).
   // سطحِ بین دو رنک به رنکِ پایین‌تر گرد می‌شه. هر کس با permission_level کمتر از team_min_perm توی صفحه‌ی کادر نمیاد.
+  // کلید مخفی برای اسکریپت‌های داخل بازی (صدور کد /getcode و تحویل خرید‌ها) — حتماً مقدار تصادفی و طولانی بذار.
+  'api_key' => '',
   'team_min_perm' => 9,
   // حداقل permission_level برای دسترسی مدیریتی داشبورد (بررسی درخواست‌ها، تیکت‌ها، لیست حساب‌ها)
   'dash_admin_perm' => 9,
@@ -70,6 +72,7 @@ const CFG = [
 
 session_set_cookie_params(['httponly' => true, 'samesite' => 'Lax']);
 session_start();
+require_once __DIR__ . '/inc/ext.php';
 
 /* ===== اتصال دیتابیس با فال‌بک امن ===== */
 function db(): PDO {
@@ -129,6 +132,7 @@ function site_install(PDO $p, bool $my): void {
   // خصومتِ بین دو گنگ — جدولِ کاملاً جدا از gang_alliances خودِ اسکریپت گنگ، که خصومت با اتحاد قاطی نشه
   $p->exec("CREATE TABLE IF NOT EXISTS web_gang_wars(id $pk, gang_a $t NOT NULL, gang_b $t NOT NULL, declared_by_name $t NOT NULL, status $t NOT NULL DEFAULT 'active', created INT NOT NULL)$tail");
   $p->exec("CREATE TABLE IF NOT EXISTS web_rate(k $t NOT NULL PRIMARY KEY, cnt INT NOT NULL, ws INT NOT NULL)$tail");
+  ext_install($p, $my);
   if (!$my) {
     // در سرور واقعی این جدول رو ریسورس Unique_Login (sql/install.sql) می‌سازه؛ اینجا فقط برای حالت دمو خالی ساخته می‌شه (هیچ حساب پیش‌فرضی وجود نداره)
     $p->exec("CREATE TABLE IF NOT EXISTS login_users(id $pk, username TEXT NOT NULL UNIQUE, password TEXT NOT NULL, password_salt TEXT NOT NULL DEFAULT '', phone TEXT UNIQUE, license TEXT NOT NULL UNIQUE, device_license TEXT, security_hold INT NOT NULL DEFAULT 0, created_at TEXT DEFAULT CURRENT_TIMESTAMP)");
@@ -296,7 +300,7 @@ function me(): ?array {
   $db = db();
   $q = $db->prepare('SELECT * FROM login_users WHERE id=?'); $q->execute([$_SESSION['lid']]); $lu = $q->fetch();
   $q = $db->prepare('SELECT * FROM web_accounts WHERE id=? AND login_id=?'); $q->execute([$_SESSION['uid'], $_SESSION['lid']]); $w = $q->fetch();
-  if (!$lu || !$w || (int)$lu['security_hold'] === 1) { $cache = false; return null; }
+  if (!$lu || !$w || (int)$lu['security_hold'] === 1 || !dev_valid()) { $cache = false; return null; }
   $g = game_profile($lu); $perm = $g ? (int)$g['permission_level'] : 0;
   $role = $perm >= (int)CFG['dash_admin_perm'] ? 'admin' : 'user';
   $name = display_name($lu, $g); $gender = $g && $g['sex'] === 'f' ? 'مونث' : 'مذکر';

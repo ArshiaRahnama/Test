@@ -1084,3 +1084,25 @@ Config.Stores = {
         }
     },
 }
+
+-------------------------------------------------------------------
+-- FIX (requested): a boss using "manage uniform" needs to be able to pick
+-- ANY clothing item to define the job's uniform, even ones blockedClothes
+-- above hides from the public in the regular shops - the shops' own
+-- blockedClothes tables stay exactly as configured for everyone else.
+-- This is a synthetic "store" (not listed in Config.Stores, has no coords/
+-- ped/blip, never shown to the public) with every category enabled, no
+-- blockedClothes, and price 0 so picking a uniform never charges the
+-- boss. Opened via exports('OpenManagementStore', ...) in client.lua -
+-- see esx_society/client/main.lua's uniform-management menu for the
+-- caller.
+-------------------------------------------------------------------
+Config.ManagementStore = {
+    price = 0,
+    categories = {
+        ['masks'] = true, ['hats'] = true, ['torsos'] = true, ['bproofs'] = true,
+        ['pants'] = true, ['shoes'] = true, ['chains'] = true, ['glasses'] = true,
+        ['watches'] = true, ['ears'] = true, ['bags'] = true,
+    },
+    blockedClothes = { ['male'] = {}, ['female'] = {} },
+}

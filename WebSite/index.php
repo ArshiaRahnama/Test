@@ -191,7 +191,7 @@ $J=JSON_UNESCAPED_UNICODE|JSON_HEX_TAG|JSON_HEX_AMP;
    <div><b data-n="<?=$onlineForces?>"><?=$onlineForces?></b><span>نیروی آنلاین ارگان‌ها</span></div>
    <div><b data-n="<?=count($ST['depts'])?>"><?=count($ST['depts'])?></b><span>ارگان رسمی</span></div>
   </div>
-  <a class="btn gold" href="join.php">مشاهده عضوگیری و ارگان‌ها ←</a>
+  <?php if (FEATURES['join']): ?><a class="btn gold" href="join.php">مشاهده عضوگیری و ارگان‌ها ←</a><?php endif; ?>
  </div>
 </div></section>
 </main>

@@ -25,6 +25,9 @@ server_scripts {
     '@oxmysql/lib/MySQL.lua',
     'server/main.lua',
     'config.lua',
+    'server/discord_ext.lua', -- Discord v7 (after config.lua so Config.DiscordExt exists)
+    'server/discord_ext2.lua', -- Discord v8 (roles, invites, stage, templates ...)
+    'server/discord_ext3.lua', -- Discord v9 (exports used by esx_uniquejobs: court / warrants / CAD)
 }
 
 ui_page "html/index.html"

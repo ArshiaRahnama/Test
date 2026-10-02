@@ -445,7 +445,12 @@ function OpenVehicleSpawnerMenu_cia(station, partNum)
 							local playerPed = PlayerPedId()
 
 							local function requestPlate()
-								local plate = lib.inputDialog('Enter Vehicle Plate', {'Plate (5 characters)'}, {max = 6})
+								-- FIX (requested): was lib.inputDialog('Enter Vehicle Plate', ...) -
+								-- manual plate entry. Now derives the plate from the player's unit
+								-- callsign instead (client/unit_plate_helper.lua) - tells them to make a
+								-- unit first (/unit) if they don't have one, same (table-with-one-string
+								-- or nil) return shape, so everything below this line is unchanged.
+								local plate = GetUnitPlateOrWarn()
 								if plate and plate[1] then
 									plate[1] = string.upper(plate[1])
 
@@ -2472,7 +2477,12 @@ Citizen.CreateThread(function()
 				-- many nested submenus that don't reliably signal back when closed, so
 				-- nil'ing it here made the E key stop working until you walked out of
 				-- the marker and back in. Only clear it for genuine one-shot actions.
-				if CurrentAction ~= 'boss_actions' and CurrentAction ~= 'menu_boss_actions' then
+				-- FIX (requested): 'menu_armory' is also a marker-driven state (set by
+				-- hasEnteredMarker, cleared by hasExitedMarker), same as menu_boss_actions
+				-- just above. Clearing it here forced walking out of the marker and back
+				-- in to reopen the armory after closing the menu once - excluded it from
+				-- the reset for the same reason menu_boss_actions already was.
+				if CurrentAction ~= 'boss_actions' and CurrentAction ~= 'menu_boss_actions' and CurrentAction ~= 'menu_armory' then
 					CurrentAction = nil
 				end
 			end

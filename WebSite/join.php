@@ -1,5 +1,5 @@
 <?php
-require __DIR__."/lib.php"; $ACTIVE='join'; $ST=site_stats();
+require __DIR__."/lib.php"; if (!FEATURES['join']) go('index.php'); $ACTIVE='join'; $ST=site_stats();
 $J=JSON_UNESCAPED_UNICODE|JSON_HEX_TAG|JSON_HEX_AMP;
 $logged=(bool)me(); $open=count(array_filter($ST['gangs'],fn($g)=>$g[2])); $online=array_sum(array_map(fn($d)=>$d[1],$ST['depts'])); $total=array_sum(array_map(fn($d)=>$d[2],$ST['depts']));
 ?>

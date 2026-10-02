@@ -1724,3 +1724,24 @@ end)
 
 exports('OpenManage', OpenManage)
 exports('OpenWardrobe', OpenWardrobe)
+
+-------------------------------------------------------------------
+-- FIX (requested): lets another resource (esx_society's boss "manage
+-- uniform" menu) open this same clothing-store UI in an unrestricted mode
+-- instead of esx_skin's bare editor - see Config.ManagementStore in
+-- config.lua for what "unrestricted" means here (every category, no
+-- blockedClothes, free). IsMenuOpened lets the caller poll for when the
+-- player has finished/cancelled, the exact same way esx_society already
+-- polled ESX.UI.Menu.IsOpen(...) for the old esx_skin editor.
+-------------------------------------------------------------------
+exports('OpenManagementStore', function()
+    -- isMenuOpened is normally set by SelectCategory right after it calls
+    -- OpenClothestore - bypassing that menu here, so set it ourselves (every
+    -- closing path - buyClothes, cancelClothes, etc. - already sets it back
+    -- to false on its own).
+    isMenuOpened = true
+    OpenClothestore(Config.ManagementStore)
+end)
+exports('IsMenuOpened', function()
+    return isMenuOpened
+end)

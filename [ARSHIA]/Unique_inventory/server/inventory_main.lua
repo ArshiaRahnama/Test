@@ -105,14 +105,26 @@ local BlockedWeapons = {
 -- armory). Now returns EVERY armory weapon, each tagged `authorized`, so the
 -- caller can decide to show-but-lock instead of hide - same UX as the gang
 -- inventory's lock badge.
+-- FIX (reported bug #2 - buying/depositing a weapon "doesn't go into the
+-- armory"): this used to fetch the weapon LIST from 'esx_policejob:
+-- getArmoryWeapons' unconditionally, no matter which job was actually
+-- viewing it. That event's own handler (server/police_main.lua) hardcodes
+-- 'society_police' as the datastore key - so EVERY job's armory view
+-- (FBI, sheriff, cia, ...) was actually showing the POLICE department's
+-- weapon stock, never their own. Buying a weapon as FBI correctly wrote
+-- to 'society_fbi' (esx_fbi_job:addArmoryWeapon already used the right
+-- key), it just never showed up because the list being displayed was
+-- reading a different store entirely. Reads the correct
+-- 'society_<thisPlayer'sJob>' store directly instead of going through a
+-- police-specific proxy event.
 local function getJobArmoryWeapons(src, xPlayer)
     local list = {}
     if not xPlayer or not xPlayer.job then return list end
     local grade, job = xPlayer.job.grade, xPlayer.job.name
 
-    TriggerEvent('esx_policejob:getArmoryWeapons', src, function(weapons)
+    TriggerEvent('esx_datastore:getSharedDataStore', 'society_' .. job, function(store)
+        local weapons = store.get('weapons') or {}
         TriggerEvent('esx_society:getWeapons', src, grade, job, function(authorizedWeapons)
-            if type(weapons) ~= 'table' then return end
             authorizedWeapons = type(authorizedWeapons) == 'table' and authorizedWeapons or {}
             for i = 1, #weapons do
                 if not BlockedWeapons[string.upper(weapons[i].name)] then
@@ -162,11 +174,18 @@ RegisterServerCallbackSafe("Parzival:getJobINV1", function(source, cb)
     cb(items)
 end)
 
+-- FIX (same root cause as getJobArmoryWeapons above - reported bug #2):
+-- was 'esx_policejob:getStockItems', hardcoded to 'society_police' no
+-- matter who was asking. Every non-police job's "Job Storage" view was
+-- silently showing police's stock items instead of their own. Reads the
+-- correct 'society_<thisPlayer'sJob>' shared inventory directly.
 RegisterServerCallbackSafe("Parzival:getJobINV2", function(source, cb)
     local xPlayer = ESX.GetPlayerFromId(source)
     local items = {}
-      
-    TriggerEvent('esx_policejob:getStockItems', source, function(itemsss)
+    if not xPlayer or not xPlayer.job then return cb(items) end
+
+    TriggerEvent('esx_addoninventory:getSharedInventory', 'society_' .. xPlayer.job.name, function(inventory)
+        local itemsss = (inventory and inventory.items) or {}
 
         local elements = {}
 
@@ -269,7 +288,7 @@ RegisterNetEvent('Parzival:GetJobItem', function(item, count)
     -- items instead of hiding them, so the server MUST reject a take request
     -- for one even if a modified client sends it anyway.
     if IsJobItemLocked(xPlayer, item) then
-        TriggerClientEvent('esx:showNotification', source, 'این آیتم برای رتبه‌ی شما قفل است')
+        TriggerClientEvent('esx:showNotification', source, 'This item is locked for your rank')
         return
     end
 
@@ -354,7 +373,7 @@ RegisterNetEvent('gangs:getFromInventory', function(itemType, itemName, count)
     if not xPlayer or not xPlayer.gang or type(count) ~= 'number' or count <= 0 then return end
 
     if IsGangItemLocked(xPlayer, itemName) then
-        TriggerClientEvent('esx:showNotification', source, 'این آیتم برای رتبه‌ی شما در گنگ قفل است')
+        TriggerClientEvent('esx:showNotification', source, 'This item is locked for your gang rank')
         return
     end
 

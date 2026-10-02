@@ -40,6 +40,7 @@ shared_scripts {
 client_scripts {
 
 	'client/unit_manager.lua',
+	'client/unit_plate_helper.lua',
 	'client/rob_manager.lua',
 	'client/panic_manager.lua',
 	'client/tracker_manager.lua',

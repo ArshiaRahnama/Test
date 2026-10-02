@@ -426,7 +426,12 @@ function OpenVehicleSpawnerMenu_weazel(station, partNum)
               local playerPed = PlayerPedId()
 
               local function requestPlate()
-                local plate = lib.inputDialog('Enter Vehicle Plate', {'Plate (6 characters)'}, {max = 6})
+                -- FIX (requested): was lib.inputDialog('Enter Vehicle Plate', ...) -
+                -- manual plate entry. Now derives the plate from the player's unit
+                -- callsign instead (client/unit_plate_helper.lua) - tells them to make a
+                -- unit first (/unit) if they don't have one, same (table-with-one-string
+                -- or nil) return shape, so everything below this line is unchanged.
+                local plate = GetUnitPlateOrWarn()
                 if plate and plate[1] then
                   plate[1] = string.upper(plate[1])
 

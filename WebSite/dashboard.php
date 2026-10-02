@@ -12,12 +12,20 @@ if (($_GET['ajax'] ?? '') === 'status') {
   exit;
 }
 
+require_once __DIR__ . '/inc/dash_ext.php';
 $db = db(); $p = $_GET['p'] ?? 'home'; $flash = ''; $ok = '';
+$off = array_keys(array_filter(['wallet' => !FEATURES['wallet'], 'shop' => !FEATURES['shop'], 'shopadm' => !FEATURES['shop'] && !FEATURES['wallet'], 'gallery' => !FEATURES['gallery'], 'galadm' => !FEATURES['gallery'], 'logs' => !FEATURES['logs']]));
+foreach (['review', 'users', 'growth', 'apps', 'notif', 'apply', 'org', 'gang', 'billing', 'garage', 'citizens', 'property'] as $fk) if (!FEATURES[$fk]) $off[] = $fk;
+if (in_array($p, $off, true)) $p = 'home';   // بخش‌های خاموش (برای روشن کردن: inc/ext.php ← FEATURES)
+if ($p === 'shop') go('shop.php');
+if ($p === 'gallery') go('gallery.php');
 $admin = $u['role'] === 'admin';
 
 // گنگ/ارگان کاراکترِ همین کاربر + رتبه‌ش + این‌که رتبه‌ش «باس» حساب می‌شه یا نه (bossaction گنگ / perm_employee_management ارگان)
 $myGang = ($u['game'] && !empty($u['game']['gang']) && !in_array($u['game']['gang'], ['none', 'nogang'], true)) ? (string)$u['game']['gang'] : null;
 $myOrg  = ($u['game'] && !empty($u['game']['job']) && $u['game']['job'] !== 'unemployed') ? (string)$u['game']['job'] : null;
+if (!FEATURES['gang']) $myGang = null;
+if (!FEATURES['org']) $myOrg = null;
 $gangGrades = $myGang ? gang_grades_of($myGang) : [];
 $myGangGrade = null; foreach ($gangGrades as $gr) if ((int)$gr['grade'] === (int)($u['game']['gang_grade'] ?? -1)) { $myGangGrade = $gr; break; }
 $isGangBoss = (bool)($myGangGrade['access']['bossaction'] ?? false);
@@ -27,7 +35,7 @@ $isOrgBoss = (bool)($myJobGrade['perm_employee_management'] ?? false);
 $myOrgGroup = $myOrg ? dept_group($myOrg) : null;
 $isLawOrg = in_array($myOrgGroup, ['doj', 'law'], true);   // فقط این گروه‌ها به پرونده‌های DOJ/Law دسترسی دارن
 
-if (!$admin && in_array($p, ['review', 'users', 'logs', 'growth'], true)) $p = 'home';
+if (!$admin && in_array($p, ['review', 'users', 'srvlogs', 'growth', 'shopadm', 'galadm'], true)) $p = 'home';
 if (!$myGang && $p === 'gang') $p = 'home';
 if (!$myOrg && $p === 'org') $p = 'home';
 
@@ -52,6 +60,8 @@ function org_group(string $label): string {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   csrf_check(); $a = $_POST['a'] ?? '';
+  dash_ext_post($u, $admin, $flash, $ok, $p);
+  if (($a === 'apply' && !FEATURES['apply']) || ($a === 'cancel_app' && !FEATURES['apps']) || ($a === 'decide' && !FEATURES['review'])) $a = '';
   if ($a === 'new') {
     $s = trim($_POST['subject'] ?? ''); $b = trim($_POST['body'] ?? '');
     // scope: ''=تیکت پشتیبانی معمولی، 'gang'=تیکت داخلی گنگ (فقط باسِ همون گنگ می‌بینه)، 'org'=تیکت داخلی ارگان
@@ -62,7 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($s === '' || $b === '' || mb_strlen($s) > 120) { $flash = 'موضوع و متن را کامل بنویس.'; $p = $backP; }
     else {
       $db->prepare('INSERT INTO web_tickets(user_id,subject,status,created,gang,org_job) VALUES(?,?,?,?,?,?)')->execute([$u['id'], $s, 'open', time(), $gangCol, $orgCol]);
-      $id = (int)$db->lastInsertId(); add_msg($id, $u['id'], $b); go("dashboard.php?p=ticket&id=$id");
+      $id = (int)$db->lastInsertId(); $cat = (string)($_POST['category'] ?? 'support'); $db->prepare('UPDATE web_tickets SET category=? WHERE id=?')->execute([isset(TICKET_CATS[$cat]) ? $cat : 'support', $id]); add_msg($id, $u['id'], $b); go("dashboard.php?p=ticket&id=$id");
     }
   } elseif ($a === 'reply' || $a === 'close') {
     $id = (int)($_POST['id'] ?? 0); $t = ticket_of($id, $u);
@@ -262,13 +272,18 @@ $I = [ // آیکون‌ها
  'logs' => '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/>',
  'growth' => '<path d="M3 3v18h18"/><path d="M18.7 8 12 14.7 8.7 11.4 3 17"/>',
 ];
+$I += ext_nav_icons();
 $unreadCount = unread_notif_count($u['id']);
 $nav = ['home' => 'نمای کلی', 'info' => 'کارت شهروندی', 'citizens' => 'جستجوی شهروندان'];
 if ($u['game']) { $nav['garage'] = 'گاراژ من'; $nav['property'] = 'املاک من'; $nav['billing'] = 'صورت‌حساب من'; }
+$nav += array_diff_key(['wallet' => 'کیف پول', 'shop' => 'فروشگاه', 'gallery' => 'گالری', 'logs' => 'لاگ‌ها'], array_flip($off));
 if ($myGang) $nav['gang'] = 'پنل گنگ من' . ($isGangBoss ? ' (باس)' : '');
 if ($myOrg) $nav['org'] = 'پنل ارگان من' . ($isOrgBoss ? ' (باس)' : '');
 $nav += ['apply' => 'ثبت درخواست عضویت', 'apps' => 'درخواست‌های من', 'tickets' => 'پشتیبانی (تیکت)', 'notif' => 'اعلان‌ها' . ($unreadCount ? " ($unreadCount)" : ''), 'settings' => 'تنظیمات'];
-$adm = ['review' => 'بررسی درخواست‌ها', 'users' => 'حساب‌های بازی', 'logs' => 'لاگ‌های سرور', 'growth' => 'رشد سایت'];
+$adm = ['review' => 'بررسی درخواست‌ها', 'users' => 'حساب‌های بازی', 'srvlogs' => 'لاگ‌های سرور', 'growth' => 'رشد سایت'];
+if (FEATURES['shop'] || FEATURES['wallet']) $adm['shopadm'] = 'مدیریت فروشگاه';
+if (FEATURES['gallery']) $adm['galadm'] = 'بررسی گالری';
+$nav = array_diff_key($nav, array_flip($off)); $adm = array_diff_key($adm, array_flip($off));
 $ico = fn($k) => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' . $I[$k] . '</svg>';
 function app_card(array $x, bool $review = false, bool $mine = true): void {
   $b = json_decode($x['body'], true) ?: []; $g = $x['kind'] === 'org' ? org_group($x['target']) : 'گنگ'; ?>
@@ -355,8 +370,8 @@ function app_card(array $x, bool $review = false, bool $mine = true): void {
   </script>
   <?php else: ?><div class="dcardx"><h3>هنوز کاراکتری به این حساب وصل نیست</h3><p class="mut">بعد از اولین ورود به سرور با همین حساب، اطلاعات کاراکترت (پول، سطح، شغل، گنگ) اینجا نمایش داده می‌شه.</p></div><?php endif; ?>
   <div class="kpis"><div class="kpi"><b><?= $tot ?></b><span>کل درخواست‌ها</span></div><div class="kpi"><b><?= $myPend ?></b><span>در انتظار بررسی</span></div><div class="kpi"><b><?= $acc ?></b><span>پذیرفته‌شده</span></div><div class="kpi"><b><?= $tk ?></b><span>تیکت باز</span></div></div>
-  <?php if ($admin && $revPend): ?><div class="dcardx" style="border-color:#ffc10755"><h3>🔔 <?= $revPend ?> درخواست منتظر بررسی توئه</h3><a class="btn gold" href="dashboard.php?p=review">رفتن به بررسی درخواست‌ها</a></div><?php endif; ?>
-  <div class="dcardx"><h3>شروع سریع</h3><div class="row-actions"><a class="btn pri" href="dashboard.php?p=apply">ثبت درخواست عضویت</a><a class="btn" href="join.php">دیدن گنگ‌ها و ارگان‌ها</a><a class="btn" href="dashboard.php?p=info">کارت شهروندی</a></div></div>
+  <?php if ($admin && $revPend && FEATURES['review']): ?><div class="dcardx" style="border-color:#ffc10755"><h3>🔔 <?= $revPend ?> درخواست منتظر بررسی توئه</h3><a class="btn gold" href="dashboard.php?p=review">رفتن به بررسی درخواست‌ها</a></div><?php endif; ?>
+  <div class="dcardx"><h3>شروع سریع</h3><div class="row-actions"><?php if (FEATURES['apply']): ?><a class="btn pri" href="dashboard.php?p=apply">ثبت درخواست عضویت</a><?php endif; ?><?php if (FEATURES['join']): ?><a class=\"btn\" href=\"join.php\">دیدن گنگ‌ها و ارگان‌ها</a><?php endif; ?><a class="btn" href="dashboard.php?p=info">کارت شهروندی</a></div></div>
   <?php if ($act): ?><div class="dcardx"><h3>آخرین فعالیت‌های حساب</h3><ul class="acts"><?php foreach ($act as $x): ?><li class="<?= in_array($x['action'], ['login_fail', 'security_hold'], true) ? 'bad' : '' ?>"><span><?= e(AUDIT[$x['action']] ?? $x['action']) ?></span><small><?= e(ago((int)strtotime((string)$x['created_at']))) ?></small></li><?php endforeach; ?></ul></div><?php endif; ?>
   <h3 style="margin:26px 0 12px">آخرین درخواست‌ها</h3>
   <?php $n = 0; foreach ($last as $x) { app_card($x); $n++; } if (!$n) echo '<div class="empty2">هنوز درخواستی ثبت نکردی. از «ثبت درخواست عضویت» شروع کن.</div>'; ?>
@@ -881,21 +896,6 @@ function app_card(array $x, bool $review = false, bool $mine = true): void {
       <td dir="ltr"><?= $x['phone'] ? e('0' . substr($x['phone'], 0, 3) . '***' . substr($x['phone'], -4)) : '—' ?></td><td><?= (int)$x['security_hold'] ? '<span class="tag rejected">قفل امنیتی</span>' : 'عادی' ?></td><td><?= e(date('Y/m/d', (int)strtotime((string)$x['created_at']))) ?></td></tr>
   <?php endforeach; if (!$rows) echo '<tr><td colspan="6" class="mut">حسابی پیدا نشد.</td></tr>'; ?></table></div>
 
-<?php elseif ($p === 'logs' && $admin): $lc = trim($_GET['c'] ?? ''); $lj = trim($_GET['j'] ?? ''); $lq = trim($_GET['q'] ?? ''); $logs = admin_logs($lc, $lj, $lq, 80); ?>
-  <h2>لاگ‌های سرور</h2><p class="lead">همه‌ی لاگ‌های ثبت‌شده توسط ریسورس <code>logs</code> (جدول <code>unique_logpanel</code>)، در یک‌جا.</p>
-  <form method="get" class="dcardx" style="display:flex;gap:10px;flex-wrap:wrap"><input type="hidden" name="p" value="logs">
-    <select name="c" style="width:auto"><option value="">همه‌ی دسته‌ها</option><?php foreach (admin_log_categories() as $cat): ?><option value="<?= e($cat) ?>" <?= $lc === $cat ? 'selected' : '' ?>><?= e($cat) ?></option><?php endforeach; ?></select>
-    <select name="j" style="width:auto"><option value="">همه‌ی ارگان‌ها</option><?php foreach (admin_log_jobs() as $jb): ?><option value="<?= e($jb) ?>" <?= $lj === $jb ? 'selected' : '' ?>><?= e(job_label($jb)) ?></option><?php endforeach; ?></select>
-    <input name="q" value="<?= e($lq) ?>" placeholder="جستجو در عنوان/متن/نام بازیکن" style="flex:1;min-width:200px">
-    <button class="btn pri">فیلتر</button>
-  </form>
-  <div class="list"><?php foreach ($logs as $lg): ?>
-    <div class="row"><b><?= $lg['pinned'] ? '📌 ' : '' ?><?= e($lg['title'] ?: $lg['category']) ?></b>
-      <small><?= e($lg['category']) ?><?= $lg['job'] ? ' · ' . e(job_label($lg['job'])) : '' ?><?= $lg['player_name'] ? ' · ' . e($lg['player_name']) : '' ?> · <?= e($lg['created_at']) ?></small>
-      <span class="mut" style="flex-basis:100%;margin-top:4px"><?= e(mb_substr((string)$lg['message'], 0, 200)) ?></span>
-    </div>
-  <?php endforeach; if (!$logs) echo '<p class="mut">لاگی با این فیلتر پیدا نشد.</p>'; ?></div>
-
 <?php elseif ($p === 'growth' && $admin): $gs = growth_series(14); ?>
   <h2>رشد سایت</h2><p class="lead">تعداد حساب/تیکت/درخواستِ جدید در ۱۴ روز اخیر.</p>
   <div class="dcardx" style="overflow-x:auto"><table class="utable"><tr><th>تاریخ</th><th>حساب جدید</th><th>تیکت جدید</th><th>درخواست جدید</th></tr>
@@ -908,25 +908,6 @@ function app_card(array $x, bool $review = false, bool $mine = true): void {
     <a class="row" href="<?= e($n['link'] ?: 'dashboard.php') ?>"><b><?= e($n['message']) ?></b><small><?= date('Y/m/d H:i', (int)$n['created']) ?></small></a>
   <?php endforeach; if (!$notifs) echo '<p class="mut">اعلانی نداری.</p>'; ?></div>
 
-<?php elseif ($p === 'tickets'): ?>
-  <h2>پشتیبانی (تیکت)</h2><p class="lead">برای سوال یا مشکل، از اینجا تیکت بفرست.</p>
-  <form method="post" class="dcardx"><?= csrf_field() ?><input type="hidden" name="a" value="new">
-    <label>موضوع<input name="subject" maxlength="120" required></label>
-    <label>توضیحات<textarea name="body" rows="4" maxlength="2000" required></textarea></label>
-    <button class="btn pri">ارسال تیکت</button></form>
-  <?php $q = $db->prepare('SELECT t.*,u.fullname FROM web_tickets t JOIN web_accounts u ON u.id=t.user_id ' . ($admin ? '' : 'WHERE t.user_id=? ') . 'ORDER BY t.id DESC LIMIT 100');
-        $q->execute($admin ? [] : [$u['id']]); $rows = $q->fetchAll();
-        $cOpen = 0; $cClosed = 0; foreach ($rows as $r) { if ($r['status'] === 'closed') $cClosed++; else $cOpen++; } ?>
-  <div class="tksum"><span class="tag open">باز <b><?= $cOpen ?></b></span><span class="tag closed">بسته <b><?= $cClosed ?></b></span></div>
-  <div class="list tklist"><?php foreach ($rows as $t): ?>
-    <a class="row tkrow st-<?= e($t['status']) ?>" href="dashboard.php?p=ticket&id=<?= (int)$t['id'] ?>">
-      <b><?= e($t['subject']) ?></b>
-      <?= $admin ? '<small>' . e($t['fullname']) . '</small>' : '' ?>
-      <span class="tag <?= e($t['status']) ?>"><?= $st[$t['status']] ?></span>
-      <span class="tkid">#<?= (int)$t['id'] ?></span>
-    </a>
-  <?php endforeach; if (!$rows) echo '<p class="mut">هنوز تیکتی نساخته‌ای.</p>'; ?></div>
-
 <?php elseif ($p === 'ticket' && ($t = ticket_of((int)($_GET['id'] ?? 0), $u))): ?>
   <h2>#<?= (int)$t['id'] ?> <?= e($t['subject']) ?> <span class="tag <?= e($t['status']) ?>"><?= $st[$t['status']] ?></span></h2>
   <?php $m = $db->prepare('SELECT m.*,u.fullname,u.role FROM web_msgs m JOIN web_accounts u ON u.id=m.user_id WHERE ticket_id=? ORDER BY m.id'); $m->execute([$t['id']]); ?>
@@ -937,11 +918,6 @@ function app_card(array $x, bool $review = false, bool $mine = true): void {
     <div class="row-actions" style="margin-top:10px"><button class="btn pri" name="a" value="reply">ارسال پاسخ</button><button class="btn" name="a" value="close" formnovalidate>بستن تیکت</button></div></form>
   <?php endif; ?>
 
-<?php elseif ($p === 'settings'): ?>
-  <h2>تنظیمات</h2><p class="lead">رمز حساب بازی و سایت یکیه؛ اینجا عوضش کنی، داخل بازی هم همون معتبره.</p>
-  <form method="post" class="dcardx" style="max-width:480px"><?= csrf_field() ?><input type="hidden" name="a" value="pass"><h3>تغییر رمز عبور</h3>
-    <label>رمز عبور فعلی<input type="password" name="old" dir="ltr" required autocomplete="current-password"></label>
-    <label>رمز عبور جدید<input type="password" name="new" dir="ltr" minlength="6" required autocomplete="new-password"></label><p class="hint">حداقل ۶ کاراکتر، شامل حداقل یک حرف انگلیسی و یک عدد.</p>
-    <button class="btn pri">تغییر رمز عبور</button></form>
+<?php elseif (in_array($p, DASH_EXT_PAGES, true)): dash_ext_page($p, $u, $admin); ?>
 <?php else: go('dashboard.php'); endif; ?>
 </main></div></body></html>

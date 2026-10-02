@@ -670,7 +670,7 @@ RegisterNUICallback("requestItemSecondInventory", function(data, cb)
                         slots = 600,
                         tamanhoChest = tonumber(20000),
                         tamanhoMyInv = tonumber(2000),
-                        nameHouse = event == "esx_inventoryhud:GetHouseItems" and "کمد خانه" or event == "esx_inventoryhud:getCargoStorage" and "Cargo Inventory" or "کمد وسایل"
+                        nameHouse = event == "esx_inventoryhud:GetHouseItems" and "House Storage" or event == "esx_inventoryhud:getCargoStorage" and "Cargo Inventory" or "Job Storage"
                     })
                 -- end
                 end)
@@ -692,7 +692,7 @@ RegisterNUICallback("requestItemSecondInventory", function(data, cb)
                             slots = 600,
                             tamanhoChest = tonumber(20000),
                             tamanhoMyInv = tonumber(2000),
-                            nameHouse = 'اسلحه خانه'
+                            nameHouse = 'Armory'
                         })
                     -- end
                     end)
@@ -715,7 +715,7 @@ RegisterNUICallback("requestItemSecondInventory", function(data, cb)
                                 slots = 600,
                                 tamanhoChest = tonumber(20000),
                                 tamanhoMyInv = tonumber(2000),
-                                nameHouse = 'کمد وسایل'
+                                nameHouse = 'Job Storage'
                             })
                         -- end
                         end)
@@ -737,7 +737,7 @@ RegisterNUICallback("requestItemSecondInventory", function(data, cb)
                             slots = 600,
                             tamanhoChest = tonumber(20000),
                             tamanhoMyInv = tonumber(2000),
-                            nameHouse = event == "esx_inventoryhud:GetHouseItems" and "کمد خانه" or event == "esx_inventoryhud:getCargoStorage" and "Cargo Inventory" or "کمد وسایل"
+                            nameHouse = event == "esx_inventoryhud:GetHouseItems" and "House Storage" or event == "esx_inventoryhud:getCargoStorage" and "Cargo Inventory" or "Job Storage"
                         })
                     -- end
                     end)
