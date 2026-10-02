@@ -18,7 +18,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     elseif ($row && totp_check($row['secret'], $_POST['totp'])) { login_finish($lu); go('dashboard.php'); }
     else { rate_hit('totp:' . $pre['lid'], 600); $err = 'کد Authenticator نادرست است.'; }
   } elseif (!empty($_POST['website'])) { $err = 'درخواست نامعتبر.'; }                // honeypot
-  elseif (!captcha_ok($_POST['cap'] ?? '')) { $err = 'پاسخ کپچا نادرست است.'; }
   else {
     $u = null;
     if ($mode === 'code') {
@@ -33,7 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
   }
 }
-$cap = captcha_new(); $needTotp = $pre && time() < $pre['exp'];
+$needTotp = $pre && time() < $pre['exp'];
 ?><!DOCTYPE html>
 <html lang="fa" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>ورود | <?= e(CFG['name']) ?></title><meta name="theme-color" content="#050505">
@@ -62,9 +61,6 @@ $cap = captcha_new(); $needTotp = $pre && time() < $pre['exp'];
     <?php else: ?>
     <label>شماره تلفن یا نام کاربری<input name="ident" dir="ltr" placeholder="09123456789" required autofocus autocomplete="username" value="<?= e($_POST['ident'] ?? '') ?>"></label>
     <label>رمز عبور<input type="password" name="pass" dir="ltr" required autocomplete="current-password"></label>
-    <?php endif; ?>
-    <?php /* کپچا فعلاً خاموشه؛ برای فعال‌سازی، FEATURES['captcha'] را در inc/ext.php برابر true قرار دهید. */ if (FEATURES['captcha']): ?>
-    <label>من ربات نیستم: <b dir="ltr" style="color:var(--gold)"><?= e($cap) ?> = ?</b><input name="cap" dir="ltr" inputmode="numeric" maxlength="3" required autocomplete="off"></label>
     <?php endif; ?>
     <button class="btn pri wide">ورود</button>
   </form>

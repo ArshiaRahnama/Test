@@ -44,19 +44,6 @@ CREATE TABLE IF NOT EXISTS `web_msgs` (
   `created`   INT NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- درخواست‌های عضویت گنگ/ارگان که از داشبورد ثبت می‌شن
-CREATE TABLE IF NOT EXISTS `web_apps` (
-  `id`      INT AUTO_INCREMENT PRIMARY KEY,
-  `user_id` INT NOT NULL,
-  `kind`    VARCHAR(190) NOT NULL,   -- gang | org
-  `target`  VARCHAR(190) NOT NULL,
-  `body`    TEXT NOT NULL,           -- JSON: پیش‌زمینه، دلیل، سوابق، ساعت فعالیت
-  `status`  VARCHAR(190) NOT NULL,   -- pending | accepted | rejected | cancelled
-  `note`    TEXT NULL,
-  `created` INT NOT NULL,
-  `updated` INT NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
 SET FOREIGN_KEY_CHECKS = 1;
 
 -- =====================================================================
@@ -64,7 +51,7 @@ SET FOREIGN_KEY_CHECKS = 1;
 --  می‌خونه (باید از قبل روی همین دیتابیس موجود باشن):
 --    users(identifier, firstname, lastname, level, playtime, job,
 --          `group`, last_seen, ...)   -> شهروندان، برترین‌ها، دپارتمان‌ها، کادر
---    gangs(name, level, disband)      -> بخش عضوگیری/گنگ‌ها
+--    gangs(name, level, disband)      -> آمار گنگ‌ها
 --  اگه اسم دیتابیس یا ستون‌ها روی سرور خودت فرق داره، در lib.php
 --  بخش CFG['mysql'] و تابع site_stats() رو مطابق شماتیک خودت تنظیم کن.
 -- =====================================================================
