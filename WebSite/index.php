@@ -1,7 +1,6 @@
 <?php
 require __DIR__."/lib.php"; $ACTIVE='home';
 $ST=site_stats(); $N=$ST['citizens']; $SC=$ST['staffCount']; $GC=$ST['gangCount'];
-$openGangs=count(array_filter($ST['gangs'],fn($g)=>$g[2])); $onlineForces=array_sum(array_map(fn($d)=>$d[1],$ST['depts']));
 $J=JSON_UNESCAPED_UNICODE|JSON_HEX_TAG|JSON_HEX_AMP;
 ?>
 <!DOCTYPE html>
@@ -18,7 +17,8 @@ $J=JSON_UNESCAPED_UNICODE|JSON_HEX_TAG|JSON_HEX_AMP;
 <link rel="canonical" href="https://example.com/index.php">
 <meta property="og:url" content="https://example.com/index.php">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M16 8v28a16 16 0 0 0 32 0V8' fill='none' stroke='%23ffc107' stroke-width='11' stroke-linecap='round'/%3E%3C/svg%3E">
-<link rel="stylesheet" href="style.css">
+<link rel="preload" href="fonts/Vazirmatn.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="<?=asset('style.css')?>">
 <style>
 /* ===== هیرو ===== */
 .hero{position:relative;min-height:100vh;display:grid;place-items:center;text-align:center;padding:140px 0 170px;overflow:hidden;background:radial-gradient(ellipse 80% 60% at 50% -10%,#b8860b66,transparent 62%),radial-gradient(ellipse 50% 40% at 85% 30%,#e6a40026,transparent 70%),var(--bg)}
@@ -107,6 +107,14 @@ $J=JSON_UNESCAPED_UNICODE|JSON_HEX_TAG|JSON_HEX_AMP;
 .bstats b{display:block;font-size:1.7rem;color:var(--gold);line-height:1.5}
 .bstats span{font-size:.8rem;color:var(--mut)}
 @media(max-width:800px){.guide{grid-template-columns:1fr}.moon{width:80px;height:80px}.band{padding:38px 20px}.hero{padding-bottom:150px}}
+
+/* ===== ارگان‌ها ===== */
+.orgs{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px;margin:30px 0}
+.org{position:relative;padding:22px 18px 20px;border-radius:var(--r);background:linear-gradient(165deg,var(--panel),#0a0906);border:1px solid var(--line2);border-top:3px solid var(--c);transition:transform .25s var(--ease),box-shadow .25s}
+.org:hover{transform:translateY(-5px);box-shadow:0 18px 40px -14px #000c,0 0 0 1px color-mix(in srgb,var(--c) 30%,transparent)}
+.org h3{font-size:1.1rem;color:var(--c);direction:ltr;margin-bottom:16px}
+.org .chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.org .chips span{padding:6px 14px;border-radius:99px;font-size:.82rem;font-weight:700;direction:ltr;color:var(--text);background:color-mix(in srgb,var(--c) 12%,transparent);border:1px solid color-mix(in srgb,var(--c) 40%,transparent)}
 </style>
 </head>
 <body>
@@ -118,7 +126,8 @@ $J=JSON_UNESCAPED_UNICODE|JSON_HEX_TAG|JSON_HEX_AMP;
  <div class="stars"></div><div class="moon"></div>
  <svg class="city" viewBox="0 0 1200 190" preserveAspectRatio="none" aria-hidden="true"><path fill="#17130a" d="M0 190V120h60V80h50v50h40V60h60v70h50V100h70v30h60V50h55v80h50V90h60v40h70V70h60v60h50V95h70v35h60V40h50v90h60V85h60v45h70V110h60v80z"/><path fill="#0a0906" d="M0 190v-40h90v-25h70v25h120v-35h80v35h140v-20h90v20h160v-30h100v30h150v-25h90v25h110z"/></svg>
  <div class="road" aria-hidden="true"><span class="car r"></span><span class="car y" style="animation-delay:-4s"></span><span class="car r" style="animation-delay:-5s;animation-duration:10s"></span></div>
- <div class="wrap in">
+ <div class="wrap in hero-grid">
+ <div class="hero-copy">
   <span class="badge">GTA V ROLEPLAY · VMP</span>
   <div id="live-pill" class="live-pill" hidden><span class="dot"></span><b id="live-count">–</b><span>/</span><span id="live-max">–</span><span> آنلاین همین الان</span></div>
   <h1><span class="l1">به شهرِ</span><span class="gt" data-name>یونیک</span><span class="l1" style="margin:0"> خوش اومدی</span></h1>
@@ -129,12 +138,23 @@ $J=JSON_UNESCAPED_UNICODE|JSON_HEX_TAG|JSON_HEX_AMP;
   </div>
   <div class="stats"><div><b data-n="<?=$N?>"><?=$N?></b><span>شهروند</span></div><div><b data-n="<?=$SC?>"><?=$SC?></b><span>عضو کادر</span></div><div><b data-n="<?=$GC?>"><?=$GC?></b><span>گنگ فعال</span></div></div>
  </div>
+ <div class="hero-art" aria-hidden="true">
+  <svg class="arcs" viewBox="0 0 600 600" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="300" cy="300" r="120"/><circle cx="300" cy="300" r="170" opacity=".7"/><circle cx="300" cy="300" r="225" opacity=".5"/><circle cx="300" cy="300" r="285" opacity=".3"/></svg>
+  <i class="ring r1"></i><i class="ring r2"></i><i class="ring r3"></i>
+  <b class="plus p1">+</b><b class="plus p2">+</b><b class="plus p3">+</b>
+  <?php if (is_file(__DIR__.'/images/hero.png')): ?>
+   <img class="hero-img" src="images/hero.png" alt="" width="640" height="720" fetchpriority="high">
+  <?php else: ?>
+   <svg class="hero-emblem" viewBox="0 0 64 64"><defs><linearGradient id="he" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffe08a"/><stop offset="1" stop-color="#d18f00"/></linearGradient></defs><path d="M16 8v28a16 16 0 0 0 32 0V8" fill="none" stroke="url(#he)" stroke-width="9" stroke-linecap="round"/></svg>
+  <?php endif; ?>
+ </div>
+ </div>
  <a class="scrolldown" href="#top"><span>رنک سرور</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4v15M6 13l6 6 6-6"/></svg></a>
 </section>
 
 <div class="ticker" aria-hidden="true"><div class="tk">
 <?php for($k=0;$k<2;$k++) foreach($ST['top'] as $cat=>$rows) foreach(array_slice($rows,0,5) as $i=>$r): ?>
- <span><em><?=$i==0?'👑':'#'.($i+1)?></em><i><?=e($cat)?></i><b><?=e($r[0])?></b><?=e($r[1])?></span>
+ <span><em><?=$i==0?'<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-label="رتبه اول"><path d="M3 18h18l1-11-5 4-5-7-5 7-5-4 1 11Z"/></svg>':'#'.($i+1)?></em><i><?=e($cat)?></i><b><?=e($r[0])?></b><?=e($r[1])?></span>
 <?php endforeach; ?>
 </div></div>
 
@@ -146,7 +166,7 @@ $J=JSON_UNESCAPED_UNICODE|JSON_HEX_TAG|JSON_HEX_AMP;
  <div class="rankwrap">
   <div class="podium" id="podium"></div>
   <div class="list" id="list" style="text-align:start"></div>
-  <p class="rk-note">رنک‌ها به‌صورت خودکار از دیتابیس سرور به‌روز می‌شن.</p>
+  <p class="rk-note">رنک‌ها به‌صورت خودکار و لحظه‌ای به‌روز می‌شن.</p>
  </div>
 </div></section>
 
@@ -169,29 +189,20 @@ $J=JSON_UNESCAPED_UNICODE|JSON_HEX_TAG|JSON_HEX_AMP;
  </div>
 </div></section>
 
-<section id="why"><div class="wrap rv">
- <div class="eyebrow">چرا <span data-name>یونیک</span>؟</div>
- <h2>شهری که با هر تصمیم تو عوض می‌شه</h2>
- <p class="sub">یه محیط رول‌پلی جدی با اقتصاد پویا، قانون واقعی و شهروندایی که هر شب داستان خودشونو می‌سازن.</p>
- <div class="grid">
-  <div class="card"><div class="ictile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="11" rx="4"/><circle cx="8" cy="12.5" r="1.6"/><circle cx="16" cy="12.5" r="1.6"/></svg></div><h3>بدون نیاز به استیم</h3><p>با VMP وارد شو و بدون خرید نسخه‌ی اصلی GTA V بازی کن.</p></div>
-  <div class="card"><div class="ictile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg></div><h3>دسترسی آسان به سرور</h3><p>سرور رو از لیست انتخاب کن و بدون مراحل پیچیده وارد شهر شو.</p></div>
-  <div class="card"><div class="ictile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.4 8.4 0 0 1-8.4 8.4 8.6 8.6 0 0 1-3.8-.9L3 20l1-5.6a8.4 8.4 0 0 1-.9-3.9A8.4 8.4 0 0 1 11.5 2 8.6 8.6 0 0 1 21 11.5Z"/></svg></div><h3>کامیونیتی فعال دیسکورد</h3><p>اخبار، رویدادها و اطلاعیه‌های مهم شهر رو دنبال کن.</p></div>
-  <div class="card"><div class="ictile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg></div><h3>پشتیبانی ۲۴ ساعته</h3><p>تیم پشتیبانی از طریق تیکت دیسکورد جواب سوالات و مشکلاتته.</p></div>
- </div>
-</div></section>
-
 <section style="padding-top:20px"><div class="wrap rv">
  <div class="band">
   <div class="eyebrow" style="justify-content:center">عضوگیری و دپارتمان</div>
   <h2>جایگاهتو تو شهر پیدا کن</h2>
-  <p class="sub">گنگ‌ها و ارگان‌های رسمی شهر (Department Of Justice، Law Enforcement و Organ Services) دنبال نیروی جدیدن. همه‌چیز رو تو یه صفحه ببین و از داشبورد درخواست بده.</p>
-  <div class="bstats">
-   <div><b data-n="<?=$openGangs?>"><?=$openGangs?></b><span>گنگ با عضوگیری باز</span></div>
-   <div><b data-n="<?=$onlineForces?>"><?=$onlineForces?></b><span>نیروی آنلاین ارگان‌ها</span></div>
-   <div><b data-n="<?=count($ST['depts'])?>"><?=count($ST['depts'])?></b><span>ارگان رسمی</span></div>
+  <p class="sub">کل ارگان‌ها نیروی جدید می‌گیرن و گنگ‌های فعال هم عضو می‌پذیرن. همه‌ی گزینه‌ها رو یه‌جا ببین و درخواستتو مستقیم از طریق دیسکورد رسمی یونیک ثبت کن.</p>
+  <div class="orgs">
+  <?php $gc=['doj'=>'#b48cff','law'=>'#7dd3fc','svc'=>'#3ddc84'];
+  foreach (CFG['org_groups'] as $gk => $g): $list=array_values(array_filter(CFG['depts'],fn($d)=>$d['group']===$gk)); if(!$list) continue; ?>
+   <div class="org" style="--c:<?=e($gc[$gk]??'#ffc107')?>">
+    <h3><?=e($g['label'])?></h3>
+    <div class="chips"><?php foreach ($list as $d): ?><span><?=e($d['label'])?></span><?php endforeach; ?></div>
+   </div>
+  <?php endforeach; ?>
   </div>
-  <a class="btn gold" href="join.php">مشاهده عضوگیری و ارگان‌ها ←</a>
  </div>
 </div></section>
 </main>

@@ -49,27 +49,21 @@ const CFG = [
     ['group' => 'svc', 'job' => 'weazel',    'label' => 'Weazel'],
   ],
 
-  // نگاشت مقدار ستون group به عنوان فارسی نمایشی
-  'roles' => ['superadmin' => 'مدیر ارشد', 'admin' => 'ادمین', 'moderator' => 'مدیر', 'mod' => 'مدیر', 'gm' => 'گیم مستر', 'owner' => 'مالک'],
-  // رنک‌هایی که توی صفحه‌ی کادر نمایش داده می‌شن (permission_level جدول users؛ همون اسم‌های Config_Shared.Rank در Unique_AdminPanel).
-  // سطحِ بین دو رنک به رنکِ پایین‌تر گرد می‌شه. هر کس با permission_level کمتر از team_min_perm توی صفحه‌ی کادر نمیاد.
+  // کلید مخفی برای اسکریپت‌های داخل بازی (صدور کد /getcode) — حتماً مقدار تصادفی و طولانی بذار.
+  'api_key' => '',
   'team_min_perm' => 9,
   // حداقل permission_level برای دسترسی مدیریتی داشبورد (بررسی درخواست‌ها، تیکت‌ها، لیست حساب‌ها)
   'dash_admin_perm' => 9,
   'perm_ranks' => [9 => 'Moderator', 10 => 'Supervisor', 11 => 'Administrator', 16 => 'Manager', 17 => 'Owner', 100 => 'Developer'],
-  // هر رنک یه بخش جدا توی صفحه‌ی کادر (از بالا به پایین)
-  'perm_tiers' => [
-    ['min' => 100, 'key' => 'dev',  'fa' => 'Developer',     'desc' => 'توسعه و زیرساخت شهر',            'color' => '#b48cff'],
-    ['min' => 17,  'key' => 'own',  'fa' => 'Owner',         'desc' => 'مالکیت و تصمیم‌گیری نهایی',       'color' => '#ff6b6b'],
-    ['min' => 16,  'key' => 'mgr',  'fa' => 'Manager',       'desc' => 'مدیریت کل تیم و سرور',           'color' => '#ff9f43'],
-    ['min' => 11,  'key' => 'adm',  'fa' => 'Administrator', 'desc' => 'اداره‌ی امور اجرایی و ادمین‌ها', 'color' => '#ffc107'],
-    ['min' => 10,  'key' => 'sup',  'fa' => 'Supervisor',    'desc' => 'نظارت بر عملکرد کادر',           'color' => '#7dd3fc'],
-    ['min' => 9,   'key' => 'mod',  'fa' => 'Moderator',     'desc' => 'رسیدگی به گزارش‌ها و تخلفات',    'color' => '#3ddc84'],
-  ],
 ];
 
-session_set_cookie_params(['httponly' => true, 'samesite' => 'Lax']);
+$https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
+ini_set('session.use_strict_mode', '1'); ini_set('session.use_only_cookies', '1');
+session_set_cookie_params(['httponly' => true, 'samesite' => 'Lax', 'secure' => $https]);
 session_start();
+if (!headers_sent()) { header('X-Content-Type-Options: nosniff'); header('Referrer-Policy: strict-origin-when-cross-origin'); header('X-Frame-Options: SAMEORIGIN'); header('Permissions-Policy: camera=(), microphone=(), geolocation=()'); }
+function asset(string $f): string { $p = __DIR__ . '/' . $f; return $f . '?v=' . (is_file($p) ? filemtime($p) : 1); }
+require_once __DIR__ . '/inc/ext.php';
 
 /* ===== اتصال دیتابیس با فال‌بک امن ===== */
 function db(): PDO {
@@ -111,27 +105,19 @@ function site_install(PDO $p, bool $my): void {
   $tail = $my ? ' ENGINE=InnoDB DEFAULT CHARSET=utf8mb4' : '';
   // جداول سایت با پیشوند web_ ساخته می‌شن تا با جداول اصلی سرور (users, gangs, ...) قاطی نشن
   $p->exec("CREATE TABLE IF NOT EXISTS web_accounts(id $pk, phone $t NOT NULL UNIQUE, pass $t NOT NULL, fullname $t NOT NULL, gender $t NOT NULL, level INT NOT NULL DEFAULT 1, acc $t NOT NULL, cid $t NOT NULL, role $t NOT NULL DEFAULT 'user', created INT NOT NULL)$tail");
-  $p->exec("CREATE TABLE IF NOT EXISTS web_tickets(id $pk, user_id INT NOT NULL, subject $t NOT NULL, status $t NOT NULL, created INT NOT NULL)$tail");
+  $p->exec("CREATE TABLE IF NOT EXISTS web_tickets(id $pk, user_id INT NOT NULL, subject $t NOT NULL, status $t NOT NULL, created INT NOT NULL, category $t NULL)$tail");
+  try { $p->exec("ALTER TABLE web_tickets ADD COLUMN category $t NULL"); } catch (Throwable $e) { /* ستون از قبل هست */ }
   $p->exec("CREATE TABLE IF NOT EXISTS web_msgs(id $pk, ticket_id INT NOT NULL, user_id INT NOT NULL, body TEXT NOT NULL, created INT NOT NULL)$tail");
-  // درخواست‌های عضویت (گنگ / ارگان) که از داشبورد ثبت می‌شن
-  $p->exec("CREATE TABLE IF NOT EXISTS web_apps(id $pk, user_id INT NOT NULL, kind $t NOT NULL, target $t NOT NULL, body TEXT NOT NULL, status $t NOT NULL, note TEXT, created INT NOT NULL, updated INT NOT NULL)$tail");
   // اتصال پروفایلِ سایت به حساب بازی (login_users.id)
   try { $p->exec('ALTER TABLE web_accounts ADD COLUMN login_id INT NULL'); } catch (Throwable $e) { /* ستون از قبل هست */ }
-  // برچسب گنگ/ارگان روی تیکت‌ها — برای تیکت‌های داخلیِ گنگ یا ارگان که فقط باس همون گنگ/ارگان (+ ادمین) می‌بینه
-  try { $p->exec("ALTER TABLE web_tickets ADD COLUMN gang $t NULL"); } catch (Throwable $e) { /* ستون از قبل هست */ }
-  try { $p->exec("ALTER TABLE web_tickets ADD COLUMN org_job $t NULL"); } catch (Throwable $e) { /* ستون از قبل هست */ }
-  // اخبار وزیل‌نیوز که تو گالریِ سایت نشون داده می‌شن
-  $p->exec("CREATE TABLE IF NOT EXISTS web_news(id $pk, author_account_id INT NOT NULL, author_name $t NOT NULL, title $t NOT NULL, body TEXT NOT NULL, image_url TEXT, pinned INT NOT NULL DEFAULT 0, created INT NOT NULL)$tail");
-  // اعلان‌های داشبورد (تغییر رتبه، تایید/رد درخواست، جواب تیکت و ...)
-  $p->exec("CREATE TABLE IF NOT EXISTS web_notifications(id $pk, user_id INT NOT NULL, message $t NOT NULL, link $t, created INT NOT NULL, read_at INT)$tail");
-  // لاگ شفافیتِ اقدامات باس گنگ/ارگان — قابل دیدن برای اعضا
-  $p->exec("CREATE TABLE IF NOT EXISTS web_audit(id $pk, scope $t NOT NULL, scope_key $t NOT NULL, action $t NOT NULL, actor_name $t NOT NULL, target_name $t, detail $t, created INT NOT NULL)$tail");
-  // خصومتِ بین دو گنگ — جدولِ کاملاً جدا از gang_alliances خودِ اسکریپت گنگ، که خصومت با اتحاد قاطی نشه
-  $p->exec("CREATE TABLE IF NOT EXISTS web_gang_wars(id $pk, gang_a $t NOT NULL, gang_b $t NOT NULL, declared_by_name $t NOT NULL, status $t NOT NULL DEFAULT 'active', created INT NOT NULL)$tail");
   $p->exec("CREATE TABLE IF NOT EXISTS web_rate(k $t NOT NULL PRIMARY KEY, cnt INT NOT NULL, ws INT NOT NULL)$tail");
+  ext_install($p, $my);
   if (!$my) {
     // در سرور واقعی این جدول رو ریسورس Unique_Login (sql/install.sql) می‌سازه؛ اینجا فقط برای حالت دمو خالی ساخته می‌شه (هیچ حساب پیش‌فرضی وجود نداره)
     $p->exec("CREATE TABLE IF NOT EXISTS login_users(id $pk, username TEXT NOT NULL UNIQUE, password TEXT NOT NULL, password_salt TEXT NOT NULL DEFAULT '', phone TEXT UNIQUE, license TEXT NOT NULL UNIQUE, device_license TEXT, security_hold INT NOT NULL DEFAULT 0, created_at TEXT DEFAULT CURRENT_TIMESTAMP)");
+    // دیتابیس‌های قدیمیِ ریسورس ممکنه ستون password_salt نداشته باشن؛ اگه نبود خودکار اضافه می‌شه
+    try { $p->query('SELECT password_salt FROM login_users LIMIT 0'); }
+    catch (Throwable $e) { try { $p->exec('ALTER TABLE login_users ADD COLUMN password_salt ' . ($my ? "VARCHAR(64) NOT NULL DEFAULT ''" : "TEXT NOT NULL DEFAULT ''")); } catch (Throwable $e2) { error_log('[UniqueRP] password_salt migration failed: ' . $e2->getMessage()); } }
     // این‌ها فقط برای حالت دمو (وقتی به دیتابیس واقعی سرور وصل نیستیم) لازمن
     $p->exec("CREATE TABLE IF NOT EXISTS demo_top(id $pk, cat $t NOT NULL, name $t NOT NULL, val $t NOT NULL)");
     $p->exec("CREATE TABLE IF NOT EXISTS demo_gangs(id $pk, name $t NOT NULL, lvl INT NOT NULL, open INT NOT NULL)");
@@ -251,7 +237,7 @@ function game_login(string $ident, string $pass, ?string &$err = null): ?array {
     $q = $db->prepare('SELECT * FROM login_users WHERE username=? LIMIT 1'); $q->execute([$ident]); $u = $q->fetch() ?: null;
     if (!$u && ($ph = phone10($ident))) { $q = $db->prepare('SELECT * FROM login_users WHERE phone=? LIMIT 1'); $q->execute([$ph]); $u = $q->fetch() ?: null; }
   } catch (Throwable $e) { error_log('[UniqueRP] login_users lookup failed: ' . $e->getMessage()); $err = 'ورود موقتاً در دسترس نیست.'; return null; }
-  if (!$u || !hash_equals((string)$u['password'], game_hash($pass, (string)$u['password_salt']))) {
+  if (!$u || !hash_equals((string)$u['password'], game_hash($pass, (string)($u['password_salt'] ?? '')))) {
     rate_hit('lf-user:' . strtolower($ident), 900); rate_hit("lf-ip:$ip", 900); usleep(500000);
     $err = 'نام کاربری/شماره یا رمز عبور اشتباه است. (حساب فقط داخل بازی ساخته می‌شه.)'; return null;
   }
@@ -296,7 +282,7 @@ function me(): ?array {
   $db = db();
   $q = $db->prepare('SELECT * FROM login_users WHERE id=?'); $q->execute([$_SESSION['lid']]); $lu = $q->fetch();
   $q = $db->prepare('SELECT * FROM web_accounts WHERE id=? AND login_id=?'); $q->execute([$_SESSION['uid'], $_SESSION['lid']]); $w = $q->fetch();
-  if (!$lu || !$w || (int)$lu['security_hold'] === 1) { $cache = false; return null; }
+  if (!$lu || !$w || (int)$lu['security_hold'] === 1 || !dev_valid()) { $cache = false; return null; }
   $g = game_profile($lu); $perm = $g ? (int)$g['permission_level'] : 0;
   $role = $perm >= (int)CFG['dash_admin_perm'] ? 'admin' : 'user';
   $name = display_name($lu, $g); $gender = $g && $g['sex'] === 'f' ? 'مونث' : 'مذکر';
@@ -312,17 +298,10 @@ function me(): ?array {
 }
 function need_login(): array {
   if ($u = me()) return $u;
-  $_SESSION['next'] = basename($_SERVER['SCRIPT_NAME']) . ($_SERVER['QUERY_STRING'] ? '?' . $_SERVER['QUERY_STRING'] : '');
+  $_SESSION['next'] = basename($_SERVER['SCRIPT_NAME']) . (!empty($_SERVER['QUERY_STRING']) ? '?' . $_SERVER['QUERY_STRING'] : '');
   go('auth.php');
 }
 function digits(string $s): string { return preg_replace('/\D/', '', strtr($s, ['۰'=>'0','۱'=>'1','۲'=>'2','۳'=>'3','۴'=>'4','۵'=>'5','۶'=>'6','۷'=>'7','۸'=>'8','۹'=>'9'])); }
-/** فهرست اهداف قابل‌درخواست: گنگ‌های باز + همه‌ی ارگان‌ها */
-function apply_targets(): array {
-  $st = site_stats(); $o = ['gang' => [], 'org' => []];
-  foreach ($st['gangs'] as $g) if ($g[2]) $o['gang'][] = $g[0];
-  foreach (CFG['depts'] as $d) $o['org'][$d['group']][] = $d['label'];
-  return $o;
-}
 
 /** اسم داخل‌بازی: playerName، بعد name، بعد اسم+فامیل. خالی => '' (هرگز license/identifier نمایش داده نمی‌شه) */
 function pname(array $r): string {
@@ -341,196 +320,6 @@ function job_grade_label(string $job, int $grade): string {
   } catch (Throwable $e) { $label = ''; }
   return $cache[$key] = ($label !== '' ? $label : (string)$grade);
 }
-/* ===== پنل «گنگ من» / «ارگان من» — برای اعضای گنگ/ارگان، مخصوصاً رتبه‌ی باس (bossaction / perm_employee_management) ===== */
-
-/** ردیف کامل گنگ از جدول gangs. */
-function gang_row(string $gang): ?array {
-  try { $q = db()->prepare('SELECT * FROM gangs WHERE name=? LIMIT 1'); $q->execute([$gang]); return $q->fetch() ?: null; }
-  catch (Throwable $e) { return null; }
-}
-/** همه‌ی رتبه‌های یک گنگ (gang_grades)، نزولی؛ ستون access رو JSON-decode می‌کنه (شامل کلید bossaction). */
-function gang_grades_of(string $gang): array {
-  try {
-    $q = db()->prepare('SELECT * FROM gang_grades WHERE gang_name=? ORDER BY grade DESC'); $q->execute([$gang]);
-    $rows = $q->fetchAll();
-    foreach ($rows as &$r) $r['access'] = json_decode((string)($r['access'] ?? '{}'), true) ?: [];
-    return $rows;
-  } catch (Throwable $e) { return []; }
-}
-/** اعضای یک گنگ از جدول users، نزولی بر اساس رتبه. */
-function gang_members(string $gang): array {
-  try {
-    $q = db()->prepare('SELECT identifier,playerName,name,firstname,lastname,gang_grade FROM users WHERE gang=? ORDER BY gang_grade DESC, playerName ASC');
-    $q->execute([$gang]); return $q->fetchAll();
-  } catch (Throwable $e) { return []; }
-}
-/** ردیف کامل ارگان/شغل از جدول jobs. */
-function job_row(string $job): ?array {
-  try { $q = db()->prepare('SELECT * FROM jobs WHERE name=? LIMIT 1'); $q->execute([$job]); return $q->fetch() ?: null; }
-  catch (Throwable $e) { return null; }
-}
-/** همه‌ی رتبه‌های یک ارگان (job_grades)، نزولی؛ شامل ستون perm_employee_management (معادل bossaction گنگ). */
-function job_grades_of(string $job): array {
-  try { $q = db()->prepare('SELECT * FROM job_grades WHERE job_name=? ORDER BY grade DESC'); $q->execute([$job]); return $q->fetchAll(); }
-  catch (Throwable $e) { return []; }
-}
-/** اعضای یک ارگان از جدول users، نزولی بر اساس رتبه. */
-function job_members(string $job): array {
-  try {
-    $q = db()->prepare('SELECT identifier,playerName,name,firstname,lastname,job_grade FROM users WHERE job=? ORDER BY job_grade DESC, playerName ASC');
-    $q->execute([$job]); return $q->fetchAll();
-  } catch (Throwable $e) { return []; }
-}
-/** گروه یک ارگان (doj/law/svc) طبق CFG['depts']؛ اگه پیدا نشه null. */
-function dept_group(string $job): ?string {
-  foreach (CFG['depts'] as $d) if ($d['job'] === $job) return $d['group'];
-  return null;
-}
-
-/* ===== قلمرو گنگ (Territory) — از افزونه‌ی territory_database.sql روی Unique_ALLGangs =====
-   لیبل/تیر هر منطقه فقط توی Config.lua سرور (Lua) تعریف شده، نه دیتابیس؛ برای همین یه کپیِ
-   نمایشی‌شون رو اینجا نگه می‌داریم. اگه منطقه‌ای به Config.Territory.Zones اضافه/حذف شد، همینجا هم به‌روز کن. */
-const TERR_ZONES = [
-  'grove_street'       => ['label' => 'خیابان گروو',       'tier' => 1],
-  'vespucci_beach'     => ['label' => 'ساحل وسپوچی',       'tier' => 1],
-  'la_mesa_industrial' => ['label' => 'منطقه صنعتی لامسا', 'tier' => 2],
-  'del_perro_pier'     => ['label' => 'اسکله دل‌پرو',       'tier' => 2],
-  'sandy_shores'       => ['label' => 'سندی شورز',         'tier' => 2],
-  'paleto_bay'         => ['label' => 'خلیج پالتو',         'tier' => 3],
-  'boss_zone'          => ['label' => 'قلمروی پادشاه (هفتگی)', 'tier' => 3],
-];
-/** وضعیت مالکیت همه‌ی مناطق (gang_territories) + لیبل/تیرشون از TERR_ZONES. */
-function territory_state(): array {
-  try { $owned = []; foreach (db()->query('SELECT zone_key,owner_gang,captured_at FROM gang_territories')->fetchAll() as $r) $owned[$r['zone_key']] = $r; }
-  catch (Throwable $e) { $owned = []; }
-  $out = [];
-  foreach (TERR_ZONES as $key => $z) $out[] = ['key' => $key, 'label' => $z['label'], 'tier' => $z['tier'], 'owner' => $owned[$key]['owner_gang'] ?? null, 'captured_at' => (int)($owned[$key]['captured_at'] ?? 0)];
-  return $out;
-}
-/** لقبِ فعلیِ یک گنگ روی قلمروی پادشاه (gang_territory_titles)، یا null اگه نداره. */
-function gang_territory_title(string $gang): ?string {
-  try { $q = db()->prepare('SELECT title FROM gang_territory_titles WHERE gang=? LIMIT 1'); $q->execute([$gang]); $v = $q->fetchColumn(); return $v !== false ? $v : null; }
-  catch (Throwable $e) { return null; }
-}
-/** اتحادهای یک گنگ (فعال + در انتظار)، چه gang_a باشه چه gang_b. */
-function gang_alliances_of(string $gang): array {
-  try { $q = db()->prepare('SELECT * FROM gang_alliances WHERE gang_a=? OR gang_b=? ORDER BY id DESC'); $q->execute([$gang, $gang]); return $q->fetchAll(); }
-  catch (Throwable $e) { return []; }
-}
-
-/* ===== پرونده‌های ارگان‌های DOJ/Law (dept_cases از Unique Jobs — law_and_cases.sql) ===== */
-
-/** پرونده‌های ثبت‌شده توسط یا ارجاع‌شده به یک ارگان، بازها اول. */
-function dept_cases_of(string $job): array {
-  try {
-    $q = db()->prepare("SELECT * FROM dept_cases WHERE referred_to=? OR opened_by_job=? ORDER BY (status NOT IN ('closed','dismissed')) DESC, updated_at DESC LIMIT 40");
-    $q->execute([$job, $job]); return $q->fetchAll();
-  } catch (Throwable $e) { return []; }
-}
-/** اتهامات ثبت‌شده روی یک پرونده‌ی مشخص (dept_case_charges). */
-function dept_case_charges(int $caseId): array {
-  try { $q = db()->prepare('SELECT * FROM dept_case_charges WHERE case_id=? ORDER BY id'); $q->execute([$caseId]); return $q->fetchAll(); }
-  catch (Throwable $e) { return []; }
-}
-/** تعداد کل بازداشت/پرونده‌های کیفری ثبت‌شده توسط اعضای یک ارگان (doj_criminal_records، از سیستم CAD). */
-function dept_booking_count(string $job): int {
-  try {
-    $q = db()->prepare('SELECT COUNT(*) FROM doj_criminal_records WHERE booked_by IN (SELECT identifier FROM users WHERE job=?)');
-    $q->execute([$job]); return (int)$q->fetchColumn();
-  } catch (Throwable $e) { return 0; }
-}
-/** پرونده‌های تحقیقاتی صحنه‌جرم (doj_cases، از افزونه‌ی CAD/CrimeScene) که به این ارگان مرتبطن.
- *  judge/cia/fbi فقط پرونده‌های ارجاع‌شده به خودشون رو می‌بینن؛ police/sheriff/mt پرونده‌های بازِ درِ دستِ تحقیقن. */
-function crime_cases_of(string $job): array {
-  $referred = ['judge' => 'referred_judge', 'cia' => 'referred_cia', 'fbi' => 'referred_fbi'];
-  try {
-    if (isset($referred[$job])) { $q = db()->prepare('SELECT * FROM doj_cases WHERE status=? ORDER BY updated_at DESC LIMIT 40'); $q->execute([$referred[$job]]); }
-    else { $q = db()->query("SELECT * FROM doj_cases WHERE status IN ('open','cold') ORDER BY updated_at DESC LIMIT 40"); }
-    return $q->fetchAll();
-  } catch (Throwable $e) { return []; }
-}
-/** شواهد ثبت‌شده روی یک پرونده‌ی تحقیقاتی صحنه‌جرم (doj_case_evidence). */
-function crime_case_evidence(int $caseId): array {
-  try { $q = db()->prepare('SELECT * FROM doj_case_evidence WHERE case_id=? ORDER BY id'); $q->execute([$caseId]); return $q->fetchAll(); }
-  catch (Throwable $e) { return []; }
-}
-/** یادداشت‌های ثبت‌شده روی یک پرونده‌ی تحقیقاتی صحنه‌جرم (doj_case_notes). */
-function crime_case_notes(int $caseId): array {
-  try { $q = db()->prepare('SELECT * FROM doj_case_notes WHERE case_id=? ORDER BY id'); $q->execute([$caseId]); return $q->fetchAll(); }
-  catch (Throwable $e) { return []; }
-}
-/** آخرین بازداشتی‌های ثبت‌شده توسط اعضای یک ارگان (doj_criminal_records — رپ‌شیت). */
-/** ماشین‌های یه شهروند (owned_vehicles واقعیِ essentialmode). اگه جدول نبود (حالت دمو) لیست خالی برمی‌گرده، نه خطا. */
-function owned_vehicles_of(string $identifier): array {
-  if ($identifier === '') return [];
-  try {
-    $q = db()->prepare('SELECT plate,type,job,stored,fuel,body,garagenum,police FROM owned_vehicles WHERE owner=? ORDER BY stored DESC, plate ASC LIMIT 60');
-    $q->execute([$identifier]); return $q->fetchAll();
-  } catch (Throwable $e) { return []; }
-}
-/** خونه/ملک‌های یه شهروند (owned_properties + کاتالوگ properties برای لیبل فارسی/آدرس). */
-function owned_properties_of(string $identifier): array {
-  if ($identifier === '') return [];
-  try {
-    $q = db()->prepare("SELECT op.name,op.price,op.rented,op.storage_level,op.safe_level,op.for_sale,op.sale_price,
-      op.mortgage_active,op.mortgage_remaining,op.mortgage_installment,op.mortgage_days_left,
-      COALESCE(p.label, op.name) AS label
-      FROM owned_properties op LEFT JOIN properties p ON p.name = op.name
-      WHERE op.owner=? ORDER BY op.name ASC LIMIT 60");
-    $q->execute([$identifier]); return $q->fetchAll();
-  } catch (Throwable $e) { return []; }
-}
-/** صورت‌حساب‌های در انتظار پرداختِ یه شهروند (جدول billing؛ پرداخت‌شده‌ها معمولاً حذف می‌شن، پس همه‌ی ردیف‌ها هنوز پرداخت‌نشده‌ن). */
-function billing_of(string $identifier): array {
-  if ($identifier === '') return [];
-  try {
-    $q = db()->prepare('SELECT id,sender,label,amount FROM billing WHERE identifier=? ORDER BY id DESC LIMIT 60');
-    $q->execute([$identifier]); return $q->fetchAll();
-  } catch (Throwable $e) { return []; }
-}
-/** جستجوی عمومی شهروندان برای پنل «جستجوی شهروندان» — فقط فیلدهای غیرحساس (نام، رنک، شغل/گنگِ رسمی)، بدون شماره تماس/حساب/آی‌پی. */
-function citizen_search(string $q): array {
-  $q = trim($q); if ($q === '') return [];
-  try {
-    $lk = '%' . addcslashes($q, '%_\\') . '%';
-    $s = db()->prepare("SELECT playerName,`rank`,xp,job,gang FROM users WHERE playerName LIKE ? ORDER BY xp DESC LIMIT 30");
-    $s->execute([$lk]); return $s->fetchAll();
-  } catch (Throwable $e) { return []; }
-}
-function dept_bookings_of(string $job): array {
-  try {
-    $q = db()->prepare('SELECT * FROM doj_criminal_records WHERE booked_by IN (SELECT identifier FROM users WHERE job=?) ORDER BY id DESC LIMIT 30');
-    $q->execute([$job]); return $q->fetchAll();
-  } catch (Throwable $e) { return []; }
-}
-/** گزارش‌های بازرسیِ داخلی (doj_ia_reports) — طبق طراحیِ خودِ ریسورس فقط CIA/FBI بازبینی‌شون می‌کنن. */
-function ia_reports_all(): array {
-  try { return db()->query('SELECT * FROM doj_ia_reports ORDER BY id DESC LIMIT 30')->fetchAll(); }
-  catch (Throwable $e) { return []; }
-}
-
-/* ===== ابزارهای مشترک باسِ گنگ/ارگان: عضوگیریِ کاراکترهای بی‌گنگ + تصمیم روی درخواست عضویت (web_apps) ===== */
-
-/** identifier کاراکتر بازیِ متصل به یک حساب سایت (web_accounts.id)؛ null اگه لینک نشده یا کاراکتری نداره. */
-function game_identifier_of_account(int $accountId): ?string {
-  try {
-    $q = db()->prepare('SELECT lu.device_license FROM web_accounts a JOIN login_users lu ON lu.id=a.login_id WHERE a.id=?');
-    $q->execute([$accountId]); $dl = $q->fetchColumn();
-    if (!$dl) return null;
-    $q2 = db()->prepare('SELECT identifier FROM users WHERE identifier=? OR license=? LIMIT 1');
-    $q2->execute([$dl, $dl]); $ident = $q2->fetchColumn();
-    return $ident !== false ? (string)$ident : null;
-  } catch (Throwable $e) { return null; }
-}
-/** درخواست‌های عضویتِ در انتظار برای یک گنگ/ارگان خاص (kind='gang'|'org')، بر اساس همون لیبلی که در web_apps.target ذخیره شده. */
-function apps_pending_for(string $kind, string $label): array {
-  try {
-    $q = db()->prepare("SELECT a.*,u.fullname FROM web_apps a JOIN web_accounts u ON u.id=a.user_id WHERE a.kind=? AND a.target=? AND a.status='pending' ORDER BY a.id DESC");
-    $q->execute([$kind, $label]); return $q->fetchAll();
-  } catch (Throwable $e) { return []; }
-}
-
-
 /** لیبل نمایشی گنگ (gangs.label)؛ اگه پیدا نشه یا 'nogang' باشه، خودِ مقدار خام برمی‌گرده. */
 function gang_label(string $gang): string {
   static $cache = [];
@@ -549,124 +338,6 @@ function rank_label(int $perm): string {
   $best = ''; foreach (CFG['perm_ranks'] as $lv => $name) if ($lv <= $perm) $best = $name;
   return $best ?: 'Staff';
 }
-function tier_of(int $perm): array {
-  foreach (CFG['perm_tiers'] as $t) if ($perm >= $t['min']) return $t;
-  $all = CFG['perm_tiers']; return end($all);
-}
-
-/* ===== لیدربورد/جنگ گنگ‌ها، عملکرد افسر، مچ‌شات، دادگاه، توقف ترافیکی، K9، DOA، وظیفه، اخبار، اعلان، لاگ شفافیت، تخته‌ی تحت‌تعقیب، پنل ادمین لاگ‌ها، رشد سایت ===== */
-
-/** لیدربورد عمومی گنگ‌ها بر اساس سطح/XP، همراه تعداد عضو و تعداد قلمروِ هرکدوم. */
-function gang_leaderboard(int $limit = 10): array {
-  try { $rows = db()->query('SELECT name,label,level,xp FROM gangs WHERE disband=0 OR disband IS NULL ORDER BY level DESC, xp DESC')->fetchAll(); }
-  catch (Throwable $e) { return []; }
-  try {
-    $mc = db()->prepare('SELECT COUNT(*) FROM users WHERE gang=?'); $tc = db()->prepare('SELECT COUNT(*) FROM gang_territories WHERE owner_gang=?');
-    foreach ($rows as &$r) { $mc->execute([$r['name']]); $r['member_count'] = (int)$mc->fetchColumn(); $tc->execute([$r['name']]); $r['territory_count'] = (int)$tc->fetchColumn(); }
-  } catch (Throwable $e) {}
-  return array_slice($rows, 0, $limit);
-}
-/** لیست گنگ‌های دیگر (برای دراپ‌داونِ انتخاب هدفِ اتحاد/خصومت)، به‌جز خودِ گنگ. */
-function other_gangs(string $exclude): array {
-  try { $q = db()->prepare('SELECT name,label FROM gangs WHERE name<>? AND (disband=0 OR disband IS NULL) ORDER BY label'); $q->execute([$exclude]); return $q->fetchAll(); }
-  catch (Throwable $e) { return []; }
-}
-/** خصومت‌های فعال یک گنگ (web_gang_wars — جدولِ مستقل سایت، تا با gang_alliances خودِ اسکریپت گنگ قاطی نشه). */
-function gang_wars_of(string $gang): array {
-  try { $q = db()->prepare("SELECT * FROM web_gang_wars WHERE (gang_a=? OR gang_b=?) AND status='active' ORDER BY id DESC"); $q->execute([$gang, $gang]); return $q->fetchAll(); }
-  catch (Throwable $e) { return []; }
-}
-
-/** لیدربورد عملکرد افسرهای یک ارگان: تعداد بازداشت (doj_criminal_records) + توقف ترافیکی (dept_traffic_stops). */
-function officer_leaderboard(string $job, int $limit = 10): array {
-  try {
-    $rows = db()->prepare("SELECT identifier,playerName,name,firstname,lastname FROM users WHERE job=?"); $rows->execute([$job]); $members = $rows->fetchAll();
-    $bk = db()->prepare('SELECT COUNT(*) FROM doj_criminal_records WHERE booked_by=?');
-    $ts = db()->prepare('SELECT COUNT(*) FROM dept_traffic_stops WHERE officer_identifier=?');
-    foreach ($members as &$m) { $bk->execute([$m['identifier']]); $m['bookings'] = (int)$bk->fetchColumn(); $ts->execute([$m['identifier']]); $m['stops'] = (int)$ts->fetchColumn(); $m['score'] = $m['bookings'] * 3 + $m['stops']; }
-    usort($members, fn($a, $b) => $b['score'] - $a['score']);
-    return array_slice($members, 0, $limit);
-  } catch (Throwable $e) { return []; }
-}
-/** دیوار مچ‌شات (dept_mugshots) — عکس/پروفایلِ کیفریِ شهروندان، سراسریه (مخصوص یک ارگان نیست). */
-function mugshots_all(int $limit = 24): array {
-  try { $q = db()->prepare('SELECT * FROM dept_mugshots ORDER BY timestamp DESC LIMIT ?'); $q->bindValue(1, $limit, PDO::PARAM_INT); $q->execute(); return $q->fetchAll(); }
-  catch (Throwable $e) { return []; }
-}
-/** تقویم دادگاه (dept_case_docket) به‌همراه عنوانِ پرونده‌ی مرتبط، برای Judge. */
-function court_docket(int $limit = 30): array {
-  try { return db()->query("SELECT d.*,c.title AS case_title FROM dept_case_docket d JOIN dept_cases c ON c.id=d.case_id ORDER BY d.scheduled_at DESC LIMIT $limit")->fetchAll(); }
-  catch (Throwable $e) { return []; }
-}
-/** لاگِ توقف‌های ترافیکیِ ثبت‌شده توسط اعضای یک ارگان (dept_traffic_stops). */
-function traffic_stops_of(string $job, int $limit = 30): array {
-  try { $q = db()->prepare('SELECT * FROM dept_traffic_stops WHERE officer_job=? ORDER BY timestamp DESC LIMIT ?'); $q->bindValue(1, $job); $q->bindValue(2, $limit, PDO::PARAM_INT); $q->execute(); return $q->fetchAll(); }
-  catch (Throwable $e) { return []; }
-}
-/** پروفایل سگ‌های K9 (جدول k9 — ستون dog_data به‌صورت JSON ذخیره شده). */
-function k9_list(): array {
-  try {
-    $rows = db()->query('SELECT * FROM k9')->fetchAll();
-    foreach ($rows as &$r) { $d = json_decode((string)($r['dog_data'] ?? ''), true); $r['parsed'] = is_array($d) ? $d : []; }
-    return $rows;
-  } catch (Throwable $e) { return []; }
-}
-/** پرونده‌های ضبط/توقیف DOA (doa_seizures). */
-function doa_seizures(int $limit = 30): array { try { return db()->query("SELECT * FROM doa_seizures ORDER BY timestamp DESC LIMIT $limit")->fetchAll(); } catch (Throwable $e) { return []; } }
-/** خبرچین‌های ثبت‌شده‌ی DOA به‌همراه تعداد سرنخِ هرکدوم (doa_informants + doa_tips). */
-function doa_informants(): array {
-  try {
-    $rows = db()->query('SELECT * FROM doa_informants ORDER BY id DESC')->fetchAll();
-    $tc = db()->prepare('SELECT COUNT(*) FROM doa_tips WHERE informant_id=?');
-    foreach ($rows as &$r) { $tc->execute([$r['id']]); $r['tip_count'] = (int)$tc->fetchColumn(); }
-    return $rows;
-  } catch (Throwable $e) { return []; }
-}
-/** آخرین جلسات کاری (duty_logs) یک ارگان — steamhex همون identifier کاراکتره تو این سرور. */
-function duty_recent(string $job, int $limit = 20): array {
-  try { $q = db()->prepare('SELECT * FROM duty_logs WHERE job_name=? ORDER BY id DESC LIMIT ?'); $q->bindValue(1, $job); $q->bindValue(2, $limit, PDO::PARAM_INT); $q->execute(); return $q->fetchAll(); }
-  catch (Throwable $e) { return []; }
-}
-
-/** تخته‌ی عمومیِ تحت‌تعقیب‌ها — پرونده‌های بازِ doj_cases که مشکوکشون شناسایی شده؛ شناسه‌ی خامِ کاراکتر هیچ‌وقت نشون داده نمی‌شه، فقط اسمش. */
-function wanted_board(int $limit = 20): array {
-  try { $q = db()->prepare("SELECT id,rob_name,suspect_name,status,created_at FROM doj_cases WHERE status IN ('open','cold') AND suspect_name IS NOT NULL AND suspect_name<>'' ORDER BY created_at DESC LIMIT ?"); $q->bindValue(1, $limit, PDO::PARAM_INT); $q->execute(); return $q->fetchAll(); }
-  catch (Throwable $e) { return []; }
-}
-
-/* ===== اخبار وزیل‌نیوز (گالری سایت) ===== */
-function news_list(int $limit = 20): array {
-  try { $q = db()->prepare('SELECT * FROM web_news ORDER BY pinned DESC, id DESC LIMIT ?'); $q->bindValue(1, $limit, PDO::PARAM_INT); $q->execute(); return $q->fetchAll(); }
-  catch (Throwable $e) { return []; }
-}
-
-/* ===== اعلان‌های داشبورد ===== */
-function notify(int $userId, string $message, string $link = ''): void {
-  try { db()->prepare('INSERT INTO web_notifications(user_id,message,link,created) VALUES(?,?,?,?)')->execute([$userId, $message, $link, time()]); }
-  catch (Throwable $e) {}
-}
-function notifications_for(int $userId, int $limit = 10): array {
-  try { $q = db()->prepare('SELECT * FROM web_notifications WHERE user_id=? ORDER BY id DESC LIMIT ?'); $q->bindValue(1, $userId, PDO::PARAM_INT); $q->bindValue(2, $limit, PDO::PARAM_INT); $q->execute(); return $q->fetchAll(); }
-  catch (Throwable $e) { return []; }
-}
-function unread_notif_count(int $userId): int {
-  try { $q = db()->prepare('SELECT COUNT(*) FROM web_notifications WHERE user_id=? AND read_at IS NULL'); $q->execute([$userId]); return (int)$q->fetchColumn(); }
-  catch (Throwable $e) { return 0; }
-}
-function mark_notifs_read(int $userId): void {
-  try { db()->prepare('UPDATE web_notifications SET read_at=? WHERE user_id=? AND read_at IS NULL')->execute([time(), $userId]); }
-  catch (Throwable $e) {}
-}
-
-/* ===== لاگ شفافیتِ اقدامات باس گنگ/ارگان ===== */
-function audit_log(string $scope, string $scopeKey, string $action, string $actorName, string $targetName = '', string $detail = ''): void {
-  try { db()->prepare('INSERT INTO web_audit(scope,scope_key,action,actor_name,target_name,detail,created) VALUES(?,?,?,?,?,?,?)')->execute([$scope, $scopeKey, $action, $actorName, $targetName, $detail, time()]); }
-  catch (Throwable $e) {}
-}
-function audit_of(string $scope, string $scopeKey, int $limit = 20): array {
-  try { $q = db()->prepare('SELECT * FROM web_audit WHERE scope=? AND scope_key=? ORDER BY id DESC LIMIT ?'); $q->bindValue(1, $scope); $q->bindValue(2, $scopeKey); $q->bindValue(3, $limit, PDO::PARAM_INT); $q->execute(); return $q->fetchAll(); }
-  catch (Throwable $e) { return []; }
-}
 
 /* ===== پنل ادمین لاگ‌ها (unique_logpanel — ادغام‌شده با ریسورس logs) ===== */
 function admin_logs(string $category = '', string $job = '', string $search = '', int $limit = 50): array {
@@ -683,36 +354,5 @@ function admin_log_categories(): array {
   try { return array_column(db()->query('SELECT DISTINCT category FROM unique_logpanel ORDER BY category')->fetchAll(), 'category'); }
   catch (Throwable $e) { return []; }
 }
-function admin_log_jobs(): array {
-  try { return array_column(db()->query("SELECT DISTINCT job FROM unique_logpanel WHERE job IS NOT NULL AND job<>'' ORDER BY job")->fetchAll(), 'job'); }
-  catch (Throwable $e) { return []; }
-}
 
-/* ===== نمودار رشدِ سایت (برای پنل ادمین) ===== */
-function growth_series(int $days = 14): array {
-  $out = [];
-  try { $pdo = db();
-    for ($i = $days - 1; $i >= 0; $i--) {
-      $dayStart = strtotime('today', time()) - $i * 86400; $dayEnd = $dayStart + 86399;
-      $u = $pdo->prepare('SELECT COUNT(*) FROM web_accounts WHERE created BETWEEN ? AND ?'); $u->execute([$dayStart, $dayEnd]);
-      $t = $pdo->prepare('SELECT COUNT(*) FROM web_tickets WHERE created BETWEEN ? AND ?'); $t->execute([$dayStart, $dayEnd]);
-      $a = $pdo->prepare('SELECT COUNT(*) FROM web_apps WHERE created BETWEEN ? AND ?'); $a->execute([$dayStart, $dayEnd]);
-      $out[] = ['day' => date('m/d', $dayStart), 'users' => (int)$u->fetchColumn(), 'tickets' => (int)$t->fetchColumn(), 'apps' => (int)$a->fetchColumn()];
-    }
-  } catch (Throwable $e) { return []; }
-  return $out;
-}
 
-/** برعکسِ game_identifier_of_account: از روی identifier بازی، آیدیِ حساب سایتِ متصل‌شده رو پیدا می‌کنه (برای فرستادن اعلان). */
-function web_account_id_of_identifier(string $ident): ?int {
-  try {
-    $q = db()->prepare('SELECT license,identifier FROM users WHERE identifier=? LIMIT 1'); $q->execute([$ident]); $row = $q->fetch();
-    $dls = array_filter([$ident, $row['license'] ?? null]);
-    if (!$dls) return null;
-    $in = implode(',', array_fill(0, count($dls), '?'));
-    $q2 = db()->prepare("SELECT id FROM login_users WHERE device_license IN ($in)"); $q2->execute(array_values($dls)); $luId = $q2->fetchColumn();
-    if (!$luId) return null;
-    $q3 = db()->prepare('SELECT id FROM web_accounts WHERE login_id=? LIMIT 1'); $q3->execute([$luId]); $v = $q3->fetchColumn();
-    return $v !== false ? (int)$v : null;
-  } catch (Throwable $e) { return null; }
-}

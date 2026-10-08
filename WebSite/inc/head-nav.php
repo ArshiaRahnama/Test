@@ -4,11 +4,8 @@
  <a href="index.php#home" class="logo" id="brand"></a>
  <div class="links" id="links">
   <a href="index.php#home"<?=$cls('home')?>>خانه</a>
-  <a href="join.php"<?=$cls('join')?>>عضوگیری و دپارتمان</a>
-  <a href="gallery.php"<?=$cls('gallery')?>>گالری</a>
   <a href="rules.php"<?=$cls('rules')?>>قوانین</a>
-  <a href="team.php"<?=$cls('team')?>>کادر مدیریت</a>
  </div>
- <button class="btn" id="burger" aria-label="منو" aria-expanded="false">☰</button>
+ <button class="btn" id="burger" aria-label="منو" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path class="b1" d="M4 7h16"/><path class="b2" d="M4 12h16"/><path class="b3" d="M4 17h16"/></svg></button>
  <a class="btn pri" href="<?=me()?"dashboard.php":"auth.php"?>">ورود به داشبورد</a>
 </nav></div></header>

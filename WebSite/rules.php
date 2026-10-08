@@ -10,7 +10,8 @@
 <link rel="canonical" href="https://example.com/rules.php">
 <meta property="og:url" content="https://example.com/rules.php">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M16 8v28a16 16 0 0 0 32 0V8' fill='none' stroke='%23ffc107' stroke-width='11' stroke-linecap='round'/%3E%3C/svg%3E">
-<link rel="stylesheet" href="style.css">
+<link rel="preload" href="fonts/Vazirmatn.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="<?=asset('style.css')?>">
 <style>
 .rcats{display:grid;gap:16px;margin-top:32px}
 .rcat{background:linear-gradient(165deg,var(--panel),#0a0906);border:1px solid var(--line2);border-radius:var(--r);overflow:hidden}
