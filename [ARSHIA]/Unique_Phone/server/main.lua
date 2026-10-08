@@ -1939,7 +1939,7 @@ ESX.RegisterServerCallback('Unique_Phone:server:Discord:GetChannels', function(s
         return
     end
 
-    local channels = ExecuteSql(true, "SELECT id, name, position, is_verified, is_locked, kind FROM phone_discord_channels WHERE server_id = @sid ORDER BY position ASC, id ASC", {
+    local channels = ExecuteSql(true, "SELECT id, name, position, is_verified, is_locked FROM phone_discord_channels WHERE server_id = @sid ORDER BY position ASC, id ASC", {
         ['@sid'] = serverId,
     })
 
@@ -1949,20 +1949,19 @@ ESX.RegisterServerCallback('Unique_Phone:server:Discord:GetChannels', function(s
         ch.is_verified, ch.is_locked = nil, nil
     end
 
-    cb(Discord_ExtFilterChannels(xPlayer, source, serverId, channels)) -- v8: view / send permissions
+    cb(channels)
 end)
 
 ESX.RegisterServerCallback('Unique_Phone:server:Discord:GetMessages', function(source, cb, channelId)
     local xPlayer = Discord_GetPlayer(source)
     local serverId = channelId ~= nil and Discord_GetServerIdForChannel(channelId) or nil
 
-    if xPlayer == nil or serverId == nil or not Discord_IsMember(xPlayer.identifier, serverId)
-        or not Discord_ExtCan(xPlayer.identifier, serverId, 'view', channelId, source) then
+    if xPlayer == nil or serverId == nil or not Discord_IsMember(xPlayer.identifier, serverId) then
         cb(false)
         return
     end
 
-    local messages = ExecuteSql(true, "SELECT id, identifier, author_name, message, created_at, edited_at, is_pinned, is_announcement, reply_to_id, role_mentions FROM phone_discord_messages WHERE channel_id = @cid ORDER BY id ASC LIMIT 200", {
+    local messages = ExecuteSql(true, "SELECT id, identifier, author_name, message, created_at, edited_at, is_pinned, is_announcement, reply_to_id FROM phone_discord_messages WHERE channel_id = @cid ORDER BY id ASC LIMIT 200", {
         ['@cid'] = channelId,
     })
 
@@ -1996,18 +1995,14 @@ ESX.RegisterServerCallback('Unique_Phone:server:Discord:GetMessages', function(s
         end
     end
 
-    local memberRowByIdentifier, verifiedByIdentifier, nickByIdentifier = {}, {}, {}
-    for _, m in pairs(ExecuteSql(true, "SELECT m.id, m.identifier, m.nickname, p.verified FROM phone_discord_members m LEFT JOIN phone_discord_profiles p ON p.identifier = m.identifier WHERE m.server_id = @sid", { ['@sid'] = serverId })) do
+    local memberRowByIdentifier, verifiedByIdentifier = {}, {}
+    for _, m in pairs(ExecuteSql(true, "SELECT m.id, m.identifier, p.verified FROM phone_discord_members m LEFT JOIN phone_discord_profiles p ON p.identifier = m.identifier WHERE m.server_id = @sid", { ['@sid'] = serverId })) do
         memberRowByIdentifier[m.identifier] = m.id
         verifiedByIdentifier[m.identifier] = (m.verified == 1 or m.verified == true)
-        nickByIdentifier[m.identifier] = m.nickname
     end
 
     for _, msg in pairs(messages) do
         msg.isMine = (msg.identifier == xPlayer.identifier)
-        if nickByIdentifier[msg.identifier] and nickByIdentifier[msg.identifier] ~= "" then msg.author_name = nickByIdentifier[msg.identifier] end -- v8: current per-server nickname
-        msg.roleMentions = Discord_ExtParseRoleIds(msg.role_mentions)
-        msg.role_mentions = nil
         msg.authorVerified = verifiedByIdentifier[msg.identifier] or false
         msg.isAnnouncement = (msg.is_announcement == 1 or msg.is_announcement == true)
         msg.is_announcement = nil
@@ -2062,7 +2057,6 @@ ESX.RegisterServerCallback('Unique_Phone:server:Discord:GetMembers', function(so
         member.status = member.isOnline and status or "offline"
         member.customStatus = member.isOnline and member.custom_status or nil
         member.custom_status = nil
-        member.activity = member.isOnline and Discord_GetActivity(member.identifier) or nil -- v7 rich presence
         member.identifier = nil
     end
 
@@ -2088,13 +2082,9 @@ ESX.RegisterServerCallback('Unique_Phone:server:Discord:SendMessage', function(s
         return
     end
 
-    -- v7: timeout (mute) + auto-mod. Returns nil or { error = "TIMEOUT"|"AUTOMOD", ... }
-    local blocked = Discord_ExtPreSend(xPlayer, source, serverId, message, channelId)
-    if blocked then cb(blocked) return end
-
     if type(replyToId) ~= "number" then replyToId = nil end
 
-    local authorName = Discord_ExtAuthorName(xPlayer, source, serverId) -- v8: per-server nickname
+    local authorName = Discord_GetDisplayName(source)
     local createdAt = os.time()
 
     local newMessageId = MySQL.Sync.insert("INSERT INTO phone_discord_messages (channel_id, identifier, author_name, message, created_at, reply_to_id) VALUES (@cid, @id, @name, @msg, @time, @reply)", {
@@ -2114,8 +2104,6 @@ ESX.RegisterServerCallback('Unique_Phone:server:Discord:SendMessage', function(s
         end
     end
 
-    local roleMentions = Discord_ExtPostSend(xPlayer, source, serverId, channelId, newMessageId, message)
-
     local payload = {
         id = newMessageId,
         serverId = serverId,
@@ -2124,7 +2112,6 @@ ESX.RegisterServerCallback('Unique_Phone:server:Discord:SendMessage', function(s
         message = message,
         created_at = createdAt,
         replyPreview = replyPreview,
-        roleMentions = roleMentions,
         authorVerified = (Discord_EnsureProfile(xPlayer.identifier).verified == 1 or Discord_EnsureProfile(xPlayer.identifier).verified == true),
         authorMemberId = (ExecuteSql(true, "SELECT id FROM phone_discord_members WHERE server_id = @sid AND identifier = @id", { ['@sid'] = serverId, ['@id'] = xPlayer.identifier })[1] or {}).id,
     }
@@ -2211,22 +2198,11 @@ ESX.RegisterServerCallback('Unique_Phone:server:Discord:JoinServer', function(so
     local xPlayer = Discord_GetPlayer(source)
     if xPlayer == nil or type(inviteCode) ~= "string" then cb(false) return end
 
-    local rawInvite = Discord_ExtNormalizeInvite(inviteCode) -- v8: accepts "discord.gg/name", vanity names, limited invites
-    inviteCode = string.upper(string.gsub(rawInvite, "%s+", ""))
+    inviteCode = string.upper(string.gsub(inviteCode, "%s+", ""))
 
     local server = ExecuteSql(true, "SELECT id, name, icon_text, icon_color, invite_code, owner_identifier, is_verified FROM phone_discord_servers WHERE invite_code = @code", {
         ['@code'] = inviteCode,
     })
-
-    local viaInvite = nil
-    if server[1] == nil then
-        local sid, invErr, invId = Discord_ExtResolveInvite(rawInvite)
-        if invErr then cb({ error = invErr }) return end
-        if sid then
-            server = ExecuteSql(true, "SELECT id, name, icon_text, icon_color, invite_code, owner_identifier, is_verified FROM phone_discord_servers WHERE id = @id", { ['@id'] = sid })
-            viaInvite = invId
-        end
-    end
 
     if server[1] == nil then
         cb({ error = "NOT_FOUND" })
@@ -2248,8 +2224,6 @@ ESX.RegisterServerCallback('Unique_Phone:server:Discord:JoinServer', function(so
         ['@time'] = os.time(),
     })
 
-    if viaInvite then Discord_ExtConsumeInvite(viaInvite) end
-
     server.isOwner = (server.owner_identifier == xPlayer.identifier)
     server.owner_identifier = nil
     server.isVerified = (server.is_verified == 1 or server.is_verified == true)
@@ -2264,7 +2238,6 @@ AddEventHandler('Unique_Phone:server:Discord:LeaveServer', function(serverId)
     local xPlayer = ESX.GetPlayerFromId(src)
     if xPlayer == nil or serverId == nil then return end
     if Discord_IsOwner(xPlayer.identifier, serverId) then return end -- owner must delete the server instead
-    if Discord_IsAutoServer(serverId) then return end -- gang/job servers: membership follows the gang/job (see server/discord_ext.lua)
 
     MySQL.Async.execute("DELETE FROM phone_discord_members WHERE server_id = @sid AND identifier = @id", {
         ['@sid'] = serverId,
@@ -2274,7 +2247,7 @@ end)
 
 ESX.RegisterServerCallback('Unique_Phone:server:Discord:DeleteServer', function(source, cb, serverId)
     local xPlayer = Discord_GetPlayer(source)
-    if xPlayer == nil or serverId == nil or not Discord_IsOwner(xPlayer.identifier, serverId) or Discord_IsAutoServer(serverId) then
+    if xPlayer == nil or serverId == nil or not Discord_IsOwner(xPlayer.identifier, serverId) then
         cb(false)
         return
     end
@@ -2347,13 +2320,10 @@ end
 
 ESX.RegisterServerCallback('Unique_Phone:server:Discord:ToggleReaction', function(source, cb, messageId, emoji)
     local xPlayer = Discord_GetPlayer(source)
-    if xPlayer == nil or messageId == nil or type(emoji) ~= "string" or #emoji > 16 then cb(false) return end
+    if xPlayer == nil or messageId == nil or not DiscordAllowedEmoji[emoji] then cb(false) return end
 
     local _, serverId = Discord_GetMessageOwnerAndServer(messageId)
     if serverId == nil or not Discord_IsMember(xPlayer.identifier, serverId) then cb(false) return end
-    -- v7: default set OR one of this server's custom (boost-slot) emoji
-    if not DiscordAllowedEmoji[emoji] and not Discord_ExtCustomEmojiAllowed(serverId, emoji) then cb(false) return end
-    if not Discord_ExtCanReact(xPlayer, source, serverId, messageId) then cb(false) return end -- v8
 
     local existing = ExecuteSql(true, "SELECT id FROM phone_discord_reactions WHERE message_id = @mid AND identifier = @id AND emoji = @emoji", {
         ['@mid'] = messageId, ['@id'] = xPlayer.identifier, ['@emoji'] = emoji,
@@ -2396,7 +2366,6 @@ ESX.RegisterServerCallback('Unique_Phone:server:Discord:EditMessage', function(s
 
     local authorIdentifier, serverId = Discord_GetMessageOwnerAndServer(messageId)
     if serverId == nil or authorIdentifier ~= xPlayer.identifier then cb(false) return end -- only the author may edit
-    if Discord_ExtAutoModHit(serverId, newText) then cb(false) return end -- v7 auto-mod applies to edits too
 
     local editedAt = os.time()
     MySQL.Async.execute("UPDATE phone_discord_messages SET message = @msg, edited_at = @time WHERE id = @mid", {
@@ -2418,7 +2387,6 @@ ESX.RegisterServerCallback('Unique_Phone:server:Discord:DeleteMessage', function
     if serverId == nil then cb(false) return end
 
     local canDelete = (authorIdentifier == xPlayer.identifier) or Discord_IsOwner(xPlayer.identifier, serverId) or Discord_IsStaff(source)
-        or Discord_ExtCan(xPlayer.identifier, serverId, 'manage_messages', nil, source) -- v8
     if not canDelete then cb(false) return end
 
     MySQL.Async.execute("DELETE FROM phone_discord_messages WHERE id = @mid", { ['@mid'] = messageId })
@@ -2435,7 +2403,7 @@ ESX.RegisterServerCallback('Unique_Phone:server:Discord:TogglePinMessage', funct
     if xPlayer == nil or messageId == nil then cb(false) return end
 
     local _, serverId = Discord_GetMessageOwnerAndServer(messageId)
-    if serverId == nil or not (Discord_CanManageChannels(xPlayer.identifier, serverId) or Discord_IsStaff(source) or Discord_ExtCan(xPlayer.identifier, serverId, 'pin', nil, source)) then cb(false) return end
+    if serverId == nil or not (Discord_CanManageChannels(xPlayer.identifier, serverId) or Discord_IsStaff(source)) then cb(false) return end
 
     local current = ExecuteSql(true, "SELECT is_pinned FROM phone_discord_messages WHERE id = @mid", { ['@mid'] = messageId })
     if current[1] == nil then cb(false) return end
@@ -2468,8 +2436,7 @@ end)
 
 ESX.RegisterServerCallback('Unique_Phone:server:Discord:KickMember', function(source, cb, serverId, memberRowId)
     local xPlayer = Discord_GetPlayer(source)
-    if xPlayer == nil or serverId == nil or memberRowId == nil or Discord_IsAutoServer(serverId)
-        or not (Discord_IsOwner(xPlayer.identifier, serverId) or Discord_ExtCan(xPlayer.identifier, serverId, 'kick', nil, source)) then
+    if xPlayer == nil or serverId == nil or memberRowId == nil or not Discord_IsOwner(xPlayer.identifier, serverId) then
         cb(false)
         return
     end
@@ -2481,10 +2448,6 @@ ESX.RegisterServerCallback('Unique_Phone:server:Discord:KickMember', function(so
 
     if target[1] == nil or (server[1] and target[1].identifier == server[1].owner_identifier) then
         cb(false) -- no such member, or trying to kick the owner
-        return
-    end
-    if not Discord_IsOwner(xPlayer.identifier, serverId) and not Discord_ExtOutranks(xPlayer.identifier, serverId, target[1].identifier) then
-        cb(false) -- v8: a role-based moderator can't kick someone with an equal/higher role
         return
     end
 
@@ -2564,7 +2527,7 @@ end)
 
 ESX.RegisterServerCallback('Unique_Phone:server:Discord:ToggleAdmin', function(source, cb, serverId, memberRowId)
     local xPlayer = Discord_GetPlayer(source)
-    if xPlayer == nil or serverId == nil or memberRowId == nil or not Discord_IsOwner(xPlayer.identifier, serverId) or Discord_IsAutoServer(serverId) then
+    if xPlayer == nil or serverId == nil or memberRowId == nil or not Discord_IsOwner(xPlayer.identifier, serverId) then
         cb(false)
         return
     end

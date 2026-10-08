@@ -4,7 +4,6 @@ Disallow: /dashboard.php
 Disallow: /auth.php
 Disallow: /reset_password.php
 Disallow: /lib.php
-Disallow: /api.php
 Disallow: /inc/
 
 Sitemap: https://example.com/sitemap.xml

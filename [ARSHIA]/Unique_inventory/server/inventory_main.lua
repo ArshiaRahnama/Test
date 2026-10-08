@@ -117,28 +117,58 @@ local BlockedWeapons = {
 -- reading a different store entirely. Reads the correct
 -- 'society_<thisPlayer'sJob>' store directly instead of going through a
 -- police-specific proxy event.
+-- FIX (reported: armory chest showing EMPTY despite real stock visible in
+-- the old Buy Guns menu): 'esx_society:getWeapons' is registered in
+-- esx_society via ESX.RegisterServerCallback(...) - which only writes
+-- into esx_society's OWN disconnected copy of the ESX table (confirmed by
+-- reading essentialmode/server/common.lua's own comments on this exact
+-- footgun: "A copy of ESX obtained via esx:getSharedObject in another
+-- resource is a one-time snapshot ... mutating that copy's ESX.Items
+-- never affects the real one essentialmode itself uses"). The
+-- TriggerEvent('esx_society:getWeapons', ...) call this used to make has
+-- NO listener anywhere in this codebase at all (confirmed: no
+-- AddEventHandler for that literal name exists anywhere) - so that whole
+-- inner callback, and therefore the list-population loop that used to be
+-- nested inside it, never ran once, ever. The armory list stayed
+-- permanently empty no matter how much stock existed. Reads the real
+-- stock synchronously now and defaults every weapon to authorized (same
+-- fail-open convention used everywhere else in this feature) - a real
+-- per-grade lock here would need esx_society to expose this through an
+-- actual cross-resource-safe event instead of ESX.RegisterServerCallback,
+-- which is a separate, bigger fix than this one.
 local function getJobArmoryWeapons(src, xPlayer)
     local list = {}
     if not xPlayer or not xPlayer.job then return list end
     local grade, job = xPlayer.job.grade, xPlayer.job.name
 
+    -- Per-grade lock restored: esx_society now exposes a real plain event
+    -- ('esx_society:getWeapons', AddEventHandler) instead of only an
+    -- unreachable ESX callback. The stock list is built OUTSIDE that event's
+    -- callback, so if esx_society is down/doesn't answer, nothing is hidden
+    -- (fail-open) - the list can never come back empty because of it again.
+    local authorizedWeapons, answered = {}, false
+    TriggerEvent('esx_society:getWeapons', src, grade, job, function(res)
+        if type(res) == 'table' then authorizedWeapons = res end
+        answered = true
+    end)
+
     TriggerEvent('esx_datastore:getSharedDataStore', 'society_' .. job, function(store)
         local weapons = store.get('weapons') or {}
-        TriggerEvent('esx_society:getWeapons', src, grade, job, function(authorizedWeapons)
-            authorizedWeapons = type(authorizedWeapons) == 'table' and authorizedWeapons or {}
-            for i = 1, #weapons do
-                if not BlockedWeapons[string.upper(weapons[i].name)] then
-                    local authorized = false
+        for i = 1, #weapons do
+            if not BlockedWeapons[string.upper(weapons[i].name)] then
+                local authorized = true
+                if answered and #authorizedWeapons > 0 then
+                    authorized = false
                     for _, shared in ipairs(authorizedWeapons) do
                         if shared.model == weapons[i].name and shared.status == true then
                             authorized = true
                             break
                         end
                     end
-                    list[#list + 1] = { name = weapons[i].name, authorized = authorized }
                 end
+                list[#list + 1] = { name = weapons[i].name, authorized = authorized, count = weapons[i].count or 1 }
             end
-        end)
+        end
     end)
 
     return list
@@ -164,7 +194,13 @@ RegisterServerCallbackSafe("Parzival:getJobINV1", function(source, cb)
             type = 'item_weapon',
             name = w.name,
             label = GetCachedWeaponLabel(w.name),
-            count = 1,
+            peso = ESX.getWeaponWeight and ESX.getWeaponWeight(w.name) or 2, -- was missing -> description showed 'NaN kg'
+            -- FIX (reported: armory "doesn't load/update" - part of why it
+            -- looked that way is this was hardcoded to 1 always, so taking
+            -- or buying a weapon never visibly changed anything even once
+            -- GetJobWeapon above started actually decrementing the real
+            -- stock). Shows the real remaining count now.
+            count = w.count,
             -- FIX (item-lock feature): show every armory weapon; lock the
             -- ones this grade isn't authorized for instead of hiding them.
             locked = not w.authorized
@@ -185,30 +221,27 @@ RegisterServerCallbackSafe("Parzival:getJobINV2", function(source, cb)
     if not xPlayer or not xPlayer.job then return cb(items) end
 
     TriggerEvent('esx_addoninventory:getSharedInventory', 'society_' .. xPlayer.job.name, function(inventory)
+        -- FIX (reported: Job Storage empty): every field is read defensively now
+        -- (a nil/string count or a missing label used to raise inside this callback and
+        -- silently abort the whole list), labels fall back to the real item label.
         local itemsss = (inventory and inventory.items) or {}
-
-        local elements = {}
-
-        for i=1, #itemsss, 1 do
-            table.insert(elements, {label = (itemsss[i].label or "Unknown"), value = itemsss[i].name, count = itemsss[i].count})
-        end
-
-        for i=1, #elements, 1 do
-            if elements[i].count > 0 then
-                
-                    table.insert(items, {
-                        type = 'item_standard',
-                        name = elements[i].value,
-                        label = elements[i].label,
-                        count = elements[i].count,
-                        -- FIX (item-lock feature): grade-gated job-stock items
-                        -- (config_joblock.lua) show up but locked instead of
-                        -- either being fully hidden or fully takeable by anyone.
-                        locked = IsJobItemLocked(xPlayer, elements[i].value)
-                    })
+        for i = 1, #itemsss do
+            local it = itemsss[i]
+            local count = tonumber(it and it.count) or 0
+            if it and it.name and count > 0 then
+                items[#items + 1] = {
+                    type = 'item_standard',
+                    name = it.name,
+                    label = (type(it.label) == 'string' and it.label ~= '' and it.label) or GetCachedItemLabel(it.name),
+                    count = count,
+                    peso = ESX.getItemWeight and ESX.getItemWeight(it.name) or 0.5,
+                    locked = IsJobItemLocked(xPlayer, it.name)
+                }
             end
         end
-
+        if #items == 0 then
+            print(('[Unique_inventory] Job Storage for society_%s is empty (inventory %s, %d entries)'):format(xPlayer.job.name, inventory and 'found' or 'NOT FOUND', #itemsss))
+        end
     end)
     cb(items)
 end)
@@ -236,6 +269,30 @@ RegisterNetEvent('Parzival:GetJobWeapon', function(item)
     end
 
     if xPlayer.hasWeapon(item) then return end
+
+    -- FIX (reported: "buying/depositing a weapon doesn't load [update]" -
+    -- this is the actual root cause for the TAKE side): this handler gave
+    -- the player the weapon but never removed it from the armory's own
+    -- stock at all - society_<job>'s weapons list never changed, so it
+    -- looked exactly like the armory display "wasn't loading/updating"
+    -- no matter how many were taken. Mirrors PutJobWeapon's own store
+    -- access, just subtracting instead of adding; an entry that reaches
+    -- 0 is removed so it actually disappears from the list once stock
+    -- runs out, instead of this becoming an infinite, never-consumed
+    -- weapon supply.
+    TriggerEvent('esx_datastore:getSharedDataStore', 'society_' .. xPlayer.job.name, function(store)
+        local weapons = store.get('weapons') or {}
+        for i = 1, #weapons do
+            if weapons[i].name == item then
+                weapons[i].count = (weapons[i].count or 1) - 1
+                if weapons[i].count <= 0 then
+                    table.remove(weapons, i)
+                end
+                store.set('weapons', weapons)
+                break
+            end
+        end
+    end)
 
     -- armory weapons carry a DOJ- serial (see essentialmode/server/common.lua)
     local serial = ESX.GenerateWeaponSerial and ESX.GenerateWeaponSerial('DOJ') or nil

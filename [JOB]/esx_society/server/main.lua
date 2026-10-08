@@ -1838,6 +1838,24 @@ ESX.RegisterServerCallback('esx_society:getWeapons', function(source, cb, rank, 
 	cb(json.decode(weapon))
 end)
 
+-- EXPOSED EVENT (requested: "put the events out"): plain, cross-resource-safe
+-- twin of the ESX.RegisterServerCallback above, under the SAME name. Other
+-- resources (Unique_inventory's armory list) call it as
+--   TriggerEvent('esx_society:getWeapons', src, grade, job, function(list) ... end)
+-- which a callback registered only via ESX.RegisterServerCallback can never
+-- answer. Same data: Jobs[job].grades[grade].weapons -> {{model=..,status=bool}}.
+AddEventHandler('esx_society:getWeapons', function(src, rank, job, cb)
+	if type(cb) ~= 'function' then return end
+	local list = {}
+	local grades = Jobs[job] and Jobs[job].grades
+	local raw = grades and grades[tostring(rank)] and grades[tostring(rank)].weapons
+	if raw and raw ~= '' then
+		local ok, decoded = pcall(json.decode, raw)
+		if ok and type(decoded) == 'table' then list = decoded end
+	end
+	cb(list)
+end)
+
 ESX.RegisterServerCallback('esx_society:getWeaponsdivisions', function(source, cb, division, job)
 	if division then
 		local result = MySQL.Sync.fetchAll("SELECT weapons FROM divisions WHERE owner = @owner And name = @name", {
@@ -2184,6 +2202,248 @@ ESX.RegisterServerCallback('esx_society:setDivisionWeapPerm', function(source, c
 		cb(true)
 	end)
 end)
+
+-------------------------------------------------------------------
+-- FEATURE (requested: bring the same Unique_Garage menu that already
+-- works for the gang garage to the organizations' vehicle garages too,
+-- using the per-rank Vehicle Access this resource's boss menu already
+-- manages via ChangeVehiclePerm/esx_society:setSocietyVehPerm - storing
+-- into Jobs[job].grades[rank].vehicles exactly like it always has).
+--
+-- Unique_Garage's client.lua 'gang' menu type already drives its
+-- GetVehicles/IsVehOwned/SetVehState calls purely by an `owner` STRING
+-- and a literal "Gang" type tag - nothing in those three SQL queries
+-- actually checks it's a real gang (confirmed by reading Unique_Garage/
+-- server.lua directly), so passing a JOB NAME in that same `owner` slot
+-- reuses all of that proven, working code completely unchanged. The one
+-- genuinely gang-specific piece is the per-rank vehicleAccess lookup
+-- (FMGangs:GetRankAccess, a Unique_ALLGangs callback) - this is this
+-- resource's own equivalent of that, built from the SAME vehicles JSON
+-- ChangeVehiclePerm already writes, just turned into the
+-- {vehicleAccess = {[model]=bool}} shape Unique_Garage's new "jobfleet"
+-- menu type (added to Unique_Garage/client.lua) expects.
+-------------------------------------------------------------------
+-- FIX (reported, same root cause as the empty-armory bug in
+-- Unique_inventory): ESX.RegisterServerCallback(...) only writes into
+-- THIS resource's own disconnected copy of the ESX table - a client's
+-- standard ESX.TriggerServerCallback(...) call is handled entirely
+-- inside essentialmode's OWN resource, looking up essentialmode's OWN
+-- ESX.ServerCallbacks table, which never contains anything esx_society
+-- registered this way. Unique_Garage's "jobfleet" menu calling this
+-- (the only caller - see client.lua) would have hung waiting for a
+-- reply that could never arrive. Replaced with a plain request/reply
+-- event pair instead - the same proven-safe cross-resource shape as
+-- esx_datastore/esx_addoninventory's events elsewhere in this codebase,
+-- just client<->server here instead of server<->server.
+RegisterServerEvent('esx_society:requestJobRankVehicleAccess')
+AddEventHandler('esx_society:requestJobRankVehicleAccess', function()
+	local source = source
+	local xPlayer = ESX.GetPlayerFromId(source)
+	local vehicleAccess = {}
+	if xPlayer and xPlayer.job and Jobs[xPlayer.job.name] then
+		local gradeData = Jobs[xPlayer.job.name].grades[tostring(xPlayer.job.grade)]
+		local raw = gradeData and gradeData.vehicles
+		if raw and raw ~= '' then
+			local ok, rows = pcall(json.decode, raw)
+			if ok and type(rows) == 'table' then
+				for _, row in ipairs(rows) do
+					if row.model and row.value == false then
+						vehicleAccess[string.lower(row.model)] = false
+					end
+				end
+			end
+		end
+	end
+	TriggerClientEvent('esx_society:jobRankVehicleAccessResult', source, { vehicleAccess = vehicleAccess })
+end)
+
+-- FIX (requested): "take a vehicle" at an organization's station used to
+-- be esx_uniquejobs' own disconnected spawn-any-authorized-model system
+-- (each job file had its own static Config_X.AuthorizedVehicles, never
+-- checked against this resource's real per-rank Vehicle Access at all).
+-- Validates against the SAME Jobs[job].grades[rank].vehicles data the
+-- callback above reads, derives a plate from the player's unit callsign
+-- (esx_uniquejobs' existing unit system - GetPlayerUnitCallsign export),
+-- and registers the vehicle into owned_vehicles exactly like
+-- FMGangs:RegisterGangVehicle does for gang vehicles (see that function
+-- for why this exact column list/shape), so it then shows up in the real
+-- Unique_Garage menu (Unique_Garage:OpenJobFleetGarage) for store/retrieve
+-- from then on, same as a gang vehicle would.
+RegisterServerEvent('esx_society:takeJobVehicle')
+AddEventHandler('esx_society:takeJobVehicle', function(model)
+	local source = source
+	-- FIX (reported: "Could not reach the vehicle fleet - try again" every
+	-- time): every early-return below used to exit completely silently.
+	-- The client (client/job_fleet_helper.lua) only ever finds out via a
+	-- blind 5-second timeout with no idea WHY it failed - which is exactly
+	-- the generic message that was reported. Every return path now tells
+	-- the player something, and the Jobs[job]/grade lookup - which was a
+	-- hard silent bail-out before - now degrades to "authorized" instead
+	-- of blocking, matching the same "never explicitly toggled = allowed"
+	-- convention this resource already uses everywhere else
+	-- (itemAccess/vehicleAccess), so a job/grade that simply has no saved
+	-- vehicle-permission row yet (nobody opened the boss menu for it) no
+	-- longer silently breaks every vehicle take-out.
+	-- FIX (reported: generic "Could not reach the vehicle fleet - try again"
+	-- showing even though every path below already sent a SPECIFIC
+	-- notification): the client only ever waited for success and otherwise
+	-- blindly timed out after 5 seconds, so even a clean, immediate denial
+	-- (not authorized / no unit) still showed the specific message AND
+	-- then the generic one 5 seconds later. Every return path now also
+	-- fires 'esx_society:jobVehicleFailed' so the client can stop waiting
+	-- immediately and skip the generic message entirely.
+	local xPlayer = ESX.GetPlayerFromId(source)
+	if not xPlayer or not xPlayer.job or xPlayer.job.name == 'nojob' then
+		TriggerClientEvent('esx:showNotification', source, 'You do not have a job that can take out a fleet vehicle')
+		TriggerClientEvent('esx_society:jobVehicleFailed', source)
+		return
+	end
+	if type(model) ~= 'string' or model == '' then
+		TriggerClientEvent('esx:showNotification', source, 'Invalid vehicle model')
+		TriggerClientEvent('esx_society:jobVehicleFailed', source)
+		return
+	end
+
+	local job, grade = xPlayer.job.name, xPlayer.job.grade
+	local authorized = true -- a model never explicitly toggled, or a job/grade with no saved permission row at all, defaults to accessible (same convention as itemAccess/vehicleAccess elsewhere)
+	local raw = Jobs[job] and Jobs[job].grades and Jobs[job].grades[tostring(grade)] and Jobs[job].grades[tostring(grade)].vehicles
+	if raw and raw ~= '' then
+		local ok, rows = pcall(json.decode, raw)
+		if ok and type(rows) == 'table' then
+			for _, row in ipairs(rows) do
+				if row.model and string.lower(row.model) == string.lower(model) and row.value == false then
+					authorized = false
+					break
+				end
+			end
+		end
+	end
+
+	if not authorized then
+		TriggerClientEvent('esx:showNotification', source, 'You are not authorized for this vehicle at your rank')
+		TriggerClientEvent('esx_society:jobVehicleFailed', source)
+		return
+	end
+
+	local callsign = nil
+	local ok = pcall(function()
+		callsign = exports['esx_uniquejobs']:GetPlayerUnitCallsign(xPlayer.identifier)
+	end)
+	if not ok or not callsign or callsign == '' then
+		TriggerClientEvent('esx:showNotification', source, 'You must create a unit first (type /unit) before taking out a vehicle')
+		TriggerClientEvent('esx_society:jobVehicleFailed', source)
+		return
+	end
+
+	local plate = string.upper(callsign):gsub('[^%w]', '')
+	if #plate > 8 then plate = string.sub(plate, 1, 8) end
+	if #plate == 0 then
+		TriggerClientEvent('esx:showNotification', source, 'You must create a unit first (type /unit) before taking out a vehicle')
+		TriggerClientEvent('esx_society:jobVehicleFailed', source)
+		return
+	end
+
+	MySQL.Async.execute('INSERT IGNORE INTO owned_vehicles (owner, plate, vehicle, job, type, stored, engine, fuel, body) VALUES (@owner, @plate, @vehicle, @job, @type, @stored, @engine, @fuel, @body)', {
+		['@owner']   = job,
+		['@plate']   = plate,
+		['@vehicle'] = json.encode({ model = model, plate = plate }),
+		['@job']     = 'job_fleet',
+		['@type']    = 'car',
+		['@stored']  = 0,
+		['@engine']  = 1000,
+		['@fuel']    = 100,
+		['@body']    = 1000,
+	}, function()
+		TriggerClientEvent('esx_society:jobVehicleReady', source, job)
+	end)
+end)
+
+-- FIX (requested: "with a command you can add or remove a vehicle for
+-- organizations"). Boss/on-duty-admin sits in the vehicle and runs this -
+-- same sanity checks as the existing esx_society:addCarJob (must actually
+-- be sitting in that model, label length-checked), but registers it
+-- straight into owned_vehicles (the Unique_Garage-visible fleet) instead
+-- of job_vehicles_custom (which only ever fed the OLD static authorized-
+-- model list, not an actual spawnable/storable vehicle).
+RegisterCommand('addjobvehicle', function(source, args)
+	if source == 0 then return end
+	local xPlayer = ESX.GetPlayerFromId(source)
+	if not xPlayer or not xPlayer.job or xPlayer.job.name == 'nojob' then return end
+	if not (isOnDutyAdmin(source) or isPlayerBoss(source, xPlayer.job.name)) then
+		TriggerClientEvent('esx:showNotification', source, 'You do not have permission to do this')
+		return
+	end
+
+	local ped = GetPlayerPed(source)
+	local veh = GetVehiclePedIsIn(ped, false)
+	if veh == 0 then
+		TriggerClientEvent('esx:showNotification', source, 'You must be sitting in the vehicle you want to add')
+		return
+	end
+
+	local model = GetEntityModel(veh)
+	local modelName = args[1]
+	if not modelName then
+		TriggerClientEvent('esx:showNotification', source, 'Usage: /addjobvehicle [plate]')
+		return
+	end
+	if GetHashKey(modelName) ~= model then
+		TriggerClientEvent('esx:showNotification', source, 'The model name you typed does not match the vehicle you are sitting in')
+		return
+	end
+
+	local plate = args[2] and string.upper(args[2]) or GetVehicleNumberPlateText(veh)
+	plate = string.gsub(plate, '%s+', '')
+	if #plate == 0 or #plate > 8 then
+		TriggerClientEvent('esx:showNotification', source, 'Invalid plate')
+		return
+	end
+
+	MySQL.Async.execute('INSERT IGNORE INTO owned_vehicles (owner, plate, vehicle, job, type, stored, engine, fuel, body) VALUES (@owner, @plate, @vehicle, @job, @type, @stored, @engine, @fuel, @body)', {
+		['@owner']   = xPlayer.job.name,
+		['@plate']   = plate,
+		['@vehicle'] = json.encode({ model = modelName, plate = plate }),
+		['@job']     = 'job_fleet',
+		['@type']    = 'car',
+		['@stored']  = 0,
+		['@engine']  = 1000,
+		['@fuel']    = 100,
+		['@body']    = 1000,
+	}, function(rowsChanged)
+		if rowsChanged and rowsChanged > 0 then
+			TriggerClientEvent('esx:showNotification', source, ('Vehicle added to %s fleet (plate %s)'):format(xPlayer.job.name, plate))
+		else
+			TriggerClientEvent('esx:showNotification', source, 'That plate is already registered')
+		end
+	end)
+end, false)
+
+RegisterCommand('removejobvehicle', function(source, args)
+	if source == 0 then return end
+	local xPlayer = ESX.GetPlayerFromId(source)
+	if not xPlayer or not xPlayer.job or xPlayer.job.name == 'nojob' then return end
+	if not (isOnDutyAdmin(source) or isPlayerBoss(source, xPlayer.job.name)) then
+		TriggerClientEvent('esx:showNotification', source, 'You do not have permission to do this')
+		return
+	end
+
+	local plate = args[1] and string.upper(string.gsub(args[1], '%s+', ''))
+	if not plate or #plate == 0 then
+		TriggerClientEvent('esx:showNotification', source, 'Usage: /removejobvehicle [plate]')
+		return
+	end
+
+	MySQL.Async.execute('DELETE FROM owned_vehicles WHERE LOWER(owner) = @owner AND plate = @plate', {
+		['@owner'] = string.lower(xPlayer.job.name),
+		['@plate'] = plate,
+	}, function(rowsChanged)
+		if rowsChanged and rowsChanged > 0 then
+			TriggerClientEvent('esx:showNotification', source, 'Vehicle removed from fleet')
+		else
+			TriggerClientEvent('esx:showNotification', source, 'No fleet vehicle with that plate was found')
+		end
+	end)
+end, false)
 
 ESX.RegisterServerCallback('esx_society:getVehicles', function(source, cb, rank, job)
 	local veh       = (Jobs[job].grades[tostring(rank)].vehicles) or '{}'

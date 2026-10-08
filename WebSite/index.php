@@ -1,6 +1,7 @@
 <?php
 require __DIR__."/lib.php"; $ACTIVE='home';
 $ST=site_stats(); $N=$ST['citizens']; $SC=$ST['staffCount']; $GC=$ST['gangCount'];
+$openGangs=count(array_filter($ST['gangs'],fn($g)=>$g[2])); $onlineForces=array_sum(array_map(fn($d)=>$d[1],$ST['depts']));
 $J=JSON_UNESCAPED_UNICODE|JSON_HEX_TAG|JSON_HEX_AMP;
 ?>
 <!DOCTYPE html>
@@ -106,14 +107,6 @@ $J=JSON_UNESCAPED_UNICODE|JSON_HEX_TAG|JSON_HEX_AMP;
 .bstats b{display:block;font-size:1.7rem;color:var(--gold);line-height:1.5}
 .bstats span{font-size:.8rem;color:var(--mut)}
 @media(max-width:800px){.guide{grid-template-columns:1fr}.moon{width:80px;height:80px}.band{padding:38px 20px}.hero{padding-bottom:150px}}
-
-/* ===== ارگان‌ها ===== */
-.orgs{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px;margin:30px 0}
-.org{position:relative;padding:22px 18px 20px;border-radius:var(--r);background:linear-gradient(165deg,var(--panel),#0a0906);border:1px solid var(--line2);border-top:3px solid var(--c);transition:transform .25s var(--ease),box-shadow .25s}
-.org:hover{transform:translateY(-5px);box-shadow:0 18px 40px -14px #000c,0 0 0 1px color-mix(in srgb,var(--c) 30%,transparent)}
-.org h3{font-size:1.1rem;color:var(--c);direction:ltr;margin-bottom:16px}
-.org .chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
-.org .chips span{padding:6px 14px;border-radius:99px;font-size:.82rem;font-weight:700;direction:ltr;color:var(--text);background:color-mix(in srgb,var(--c) 12%,transparent);border:1px solid color-mix(in srgb,var(--c) 40%,transparent)}
 </style>
 </head>
 <body>
@@ -153,7 +146,7 @@ $J=JSON_UNESCAPED_UNICODE|JSON_HEX_TAG|JSON_HEX_AMP;
  <div class="rankwrap">
   <div class="podium" id="podium"></div>
   <div class="list" id="list" style="text-align:start"></div>
-  <p class="rk-note">رنک‌ها به‌صورت خودکار و لحظه‌ای به‌روز می‌شن.</p>
+  <p class="rk-note">رنک‌ها به‌صورت خودکار از دیتابیس سرور به‌روز می‌شن.</p>
  </div>
 </div></section>
 
@@ -176,20 +169,29 @@ $J=JSON_UNESCAPED_UNICODE|JSON_HEX_TAG|JSON_HEX_AMP;
  </div>
 </div></section>
 
+<section id="why"><div class="wrap rv">
+ <div class="eyebrow">چرا <span data-name>یونیک</span>؟</div>
+ <h2>شهری که با هر تصمیم تو عوض می‌شه</h2>
+ <p class="sub">یه محیط رول‌پلی جدی با اقتصاد پویا، قانون واقعی و شهروندایی که هر شب داستان خودشونو می‌سازن.</p>
+ <div class="grid">
+  <div class="card"><div class="ictile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="11" rx="4"/><circle cx="8" cy="12.5" r="1.6"/><circle cx="16" cy="12.5" r="1.6"/></svg></div><h3>بدون نیاز به استیم</h3><p>با VMP وارد شو و بدون خرید نسخه‌ی اصلی GTA V بازی کن.</p></div>
+  <div class="card"><div class="ictile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg></div><h3>دسترسی آسان به سرور</h3><p>سرور رو از لیست انتخاب کن و بدون مراحل پیچیده وارد شهر شو.</p></div>
+  <div class="card"><div class="ictile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.4 8.4 0 0 1-8.4 8.4 8.6 8.6 0 0 1-3.8-.9L3 20l1-5.6a8.4 8.4 0 0 1-.9-3.9A8.4 8.4 0 0 1 11.5 2 8.6 8.6 0 0 1 21 11.5Z"/></svg></div><h3>کامیونیتی فعال دیسکورد</h3><p>اخبار، رویدادها و اطلاعیه‌های مهم شهر رو دنبال کن.</p></div>
+  <div class="card"><div class="ictile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg></div><h3>پشتیبانی ۲۴ ساعته</h3><p>تیم پشتیبانی از طریق تیکت دیسکورد جواب سوالات و مشکلاتته.</p></div>
+ </div>
+</div></section>
+
 <section style="padding-top:20px"><div class="wrap rv">
  <div class="band">
   <div class="eyebrow" style="justify-content:center">عضوگیری و دپارتمان</div>
   <h2>جایگاهتو تو شهر پیدا کن</h2>
-  <p class="sub">کل ارگان‌ها نیروی جدید می‌گیرن و گنگ‌های فعال هم عضو می‌پذیرن. همه‌ی گزینه‌ها رو یه‌جا ببین و درخواستتو مستقیم از طریق دیسکورد رسمی یونیک ثبت کن.</p>
-  <div class="orgs">
-  <?php $gc=['doj'=>'#b48cff','law'=>'#7dd3fc','svc'=>'#3ddc84'];
-  foreach (CFG['org_groups'] as $gk => $g): $list=array_values(array_filter(CFG['depts'],fn($d)=>$d['group']===$gk)); if(!$list) continue; ?>
-   <div class="org" style="--c:<?=e($gc[$gk]??'#ffc107')?>">
-    <h3><?=e($g['label'])?></h3>
-    <div class="chips"><?php foreach ($list as $d): ?><span><?=e($d['label'])?></span><?php endforeach; ?></div>
-   </div>
-  <?php endforeach; ?>
+  <p class="sub">گنگ‌ها و ارگان‌های رسمی شهر (Department Of Justice، Law Enforcement و Organ Services) دنبال نیروی جدیدن. همه‌چیز رو تو یه صفحه ببین و از داشبورد درخواست بده.</p>
+  <div class="bstats">
+   <div><b data-n="<?=$openGangs?>"><?=$openGangs?></b><span>گنگ با عضوگیری باز</span></div>
+   <div><b data-n="<?=$onlineForces?>"><?=$onlineForces?></b><span>نیروی آنلاین ارگان‌ها</span></div>
+   <div><b data-n="<?=count($ST['depts'])?>"><?=count($ST['depts'])?></b><span>ارگان رسمی</span></div>
   </div>
+  <a class="btn gold" href="join.php">مشاهده عضوگیری و ارگان‌ها ←</a>
  </div>
 </div></section>
 </main>

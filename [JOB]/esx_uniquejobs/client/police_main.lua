@@ -641,61 +641,19 @@ function OpenVehicleSpawnerMenu_police(station, partNum)
 
 					if model then
 						if not DoesEntityExist(vehicle) then
-
-							local playerPed = PlayerPedId()
-
-							local function requestPlate()
-								-- FIX (requested): was lib.inputDialog('Enter Vehicle Plate', ...) -
-								-- manual plate entry. Now derives the plate from the player's unit
-								-- callsign instead (client/unit_plate_helper.lua) - tells them to make a
-								-- unit first (/unit) if they don't have one, same (table-with-one-string
-								-- or nil) return shape, so everything below this line is unchanged.
-								local plate = GetUnitPlateOrWarn()
-								if plate and plate[1] then
-									plate[1] = string.upper(plate[1])
-
-									ESX.TriggerServerCallback('checkPlateInServer', function(plateExists)
-										if plateExists then
-
-											local alert = lib.alertDialog({
-												header = 'Az In Plake Qablan Estefadeh Shode',
-												content = 'Aya Mikhahid Hazf Shavad?',
-												centered = true,
-												cancel = true
-											})
-											if alert == 'confirm' then
-												ESX.TriggerServerCallback('deletevehiclejob', function(plate)
-													TriggerEvent('chat:addMessage', {
-														args = {'^1SYSTEM', 'Mashin be moafaghiat hazf shod'}
-													})
-												end, "PD" .. plate[1])
-												menu.close()
-
-												Wait(1000)
-												spawnvehicles_police(data, plate, vehicle, station, partNum)
-
-											else
-												TriggerEvent('chat:addMessage', {
-													args = {'^1SYSTEM', 'Cancel Shod'}
-												})
-
-											end
-										else
-											if #plate[1] == 6 then
-												menu.close()
-
-												spawnvehicles_police(data, plate, vehicle, station, partNum)
-											else
-												TriggerEvent('chat:addMessage', {
-													args = {'^1SYSTEM', 'Plake Mashin Bayad 6 Character Bashad'}
-												})
-												requestPlate()
-											end
-										end
-									end, "PD" .. plate[1])
-								end
-							end
-							requestPlate()
+							menu.close()
+							-- FIX (requested): was a manual plate dialog + direct
+							-- ESX.Game.SpawnVehicle with no persistence at all. Now
+							-- registers (or reuses) this model as a real fleet vehicle
+							-- (esx_society:takeJobVehicle - plate derived from the
+							-- player's unit callsign, same as before) and opens it
+							-- through the exact same Unique_Garage menu the gang
+							-- garage already uses (client/unit_plate_helper.lua's
+							-- GetUnitPlateOrWarn is no longer needed here - the plate
+							-- is now derived server-side in esx_society, since the
+							-- vehicle needs to exist as a real DB row before
+							-- Unique_Garage can show/spawn it).
+							OpenJobFleetGarage(model)
 						else
 							ESX.ShowNotification(_U('vehicle_out'))
 						end

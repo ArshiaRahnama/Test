@@ -13,6 +13,31 @@ AddEventHandler('Unique_Garage:OpenGangGarage', function(gangName, coord, vehTyp
 	OpenMenuG('gang', { gangName = gangName, coord = coord, vehType = vehType or 'car' })
 end)
 
+-------------------------------------------------------------------
+-- FEATURE (requested: bring the same garage menu that already works for
+-- gangs to organization/job vehicle garages too). esx_uniquejobs'
+-- per-job client files (police_main.lua etc.) call this the exact same
+-- way FMGangs calls OpenGangGarage above - see OpenMenuG's new "jobfleet"
+-- branch further down for how this reuses the SAME GetVehicles/
+-- IsVehOwned/SetVehState calls the gang menu already proved out (they're
+-- driven by a plain `owner` string + a literal "Gang" type tag, nothing
+-- in Unique_Garage/server.lua actually validates it's a real gang - a job
+-- name in that same slot works identically).
+-------------------------------------------------------------------
+RegisterNetEvent('esx_society:jobRankVehicleAccessResult') -- FIX: server->client event must be net-registered or it is dropped ('not safe for net')
+RegisterNetEvent('Unique_Garage:OpenJobFleetGarage')
+AddEventHandler('Unique_Garage:OpenJobFleetGarage', function(jobName, coord, vehType)
+	OpenMenuG('jobfleet', { jobName = jobName, coord = coord, vehType = vehType or 'car' })
+end)
+
+RegisterNetEvent('Unique_Garage:StoreJobFleetVehicle')
+AddEventHandler('Unique_Garage:StoreJobFleetVehicle', function(jobName)
+	-- Identical body to StoreGangVehicle below - the server side
+	-- (SetVehState/IsVehOwned) only ever looks at the string passed as
+	-- `playerjob` when `job == 'Gang'`, so this reuses it unchanged.
+	TriggerEvent('Unique_Garage:StoreGangVehicle', jobName)
+end)
+
 RegisterNetEvent('Unique_Garage:StoreGangVehicle')
 AddEventHandler('Unique_Garage:StoreGangVehicle', function(gangName)
 	local PlayerPed = PlayerPedId()
@@ -584,6 +609,80 @@ OpenMenuG = function(type, extra)
 				end
 			end, "Gang", extra.gangName, extra.vehType)
 		end, extra.gangName)
+	elseif type == "jobfleet" then
+		-- FEATURE (requested): exact mirror of the "gang" branch just
+		-- above - same camera placement, same per-rank access filter
+		-- (just against esx_society:GetJobRankVehicleAccess instead of
+		-- FMGangs:GetRankAccess), same "Gang"-labeled GetVehicles call
+		-- (see the long comment on Unique_Garage:OpenJobFleetGarage at
+		-- the top of this file for why "Gang" is correct here even
+		-- though extra.jobName is an organization, not an actual gang).
+		local heading = extra.coord.h or 0.0
+		local camAngleOffset = 40.0
+		local camDistance = 4.5
+		local camHeight = 1.3
+		local placeAngle = math.rad(heading + camAngleOffset)
+		LastCamera = {
+			vehSpawn = vector4(extra.coord.x, extra.coord.y, extra.coord.z, extra.coord.h),
+			location = {
+				posX = extra.coord.x + camDistance * -math.sin(placeAngle),
+				posY = extra.coord.y + camDistance * math.cos(placeAngle),
+				posZ = extra.coord.z + camHeight,
+				rotX = -8.0, rotY = 0.0, rotZ = heading + camAngleOffset + 180.0, fov = 45.0
+			}
+		}
+		LastSpawnPos = LastCamera.vehSpawn
+		LastGangJob = extra.jobName -- StoreJobFleetVehicle forwards to StoreGangVehicle, which reads this same var
+
+		-- FIX (reported): was Callback('esx_society:GetJobRankVehicleAccess',
+		-- ...) i.e. ESX.TriggerServerCallback - esx_society registers that
+		-- name via ESX.RegisterServerCallback, which (confirmed by reading
+		-- essentialmode/server/common.lua directly) only writes into
+		-- esx_society's OWN disconnected copy of the ESX table, so this
+		-- call could never actually get a reply and the garage would hang
+		-- here forever. Uses a plain request/reply event pair instead
+		-- (esx_society/server/main.lua's matching fix), with a short
+		-- timeout that just shows everything unlocked if esx_society
+		-- somehow still doesn't answer, rather than hanging the menu open.
+		local jobAccessReceived, jobVehicleAccess = false, {}
+		local jobAccessHandler = AddEventHandler('esx_society:jobRankVehicleAccessResult', function(access)
+			jobVehicleAccess = (access and access.vehicleAccess) or {}
+			jobAccessReceived = true
+		end)
+		TriggerServerEvent('esx_society:requestJobRankVehicleAccess')
+
+		Citizen.CreateThread(function()
+			local timeout = GetGameTimer() + 3000
+			while not jobAccessReceived and GetGameTimer() < timeout do
+				Citizen.Wait(0)
+			end
+			RemoveEventHandler(jobAccessHandler)
+			local vehicleAccess = jobVehicleAccess
+
+			Callback('GetVehicles', function(data)
+				if data ~= nil then
+					inGarage = 0
+					local newData = {}
+					for index, vh in pairs(data) do
+						vh.stored = ToStoredNum(vh.stored)
+						vh.engine = tonumber(vh.engine) or 1000
+						vh.fuel = tonumber(vh.fuel) or 100
+						vh.body = tonumber(vh.body) or 1000
+						local displaytext = string.gsub(GetDisplayNameFromVehicleModel(json.decode(vh.vehicle).model), "%s+", ""):lower()
+						vh["VehModel"] = displaytext
+						vh["VehText"] = GetLabelText(displaytext)
+						if not (vehicleAccess and vehicleAccess[displaytext] == false) then
+							NewTable(newData, vh)
+						end
+					end
+					Camera()
+					SendReactMessage('setOpen', { setVeh = newData, setName = extra.jobName .. ' Garage', inGarage = inGarage, Price = 0 })
+					SetNuiFocus(true, true)
+				else
+					SafeNotify("Shoma Hich Mashini Nadarid!")
+				end
+			end, "Gang", extra.jobName, extra.vehType)
+		end)
 	elseif type == "garage" then
 		for index_, esc in pairs(Customize.Garages) do
 			local NPCDistance = #(PlayerCoord - esc.Npc.Pos)
