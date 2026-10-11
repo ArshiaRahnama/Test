@@ -2107,7 +2107,7 @@ end
 
 
 
-function OpenVehicleSpawnerMenu_ambulance(station, partNum)
+function OpenVehicleSpawnerMenu_ambulance_legacy(station, partNum)
 	local vehicles = Config_ambulance.Hospitals[station].Vehicles
 	ESX.UI.Menu.CloseAll()
 
@@ -2425,7 +2425,7 @@ function GetAvailableVehicleSpawnPoint_ambulance(hospital, part, partNum)
 
 end
 
-function OpenheliSpawnerMenu_ambulance(station, partNum)
+function OpenheliSpawnerMenu_ambulance_legacy(station, partNum)
 	local vehicles = Config_ambulance.Hospitals[station].Helicopters
 	ESX.UI.Menu.CloseAll()
 
@@ -3067,4 +3067,13 @@ function OpendivisionsMenu_ambulance()
             menu.close()
         end)
     end)
+end
+
+function OpenVehicleSpawnerMenu_ambulance(station, partNum)
+	OpenJobFleetOrLegacy(function() OpenVehicleSpawnerMenu_ambulance_legacy(station, partNum) end)
+end
+
+
+function OpenheliSpawnerMenu_ambulance(station, partNum)
+	OpenJobFleetOrLegacy(function() OpenheliSpawnerMenu_ambulance_legacy(station, partNum) end, 'heli')
 end

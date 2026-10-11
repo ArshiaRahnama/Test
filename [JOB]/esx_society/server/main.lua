@@ -1003,15 +1003,82 @@ ESX.RegisterServerCallback('esx_society:isBoss', function(source, cb, job)
 	cb(isPlayerBoss(source, job))
 end)
 
+-- FIX (reported: "I cross PISTOL and PISTOL50, which I had crossed before, becomes ticked"):
+-- the permission list used to be rebuilt from the `rows` the CLIENT sent (each row's
+-- on-screen value), so any row the menu showed differently from what was stored got saved
+-- with the wrong state. The server now starts from what is STORED for that rank, flips
+-- ONLY the clicked entry (case-insensitive match), and uses the client rows only to know
+-- which entries exist (unknown ones start unticked, like the menu shows them).
+local function buildPermTable(existingRaw, rows, keyField, choice, status)
+	SDbg(('^5[LOCKDBG]^0 BOSS toggle field=%s choice=%s newStatus=%s | stored(before)=%s | clientRows=%d'):format(tostring(keyField), tostring(choice), tostring(status), tostring(existingRaw), type(rows) == 'table' and #rows or -1))
+	local state, order = {}, {}
+	local function put(key, st)
+		if type(key) ~= 'string' or key == '' then return end
+		local lk = string.lower(key)
+		if state[lk] == nil then
+			state[lk] = { key = key, status = st and true or false }
+			order[#order + 1] = lk
+		end
+	end
+	if existingRaw and existingRaw ~= '' then
+		local ok, dec = pcall(json.decode, existingRaw)
+		if ok and type(dec) == 'table' then
+			for _, e in ipairs(dec) do put(e[keyField], e.status == true) end
+		end
+	end
+	for _, r in ipairs(rows or {}) do put(r[keyField], false) end
+	put(choice, false)
+	if type(choice) == 'string' then
+		state[string.lower(choice)].status = status and true or false
+	end
+	local out = {}
+	for _, lk in ipairs(order) do
+		out[#out + 1] = { [keyField] = state[lk].key, status = state[lk].status }
+	end
+	SDbg(('^5[LOCKDBG]^0 BOSS toggle result(after)=%s'):format(json.encode(out)))
+	return out
+end
+
+-- ===== LOCKDBG: set to false to silence all [LOCKDBG] lines from this resource =====
+local LOCKDBG = false
+local function SLog(fmt, ...)
+	if LOCKDBG then
+		local ok, msg = pcall(string.format, fmt, ...)
+		print('^5[LOCKDBG][society]^0 ' .. (ok and msg or tostring(fmt)))
+	end
+end
+function SDbg(...) if LOCKDBG then print(...) end end
+
+-- FIX (reported: "I untick a weapon in boss action and it becomes active again" /
+-- "locked in boss action but still unlocked for the rank"): the client menu lets the
+-- job's TOP rank in (e.g. FBI rank 7 "General", whose grade_name is not 'boss'), but
+-- this server check only accepted grade_name == 'boss', so every save from that rank
+-- was silently refused (cb() with nothing) and the menu reloaded the old ticks. The
+-- top (highest-numbered) grade of the job now counts as boss here too - same rule as
+-- the client menu.
 function isPlayerBoss(playerId, job)
 	local xPlayer = ESX.GetPlayerFromId(playerId)
+	if not xPlayer or not xPlayer.job then return false end
 
-	if xPlayer.job.name == job and xPlayer.job.grade_name == 'boss' then
-		return true
+	if xPlayer.job.name == job then
+		if xPlayer.job.grade_name == 'boss' then SLog('isPlayerBoss src=%s job=%s grade=%s(%s) -> TRUE (grade_name boss)', tostring(playerId), job, tostring(xPlayer.job.grade), tostring(xPlayer.job.grade_name)) return true end
+
+		local top = -1
+		local grades = Jobs[job] and Jobs[job].grades
+		if grades then
+			for g, _ in pairs(grades) do
+				local n = tonumber(g)
+				if n and n > top then top = n end
+			end
+		end
+		if top >= 0 and tonumber(xPlayer.job.grade) == top then SLog('isPlayerBoss src=%s job=%s grade=%s(%s) -> TRUE (top rank, top=%s)', tostring(playerId), job, tostring(xPlayer.job.grade), tostring(xPlayer.job.grade_name), tostring(top)) return true end
+		SLog('isPlayerBoss src=%s job=%s grade=%s(%s) top=%s -> FALSE', tostring(playerId), job, tostring(xPlayer.job.grade), tostring(xPlayer.job.grade_name), tostring(top))
 	else
-		print(('esx_society: %s attempted open a society boss menu!'):format(xPlayer.identifier))
-		return false
+		SLog('isPlayerBoss src=%s asked job=%s but player job=%s -> FALSE', tostring(playerId), tostring(job), tostring(xPlayer.job.name))
 	end
+
+	print(('esx_society: %s attempted open a society boss menu!'):format(xPlayer.identifier))
+	return false
 end
 
 ESX.RegisterServerCallback('esx_society:getGrades', function(source, cb, plate)
@@ -1835,6 +1902,7 @@ ESX.RegisterServerCallback('esx_society:getWeapons', function(source, cb, rank, 
 	if weapon == nil or weapon == '' then
 		TriggerClientEvent('esx:showNotification', source, 'Please set garades options in ~y~boss action')
 	end
+	SLog('MENU read weapons src=%s job=%s rank=%s raw=%s', tostring(source), tostring(job), tostring(rank), tostring(weapon))
 	cb(json.decode(weapon))
 end)
 
@@ -1853,6 +1921,7 @@ AddEventHandler('esx_society:getWeapons', function(src, rank, job, cb)
 		local ok, decoded = pcall(json.decode, raw)
 		if ok and type(decoded) == 'table' then list = decoded end
 	end
+	SLog('EVENT getWeapons src=%s job=%s rank=%s -> %d entries (%s)', tostring(src), tostring(job), tostring(rank), #list, json.encode(list))
 	cb(list)
 end)
 
@@ -2269,9 +2338,75 @@ end)
 -- for why this exact column list/shape), so it then shows up in the real
 -- Unique_Garage menu (Unique_Garage:OpenJobFleetGarage) for store/retrieve
 -- from then on, same as a gang vehicle would.
+-- Military / law jobs (DOJ + Law Enforcement) must be inside a unit to take a
+-- vehicle (plate = unit callsign). Organ services (taxi/mechanic/ambulance/weazel)
+-- type their own plate instead and need no unit.
+local FleetMilitaryFallback = { cid=true, cia=true, marshal=true, fbi=true, judge=true, doa=true, police=true, sheriff=true, mt=true }
+local function isMilitaryJob(job)
+	local ok, dept = pcall(function() return exports['esx_uniquejobs']:GetDepartmentForJob(job) end)
+	if ok and dept and dept.id then return dept.id == 'doj' or dept.id == 'le' end
+	return FleetMilitaryFallback[job] == true
+end
+local function getUnitCallsign(identifier)
+	local callsign
+	pcall(function() callsign = exports['esx_uniquejobs']:GetPlayerUnitCallsign(identifier) end)
+	if callsign and callsign ~= '' then return callsign end
+	return nil
+end
+
+-- Direct-open support: does this player's job have at least one registered
+-- fleet vehicle their rank may use? If yes the client opens the Unique_Garage
+-- fleet menu straight away at the vehicle marker (no old ESX list first).
+RegisterServerEvent('esx_society:requestJobFleetStatus')
+AddEventHandler('esx_society:requestJobFleetStatus', function(vehType)
+	local src = source
+	vehType = (type(vehType) == 'string' and vehType ~= '') and vehType or 'car'
+	local xPlayer = ESX.GetPlayerFromId(src)
+	if not xPlayer or not xPlayer.job or xPlayer.job.name == 'nojob' then
+		TriggerClientEvent('esx_society:jobFleetStatusResult', src, false)
+		return
+	end
+	local job, grade = xPlayer.job.name, tostring(xPlayer.job.grade)
+	if isMilitaryJob(job) and not getUnitCallsign(xPlayer.identifier) then
+		TriggerClientEvent('esx:showNotification', src, 'You must join a unit first (type /unit) before taking out a vehicle')
+		TriggerClientEvent('esx_society:jobFleetStatusResult', src, 'nounit')
+		return
+	end
+	if not isMilitaryJob(job) then
+		-- organ services type their own plate: use the classic list menu flow
+		TriggerClientEvent('esx_society:jobFleetStatusResult', src, false)
+		return
+	end
+	local denied = {}
+	local gd = Jobs[job] and Jobs[job].grades and Jobs[job].grades[grade]
+	if gd and gd.vehicles and gd.vehicles ~= '' then
+		local ok, rows = pcall(json.decode, gd.vehicles)
+		if ok and type(rows) == 'table' then
+			for _, r in ipairs(rows) do
+				if r.model and r.value == false then denied[string.lower(r.model)] = true end
+			end
+		end
+	end
+	SLog('FLEETSTATUS src=%s job=%s grade=%s vehType=%s military=%s denied=%s', tostring(src), tostring(job), tostring(grade), tostring(vehType), tostring(isMilitaryJob(job)), json.encode(denied))
+	MySQL.Async.fetchAll('SELECT vehicle FROM owned_vehicles WHERE owner = @o AND job = @j AND type = @t', { ['@o'] = job, ['@j'] = 'job_fleet', ['@t'] = vehType }, function(rows)
+		local has = false
+		for _, r in ipairs(rows or {}) do
+			local ok, v = pcall(json.decode, r.vehicle or '{}')
+			local m = ok and type(v) == 'table' and v.model
+			if m then
+				if type(m) == 'number' then has = true break end
+				if not denied[string.lower(tostring(m))] then has = true break end
+			end
+		end
+		SLog('FLEETSTATUS result src=%s job=%s vehType=%s rows=%d hasUsable=%s', tostring(src), tostring(job), tostring(vehType), #(rows or {}), tostring(has))
+		TriggerClientEvent('esx_society:jobFleetStatusResult', src, has)
+	end)
+end)
+
 RegisterServerEvent('esx_society:takeJobVehicle')
-AddEventHandler('esx_society:takeJobVehicle', function(model)
+AddEventHandler('esx_society:takeJobVehicle', function(model, vehType, customPlate)
 	local source = source
+	vehType = (vehType == 'heli' or vehType == 'boat') and vehType or 'car'
 	-- FIX (reported: "Could not reach the vehicle fleet - try again" every
 	-- time): every early-return below used to exit completely silently.
 	-- The client (client/job_fleet_helper.lua) only ever finds out via a
@@ -2305,6 +2440,7 @@ AddEventHandler('esx_society:takeJobVehicle', function(model)
 	end
 
 	local job, grade = xPlayer.job.name, xPlayer.job.grade
+	SLog('TAKEVEHICLE src=%s job=%s grade=%s model=%s vehType=%s customPlate=%s', tostring(source), tostring(job), tostring(grade), tostring(model), tostring(vehType), tostring(customPlate))
 	local authorized = true -- a model never explicitly toggled, or a job/grade with no saved permission row at all, defaults to accessible (same convention as itemAccess/vehicleAccess elsewhere)
 	local raw = Jobs[job] and Jobs[job].grades and Jobs[job].grades[tostring(grade)] and Jobs[job].grades[tostring(grade)].vehicles
 	if raw and raw ~= '' then
@@ -2325,20 +2461,21 @@ AddEventHandler('esx_society:takeJobVehicle', function(model)
 		return
 	end
 
-	local callsign = nil
-	local ok = pcall(function()
-		callsign = exports['esx_uniquejobs']:GetPlayerUnitCallsign(xPlayer.identifier)
-	end)
-	if not ok or not callsign or callsign == '' then
-		TriggerClientEvent('esx:showNotification', source, 'You must create a unit first (type /unit) before taking out a vehicle')
-		TriggerClientEvent('esx_society:jobVehicleFailed', source)
-		return
+	local plate
+	if isMilitaryJob(job) then
+		local callsign = getUnitCallsign(xPlayer.identifier)
+		if not callsign then
+			TriggerClientEvent('esx:showNotification', source, 'You must join a unit first (type /unit) before taking out a vehicle')
+			TriggerClientEvent('esx_society:jobVehicleFailed', source)
+			return
+		end
+		plate = string.upper(callsign):gsub('[^%w]', '')
+	else
+		plate = string.upper(tostring(customPlate or '')):gsub('[^%w]', '')
 	end
-
-	local plate = string.upper(callsign):gsub('[^%w]', '')
 	if #plate > 8 then plate = string.sub(plate, 1, 8) end
 	if #plate == 0 then
-		TriggerClientEvent('esx:showNotification', source, 'You must create a unit first (type /unit) before taking out a vehicle')
+		TriggerClientEvent('esx:showNotification', source, isMilitaryJob(job) and 'You must join a unit first (type /unit) before taking out a vehicle' or 'Please enter a valid plate')
 		TriggerClientEvent('esx_society:jobVehicleFailed', source)
 		return
 	end
@@ -2348,7 +2485,7 @@ AddEventHandler('esx_society:takeJobVehicle', function(model)
 		['@plate']   = plate,
 		['@vehicle'] = json.encode({ model = model, plate = plate }),
 		['@job']     = 'job_fleet',
-		['@type']    = 'car',
+		['@type']    = vehType,
 		['@stored']  = 0,
 		['@engine']  = 1000,
 		['@fuel']    = 100,
@@ -2469,6 +2606,21 @@ ESX.RegisterServerCallback('esx_society:getItems', function(source, cb, rank, jo
 	cb(json.decode(item))
 end)
 
+-- EXPOSED EVENT: plain cross-resource twin of the callback above (same pattern as
+-- esx_society:getWeapons). Unique_inventory's Job Storage asks it which items this
+-- rank may take: Jobs[job].grades[grade].items -> {{name=..,status=bool}}.
+AddEventHandler('esx_society:getItems', function(src, rank, job, cb)
+	if type(cb) ~= 'function' then return end
+	local list = {}
+	local grades = Jobs[job] and Jobs[job].grades
+	local raw = grades and grades[tostring(rank)] and grades[tostring(rank)].items
+	if raw and raw ~= '' then
+		local ok, decoded = pcall(json.decode, raw)
+		if ok and type(decoded) == 'table' then list = decoded end
+	end
+	cb(list)
+end)
+
 ESX.RegisterServerCallback('esx_society:getJobItems', function(source, cb, job)
 	TriggerEvent('esx_addoninventory:getSharedInventory', 'society_'..job, function(inventory)
 
@@ -2517,21 +2669,12 @@ ESX.RegisterServerCallback('esx_society:setSocietyItemPerm', function(source, cb
 	local identifier = GetPlayerIdentifier(source, tonumber(0))
 	local xPlayer = ESX.GetPlayerFromId(source)
 	local isBoss = isPlayerBoss(source, job)
+	do local xp = ESX.GetPlayerFromId(source); SDbg(('^5[LOCKDBG]^0 BOSS %s src=%s job=%s editingRank=%s isBoss=%s playerJob=%s grade=%s gradeName=%s'):format('setSocietyItemPerm', tostring(source), tostring(job), tostring(rank), tostring(isBoss), xp and xp.job and xp.job.name or '?', xp and xp.job and tostring(xp.job.grade) or '?', xp and xp.job and tostring(xp.job.grade_name) or '?')) end
 	local itemtable = {}
 	if isBoss then
-		for _, item in ipairs(items) do
-			if item.name ~= choice then
-				table.insert(itemtable,{
-					name = item.name,
-					status = item.value
-				})
-			else
-				table.insert(itemtable,{
-					name = item.name,
-					status = status
-				})
-			end
-		end
+		itemtable = buildPermTable(Jobs[job] and Jobs[job].grades[tostring(rank)] and Jobs[job].grades[tostring(rank)].items, items, 'name', choice, status)
+		SLog('SAVE items src=%s job=%s rank=%s choice=%s newStatus=%s | stored-before=%s | client-rows=%d | saved-after=%s', tostring(source), tostring(job), tostring(rank), tostring(choice), tostring(status), tostring(Jobs[job] and Jobs[job].grades[tostring(rank)] and Jobs[job].grades[tostring(rank)].items), #(items or {}), json.encode(itemtable))
+
 		Jobs[job].grades[tostring(rank)].items = json.encode(itemtable)
 		MySQL.Async.execute('UPDATE job_grades SET items = @items WHERE job_name = @job_name AND grade = @grade', {
 			['@items']   = json.encode(itemtable),
@@ -2582,30 +2725,13 @@ end)
 
 ESX.RegisterServerCallback('esx_society:setSocietyWeapPerm', function(source, cb, job, rank, weapons, status, choice)
 	local isBoss = isPlayerBoss(source, job)
+	do local xp = ESX.GetPlayerFromId(source); SDbg(('^5[LOCKDBG]^0 BOSS %s src=%s job=%s editingRank=%s isBoss=%s playerJob=%s grade=%s gradeName=%s'):format('setSocietyWeapPerm', tostring(source), tostring(job), tostring(rank), tostring(isBoss), xp and xp.job and xp.job.name or '?', xp and xp.job and tostring(xp.job.grade) or '?', xp and xp.job and tostring(xp.job.grade_name) or '?')) end
 	local identifier = GetPlayerIdentifier(source, tonumber(0))
 	local xPlayer    = ESX.GetPlayerFromId(source)
 	local weapontable = {}
 	if isBoss then
-		for _, weapon in ipairs(weapons) do
-			if weapon.model ~= choice then
-				table.insert(weapontable,{
-					model = weapon.model,
-					status = weapon.value
-				})
-			else
-				if status then
-					table.insert(weapontable,{
-						model = weapon.model,
-						status = true
-					})
-				else
-					table.insert(weapontable,{
-						model = weapon.model,
-						status = false
-					})
-				end
-			end
-		end
+		weapontable = buildPermTable(Jobs[job] and Jobs[job].grades[tostring(rank)] and Jobs[job].grades[tostring(rank)].weapons, weapons, 'model', choice, status)
+		SLog('SAVE weapons src=%s job=%s rank=%s choice=%s newStatus=%s | stored-before=%s | client-rows=%d | saved-after=%s', tostring(source), tostring(job), tostring(rank), tostring(choice), tostring(status), tostring(Jobs[job] and Jobs[job].grades[tostring(rank)] and Jobs[job].grades[tostring(rank)].weapons), #(weapons or {}), json.encode(weapontable))
 
 		Jobs[job].grades[tostring(rank)].weapons = json.encode(weapontable)
 		MySQL.Async.execute('UPDATE job_grades SET weapons = @weapons WHERE job_name = @job_name AND grade = @grade', {
@@ -2656,30 +2782,14 @@ end)
 
 ESX.RegisterServerCallback('esx_society:setSocietyVehPerm', function(source, cb, job, rank, vehs, status, choice, vehlabel)
 	local isBoss = isPlayerBoss(source, job)
+	do local xp = ESX.GetPlayerFromId(source); SDbg(('^5[LOCKDBG]^0 BOSS %s src=%s job=%s editingRank=%s isBoss=%s playerJob=%s grade=%s gradeName=%s'):format('setSocietyVehPerm', tostring(source), tostring(job), tostring(rank), tostring(isBoss), xp and xp.job and xp.job.name or '?', xp and xp.job and tostring(xp.job.grade) or '?', xp and xp.job and tostring(xp.job.grade_name) or '?')) end
 	local identifier = GetPlayerIdentifier(source, tonumber(0))
 	local xPlayer = ESX.GetPlayerFromId(source)
 	local vehtable = {}
 	if isBoss then
-		for _, veh in ipairs(vehs) do
-			if veh.model ~= choice then
-				table.insert(vehtable,{
-					model = veh.model,
-					status = veh.value
-				})
-			else
-				if status then
-					table.insert(vehtable,{
-						model = veh.model,
-						status = true
-					})
-				else
-					table.insert(vehtable,{
-						model = veh.model,
-						status = false
-					})
-				end
-			end
-		end
+		vehtable = buildPermTable(Jobs[job] and Jobs[job].grades[tostring(rank)] and Jobs[job].grades[tostring(rank)].vehicles, vehs, 'model', choice, status)
+		SLog('SAVE vehicles src=%s job=%s rank=%s choice=%s newStatus=%s | stored-before=%s | client-rows=%d | saved-after=%s', tostring(source), tostring(job), tostring(rank), tostring(choice), tostring(status), tostring(Jobs[job] and Jobs[job].grades[tostring(rank)] and Jobs[job].grades[tostring(rank)].vehicles), #(vehs or {}), json.encode(vehtable))
+
 		Jobs[job].grades[tostring(rank)].vehicles = json.encode(vehtable)
 		MySQL.Async.execute('UPDATE job_grades SET vehicles = @vehicles WHERE job_name = @job_name AND grade = @grade', {
 			['@vehicles']   = json.encode(vehtable),

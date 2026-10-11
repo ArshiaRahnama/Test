@@ -636,19 +636,85 @@ ESX.RegisterServerCallback('FMGangs:EditAccess', function(source, cb, GangName, 
     end)
 end)
 
+local GDEBUG = false
+local function GDbg(...) if GDEBUG then print(...) end end
+local function GLog(fmt, ...)
+    if not GDEBUG then return end
+    local ok, msg = pcall(string.format, fmt, ...)
+    print('^5[LOCKDBG][gangs]^0 ' .. (ok and msg or tostring(fmt)))
+end
+
+
+-------------------------------------------------------------------
+-- MULTIPLE ARMORIES PER GANG: every armory (Gangs[g].armory[key]) has its OWN chest and its OWN
+-- per-rank weapon/item access.
+--   * the gang's FIRST armory (lowest key) keeps the legacy chest "gang_<name>" and the legacy
+--     access table (access.itemAccess, never-toggled = allowed) so existing gangs keep working;
+--   * every additional armory gets chest "gang_<name>_<key>" and access.armoryAccess[<key>][item];
+--     there, anything the boss has not opened yet is LOCKED (boss action -> Weapon / Item Access
+--     -> pick the armory -> tick what the rank may use).
+-------------------------------------------------------------------
+local function ArmoryPrimaryKey(gangName)
+    local lo
+    for k in pairs((Gangs[gangName] and Gangs[gangName].armory) or {}) do
+        local n = tonumber(k)
+        if n and (not lo or n < lo) then lo = n end
+    end
+    return lo
+end
+
+local function ArmoryStoreName(gangName, key)
+    local base = 'gang_' .. string.lower(tostring(gangName))
+    local n, lo = tonumber(key), ArmoryPrimaryKey(gangName)
+    if not n or not lo or n == lo then return base end
+    return base .. '_' .. n
+end
+
+local function ArmoryIsPrimary(gangName, key)
+    local n, lo = tonumber(key), ArmoryPrimaryKey(gangName)
+    return (not n) or (not lo) or n == lo
+end
+
+-- the table that holds this armory's per-item flags for one grade (created on demand when create=true)
+local function ArmoryAccessTable(grade, gangName, key, create)
+    grade.access = grade.access or {}
+    if ArmoryIsPrimary(gangName, key) then
+        if create then grade.access.itemAccess = grade.access.itemAccess or {} end
+        return grade.access.itemAccess
+    end
+    if create then
+        grade.access.armoryAccess = grade.access.armoryAccess or {}
+        grade.access.armoryAccess[tostring(tonumber(key))] = grade.access.armoryAccess[tostring(tonumber(key))] or {}
+    end
+    return grade.access.armoryAccess and grade.access.armoryAccess[tostring(tonumber(key))]
+end
+
+local function ArmoryItemAllowed(gangName, grade, key, itemName)
+    local default = ArmoryIsPrimary(gangName, key) -- primary: open unless blocked / extra armory: closed unless opened
+    if not grade then return default end
+    local t = ArmoryAccessTable(grade, gangName, key, false)
+    if not t or type(itemName) ~= 'string' then return default end
+    local v = t[itemName]
+    if v == nil then v = t[string.upper(itemName)] end
+    if v == nil then v = t[string.lower(itemName)] end
+    if v == nil then return default end
+    return v and true or false
+end
+
 -------------------------------------------------------------------
 -- Per-item armory access toggles (see the swapItems hook above).
 -- Stored nested inside the SAME `access` JSON blob each grade already
 -- has (access.itemAccess = {itemName = bool, ...}) - no DB schema
 -- change needed. Same permission check as EditAccess.
 -------------------------------------------------------------------
-ESX.RegisterServerCallback('FMGangs:EditItemAccess', function(source, cb, GangName, GradeNumber, itemName, value)
+ESX.RegisterServerCallback('FMGangs:EditItemAccess', function(source, cb, GangName, GradeNumber, itemName, value, armoryKey)
     if not IsGangBossSource(source, GangName) then return cb(false) end
     if not Gangs[GangName].grades[tonumber(GradeNumber)] then return cb(false) end
 
     local grade = Gangs[GangName].grades[tonumber(GradeNumber)]
-    grade.access.itemAccess = grade.access.itemAccess or {}
-    grade.access.itemAccess[itemName] = value
+    local t = ArmoryAccessTable(grade, GangName, armoryKey, true)
+    t[itemName] = value
+    GLog('EditItemAccess src=%s gang=%s grade=%s armory=%s item=%s allowed=%s', tostring(source), tostring(GangName), tostring(GradeNumber), tostring(armoryKey), tostring(itemName), tostring(value))
 
     MySQL.Async.execute('UPDATE gang_grades SET access = @access WHERE gang_name = @gang_name AND grade = @grade',
     {
@@ -1603,21 +1669,37 @@ end)
 -- If Unique_ALLGangs isn't running, nobody answers and Unique_inventory
 -- just doesn't lock anything - fails open, never breaks the gang chest.
 -------------------------------------------------------------------
-AddEventHandler('Unique_ALLGangs:checkItemAccess', function(src, gangName, itemName, cb)
+AddEventHandler('Unique_ALLGangs:checkItemAccess', function(src, gangName, itemName, cb, armoryKey)
     if type(cb) ~= 'function' then return end
-
     local grades = Gangs[gangName] and Gangs[gangName].grades
     local xP = ESX.GetPlayerFromId(src)
     local gradeNum = xP and xP.gang and xP.gang.name == gangName and xP.gang.grade or nil
     local grade = gradeNum and grades and grades[gradeNum]
+    local allowed = ArmoryItemAllowed(gangName, grade, armoryKey, itemName)
+    GLog('checkItemAccess src=%s gang=%s grade=%s armory=%s item=%s -> %s', tostring(src), tostring(gangName), tostring(gradeNum), tostring(armoryKey), tostring(itemName), tostring(allowed))
+    cb(allowed)
+end)
 
-    if not grade or not grade.access or not grade.access.itemAccess then
-        return cb(true) -- nothing explicitly configured for this grade = allowed
+-- Position of an armory among the gang's armories (1 = first) and how many there are: used for the
+-- chest title ("Gang Armory & Storage - Armory 2").
+AddEventHandler('Unique_ALLGangs:getArmoryNumber', function(src, gangName, armoryKey, cb)
+    if type(cb) ~= 'function' then return end
+    local keys = {}
+    for k in pairs((Gangs[gangName] and Gangs[gangName].armory) or {}) do
+        if tonumber(k) then keys[#keys + 1] = tonumber(k) end
     end
+    table.sort(keys)
+    local pos = 1
+    for i, k in ipairs(keys) do if k == tonumber(armoryKey) then pos = i break end end
+    cb(pos, #keys)
+end)
 
-    local allowed = grade.access.itemAccess[itemName]
-    if allowed == nil then return cb(true) end -- item never toggled = allowed
-    cb(allowed and true or false)
+-- Which shared stores belong to which armory of the gang (nil = that armory does not exist).
+AddEventHandler('Unique_ALLGangs:getArmoryStore', function(src, gangName, armoryKey, cb)
+    if type(cb) ~= 'function' then return end
+    local armories = Gangs[gangName] and Gangs[gangName].armory
+    if armoryKey ~= nil and not (armories and armories[tonumber(armoryKey)]) then return cb(nil) end
+    cb(ArmoryStoreName(gangName, armoryKey))
 end)
 
 local StashAccessCheckerFunctions = {} -- [stashId] = the REAL checker function - never leaves this resource
@@ -1715,13 +1797,49 @@ local EnsureArmoryStash
 -- boss menu until someone happened to open it first. Now seeds it
 -- right here too, so the boss sees real contents immediately.
 -------------------------------------------------------------------
-ESX.RegisterServerCallback('FMGangs:GetArmoryStashItemNames', function(source, cb, gang, armoryKey)
-    local armoryEntry = Gangs[gang] and Gangs[gang].armory and Gangs[gang].armory[tonumber(armoryKey) or armoryKey]
-    if armoryEntry then
-        EnsureArmoryStash(gang, tonumber(armoryKey) or armoryKey, armoryEntry)
+-- kind = 'weapons' | 'items'; returns [{name=, allowed=}] for ONE armory's chest and ONE rank
+-- (the boss menu shows the same list for every armory the gang has, each with its own ticks).
+ESX.RegisterServerCallback('FMGangs:GetArmoryStashItemNames', function(source, cb, gang, kind, armoryKey, gradeNumber)
+    local names, seen = {}, {}
+    local function add(n)
+        if type(n) ~= 'string' or n == '' then return end
+        local k = string.lower(n)
+        if seen[k] then return end
+        seen[k] = true
+        names[#names + 1] = n
     end
-    local stashId = GetArmoryStashId(gang, armoryKey)
-    cb(ReadArmoryStashItemNames(stashId))
+    local sname = ArmoryStoreName(gang, armoryKey)
+    local inv, store
+    TriggerEvent('esx_addoninventory:getSharedInventory', sname, function(i) inv = i end)
+    TriggerEvent('esx_datastore:getSharedDataStore', sname, function(st) store = st end)
+    if inv and inv.items then
+        for _, it in ipairs(inv.items) do add(it.name) end
+    else
+        local rows = MySQL.Sync.fetchAll('SELECT name FROM addon_inventory_items WHERE inventory_name = ?', { sname }) or {}
+        for _, r in ipairs(rows) do add(r.name) end
+    end
+    local weps = store and store.get('weapons')
+    if weps then
+        for _, w in pairs(weps) do if w and w.name then add(string.upper(w.name)) end end
+    end
+    -- everything already toggled for any rank of THIS armory (so toggled entries never vanish)
+    local g = Gangs[gang]
+    if g and g.grades then
+        for _, gr in pairs(g.grades) do
+            local t = ArmoryAccessTable(gr, gang, armoryKey, false)
+            for n, _ in pairs(t or {}) do add(n) end
+        end
+    end
+    local out = {}
+    local grade = g and g.grades and g.grades[tonumber(gradeNumber)]
+    for _, n in ipairs(names) do
+        local isWeapon = string.upper(n):sub(1, 7) == 'WEAPON_'
+        if kind ~= 'weapons' and kind ~= 'items' or (kind == 'weapons') == isWeapon then
+            out[#out + 1] = { name = n, allowed = ArmoryItemAllowed(gang, grade, armoryKey, n) }
+        end
+    end
+    table.sort(out, function(a, b) return string.lower(a.name) < string.lower(b.name) end)
+    cb(out)
 end)
 
 -- Seeds the `stashs` row from the legacy armory JSON the first time
@@ -1832,7 +1950,7 @@ ESX.RegisterServerCallback('For5M:OpenInventory', function(source, cb, code)
         return cb(false)
     end
 
-    TriggerClientEvent('esx_inventoryhud:OpenGangInventory', source)
+    TriggerClientEvent('esx_inventoryhud:OpenGangInventory', source, key)
     cb(true)
 end)
 -------------------------------------------------------------------
@@ -2030,3 +2148,17 @@ function UpdateRankOfPlayersUP(GangName  , FinalRank   )
         end
     end
 end 
+
+-------------------------------------------------------------------
+-- Rank flag check for Unique_inventory's gang chest ('putitem' / 'takeitem'
+-- from the boss menu's General Access). Same safe TriggerEvent+callback pattern
+-- as Unique_ALLGangs:checkItemAccess; unanswered = Unique_inventory fails open.
+-------------------------------------------------------------------
+AddEventHandler('Unique_ALLGangs:checkGangFlag', function(src, gangName, flag, cb)
+    if type(cb) ~= 'function' then return end
+    local xP = ESX.GetPlayerFromId(src)
+    local gradeNum = xP and xP.gang and xP.gang.name == gangName and xP.gang.grade or nil
+    local grade = gradeNum and Gangs[gangName] and Gangs[gangName].grades and Gangs[gangName].grades[gradeNum]
+    if not grade or not grade.access then return cb(false) end
+    cb(grade.access[flag] and true or false)
+end)

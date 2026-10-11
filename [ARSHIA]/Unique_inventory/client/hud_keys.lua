@@ -76,7 +76,7 @@ local Keys = {
     ["N9"] = 118
 }
 
-print('inventory 2 loaded')
+-- print('inventory 2 loaded')
 
 local trunkData = nil
 local houseData = nil
@@ -218,7 +218,7 @@ RegisterNUICallback(
     "NUIFocusOff",
     function()
         TriggerEvent('CloseFuckingINV')
-        print('slmsasdasd')
+        -- print('slmsasdasd')
     end
 )
 

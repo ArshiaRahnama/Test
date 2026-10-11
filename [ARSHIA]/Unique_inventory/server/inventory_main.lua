@@ -44,57 +44,68 @@ RegisterServerCallbackSafe("Parzival:getHouseINV", function(source, cb)
     cb(items)
 end)
 
-RegisterServerCallbackSafe("Parzival:getGangINV", function(source, cb)
+local BlockedWeapons = {
+    WEAPON_SNIPERRIFLE = true,
+    WEAPON_HEAVYSNIPER = true,
+}
+
+-- Title of the gang chest: "Gang Armory & Storage" (+ " - Armory N" when the gang has several armories).
+RegisterServerCallbackSafe("Parzival:getGangArmoryTitle", function(source, cb, armoryKey)
+    local xPlayer = ESX.GetPlayerFromId(source)
+    local title = 'Gang Armory & Storage'
+    if xPlayer and xPlayer.gang then
+        TriggerEvent('Unique_ALLGangs:getArmoryNumber', source, xPlayer.gang.name, armoryKey, function(pos, total)
+            if (tonumber(total) or 0) > 1 then title = title .. ' - Armory ' .. tostring(pos) end
+        end)
+    end
+    cb(title)
+end)
+
+RegisterServerCallbackSafe("Parzival:getGangINV", function(source, cb, armoryKey)
     local xPlayer = ESX.GetPlayerFromId(source)
     local items = {}
-    local items2      = {}
-    local weapons    = {}
-    local GANG = 'gang_' .. string.lower(xPlayer.gang.name)
-    TriggerEvent('esx_addoninventory:getSharedInventory', GANG, function(inventory)
-        items2 = inventory.items
-    end)
-    TriggerEvent('esx_datastore:getSharedDataStore', GANG, function(store)
-        weapons = store.get('weapons') or {}
-    end)
+    if not xPlayer or not xPlayer.gang then return cb(items) end
+    local storeName = ResolveGangStoreName(xPlayer, armoryKey)
+    if not storeName then return cb(items) end
+    -- the gang's shared stores may not exist yet - EnsureGangStores (server/gang_store.lua) creates them.
+    local gInventory, gStore = EnsureGangStores(xPlayer.gang.name, storeName)
+    local items2  = (gInventory and gInventory.items) or {}
+    local weapons = (gStore and gStore.get('weapons')) or {}
+    DLog('GANGCHEST open gang=%s grade=%s src=%s items=%d weapons=%d', tostring(xPlayer.gang.name), tostring(xPlayer.gang.grade), tostring(source), #items2, #weapons)
 
-    for k,v in pairs(weapons) do
-        if string.lower(v.name) == 'weapon_sniperrifle' then
-
-		elseif string.lower(v.name) == 'weapon_heavysniper' then
-
-		else
-            table.insert(items, {
+    -- Same behaviour as the job armory: every weapon / item of the gang chest is listed;
+    -- the ones the boss locked for this rank show a lock badge and can't be taken.
+    for _, v in pairs(weapons) do
+        local wname = v and v.name and string.upper(v.name)
+        local wcount = tonumber(v and (v.count or v.ammo)) or 1
+        if wname and not BlockedWeapons[wname] and wcount > 0 then
+            items[#items + 1] = {
                 type = 'item_weapon',
                 name = v.name,
                 label = GetCachedWeaponLabel(v.name),
-                count = v.ammo,
-                -- FIX: gang "Item Access" boss-menu locks existed but were
-                -- never actually enforced anywhere the player could see/take
-                -- items from (see server/job_gang_lock.lua). Item stays
-                -- visible either way; NUI shows a lock badge for locked ones.
-                locked = IsGangItemLocked(xPlayer, v.name)
-            })
+                peso = ESX.getWeaponWeight and ESX.getWeaponWeight(v.name) or 2,
+                count = wcount,
+                locked = IsGangItemLocked(xPlayer, v.name, armoryKey)
+            }
         end
     end
 
-    for k,v in pairs(items2) do
-        if v.count > 0 then
-            table.insert(items, {
+    for _, v in pairs(items2) do
+        local c = tonumber(v and v.count) or 0
+        if v and v.name and c > 0 then
+            items[#items + 1] = {
                 type = 'item_standard',
                 name = v.name,
-                label = v.label,
-                count = v.count,
-                locked = IsGangItemLocked(xPlayer, v.name)
-            })
+                label = (type(v.label) == 'string' and v.label ~= '' and v.label) or GetCachedItemLabel(v.name),
+                peso = ESX.getItemWeight and ESX.getItemWeight(v.name) or 0.5,
+                count = c,
+                locked = IsGangItemLocked(xPlayer, v.name, armoryKey)
+            }
         end
     end
     cb(items)
 end)
 
-local BlockedWeapons = {
-    WEAPON_SNIPERRIFLE = true,
-    WEAPON_HEAVYSNIPER = true,
-}
 
 -- Single source of truth for "which armory weapons may THIS player take".
 -- Used by BOTH the UI list (getJobINV1) and the take-weapon event below, so a
@@ -146,26 +157,36 @@ local function getJobArmoryWeapons(src, xPlayer)
     -- unreachable ESX callback. The stock list is built OUTSIDE that event's
     -- callback, so if esx_society is down/doesn't answer, nothing is hidden
     -- (fail-open) - the list can never come back empty because of it again.
-    local authorizedWeapons, answered = {}, false
-    TriggerEvent('esx_society:getWeapons', src, grade, job, function(res)
-        if type(res) == 'table' then authorizedWeapons = res end
-        answered = true
-    end)
+    -- Lock list comes straight from job_grades.weapons (what the boss action saves).
+    local authorizedWeapons, answered = GetJobGradePerm(job, grade, 'weapons')
 
     TriggerEvent('esx_datastore:getSharedDataStore', 'society_' .. job, function(store)
         local weapons = store.get('weapons') or {}
+        DLog('ARMORY open job=%s grade=%s src=%s stock(society_%s)=%d weapons, rankListFound=%s, rankListEntries=%d',
+            tostring(job), tostring(grade), tostring(src), tostring(job), #weapons, tostring(answered), #authorizedWeapons)
         for i = 1, #weapons do
+            if BlockedWeapons[string.upper(weapons[i].name)] then
+                DLog('ARMORY   %s x%s HIDDEN (BlockedWeapons list)', tostring(weapons[i].name), tostring(weapons[i].count))
+            end
             if not BlockedWeapons[string.upper(weapons[i].name)] then
+                -- Same rule as the boss menu's "Manage Weapons": a weapon is open for a
+                -- rank ONLY if it is explicitly ticked (status == true). Anything not
+                -- ticked - including a rank whose list was never configured, which the
+                -- menu shows as all-red - is locked. (Previously an empty list meant
+                -- "everything unlocked", so rank 1 stayed open even with every box red.)
+                -- Fail-open only when esx_society did not answer at all.
                 local authorized = true
-                if answered and #authorizedWeapons > 0 then
+                if answered then
                     authorized = false
+                    local wname = string.lower(weapons[i].name)
                     for _, shared in ipairs(authorizedWeapons) do
-                        if shared.model == weapons[i].name and shared.status == true then
+                        if shared.model and string.lower(shared.model) == wname and shared.status == true then
                             authorized = true
                             break
                         end
                     end
                 end
+                DLog('ARMORY   %s x%s -> authorized=%s', tostring(weapons[i].name), tostring(weapons[i].count), tostring(authorized))
                 list[#list + 1] = { name = weapons[i].name, authorized = authorized, count = weapons[i].count or 1 }
             end
         end
@@ -185,7 +206,7 @@ local function getAuthorizedJobWeapons(src, xPlayer)
     return list
 end
 
-RegisterServerCallbackSafe("Parzival:getJobINV1", function(source, cb)
+local function buildJobWeaponList(source, cb)
     local xPlayer = ESX.GetPlayerFromId(source)
     local items = {}
 
@@ -207,43 +228,75 @@ RegisterServerCallbackSafe("Parzival:getJobINV1", function(source, cb)
         })
     end
 
+    do
+        local lockedCount = 0
+        local names = {}
+        for _, it in ipairs(items) do
+            if it.locked then lockedCount = lockedCount + 1 end
+            names[#names + 1] = (it.locked and '[LOCKED] ' or '') .. tostring(it.name)
+        end
+        if Config and Config.DebugLock then print(('[Unique_inventory] Armory %s grade %s -> %d shown, %d locked: %s'):format(
+            xPlayer.job and xPlayer.job.name or '?', xPlayer.job and xPlayer.job.grade or '?', #items, lockedCount, table.concat(names, ', '))) end
+    end
+
     cb(items)
-end)
+end
+RegisterServerCallbackSafe("Parzival:getJobINV1", buildJobWeaponList)
 
 -- FIX (same root cause as getJobArmoryWeapons above - reported bug #2):
 -- was 'esx_policejob:getStockItems', hardcoded to 'society_police' no
 -- matter who was asking. Every non-police job's "Job Storage" view was
 -- silently showing police's stock items instead of their own. Reads the
 -- correct 'society_<thisPlayer'sJob>' shared inventory directly.
-RegisterServerCallbackSafe("Parzival:getJobINV2", function(source, cb)
+local function buildJobItemList(source, cb)
     local xPlayer = ESX.GetPlayerFromId(source)
     local items = {}
     if not xPlayer or not xPlayer.job then return cb(items) end
 
+    -- IMPORTANT: the shared-inventory event callback must NOT yield. IsJobItemLocked
+    -- reads job_grades with MySQL.Sync (yields), and calling it inside this callback made
+    -- TriggerEvent return early -> the list was sent EMPTY. So: snapshot the stock first
+    -- (no yielding), then compute the locks afterwards.
+    local raw = {}
+    local found = false
     TriggerEvent('esx_addoninventory:getSharedInventory', 'society_' .. xPlayer.job.name, function(inventory)
-        -- FIX (reported: Job Storage empty): every field is read defensively now
-        -- (a nil/string count or a missing label used to raise inside this callback and
-        -- silently abort the whole list), labels fall back to the real item label.
+        found = inventory ~= nil
         local itemsss = (inventory and inventory.items) or {}
         for i = 1, #itemsss do
             local it = itemsss[i]
             local count = tonumber(it and it.count) or 0
             if it and it.name and count > 0 then
-                items[#items + 1] = {
-                    type = 'item_standard',
-                    name = it.name,
-                    label = (type(it.label) == 'string' and it.label ~= '' and it.label) or GetCachedItemLabel(it.name),
-                    count = count,
-                    peso = ESX.getItemWeight and ESX.getItemWeight(it.name) or 0.5,
-                    locked = IsJobItemLocked(xPlayer, it.name)
-                }
+                raw[#raw + 1] = { name = it.name, label = it.label, count = count }
             end
         end
-        if #items == 0 then
-            print(('[Unique_inventory] Job Storage for society_%s is empty (inventory %s, %d entries)'):format(xPlayer.job.name, inventory and 'found' or 'NOT FOUND', #itemsss))
-        end
     end)
+
+    for _, it in ipairs(raw) do
+        items[#items + 1] = {
+            type = 'item_standard',
+            name = it.name,
+            label = (type(it.label) == 'string' and it.label ~= '' and it.label) or GetCachedItemLabel(it.name),
+            count = it.count,
+            peso = ESX.getItemWeight and ESX.getItemWeight(it.name) or 0.5,
+            locked = IsJobItemLocked(xPlayer, it.name)
+        }
+    end
+    if #items == 0 then
+        if Config and Config.DebugLock then print(('[Unique_inventory] Job Storage for society_%s is empty (inventory %s)'):format(xPlayer.job.name, found and 'found' or 'NOT FOUND')) end
+    end
     cb(items)
+end
+RegisterServerCallbackSafe("Parzival:getJobINV2", buildJobItemList)
+
+-- Merged view: armory weapons + job storage items in ONE chest.
+RegisterServerCallbackSafe("Parzival:getJobINVAll", function(source, cb)
+    local all = {}
+    buildJobWeaponList(source, function(w) for _, it in ipairs(w or {}) do all[#all + 1] = it end end)
+    buildJobItemList(source, function(i) for _, it in ipairs(i or {}) do all[#all + 1] = it end end)
+    local nw, ni = 0, 0
+    for _, it in ipairs(all) do if it.type == 'item_weapon' then nw = nw + 1 else ni = ni + 1 end end
+    if Config and Config.DebugLock then print(('[Unique_inventory] ARMORY&STORAGE src=%s -> %d weapons + %d items'):format(tostring(source), nw, ni)) end
+    cb(all)
 end)
 
 RegisterNetEvent('Parzival:GetJobWeapon', function(item)
@@ -262,6 +315,7 @@ RegisterNetEvent('Parzival:GetJobWeapon', function(item)
     for _, name in ipairs(getAuthorizedJobWeapons(_source, xPlayer)) do
         if string.upper(name) == item then allowed = true break end
     end
+    DLog('TAKE weapon %s by src=%s job=%s grade=%s -> allowed=%s', item, tostring(_source), tostring(xPlayer.job.name), tostring(xPlayer.job.grade), tostring(allowed))
     if not allowed then
         print(('^3[Unique_inventory]^0 blocked Parzival:GetJobWeapon from %s (%s) -> %s'):format(
             _source, GetPlayerName(_source) or '?', item))
@@ -344,7 +398,9 @@ RegisterNetEvent('Parzival:GetJobItem', function(item, count)
     -- FIX (item-lock feature, real enforcement): the UI now shows locked
     -- items instead of hiding them, so the server MUST reject a take request
     -- for one even if a modified client sends it anyway.
+    DLog('TAKE job item %s x%s by src=%s job=%s grade=%s', tostring(item), tostring(count), tostring(source), tostring(xPlayer.job.name), tostring(xPlayer.job.grade))
     if IsJobItemLocked(xPlayer, item) then
+        DLog('TAKE job item %s -> REFUSED (locked)', tostring(item))
         TriggerClientEvent('esx:showNotification', source, 'This item is locked for your rank')
         return
     end
@@ -357,6 +413,7 @@ RegisterNetEvent('Parzival:GetJobItem', function(item, count)
     TriggerEvent('esx_addoninventory:getSharedInventory', 'society_'..xPlayer.job.name, function(inventory)
 
         local inventoryItem = inventory.getItem(string.lower(item))
+        if Config and Config.DebugLock then print(('[Unique_inventory] TAKE job item %s x%s | stock=%s'):format(tostring(item), tostring(count), tostring(inventoryItem and inventoryItem.count))) end
         if not inventoryItem then return end
 
         -- is there enough in the society?
@@ -388,13 +445,21 @@ RegisterNetEvent('Parzival:PutJobItem', function(item, count)
     -- sending an upper-case item name would pass GetJobItem but silently fail
     -- here. Also added the nil-checks GetJobItem already got above.
     item = string.lower(item)
+    count = tonumber(count) or 0
     local sourceItem = xPlayer.getInventoryItem(item)
+    if Config and Config.DebugLock then print(('[Unique_inventory] PUT job item %s x%s src=%s job=%s | playerHas=%s'):format(item, tostring(count), tostring(source), tostring(xPlayer.job.name), tostring(sourceItem and sourceItem.count))) end
+    if not sourceItem or sourceItem.count < count or count <= 0 then
+        TriggerClientEvent('esx:showNotification', source, 'You do not have that amount')
+    end
     if sourceItem and sourceItem.count >= count then
 
         TriggerEvent('esx_addoninventory:getSharedInventory', 'society_'..xPlayer.job.name, function(inventory)
     
             local inventoryItem = inventory.getItem(item)
-            if not inventoryItem then return end
+            if not inventoryItem then
+                if Config and Config.DebugLock then print(('[Unique_inventory] PUT job item %s REFUSED: society_%s has no such item entry'):format(item, tostring(xPlayer.job.name))) end
+                return
+            end
     
             -- does the player have enough of the item?
             if sourceItem.count >= count and count > 0 then
@@ -425,81 +490,108 @@ end)
 -- Parzival:getGangINV already reads from, so what you see in the chest is
 -- what you can actually take.
 -------------------------------------------------------------------------
-RegisterNetEvent('gangs:getFromInventory', function(itemType, itemName, count)
+
+-- Rank flag from the gang boss menu (General Access: putitem / takeitem). Unanswered
+-- (Unique_ALLGangs not running) = allowed, never breaks the chest.
+local function GangFlagAllowed(src, gangName, flag)
+    local ok, answered = true, false
+    TriggerEvent('Unique_ALLGangs:checkGangFlag', src, gangName, flag, function(v) answered = true ok = v and true or false end)
+    if not answered then return true end
+    return ok
+end
+
+RegisterNetEvent('gangs:getFromInventory', function(itemType, itemName, count, armoryKey)
     local xPlayer = ESX.GetPlayerFromId(source)
     if not xPlayer or not xPlayer.gang or type(count) ~= 'number' or count <= 0 then return end
 
-    if IsGangItemLocked(xPlayer, itemName) then
+    DLog('TAKE gang %s %s x%s by src=%s gang=%s grade=%s', tostring(itemType), tostring(itemName), tostring(count), tostring(source), tostring(xPlayer.gang.name), tostring(xPlayer.gang.grade))
+    if IsGangItemLocked(xPlayer, itemName, armoryKey) then
+        DLog('TAKE gang %s -> REFUSED (locked)', tostring(itemName))
         TriggerClientEvent('esx:showNotification', source, 'This item is locked for your gang rank')
         return
     end
 
-    local GANG = 'gang_' .. string.lower(xPlayer.gang.name)
+    if not GangFlagAllowed(source, xPlayer.gang.name, 'takeitem') then
+        TriggerClientEvent('esx:showNotification', source, 'Your rank cannot take items from the gang chest')
+        return
+    end
+
+    local storeName = ResolveGangStoreName(xPlayer, armoryKey)
+    if not storeName then return end
 
     if itemType == 'item_weapon' then
         local upper = string.upper(itemName)
         if BlockedWeapons[upper] then return end
         if xPlayer.hasWeapon(upper) then return end
 
-        TriggerEvent('esx_datastore:getSharedDataStore', GANG, function(store)
-            local weapons = store.get('weapons') or {}
-            for i = 1, #weapons do
-                if string.upper(weapons[i].name) == upper then
-                    table.remove(weapons, i)
-                    store.set('weapons', weapons)
-                    xPlayer.addWeapon(upper, 250)
-                    return
-                end
+        local _, store = EnsureGangStores(xPlayer.gang.name, storeName)
+        if not store then return end
+        local weapons = store.get('weapons') or {}
+        for i = 1, #weapons do
+            if string.upper(weapons[i].name) == upper then
+                -- same as the job armory: take ONE from the stock, remove the entry at 0
+                local left = (tonumber(weapons[i].count or weapons[i].ammo) or 1) - 1
+                if left <= 0 then table.remove(weapons, i) else weapons[i].count = left; weapons[i].ammo = nil end
+                store.set('weapons', weapons)
+                xPlayer.addWeapon(upper, 250)
+                return
             end
-        end)
+        end
     else
         local sourceItem = xPlayer.getInventoryItem(string.lower(itemName))
         if not sourceItem then return end
 
-        TriggerEvent('esx_addoninventory:getSharedInventory', GANG, function(inventory)
-            local inventoryItem = inventory.getItem(string.lower(itemName))
-            if not inventoryItem or inventoryItem.count < count then return end
-            if sourceItem.limit ~= -1 and (sourceItem.count + count) > sourceItem.limit then return end
+        local inventory = EnsureGangStores(xPlayer.gang.name, storeName)
+        if not inventory then return end
+        local inventoryItem = inventory.getItem(string.lower(itemName))
+        if not inventoryItem or inventoryItem.count < count then return end
+        if sourceItem.limit ~= -1 and (sourceItem.count + count) > sourceItem.limit then return end
 
-            inventory.removeItem(string.lower(itemName), count)
-            xPlayer.addInventoryItem(string.lower(itemName), count)
-        end)
+        inventory.removeItem(string.lower(itemName), count)
+        xPlayer.addInventoryItem(string.lower(itemName), count)
     end
 end)
 
-RegisterNetEvent('gangs:addToInventory', function(itemType, itemName, count)
+RegisterNetEvent('gangs:addToInventory', function(itemType, itemName, count, armoryKey)
     local xPlayer = ESX.GetPlayerFromId(source)
     if not xPlayer or not xPlayer.gang or type(count) ~= 'number' or count <= 0 then return end
 
-    local GANG = 'gang_' .. string.lower(xPlayer.gang.name)
+    if not GangFlagAllowed(source, xPlayer.gang.name, 'putitem') then
+        TriggerClientEvent('esx:showNotification', source, 'Your rank cannot put items into the gang chest')
+        return
+    end
+
+    local storeName = ResolveGangStoreName(xPlayer, armoryKey)
+    if not storeName then return end
 
     if itemType == 'item_weapon' then
         local upper = string.upper(itemName)
         if not xPlayer.hasWeapon(upper) then return end
 
-        TriggerEvent('esx_datastore:getSharedDataStore', GANG, function(store)
-            local weapons = store.get('weapons') or {}
-            local found = false
-            for i = 1, #weapons do
-                if string.upper(weapons[i].name) == upper then
-                    weapons[i].count = (weapons[i].count or 0) + 250
-                    found = true
-                    break
-                end
+        local _, store = EnsureGangStores(xPlayer.gang.name, storeName)
+        if not store then return end
+        local weapons = store.get('weapons') or {}
+        local found = false
+        for i = 1, #weapons do
+            if string.upper(weapons[i].name) == upper then
+                weapons[i].count = (tonumber(weapons[i].count or weapons[i].ammo) or 0) + 1
+                weapons[i].ammo = nil
+                found = true
+                break
             end
-            if not found then
-                table.insert(weapons, { name = upper, count = 250 })
-            end
-            store.set('weapons', weapons)
-            xPlayer.removeWeapon(upper)
-        end)
+        end
+        if not found then
+            table.insert(weapons, { name = upper, count = 1 })
+        end
+        store.set('weapons', weapons)
+        xPlayer.removeWeapon(upper)
     else
         local sourceItem = xPlayer.getInventoryItem(string.lower(itemName))
         if not sourceItem or sourceItem.count < count then return end
 
-        TriggerEvent('esx_addoninventory:getSharedInventory', GANG, function(inventory)
-            xPlayer.removeInventoryItem(itemName, count)
-            inventory.addItem(itemName, count)
-        end)
+        local inventory = EnsureGangStores(xPlayer.gang.name, storeName)
+        if not inventory then return end
+        xPlayer.removeInventoryItem(itemName, count)
+        inventory.addItem(itemName, count)
     end
 end)

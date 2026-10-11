@@ -409,7 +409,7 @@ function OpenCoffreInventoryMenu(plate, max, myVeh)
     text = _U("trunk_info", plate, (inventory.weight / 1000), (max / 1000))
 
     data = {plate = plate, max = max, myVeh = myVeh, text = text}
-    print('slm')
+    -- print('slm')
     TriggerEvent("esx_inventoryhud:openTrunkInventory", data, 0, 0, inventory.items, inventory.weapons)
 
   end, plate)

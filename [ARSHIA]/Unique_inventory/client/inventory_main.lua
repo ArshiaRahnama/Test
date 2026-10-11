@@ -46,7 +46,7 @@ Citizen.CreateThread(function()
     ESX.TriggerServerCallback("esx_inventoryhud:GetData", function(data)
        
         MyData = data 
-        print(json.encode(MyData))
+        -- print(json.encode(MyData))
     end)
 end)
 
@@ -119,7 +119,7 @@ RegisterNetEvent('esx_inventoryhud:OpenJobInventory1')
 AddEventHandler('esx_inventoryhud:OpenJobInventory1', function(ID)
     houseID = ID or nil
     secondInventory = "house"
-    event = "job1"
+    event = "jobAll"
     getEvent = "esx_inventoryhud:removeFromHouse"
     putEvent = "esx_property:putItem"
     SetNuiFocus(true, true)
@@ -136,7 +136,7 @@ RegisterNetEvent('esx_inventoryhud:OpenJobInventory2')
 AddEventHandler('esx_inventoryhud:OpenJobInventory2', function(ID)
     houseID = ID or nil
     secondInventory = "house"
-    event = "job2"
+    event = "jobAll"
     getEvent = "esx_inventoryhud:removeFromHouse"
     putEvent = "esx_property:putItem"
     SetNuiFocus(true, true)
@@ -153,6 +153,7 @@ end)
 RegisterNetEvent('esx_inventoryhud:OpenGangInventory')
 AddEventHandler('esx_inventoryhud:OpenGangInventory', function(sec)
     second = sec
+    gangArmoryKey = sec -- which armory of the gang this chest is (nil = the gang's first one)
     secondInventory = "house"
     event = "esx_inventoryhud:getGangStorage"
     getEvent = "esx_inventoryhud:removeFromGang"
@@ -674,8 +675,9 @@ RegisterNUICallback("requestItemSecondInventory", function(data, cb)
                     })
                 -- end
                 end)
-            elseif event == 'job1' then
-                ESX.TriggerServerCallback('Parzival:getJobINV1', function(tableItem)
+            elseif event == 'job1' or event == 'jobAll' then
+                ESX.TriggerServerCallback(event == 'jobAll' and 'Parzival:getJobINVAll' or 'Parzival:getJobINV1', function(tableItem)
+                    if Config and Config.DebugLock then print('[LOCKDBG][client] job1 armory received ' .. tostring(tableItem and #tableItem or 'nil') .. ' entries'); for _, it in ipairs(tableItem or {}) do print(('[LOCKDBG][client]   %s x%s locked=%s'):format(tostring(it.name), tostring(it.count), tostring(it.locked))) end end
                     --         cb({
                     --             chest = "house",
                     --             tableChest = tableItem,
@@ -692,13 +694,14 @@ RegisterNUICallback("requestItemSecondInventory", function(data, cb)
                             slots = 600,
                             tamanhoChest = tonumber(20000),
                             tamanhoMyInv = tonumber(2000),
-                            nameHouse = 'Armory'
+                            nameHouse = (event == 'jobAll') and 'Armory & Storage' or 'Armory'
                         })
                     -- end
                     end)
 
                 elseif event == 'job2' then
                     ESX.TriggerServerCallback('Parzival:getJobINV2', function(tableItem)
+                        if Config and Config.DebugLock then print('[LOCKDBG][client] job2 storage received ' .. tostring(tableItem and #tableItem or 'nil') .. ' entries'); for _, it in ipairs(tableItem or {}) do print(('[LOCKDBG][client]   %s x%s peso=%s locked=%s'):format(tostring(it.name), tostring(it.count), tostring(it.peso), tostring(it.locked))) end end
                         --         cb({
                         --             chest = "house",
                         --             tableChest = tableItem,
@@ -721,6 +724,7 @@ RegisterNUICallback("requestItemSecondInventory", function(data, cb)
                         end)
             else
                 ESX.TriggerServerCallback('Parzival:getGangINV', function(tableItem)
+                  ESX.TriggerServerCallback('Parzival:getGangArmoryTitle', function(gangTitle)
                     --         cb({
                     --             chest = "house",
                     --             tableChest = tableItem,
@@ -737,10 +741,11 @@ RegisterNUICallback("requestItemSecondInventory", function(data, cb)
                             slots = 600,
                             tamanhoChest = tonumber(20000),
                             tamanhoMyInv = tonumber(2000),
-                            nameHouse = event == "esx_inventoryhud:GetHouseItems" and "House Storage" or event == "esx_inventoryhud:getCargoStorage" and "Cargo Inventory" or "Job Storage"
+                            nameHouse = event == "esx_inventoryhud:GetHouseItems" and "House Storage" or event == "esx_inventoryhud:getCargoStorage" and "Cargo Inventory" or (gangTitle or "Gang Armory & Storage")
                         })
                     -- end
-                    end)
+                  end, gangArmoryKey)
+                    end, gangArmoryKey)
             end
         end
     end
@@ -776,6 +781,15 @@ RegisterNUICallback("colocarItemHouse", function(data)
         dPN.closeInventoryPlayer()
         Wait(100)
         TriggerEvent('esx_inventoryhud:OpenHouseInventory')
+    elseif event == 'jobAll' then
+        if type == 'item_weapon' then
+            TriggerServerEvent('Parzival:PutJobWeapon', name)
+        else
+            TriggerServerEvent('Parzival:PutJobItem', name, count)
+        end
+        dPN.closeInventoryPlayer()
+        Wait(100)
+        TriggerEvent('esx_inventoryhud:OpenJobInventory1')
     elseif event == 'job1' then
      
     
@@ -807,10 +821,10 @@ RegisterNUICallback("colocarItemHouse", function(data)
 
 
     else
-        TriggerServerEvent("gangs:addToInventory", type, name, count)
+        TriggerServerEvent("gangs:addToInventory", type, name, count, gangArmoryKey)
         dPN.closeInventoryPlayer()
         Wait(100)
-        TriggerEvent('esx_inventoryhud:OpenGangInventory')
+        TriggerEvent('esx_inventoryhud:OpenGangInventory', gangArmoryKey)
     end
     -- TriggerServerEvent(putEvent, currentUser or houseID or PlayerData.identifier, type, name, count, data.oldSlot, second)
     -- if AdminOpenning then
@@ -845,6 +859,15 @@ RegisterNUICallback("retirarItemHouse", function(data)
             dPN.closeInventoryPlayer()
             Wait(100)
             TriggerEvent('esx_inventoryhud:OpenHouseInventory')
+        elseif event == 'jobAll' then
+            if type == 'item_weapon' then
+                TriggerServerEvent('Parzival:GetJobWeapon', item)
+            else
+                TriggerServerEvent('Parzival:GetJobItem', item, tonumber(data.amount))
+            end
+            dPN.closeInventoryPlayer()
+            Wait(100)
+            TriggerEvent('esx_inventoryhud:OpenJobInventory1')
         elseif event == 'job1' then
      
     
@@ -871,10 +894,10 @@ RegisterNUICallback("retirarItemHouse", function(data)
                 TriggerEvent('esx_inventoryhud:OpenJobInventory2')
             end
         else
-            TriggerServerEvent("gangs:getFromInventory", type, item, tonumber(data.amount))
+            TriggerServerEvent("gangs:getFromInventory", type, item, tonumber(data.amount), gangArmoryKey)
             dPN.closeInventoryPlayer()
             Wait(100)
-            TriggerEvent('esx_inventoryhud:OpenGangInventory')
+            TriggerEvent('esx_inventoryhud:OpenGangInventory', gangArmoryKey)
         end
         -- if AdminOpenning then
         --     Citizen.Wait(2000)

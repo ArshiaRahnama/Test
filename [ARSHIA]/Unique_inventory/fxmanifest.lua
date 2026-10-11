@@ -47,6 +47,7 @@ server_scripts {
     -- IsGangItemLocked/IsJobItemLocked - must load before inventory_main.lua,
     -- which calls them from getGangINV/getJobINV1/getJobINV2 and the take-item events
     'server/job_gang_lock.lua',
+    'server/gang_store.lua', -- EnsureGangStores: creates missing gang_<name> stores (fixes nil inventory/store crashes)
     'server/inventory_main.lua',
     'server/hud_data.lua',
     'server/classes/c_trunk.lua',

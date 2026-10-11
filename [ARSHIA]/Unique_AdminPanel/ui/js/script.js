@@ -453,9 +453,37 @@ function renderSecuritySection(security) {
   }
 }
 
-function clearSecurityHold() {
+/* In-panel confirm dialog (window.confirm() shows an ugly native "JavaScript Confirm" window in CEF). */
+function uiConfirm(message) {
+  return new Promise(resolve => {
+    const ov = document.createElement('div');
+    ov.style.cssText = 'position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.55);font-family:inherit';
+    const box = document.createElement('div');
+    box.style.cssText = 'min-width:320px;max-width:420px;background:#161b27;color:#e6e9f0;border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:18px 20px;box-shadow:0 20px 60px rgba(0,0,0,.6)';
+    const txt = document.createElement('div');
+    txt.style.cssText = 'font-size:14px;line-height:1.8;margin-bottom:16px';
+    txt.textContent = message;
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;gap:8px;justify-content:flex-end';
+    const ok = document.createElement('button');
+    ok.textContent = 'Confirm';
+    ok.style.cssText = 'padding:7px 18px;border-radius:8px;border:0;cursor:pointer;background:#e5484d;color:#fff;font-family:inherit';
+    const no = document.createElement('button');
+    no.textContent = 'Cancel';
+    no.style.cssText = 'padding:7px 18px;border-radius:8px;border:1px solid rgba(255,255,255,.18);cursor:pointer;background:transparent;color:inherit;font-family:inherit';
+    row.append(no, ok); box.append(txt, row); ov.append(box);
+    const done = v => { document.removeEventListener('keydown', onKey, true); ov.remove(); resolve(v); };
+    const onKey = e => { if (e.key === 'Escape') { e.stopPropagation(); done(false); } else if (e.key === 'Enter') { e.stopPropagation(); done(true); } };
+    ok.onclick = () => done(true); no.onclick = () => done(false);
+    ov.addEventListener('click', e => { if (e.target === ov) done(false); });
+    document.addEventListener('keydown', onKey, true);
+    document.body.appendChild(ov); ok.focus();
+  });
+}
+
+async function clearSecurityHold() {
   if (Number(selectedPlayer) <= 0) return;
-  if (!confirm("Clear this account's suspicious-activity lock? The player will be able to log in normally again.")) return;
+  if (!(await uiConfirm("Clear this account's suspicious-activity lock? The player will be able to log in normally again."))) return;
   nuiPost("clearSecurityHold", { playerId: selectedPlayer });
 }
 

@@ -222,10 +222,27 @@ end)
 RegisterServerCallbackSafe('Unique_Ticket:createFromReport', function(source, cb, reportId)
     if not isTicketAdmin(source) then return cb({ r = false }) end
     local ok, reports = pcall(function() return exports.Unique_AdminPanel:GetReports() end)
-    if not ok or not reports or not reports[tostring(reportId)] then
-        return cb({ r = false, msg = 'گزارش پیدا نشد یا دیگر باز نیست.' })
+    local rep = ok and reports and reports[tostring(reportId)] or nil
+    if not rep then
+        -- FIX (admin panel bug): GetReports() only returns pending/accepted reports, so
+        -- "convert to ticket" on a closed / archived report (Archive tab) always answered
+        -- "report not found or no longer open". Fall back to the reports table itself.
+        local row = MySQL.Sync.fetchAll(
+            'SELECT `ID`,`title`,`sub`,`category`,`identifier` FROM `reports` WHERE `ID` = @id LIMIT 1',
+            { ['@id'] = tonumber(reportId) or 0 })
+        row = row and row[1]
+        if not row then
+            return cb({ r = false, msg = 'گزارش پیدا نشد (حذف شده).' })
+        end
+        local ownerName = row.identifier
+        local u = MySQL.Sync.fetchAll('SELECT `firstname`,`lastname` FROM `users` WHERE `identifier` = @i LIMIT 1', { ['@i'] = row.identifier })
+        if u and u[1] and u[1].firstname then ownerName = (u[1].firstname .. ' ' .. (u[1].lastname or '')):gsub('%s+$', '') end
+        rep = {
+            owner    = { identifier = row.identifier, name = ownerName },
+            category = row.category or row.title,
+            Detail   = row.sub,
+        }
     end
-    local rep = reports[tostring(reportId)]
     local adminIdent, adminName = getIdentifier(source), getName(source)
 
     MySQL.Async.insert(

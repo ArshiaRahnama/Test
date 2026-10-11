@@ -1,0 +1,62 @@
+/* Discord v13 — Discover page, discover settings, activity card. Loaded last. */
+#discord-tab-discover { display: flex; flex-direction: column; }
+#dxd-bar { padding: 4px 0 12px; }
+.dxd-search { display: flex; align-items: center; gap: 8px; height: 38px; background: var(--dc-rail); border-radius: 4px; padding: 0 12px; box-sizing: border-box; }
+.dxd-search i { color: var(--dc-muted); font-size: 14px; }
+.dxd-search input { flex: 1; min-width: 0; background: transparent; border: none; outline: none; color: var(--dc-text); font-size: 15px; }
+.dxd-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+.dxd-chip { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border-radius: 14px; background: var(--dc-side); color: var(--dc-muted); font-size: 13px; font-weight: 500; cursor: pointer; user-select: none; }
+.dxd-chip i { font-size: 12px; }
+.dxd-chip:hover { color: var(--dc-text); background: var(--dc-hover); }
+.dxd-chip.dxd-sel { background: var(--dc-brand); color: #fff; }
+.dxd-sec { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .02em; color: var(--dc-muted); margin: 14px 0 8px; }
+.dxd-sec i { color: #f0b232; margin-right: 4px; }
+.dxd-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+.dxd-feat-row { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+.dxd-card { position: relative; background: var(--dc-side); border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 1px 0 rgba(0, 0, 0, .2); transition: transform .12s; }
+.dxd-card:hover { transform: translateY(-1px); }
+.dxd-banner { height: 62px; }
+.dxd-av { position: absolute; left: 12px; top: 34px; width: 52px; height: 52px; border-radius: 16px; border: 5px solid var(--dc-side); box-sizing: content-box; color: #fff; font-weight: 700; font-size: 17px; display: flex; align-items: center; justify-content: center; }
+.dxd-av.dx-img { font-size: 0; }
+.dxd-body { padding: 34px 14px 6px; min-width: 0; cursor: pointer; }
+.dxd-name { font-size: 16px; font-weight: 700; color: var(--dc-white); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dxd-ver { color: var(--dc-brand); font-size: 12px; }
+.dxd-vip { color: #b491ff; font-size: 12px; }
+.dxd-desc { font-size: 13px; color: var(--dc-text); margin-top: 4px; line-height: 17px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 34px; }
+.dxd-stats { display: flex; gap: 12px; font-size: 12px; color: var(--dc-muted); margin-top: 8px; }
+.dxd-online i { color: var(--dc-green); font-size: 8px; margin-right: 5px; vertical-align: 2px; }
+.dxd-foot { padding: 10px 14px 14px; margin-top: auto; }
+.dxd-foot .discord-btn { width: 100%; justify-content: center; box-sizing: border-box; }
+.dxd-btn { height: 32px; line-height: 32px; text-align: center; border-radius: 3px; background: var(--dc-select); color: var(--dc-text); font-size: 14px; font-weight: 500; cursor: pointer; }
+.dxd-btn:hover { background: var(--dc-hover); }
+.dxd-open { background: var(--dc-select); }
+.dxd-empty { text-align: center; color: var(--dc-muted); padding: 60px 20px; }
+.dxd-empty i { font-size: 56px; opacity: .35; margin-bottom: 14px; }
+.dxd-empty p { margin: 0; font-size: 15px; }
+.dxd-loading i { font-size: 30px; }
+.dxd-settings .dxd-set-row { display: flex; align-items: center; gap: 10px; margin: 10px 0; flex-wrap: wrap; }
+.dxd-set-lbl { font-size: 14px; color: var(--dc-text); min-width: 80px; }
+.dxd-settings select.dx-input { max-width: 240px; }
+
+/* activity card */
+.dxd-act { margin-bottom: 12px; }
+.dxd-act-head { font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--dc-white); margin-bottom: 6px; letter-spacing: .02em; }
+.dxd-act-card { display: flex; gap: 12px; align-items: center; background: var(--dc-float); border-radius: 8px; padding: 10px; }
+.dxd-act-ico { width: 48px; height: 48px; border-radius: 8px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 20px; box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .15); }
+.dxd-act-text { min-width: 0; }
+.dxd-act-title { font-size: 14px; font-weight: 700; color: var(--dc-white); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dxd-act-sub { font-size: 12px; color: var(--dc-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dxd-act-time { font-size: 12px; color: var(--dc-muted); margin-top: 2px; }
+
+/* the join modal's generic input rule (height / padding / width) was stretching the search box */
+#discord-modal-join-server #dxd-bar .dxd-search input,
+#dxd-bar .dxd-search input { height: 36px; padding: 0; margin: 0; width: auto; background: transparent; border: none; border-radius: 0; box-sizing: border-box; }
+#discord-modal-join-server #dxd-bar .dxd-search { height: 38px; }
+/* the discover tab scrolls on its own, so the footer and the grid never collide */
+#discord-tab-discover { max-height: 58vh; overflow-y: auto; overflow-x: hidden; }
+#discord-tab-discover #discord-discover-list { padding-bottom: 8px; }
+#discord-modal-join-server { width: min(560px, 94vw); }
+.dxd-name { display: flex; align-items: center; gap: 5px; min-width: 0; }
+.dxd-nt { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dxd-name i { flex-shrink: 0; font-size: 13px; }
+#dxd-bar .dxd-search { overflow: hidden; }

@@ -294,7 +294,7 @@ function OpenCloakroom_taxi()
 	end)
 end
 
-function OpenVehicleSpawnerMenu_taxi(station, partNum)
+function OpenVehicleSpawnerMenu_taxi_legacy(station, partNum)
 	local Vehicles = Config_taxi.AuthorizedVehicles.Shared
 	ESX.UI.Menu.CloseAll()
 
@@ -406,7 +406,7 @@ function OpenVehicleSpawnerMenu_taxi(station, partNum)
 	end, grade, job)
 end
 
-function OpenheliSpawnerMenu_taxi()
+function OpenheliSpawnerMenu_taxi_legacy()
 	local vehicles = Config_taxi.AuthorizedHelis.Shared
 	ESX.UI.Menu.CloseAll()
 
@@ -2115,4 +2115,13 @@ function OpendivisionsMenu_taxi()
             menu.close()
         end)
     end)
+end
+
+function OpenVehicleSpawnerMenu_taxi(station, partNum)
+	OpenJobFleetOrLegacy(function() OpenVehicleSpawnerMenu_taxi_legacy(station, partNum) end)
+end
+
+
+function OpenheliSpawnerMenu_taxi()
+	OpenJobFleetOrLegacy(function() OpenheliSpawnerMenu_taxi_legacy() end, 'heli')
 end

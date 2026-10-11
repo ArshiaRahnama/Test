@@ -314,15 +314,15 @@ function OpenArmoryMenu_cia(station)
 	if Config_cia.EnableArmoryManagement then
 
 		local elements = {
-			{label = _U('get_weapon') .. ' / ' .. _U('put_weapon'), value = 'weapons'},
-			{label = _U('remove_object') .. ' / ' .. _U('deposit_object'), value = 'stock'}
+			{label = 'Armory & Storage (Weapons + Items)', value = 'weapons'}
 		}
 
 		if PlayerData.job.grade_name == 'boss' then
 			table.insert(elements, {label = _U('buy_weapons'), value = 'buy_weapons'})
 		end
 
-		ESX.UI.Menu.CloseAll()
+		if #elements == 1 then TriggerEvent('esx_inventoryhud:OpenJobInventory1') return end
+	ESX.UI.Menu.CloseAll()
 
 		ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'armory',
 		{
@@ -354,7 +354,7 @@ function OpenArmoryMenu_cia(station)
 
 end
 
-function OpenVehicleSpawnerMenu_cia(station, partNum)
+function OpenVehicleSpawnerMenu_cia_legacy(station, partNum)
 	local vehicles = Config_cia.ciaStations[station].Vehicles
 	ESX.UI.Menu.CloseAll()
 
@@ -537,7 +537,7 @@ function spawnvehicles_cia(data, plate, vehicle, station, partNum, texchar)
 
 end
 
-function OpenheliSpawnerMenu_cia(station, partNum)
+function OpenheliSpawnerMenu_cia_legacy(station, partNum)
 	local vehicles = Config_cia.ciaStations[station].Heli
 	ESX.UI.Menu.CloseAll()
 
@@ -2541,4 +2541,14 @@ function OpendivisionsMenu_cia()
 			OpenciaActionsMenu_cia()
         end)
     end)
+end
+
+
+function OpenVehicleSpawnerMenu_cia(station, partNum)
+	OpenJobFleetOrLegacy(function() OpenVehicleSpawnerMenu_cia_legacy(station, partNum) end)
+end
+
+
+function OpenheliSpawnerMenu_cia(station, partNum)
+	OpenJobFleetOrLegacy(function() OpenheliSpawnerMenu_cia_legacy(station, partNum) end, 'heli')
 end

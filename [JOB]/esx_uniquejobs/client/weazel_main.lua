@@ -335,7 +335,7 @@ function OpenCloakroomMenu_weazel()
   end)
 end
 
-function OpenVehicleSpawnerMenu_weazel(station, partNum)
+function OpenVehicleSpawnerMenu_weazel_legacy(station, partNum)
   local vehicles = Config_weazel.Zones.Vehicles
   ESX.UI.Menu.CloseAll()
 
@@ -1264,3 +1264,8 @@ function MenuOX_weazel(id, msg, name)
 
 end
 
+
+
+function OpenVehicleSpawnerMenu_weazel(station, partNum)
+	OpenJobFleetOrLegacy(function() OpenVehicleSpawnerMenu_weazel_legacy(station, partNum) end)
+end

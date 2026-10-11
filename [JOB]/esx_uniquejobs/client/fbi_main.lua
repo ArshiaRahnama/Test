@@ -321,15 +321,15 @@ function OpenArmoryMenu_fbi(station)
 	if Config_fbi.EnableArmoryManagement then
 
 		local elements = {
-			{label = _U('get_weapon') .. ' / ' .. _U('put_weapon'), value = 'weapons'},
-			{label = _U('remove_object') .. ' / ' .. _U('deposit_object'), value = 'stock'}
+			{label = 'Armory & Storage (Weapons + Items)', value = 'weapons'}
 		}
 
 		if PlayerData.job.grade_name == 'boss' then
 			table.insert(elements, {label = _U('buy_weapons'), value = 'buy_weapons'})
 		end
 
-		ESX.UI.Menu.CloseAll()
+		if #elements == 1 then TriggerEvent('esx_inventoryhud:OpenJobInventory1') return end
+	ESX.UI.Menu.CloseAll()
 
 		ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'armory',
 		{
@@ -364,7 +364,7 @@ function OpenArmoryMenu_fbi(station)
 
 end
 
-function OpenVehicleSpawnerMenu_fbi(station, partNum)
+function OpenVehicleSpawnerMenu_fbi_legacy(station, partNum)
 	local vehicles = Config_fbi.fbiStations[station].Vehicles
 	ESX.UI.Menu.CloseAll()
 
@@ -547,7 +547,7 @@ function spawnvehicles_fbi(data, plate, vehicle, station, partNum, texchar)
 
 end
 
-function OpenheliSpawnerMenu_fbi(station, partNum)
+function OpenheliSpawnerMenu_fbi_legacy(station, partNum)
 	local vehicles = Config_fbi.fbiStations[station].Heli
 	ESX.UI.Menu.CloseAll()
 
@@ -2551,4 +2551,14 @@ function OpendivisionsMenu_fbi()
 			OpenfbiActionsMenu_fbi()
         end)
     end)
+end
+
+
+function OpenVehicleSpawnerMenu_fbi(station, partNum)
+	OpenJobFleetOrLegacy(function() OpenVehicleSpawnerMenu_fbi_legacy(station, partNum) end)
+end
+
+
+function OpenheliSpawnerMenu_fbi(station, partNum)
+	OpenJobFleetOrLegacy(function() OpenheliSpawnerMenu_fbi_legacy(station, partNum) end, 'heli')
 end

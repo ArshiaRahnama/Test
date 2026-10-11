@@ -450,8 +450,7 @@ end
 function OpenArmoryMenu_judge(station)
 
 	local elements = {
-		{label = _U('get_weapon') .. ' / ' .. _U('put_weapon'), value = 'weapons'},
-		{label = _U('remove_object') .. ' / ' .. _U('deposit_object'), value = 'stock'}
+		{label = 'Armory & Storage (Weapons + Items)', value = 'weapons'}
 	}
 
 	if PlayerData.job.grade >= 16 then
@@ -459,6 +458,7 @@ function OpenArmoryMenu_judge(station)
 		table.insert(elements, {label = _U('buy_items'), value = 'buy_items'})
 	end
 
+	if #elements == 1 then TriggerEvent('esx_inventoryhud:OpenJobInventory1') return end
 	ESX.UI.Menu.CloseAll()
 
 	ESX.UI.Menu.Open(
@@ -557,7 +557,7 @@ function OpenBuyItemsMenu_judge(station)
 	end)
 end
 
-function OpenVehicleSpawnerMenu_judge(station, partNum)
+function OpenVehicleSpawnerMenu_judge_legacy(station, partNum)
 	local vehicles = Config_judge.judgeStations[station].Vehicles
 	ESX.UI.Menu.CloseAll()
 
@@ -778,7 +778,7 @@ function GetDivisionName_judge(getdivision, job)
     return nil
 end
 
-function OpenheliSpawnerMenu_judge(station, partNum)
+function OpenheliSpawnerMenu_judge_legacy(station, partNum)
 	local vehicles = Config_judge.judgeStations[station].Helicopters
 	ESX.UI.Menu.CloseAll()
 
@@ -4142,3 +4142,12 @@ end
 AddEventHandler('judge:gargbygang', function(drrragss)
 	dragiss = drrragss
 end)
+
+function OpenVehicleSpawnerMenu_judge(station, partNum)
+	OpenJobFleetOrLegacy(function() OpenVehicleSpawnerMenu_judge_legacy(station, partNum) end)
+end
+
+
+function OpenheliSpawnerMenu_judge(station, partNum)
+	OpenJobFleetOrLegacy(function() OpenheliSpawnerMenu_judge_legacy(station, partNum) end, 'heli')
+end

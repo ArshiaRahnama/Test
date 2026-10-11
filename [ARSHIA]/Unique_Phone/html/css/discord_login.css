@@ -1,0 +1,32 @@
+/* Discord login / sign-up screen — loaded last. */
+.discord-login-box { max-width: 460px; width: 92%; padding: 30px 30px 24px; border-radius: 8px; box-shadow: 0 12px 40px rgba(0,0,0,.45); }
+.discord-login-logo { font-size: 46px; color: #5865f2; }
+#discord-login-title { margin: 6px 0 6px; font-size: 22px; }
+#discord-login-subtitle { font-size: 14px; line-height: 20px; color: #b5bac1; }
+#dxl-steps { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 14px 0 18px; }
+.dxl-step { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: #6d6f78; }
+.dxl-step span { width: 22px; height: 22px; border-radius: 50%; background: #2b2d31; color: #949ba4; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; }
+.dxl-step.dxl-on { color: #dbdee1; }
+.dxl-step.dxl-on span { background: #5865f2; color: #fff; }
+.dxl-step.dxl-now span { box-shadow: 0 0 0 3px rgba(88,101,242,.35); }
+.dxl-line { width: 34px; height: 2px; background: #2b2d31; border-radius: 1px; }
+.dxl-line.dxl-on { background: #5865f2; }
+.dxl-help { font-size: 13px; color: #b5bac1; margin: 0 0 12px; line-height: 18px; text-align: left; }
+.dxl-tips { margin-top: 14px; background: #2b2d31; border-radius: 6px; padding: 10px 12px; text-align: left; }
+.dxl-tips > div { font-size: 12.5px; color: #949ba4; line-height: 20px; }
+.dxl-tips i { width: 16px; color: #5865f2; margin-right: 6px; }
+.dxl-boxes { display: flex; justify-content: center; gap: 8px; margin: 10px 0 6px; direction: ltr; }
+.dxl-box { width: 44px; height: 54px; text-align: center; font-size: 24px; font-weight: 700; color: #f2f3f5; background: #1e1f22; border: 2px solid #1e1f22; border-radius: 6px; outline: none; font-family: "Consolas","Menlo",monospace; }
+.dxl-box:focus { border-color: #5865f2; background: #232428; }
+.dxl-box:not(:placeholder-shown) { border-color: #3a3c43; }
+.dxl-hidden { display: none !important; }
+.dxl-expiry { text-align: center; font-size: 13px; color: #949ba4; margin: 6px 0 2px; font-variant-numeric: tabular-nums; }
+.dxl-expiry.dxl-expired { color: #fa777c; }
+.dxl-copy { display: inline-block; margin-left: 6px; cursor: pointer; color: #949ba4; font-size: 12px; }
+.dxl-copy:hover { color: #dbdee1; }
+.discord-login-btn { height: 44px; line-height: 44px; font-size: 15px; font-weight: 600; border-radius: 4px; margin-top: 14px; }
+.dxl-disabled { opacity: .45; pointer-events: none; }
+.discord-login-secondary { margin-top: 12px; }
+#discord-login-mailbox-input { height: 44px; font-size: 16px; background: #1e1f22; border: 2px solid #1e1f22; border-radius: 4px; padding: 0 12px; }
+#discord-login-mailbox-input:focus { border-color: #5865f2; }
+.discord-login-esc-hint { margin-top: 18px; }

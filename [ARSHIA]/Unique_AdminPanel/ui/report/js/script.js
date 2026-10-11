@@ -28,6 +28,32 @@ function esc(v) {
     .replace(/'/g, '&#39;');
 }
 
+
+/* In-panel confirm dialog (replaces window.confirm(): CEF shows that as an ugly native
+   "JavaScript Confirm - cfx-nui-..." window outside the panel's style). */
+function uiConfirm(message) {
+  return new Promise(resolve => {
+    const ov = document.createElement('div');
+    ov.style.cssText = 'position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.55);direction:rtl;font-family:inherit';
+    ov.innerHTML = `
+      <div style="min-width:320px;max-width:420px;background:#161b27;color:#e6e9f0;border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:18px 20px;box-shadow:0 20px 60px rgba(0,0,0,.6)">
+        <div style="font-size:14px;line-height:1.9;margin-bottom:16px">${esc(message)}</div>
+        <div style="display:flex;gap:8px;justify-content:flex-start">
+          <button data-ok style="padding:7px 18px;border-radius:8px;border:0;cursor:pointer;background:#e5484d;color:#fff;font-family:inherit">تأیید</button>
+          <button data-no style="padding:7px 18px;border-radius:8px;border:1px solid rgba(255,255,255,.18);cursor:pointer;background:transparent;color:inherit;font-family:inherit">لغو</button>
+        </div>
+      </div>`;
+    const done = v => { document.removeEventListener('keydown', onKey, true); ov.remove(); resolve(v); };
+    const onKey = e => { if (e.key === 'Escape') { e.stopPropagation(); done(false); } else if (e.key === 'Enter') { e.stopPropagation(); done(true); } };
+    ov.querySelector('[data-ok]').onclick = () => done(true);
+    ov.querySelector('[data-no]').onclick = () => done(false);
+    ov.addEventListener('click', e => { if (e.target === ov) done(false); });
+    document.addEventListener('keydown', onKey, true);
+    document.body.appendChild(ov);
+    ov.querySelector('[data-ok]').focus();
+  });
+}
+
 async function nui(name, data = {}) {
   try {
     const res = await fetch(`https://${RES}/${name}`, {
@@ -711,7 +737,7 @@ function paintDetail() {
 async function detailAction(what, t) {
   if (what === 'open') { S.adminView = 'active'; return renderAdmin(); }
 
-  if (what === 'delete' && !confirm(`ریپورت #${t.ID} برای همیشه حذف بشه؟`)) return;
+  if (what === 'delete' && !(await uiConfirm(`ریپورت #${t.ID} برای همیشه حذف بشه؟`))) return;
 
   // Ticket System link - own endpoint/payload shape (ticket:createFromReport
   // takes { reportId }, not { id }), and unlike the actions below it doesn't
@@ -914,7 +940,7 @@ async function renderActive(body) {
         </button>`).join('')}`;
 
     $$('.ban-preset', panel).forEach(b => b.addEventListener('click', async () => {
-      if (!confirm(`مطمئنی؟ بازیکن بن می‌شه و ریپورت بسته می‌شه.`)) return;
+      if (!(await uiConfirm(`مطمئنی؟ بازیکن بن می‌شه و ریپورت بسته می‌شه.`))) return;
       b.disabled = true;
       const res2 = await nui('banClose', { id: d.ID, presetId: b.dataset.preset });
       if (res2 && res2.r) {
@@ -1242,7 +1268,7 @@ async function paintTicketDetail() {
 
   $('#tStatusSel').addEventListener('change', async e => {
     const val = e.target.value;
-    if (val === 'closed' && !confirm(`تیکت #${t.id} برای همیشه بسته بشه؟ فقط از این راه بسته میشه.`)) {
+    if (val === 'closed' && !(await uiConfirm(`تیکت #${t.id} برای همیشه بسته بشه؟ فقط از این راه بسته میشه.`))) {
       e.target.value = t.status;
       return;
     }

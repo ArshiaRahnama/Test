@@ -385,6 +385,7 @@ function OpenBossRankAccessCategoryMenu(gang, gradeNumber)
         align    = 'top-left',
         elements = {
             { label = 'General Access', value = 'general' },
+            { label = 'Weapon Access (Armory)', value = 'weapons' },
             { label = 'Item Access (Armory)', value = 'items' },
             { label = 'Vehicle Access', value = 'vehicles' },
         }
@@ -392,8 +393,8 @@ function OpenBossRankAccessCategoryMenu(gang, gradeNumber)
         menu.close()
         if data.current.value == 'general' then
             OpenBossRankAccessToggleMenu(gang, gradeNumber)
-        elseif data.current.value == 'items' then
-            OpenBossItemAccessArmoryMenu(gang, gradeNumber)
+        elseif data.current.value == 'weapons' or data.current.value == 'items' then
+            OpenBossItemAccessArmoryMenu(gang, gradeNumber, data.current.value)
         else
             OpenBossVehicleAccessCategoryMenu(gang, gradeNumber)
         end
@@ -469,26 +470,31 @@ end
 -- that gang's armories, same as before - only the discovery list is
 -- now per-armory.)
 -------------------------------------------------------------------
-function OpenBossItemAccessArmoryMenu(gang, gradeNumber)
+-- kind = 'weapons' | 'items'. A gang can own SEVERAL armories, each with its own chest and its own
+-- per-rank access: with more than one armory the boss picks which one to manage first.
+function OpenBossItemAccessArmoryMenu(gang, gradeNumber, kind)
     ESX.TriggerServerCallback('FMGangs:GetGangArmories', function(armories)
         if not armories or #armories == 0 then
-            ESX.ShowNotification('This gang has no armories placed yet')
-            OpenBossRankAccessCategoryMenu(gang, gradeNumber)
+            OpenBossItemAccessMenu(gang, gradeNumber, kind, nil)
+            return
+        end
+        if #armories == 1 then
+            OpenBossItemAccessMenu(gang, gradeNumber, kind, armories[1].key)
             return
         end
 
         local elements = {}
         for _, a in ipairs(armories) do
-            table.insert(elements, { label = 'Armory #' .. a.key, value = tostring(a.key) })
+            table.insert(elements, { label = 'Armory #' .. a.key, value = a.key })
         end
 
-        ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'boss_item_access_armory_' .. gang .. '_' .. gradeNumber, {
+        ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'boss_item_access_armory_' .. gang .. '_' .. gradeNumber .. '_' .. kind, {
             title    = 'SELECT ARMORY',
             align    = 'top-left',
             elements = elements
         }, function(data, menu)
             menu.close()
-            OpenBossItemAccessMenu(gang, gradeNumber, data.current.value)
+            OpenBossItemAccessMenu(gang, gradeNumber, kind, data.current.value)
         end, function(data, menu)
             menu.close()
             OpenBossRankAccessCategoryMenu(gang, gradeNumber)
@@ -496,7 +502,7 @@ function OpenBossItemAccessArmoryMenu(gang, gradeNumber)
     end, gang)
 end
 
-function OpenBossItemAccessMenu(gang, gradeNumber, armoryKey)
+function OpenBossItemAccessMenu(gang, gradeNumber, kind, armoryKey)
     ESX.TriggerServerCallback('FMGangs:GetGangDataFromName', function(gangData)
         local gradeData = gangData and gangData.grades and gangData.grades[gradeNumber]
         if not gradeData then
@@ -505,35 +511,30 @@ function OpenBossItemAccessMenu(gang, gradeNumber, armoryKey)
             return
         end
 
-        ESX.TriggerServerCallback('FMGangs:GetArmoryStashItemNames', function(itemNames)
-            local itemAccess = (gradeData.access and gradeData.access.itemAccess) or {}
+        ESX.TriggerServerCallback('FMGangs:GetArmoryStashItemNames', function(list)
             local elements = {}
-            for _, item in ipairs(itemNames or {}) do
-                -- unset (nil) means "allowed" (backward compatible default)
-                local allowed = itemAccess[item] ~= false
-                local state = allowed and '<span style="color:lightgreen;">ALLOWED</span>' or '<span style="color:salmon;">BLOCKED</span>'
-                table.insert(elements, { label = item .. ': ' .. state, value = item })
+            for _, row in ipairs(list or {}) do
+                local state = row.allowed and '<span style="color:lightgreen;">✔ ALLOWED</span>' or '<span style="color:salmon;">❌ LOCKED</span>'
+                table.insert(elements, { label = row.name .. ': ' .. state, value = row.name, allowed = row.allowed })
             end
             if #elements == 0 then
-                ESX.ShowNotification('This armory is empty - add items to it first, then come back to set access')
+                ESX.ShowNotification('This armory has nothing of this type yet - put some in first, then come back to set access')
             end
 
-            ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'boss_item_access_' .. gang .. '_' .. gradeNumber .. '_' .. armoryKey, {
-                title    = (gradeData.label or ('Grade ' .. gradeNumber)) .. ' - Armory #' .. armoryKey,
+            ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'boss_item_access_' .. gang .. '_' .. gradeNumber .. '_' .. kind .. '_' .. tostring(armoryKey), {
+                title    = (gradeData.label or ('Grade ' .. gradeNumber)) .. (kind == 'weapons' and ' - Weapons' or ' - Items') .. (armoryKey and (' - Armory #' .. armoryKey) or ''),
                 align    = 'top-left',
                 elements = elements
             }, function(data, menu)
-                local item = data.current.value
-                local currentlyAllowed = itemAccess[item] ~= false
                 ESX.TriggerServerCallback('FMGangs:EditItemAccess', function()
                     menu.close()
-                    OpenBossItemAccessMenu(gang, gradeNumber, armoryKey)
-                end, gang, gradeNumber, item, not currentlyAllowed)
+                    OpenBossItemAccessMenu(gang, gradeNumber, kind, armoryKey)
+                end, gang, gradeNumber, data.current.value, not data.current.allowed, armoryKey)
             end, function(data, menu)
                 menu.close()
-                OpenBossItemAccessArmoryMenu(gang, gradeNumber)
+                OpenBossRankAccessCategoryMenu(gang, gradeNumber)
             end)
-        end, gang, armoryKey)
+        end, gang, kind, armoryKey, gradeNumber)
     end, gang)
 end
 

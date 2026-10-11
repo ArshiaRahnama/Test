@@ -25,6 +25,10 @@ server_scripts {
     '@oxmysql/lib/MySQL.lua',
     'server/main.lua',
     'config.lua',
+    'server/discord_ext.lua', -- Discord v7 (after config.lua so Config.DiscordExt exists)
+    'server/discord_ext2.lua', -- Discord v8 (roles, invites, stage, templates ...)
+    'server/discord_ext3.lua', -- Discord v9 (exports used by esx_uniquejobs: court / warrants / CAD)
+    'server/discord_ext4.lua', -- Discord v11 (avatars, friends, DMs, uploaded emoji)
 }
 
 ui_page "html/index.html"
@@ -38,6 +42,7 @@ files {
     'html/fonts/*.ttf',
     'html/fonts/*.otf',
     'html/fonts/*.woff',
+    'html/fonts/discord/*.woff2',
     'html/img/backgrounds/*.png',
     'html/img/apps/*.png',
     'html/img/vehicle/*.png',

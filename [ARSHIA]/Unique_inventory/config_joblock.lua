@@ -14,6 +14,10 @@
 
 Config = Config or {}
 
+-- Verbose [LOCKDBG] console logging for armory / job storage / gang chest / boss-action locks.
+-- Set to false when you no longer need it.
+Config.DebugLock = false
+
 -- Config.JobStockMinGrade[jobName][itemName] = حداقل گریدی که برای برداشتن
 -- این آیتم از انبار جاب (job2) لازمه. آیتمی که اینجا نیست = بدون محدودیت
 -- (هر کسی که اصلاً دسترسی به انبار جاب رو داره می‌تونه برش داره).

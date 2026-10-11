@@ -127,7 +127,7 @@ $(document).ready(function () {
       $('.box-circle-mochila').css('opacity', '1')
       $('.left-menu-chest').css('opacity', '0')
       $('.name-car').html('Em uso')
-      $('#box-menu-item-chest').html('')
+      $('#box-menu-item-chest').html(''); $('#barra-pesquisa-chest').val('')
       $('#box-menu-item-chest').append(
         '\n                <div class="in-use"> \n                    Alguém já está usando este inventário!\n                    <img src="' +
           ip +
@@ -140,7 +140,7 @@ $(document).ready(function () {
       $('.box-circle-mochila').css('opacity', '1')
       $('.left-menu-chest').css('opacity', '0')
       $('.name-car').html('Não registrado')
-      $('#box-menu-item-chest').html('')
+      $('#box-menu-item-chest').html(''); $('#barra-pesquisa-chest').val('')
       $('#box-menu-item-chest').append(
         '\n                <div class="in-use"> \n                    Esse carro não está nos registros\n                    <img src="' +
           ip +
@@ -153,7 +153,7 @@ $(document).ready(function () {
       $('.box-circle-mochila').css('opacity', '1')
       $('.left-menu-chest').css('opacity', '0')
       $('.name-car').html('Trancado')
-      $('#box-menu-item-chest').html('')
+      $('#box-menu-item-chest').html(''); $('#barra-pesquisa-chest').val('')
       $('#box-menu-item-chest').append(
         '\n                <div class="in-use"> \n                    Esse carro está trancado\n                    <img src="' +
           ip +
@@ -166,7 +166,7 @@ $(document).ready(function () {
       JSON.stringify({ tipo: _0x5692f1 }),
       (_0x24ece6) => {
         $('.name-car').html(_0x5692f1)
-        $('#box-menu-item-chest').html('')
+        $('#box-menu-item-chest').html(''); $('#barra-pesquisa-chest').val('')
         if (_0x24ece6.chest === false) {
           const _0x54fd78 = _0x24ece6.itemTable.sort((_0xf573bc, _0x53d970) =>
             _0xf573bc.name > _0x53d970.name ? 1 : -1
@@ -233,7 +233,7 @@ $(document).ready(function () {
           if (_0x24ece6.chest === true) {
             $('.left-menu-chest').css('opacity', '1')
             nomeDoBau = _0x5692f1
-            $('#box-menu-item-chest').html('')
+            $('#box-menu-item-chest').html(''); $('#barra-pesquisa-chest').val('')
             for (let _0x4de65f = 0; _0x4de65f < _0x24ece6.slots; _0x4de65f++) {
               $('#box-menu-item-chest').append(
                 '\n                        <div class="slotChest chest" data-temItem="false" data-slotNovo="' +
@@ -301,7 +301,7 @@ $(document).ready(function () {
             if (_0x24ece6.chest === 'TrunckChest') {
               $('.left-menu-chest').css('opacity', '1')
               nomeTrunckChest = _0x24ece6.nameCar
-              $('#box-menu-item-chest').html('')
+              $('#box-menu-item-chest').html(''); $('#barra-pesquisa-chest').val('')
               $('.name-car').html(nomeTrunckChest)
               fitChestTitleLine()
               setTimeout(fitChestTitleLine, 150)
@@ -377,7 +377,7 @@ $(document).ready(function () {
               if (_0x24ece6.chest === 'house') {
                 $('.left-menu-chest').css('opacity', '1')
                 nomeHouse = _0x24ece6.nameHouse
-                $('#box-menu-item-chest').html('')
+                $('#box-menu-item-chest').html(''); $('#barra-pesquisa-chest').val('')
                 $('.name-car').html(nomeHouse)
                 for (
                   let _0x19a5f2 = 0;
@@ -394,6 +394,10 @@ $(document).ready(function () {
                   if (_0x24ece6.tableChest[i]) {
                     var _0x286660 = _0x24ece6.tableChest[i],
                       _0x5bc40d = $('.slotChest')
+                    // FIX (UI showed 'undefinedx' / 0.0kg for armory weapons): never render a missing field
+                    if (_0x286660.count == null || isNaN(Number(_0x286660.count))) _0x286660.count = 1
+                    if (_0x286660.peso == null || isNaN(Number(_0x286660.peso))) _0x286660.peso = _0x286660.type === 'item_weapon' ? 2 : 0.5
+                    if (!_0x286660.label) _0x286660.label = _0x286660.name
                     // FIX (item-lock feature): gang/job armory items the
                     // server flags locked=true are still shown (per the
                     // requested UX: visible, but can't be taken) with a
@@ -1801,3 +1805,20 @@ $('#barra-pesquisa').hover(
     $('.toltip-pesquisa').hide()
   }
 )
+
+
+// Search inside the second inventory (armory / storage / gang chest / trunk):
+// type a weapon or item name, non-matching slots are hidden.
+function pesquisarChest() {
+  var q = ($('#barra-pesquisa-chest').val() || '').toUpperCase().trim()
+  var list = document.getElementById('box-menu-item-chest')
+  if (!list) return
+  var items = list.getElementsByClassName('item-player')
+  for (var i = 0; i < items.length; i++) {
+    var n = items[i].getElementsByClassName('name-item')[0]
+    var label = n ? n.textContent || n.innerText || '' : ''
+    var key = items[i].getAttribute('data-item-key') || ''
+    var hit = q === '' || label.toUpperCase().indexOf(q) > -1 || key.toUpperCase().indexOf(q) > -1
+    items[i].style.display = hit ? '' : 'none'
+  }
+}

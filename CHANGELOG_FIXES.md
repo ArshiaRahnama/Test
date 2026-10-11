@@ -122,3 +122,47 @@
 - **`esx_inventoryhud:moveItem`** (درگ‌اند‌دراپ بین اسلات‌ها) — سمت سرور listener ندارد. essentialmode یه لایه‌ی کامل persist-شده (`slots.lua`) دارد ولی شماره‌ی اسلات NUI (ایندکس آرِی) با شماره‌ی اسلات پرسیستنت essentialmode (۱..۵۰+بک‌پک) یکی نیست — وصل‌کردن مستقیم خطرناکه، نیاز به تغییر `requestItens` (سمت سرور) + رندر NUI هم‌زمان دارد.
 - NUI callback های orphan دیگه: `moverItemChest`, `moverItemHouse`, `moverItemTrunckChest`, `buyItem`, `colocarItemInventory`, `retirarItemChest`, `venderItem`.
 - آیکون‌های گمشده: ۳۰ آیتم کافه + بخشی از آیتم‌های `itemseller_config.lua` (مرغ/گوشت/حیوانات) هنوز PNG ندارن.
+
+## ۱۸. آخرین اصلاحات (گاراژ مستقیم جاب‌ها، قفل پیش‌فرض اسلحه، ارموری گنگ)
+46. **ارموری گنگ‌ها**: فایل جدید `Unique_inventory/server/gang_store.lua` (`EnsureGangStores`) — اگر `gang_<name>` در `addon_inventory`/`datastore` نبود خودکار ساخته می‌شود؛ دیگر `inventory/store nil` کرش نمی‌دهد.
+47. **قفل اسلحه ارموری جاب**: حالا پیش‌فرض «بسته» است؛ فقط اسلحه‌ای که در Boss Action برای آن رنک `status=true` شده باز می‌شود (رنک ۱ با لیست خالی = همه قفل).
+48. **ماشین جاب‌ها**: با E روی مارکر ماشین، مستقیم منوی Unique_Garage (ماشین‌های مجاز همان رنک) باز می‌شود (`esx_society:requestJobFleetStatus`). اگر جاب هنوز ماشینی ثبت‌شده ندارد (`/addjobvehicle`)، منوی قدیمی فقط به‌عنوان fallback باز می‌شود.
+49. **مکانیک و هلیکوپتر**: مارکر ماشین مکانیک همان `OpenheliSpawnerMenu_mechanic` است؛ حالا مستقیم Unique_Garage (نوع `heli`) را باز می‌کند. منوی هلی بقیه جاب‌ها هم همین‌طور. `takeJobVehicle`/`requestJobFleetStatus` پارامتر `vehType` (car/heli/boat) دارند.
+50. **یونیت اجباری برای ارگان‌های نظامی (DOJ + LAW)**: با E روی مارکر ماشین، اگر بازیکن در یونیت نباشد هیچ منویی باز نمی‌شود و پیام «You must join a unit first (/unit)» می‌آید؛ پلاک = callsign یونیت. ارگان‌های سرویس (taxi/mechanic/ambulance/weazel) نیازی به یونیت ندارند و پلاک را خودشان وارد می‌کنند (منوی لیست → دیالوگ پلاک → Unique_Garage).
+51. **مدیریت گان/آیتم از باس اکشن**:
+    - گنگ: `FMGangs:GetArmoryStashItemNames` حالا محتوای واقعی چست گنگ (آیتم‌ها + اسلحه‌ها از `gang_<name>`) را لیست می‌کند، نه جدول قدیمی `stashs` (که خالی بود). `checkItemAccess` به حروف بزرگ/کوچک حساس نیست (WEAPON_X).
+    - جاب: «Manage Inventory» در باس اکشن حالا واقعاً روی Job Storage اعمال می‌شود (event جدید `esx_society:getItems`). تیک‌نخورده = قفل؛ رنک boss همیشه باز.
+52. **تیک اسلحه/آیتم در باس اکشن برمی‌گشت (قفل اعمال نمی‌شد)**: `isPlayerBoss` در esx_society فقط `grade_name == 'boss'` را قبول می‌کرد؛ رنک آخر (مثل FBI رنک ۷ «General») منو را باز می‌کرد ولی سرور ذخیره را بی‌صدا رد می‌کرد و منو دوباره تیک‌های قدیمی را نشان می‌داد. حالا بالاترین رنک جاب هم باس حساب می‌شود (Weapons / Inventory / Vehicles).
+53. **UI**: آیتم بدون count/peso دیگر `undefinedx` و `0.0kg` نشان نمی‌دهد (پیش‌فرض ۱ و وزن پیش‌فرض).
+54. **Manage Weapons/Inventory/Vehicles — ضربدر یکی، تیک دیگری عوض می‌شد**: سرور حالا از روی داده‌ی ذخیره‌شده‌ی همان رنک شروع می‌کند و فقط ردیف کلیک‌شده را (بدون حساسیت به حروف) عوض می‌کند؛ ردیف‌های ارسالی کلاینت فقط برای شناخت لیست‌اند (`buildPermTable`).
+55. **قفل ارموری جاب**: لیست مجاز مستقیم از `job_grades.weapons/items` (دیتابیس) خوانده می‌شود (`GetJobGradePerm`)، نه از event خارجی؛ پس دیگر هیچ‌وقت «fail-open» نمی‌شود. همه سلاح/آیتم‌ها برای همه نمایش داده می‌شوند؛ تیک‌نخورده = آیکن قفل + برداشتن رد می‌شود (سمت سرور هم چک می‌شود).
+
+## ۱۹. لاگ دیباگ (برای پیدا کردن مشکل قفل/باس اکشن)
+همه خطوط با پیشوند `[LOCKDBG]` چاپ می‌شوند. برای خاموش‌کردن: `Config.DebugLock = false` (config_joblock.lua) و `local LOCKDBG = false` (esx_society/server/main.lua).
+- `[LOCKDBG]` (Unique_inventory): ARMORY open/تک‌تک سلاح‌ها، JOBPERM (خام job_grades)، JOBITEM، GANG، TAKE ...، و سمت کلاینت چیزی که NUI گرفته.
+- `[LOCKDBG][society]`: isPlayerBoss، SAVE weapons/items/vehicles (قبل/بعد)، MENU read، EVENT getWeapons، FLEETSTATUS، TAKEVEHICLE.
+- `[LOCKDBG][gangs]`: EditItemAccess، checkItemAccess، GetArmoryStashItemNames.
+- `[LOCKDBG][fleet]` (کلاینت F8): پاسخ وضعیت ماشین.
+هنگام استارت سرور هر ریسورس خط «build 2026-10-10-DEBUG» چاپ می‌کند تا معلوم شود فایل جدید لود شده.
+56. **باگ پیدا‌شده با لاگ**: `attempt to call a nil value (global 'buildPermTable')` در esx_society/server/main.lua — تابع کمکی بعد از callback آیتم‌ها تعریف شده بود، پس Manage Inventory (آیتم‌ها) هیچ‌وقت ذخیره نمی‌شد. تابع به بالای فایل منتقل شد. (Manage Weapons درست کار می‌کرد.)
+57. **قفل آیتم Job Storage برای باس**: استثنای `grade_name == 'boss'` حذف شد؛ آیتم‌ها مثل سلاح‌ها برای همه رنک‌ها (حتی باس) طبق تیک‌ها قفل/باز می‌شوند.
+
+58. Armory + Job Storage merged into ONE chest ("Armory & Storage"): new callback `Parzival:getJobINVAll` (weapons + items together, each with its own lock badge); `OpenJobInventory1/2` both open it; put/take route by type (weapon -> Put/GetJobWeapon, item -> Put/GetJobItem). E-menu in all 9 armory jobs shows a single entry (non-boss opens the chest directly; boss still sees Buy weapons/items).
+
+59. Armory & Storage diagnostics: always-on console lines `ARMORY&STORAGE src -> N weapons + M items`, `PUT job item ...`, `TAKE job item ... stock=`; deposit now notifies when the player lacks the amount / society has no entry.
+
+60. ROOT CAUSE of "items don't show in Armory & Storage": IsJobItemLocked (MySQL.Sync, yields) was called INSIDE the esx_addoninventory callback, so TriggerEvent returned early and the item list was sent empty (it only worked for boss rank before because of the exemption removed in #57). Stock is now snapshotted first, locks computed after.
+
+61. Debug console logging switched OFF (Config.DebugLock=false, esx_society LOCKDBG=false, gangs GDEBUG=false, fleet helper silent, boot banners removed). Pocket Space grid (#box-menu-item) moved down 3vw (top 11.7vw, height 30vw).
+
+62. Pocket Space ring block (.box-peso) moved down 4.6vw (closer to the divider between the two rings).
+63. Pocket Space ring block moved a bit lower (top 10.4vw).
+64. Description / Serial Number block (.descricao-menu) moved down 3.8vw so it no longer overlaps the item grid.
+65. Search box for the second inventory (armory/storage/gang chest/trunk): #barra-pesquisa-chest + pesquisarChest(); title line (.line-chest) shortened to 17vw so it no longer runs under the Pocket Space side.
+66. Chest search moved under the 'Armory & Storage' title, header line removed. Console spam removed (inventory 2 loaded / MyData / slm prints). Admin panel: 'convert to ticket' now works for archived/closed reports (DB fallback); native JS confirm() replaced by an in-panel dialog (uiConfirm).
+67. Chest search redesigned (centred glass pill with magnifier icon, header row). Last native confirm() (Admin panel 'Clear security hold') replaced by in-UI dialog - no native JS dialogs remain anywhere in the project.
+
+68. Gangs now work exactly like the job armories: one chest "Gang Armory & Storage" (weapons + items, search, lock badges); gang boss menu -> rank -> Access Type has separate "Weapon Access" and "Item Access" lists with ✔ ALLOWED / ❌ LOCKED toggles (no "select armory" step any more - it blocked managing when no armory prop existed); weapons are stocked/taken one at a time like the job armory (count -1 / +1 instead of removing the whole entry / adding 250); weapon counts shown correctly; zero-count entries hidden; General Access flags putitem / takeitem are now enforced server-side (Unique_ALLGangs:checkGangFlag). Gang item locks have no boss exemption.
+
+69. Gangs with SEVERAL armories: each armory (E marker) opens its OWN chest and has its OWN per-rank weapon/item access. First armory = legacy chest `gang_<name>` + legacy `access.itemAccess` (never-toggled = allowed, nothing changes for existing gangs); every additional armory = chest `gang_<name>_<key>` + `access.armoryAccess[key]` where everything is LOCKED until the boss opens it (boss action -> rank -> Weapon Access / Item Access -> pick the armory -> tick). Armory picker is skipped when the gang only has one. Server validates the armory key; take/put/list all resolve the right chest and lock table.
+70. Gang chest title shows the armory number when the gang has several armories ("Gang Armory & Storage - Armory 2"): Parzival:getGangArmoryTitle + Unique_ALLGangs:getArmoryNumber; search box moved to x=43.6vw to leave room for the longer title.

@@ -1,3 +1,4 @@
+local function FDbg(...) end -- fleet debug output disabled (swap body for print(...) to re-enable)
 --[[ ===========================================================================
     esx_uniquejobs | client/job_fleet_helper.lua
 
@@ -26,12 +27,24 @@
 RegisterNetEvent('esx_society:jobVehicleReady')
 RegisterNetEvent('esx_society:jobVehicleFailed')
 
-function OpenJobFleetGarage(model)
+function OpenJobFleetGarage(model, vehType)
+    vehType = vehType or 'car'
     local job = ESX.PlayerData.job and ESX.PlayerData.job.name
     if not job or job == 'nojob' then return end
 
     local playerCoords = GetEntityCoords(PlayerPedId())
     local heading = GetEntityHeading(PlayerPedId())
+
+    -- Organ services (taxi/mechanic/ambulance/weazel) enter their own plate;
+    -- military/law jobs get the plate from their unit callsign (server side).
+    local customPlate = nil
+    local dept = GetDepartmentForJob and GetDepartmentForJob(job)
+    local isMilitary = dept and (dept.id == 'doj' or dept.id == 'le')
+    if not isMilitary then
+        local input = lib.inputDialog('Enter Vehicle Plate', {'Plate (6 characters)'}, {max = 6})
+        if not input or not input[1] or input[1] == '' then return end
+        customPlate = input[1]
+    end
 
     -- FIX (reported: generic "Could not reach the vehicle fleet - try
     -- again" showing up alongside - or instead of noticing - a specific
@@ -53,7 +66,8 @@ function OpenJobFleetGarage(model)
         failed = true
     end)
 
-    TriggerServerEvent('esx_society:takeJobVehicle', model)
+    FDbg(('[LOCKDBG][fleet] takeJobVehicle model=%s vehType=%s plate=%s military=%s'):format(tostring(model), tostring(vehType), tostring(customPlate), tostring(isMilitary)))
+    TriggerServerEvent('esx_society:takeJobVehicle', model, vehType, customPlate)
 
     Citizen.CreateThread(function()
         local timeout = GetGameTimer() + 5000
@@ -66,7 +80,7 @@ function OpenJobFleetGarage(model)
         if done then
             TriggerEvent('Unique_Garage:OpenJobFleetGarage', job, {
                 x = playerCoords.x, y = playerCoords.y, z = playerCoords.z, h = heading
-            }, 'car')
+            }, vehType)
         elseif not failed then
             -- Neither signal arrived at all within the timeout - a genuine
             -- unexpected failure (esx_society not running, dropped event,
@@ -75,5 +89,33 @@ function OpenJobFleetGarage(model)
         end
         -- if `failed` is true, esx_society already showed the specific
         -- reason - nothing more to show here.
+    end)
+end
+
+
+-- E at the vehicle marker: if the job has fleet vehicles for this rank, open
+-- the Unique_Garage menu directly; otherwise fall back to the legacy list menu.
+RegisterNetEvent('esx_society:jobFleetStatusResult')
+function OpenJobFleetOrLegacy(legacyFn, vehType)
+    vehType = vehType or 'car'
+    local job = ESX.PlayerData.job and ESX.PlayerData.job.name
+    if not job or job == 'nojob' then if legacyFn then legacyFn() end return end
+    local answered, has = false, false
+    local h = AddEventHandler('esx_society:jobFleetStatusResult', function(v) answered = true has = v FDbg(('[LOCKDBG][fleet] status reply job=%s vehType=%s -> %s'):format(tostring(job), tostring(vehType), tostring(v))) end)
+    TriggerServerEvent('esx_society:requestJobFleetStatus', vehType)
+    local p = GetEntityCoords(PlayerPedId())
+    local hd = GetEntityHeading(PlayerPedId())
+    Citizen.CreateThread(function()
+        local t = GetGameTimer() + 3000
+        while not answered and GetGameTimer() < t do Citizen.Wait(0) end
+        RemoveEventHandler(h)
+        if not answered then FDbg(('[LOCKDBG][fleet] NO status reply within 3s (job=%s vehType=%s) -> legacy menu'):format(tostring(job), tostring(vehType))) end
+        if answered and has == 'nounit' then
+            return -- server already told the player to join a unit
+        elseif answered and has == true then
+            TriggerEvent('Unique_Garage:OpenJobFleetGarage', job, { x = p.x, y = p.y, z = p.z, h = hd }, vehType)
+        elseif legacyFn then
+            legacyFn()
+        end
     end)
 end

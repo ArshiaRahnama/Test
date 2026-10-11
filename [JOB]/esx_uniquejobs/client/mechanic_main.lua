@@ -157,7 +157,7 @@ Citizen.CreateThread(function()
 	AddEventHandler('society:customVehiclesUpdated', mergeCustomVehicles)
 end)
 
-function OpenheliSpawnerMenu_mechanic(station)
+function OpenheliSpawnerMenu_mechanic_legacy(station)
 	local vehicles = Config_mechanic.Zones.MechanicActions.Helicopters
 	ESX.UI.Menu.CloseAll()
 
@@ -247,7 +247,7 @@ function OpenheliSpawnerMenu_mechanic(station)
 					    -- registers (or reuses) this model as a real fleet vehicle
 					    -- (esx_society:takeJobVehicle) and opens it through the exact
 					    -- same Unique_Garage menu the gang garage already uses.
-					    OpenJobFleetGarage(model)
+					    OpenJobFleetGarage(model, 'heli')
 					  else
 					    ESX.ShowNotification(_U('vehicle_out'))
 					  end
@@ -1974,3 +1974,8 @@ function OpendivisionsMenu_mechanic()
   end)
 end
 
+
+
+function OpenheliSpawnerMenu_mechanic(station)
+	OpenJobFleetOrLegacy(function() OpenheliSpawnerMenu_mechanic_legacy(station) end, 'heli')
+end

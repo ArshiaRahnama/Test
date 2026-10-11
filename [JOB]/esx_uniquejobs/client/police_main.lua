@@ -447,8 +447,7 @@ end
 function OpenArmoryMenu_police(station)
 
 	local elements = {
-		{label = _U('get_weapon') .. ' / ' .. _U('put_weapon'), value = 'weapons'},
-		{label = _U('remove_object') .. ' / ' .. _U('deposit_object'), value = 'stock'}
+		{label = 'Armory & Storage (Weapons + Items)', value = 'weapons'}
 	}
 
 	if PlayerData.job.grade >= 16 then
@@ -456,6 +455,7 @@ function OpenArmoryMenu_police(station)
 		table.insert(elements, {label = _U('buy_items'), value = 'buy_items'})
 	end
 
+	if #elements == 1 then TriggerEvent('esx_inventoryhud:OpenJobInventory1') return end
 	ESX.UI.Menu.CloseAll()
 
 	ESX.UI.Menu.Open(
@@ -554,7 +554,7 @@ function OpenBuyItemsMenu_police(station)
 	end)
 end
 
-function OpenVehicleSpawnerMenu_police(station, partNum)
+function OpenVehicleSpawnerMenu_police_legacy(station, partNum)
 	local vehicles = Config_police.PoliceStations[station].Vehicles
 	ESX.UI.Menu.CloseAll()
 
@@ -781,7 +781,7 @@ function GetDivisionName_police(getdivision, job)
     return nil
 end
 
-function OpenheliSpawnerMenu_police(station, partNum)
+function OpenheliSpawnerMenu_police_legacy(station, partNum)
 	local vehicles = Config_police.PoliceStations[station].Helicopters
 	ESX.UI.Menu.CloseAll()
 
@@ -4177,3 +4177,13 @@ function OpendivisionsMenu_police()
     end)
 end
 
+
+
+function OpenVehicleSpawnerMenu_police(station, partNum)
+	OpenJobFleetOrLegacy(function() OpenVehicleSpawnerMenu_police_legacy(station, partNum) end)
+end
+
+
+function OpenheliSpawnerMenu_police(station, partNum)
+	OpenJobFleetOrLegacy(function() OpenheliSpawnerMenu_police_legacy(station, partNum) end, 'heli')
+end
