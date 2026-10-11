@@ -1,0 +1,7 @@
+/* Discord v27 — loaded last. */
+.dxs-super { border: 1px solid #f0b232; background: linear-gradient(90deg, rgba(240,178,50,.18), rgba(88,101,242,.18)); }
+.dxs-super .dxs-spark { display: inline-block; margin-right: 3px; animation: dxsBurst .9s ease-out; }
+@keyframes dxsBurst { 0% { transform: scale(.4); opacity: 0; } 60% { transform: scale(1.4); opacity: 1; } 100% { transform: scale(1); } }
+.dxp27-check { display: flex; gap: 8px; align-items: center; font-size: 13px; color: #dbdee1; margin: 6px 0; }
+.dxp27-roles { margin: 6px 0; }
+.dxp27 { margin-top: 10px; padding-top: 10px; border-top: 1px solid #3f4147; }

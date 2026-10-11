@@ -1,0 +1,217 @@
+.browser-app {
+    display: none;
+    height: 100%;
+    width: 100%;
+    background: #0d0d0d;
+    overflow: hidden;
+}
+
+.browser-app-header {
+    position: absolute;
+    top: 0;
+    height: 9vh;
+    width: 100%;
+    background: linear-gradient(135deg, #4285F4, #34a1f5);
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-top: 2vh;
+    box-sizing: border-box;
+    box-shadow: 0 .4vh 1.4vh rgba(66, 133, 244, 0.35);
+}
+
+.browser-urlbar {
+    display: flex;
+    align-items: center;
+    gap: .7vh;
+    width: 85%;
+    height: 4vh;
+    background: rgba(0, 0, 0, 0.25);
+    border-radius: 2vh;
+    padding: 0 1.4vh;
+    box-sizing: border-box;
+}
+
+.browser-urlbar i.fa-lock {
+    color: #d9fdd3;
+    font-size: 1vh;
+}
+
+.browser-urlbar span {
+    flex: 1;
+    color: white;
+    font-family: 'Samsung Sans Bold';
+    font-size: 1.05vh;
+    direction: ltr;
+    text-align: center;
+    unicode-bidi: embed;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.browser-refresh {
+    color: white;
+    font-size: 1.05vh;
+    cursor: pointer;
+    transition: transform .2s ease;
+}
+
+.browser-refresh.spinning {
+    animation: browserSpin 0.7s linear infinite;
+}
+
+@keyframes browserSpin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+}
+
+.browser-frame-wrap {
+    position: absolute;
+    top: 9vh;
+    left: 0;
+    width: 100%;
+    height: 91vh;
+    background: white;
+}
+
+.browser-frame-wrap iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+}
+
+.browser-loading {
+    position: absolute;
+    top: 9vh;
+    left: 0;
+    width: 100%;
+    height: 91vh;
+    background: #0d0d0d;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.4vh;
+    z-index: 1;
+    transition: opacity .25s ease;
+}
+
+.browser-loading i {
+    font-size: 3vh;
+    color: #4285F4;
+    animation: browserSpin 0.9s linear infinite;
+}
+
+.browser-loading span {
+    color: rgb(150, 150, 150);
+    font-family: 'Samsung Sans Regular';
+    font-size: 1.05vh;
+}
+
+.browser-loading.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.browser-fallback-note {
+    position: absolute;
+    bottom: 1.5vh;
+    left: 0;
+    width: 100%;
+    text-align: center;
+    color: rgb(120, 120, 120);
+    font-family: 'Samsung Sans Regular';
+    font-size: 0.8vh;
+    padding: 0 2vh;
+    box-sizing: border-box;
+    z-index: 1;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.browser-blocked {
+    position: absolute;
+    top: 9vh;
+    left: 0;
+    width: 100%;
+    height: 91vh;
+    background: radial-gradient(circle at 50% 20%, #1a2432 0%, #0d0d0d 60%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 0 3vh;
+    box-sizing: border-box;
+    z-index: 1;
+    animation: browserBlockedIn .3s ease;
+}
+
+@keyframes browserBlockedIn {
+    from { opacity: 0; transform: translateY(1vh); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.browser-blocked-icon {
+    width: 7vh;
+    height: 7vh;
+    border-radius: 50%;
+    background: rgba(66, 133, 244, 0.12);
+    border: 1px solid rgba(66, 133, 244, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.6vh;
+    color: #4285F4;
+    margin-bottom: 1.8vh;
+}
+
+.browser-blocked-title {
+    color: white;
+    font-family: 'Samsung Sans Bold';
+    font-size: 1.25vh;
+    margin-bottom: 1vh;
+}
+
+.browser-blocked-text {
+    color: rgb(150, 150, 150);
+    font-family: 'Samsung Sans Regular';
+    font-size: 0.95vh;
+    line-height: 1.75;
+    margin-bottom: 2vh;
+}
+
+.browser-blocked-text b {
+    color: #4285F4;
+    font-family: 'Samsung Sans Bold';
+    direction: ltr;
+    unicode-bidi: embed;
+}
+
+.browser-copy-btn {
+    display: flex;
+    align-items: center;
+    gap: .6vh;
+    padding: 1.1vh 1.8vh;
+    background: linear-gradient(135deg, #4285F4, #34a1f5);
+    color: white;
+    font-family: 'Samsung Sans Bold';
+    font-size: 1vh;
+    border-radius: 1.4vh;
+    cursor: pointer;
+    box-shadow: 0 .5vh 1.4vh rgba(66, 133, 244, 0.3);
+    transition: transform .12s ease;
+}
+
+.browser-copy-btn:active { transform: scale(.96); }
+
+.browser-copy-msg {
+    margin-top: 1vh;
+    color: #34e0a1;
+    font-family: 'Samsung Sans Regular';
+    font-size: 0.9vh;
+}

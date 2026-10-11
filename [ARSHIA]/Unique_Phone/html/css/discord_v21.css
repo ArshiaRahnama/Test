@@ -1,0 +1,9 @@
+/* Discord v21 — loaded last. */
+.dxh-muted { color: #949ba4; font-size: 12px; }
+.dxh-label { font-size: 11px; font-weight: 700; text-transform: uppercase; color: #949ba4; margin-bottom: 4px; }
+.dxh-ver { background: #2b2d31; border-radius: 6px; padding: 9px 10px; margin-bottom: 8px; font-size: 14px; color: #dbdee1; white-space: pre-wrap; }
+.dxh-cur { border-left: 3px solid #5865f2; }
+.dxh-row { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
+.dxh-row input { flex: 1; }
+.dxh-ban-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; background: #2b2d31; border-radius: 6px; padding: 9px 10px; margin-bottom: 8px; color: #dbdee1; font-size: 14px; }
+.dxh-reason { font-size: 13px; color: #b5bac1; margin-top: 3px; }

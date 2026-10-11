@@ -1,0 +1,29 @@
+/* Web phone — the Discord app fills the browser (desktop and phone). Loaded only on the website. */
+html, body { height: 100%; margin: 0; background: #1e1f22; overflow: hidden; }
+#discord-backdrop { position: fixed !important; inset: 0 !important; width: 100vw !important; height: 100vh !important; height: 100dvh !important; z-index: 100000 !important; background: #313338 !important; display: flex !important; }
+#discord-backdrop .discord-window { width: 100% !important; height: 100% !important; max-width: none !important; max-height: none !important; border-radius: 0 !important; margin: 0 !important; }
+#discord-backdrop .discord-titlebar { display: none !important; }
+#discord-backdrop .discord-modal-overlay, #discord-backdrop .discord-modal { max-width: 94vw; }
+#dx-web-menu { display: none; cursor: pointer; font-size: 18px; width: 28px; text-align: center; margin-right: 8px; color: #b5bac1; }
+#dx-web-login { position: absolute; inset: 0; z-index: 50; display: none; align-items: center; justify-content: center; background: rgba(0, 0, 0, .6); color: #dbdee1; text-align: center; padding: 20px; box-sizing: border-box; }
+#dx-web-login > div { background: #313338; border-radius: 8px; padding: 28px; max-width: 420px; }
+#dx-web-login i { font-size: 48px; color: #5865f2; }
+#dx-web-login h2 { margin: 12px 0 8px; color: #f2f3f5; font-size: 20px; }
+#dx-web-login p { margin: 0; font-size: 14px; line-height: 20px; color: #b5bac1; }
+@media (max-width: 900px) {
+  .discord-members-sidebar { display: none !important; }
+}
+@media (max-width: 760px) {
+  #dx-web-menu { display: inline-block; }
+  .discord-rail { width: 56px !important; min-width: 56px !important; }
+  .discord-rail-icon { width: 40px !important; height: 40px !important; }
+  .discord-channel-sidebar { position: absolute !important; left: 56px; top: 0; bottom: 0; z-index: 30; width: 240px !important; min-width: 240px !important; transform: translateX(-110%); transition: transform .18s ease-out; box-shadow: 8px 0 24px rgba(0, 0, 0, .45); }
+  #discord-backdrop.dx-web-nav-open .discord-channel-sidebar { transform: none; }
+  #discord-backdrop .discord-window { position: relative; overflow: hidden; }
+  .discord-chat-column { min-width: 0; }
+  .discord-message { padding-left: 58px !important; padding-right: 10px !important; }
+  .discord-message-avatar { left: 8px !important; width: 36px !important; height: 36px !important; }
+  #discord-message-input { font-size: 16px; }
+  .dx-chat-topic { display: none; }
+  .discord-chat-header-actions { gap: 10px; }
+}

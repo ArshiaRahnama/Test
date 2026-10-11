@@ -1,0 +1,134 @@
+/* ==========================================================================
+   Discord v11 — avatars, home / friends / DMs, uploaded emoji.
+   Loaded after discord_skin.css.
+   ========================================================================== */
+
+/* ---------- avatars (image URL or initials) ---------- */
+.dx-img { background-size: cover !important; background-position: center !important; background-repeat: no-repeat !important; font-size: 0 !important; color: transparent !important; }
+.dx-img > * { font-size: 12px; }
+.discord-message-avatar.dx-img, .discord-member-avatar.dx-img, .discord-user-avatar.dx-img, .discord-profile-avatar.dx-img { text-indent: -9999px; overflow: visible; }
+.discord-rail-icon.dx-icon-img { border: none; }
+.discord-rail-icon.dx-icon-img .discord-verified-badge { font-size: 12px; color: #fff; }
+
+.dx-av { position: relative; width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 15px; user-select: none; }
+.dx-av .discord-member-status-dot { position: absolute; right: -3px; bottom: -3px; border-color: var(--dc-chat); }
+.dx-av-sm { width: 32px; height: 32px; font-size: 12px; }
+.dx-av-lg { width: 80px; height: 80px; font-size: 28px; }
+.dx-av-xl { width: 80px; height: 80px; font-size: 28px; margin-bottom: 12px; }
+.dx-av.dx-square { border-radius: 22px; }
+.dx-avatar-row { display: flex; gap: 16px; align-items: center; }
+.dx-avatar-controls { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.dx-avatar-controls input[type=text] { width: 100%; background: var(--dc-rail); border: none; outline: none; color: var(--dc-text); border-radius: 3px; padding: 9px 10px; font-size: 14px; box-sizing: border-box; height: auto; }
+.dx-avatar-edit { margin-bottom: 8px; padding-bottom: 12px; border-bottom: 1px solid var(--dc-divider); }
+.dx-gal-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; max-height: 340px; overflow-y: auto; }
+.dx-gal-item { aspect-ratio: 1 / 1; background-size: cover; background-position: center; border-radius: 6px; cursor: pointer; border: 2px solid transparent; background-color: var(--dc-rail); }
+.dx-gal-item:hover { border-color: var(--dc-brand); }
+.dx-gal-grid .dx-empty { grid-column: 1 / -1; }
+
+/* ---------- uploaded emoji ---------- */
+.dx-emoji { width: 1.375em; height: 1.375em; vertical-align: -0.3em; object-fit: contain; display: inline-block; }
+.dx-emoji.dx-jumbo { width: 48px; height: 48px; vertical-align: middle; margin-right: 2px; }
+.discord-reaction-pill .dx-emoji { width: 16px; height: 16px; vertical-align: middle; }
+.discord-emoji-picker-item .dx-emoji { width: 32px; height: 32px; vertical-align: middle; }
+.dx-picker-label { grid-column: 1 / -1; width: 100%; font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--dc-muted); padding: 6px 4px 2px; flex-basis: 100%; }
+.dx-emoji-list { display: flex; flex-wrap: wrap; gap: 8px; }
+.dx-emoji-card { display: flex; align-items: center; gap: 8px; background: var(--dc-side); border-radius: 6px; padding: 6px 10px; font-size: 13px; }
+.dx-emoji-card .dx-emoji { width: 28px; height: 28px; }
+.dx-emoji-card i { cursor: pointer; color: var(--dc-muted); font-size: 12px; margin-left: 4px; }
+.dx-emoji-card i:hover { color: var(--dc-red); }
+#dx-emoji-menu { display: none; position: absolute; left: 16px; right: 16px; bottom: 76px; max-height: 240px; overflow-y: auto; background: var(--dc-side); border-radius: 8px; box-shadow: 0 0 0 1px rgba(0, 0, 0, .3), 0 8px 16px rgba(0, 0, 0, .3); padding: 8px; z-index: 25; }
+#dx-emoji-menu.dx-open { display: block; }
+#dx-emoji-menu .dx-slash-item { align-items: center; }
+#dx-emoji-menu .dx-emoji { width: 24px; height: 24px; }
+
+/* ---------- Home button ---------- */
+.discord-rail-icon.dx-home-btn { background: var(--dc-chat); color: #dbdee1; font-size: 26px; margin-bottom: 8px; transition: background-color .15s, border-radius .15s, color .15s; }
+.discord-rail-icon.dx-home-btn:hover, .discord-rail-icon.dx-home-btn.selected-discord-server { background: var(--dc-brand); color: #fff; border-radius: 16px; }
+.discord-rail-icon.dx-home-btn::before { content: ''; }
+#dx-home-divider { margin-top: 0; }
+.dx-home-badge { position: absolute; right: -4px; bottom: -4px; min-width: 16px; height: 16px; padding: 0 4px; box-sizing: content-box; border-radius: 8px; border: 3px solid var(--dc-rail); background: var(--dc-red); color: #fff; font-size: 11px; line-height: 16px; font-weight: 700; text-align: center; display: none; }
+.dx-home-badge.dx-visible { display: block; }
+.dx-nav-badge { font-style: normal; min-width: 16px; height: 16px; line-height: 16px; padding: 0 5px; box-sizing: border-box; border-radius: 8px; background: var(--dc-red); color: #fff; font-size: 12px; font-weight: 700; text-align: center; margin-left: auto; }
+
+/* ---------- Home layout switches ---------- */
+#dx-home-sidebar, #dx-friends-page { display: none; }
+.discord-window.dx-home-mode #dx-home-sidebar { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.discord-window.dx-home-mode .discord-server-header, .discord-window.dx-home-mode #discord-channel-list, .discord-window.dx-home-mode #discord-add-channel-btn,
+.discord-window.dx-home-mode .discord-add-channel-row { display: none !important; }
+.discord-window.dx-home-mode .discord-members-sidebar { display: none !important; }
+.discord-window.dx-friends-mode #dx-friends-page { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.discord-window.dx-friends-mode #discord-chat-active { display: none !important; }
+.discord-window.dx-dm-mode .dx-header-btn, .discord-window.dx-dm-mode #dx-search-btn, .discord-window.dx-dm-mode #discord-chat-members-toggle,
+.discord-window.dx-dm-mode #discord-chat-pins-btn, .discord-window.dx-dm-mode #dx-tools-btn, .discord-window.dx-dm-mode #dx-lb-btn { display: none !important; }
+.discord-window.dx-dm-mode .discord-chat-hash.dx-dm-at { color: var(--dc-faint); font-size: 20px; }
+.dx-dm-status { margin-left: 10px; padding-left: 10px; border-left: 1px solid #4e5058; font-size: 13px; color: var(--dc-muted); display: inline-flex; align-items: center; gap: 6px; font-weight: 400; }
+.dx-dm-status .discord-member-status-dot { position: static; border: none; width: 9px; height: 9px; box-sizing: border-box; }
+
+/* ---------- Home sidebar ---------- */
+.dx-home-search { padding: 10px; border-bottom: 1px solid var(--dc-border); height: 48px; box-sizing: border-box; box-shadow: 0 1px 0 rgba(4, 4, 5, .12); }
+.dx-home-search input { width: 100%; height: 28px; background: var(--dc-rail); border: none; outline: none; border-radius: 4px; color: var(--dc-text); font-size: 13px; padding: 0 8px; box-sizing: border-box; }
+.dx-home-scroll { flex: 1; min-height: 0; overflow-y: auto; padding: 8px 0; }
+.dx-nav-item { display: flex; align-items: center; gap: 12px; height: 42px; margin: 0 8px 2px; padding: 0 12px; border-radius: 4px; color: #949ba4; font-size: 16px; font-weight: 500; cursor: pointer; }
+.dx-nav-item i { width: 24px; text-align: center; font-size: 18px; }
+.dx-nav-item:hover { background: var(--dc-hover); color: var(--dc-text); }
+.dx-nav-item.dx-sel { background: var(--dc-select); color: #fff; }
+.dx-category-lite { padding: 18px 8px 4px 18px; font-size: 12px; font-weight: 600; text-transform: uppercase; color: var(--dc-muted); letter-spacing: .02em; }
+.dx-dm-row { display: flex; align-items: center; gap: 12px; height: 42px; margin: 1px 8px; padding: 0 8px; border-radius: 4px; cursor: pointer; color: #949ba4; }
+.dx-dm-row .dx-av .discord-member-status-dot { border-color: var(--dc-side); }
+.dx-dm-row:hover { background: var(--dc-hover); color: var(--dc-text); }
+.dx-dm-row:hover .dx-av .discord-member-status-dot { border-color: var(--dc-hover); }
+.dx-dm-row.dx-sel { background: var(--dc-select); color: #fff; }
+.dx-dm-row.dx-sel .dx-av .discord-member-status-dot { border-color: var(--dc-select); }
+.dx-dm-row.dx-unread { color: #fff; }
+.dx-dm-text { min-width: 0; flex: 1; }
+.dx-dm-name { font-size: 16px; font-weight: 500; line-height: 20px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dx-dm-row.dx-unread .dx-dm-name { font-weight: 600; }
+.dx-dm-sub { font-size: 12px; line-height: 14px; color: var(--dc-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dx-dm-empty { padding: 16px 18px; color: var(--dc-muted); font-size: 13px; }
+
+/* ---------- Friends page ---------- */
+.dx-friends-head { height: 48px; min-height: 48px; padding: 0 16px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--dc-border); box-shadow: 0 1px 0 rgba(4, 4, 5, .08); }
+.dx-fh-title { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 600; color: var(--dc-white); }
+.dx-fh-title i { color: var(--dc-faint); font-size: 20px; }
+.dx-fh-sep { width: 1px; height: 24px; background: #4e5058; margin: 0 8px; }
+.dx-ftab { display: flex; align-items: center; gap: 6px; height: 28px; padding: 0 8px; border-radius: 4px; color: #b5bac1; font-size: 16px; font-weight: 500; cursor: pointer; }
+.dx-ftab:hover { background: var(--dc-hover); color: var(--dc-text); }
+.dx-ftab.dx-sel { background: var(--dc-select); color: #fff; }
+.dx-ftab-add { background: #248046; color: #fff; margin-left: 4px; }
+.dx-ftab-add:hover { background: #1a6334; color: #fff; }
+.dx-ftab-add.dx-sel { background: transparent; color: #23a55a; }
+.dx-friends-body { flex: 1; min-height: 0; overflow-y: auto; padding: 16px 20px 16px 30px; }
+.dx-flabel { font-size: 12px; font-weight: 600; text-transform: uppercase; color: var(--dc-muted); margin-bottom: 8px; padding-bottom: 8px; }
+.dx-frow { display: flex; align-items: center; gap: 12px; height: 62px; margin-top: -1px; padding: 0 10px; border-top: 1px solid var(--dc-divider); border-radius: 8px; cursor: pointer; }
+.dx-frow:hover { background: var(--dc-hover); border-top-color: transparent; }
+.dx-frow:hover + .dx-frow { border-top-color: transparent; }
+.dx-frow .dx-av .discord-member-status-dot { border-color: var(--dc-chat); }
+.dx-frow:hover .dx-av .discord-member-status-dot { border-color: var(--dc-hover); }
+.dx-ftext { min-width: 0; flex: 1; }
+.dx-fname { font-size: 16px; font-weight: 600; color: var(--dc-white); line-height: 20px; }
+.dx-ftag { margin-left: 8px; font-size: 14px; font-weight: 400; color: var(--dc-muted); display: none; }
+.dx-frow:hover .dx-ftag { display: inline; }
+.dx-fsub { font-size: 14px; color: var(--dc-muted); line-height: 18px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dx-factions { display: flex; gap: 8px; }
+.dx-fbtn { width: 36px; height: 36px; border-radius: 50%; background: var(--dc-side); color: #b5bac1; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 16px; }
+.dx-frow:hover .dx-fbtn { background: var(--dc-rail); }
+.dx-fbtn:hover { color: #fff; }
+.dx-fbtn.dx-yes:hover { color: var(--dc-green); }
+.dx-fbtn.dx-no:hover { color: var(--dc-red); }
+.dx-fempty { text-align: center; color: var(--dc-muted); padding: 90px 20px 0; }
+.dx-fempty i { font-size: 72px; opacity: .35; margin-bottom: 20px; }
+.dx-fempty p { margin: 0; font-size: 16px; }
+.dx-addfriend h2 { margin: 0 0 8px; font-size: 16px; font-weight: 600; color: var(--dc-white); text-transform: uppercase; }
+.dx-addfriend p { margin: 0 0 16px; font-size: 14px; color: var(--dc-muted); }
+.dx-addrow { display: flex; align-items: center; background: var(--dc-rail); border: 1px solid var(--dc-rail); border-radius: 8px; padding: 0 12px 0 0; }
+.dx-addrow:focus-within { border-color: var(--dc-brand); }
+.dx-addrow input { flex: 1; min-width: 0; height: 50px; background: transparent; border: none; outline: none; color: var(--dc-text); font-size: 16px; padding: 0 16px; }
+.dx-addmsg { margin-top: 10px; font-size: 14px; min-height: 18px; }
+.dx-addmsg.dx-ok { color: #23a55a; }
+.dx-addmsg.dx-bad { color: #fa777c; }
+
+/* ---------- DM chat bits ---------- */
+.dx-load-older { text-align: center; color: #00a8fc; font-size: 13px; padding: 10px; cursor: pointer; }
+.dx-load-older:hover { text-decoration: underline; }
+.dx-social-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.dx-social-actions .dx-btn { flex: 1; text-align: center; }

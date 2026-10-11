@@ -1,0 +1,6 @@
+/* Discord v15 — loaded last. */
+.discord-profile-banner { background-color: #5865f2; background-size: cover; background-position: center; }
+.dxw-banner { margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid #3f4147; }
+.dxw-banner-preview { height: 70px; border-radius: 6px; background: #5865f2; margin: 6px 0 8px; background-size: cover; background-position: center; }
+.dxw-banner-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.dxw-banner-row input { flex: 1; min-width: 160px; background: #1e1f22; border: none; border-radius: 4px; color: #dbdee1; padding: 8px 10px; font-size: 13px; }

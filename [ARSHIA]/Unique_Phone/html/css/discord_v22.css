@@ -1,0 +1,7 @@
+/* Discord v22 — loaded last. */
+.dxd-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.dxd-tag { font-size: 11px; background: #1e1f22; color: #b5bac1; border-radius: 10px; padding: 2px 8px; }
+.dxv-icon-row { margin-top: 14px; border-top: 1px solid #3f4147; padding-top: 10px; }
+.dxv-icon-line { display: flex; gap: 8px; align-items: center; }
+.dxv-icon-line input { width: 90px; background: #1e1f22; border: none; border-radius: 4px; color: #dbdee1; padding: 8px; font-size: 18px; text-align: center; }
+.dxv-role-icon { font-size: 13px; width: 14px; display: inline-block; text-align: center; margin-right: 2px; }

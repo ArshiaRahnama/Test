@@ -1,0 +1,9 @@
+/* Discord v17 — loaded last. */
+.discord-message.dxb-sel { background: rgba(88,101,242,.16); box-shadow: inset 3px 0 0 #5865f2; cursor: pointer; }
+.discord-message.dxm-hidden { display: none; }
+#dxb-bar { position: fixed; left: 50%; bottom: 84px; transform: translateX(-50%); z-index: 90; display: none; align-items: center; gap: 12px; background: #111214; color: #dbdee1; border-radius: 8px; padding: 8px 10px 8px 14px; box-shadow: 0 8px 24px rgba(0,0,0,.5); font-size: 14px; }
+#dxb-bar.dxb-show { display: flex; }
+.dxb-go { background: #ed4245; color: #fff; border-radius: 4px; padding: 6px 12px; cursor: pointer; font-weight: 600; }
+.dxb-go:hover { background: #c03537; }
+.dxb-clear { color: #b5bac1; cursor: pointer; padding: 6px 8px; }
+.dxb-clear:hover { color: #fff; }
