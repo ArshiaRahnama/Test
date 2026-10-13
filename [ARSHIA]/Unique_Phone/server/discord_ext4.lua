@@ -138,7 +138,7 @@ ESX.RegisterServerCallback('Unique_Phone:server:DiscordExt:GetMyDiscord', functi
     local xPlayer = Discord_GetPlayer(source)
     if not xPlayer then cb(false) return end
     local p = profileOf(xPlayer.identifier)
-    cb({ uid = p.uid, avatar = p.avatar_url, discriminator = p.discriminator, name = Discord_GetDisplayName(source) })
+    cb({ uid = p.uid, avatar = p.avatar_url, banner = p.banner_url, effect = p.avatar_effect, discriminator = p.discriminator, handle = p.handle, name = Discord_GetDisplayName(source) })
 end)
 
 ESX.RegisterServerCallback('Unique_Phone:server:DiscordExt:SetAvatar', function(source, cb, url)
@@ -181,9 +181,9 @@ end)
 -- member row id -> { avatar, uid } for the member meta
 function Discord_ExtProfileMap(serverId)
     local out = {}
-    for _, r in ipairs(Q([[SELECT m.identifier, p.avatar_url, p.uid FROM phone_discord_members m
+    for _, r in ipairs(Q([[SELECT m.identifier, p.avatar_url, p.banner_url, p.avatar_effect, p.handle, p.uid FROM phone_discord_members m
                            LEFT JOIN phone_discord_profiles p ON p.identifier = m.identifier WHERE m.server_id = @s]], { ['@s'] = serverId })) do
-        out[r.identifier] = { avatar = r.avatar_url, uid = r.uid }
+        out[r.identifier] = { avatar = r.avatar_url, banner = r.banner_url, effect = r.avatar_effect, handle = r.handle, uid = r.uid }  -- v15: banner, v25: effect, v36: handle
     end
     return out
 end
@@ -582,11 +582,11 @@ ESX.RegisterServerCallback('Unique_Phone:server:DiscordExt:GetDiscover', functio
     end
     local q = clean(query, 40)
     if #q >= 2 then
-        where = where .. " AND (LOWER(s.name) LIKE @q OR LOWER(s.description) LIKE @q)"
+        where = where .. " AND (LOWER(s.name) LIKE @q OR LOWER(s.description) LIKE @q OR LOWER(s.tags) LIKE @q)"
         params['@q'] = "%" .. likeEscape(q:lower()) .. "%"
     end
 
-    local rows = Q([[SELECT s.id, s.name, s.icon_text, s.icon_color, s.icon_url, s.description, s.category, s.is_verified, s.is_featured, s.vanity,
+    local rows = Q([[SELECT s.id, s.name, s.icon_text, s.icon_color, s.icon_url, s.description, s.category, s.tags, s.is_verified, s.is_featured, s.vanity,
                             (SELECT COUNT(*) FROM phone_discord_members m WHERE m.server_id = s.id) AS memberCount
                      FROM phone_discord_servers s WHERE ]] .. where .. [[
                      ORDER BY s.is_featured DESC, memberCount DESC, s.id ASC LIMIT 60]], params)
@@ -609,7 +609,7 @@ ESX.RegisterServerCallback('Unique_Phone:server:DiscordExt:GetDiscover', functio
     for _, r in ipairs(rows) do
         out[#out + 1] = {
             id = r.id, name = r.name, icon_text = r.icon_text, icon_color = r.icon_color, icon_url = r.icon_url,
-            description = r.description, category = r.category, vanity = r.vanity,
+            description = r.description, category = r.category, vanity = r.vanity, tags = r.tags,
             isVerified = truthy(r.is_verified), isFeatured = truthy(r.is_featured),
             memberCount = tonumber(r.memberCount) or 0, onlineCount = online[r.id] or 0, isMember = mine[r.id] == true,
         }

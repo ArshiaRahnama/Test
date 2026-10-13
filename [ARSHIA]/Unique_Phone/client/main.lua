@@ -3087,7 +3087,7 @@ end)
 RegisterNUICallback('SendDiscordMessage', function(data, cb)
     ESX.TriggerServerCallback('Unique_Phone:server:Discord:SendMessage', function(result)
         if cb then cb(result) end
-    end, data.channelId, data.message, data.replyToId)
+    end, data.channelId, data.message, data.replyToId, data.replyPing == true)
 end)
 
 RegisterNUICallback('CreateDiscordServer', function(data, cb)

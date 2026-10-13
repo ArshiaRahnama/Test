@@ -654,6 +654,12 @@ end
 --     there, anything the boss has not opened yet is LOCKED (boss action -> Weapon / Item Access
 --     -> pick the armory -> tick what the rank may use).
 -------------------------------------------------------------------
+-- The armory each player opened last (set by For5M:OpenInventory). The chest code in Unique_inventory
+-- asks us which store/lock table to use; the client's own argument can get lost on the way, so this
+-- server-side memory is the source of truth.
+local OpenedArmory = {}
+AddEventHandler('playerDropped', function() OpenedArmory[source] = nil end)
+
 local function ArmoryPrimaryKey(gangName)
     local lo
     for k in pairs((Gangs[gangName] and Gangs[gangName].armory) or {}) do
@@ -1670,7 +1676,8 @@ end)
 -- just doesn't lock anything - fails open, never breaks the gang chest.
 -------------------------------------------------------------------
 AddEventHandler('Unique_ALLGangs:checkItemAccess', function(src, gangName, itemName, cb, armoryKey)
-    if type(cb) ~= 'function' then return end
+    if cb == nil then return end -- cross-resource callbacks can arrive as a callable table, not a plain function
+    armoryKey = OpenedArmory[src] or armoryKey
     local grades = Gangs[gangName] and Gangs[gangName].grades
     local xP = ESX.GetPlayerFromId(src)
     local gradeNum = xP and xP.gang and xP.gang.name == gangName and xP.gang.grade or nil
@@ -1683,7 +1690,8 @@ end)
 -- Position of an armory among the gang's armories (1 = first) and how many there are: used for the
 -- chest title ("Gang Armory & Storage - Armory 2").
 AddEventHandler('Unique_ALLGangs:getArmoryNumber', function(src, gangName, armoryKey, cb)
-    if type(cb) ~= 'function' then return end
+    if cb == nil then return end -- cross-resource callbacks can arrive as a callable table, not a plain function
+    armoryKey = OpenedArmory[src] or armoryKey
     local keys = {}
     for k in pairs((Gangs[gangName] and Gangs[gangName].armory) or {}) do
         if tonumber(k) then keys[#keys + 1] = tonumber(k) end
@@ -1696,9 +1704,15 @@ end)
 
 -- Which shared stores belong to which armory of the gang (nil = that armory does not exist).
 AddEventHandler('Unique_ALLGangs:getArmoryStore', function(src, gangName, armoryKey, cb)
-    if type(cb) ~= 'function' then return end
+    if cb == nil then return end -- cross-resource callbacks can arrive as a callable table, not a plain function
+    armoryKey = OpenedArmory[src] or armoryKey
     local armories = Gangs[gangName] and Gangs[gangName].armory
-    if armoryKey ~= nil and not (armories and armories[tonumber(armoryKey)]) then return cb(nil) end
+    local nk = tonumber(armoryKey)
+    if armoryKey ~= nil and not (armories and nk and (armories[nk] or armories[tostring(nk)])) then
+        GLog('getArmoryStore src=%s gang=%s key=%s -> NO SUCH ARMORY', tostring(src), tostring(gangName), tostring(armoryKey))
+        return cb(nil)
+    end
+    GLog('getArmoryStore src=%s gang=%s key=%s -> %s', tostring(src), tostring(gangName), tostring(armoryKey), ArmoryStoreName(gangName, armoryKey))
     cb(ArmoryStoreName(gangName, armoryKey))
 end)
 
@@ -1938,10 +1952,19 @@ end
 -- wanted later, that needs a bigger follow-up (a stash-id parameter
 -- threaded through getGangINV/gangs:getFromInventory/addToInventory).
 -------------------------------------------------------------------
-ESX.RegisterServerCallback('For5M:OpenInventory', function(source, cb, code)
+ESX.RegisterServerCallback('For5M:OpenInventory', function(source, cb, code, keyHint)
     local xPlayer = ESX.GetPlayerFromId(source)
     local playergang = xPlayer.gang.name
-    local armory, key = GetArmoryByCode(playergang, code)
+    -- the marker the player stands at tells us its exact slot (keyHint): codes can repeat after an
+    -- armory was deleted and re-added, which used to open the WRONG armory's chest
+    local armory, key
+    local list = Gangs[playergang] and Gangs[playergang].armory
+    local hk = tonumber(keyHint)
+    if list and hk then
+        local a = list[hk] or list[tostring(hk)]
+        if a and a.code == code then armory, key = a, hk end
+    end
+    if not key then armory, key = GetArmoryByCode(playergang, code) end
     if not key or key == 0 then return cb(false) end
 
     local access = Gangs[playergang].grades[xPlayer.gang.grade].access
@@ -1950,6 +1973,7 @@ ESX.RegisterServerCallback('For5M:OpenInventory', function(source, cb, code)
         return cb(false)
     end
 
+    OpenedArmory[source] = tonumber(key) or key
     TriggerClientEvent('esx_inventoryhud:OpenGangInventory', source, key)
     cb(true)
 end)
@@ -2155,7 +2179,7 @@ end
 -- as Unique_ALLGangs:checkItemAccess; unanswered = Unique_inventory fails open.
 -------------------------------------------------------------------
 AddEventHandler('Unique_ALLGangs:checkGangFlag', function(src, gangName, flag, cb)
-    if type(cb) ~= 'function' then return end
+    if cb == nil then return end -- cross-resource callbacks can arrive as a callable table, not a plain function
     local xP = ESX.GetPlayerFromId(src)
     local gradeNum = xP and xP.gang and xP.gang.name == gangName and xP.gang.grade or nil
     local grade = gradeNum and Gangs[gangName] and Gangs[gangName].grades and Gangs[gangName].grades[gradeNum]

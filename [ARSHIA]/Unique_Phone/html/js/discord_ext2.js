@@ -63,7 +63,7 @@ window.DX_ErrorText = function(result) {
         case "AUTOMOD": return "Your message was blocked by this server's auto-mod.";
         case "LOCKED": return "This channel is locked.";
         case "NO_PERMISSION": return "You don't have permission to send messages here.";
-        case "STAGE": return "Only speakers can talk in a stage channel.";
+        case "STAGE": return "You do not have permission to send messages here.";
         case "RULES": return "Accept the server rules before you can chat.";
         case "NO_ACCOUNT": return "Open Discord and sign in first.";
         case "BAD_URL": return "That image link can't be shared.";
@@ -607,8 +607,7 @@ window.Discord_UpdateComposerLock = function() {
     if (ch) {
         if (ch.canSend === false) {
             locked = true;
-            reason = ch.kind === "stage" ? "Only speakers can talk in this stage channel (you can still react)"
-                   : "You do not have permission to send messages in this channel.";
+            reason = "You do not have permission to send messages in this channel.";
         } else if (ch.canSend === undefined && ch.isLocked && !(Discord.currentServerIsOwner || Discord.currentServerIsAdmin || Discord.isStaff)) {
             locked = true; reason = "You do not have permission to send messages in this channel.";
         }
@@ -706,9 +705,6 @@ function DX2_BuildUI() {
 
         '<div class="discord-modal dx-modal-wide" id="dx-modal-welcome"><div class="discord-modal-title" id="dx-welcome-title">Welcome!</div><div id="dx-welcome-body"></div>' +
             '<div class="discord-modal-buttons" id="dx-welcome-buttons"></div></div>' +
-
-        '<div class="discord-modal dx-modal-wide" id="dx-modal-speakers"><div class="discord-modal-title" id="dx-speakers-title">Stage speakers</div><div id="dx-speakers-body"></div>' +
-            '<div class="discord-modal-buttons"><div class="discord-modal-btn discord-modal-cancel" data-discordmodalclose="1">Close</div></div></div>' +
 
         '<div class="discord-modal dx-modal-wide" id="dx-modal-templates"><div class="discord-modal-title">Server templates</div><div id="dx-templates-body"></div>' +
             '<div class="discord-modal-buttons"><div class="discord-modal-btn discord-modal-cancel" data-discordmodalclose="1">Close</div></div></div>'
@@ -1072,7 +1068,7 @@ $(document).on("click", "#dx-welcome-accept", function() {
 });
 
 // ---------------------------------------------------------------------------
-// Stage channels: create (checkbox in the create-channel modal) + speakers
+// Stage channels: create (checkbox in the create-channel modal)
 // ---------------------------------------------------------------------------
 
 document.addEventListener("click", function(e) {
@@ -1088,25 +1084,6 @@ document.addEventListener("click", function(e) {
         DX2_ReloadChannels();
     });
 }, true);
-
-function DX2_OpenSpeakers(channelId) {
-    DX2.speakerChannel = channelId;
-    Discord_OpenModal("dx-modal-speakers");
-    $("#dx-speakers-body").html('<div class="dx-empty">Loading...</div>');
-    DX_Post("DiscordExt_GetSpeakers", { serverId: Discord.currentServerId, channelId: channelId }, function(r) {
-        if (!r) { $("#dx-speakers-body").html('<div class="dx-empty">You can\'t manage speakers here.</div>'); return; }
-        $("#dx-speakers-title").text("#" + r.channel.name + " \u2014 speakers");
-        var html = '<div class="dx-muted" style="margin-bottom:8px">Owner and admins can always talk. Tick the people who may speak; everyone else can only react.</div><div class="dx-member-pick">';
-        $.each(r.members, function(i, m) { html += '<label class="dx-member-row"><input type="checkbox" data-speaker="' + m.id + '"' + (m.speaker ? " checked" : "") + "> " + DX_Esc(m.nickname) + "</label>"; });
-        $("#dx-speakers-body").html(html + "</div>");
-    });
-}
-$(document).on("change", "[data-speaker]", function() {
-    var cb = $(this), on = cb.is(":checked");
-    DX_Post("DiscordExt_SetSpeaker", { serverId: Discord.currentServerId, channelId: DX2.speakerChannel, memberId: parseInt(cb.attr("data-speaker"), 10), on: on }, function(ok) {
-        if (!ok) { cb.prop("checked", !on); DX_Toast("Could not change that.", "error"); }
-    });
-});
 
 // ---------------------------------------------------------------------------
 // Templates
@@ -1324,7 +1301,6 @@ DX2_BindContext(".discord-channel-item[data-channelid]", function(el, x, y) {
     if (p.manage_roles || p.manage_channels || p.administrator) {
         items.push({ sep: true });
         items.push({ label: "Edit permissions", icon: "fa-lock", fn: function() { DX2_OpenChannelPerms(cid); } });
-        if (ch && ch.kind === "stage") items.push({ label: "Manage speakers", icon: "fa-microphone", fn: function() { DX2_OpenSpeakers(cid); } });
     }
     DX2_Ctx(x, y, items);
 });

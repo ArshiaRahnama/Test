@@ -562,11 +562,18 @@ RegisterNetEvent('gangs:addToInventory', function(itemType, itemName, count, arm
     end
 
     local storeName = ResolveGangStoreName(xPlayer, armoryKey)
-    if not storeName then return end
+    if not storeName then
+        TriggerClientEvent('esx:showNotification', source, 'This armory is not available (try reopening it)')
+        return
+    end
+    DLog('PUT gang %s %s x%s store=%s', tostring(itemType), tostring(itemName), tostring(count), tostring(storeName))
 
     if itemType == 'item_weapon' then
         local upper = string.upper(itemName)
-        if not xPlayer.hasWeapon(upper) then return end
+        if not xPlayer.hasWeapon(upper) then
+            TriggerClientEvent('esx:showNotification', source, 'You do not have this weapon on you')
+            return
+        end
 
         local _, store = EnsureGangStores(xPlayer.gang.name, storeName)
         if not store then return end

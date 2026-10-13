@@ -118,6 +118,10 @@ function ResolveGangStoreName(xPlayer, armoryKey)
     if not xPlayer or not xPlayer.gang then return nil end
     local answered, name = false, nil
     TriggerEvent('Unique_ALLGangs:getArmoryStore', xPlayer.source, xPlayer.gang.name, armoryKey, function(n) answered = true name = n end)
-    if not answered then return 'gang_' .. string.lower(xPlayer.gang.name) end
+    DLog('RESOLVE gang store src=%s gang=%s key=%s answered=%s -> %s', tostring(xPlayer.source), tostring(xPlayer.gang.name), tostring(armoryKey), tostring(answered), tostring(name))
+    if not answered then
+        if armoryKey ~= nil then return nil end -- never show another armory's chest by mistake
+        return 'gang_' .. string.lower(xPlayer.gang.name)
+    end
     return name
 end

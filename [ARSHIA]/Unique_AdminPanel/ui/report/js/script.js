@@ -171,6 +171,7 @@ function renderCompose(body) {
   const L = S.cfg.limits || {};
   body.className = 'body scroller';
   body.innerHTML = `
+    <div class="compose-wrap">
     <form class="compose" id="composeForm" novalidate>
       <p class="compose__lede">
         هرچی دقیق‌تر بنویسی سریع‌تر رسیدگی می‌شه. زمان، مکان و آیدی افراد درگیر رو بنویس.
@@ -210,7 +211,34 @@ function renderCompose(body) {
       <button class="btn btn--go" id="cSend" type="submit">
         <i class="fa-solid fa-paper-plane"></i> ارسال ریپورت
       </button>
-    </form>`;
+    </form>
+    <aside class="tips">
+      <div class="tipcard">
+        <h4><i class="fa-solid fa-lightbulb"></i> یک ریپورت خوب</h4>
+        <ul>
+          <li>عنوان کوتاه و دقیق بنویس؛ موضوع اصلی در یک جمله.</li>
+          <li>زمان تقریبی، مکان و آیدی افراد درگیر رو ذکر کن.</li>
+          <li>اگه کلیپ یا مدرک داری، توی توضیحات بنویس که داری.</li>
+          <li>موضوع درست رو انتخاب کن تا سریع‌تر به ادمین مربوطه برسه.</li>
+        </ul>
+      </div>
+      <div class="tipcard">
+        <h4><i class="fa-solid fa-clock"></i> بعد از ارسال</h4>
+        <ul>
+          <li>ریپورت وارد صف می‌شه و اولین ادمین آزاد قبولش می‌کنه.</li>
+          <li>از تب «ریپورت من» می‌تونی با ادمین چت کنی.</li>
+          <li>آخرِ کار می‌تونی به رسیدگی ادمین امتیاز بدی.</li>
+        </ul>
+      </div>
+      <div class="tipcard tipcard--warn">
+        <h4><i class="fa-solid fa-triangle-exclamation"></i> یادآوری</h4>
+        <ul>
+          <li>ریپورت الکی یا تکراری مجازات داره.</li>
+          <li>تا بسته شدن ریپورتِ قبلی، ریپورت جدید نمی‌تونی بدی.</li>
+        </ul>
+      </div>
+    </aside>
+    </div>`;
 
   // انتخاب موضوع
   $$('#cCats .cat').forEach(btn => {
@@ -514,7 +542,19 @@ async function renderBoard(body) {
     return;
   }
 
+  const podOrder = [1, 0, 2].filter(i => res.data[i]);
+  const podium = res.data.length >= 3 ? `
+    <div class="podium">
+      ${podOrder.map(i => { const a = res.data[i]; return `
+        <div class="pod pod--${i + 1}">
+          <span class="pod__medal">${['🥇', '🥈', '🥉'][i]}</span>
+          <div class="pod__name">${esc(a.name || '—')}</div>
+          <div class="pod__sub">${esc(a.rank)}</div>
+          <div class="pod__num">${esc(a.handled)} رسیدگی${a.avg_rating ? ' · ' + esc(Number(a.avg_rating).toFixed(1)) + ' ★' : ''}</div>
+        </div>`; }).join('')}
+    </div>` : '';
   body.innerHTML = `
+    ${podium}
     <div class="board">
       <div class="board__row board__row--head">
         <span>#</span><span>ادمین</span><span>رسیدگی</span><span>میانگین امتیاز</span><span>XP</span>
@@ -556,10 +596,17 @@ async function renderQueue(body, archived) {
 
   const waiting = S.tickets.filter(t => t.status === 'pending').length;
   $('#queueCount').textContent = waiting;
+  const pendAges = S.tickets.filter(t => t.status === 'pending').map(t => Number(t.age) || 0);
+  const oldestWait = pendAges.length ? ago(Math.max.apply(null, pendAges)) : '—';
 
   body.innerHTML = `
     <div class="split">
       <div class="queue">
+        <div class="qstats">
+          <div class="qchip qchip--wait"><b>${waiting}</b><span>در انتظار</span></div>
+          <div class="qchip qchip--live"><b>${S.tickets.filter(t => t.status === 'accept').length}</b><span>در حال بررسی</span></div>
+          <div class="qchip qchip--old"><b>${esc(oldestWait)}</b><span>قدیمی‌ترین انتظار</span></div>
+        </div>
         <div class="queue__tools">
           <input class="search" id="qSearch" placeholder="جستجو در عنوان، بازیکن یا شماره…"
                  value="${esc(S.search)}" autocomplete="off">

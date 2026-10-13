@@ -163,7 +163,7 @@ function LoadMyGangOptions()
         for k ,armory in pairs( MyGangData.armory ) do  
             armory.label = 'armory'   
             CreateMarker( 'armory' .. '-' .. k, armory  , function(KeyPressed)  
-                OpenArmoryMenu(armory.code)
+                OpenArmoryMenu(armory.code, k)
             end)
         end 
         ---------------------
@@ -494,7 +494,7 @@ function SelectRank(Ranks , cb)
     end)
 end 
 
-function OpenArmoryMenu(armory)
+function OpenArmoryMenu(armory, keyHint)
     if KeyPressedCD then return end 
     KeyPressedCD = true SetTimeout(1500, function() KeyPressedCD =false  end)
     ESX.TriggerServerCallback('For5M:OpenInventory', function(open)
@@ -502,7 +502,7 @@ function OpenArmoryMenu(armory)
             
            Notifiaction('Can`t Open Armory , try again ')
         end 
-     end , armory )
+     end , armory, keyHint )
 end 
 function OpenCraftMenu()
     if KeyPressedCD then return end 

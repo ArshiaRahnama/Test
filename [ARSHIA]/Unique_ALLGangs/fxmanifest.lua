@@ -63,6 +63,7 @@ files {
     -- markup directly (merged into one page, see notes in web/ui.html)
     'web/ui.html',
     'web/css/style.css',
+    'web/css/theme.css',
     'web/css/Audiowide.ttf',
     'web/js/script.js',
     'web/img/*.png',

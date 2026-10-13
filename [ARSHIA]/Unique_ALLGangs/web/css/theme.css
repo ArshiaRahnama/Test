@@ -1,0 +1,326 @@
+/* =====================================================================
+   Unique Gangs - admin / boss panel theme  (loaded AFTER style.css)
+   Pure restyle: every id / class the script uses is untouched.
+   Dark glass + gold, same language as Unique_inventory.
+   ===================================================================== */
+:root{
+  --u-gold:#d4af37; --u-gold2:#f6dd8a; --u-gold3:#8f6f12;
+  --u-ink:#0a0b10;  --u-glass:rgba(255,255,255,.045); --u-glass2:rgba(255,255,255,.08);
+  --u-line:rgba(212,175,55,.24); --u-green:#3ddc84; --u-red:#ff4d5e; --u-blue:#5ab0ff;
+}
+*{ font-family:"Audiowide","Segoe UI",sans-serif; }
+::selection{ background:rgba(212,175,55,.35); }
+
+/* ---------- main window ---------- */
+.CGMain{
+  width:1037px; height:560px; border-radius:22px;
+  border:1px solid rgba(212,175,55,.42);
+  background:
+    radial-gradient(900px 380px at 18% -8%, rgba(212,175,55,.16), transparent 62%),
+    radial-gradient(700px 320px at 100% 110%, rgba(212,175,55,.09), transparent 60%),
+    linear-gradient(160deg,#10121a 0%,#0a0b10 58%,#14110a 100%);
+  box-shadow:0 40px 110px rgba(0,0,0,.75),0 0 70px rgba(212,175,55,.13),inset 0 0 0 1px rgba(255,255,255,.035);
+  transform:translate(-50%,-50%) scale(1.3);
+  animation:uqIn .38s cubic-bezier(.2,.8,.2,1);
+  overflow:hidden;
+}
+@keyframes uqIn{ from{opacity:0; transform:translate(-50%,-47%) scale(1.24);} to{opacity:1; transform:translate(-50%,-50%) scale(1.3);} }
+.CGMain::before{ /* gold hairline on top */
+  content:""; position:absolute; left:0; right:0; top:0; height:2px; z-index:50;
+  background:linear-gradient(90deg,transparent,var(--u-gold2),var(--u-gold),transparent);
+}
+
+/* ---------- top / titles ---------- */
+.CGTop{ border-bottom:1px solid var(--u-line); }
+.CGLogo{ filter:sepia(1) saturate(5) hue-rotate(-12deg) brightness(1.15) drop-shadow(0 0 8px rgba(212,175,55,.55)); }
+.CGTopTitle{
+  letter-spacing:2px; font-size:15px; white-space:nowrap;
+  background:linear-gradient(90deg,var(--u-gold3),var(--u-gold2),var(--u-gold));
+  -webkit-background-clip:text; background-clip:text; color:transparent!important; text-shadow:none;
+}
+.CGLeft{ background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.01)); border-right:1px solid var(--u-line); }
+.CGRight{ border:0; border-left:1px solid var(--u-line); background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.01)); }
+.CGLeftTitle,.CGRightTitle{ border-left:3px solid var(--u-gold)!important; color:var(--u-gold2)!important; letter-spacing:1px; }
+.CGLeftTitle span,.CGRightTitle span{ color:var(--u-gold2)!important; }
+.CGExit{ filter:sepia(1) saturate(5) hue-rotate(-12deg) brightness(1.2); transition:.2s; }
+.CGExit:hover{ filter:none; transform:rotate(90deg) scale(1.1); }
+
+/* ---------- side buttons ---------- */
+.CGButton{
+  background:var(--u-glass)!important; border:1px solid var(--u-line)!important; border-radius:12px!important;
+  box-shadow:none!important; transition:.22s;
+}
+.CGButton img{ filter:sepia(1) saturate(5) hue-rotate(-12deg) brightness(1.2); }
+.CGButton:hover,.CGButton:focus{
+  background:linear-gradient(90deg,rgba(212,175,55,.28),rgba(212,175,55,.05))!important;
+  border-color:var(--u-gold)!important; transform:translateX(3px); box-shadow:0 0 18px rgba(212,175,55,.25)!important;
+}
+.CGButton:active{ transform:translateX(3px) scale(.98); }
+
+/* ---------- admin card ---------- */
+.CGLeftAdmin{ background:linear-gradient(180deg,rgba(212,175,55,.14),rgba(255,255,255,.03))!important; border:1px solid var(--u-line); border-radius:16px!important; }
+.CGLeftAdminPic,img.CGLeftAdminPic{ border-radius:14px!important; border:2px solid var(--u-gold); box-shadow:0 0 16px rgba(212,175,55,.4); }
+.CGLeftAdminRank{ color:var(--u-gold2)!important; letter-spacing:1px; }
+.point{ box-shadow:0 0 8px currentColor; }
+
+/* ---------- clock ---------- */
+.CGRightClock,.CGRightDay{ color:var(--u-gold2)!important; }
+
+/* ---------- home stat cards ---------- */
+.CGMidCreated,.CGMidMembersOff,.CGMidMembersOn{
+  background:linear-gradient(160deg,rgba(255,255,255,.07),rgba(255,255,255,.015))!important;
+  border:1px solid var(--u-line)!important; border-radius:18px!important; box-shadow:0 10px 30px rgba(0,0,0,.35)!important;
+  transition:.25s;
+}
+.CGMidCreated:hover,.CGMidMembersOff:hover,.CGMidMembersOn:hover{ transform:translateY(-3px); border-color:var(--u-gold)!important; box-shadow:0 14px 36px rgba(0,0,0,.5),0 0 22px rgba(212,175,55,.2)!important; }
+.CGMidCreated::after,.CGMidMembersOff::after,.CGMidMembersOn::after{ content:""; position:absolute; left:0; right:0; top:0; height:3px; }
+.CGMidCreated::after{ background:linear-gradient(90deg,transparent,var(--u-gold),transparent); }
+.CGMidMembersOff::after{ background:linear-gradient(90deg,transparent,var(--u-green),transparent); }
+.CGMidMembersOn::after{ background:linear-gradient(90deg,transparent,var(--u-red),transparent); }
+.CGMCLogo{ background:rgba(212,175,55,.14)!important; border:1px solid var(--u-line); }
+.CGMCLogo img{ filter:sepia(1) saturate(4) hue-rotate(-12deg) brightness(1.25); }
+.CGMCText{ color:var(--u-gold2)!important; text-shadow:0 0 12px rgba(212,175,55,.35); }
+.CGMCInfo{ color:rgba(255,255,255,.6)!important; letter-spacing:1px; }
+
+/* ---------- progress bars ---------- */
+.AllGangsLine,.CGMGRIMembersLine,.CGMGRIExpireLine,.CGMGRIActiveLine,.CGMGRILeveLLine,.CGMGRIXPLine,
+.CGMGLGInfoTextLine,.CGMSGIInfoTextLine{ background:rgba(255,255,255,.1)!important; border-radius:99px!important; overflow:hidden; }
+.AllGangsLineValue,.CGMGRIMembersLineValue,.CGMGRIExpireLineValue,.CGMGRIActiveLineValue,.CGMGRILeveLLineValue,.CGMGRIXPLineValue,
+.CGMGLGInfoTextLineValue,.CGMSGIInfoTextLineValue{
+  background:linear-gradient(90deg,var(--u-gold3),var(--u-gold),var(--u-gold2))!important; border-radius:99px!important;
+  box-shadow:0 0 10px rgba(212,175,55,.55); transition:width .8s cubic-bezier(.2,.8,.2,1);
+}
+#ONLINELINEVALUE{ background:linear-gradient(90deg,#1d8a52,var(--u-green))!important; box-shadow:0 0 10px rgba(61,220,132,.5); }
+#OFFLINELINEVALUE{ background:linear-gradient(90deg,#9b2330,var(--u-red))!important; box-shadow:0 0 10px rgba(255,77,94,.5); }
+
+/* ---------- section titles & lines ---------- */
+.CGMiddleGangInfo{ color:var(--u-gold2)!important; letter-spacing:1px; white-space:nowrap; }
+.CGGILine{ background:linear-gradient(to right,rgba(212,175,55,0),var(--u-gold))!important; height:1px!important; }
+
+/* ---------- member / gang rows ---------- */
+.CGMMemberInfo,.CGMSGIListNameSec{ color:var(--u-gold2)!important; }
+.CGMIText,.CGMSGILNStext{ color:var(--u-gold2)!important; letter-spacing:0; }
+.CGMLGang,.CGMSGIGangMember{
+  background:linear-gradient(90deg,rgba(255,255,255,.07),rgba(255,255,255,.02))!important; border:1px solid transparent; border-radius:10px!important; transition:.2s;
+}
+.CGMLGang:hover,.CGMSGIGangMember:hover{ border-color:var(--u-gold); background:linear-gradient(90deg,rgba(212,175,55,.22),rgba(255,255,255,.02))!important; }
+.CGMLGCount,.CGMSGICount{ color:var(--u-gold)!important; }
+.CGMLGang img,.CGMSGIGangMember img{ border-radius:50%!important; border:1px solid var(--u-gold); }
+.CopySteam{ color:var(--u-gold2)!important; transition:.2s; } .CopySteam:hover{ color:#fff!important; text-shadow:0 0 8px var(--u-gold); }
+
+/* ---------- gang cards (Gangs page) ---------- */
+.CGMGLGang{
+  background:linear-gradient(160deg,rgba(255,255,255,.07),rgba(255,255,255,.015))!important; border:1px solid var(--u-line)!important;
+  border-radius:16px!important; box-shadow:0 8px 24px rgba(0,0,0,.35)!important; transition:.25s; cursor:pointer;
+}
+.CGMGLGang:hover{ transform:translateY(-3px); border-color:var(--u-gold)!important; box-shadow:0 14px 34px rgba(0,0,0,.5),0 0 22px rgba(212,175,55,.22)!important; }
+.CGMGLGang img{ border-radius:14px!important; border:2px solid var(--u-gold); box-shadow:0 0 14px rgba(212,175,55,.35); }
+.CGMGLGName{ color:var(--u-gold2)!important; }
+.CMGLGITLVText,.CGMSGIITLVText{ color:rgba(255,255,255,.65)!important; }
+.CGMGSreachBar{ background:var(--u-glass)!important; border:1px solid var(--u-line)!important; border-radius:99px!important; }
+.CGMGSreachBar img{ filter:sepia(1) saturate(5) hue-rotate(-12deg) brightness(1.2); }
+
+/* ---------- gang info ---------- */
+.CGMSGIGangPic{ border-radius:20px!important; border:2px solid var(--u-gold)!important; box-shadow:0 0 26px rgba(212,175,55,.4); background:#0b0c11!important; }
+.CGMSGIGangName{ color:var(--u-gold2)!important; text-shadow:0 0 12px rgba(212,175,55,.3); }
+.CGMSGIInfoText{ color:var(--u-gold2)!important; }
+
+/* ---------- buttons ---------- */
+.CMGSSButton,.CGCGCGCreateButton,.CGCGCGRankCreateButton,.CGMSGIbuttonValues,.CGCGCreateOptionbuttons,.CGCGCPBbutton,.CGMPbutton,.OthersBtn,.OthersBtn2,.OthersBtn3,#CGADDRANK,#CGCLOSEMENURANK{
+  background:linear-gradient(180deg,var(--u-gold2),var(--u-gold) 55%,var(--u-gold3))!important;
+  color:#15110a!important; border:0!important; border-radius:10px!important; letter-spacing:1.5px;
+  box-shadow:0 6px 16px rgba(212,175,55,.28)!important; transition:.2s; cursor:pointer;
+}
+.CMGSSButton *,.CGCGCGCreateButton *,.CGMSGIbuttonValues *{ color:inherit!important; }
+.CMGSSButton:hover,.CGCGCGCreateButton:hover,.CGCGCGRankCreateButton:hover,.CGMSGIbuttonValues:hover,.CGCGCreateOptionbuttons:hover,.CGMPbutton:hover,.OthersBtn:hover,.OthersBtn2:hover,.OthersBtn3:hover,#CGADDRANK:hover,#CGCLOSEMENURANK:hover{
+  filter:brightness(1.12); transform:translateY(-2px); box-shadow:0 10px 22px rgba(212,175,55,.42)!important;
+}
+#INFOGANGDISBAND,.CGMSGIDeletebutton,.CGCGACODelete,.CGCGCGDeleteRank,.OthersBtn3,#CGCLOSEMENURANK{
+  background:linear-gradient(180deg,#ff6b78,var(--u-red) 55%,#a2202e)!important; color:#fff!important; box-shadow:0 6px 16px rgba(255,77,94,.3)!important;
+}
+.CGMSGIDeletebutton{ border-radius:8px!important; }
+
+/* ---------- inputs ---------- */
+input,textarea,select{
+  background:rgba(255,255,255,.06)!important; color:#fff!important; border:1px solid var(--u-line)!important; border-radius:10px!important; outline:none; transition:.2s;
+}
+input:focus,textarea:focus,select:focus{ border-color:var(--u-gold)!important; box-shadow:0 0 0 3px rgba(212,175,55,.18),0 0 16px rgba(212,175,55,.25)!important; background:rgba(212,175,55,.07)!important; }
+input::placeholder{ color:rgba(212,175,55,.5)!important; }
+.CGMGSreachBarinput{ background:transparent!important; border:0!important; box-shadow:none!important; }
+
+/* ---------- create page ---------- */
+.CGCGOptionbutton{
+  background:var(--u-glass)!important; border:1px solid var(--u-line)!important; border-radius:10px!important; color:#fff!important; transition:.2s; cursor:pointer;
+}
+.CGCGOptionbutton:hover{ border-color:var(--u-gold)!important; background:rgba(212,175,55,.16)!important; }
+.CGCGButtonSelected,.CGCGOptionbutton.CGCGButtonSelected{
+  background:linear-gradient(180deg,var(--u-gold2),var(--u-gold))!important; color:#15110a!important; border-color:var(--u-gold)!important; box-shadow:0 0 18px rgba(212,175,55,.45)!important;
+}
+.CGCGButtonSelected *{ color:#15110a!important; }
+.CGCGCGInputName,.CGCGLeftInfoText,.CGCGRightInfoText{ color:var(--u-gold2)!important; letter-spacing:1px; }
+.CGCGCGGanglogo{ border-radius:18px!important; border:2px solid var(--u-gold)!important; box-shadow:0 0 22px rgba(212,175,55,.35); }
+.CGCGCGRankList,.CGCGAlradyCreatedOfthisOptionList,.CGCGCOthersList,.CGMPacksPage{
+  background:rgba(255,255,255,.035)!important; border:1px solid var(--u-line)!important; border-radius:16px!important;
+}
+.CGCGCGRTopListText,.CGCGCGRText{ color:var(--u-gold2)!important; }
+.CGCGCGRank,.CGCGACOption,.OthersBadge,.CGMPPack{
+  background:linear-gradient(90deg,rgba(255,255,255,.07),rgba(255,255,255,.02))!important; border:1px solid var(--u-line)!important; border-radius:12px!important; transition:.2s;
+}
+.CGCGCGRank:hover,.CGCGACOption:hover,.OthersBadge:hover,.CGMPPack:hover{ border-color:var(--u-gold)!important; background:linear-gradient(90deg,rgba(212,175,55,.2),rgba(255,255,255,.02))!important; }
+.CGCGCGEditRank,.CGCGACOEdit,.CGCGACOCoord{ background:linear-gradient(180deg,var(--u-gold2),var(--u-gold))!important; color:#15110a!important; border-radius:8px!important; }
+.CGCGACOEdit *,.CGCGACOCoord *{ color:#15110a!important; }
+.CGCGCGARMBody{ background:linear-gradient(160deg,#12141c,#0b0c11)!important; border:1px solid var(--u-gold)!important; border-radius:18px!important; box-shadow:0 20px 60px rgba(0,0,0,.7),0 0 40px rgba(212,175,55,.2)!important; }
+.CGCGCGARMBName,.CGCGCGARMBLAbeL,.CGCGCGARMBSalary,.CGCGCGARMBAccess{ color:var(--u-gold2)!important; }
+.CGCGCGARMBAccse{ background:var(--u-glass)!important; border:1px solid var(--u-line); border-radius:12px!important; }
+.CGCGCGARMBAccse img{ filter:sepia(1) saturate(4) hue-rotate(-12deg) brightness(1.2); }
+.SetAccsegreen{ background:rgba(61,220,132,.25)!important; border:1px solid var(--u-green)!important; border-radius:6px!important; }
+.SetAccsegred{ background:rgba(255,77,94,.25)!important; border:1px solid var(--u-red)!important; border-radius:6px!important; }
+.SetAccesSelected{ box-shadow:0 0 12px currentColor!important; filter:brightness(1.5); }
+.CGCGNextLeft,.CGCGNextRight{ filter:sepia(1) saturate(5) hue-rotate(-12deg) brightness(1.2); }
+.CGCGLine,.CGCGHLine{ background:var(--u-line)!important; }
+.CGCGColorofMarkers,.CGCGMarker{ border-color:var(--u-line)!important; }
+.othersSelected{ border-color:var(--u-gold)!important; box-shadow:0 0 14px rgba(212,175,55,.35)!important; }
+
+/* ---------- scrollbars ---------- */
+::-webkit-scrollbar{ width:6px; height:6px; }
+::-webkit-scrollbar-track{ background:transparent; }
+::-webkit-scrollbar-thumb{ background:linear-gradient(var(--u-gold2),var(--u-gold3)); border-radius:99px; }
+
+/* ---- final polish: title, white borders -> gold ---- */
+.CGTopTitle{width:auto!important;white-space:nowrap;transform:translateX(-50%);left:50%!important;letter-spacing:.12em;color:var(--u-gold2,#f3d77a)}
+.CGLeftTitle{border-right-color:var(--u-gold)!important}
+.CGRight,.CGLeft,.CGTopGang,.CGMiddleGang,.CGMGSreachBar,.CMGSSButton,.CGCGCreateOption,.CGCGButtonSelected{border-color:var(--u-line)!important}
+.CGMCText,.CGCGRightInfoText,.CGCGLeftInfoText{border-bottom-color:var(--u-line)!important}
+.CGMGSreachBarinput,.CGCGOptionbutton{border-left-color:var(--u-line)!important}
+.CGMGLGang{border-top-color:var(--u-line)!important}
+.OthersBadge{border-right-color:var(--u-gold)!important;border-bottom-color:var(--u-gold)!important}
+.CGMiddleGang{background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(0,0,0,.35))!important;border:1px solid var(--u-line)!important;box-shadow:inset 0 0 30px rgba(212,175,55,.05)}
+.CGTopGang{background:linear-gradient(90deg,rgba(212,175,55,.14),rgba(0,0,0,.4))!important}
+.CGMLGang{background:linear-gradient(90deg,rgba(212,175,55,.12),rgba(0,0,0,.35))!important}
+
+/* ---------- create-tab: kill the leftover blue, keep the icons ---------- */
+.CGCGCreateOption,.CGCGCGRankList,.CGCGAlradyCreatedOfthisOptionList{
+  background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(0,0,0,.35))!important; border:1px solid var(--u-line)!important; border-radius:16px!important; box-shadow:inset 0 0 40px rgba(212,175,55,.05);
+}
+.CGCGColorofMarkers,.CGCGCPBbutton,.CGCGinput,.CGCGCGinput,.CGMPInput,.CGCGOthersinput,.CGCGCGARMBRankName,.CGCGCGARMBRankLabeL,.CGCGCGARMBRankSalary{
+  background:rgba(255,255,255,.06)!important; border:1px solid var(--u-line)!important; border-radius:10px!important; color:#fff!important;
+}
+.CGCGCPBbutton{ background:linear-gradient(180deg,var(--u-gold2),var(--u-gold) 60%,var(--u-gold3))!important; color:#15110a!important; border:0!important; font-weight:700; cursor:pointer; box-shadow:0 6px 16px rgba(212,175,55,.3)!important; }
+.CGCGNextLeft,.CGCGNextRight{ background:rgba(212,175,55,.14)!important; border:1px solid var(--u-gold)!important; border-radius:50%!important; box-shadow:0 0 14px rgba(212,175,55,.3); transition:.2s; }
+.CGCGNextLeft:hover,.CGCGNextRight:hover{ background:var(--u-gold)!important; transform:scale(1.1); }
+.CGCGCGInfoRank{ background:linear-gradient(90deg,rgba(212,175,55,.2),rgba(255,255,255,.04))!important; border:1px solid var(--u-line); border-radius:10px!important; color:#fff!important; }
+.CGCGCGInfoRank *{ color:#fff!important; }
+.CGCGACOCoord{ background:linear-gradient(90deg,rgba(212,175,55,.2),rgba(255,255,255,.04))!important; border:1px solid var(--u-line)!important; border-radius:10px!important; color:#fff!important; }
+.CGCGACOCoord *{ color:#fff!important; }
+.CGCGACOption .CGCGACOCoord:hover{ background:rgba(212,175,55,.32)!important; }
+
+/* icon buttons: the gold/red gradient used to REPLACE the icon (shorthand background) - layer them instead */
+.CGCGCGEditRank,.CGCGACOEdit,.CGCGACODelete,.CGCGCGDeleteRank{
+  background-repeat:no-repeat!important; background-position:center!important; background-size:20px 20px,100% 100%!important;
+  border-radius:10px!important; border:1px solid rgba(255,255,255,.18)!important; cursor:pointer; transition:.18s; filter:none;
+}
+.CGCGCGEditRank,.CGCGACOEdit{ background-image:url('../img/edit.png'),linear-gradient(180deg,var(--u-gold2),var(--u-gold))!important; box-shadow:0 4px 12px rgba(212,175,55,.35)!important; }
+.CGCGCGDeleteRank,.CGCGACODelete{ background-image:url('../img/delete.png'),linear-gradient(180deg,#ff6b78,var(--u-red))!important; box-shadow:0 4px 12px rgba(255,77,94,.35)!important; }
+.CGCGCGEditRank:hover,.CGCGACOEdit:hover,.CGCGACODelete:hover,.CGCGCGDeleteRank:hover{ transform:translateY(-2px) scale(1.06); filter:brightness(1.15); }
+.CGCGACOption .CGCGACODelete:hover{ background-image:url('../img/delete.png'),linear-gradient(180deg,#ff6b78,var(--u-red))!important; }
+.CGCGACOEdit,.CGCGACODelete{ width:34px!important; margin-right:6px; }
+.CGCGCGDeleteRank,.CGCGACODelete,.CGCGACOption .CGCGACODelete:hover{ background-image:url('../img/delete.png'),linear-gradient(180deg,rgba(255,77,94,.22),rgba(255,77,94,.08))!important; border:1px solid var(--u-red)!important; box-shadow:0 4px 12px rgba(255,77,94,.25)!important; }
+.CGCGCGDeleteRank:hover,.CGCGACODelete:hover{ background-image:url('../img/delete.png'),linear-gradient(180deg,rgba(255,77,94,.4),rgba(255,77,94,.18))!important; }
+
+/* leftover white lines/hovers -> gold */
+.CGCGCGRTopListText{ border-bottom:1px solid var(--u-gold)!important; }
+.CGCGCGRanks{ border-left:0!important; }
+.CGCGCGRank{ border-bottom:0!important; }
+.CGTop{ border-bottom-color:var(--u-line)!important; }
+.CGRightTitle{ border-left-color:var(--u-gold)!important; }
+.CGMSGIGangName :hover,.CGMSGIbuttons :hover,.OthersBtn3:hover,.OthersBtn2:hover,.OthersBtn:hover,.CGLeftButton :hover,.CGCGOptionList :hover{ border-color:var(--u-gold)!important; }
+.CGCGACOption .CGCGACOEdit:hover,.CGCGCGEditRank:hover{ background-image:url('../img/edit.png'),linear-gradient(180deg,#fff0b0,var(--u-gold2))!important; }
+.CGCGCGARMBody{ border-color:var(--u-gold)!important; }
+
+/* Others tab: the two small buttons were blank coloured squares - give them the edit / delete icons */
+.OthersBtn2,.OthersBtn3{ width:38px!important; height:32px!important; border-radius:10px!important; background-repeat:no-repeat!important; background-position:center!important; background-size:18px 18px,100% 100%!important; margin-top:8px!important; }
+.OthersBtn2{ background-image:url('../img/edit.png'),linear-gradient(180deg,var(--u-gold2),var(--u-gold))!important; border:1px solid rgba(255,255,255,.18)!important; }
+.OthersBtn3{ background-image:url('../img/delete.png'),linear-gradient(180deg,rgba(255,77,94,.25),rgba(255,77,94,.08))!important; border:1px solid var(--u-red)!important; }
+.OthersBtn2:hover{ border-color:#fff0b0!important; } .OthersBtn3:hover{ border-color:#ff9aa4!important; }
+
+/* list rows (blip/locker/veh...): icons + coordinate pill on one line, nothing overlaps */
+.CGCGACOption{ display:flex!important; align-items:center; gap:6px; padding:3px 4px; box-sizing:border-box; height:auto; min-height:38px; }
+.CGCGACOption .CGCGACOEdit,.CGCGACOption .CGCGACODelete{ flex:0 0 34px; height:32px!important; margin:0!important; }
+.CGCGACOption .CGCGACOCoord{ flex:1 1 auto; width:auto!important; min-width:0; height:32px!important; line-height:32px; font-size:14px!important; }
+.CGCGACOCoordText{ width:100%!important; font-size:14px!important; line-height:32px!important; }
+
+/* marker creator toolbar: Ped / Marker / Object + X Y Z + ADD, laid out properly */
+.CGCGCreateOptionbuttons{ width:236px!important; height:auto!important; left:8px!important; bottom:10px!important; display:flex!important; flex-wrap:wrap; gap:6px; align-items:center; }
+.CGCGCreateOptionbuttons .CGCGCPBbutton{ width:70px!important; height:26px!important; padding:0!important; font-size:11px!important; letter-spacing:.5px!important; border-radius:8px!important; }
+.CGCGCreateOptionbuttons #ADDGANGMARKER{ position:static!important; width:70px!important; height:26px!important; margin-left:auto; background:linear-gradient(180deg,#7dffa6,#00d44f)!important; color:#06240f!important; box-shadow:0 4px 14px rgba(0,212,79,.35)!important; }
+.CGCGCreateOptionbuttons .CGCGinput{ width:70px!important; height:26px!important; font-size:12px!important; color:#fff!important; }
+.CGCGCreateOptionbuttons :hover{ background:inherit; }
+.CGCGCreateOptionbuttons .CGCGCPBbutton:hover{ filter:brightness(1.15); transform:translateY(-1px); }
+.CGCGACOCoordText{ margin:0!important; height:auto!important; line-height:32px!important; font-size:14px!important; white-space:nowrap; }
+.CGCGCreateOptionbuttons{ background:none!important; box-shadow:none!important; border:0!important; filter:none!important; transform:none!important; display:grid!important; grid-template-columns:repeat(3,1fr); gap:6px; width:236px!important; bottom:6px!important; letter-spacing:0!important; }
+.CGCGCreateOptionbuttons:hover{ background:none!important; box-shadow:none!important; transform:none!important; filter:none!important; }
+.CGCGCreateOptionbuttons .CGCGCPBbutton,.CGCGCreateOptionbuttons .CGCGinput{ width:100%!important; }
+.CGCGCreateOptionbuttons #ADDGANGMARKER{ grid-column:1 / -1; width:100%!important; margin:0!important; height:30px!important; }
+.CGCGColorofMarkers{ transform:translateY(-38px); z-index:3; }
+.CGCGColorofMarker{ border:2px solid rgba(255,255,255,.7); border-radius:50%!important; box-shadow:0 0 8px rgba(0,0,0,.6); }
+
+select{ color-scheme:dark; }
+select option{ background:#16171f!important; color:#f2efe6!important; }
+select option:checked,select option:hover{ background:#d4af37!important; color:#1a1405!important; }
+
+/* ---------- Rank add / edit popup: rebuilt as a proper centred modal ---------- */
+.CGCGCGRADDRankMenu{ position:absolute; inset:0; width:auto!important; height:auto!important; z-index:20; background:rgba(4,4,8,.78); backdrop-filter:blur(3px); border-radius:16px; }
+.CGCGCGARMBody{
+  position:absolute!important; left:50%!important; top:50%!important; transform:translate(-50%,-50%);
+  width:430px!important; height:auto!important; box-sizing:border-box; padding:18px 20px 18px;
+  display:grid; grid-template-columns:1fr 1fr 1fr; column-gap:12px; row-gap:6px; align-items:center;
+  background:linear-gradient(160deg,#171821,#0b0b10)!important; border:1px solid var(--u-gold)!important; border-radius:20px!important;
+  box-shadow:0 30px 80px rgba(0,0,0,.8),0 0 40px rgba(212,175,55,.25)!important; animation:uqIn .25s ease;
+}
+.CGCGCGARMBName,.CGCGCGARMBLAbeL,.CGCGCGARMBSalary{ position:static!important; margin:0!important; font-size:11px!important; letter-spacing:1px; color:var(--u-gold2)!important; text-align:left; align-self:end; }
+.CGCGCGARMBName{ grid-column:1; grid-row:1; } .CGCGCGARMBLAbeL{ grid-column:2; grid-row:1; } .CGCGCGARMBSalary{ grid-column:3; grid-row:1; }
+.CGCGCGARMBRankName,.CGCGCGARMBRankLabeL,.CGCGCGARMBRankSalary{ width:100%!important; height:34px!important; margin:0!important; box-sizing:border-box; font-size:12px!important; text-align:center; }
+.CGCGCGARMBRankName{ grid-column:1; grid-row:2; } .CGCGCGARMBRankLabeL{ grid-column:2; grid-row:2; } .CGCGCGARMBRankSalary{ grid-column:3; grid-row:2; }
+.CGCGCGARMBAccess{ position:static!important; grid-column:1 / -1; grid-row:3; margin:12px 0 2px!important; font-size:12px!important; letter-spacing:2px; color:var(--u-gold)!important; text-align:center; border-bottom:1px solid var(--u-line); padding-bottom:6px; }
+.CGCGCGARMBAccsesList{ grid-column:1 / -1; grid-row:4; width:100%!important; height:auto!important; margin:6px 0 4px!important; display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+.CGCGCGARMBAccse{
+  width:auto!important; height:auto!important; display:grid!important; grid-template-columns:1fr auto; grid-template-rows:auto auto; align-items:center; column-gap:6px; row-gap:4px;
+  background:rgba(255,255,255,.05)!important; border:1px solid var(--u-line); border-radius:14px!important; padding:9px 10px; transition:.18s;
+}
+.CGCGCGARMBAccse:hover{ border-color:var(--u-gold); background:rgba(212,175,55,.1)!important; }
+.CGCGCGARMBAccse img{ grid-column:1; grid-row:1; width:30px!important; height:28px!important; margin:0!important; filter:none!important; object-fit:contain; }
+.CGCGCGARMBAccsesbtn{ grid-column:2; grid-row:1; width:auto!important; height:auto!important; display:flex!important; flex-direction:column; gap:5px; }
+.CGCGCGARMBAccse span{ grid-column:1 / -1; grid-row:2; position:static!important; top:auto!important; left:auto!important; line-height:1.2!important; font-size:11px!important; letter-spacing:.5px; text-align:left; color:#fff!important; }
+.SetAccsegreen,.SetAccsegred{ width:22px!important; height:22px!important; border-radius:7px!important; border:1px solid rgba(255,255,255,.18)!important; display:grid!important; place-items:center; font-size:13px; font-weight:900; line-height:1; opacity:.45; transition:.15s; position:relative; }
+.SetAccsegreen{ background:rgba(56,217,138,.25)!important; } .SetAccsegred{ background:rgba(255,77,94,.25)!important; }
+.SetAccsegreen::after{ content:'\2713'; color:#8bf5c0; } .SetAccsegred::after{ content:'\2715'; color:#ff9aa4; }
+.SetAccsegreen:hover,.SetAccsegred:hover{ opacity:.85; transform:scale(1.08); }
+.SetAccesSelected{ background-image:none!important; opacity:1!important; transform:scale(1.1); }
+.SetAccsegreen.SetAccesSelected{ background:linear-gradient(180deg,#6af0ae,var(--u-green))!important; box-shadow:0 0 14px rgba(56,217,138,.6)!important; }
+.SetAccsegred.SetAccesSelected{ background:linear-gradient(180deg,#ff8f99,var(--u-red))!important; box-shadow:0 0 14px rgba(255,77,94,.6)!important; }
+.SetAccsegreen.SetAccesSelected::after,.SetAccsegred.SetAccesSelected::after{ color:#0b0b10; }
+#CGADDRANK,#CGCLOSEMENURANK{ position:static!important; width:100%!important; height:36px!important; margin:8px 0 0!important; grid-row:5; font-size:12px!important; letter-spacing:2px; }
+#CGADDRANK{ grid-column:1 / 3; } #CGCLOSEMENURANK{ grid-column:3; }
+.CGCGCGRADDRankMenu{ position:fixed!important; inset:0!important; border-radius:0; }
+.CGCGCGARMBody *{ box-sizing:border-box; min-width:0; }
+.CGCGCGARMBody{ width:440px!important; }
+.CGCGCGARMBody{ grid-template-columns:repeat(3,minmax(0,1fr))!important; }
+.CGCGCGARMBAccsesList{ grid-template-columns:repeat(3,minmax(0,1fr)); }
+.CGCGCGARMBRankName,.CGCGCGARMBRankLabeL,.CGCGCGARMBRankSalary,.CGCGCGARMBAccse,#CGADDRANK,#CGCLOSEMENURANK{ max-width:100%!important; }
+
+/* marker preview: keep colour dots below the image */
+.CGCGMarker{ height:140px!important; width:auto!important; max-width:120px; object-fit:contain; top:36px!important; left:62px!important; }
+.CGCGColorofMarkers{ transform:none!important; top:182px!important; height:22px!important; width:auto!important; min-width:68px; display:flex; align-items:center; justify-content:center; gap:3px; padding:0 6px!important; border-radius:11px!important; }
+.CGCGColorofMarker{ margin-top:0!important; width:14px!important; height:14px!important; }
+
+/* custom colour picker = its own rainbow swatch (4th dot), no longer on top of the green one */
+.CGCGColorofMarkers{ gap:6px!important; padding:0 8px!important; }
+.CGCGColorofMarkers .CGCGColorofMarkerinput{
+  position:static!important; margin:0!important; width:16px!important; height:16px!important; padding:0!important;
+  border:2px solid rgba(255,255,255,.7)!important; border-radius:50%!important; cursor:pointer!important; flex:none;
+  background:conic-gradient(#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00)!important; box-shadow:0 0 8px rgba(0,0,0,.6); overflow:hidden;
+  -webkit-appearance:none; appearance:none; opacity:1;
+}
+.CGCGColorofMarkerinput::-webkit-color-swatch-wrapper{ padding:0; opacity:0; }
+.CGCGColorofMarkerinput::-webkit-color-swatch{ border:0; border-radius:50%; }
+.CGCGColorofMarkers .CGCGColorofMarker:hover,.CGCGColorofMarkers .CGCGColorofMarkerinput:hover{ opacity:1!important; transform:scale(1.18); }

@@ -43,7 +43,6 @@ local PERM_LIST = {
     { key = 'mention_roles',   label = 'Mention @roles / @admin' },
     { key = 'pin',             label = 'Pin messages' },
     { key = 'manage_messages', label = 'Delete others\' messages' },
-    { key = 'speak',           label = 'Speak in stage channels' },
     { key = 'manage_channels', label = 'Manage channels' },
     { key = 'manage_roles',    label = 'Manage roles' },
     { key = 'manage_server',   label = 'Manage server (theme, invites, welcome...)' },
@@ -60,7 +59,6 @@ local CHANNEL_PERM_LIST = {
     { key = 'react',           label = 'Add reactions' },
     { key = 'pin',             label = 'Pin messages' },
     { key = 'manage_messages', label = 'Delete others\' messages' },
-    { key = 'speak',           label = 'Speak (stage)' },
 }
 local CH_PERM = {}
 for _, p in ipairs(CHANNEL_PERM_LIST) do CH_PERM[p.key] = true end
@@ -139,15 +137,6 @@ local function ctxOverrides(ctx)
     return ctx.ov
 end
 
-local function ctxSpeakers(ctx)
-    if ctx.speakers then return ctx.speakers end
-    ctx.speakers = {}
-    for _, r in ipairs(Q([[SELECT ss.channel_id FROM phone_discord_stage_speakers ss JOIN phone_discord_channels c ON c.id = ss.channel_id
-                           WHERE c.server_id = @s AND ss.identifier = @i]], { ['@s'] = ctx.serverId, ['@i'] = ctx.identifier })) do
-        ctx.speakers[r.channel_id] = true
-    end
-    return ctx.speakers
-end
 
 -- channel = { id, kind, is_locked }
 local function ctxCan(ctx, perm, channel)
@@ -180,9 +169,6 @@ local function ctxCan(ctx, perm, channel)
     if channel and perm == 'send' then
         if not ctxCan(ctx, 'view', channel) then return false end
         if truthy(channel.is_locked) and not (ctx.base.manage_channels or ctx.base.manage_messages) then return false end
-        if channel.kind == 'stage' then
-            if not (ctx.base.manage_channels or ctxCan(ctx, 'speak', channel) or ctxSpeakers(ctx)[channel.id]) then return false end
-        end
     end
     return v
 end
@@ -543,14 +529,14 @@ end)
 -- (member-list group) and the role chips for the profile card.
 function Discord_ExtMemberRoleMap(serverId)
     local roles = {}
-    for _, r in ipairs(Q("SELECT id, name, color, position, is_default, hoist FROM phone_discord_roles WHERE server_id = @s", { ['@s'] = serverId })) do roles[r.id] = r end
+    for _, r in ipairs(Q("SELECT id, name, color, position, is_default, hoist, icon FROM phone_discord_roles WHERE server_id = @s", { ['@s'] = serverId })) do roles[r.id] = r end
     local out = {}
     for _, a in ipairs(Q("SELECT role_id, identifier FROM phone_discord_member_roles WHERE server_id = @s", { ['@s'] = serverId })) do
         local r = roles[a.role_id]
         if r and not truthy(r.is_default) then
             local e = out[a.identifier]
             if not e then e = { roles = {} }; out[a.identifier] = e end
-            e.roles[#e.roles + 1] = { name = r.name, color = r.color, position = r.position }
+            e.roles[#e.roles + 1] = { name = r.name, color = r.color, position = r.position, icon = r.icon } -- v22
             if r.color and r.color ~= "" and (e.colorPos == nil or r.position > e.colorPos) then e.color = r.color; e.colorPos = r.position end
             if truthy(r.hoist) and (e.hoistPos == nil or r.position > e.hoistPos) then e.hoist = r.name; e.hoistPos = r.position; e.hoistColor = r.color end
         end
@@ -631,36 +617,6 @@ local function stageChannelFor(ctx, serverId, channelId)
     return ch
 end
 
-ESX.RegisterServerCallback('Unique_Phone:server:DiscordExt:GetSpeakers', function(source, cb, serverId, channelId)
-    local xPlayer = Discord_GetPlayer(source)
-    if xPlayer == nil or serverId == nil then cb(false) return end
-    local ctx = loadCtx(xPlayer.identifier, serverId, source)
-    local ch = stageChannelFor(ctx, serverId, channelId)
-    if not ch then cb(false) return end
-    local speakers = {}
-    for _, r in ipairs(Q("SELECT identifier FROM phone_discord_stage_speakers WHERE channel_id = @c", { ['@c'] = ch.id })) do speakers[r.identifier] = true end
-    local members = {}
-    for _, m in ipairs(Q("SELECT id, identifier, nickname FROM phone_discord_members WHERE server_id = @s ORDER BY nickname", { ['@s'] = serverId })) do
-        members[#members + 1] = { id = m.id, nickname = m.nickname, speaker = speakers[m.identifier] == true }
-    end
-    cb({ channel = { id = ch.id, name = ch.name }, members = members })
-end)
-
-ESX.RegisterServerCallback('Unique_Phone:server:DiscordExt:SetSpeaker', function(source, cb, serverId, channelId, memberRowId, on)
-    local xPlayer = Discord_GetPlayer(source)
-    if xPlayer == nil or serverId == nil then cb(false) return end
-    local ctx = loadCtx(xPlayer.identifier, serverId, source)
-    local ch = stageChannelFor(ctx, serverId, channelId)
-    local t = ch and Q("SELECT identifier FROM phone_discord_members WHERE id = @m AND server_id = @s", { ['@m'] = memberRowId, ['@s'] = serverId })[1]
-    if not ch or not t then cb(false) return end
-    if on then
-        Exec("INSERT IGNORE INTO phone_discord_stage_speakers (channel_id, identifier) VALUES (@c, @i)", { ['@c'] = ch.id, ['@i'] = t.identifier })
-    else
-        Exec("DELETE FROM phone_discord_stage_speakers WHERE channel_id = @c AND identifier = @i", { ['@c'] = ch.id, ['@i'] = t.identifier })
-    end
-    pushExtras(serverId, { channels = true })
-    cb(true)
-end)
 
 -- ==========================================================================
 -- 6) INVITES + VANITY

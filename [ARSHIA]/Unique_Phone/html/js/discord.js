@@ -266,6 +266,8 @@ function Discord_VerifyLoginCode() {
         }
 
         clearInterval(DiscordResendCooldownTimer);
+        // v35: after a correct code the player chooses their ID first
+        if (window.DXID_Start) { DXID_Start(); return; }
         $("#discord-login-screen").removeClass("discord-visible");
         Discord_LoadServers();
     });

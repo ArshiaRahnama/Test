@@ -52,8 +52,6 @@ bridge('DiscordExt_SetMemberRole',      'SetMemberRole',      'serverId', 'membe
 bridge('DiscordExt_GetChannelPerms',    'GetChannelPerms',    'serverId', 'channelId')
 bridge('DiscordExt_SetChannelPerm',     'SetChannelPerm',     'serverId', 'channelId', 'roleId', 'allow', 'deny')
 bridge('DiscordExt_CreateStageChannel', 'CreateStageChannel', 'serverId', 'name')
-bridge('DiscordExt_GetSpeakers',        'GetSpeakers',        'serverId', 'channelId')
-bridge('DiscordExt_SetSpeaker',         'SetSpeaker',         'serverId', 'channelId', 'memberId', 'on')
 bridge('DiscordExt_ListInvites',        'ListInvites',        'serverId')
 bridge('DiscordExt_CreateInvite',       'CreateInvite',       'serverId', 'maxUses', 'expireMinutes')
 bridge('DiscordExt_RevokeInvite',       'RevokeInvite',       'serverId', 'inviteId')
@@ -197,3 +195,70 @@ CreateThread(function()
         Wait((P and P.CheckEveryMs) or 5000)
     end
 end)
+
+-- ---- v14: channel order, announcements / follows, health, mutual friends, appeals, staff notes ----
+bridge('DiscordExt_SetChannelOrder',         'SetChannelOrder',         'serverId', 'ids')
+bridge('DiscordExt_SetAnnouncementChannel',  'SetAnnouncementChannel',  'channelId', 'on')
+bridge('DiscordExt_GetAnnouncementChannels', 'GetAnnouncementChannels')
+bridge('DiscordExt_FollowChannel',           'FollowChannel',           'targetChannelId', 'sourceChannelId')
+bridge('DiscordExt_UnfollowChannel',         'UnfollowChannel',         'targetChannelId')
+bridge('DiscordExt_GetFollows',              'GetFollows',              'serverId')
+bridge('DiscordExt_GetHealth',               'GetHealth',               'serverId')
+bridge('DiscordExt_GetMutualFriends',        'GetMutualFriends',        'uid')
+bridge('DiscordExt_GetMyPunishments',        'GetMyPunishments',        'serverId')
+bridge('DiscordExt_SubmitAppeal',            'SubmitAppeal',            'serverId', 'kind', 'warnId', 'text')
+bridge('DiscordExt_GetAppeals',              'GetAppeals',              'serverId')
+bridge('DiscordExt_ResolveAppeal',           'ResolveAppeal',           'appealId', 'accept')
+bridge('DiscordExt_GetStaffNotes',           'GetStaffNotes',           'serverId', 'memberId')
+bridge('DiscordExt_AddStaffNote',            'AddStaffNote',            'serverId', 'memberId', 'text')
+bridge('DiscordExt_DeleteStaffNote',         'DeleteStaffNote',         'noteId')
+
+-- ---- v15: profile banner ----
+bridge('DiscordExt_SetBanner', 'SetBanner', 'url')
+
+-- ---- v16: channel templates + featured messages ----
+bridge('DiscordExt_GetChannelTemplates',      'GetChannelTemplates',      'serverId')
+bridge('DiscordExt_CreateChannelFromTemplate','CreateChannelFromTemplate','serverId', 'key', 'name')
+bridge('DiscordExt_SaveChannelTemplate',      'SaveChannelTemplate',      'channelId')
+bridge('DiscordExt_DeleteChannelTemplate',    'DeleteChannelTemplate',    'templateId')
+bridge('DiscordExt_ToggleFeatured',           'ToggleFeatured',           'messageId')
+
+-- ---- v17: bulk delete ----
+bridge('DiscordExt_BulkDelete', 'BulkDelete', 'channelId', 'ids')
+
+-- ---- v18: audit log ----
+bridge('DiscordExt_GetServerAudit', 'GetServerAudit', 'serverId')
+
+-- ---- v19: reply pings ----
+RegisterNetEvent('Unique_Phone:client:DiscordExt:ReplyPing')
+AddEventHandler('Unique_Phone:client:DiscordExt:ReplyPing', function(payload)
+    SendNUIMessage({ action = "DiscordReplyPing", data = payload })
+end)
+
+-- ---- v21: edit history + server bans ----
+bridge('DiscordExt_GetEditHistory', 'GetEditHistory', 'messageId')
+bridge('DiscordExt_BanMember',      'BanMember',      'serverId', 'memberId', 'reason')
+bridge('DiscordExt_UnbanMember',    'UnbanMember',    'serverId', 'identifier')
+bridge('DiscordExt_GetServerBans',  'GetServerBans',  'serverId')
+
+-- ---- v22: server tags + role icons ----
+bridge('DiscordExt_SetServerTags', 'SetServerTags', 'serverId', 'tags')
+bridge('DiscordExt_SetRoleIcon',   'SetRoleIcon',   'serverId', 'roleId', 'icon')
+
+-- ---- v25: avatar effects ----
+bridge('DiscordExt_SetAvatarEffect', 'SetAvatarEffect', 'effect')
+
+-- ---- v26: message requests ----
+bridge('DiscordExt_GetMessageRequests', 'GetMessageRequests')
+bridge('DiscordExt_AcceptRequest', 'AcceptRequest', 'dmId')
+bridge('DiscordExt_DeclineRequest', 'DeclineRequest', 'dmId')
+
+-- ---- v27: private channels + super reactions ----
+bridge('DiscordExt_SetChannelPrivate', 'SetChannelPrivate', 'serverId', 'channelId', 'roleIds', 'on')
+bridge('DiscordExt_SuperReact', 'SuperReact', 'messageId', 'emoji')
+
+-- ---- v35: ID chosen at sign-up ----
+bridge('DiscordExt_SetHandle', 'SetHandle', 'handle')
+
+-- ---- v41: mutual servers ----
+bridge('DiscordExt_GetMutualServers', 'GetMutualServers', 'uid')

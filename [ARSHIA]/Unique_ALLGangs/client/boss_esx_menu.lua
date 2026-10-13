@@ -385,8 +385,8 @@ function OpenBossRankAccessCategoryMenu(gang, gradeNumber)
         align    = 'top-left',
         elements = {
             { label = 'General Access', value = 'general' },
-            { label = 'Weapon Access (Armory)', value = 'weapons' },
-            { label = 'Item Access (Armory)', value = 'items' },
+            { label = 'Armory Weapon Access', value = 'weapons' },
+            { label = 'Armory Item Access', value = 'items' },
             { label = 'Vehicle Access', value = 'vehicles' },
         }
     }, function(data, menu)
@@ -478,18 +478,13 @@ function OpenBossItemAccessArmoryMenu(gang, gradeNumber, kind)
             OpenBossItemAccessMenu(gang, gradeNumber, kind, nil)
             return
         end
-        if #armories == 1 then
-            OpenBossItemAccessMenu(gang, gradeNumber, kind, armories[1].key)
-            return
-        end
-
         local elements = {}
-        for _, a in ipairs(armories) do
-            table.insert(elements, { label = 'Armory #' .. a.key, value = a.key })
+        for i, a in ipairs(armories) do
+            table.insert(elements, { label = 'Armory ' .. i .. (i == 1 and ' (main)' or ''), value = a.key })
         end
 
         ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'boss_item_access_armory_' .. gang .. '_' .. gradeNumber .. '_' .. kind, {
-            title    = 'SELECT ARMORY',
+            title    = (kind == 'weapons' and 'WEAPONS' or 'ITEMS') .. ' - SELECT ARMORY',
             align    = 'top-left',
             elements = elements
         }, function(data, menu)

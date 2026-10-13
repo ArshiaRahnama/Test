@@ -320,7 +320,13 @@ Config.DiscordMailAPI = {
     subjectText = "Discord Verification Code",
     -- Extra static fields to send every time (e.g. an API key), if the
     -- site needs one: { key = "your-api-key" }
-    extraFields = {},
+    -- The key is NOT stored in this file. Set it in server.cfg instead:
+    --   set narges_mail_api_key "your-key-here"
+    extraFields = (function()
+        local k = (GetConvar and GetConvar('narges_mail_api_key', '')) or ''
+        if k ~= '' then return { key = k } end
+        return {}
+    end)(),
 }
 
 
@@ -476,5 +482,22 @@ Config.DiscordExt = {
         DmCooldownMs = 700,
         MaxMessageLength = 500,
         DmPageSize = 50,
+    },
+}
+
+-- Who may create Discord servers and channels. Restricted = true: only the creators
+-- granted in the staff panel (and staff, if StaffAlwaysAllowed) can create. The staff panel
+-- switch overrides this value and is stored in the database.
+Config.DiscordCreation = {
+    Restricted = false,
+    StaffAlwaysAllowed = true,
+}
+
+-- Job servers (Discord v30): one role per rank, the top rank gets full access.
+-- ChannelMinGrade: channel name -> lowest rank (grade number) that can see and write there.
+Config.DiscordJobRanks = {
+    Enabled = true,
+    ChannelMinGrade = {
+        ['court-docket'] = 1,
     },
 }

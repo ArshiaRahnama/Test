@@ -1,0 +1,4 @@
+/* Discord v31 — loaded last. */
+.dxv31-id { display: inline-flex; align-items: center; gap: 8px; margin-top: 6px; padding: 3px 8px; border-radius: 4px; background: #1e1f22; color: #b5bac1; font-size: 12px; font-family: "Consolas", monospace; }
+.dxv31-copy { cursor: pointer; color: #b5bac1; }
+.dxv31-copy:hover { color: #fff; }

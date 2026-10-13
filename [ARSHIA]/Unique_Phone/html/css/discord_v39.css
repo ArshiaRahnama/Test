@@ -1,0 +1,4 @@
+/* Discord v39 — profile card action row. */
+.dxv39-actions { display: flex; gap: 8px; margin-top: 12px; }
+.dxv39-actions .dxp34-btn { flex: 1; }
+.dxv39-off, .dxv39-actions .dxv39-off { background: #4e5058 !important; cursor: default; color: #b5bac1; }

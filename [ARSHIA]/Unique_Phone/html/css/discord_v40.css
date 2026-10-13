@@ -1,0 +1,3 @@
+/* Discord v40 — "More" button on the profile card. */
+.dxv40-more { flex: 0 0 44px !important; background: #4e5058 !important; }
+.dxv40-more:hover { background: #6d6f78 !important; }

@@ -1939,14 +1939,15 @@ ESX.RegisterServerCallback('Unique_Phone:server:Discord:GetChannels', function(s
         return
     end
 
-    local channels = ExecuteSql(true, "SELECT id, name, position, is_verified, is_locked, kind, topic FROM phone_discord_channels WHERE server_id = @sid ORDER BY position ASC, id ASC", {
+    local channels = ExecuteSql(true, "SELECT id, name, position, is_verified, is_locked, kind, topic, is_announcement FROM phone_discord_channels WHERE server_id = @sid ORDER BY position ASC, id ASC", {
         ['@sid'] = serverId,
     })
 
     for _, ch in pairs(channels) do
         ch.isVerified = (ch.is_verified == 1 or ch.is_verified == true)
         ch.isLocked = (ch.is_locked == 1 or ch.is_locked == true)
-        ch.is_verified, ch.is_locked = nil, nil
+        ch.isAnnouncement = (ch.is_announcement == 1 or ch.is_announcement == true) -- v14
+        ch.is_verified, ch.is_locked, ch.is_announcement = nil, nil, nil
     end
 
     cb(Discord_ExtFilterChannels(xPlayer, source, serverId, channels)) -- v8: view / send permissions
@@ -1962,7 +1963,7 @@ ESX.RegisterServerCallback('Unique_Phone:server:Discord:GetMessages', function(s
         return
     end
 
-    local messages = ExecuteSql(true, "SELECT * FROM (SELECT id, identifier, author_name, message, created_at, edited_at, is_pinned, is_announcement, reply_to_id, role_mentions FROM phone_discord_messages WHERE channel_id = @cid ORDER BY id DESC LIMIT 200) AS recent ORDER BY id ASC", {
+    local messages = ExecuteSql(true, "SELECT * FROM (SELECT id, identifier, author_name, message, created_at, edited_at, is_pinned, is_announcement, reply_to_id, role_mentions, is_featured FROM phone_discord_messages WHERE channel_id = @cid ORDER BY id DESC LIMIT 200) AS recent ORDER BY id ASC", {
         ['@cid'] = channelId,
     })
 
@@ -1978,14 +1979,16 @@ ESX.RegisterServerCallback('Unique_Phone:server:Discord:GetMessages', function(s
             if msg.reply_to_id ~= nil then table.insert(replyIdParts, tostring(msg.reply_to_id)) end
         end
 
-        local reactions = ExecuteSql(true, "SELECT message_id, identifier, emoji FROM phone_discord_reactions WHERE message_id IN (" .. table.concat(idParts, ",") .. ")", {})
+        local reactions = ExecuteSql(true, "SELECT message_id, identifier, emoji, is_super FROM phone_discord_reactions WHERE message_id IN (" .. table.concat(idParts, ",") .. ")", {})
 
         for _, r in pairs(reactions) do
             reactionsByMessage[r.message_id] = reactionsByMessage[r.message_id] or {}
             local byEmoji = reactionsByMessage[r.message_id]
-            byEmoji[r.emoji] = byEmoji[r.emoji] or { emoji = r.emoji, count = 0, reacted = false }
-            byEmoji[r.emoji].count = byEmoji[r.emoji].count + 1
-            if r.identifier == xPlayer.identifier then byEmoji[r.emoji].reacted = true end
+            -- v27: super reactions are kept apart from normal ones with the same emoji
+            local key = r.emoji .. ((r.is_super == 1 or r.is_super == true) and "#super" or "")
+            byEmoji[key] = byEmoji[key] or { emoji = r.emoji, count = 0, reacted = false, super = (r.is_super == 1 or r.is_super == true) }
+            byEmoji[key].count = byEmoji[key].count + 1
+            if r.identifier == xPlayer.identifier then byEmoji[key].reacted = true end
         end
 
         if #replyIdParts > 0 then
@@ -2007,6 +2010,8 @@ ESX.RegisterServerCallback('Unique_Phone:server:Discord:GetMessages', function(s
         msg.isMine = (msg.identifier == xPlayer.identifier)
         if nickByIdentifier[msg.identifier] and nickByIdentifier[msg.identifier] ~= "" then msg.author_name = nickByIdentifier[msg.identifier] end -- v8: current per-server nickname
         msg.roleMentions = Discord_ExtParseRoleIds(msg.role_mentions)
+        msg.isFeatured = (msg.is_featured == 1 or msg.is_featured == true) -- v16: staff-starred message
+        msg.is_featured = nil
         msg.role_mentions = nil
         msg.authorVerified = verifiedByIdentifier[msg.identifier] or false
         msg.isAnnouncement = (msg.is_announcement == 1 or msg.is_announcement == true)
@@ -2146,6 +2151,7 @@ ESX.RegisterServerCallback('Unique_Phone:server:Discord:SendMessage', function(s
     -- just needs the id back (see below) to attach reactions/edit/delete to
     -- it. Every other online member gets the full live payload.
     Discord_BroadcastToServerMembers(serverId, 'Unique_Phone:client:Discord:NewMessage', payload, source)
+    if Discord_ExtForwardFollows then Discord_ExtForwardFollows(channelId, serverId, authorName, message, createdAt) end -- v14: announcement follows
 
     cb({ id = newMessageId, created_at = createdAt, replyPreview = replyPreview })
 end)
@@ -2368,7 +2374,7 @@ ESX.RegisterServerCallback('Unique_Phone:server:Discord:ToggleReaction', functio
     if not DiscordAllowedEmoji[emoji] and not Discord_ExtCustomEmojiAllowed(serverId, emoji) then cb(false) return end
     if not Discord_ExtCanReact(xPlayer, source, serverId, messageId) then cb(false) return end -- v8
 
-    local existing = ExecuteSql(true, "SELECT id FROM phone_discord_reactions WHERE message_id = @mid AND identifier = @id AND emoji = @emoji", {
+    local existing = ExecuteSql(true, "SELECT id FROM phone_discord_reactions WHERE message_id = @mid AND identifier = @id AND emoji = @emoji AND is_super = 0", {
         ['@mid'] = messageId, ['@id'] = xPlayer.identifier, ['@emoji'] = emoji,
     })
 
@@ -2472,7 +2478,7 @@ ESX.RegisterServerCallback('Unique_Phone:server:Discord:GetPinnedMessages', func
         return
     end
 
-    local pinned = ExecuteSql(true, "SELECT id, author_name, message, created_at FROM phone_discord_messages WHERE channel_id = @cid AND is_pinned = 1 ORDER BY id DESC", {
+    local pinned = ExecuteSql(true, "SELECT id, author_name, message, created_at FROM phone_discord_messages WHERE channel_id = @cid AND is_pinned = 1 ORDER BY COALESCE(pinned_at, created_at) DESC, id DESC", {
         ['@cid'] = channelId,
     })
 
@@ -2643,8 +2649,11 @@ AddEventHandler('Unique_Phone:server:Discord:Typing', function(channelId)
     local serverId = channelId ~= nil and Discord_GetServerIdForChannel(channelId) or nil
     if xPlayer == nil or serverId == nil or not Discord_IsMember(xPlayer.identifier, serverId) then return end
 
+    -- v14: memberId lets the list show "typing" next to the right person
+    local mem = ExecuteSql(true, "SELECT id FROM phone_discord_members WHERE server_id = @s AND identifier = @i", { ['@s'] = serverId, ['@i'] = xPlayer.identifier })[1]
     Discord_BroadcastToServerMembers(serverId, 'Unique_Phone:client:Discord:Typing', {
         serverId = serverId, channelId = channelId, name = (Discord_GetDisplayName(source):match("^(%S+)") or ""),
+        memberId = mem and mem.id or nil,
     }, source)
 end)
 
@@ -3077,6 +3086,40 @@ DiscordStaffActions.Audit = function(src, data)
     return ExecuteSql(true, "SELECT staff_name, action, target, created_at FROM phone_discord_audit ORDER BY id DESC LIMIT 80", {})
 end
 
+-- ---- creators: who may create servers and channels (staff panel "Creators" tab)
+DiscordStaffActions.Creators = function(src, data)
+    local rows = ExecuteSql(true, [[SELECT c.identifier, c.granted_by, c.granted_at, u.firstname, u.lastname, p.discriminator
+                                    FROM phone_discord_creators c
+                                    LEFT JOIN users u ON u.identifier = c.identifier
+                                    LEFT JOIN phone_discord_profiles p ON p.identifier = c.identifier
+                                    ORDER BY c.granted_at DESC LIMIT 200]], {})
+    local out = {}
+    for _, r in ipairs(rows) do
+        out[#out + 1] = {
+            identifier = r.identifier, name = ((r.firstname or "") .. " " .. (r.lastname or "")):gsub("^%s+", ""):gsub("%s+$", ""),
+            grantedBy = r.granted_by, grantedAt = r.granted_at, discriminator = r.discriminator,
+        }
+    end
+    return { restricted = Discord_CreationRestricted(), creators = out }
+end
+
+DiscordStaffActions.SetCreator = function(src, data)
+    if type(data.identifier) ~= "string" or data.identifier == "" then return false end
+    if data.on == true then
+        MySQL.Sync.execute("REPLACE INTO phone_discord_creators (identifier, granted_by, granted_at) VALUES (@i, @b, @t)", {
+            ['@i'] = data.identifier, ['@b'] = Discord_GetDisplayName(src), ['@t'] = os.time(),
+        })
+    else
+        MySQL.Sync.execute("DELETE FROM phone_discord_creators WHERE identifier = @i", { ['@i'] = data.identifier })
+    end
+    return { ok = true }
+end
+
+DiscordStaffActions.SetCreationRestricted = function(src, data)
+    MySQL.Sync.execute("REPLACE INTO phone_discord_settings (k, v) VALUES ('creation_restricted', @v)", { ['@v'] = data.on == true and "1" or "0" })
+    return { ok = true, restricted = data.on == true }
+end
+
 ESX.RegisterServerCallback('Unique_Phone:server:Discord:Staff', function(source, cb, action, data)
     if not Discord_IsStaff(source) then cb(false) return end
 
@@ -3151,31 +3194,37 @@ end)
 
 local DiscordCodeCooldown = {} -- identifier -> last request timestamp (extra guard in front of the DB check)
 
-function Discord_SendMailCode(mailbox, code)
+-- v31: talks to the real Mail X API (mail-x/api.php). The API reads these fields:
+--   action  = "send_code" | "verify_code"   api_key = an active key   email = mailbox   code = the code
+-- The API creates the code itself and emails it, so the game does not make its own code any more.
+function Discord_MailApi(fields)
     local cfg = Config.DiscordMailAPI
-    if cfg == nil or cfg.url == nil then return false end
-
-    local fields = { [cfg.fieldMailbox or "to"] = mailbox, [cfg.fieldCode or "code"] = code }
-    if cfg.fieldSubject then fields[cfg.fieldSubject] = cfg.subjectText or "Verification Code" end
-    for k, v in pairs(cfg.extraFields or {}) do fields[k] = v end
-
-    local headers, body
-    if cfg.bodyFormat == "form" then
-        headers = { ["Content-Type"] = "application/x-www-form-urlencoded" }
-        local parts = {}
-        for k, v in pairs(fields) do table.insert(parts, k .. "=" .. tostring(v)) end
-        body = table.concat(parts, "&")
-    else
-        headers = { ["Content-Type"] = "application/json" }
-        body = json.encode(fields)
-    end
-
+    local key = (GetConvar and GetConvar('narges_mail_api_key', '')) or ''
+    fields.api_key = key
     local p = promise.new()
-    PerformHttpRequest(cfg.url, function(statusCode, response, respHeaders)
-        p:resolve(statusCode ~= nil and statusCode >= 200 and statusCode < 300)
-    end, cfg.method or "POST", body, headers)
-
+    PerformHttpRequest(cfg.url, function(statusCode, response)
+        local decoded = nil
+        if response and response ~= "" then
+            local okJson, d = pcall(json.decode, response)
+            if okJson and type(d) == "table" then decoded = d end
+        end
+        p:resolve({ http = statusCode, data = decoded, raw = tostring(response or "") })
+    end, "POST", json.encode(fields), { ["Content-Type"] = "application/json" })
     return Citizen.Await(p)
+end
+
+function Discord_SendMailCode(mailbox)
+    local cfg = Config.DiscordMailAPI
+    if cfg == nil or cfg.url == nil then return false, "NO_CONFIG" end
+    local r = Discord_MailApi({ action = "send_code", email = mailbox, purpose = "verification" })
+    local ok = r.http ~= nil and r.http >= 200 and r.http < 300 and r.data ~= nil and r.data.success == true
+    if ok then
+        print(("[Unique_Phone] MAIL OK: code sent to '%s'"):format(tostring(mailbox)))
+    else
+        local reason = (r.data and r.data.error) or r.raw:sub(1, 200)
+        print(("[Unique_Phone] MAIL FAILED for '%s' (HTTP %s). API said: %s"):format(tostring(mailbox), tostring(r.http), tostring(reason)))
+    end
+    return ok, (r.data and r.data.error) or nil
 end
 
 function Discord_ValidMailbox(mailbox)
@@ -3224,9 +3273,8 @@ ESX.RegisterServerCallback('Unique_Phone:server:Discord:RequestLoginCode', funct
 
     DiscordCodeCooldown[xPlayer.identifier] = os.time()
 
-    -- seed per request: an unseeded Lua RNG repeats the same codes after every restart
-    math.randomseed(os.time() + math.floor((GetGameTimer() or 0) % 100000) + xPlayer.source)
-    local code = tostring(math.random(100000, 999999))
+    -- v31: the Mail X API makes and checks the code; this row only keeps the bookkeeping (expiry, attempts)
+    local code = "api"
     local now = os.time()
 
     MySQL.Sync.execute([[
@@ -3234,9 +3282,10 @@ ESX.RegisterServerCallback('Unique_Phone:server:Discord:RequestLoginCode', funct
         VALUES (@id, @mailbox, @code, 0, @now, @exp)
     ]], { ['@id'] = xPlayer.identifier, ['@mailbox'] = mailbox, ['@code'] = code, ['@now'] = now, ['@exp'] = now + 600 })
 
-    local sent = Discord_SendMailCode(mailbox, code)
+    local sent, apiErr = Discord_SendMailCode(mailbox)
     if not sent then
-        cb({ error = "MAIL_SEND_FAILED" })
+        MySQL.Async.execute("DELETE FROM phone_discord_login_codes WHERE identifier = @id", { ['@id'] = xPlayer.identifier })
+        cb({ error = "MAIL_SEND_FAILED", reason = apiErr })
         return
     end
 
@@ -3256,7 +3305,8 @@ ESX.RegisterServerCallback('Unique_Phone:server:Discord:VerifyLoginCode', functi
     end
     if row[1].attempts >= 5 then cb({ error = "TOO_MANY_ATTEMPTS" }) return end
 
-    if code ~= row[1].code then
+    local r = Discord_MailApi({ action = "verify_code", email = row[1].mailbox, code = code })
+    if not (r.http ~= nil and r.http >= 200 and r.http < 300 and r.data ~= nil and r.data.success == true) then
         MySQL.Sync.execute("UPDATE phone_discord_login_codes SET attempts = attempts + 1 WHERE identifier = @id", { ['@id'] = xPlayer.identifier })
         cb({ error = "WRONG_CODE", attemptsLeft = 5 - (row[1].attempts + 1) })
         return

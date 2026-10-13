@@ -40,10 +40,17 @@ if orig then
         return orig(source, function(rows)
             local out = {}
             local from = f.from and f.from:lower()
+            -- v37: from:<ID> also finds the messages of the member with that chosen ID
+            local fromAlt = nil
+            if from then
+                local hr = ExecuteSql(true, "SELECT m.nickname AS n FROM phone_discord_members m JOIN phone_discord_profiles p ON p.identifier = m.identifier WHERE m.server_id = @s AND p.handle = @h LIMIT 1", { ['@s'] = serverId, ['@h'] = from })[1]
+                if hr then fromAlt = tostring(hr.n or ""):lower() end
+            end
             local inCh = f["in"] and f["in"]:lower():gsub("^#", "")
             for _, r in ipairs(rows or {}) do
                 local ok = true
-                if from and not tostring(r.author_name or ""):lower():find(from, 1, true) then ok = false end
+                local an = tostring(r.author_name or ""):lower()
+                if from and not (an:find(from, 1, true) or (fromAlt and an == fromAlt)) then ok = false end
                 if inCh and not tostring(r.channel_name or ""):lower():find(inCh, 1, true) then ok = false end
                 if before and tonumber(r.created_at) and tonumber(r.created_at) >= before then ok = false end
                 if ok then out[#out + 1] = r end

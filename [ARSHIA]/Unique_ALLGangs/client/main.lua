@@ -60,7 +60,6 @@ AddEventHandler('For5M:OpenBossPanel', function(data , GangName )
 end) 
 
 RegisterNUICallback('CLOSEADMINPANEL', function(data, cb)
-	print('[Unique_ALLGangs] CLOSEADMINPANEL received - releasing NUI focus')
 	InAdminPanel = false 
 	SetNuiFocus(false, false)
 	-- also make sure the boss-panel iframe (if it was ever opened) is

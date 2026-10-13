@@ -1913,7 +1913,7 @@ end)
 -- which a callback registered only via ESX.RegisterServerCallback can never
 -- answer. Same data: Jobs[job].grades[grade].weapons -> {{model=..,status=bool}}.
 AddEventHandler('esx_society:getWeapons', function(src, rank, job, cb)
-	if type(cb) ~= 'function' then return end
+	if cb == nil then return end -- cross-resource callbacks can arrive as a callable table, not a plain function
 	local list = {}
 	local grades = Jobs[job] and Jobs[job].grades
 	local raw = grades and grades[tostring(rank)] and grades[tostring(rank)].weapons
@@ -2610,7 +2610,7 @@ end)
 -- esx_society:getWeapons). Unique_inventory's Job Storage asks it which items this
 -- rank may take: Jobs[job].grades[grade].items -> {{name=..,status=bool}}.
 AddEventHandler('esx_society:getItems', function(src, rank, job, cb)
-	if type(cb) ~= 'function' then return end
+	if cb == nil then return end -- cross-resource callbacks can arrive as a callable table, not a plain function
 	local list = {}
 	local grades = Jobs[job] and Jobs[job].grades
 	local raw = grades and grades[tostring(rank)] and grades[tostring(rank)].items

@@ -250,6 +250,7 @@ local function syncJobs()
             desired[u.identifier] = { nick = nickFrom(u), admin = (tonumber(u.job_grade) or 0) >= (topGrade[jobName] or 9999) }
         end
         syncMembers(sid, desired)
+        if Discord_JobRankSync then Discord_JobRankSync(sid, jobName, byJob[jobName] or {}) end -- v30: one role per rank, rank-gated channels
         if Discord_ExtEnsureExtraChannels then Discord_ExtEnsureExtraChannels(sid, jobName) end -- v9: e.g. judge -> #court-docket
     end
 end
@@ -932,10 +933,10 @@ ESX.RegisterServerCallback('Unique_Phone:server:DiscordExt:GetMemberMeta', funct
         if bestBadge then badges[#badges + 1] = bestBadge end
         local tr = topRole[m.identifier]
         local chips = {}
-        if tr then for _, r in ipairs(tr.roles) do chips[#chips + 1] = { name = r.name, color = r.color } end end
+        if tr then for _, r in ipairs(tr.roles) do chips[#chips + 1] = { name = r.name, color = r.color, icon = r.icon } end end -- v22: role icon
         local pm = profileMap[m.identifier]
         local act = ESX.GetPlayerFromIdentifier(m.identifier) and Discord_GetActivityCard(m.identifier) or nil -- v13 activity card
-        meta[tostring(m.id)] = { act = act, avatar = pm and pm.avatar or nil, uid = pm and pm.uid or nil, level = lvl, badges = badges, color = tr and tr.color or nil, hoist = tr and tr.hoist or nil, hoistPos = tr and tr.hoistPos or nil,
+        meta[tostring(m.id)] = { act = act, avatar = pm and pm.avatar or nil, banner = pm and pm.banner or nil, effect = pm and pm.effect or nil, handle = pm and pm.handle or nil, uid = pm and pm.uid or nil, level = lvl, badges = badges, color = tr and tr.color or nil, hoist = tr and tr.hoist or nil, hoistPos = tr and tr.hoistPos or nil,
                                  hoistColor = tr and tr.hoistColor or nil, roles = chips, joinedAt = m.joined_at }
     end
 
