@@ -86,6 +86,12 @@ function BroadcastTerritoryState()
     TriggerClientEvent('Territory:SyncState', -1, out)
 end
 
+-- Exposed for server/zonewar.lua (the helpers below are file-local).
+function ZW_IsZoneOnWar(zoneKey)
+    local s = Territories[zoneKey]
+    return s and s.inWar or false
+end
+
 function CountGangZones(gang)
     local count = 0
     for _, state in pairs(Territories) do
@@ -201,6 +207,9 @@ local function EffectiveCaptureSeconds(zoneKey, state, challengerGang)
         base = base * (Config.Territory.WarNight.captureMultiplier or 1)
     end
 
+    local speed = GetGangPerk and tonumber(GetGangPerk(challengerGang, 'captureSpeed', 0)) or 0
+    if speed > 0 then base = base * (1 - math.min(speed, 0.5)) end
+
     return base
 end
 
@@ -310,6 +319,14 @@ AddEventHandler('Territory:Ping', function(zoneKey, x, y, z)
     local xPlayer = ESX.GetPlayerFromId(src)
     if not xPlayer or not xPlayer.gang or xPlayer.gang.name == 'nogang' then return end
 
+    -- Players inside another routing bucket (Warzone/Gungame matches run
+    -- on the same island) are in a different world: they must never count
+    -- as "present" in a real territory zone.
+    if GetPlayerRoutingBucket then
+        local okB, bucket = pcall(GetPlayerRoutingBucket, src)
+        if okB and bucket and bucket ~= 0 then return end
+    end
+
     local dx, dy, dz = x - cfg.coord.x, y - cfg.coord.y, z - cfg.coord.z
     if math.sqrt(dx * dx + dy * dy + dz * dz) > (cfg.radius + 10.0) then return end -- reject spoofed/out-of-range pings
 
@@ -325,7 +342,96 @@ end)
 -- state to everyone, notifies both gangs, and sends a Discord log
 -- through the resource's existing per-category webhook system.
 -------------------------------------------------------------------
-function CaptureZone(zoneKey, newGang, actorSource)
+-------------------------------------------------------------------
+-- CAPTURE REWARD (Config.Territory.CaptureReward): items into the
+-- gang's armory + a chat/notification to every online member.
+-------------------------------------------------------------------
+local RewardItemLabels = {}   -- item name -> label (from the `items` table, for the message)
+local RewardCooldownAt = {}   -- RewardCooldownAt[zoneKey] = os.time() of the last payout
+
+local function AllRewardItemNames()
+    local names, seen = {}, {}
+    local rw = Config.Territory.CaptureReward
+    if not rw then return names end
+    local function add(list) for _, it in ipairs(list or {}) do if it.name and not seen[it.name] then seen[it.name] = true names[#names + 1] = it.name end end end
+    add(rw.default); add(rw.bossZone)
+    for _, list in pairs(rw.byTier or {}) do add(list) end
+    return names
+end
+
+-- Warn at start if a configured reward item doesn't exist in the `items` table.
+MySQL.ready(function()
+    local rw = Config.Territory.CaptureReward
+    if not rw or not rw.Enabled then return end
+    local names = AllRewardItemNames()
+    if #names == 0 then return end
+    local quoted = {}
+    for _, n in ipairs(names) do
+        if n:match('^[%w_%-]+$') then quoted[#quoted + 1] = "'" .. n .. "'" end -- config-only names; anything odd is skipped
+    end
+    if #quoted == 0 then return end
+    MySQL.Async.fetchAll('SELECT name, label FROM items WHERE name IN (' .. table.concat(quoted, ',') .. ')', {}, function(rows)
+        local found = {}
+        for _, r in ipairs(rows or {}) do found[r.name] = true RewardItemLabels[r.name] = r.label end
+        for _, n in ipairs(names) do
+            if not found[n] then
+                print(('[Unique_ALLGangs] WARNING: Territory capture reward item "%s" does not exist in the items table - gangs will get nothing for it. Fix Config.Territory.CaptureReward.'):format(n))
+            end
+        end
+    end)
+end)
+
+local function AddItemToGangArmory(gang, itemName, count)
+    local rw = Config.Territory.CaptureReward
+    local res = rw and rw.inventoryResource or 'Unique_inventory'
+    local ok, success = pcall(function() return exports[res]:AddGangArmoryItem(gang, itemName, count) end)
+    if ok and success then return true end
+    -- fallback: talk to esx_addoninventory directly (shared store "gang_<name>")
+    local inv
+    TriggerEvent('esx_addoninventory:getSharedInventory', 'gang_' .. string.lower(gang), function(i) inv = i end)
+    if inv then inv.addItem(string.lower(itemName), count) return true end
+    print(('[Unique_ALLGangs] could not add %sx %s to the armory of "%s" (is %s running?)'):format(count, itemName, gang, res))
+    return false
+end
+
+local function TellGang(gang, text, kind)
+    for _, playerId in ipairs(ESX.GetPlayers()) do
+        local x = ESX.GetPlayerFromId(playerId)
+        if x and x.gang and x.gang.name == gang then
+            TriggerClientEvent(Config.showNotification, playerId, text, kind or 'success')
+            TriggerClientEvent('chat:addMessage', playerId, { color = { 255, 200, 0 }, multiline = true, args = { 'TERRITORY', text } })
+        end
+    end
+end
+
+local function GiveCaptureReward(zoneKey, newGang, cfg)
+    local rw = Config.Territory.CaptureReward
+    if not rw or not rw.Enabled then return end
+    local items = (cfg.bossZone and rw.bossZone) or (rw.byTier and rw.byTier[cfg.tier]) or rw.default
+    if not items or #items == 0 then return end
+
+    local now = os.time()
+    local cd = (tonumber(rw.cooldownMinutes) or 60) * 60
+    if RewardCooldownAt[zoneKey] and now - RewardCooldownAt[zoneKey] < cd then
+        TellGang(newGang, ('Gang-e shoma "%s" ro tasarrof kard - in zone nazdik be pish jayeze dade shode, in bar jayeze-i nadarad.'):format(cfg.label), 'info')
+        return
+    end
+
+    local parts = {}
+    for _, it in ipairs(items) do
+        if AddItemToGangArmory(newGang, it.name, it.count) then
+            parts[#parts + 1] = ('%sx %s'):format(it.count, RewardItemLabels[it.name] or it.name)
+        end
+    end
+    if #parts > 0 then
+        -- only start the per-zone cooldown when something was really paid out
+        -- (an armory/inventory outage must not burn the zone's reward for an hour)
+        RewardCooldownAt[zoneKey] = now
+        TellGang(newGang, ('Gang-e shoma "%s" ro tasarrof kard! Jayeze be armory-e gang ezafe shod: %s - az armory bardarid.'):format(cfg.label, table.concat(parts, ', ')), 'success')
+    end
+end
+
+function CaptureZone(zoneKey, newGang, actorSource, skipXP)
     local state = Territories[zoneKey]
     local cfg = ZoneConfigByKey[zoneKey]
     if not state or not cfg then return end
@@ -374,6 +480,12 @@ function CaptureZone(zoneKey, newGang, actorSource)
         end
         TriggerClientEvent(Config.showAdvancedNotification, -1, '~p~Ghalamroye Padeshah', '~p~Fath shod!', 'Gang "' .. newGang .. '" Ghalamroye Padeshah ro tasarrof kard va laghabe "' .. (bz.titleReward or '') .. '" ro be dast avard!', 'CHAR_MP_DETONATEPHONE', 9)
     end
+
+    if not skipXP and GrantGangXP and Config.GangXP and Config.GangXP.Sources then
+        GrantGangXP(newGang, cfg.bossZone and Config.GangXP.Sources.bossZone or Config.GangXP.Sources.capture, cfg.bossZone and 'Boss Zone' or 'Territory Capture')
+    end
+
+    GiveCaptureReward(zoneKey, newGang, cfg)
 
     BroadcastTerritoryState()
 
@@ -435,6 +547,47 @@ end
 -- systems 1/3/4/6 folded into the required time via
 -- EffectiveCaptureSeconds. This is the only place ownership changes.
 -------------------------------------------------------------------
+-------------------------------------------------------------------
+-- Live capture timer: every tick the server tells all clients which
+-- zones are being captured, by whom, and how many seconds are left.
+-- Clients count down locally between ticks (client/territory.lua).
+-- An empty table is sent once when the last capture stops so the
+-- timers disappear.
+-------------------------------------------------------------------
+local LastProgressHad = false
+local function BroadcastCaptureProgress()
+    local out, any = {}, false
+    local now = os.time()
+    local window = ((Config.Territory.TickIntervalMs or 5000) / 1000) + 1
+    for zoneKey, prog in pairs(ZoneProgress) do
+        local state = Territories[zoneKey]
+        -- Progress is kept when a gang walks away (the zone isn't reset), but a timer
+        -- must only count down while someone is really there capturing it.
+        if state and prog.gang and state.captureActiveAt and now - state.captureActiveAt <= window then
+            local needed = EffectiveCaptureSeconds(zoneKey, state, prog.gang)
+            out[zoneKey] = { gang = prog.gang, remaining = math.max(0, math.floor(needed - prog.seconds)) }
+            any = true
+        end
+    end
+    if any or LastProgressHad then
+        TriggerClientEvent('Territory:CaptureProgress', -1, out)
+    end
+    LastProgressHad = any
+end
+
+-- Owner beat back a real capture attempt: the challenger had been
+-- holding the zone for a while and then got cleared (owner showed up,
+-- or it turned into a contest). Throttled per zone + daily-capped.
+local function RewardDefense(zoneKey, state, now)
+    local xp = Config.GangXP
+    if not (xp and xp.Enabled and GrantGangXP and state.owner) then return end
+    local prog = ZoneProgress[zoneKey]
+    if not prog or prog.seconds < (xp.DefendMinProgressSeconds or 60) then return end
+    if now - (state.lastDefendXP or 0) < (xp.DefendThrottleSeconds or 300) then return end
+    state.lastDefendXP = now
+    GrantGangXP(state.owner, xp.Sources.defend, 'Territory Defense')
+end
+
 local function ProcessTerritoryTick()
     local now = os.time()
     local staleAfter = Config.Territory.PingStaleSeconds or 12
@@ -457,7 +610,7 @@ local function ProcessTerritoryTick()
     for zoneKey, state in pairs(Territories) do
         local cfg = ZoneConfigByKey[zoneKey]
 
-        if cfg and cfg.bossZone and not IsBossZoneOpen() then
+        if (cfg and cfg.bossZone and not IsBossZoneOpen()) or state.inWar or (state.protectedUntil and state.protectedUntil > now) then
             -- Closed for the week: never eligible for progress, and any
             -- progress from right before it closed doesn't carry over.
             state.contested = false
@@ -493,6 +646,7 @@ local function ProcessTerritoryTick()
                 -- nobody there - leave progress as-is, nothing to evaluate this tick
             elseif #sides >= 2 then
                 state.contested = true
+                RewardDefense(zoneKey, state, now)
                 ZoneProgress[zoneKey] = nil
             else
                 state.contested = false
@@ -504,6 +658,7 @@ local function ProcessTerritoryTick()
                 end
 
                 if ownerOnThisSide then
+                    RewardDefense(zoneKey, state, now)
                     ZoneProgress[zoneKey] = nil -- owner (or an ally) reinforcing, nothing to contest
                 else
                     -- Credit progress to whichever single gang on this side
@@ -515,7 +670,7 @@ local function ProcessTerritoryTick()
                         if c > bestCount then bestCount, creditedGang = c, g end
                     end
 
-                    if CountGangZones(creditedGang) >= (Config.Territory.MaxZonesPerGang or 999) then
+                    if CountGangZones(creditedGang) >= (GetGangPerk and GetGangPerk(creditedGang, 'maxZones', Config.Territory.MaxZonesPerGang or 999) or Config.Territory.MaxZonesPerGang or 999) then
                         -- that gang is at its territory cap - no progress accrues until they drop one
                     else
                         local prog = ZoneProgress[zoneKey]
@@ -524,6 +679,7 @@ local function ProcessTerritoryTick()
                             ZoneProgress[zoneKey] = prog
                         end
                         prog.seconds = prog.seconds + tickSeconds
+                        state.captureActiveAt = now -- someone is capturing RIGHT NOW (the live timer only shows these)
 
                         local needed = EffectiveCaptureSeconds(zoneKey, state, creditedGang)
                         if prog.seconds >= needed then
@@ -543,6 +699,7 @@ CreateThread(function()
         Wait(Config.Territory and Config.Territory.TickIntervalMs or 5000)
         if Config.Territory and Config.Territory.Enabled then
             ProcessTerritoryTick()
+            BroadcastCaptureProgress()
         end
     end
 end)
@@ -558,6 +715,7 @@ end)
 local function DistributeTerritoryIncome()
     local warNight = IsWarNight()
     local totals = {}
+    local xpTotals = {}
 
     for zoneKey, state in pairs(Territories) do
         local cfg = ZoneConfigByKey[zoneKey]
@@ -580,9 +738,17 @@ local function DistributeTerritoryIncome()
                 amount = amount * (Config.Territory.WarNight.incomeMultiplier or 1)
             end
 
+            if state.warBonusUntil and state.warBonusUntil > os.time() then
+                amount = amount * (1 + ((Config.ZoneWar and Config.ZoneWar.WinnerIncomeBonus) or 0))
+            end
+
             amount = math.floor(amount)
             if amount > 0 then
                 totals[state.owner] = (totals[state.owner] or 0) + amount
+                local xpTier = Config.GangXP and Config.GangXP.Sources and Config.GangXP.Sources.territoryIncome
+                if xpTier and xpTier[cfg.tier] then
+                    xpTotals[state.owner] = (xpTotals[state.owner] or 0) + xpTier[cfg.tier]
+                end
             end
         end
     end
@@ -596,6 +762,11 @@ local function DistributeTerritoryIncome()
                 end
             end
         end
+    end
+
+    -- Gang XP for holding territory (daily-capped inside GrantGangXP).
+    if GrantGangXP then
+        for gang, xp in pairs(xpTotals) do GrantGangXP(gang, xp, 'Territory Income') end
     end
 end
 
@@ -768,6 +939,8 @@ ESX.RegisterServerCallback('Territory:PurchaseUpgrade', function(source, cb, zon
 
     local cost = upgradeCfg.cost[currentLevel + 1]
     if not cost then return cb(false, 'Hazine-ye in sath moshakhas nist') end
+    local discount = GetGangPerk and tonumber(GetGangPerk(xPlayer.gang.name, 'upgradeDiscount', 0)) or 0
+    if discount > 0 then cost = math.floor(cost * (1 - math.min(discount, 0.9))) end
 
     if not RemoveGangMoney(xPlayer.gang.name, cost) then
         return cb(false, 'Pool-e tamiz-e kafi dar khazane-ye gang nist (niaz: $' .. cost .. ')')
@@ -885,6 +1058,7 @@ AddEventHandler('Territory:Sabotage', function(zoneKey)
     state.sabotagedUntil = now + (Config.Territory.Sabotage.DurationSeconds or 7200)
 
     TriggerClientEvent(Config.showNotification, src, 'Kharabkari ba movafaghiat anjam shod - daramad-e in mantaghe baraye moddati kahesh miyabad', 'success')
+    if GrantGangXP and Config.GangXP and Config.GangXP.Sources then GrantGangXP(xPlayer.gang.name, Config.GangXP.Sources.sabotage, 'Sabotage') end
 
     local detected = math.random(1, 100) <= (Config.Territory.Sabotage.DetectionChance or 0)
     for _, playerId in ipairs(ESX.GetPlayers()) do
@@ -1058,3 +1232,18 @@ if Config.Territory.BossZone and Config.Territory.BossZone.Enabled then
     end)
 end
 
+-------------------------------------------------------------------
+-- /zonepos (admin) - prints the caller's exact position as a ready to
+-- paste `coord = vector3(...)` line, for placing zones on the island.
+-------------------------------------------------------------------
+RegisterCommand('zonepos', function(source)
+    if source == 0 then return end
+    if not IsPlayerCanOpenPanel(source) then return end
+    TriggerClientEvent('Territory:PrintPos', source)
+end, false)
+
+-------------------------------------------------------------------
+-- Wrappers so server/zonewar.lua can reuse the file-local helpers.
+-------------------------------------------------------------------
+function ZW_AreAllied(a, b) return AreGangsAllied(a, b) end
+function ZW_IsWarNight() return IsWarNight() end

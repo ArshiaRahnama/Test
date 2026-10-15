@@ -28,6 +28,17 @@ CreateThread(function()
     end
 end)
 
+-- Gang War data for the boss menu badge. When Gang War is switched off
+-- (Config.ZoneWar.Enabled = false) its server callback doesn't exist, so
+-- skip the call instead of waiting on a reply that never comes.
+local function WithZoneWar(cb)
+    if Config.ZoneWar and Config.ZoneWar.Enabled then
+        ESX.TriggerServerCallback('ZoneWar:GetMenu', cb)
+    else
+        cb(nil)
+    end
+end
+
 function OpenBossActionsMenu()
     -- FIX (attempt to index a nil value 'gang'): ESX.PlayerData.gang
     -- isn't populated by this server's es_extended_bridge (only
@@ -68,6 +79,14 @@ function OpenBossActionsMenu()
             end
 
             ESX.TriggerServerCallback('FMGangsBoss:getmoney', function(money)
+              -- Gang War: show a badge when another gang is waiting for an answer
+              WithZoneWar(function(zw)
+                local zwLabel = 'Gang War'
+                if zw and zw.incoming then
+                    zwLabel = '<span style="color:orange;">Gang War (darkhast-e jang!)</span>'
+                elseif zw and zw.war then
+                    zwLabel = 'Gang War (dar jaryan)'
+                end
                 local elements = {
                     {label = ('Money: <span style="color:green;">$%s</span>'):format(ESX.Math.GroupDigits(money or 0)), value = 'money'},
                     {label = 'Manage Gang Members', value = 'employees'},
@@ -75,6 +94,9 @@ function OpenBossActionsMenu()
                     {label = 'Gang Settings', value = 'settings'},
                     {label = 'Territory Control', value = 'territory'},
                 }
+                if Config.ZoneWar and Config.ZoneWar.Enabled then
+                    elements[#elements + 1] = {label = zwLabel, value = 'zonewar'}
+                end
 
                 ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'boss_actions_' .. gang, {
                     title    = 'BOSS MENU',
@@ -100,10 +122,15 @@ function OpenBossActionsMenu()
                         -- client script has finished loading).
                         menu.close()
                         OpenTerritoryBossMenu(gang)
+                    elseif data.current.value == 'zonewar' then
+                        -- Defined in client/zonewar.lua (same load-order note as above)
+                        menu.close()
+                        OpenZoneWarBossMenu(gang)
                     end
                 end, function(data, menu)
                     menu.close()
                 end)
+              end)
             end)
         end)
     end)

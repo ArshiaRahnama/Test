@@ -18,14 +18,14 @@ end)
 RegisterCommand(Config.ADDXPCMD, function(source, args)
     if IsPlayerCanOpenPanel(source) then
         if args[1] and tonumber(args[2]) then 
-            TriggerEvent('For5M:AddGangXP', tonumber(args[2]),args[1] ) 
+            TriggerEvent('Unique_ALLGangs:AdminXP', tonumber(args[2]), args[1]) 
         end 
     end
 end)
 RegisterCommand(Config.REMOVEXPCMD, function(source, args)
     if IsPlayerCanOpenPanel(source) then
         if args[1] and tonumber(args[2]) and Gangs[args[1]] then 
-            TriggerEvent('For5M:AddGangXP', tonumber(args[2]) * -1 ,args[1] ) 
+            TriggerEvent('Unique_ALLGangs:AdminXP', tonumber(args[2]) * -1, args[1]) 
         end 
     end
 end)

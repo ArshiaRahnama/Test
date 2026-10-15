@@ -41,6 +41,7 @@ server_scripts {
     'server/Gangs.lua',     -- core gang data, armory -> IRV-inventory stashs table
     'server/boss.lua',      -- boss panel actions (was FMGangBoss/server.lua)
     'server/territory.lua', -- Territory Control add-on (see Config.Territory) - loads after Gangs.lua/boss.lua since it calls their global functions (Gangs, AddGangBlackMoney, SendLog, GetCategoryWebhook)
+    'server/zonewar.lua',   -- Gang War (contained, contract-based war over one territory zone) - loads after territory.lua (uses Territories, CaptureZone, ZW_* wrappers)
 }
 
 client_scripts {
@@ -54,6 +55,7 @@ client_scripts {
     'client/gangwar.lua',       -- shootout detection -> live FBI/CIA dispatch (see Config.GangWar, README #45)
     'client/territory.lua',     -- Territory Control add-on (see Config.Territory) - loads after boss.lua so the global `PlayerData` it reads is already set up
     'client/territory_zombies.lua', -- ambient zombies inside territory zones (see Config.Territory.ZombieTiers) - loads after territory.lua since it listens for the same Territory:BossZoneState event
+    'client/zonewar.lua',       -- Gang War menu (/zonewar), HUD and war-zone blips
 }
 
 ui_page 'web/ui.html'

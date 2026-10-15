@@ -54,3 +54,22 @@ CREATE TABLE IF NOT EXISTS `gang_territory_titles` (
   `earned_at` int(255) DEFAULT 0,
   PRIMARY KEY (`gang`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_persian_ci ROW_FORMAT=DYNAMIC;
+
+-- Gang War history (also created automatically by server/zonewar.lua on start)
+CREATE TABLE IF NOT EXISTS `gang_wars` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `zone_key` varchar(50) NOT NULL,
+  `gang_a` varchar(254) NOT NULL,
+  `gang_b` varchar(254) NOT NULL,
+  `score_a` int(11) DEFAULT 0,
+  `score_b` int(11) DEFAULT 0,
+  `status` varchar(20) DEFAULT 'pending',
+  `fee_a` int(11) DEFAULT 0,
+  `fee_b` int(11) DEFAULT 0,
+  `created_at` int(255) DEFAULT 0,
+  `starts_at` int(255) DEFAULT 0,
+  `ends_at` int(255) DEFAULT 0,
+  `winner` varchar(254) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_persian_ci;

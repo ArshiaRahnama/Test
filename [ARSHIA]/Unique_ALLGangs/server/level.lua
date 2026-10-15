@@ -2,132 +2,102 @@ ESX= nil
 TriggerEvent(Config.ESX, function(obj) ESX = obj end)
 
 Config.GangLeveL[0] = 0
-local GangInfo = {}
-local ganglevels = {}
 
+-------------------------------------------------------------------
+-- ONE level-up formula for the whole resource.
+--   Config.GangLeveL[n] = XP needed to go from level n-1 to level n.
+--   `xp` is the progress inside the CURRENT level, so on every level
+--   gained the threshold of the level just reached is subtracted
+--   (this is also what client/level.lua's bar animation assumes).
+-- The old code subtracted the OLD level's threshold here and the NEW
+-- one in server/Gangs.lua:UpdateXPAndLeveL, so leftover XP was wrong.
+-- Handles max level (no out-of-range lookup), negative amounts (admin
+-- /removexp - clamped at 0, levels are never taken away) and pays
+-- Config.LevelReward once per level gained.
+-------------------------------------------------------------------
 function Database(source, XP, gang)
-    if Gangs[gang] then
-        
-        ganglevels[gang] = { 
-            Level = tonumber(Gangs[gang].level),
-            XP    = tonumber(Gangs[gang].xp) ,
-            
-        } 
-        -------------------------------------------------------------
-        -- FIX (SCRIPT ERROR: attempt to compare nil with number, at
-        -- the "if ganglevels[gang].XP + XP >= Config.GangLeveL[...]"
-        -- line below): Config.GangLeveL only has entries for levels
-        -- 1-10. Once a gang is already AT level 10 (max) and gains
-        -- more XP, the old code looked up
-        -- Config.GangLeveL[10 + 1] = Config.GangLeveL[11], which
-        -- doesn't exist (nil) - comparing a number against that nil
-        -- crashed this entire function (and the XP grant along with
-        -- it) every time a maxed-out gang earned any more XP.
-        -- Now: if already at max level, XP is just added without
-        -- attempting to level up further - no more out-of-bounds
-        -- lookup, and a maxed gang no longer errors out just for
-        -- existing.
-        -------------------------------------------------------------
-        local atMaxLevel = ganglevels[gang].Level >= #Config.GangLeveL
-        if not atMaxLevel and ganglevels[gang].XP + XP >= Config.GangLeveL[ganglevels[gang].Level + 1] then
-            ganglevels[gang].XP =  ganglevels[gang].XP + XP
-            while ganglevels[gang].Level < #Config.GangLeveL do 
-                if ganglevels[gang].XP  >= Config.GangLeveL[ganglevels[gang].Level + 1]  then 
-                    ganglevels[gang].XP = ganglevels[gang].XP  - Config.GangLeveL[ganglevels[gang].Level]
-                    ganglevels[gang].Level = ganglevels[gang].Level + 1  
-                    if ganglevels[gang].Level  > #Config.GangLeveL  then 
-                        ganglevels[gang].Level = #Config.GangLeveL 
-                        ganglevels[gang].XP    = Config.GangLeveL[#Config.GangLeveL]
-                    end 
-                    -------------------------------------------------
-                    -- FEATURE (Config.LevelReward existed but was
-                    -- never actually paid out anywhere - confirmed by
-                    -- searching the whole codebase before adding
-                    -- this): pays the configured reward straight into
-                    -- the gang's own bank money the moment it
-                    -- actually reaches this new level. Runs once per
-                    -- level gained, so a big XP grant that jumps
-                    -- several levels at once pays out for each one.
-                    -------------------------------------------------
-                    local reward = Config.LevelReward[ganglevels[gang].Level]
-                    if reward and reward > 0 then
-                        UpdateOthers(gang, 'money', reward, 'add')
-                        -- Direct, clear notification instead of reusing
-                        -- UpdateXP (which is worded specifically around
-                        -- XP amounts - passing 0 there would have told
-                        -- players they "received 0 XP", which is
-                        -- confusing/wrong for what's actually a money
-                        -- reward).
-                        local xPlayers = ESX.GetPlayers()
-                        for k, v in pairs(xPlayers) do
-                            local xPlayer = ESX.GetPlayerFromId(v)
-                            if xPlayer and xPlayer.gang and xPlayer.gang.name == gang then
-                                TriggerClientEvent(Config.showNotification, xPlayer.source, ('~g~~h~Gang reached Level %s! ~y~~h~$%s~g~~h~ added to the gang bank.'):format(ganglevels[gang].Level, reward))
-                            end
-                        end
-                        -- NOT using For5M:SendLog here on purpose: its
-                        -- handler assumes a real player source
-                        -- (ESX.GetPlayerFromId(source).gang.name) - a
-                        -- level-up isn't triggered by any one player,
-                        -- so passing a fake source would crash inside
-                        -- that handler. Sending directly to whichever
-                        -- online gang member's webhook is configured
-                        -- instead, same request shape SendLog uses.
-                        if Gangs[gang].webhook and Gangs[gang].webhook ~= '' then
-                            PerformHttpRequest(Gangs[gang].webhook, function() end, 'POST', json.encode({
-                                username = 'Heta RP',
-                                embeds = {{
-                                    ['color'] = '65352',
-                                    ['title'] = 'Gang Level Up',
-                                    ['description'] = ('**Gang:** %s\n**New Level:** %s\n**Reward:** $%s'):format(gang, ganglevels[gang].Level, reward),
-                                    ['footer'] = { ['text'] = gang .. ' - Logs', ['icon_url'] = Gangs[gang].logo },
-                                }}
-                            }), { ['Content-Type'] = 'application/json' })
-                        end
-                    end
-                else 
-                    break 
-                end 
-                Wait(100)
-            end 
-        else 
-            ganglevels[gang].XP =  ganglevels[gang].XP + XP
+    local g = Gangs and Gangs[gang]
+    if not g then return end
+    XP = tonumber(XP) or 0
+
+    local maxLevel = #Config.GangLeveL
+    local level = tonumber(g.level) or 0
+    local xp    = (tonumber(g.xp) or 0) + XP
+    if xp < 0 then xp = 0 end
+
+    local gained = {}
+    while level < maxLevel and xp >= Config.GangLeveL[level + 1] do
+        xp = xp - Config.GangLeveL[level + 1]
+        level = level + 1
+        gained[#gained + 1] = level
+    end
+    if level >= maxLevel then
+        xp = math.min(xp, Config.GangLeveL[maxLevel] or xp) -- maxed gangs don't pile up XP forever
+    end
+
+    g.level = level
+    g.xp = xp
+    MySQL.Async.execute('UPDATE gangs SET xp = @XP, level = @Level WHERE name = @name', {
+        ['@XP'] = xp, ['@Level'] = level, ['@name'] = gang,
+    })
+
+    for _, lvl in ipairs(gained) do
+        local reward = Config.LevelReward and Config.LevelReward[lvl]
+        if reward and reward > 0 then
+            UpdateOthers(gang, 'money', reward, 'add')
         end
-        Gangs[gang].level = ganglevels[gang].Level
-        Gangs[gang].xp = ganglevels[gang].XP
-        MySQL.Async.execute('UPDATE gangs SET xp = @XP, level = @Level WHERE name = @name', 
-        {
-            ['@XP']    = ganglevels[gang].XP,
-            ['@Level']    = ganglevels[gang].Level,
-            ['@name'] = gang
-        })
-        ganglevels[gang] = nil
+        for _, playerId in ipairs(ESX.GetPlayers()) do
+            local xPlayer = ESX.GetPlayerFromId(playerId)
+            if xPlayer and xPlayer.gang and xPlayer.gang.name == gang then
+                TriggerClientEvent(Config.showNotification, xPlayer.source,
+                    ('~g~~h~Gang reached Level %s!%s'):format(lvl, (reward and reward > 0) and (' ~y~~h~$' .. reward .. '~g~~h~ added to the gang bank.') or ''))
+            end
+        end
+        if g.webhook and g.webhook ~= '' then
+            local url = GetCategoryWebhook and GetCategoryWebhook(gang, 'Boss Action') or g.webhook
+            if url and url ~= '' then
+                PerformHttpRequest(url, function() end, 'POST', json.encode({
+                    username = 'Heta RP',
+                    embeds = {{
+                        ['color'] = '65352',
+                        ['title'] = 'Gang Level Up',
+                        ['description'] = ('**Gang:** %s\n**New Level:** %s\n**Reward:** $%s'):format(gang, lvl, reward or 0),
+                        ['footer'] = { ['text'] = gang .. ' - Logs', ['icon_url'] = g.logo },
+                    }}
+                }), { ['Content-Type'] = 'application/json' })
+            end
+        end
     end
 end
 
+-------------------------------------------------------------------
+-- SECURITY FIX: `For5M:AddXP` used to be a RegisterNetEvent that took
+-- the amount straight from the client - any gang member could send
+-- any number. It is now a plain server-side event: the server (or
+-- another server script via TriggerEvent) can still fire it, a
+-- client cannot ("not safe for net").
+-------------------------------------------------------------------
 function AddGangXP(source, meghdar)
     local xPlayer = ESX.GetPlayerFromId(source)
-    UpdateXP(xPlayer.gang.name, meghdar, "System")
-    Database(source, meghdar, xPlayer.gang.name)
+    if not xPlayer or not xPlayer.gang or xPlayer.gang.name == 'nogang' then return end
+    GrantGangXP(xPlayer.gang.name, meghdar, 'System')
 end
 
-RegisterNetEvent('For5M:AddXP')
 AddEventHandler('For5M:AddXP', function(amount)
+    -- NOT a net event any more (no RegisterNetEvent): only server code
+    -- can fire it. `source` is the gang member the XP is credited to.
     AddGangXP(source, amount)
 end)
 
 -------------------------------------------------------------------
--- FIX (same exploit class as FMGangsBoss:server:MoneyPack in
--- server/boss.lua - unlimited XP injection): no access check, amount
--- taken straight from the client, for any gang. Now requires the same
--- admin check as everywhere else, and ignores the client-sent amount
--- entirely - uses the fixed Config.Packs['xppack'] value instead
--- (the client already happened to send this correctly, but the raw
--- event was still directly callable with any number).
+-- Admin / pack XP (no daily cap) - unchanged behaviour, still gated by
+-- IsPlayerCanOpenPanel and ignores the client-sent amount.
 -------------------------------------------------------------------
 RegisterNetEvent('For5M:AddGangXP')
 AddEventHandler('For5M:AddGangXP', function(amount , gang )
     local src = source
+    -- client-reachable (XP pack button in the admin panel): admin only,
+    -- and the client-sent amount is ignored - the fixed pack value is used.
     if not IsPlayerCanOpenPanel(src) then
         print('[Unique_ALLGangs] For5M:AddGangXP: source ' .. tostring(src) .. ' is not an admin - denying')
         return
@@ -138,11 +108,78 @@ AddEventHandler('For5M:AddGangXP', function(amount , gang )
     Database(0, xp ,gang )
 end)
 
+-------------------------------------------------------------------
+-- Server-only admin XP (/addxp, /removexp in server/main.lua). Not a
+-- net event, so a client can never fire it. The commands check admin
+-- rights themselves. This also restores real /addxp <gang> <amount>
+-- and /removexp amounts: both used to go through the net event above,
+-- which ignores the amount (always the pack value, and never negative).
+-------------------------------------------------------------------
+AddEventHandler('Unique_ALLGangs:AdminXP', function(amount, gang)
+    if type(Gangs) ~= 'table' or not Gangs[gang] then return end
+    amount = tonumber(amount) or 0
+    if amount == 0 then return end
+    if amount > 0 then UpdateXP(gang, amount, 'Admin') end
+    Database(0, amount, gang)
+end)
+
+-------------------------------------------------------------------
+-- GAMEPLAY XP with a per-gang daily cap (Config.GangXP).
+-- Returns the amount actually granted (0 if capped/disabled).
+-------------------------------------------------------------------
+local DailyXP = {} -- DailyXP[gang] = { day = 'YYYY-MM-DD', xp = n }
+
+function GrantGangXP(gang, amount, reason)
+    if not Config.GangXP or not Config.GangXP.Enabled then return 0 end
+    if not gang or gang == 'nogang' or not (Gangs and Gangs[gang]) then return 0 end
+    amount = math.floor(tonumber(amount) or 0)
+    if amount <= 0 then return 0 end
+
+    local today = os.date('%Y-%m-%d')
+    local rec = DailyXP[gang]
+    if not rec or rec.day ~= today then
+        rec = { day = today, xp = 0 }
+        DailyXP[gang] = rec
+    end
+    local cap = tonumber(Config.GangXP.DailyCap) or 0
+    if cap > 0 then
+        amount = math.min(amount, cap - rec.xp)
+    end
+    if amount <= 0 then return 0 end
+
+    rec.xp = rec.xp + amount
+    UpdateXP(gang, amount, reason or 'Gang Activity')
+    Database(0, amount, gang)
+    return amount
+end
+
+-- How much of today's cap this gang has left (used by the war/XP UI).
+function GetGangXPCapLeft(gang)
+    local cap = tonumber(Config.GangXP and Config.GangXP.DailyCap) or 0
+    if cap <= 0 then return math.huge end
+    local rec = DailyXP[gang]
+    if not rec or rec.day ~= os.date('%Y-%m-%d') then return cap end
+    return math.max(0, cap - rec.xp)
+end
+
+-------------------------------------------------------------------
+-- Level perks (Config.GangPerks): cumulative - the value comes from
+-- the highest listed level <= the gang's level, per key.
+-------------------------------------------------------------------
+function GetGangPerk(gang, key, default)
+    local level = Gangs and Gangs[gang] and tonumber(Gangs[gang].level) or 0
+    for l = level, 0, -1 do
+        local p = Config.GangPerks and Config.GangPerks[l]
+        if p and p[key] ~= nil then return p[key] end
+    end
+    return default
+end
+
 function UpdateXP(gang, Add, MT)
     local xPlayers = ESX.GetPlayers()
     for k, v in pairs(xPlayers) do
         local xPlayer = ESX.GetPlayerFromId(v)
-        if xPlayer.gang.name == gang then
+        if xPlayer and xPlayer.gang and xPlayer.gang.name == gang then
             TriggerClientEvent("For5M:AddXPtoGang", xPlayer.source, Add)
             TriggerClientEvent(Config.showNotification, xPlayer.source, '~g~~h~Gang Shoma ~y~~h~'..Add.." XP~g~~h~ Az ~y~~h~"..MT.." ~g~~h~Daryaft Kard.")
         end

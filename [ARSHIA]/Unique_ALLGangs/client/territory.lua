@@ -154,6 +154,37 @@ end)
 -- changes. Refreshing all of them unconditionally on every broadcast
 -- would flicker every zone blip on everyone's map every few seconds.
 -------------------------------------------------------------------
+-------------------------------------------------------------------
+-- Live capture timer (server broadcasts remaining seconds every tick,
+-- we count down locally in between).
+-------------------------------------------------------------------
+local CaptureInfo = {} -- CaptureInfo[zoneKey] = { gang = name, endsAt = GetGameTimer() ms }
+
+RegisterNetEvent('Territory:CaptureProgress')
+AddEventHandler('Territory:CaptureProgress', function(info)
+    local now = GetGameTimer()
+    CaptureInfo = {}
+    for zoneKey, v in pairs(info or {}) do
+        CaptureInfo[zoneKey] = { gang = v.gang, endsAt = now + (tonumber(v.remaining) or 0) * 1000 }
+    end
+end)
+
+local function ClockText(seconds)
+    seconds = math.max(0, math.floor(seconds))
+    return ('%d:%02d'):format(math.floor(seconds / 60), seconds % 60)
+end
+
+local function DrawHudLine(text, y, scale, r, g, b)
+    SetTextFont(4)
+    SetTextScale(scale, scale)
+    SetTextColour(r, g, b, 255)
+    SetTextOutline()
+    SetTextCentre(true)
+    BeginTextCommandDisplayText('STRING')
+    AddTextComponentSubstringPlayerName(text)
+    EndTextCommandDisplayText(0.5, y)
+end
+
 RegisterNetEvent('Territory:SyncState')
 AddEventHandler('Territory:SyncState', function(state)
     for zoneKey, s in pairs(state) do
@@ -214,6 +245,17 @@ CreateThread(function()
                         statusText = '~y~Motaalegh be: ' .. state.owner .. (state.vulnerable and ' ~r~(asib-pazir)' or '')
                     else
                         statusText = '~w~Azad - dar hale tasarrof...'
+                    end
+
+                    -- a capture is running here: show who, and how long until the zone flips
+                    local cap = CaptureInfo[zoneKey]
+                    if cap and not state.contested and GetGameTimer() < cap.endsAt + 15000 then
+                        local left = (cap.endsAt - GetGameTimer()) / 1000.0
+                        local mine = cap.gang == PlayerData.gang.name
+                        statusText = (mine and '~g~Shoma dar hale tasarrof hastid' or ('~r~Dar hale tasarrof tavasot-e ' .. cap.gang))
+                            .. '\n~y~Zaman-e baghi: ' .. ClockText(left)
+                        DrawHudLine(('TASARROF - %s'):format(cfg.label), 0.80, 0.55, 255, 255, 255)
+                        DrawHudLine(ClockText(left), 0.84, 0.9, mine and 120 or 255, mine and 255 or 90, mine and 120 or 90)
                     end
 
                     Draw3DText(cfg.coord.x, cfg.coord.y, cfg.coord.z + 1.0, cfg.label .. '\n' .. statusText, 4, 0.35, 0.35)
@@ -573,3 +615,35 @@ end
 -- and the Boss Zone) now lives in its own file - see
 -- client/territory_zombies.lua.
 -------------------------------------------------------------------
+
+-------------------------------------------------------------------
+-- Admin helper for /zonepos (server checks permission first).
+-------------------------------------------------------------------
+RegisterNetEvent('Territory:PrintPos')
+AddEventHandler('Territory:PrintPos', function()
+    local c = GetEntityCoords(PlayerPedId())
+    local line = ('coord = vector3(%.1f, %.1f, %.1f)'):format(c.x, c.y, c.z)
+    print('[zonepos] ' .. line)
+    TriggerEvent('chat:addMessage', { args = { '^3zonepos', line } })
+end)
+
+-------------------------------------------------------------------
+-- The whole island as one red danger circle on the map
+-- (Config.Territory.Island: coords / radius / blipColor / blipOpacity).
+-------------------------------------------------------------------
+local IslandBlip = nil
+
+CreateThread(function()
+    local isl = Config.Territory and Config.Territory.Island
+    if not isl or isl.Enabled == false or not isl.blip then return end
+
+    IslandBlip = AddBlipForRadius(isl.coords.x + 0.0, isl.coords.y + 0.0, isl.coords.z + 0.0, (isl.radius or 1100.0) + 0.0)
+    SetBlipColour(IslandBlip, isl.blipColor or 1)
+    SetBlipAlpha(IslandBlip, isl.blipOpacity or 50)
+    SetBlipAsShortRange(IslandBlip, false)
+end)
+
+AddEventHandler('onResourceStop', function(resourceName)
+    if GetCurrentResourceName() ~= resourceName then return end
+    if IslandBlip and DoesBlipExist(IslandBlip) then RemoveBlip(IslandBlip) end
+end)

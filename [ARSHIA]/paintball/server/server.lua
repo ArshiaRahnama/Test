@@ -200,6 +200,8 @@ end
 
 function JoinLobby(LobbyId, PlayerId)
 	local _, Lobby = FindLobby(LobbyId)
+	-- external (Gang War) matches are closed: nobody can join them from the UI
+	if Lobby and Lobby.external then return {} end
 	if Lobby then
 		local LastTeamID, PlayerIndex, Player = FindPlayerInLobby(LobbyId, PlayerId)
 		if LastTeamID then table.remove(LobbyList[_].teams[LastTeamID], PlayerIndex) end
@@ -397,7 +399,7 @@ end)
 ESX.RegisterServerCallback('esx_paintball:GetLobbyList', function(source, cb, data)
 	local newLobbyListTable = {}
 	for k, v in pairs(LobbyList) do
-		if not v.started then
+		if not v.started and not v.external then
 			table.insert(newLobbyListTable, { LobbyId = v.LobbyId, name = v.name, map = v.map, weapon = v.weapon, hasPassword = (v.pass ~= "" and v.pass ~= nil) })
 		end
 	end
@@ -469,7 +471,7 @@ AddEventHandler('esx_paintball:SetPlayerReqs', function(LobbyId)
 		if CurrentTeamID then
 			local xPlayer = ESX.GetPlayerFromId(source)
 			if not PlayerLoadouts[source] then
-				local price = WeaponPrices[string.lower(tostring(Lobby.weapon))] or 0
+				local price = Lobby.free and 0 or (WeaponPrices[string.lower(tostring(Lobby.weapon))] or 0)
 				if price > 0 and xPlayer then
 					if xPlayer.getMoney() >= price then
 						xPlayer.removeMoney(price)
@@ -498,26 +500,131 @@ AddEventHandler('esx_paintball:StartRound', function(LobbyId)
 	end
 end)
 
+-- Ends a lobby: sends everyone back (bucket 0 + client QuitPaintBall), tells
+-- an external owner (Gang War) who won, then removes the lobby.
+-- Shared by the QuitPaintBall event (admin / internal) and by the
+-- EndExternalMatch export.
+function PB_EndLobby(LobbyId, winnerTeam, forced)
+	local _, Lobby = FindLobby(LobbyId)
+	if Lobby and Lobby.started then
+		for i = 2, 3 do
+			for playerKey, playerValue in pairs(LobbyList[_].teams[i]) do
+				SetPlayerRoutingBucket(playerValue.source, 0)
+				-- A finished match never cleared PBPlayers, which left
+				-- weaponDamageEvent cancelling this player's damage to anyone
+				-- outside paintball afterwards. Clear it when the match ends.
+				PBPlayers[playerValue.source] = false
+				TriggerClientEvent('esx_paintball:QuitPaintBall', playerValue.source, LobbyId, winnerTeam)
+			end
+		end
+		if Lobby.external and Lobby.external.event then
+			TriggerEvent(Lobby.external.event, Lobby.external.token, winnerTeam, {
+				rounds = { (Lobby.winRounds and Lobby.winRounds[1]) or 0, (Lobby.winRounds and Lobby.winRounds[2]) or 0 },
+				forced = forced and true or false,
+			})
+		end
+		Wait(1000)
+		-- Same sparse-array hazard as in QuitLobby -- use table.remove.
+		local removeKey = select(1, FindLobby(LobbyId))
+		if removeKey then table.remove(LobbyList, removeKey) end
+	end
+end
+
 RegisterServerEvent('esx_paintball:QuitPaintBall')
 AddEventHandler('esx_paintball:QuitPaintBall', function(LobbyId, winnerTeam)
 	local xPlayer = ESX.GetPlayerFromId(source)
 	if source == '' or (xPlayer and xPlayer.permission_level > 0) then
-		local _, Lobby = FindLobby(LobbyId)
-		if Lobby and Lobby.started then
-			for i = 2, 3 do
-				for playerKey, playerValue in pairs(LobbyList[_].teams[i]) do
-					local xPlayer = ESX.GetPlayerFromId(playerValue.source)
-					SetPlayerRoutingBucket(playerValue.source, 0)
-					TriggerClientEvent('esx_paintball:QuitPaintBall', playerValue.source, LobbyId, winnerTeam)
-				end
-			end
-			Wait(1000)
-			-- Same sparse-array hazard as in QuitLobby -- use table.remove.
-			local removeKey = select(1, FindLobby(LobbyId))
-			if removeKey then table.remove(LobbyList, removeKey) end
-		end
+		PB_EndLobby(LobbyId, winnerTeam)
 	end
 end)
+
+-------------------------------------------------------------------
+-- EXTERNAL MATCHES (used by Unique_ALLGangs Gang War)
+-- exports['paintball']:CreateExternalMatch({
+--     map = 'cargo', weapon = 'carbinerifle', roundNum = 3, armor = 100,
+--     rtime = 120, headbox = 0,
+--     teamA = { serverId, ... }, teamB = { serverId, ... },   -- team 1 / team 2
+--     onFinish = 'Some:ServerEvent', token = anything,
+-- }) -> LobbyId | nil, error
+-- The match is built and started without the lobby UI (no owner, nobody
+-- needs to click Ready), is free (no weapon cost) and is hidden from the
+-- lobby browser. When it ends, `onFinish` fires on the SERVER as
+-- (token, winnerTeam (1|2|nil), { rounds = {t1, t2}, forced = bool }).
+-------------------------------------------------------------------
+local function StartExternalMatch(LobbyId)
+	local _, Lobby = FindLobby(LobbyId)
+	if not Lobby or Lobby.started then return end
+	Lobby.started = true
+	Lobby.winRounds, Lobby.loseRounds = { 0, 0 }, { 0, 0 }
+	for i = 2, 3 do
+		for _k, v in pairs(Lobby.teams[i]) do
+			v.alive, v.kills, v.deaths = true, 0, 0
+			PBPlayers[v.source] = true
+			TriggerClientEvent('esx_paintball:StartMatch', v.source, LobbyId, Lobby.map, Lobby.weapon, i - 1,
+				Lobby.teams[i], Lobby.roundNum, Lobby.armor, Lobby.rtime, Lobby.gunattachs, Lobby.headbox)
+		end
+	end
+	StartRound(-1, LobbyId)
+end
+
+exports('CreateExternalMatch', function(opts)
+	if type(opts) ~= 'table' then return nil, 'bad options' end
+	if type(opts.teamA) ~= 'table' or type(opts.teamB) ~= 'table' or #opts.teamA == 0 or #opts.teamB == 0 then
+		return nil, 'both teams need players'
+	end
+	local seen = {}
+	local function build(list)
+		local out = {}
+		for _, src in ipairs(list) do
+			if seen[src] or not GetPlayerName(src) then return nil, ('player %s is not online or listed twice'):format(tostring(src)) end
+			seen[src] = true
+			out[#out + 1] = { source = src, ready = true }
+		end
+		return out
+	end
+	local a, errA = build(opts.teamA); if not a then return nil, errA end
+	local b, errB = build(opts.teamB); if not b then return nil, errB end
+
+	local rounds = tonumber(opts.roundNum) or 3
+	if rounds < 1 then rounds = 1 elseif rounds > 10 then rounds = 10 end
+	local rtime = tonumber(opts.rtime) or 120
+	if rtime < 30 or rtime > 300 then rtime = 120 end
+	local armor = tonumber(opts.armor) or 100
+	if armor < 0 then armor = 0 elseif armor > 100 then armor = 100 end
+
+	LobbyCounter = LobbyCounter + 1
+	local LobbyId = LobbyCounter
+	table.insert(LobbyList, {
+		lobbyOwner = { source = -1, identifier = 'external:' .. LobbyId },
+		LobbyId = LobbyId, name = tostring(opts.name or 'Gang War'), map = tostring(opts.map),
+		weapon = tostring(opts.weapon or 'carbinerifle'), pass = '', armor = armor, gunattachs = false,
+		rtime = rtime, headbox = (tonumber(opts.headbox) == 1) and 1 or 0, friendlyFire = false,
+		roundNum = rounds, teams = { {}, a, b }, started = false, roundCounter = 0,
+		LobbyCounter = LobbyCounter, Kills = {},
+		external = { event = opts.onFinish, token = opts.token }, free = true,
+	})
+
+	-- clients must adopt the lobby id before esx_paintball:StartMatch reaches them
+	for _, list in ipairs({ opts.teamA, opts.teamB }) do
+		for _, src in ipairs(list) do TriggerClientEvent('esx_paintball:ExternalJoin', src, LobbyId) end
+	end
+	SetTimeout(1500, function() StartExternalMatch(LobbyId) end)
+	return LobbyId
+end)
+
+-- Forcefully end an external match (admin / failsafe). winnerTeam may be nil (draw).
+exports('EndExternalMatch', function(LobbyId, winnerTeam)
+	local _, Lobby = FindLobby(LobbyId)
+	if not Lobby or not Lobby.external then return false end
+	if not Lobby.started then
+		-- never started (players dropped during the 1.5s window): just drop it
+		table.remove(LobbyList, (select(1, FindLobby(LobbyId))))
+		return true
+	end
+	CreateThread(function() PB_EndLobby(LobbyId, winnerTeam, true) end)
+	return true
+end)
+
 local mainloadout = {}
 
 RegisterServerEvent('esx_paintball:mainloadout')

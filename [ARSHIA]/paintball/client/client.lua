@@ -534,6 +534,15 @@ AddEventHandler('esx_paintball:ForceExit', function(LobbyId)
 	end
 end)
 
+-- Matches created by another resource (Unique_ALLGangs Gang War) skip the
+-- lobby UI: the server tells the client which lobby it belongs to, then
+-- fires esx_paintball:StartMatch as usual.
+RegisterNetEvent('esx_paintball:ExternalJoin')
+AddEventHandler('esx_paintball:ExternalJoin', function(LobbyId)
+	if PBData.InPB then return end
+	PBData.LobbyId = tonumber(LobbyId) or -1
+end)
+
 RegisterNetEvent('esx_paintball:RefreshLobbies')
 AddEventHandler('esx_paintball:RefreshLobbies', function(LobbyId)
 	if Acs then

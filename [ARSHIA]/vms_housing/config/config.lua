@@ -506,7 +506,7 @@ Config.Marketplace = {
     Enabled = true, -- Enables or disables the marketplace system
     AllowTransactionFromMenu = true, -- Allow transactions directly from the property management menu
 
-    ShowSecondaryMarketOnly = true, -- Show only the secondary market (properties for sale by players)
+    ShowSecondaryMarketOnly = false, -- false = همه ملک‌های فروشی نشون داده میشن -- Show only the secondary market (properties for sale by players)
 
     Blip = Config.Blips['Marketplace'], -- Blip settings (see Config.Blips section)
     BlipCoords = vector3(-1082.89, -249.45, 43.98), -- Location of the blip on the map

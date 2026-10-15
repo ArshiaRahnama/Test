@@ -71,6 +71,17 @@ Config.GangWar = {
     -- evidence on the case automatically - see
     -- FMGangs:ReportGangShotFired, server/Gangs.lua.
     VehicleTraceRadius = 60.0,
+
+    -- Island fights are the whole point of the island, so they must NOT
+    -- spam FBI/CIA dispatch or file federal cases. Shots inside any of
+    -- these circles are ignored by the shootout detector.
+    SilentRegions = {
+        { coord = vector3(4945.34, -4945.37, 13.28), radius = 1200.0 }, -- the island
+    },
+
+    -- Shots/pings from players in a non-default routing bucket (Warzone,
+    -- Gungame lobbies, etc.) never count toward a gang shootout.
+    RequireDefaultBucket = true,
 }
 
 -------------------------------------------------------------------
@@ -213,6 +224,110 @@ Config.LevelReward = {
     [8] = 8000,
     [9] = 9000,
     [10] = 10000,
+}
+
+
+-------------------------------------------------------------------
+-- GANG XP SOURCES (server-side only; see GrantGangXP in server/level.lua)
+-- Every gain is capped per gang per (server) day so nobody can farm
+-- levels. Admin XP packs and /addxp bypass the cap on purpose.
+-------------------------------------------------------------------
+Config.GangXP = {
+    Enabled  = true,
+    DailyCap = 1500,
+    Sources  = {
+        territoryIncome = { [1] = 10, [2] = 25, [3] = 50 }, -- per owned zone, every income payout, by zone tier
+        capture         = 150,   -- taking a normal zone by holding it
+        bossZone        = 600,   -- taking the Boss Zone
+        defend          = 100,   -- owner beat back a real capture attempt (throttled per zone)
+        sabotage        = 80,
+        warWin          = 400,
+        warLose         = 100,
+    },
+    DefendMinProgressSeconds = 60,  -- the challenger must have held the zone this long before a defense counts
+    DefendThrottleSeconds    = 300, -- per zone
+}
+
+-------------------------------------------------------------------
+-- GANG LEVEL PERKS - cumulative: a gang gets the value from the
+-- highest listed level <= its own level, per key. Read with
+-- GetGangPerk(gang, key, default) (server/level.lua).
+--   maxZones        territory cap (replaces Config.Territory.MaxZonesPerGang)
+--   upgradeDiscount discount on zone upgrades (0.10 = 10%)
+--   captureSpeed    challenger needs this much LESS capture time (0.05 = 5%)
+--   warRosterMax    max players per side in a Gang War
+--   warFeeDiscount  discount on the Gang War declare/accept fee
+-------------------------------------------------------------------
+Config.GangPerks = {
+    [0]  = { maxZones = 2, warRosterMax = 4, upgradeDiscount = 0.0, captureSpeed = 0.0, warFeeDiscount = 0.0 },
+    [3]  = { warRosterMax = 5 },
+    [5]  = { maxZones = 3, warRosterMax = 6 },
+    [6]  = { upgradeDiscount = 0.10 },
+    [7]  = { warFeeDiscount = 0.10 },
+    [8]  = { warRosterMax = 7 },
+    [9]  = { upgradeDiscount = 0.15 },
+    [10] = { maxZones = 4, warRosterMax = 8, captureSpeed = 0.05 },
+}
+
+-------------------------------------------------------------------
+-- GANG WAR - a contained, contract-based fight over ONE territory zone
+-- (see server/zonewar.lua). Only rostered players, only inside the
+-- zone, only for a limited time. Nothing outside the zone is affected.
+-------------------------------------------------------------------
+Config.ZoneWar = {
+    Enabled               = true,
+    AdminEndCommand       = 'endwar',    -- /endwar <id>  (admin) cancels a war and refunds both fees
+
+    MinOnlineToTarget     = 3,          -- a gang is only listed as a target when it has at least this many members online (your own gang needs it too)
+    DeclareFee            = 15000,       -- clean gang money, paid by BOTH sides (attacker on declare, defender on accept)
+    PoolBurnPercent       = 10,          -- % of the prize pool that disappears (money sink, stops inflation)
+    AcceptWindowMin       = 10,          -- defender boss has this long to accept; declining/ignoring refunds the attacker
+    StartDelayMin         = 15,          -- time between accept and start (rosters form during this)
+    MaxDurationMin        = 30,
+    ScoreToWin            = 20,
+    RosterMin             = 3,           -- fewer than this on either side at start = cancelled + refunded
+    MaxConcurrentWars     = 2,           -- server-wide
+    MaxWarsPerWeek        = 2,           -- per gang
+    PairCooldownHours     = 48,          -- same two gangs can't fight again for this long
+    ForfeitIfEmptySeconds = 180,         -- a side with nobody online for this long forfeits
+
+    ZoneBufferMeters      = 15.0,        -- kills only count when BOTH players are inside radius + buffer
+    MaxKillDistance       = 400.0,       -- sanity cap on killer<->victim distance
+    SameVictimCooldownSec = 180,         -- the same victim only gives points once per this window
+    KillPoints            = 1,
+    LeaderKillPoints      = 2,           -- killing the enemy boss
+    HoldPointEverySec     = 60,          -- the side with more rostered players inside gets +1
+    WarNightMultiplier    = 2,           -- all points x2 during Config.Territory.WarNight
+
+    WinnerProtectHours    = 2,           -- zone can't be captured/challenged after a war
+    WinnerIncomeBonus     = 0.25,        -- +25% income from that zone...
+    WinnerBonusHours      = 24,          -- ...for this long (memory only, resets on restart)
+
+    TickSeconds           = 5,
+    Webhook               = '',          -- optional Discord webhook for declare/start/result
+
+    -------------------------------------------------------------------
+    -- MODE
+    --   'arena' : (default) the roster gathers at their gang HQ, then both
+    --             teams are taken to an isolated paintball arena (own
+    --             routing bucket, no real deaths, loadout restored) and
+    --             play first-to-N rounds. Nothing touches the city.
+    --   'zone'  : fight inside the real zone (original mode, see above).
+    -- If the paintball resource is not running, 'arena' falls back to 'zone'.
+    -------------------------------------------------------------------
+    Mode = 'arena',
+    Arena = {
+        Resource       = 'paintball',   -- resource that exports CreateExternalMatch / EndExternalMatch
+        Maps           = { 'cargo', 'island', 'skyscraper' }, -- paintball map names, rotated per war
+        Weapon         = 'carbinerifle', -- paintball weapon (no "weapon_" prefix); free for war matches
+        RoundsToWin    = 3,             -- "matches": first team to win this many rounds takes the war
+        RoundSeconds   = 120,
+        Armor          = 100,
+        Headbox        = 0,             -- 1 = headshots only count
+        GatherSeconds  = 180,           -- roster must be at their HQ within this time after the war starts
+        GatherRadius   = 80.0,          -- metres around the gang's boss marker (Boss Menu location)
+        MaxMatchMinutes = 25,           -- failsafe: a stuck match is ended as a draw (fees refunded)
+    },
 }
 
 Config.DefaultRanks = {
@@ -422,13 +537,104 @@ Config.LogCategories = {
 Config.Territory = {
     Enabled = true,
 
+    -------------------------------------------------------------------
+    -- ISLAND LAYOUT - every zone lives on the island, so wars stay out
+    -- of the city. Coordinates are taken from the island's own flag /
+    -- weapon-spawn spots (known walkable ground). Zones are kept well
+    -- away from the 5 island Safe zones (spawn/teleport areas).
+    -- Fine-tune any spot in-game with /zonepos (admin) and paste the
+    -- printed `coord = ...` line over the matching zone.
+    -- zombieTier is omitted on purpose: the island system already runs
+    -- its own zombies, so territory zombies would double the load.
+    -------------------------------------------------------------------
     Zones = {
-        { key = 'grove_street',        label = 'Khiaboone Grove',            coord = vector3(-170.0,  -1609.0,  34.0), radius = 40.0, tier = 1, zombieTier = 'normal' },
-        { key = 'vespucci_beach',      label = 'Sahele Vespucci',            coord = vector3(-1180.0, -1520.0,   4.0), radius = 45.0, tier = 1, zombieTier = 'normal' },
-        { key = 'la_mesa_industrial',  label = 'Mantaghe Sanati La Mesa',      coord = vector3(850.0,   -1940.0,  31.0), radius = 50.0, tier = 2, zombieTier = 'normal' },
-        { key = 'del_perro_pier',      label = 'Eskele Del Perro',           coord = vector3(-1850.0, -1230.0,  13.0), radius = 45.0, tier = 2, zombieTier = 'normal' },
-        { key = 'sandy_shores',        label = 'Sandy Shores',              coord = vector3(1961.0,   3740.0,  32.0), radius = 55.0, tier = 2, zombieTier = 'normal' },
-        { key = 'paleto_bay',          label = 'Khalije Paleto',             coord = vector3(-448.0,   6008.0,  31.0), radius = 60.0, tier = 3, zombieTier = 'normal' },
+        { key = 'cayo_airstrip',    label = 'Foroodgah Jazire',   coord = vector3(4479.5,  -4590.65,  5.56), radius = 55.0, tier = 2 },
+        { key = 'cayo_central',     label = 'Markaze Jazire',     coord = vector3(4995.74, -5166.95,  2.7),  radius = 50.0, tier = 1 },
+        { key = 'cayo_north_coast', label = 'Sahele Shomal',      coord = vector3(5104.77, -4676.54,  2.29), radius = 50.0, tier = 1 },
+        { key = 'cayo_south_hill',  label = 'Tappe-ye Jonoob',    coord = vector3(4901.82, -5336.31, 35.61), radius = 45.0, tier = 2 },
+        { key = 'cayo_tower_base',  label = 'Paye-ye Borj',       coord = vector3(5263.34, -5432.39, 65.6),  radius = 35.0, tier = 3 },
+    },
+
+    -------------------------------------------------------------------
+    -- ISLAND (client/territory.lua draws the red circle,
+    --         client/territory_zombies.lua spawns the zombies)
+    -- The whole island is one big danger zone: a red radius blip over it
+    -- and ambient zombies that exist ONLY inside the circle (and never
+    -- inside the island's Safe zones). Zombies are local per player.
+    -------------------------------------------------------------------
+    Island = {
+        Enabled      = true,
+        label        = 'Jazire',
+        coords       = vector3(4945.34, -4945.37, 13.28),
+        radius       = 1100.0,
+        blip         = true,
+        blipColor    = 1,     -- red
+        blipOpacity  = 50,    -- 0-255
+
+        -- No zombies in/near the island's Safe zones (spawn/teleport areas).
+        -- radius = the Safe zone's own 50m + a 50m margin, so zombies never hover at the edge.
+        safeZones = {
+            { coord = vector3(4890.52, -5736.66, 26.35), radius = 100.0 },
+            { coord = vector3(5479.87, -5852.72, 20.33), radius = 100.0 },
+            { coord = vector3(5587.27, -5222.80, 14.35), radius = 100.0 },
+            { coord = vector3(4820.23, -4306.22,  5.38), radius = 100.0 },
+            { coord = vector3(3906.31, -4693.10,  4.20), radius = 100.0 },
+        },
+
+        zombies = {
+            Enabled       = true,
+            -- How zombies hurt you:
+            --   'combat' (default): the game's own melee AI (TaskCombatPed) - they run at you and visibly
+            --                       punch/claw you with normal hit reactions. `damage` is NOT used;
+            --                       meleeDamageScale scales the game's melee damage while you are on the island.
+            --   'script'          : they run up and hit you with the exact HP in `damage` (+ a punch animation).
+            damageMode        = 'combat',
+            meleeDamageScale  = 1.0,
+            maxZombie     = 2,      -- zombies alive at once, per player
+            spawnCooldown = 60,     -- seconds between spawn waves
+            spawnRadius   = 40,     -- they appear 40% - 100% of this many metres from the player (1-40)
+            maxRadius     = 75,     -- a zombie farther than this from the player is removed
+            fireChance    = 10,     -- % of spawns that are burning
+            bombChance    = 5,      -- % of spawns that explode when they reach (or die next to) the player
+            speed         = { 5, 10 }, -- run speed, random per zombie (1-10)
+            damage        = { 3, 5 },  -- HP per hit, random per hit (damageMode = 'script' only)
+
+            -- finer control (optional)
+            health            = 150,   -- fire zombies get double
+            detectRange       = 75.0,  -- start chasing within this range (<= maxRadius)
+            attackRange       = 1.8,   -- melee reach
+            attackIntervalMs  = 1200,  -- time between hits
+            moveRateBase      = 0.8,   -- run speed -> move rate: base + speed * perSpeed (speed 5 = 1.4, speed 10 = 2.0)
+            moveRatePerSpeed  = 0.12,
+            bombTriggerRange  = 3.0,   -- bomb zombie explodes this close to the player
+            bombDeathRange    = 6.0,   -- ...or when killed this close
+            bombExplosionType = 0,     -- GTA explosion type 0 = grenade
+            bombExplosionScale = 0.4,  -- damage scale
+            -- models = { ... }        -- default: Config.Territory.ZombieTiers.normal.models
+        },
+    },
+
+    -------------------------------------------------------------------
+    -- CAPTURE REWARD: items dropped into the capturing gang's ARMORY
+    -- (the first gang armory, Unique_inventory store "gang_<name>") the
+    -- moment they take a zone. Members take them out of the armory like
+    -- any other item, and every online member gets a chat message +
+    -- notification. To stop two friendly gangs flipping a zone back and
+    -- forth for items, a zone only pays out once per cooldownMinutes.
+    -- Item names must exist in the `items` table (a warning is printed
+    -- at start if one is missing).
+    -------------------------------------------------------------------
+    CaptureReward = {
+        Enabled            = true,
+        inventoryResource  = 'Unique_inventory',
+        cooldownMinutes    = 60,
+        byTier = {
+            [1] = { { name = 'plan_give', count = 2 } },
+            [2] = { { name = 'plan_give', count = 3 } },
+            [3] = { { name = 'plan_give', count = 5 } },
+        },
+        default  = { { name = 'plan_give', count = 2 } },
+        bossZone = { { name = 'plan_give', count = 10 } },
     },
 
     TierIncome = { -- dirty money ($) paid per zone every IncomeIntervalMinutes
@@ -442,7 +648,7 @@ Config.Territory = {
     VulnerableCaptureSeconds = 120, -- faster capture time while a zone is flagged vulnerable
     TickIntervalMs           = 5000, -- how often the server evaluates who's holding each zone
     PingStaleSeconds         = 12,   -- a client ping older than this no longer counts as "present"
-    MaxZonesPerGang          = 3,    -- a gang stops being able to make progress on new zones past this
+    MaxZonesPerGang          = 2,    -- a gang stops being able to make progress on new zones past this (island has 5 zones + boss)
 
     VulnerableEventMinMinutes = 90,  -- a random owned zone goes "vulnerable" every 90-180 min
     VulnerableEventMaxMinutes = 180,
@@ -523,7 +729,7 @@ Config.Territory = {
     -------------------------------------------------------------------
     BossZone = {
         Enabled = true,
-        key = 'boss_zone', label = 'Ghalamroye Padeshah', coord = vector3(2565.0, 2585.0, 37.9), radius = 70.0, tier = 3,
+        key = 'boss_zone', label = 'Ghalamroye Padeshah', coord = vector3(5266.43, -5427.52, 141.05), radius = 35.0, tier = 3, -- top of the tower (island weapon-spawn spot); sits 75m above cayo_tower_base so the two never overlap
         bossZone = true,
         openDay = 6,           -- Friday
         openHour = 20,         -- 20:00 server time

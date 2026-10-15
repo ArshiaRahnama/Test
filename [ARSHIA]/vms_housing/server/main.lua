@@ -50,16 +50,8 @@ AddEventHandler("vms_housing:sv:fetchData", function()
     end
 
     -- === CLIENT SYNC (properties + furniture definitions) ===================
-    -- Debug: count how many properties server has
-    local propCount = 0
-    for _ in pairs(Properties) do propCount = propCount + 1 end
-    print(("[vms_housing] sv:fetchData -> sending " .. propCount .. " properties to src " .. tostring(src)))
-
     local ok, propJson = pcall(json.encode, Properties)
-    if not ok or not propJson then
-        print("[vms_housing] ERROR: json.encode(Properties) failed: " .. tostring(propJson))
-        propJson = "{}"
-    end
+    if not ok or not propJson then propJson = "{}" end
 
     TriggerClientEvent(
         "vms_housing:cl:loadProperties",

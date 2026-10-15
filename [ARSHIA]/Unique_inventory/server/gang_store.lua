@@ -80,3 +80,19 @@ function EnsureGangStores(gangName, storeName)
 
     return inventory, store
 end
+
+-------------------------------------------------------------------------
+-- EXPORT: put items straight into a gang's armory chest (used by
+-- Unique_ALLGangs' Territory capture reward).
+--   exports['Unique_inventory']:AddGangArmoryItem(gangName, itemName, count [, storeName])
+-- storeName is optional; by default the gang's first armory ("gang_<name>").
+-- Returns true on success, false (+ reason) otherwise. Never throws.
+-------------------------------------------------------------------------
+exports('AddGangArmoryItem', function(gangName, itemName, count, storeName)
+    count = math.floor(tonumber(count) or 0)
+    if type(itemName) ~= 'string' or itemName == '' or count <= 0 then return false, 'bad item/count' end
+    local ok, inventory = pcall(EnsureGangStores, gangName, storeName)
+    if not ok or not inventory then return false, 'gang store unavailable' end
+    inventory.addItem(string.lower(itemName), count)
+    return true
+end)

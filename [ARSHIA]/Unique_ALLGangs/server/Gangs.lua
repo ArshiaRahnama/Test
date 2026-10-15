@@ -1195,6 +1195,18 @@ AddEventHandler('FMGangs:ReportGangShotFired', function(x, y, z)
     local gang = xPlayer.gang.name
     local now = os.time()
 
+    -- Ignore players inside another routing bucket (Warzone / Gungame).
+    if Config.GangWar.RequireDefaultBucket and GetPlayerRoutingBucket then
+        local okB, bucket = pcall(GetPlayerRoutingBucket, source)
+        if okB and bucket and bucket ~= 0 then return end
+    end
+    -- Ignore shootouts inside silent regions (the island): no dispatch spam.
+    if type(x) ~= 'number' or type(y) ~= 'number' or type(z) ~= 'number' then return end
+    for _, region in ipairs(Config.GangWar.SilentRegions or {}) do
+        local rx, ry, rz = x - region.coord.x, y - region.coord.y, z - region.coord.z
+        if math.sqrt(rx * rx + ry * ry + rz * rz) <= region.radius then return end
+    end
+
     if now < ((GangWarCooldowns[gang] or 0) + (Config.GangWar.CooldownSeconds or 120)) then return end
 
     -- drop shots outside the time window, then record this one

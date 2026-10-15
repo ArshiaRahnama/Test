@@ -1,4 +1,8 @@
 -------------------------------------------------------------------
+-- NOTE: ambient zombies now live on the WHOLE ISLAND (see ISLAND ZOMBIES
+-- below + Config.Territory.Island). Regular zones no longer spawn their
+-- own zombies (no zombieTier); only the Boss Zone's extra wave remains.
+--
 -- TERRITORY ZOMBIES - ambient danger inside gang territory itself
 -- ---------------------------------------------------------------
 -- Every regular Territory Control zone (Config.Territory.Zones) is
@@ -245,6 +249,233 @@ CreateThread(function()
 end)
 
 -------------------------------------------------------------------
+-- ISLAND ZOMBIES (Config.Territory.Island.zombies)
+-- Zombies exist ONLY on the island (the big circle drawn on the map by
+-- client/territory.lua) and never inside its Safe zones. They are local
+-- to each player. Everything is configured by the numbers in
+-- Island.zombies: maxZombie / spawnCooldown / spawnRadius / maxRadius /
+-- fireChance / bombChance / speed / damage.
+--   * damageMode 'combat' (default): the game's own melee AI - they run
+--     at you and visibly punch/claw you; meleeDamageScale scales that.
+--   * damageMode 'script': they chase with TaskGoToEntity and hit for
+--     exactly the HP in damage[1]..[2] (with a punch animation).
+--   * fire   : spawns burning (double health so it lives long enough).
+--   * bomb   : red blip; explodes when it reaches the player or dies
+--              next to them.
+-------------------------------------------------------------------
+local IslandCfg   = Config.Territory and Config.Territory.Island
+local IZ          = IslandCfg and IslandCfg.zombies
+local IslandZombies = {}   -- [ped] = { dmg, bomb, fire, blip, lastHit, lastTask, deadSince, exploded }
+local LastIslandSpawn = 0
+
+local function InsideIsland(x, y)
+    local dx, dy = x - IslandCfg.coords.x, y - IslandCfg.coords.y
+    return (dx * dx + dy * dy) <= (IslandCfg.radius * IslandCfg.radius)
+end
+
+local function InIslandSafeZone(c)
+    for _, s in ipairs(IslandCfg.safeZones or {}) do
+        if #(vector3(c.x, c.y, c.z) - s.coord) <= s.radius then return true end
+    end
+    return false
+end
+
+local function RemoveIslandZombie(ped, data)
+    if data and data.blip and DoesBlipExist(data.blip) then RemoveBlip(data.blip) end
+    if DoesEntityExist(ped) then DeleteEntity(ped) end
+    IslandZombies[ped] = nil
+end
+
+local function ClearIslandZombies()
+    for ped, data in pairs(IslandZombies) do RemoveIslandZombie(ped, data) end
+end
+
+local function ExplodeIslandZombie(ped, data)
+    if data.exploded then return end
+    data.exploded = true
+    local c = GetEntityCoords(ped)
+    AddExplosion(c.x, c.y, c.z, IZ.bombExplosionType or 0, IZ.bombExplosionScale or 0.4, true, false, 0.4)
+    if data.blip and DoesBlipExist(data.blip) then RemoveBlip(data.blip) data.blip = nil end
+    if DoesEntityExist(ped) and not IsEntityDead(ped) then SetEntityHealth(ped, 0) end
+end
+
+local function SpawnIslandZombie(pc)
+    local models = IZ.models or (Config.Territory.ZombieTiers and Config.Territory.ZombieTiers.normal and Config.Territory.ZombieTiers.normal.models)
+    if not models or #models == 0 then return false end
+
+    local angle = math.random() * 2 * math.pi
+    local dist = math.min(IZ.spawnRadius or 40, 40) * (0.4 + math.random() * 0.6)
+    local sx, sy = pc.x + math.cos(angle) * dist, pc.y + math.sin(angle) * dist
+    if not InsideIsland(sx, sy) then return false end
+
+    local found, gz = GetGroundZFor_3dCoord(sx + 0.0, sy + 0.0, pc.z + 30.0, false)
+    if not found then return false end
+    if InIslandSafeZone({ x = sx, y = sy, z = gz }) then return false end
+
+    local hash = RequestZombieModel(models[math.random(1, #models)])
+    if not hash then return false end
+
+    local ped = CreatePed(4, hash, sx, sy, gz, math.random(0, 359) + 0.0, true, true)
+    if not DoesEntityExist(ped) then return false end
+
+    local roll = math.random(100)
+    local fire = roll <= (IZ.fireChance or 0)
+    local bomb = (not fire) and roll <= ((IZ.fireChance or 0) + (IZ.bombChance or 0))
+
+    local speed = math.random((IZ.speed and IZ.speed[1]) or 5, (IZ.speed and IZ.speed[2]) or 10)
+    local health = (IZ.health or 150) * (fire and 2 or 1)
+
+    SetEntityAsMissionEntity(ped, true, true)
+    SetPedRelationshipGroupHash(ped, EnsureRelationshipGroup())
+    SetPedFleeAttributes(ped, 0, false)
+    SetEntityMaxHealth(ped, health)
+    SetEntityHealth(ped, health)
+    SetPedMoveRateOverride(ped, (IZ.moveRateBase or 0.8) + speed * (IZ.moveRatePerSpeed or 0.12))
+    SetPedCanRagdoll(ped, true)
+    SetBlockingOfNonTemporaryEvents(ped, true)
+    if IZ.damageMode ~= 'script' then
+        -- same setup as the Boss Zone wave: real melee fighters that never back off
+        SetPedCombatAttributes(ped, 46, true)   -- can fight unarmed
+        SetPedCombatAttributes(ped, 5, true)    -- always fights
+        SetPedCombatMovement(ped, 2)            -- advances on the player
+        SetPedCombatRange(ped, 0)               -- close range
+    end
+    TaskWanderStandard(ped, 10.0, 10)
+
+    local blip
+    if bomb then
+        blip = AddBlipForEntity(ped)
+        SetBlipSprite(blip, 1)
+        SetBlipColour(blip, 1)
+        SetBlipScale(blip, 0.7)
+    end
+    if fire then StartEntityFire(ped) end
+
+    IslandZombies[ped] = {
+        dmg = math.random((IZ.damage and IZ.damage[1]) or 3, (IZ.damage and IZ.damage[2]) or 5),
+        dmgMin = (IZ.damage and IZ.damage[1]) or 3, dmgMax = (IZ.damage and IZ.damage[2]) or 5,
+        bomb = bomb, fire = fire, blip = blip, lastHit = 0, lastTask = 0,
+    }
+    return true
+end
+
+local function MaintainIslandZombies(playerPed, pc)
+    local now = GetGameTimer()
+    local playerInVehicle = IsPedInAnyVehicle(playerPed, false)
+
+    for ped, data in pairs(IslandZombies) do
+        if not DoesEntityExist(ped) then
+            RemoveIslandZombie(ped, data)
+        elseif IsEntityDead(ped) then
+            if data.bomb and not data.exploded and #(GetEntityCoords(ped) - pc) <= (IZ.bombDeathRange or 6.0) then
+                ExplodeIslandZombie(ped, data)
+            end
+            data.deadSince = data.deadSince or now
+            if now - data.deadSince > 8000 then RemoveIslandZombie(ped, data) end
+        else
+            local zc = GetEntityCoords(ped)
+            local dist = #(zc - pc)
+            if dist > (IZ.maxRadius or 75) or InIslandSafeZone(zc) or not InsideIsland(zc.x, zc.y) then
+                RemoveIslandZombie(ped, data)
+            elseif dist <= (IZ.detectRange or IZ.maxRadius or 75) then
+                if IZ.damageMode == 'script' then
+                    if now - data.lastTask > 3000 then
+                        data.lastTask = now
+                        TaskGoToEntity(ped, playerPed, -1, 1.2, 2.0, 1073741824, 0)
+                    end
+                else
+                    -- the game's melee AI: attack as soon as the player is in range, and
+                    -- re-issue the order if the zombie ever drops out of combat
+                    if not data.aggro or (now - data.lastTask > 4000 and not IsPedInCombat(ped, playerPed)) then
+                        data.aggro, data.lastTask = true, now
+                        TaskCombatPed(ped, playerPed, 0, 16)
+                    end
+                end
+                if data.bomb and dist <= (IZ.bombTriggerRange or 3.0) then
+                    ExplodeIslandZombie(ped, data)
+                elseif IZ.damageMode == 'script' and dist <= (IZ.attackRange or 1.8) and not playerInVehicle
+                    and now - data.lastHit >= (IZ.attackIntervalMs or 1200) then
+                    data.lastHit = now
+                    -- face the player and throw a punch so the hit is visible
+                    local dx, dy = pc.x - zc.x, pc.y - zc.y
+                    SetEntityHeading(ped, GetHeadingFromVector_2d(dx, dy))
+                    RequestAnimDict('melee@unarmed@streamed_core')
+                    if HasAnimDictLoaded('melee@unarmed@streamed_core') then
+                        TaskPlayAnim(ped, 'melee@unarmed@streamed_core', 'short_90_punch', 8.0, -8.0, 600, 0, 0.0, false, false, false)
+                        data.lastTask = 0 -- re-issue the chase right after the punch
+                    end
+                    ApplyDamageToPed(playerPed, math.random(data.dmgMin, data.dmgMax), false)
+                end
+            elseif data.aggro and dist > (IZ.detectRange or IZ.maxRadius or 75) * 1.5 then
+                data.aggro = false
+                TaskWanderStandard(ped, 10.0, 10)
+            end
+        end
+    end
+end
+
+local MeleeScaleApplied = false
+local function SetMeleeScale(on)
+    local scale = tonumber(IZ.meleeDamageScale) or 1.0
+    if on and scale ~= 1.0 and not MeleeScaleApplied then
+        SetAiMeleeWeaponDamageModifier(scale)
+        MeleeScaleApplied = true
+    elseif not on and MeleeScaleApplied then
+        SetAiMeleeWeaponDamageModifier(1.0)
+        MeleeScaleApplied = false
+    end
+end
+
+-- /islandzombies : prints why zombies are (not) spawning for YOU right now.
+local LastIslandStatus = ''
+RegisterCommand('islandzombies', function()
+    if not (IslandCfg and IZ) then return print('[island zombies] Config.Territory.Island.zombies missing') end
+    local pc = GetEntityCoords(PlayerPedId())
+    local alive = 0
+    for ped in pairs(IslandZombies) do if DoesEntityExist(ped) and not IsEntityDead(ped) then alive = alive + 1 end end
+    local cd = math.max(0, math.ceil(((IZ.spawnCooldown or 60) * 1000 - (GetGameTimer() - LastIslandSpawn)) / 1000))
+    local msg = ('island zombies | enabled=%s | on island=%s | in safe zone=%s | alive=%d/%d | next wave in %ds | mode=%s'):format(
+        tostring(IslandCfg.Enabled ~= false and IZ.Enabled ~= false), tostring(InsideIsland(pc.x, pc.y)), tostring(InIslandSafeZone(pc)),
+        alive, IZ.maxZombie or 2, cd, tostring(IZ.damageMode or 'combat'))
+    print('[Unique_ALLGangs] ' .. msg)
+    TriggerEvent('chat:addMessage', { color = { 255, 100, 100 }, args = { 'ZOMBIES', msg } })
+end, false)
+
+CreateThread(function()
+    math.randomseed(GetGameTimer())
+    while true do
+        Wait(1000)
+        if IslandCfg and IslandCfg.Enabled ~= false and IZ and IZ.Enabled ~= false then
+            local playerPed = PlayerPedId()
+            local pc = GetEntityCoords(playerPed)
+            local active = InsideIsland(pc.x, pc.y) and not InIslandSafeZone(pc) and not IsEntityDead(playerPed)
+
+            SetMeleeScale(active)
+            if active then
+                local now = GetGameTimer()
+                local alive = 0
+                for ped in pairs(IslandZombies) do
+                    if DoesEntityExist(ped) and not IsEntityDead(ped) then alive = alive + 1 end
+                end
+
+                if alive < (IZ.maxZombie or 2) and now - LastIslandSpawn >= (IZ.spawnCooldown or 60) * 1000 then
+                    local spawned = 0
+                    for _ = 1, (IZ.maxZombie or 2) - alive do
+                        if SpawnIslandZombie(pc) then spawned = spawned + 1 end
+                    end
+                    if spawned > 0 then LastIslandSpawn = now end
+                end
+
+                MaintainIslandZombies(playerPed, pc)
+            elseif next(IslandZombies) ~= nil then
+                -- left the island / entered a Safe zone / died: no zombies follow
+                ClearIslandZombies()
+            end
+        end
+    end
+end)
+
+-------------------------------------------------------------------
 -- Cleanup: never leave zombies behind when the resource stops/
 -- restarts, and never leave a requested model stuck loaded.
 -------------------------------------------------------------------
@@ -254,6 +485,7 @@ AddEventHandler('onResourceStop', function(resourceName)
         if DoesEntityExist(ped) then DeleteEntity(ped) end
     end
     ActiveZombies = {}
+    if IslandCfg then ClearIslandZombies() SetMeleeScale(false) end
     for hash in pairs(ModelsRequested) do
         SetModelAsNoLongerNeeded(hash)
     end
