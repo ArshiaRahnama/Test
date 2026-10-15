@@ -11,13 +11,14 @@
   <link rel="stylesheet" href="styles/skill.css" />
   <link rel="stylesheet" href="styles/duty.css" />
   <link rel="stylesheet" href="styles/record.css" />
-  <link rel="stylesheet" href="styles/capture.css" />
+  <link rel="stylesheet" href="styles/event.css" />
   <link rel="stylesheet" href="styles/collections.css" />
   <link rel="stylesheet" href="styles/leaderboard.css" />
   <link rel="stylesheet" href="styles/compare.css" />
   <link rel="stylesheet" href="styles/confetti.css" />
   <link rel="stylesheet" href="styles/promotion.css" />
   <link rel="stylesheet" href="styles/toast.css" />
+  <link rel="stylesheet" href="styles/polish.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
 </head>
 
@@ -140,8 +141,8 @@
         <button class="tab" data-tab="record">
           <i class="fa-solid fa-file-lines"></i> PUNISHMENT
         </button>
-        <button class="tab" data-tab="capture">
-          <i class="fa-solid fa-flag"></i> CAPTURE
+        <button class="tab tab-event" data-tab="event">
+          <i class="fa-solid fa-bolt"></i> EVENT
         </button>
       </div>
 
@@ -166,16 +167,12 @@
           <div class="record-history"></div>
         </div>
 
-        <div class="panel hidden" id="tab_capture">
-          <div class="capture-unavailable hidden" id="capture_unavailable">
-            <i class="fa-solid fa-flag"></i>
-            <span>Capture system is not currently active on this server.</span>
+        <div class="panel hidden" id="tab_event">
+          <div class="event-hero">
+            <div class="event-hero-title"><i class="fa-solid fa-bolt"></i> EVENTS</div>
+            <div class="event-hero-sub">همه‌ی ایونت‌های سرور؛ با کامند وارد شو و رکوردت رو بزن</div>
           </div>
-          <div class="capture-body" id="capture_body">
-            <div class="capture-header"></div>
-            <div class="capture-summary"></div>
-            <div class="capture-columns"></div>
-          </div>
+          <div class="event-grid" id="event_grid"></div>
         </div>
 
         <div class="panel hidden" id="tab_leaderboard">
@@ -250,6 +247,7 @@
     </div>
   </div>
 
+  <script src="scripts/dedupe.js"></script>
   <script src="scripts/sound.js"></script>
   <script src="scripts/confetti.js"></script>
   <script src="scripts/promotion.js"></script>
@@ -260,7 +258,7 @@
   <script src="scripts/skill.js"></script>
   <script src="scripts/duty.js"></script>
   <script src="scripts/record.js"></script>
-  <script src="scripts/capture.js"></script>
+  <script src="scripts/event.js"></script>
   <script src="scripts/collections.js"></script>
   <script src="scripts/leaderboard.js"></script>
   <script src="scripts/compare.js"></script>

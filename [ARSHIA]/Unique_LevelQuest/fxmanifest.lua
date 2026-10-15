@@ -20,7 +20,7 @@ server_scripts {
     'server/leaderboard.lua',
     'server/duty.lua',
     'server/record.lua',
-    'server/capture.lua',
+    'server/event.lua',
 }
 
 client_scripts {

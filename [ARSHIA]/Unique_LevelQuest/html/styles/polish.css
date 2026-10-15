@@ -1,0 +1,109 @@
+/* ============================================================
+   POLISH LAYER — loaded last. Unified premium look for every tab.
+   Only transform/opacity are animated (GPU-cheap); heavy blur and
+   filter effects are avoided so the NUI stays smooth on weak PCs.
+   ============================================================ */
+:root {
+  --glass: linear-gradient(165deg, rgba(255,255,255,.065), rgba(255,255,255,.018));
+  --edge: rgba(255,255,255,.09);
+  --glow: rgba(255,140,26,.45);
+}
+
+.window {
+  background:
+    radial-gradient(900px 380px at 85% -10%, rgba(255,140,26,.10), transparent 60%),
+    radial-gradient(700px 320px at 0% 110%, rgba(79,168,255,.07), transparent 60%),
+    linear-gradient(180deg, rgba(10,10,12,.94), rgba(5,5,7,.92));
+  border: 1px solid rgba(255,140,26,.18);
+  box-shadow: 0 30px 100px rgba(0,0,0,.75), 0 0 0 1px rgba(0,0,0,.6), 0 0 60px -20px var(--glow);
+}
+
+/* ---- scrollbar ---- */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: linear-gradient(var(--orange), #b85d00); border-radius: 8px; }
+
+/* ---- tabs ---- */
+.tabs { background: linear-gradient(180deg, rgba(0,0,0,.7), rgba(0,0,0,.45)); }
+.tab { text-transform: uppercase; transition: color .2s, background .2s; }
+.tab i { transition: transform .25s, color .2s; }
+.tab:hover i { transform: translateY(-2px) scale(1.15); }
+.tab.active { background: linear-gradient(180deg, rgba(255,140,26,.16), transparent 90%); text-shadow: 0 0 12px rgba(255,140,26,.55); }
+.tab.active::after { left: 22%; right: 22%; height: 3px; border-radius: 3px 3px 0 0; animation: plIndicator .3s ease; }
+@keyframes plIndicator { from { transform: scaleX(.2); opacity: 0; } }
+
+/* ---- panel transitions ---- */
+.panel:not(.hidden) { animation: plPanel .28s ease; }
+@keyframes plPanel { from { opacity: 0; transform: translateY(8px); } }
+
+/* ---- unified cards ---- */
+.achCard, .skillRow, .recordStatusCard, .recordHistoryRow, .dutyChip, .summaryChip,
+.questSlotChip, .imgCard, .champCard, .boardRow, .gwRow, .dutyRosterRow, .dutyPersonalResultBox,
+.podiumSpot {
+  background: var(--glass);
+  border: 1px solid var(--edge);
+  border-radius: 14px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.05), 0 6px 18px -10px rgba(0,0,0,.8);
+  transition: transform .22s ease, border-color .22s ease, box-shadow .22s ease;
+}
+.achCard:hover, .skillRow:hover, .imgCard:hover, .champCard:hover, .boardRow:hover,
+.gwRow:hover, .dutyRosterRow:hover, .recordHistoryRow:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255,140,26,.5);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.07), 0 12px 28px -12px var(--glow);
+}
+
+/* long lists: skip layout/paint of offscreen rows */
+.boardRow, .gwRow, .dutyRosterRow, .recordHistoryRow, .skillRow {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 64px;
+}
+
+/* ---- staggered entrance for grids ---- */
+.quests-grid > *, .skill-list > *, .gridCards > *, .board-list > *, .dutyRosterList > * {
+  animation: plRise .4s ease both;
+}
+.quests-grid > *:nth-child(1), .skill-list > *:nth-child(1), .gridCards > *:nth-child(1), .board-list > *:nth-child(1) { animation-delay: .02s; }
+.quests-grid > *:nth-child(2), .skill-list > *:nth-child(2), .gridCards > *:nth-child(2), .board-list > *:nth-child(2) { animation-delay: .06s; }
+.quests-grid > *:nth-child(3), .skill-list > *:nth-child(3), .gridCards > *:nth-child(3), .board-list > *:nth-child(3) { animation-delay: .10s; }
+.quests-grid > *:nth-child(4), .skill-list > *:nth-child(4), .gridCards > *:nth-child(4), .board-list > *:nth-child(4) { animation-delay: .14s; }
+.quests-grid > *:nth-child(n+5), .skill-list > *:nth-child(n+5), .gridCards > *:nth-child(n+5), .board-list > *:nth-child(n+5) { animation-delay: .18s; }
+@keyframes plRise { from { opacity: 0; transform: translateY(10px); } }
+
+/* ---- progress bars: glowing, shimmering fill ---- */
+.xp-fill, .skillFill, .fuelFill {
+  position: relative; overflow: hidden;
+  box-shadow: 0 0 10px rgba(255,140,26,.55);
+}
+.xp-fill::after, .skillFill::after {
+  content: ''; position: absolute; inset: 0; width: 40%;
+  background: linear-gradient(100deg, transparent, rgba(255,255,255,.35), transparent);
+  animation: plShimmer 2.4s linear infinite;
+}
+@keyframes plShimmer { from { transform: translateX(-120%); } to { transform: translateX(320%); } }
+
+/* ---- top stat chips ---- */
+.lvBox { background: linear-gradient(160deg, rgba(255,140,26,.12), rgba(0,0,0,.5)); box-shadow: 0 0 28px -8px var(--glow), inset 0 1px 0 rgba(255,255,255,.08); }
+.lvValue { text-shadow: 0 0 18px rgba(255,140,26,.65); }
+
+/* ---- buttons ---- */
+.questBtn, .acceptBtn, .subtab, .calApplyBtn, .jobLbPeriodBtn {
+  transition: transform .15s ease, box-shadow .2s ease, filter .2s ease;
+}
+.questBtn:hover, .acceptBtn:hover, .calApplyBtn:hover { transform: translateY(-1px); box-shadow: 0 8px 20px -8px var(--glow); filter: brightness(1.1); }
+.questBtn:active, .acceptBtn:active, .subtab:active { transform: scale(.97); }
+.subtab.active { box-shadow: 0 0 16px -4px var(--glow); }
+
+/* ---- leaderboard top 3 ---- */
+.boardRow:nth-child(1) { border-color: rgba(255,215,0,.5); box-shadow: 0 0 24px -10px rgba(255,215,0,.6); }
+.boardRow:nth-child(2) { border-color: rgba(200,210,225,.4); }
+.boardRow:nth-child(3) { border-color: rgba(205,127,50,.45); }
+
+/* ---- inputs ---- */
+input, select { transition: border-color .2s, box-shadow .2s; }
+input:focus, select:focus { outline: none; border-color: var(--orange) !important; box-shadow: 0 0 0 3px rgba(255,140,26,.18); }
+
+/* ---- accessibility / low-end ---- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
