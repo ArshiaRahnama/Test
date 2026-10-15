@@ -614,13 +614,16 @@ AddEventHandler('Morphy_RobSystem:robberyNeeds', function(robname)
     end
 
     for itemname,amount in pairs(Config.Rob.RobTypes[Config.Rob.Robs[robname].type].itemneed) do
-        if xPlayer.getInventoryItem(itemname) then
-            if amount > xPlayer.getInventoryItem(itemname).count then
-                TriggerClientEvent('esx:showNotification', _source, "Baraye Starte In Robbery Bayad Be tedade "..amount.." az "..itemname.." Dashte Bashid .")
+        local have = xPlayer.getInventoryItem(itemname)
+        -- show the item's label (e.g. "Plan Robbery Premium") instead of the raw name when it has one
+        local shown = (have and type(have.label) == 'string' and have.label ~= '' and have.label) or itemname
+        if have then
+            if amount > have.count then
+                TriggerClientEvent('esx:showNotification', _source, "Baraye Starte In Robbery Bayad Be tedade "..amount.." az "..shown.." Dashte Bashid .")
                 return
             end
         else
-            TriggerClientEvent('esx:showNotification', _source, "Baraye Starte In Robbery Bayad Be tedade "..amount.." az "..itemname.." Dashte Bashid .")
+            TriggerClientEvent('esx:showNotification', _source, "Baraye Starte In Robbery Bayad Be tedade "..amount.." az "..shown.." Dashte Bashid .")
             return
         end
 

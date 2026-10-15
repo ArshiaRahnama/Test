@@ -570,6 +570,7 @@ Config.Territory = {
         blip         = true,
         blipColor    = 1,     -- red
         blipOpacity  = 50,    -- 0-255
+        captureAnnounce = true, -- when a zone changes hands, everyone physically on the island gets a message
 
         -- No zombies in/near the island's Safe zones (spawn/teleport areas).
         -- radius = the Safe zone's own 50m + a 50m margin, so zombies never hover at the edge.
@@ -619,22 +620,61 @@ Config.Territory = {
     -- (the first gang armory, Unique_inventory store "gang_<name>") the
     -- moment they take a zone. Members take them out of the armory like
     -- any other item, and every online member gets a chat message +
-    -- notification. To stop two friendly gangs flipping a zone back and
-    -- forth for items, a zone only pays out once per cooldownMinutes.
-    -- Item names must exist in the `items` table (a warning is printed
-    -- at start if one is missing).
+    -- notification. A zone only pays out once per cooldownMinutes, so two
+    -- friendly gangs can't flip it back and forth for items.
+    --
+    -- The guaranteed part is the ROBBERY PLANS that Unique_AllRobs now
+    -- requires (Config.Rob.Plans there): plan_bronze / plan_silver /
+    -- plan_premium. On top of that there is a LOW-chance bonus roll for a
+    -- weapon or item (`bonus` below).
+    -- Item names must exist in the `items` table (a warning is printed at
+    -- start if one is missing - run Unique_AllRobs/sql/Unique_RobPlans.sql).
     -------------------------------------------------------------------
     CaptureReward = {
         Enabled            = true,
         inventoryResource  = 'Unique_inventory',
         cooldownMinutes    = 60,
+
+        -- guaranteed items, by zone tier
         byTier = {
-            [1] = { { name = 'plan_give', count = 2 } },
-            [2] = { { name = 'plan_give', count = 3 } },
-            [3] = { { name = 'plan_give', count = 5 } },
+            [1] = { { name = 'plan_bronze',  count = 2 } },
+            [2] = { { name = 'plan_silver',  count = 1 }, { name = 'plan_bronze', count = 1 } },
+            [3] = { { name = 'plan_premium', count = 2 }, { name = 'plan_silver', count = 1 } },
         },
-        default  = { { name = 'plan_give', count = 2 } },
-        bossZone = { { name = 'plan_give', count = 10 } },
+        default  = { { name = 'plan_bronze', count = 1 } },
+        bossZone = { { name = 'plan_premium', count = 5 } },
+
+        -- chance (%) of ONE extra random reward per payout, and what it can be.
+        -- type = 'weapon' goes to the armory's weapon list, 'item' to its items.
+        -- weight = relative likelihood inside the pool.
+        bonus = {
+            byTier = {
+                [1] = { chance = 5, pool = {
+                    { type = 'weapon', name = 'WEAPON_PISTOL',     count = 1, weight = 55 },
+                    { type = 'weapon', name = 'WEAPON_PISTOL_MK2', count = 1, weight = 25 },
+                    { type = 'item',   name = 'iron',              count = 5, weight = 20 },
+                } },
+                [2] = { chance = 8, pool = {
+                    { type = 'weapon', name = 'WEAPON_SNSPISTOL_MK2', count = 1, weight = 40 },
+                    { type = 'weapon', name = 'WEAPON_PISTOL50',      count = 1, weight = 30 },
+                    { type = 'weapon', name = 'WEAPON_ASSAULTSMG',    count = 1, weight = 20 },
+                    { type = 'item',   name = 'gold',                 count = 5, weight = 10 },
+                } },
+                [3] = { chance = 12, pool = {
+                    { type = 'weapon', name = 'WEAPON_ASSAULTSMG',     count = 1, weight = 40 },
+                    { type = 'weapon', name = 'WEAPON_CARBINERIFLE',   count = 1, weight = 35 },
+                    { type = 'weapon', name = 'WEAPON_ASSAULTSHOTGUN', count = 1, weight = 25 },
+                } },
+            },
+            bossZone = { chance = 25, pool = {
+                { type = 'weapon', name = 'WEAPON_CARBINERIFLE',    count = 1, weight = 40 },
+                { type = 'weapon', name = 'WEAPON_ADVANCEDRIFLE',   count = 1, weight = 35 },
+                { type = 'weapon', name = 'WEAPON_ASSAULTRIFLE_MK2', count = 1, weight = 25 },
+            } },
+            default = { chance = 5, pool = {
+                { type = 'weapon', name = 'WEAPON_PISTOL', count = 1, weight = 100 },
+            } },
+        },
     },
 
     TierIncome = { -- dirty money ($) paid per zone every IncomeIntervalMinutes

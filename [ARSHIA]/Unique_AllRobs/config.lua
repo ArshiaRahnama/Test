@@ -417,3 +417,39 @@ Config.Rob.RobTypes ={
         teammatesrequired = 4, -- BASE minimum; larger party = more guards + bigger reward
     },
 }
+
+-------------------------------------------------------------------
+-- ROBBERY PLANS
+-- Every robbery TYPE except Shop needs "plan" items on top of what it
+-- already needed (laptop, blowtorch ...). The plans are consumed when the
+-- robbery starts, exactly like the other required items.
+--   plan_bronze / plan_silver / plan_premium   (create them with
+--   sql/Unique_RobPlans.sql)
+-- Gangs earn them by capturing Territory zones (Unique_ALLGangs ->
+-- Config.Territory.CaptureReward). Shops need no plan, so a brand new gang
+-- can always start robbing.
+-- To change a rule just edit this table: a type that is missing or set to
+-- nil needs no plan.
+-------------------------------------------------------------------
+Config.Rob.Plans = {
+    Items = { bronze = 'plan_bronze', silver = 'plan_silver', premium = 'plan_premium' },
+    Requirements = {
+        -- type            = { tier, how many plans of that tier }
+        Minibank           = { tier = 'bronze',  count = 3 }, -- FleeccE Bank 1-4, Bank Saheli
+        OilRig             = { tier = 'bronze',  count = 3 }, -- Oil Rig Heist ("air robbery")
+        Jewerlly           = { tier = 'silver',  count = 2 }, -- Jaw Shahr, Jaw BironShahr
+        Life_Invader       = { tier = 'premium', count = 5 }, -- Insurance (Bime)
+        Palateo_Bank       = { tier = 'premium', count = 5 }, -- Bank Pelato
+    },
+}
+
+-- Merge the plan requirements into each type's itemneed (the existing
+-- start check in server.lua then verifies + consumes them).
+for robType, req in pairs(Config.Rob.Plans.Requirements) do
+    local rt = Config.Rob.RobTypes[robType]
+    local item = Config.Rob.Plans.Items[req.tier]
+    if rt and item and (tonumber(req.count) or 0) > 0 then
+        rt.itemneed = rt.itemneed or {}
+        rt.itemneed[item] = req.count
+    end
+end

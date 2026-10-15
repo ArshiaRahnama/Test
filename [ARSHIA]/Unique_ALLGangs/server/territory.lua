@@ -346,6 +346,7 @@ end)
 -- CAPTURE REWARD (Config.Territory.CaptureReward): items into the
 -- gang's armory + a chat/notification to every online member.
 -------------------------------------------------------------------
+math.randomseed(os.time())
 local RewardItemLabels = {}   -- item name -> label (from the `items` table, for the message)
 local RewardCooldownAt = {}   -- RewardCooldownAt[zoneKey] = os.time() of the last payout
 
@@ -356,6 +357,11 @@ local function AllRewardItemNames()
     local function add(list) for _, it in ipairs(list or {}) do if it.name and not seen[it.name] then seen[it.name] = true names[#names + 1] = it.name end end end
     add(rw.default); add(rw.bossZone)
     for _, list in pairs(rw.byTier or {}) do add(list) end
+    local function addPool(b) for _, e in ipairs((b and b.pool) or {}) do if e.type == 'item' and e.name and not seen[e.name] then seen[e.name] = true names[#names + 1] = e.name end end end
+    if rw.bonus then
+        addPool(rw.bonus.default); addPool(rw.bonus.bossZone)
+        for _, b in pairs(rw.bonus.byTier or {}) do addPool(b) end
+    end
     return names
 end
 
@@ -389,8 +395,36 @@ local function AddItemToGangArmory(gang, itemName, count)
     -- fallback: talk to esx_addoninventory directly (shared store "gang_<name>")
     local inv
     TriggerEvent('esx_addoninventory:getSharedInventory', 'gang_' .. string.lower(gang), function(i) inv = i end)
-    if inv then inv.addItem(string.lower(itemName), count) return true end
+    if inv then inv.addItem(itemName, count) return true end
     print(('[Unique_ALLGangs] could not add %sx %s to the armory of "%s" (is %s running?)'):format(count, itemName, gang, res))
+    return false
+end
+
+-- Weapons live in the armory's separate weapon list (esx_datastore "gang_<name>").
+local function AddWeaponToGangArmory(gang, weaponName, count)
+    local rw = Config.Territory.CaptureReward
+    local res = rw and rw.inventoryResource or 'Unique_inventory'
+    local ok, success = pcall(function() return exports[res]:AddGangArmoryWeapon(gang, weaponName, count) end)
+    if ok and success then return true end
+    local store
+    TriggerEvent('esx_datastore:getSharedDataStore', 'gang_' .. string.lower(gang), function(st) store = st end)
+    if store then
+        local upper = string.upper(weaponName)
+        local weapons = store.get('weapons') or {}
+        local found = false
+        for i = 1, #weapons do
+            if string.upper(weapons[i].name) == upper then
+                weapons[i].count = (tonumber(weapons[i].count or weapons[i].ammo) or 0) + count
+                weapons[i].ammo = nil
+                found = true
+                break
+            end
+        end
+        if not found then table.insert(weapons, { name = upper, count = count }) end
+        store.set('weapons', weapons)
+        return true
+    end
+    print(('[Unique_ALLGangs] could not add %sx %s to the armory of "%s" (is %s running?)'):format(count, weaponName, gang, res))
     return false
 end
 
@@ -402,6 +436,62 @@ local function TellGang(gang, text, kind)
             TriggerClientEvent('chat:addMessage', playerId, { color = { 255, 200, 0 }, multiline = true, args = { 'TERRITORY', text } })
         end
     end
+end
+
+-- Everyone physically INSIDE the island circle (the red blip), except the
+-- gangs in `skipGangs` (they get their own, more specific message), hears
+-- that a zone changed hands. Players in another routing bucket (paintball
+-- arena, events) are not on the island and are skipped.
+local function AnnounceToIsland(text, skipGangs)
+    local isl = Config.Territory.Island
+    if not isl or isl.Enabled == false or isl.captureAnnounce == false then return end
+    for _, playerId in ipairs(ESX.GetPlayers()) do
+        local x = ESX.GetPlayerFromId(playerId)
+        local skip = x and x.gang and skipGangs and skipGangs[x.gang.name]
+        if not skip then
+            local ped = GetPlayerPed(playerId)
+            local inBucket0 = true
+            if GetPlayerRoutingBucket then
+                local okB, bucket = pcall(GetPlayerRoutingBucket, playerId)
+                inBucket0 = (not okB) or bucket == nil or bucket == 0
+            end
+            if ped and ped ~= 0 and inBucket0 then
+                local c = GetEntityCoords(ped)
+                local dx, dy = c.x - isl.coords.x, c.y - isl.coords.y
+                if (dx * dx + dy * dy) <= (isl.radius * isl.radius) then
+                    TriggerClientEvent(Config.showNotification, playerId, text, 'info')
+                    TriggerClientEvent('chat:addMessage', playerId, { color = { 255, 120, 60 }, multiline = true, args = { 'JAZIRE', text } })
+                end
+            end
+        end
+    end
+end
+
+-- One random extra (weapon or item) with a LOW chance, picked by weight.
+local function RollBonus(cfg, newGang)
+    local rw = Config.Territory.CaptureReward
+    local bonus = rw and rw.bonus
+    if not bonus then return nil end
+    local entry = (cfg.bossZone and bonus.bossZone) or (bonus.byTier and bonus.byTier[cfg.tier]) or bonus.default
+    if not entry or not entry.pool or #entry.pool == 0 then return nil end
+    if math.random(100) > (tonumber(entry.chance) or 0) then return nil end
+
+    local total = 0
+    for _, e in ipairs(entry.pool) do total = total + (tonumber(e.weight) or 1) end
+    local pick = math.random() * total
+    local chosen = entry.pool[#entry.pool]
+    for _, e in ipairs(entry.pool) do
+        pick = pick - (tonumber(e.weight) or 1)
+        if pick <= 0 then chosen = e break end
+    end
+
+    local count = chosen.count or 1
+    local ok
+    if chosen.type == 'weapon' then ok = AddWeaponToGangArmory(newGang, chosen.name, count)
+    else ok = AddItemToGangArmory(newGang, chosen.name, count) end
+    if not ok then return nil end
+    local label = chosen.type == 'weapon' and (chosen.name:gsub('^WEAPON_', '')) or (RewardItemLabels[chosen.name] or chosen.name)
+    return ('%sx %s'):format(count, label)
 end
 
 local function GiveCaptureReward(zoneKey, newGang, cfg)
@@ -427,7 +517,10 @@ local function GiveCaptureReward(zoneKey, newGang, cfg)
         -- only start the per-zone cooldown when something was really paid out
         -- (an armory/inventory outage must not burn the zone's reward for an hour)
         RewardCooldownAt[zoneKey] = now
-        TellGang(newGang, ('Gang-e shoma "%s" ro tasarrof kard! Jayeze be armory-e gang ezafe shod: %s - az armory bardarid.'):format(cfg.label, table.concat(parts, ', ')), 'success')
+        local text = ('Gang-e shoma "%s" ro tasarrof kard! Jayeze be armory-e gang ezafe shod: %s'):format(cfg.label, table.concat(parts, ', '))
+        local extra = RollBonus(cfg, newGang)
+        if extra then text = text .. (' + BONUS (shans): %s'):format(extra) end
+        TellGang(newGang, text .. ' - az armory bardarid.', 'success')
     end
 end
 
@@ -486,6 +579,12 @@ function CaptureZone(zoneKey, newGang, actorSource, skipXP)
     end
 
     GiveCaptureReward(zoneKey, newGang, cfg)
+
+    if not cfg.bossZone then
+        local who = (Gangs[newGang] and Gangs[newGang].label) or newGang
+        local from = oldGang and oldGang ~= newGang and ((Gangs[oldGang] and Gangs[oldGang].label) or oldGang) or nil
+        AnnounceToIsland(('Mantaghe-ye "%s" tavasot-e gang-e "%s" tasarrof shod%s!'):format(cfg.label, who, from and (' (az "' .. from .. '")') or ''), { [newGang] = true, [oldGang or ''] = true })
+    end
 
     BroadcastTerritoryState()
 
