@@ -7,6 +7,57 @@ local SC = function(coords)
     return coords
 end
 
+-- ============================================================
+-- FIX (bug: "dc/crash -> wrong spawn location"): db.updateUser only lets the
+-- `dateofbirth` column through (see the whitelist in server/db.lua), so the
+-- `position = ...` that playerDropped passed to it was silently dropped and the
+-- ONLY thing that ever persisted a position was the 8-minute autosave. A player
+-- who left/crashed between two autosaves respawned at an old location.
+-- This writes the position itself, straight to the DB, independent of that
+-- whitelist, and prefers the live ped position over the last 1s client report.
+-- ============================================================
+local function IsValidSavedCoords(c)
+    return type(c) == "table"
+        and type(c.x) == "number" and type(c.y) == "number" and type(c.z) == "number"
+        and c.x == c.x and c.y == c.y and c.z == c.z           -- NaN check
+        and not (math.abs(c.x) < 1.0 and math.abs(c.y) < 1.0)  -- (0,0,z) = ped not placed yet
+        and c.z > -200.0 and c.z < 3000.0
+end
+
+local function SavePlayerPosition(Source)
+    local user = Users[Source]
+    if not user or not user.identifier then return end
+
+    local coords = user.coords
+    -- Live position beats the last report (client reports at most once a second).
+    -- On some builds the ped is already gone inside playerDropped, so this is
+    -- only a bonus - the client-reported coords stay the fallback.
+    local ped = GetPlayerPed(Source)
+    if ped and ped ~= 0 and DoesEntityExist(ped) then
+        local live = GetEntityCoords(ped)
+        local candidate = {x = live.x, y = live.y, z = live.z, h = GetEntityHeading(ped)}
+        if IsValidSavedCoords(candidate) then
+            coords = candidate
+        end
+    end
+
+    if not IsValidSavedCoords(coords) then
+        return -- never overwrite a good stored position with garbage
+    end
+
+    local payload = json.encode({
+        x = tonumber(string.format("%.2f", coords.x)),
+        y = tonumber(string.format("%.2f", coords.y)),
+        z = tonumber(string.format("%.2f", coords.z)),
+        h = tonumber(string.format("%.1f", coords.h or user.angel or 0.0)),
+    })
+
+    exports.oxmysql:execute(
+        "UPDATE users SET `position` = @position WHERE `identifier` = @identifier",
+        {["position"] = payload, ["identifier"] = user.identifier}
+    )
+end
+
 RegisterServerEvent('updateLoadout')
 AddEventHandler('updateLoadout', function(loadout)
 local xPlayer = ESX.GetPlayerFromId(source)
@@ -86,6 +137,9 @@ AddEventHandler(
     function(reason)
         local Source = source
         if (Users[Source]) then
+            -- Save the exact position FIRST (before any other resource's
+            -- esx:playerDropped handler or the slower writes below can fail).
+            SavePlayerPosition(Source)
             TriggerEvent("esx:playerDropped", Source, reason)
             local invent = {}
             for _, v in ipairs(Users[Source].inventory) do
@@ -156,6 +210,7 @@ AddEventHandler(
     function(source)
         local Source = source
         if (Users[Source]) then
+            SavePlayerPosition(Source)
             TriggerEvent("esx:playerDropped", Source)
             local invent = {}
             for _, v in ipairs(Users[Source].inventory) do
@@ -714,9 +769,16 @@ RegisterServerEvent("updatePositions")
 AddEventHandler(
     "updatePositions",
     function(x, y, z, a)
-        if (Users[source]) then
-            Users[source].setCoords(x, y, z)
-            Users[source].set("angel", a)
+        local src = source
+        if (Users[src]) then
+            -- Reject junk (non-numbers, NaN, (0,0,z) from an unplaced ped) so
+            -- a bad report can never overwrite the real last position.
+            if not IsValidSavedCoords({x = x, y = y, z = z}) then return end
+            Users[src].setCoords(x, y, z)
+            if type(a) == "number" and Users[src].coords then
+                Users[src].coords.h = a
+            end
+            Users[src].set("angel", a)
         end
     end
 )

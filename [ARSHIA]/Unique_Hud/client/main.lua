@@ -194,55 +194,71 @@ end)
 
 local previousArmor = 0
 local previousHealth = 0
+-- ✅ فیکس شد (باگ «با باز کردن مپ کل HUD محو میشه و چند دقیقه بعد برمی‌گرده»):
+-- دو مشکل بود:
+-- ۱) وقتی پاز/مپ باز بود ترد Wait(5000) می‌کرد و بعد از بسته شدن مپ، تا ۵ ثانیه
+--    (در عمل بیشتر) طول می‌کشید تا HUD دوباره نشون داده بشه. الان وضعیت پاز هر
+--    ۱۰۰ms چک میشه و HUD همون لحظه‌ی بسته شدن مپ برمی‌گرده.
+-- ۲) هر بار ReloadAllData صدا زده می‌شد (playerLoaded، /reload، دکمه‌ی ~) این
+--    ایونت یه ترد جدید می‌ساخت و ترد قبلی هیچ‌وقت نمی‌مرد؛ چند ترد هم‌زمان
+--    display رو با هم عوض می‌کردن و باعث گیر کردن HUD می‌شد. الان فقط یه ترد داریم.
+local statusThreadStarted = false
+
 RegisterNetEvent('showStatus')
 AddEventHandler('showStatus', function()
-	Wait(1000)
+  if statusThreadStarted then return end
+  statusThreadStarted = true
 
-  local wait = 1000
+  Wait(1000)
+
   Citizen.CreateThread(function()
     local showed = false
+    local nextStatusUpdate = 0
     while true do
-
       local pause = IsPauseMenuActive()
 
-      if showed ~= showHud and not pause then
-        SendNUIMessage({
-          display = showHud
-        })
-        showed = showHud
-		wait = 1000
-      end
-      if pause and showed then
-        SendNUIMessage({
-          display = false
-        })
-        showed = false
-		wait = 5000
-      end
-
-      if showHud and showed then
-        local ped = PlayerPedId()
-        local pedhealth = GetEntityHealth(ped)
-        if pedhealth < 100 then
-          health = 0
-        else
-          health = pedhealth - 100
+      if pause then
+        -- مپ/پاز باز شد: یه بار مخفی کن
+        if showed then
+          SendNUIMessage({ display = false })
+          showed = false
+        end
+      else
+        -- مپ/پاز بسته شد (یا HUD با togglehud عوض شد): فوراً هماهنگ کن
+        if showed ~= showHud then
+          SendNUIMessage({ display = showHud })
+          showed = showHud
+          nextStatusUpdate = 0
         end
 
-        local armor = GetPedArmour(ped)
-		if armor == 98 then
-		armor = 100
-		end
-        if health ~= previousHealth or armor ~= previousArmor then
-          previousHealth = health
-          previousArmor = armor
-          updateHUD(health, armor)
-        end
+        -- آپدیت هیل/آرمور فقط هر ۱ ثانیه (مثل قبل)، نه هر ۱۰۰ms
+        local now = GetGameTimer()
+        if showHud and showed and now >= nextStatusUpdate then
+          nextStatusUpdate = now + 1000
 
+          local ped = PlayerPedId()
+          local pedhealth = GetEntityHealth(ped)
+          if pedhealth < 100 then
+            health = 0
+          else
+            health = pedhealth - 100
+          end
+
+          local armor = GetPedArmour(ped)
+          if armor == 98 then
+            armor = 100
+          end
+          if health ~= previousHealth or armor ~= previousArmor then
+            previousHealth = health
+            previousArmor = armor
+            updateHUD(health, armor)
+          end
+        end
       end
-      Citizen.Wait(wait)
+
+      Citizen.Wait(100)
     end
-end)
+  end)
 end)
 
 -- ✅ فیکس mugshot: تابع مستقل ثبت عکس، هم موقع playerLoaded هم موقع تعویض

@@ -58,14 +58,33 @@ end)
 local loaded = false
 local oldPos
 
+-- FIX (bug: "sometimes spawns in the wrong place after leaving"): this loop used
+-- to start reporting the moment the resource started - i.e. while the player was
+-- still on the loading screen / character form with the ped sitting at the
+-- spawnmanager default (or 0,0,0). If they quit then, that garbage overwrote
+-- their real saved position. Reporting now only starts once the player has been
+-- placed at their saved position (PositionReportingReady), either when the
+-- loading script says it is done or after a fallback delay.
+local PositionReportingReady = false
+
+AddEventHandler('loading:Loaded', function()
+	PositionReportingReady = true
+end)
+
 Citizen.CreateThread(function()
 	while true do
 		Citizen.Wait(1000)
-		local pos = GetEntityCoords(PlayerPedId())
-		local heading = GetEntityHeading(PlayerPedId())
-		if(oldPos ~= pos) and UpdatePos == true then
-			TriggerServerEvent('updatePositions', pos.x, pos.y, pos.z, heading)
-			oldPos = pos
+		if PositionReportingReady and UpdatePos == true then
+			local ped = PlayerPedId()
+			local pos = GetEntityCoords(ped)
+			-- skip until the ped is really in the world (not 0,0,z / not NaN)
+			if pos.x == pos.x and (math.abs(pos.x) >= 1.0 or math.abs(pos.y) >= 1.0) then
+				local heading = GetEntityHeading(ped)
+				if oldPos ~= pos then
+					TriggerServerEvent('updatePositions', pos.x, pos.y, pos.z, heading)
+					oldPos = pos
+				end
+			end
 		end
 	end
 end)
@@ -159,8 +178,34 @@ AddEventHandler("playerSpawned", function()
 	local playerPed = PlayerPedId()
 
 	if firstSpawn then
-		SetEntityCoords(playerPed, ESX.PlayerData.lastPosition.x, ESX.PlayerData.lastPosition.y, ESX.PlayerData.lastPosition.z - 1)
+		local lp = ESX.PlayerData.lastPosition
+		if lp and lp.x and lp.y and lp.z then
+			-- FIX (bug: "spawn under the map / wrong place"): the old code put
+			-- the ped at z-1 immediately, before the map around that spot had
+			-- loaded, so it could fall through the ground. Now: request the
+			-- collision, keep the ped frozen until it's loaded (max 4s), and
+			-- restore the EXACT saved position (z is the ped's own saved z, so
+			-- no -1 offset) plus the saved heading.
+			local x, y, z = lp.x + 0.0, lp.y + 0.0, lp.z + 0.0
+			FreezeEntityPosition(playerPed, true)
+			RequestCollisionAtCoord(x, y, z)
+			SetEntityCoordsNoOffset(playerPed, x, y, z, false, false, false)
+			if lp.h then SetEntityHeading(playerPed, lp.h + 0.0) end
+			local waited = 0
+			while not HasCollisionLoadedAroundEntity(playerPed) and waited < 4000 do
+				RequestCollisionAtCoord(x, y, z)
+				Citizen.Wait(50)
+				waited = waited + 50
+			end
+			FreezeEntityPosition(playerPed, false)
+		end
 		TriggerEvent('es_admin:freezePlayer', true)
+
+		-- Fallback so position saving can never stay disabled forever if the
+		-- loading script's 'loading:Loaded' event doesn't fire on some path.
+		Citizen.SetTimeout(30000, function()
+			PositionReportingReady = true
+		end)
 	end
 	firstSpawn = false
 	PlayerSpawned = true

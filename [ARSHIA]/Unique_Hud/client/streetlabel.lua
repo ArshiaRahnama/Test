@@ -25,9 +25,25 @@ CreateThread(function()
     end
 end)
 
-local UH_directions = {
-    N = 360, NE = 315, E = 270, SE = 225, S = 180, SW = 135, W = 90, NW = 45,
-}
+-- ✅ فیکس شد (باگ «تایم/جهت گاهی خراب میشه و عدد اعشاری روی آدرس میفته»):
+-- قبلاً جهت با مقایسه‌ی |heading - مقدار| < 22.5 پیدا می‌شد و «N» فقط برای 360 تعریف
+-- شده بود، نه 0. وقتی heading بین 0 تا 22.5 بود (مثلاً 0.039) هیچ جهتی مچ نمی‌شد و
+-- خودِ عدد خام (0.0390246407959...) به‌جای N تو UI چاپ می‌شد - همون چیزی که تو
+-- اسکرین‌شات دیده شد. الان heading نرمال میشه (0..360 با wrap) و همیشه یکی از ۸ جهت برمیگرده.
+-- ترتیب خلاف عقربه‌های ساعت چون heading تو GTA از شمال به سمت غرب زیاد میشه (W = 90).
+local UH_dirNames = { 'N', 'NW', 'W', 'SW', 'S', 'SE', 'E', 'NE' }
+
+local function UH_headingToDirection(heading)
+    if type(heading) ~= 'number' or heading ~= heading then return 'N' end
+    local h = heading % 360.0
+    local idx = math.floor((h + 22.5) / 45.0) % 8
+    return UH_dirNames[idx + 1]
+end
+
+-- ساعت بازی با صفر پشت دقیقه/ساعت (قبلاً 1:5 به‌جای 01:05 نشون میداد)
+local function UH_formatClock()
+    return string.format('%d:%02d', GetClockHours(), GetClockMinutes())
+end
 
 local UH_isGpsOn = true
 local UH_isLoaded = false
@@ -87,14 +103,7 @@ CreateThread(function()
             local var1, var2 = GetStreetNameAtCoord(coords.x, coords.y, coords.z, Citizen.ResultAsInteger(), Citizen.ResultAsInteger())
             UH_streetHash1 = GetStreetNameFromHashKey(var1)
             UH_streetHash2 = GetStreetNameFromHashKey(var2)
-            UH_playerDirection = GetEntityHeading(ped)
-
-            for k, v in pairs(UH_directions) do
-                if math.abs(UH_playerDirection - v) < 22.5 then
-                    UH_playerDirection = k
-                    break
-                end
-            end
+            UH_playerDirection = UH_headingToDirection(GetEntityHeading(ped))
 
             street2 = (UH_streetHash2 == '') and zoneLabel or (UH_streetHash2 .. ', ' .. zoneLabel)
         end
@@ -104,7 +113,7 @@ CreateThread(function()
             direction = UH_playerDirection,
             zone = UH_streetHash1,
             street = street2,
-            time = GetClockHours() .. ':' .. GetClockMinutes(),
+            time = UH_formatClock(),
             ts = UH_ts .. ' | ' .. UH_accountId .. ' | W' .. UH_world .. ' | ID : ',
             src = svID,
             server = (UH_ESX.serverNum == 1) and '*' or '**',
@@ -124,7 +133,9 @@ end)
 
 CreateThread(function()
     while true do
-        Wait(60000)
+        -- اگه اولین گرفتن زمان سرور جواب نداده بود (ts هنوز ۰ یا خیلی کوچیکه)،
+        -- هر ۳ ثانیه دوباره امتحان کن به‌جای اینکه ۶۰ ثانیه عدد خراب نشون بدیم.
+        Wait((UH_ts or 0) < 1000000000 and 3000 or 60000)
         if UH_ESX then
             UH_ESX.TriggerServerCallback('sun-streetlabel:getServerTime', function(time)
                 if time then UH_ts = time end

@@ -15,6 +15,7 @@ server_scripts {
     'server/main.lua',
     'server/streetlabel.lua',
     'server/scoreboard.lua',
+    'server/bike_model.lua',
 }
 
 client_scripts {
@@ -25,6 +26,7 @@ client_scripts {
     'client/scoreboard.lua',
     'client/seatbelt.lua',
     'client/hud2_client.lua',
+    'client/bike_antifall.lua',
 }
 
 ui_page 'ui/index.html'
