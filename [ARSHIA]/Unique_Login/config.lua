@@ -1,5 +1,3 @@
-
-
 Config = {}
 
 Config.SMS = {
@@ -91,4 +89,17 @@ Config.UsernameBlacklist = {
     "admin", "administrator", "owner", "founder", "support", "staff",
     "moderator", "mod", "gm", "developer", "dev", "system", "unique_rp",
     "uniquerp", "helper", "management", "ceo",
+}
+
+-- UI v2: ورود خودکار با دستگاه (device_license).
+--   false (پیش‌فرض) = هر بار هاب «انتخاب حساب» نشون داده می‌شه و رمز پرسیده می‌شه.
+--   true            = رفتار قبلی؛ دستگاه شناخته‌شده بدون پنل مستقیم وارد می‌شه.
+Config.AutoLogin = false
+
+-- UI v2: لیست حساب‌های قبلیِ همین دستگاه توی هاب. از login_audit خونده می‌شه
+-- (نگهداری‌ش با Config.AuditLogRetentionDays کنترل می‌شه). انتخاب یه حساب
+-- فقط یوزرنیم رو پر می‌کنه؛ رمز همیشه پرسیده می‌شه.
+Config.AccountPicker = {
+    Enabled     = true,
+    MaxAccounts = 5, -- بین ۱ تا ۱۰
 }

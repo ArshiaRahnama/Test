@@ -137,256 +137,341 @@ local function sendDiscordAlert(title, description, color)
 end
 
 local smscodedict = {}
-function ShowMainMenu(deferrals)
-    local card = {
-        type = "AdaptiveCard",
-        version = "1.5",
-        minHeight = "200px",
-        body = {
+-- ─────────────────────────────────────────────────────────
+-- UI v2: هاب انتخاب حساب + فرم ورود جدید
+--
+-- هر بار که بازیکن وصل می‌شه (وقتی Config.AutoLogin خاموشه، که پیش‌فرضه)
+-- اول این «هاب» رو می‌بینه: لیست حساب‌هایی که قبلاً با همین دستگاه
+-- (license: واقعی) وارد شدن/ثبت‌نام کردن. انتخاب یه حساب فقط یوزرنیم رو
+-- پر می‌کنه — رمز عبور هر بار پرسیده می‌شه، پس لیست‌شدن اسم حساب
+-- دسترسی به حساب نمی‌ده. لیست از login_audit (و ستون device_license)
+-- ساخته می‌شه، پس هیچ جدول/ستون جدیدی لازم نیست.
+-- ─────────────────────────────────────────────────────────
+local function uiLetterOf(name)
+    local ch = tostring(name or "?"):match("[%z\1-\127\194-\244][\128-\191]*") or "?"
+    if #ch == 1 then ch = ch:upper() end
+    return ch
+end
+
+local function uiTimeAgo(unix)
+    unix = tonumber(unix)
+    if not unix then return "—" end
+    local d = math.max(0, os.time() - unix)
+    if d < 60 then return "همین الان" end
+    if d < 3600 then return math.floor(d / 60) .. " دقیقه پیش" end
+    if d < 86400 then return math.floor(d / 3600) .. " ساعت پیش" end
+    return math.floor(d / 86400) .. " روز پیش"
+end
+
+local function uiBrandHeader(title, subtitle, icon)
+    return {
+        type = "Container",
+        style = "emphasis",
+        backgroundColor = COLORS.MID,
+        items = {
             {
-                type = "Container",
-                backgroundColor = COLORS.MID,
-                items = {
+                type = "TextBlock",
+                text = "✦  U N I Q U E   R P  ✦",
+                weight = "bolder",
+                size = "medium",
+                color = "Accent",
+                horizontalAlignment = "center",
+                fontType = "monospace"
+            },
+            {
+                type = "ColumnSet",
+                spacing = "medium",
+                columns = {
                     {
-                        type = "ColumnSet",
-                        columns = {
-                            {
-                                type = "Column",
-                                width = "stretch",
-                                items = {
-                                    {
-                                        type = "TextBlock",
-                                        text = "Unique RolePlay",
-                                        weight = "bolder",
-                                        size = "extraLarge",
-                                        color = "Accent",
-                                        horizontalAlignment = "center",
-                                        fontType = "monospace"
-                                    },
-                                    {
-                                        type = "TextBlock",
-                                        -- text = "به دنیای واقعی خوش آمدید",
-                                        size = "small",
-                                        color = COLORS.Light,
-                                        horizontalAlignment = "center",
-                                        isSubtle = true,
-                                        spacing = "small"
-                                    }
-                                }
-                            }
+                        type = "Column",
+                        width = "auto",
+                        verticalContentAlignment = "center",
+                        items = { { type = "TextBlock", text = icon or "🔐", size = "extraLarge" } }
+                    },
+                    {
+                        type = "Column",
+                        width = "stretch",
+                        verticalContentAlignment = "center",
+                        items = {
+                            { type = "TextBlock", text = title, weight = "bolder", size = "large", color = "Light", wrap = true },
+                            { type = "TextBlock", text = subtitle or "", size = "small", isSubtle = true, wrap = true, spacing = "none" }
                         }
                     }
-                },
-                cornerRadius = "15px 15px 0 0",
-                padding = "25px"
-            },
-
-            {
-                type = "Container",
-                backgroundColor = COLORS.DARK,
-                items = {
-                    {
-                        type = "TextBlock",
-                        text = "━━━━━━━━━━━━━━━━━━━━━━━",
-                        horizontalAlignment = "center",
-                        color = "Accent",
-                        spacing = "medium"
-                    },
-
-
-                    {
-                        type = "TextBlock",
-                        text = "🔐 برای ورود به سرور احراز هویت کنید",
-                        horizontalAlignment = "center",
-                        color = COLORS.Light,
-                        weight = "bolder",
-                        spacing = "medium"
-                    },
-
-                    {
-                        type = "TextBlock",
-                        text = " ",
-                        size = "small"
-                    },
-
-                    {
-                        type = "TextBlock",
-                        text = "📅 " .. os.date("%Y/%m/%d") .. "  ⏰ " .. os.date("%H:%M"),
-                        horizontalAlignment = "center",
-                        color = COLORS.Light,
-                        isSubtle = true,
-                        spacing = "small"
-                    }
-                },
-                cornerRadius = "0 0 15px 15px",
-                padding = "25px"
+                }
             }
         },
+        cornerRadius = "15px 15px 0 0",
+        padding = "20px"
+    }
+end
 
-        actions = {
-            {
-                type = "Action.Submit",
-                title = "🔑  ورود با حساب کاربری",
-                data = { action = "login" }
-            },
-            {
-                type = "Action.Submit",
-                title = "📝  ثبت‌نام حساب جدید",
-                style = "positive",
-                data = { action = "register" }
-            },
+local function uiStatusStrip()
+    local maxSlots = (Config.Queue and Config.Queue.MaxSlots) or GetConvarInt("sv_maxclients", 48)
+    return {
+        type = "ColumnSet",
+        columns = {
+            { type = "Column", width = "stretch", items = { { type = "TextBlock", text = "🟢 سرور آنلاین", size = "small", color = "Good", weight = "bolder" } } },
+            { type = "Column", width = "stretch", items = { { type = "TextBlock", text = ("👥 %d / %d بازیکن"):format(#GetPlayers(), maxSlots), size = "small", horizontalAlignment = "center" } } },
+            { type = "Column", width = "stretch", items = { { type = "TextBlock", text = "🕒 " .. os.date("%H:%M"), size = "small", horizontalAlignment = "right", isSubtle = true } } }
         }
     }
+end
 
-    deferrals.presentCard(json.encode(card), function(data)
-        if data.action == "login" then
-            ShowLoginForm(deferrals)
-        elseif data.action == "register" then
-            ShowRegisterStep1_Phone(deferrals)
+-- یه کاشی (tile) برای نمایش یه حساب؛ actions اختیاریه.
+local function uiAccountTile(username, line2, lineColor, actions)
+    local items = {
+        {
+            type = "ColumnSet",
+            columns = {
+                {
+                    type = "Column",
+                    width = "auto",
+                    verticalContentAlignment = "center",
+                    items = { { type = "TextBlock", text = " " .. uiLetterOf(username) .. " ", size = "extraLarge", weight = "bolder", color = "Accent" } }
+                },
+                {
+                    type = "Column",
+                    width = "stretch",
+                    verticalContentAlignment = "center",
+                    items = {
+                        { type = "TextBlock", text = username, weight = "bolder", size = "medium", wrap = true },
+                        { type = "TextBlock", text = line2, size = "small", isSubtle = true, spacing = "none", wrap = true, color = lineColor }
+                    }
+                }
+            }
+        }
+    }
+    if actions then
+        table.insert(items, { type = "ActionSet", actions = actions })
+    end
+    return { type = "Container", style = "emphasis", spacing = "small", items = items }
+end
+
+-- حساب‌هایی که قبلاً با همین دستگاه استفاده شدن. اگه دیتابیس جواب نده،
+-- بعد از ۳ ثانیه با لیست خالی ادامه می‌ده تا بازیکن گیر نکنه.
+local function GetDeviceAccounts(src, cb)
+    local picker = Config.AccountPicker or {}
+    local dl = getIdentifierPrefix(src, "license:")
+    if picker.Enabled == false or not dl then
+        cb({})
+        return
+    end
+
+    local limit = math.floor(tonumber(picker.MaxAccounts) or 5)
+    if limit < 1 then limit = 1 elseif limit > 10 then limit = 10 end
+
+    local finished = false
+    local function finish(rows)
+        if finished then return end
+        finished = true
+        cb(rows or {})
+    end
+    Citizen.SetTimeout(3000, function() finish({}) end)
+
+    MySQL.Async.fetchAll(
+        "SELECT username, MAX(security_hold) AS security_hold, UNIX_TIMESTAMP(MAX(ts)) AS last_unix FROM ("
+            .. " SELECT lu.username AS username, lu.security_hold AS security_hold, a.created_at AS ts"
+            .. "   FROM login_audit a JOIN login_users lu ON lu.username = a.username"
+            .. "  WHERE a.device_license = @dl AND a.action IN ('login_success','register')"
+            .. " UNION ALL"
+            .. " SELECT username, security_hold, created_at FROM login_users WHERE device_license = @dl"
+            .. ") t GROUP BY username ORDER BY last_unix DESC LIMIT " .. limit,
+        { ["@dl"] = dl },
+        function(rows) finish(rows) end
+    )
+end
+
+function ShowMainMenu(deferrals)
+    GetDeviceAccounts(deferrals.src, function(accounts)
+        local hasAccounts = #accounts > 0
+
+        local body = {
+            uiBrandHeader(
+                hasAccounts and "خوش برگشتی 👋" or "خوش آمدید",
+                hasAccounts and "حساب خودت رو انتخاب کن تا وارد سرور بشی" or "برای ورود به سرور وارد حساب بشید یا ثبت‌نام کنید",
+                "🔐"
+            )
+        }
+
+        local inner = { uiStatusStrip() }
+
+        if hasAccounts then
+            table.insert(inner, {
+                type = "TextBlock",
+                text = "👥  حساب‌های این دستگاه",
+                weight = "bolder",
+                color = "Accent",
+                spacing = "large",
+                separator = true
+            })
+            for _, acc in ipairs(accounts) do
+                local locked = tonumber(acc.security_hold) == 1
+                local line2 = locked and "🔒 قفل امنیتی — برای باز شدن بازیابی رمز لازمه"
+                    or ("🕒 آخرین ورود: " .. uiTimeAgo(acc.last_unix))
+                table.insert(inner, uiAccountTile(acc.username, line2, locked and "Attention" or nil, {
+                    {
+                        type = "Action.Submit",
+                        title = locked and "🔓  بازیابی رمز عبور" or "🚀  ورود با این حساب",
+                        style = locked and "destructive" or "positive",
+                        data = { action = locked and "pick_locked" or "pick", username = acc.username }
+                    }
+                }))
+            end
         else
-            ShowMainMenu(deferrals)
+            table.insert(inner, {
+                type = "TextBlock",
+                text = "🔑  با نام کاربری/شماره تلفن و رمز عبور وارد شو\n📝  اگه حساب نداری، ثبت‌نام با تأیید پیامکی ساده‌ست",
+                wrap = true,
+                spacing = "large",
+                separator = true,
+                isSubtle = true
+            })
         end
+
+        table.insert(inner, {
+            type = "TextBlock",
+            text = "🛡️ هر بار ورود، رمز عبور پرسیده می‌شه تا حسابت امن بمونه",
+            size = "small",
+            isSubtle = true,
+            horizontalAlignment = "center",
+            wrap = true,
+            spacing = "large",
+            separator = true
+        })
+
+        table.insert(body, {
+            type = "Container",
+            backgroundColor = COLORS.DARK,
+            items = inner,
+            cornerRadius = "0 0 15px 15px",
+            padding = "20px"
+        })
+
+        local actions
+        if hasAccounts then
+            actions = {
+                { type = "Action.Submit", title = "➕  ورود با حساب دیگر", data = { action = "login" } },
+                { type = "Action.Submit", title = "📝  ثبت‌نام حساب جدید", data = { action = "register" } },
+            }
+        else
+            actions = {
+                { type = "Action.Submit", title = "🔑  ورود با حساب کاربری", style = "positive", data = { action = "login" } },
+                { type = "Action.Submit", title = "📝  ثبت‌نام حساب جدید", data = { action = "register" } },
+            }
+        end
+
+        local card = {
+            type = "AdaptiveCard",
+            version = "1.5",
+            minHeight = "200px",
+            body = body,
+            actions = actions
+        }
+
+        deferrals.presentCard(json.encode(card), function(data)
+            if (data.action == "pick" or data.action == "pick_locked") and type(data.username) == "string" then
+                -- فقط حساب‌هایی که همین الان توی لیست نشون داده شدن قابل انتخابن.
+                local known = false
+                for _, acc in ipairs(accounts) do
+                    if acc.username == data.username then known = true break end
+                end
+                if not known then
+                    ShowMainMenu(deferrals)
+                elseif data.action == "pick_locked" then
+                    ShowForgotPassword_Step1(deferrals)
+                else
+                    ShowLoginForm(deferrals, data.username)
+                end
+            elseif data.action == "login" then
+                ShowLoginForm(deferrals)
+            elseif data.action == "register" then
+                ShowRegisterStep1_Phone(deferrals)
+            else
+                ShowMainMenu(deferrals)
+            end
+        end)
     end)
 end
 
-function ShowLoginForm(deferrals)
+-- prefill (اختیاری): یوزرنیمی که از هاب انتخاب شده. اگه باشه فقط رمز پرسیده می‌شه.
+function ShowLoginForm(deferrals, prefill)
+    local inner = {}
+
+    if prefill then
+        table.insert(inner, uiAccountTile(prefill, "🔐 رمز عبور این حساب رو وارد کن", nil, nil))
+    else
+        table.insert(inner, {
+            type = "TextBlock",
+            text = "👤  نام کاربری یا شماره تلفن (بدون 0)",
+            weight = "bolder",
+            size = "small"
+        })
+        table.insert(inner, {
+            type = "Input.Text",
+            id = "username",
+            placeholder = "نام کاربری خود را وارد کنید...",
+            isRequired = false
+        })
+    end
+
+    table.insert(inner, {
+        type = "TextBlock",
+        text = "🔒  رمز عبور",
+        weight = "bolder",
+        size = "small",
+        spacing = "medium"
+    })
+    table.insert(inner, {
+        type = "Input.Text",
+        id = "password",
+        placeholder = "رمز عبور...",
+        isRequired = false,
+        style = "password"
+    })
+    table.insert(inner, {
+        type = "TextBlock",
+        text = "🛡️ رمزت هیچ‌جا به‌صورت متن ساده ذخیره نمی‌شه",
+        size = "small",
+        isSubtle = true,
+        horizontalAlignment = "center",
+        wrap = true,
+        spacing = "large",
+        separator = true
+    })
+
+    local actions = {
+        {
+            type = "Action.Submit",
+            title = "🚀  ورود به سرور",
+            style = "positive",
+            data = { action = "do_login", username = prefill }
+        },
+        { type = "Action.Submit", title = "❓  فراموشی رمز عبور", data = { action = "forgot_password" } },
+    }
+    if not prefill then
+        table.insert(actions, 2, { type = "Action.Submit", title = "📝  حساب ندارم، ثبت‌نام می‌کنم", data = { action = "register" } })
+    end
+    table.insert(actions, { type = "Action.Submit", title = "👥  تغییر حساب", data = { action = "back" } })
+
     local card = {
         type = "AdaptiveCard",
         version = "1.5",
         minHeight = "200px",
         body = {
-            {
-                type = "Container",
-                backgroundColor = COLORS.MID,
-                items = {
-                    {
-                        type = "ColumnSet",
-                        columns = {
-                            {
-                                type = "Column",
-                                width = "auto",
-                                items = {
-                                    {
-                                        type = "TextBlock",
-                                        text = "🔑",
-                                        size = "extraLarge"
-                                    }
-                                }
-                            },
-                            {
-                                type = "Column",
-                                width = "stretch",
-                                verticalContentAlignment = "center",
-                                items = {
-                                    {
-                                        type = "TextBlock",
-                                        text = "ورود به حساب",
-                                        weight = "bolder",
-                                        size = "large",
-                                        color = "Accent"
-                                    },
-                                    {
-                                        type = "TextBlock",
-                                        text = "نام کاربری و رمز عبور خود را وارد کنید",
-                                        size = "small",
-                                        color = COLORS.Light,
-                                        isSubtle = true
-                                    }
-                                }
-                            }
-                        }
-                    }
-                },
-                cornerRadius = "15px 15px 0 0",
-                padding = "20px"
-            },
-
+            uiBrandHeader(
+                prefill and "ورود به حساب" or "ورود با حساب دیگر",
+                prefill and "فقط رمز عبور رو وارد کن" or "نام کاربری و رمز عبور خود را وارد کنید",
+                "🔑"
+            ),
             {
                 type = "Container",
                 backgroundColor = COLORS.DARK,
-                items = {
-                    {
-                        type = "TextBlock",
-                        text = "👤 نام کاربری یا شماره تلفن (بدون 0)",
-                        weight = "bolder",
-                        color = COLORS.Light,
-                        size = "small",
-                        spacing = "small"
-                    },
-                    {
-                        type = "Input.Text",
-                        id = "username",
-                        placeholder = "نام کاربری خود را وارد کنید...",
-                        isRequired = false
-                    },
-
-                    {
-                        type = "TextBlock",
-                        text = " ",
-                        size = "small"
-                    },
-
-                    {
-                        type = "TextBlock",
-                        text = "🔒 رمز عبور",
-                        weight = "bolder",
-                        color = COLORS.Light,
-                        size = "small",
-                        spacing = "small"
-                    },
-                    {
-                        type = "Input.Text",
-                        id = "password",
-                        placeholder = "رمز عبور...",
-                        isRequired = false,
-                        style = "password"
-                    },
-
-                    {
-                        type = "TextBlock",
-                        text = "━━━━━━━━━━━━━━━━━━━━━━━",
-                        horizontalAlignment = "center",
-                        color = "Accent",
-                        spacing = "medium"
-                    },
-
-                    {
-                        type = "TextBlock",
-                        -- text = "💡 رمز خود را فراموش کرده‌اید؟",
-                        color = "Attention",
-                        isSubtle = true,
-                        horizontalAlignment = "right",
-                        wrap = true
-                    }
-                },
-                cornerRadius = "0 0 0 0",
+                items = inner,
+                cornerRadius = "0 0 15px 15px",
                 padding = "20px"
             }
         },
-
-        actions = {
-            {
-                type = "Action.Submit",
-                title = "🚀  ورود به سرور",
-                style = "positive",
-                data = { action = "do_login" }
-            },
-            {
-                type = "Action.Submit",
-                title = "📝  حساب ندارم، می‌خواهم ثبت‌نام کنم",
-                data = { action = "register" }
-            },
-            {
-                type = "Action.Submit",
-                title = "❓ فراموشی رمز عبور",
-                data = { action = "forgot_password" }
-            },
-            {
-                type = "Action.Submit",
-                title = "↩️  بازگشت",
-                data = { action = "back" }
-            }
-        }
+        actions = actions
     }
 
     deferrals.presentCard(json.encode(card), function(data)
@@ -402,12 +487,12 @@ function ShowLoginForm(deferrals)
         elseif data.action == "forgot_password" then
             ShowForgotPassword_Step1(deferrals)
         elseif data.action == "do_login" then
-            local username = data.username or ""
+            local username = prefill or data.username or ""
             local password = data.password or ""
 
             if username == "" or password == "" then
                 ShowError(deferrals, "لطفاً نام کاربری و رمز عبور را وارد کنید!", function()
-                    ShowLoginForm(deferrals)
+                    ShowLoginForm(deferrals, prefill)
                 end)
                 return
             end
@@ -418,7 +503,7 @@ function ShowLoginForm(deferrals)
             if locked then
                 ShowError(deferrals, "به‌دلیل تلاش‌های ناموفق زیاد، این حساب موقتاً قفل شده. "
                     .. remainingMinutes .. " دقیقه دیگر دوباره تلاش کنید.", function()
-                    ShowLoginForm(deferrals)
+                    ShowLoginForm(deferrals, prefill)
                 end)
                 return
             end
@@ -457,12 +542,12 @@ function ShowLoginForm(deferrals)
                     registerLoginFailure(username)
                     logAudit("login_fail", username, nil, deferrals.src)
                     ShowError(deferrals, "نام کاربری یا رمز عبور اشتباه است!", function()
-                        ShowLoginForm(deferrals)
+                        ShowLoginForm(deferrals, prefill)
                     end)
                 end
             end)
         else
-            ShowLoginForm(deferrals)
+            ShowLoginForm(deferrals, prefill)
         end
     end)
 end
@@ -2121,6 +2206,13 @@ AddEventHandler("playerConnecting", function(name, setKickReason, deferrals)
         if not realLicense then
             -- Extremely rare (FiveM always assigns a license: identifier),
             -- but fail safe by just showing the normal panel.
+            settle(function() ShowMainMenu(deferrals) end)
+            return
+        end
+
+        -- Config.AutoLogin (پیش‌فرض: false) — وقتی خاموشه بازیکن هر بار
+        -- هاب انتخاب حساب رو می‌بینه و رمز رو وارد می‌کنه.
+        if not Config.AutoLogin then
             settle(function() ShowMainMenu(deferrals) end)
             return
         end
