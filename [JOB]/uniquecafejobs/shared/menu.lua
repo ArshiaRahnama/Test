@@ -121,3 +121,37 @@ Config.UwUShopItem = {
 
 }
 
+
+
+-- ── Per-business menus ──────────────────────────────────────────────────────
+-- Cafes sell drinks + cakes. Restaurants sell food + a few drinks.
+-- The server only accepts items listed here (see server/shop_server.lua).
+local function pick(list, values)
+    local out = {}
+    for _, v in ipairs(values) do
+        for _, item in ipairs(list) do
+            if item.value == v then out[#out + 1] = item end
+        end
+    end
+    return out
+end
+
+local function concat(a, b)
+    local out = {}
+    for _, v in ipairs(a) do out[#out + 1] = v end
+    for _, v in ipairs(b) do out[#out + 1] = v end
+    return out
+end
+
+Config.MenuByGroup = {
+    cafe = {
+        drinks   = Config.UwUMenu_Noshidani_Item,
+        desserts = Config.UwUMenu_Cake_Item,
+    },
+    restaurant = {
+        drinks   = pick(Config.UwUMenu_Noshidani_Item, { 'abporteghal', 'chaee', 'milkshake', 'bastani' }),
+        desserts = concat(pick(Config.UwUMenu_Cake_Item, { 'nodel', 'vafel_nutella', 'pankik_oreo' }), {
+            { title = 'Suop', value = 'suop', price = 4500, image = Config.itemIconsPath .. 'suop.png' },
+        }),
+    },
+}

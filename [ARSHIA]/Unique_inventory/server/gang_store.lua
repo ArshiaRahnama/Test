@@ -144,3 +144,27 @@ exports('RemoveGangArmoryItem', function(gangName, itemName, count, storeName)
     inventory.removeItem(itemName, count)
     return true
 end)
+
+-- Take weapons out of the gang armory (used by the gun shop stock and zone armory).
+--   exports['Unique_inventory']:RemoveGangArmoryWeapon(gangName, weaponName, count [, storeName])
+-- All-or-nothing: returns false and removes nothing when the armory holds fewer.
+exports('RemoveGangArmoryWeapon', function(gangName, weaponName, count, storeName)
+    count = math.floor(tonumber(count) or 0)
+    if type(weaponName) ~= 'string' or weaponName == '' or count <= 0 then return false end
+    local ok, _, store = pcall(EnsureGangStores, gangName, storeName)
+    if not ok or not store then return false end
+    local upper = string.upper(weaponName)
+    local weapons = store.get('weapons') or {}
+    for i = 1, #weapons do
+        if string.upper(weapons[i].name) == upper then
+            local have = tonumber(weapons[i].count or weapons[i].ammo) or 0
+            if have < count then return false end
+            weapons[i].count = have - count
+            weapons[i].ammo = nil
+            if weapons[i].count <= 0 then table.remove(weapons, i) end
+            store.set('weapons', weapons)
+            return true
+        end
+    end
+    return false
+end)

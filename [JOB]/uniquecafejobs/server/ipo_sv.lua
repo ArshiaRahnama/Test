@@ -19,39 +19,35 @@ CreateThread(function()
 	end
 end)
 
--- Called from server/corp_server.lua's collectFranchiseFee, right after a
--- holding's franchise-fee collection for this cycle is known in full.
+-- Pays the shareholders of a holding out of its collected franchise fees.
+-- Money is only paid if the holding's society really has it (no minting).
 function PayIPODividends(holdingJob, totalCollected)
 	local ipo = IPOState[holdingJob]
 	if not ipo or ipo.offerPercent <= 0 or ipo.sharesSold <= 0 then return end
-
-	local dividendPool = math.floor(totalCollected * ipo.offerPercent / 100)
-	if dividendPool <= 0 then return end
-
-	local perShare = dividendPool / Config.IPO.TotalShares
-	local holders = Shareholders[holdingJob] or {}
+	local pool = math.floor(totalCollected * ipo.offerPercent / 100)
+	if pool <= 0 then return end
 
 	TriggerEvent('esx_addonaccount:getSharedAccount', 'society_' .. holdingJob, function(hAccount)
 		if not hAccount then return end
-		local totalPaid = 0
-		local holdingLabel = GetDisplayLabel(holdingJob, GetHoldingConfig(holdingJob) and GetHoldingConfig(holdingJob).Label or holdingJob)
-
-		for identifier, holder in pairs(holders) do
+		local perShare = pool / Config.IPO.TotalShares
+		local payouts, total = {}, 0
+		for identifier, holder in pairs(Shareholders[holdingJob] or {}) do
 			local amount = math.floor(perShare * holder.shares)
 			if amount > 0 then
-				totalPaid = totalPaid + amount
-				local xTarget = ESX.GetPlayerFromIdentifier(identifier)
-				if xTarget then
-					xTarget.addBank(amount)
-					TriggerClientEvent('esx:showNotification', xTarget.source, ('Dividend: +$%d from your %s shares.'):format(amount, holdingLabel))
-				else
-					MySQL.Async.execute('UPDATE users SET bank = bank + @amount WHERE identifier = @id', { ['@amount'] = amount, ['@id'] = identifier })
-				end
+				payouts[#payouts + 1] = { id = identifier, amount = amount }
+				total = total + amount
 			end
 		end
+		if total <= 0 or total > hAccount.money then return end
+		hAccount.removeMoney(total)
 
-		if totalPaid > 0 and totalPaid <= hAccount.money then
-			hAccount.removeMoney(totalPaid)
+		local label = GetDisplayLabel(holdingJob, GetHoldingConfig(holdingJob) and GetHoldingConfig(holdingJob).Label or holdingJob)
+		for _, p in ipairs(payouts) do
+			local xTarget = ESX.GetPlayerFromIdentifier(p.id)
+			if xTarget then
+				xTarget.addBank(p.amount)
+				TriggerClientEvent('esx:showNotification', xTarget.source, ('Dividend: +$%d from %s shares.'):format(p.amount, label))
+			end
 		end
 	end)
 end

@@ -100,12 +100,19 @@ RegisterNetEvent('AH_uwucafejob:OpenBossMenus')
 AddEventHandler('AH_uwucafejob:OpenBossMenus', function()
     ESX.UI.Menu.CloseAll()
 
+    local biz = GetCafeForJob(PlayerData.job.name)
+    local holding = biz and (HoldingOverrides and HoldingOverrides[biz.Job] or biz.Holding)
+    local hc = holding and GetHoldingConfig(holding)
+
     local elements = {
-        { label = 'Manage Business', value = 'manage_business' },
+        MenuInfo('Owned by: ' .. ((hc and hc.Label) or 'No Holding')),
+        MenuSection('BUSINESS'),
+        { label = '» Manage Business (Society)', value = 'manage_business' },
     }
     if PlayerData.job.grade_name == 'boss' then
-        table.insert(elements, { label = 'Set Work Uniform', value = 'set_uniform' })
-        table.insert(elements, { label = 'Manage Vehicles', value = 'manage_vehicles' })
+        table.insert(elements, MenuSection('MANAGE'))
+        table.insert(elements, { label = '» Set Work Uniform', value = 'set_uniform' })
+        table.insert(elements, { label = '» Manage Vehicles', value = 'manage_vehicles' })
     end
 
     ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'uwu_boss_action', {

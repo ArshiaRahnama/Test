@@ -3,12 +3,12 @@
 	owning holding (the `Holding` field on it in shared/cafes.lua). Every
 	holding gets the SAME generic management toolkit over ONLY the
 	businesses it owns - Portfolio Dashboard, Rank Up, Manage Staff,
-	Open/Close, Rename. Blacktide/CrateCarry additionally keep their own
+	Open/Close, Rename. 
 	special mechanic (laundering / wholesale) further down this file, which
 	works across all 17 businesses regardless of who owns them.
 ]]
 
-for _, holding in pairs({ Corp.Meridian, Corp.Blacktide, Corp.CrateCarry, TurfCo }) do
+for _, holding in pairs({ Corp.Meridian, TurfCo }) do
 	TriggerEvent('esx_society:registerSociety', holding.Job, holding.Label, 'society_' .. holding.Job, 'society_' .. holding.Job, 'society_' .. holding.Job, { type = 'public' })
 end
 
@@ -21,7 +21,7 @@ end
 local HoldingOwners = {} -- holding_job -> { identifier, name }
 
 local HoldingJobSet = {
-	[Corp.Meridian.Job] = true, [Corp.Blacktide.Job] = true, [Corp.CrateCarry.Job] = true, [TurfCo.Job] = true,
+	[Corp.Meridian.Job] = true, [TurfCo.Job] = true,
 }
 
 local function setHoldingOwner(job, identifier, name)
@@ -140,7 +140,7 @@ local lastCollect = {}
 -- GetBusinessHolding() (server/takeover_sv.lua) so a completed Takeover War
 -- auction is reflected immediately, not just cafe.Holding's compile-time default.
 local function ownerOf(businessJob)
-	local cafe = GetCafeForJob(businessJob)
+	local cafe = GetBusinessForJob(businessJob)
 	return cafe and GetBusinessHolding(cafe) or nil
 end
 
@@ -199,7 +199,7 @@ CreateThread(function()
 			upgradeCost = row.upgrade_cost, sortOrder = row.sort_order,
 		})
 	end
-	for _, holding in pairs({ Corp.Meridian, Corp.Blacktide, Corp.CrateCarry, TurfCo }) do
+	for _, holding in pairs({ Corp.Meridian, TurfCo }) do
 		if not HoldingRanks[holding.Job] or #HoldingRanks[holding.Job] == 0 then
 			seedDefaultRanks(holding.Job)
 		else
@@ -213,7 +213,7 @@ CreateThread(function()
 	for _, row in ipairs(rows) do
 		BusinessState[row.business_job] = { rank = row.rank or 'bronze' }
 	end
-	for _, cafe in pairs(Cafes) do
+	for _, cafe in pairs(AllBusinesses()) do
 		if not BusinessState[cafe.Job] then
 			BusinessState[cafe.Job] = { rank = 'bronze' }
 			MySQL.Async.execute('REPLACE INTO meridian_portfolio (business_job, kind, status, rank) VALUES (@job, @kind, @status, @rank)', {
@@ -238,7 +238,7 @@ AddEventHandler('uniquecafejobs:corp:requestPortfolio', function()
 	if not holding then return end
 
 	local myJobs = {}
-	for _, cafe in pairs(Cafes) do
+	for _, cafe in pairs(AllBusinesses()) do
 		if GetBusinessHolding(cafe) == holding.Job then table.insert(myJobs, cafe) end
 	end
 
@@ -246,7 +246,7 @@ AddEventHandler('uniquecafejobs:corp:requestPortfolio', function()
 	local pending = #myJobs
 	if pending == 0 then
 		TriggerEvent('esx_addonaccount:getSharedAccount', 'society_' .. holding.Job, function(mAccount)
-			TriggerClientEvent('uniquecafejobs:corp:showPortfolio', src, rows, false, mAccount.money)
+			TriggerClientEvent('uniquecafejobs:corp:showPortfolio', src, rows, false, mAccount and mAccount.money or 0)
 		end)
 		return
 	end
@@ -255,7 +255,7 @@ AddEventHandler('uniquecafejobs:corp:requestPortfolio', function()
 		TriggerEvent('esx_addonaccount:getSharedAccount', 'society_' .. holding.Job, function(mAccount)
 			local canCollect = (os.time() - (lastCollect[holding.Job] or 0)) >= (holding.CollectCooldownMins * 60)
 			table.sort(rows, function(a, b) return a.label < b.label end)
-			TriggerClientEvent('uniquecafejobs:corp:showPortfolio', src, rows, canCollect, mAccount.money)
+			TriggerClientEvent('uniquecafejobs:corp:showPortfolio', src, rows, canCollect, mAccount and mAccount.money or 0)
 		end)
 	end
 
@@ -263,7 +263,7 @@ AddEventHandler('uniquecafejobs:corp:requestPortfolio', function()
 		TriggerEvent('esx_addonaccount:getSharedAccount', 'society_' .. cafe.Job, function(account)
 			local state = BusinessState[cafe.Job]
 			local tag = findRank(holding.Job, state.rank).label
-			table.insert(rows, { label = ('%s [%s]'):format(GetDisplayLabel(cafe.Job, cafe.Label), tag), balance = account.money })
+			table.insert(rows, { label = ('%s [%s]'):format(GetDisplayLabel(cafe.Job, cafe.Label), tag), balance = account and account.money or 0 })
 			pending = pending - 1
 			if pending == 0 then finish() end
 		end)
@@ -284,7 +284,7 @@ AddEventHandler('uniquecafejobs:corp:collectFranchiseFee', function()
 	lastCollect[holding.Job] = os.time()
 
 	local myJobs = {}
-	for _, cafe in pairs(Cafes) do
+	for _, cafe in pairs(AllBusinesses()) do
 		if GetBusinessHolding(cafe) == holding.Job then table.insert(myJobs, cafe) end
 	end
 
@@ -338,7 +338,7 @@ AddEventHandler('uniquecafejobs:corp:requestManagePortfolio', function()
 	if not holding then return end
 
 	local rows = {}
-	for _, cafe in pairs(Cafes) do
+	for _, cafe in pairs(AllBusinesses()) do
 		if GetBusinessHolding(cafe) == holding.Job then
 			local state = BusinessState[cafe.Job]
 			local current = findRank(holding.Job, state.rank)
@@ -376,7 +376,7 @@ AddEventHandler('uniquecafejobs:corp:upgradeBusiness', function(job)
 	end
 
 	TriggerEvent('esx_addonaccount:getSharedAccount', 'society_' .. xPlayer.job.name, function(account)
-		if account.money < nextRank.upgradeCost then
+		if not account or account.money < nextRank.upgradeCost then
 			TriggerClientEvent('esx:showNotification', src, 'Not enough money in your holding account.')
 			return
 		end
@@ -420,7 +420,7 @@ AddEventHandler('uniquecafejobs:corp:requestManageRanks', function()
 	local rows = {}
 	for _, r in ipairs(ranks) do
 		local inUse = 0
-		for _, cafe in pairs(Cafes) do
+		for _, cafe in pairs(AllBusinesses()) do
 			if GetBusinessHolding(cafe) == xPlayer.job.name and BusinessState[cafe.Job].rank == r.id then
 				inUse = inUse + 1
 			end
@@ -549,7 +549,7 @@ AddEventHandler('uniquecafejobs:corp:removeRank', function(rankId)
 	local removedId = ranks[removeIndex].id
 	local fallback = ranks[removeIndex - 1] or ranks[removeIndex + 1]
 	local reassigned = 0
-	for _, cafe in pairs(Cafes) do
+	for _, cafe in pairs(AllBusinesses()) do
 		if GetBusinessHolding(cafe) == job and BusinessState[cafe.Job].rank == removedId then
 			BusinessState[cafe.Job].rank = fallback.id
 			saveBusinessState(cafe.Job)
@@ -588,7 +588,7 @@ AddEventHandler('uniquecafejobs:corp:requestSupplyBusinessList', function()
 	end
 
 	local rows = {}
-	for _, cafe in pairs(Cafes) do
+	for _, cafe in pairs(AllBusinesses()) do
 		if GetBusinessHolding(cafe) == xPlayer.job.name then
 			table.insert(rows, { job = cafe.Job, label = GetDisplayLabel(cafe.Job, cafe.Label) })
 		end
@@ -606,7 +606,7 @@ AddEventHandler('uniquecafejobs:corp:openSupplyContract', function(businessJob)
 	if xPlayer.job.grade < 5 then return end
 	if ownerOf(businessJob) ~= xPlayer.job.name then return end
 
-	local cafe = GetCafeForJob(businessJob)
+	local cafe = GetBusinessForJob(businessJob)
 	if not cafe then return end
 
 	local stock = {}
@@ -665,7 +665,7 @@ AddEventHandler('uniquecafejobs:corp:requestOwnedBusinessList', function()
 	if not holding then return end
 
 	local rows = {}
-	for _, cafe in pairs(Cafes) do
+	for _, cafe in pairs(AllBusinesses()) do
 		if GetBusinessHolding(cafe) == xPlayer.job.name then
 			table.insert(rows, { job = cafe.Job, label = GetDisplayLabel(cafe.Job, cafe.Label) })
 		end
@@ -703,7 +703,7 @@ AddEventHandler('uniquecafejobs:corp:requestManageStaffList', function()
 	end
 
 	local rows = {}
-	for _, cafe in pairs(Cafes) do
+	for _, cafe in pairs(AllBusinesses()) do
 		if GetBusinessHolding(cafe) == xPlayer.job.name then
 			table.insert(rows, { job = cafe.Job, label = GetDisplayLabel(cafe.Job, cafe.Label) })
 		end
@@ -901,7 +901,7 @@ CreateThread(function()
 	for _, row in ipairs(rows) do
 		saved[row.business_job] = row.active == 1
 	end
-	for _, cafe in pairs(Cafes) do
+	for _, cafe in pairs(AllBusinesses()) do
 		ActiveBusinesses[cafe.Job] = saved[cafe.Job]
 		if ActiveBusinesses[cafe.Job] == nil then ActiveBusinesses[cafe.Job] = true end
 	end
@@ -927,7 +927,7 @@ AddEventHandler('uniquecafejobs:corp:requestToggleList', function()
 	if not holding then return end
 
 	local rows = {}
-	for _, cafe in pairs(Cafes) do
+	for _, cafe in pairs(AllBusinesses()) do
 		if GetBusinessHolding(cafe) == xPlayer.job.name then
 			table.insert(rows, {
 				job = cafe.Job,
@@ -955,175 +955,14 @@ AddEventHandler('uniquecafejobs:corp:toggleBusinessActive', function(job)
 	})
 
 	TriggerClientEvent('uniquecafejobs:corp:syncActiveBusinesses', -1, ActiveBusinesses)
-	local label = GetDisplayLabel(job, GetCafeForJob(job).Label)
+	local label = GetDisplayLabel(job, GetBusinessForJob(job).Label)
 	TriggerClientEvent('esx:showNotification', src, ('%s is now %s.'):format(label, newState and 'OPEN' or 'CLOSED'))
 end)
--- ══════════════════════════ Blacktide Logistics (laundering) ══════════════════════════
+-- ══════════════════════════ Custom names sync ══════════════════════════
 
-local lastWash = {} -- [identifier] = os.time()
-
-RegisterNetEvent('uniquecafejobs:corp:launder')
-AddEventHandler('uniquecafejobs:corp:launder', function(businessJob)
-	local src = source
-	local xPlayer = ESX.GetPlayerFromId(src)
-	if not xPlayer or xPlayer.job.name ~= Corp.Blacktide.Job then return end
-	if not GetCafeForJob(businessJob) then return end
-
-	local now = os.time()
-	if lastWash[xPlayer.identifier] and (now - lastWash[xPlayer.identifier]) < Corp.Blacktide.CooldownSeconds then
-		local wait = Corp.Blacktide.CooldownSeconds - (now - lastWash[xPlayer.identifier])
-		TriggerClientEvent('esx:showNotification', src, ('Bayad %d sanie sabr konid.'):format(wait))
-		return
-	end
-
-	local dirty = xPlayer.getAccount('black_money').money
-	if dirty <= 0 then
-		TriggerClientEvent('esx:showNotification', src, 'Pool kasif (black_money) nadarid.')
-		return
-	end
-
-	local amount = math.min(dirty, Corp.Blacktide.MaxPerWash)
-	xPlayer.removeAccountMoney('black_money', amount)
-
-	local blacktideCut = math.floor(amount * Corp.Blacktide.LaunderCutPercent / 100)
-	local businessCut  = math.floor(amount * Corp.Blacktide.BusinessCutPercent / 100)
-
-	TriggerEvent('esx_addonaccount:getSharedAccount', 'society_' .. Corp.Blacktide.Job, function(account)
-		account.addMoney(blacktideCut)
-	end)
-	TriggerEvent('esx_addonaccount:getSharedAccount', 'society_' .. businessJob, function(account)
-		account.addMoney(businessCut)
-	end)
-
-	lastWash[xPlayer.identifier] = now
-	TriggerClientEvent('esx:showNotification', src, ('Shoma $%d pool kasif shostid, Blacktide $%d gereft.'):format(amount, blacktideCut))
-	TriggerEvent('quest-cafe:launder')
-end)
-
--- ══════════════════════════ Crate & Carry (wholesale + resale) ══════════════════════════
-
-RegisterNetEvent('uniquecafejobs:corp:openWholesaleMenu')
-AddEventHandler('uniquecafejobs:corp:openWholesaleMenu', function(businessJob)
-	local src = source
-	local xPlayer = ESX.GetPlayerFromId(src)
-	if not xPlayer or xPlayer.job.name ~= Corp.CrateCarry.Job then return end
-	local cafe = GetCafeForJob(businessJob)
-	if not cafe then return end
-
-	TriggerEvent('esx_addoninventory:getSharedInventory', 'society_' .. businessJob, function(inventory)
-		local stock = {}
-		if inventory then
-			for _, v in pairs(inventory.items) do
-				if v.count > 0 then
-					table.insert(stock, { name = v.name, label = v.label, count = v.count })
-				end
-			end
-		end
-		TriggerClientEvent('uniquecafejobs:corp:showWholesaleMenu', src, businessJob, GetDisplayLabel(cafe.Job, cafe.Label), stock)
-	end)
-end)
-
-RegisterNetEvent('uniquecafejobs:corp:buyWholesale')
-AddEventHandler('uniquecafejobs:corp:buyWholesale', function(businessJob, itemName, quantity)
-	local src = source
-	local xPlayer = ESX.GetPlayerFromId(src)
-	if not xPlayer or xPlayer.job.name ~= Corp.CrateCarry.Job then return end
-	if not GetCafeForJob(businessJob) then return end
-
-	quantity = tonumber(quantity)
-	if not quantity or quantity <= 0 or quantity > Corp.CrateCarry.WholesaleBuyLimit then
-		TriggerClientEvent('esx:showNotification', src, 'Meghdar motabar nist.')
-		return
-	end
-
-	local cost = quantity * Corp.CrateCarry.WholesaleUnitPrice
-
-	TriggerEvent('esx_addonaccount:getSharedAccount', 'society_' .. Corp.CrateCarry.Job, function(buyerAccount)
-		if buyerAccount.money < cost then
-			TriggerClientEvent('esx:showNotification', src, 'Pool sosayeti Crate & Carry kafi nist.')
-			return
-		end
-
-		TriggerEvent('esx_addoninventory:getSharedInventory', 'society_' .. businessJob, function(sourceInv)
-			local sourceItem = sourceInv.getItem(itemName)
-			if not sourceItem or sourceItem.count < quantity then
-				TriggerClientEvent('esx:showNotification', src, 'In meghdar dar anbar mojood nist.')
-				return
-			end
-
-			sourceInv.removeItem(itemName, quantity)
-			buyerAccount.removeMoney(cost)
-
-			TriggerEvent('esx_addonaccount:getSharedAccount', 'society_' .. businessJob, function(businessAccount)
-				businessAccount.addMoney(cost)
-			end)
-
-			TriggerEvent('esx_addoninventory:getSharedInventory', 'society_' .. Corp.CrateCarry.Job, function(myInv)
-				myInv.addItem(itemName, quantity)
-			end)
-
-			TriggerClientEvent('esx:showNotification', src, ('%d x %s kharidari shod.'):format(quantity, sourceItem.label))
-			TriggerEvent('quest-cafe:wholesale')
-		end)
-	end)
-end)
-
-RegisterNetEvent('uniquecafejobs:corp:openResaleShop')
-AddEventHandler('uniquecafejobs:corp:openResaleShop', function()
-	local src = source
-	TriggerEvent('esx_addoninventory:getSharedInventory', 'society_' .. Corp.CrateCarry.Job, function(inventory)
-		local stock = {}
-		if inventory then
-			for _, v in pairs(inventory.items) do
-				if v.count > 0 then
-					table.insert(stock, {
-						name  = v.name,
-						label = v.label,
-						count = v.count,
-						price = math.ceil(Corp.CrateCarry.WholesaleUnitPrice * Corp.CrateCarry.Markup),
-					})
-				end
-			end
-		end
-		TriggerClientEvent('uniquecafejobs:corp:showResaleShop', src, stock)
-	end)
-end)
-
-RegisterNetEvent('uniquecafejobs:corp:buyResale')
-AddEventHandler('uniquecafejobs:corp:buyResale', function(itemName)
-	local src = source
-	local xPlayer = ESX.GetPlayerFromId(src)
-	if not xPlayer then return end
-
-	local price = math.ceil(Corp.CrateCarry.WholesaleUnitPrice * Corp.CrateCarry.Markup)
-
-	if xPlayer.getMoney() < price then
-		TriggerClientEvent('esx:showNotification', src, 'Pool kafi nadarid.')
-		return
-	end
-
-	TriggerEvent('esx_addoninventory:getSharedInventory', 'society_' .. Corp.CrateCarry.Job, function(inventory)
-		local item = inventory.getItem(itemName)
-		if not item or item.count < 1 then
-			TriggerClientEvent('esx:showNotification', src, 'Faroosh shode, mojood nist.')
-			return
-		end
-
-		local playerItem = xPlayer.getInventoryItem(itemName)
-		if playerItem.limit ~= -1 and (playerItem.count + 1) > playerItem.limit then
-			TriggerClientEvent('esx:showNotification', src, 'Nemitavanid bishtar az in negah darid.')
-			return
-		end
-
-		xPlayer.removeMoney(price)
-		inventory.removeItem(itemName, 1)
-		xPlayer.addInventoryItem(itemName, 1)
-
-		TriggerEvent('esx_addonaccount:getSharedAccount', 'society_' .. Corp.CrateCarry.Job, function(account)
-			account.addMoney(price)
-		end)
-
-		TriggerClientEvent('esx:showNotification', src, ('Shoma %s ro kharidid.'):format(item.label))
-		TriggerEvent('quest-cafe:resale')
-	end)
+-- A player joining asks for every custom business name, so blips show the
+-- owner's name, not the default one.
+RegisterNetEvent('uniquecafejobs:corp:requestCustomNames')
+AddEventHandler('uniquecafejobs:corp:requestCustomNames', function()
+	TriggerClientEvent('uniquecafejobs:corp:syncCustomNames', source, CustomNames)
 end)

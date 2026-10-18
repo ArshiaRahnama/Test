@@ -164,7 +164,7 @@ Citizen.CreateThread(function()
         end
 
         if DrugCfg.CircleZones.DrugDealer then
-            CreateBlipCircle(DrugCfg.CircleZones.DrugDealer.coords, DrugCfg.CircleZones.DrugDealer.name, DrugCfg.CircleZones.DrugDealer.radius, DrugCfg.CircleZones.DrugDealer.color, DrugCfg.CircleZones.DrugDealer.sprite)
+            CreateBlipCircle(DrugCfg.CircleZones.DrugDealer.coords, _U(DrugCfg.CircleZones.DrugDealer.name), DrugCfg.CircleZones.DrugDealer.radius, DrugCfg.CircleZones.DrugDealer.color, DrugCfg.CircleZones.DrugDealer.sprite)
         end
 
     end

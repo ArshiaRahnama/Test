@@ -30,20 +30,24 @@
     <iframe id="frame-cafe" src="cafe/form.html"></iframe>
     <iframe id="frame-market" src="market/index.html"></iframe>
     <iframe id="frame-shop" src="shop/index.html"></iframe>
+    <iframe id="frame-barber" src="vms_barber/ui.html"></iframe>
+    <iframe id="frame-tattoo" src="vms_tattooshop/ui.html"></iframe>
 
     <script>
         const frames = {
             cafe: document.getElementById('frame-cafe'),
             market: document.getElementById('frame-market'),
             shop: document.getElementById('frame-shop'),
+            barber: document.getElementById('frame-barber'),
+            tattoo: document.getElementById('frame-tattoo'),
         };
 
         window.addEventListener('message', function (event) {
             const data = event.data;
 
-            // Only messages sent from Lua (SendCafeNUI / SendMarketNUI) carry
-            // __routeTo - anything else (e.g. a message bouncing back out of
-            // one of the iframes) is ignored so we don't create a loop.
+            // Only messages sent from Lua (SendCafeNUI / SendMarketNUI / SendShopNUI /
+            // SendBarberNUI / SendTattooNUI) carry __routeTo. Anything else is ignored
+            // so a message bouncing back out of an iframe can't create a loop.
             if (!data || !data.__routeTo) return;
 
             const target = frames[data.__routeTo];

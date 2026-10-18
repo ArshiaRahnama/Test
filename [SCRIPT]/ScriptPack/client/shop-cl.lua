@@ -126,10 +126,14 @@ end
 
 -- Drops a map blip (sprite 110, the Ammu-Nation gun icon) at every
 -- location in `locations` whose `displayBlip` flag is true.
+-- Gun shop blips, kept so they can follow the gang that leases the shop (Unique_ALLGangs).
+GunShopBlips = {}
+
 local function spawnShopBlips(locations, label, colour)
     for _, v in pairs(locations) do
         if v.displayBlip then
             local blip = AddBlipForCoord(v.x, v.y, v.z)
+            if label == 'Gun Shop' then GunShopBlips[#GunShopBlips + 1] = { blip = blip, x = v.x, y = v.y, z = v.z } end
             SetBlipSprite(blip, 110)
             SetBlipDisplay(blip, 4)
             SetBlipScale(blip, 0.7)
@@ -279,7 +283,13 @@ local function buildWeaponMetadata(item)
     return metadata
 end
 
+-- E at the gun shop NPC: purchase menu only. Management (stock, sales, bids) lives in the
+-- boss action menu -> Gun Shop, and the zone workshop lives on the zone markers.
 function OpenBuyMenuGunshop()
+    OpenBuyMenuGunshopShop()
+end
+
+function OpenBuyMenuGunshopShop()
     ESX.TriggerServerCallback('getitemsForSaleGunshop', function(itemsForSaleGunshop)
         showCategorizedShopMenu('buy_item_gunshop_menu', '🔫 Gun Shop', ShopConfig.GunshopCategories, itemsForSaleGunshop, function(item, cat)
             local isAmmo = item.itemType == 'ammo'
@@ -333,4 +343,38 @@ Citizen.CreateThread(function()
     -- Standalone gun shops (if any get added to ShopConfig.sellingLocationGunshop)
     -- get a map blip too, same as the Attachment Shop locations above.
     spawnShopBlips(ShopConfig.sellingLocationGunshop, 'Gun Shop', 1)
+end)
+
+-- ============================================================
+-- GUN SHOP BLIPS FOLLOW THE GANG LEASE (automatic)
+-- Free shop: grey "Gun Shop (Free)". Leased: red "Gun Shop - <gang>".
+-- ============================================================
+local function ApplyGunShopBlips(list)
+    for _, b in ipairs(GunShopBlips) do
+        local best, bestD
+        for _, s in ipairs(list or {}) do
+            if s.coords then
+                local d = #(vector3(b.x, b.y, b.z) - vector3(s.coords.x, s.coords.y, s.coords.z))
+                if d < 15.0 and (not bestD or d < bestD) then best, bestD = s, d end
+            end
+        end
+        if best and DoesBlipExist(b.blip) then
+            local owned = best.ownerLabel ~= nil
+            SetBlipColour(b.blip, owned and 1 or 4)
+            BeginTextCommandSetBlipName("STRING")
+            AddTextComponentSubstringPlayerName(owned and ("Gun Shop - " .. best.ownerLabel) or "Gun Shop (Free)")
+            EndTextCommandSetBlipName(b.blip)
+        end
+    end
+end
+
+RegisterNetEvent('GunShop:Sync')
+AddEventHandler('GunShop:Sync', function(list) ApplyGunShopBlips(list) end)
+
+CreateThread(function()
+    while ESX == nil do Wait(200) end
+    Wait(4000)
+    ESX.TriggerServerCallback('GunShop:GetAll', function(data)
+        ApplyGunShopBlips(data and data.shops or {})
+    end)
 end)

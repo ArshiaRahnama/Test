@@ -37,6 +37,19 @@
       ['اتحاد', 'گنگ‌ها می‌تونن اتحاد بندن. متحدها توی جنگ‌ها کمک می‌کنن و نمی‌تونن همدیگه رو تصرف کنن.'],
       ['جدول امتیاز', 'تعداد زون‌های هر گنگ و عنوان قلمرو (افتخاری) توی جدول امتیاز دیده میشه.']
     ],
+    zonearmory: [
+      ['آرموری زون', 'هر زون تسخیرپذیر یک آرموری داره. روی مارکر زرد زون بایستید و E بزنید تا آرموری باز بشه. فقط گنگ مالک زون می‌تونه از آرموری استفاده کنه.'],
+      ['آیتم‌ها', 'آیتم‌ها (طلا، آهن، ...) رو از آرموری گنگ به آرموری زون ببرید یا برگردونید. آیتم‌هایی که توی آرموری زون باشن، با تسخیر زون به گنگ جدید میرن.'],
+      ['اسلحه‌ها', 'اسلحه‌ها رو از آرموری گنگ به آرموری زون بذارید یا برگردونید. اسلحه‌های آرموری زون رو همه‌ی اعضای گنگ مالک می‌تونن بردارن.'],
+      ['تسخیر زون', 'اگه زون تسخیر بشه، آرموری با زون به گنگ جدید میره و گنگ قبلی دیگه دسترسی نداره.']
+    ],
+    gunshop: [
+      ['مغازه‌ها', 'هر مغازه‌ی اسلحه (۹ تا) به یک گنگ اجاره داده میشه. مغازه‌ی آزاد با قیمت خرید ۳۰ روزه خریده میشه. وقتی مغازه‌ای مالک داره، فقط با پیشنهاد (bid) می‌شه عوضش کرد. پیشنهاد باید از بالاترین پیشنهاد گنگ‌های دیگه بیشتر باشه. پیشنهاد فوراً مالک رو عوض نمی‌کنه: بعد از پایان ۳۰ روز، بالاترین پیشنهاد برنده میشه و بقیه پولشون کامل برمی‌گرده.'],
+      ['فروش از گان‌شاپ', 'وقتی بازیکنی از گان‌شاپ NPC اسلحه بخره، پول به خزانه‌ی گنگ مالک اون مغازه میره و توی تب «فروش‌ها» ثبت میشه. گنگ مالک می‌تونه از کاتالوگ هم برای آرموری خودش اسلحه بخره.'],
+      ['کارگاه و آرموری زون', 'کارگاه هر زون روی مارکر خود زون هست (با E). ساخت اسلحه و برداشتن اسلحه اونجا انجام میشه، نه اینجا.'],
+      ['فروش‌ها', 'لیست فروش‌های مغازه‌های گنگ شما (خریدار، اسلحه، تعداد، مبلغ و زمان).'],
+      ['بلیپ مغازه‌ها', 'روی نقشه، بلیپ هر مغازه‌ی اسلحه اسم گنگ مالکش رو داره (قرمز). مغازه‌ی آزاد خاکستری نشون داده میشه.']
+    ],
     allies: [
       ['گنگ‌های متحد چیه؟', 'دو گنگ می‌تونن با هم اتحاد ببندن. پیشنهاد می‌ده یک گنگ، قبول می‌کنه گنگ دیگه؛ بعد از قبول، اتحاد برقرار میشه. هر کدوم از گنگ‌ها فقط باس (یا کسی که دسترسی باس‌اکشن داره) می‌تونه پیشنهاد بده، قبول کنه یا اتحاد رو بشکنه.'],
       ['درخواست‌ها', 'پیشنهادهای ورودی (از گنگ‌های دیگه) توی تب «درخواست‌ها» دیده میشن و می‌تونی قبول کنی. پیشنهادهای خودت تا وقتی جواب نیان، توی همین تب منتظر می‌مونن.'],
@@ -58,6 +71,8 @@
   };
 
   var HEAD = {
+    zonearmory: ['آرموری زون', 'انتقال آیتم و اسلحه بین آرموری گنگ و آرموری زون'],
+    gunshop: ['گان‌شاپ گنگ', 'مغازه‌های اسلحه، کارگاه زون و فروش‌ها'],
     allies: ['گنگ‌های متحد (Gang Friends)', 'اتحاد با گنگ‌ها: پیشنهاد، قبول و شکستن اتحاد'],
     gangwar: ['جنگ گنگ‌ها', 'اعلان جنگ، پذیرش، جنگجوها و نتیجه'],
     territory: ['قلمرو (تریتوری)', 'زون‌ها، آپگرید و جدول امتیاز']
@@ -71,6 +86,8 @@
   }
 
   function tabsFor(kind) {
+    if (kind === 'zonearmory') return [['items', 'آیتم‌ها'], ['weapons', 'اسلحه‌ها'], ['help', 'راهنما']];
+    if (kind === 'gunshop') return [['shops', 'مغازه‌ها'], ['sales', 'فروش‌ها'], ['help', 'راهنما']];
     if (kind === 'allies') return [['friends', 'متحدها'], ['requests', 'درخواست‌ها'], ['propose', 'پیشنهاد اتحاد'], ['help', 'راهنما']];
     if (kind === 'gangwar') return [['status', 'وضعیت'], ['declare', 'اعلان جنگ'], ['help', 'راهنما']];
     return [['zones', 'زون‌ها'], ['upgrades', 'آپگرید'], ['board', 'جدول امتیاز'], ['help', 'راهنما']];
@@ -127,6 +144,8 @@
     var d = state.data || {};
     var v = view();
     if (state.tab === 'help') return renderHelp(v, state.kind);
+    if (state.kind === 'zonearmory') return renderZoneArmory(v, d, state.tab);
+    if (state.kind === 'gunshop') return renderGunShop(v, d, state.tab);
     if (state.kind === 'allies') return renderAllies(v, d, state.tab);
     if (state.kind === 'gangwar') return renderGangWar(v, d, state.tab);
     return renderTerritory(v, d, state.tab);
@@ -144,6 +163,138 @@
   }
 
   function renderHelp(v, kind) { renderTopics(v, kind); }
+
+  // ---------- Zone armory ----------
+  function renderZoneArmory(v, d, tab) {
+    if (!d.mine) {
+      v.appendChild(el('div', 'empty', 'این زون مالک دارد. فقط گنگ مالک زون (' + (d.label || '') + ') به آرموری دسترسی داره.'));
+      if (tab === 'help') renderHelp(v, 'zonearmory');
+      return;
+    }
+    var mats = d.materials || {}, wpn = d.weapons || {};
+    var matTotal = Object.keys(mats).reduce(function (s, m) { return s + (mats[m] || 0); }, 0);
+    var wpnTotal = Object.keys(wpn).reduce(function (s, w) { return s + (wpn[w] || 0); }, 0);
+    var head = el('div', 'meta');
+    head.appendChild(el('span', 'tag', 'آیتم‌ها: ' + fa(matTotal)));
+    head.appendChild(el('span', 'tag', 'اسلحه‌ها: ' + fa(wpnTotal)));
+    v.appendChild(head);
+
+    if (tab === 'items') {
+      v.appendChild(el('div', 'section-title', 'آیتم‌های آرموری زون'));
+      var names = Object.keys(mats).filter(function (m) { return mats[m] > 0; });
+      if (!names.length) v.appendChild(el('div', 'empty', 'آرموری زون خالیه.'));
+      var mg = el('div', 'grid');
+      names.forEach(function (m) {
+        var c = el('div', 'kind-card');
+        c.appendChild(el('h3', null, m));
+        c.appendChild(el('div', 'kind-row', 'تعداد: ' + fa(mats[m])));
+        var row = el('div', 'kind-row');
+        var cnt = el('input'); cnt.type = 'number'; cnt.min = '1'; cnt.value = '1'; cnt.className = 'bid-input';
+        var back = el('button', 'btn ghost', 'برگردوندن به آرموری گنگ');
+        back.onclick = function () { post('wsWithdrawMaterial', { zone: d.zoneKey, item: m, count: parseInt(cnt.value, 10) || 0 }); };
+        row.appendChild(cnt); row.appendChild(back);
+        c.appendChild(row);
+        mg.appendChild(c);
+      });
+      v.appendChild(mg);
+      v.appendChild(el('div', 'section-title', 'گذاشتن آیتم از آرموری گنگ'));
+      var r = el('div', 'kind-row');
+      var item = el('input'); item.placeholder = 'نام آیتم (مثلاً gold_piece)'; item.className = 'bid-input';
+      var c2 = el('input'); c2.type = 'number'; c2.min = '1'; c2.value = '10'; c2.className = 'bid-input';
+      var go = el('button', 'btn', 'گذاشتن در آرموری زون');
+      go.onclick = function () { post('wsDeposit', { zone: d.zoneKey, item: item.value.trim(), count: parseInt(c2.value, 10) || 0 }); };
+      r.appendChild(item); r.appendChild(c2); r.appendChild(go);
+      v.appendChild(r);
+      return;
+    }
+
+    if (tab === 'weapons') {
+      var keys = Object.keys(wpn).filter(function (w) { return wpn[w] > 0; });
+      v.appendChild(el('div', 'section-title', 'اسلحه‌های آرموری زون'));
+      if (!keys.length) v.appendChild(el('div', 'empty', 'اسلحه‌ای توی آرموری زون نیست.'));
+      var wg = el('div', 'grid');
+      keys.forEach(function (w) {
+        var c = el('div', 'kind-card mine');
+        c.appendChild(el('h3', null, w.replace('WEAPON_', '')));
+        c.appendChild(el('div', 'kind-row', 'تعداد: ' + fa(wpn[w])));
+        var b = el('button', 'btn', 'برداشتن به آرموری گنگ');
+        b.onclick = function () { post('wsWithdraw', { zone: d.zoneKey, weapon: w }); };
+        c.appendChild(b);
+        wg.appendChild(c);
+      });
+      v.appendChild(wg);
+      v.appendChild(el('div', 'section-title', 'گذاشتن اسلحه از آرموری گنگ'));
+      var wr = el('div', 'kind-row');
+      var ww = el('input'); ww.placeholder = 'WEAPON_...'; ww.className = 'bid-input';
+      var wc = el('input'); wc.type = 'number'; wc.min = '1'; wc.value = '1'; wc.className = 'bid-input';
+      var wd = el('button', 'btn ghost', 'گذاشتن در آرموری زون');
+      wd.onclick = function () { post('wsDepositWeapon', { zone: d.zoneKey, weapon: ww.value.trim(), count: parseInt(wc.value, 10) || 0 }); };
+      wr.appendChild(ww); wr.appendChild(wc); wr.appendChild(wd);
+      v.appendChild(wr);
+      return;
+    }
+    if (tab === 'help') renderHelp(v, 'zonearmory');
+  }
+
+  // ---------- Gun shops + zone workshops ----------
+  function renderGunShop(v, d, tab) {
+    if (!d.gang) { v.appendChild(el('div', 'empty', 'شما توی هیچ گنگی نیستید.')); return; }
+    if (tab === 'shops') {
+      var grid = el('div', 'grid');
+      (d.shops || []).forEach(function (s) {
+        var c = el('div', 'kind-card' + (s.mine ? ' mine' : ''));
+        c.appendChild(el('h3', null, s.label));
+        if (s.owner) {
+          c.appendChild(el('div', 'kind-row', 'مالک: ' + (s.ownerLabel || s.owner) + (s.mine ? '  (شما)' : '')));
+          var left = Math.max(0, (s.expiresAt || 0) - Math.floor(Date.now() / 1000));
+          c.appendChild(el('div', 'kind-row', 'باقی‌مانده: ' + fa(Math.ceil(left / 86400)) + ' روز  |  اجاره: ' + money(s.paid)));
+          var best = 0; (s.bids || []).forEach(function (b) { if (b.gang !== d.gang && b.amount > best) best = b.amount; });
+          if (best > 0) c.appendChild(el('div', 'kind-row', 'بالاترین پیشنهاد دیگران: ' + money(best)));
+          if (d.isBoss && !s.mine) {
+            var minNeed = Math.max(d.minBid || 0, best > 0 ? best + (d.bidStep || 0) : 0);
+            var inp = el('input'); inp.type = 'number'; inp.min = String(minNeed); inp.value = String(minNeed); inp.className = 'bid-input';
+            var b = el('button', 'btn', 'پیشنهاد (bid)');
+            b.onclick = function () { post('gsBid', { id: s.id, amount: parseInt(inp.value, 10) || 0 }); };
+            c.appendChild(inp); c.appendChild(b);
+          }
+            var stk = s.stock || {};
+            var stockLine = Object.keys(stk).map(function (w) { return w.replace('WEAPON_', '') + ' × ' + fa(stk[w]); }).join(' | ') || 'مغازه خالیه';
+            c.appendChild(el('div', 'kind-row', 'موجودی مغازه: ' + stockLine));
+            var srow = el('div', 'kind-row');
+            var sw = el('input'); sw.placeholder = 'WEAPON_...'; sw.className = 'bid-input';
+            var sc = el('input'); sc.type = 'number'; sc.min = '1'; sc.value = '1'; sc.className = 'bid-input';
+            var sbtn = el('button', 'btn ghost', 'گذاشتن در مغازه');
+            sbtn.onclick = function () { post('gsDeposit', { id: s.id, weapon: sw.value.trim(), count: parseInt(sc.value, 10) || 0 }); };
+            srow.appendChild(sw); srow.appendChild(sc); srow.appendChild(sbtn);
+            c.appendChild(srow);
+          if (d.isBoss && s.mine) {
+          }
+        } else {
+          c.appendChild(el('div', 'kind-row', 'آزاد - قیمت اجاره‌ی ۳۰ روز: ' + money(d.basePrice)));
+          if (d.isBoss) {
+            var bn = el('button', 'btn', 'خرید مستقیم');
+            bn.onclick = function () { post('gsBuyNow', { id: s.id }); };
+            c.appendChild(bn);
+          }
+        }
+        grid.appendChild(c);
+      });
+      v.appendChild(grid);
+      if (!d.isBoss) v.appendChild(el('div', 'empty', 'فقط باس گنگ می‌تونه خرید یا پیشنهاد بده.'));
+      return;
+    }
+    if (tab === 'sales') {
+      var sales = d.sales || [];
+      if (!sales.length) { v.appendChild(el('div', 'empty', 'هنوز فروشی ثبت نشده.')); return; }
+      sales.forEach(function (s) {
+        var c = el('div', 'kind-card');
+        c.appendChild(el('h3', null, (s.weapon || '').replace('WEAPON_', '') + ' × ' + fa(s.amount || 1)));
+        c.appendChild(el('div', 'kind-row', 'خریدار: ' + (s.buyer || '?') + '  |  ' + money(s.price)));
+        c.appendChild(el('div', 'kind-row', new Date((s.at || 0) * 1000).toLocaleString('fa-IR')));
+        v.appendChild(c);
+      });
+    }
+  }
 
   // ---------- Gang Friends (alliances) ----------
   function renderAllies(v, d, tab) {

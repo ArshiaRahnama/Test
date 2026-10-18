@@ -233,6 +233,17 @@ local function isRateLimited(source)
     return false
 end
 
+-- Gang gun shops (Unique_ALLGangs): a leased shop sells only its stock (weapons), and
+-- 40% of every NPC purchase goes to the owner gang (60% disappears). Free shops = unchanged.
+local function gunshopCanSell(source, weapon, amount)
+    local ok, can, msg = pcall(function() return exports['Unique_ALLGangs']:GunShopCanSell(source, weapon, amount) end)
+    if not ok then return true end
+    return can ~= false, msg
+end
+local function gunshopRecord(source, weapon, price, amount)
+    pcall(function() exports['Unique_ALLGangs']:RecordGunShopSale(source, weapon, price, amount) end)
+end
+
 RegisterServerEvent('gunshop_item:buy_gunshop')
 AddEventHandler('gunshop_item:buy_gunshop', function(itemName, amount)
     local source = source
@@ -247,6 +258,12 @@ AddEventHandler('gunshop_item:buy_gunshop', function(itemName, amount)
     local itemPrice = itemData.price
     local totalPrice = itemPrice * amount
 
+    local canSell, stockMsg = gunshopCanSell(source, itemName, amount)
+    if not canSell then
+        TriggerClientEvent('esx:showNotification', source, stockMsg or 'Aslahe too maghaze tamoom shode.')
+        return
+    end
+
     if xPlayer.canAfford(totalPrice) then
 
         local itemLabel = ESX.GetWeaponLabel(itemName)
@@ -254,6 +271,10 @@ AddEventHandler('gunshop_item:buy_gunshop', function(itemName, amount)
         xPlayer.payAny(totalPrice)
 
         xPlayer.addWeapon(itemName, 50)
+
+        -- Gang gun shops: if this shop is leased to a gang, the money goes to that gang's bank
+        -- and the sale is logged in its GunShop tab (Unique_ALLGangs). No gang = nothing changes.
+        gunshopRecord(source, itemName, totalPrice, amount)
 
         TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'AMoneyLog', '```css\n[ Player : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Player Steam : '..xPlayer.identifier..' ]\n[ Bought Weapon : '..tostring(itemName)..' x'..tostring(amount)..' ]\n[ Cost : '..tostring(totalPrice)..' ]\n```', 'user', true, source, false)
 
@@ -309,6 +330,7 @@ AddEventHandler('gunshop_item:buy_permit', function(itemName)
         end
 
         xPlayer.payAny(itemData.price)
+        gunshopRecord(source, 'permit_' .. tostring(licenseType), itemData.price, 1)
 
         local expire = os.time() + (DYS_PERMIT_DAYS * 86400)
 
@@ -354,6 +376,7 @@ AddEventHandler('gunshop_item:buy_ammo', function(itemName, amount)
         local itemLabel = itemInfo and itemInfo.label or itemName
 
         xPlayer.payAny(totalPrice)
+        gunshopRecord(source, itemName, totalPrice, amount)
         xPlayer.addInventoryItem(itemName, totalAmmo)
 
         TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'AMoneyLog', '```css\n[ Player : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Player Steam : '..xPlayer.identifier..' ]\n[ Bought Ammo : '..tostring(itemName)..' x'..tostring(totalAmmo)..' ]\n[ Cost : '..tostring(totalPrice)..' ]\n```', 'user', true, source, false)

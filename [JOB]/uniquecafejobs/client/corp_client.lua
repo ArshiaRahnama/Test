@@ -1,5 +1,5 @@
 --[[
-	Client side for the 3 "corp.lua" holdings (Meridian/Blacktide/CrateCarry).
+	Client side for the Meridian holding (Gang 1).
 	Turf Wars (turfco) has its own client/turfco_client.lua for its HQ +
 	paintball-map renting, but shares the SAME generic Boss Actions menu
 	(openHoldingBossMenu below) since Ranks/ownership/toggle are all generic
@@ -9,15 +9,13 @@
 local function myCorpJob()
 	if not PlayerData or not PlayerData.job then return nil end
 	if PlayerData.job.name == Corp.Meridian.Job then return Corp.Meridian end
-	if PlayerData.job.name == Corp.Blacktide.Job then return Corp.Blacktide end
-	if PlayerData.job.name == Corp.CrateCarry.Job then return Corp.CrateCarry end
 	return nil
 end
 
 -- ── Blips ──
 local CorpBlips = {}
 CreateThread(function()
-	for _, corp in pairs({ Corp.Meridian, Corp.Blacktide, Corp.CrateCarry }) do
+	for _, corp in pairs({ Corp.Meridian }) do
 		local blip = AddBlipForCoord(corp.HQ.x, corp.HQ.y, corp.HQ.z)
 		SetBlipSprite(blip, corp.Blip.Sprite)
 		SetBlipColour(blip, corp.Blip.Color)
@@ -50,10 +48,6 @@ AddEventHandler('uniquecafejobs:corp:holdingRenamed', function(job, newName)
 	end
 end)
 
-RegisterNetEvent('uniquecafejobs:corp:businessRenamed')
-AddEventHandler('uniquecafejobs:corp:businessRenamed', function(job, newName)
-	CustomNames[job] = newName
-end)
 
 RegisterNetEvent('uniquecafejobs:corp:openCloakroom')
 AddEventHandler('uniquecafejobs:corp:openCloakroom', function()
@@ -63,22 +57,27 @@ end)
 -- ── Generic Boss Actions menu - identical for all 4 holdings ──
 local function openHoldingBossMenu(job, label)
 	local elements = {
-		{ label = 'Portfolio Dashboard', value = 'dashboard' },
-		{ label = 'Go Work at a Business', value = 'gowork' },
-		{ label = 'Manage Portfolio (Rank Up) (Director+)', value = 'portfolio' },
-		{ label = 'Manage Business Staff (Director+)', value = 'staff' },
-		{ label = 'Open/Close Businesses (Director+)', value = 'toggle' },
-		{ label = 'Rename Holding', value = 'rename' },
+		MenuSection('OVERVIEW'),
+		{ label = '» Portfolio Dashboard', value = 'dashboard' },
+		{ label = '» Go Work at a Business', value = 'gowork' },
+		{ label = '» Rename Holding', value = 'rename' },
+
+		MenuSection('BUSINESSES'),
+		{ label = '» Manage Portfolio (Rank Up) [Director+]', value = 'portfolio' },
+		{ label = '» Manage Business Staff [Director+]', value = 'staff' },
+		{ label = '» Open / Close Businesses [Director+]', value = 'toggle' },
 	}
 	if job ~= Corp.Meridian.Job then
-		table.insert(elements, { label = 'Buy Raw Materials (Meridian Supply) (Director+)', value = 'supply' })
+		table.insert(elements, { label = '» Buy Raw Materials (Meridian Supply) [Director+]', value = 'supply' })
 	end
-	table.insert(elements, { label = 'Takeover War Auctions (Director+)', value = 'takeover' })
+	table.insert(elements, { label = '» Takeover War Auctions [Director+]', value = 'takeover' })
+
 	if PlayerData.job.grade_name == 'boss' then
-		table.insert(elements, { label = 'Manage Ranks (Owner Only)', value = 'manage_ranks' })
-		table.insert(elements, { label = 'Set Work Uniform', value = 'set_uniform' })
-		table.insert(elements, { label = 'Manage Vehicles', value = 'manage_vehicles' })
-		table.insert(elements, { label = 'Transfer Ownership (Owner Only)', value = 'transfer' })
+		table.insert(elements, MenuSection('OWNER'))
+		table.insert(elements, { label = '» Manage Ranks', value = 'manage_ranks' })
+		table.insert(elements, { label = '» Set Work Uniform', value = 'set_uniform' })
+		table.insert(elements, { label = '» Manage Vehicles', value = 'manage_vehicles' })
+		table.insert(elements, { label = '» Transfer Ownership', value = 'transfer' })
 	end
 
 	ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'holding_boss_root_' .. job, {
@@ -136,26 +135,12 @@ AddEventHandler('uniquecafejobs:corp:openMeridianBoss', function()
 	openHoldingBossMenu(Corp.Meridian.Job, Corp.Meridian.Label)
 end)
 
-RegisterNetEvent('uniquecafejobs:corp:openBlacktideBoss')
-AddEventHandler('uniquecafejobs:corp:openBlacktideBoss', function()
-	openHoldingBossMenu(Corp.Blacktide.Job, Corp.Blacktide.Label)
-end)
-
-RegisterNetEvent('uniquecafejobs:corp:openCrateCarryBoss')
-AddEventHandler('uniquecafejobs:corp:openCrateCarryBoss', function()
-	openHoldingBossMenu(Corp.CrateCarry.Job, Corp.CrateCarry.Label)
-end)
-
--- ── Boss Action / Cloakroom markers (Meridian + Blacktide + CrateCarry) ──
+-- ── Boss Action / Cloakroom markers (Meridian) ──
 -- Classic DrawMarker + proximity style, same convention as esx_uniquejobs.
 local SimpleMarkers = {
 	{ pos = Corp.Meridian.BossAction.Pos,   job = Corp.Meridian.Job,   help = Corp.Meridian.BossAction.Name,   event = 'uniquecafejobs:corp:openMeridianBoss' },
 	{ pos = Corp.Meridian.CloackRoom.Pos,   job = Corp.Meridian.Job,   help = Corp.Meridian.CloackRoom.Name,   event = 'uniquecafejobs:corp:openCloakroom' },
-	{ pos = Corp.Blacktide.BossAction.Pos,  job = Corp.Blacktide.Job,  help = Corp.Blacktide.BossAction.Name,  event = 'uniquecafejobs:corp:openBlacktideBoss' },
-	{ pos = Corp.Blacktide.CloackRoom.Pos,  job = Corp.Blacktide.Job,  help = Corp.Blacktide.CloackRoom.Name,  event = 'uniquecafejobs:corp:openCloakroom' },
-	{ pos = Corp.CrateCarry.Freezer.Pos,    job = Corp.CrateCarry.Job, help = Corp.CrateCarry.Freezer.Name,    event = 'AH_uwucafejob:OpenInventory' },
-	{ pos = Corp.CrateCarry.BossAction.Pos, job = Corp.CrateCarry.Job, help = Corp.CrateCarry.BossAction.Name, event = 'uniquecafejobs:corp:openCrateCarryBoss' },
-	{ pos = Corp.CrateCarry.CloackRoom.Pos, job = Corp.CrateCarry.Job, help = Corp.CrateCarry.CloackRoom.Name, event = 'uniquecafejobs:corp:openCloakroom' },
+	{ pos = TurfCo.BossAction.Pos,           job = TurfCo.Job,           help = TurfCo.BossAction.Name,           event = 'uniquecafejobs:turfco:openBoss' },
 }
 
 CreateThread(function()
@@ -178,16 +163,6 @@ CreateThread(function()
 			end
 		end
 
-		local resaleDist = #(playerCoords - vector3(Corp.CrateCarry.ResaleShop.Pos.x, Corp.CrateCarry.ResaleShop.Pos.y, Corp.CrateCarry.ResaleShop.Pos.z))
-		if resaleDist < 10.0 then
-			DrawMarker(29, Corp.CrateCarry.ResaleShop.Pos.x, Corp.CrateCarry.ResaleShop.Pos.y, Corp.CrateCarry.ResaleShop.Pos.z - 0.9, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.6, 0.6, 0.6, 0, 200, 255, 100, false, true, 2, false, nil, nil, false)
-			if resaleDist < 1.5 then
-				ESX.ShowHelpNotification("~INPUT_CONTEXT~ " .. Corp.CrateCarry.ResaleShop.Name)
-				if IsControlJustPressed(0, 38) then
-					TriggerServerEvent('uniquecafejobs:corp:openResaleShop')
-				end
-			end
-		end
 	end
 end)
 
@@ -448,7 +423,7 @@ AddEventHandler('uniquecafejobs:corp:showManageStaffList', function(rows)
 					TriggerServerEvent('uniquecafejobs:corp:renameBusiness', chosenJob, input[1])
 				end
 			elseif data2.current.value == 'blip' then
-				local cafe = GetCafeForJob(chosenJob)
+				local cafe = GetBusinessForJob(chosenJob)
 				local input = lib.inputDialog('Change Blip', {
 					{ type = 'number', label = 'Sprite ID', required = true, default = GetDisplaySprite(chosenJob, cafe.Blip.Sprite) },
 					{ type = 'number', label = 'Colour ID', required = true, default = GetDisplayColour(chosenJob, cafe.Blip.Colour) },
@@ -505,7 +480,7 @@ CreateThread(function()
 		if PlayerData and PlayerData.job and GetHoldingConfig(PlayerData.job.name) and PlayerData.job.grade >= 5 then
 			local playerCoords = GetEntityCoords(PlayerPedId())
 
-			for _, cafe in pairs(Cafes) do
+			for _, cafe in pairs(AllBusinesses()) do
 				if (HoldingOverrides[cafe.Job] or cafe.Holding) == PlayerData.job.name then
 					local dist = #(playerCoords - vector3(cafe.BossAction.Pos.x, cafe.BossAction.Pos.y, cafe.BossAction.Pos.z))
 					if dist < 10.0 then
@@ -525,98 +500,7 @@ CreateThread(function()
 	end
 end)
 
--- ── Blacktide (launder) + CrateCarry (wholesale) markers at all 17 businesses ──
-CreateThread(function()
-	while true do
-		Citizen.Wait(0)
-		if PlayerData and PlayerData.job and (PlayerData.job.name == Corp.Blacktide.Job or PlayerData.job.name == Corp.CrateCarry.Job) then
-			local playerCoords = GetEntityCoords(PlayerPedId())
-
-			for _, cafe in pairs(Cafes) do
-				if PlayerData.job.name == Corp.Blacktide.Job then
-					local dist = #(playerCoords - vector3(cafe.PedShop.Pos.x, cafe.PedShop.Pos.y, cafe.PedShop.Pos.z))
-					if dist < 10.0 then
-						DrawMarker(29, cafe.PedShop.Pos.x, cafe.PedShop.Pos.y, cafe.PedShop.Pos.z - 0.9, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.6, 0.6, 0.6, 40, 40, 40, 100, false, true, 2, false, nil, nil, false)
-						if dist < 1.5 then
-							ESX.ShowHelpNotification("~INPUT_CONTEXT~ Launder Cash Through " .. GetDisplayLabel(cafe.Job, cafe.Label))
-							if IsControlJustPressed(0, 38) then
-								TriggerServerEvent('uniquecafejobs:corp:launder', cafe.Job)
-							end
-						end
-					end
-				end
-
-				if PlayerData.job.name == Corp.CrateCarry.Job then
-					local dist2 = #(playerCoords - vector3(cafe.Freezer.Pos.x, cafe.Freezer.Pos.y, cafe.Freezer.Pos.z))
-					if dist2 < 10.0 then
-						DrawMarker(29, cafe.Freezer.Pos.x, cafe.Freezer.Pos.y, cafe.Freezer.Pos.z - 0.9, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.6, 0.6, 0.6, 255, 170, 0, 100, false, true, 2, false, nil, nil, false)
-						if dist2 < 1.5 then
-							ESX.ShowHelpNotification("~INPUT_CONTEXT~ Buy Wholesale From " .. GetDisplayLabel(cafe.Job, cafe.Label))
-							if IsControlJustPressed(0, 38) then
-								TriggerServerEvent('uniquecafejobs:corp:openWholesaleMenu', cafe.Job)
-							end
-						end
-					end
-				end
-			end
-		else
-			Citizen.Wait(1000)
-		end
-	end
-end)
-
-RegisterNetEvent('uniquecafejobs:corp:showWholesaleMenu')
-AddEventHandler('uniquecafejobs:corp:showWholesaleMenu', function(businessJob, businessLabel, stock)
-	local elements = {}
-	for _, s in ipairs(stock) do
-		table.insert(elements, { label = ('%s (x%d in stock) - $%d/unit'):format(s.label, s.count, Corp.CrateCarry.WholesaleUnitPrice), value = s.name })
-	end
-	if #elements == 0 then
-		table.insert(elements, { label = 'Nothing in stock right now', value = 'noop', disabled = true })
-	end
-
-	ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'wholesale_menu', {
-		title    = 'Wholesale - ' .. businessLabel,
-		align    = 'top-left',
-		elements = elements,
-	}, function(data, menu)
-		if data.current.value ~= 'noop' then
-			local input = lib.inputDialog('Buy Wholesale', {
-				{ type = 'number', label = 'Quantity (max ' .. Corp.CrateCarry.WholesaleBuyLimit .. ')', default = 1, min = 1, max = Corp.CrateCarry.WholesaleBuyLimit },
-			})
-			if input and input[1] then
-				TriggerServerEvent('uniquecafejobs:corp:buyWholesale', businessJob, data.current.value, tonumber(input[1]))
-			end
-		end
-	end, function(data, menu)
-		menu.close()
-	end)
-end)
-
-RegisterNetEvent('uniquecafejobs:corp:showResaleShop')
-AddEventHandler('uniquecafejobs:corp:showResaleShop', function(stock)
-	local elements = {}
-	for _, s in ipairs(stock) do
-		table.insert(elements, { label = ('%s - $%d (x%d in stock)'):format(s.label, s.price, s.count), value = s.name })
-	end
-	if #elements == 0 then
-		table.insert(elements, { label = 'Sold out - come back later', value = 'noop', disabled = true })
-	end
-
-	ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'resale_shop', {
-		title    = Corp.CrateCarry.Label,
-		align    = 'top-left',
-		elements = elements,
-	}, function(data, menu)
-		if data.current.value ~= 'noop' then
-			TriggerServerEvent('uniquecafejobs:corp:buyResale', data.current.value)
-		end
-	end, function(data, menu)
-		menu.close()
-	end)
-end)
-
--- ── Vehicle spawn/delete for Meridian/Blacktide/CrateCarry ──
+-- ── Vehicle spawn/delete (holding fleet) ──
 CreateThread(function()
 	while true do
 		Citizen.Wait(0)

@@ -78,7 +78,7 @@ end)
 -- businesses (see shared/takeover.lua for why solo Types are skipped) ──
 local function openTakeoverAuctions()
 	local byType = {}
-	for _, cafe in pairs(Cafes) do
+	for _, cafe in pairs(AllBusinesses()) do
 		byType[cafe.Type] = byType[cafe.Type] or {}
 		table.insert(byType[cafe.Type], cafe)
 	end
@@ -130,7 +130,7 @@ end
 local function closeExpiredAuctions()
 	for businessJob, auction in pairs(ActiveAuctions) do
 		if os.time() >= auction.closesAt then
-			local cafe = GetCafeForJob(businessJob)
+			local cafe = GetBusinessForJob(businessJob)
 			if not cafe then
 				ActiveAuctions[businessJob] = nil
 			elseif not auction.highestBidder then
@@ -202,7 +202,7 @@ AddEventHandler('uniquecafejobs:takeover:requestAuctions', function()
 
 	local rows = {}
 	for businessJob, auction in pairs(ActiveAuctions) do
-		local cafe = GetCafeForJob(businessJob)
+		local cafe = GetBusinessForJob(businessJob)
 		if cafe then
 			table.insert(rows, {
 				job = businessJob,
@@ -261,7 +261,7 @@ AddEventHandler('uniquecafejobs:takeover:placeBid', function(businessJob, bidAmo
 		MySQL.Async.execute('UPDATE takeover_auctions SET highest_bid = @bid, highest_bidder = @holding WHERE business_job = @job', {
 			['@bid'] = bidAmount, ['@holding'] = holding.Job, ['@job'] = businessJob,
 		})
-		TriggerClientEvent('esx:showNotification', src, ('Bid placed: $%d on %s.'):format(bidAmount, GetDisplayLabel(businessJob, GetCafeForJob(businessJob).Label)))
+		TriggerClientEvent('esx:showNotification', src, ('Bid placed: $%d on %s.'):format(bidAmount, GetDisplayLabel(businessJob, GetBusinessForJob(businessJob).Label)))
 	end)
 end)
 

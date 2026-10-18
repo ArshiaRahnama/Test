@@ -95,8 +95,9 @@ Citizen.CreateThread(function()
         CafeBlips[cafe.Job] = blip
 
         BeginTextCommandSetBlipName("STRING")
-        AddTextComponentString(cafe.Label)
+        AddTextComponentString(GetDisplayLabel(cafe.Job, cafe.Type == 'cafe' and 'Cafe' or 'Restaurant'))
         EndTextCommandSetBlipName(blip)
+        TrackBusinessBlip(cafe.Job, blip, cafe.Type == 'cafe' and 'Cafe' or 'Restaurant')
 
     end
 end)

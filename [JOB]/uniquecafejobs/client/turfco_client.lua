@@ -30,21 +30,8 @@ AddEventHandler('uniquecafejobs:corp:holdingRenamed', function(job, newName)
 	end
 end)
 
-CreateThread(function()
-	exports.ox_target:addBoxZone({
-		coords = vec3(TurfCo.BossAction.Pos.x, TurfCo.BossAction.Pos.y, TurfCo.BossAction.Pos.z),
-		size = vec3(1.5, 1.5, 1.5),
-		rotation = 45,
-		debug = false,
-		options = {
-			{
-				name = 'turfco_boss',
-				icon = TurfCo.BossAction.Icon,
-				label = TurfCo.BossAction.Name,
-				canInteract = function()
-					return PlayerData and PlayerData.job and PlayerData.job.name == TurfCo.Job
-				end,
-				onSelect = function()
+-- Gang 2 boss menu: opened with E at TurfCo.BossAction (SimpleMarkers in corp_client.lua)
+local function openTurfcoBoss()
 					local elements = {
 						{ label = 'Rent Paintball Map', value = 'rent' },
 						{ label = 'Portfolio Dashboard', value = 'dashboard' },
@@ -100,11 +87,12 @@ CreateThread(function()
 					end, function(data, menu)
 						menu.close()
 					end)
-				end,
-			},
-		},
-	})
+end
 
+RegisterNetEvent('uniquecafejobs:turfco:openBoss')
+AddEventHandler('uniquecafejobs:turfco:openBoss', openTurfcoBoss)
+
+CreateThread(function()
 	exports.ox_target:addBoxZone({
 		coords = vec3(TurfCo.CloackRoom.Pos.x, TurfCo.CloackRoom.Pos.y, TurfCo.CloackRoom.Pos.z),
 		size = vec3(1.5, 1.5, 1.5),
@@ -126,25 +114,25 @@ CreateThread(function()
 	})
 end)
 
+-- Billing (Gang 2 staff): bills a nearby customer for a 30-day rental.
 RegisterNetEvent('uniquecafejobs:turfco:showRentMenu')
 AddEventHandler('uniquecafejobs:turfco:showRentMenu', function(rows)
 	local elements = {}
 	for _, row in ipairs(rows) do
 		local label = row.rentedBy
-			and ('%s - rented by %s (%d min left)'):format(row.map, row.rentedBy, row.minutesLeft)
-			or (row.map .. ' - available')
+			and ('%s - rented by %s (%d days left)'):format(row.map, row.rentedBy, row.daysLeft)
+			or (row.map .. ' - free')
 		table.insert(elements, { label = label, value = row.map, available = row.rentedBy == nil })
 	end
-
 	ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'turfco_rent_menu', {
-		title    = 'Rent Paintball Map',
-		align    = 'top-left',
+		title = ('Bill Paintball Rental ($%d / %d days)'):format(TurfCo.RentPrice, TurfCo.RentDays),
+		align = 'top-left',
 		elements = elements,
 	}, function(data, menu)
 		if data.current.available then
-			local input = lib.inputDialog('Rent ' .. data.current.value, {
+			local input = lib.inputDialog('Bill ' .. data.current.value, {
 				{ type = 'input',  label = 'Gang name', required = true },
-				{ type = 'number', label = ('Minutes (max %d, $%d/min)'):format(TurfCo.MaxRentMinutes, TurfCo.RentCostPerMinute), default = 30, min = 1, max = TurfCo.MaxRentMinutes },
+				{ type = 'number', label = 'Customer server ID (must be within 10m)', required = true },
 			})
 			if input and input[1] and input[2] then
 				TriggerServerEvent('uniquecafejobs:turfco:rentMap', data.current.value, input[1], input[2])
@@ -154,6 +142,63 @@ AddEventHandler('uniquecafejobs:turfco:showRentMenu', function(rows)
 	end, function(data, menu)
 		menu.close()
 	end)
+end)
+
+-- Map E-points: anyone can walk up to a paintball map and press E.
+local function openMapMenu(map)
+	TriggerServerEvent('uniquecafejobs:turfco:requestMapInfo', map)
+end
+
+RegisterNetEvent('uniquecafejobs:turfco:mapInfo')
+AddEventHandler('uniquecafejobs:turfco:mapInfo', function(map, rentedBy, daysLeft)
+	local myGang = PlayerData and PlayerData.gang and PlayerData.gang.name
+	local mine = rentedBy and myGang and (myGang:lower():gsub('%s+', '')) == rentedBy
+
+	local elements = {}
+	if rentedBy then
+		table.insert(elements, MenuInfo(('Rented by %s - %d days left'):format(rentedBy, daysLeft)))
+		if mine then
+			table.insert(elements, { label = '» Your gang can host paintball here', value = 'noop' })
+		else
+			table.insert(elements, MenuInfo('Reserved for another gang'))
+		end
+	else
+		table.insert(elements, MenuInfo('Free to play'))
+	end
+
+	ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'turfco_map_menu', {
+		title = 'Paintball - ' .. map,
+		align = 'top-left',
+		elements = elements,
+	}, function(data, menu)
+		menu.close()
+	end, function(data, menu)
+		menu.close()
+	end)
+end)
+
+CreateThread(function()
+	while true do
+		Citizen.Wait(0)
+		local ped = PlayerPedId()
+		local pos = GetEntityCoords(ped)
+		local nearAny = false
+		for _, map in ipairs(TurfCo.Maps) do
+			local p = TurfCo.MapPoints[map]
+			if p then
+				local d = #(pos - vector3(p.x, p.y, p.z))
+				if d < 40.0 then
+					nearAny = true
+					DrawMarker(1, p.x, p.y, p.z - 1.0, 0, 0, 0, 0, 0, 0, 2.0, 2.0, 0.6, 0, 180, 255, 120, false, true, 2, false, nil, nil, false)
+					if d < 2.0 then
+						ESX.ShowHelpNotification(('Paintball %s: ~INPUT_CONTEXT~'):format(map))
+						if IsControlJustPressed(0, 38) then openMapMenu(map) end
+					end
+				end
+			end
+		end
+		if not nearAny then Citizen.Wait(500) end
+	end
 end)
 
 -- ── Vehicle spawn/delete (same pattern as everything else in this resource) ──

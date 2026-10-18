@@ -54,7 +54,8 @@ client_scripts {
     'client/boss_esx_menu.lua', -- boss actions via ESX default menu (top-left), styled like the old Unique_Gangs system - this is what the boss NPC opens now
     'client/gangwar.lua',       -- shootout detection -> live FBI/CIA dispatch (see Config.GangWar, README #45)
     'client/territory.lua',     -- Territory Control add-on (see Config.Territory) - loads after boss.lua so the global `PlayerData` it reads is already set up
-    'client/territory_zombies.lua', -- ambient zombies inside territory zones (see Config.Territory.ZombieTiers) - loads after territory.lua since it listens for the same Territory:BossZoneState event
+    'client/territory_zombies.lua',
+    'client/zonearmory.lua', -- ambient zombies inside territory zones (see Config.Territory.ZombieTiers) - loads after territory.lua since it listens for the same Territory:BossZoneState event
     'client/zonewar.lua',       -- Gang War menu (/zonewar), HUD and war-zone blips
 }
 
@@ -94,7 +95,6 @@ escrow_ignore {
 -- ===== DRUGS (merged from esx_drugs; see drugs/) =====
 -- drugs config lives in the global DrugCfg (not Config) so the two configs never clash.
 shared_scripts {
-    '@ox_lib/init.lua',
     'drugs/config.lua',
     'config_gunshop.lua',
 }

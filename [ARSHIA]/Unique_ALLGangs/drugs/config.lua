@@ -228,7 +228,7 @@ DrugCfg.Locations = {
 DrugCfg.Zones = {}
 
 DrugCfg.CircleZones = {
-	DrugDealer = {coords = vector3(-1221.33, -1487.33, 3.37), name = _U('blip_drugdealer'), color = 6, sprite = 378, radius = 15.0},
+	DrugDealer = {coords = vector3(-1221.33, -1487.33, 3.37), name = 'blip_drugdealer', color = 6, sprite = 378, radius = 15.0},
 }
 
 for i=1, #DrugCfg.Locations, 1 do

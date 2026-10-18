@@ -659,7 +659,7 @@ ConfigCrafting = {
 		},
 	 ['shokolat'] = {
 	 	Level = 1, 
-		Category = 'UwUHamzan', 
+		Category = 'cafeHamzan', 
 		isGun = false, 
 		Jobs = ANY_CAFE_JOB, 
 		JobGrades = {}, 
@@ -677,7 +677,7 @@ ConfigCrafting = {
 
 	 ['cakebastani'] = {
 	 	Level = 1, 
-		Category = 'UwU', 
+		Category = 'cafeGaz', 
 		isGun = false, 
 		Jobs = ANY_CAFE_JOB, 
 		JobGrades = {}, 
@@ -699,7 +699,7 @@ ConfigCrafting = {
 
 	 ['caketotfarangi'] = {
 	 	Level = 1, 
-		Category = 'UwU', 
+		Category = 'cafeGaz', 
 		isGun = false, 
 		Jobs = ANY_CAFE_JOB, 
 		JobGrades = {}, 
@@ -721,7 +721,7 @@ ConfigCrafting = {
 
 	 ['milkshake'] = {
 	 	Level = 1, 
-		Category = 'UwUHamzan', 
+		Category = 'cafeHamzan', 
 		isGun = false, 
 		Jobs = ANY_CAFE_JOB, 
 		JobGrades = {}, 
@@ -739,7 +739,7 @@ ConfigCrafting = {
 
 	 ['latte'] = {
 	 	Level = 1, 
-		Category = 'UwUGhahve', 
+		Category = 'cafeGhahvesaz', 
 		isGun = false, 
 		Jobs = ANY_CAFE_JOB, 
 		JobGrades = {}, 
@@ -758,7 +758,7 @@ ConfigCrafting = {
 
 	 ['hot_chocolate'] = {
 	 	Level = 1, 
-		Category = 'UwUGhahve', 
+		Category = 'cafeGhahvesaz', 
 		isGun = false, 
 		Jobs = ANY_CAFE_JOB, 
 		JobGrades = {}, 
@@ -775,7 +775,7 @@ ConfigCrafting = {
 
 	 ['ghahve50'] = {
 	 	Level = 1, 
-		Category = 'UwUGhahve', 
+		Category = 'cafeGhahvesaz', 
 		isGun = false, 
 		Jobs = ANY_CAFE_JOB, 
 		JobGrades = {}, 
@@ -792,7 +792,7 @@ ConfigCrafting = {
 
 	 ['ghahve80'] = {
 	 	Level = 1, 
-		Category = 'UwUGhahve', 
+		Category = 'cafeGhahvesaz', 
 		isGun = false, 
 		Jobs = ANY_CAFE_JOB, 
 		JobGrades = {}, 
@@ -810,7 +810,7 @@ ConfigCrafting = {
 
 	 ['ghahve100'] = {
 	 	Level = 1, 
-		Category = 'UwUGhahve', 
+		Category = 'cafeGhahvesaz', 
 		isGun = false, 
 		Jobs = ANY_CAFE_JOB, 
 		JobGrades = {}, 
@@ -827,7 +827,7 @@ ConfigCrafting = {
 
 	 ['fenjon'] = {
 	 	Level = 1, 
-		Category = 'UwUZarfShoe', 
+		Category = 'cafeZarfShoe', 
 		isGun = false, 
 		Jobs = ANY_CAFE_JOB, 
 		JobGrades = {}, 
@@ -843,7 +843,7 @@ ConfigCrafting = {
 
 	 ['bubbletetotfarangi'] = {
 	 	Level = 1, 
-		Category = 'UwUHamzan', 
+		Category = 'cafeHamzan', 
 		isGun = false, 
 		Jobs = ANY_CAFE_JOB, 
 		JobGrades = {}, 
@@ -861,7 +861,7 @@ ConfigCrafting = {
 
 	 ['cupcake'] = {
 	 	Level = 1, 
-		Category = 'UwU', 
+		Category = 'cafeGaz', 
 		isGun = false, 
 		Jobs = ANY_CAFE_JOB, 
 		JobGrades = {}, 
@@ -884,7 +884,7 @@ ConfigCrafting = {
 
 	--  ['bastani'] = {
 	--  	Level = 1, 
-	-- 	Category = 'UwU', 
+	-- 	Category = 'cafeGaz', 
 	-- 	isGun = false, 
 	-- 	Jobs = ANY_CAFE_JOB, 
 	-- 	JobGrades = {}, 
@@ -905,7 +905,7 @@ ConfigCrafting = {
 
 	 ['boba_milk_tea_caramel'] = {
 	 	Level = 1, 
-		Category = 'UwUHamzan', 
+		Category = 'cafeHamzan', 
 		isGun = false, 
 		Jobs = ANY_CAFE_JOB, 
 		JobGrades = {}, 
@@ -922,7 +922,7 @@ ConfigCrafting = {
 
 	 ['boba_milk_tea_matcha'] = {
 	 	Level = 1, 
-		Category = 'UwUHamzan', 
+		Category = 'cafeHamzan', 
 		isGun = false, 
 		Jobs = ANY_CAFE_JOB, 
 		JobGrades = {}, 
@@ -940,7 +940,7 @@ ConfigCrafting = {
 
 	 ['bobal_tea_matcha'] = {
 	 	Level = 1, 
-		Category = 'UwUHamzan', 
+		Category = 'cafeHamzan', 
 		isGun = false, 
 		Jobs = ANY_CAFE_JOB, 
 		JobGrades = {}, 
@@ -957,7 +957,7 @@ ConfigCrafting = {
 
 	 ['bobal_tea_tamshak'] = {
 	 	Level = 1, 
-		Category = 'UwUHamzan', 
+		Category = 'cafeHamzan', 
 		isGun = false, 
 		Jobs = ANY_CAFE_JOB, 
 		JobGrades = {}, 
@@ -974,7 +974,7 @@ ConfigCrafting = {
 
 	 ['cake_bastani_vanili'] = {
 	 	Level = 1, 
-		Category = 'UwU', 
+		Category = 'cafeGaz', 
 		isGun = false, 
 		Jobs = ANY_CAFE_JOB, 
 		JobGrades = {}, 
@@ -995,7 +995,7 @@ ConfigCrafting = {
 
 	 ['cake_limoii'] = {
 	 	Level = 1, 
-		Category = 'UwU', 
+		Category = 'cafeGaz', 
 		isGun = false, 
 		Jobs = ANY_CAFE_JOB, 
 		JobGrades = {}, 
@@ -1014,7 +1014,7 @@ ConfigCrafting = {
 
 	 ['cupcake_shokolati'] = {
 	 	Level = 1, 
-		Category = 'UwU', 
+		Category = 'cafeGaz', 
 		isGun = false, 
 		Jobs = ANY_CAFE_JOB, 
 		JobGrades = {}, 
@@ -1034,7 +1034,7 @@ ConfigCrafting = {
 
 	 ['ice_coffee_matcha'] = {
 	 	Level = 1, 
-		Category = 'UwUHamzan', 
+		Category = 'cafeHamzan', 
 		isGun = false, 
 		Jobs = ANY_CAFE_JOB, 
 		JobGrades = {}, 
@@ -1055,7 +1055,7 @@ ConfigCrafting = {
 
 	 ['milk_shake_shokolati'] = {
 	 	Level = 1, 
-		Category = 'UwUHamzan', 
+		Category = 'cafeHamzan', 
 		isGun = false, 
 		Jobs = ANY_CAFE_JOB, 
 		JobGrades = {}, 
@@ -1072,7 +1072,7 @@ ConfigCrafting = {
 
 	 ['mufchocolate'] = {
 	 	Level = 1, 
-		Category = 'UwU', 
+		Category = 'cafeGaz', 
 		isGun = false, 
 		Jobs = ANY_CAFE_JOB, 
 		JobGrades = {}, 
@@ -1094,7 +1094,7 @@ ConfigCrafting = {
 
 	 ['muffin_tamshak'] = {
 	 	Level = 1, 
-		Category = 'UwU', 
+		Category = 'cafeGaz', 
 		isGun = false, 
 		Jobs = ANY_CAFE_JOB, 
 		JobGrades = {}, 
@@ -1114,7 +1114,7 @@ ConfigCrafting = {
 
 	 ['nodel'] = {
 	 	Level = 1, 
-		Category = 'UwU', 
+		Category = 'cafeGaz', 
 		isGun = false, 
 		Jobs = ANY_CAFE_JOB, 
 		JobGrades = {}, 
@@ -1132,7 +1132,7 @@ ConfigCrafting = {
 
 	 ['kase'] = {
 	 	Level = 1, 
-		Category = 'UwUZarfShoe', 
+		Category = 'cafeZarfShoe', 
 		isGun = false, 
 		Jobs = ANY_CAFE_JOB, 
 		JobGrades = {}, 
@@ -1148,7 +1148,7 @@ ConfigCrafting = {
 
 	 ['pankik'] = {
 	 	Level = 1, 
-		Category = 'UwU', 
+		Category = 'cafeGaz', 
 		isGun = false, 
 		Jobs = ANY_CAFE_JOB, 
 		JobGrades = {}, 
@@ -1167,7 +1167,7 @@ ConfigCrafting = {
 
 	 ['pankik_nutella'] = {
 	 	Level = 1, 
-		Category = 'UwU', 
+		Category = 'cafeGaz', 
 		isGun = false, 
 		Jobs = ANY_CAFE_JOB, 
 		JobGrades = {}, 
@@ -1187,7 +1187,7 @@ ConfigCrafting = {
 
 	 ['pankik_oreo'] = {
 	 	Level = 1, 
-		Category = 'UwU', 
+		Category = 'cafeGaz', 
 		isGun = false, 
 		Jobs = ANY_CAFE_JOB, 
 		JobGrades = {}, 
@@ -1208,7 +1208,7 @@ ConfigCrafting = {
 
 	 ['tiramisuye_toot_farangi'] = {
 	 	Level = 1, 
-		Category = 'UwU', 
+		Category = 'cafeGaz', 
 		isGun = false, 
 		Jobs = ANY_CAFE_JOB, 
 		JobGrades = {}, 
@@ -1231,7 +1231,7 @@ ConfigCrafting = {
 
 	 ['vafel_nutella'] = {
 	 	Level = 1, 
-		Category = 'UwU', 
+		Category = 'cafeGaz', 
 		isGun = false, 
 		Jobs = ANY_CAFE_JOB, 
 		JobGrades = {}, 

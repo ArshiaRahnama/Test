@@ -145,12 +145,13 @@ main::-webkit-scrollbar-thumb { background: rgba(168,85,247,.35); border-radius:
 /* ===== themes: same UI, each system its own colours (deep + light) ===== */
 #app[data-theme="robbery"]  { --accent: #a855f7; --accent-2: #7c3aed; --premium: #c084fc; --accent-soft: rgba(168,85,247,.22); }
 #app[data-theme="gangwar"]  { --accent: #fb923c; --accent-2: #b91c1c; --premium: #fdba74; --accent-soft: rgba(251,146,60,.22); --bronze: #f59e0b; --silver: #fca5a5; }
+#app[data-theme="gunshop"] { --accent: #facc15; --accent-2: #a16207; --premium: #fde68a; --accent-soft: rgba(250,204,21,.22); --bronze: #fb923c; --silver: #e5e7eb; }
 #app[data-theme="allies"]    { --accent: #f472b6; --accent-2: #be185d; --premium: #f9a8d4; --accent-soft: rgba(244,114,182,.22); --bronze: #f0abfc; --silver: #67e8f9; }
 #app[data-theme="territory"]{ --accent: #34d399; --accent-2: #047857; --premium: #6ee7b7; --accent-soft: rgba(52,211,153,.22); --bronze: #fbbf24; --silver: #93c5fd; }
-#app[data-theme="gangwar"] .tab.active, #app[data-theme="territory"] .tab.active, #app[data-theme="allies"] .tab.active,
+#app[data-theme="gangwar"] .tab.active, #app[data-theme="territory"] .tab.active, #app[data-theme="allies"] .tab.active, #app[data-theme="gunshop"] .tab.active,
 #app[data-theme="gangwar"] .navbtn:hover, #app[data-theme="territory"] .navbtn:hover { background: linear-gradient(135deg, var(--accent-soft), rgba(0,0,0,.15)); border-color: var(--accent); }
 #app[data-theme="gangwar"] .section-title, #app[data-theme="territory"] .section-title { color: var(--accent); }
-#app[data-theme="gangwar"] .btn, #app[data-theme="territory"] .btn, #app[data-theme="allies"] .btn { background: linear-gradient(135deg, var(--accent-2), var(--accent)); }
+#app[data-theme="gangwar"] .btn, #app[data-theme="territory"] .btn, #app[data-theme="allies"] .btn, #app[data-theme="gunshop"] .btn { background: linear-gradient(135deg, var(--accent-2), var(--accent)); }
 
 .kind-nav { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; padding-top: 10px; border-top: 1px solid var(--line); }
 .kind-nav-label { font-size: 11px; color: var(--muted); text-align: center; }
@@ -176,3 +177,14 @@ main::-webkit-scrollbar-thumb { background: rgba(168,85,247,.35); border-radius:
 .topic { font-family: inherit; font-size: 12.5px; color: var(--text); background: rgba(255,255,255,.05); border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px; cursor: pointer; transition: .15s; }
 .topic:hover { background: rgba(255,255,255,.1); }
 .topic.active { background: var(--accent-soft); border-color: var(--accent); color: #fff; }
+.bid-input { font-family: inherit; font-size: 13px; background: rgba(0,0,0,.25); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; width: 140px; margin: 4px 0; }
+
+/* zone armory: progress bars + ok/low numbers */
+.mini-bar { height: 7px; border-radius: 99px; background: rgba(248,113,113,.28); overflow: hidden; margin: 4px 0 6px; }
+.mini-bar i { display: block; height: 100%; background: linear-gradient(90deg, #f59e0b, #fde68a); width: 0; transition: width .4s ease; }
+.mini-bar.ok i { background: linear-gradient(90deg, #22c55e, #86efac); }
+.ok-num { color: var(--good); } .low-num { color: var(--bad); }
+#app[data-theme="zonearmory"] { --accent: #facc15; --accent-2: #a16207; --premium: #fde68a; --accent-soft: rgba(250,204,21,.22); --bronze: #fb923c; --silver: #e5e7eb; }
+#app[data-theme="zonearmory"] .tab.active { background: var(--accent-soft); border-color: var(--accent); }
+#app[data-theme="zonearmory"] .btn { background: linear-gradient(135deg, var(--accent-2), var(--accent)); }
+#app[data-theme="zonearmory"] .section-title { color: var(--accent); }

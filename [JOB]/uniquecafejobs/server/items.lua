@@ -6,7 +6,7 @@ ESX.RegisterUsableItem('abporteghal', function(source)
 
 	TriggerClientEvent('esx_status:add', source, 'thirst', 333333)
 	TriggerClientEvent('AH_uwucafejob:onDrinkabporteghal', source)
-	TriggerClientEvent('esx:ShowNotification', source, "Shoma Yek ~y~Ab Porteghal~w~ Noshidid")
+	TriggerClientEvent('esx:showNotification', source, "Shoma Yek ~y~Ab Porteghal~w~ Noshidid")
 end) 
 
 ESX.RegisterUsableItem('bubbletetotfarangi', function(source)
@@ -16,7 +16,7 @@ ESX.RegisterUsableItem('bubbletetotfarangi', function(source)
 
 	TriggerClientEvent('esx_status:add', source, 'thirst', 1000000)
 	TriggerClientEvent('AH_uwucafejob:onDrinkbubbletetotfarangi', source)
-	TriggerClientEvent('esx:ShowNotification', source, "Shoma Yek ~y~Bubblete Totfarangi~w~ Noshidid")
+	TriggerClientEvent('esx:showNotification', source, "Shoma Yek ~y~Bubblete Totfarangi~w~ Noshidid")
 end)
 
 ESX.RegisterUsableItem('chaee', function(source)
@@ -26,7 +26,7 @@ ESX.RegisterUsableItem('chaee', function(source)
 
 	TriggerClientEvent('esx_status:add', source, 'thirst', 500000)
 	TriggerClientEvent('AH_uwucafejob:onDrinkchaee', source)
-	TriggerClientEvent('esx:ShowNotification', source, "Shoma Yek ~y~Chaee~w~ Noshidid")
+	TriggerClientEvent('esx:showNotification', source, "Shoma Yek ~y~Chaee~w~ Noshidid")
 end)
 
 ESX.RegisterUsableItem('bastani', function(source)
@@ -37,7 +37,7 @@ ESX.RegisterUsableItem('bastani', function(source)
 	TriggerClientEvent('esx_status:add', source, 'thirst', 200000)
 	TriggerClientEvent('esx_status:add', source, 'hunger', 200000)
 	TriggerClientEvent('AH_uwucafejob:onDrinkbastani', source)
-	TriggerClientEvent('esx:ShowNotification', source, "Shoma Yek ~y~Bastani~w~ Khordid")
+	TriggerClientEvent('esx:showNotification', source, "Shoma Yek ~y~Bastani~w~ Khordid")
 end)
 
 ESX.RegisterUsableItem('boba_milk_tea_caramel', function(source)
@@ -47,7 +47,7 @@ ESX.RegisterUsableItem('boba_milk_tea_caramel', function(source)
 
 	TriggerClientEvent('esx_status:add', source, 'thirst', 1000000)
 	TriggerClientEvent('AH_uwucafejob:onDrinkboba_milk_tea_caramel', source)
-	TriggerClientEvent('esx:ShowNotification', source, "Shoma Yek ~y~Boba_milk_tea_caramel~w~ Noshidid")
+	TriggerClientEvent('esx:showNotification', source, "Shoma Yek ~y~Boba_milk_tea_caramel~w~ Noshidid")
 end)
 
 ESX.RegisterUsableItem('boba_milk_tea_matcha', function(source)
@@ -57,7 +57,7 @@ ESX.RegisterUsableItem('boba_milk_tea_matcha', function(source)
 
 	TriggerClientEvent('esx_status:add', source, 'thirst', 1000000)
 	TriggerClientEvent('AH_uwucafejob:onDrinkboba_milk_tea_matcha', source)
-	TriggerClientEvent('esx:ShowNotification', source, "Shoma Yek ~y~boba_milk_tea_matcha~w~ Noshidid")
+	TriggerClientEvent('esx:showNotification', source, "Shoma Yek ~y~boba_milk_tea_matcha~w~ Noshidid")
 end)
 
 ESX.RegisterUsableItem('bobal_tea_matcha', function(source)
@@ -67,7 +67,7 @@ ESX.RegisterUsableItem('bobal_tea_matcha', function(source)
 
 	TriggerClientEvent('esx_status:add', source, 'thirst', 1000000)
 	TriggerClientEvent('AH_uwucafejob:onDrinkbobal_tea_matchaa', source)
-	TriggerClientEvent('esx:ShowNotification', source, "Shoma Yek ~y~bobal_tea_matcha~w~ Noshidid")
+	TriggerClientEvent('esx:showNotification', source, "Shoma Yek ~y~bobal_tea_matcha~w~ Noshidid")
 end)
 
 ESX.RegisterUsableItem('bobal_tea_tamshak', function(source)
@@ -77,7 +77,7 @@ ESX.RegisterUsableItem('bobal_tea_tamshak', function(source)
 
 	TriggerClientEvent('esx_status:add', source, 'thirst', 1000000)
 	TriggerClientEvent('AH_uwucafejob:onDrinkbobal_tea_tamshak', source)
-	TriggerClientEvent('esx:ShowNotification', source, "Shoma Yek ~y~bobal_tea_tamshak~w~ Noshidid")
+	TriggerClientEvent('esx:showNotification', source, "Shoma Yek ~y~bobal_tea_tamshak~w~ Noshidid")
 end)
 
 ESX.RegisterUsableItem('ice_coffee_matcha', function(source)
@@ -87,7 +87,7 @@ ESX.RegisterUsableItem('ice_coffee_matcha', function(source)
 
 	TriggerClientEvent('esx_status:add', source, 'thirst', 1000000)
 	TriggerClientEvent('AH_uwucafejob:onDrinkice_coffee_matcha', source)
-	TriggerClientEvent('esx:ShowNotification', source, "Shoma Yek ~y~ice_coffee_matcha~w~ Noshidid")
+	TriggerClientEvent('esx:showNotification', source, "Shoma Yek ~y~ice_coffee_matcha~w~ Noshidid")
 end)
 
 ESX.RegisterUsableItem('ghahve50', function(source)
@@ -98,7 +98,7 @@ ESX.RegisterUsableItem('ghahve50', function(source)
 
 	TriggerClientEvent('esx_status:add', source, 'thirst', 500000)
 	TriggerClientEvent('AH_uwucafejob:onDrinkghahve', source)
-	TriggerClientEvent('esx:ShowNotification', source, "Shoma Yek ~y~Ghahve50~w~ Noshidid")
+	TriggerClientEvent('esx:showNotification', source, "Shoma Yek ~y~Ghahve50~w~ Noshidid")
 end)
 
 ESX.RegisterUsableItem('ghahve80', function(source)
@@ -109,7 +109,7 @@ ESX.RegisterUsableItem('ghahve80', function(source)
 
 	TriggerClientEvent('esx_status:add', source, 'thirst', 333333)
 	TriggerClientEvent('AH_uwucafejob:onDrinkghahve', source)
-	TriggerClientEvent('esx:ShowNotification', source, "Shoma Yek ~y~Ghahve80~w~ Noshidid")
+	TriggerClientEvent('esx:showNotification', source, "Shoma Yek ~y~Ghahve80~w~ Noshidid")
 end)
 
 ESX.RegisterUsableItem('ghahve100', function(source)
@@ -120,7 +120,7 @@ ESX.RegisterUsableItem('ghahve100', function(source)
 
 	TriggerClientEvent('esx_status:add', source, 'thirst', 1000000)
 	TriggerClientEvent('AH_uwucafejob:onDrinkghahve', source)
-	TriggerClientEvent('esx:ShowNotification', source, "Shoma Yek ~y~Ghahve100~w~ Noshidid")
+	TriggerClientEvent('esx:showNotification', source, "Shoma Yek ~y~Ghahve100~w~ Noshidid")
 end)
 
 ESX.RegisterUsableItem('hot_chocolate', function(source)
@@ -130,7 +130,7 @@ ESX.RegisterUsableItem('hot_chocolate', function(source)
 
 	TriggerClientEvent('esx_status:add', source, 'thirst', 800000)
 	TriggerClientEvent('AH_uwucafejob:onDrinkhot_chocolate', source)
-	TriggerClientEvent('esx:ShowNotification', source, "Shoma Yek ~y~Hot Chocolate~w~ Noshidid")
+	TriggerClientEvent('esx:showNotification', source, "Shoma Yek ~y~Hot Chocolate~w~ Noshidid")
 end)
 
 ESX.RegisterUsableItem('latte', function(source)
@@ -140,7 +140,7 @@ ESX.RegisterUsableItem('latte', function(source)
 
 	TriggerClientEvent('esx_status:add', source, 'thirst', 1000000)
 	TriggerClientEvent('AH_uwucafejob:onDrinklatte', source)
-	TriggerClientEvent('esx:ShowNotification', source, "Shoma Yek ~y~Lattee~w~ Noshidid")
+	TriggerClientEvent('esx:showNotification', source, "Shoma Yek ~y~Lattee~w~ Noshidid")
 end)
 
 ESX.RegisterUsableItem('milkshake', function(source)
@@ -150,7 +150,7 @@ ESX.RegisterUsableItem('milkshake', function(source)
 
 	TriggerClientEvent('esx_status:add', source, 'thirst', 1000000)
 	TriggerClientEvent('AH_uwucafejob:onDrinkmilkshake', source)
-	TriggerClientEvent('esx:ShowNotification', source, "Shoma Yek ~y~Milkshake~w~ Noshidid")
+	TriggerClientEvent('esx:showNotification', source, "Shoma Yek ~y~Milkshake~w~ Noshidid")
 end)
 
 ESX.RegisterUsableItem('milk_shake_shokolati', function(source)
@@ -160,7 +160,7 @@ ESX.RegisterUsableItem('milk_shake_shokolati', function(source)
 
 	TriggerClientEvent('esx_status:add', source, 'thirst', 1000000)
 	TriggerClientEvent('AH_uwucafejob:onDrinkmilk_shake_shokolati', source)
-	TriggerClientEvent('esx:ShowNotification', source, "Shoma Yek ~y~Milkshake~w~ Noshidid")
+	TriggerClientEvent('esx:showNotification', source, "Shoma Yek ~y~Milkshake~w~ Noshidid")
 end)
 
 --------------------------------------- Eat --------------------------------------  
@@ -172,7 +172,7 @@ ESX.RegisterUsableItem('nodel', function(source)
 
 	TriggerClientEvent('esx_status:add', source, 'hunger', 1000000)
 	TriggerClientEvent('AH_uwucafejob:onEatnodel', source)
-	TriggerClientEvent('esx:ShowNotification', source, "Shoma Yek ~y~nodel~w~ Khordid")
+	TriggerClientEvent('esx:showNotification', source, "Shoma Yek ~y~nodel~w~ Khordid")
 end)
 
 ESX.RegisterUsableItem('vafel_nutella', function(source)
@@ -182,7 +182,7 @@ ESX.RegisterUsableItem('vafel_nutella', function(source)
 
 	TriggerClientEvent('esx_status:add', source, 'hunger', 1000000)
 	TriggerClientEvent('AH_uwucafejob:onEatvafel_nutella', source)
-	TriggerClientEvent('esx:ShowNotification', source, "Shoma Yek ~y~vafel_nutella~w~ Khordid")
+	TriggerClientEvent('esx:showNotification', source, "Shoma Yek ~y~vafel_nutella~w~ Khordid")
 end)
 
 ESX.RegisterUsableItem('tiramisuye_toot_farangi', function(source)
@@ -192,7 +192,7 @@ ESX.RegisterUsableItem('tiramisuye_toot_farangi', function(source)
 
 	TriggerClientEvent('esx_status:add', source, 'hunger', 1000000)
 	TriggerClientEvent('AH_uwucafejob:onEattiramisuye_toot_farangi', source)
-	TriggerClientEvent('esx:ShowNotification', source, "Shoma Yek ~y~tiramisuye_toot_farangi~w~ Khordid")
+	TriggerClientEvent('esx:showNotification', source, "Shoma Yek ~y~tiramisuye_toot_farangi~w~ Khordid")
 end)
 
 ESX.RegisterUsableItem('pankik_oreo', function(source)
@@ -202,7 +202,7 @@ ESX.RegisterUsableItem('pankik_oreo', function(source)
 
 	TriggerClientEvent('esx_status:add', source, 'hunger', 1000000)
 	TriggerClientEvent('AH_uwucafejob:onEatpankik_oreo', source)
-	TriggerClientEvent('esx:ShowNotification', source, "Shoma Yek ~y~pankik_oreo~w~ Khordid")
+	TriggerClientEvent('esx:showNotification', source, "Shoma Yek ~y~pankik_oreo~w~ Khordid")
 end)
 
 ESX.RegisterUsableItem('pankik_nutella', function(source)
@@ -212,7 +212,7 @@ ESX.RegisterUsableItem('pankik_nutella', function(source)
 
 	TriggerClientEvent('esx_status:add', source, 'hunger', 1000000)
 	TriggerClientEvent('AH_uwucafejob:onEatpankik_nutella', source)
-	TriggerClientEvent('esx:ShowNotification', source, "Shoma Yek ~y~pankik_nutella~w~ Khordid")
+	TriggerClientEvent('esx:showNotification', source, "Shoma Yek ~y~pankik_nutella~w~ Khordid")
 end)
 
 ESX.RegisterUsableItem('pankik', function(source)
@@ -222,7 +222,7 @@ ESX.RegisterUsableItem('pankik', function(source)
 
 	TriggerClientEvent('esx_status:add', source, 'hunger', 1000000)
 	TriggerClientEvent('AH_uwucafejob:onEatpankik', source)
-	TriggerClientEvent('esx:ShowNotification', source, "Shoma Yek ~y~pankik~w~ Khordid")
+	TriggerClientEvent('esx:showNotification', source, "Shoma Yek ~y~pankik~w~ Khordid")
 end)
 
 ESX.RegisterUsableItem('muffin_tamshak', function(source)
@@ -232,7 +232,7 @@ ESX.RegisterUsableItem('muffin_tamshak', function(source)
 
 	TriggerClientEvent('esx_status:add', source, 'hunger', 1000000)
 	TriggerClientEvent('AH_uwucafejob:onEatmuffin_tamshak', source)
-	TriggerClientEvent('esx:ShowNotification', source, "Shoma Yek ~y~muffin_tamshak~w~ Khordid")
+	TriggerClientEvent('esx:showNotification', source, "Shoma Yek ~y~muffin_tamshak~w~ Khordid")
 end)
 
 
@@ -243,7 +243,7 @@ ESX.RegisterUsableItem('cupcake_shokolati', function(source)
 
 	TriggerClientEvent('esx_status:add', source, 'hunger', 1000000)
 	TriggerClientEvent('AH_uwucafejob:onEatcupcake_shokolati', source)
-	TriggerClientEvent('esx:ShowNotification', source, "Shoma Yek ~y~cupcake_shokolati~w~ Khordid")
+	TriggerClientEvent('esx:showNotification', source, "Shoma Yek ~y~cupcake_shokolati~w~ Khordid")
 end)
 
 ESX.RegisterUsableItem('mufchocolate', function(source)
@@ -253,7 +253,7 @@ ESX.RegisterUsableItem('mufchocolate', function(source)
 
 	TriggerClientEvent('esx_status:add', source, 'hunger', 1000000)
 	TriggerClientEvent('AH_uwucafejob:onEatmufchocolate', source)
-	TriggerClientEvent('esx:ShowNotification', source, "Shoma Yek ~y~mufchocolate~w~ Khordid")
+	TriggerClientEvent('esx:showNotification', source, "Shoma Yek ~y~mufchocolate~w~ Khordid")
 end)
 
 ESX.RegisterUsableItem('cake_limoii', function(source)
@@ -263,7 +263,7 @@ ESX.RegisterUsableItem('cake_limoii', function(source)
 
 	TriggerClientEvent('esx_status:add', source, 'hunger', 1000000)
 	TriggerClientEvent('AH_uwucafejob:onEatcake_limoii', source)
-	TriggerClientEvent('esx:ShowNotification', source, "Shoma Yek ~y~cake_limoii~w~ Khordid")
+	TriggerClientEvent('esx:showNotification', source, "Shoma Yek ~y~cake_limoii~w~ Khordid")
 end)
 
 ESX.RegisterUsableItem('cakebastani', function(source)
@@ -273,7 +273,7 @@ ESX.RegisterUsableItem('cakebastani', function(source)
 
 	TriggerClientEvent('esx_status:add', source, 'hunger', 1000000)
 	TriggerClientEvent('AH_uwucafejob:onEatcakebastani', source)
-	TriggerClientEvent('esx:ShowNotification', source, "Shoma Yek ~y~Cake Bastani~w~ Khordid")
+	TriggerClientEvent('esx:showNotification', source, "Shoma Yek ~y~Cake Bastani~w~ Khordid")
 end)
 
 
@@ -284,7 +284,7 @@ ESX.RegisterUsableItem('cakebastanivanili', function(source)
 
 	TriggerClientEvent('esx_status:add', source, 'hunger', 1000000)
 	TriggerClientEvent('AH_uwucafejob:onEatcakebastanivanili', source)
-	TriggerClientEvent('esx:ShowNotification', source, "Shoma Yek ~y~Cake Bastanivanili~w~ Khordid")
+	TriggerClientEvent('esx:showNotification', source, "Shoma Yek ~y~Cake Bastanivanili~w~ Khordid")
 end)
 
 ESX.RegisterUsableItem('cake_bastani_vanili', function(source)
@@ -294,7 +294,7 @@ ESX.RegisterUsableItem('cake_bastani_vanili', function(source)
 
 	TriggerClientEvent('esx_status:add', source, 'hunger', 1000000)
 	TriggerClientEvent('AH_uwucafejob:onEatcakebastanivanili', source)
-	TriggerClientEvent('esx:ShowNotification', source, "Shoma Yek ~y~Cake Bastani vanili~w~ Khordid")
+	TriggerClientEvent('esx:showNotification', source, "Shoma Yek ~y~Cake Bastani vanili~w~ Khordid")
 end)
 
 
@@ -305,7 +305,7 @@ ESX.RegisterUsableItem('caketotfarangi', function(source)
 
 	TriggerClientEvent('esx_status:add', source, 'hunger', 1000000)
 	TriggerClientEvent('AH_uwucafejob:onEatcaketotfarangi', source)
-	TriggerClientEvent('esx:ShowNotification', source, "Shoma Yek ~y~Cake Totfarangi~w~ Khordid")
+	TriggerClientEvent('esx:showNotification', source, "Shoma Yek ~y~Cake Totfarangi~w~ Khordid")
 end)
 
 ESX.RegisterUsableItem('cupcake', function(source)
@@ -315,7 +315,7 @@ ESX.RegisterUsableItem('cupcake', function(source)
 
 	TriggerClientEvent('esx_status:add', source, 'hunger', 1000000)
 	TriggerClientEvent('AH_uwucafejob:onEatcupcake', source)
-	TriggerClientEvent('esx:ShowNotification', source, "Shoma Yek ~y~Cupcake~w~ Khordid")
+	TriggerClientEvent('esx:showNotification', source, "Shoma Yek ~y~Cupcake~w~ Khordid")
 end)
 
 ESX.RegisterUsableItem('shokolat', function(source)
@@ -325,7 +325,7 @@ ESX.RegisterUsableItem('shokolat', function(source)
 
 	TriggerClientEvent('esx_status:add', source, 'hunger', 1000000)
 	TriggerClientEvent('AH_uwucafejob:onEatshokolat', source)
-	TriggerClientEvent('esx:ShowNotification', source, "Shoma Yek ~y~Shokolat~w~ Khordid")
+	TriggerClientEvent('esx:showNotification', source, "Shoma Yek ~y~Shokolat~w~ Khordid")
 end)
 
 ESX.RegisterUsableItem('suop', function(source)
@@ -335,10 +335,11 @@ ESX.RegisterUsableItem('suop', function(source)
 
 	TriggerClientEvent('esx_status:add', source, 'hunger', 1000000)
 	TriggerClientEvent('AH_uwucafejob:onDrinksuop', source)
-	TriggerClientEvent('esx:ShowNotification', source, "Shoma Yek ~y~Suop~w~ Khordid")
+	TriggerClientEvent('esx:showNotification', source, "Shoma Yek ~y~Suop~w~ Khordid")
 end)
 
 RegisterCommand('th2', function(source, args)
+	if source == 0 then return end
 	local xPlayer = ESX.GetPlayerFromId(source)
 	if xPlayer.permission_level >= 1 then
 		if not args[2] then 

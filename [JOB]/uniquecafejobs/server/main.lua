@@ -266,7 +266,8 @@ AddEventHandler("spawnCarOnMarker", function(vehicleName)
     if not xPlayer then return end
 
     local myCafe = GetCafeForJob(xPlayer.job.name)
-    if myCafe then
+    -- vms barber/tattoo shops have no cafe vehicle; only real cafes spawn here
+    if myCafe and myCafe.SpawnVehicle then
         if vehicleName == myCafe.SpawnVehicle then
             TriggerClientEvent("spawnCarClient", source, vehicleName)
         else
@@ -279,12 +280,14 @@ end)
 
 RegisterNetEvent('AH_uwucafejob:blingrequest')
 AddEventHandler('AH_uwucafejob:blingrequest', function(player, target, ammont)
+	if not tonumber(target) or not ESX.GetPlayerFromId(tonumber(target)) then return end
 
 	TriggerClientEvent('AH_uwucafejob:OpenMenuDialog', player, player, target, ammont)
 end)
 
 RegisterNetEvent('AH_uwucafejob:ChatMessage')
 AddEventHandler('AH_uwucafejob:ChatMessage', function(target, player, Chek)
+	if not tonumber(target) or not ESX.GetPlayerFromId(tonumber(target)) then return end
 
 	if Chek then 
 		TriggerClientEvent('chat:addMessage', target, { args = { '^1SYSTEM', 'Darkhast Ghabz Tavasot ID: ^2'..tonumber(player)..' ^0| ^2Ghabol ^0Shod' } })
@@ -298,7 +301,7 @@ end)
 ESX.RegisterServerCallback("AH_uwucafejob:GetOnDutyJob", function(source, cb)
 	for k,v in pairs(GetPlayers()) do 
 		local Target = ESX.GetPlayerFromId(v)
-		if IsCafeJob(Target.job.name) then 
+		if Target and IsCafeJob(Target.job.name) then 
 			cb(true)
 			return
 		end

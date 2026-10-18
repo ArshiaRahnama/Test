@@ -1,34 +1,15 @@
---[[
-    Server-side checkout for the Unique Café product menu (client/shop_client.lua).
+-- Cafe / restaurant checkout. Prices come from shared/menu.lua on the server.
+-- The player must be standing at the menu point of the business they buy from.
 
-    The client only ever sends { value = 'ghahve80', qty = 2 } style entries -
-    every price is looked up here from Config.UwUMenu_Cake_Item /
-    Config.UwUMenu_Noshidani_Item, never trusted from the NUI payload, so a
-    modified client can't just claim a cheaper price.
-
-    Revenue: the full sale total is deposited into the interacting cafe's
-    own business account (society_<job>, same shared-account system every
-    other cafe revenue source in this resource uses - see crafting_sv.lua)
-    and counted via RecordSale for the Takeover War weekly sales board
-    (server/takeover_sv.lua) - a purchase here behaves like a real business
-    sale, not a money sink.
-]]
-
-local function findMenuItem(value)
-    for _, item in ipairs(Config.UwUMenu_Cake_Item) do
-        if item.value == value then return item end
-    end
-    for _, item in ipairs(Config.UwUMenu_Noshidani_Item) do
-        if item.value == value then return item end
+local function findMenuItem(group, value)
+    local menu = Config.MenuByGroup[group]
+    if not menu then return nil end
+    for _, list in pairs(menu) do
+        for _, item in ipairs(list) do
+            if item.value == value then return item end
+        end
     end
     return nil
-end
-
-local function isKnownCafeJob(job)
-    for _, cafe in pairs(Cafes) do
-        if cafe.Job == job then return true end
-    end
-    return false
 end
 
 RegisterNetEvent('uwushop:checkout')
@@ -37,52 +18,35 @@ AddEventHandler('uwushop:checkout', function(cart, cafeJob)
     local xPlayer = ESX.GetPlayerFromId(src)
     if not xPlayer then return end
 
-    if type(cart) ~= 'table' or #cart == 0 then
-        TriggerClientEvent('uwushop:result', src, false, 'Sabad kharid khali ast.')
-        return
-    end
+    local function fail(msg) TriggerClientEvent('uwushop:result', src, false, msg) end
 
-    if not cafeJob or not isKnownCafeJob(cafeJob) then
-        TriggerClientEvent('uwushop:result', src, false, 'Cafe nameatabar ast.')
-        return
-    end
+    if type(cart) ~= 'table' or #cart == 0 or #cart > 20 then return fail('Sabad kharid khali ast.') end
 
-    -- Validate every line + compute the real total server-side.
-    local total = 0
-    local resolved = {}
+    local biz = type(cafeJob) == 'string' and GetCafeForJob(cafeJob)
+    if not biz then return fail('Cafe nameatabar ast.') end
 
+    local p = GetEntityCoords(GetPlayerPed(src))
+    local mp = biz.Menu_Sefaresh.Pos
+    if #(p - vector3(mp.x, mp.y, mp.z)) > 10.0 then return fail('Shoma nazdik in cafe nistid.') end
+
+    local total, resolved = 0, {}
     for _, line in ipairs(cart) do
-        local qty = tonumber(line.qty)
-        if not qty or qty <= 0 or qty > 50 then
-            TriggerClientEvent('uwushop:result', src, false, 'Meghdar nameatabar.')
-            return
-        end
-
-        local item = findMenuItem(line.value)
-        if not item then
-            TriggerClientEvent('uwushop:result', src, false, 'Kalaye nameatabar.')
-            return
-        end
-
-        total = total + (item.price * qty)
+        local qty = math.floor(tonumber(line.qty) or 0)
+        if qty <= 0 or qty > 50 then return fail('Meghdar nameatabar.') end
+        local item = findMenuItem(biz.MenuGroup, line.value)
+        if not item then return fail('Kalaye nameatabar.') end
+        total = total + item.price * qty
         resolved[#resolved + 1] = { name = item.value, qty = qty }
     end
 
-    if xPlayer.getMoney() < total then
-        TriggerClientEvent('uwushop:result', src, false, 'Pool kafi nadarid.')
-        return
-    end
-
+    if xPlayer.getMoney() < total then return fail('Pool kafi nadarid.') end
     xPlayer.removeMoney(total)
+    for _, l in ipairs(resolved) do xPlayer.addInventoryItem(l.name, l.qty) end
 
-    for _, line in ipairs(resolved) do
-        xPlayer.addInventoryItem(line.name, line.qty)
-    end
-
-    TriggerEvent('esx_addonaccount:getSharedAccount', 'society_' .. cafeJob, function(account)
-        account.addMoney(total)
-        RecordSale(cafeJob, total) -- Takeover War weekly sales board (server/takeover_sv.lua)
+    TriggerEvent('esx_addonaccount:getSharedAccount', 'society_' .. biz.Society, function(acc)
+        if acc then acc.addMoney(total) end
     end)
+    RecordSale(biz.Job, total)
 
     TriggerClientEvent('uwushop:result', src, true, ('Kharid movafagh - $%d kasr shod.'):format(total))
 end)

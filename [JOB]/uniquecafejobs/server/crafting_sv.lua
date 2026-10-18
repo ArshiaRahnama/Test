@@ -44,31 +44,17 @@ function getCraftingRank(identifier)
 	return 20
 end
 
-local tx = nil
-local ty = nil
-local tz = nil
 ESX.RegisterServerCallback('coordscraft', function(source, cb, cx, cy, cz)
-    salam = true 
-    cb(salam)
-    tx = cx
-    ty = cy
-    tz = cz
+    cb(true)
 
 
 end)
-local gangaccses = false
 
 
-RegisterServerEvent('sendPlayerDataToServer')
-AddEventHandler('sendPlayerDataToServer', function(permchek)
-  
-    gangaccses = permchek
-    
-    
-end)
 
 
 function craft(src, item, retrying)
+	retrying = false -- never trust the client: no ingredient/level bypass
 
   
 	local xPlayer = ESX.GetPlayerFromId(src)
@@ -120,7 +106,7 @@ function craft(src, item, retrying)
 			end
 
 			TriggerClientEvent("AH_uwucafejob:craftStart", src, item, count)
-			PendingCrafts[src] = { item = item, expiresAt = os.time() + 120 }
+			PendingCrafts[src] = { item = item, expiresAt = os.time() + 120, readyAt = os.time() + (ConfigCrafting.Recipes[item].Time or 0) }
 			
 			
 		else
@@ -167,7 +153,7 @@ function craft(src, item, retrying)
                                     end
 
                                     TriggerClientEvent("AH_uwucafejob:craftStart", src, item, count)
-                                    PendingCrafts[src] = { item = item, expiresAt = os.time() + 120, identifier = xPlayer.identifier, queued = true }
+                                    PendingCrafts[src] = { item = item, expiresAt = os.time() + 120, readyAt = os.time() + (ConfigCrafting.Recipes[item].Time or 0), identifier = xPlayer.identifier, queued = true }
                                 else
                                     TriggerClientEvent('esx:showNotification', src, 'Shoma Pol Kafi Nadarid')
                                 end
@@ -195,7 +181,7 @@ function craft(src, item, retrying)
 					end
 
 					TriggerClientEvent("AH_uwucafejob:craftStart", src, item, count)
-					PendingCrafts[src] = { item = item, expiresAt = os.time() + 120 }
+					PendingCrafts[src] = { item = item, expiresAt = os.time() + 120, readyAt = os.time() + (ConfigCrafting.Recipes[item].Time or 0) }
 				else
 					TriggerClientEvent('esx:showNotification', src, _U("not_enough_ingredients"))
 				end
@@ -212,6 +198,8 @@ AddEventHandler(
 "AH_uwucafejob:itemCrafted",
 function(item, count)
     local src = source
+    local pc = GetEntityCoords(GetPlayerPed(src)) -- drop position comes from the server, not the client
+    local px, py, pz = pc.x, pc.y, pc.z
     local xPlayer = ESX.GetPlayerFromId(src)
     if not xPlayer then return end
 
@@ -223,9 +211,10 @@ function(item, count)
     if not pending or pending.item ~= item or os.time() > pending.expiresAt then
         return
     end
+    if os.time() < pending.readyAt - 1 then return end -- can't be finished instantly
     PendingCrafts[src] = nil
 
-    if ConfigCrafting.Recipes[item].SuccessRate > math.random(0, ConfigCrafting.Recipes[item].SuccessRate) then
+    if math.random(1, 100) <= ConfigCrafting.Recipes[item].SuccessRate then
         if ConfigCrafting.UseLimitSystem then
 
 
@@ -252,7 +241,7 @@ function(item, count)
                     local ammo =  ConfigCrafting.Recipes[item].Amount
                     local components = xPlayer.hasWeapon(item).components
                     local weaponLabel = ESX.GetWeaponLabel(item)
-                    ESX.CreatePickupCrafting("item_weapon", string.upper(item), {ammo = ammo, components = components}, weaponLabel, tx, ty, tz)
+                    ESX.CreatePickupCrafting("item_weapon", string.upper(item), {ammo = ammo, components = components}, weaponLabel, px, py, pz)
                     TriggerClientEvent('esx:showNotification', src, _U("item_crafted"))
                     TriggerEvent('quest-cafe:craft')
                 end
@@ -339,7 +328,7 @@ AddEventHandler(
     "AH_uwucafejob:craft",
     function(item, retrying)
 
-        craft(source, item, retrying)
+        craft(source, item, false)
     end
 )
 

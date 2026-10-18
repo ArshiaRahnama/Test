@@ -25,6 +25,12 @@ shared_scripts {
 	'shared/takeover.lua',
 	'shared/ipo.lua',
 	'shared/turfco.lua',
+	-- vms barber + tattoo (merged in, see shared/vms_businesses.lua)
+	'vms_barber/config/config.lua',
+	'vms_barber/config/config.translation.lua',
+	'vms_barber/config/config.management.lua',
+	'vms_tattooshop/config.lua',
+	'shared/vms_businesses.lua',
 }
 
 client_scripts {
@@ -40,6 +46,9 @@ client_scripts {
 	'client/takeover_cl.lua',
 	'client/ipo_cl.lua',
 	'client/turfco_client.lua',
+	'vms_barber/config/config.client.lua',
+	'vms_barber/client/*.lua',
+	'vms_tattooshop/client/*.lua',
 }
 
 server_scripts {
@@ -57,6 +66,10 @@ server_scripts {
 	'server/takeover_sv.lua',
 	'server/ipo_sv.lua',
 	'server/turfco_server.lua',
+	'server/vms_bridge.lua',
+	'vms_barber/config/config.server.lua',
+	'vms_barber/server/*.lua',
+	'vms_tattooshop/server/*.lua',
 }
 
 ui_page 'html/index.html'
@@ -76,11 +89,13 @@ files {
 	'html/market/index.html',
 	'html/market/css/*.css',
 	'html/market/js/*.js',
-	'html/market/js/*.js.map',
 	'html/market/img/*.png',
 	'html/market/favicon.ico',
 
-	
+	'html/vms_barber/**/*',
+	'html/vms_tattooshop/**/*',
+	'translation.js',
+	'html/config/*.json',
 }
 
 dependencies {
@@ -98,3 +113,7 @@ dependencies {
 -- block this ENTIRE resource (all 17 businesses) from starting. Turf Wars
 -- checks for it at runtime instead (GetResourceState('Unique_Gangs')) and
 -- just shows a clear error if it's not running.
+
+-- vms_tattooshop DLC data (paths inside this resource)
+data_file 'PED_OVERLAY_FILE' 'vms_tattooshop/meta/vms_overlays.xml'
+data_file 'TATTOO_SHOP_DLC_FILE' 'vms_tattooshop/meta/shop_tattoo.meta'

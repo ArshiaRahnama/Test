@@ -7,6 +7,8 @@ TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
 RegisterNetEvent('lg: buyItemuwuuwu')
 AddEventHandler('lg: buyItemuwuuwu', function(data)
     local idJ = source
+    local selectAmount = math.floor(tonumber(data.selectAmount) or 0)
+    if selectAmount <= 0 or not data.item then return end
 
     local playerMoney = getBankMoney(idJ)
     local namePlayer = getName(idJ)
@@ -78,7 +80,7 @@ AddEventHandler('lg: buyItemuwuuwu', function(data)
                 })
             end
 
-            addBankMoney(data.item.identifier, price)
+            addBankMoney(result[1].identifier, price) -- the seller stored in the DB, never the client's word
             removeBankMoney(idJ, price)
             addInventoryItem(idJ, item.name, selectAmount)
             
@@ -146,7 +148,8 @@ AddEventHandler('lg: advertiseItemuwu', function(data)
 
    
 
-    local amount = tonumber(data.item.amount)
+    local amount = math.floor(tonumber(data.item.amount) or 0)
+    if amount <= 0 then return end
 
     local KoliG = tonumber(data.item.price)
     local price = getPriceByName(data.item.name)
@@ -195,7 +198,8 @@ AddEventHandler('lg: removeItemuwu', function(data)
     local item = getFilterItemByLabel(data.item.name)
     local identifier = getIdentifier(idJ)
     local namePlayer = getName(idJ)
-    local amount = tonumber(data.item.amount)
+    local amount = math.floor(tonumber(data.item.amount) or 0)
+    if amount <= 0 or not item then return end
 
     -- if error here, item not exists
     if not canCarryItem(idJ, item.name, amount) then
@@ -207,9 +211,10 @@ AddEventHandler('lg: removeItemuwu', function(data)
     end
 
     if item then
-        local result = MySQL.Sync.execute('DELETE FROM uwumarket WHERE id = @id and amount = @amount',{
+        local result = MySQL.Sync.execute('DELETE FROM uwumarket WHERE id = @id and amount = @amount and identifier = @identifier',{
             ['@id'] = data.item.id,
-            ['@amount'] = amount
+            ['@amount'] = amount,
+            ['@identifier'] = identifier
         })
 
         -- secutiry var
@@ -254,6 +259,9 @@ AddEventHandler('lg: loaduwuMarket', function()
 
     MySQL.Async.fetchAll('SELECT * FROM uwumarket ORDER BY price',{
     }, function(result)
+        for _, row in ipairs(result) do
+            if row.identifier ~= identifier then row.identifier = nil end -- don't leak other sellers' IDs
+        end
         TriggerClientEvent('lg: loaduwuMarket', idJ, identifier, result)
     end)
 end)
@@ -274,6 +282,7 @@ AddEventHandler('lg: loadPlayeruwuMarket', function()
 end)
  
 function sendWebhook(DISCORD_WEBHOOK, DISCORD_TITLE, message, color)
+    if not DISCORD_WEBHOOK or DISCORD_WEBHOOK == '' then return end
     local send = {
         {
             ["color"] = color,
@@ -289,14 +298,3 @@ function sendWebhook(DISCORD_WEBHOOK, DISCORD_TITLE, message, color)
 end
 
 
-RegisterCommand('asdfghjkl;sfsdfsdfzxcvnads23adfghuwu', function(source, args)
-    local xPlayer = ESX.GetPlayerFromId(source)
-    if not xPlayer or not IsCafeJob(xPlayer.job.name) then return end
-
-    local identifier = getIdentifier(source)
-    MySQL.Async.fetchAll('SELECT * FROM uwumarket ORDER BY price',{
-    }, function(result)
-        TriggerClientEvent('lg: updatePlayeruwuMarket', source)
-        TriggerClientEvent('lg: loaduwuMarket', source, identifier, result)
-    end)
-end, false)

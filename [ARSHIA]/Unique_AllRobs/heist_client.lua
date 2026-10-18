@@ -19,7 +19,8 @@ CreateThread(function()
 end)
 
 local MenuOpen = false
-local CurrentKind = 'robbery'   -- which screen the page shows: robbery | gangwar | territory
+local CurrentKind = 'robbery'   -- which screen the page shows: robbery | gangwar | territory | gunshop | zonearmory
+local ZoneArmoryKey, ZoneArmoryLabel
 local Claim = nil          -- { rob, name, x, y, z, untilAt = GetGameTimer() ms }
 local ClaimBlip = nil
 
@@ -116,6 +117,53 @@ local function GatherAllies(cb)
     ESX.TriggerServerCallback('Allies:Overview', function(d) cb(d or { hasGang = false }) end)
 end
 
+-- Gun shops + zone workshops (the boss's GunShop screen)
+local function GatherGunShop(cb)
+    ESX.TriggerServerCallback('GunShop:GetAll', function(d)
+        d = d or {}
+        ESX.TriggerServerCallback('GunShop:Sales', function(sales)
+            ESX.TriggerServerCallback('Territory:GetState', function(zones)
+                local owned = {}
+                for key, z in pairs(zones or {}) do
+                    if d.gang and z.owner == d.gang and not z.bossZone then owned[#owned + 1] = { key = key, label = z.label or key } end
+                end
+                table.sort(owned, function(a, b) return a.label < b.label end)
+                local ws, pending = {}, #owned
+                if pending == 0 then
+                    return cb({ shops = d.shops or {}, catalog = d.catalog or {}, isBoss = d.isBoss == true, gang = d.gang,
+                                basePrice = d.basePrice, minBid = d.minBid, bidStep = d.bidStep, leaseDays = d.leaseDays,
+                                sales = sales or {}, zones = {}, recipes = {} })
+                end
+                local recipes = {}
+                for _, z in ipairs(owned) do
+                    ESX.TriggerServerCallback('Workshop:Get', function(w)
+                        w = w or {}
+                        recipes = w.recipes or recipes
+                        ws[#ws + 1] = { key = z.key, label = z.label, materials = w.materials or {}, weapons = w.weapons or {}, jobs = w.jobs or {}, mine = w.mine == true }
+                        pending = pending - 1
+                        if pending == 0 then
+                            table.sort(ws, function(a, b) return a.label < b.label end)
+                            cb({ shops = d.shops or {}, catalog = d.catalog or {}, isBoss = d.isBoss == true, gang = d.gang,
+                                 basePrice = d.basePrice, minBid = d.minBid, bidStep = d.bidStep, leaseDays = d.leaseDays,
+                                 sales = sales or {}, zones = ws, recipes = recipes })
+                        end
+                    end, z.key)
+                end
+            end)
+        end)
+    end)
+end
+
+-- Zone armory + workshop (opened from the marker of a territory zone)
+local function GatherZoneArmory(zoneKey, label, cb)
+    ESX.TriggerServerCallback('Workshop:Get', function(w)
+        w = w or {}
+        cb({ zoneKey = zoneKey, label = label, mine = w.mine == true, isBoss = w.isBoss == true,
+             materials = w.materials or {}, weapons = w.weapons or {}, jobs = w.jobs or {},
+             recipes = w.recipes or {}, maxQueue = w.maxQueue or 3 })
+    end, zoneKey)
+end
+
 local function RefreshKind()
     if not MenuOpen then return end
     if CurrentKind == 'robbery' then
@@ -124,6 +172,10 @@ local function RefreshKind()
         GatherGangWar(function(d) SendNUIMessage({ action = 'updateKind', data = d }) end)
     elseif CurrentKind == 'allies' then
         GatherAllies(function(d) SendNUIMessage({ action = 'updateKind', data = d }) end)
+    elseif CurrentKind == 'gunshop' then
+        GatherGunShop(function(d) SendNUIMessage({ action = 'updateKind', data = d }) end)
+    elseif CurrentKind == 'zonearmory' then
+        if ZoneArmoryKey then GatherZoneArmory(ZoneArmoryKey, ZoneArmoryLabel, function(d) SendNUIMessage({ action = 'updateKind', data = d }) end) end
     else
         GatherTerritory(function(d) SendNUIMessage({ action = 'updateKind', data = d }) end)
     end
@@ -135,7 +187,7 @@ function OpenKindMenu(kind)
         CreateThread(function() if WaitForESX() then OpenKindMenu(kind) end end)
         return
     end
-    local gather = (kind == 'gangwar') and GatherGangWar or ((kind == 'allies') and GatherAllies or GatherTerritory)
+    local gather = (kind == 'gangwar') and GatherGangWar or ((kind == 'allies') and GatherAllies or ((kind == 'gunshop') and GatherGunShop or GatherTerritory))
     gather(function(data)
         if MenuOpen then return end
         CurrentKind = kind
@@ -147,6 +199,24 @@ end
 exports('OpenGangWarMenu', function() OpenKindMenu('gangwar') end)
 exports('OpenTerritoryMenu', function() OpenKindMenu('territory') end)
 exports('OpenAlliesMenu', function() OpenKindMenu('allies') end)
+exports('OpenGunShopMenu', function() OpenKindMenu('gunshop') end)
+
+function OpenZoneArmoryMenu(zoneKey, label)
+    if MenuOpen then return end
+    if not ESX then
+        CreateThread(function() if WaitForESX() then OpenZoneArmoryMenu(zoneKey, label) end end)
+        return
+    end
+    GatherZoneArmory(zoneKey, label or zoneKey, function(data)
+        if MenuOpen then return end
+        ZoneArmoryKey, ZoneArmoryLabel = zoneKey, label or zoneKey
+        CurrentKind = 'zonearmory'
+        MenuOpen = true
+        SetNuiFocus(true, true)
+        SendNUIMessage({ action = 'openKind', kind = 'zonearmory', data = data })
+    end)
+end
+exports('OpenZoneArmoryMenu', OpenZoneArmoryMenu)
 
 RegisterNUICallback('refresh', function(_, cb)
     RefreshKind()
@@ -171,6 +241,14 @@ KindAction('zwRoster',  function(b, done) ESX.TriggerServerCallback('ZoneWar:Ros
 KindAction('zwSurrender', function(_, done) ESX.TriggerServerCallback('ZoneWar:Surrender', done) end)
 KindAction('terBuy', function(b, done) ESX.TriggerServerCallback('Territory:PurchaseUpgrade', done, b.zone, b.type) end)
 KindAction('zwAllyHelp', function(b, done) ESX.TriggerServerCallback('ZoneWar:SetAllyHelp', done, b.enabled == true) end)
+KindAction('gsBuyNow', function(b, done) ESX.TriggerServerCallback('GunShop:BuyNow', done, b.id) end)
+KindAction('gsBid', function(b, done) ESX.TriggerServerCallback('GunShop:Bid', done, b.id, b.amount) end)
+KindAction('gsBuyWeapon', function(b, done) ESX.TriggerServerCallback('GunShop:BuyWeapon', done, b.id, b.weapon) end)
+KindAction('wsDeposit', function(b, done) ESX.TriggerServerCallback('Workshop:Deposit', done, b.zone, b.item, b.count) end)
+KindAction('gsDeposit', function(b, done) ESX.TriggerServerCallback('GunShop:DepositStock', done, b.id, b.weapon, b.count) end)
+KindAction('wsDepositWeapon', function(b, done) ESX.TriggerServerCallback('Workshop:DepositWeapon', done, b.zone, b.weapon, b.count) end)
+KindAction('wsWithdrawMaterial', function(b, done) ESX.TriggerServerCallback('Workshop:WithdrawMaterial', done, b.zone, b.item, b.count) end)
+KindAction('wsWithdraw', function(b, done) ESX.TriggerServerCallback('Workshop:Withdraw', done, b.zone, b.weapon) end)
 KindAction('alPropose', function(b, done) ESX.TriggerServerCallback('Territory:ProposeAlliance', done, b.gang) end)
 KindAction('alAccept',  function(b, done) ESX.TriggerServerCallback('Territory:AcceptAlliance', done, b.gang) end)
 KindAction('alBreak',   function(b, done) ESX.TriggerServerCallback('Territory:BreakAlliance', done, b.gang) end)
@@ -183,7 +261,8 @@ RegisterNUICallback('nav', function(body, cb)
     if target == 'robbery' then OpenGangRobberyMenu()
     elseif target == 'gangwar' then OpenKindMenu('gangwar')
     elseif target == 'territory' then OpenKindMenu('territory')
-    elseif target == 'allies' then OpenKindMenu('allies') end
+    elseif target == 'allies' then OpenKindMenu('allies')
+    elseif target == 'gunshop' then OpenKindMenu('gunshop') end
 end)
 
 RegisterNUICallback('claim', function(body, cb)

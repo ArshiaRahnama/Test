@@ -31,7 +31,7 @@ Cafes = {
 		Job     = 'uwucafe',
 		Holding = 'meridian',
 		Society = 'uwucafe',
-		Label   = 'Cafe UwU',
+		Label   = 'Cafe 1',
 
 		Blip = {
 			Pos     = { x = -581.831, y = -1064.56, z = 22.347 },
@@ -81,7 +81,7 @@ Cafes = {
 		Job     = 'obsidian',
 		Holding = 'meridian',
 		Society = 'obsidian',
-		Label   = 'Cafe Obsidian',
+		Label   = 'Cafe 2',
 
 		Blip = {
 			Pos     = { x = -1223.0, y = -906.0, z = 12.33 },
@@ -129,9 +129,9 @@ Cafes = {
 		Type    = 'cafe',
 		MenuGroup = 'cafe',
 		Job     = 'voltage',
-		Holding = 'meridian',
+		Holding = 'turfco',
 		Society = 'voltage',
-		Label   = 'Cafe Voltage',
+		Label   = 'Cafe 3',
 
 		Blip = {
 			Pos     = { x = 442.9, y = -1750.0, z = 29.5 },
@@ -181,7 +181,7 @@ Cafes = {
 		Job     = 'ember',
 		Holding = 'meridian',
 		Society = 'ember',
-		Label   = 'Restaurant Ember',
+		Label   = 'Restaurant 1',
 
 		Blip = {
 			Pos     = { x = -1391.0, y = -583.0, z = 30.3 },
@@ -226,9 +226,9 @@ Cafes = {
 		Type    = 'restaurant',
 		MenuGroup = 'restaurant',
 		Job     = 'anchor',
-		Holding = 'meridian',
+		Holding = 'turfco',
 		Society = 'anchor',
-		Label   = 'Restaurant Anchor',
+		Label   = 'Restaurant 2',
 
 		Blip = {
 			Pos     = { x = -1850.0, y = -1230.0, z = 13.0 },
@@ -278,7 +278,7 @@ Cafes = {
 		Job     = 'crimson',
 		Holding = 'meridian',
 		Society = 'crimson',
-		Label   = 'Restaurant Crimson',
+		Label   = 'Restaurant 3',
 
 		Blip = {
 			Pos     = { x = -278.0, y = -720.0, z = 33.0 },
@@ -318,106 +318,16 @@ Cafes = {
 	},
 
 	-- ── Bakery: Flourish Bakery ──
-	-- PLACEHOLDER location (Vinewood Hills, high elevation) - move in-game.
-	Flourish = {
-		Type    = 'bakery',
-		MenuGroup = 'bakery',
-		Job     = 'flourish',
-		Holding = 'blacktide',
-		Society = 'flourish',
-		Label   = 'Bakery Flourish',
-
-		Blip = {
-			Pos     = { x = -1100.0, y = 260.0, z = 69.0 },
-			Sprite  = 432,
-			Display = 4,
-			Scale   = 0.7,
-			Colour  = 46,
-		},
-
-		Freezer            = { Pos = { x = -1107.5, y = 265.6, z = 69.3 }, Name = "Freezer",     Icon = "fa-regular fa-snowflake" },
-		PedShop            = { Model = 's_m_m_ammucountry', Pos = { x = -1105.0, y = 253.0, z = 68.9, h = 200.0 }, Name = "Shop", Icon = "fa-solid fa-shop" },
-		BossAction         = { Pos = { x = -1114.0, y = 272.5, z = 69.4 }, Name = "Boss Actions", Icon = "fa-solid fa-gear" },
-		CloackRoom         = { Pos = { x = -1103.6, y = 274.2, z = 69.3 }, Name = "Cloack Room", Icon = "fa-solid fa-shirt" },
-		Crafting_Hamzan    = { Pos = { x = -1108.3, y = 260.0, z = 69.05 }, Name = "HamZan",      Icon = "fa-brands fa-files-pinwheel" },
-		Crafting_Ghahvesaz = { Pos = { x = -1103.7, y = 262.8, z = 68.85 }, Name = "Ghahve Saz",  Icon = "fa-brands fa-java" },
-		Crafting_ZarfShoe  = { Pos = { x = -1104.4, y = 262.1, z = 69.05 }, Name = "Zarf Shoe",   Icon = "fa-brands fa-first-order-alt" },
-		Crafting_Gaz       = { Pos = { x = -1108.4, y = 267.7, z = 68.75 }, Name = "Gaz",         Icon = "fa-brands fa-firefox-browser" },
-		Menu_Sefaresh      = { Pos = { x = -1101.2, y = 263.2, z = 68.85 }, Name = "Menu",        Icon = "fa-brands fa-whmcs" },
-
-		SpawnVehicle = 'scania',
-		SpawnMarker  = { x = -1121.0, y = 260.0, z = 69.33 },
-		SpawnPoint   = { x = -1135.0, y = 266.0, z = 68.3, w = 268.28 },
-		DeleteMarker = { x = -1126.0, y = 265.1, z = 69.33 },
-
-		CatModel        = "a_c_cat_01",
-		SpawnLocations = {
-			{ x = -1098.7, y = 268.5, z = 67.5 },
-			{ x = -1098.7, y = 269.8, z = 67.5 },
-			{ x = -1093.0, y = 268.1, z = 67.5 },
-			{ x = -1093.1, y = 269.4, z = 67.5 },
-			{ x = -1090.7, y = 269.5, z = 67.5 },
-			{ x = -1090.8, y = 268.0, z = 67.5 },
-			{ x = -1094.2, y = 260.8, z = 67.5 },
-			{ x = -1091.8, y = 263.1, z = 67.5 },
-			{ x = -1090.1, y = 260.2, z = 67.5 },
-		},
-	},
 	-- ── Bakery: Gold Crust Bakehouse ──
-	-- PLACEHOLDER location (Power Street / east Textile City edge) - move in-game.
-	GoldCrust = {
-		Type    = 'bakery',
-		MenuGroup = 'bakery',
-		Job     = 'goldcrust',
-		Holding = 'blacktide',
-		Society = 'goldcrust',
-		Label   = 'Bakery GoldCrust',
-
-		Blip = {
-			Pos     = { x = 150.0, y = -1300.0, z = 29.0 },
-			Sprite  = 432,
-			Display = 4,
-			Scale   = 0.7,
-			Colour  = 46,
-		},
-
-		Freezer            = { Pos = { x = 142.5, y = -1294.4, z = 29.3 }, Name = "Freezer",     Icon = "fa-regular fa-snowflake" },
-		PedShop            = { Model = 's_m_m_ammucountry', Pos = { x = 145.0, y = -1307.0, z = 28.9, h = 200.0 }, Name = "Shop", Icon = "fa-solid fa-shop" },
-		BossAction         = { Pos = { x = 136.0, y = -1287.5, z = 29.4 }, Name = "Boss Actions", Icon = "fa-solid fa-gear" },
-		CloackRoom         = { Pos = { x = 146.4, y = -1285.8, z = 29.3 }, Name = "Cloack Room", Icon = "fa-solid fa-shirt" },
-		Crafting_Hamzan    = { Pos = { x = 141.7, y = -1300.0, z = 29.05 }, Name = "HamZan",      Icon = "fa-brands fa-files-pinwheel" },
-		Crafting_Ghahvesaz = { Pos = { x = 146.3, y = -1297.2, z = 28.85 }, Name = "Ghahve Saz",  Icon = "fa-brands fa-java" },
-		Crafting_ZarfShoe  = { Pos = { x = 145.6, y = -1297.9, z = 29.05 }, Name = "Zarf Shoe",   Icon = "fa-brands fa-first-order-alt" },
-		Crafting_Gaz       = { Pos = { x = 141.6, y = -1292.3, z = 28.75 }, Name = "Gaz",         Icon = "fa-brands fa-firefox-browser" },
-		Menu_Sefaresh      = { Pos = { x = 148.8, y = -1296.8, z = 28.85 }, Name = "Menu",        Icon = "fa-brands fa-whmcs" },
-
-		SpawnVehicle = 'scania',
-		SpawnMarker  = { x = 129.0, y = -1300.0, z = 29.33 },
-		SpawnPoint   = { x = 115.0, y = -1294.0, z = 28.3, w = 268.28 },
-		DeleteMarker = { x = 124.0, y = -1294.9, z = 29.33 },
-
-		CatModel        = "a_c_cat_01",
-		SpawnLocations = {
-			{ x = 151.3, y = -1291.5, z = 27.5 },
-			{ x = 151.3, y = -1290.2, z = 27.5 },
-			{ x = 157.0, y = -1291.9, z = 27.5 },
-			{ x = 156.9, y = -1290.6, z = 27.5 },
-			{ x = 159.3, y = -1290.5, z = 27.5 },
-			{ x = 159.2, y = -1292.0, z = 27.5 },
-			{ x = 155.8, y = -1299.2, z = 27.5 },
-			{ x = 158.2, y = -1296.9, z = 27.5 },
-			{ x = 159.9, y = -1299.8, z = 27.5 },
-		},
-	},
 	-- ── Bar: Static Lounge ──
 	-- PLACEHOLDER location (Pacific Bluffs, near the golf club) - move in-game.
 	Static = {
-		Type    = 'bar',
-		MenuGroup = 'bar',
+		Type    = 'restaurant',
+		MenuGroup = 'restaurant',
 		Job     = 'static',
 		Holding = 'turfco',
 		Society = 'static',
-		Label   = 'Bar Static',
+		Label   = 'Restaurant 4',
 
 		Blip = {
 			Pos     = { x = -1385.0, y = -600.0, z = 30.5 },
@@ -458,12 +368,12 @@ Cafes = {
 	-- ── Bar: Nightjar Pub ──
 	-- PLACEHOLDER location (Vinewood Hills, near the sign) - move in-game.
 	Nightjar = {
-		Type    = 'bar',
-		MenuGroup = 'bar',
+		Type    = 'cafe',
+		MenuGroup = 'cafe',
 		Job     = 'nightjar',
 		Holding = 'turfco',
 		Society = 'nightjar',
-		Label   = 'Bar Nightjar',
+		Label   = 'Cafe 4',
 
 		Blip = {
 			Pos     = { x = -560.0, y = 290.0, z = 82.5 },
@@ -502,328 +412,12 @@ Cafes = {
 		},
 	},
 	-- ── Pizza: Firebrick Pizza Co. ──
-	-- PLACEHOLDER location (Rockford Hills / Pillbox Hill border) - move in-game.
-	Firebrick = {
-		Type    = 'pizza',
-		MenuGroup = 'pizza',
-		Job     = 'firebrick',
-		Holding = 'cratecarry',
-		Society = 'firebrick',
-		Label   = 'Pizza Firebrick',
-
-		Blip = {
-			Pos     = { x = -710.0, y = -915.0, z = 19.2 },
-			Sprite  = 273,
-			Display = 4,
-			Scale   = 0.7,
-			Colour  = 1,
-		},
-
-		Freezer            = { Pos = { x = -717.5, y = -909.4, z = 19.5 }, Name = "Freezer",     Icon = "fa-regular fa-snowflake" },
-		PedShop            = { Model = 's_m_m_ammucountry', Pos = { x = -715.0, y = -922.0, z = 19.099999999999998, h = 200.0 }, Name = "Shop", Icon = "fa-solid fa-shop" },
-		BossAction         = { Pos = { x = -724.0, y = -902.5, z = 19.599999999999998 }, Name = "Boss Actions", Icon = "fa-solid fa-gear" },
-		CloackRoom         = { Pos = { x = -713.6, y = -900.8, z = 19.5 }, Name = "Cloack Room", Icon = "fa-solid fa-shirt" },
-		Crafting_Hamzan    = { Pos = { x = -718.3, y = -915.0, z = 19.25 }, Name = "HamZan",      Icon = "fa-brands fa-files-pinwheel" },
-		Crafting_Ghahvesaz = { Pos = { x = -713.7, y = -912.2, z = 19.05 }, Name = "Ghahve Saz",  Icon = "fa-brands fa-java" },
-		Crafting_ZarfShoe  = { Pos = { x = -714.4, y = -912.9, z = 19.25 }, Name = "Zarf Shoe",   Icon = "fa-brands fa-first-order-alt" },
-		Crafting_Gaz       = { Pos = { x = -718.4, y = -907.3, z = 18.95 }, Name = "Gaz",         Icon = "fa-brands fa-firefox-browser" },
-		Menu_Sefaresh      = { Pos = { x = -711.2, y = -911.8, z = 19.05 }, Name = "Menu",        Icon = "fa-brands fa-whmcs" },
-
-		SpawnVehicle = 'scania',
-		SpawnMarker  = { x = -731.0, y = -915.0, z = 19.529999999999998 },
-		SpawnPoint   = { x = -745.0, y = -909.0, z = 18.5, w = 268.28 },
-		DeleteMarker = { x = -736.0, y = -909.9, z = 19.529999999999998 },
-
-		CatModel        = "a_c_cat_01",
-		SpawnLocations = {
-			{ x = -708.7, y = -906.5, z = 17.7 },
-			{ x = -708.7, y = -905.2, z = 17.7 },
-			{ x = -703.0, y = -906.9, z = 17.7 },
-			{ x = -703.1, y = -905.6, z = 17.7 },
-			{ x = -700.7, y = -905.5, z = 17.7 },
-			{ x = -700.8, y = -907.0, z = 17.7 },
-			{ x = -704.2, y = -914.2, z = 17.7 },
-			{ x = -701.8, y = -911.9, z = 17.7 },
-			{ x = -700.1, y = -914.8, z = 17.7 },
-		},
-	},
 	-- ── Pizza: Slice Society ──
-	-- PLACEHOLDER location (Power Street industrial strip) - move in-game.
-	Slice = {
-		Type    = 'pizza',
-		MenuGroup = 'pizza',
-		Job     = 'slice',
-		Holding = 'cratecarry',
-		Society = 'slice',
-		Label   = 'Pizza Slice',
-
-		Blip = {
-			Pos     = { x = -47.0, y = -1750.0, z = 29.5 },
-			Sprite  = 273,
-			Display = 4,
-			Scale   = 0.7,
-			Colour  = 1,
-		},
-
-		Freezer            = { Pos = { x = -54.5, y = -1744.4, z = 29.8 }, Name = "Freezer",     Icon = "fa-regular fa-snowflake" },
-		PedShop            = { Model = 's_m_m_ammucountry', Pos = { x = -52.0, y = -1757.0, z = 29.4, h = 200.0 }, Name = "Shop", Icon = "fa-solid fa-shop" },
-		BossAction         = { Pos = { x = -61.0, y = -1737.5, z = 29.9 }, Name = "Boss Actions", Icon = "fa-solid fa-gear" },
-		CloackRoom         = { Pos = { x = -50.6, y = -1735.8, z = 29.8 }, Name = "Cloack Room", Icon = "fa-solid fa-shirt" },
-		Crafting_Hamzan    = { Pos = { x = -55.3, y = -1750.0, z = 29.55 }, Name = "HamZan",      Icon = "fa-brands fa-files-pinwheel" },
-		Crafting_Ghahvesaz = { Pos = { x = -50.7, y = -1747.2, z = 29.35 }, Name = "Ghahve Saz",  Icon = "fa-brands fa-java" },
-		Crafting_ZarfShoe  = { Pos = { x = -51.4, y = -1747.9, z = 29.55 }, Name = "Zarf Shoe",   Icon = "fa-brands fa-first-order-alt" },
-		Crafting_Gaz       = { Pos = { x = -55.4, y = -1742.3, z = 29.25 }, Name = "Gaz",         Icon = "fa-brands fa-firefox-browser" },
-		Menu_Sefaresh      = { Pos = { x = -48.2, y = -1746.8, z = 29.35 }, Name = "Menu",        Icon = "fa-brands fa-whmcs" },
-
-		SpawnVehicle = 'scania',
-		SpawnMarker  = { x = -68.0, y = -1750.0, z = 29.83 },
-		SpawnPoint   = { x = -82.0, y = -1744.0, z = 28.8, w = 268.28 },
-		DeleteMarker = { x = -73.0, y = -1744.9, z = 29.83 },
-
-		CatModel        = "a_c_cat_01",
-		SpawnLocations = {
-			{ x = -45.7, y = -1741.5, z = 28.0 },
-			{ x = -45.7, y = -1740.2, z = 28.0 },
-			{ x = -40.0, y = -1741.9, z = 28.0 },
-			{ x = -40.1, y = -1740.6, z = 28.0 },
-			{ x = -37.7, y = -1740.5, z = 28.0 },
-			{ x = -37.8, y = -1742.0, z = 28.0 },
-			{ x = -41.2, y = -1749.2, z = 28.0 },
-			{ x = -38.8, y = -1746.9, z = 28.0 },
-			{ x = -37.1, y = -1749.8, z = 28.0 },
-		},
-	},
 	-- ── Icecream: Frostbite Creamery ──
-	-- PLACEHOLDER location (Vinewood Hills, high elevation) - move in-game.
-	Frostbite = {
-		Type    = 'icecream',
-		MenuGroup = 'icecream',
-		Job     = 'frostbite',
-		Holding = 'cratecarry',
-		Society = 'frostbite',
-		Label   = 'Bastani Frostbite',
-
-		Blip = {
-			Pos     = { x = -820.0, y = 180.0, z = 71.5 },
-			Sprite  = 314,
-			Display = 4,
-			Scale   = 0.7,
-			Colour  = 27,
-		},
-
-		Freezer            = { Pos = { x = -827.5, y = 185.6, z = 71.8 }, Name = "Freezer",     Icon = "fa-regular fa-snowflake" },
-		PedShop            = { Model = 's_m_m_ammucountry', Pos = { x = -825.0, y = 173.0, z = 71.4, h = 200.0 }, Name = "Shop", Icon = "fa-solid fa-shop" },
-		BossAction         = { Pos = { x = -834.0, y = 192.5, z = 71.9 }, Name = "Boss Actions", Icon = "fa-solid fa-gear" },
-		CloackRoom         = { Pos = { x = -823.6, y = 194.2, z = 71.8 }, Name = "Cloack Room", Icon = "fa-solid fa-shirt" },
-		Crafting_Hamzan    = { Pos = { x = -828.3, y = 180.0, z = 71.55 }, Name = "HamZan",      Icon = "fa-brands fa-files-pinwheel" },
-		Crafting_Ghahvesaz = { Pos = { x = -823.7, y = 182.8, z = 71.35 }, Name = "Ghahve Saz",  Icon = "fa-brands fa-java" },
-		Crafting_ZarfShoe  = { Pos = { x = -824.4, y = 182.1, z = 71.55 }, Name = "Zarf Shoe",   Icon = "fa-brands fa-first-order-alt" },
-		Crafting_Gaz       = { Pos = { x = -828.4, y = 187.7, z = 71.25 }, Name = "Gaz",         Icon = "fa-brands fa-firefox-browser" },
-		Menu_Sefaresh      = { Pos = { x = -821.2, y = 183.2, z = 71.35 }, Name = "Menu",        Icon = "fa-brands fa-whmcs" },
-
-		SpawnVehicle = 'scania',
-		SpawnMarker  = { x = -841.0, y = 180.0, z = 71.83 },
-		SpawnPoint   = { x = -855.0, y = 186.0, z = 70.8, w = 268.28 },
-		DeleteMarker = { x = -846.0, y = 185.1, z = 71.83 },
-
-		CatModel        = "a_c_cat_01",
-		SpawnLocations = {
-			{ x = -818.7, y = 188.5, z = 70.0 },
-			{ x = -818.7, y = 189.8, z = 70.0 },
-			{ x = -813.0, y = 188.1, z = 70.0 },
-			{ x = -813.1, y = 189.4, z = 70.0 },
-			{ x = -810.7, y = 189.5, z = 70.0 },
-			{ x = -810.8, y = 188.0, z = 70.0 },
-			{ x = -814.2, y = 180.8, z = 70.0 },
-			{ x = -811.8, y = 183.1, z = 70.0 },
-			{ x = -810.1, y = 180.2, z = 70.0 },
-		},
-	},
 	-- ── Icecream: Sundae Funday ──
-	-- PLACEHOLDER location (Pacific Bluffs area) - move in-game.
-	Sundae = {
-		Type    = 'icecream',
-		MenuGroup = 'icecream',
-		Job     = 'sundae',
-		Holding = 'cratecarry',
-		Society = 'sundae',
-		Label   = 'Bastani Sundae',
-
-		Blip = {
-			Pos     = { x = -1090.0, y = -390.0, z = 36.7 },
-			Sprite  = 314,
-			Display = 4,
-			Scale   = 0.7,
-			Colour  = 27,
-		},
-
-		Freezer            = { Pos = { x = -1097.5, y = -384.4, z = 37.0 }, Name = "Freezer",     Icon = "fa-regular fa-snowflake" },
-		PedShop            = { Model = 's_m_m_ammucountry', Pos = { x = -1095.0, y = -397.0, z = 36.6, h = 200.0 }, Name = "Shop", Icon = "fa-solid fa-shop" },
-		BossAction         = { Pos = { x = -1104.0, y = -377.5, z = 37.1 }, Name = "Boss Actions", Icon = "fa-solid fa-gear" },
-		CloackRoom         = { Pos = { x = -1093.6, y = -375.8, z = 37.0 }, Name = "Cloack Room", Icon = "fa-solid fa-shirt" },
-		Crafting_Hamzan    = { Pos = { x = -1098.3, y = -390.0, z = 36.75 }, Name = "HamZan",      Icon = "fa-brands fa-files-pinwheel" },
-		Crafting_Ghahvesaz = { Pos = { x = -1093.7, y = -387.2, z = 36.550000000000004 }, Name = "Ghahve Saz",  Icon = "fa-brands fa-java" },
-		Crafting_ZarfShoe  = { Pos = { x = -1094.4, y = -387.9, z = 36.75 }, Name = "Zarf Shoe",   Icon = "fa-brands fa-first-order-alt" },
-		Crafting_Gaz       = { Pos = { x = -1098.4, y = -382.3, z = 36.45 }, Name = "Gaz",         Icon = "fa-brands fa-firefox-browser" },
-		Menu_Sefaresh      = { Pos = { x = -1091.2, y = -386.8, z = 36.550000000000004 }, Name = "Menu",        Icon = "fa-brands fa-whmcs" },
-
-		SpawnVehicle = 'scania',
-		SpawnMarker  = { x = -1111.0, y = -390.0, z = 37.03 },
-		SpawnPoint   = { x = -1125.0, y = -384.0, z = 36.0, w = 268.28 },
-		DeleteMarker = { x = -1116.0, y = -384.9, z = 37.03 },
-
-		CatModel        = "a_c_cat_01",
-		SpawnLocations = {
-			{ x = -1088.7, y = -381.5, z = 35.2 },
-			{ x = -1088.7, y = -380.2, z = 35.2 },
-			{ x = -1083.0, y = -381.9, z = 35.2 },
-			{ x = -1083.1, y = -380.6, z = 35.2 },
-			{ x = -1080.7, y = -380.5, z = 35.2 },
-			{ x = -1080.8, y = -382.0, z = 35.2 },
-			{ x = -1084.2, y = -389.2, z = 35.2 },
-			{ x = -1081.8, y = -386.9, z = 35.2 },
-			{ x = -1080.1, y = -389.8, z = 35.2 },
-		},
-	},
 	-- ── Sushi: Koi Sushi House ──
-	-- PLACEHOLDER location (south Textile City, near the LS River) - move in-game.
-	Koi = {
-		Type    = 'sushi',
-		MenuGroup = 'sushi',
-		Job     = 'koi',
-		Holding = 'turfco',
-		Society = 'koi',
-		Label   = 'Sushi Koi',
-
-		Blip = {
-			Pos     = { x = -560.0, y = -1250.0, z = 17.6 },
-			Sprite  = 88,
-			Display = 4,
-			Scale   = 0.7,
-			Colour  = 2,
-		},
-
-		Freezer            = { Pos = { x = -567.5, y = -1244.4, z = 17.900000000000002 }, Name = "Freezer",     Icon = "fa-regular fa-snowflake" },
-		PedShop            = { Model = 's_m_m_ammucountry', Pos = { x = -565.0, y = -1257.0, z = 17.5, h = 200.0 }, Name = "Shop", Icon = "fa-solid fa-shop" },
-		BossAction         = { Pos = { x = -574.0, y = -1237.5, z = 18.0 }, Name = "Boss Actions", Icon = "fa-solid fa-gear" },
-		CloackRoom         = { Pos = { x = -563.6, y = -1235.8, z = 17.900000000000002 }, Name = "Cloack Room", Icon = "fa-solid fa-shirt" },
-		Crafting_Hamzan    = { Pos = { x = -568.3, y = -1250.0, z = 17.650000000000002 }, Name = "HamZan",      Icon = "fa-brands fa-files-pinwheel" },
-		Crafting_Ghahvesaz = { Pos = { x = -563.7, y = -1247.2, z = 17.450000000000003 }, Name = "Ghahve Saz",  Icon = "fa-brands fa-java" },
-		Crafting_ZarfShoe  = { Pos = { x = -564.4, y = -1247.9, z = 17.650000000000002 }, Name = "Zarf Shoe",   Icon = "fa-brands fa-first-order-alt" },
-		Crafting_Gaz       = { Pos = { x = -568.4, y = -1242.3, z = 17.35 }, Name = "Gaz",         Icon = "fa-brands fa-firefox-browser" },
-		Menu_Sefaresh      = { Pos = { x = -561.2, y = -1246.8, z = 17.450000000000003 }, Name = "Menu",        Icon = "fa-brands fa-whmcs" },
-
-		SpawnVehicle = 'scania',
-		SpawnMarker  = { x = -581.0, y = -1250.0, z = 17.93 },
-		SpawnPoint   = { x = -595.0, y = -1244.0, z = 16.900000000000002, w = 268.28 },
-		DeleteMarker = { x = -586.0, y = -1244.9, z = 17.93 },
-
-		CatModel        = "a_c_cat_01",
-		SpawnLocations = {
-			{ x = -558.7, y = -1241.5, z = 16.1 },
-			{ x = -558.7, y = -1240.2, z = 16.1 },
-			{ x = -553.0, y = -1241.9, z = 16.1 },
-			{ x = -553.1, y = -1240.6, z = 16.1 },
-			{ x = -550.7, y = -1240.5, z = 16.1 },
-			{ x = -550.8, y = -1242.0, z = 16.1 },
-			{ x = -554.2, y = -1249.2, z = 16.1 },
-			{ x = -551.8, y = -1246.9, z = 16.1 },
-			{ x = -550.1, y = -1249.8, z = 16.1 },
-		},
-	},
 	-- ── Sushi: Wasabi & Co. ──
-	-- PLACEHOLDER location (Pacific Bluffs area) - move in-game.
-	Wasabi = {
-		Type    = 'sushi',
-		MenuGroup = 'sushi',
-		Job     = 'wasabi',
-		Holding = 'turfco',
-		Society = 'wasabi',
-		Label   = 'Sushi Wasabi',
-
-		Blip = {
-			Pos     = { x = -1210.0, y = -450.0, z = 36.9 },
-			Sprite  = 88,
-			Display = 4,
-			Scale   = 0.7,
-			Colour  = 2,
-		},
-
-		Freezer            = { Pos = { x = -1217.5, y = -444.4, z = 37.199999999999996 }, Name = "Freezer",     Icon = "fa-regular fa-snowflake" },
-		PedShop            = { Model = 's_m_m_ammucountry', Pos = { x = -1215.0, y = -457.0, z = 36.8, h = 200.0 }, Name = "Shop", Icon = "fa-solid fa-shop" },
-		BossAction         = { Pos = { x = -1224.0, y = -437.5, z = 37.3 }, Name = "Boss Actions", Icon = "fa-solid fa-gear" },
-		CloackRoom         = { Pos = { x = -1213.6, y = -435.8, z = 37.199999999999996 }, Name = "Cloack Room", Icon = "fa-solid fa-shirt" },
-		Crafting_Hamzan    = { Pos = { x = -1218.3, y = -450.0, z = 36.949999999999996 }, Name = "HamZan",      Icon = "fa-brands fa-files-pinwheel" },
-		Crafting_Ghahvesaz = { Pos = { x = -1213.7, y = -447.2, z = 36.75 }, Name = "Ghahve Saz",  Icon = "fa-brands fa-java" },
-		Crafting_ZarfShoe  = { Pos = { x = -1214.4, y = -447.9, z = 36.949999999999996 }, Name = "Zarf Shoe",   Icon = "fa-brands fa-first-order-alt" },
-		Crafting_Gaz       = { Pos = { x = -1218.4, y = -442.3, z = 36.65 }, Name = "Gaz",         Icon = "fa-brands fa-firefox-browser" },
-		Menu_Sefaresh      = { Pos = { x = -1211.2, y = -446.8, z = 36.75 }, Name = "Menu",        Icon = "fa-brands fa-whmcs" },
-
-		SpawnVehicle = 'scania',
-		SpawnMarker  = { x = -1231.0, y = -450.0, z = 37.23 },
-		SpawnPoint   = { x = -1245.0, y = -444.0, z = 36.199999999999996, w = 268.28 },
-		DeleteMarker = { x = -1236.0, y = -444.9, z = 37.23 },
-
-		CatModel        = "a_c_cat_01",
-		SpawnLocations = {
-			{ x = -1208.7, y = -441.5, z = 35.4 },
-			{ x = -1208.7, y = -440.2, z = 35.4 },
-			{ x = -1203.0, y = -441.9, z = 35.4 },
-			{ x = -1203.1, y = -440.6, z = 35.4 },
-			{ x = -1200.7, y = -440.5, z = 35.4 },
-			{ x = -1200.8, y = -442.0, z = 35.4 },
-			{ x = -1204.2, y = -449.2, z = 35.4 },
-			{ x = -1201.8, y = -446.9, z = 35.4 },
-			{ x = -1200.1, y = -449.8, z = 35.4 },
-		},
-	},
-
 	-- ── Carwash: Suds & Cash ──
-	-- PLACEHOLDER location (Power Street industrial strip) - move in-game.
-	Suds = {
-		Type    = 'carwash',
-		MenuGroup = 'carwash',
-		Job     = 'carwash',
-		Holding = 'blacktide',
-		Society = 'carwash',
-		Label   = 'Carwash Suds',
-
-		Blip = {
-			Pos     = { x = -207.0, y = -1330.0, z = 31.0 },
-			Sprite  = 402,
-			Display = 4,
-			Scale   = 0.7,
-			Colour  = 46,
-		},
-
-		Freezer            = { Pos = { x = -214.5, y = -1324.4, z = 31.3 }, Name = "Storage",    Icon = "fa-regular fa-box" },
-		PedShop            = { Model = 's_m_m_ammucountry', Pos = { x = -212.0, y = -1337.0, z = 30.9, h = 200.0 }, Name = "Shop", Icon = "fa-solid fa-shop" },
-		BossAction         = { Pos = { x = -221.0, y = -1317.5, z = 31.4 }, Name = "Boss Actions", Icon = "fa-solid fa-gear" },
-		CloackRoom         = { Pos = { x = -210.6, y = -1315.8, z = 31.3 }, Name = "Cloack Room", Icon = "fa-solid fa-shirt" },
-		Crafting_Hamzan    = { Pos = { x = -215.3, y = -1330.0, z = 31.05 }, Name = "Bench 1",     Icon = "fa-brands fa-files-pinwheel" },
-		Crafting_Ghahvesaz = { Pos = { x = -210.7, y = -1327.2, z = 30.85 }, Name = "Bench 2",     Icon = "fa-brands fa-java" },
-		Crafting_ZarfShoe  = { Pos = { x = -211.4, y = -1327.9, z = 31.05 }, Name = "Bench 3",     Icon = "fa-brands fa-first-order-alt" },
-		Crafting_Gaz       = { Pos = { x = -215.4, y = -1322.3, z = 30.75 }, Name = "Bench 4",     Icon = "fa-brands fa-firefox-browser" },
-		Menu_Sefaresh      = { Pos = { x = -208.2, y = -1326.8, z = 30.85 }, Name = "Menu",        Icon = "fa-brands fa-whmcs" },
-
-		SpawnVehicle = 'scania',
-		SpawnMarker  = { x = -228.0, y = -1330.0, z = 31.33 },
-		SpawnPoint   = { x = -242.0, y = -1324.0, z = 30.3, w = 268.28 },
-		DeleteMarker = { x = -233.0, y = -1324.9, z = 31.33 },
-
-		CatModel        = "a_c_cat_01",
-		SpawnLocations = {
-			{ x = -205.7, y = -1321.5, z = 29.5 },
-			{ x = -205.7, y = -1320.2, z = 29.5 },
-			{ x = -200.0, y = -1321.9, z = 29.5 },
-			{ x = -200.1, y = -1320.6, z = 29.5 },
-			{ x = -197.7, y = -1320.5, z = 29.5 },
-			{ x = -197.8, y = -1322.0, z = 29.5 },
-			{ x = -201.2, y = -1329.2, z = 29.5 },
-			{ x = -198.8, y = -1326.9, z = 29.5 },
-			{ x = -197.1, y = -1329.8, z = 29.5 },
-		},
-	},
 }
 
 -- ── Helpers shared by both client and server ──
@@ -845,4 +439,16 @@ end
 
 function IsCafeJob(jobName)
 	return CafeJobSet[jobName] == true
+end
+
+-- Ownership / holding lookup: cafes AND vms barber/tattoo shops.
+-- Use this in holding, takeover, portfolio and vms money code. Cafe UI and
+-- crafting keep GetCafeForJob (cafes only).
+function GetBusinessForJob(jobName)
+	local cafe = GetCafeForJob(jobName)
+	if cafe then return cafe end
+	for _, biz in ipairs(VmsBusinesses or {}) do
+		if biz.Job == jobName then return biz end
+	end
+	return nil
 end

@@ -8,7 +8,7 @@
 ]]
 
 CreateThread(function()
-	for _, holding in ipairs({ Corp.Meridian, Corp.Blacktide, Corp.CrateCarry, TurfCo }) do
+	for _, holding in ipairs({ Corp.Meridian, TurfCo }) do
 		CreateOXTargetNotJob(holding.HQ, 'Investment Opportunities (' .. holding.Label .. ')', 'uniquecafejobs:ipo:openMenuClient:' .. holding.Job, 'fas fa-chart-line', nil)
 	end
 end)
@@ -18,10 +18,6 @@ end)
 -- name suffix instead of registering 4 nearly-identical handlers.
 RegisterNetEvent('uniquecafejobs:ipo:openMenuClient:meridian')
 AddEventHandler('uniquecafejobs:ipo:openMenuClient:meridian', function() TriggerServerEvent('uniquecafejobs:ipo:requestInfo', Corp.Meridian.Job) end)
-RegisterNetEvent('uniquecafejobs:ipo:openMenuClient:blacktide')
-AddEventHandler('uniquecafejobs:ipo:openMenuClient:blacktide', function() TriggerServerEvent('uniquecafejobs:ipo:requestInfo', Corp.Blacktide.Job) end)
-RegisterNetEvent('uniquecafejobs:ipo:openMenuClient:cratecarry')
-AddEventHandler('uniquecafejobs:ipo:openMenuClient:cratecarry', function() TriggerServerEvent('uniquecafejobs:ipo:requestInfo', Corp.CrateCarry.Job) end)
 RegisterNetEvent('uniquecafejobs:ipo:openMenuClient:turfco')
 AddEventHandler('uniquecafejobs:ipo:openMenuClient:turfco', function() TriggerServerEvent('uniquecafejobs:ipo:requestInfo', TurfCo.Job) end)
 
