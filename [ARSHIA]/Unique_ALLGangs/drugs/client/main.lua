@@ -9,7 +9,7 @@ Keys = {
     ["LEFT"] = 174, ["RIGHT"] = 175, ["TOP"] = 27, ["DOWN"] = 173,
     ["NENTER"] = 201, ["N4"] = 108, ["N5"] = 60, ["N6"] = 107, ["N+"] = 96, ["N-"] = 97, ["N7"] = 117, ["N8"] = 61, ["N9"] = 118
   }
-ESX = nil
+ESX = ESX or nil  -- merged into Unique_ALLGangs: never wipe the ESX object another file already set
 local count = 0
 local price = {}
 LastZone                = nil
@@ -133,19 +133,19 @@ Citizen.CreateThread(function()
 
         Citizen.Wait(0)
 
-        if Config.ShowMarkers then
+        if DrugCfg.ShowMarkers then
 
             local coords = GetEntityCoords(GetPlayerPed(-1))
 
-			for k,v in pairs(Config.FieldZones) do
-                if GetDistanceBetweenCoords(coords, v.coords, true) < Config.DrawDistance then
-                    DrawMarker(Config.MarkerType, v.coords, 0.0, 0.0, 0.0, 0, 0.0, 0.0, Config.ZoneSize.x, Config.ZoneSize.y, Config.ZoneSize.z, Config.MarkerColor.r, Config.MarkerColor.g, Config.MarkerColor.b, 100, false, true, 2, false, false, false, false)
+			for k,v in pairs(DrugCfg.FieldZones) do
+                if GetDistanceBetweenCoords(coords, v.coords, true) < DrugCfg.DrawDistance then
+                    DrawMarker(DrugCfg.MarkerType, v.coords, 0.0, 0.0, 0.0, 0, 0.0, 0.0, DrugCfg.ZoneSize.x, DrugCfg.ZoneSize.y, DrugCfg.ZoneSize.z, DrugCfg.MarkerColor.r, DrugCfg.MarkerColor.g, DrugCfg.MarkerColor.b, 100, false, true, 2, false, false, false, false)
                 end
             end
 
-            for k,v in pairs(Config.ProcessZones) do
-                if GetDistanceBetweenCoords(coords, v.coords, true) < Config.DrawDistance then
-                    DrawMarker(Config.MarkerType, v.coords, 0.0, 0.0, 0.0, 0, 0.0, 0.0, Config.ZoneSize.x, Config.ZoneSize.y, Config.ZoneSize.z, Config.MarkerColor.r, Config.MarkerColor.g, Config.MarkerColor.b, 100, false, true, 2, false, false, false, false)
+            for k,v in pairs(DrugCfg.ProcessZones) do
+                if GetDistanceBetweenCoords(coords, v.coords, true) < DrugCfg.DrawDistance then
+                    DrawMarker(DrugCfg.MarkerType, v.coords, 0.0, 0.0, 0.0, 0, 0.0, 0.0, DrugCfg.ZoneSize.x, DrugCfg.ZoneSize.y, DrugCfg.ZoneSize.z, DrugCfg.MarkerColor.r, DrugCfg.MarkerColor.g, DrugCfg.MarkerColor.b, 100, false, true, 2, false, false, false, false)
                 end
             end
         end
@@ -154,24 +154,24 @@ end)
 
 Citizen.CreateThread(function()
 
-    if Config.ShowBlips then
-		for k,v in pairs(Config.FieldZones) do
+    if DrugCfg.ShowBlips then
+		for k,v in pairs(DrugCfg.FieldZones) do
             CreateBlipCircle(v.coords, v.name, v.radius, v.color, v.sprite)
         end
 
-        for k,v in pairs(Config.ProcessZones) do
+        for k,v in pairs(DrugCfg.ProcessZones) do
             CreateBlipCircle(v.coords, v.name, v.radius, v.color, v.sprite)
         end
 
-        if Config.CircleZones.DrugDealer then
-            CreateBlipCircle(Config.CircleZones.DrugDealer.coords, Config.CircleZones.DrugDealer.name, Config.CircleZones.DrugDealer.radius, Config.CircleZones.DrugDealer.color, Config.CircleZones.DrugDealer.sprite)
+        if DrugCfg.CircleZones.DrugDealer then
+            CreateBlipCircle(DrugCfg.CircleZones.DrugDealer.coords, DrugCfg.CircleZones.DrugDealer.name, DrugCfg.CircleZones.DrugDealer.radius, DrugCfg.CircleZones.DrugDealer.color, DrugCfg.CircleZones.DrugDealer.sprite)
         end
 
     end
 end)
 
 Citizen.CreateThread(function()
-    for k,v in pairs(Config.Peds) do
+    for k,v in pairs(DrugCfg.Peds) do
         RequestModel(v.ped)
         while not HasModelLoaded(v.ped) do
             Wait(1)
@@ -192,7 +192,7 @@ end)
 ----------------------------------------
 ----------- DRUG DEALER ----------------
 ----------------------------------------
--- Ground marker + interaction prompt for the generic drug dealer (Config.CircleZones.DrugDealer).
+-- Ground marker + interaction prompt for the generic drug dealer (DrugCfg.CircleZones.DrugDealer).
 -- Sells whatever the local `price` table lists, using the same 'esx_drugs:sellDrug' server event
 -- and DrugDealerItems pricing that server/main.lua already implements.
 Citizen.CreateThread(function()
@@ -201,10 +201,10 @@ Citizen.CreateThread(function()
         Citizen.Wait(wait)
         local playerPed = PlayerPedId()
         local coords = GetEntityCoords(playerPed)
-        local distance = #(coords - Config.CircleZones.DrugDealer.coords)
+        local distance = #(coords - DrugCfg.CircleZones.DrugDealer.coords)
 
-        if not menuOpen and distance <= Config.CircleZones.DrugDealer.radius then
-            DrawMarker(1, Config.CircleZones.DrugDealer.coords, 0.0, 0.0, 0.0, 0, 0.0, 0.0, 1.5, 1.5, 1.5, 255, 0, 0, 100, false, true, 2, false, false, false, false)
+        if not menuOpen and distance <= DrugCfg.CircleZones.DrugDealer.radius then
+            DrawMarker(1, DrugCfg.CircleZones.DrugDealer.coords, 0.0, 0.0, 0.0, 0, 0.0, 0.0, 1.5, 1.5, 1.5, 255, 0, 0, 100, false, true, 2, false, false, false, false)
             wait = 5
         end
 
@@ -233,7 +233,7 @@ function OpenDrugShop()
 
     local playerInventory = ESX.GetPlayerData().inventory
 
-    if Config.Delivery.Enabled then
+    if DrugCfg.Delivery.Enabled then
         table.insert(elements, {
             label = 'Mamoriate Mahmooleh (Delivery)',
             action = 'delivery'
@@ -243,7 +243,7 @@ function OpenDrugShop()
     for i=1, #price, 1 do
         for k, item in pairs(playerInventory) do
             if item.name == price[i].name and item.count > 0 then
-                local dealerPrice = ESX.Math.Round(price[i].price * Config.DealerSellBonus)
+                local dealerPrice = ESX.Math.Round(price[i].price * DrugCfg.DealerSellBonus)
                 table.insert(elements, {
                     label = ('%s - <span style="color:green;">%s</span>'):format(item.label, _U('dealer_item', ESX.Math.GroupDigits(dealerPrice))),
                     name  = item.name,
@@ -289,7 +289,7 @@ function OpenDrugShop()
     end)
 end
 
--- Shows the seller their current dealer "heat" level after every sale (server: Config.Heat)
+-- Shows the seller their current dealer "heat" level after every sale (server: DrugCfg.Heat)
 RegisterNetEvent('esx_drugs:updateHeat')
 AddEventHandler('esx_drugs:updateHeat', function(heat, maxHeat)
     local percent = math.floor((heat / maxHeat) * 100)
@@ -432,7 +432,7 @@ Citizen.CreateThread(function()
         if ESX.PlayerData.job ~= nil and ESX.PlayerData.job.name == 'doa' then
             local playerPed = PlayerPedId()
             local coords = GetEntityCoords(playerPed)
-            local closestPlayer, closestDistance = nil, Config.Delivery.InterceptRadius
+            local closestPlayer, closestDistance = nil, DrugCfg.Delivery.InterceptRadius
 
             for _, playerId in ipairs(GetActivePlayers()) do
                 local targetPed = GetPlayerPed(playerId)
@@ -465,7 +465,7 @@ end)
 -- / esx:setJob -> SyncEvidenceToPlayer), so nothing is ever missed.
 --
 -- Collection itself happens at a permanent "field investigator" ped standing next to each farm
--- (Config.EvidencePeds). Regular players can target the ped but get no options at all; DOA sees
+-- (DrugCfg.EvidencePeds). Regular players can target the ped but get no options at all; DOA sees
 -- a collect-evidence option there. This replaces walking to an invisible spot and mashing E.
 local evidenceBlips = {} -- [fieldKey] = {blip = ..., coords = ..., label = ..., count = ...}
 
@@ -504,9 +504,9 @@ end)
 Citizen.CreateThread(function()
     while ESX == nil do Citizen.Wait(100) end
 
-    for fieldKey, pedCfg in pairs(Config.EvidencePeds) do
+    for fieldKey, pedCfg in pairs(DrugCfg.EvidencePeds) do
         local ok, err = pcall(function()
-            local fieldZone = Config.FieldZones[fieldKey]
+            local fieldZone = DrugCfg.FieldZones[fieldKey]
             if not fieldZone then return end
 
             local coords = fieldZone.coords + pedCfg.offset
@@ -557,7 +557,7 @@ Citizen.CreateThread(function()
 
                         TriggerEvent("mythic_progbar:client:progress", {
                             name = "collect_evidence",
-                            duration = Config.Evidence.CollectAnimDuration,
+                            duration = DrugCfg.Evidence.CollectAnimDuration,
                             label = "Dar hale barresi va sabte madarek...",
                             useWhileDead = false,
                             canCancel = true,
@@ -1180,7 +1180,7 @@ AddEventHandler('esx_jk_drugs:selling', function()
     streetName = GetStreetNameFromHashKey(streetName)
     crossing = GetStreetNameFromHashKey(crossing)
 
-	if Config.UseESXPhone then
+	if DrugCfg.UseESXPhone then
         if crossing ~= nil then
 
             local coords      = GetEntityCoords(GetPlayerPed(-1))
@@ -1197,7 +1197,7 @@ AddEventHandler('esx_jk_drugs:selling', function()
                 z = coords.z
             })
         end
-    elseif Config.UseGCPhone then
+    elseif DrugCfg.UseGCPhone then
         if crossing ~= nil then
             local coords      = GetEntityCoords(GetPlayerPed(-1))
 
@@ -1243,7 +1243,7 @@ Citizen.CreateThread(function()
 		local isInMarker  = false
 		local currentZone = nil
 
-		for k,v in pairs(Config.Zones) do
+		for k,v in pairs(DrugCfg.Zones) do
 			if GetDistanceBetweenCoords(coords, v.Pos.x, v.Pos.y, v.Pos.z, true) < v.Size.x then
 				isInMarker  = true
 				currentZone = k
@@ -1274,8 +1274,8 @@ Citizen.CreateThread(function()
 		local coords = GetEntityCoords(PlayerPedId())
 		local canSleep = true
 
-		for k,v in pairs(Config.Zones) do
-			if(v.Type ~= -1 and GetDistanceBetweenCoords(coords, v.Pos.x, v.Pos.y, v.Pos.z, true) < Config.DrawDistance) then
+		for k,v in pairs(DrugCfg.Zones) do
+			if(v.Type ~= -1 and GetDistanceBetweenCoords(coords, v.Pos.x, v.Pos.y, v.Pos.z, true) < DrugCfg.DrawDistance) then
 				canSleep = false
 				DrawMarker(v.Type, v.Pos.x, v.Pos.y, v.Pos.z, 0.0, 0.0, 0.0, 0, 0.0, 0.0, v.Size.x, v.Size.y, v.Size.z, v.Color.r, v.Color.g, v.Color.b, 100, false, true, 2, false, false, false, false)
 			end
@@ -1425,7 +1425,7 @@ Citizen.CreateThread(function()
                             if not status then
 
                                 TriggerServerEvent('esx_jk_drugs:processCannabis')
-                                TriggerClientEvent("esx_drugs:MarijuanaProg", _source, amount, Item.name)
+                                -- (server already sends esx_drugs:MarijuanaProg when the processing is paid out)
 
                             elseif status then
 
@@ -1476,10 +1476,7 @@ Citizen.CreateThread(function()
                         local TimeOut = 8000
 
                         local ChekSkills = 0
-                        if GetResourceState('Unique_Skills') == 'started' then
-                        	local ok, result = pcall(function() return exports['Unique_Skills']:CheckSkill('Heroine') end)
-                        	if ok then ChekSkills = result end
-                        end
+                        ChekSkills = DrugSkillValue('Heroine')
 						if ChekSkills == 100 then
 							TimeOut = TimeOut / 2
 						else
@@ -1524,10 +1521,7 @@ Citizen.CreateThread(function()
                         local TimeOut = 12000
 
                         local ChekSkills = 0
-                        if GetResourceState('Unique_Skills') == 'started' then
-                        	local ok, result = pcall(function() return exports['Unique_Skills']:CheckSkill('Heroine') end)
-                        	if ok then ChekSkills = result end
-                        end
+                        ChekSkills = DrugSkillValue('Heroine')
 						if ChekSkills == 100 then
 							TimeOut = TimeOut / 2
 						else

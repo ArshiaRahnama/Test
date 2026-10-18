@@ -6,6 +6,7 @@ description 'Unique_Login - Steam-optional connect login (username/password + SM
 version '1.0.0'
 
 server_scripts {
+    'steam_compat.lua',
 
 
 

@@ -78,10 +78,12 @@ if Config.Territory and Config.Territory.BossZone and Config.Territory.BossZone.
     }
 end
 
+local ZoneUpgrades = {}  -- must be declared before BroadcastTerritoryState uses it
 function BroadcastTerritoryState()
     local out = {}
     for zoneKey, state in pairs(Territories) do
-        out[zoneKey] = { owner = state.owner, contested = state.contested, vulnerable = state.vulnerable }
+        -- upgrades travel with the state too, otherwise the menu always shows level 0
+        out[zoneKey] = { owner = state.owner, contested = state.contested, vulnerable = state.vulnerable, upgrades = ZoneUpgrades[zoneKey] }
     end
     TriggerClientEvent('Territory:SyncState', -1, out)
 end
@@ -105,7 +107,7 @@ end
 -- (before ProcessTerritoryTick) since the tick loop needs to read
 -- alliances/upgrades/war-night/boss-zone-window every pass.
 -------------------------------------------------------------------
-local ZoneUpgrades  = {} -- ZoneUpgrades[zoneKey][upgradeType] = level
+ZoneUpgrades = ZoneUpgrades or {} -- ZoneUpgrades[zoneKey][upgradeType] = level (declared at the top, see below)
 local Alliances     = {} -- Alliances[gangA][gangB] = true (stored both directions once active)
 local ZoneTitles    = {} -- ZoneTitles[gang] = 'title text' (Boss Zone reward)
 local ScoutCooldown = {} -- ScoutCooldown[source] = os.time() of last scout
@@ -517,6 +519,12 @@ local function GiveCaptureReward(zoneKey, newGang, cfg)
         -- only start the per-zone cooldown when something was really paid out
         -- (an armory/inventory outage must not burn the zone's reward for an hour)
         RewardCooldownAt[zoneKey] = now
+        -- Robbery-lottery points (Unique_AllRobs). pcall: the resource may not be running.
+        local hp = rw.heistPoints
+        local pts = hp and ((cfg.bossZone and hp.bossZone) or hp[cfg.tier] or hp.default) or 0
+        if pts and pts > 0 then
+            pcall(function() exports['Unique_AllRobs']:AddGangHeistPoints(newGang, pts, 'tasarrof-e zone') end)
+        end
         local text = ('Gang-e shoma "%s" ro tasarrof kard! Jayeze be armory-e gang ezafe shod: %s'):format(cfg.label, table.concat(parts, ', '))
         local extra = RollBonus(cfg, newGang)
         if extra then text = text .. (' + BONUS (shans): %s'):format(extra) end
@@ -1063,7 +1071,8 @@ ESX.RegisterServerCallback('Territory:PurchaseUpgrade', function(source, cb, zon
         Webhook = GetCategoryWebhook(xPlayer.gang.name, 'Territory'),
     })
 
-    cb(true, upgradeCfg.label .. ' be sath-e ' .. newLevel .. ' ertegha yaft')
+    BroadcastTerritoryState()
+    cb(true, upgradeCfg.label .. ' be sath-e ' .. newLevel .. ' ertegha yaft', newLevel)
 end)
 
 -------------------------------------------------------------------
@@ -1346,3 +1355,43 @@ end, false)
 -------------------------------------------------------------------
 function ZW_AreAllied(a, b) return AreGangsAllied(a, b) end
 function ZW_IsWarNight() return IsWarNight() end
+
+-- Alliances for other resources (Unique_AllRobs: allied gangs count together for a heist party).
+exports('AreGangsAllied', function(gangA, gangB)
+    return AreGangsAllied(gangA, gangB) and true or false
+end)
+
+-- Overview for the Gang Friends screen (Unique_AllRobs NUI): current allies,
+-- incoming/outgoing proposals, and the gangs you can propose to.
+ESX.RegisterServerCallback('Allies:Overview', function(source, cb)
+    local xPlayer = ESX.GetPlayerFromId(source)
+    if not xPlayer or not xPlayer.gang or xPlayer.gang.name == 'nogang' then return cb({ hasGang = false }) end
+    local me = xPlayer.gang.name
+    local online = {}
+    for _, playerId in ipairs(ESX.GetPlayers()) do
+        local x = ESX.GetPlayerFromId(playerId)
+        if x and x.gang and x.gang.name ~= 'nogang' then online[x.gang.name] = (online[x.gang.name] or 0) + 1 end
+    end
+    local function labelOf(g) return (Gangs[g] and Gangs[g].label) or g end
+
+    local allies, incoming, outgoing, candidates = {}, {}, {}, {}
+    for other in pairs(Alliances[me] or {}) do allies[#allies + 1] = { gang = other, label = labelOf(other), online = online[other] or 0 } end
+    for key in pairs(PendingAlliances) do
+        local proposer, target = key:match('^(.-):(.*)$')
+        if target == me then incoming[#incoming + 1] = { gang = proposer, label = labelOf(proposer) } end
+        if proposer == me then outgoing[#outgoing + 1] = { gang = target, label = labelOf(target) } end
+    end
+    for g in pairs(Gangs) do
+        if g ~= me and g ~= 'nogang' and not AreGangsAllied(me, g) then
+            local pending = PendingAlliances[me .. ':' .. g] == true
+            candidates[#candidates + 1] = { gang = g, label = labelOf(g), online = online[g] or 0, pending = pending }
+        end
+    end
+    local byLabel = function(a, b) return a.label < b.label end
+    table.sort(allies, byLabel); table.sort(incoming, byLabel); table.sort(outgoing, byLabel); table.sort(candidates, byLabel)
+    cb({
+        hasGang = true, gang = me, label = labelOf(me), isBoss = HasBossAccess(xPlayer),
+        enabled = Config.Territory.Alliance and Config.Territory.Alliance.Enabled or false,
+        allies = allies, incoming = incoming, outgoing = outgoing, candidates = candidates,
+    })
+end)

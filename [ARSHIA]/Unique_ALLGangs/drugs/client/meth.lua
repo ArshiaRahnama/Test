@@ -1,5 +1,5 @@
-local spawnedMushroom = 1
-local MushroomPlants = {}
+local spawnedEphedra = 1
+local ephedraPlants = {}
 local isPickingUp, isProcessing = false, false
 
 Citizen.CreateThread(function()
@@ -7,12 +7,24 @@ Citizen.CreateThread(function()
 		Citizen.Wait(1000)
 		local coords = GetEntityCoords(PlayerPedId())
 
-		if GetDistanceBetweenCoords(coords, Config.FieldZones.MushroomField.coords, true) < 40 then
+		if GetDistanceBetweenCoords(coords, DrugCfg.FieldZones.EphedrineField.coords, true) < 50 then
 
-			SpawnMushroomPlants()
+			SpawnEphedraPlants()
 			Citizen.Wait(1000)
 		else
 			Citizen.Wait(1000)
+		end
+	end
+end)
+
+Citizen.CreateThread(function()
+	while true do
+		Citizen.Wait(1000)
+		local playerPed = PlayerPedId()
+		local coords = GetEntityCoords(playerPed)
+
+		if GetDistanceBetweenCoords(coords, DrugCfg.ProcessZones.EphedrineProcessing.coords, true) < 15 and GetDistanceBetweenCoords(coords, DrugCfg.ProcessZones.EphedrineProcessing.coords, true) > 10 then
+
 		end
 	end
 end)
@@ -24,16 +36,16 @@ Citizen.CreateThread(function()
 		local coords = GetEntityCoords(playerPed)
 		local nearbyObject, nearbyID
 
-		for i=1, #MushroomPlants, 1 do
-			if GetDistanceBetweenCoords(coords, GetEntityCoords(MushroomPlants[i]), false) < 1 then
-				nearbyObject, nearbyID = MushroomPlants[i], i
+		for i=1, #ephedraPlants, 1 do
+			if GetDistanceBetweenCoords(coords, GetEntityCoords(ephedraPlants[i]), false) < 1 then
+				nearbyObject, nearbyID = ephedraPlants[i], i
 			end
 		end
 
 		if nearbyObject and IsPedOnFoot(playerPed) and not IsPedUsingAnyScenario(playerPed) then
 
 			if not isPickingUp then
-				ESX.ShowHelpNotification(_U('mushroom_pickupprompt'))
+				ESX.ShowHelpNotification(_U('ephedrine_pickupprompt'))
 			end
 
 			if not isPickingUp and IsControlJustReleased(0, 38) then
@@ -45,9 +57,9 @@ Citizen.CreateThread(function()
 						isPickingUp = true
 						TaskStartScenarioInPlace(playerPed, 'world_human_gardener_plant', 0, false)
 						TriggerEvent("mythic_progbar:client:progress", {
-							name = "harvest_Mushroom",
+							name = "harvest_ephedra",
 							duration = 3500,
-							label = "Bardasht Gharch",
+							label = "Bardasht Ephedra",
 							useWhileDead = false,
 							canCancel = true,
 							controlDisables = {
@@ -59,13 +71,13 @@ Citizen.CreateThread(function()
 						}, function(status)
 							if not status then
 
-							table.remove(MushroomPlants, nearbyID)
-							spawnedMushroom = spawnedMushroom - 1
+							table.remove(ephedraPlants, nearbyID)
+							spawnedEphedra = spawnedEphedra - 1
 
 							ClearPedTasks(playerPed)
 							ESX.Game.DeleteObject(nearbyObject)
 
-							TriggerServerEvent('esx_jk_drugs:pickedUpmushroom', GetForensicSnapshot())
+							TriggerServerEvent('esx_jk_drugs:pickedUpEphedra', GetForensicSnapshot())
 							isPickingUp = false
 
 							elseif status then
@@ -78,9 +90,9 @@ Citizen.CreateThread(function()
 
 
 					else
-						ESX.ShowNotification(_U('mushroom_inventoryfull'))
+						ESX.ShowNotification(_U('ephedrine_inventoryfull'))
 					end
-				end, 'mushroom')
+				end, 'ephedrine')
 				isPickingUp = false
 			end
 		else
@@ -93,38 +105,38 @@ end)
 
 AddEventHandler('onResourceStop', function(resource)
 	if resource == GetCurrentResourceName() then
-		for k, v in pairs(MushroomPlants) do
+		for k, v in pairs(ephedraPlants) do
 			ESX.Game.DeleteObject(v)
 		end
 	end
 end)
 
-function SpawnMushroomPlants()
-	while spawnedMushroom < 10 do
+function SpawnEphedraPlants()
+	while spawnedEphedra < 10 do
 		Citizen.Wait(0)
-		local MushroomCoords = GenerateMushroomCoords()
+		local ephedraCoords = GenerateEphedraCoords()
 
-		ESX.Game.SpawnLocalObject('prop_weed_02', MushroomCoords, function(obj)
+		ESX.Game.SpawnLocalObject('prop_plant_cane_01b', ephedraCoords, function(obj)
 			PlaceObjectOnGroundProperly(obj)
 			FreezeEntityPosition(obj, true)
 
-			table.insert(MushroomPlants, obj)
-			spawnedMushroom = spawnedMushroom + 1
+			table.insert(ephedraPlants, obj)
+			spawnedEphedra = spawnedEphedra + 1
 		end)
 	end
 end
 
-function ValidateMushroomCoord(plantCoord)
-	if spawnedMushroom > 0 then
+function ValidateEphedraCoord(plantCoord)
+	if spawnedEphedra > 0 then
 		local validate = true
 
-		for k, v in pairs(MushroomPlants) do
+		for k, v in pairs(ephedraPlants) do
 			if GetDistanceBetweenCoords(plantCoord, GetEntityCoords(v), true) < 5 then
 				validate = false
 			end
 		end
 
-		if GetDistanceBetweenCoords(plantCoord, Config.FieldZones.MushroomField.coords, false) > 50 then
+		if GetDistanceBetweenCoords(plantCoord, DrugCfg.FieldZones.EphedrineField.coords, false) > 50 then
 			validate = false
 		end
 
@@ -134,11 +146,11 @@ function ValidateMushroomCoord(plantCoord)
 	end
 end
 
-function GenerateMushroomCoords()
+function GenerateEphedraCoords()
 	while true do
 		Citizen.Wait(1)
 
-		local MushroomCoordX, MushroomCoordY
+		local ephedraCoordX, ephedraCoordY
 
 		math.randomseed(GetGameTimer())
 		local modX = math.random(-90, 90)
@@ -148,13 +160,13 @@ function GenerateMushroomCoords()
 		math.randomseed(GetGameTimer())
 		local modY = math.random(-90, 90)
 
-		MushroomCoordX = Config.FieldZones.MushroomField.coords.x + modX
-		MushroomCoordY = Config.FieldZones.MushroomField.coords.y + modY
+		ephedraCoordX = DrugCfg.FieldZones.EphedrineField.coords.x + modX
+		ephedraCoordY = DrugCfg.FieldZones.EphedrineField.coords.y + modY
 
-		local coordZ = GetCoordZ(MushroomCoordX, MushroomCoordY)
-		local coord = vector3(MushroomCoordX, MushroomCoordY, coordZ)
+		local coordZ = GetCoordZ(ephedraCoordX, ephedraCoordY)
+		local coord = vector3(ephedraCoordX, ephedraCoordY, coordZ)
 
-		if ValidateMushroomCoord(coord) then
+		if ValidateEphedraCoord(coord) then
 			return coord
 		end
 	end
@@ -172,3 +184,14 @@ function GetCoordZ(x, y)
 	end
 	return 95.0
 end
+
+Citizen.CreateThread(function()
+	while true do
+		Citizen.Wait(1000)
+		local playerPed = PlayerPedId()
+		local coords = GetEntityCoords(playerPed)
+
+		if GetDistanceBetweenCoords(coords, DrugCfg.ProcessZones.MethProcessing.coords, true) < 15 and GetDistanceBetweenCoords(coords, DrugCfg.ProcessZones.MethProcessing.coords, true) > 10 then
+		end
+	end
+end)

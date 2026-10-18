@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>Gang Robbery</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app" class="hidden">
+  <div class="panel">
+
+    <aside class="side">
+      <button class="close" id="btnClose" title="بستن">×</button>
+      <div class="side-title">منو</div>
+      <div class="side-gang" id="sideGang"></div>
+      <nav id="robTabs">
+        <button class="tab" data-tab="lottery" id="tabLottery">قرعه‌کشی</button>
+        <button class="tab active" data-tab="robberies">رابری‌ها</button>
+        <button class="tab" data-tab="stats">آمار و توکن</button>
+        <button class="tab" data-tab="help">راهنما</button>
+      </nav>
+      <nav id="kindTabs" class="hidden"></nav>
+      <div class="kind-nav" id="kindNav">
+        <div class="kind-nav-label">بخش‌های دیگه</div>
+        <button class="navbtn" data-go="robbery">رابری گنگ</button>
+        <button class="navbtn" data-go="gangwar">جنگ گنگ‌ها</button>
+        <button class="navbtn" data-go="territory">قلمرو (تریتوری)</button>
+        <button class="navbtn" data-go="allies">گنگ‌های متحد</button>
+      </div>
+      <div class="side-foot">
+        <div class="side-foot-label">ارگان‌های نظامی آنلاین</div>
+        <div class="side-foot-val" id="copsOnline">۰</div>
+      </div>
+    </aside>
+
+    <main>
+      <header class="head">
+        <div>
+          <div class="head-title" id="headTitle">رابری گنگ</div>
+          <div class="head-sub" id="headSub"></div>
+        </div>
+        <div class="chips" id="planChips"></div>
+      </header>
+
+      <div id="claimBanner" class="banner hidden"></div>
+
+      <!-- قرعه‌کشی -->
+      <section class="view hidden" id="view-lottery">
+        <div class="lot-head">
+          <button class="arrow" id="btnRound" title="دوره‌ی بعدی">→</button>
+          <div class="lot-title"><span class="lot-title-en" id="lotName">Robbery A</span> <span class="lot-title-fa">- قرعه‌کشی</span></div>
+          <div class="lot-chips">
+            <div class="lot-chip"><span class="k">پوینت گنگ :</span> <span class="v" id="lotPoints">۰</span></div>
+            <div class="lot-chip"><span class="k">پلن :</span> <span class="v" id="lotPlans">۰</span></div>
+          </div>
+        </div>
+        <div class="lot-status" id="lotStatus">
+          <div class="lot-status-title" id="lotStatusTitle"></div>
+          <div class="lot-status-time" id="lotStatusTime"></div>
+        </div>
+        <div class="section-title">رابری‌های این قرعه‌کشی</div>
+        <div class="lot-items" id="lotItems"></div>
+        <div class="foot-note" id="lotNote"></div>
+      </section>
+
+      <!-- رابری‌ها -->
+      <section class="view" id="view-robberies">
+        <div class="section-title">رابری‌های پلن‌دار</div>
+        <div class="grid" id="robGrid"></div>
+        <div class="foot-note">رابری‌های بدون پلن (مثل شاپ) مثل همیشه از خود مارکر شروع می‌شن.</div>
+      </section>
+
+      <!-- آمار و توکن -->
+      <section class="view hidden" id="view-stats">
+        <div class="stat-row">
+          <div class="stat win"><div class="stat-num" id="stWins">۰</div><div class="stat-lab">برد</div></div>
+          <div class="stat lose"><div class="stat-num" id="stLosses">۰</div><div class="stat-lab">باخت</div></div>
+          <div class="stat"><div class="stat-num" id="stRate">۰٪</div><div class="stat-lab">درصد برد</div></div>
+          <div class="stat tok"><div class="stat-num" id="stTokens">۰</div><div class="stat-lab">توکن گنگ از رابری</div></div>
+          <div class="stat pts"><div class="stat-num" id="stPoints">۰</div><div class="stat-lab">پوینت گنگ</div></div>
+        </div>
+        <div class="bar"><div class="bar-win" id="barWin"></div></div>
+        <div class="section-title">توکن‌های در انتظار استفاده</div>
+        <div class="note" id="tokenNote"></div>
+        <div id="pendingList" class="pending"></div>
+      </section>
+
+      <!-- راهنما -->
+      <section class="view hidden" id="view-kind"></section>
+
+      <section class="view hidden" id="view-help">
+        <div class="help-wrap" id="helpRob"></div>
+      </section>
+    </main>
+  </div>
+  <div id="toast"></div>
+</div>
+<script src="app.js"></script>
+<script src="kinds.js"></script>
+</body>
+</html>

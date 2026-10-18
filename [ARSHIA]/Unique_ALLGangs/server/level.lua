@@ -129,7 +129,7 @@ end)
 -------------------------------------------------------------------
 local DailyXP = {} -- DailyXP[gang] = { day = 'YYYY-MM-DD', xp = n }
 
-function GrantGangXP(gang, amount, reason)
+function GrantGangXP(gang, amount, reason, bypassCap)
     if not Config.GangXP or not Config.GangXP.Enabled then return 0 end
     if not gang or gang == 'nogang' or not (Gangs and Gangs[gang]) then return 0 end
     amount = math.floor(tonumber(amount) or 0)
@@ -142,7 +142,7 @@ function GrantGangXP(gang, amount, reason)
         DailyXP[gang] = rec
     end
     local cap = tonumber(Config.GangXP.DailyCap) or 0
-    if cap > 0 then
+    if cap > 0 and not bypassCap then
         amount = math.min(amount, cap - rec.xp)
     end
     if amount <= 0 then return 0 end
@@ -185,3 +185,27 @@ function UpdateXP(gang, Add, MT)
         end
     end
 end
+
+-------------------------------------------------------------------
+-- XP CARDS (from robberies): the robbery reward gives xpshop / xpfleeca /
+-- xpjewel / xpbime / xpbankp / xprig items. A member uses the card and its
+-- XP goes to the gang. Unique_AllRobs registers the usable items and calls
+-- this export. Cards are worth Config.GangXP.Cards[name] XP and bypass the
+-- daily cap (they are paid for by a robbery, not farmed).
+-------------------------------------------------------------------
+exports('GetGangXPCardValue', function(cardName)
+    local cards = Config.GangXP and Config.GangXP.Cards or {}
+    return tonumber(cards[cardName]) or 0
+end)
+
+exports('AddGangXPFromCard', function(gang, cardName, reason)
+    local value = Config.GangXP and Config.GangXP.Cards and Config.GangXP.Cards[cardName]
+    if not value then return 0 end
+    return GrantGangXP(gang, value, reason or ('Card ' .. tostring(cardName)), true)
+end)
+
+-- XP for gang activity coming from other resources (drugs sales etc.). Uses the normal
+-- daily cap, so drug farming can not level a gang past the limit.
+exports('AddGangXPFromDrugs', function(gang, amount, reason)
+    return GrantGangXP(gang, tonumber(amount) or 0, reason or 'Drugs')
+end)

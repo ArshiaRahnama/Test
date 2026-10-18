@@ -32,7 +32,7 @@ end
 -- route, then reports the network IDs back so the server can broadcast them to everyone else.
 RegisterNetEvent('esx_drugs:convoy:becomeSpawner')
 AddEventHandler('esx_drugs:convoy:becomeSpawner', function(convoyId, route)
-    local cfg = Config.Convoy
+    local cfg = DrugCfg.Convoy
     local fromCoords, toCoords = route.from.coords, route.to.coords
 
     local vehModel = GetHashKey(cfg.VehicleModel)
@@ -118,8 +118,8 @@ AddEventHandler('esx_drugs:convoy:announce', function(convoyId, route, netVeh, n
         if not veh or not (activeConvoy and activeConvoy.id == convoyId) then return end
 
         local blip = AddBlipForEntity(veh)
-        SetBlipSprite(blip, Config.Convoy.BlipSprite)
-        SetBlipColour(blip, Config.Convoy.BlipColor)
+        SetBlipSprite(blip, DrugCfg.Convoy.BlipSprite)
+        SetBlipColour(blip, DrugCfg.Convoy.BlipColor)
         SetBlipScale(blip, 1.0)
         BeginTextCommandSetBlipName('STRING')
         AddTextComponentString('Convoy Mavad')

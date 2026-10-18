@@ -90,3 +90,35 @@ escrow_ignore {
     'shared/*.lua',
     'Config.lua',
 }
+
+-- ===== DRUGS (merged from esx_drugs; see drugs/) =====
+-- drugs config lives in the global DrugCfg (not Config) so the two configs never clash.
+shared_scripts {
+    '@ox_lib/init.lua',
+    'drugs/config.lua',
+    'config_gunshop.lua',
+}
+server_scripts {
+    '@essentialmode/locale.lua',
+    'drugs/locales/en.lua',
+    'drugs/locales/fr.lua',
+    'drugs/locales/sv.lua',
+    'server/gunshop.lua',
+    'drugs/server/skills.lua',
+    'drugs/server/main.lua',
+    'drugs/server/convoy.lua',
+}
+client_scripts {
+    '@essentialmode/locale.lua',
+    'drugs/locales/en.lua',
+    'drugs/locales/fr.lua',
+    'drugs/locales/sv.lua',
+    'drugs/client/skills.lua',
+    'drugs/client/main.lua',
+    'drugs/client/weed.lua',
+    'drugs/client/meth.lua',
+    'drugs/client/crack.lua',
+    'drugs/client/heroine.lua',
+    'drugs/client/mushroom.lua',
+    'drugs/client/convoy.lua',
+}

@@ -2198,3 +2198,20 @@ AddEventHandler('Unique_ALLGangs:checkGangFlag', function(src, gangName, flag, c
     if not grade or not grade.access then return cb(false) end
     cb(grade.access[flag] and true or false)
 end)
+
+-------------------------------------------------------------------
+-- Is this player a boss of their gang (top rank, or a rank with the
+-- "bossaction" access)? Same rule the Boss Menu uses. Used by
+-- Unique_AllRobs (Gang Heists) so only bosses can claim robberies.
+-------------------------------------------------------------------
+function IsGangBoss(src)
+    local xPlayer = ESX.GetPlayerFromId(src)
+    if not xPlayer or not xPlayer.gang or xPlayer.gang.name == 'nogang' or not Gangs[xPlayer.gang.name] then return false end
+    local grades = Gangs[xPlayer.gang.name].grades
+    if not grades then return false end
+    local isBoss = xPlayer.gang.grade == CountTable(grades)
+    local g = grades[xPlayer.gang.grade]
+    local hasAccess = g and g.access and g.access['bossaction']
+    return (isBoss or hasAccess) and true or false
+end
+exports('IsGangBoss', IsGangBoss)

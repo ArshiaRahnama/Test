@@ -2210,7 +2210,7 @@ AddEventHandler("playerConnecting", function(name, setKickReason, deferrals)
             return
         end
 
-        -- Config.AutoLogin (پیش‌فرض: false) — وقتی خاموشه بازیکن هر بار
+        -- Config.AutoLogin (پیش‌فرض: true) — وقتی خاموشه بازیکن هر بار
         -- هاب انتخاب حساب رو می‌بینه و رمز رو وارد می‌کنه.
         if not Config.AutoLogin then
             settle(function() ShowMainMenu(deferrals) end)

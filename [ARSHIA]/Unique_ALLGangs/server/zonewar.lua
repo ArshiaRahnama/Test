@@ -189,6 +189,21 @@ end
 
 local function GangOfSide(war, side) return side == 'a' and war.a or war.b end
 
+-- ALLY HELP: a gang's boss can tick "allies may fight for us". When ticked, members of
+-- that gang's ALLIES may join its roster for a gang war. Off by default.
+AllyHelp = AllyHelp or {}   -- AllyHelp[gang] = true|false
+local function AlliedWith(a, b)
+    if not a or not b or a == b then return a == b end
+    return ((ZW_AreAllied and ZW_AreAllied(a, b)) or false) and true or false
+end
+-- may a player of gang `pg` fight for war side gang `sg`?
+local function MayFightFor(sg, pg)
+    if not sg or not pg then return false end
+    if pg == sg then return true end
+    return AllyHelp[sg] == true and AlliedWith(sg, pg)
+end
+local function MayFightForSide(war, side, pg) return MayFightFor(GangOfSide(war, side), pg) end
+
 local function WarLog(war, text)
     for _, gang in ipairs({ war.a, war.b }) do
         if Gangs[gang] then
@@ -359,6 +374,10 @@ local function FinishWar(war, winnerSide, reason)
         if prize > 0 and Gangs[winner] then AddGangMoney(winner, prize) end
         war.feeA, war.feeB = 0, 0
 
+        local wp = tonumber(ZW.WinnerHeistPoints) or 0
+        if wp > 0 then
+            pcall(function() exports['Unique_AllRobs']:AddGangHeistPoints(winner, wp, 'Gang War') end)
+        end
         if GrantGangXP and Config.GangXP and Config.GangXP.Sources then
             GrantGangXP(winner, Config.GangXP.Sources.warWin, 'Gang War Win')
             GrantGangXP(loser,  Config.GangXP.Sources.warLose, 'Gang War')
@@ -397,7 +416,7 @@ local function StartWar(war)
         local out = {}
         for _, src in ipairs(roster) do
             local x = ESX.GetPlayerFromId(src)
-            if x and x.gang and x.gang.name == GangOfSide(war, side) and InDefaultBucket(src) then out[#out + 1] = src end
+            if x and x.gang and MayFightForSide(war, side, x.gang.name) and InDefaultBucket(src) then out[#out + 1] = src end
         end
         return out
     end
@@ -524,7 +543,7 @@ local function ResolveGathering(war)
         local out, hq = {}, GangHQ(GangOfSide(war, side))
         for _, src in ipairs(roster) do
             local x = ESX.GetPlayerFromId(src)
-            if x and x.gang and x.gang.name == GangOfSide(war, side) and InDefaultBucket(src) and NearHQ(src, hq) then
+            if x and x.gang and MayFightForSide(war, side, x.gang.name) and InDefaultBucket(src) and NearHQ(src, hq) then
                 out[#out + 1] = src
             end
         end
@@ -654,7 +673,7 @@ local function TickWar(war, now)
             local hq = GangHQ(GangOfSide(war, side))
             for _, src in ipairs(roster) do
                 local x = ESX.GetPlayerFromId(src)
-                if not (x and InDefaultBucket(src) and NearHQ(src, hq)) then return false end
+                if not (x and MayFightForSide(war, side, x.gang and x.gang.name) and InDefaultBucket(src) and NearHQ(src, hq)) then return false end
             end
             return #roster > 0
         end
@@ -683,7 +702,7 @@ local function TickWar(war, now)
     for side, roster in pairs({ a = war.rosterA, b = war.rosterB }) do
         for _, src in ipairs(roster) do
             local x = ESX.GetPlayerFromId(src)
-            if x and x.gang and x.gang.name == GangOfSide(war, side) then
+            if x and x.gang and MayFightForSide(war, side, x.gang.name) then
                 online[side] = online[side] + 1
                 local p = PedCoords(src)
                 if p and InDefaultBucket(src) and Dist3(p, cfg.coord) <= reach then
@@ -880,10 +899,11 @@ ESX.RegisterServerCallback('ZoneWar:GetMembers', function(source, cb)
     local out = {}
     for _, playerId in ipairs(ESX.GetPlayers()) do
         local x = ESX.GetPlayerFromId(playerId)
-        if x and x.gang and x.gang.name == gang then
+        if x and x.gang and MayFightFor(gang, x.gang.name) then
             local inRoster = false
             for _, r in ipairs(roster) do if r == playerId then inRoster = true end end
-            out[#out + 1] = { src = playerId, name = x.name or ('ID ' .. playerId), inRoster = inRoster }
+            out[#out + 1] = { src = playerId, name = x.name or ('ID ' .. playerId), inRoster = inRoster,
+                              gang = x.gang.name, fromAlly = x.gang.name ~= gang }
         end
     end
     cb(out)
@@ -900,7 +920,7 @@ ESX.RegisterServerCallback('ZoneWar:Roster', function(source, cb, targetSrc, add
 
     local target = tonumber(targetSrc)
     local tx = target and ESX.GetPlayerFromId(target)
-    if not tx or not tx.gang or tx.gang.name ~= gang then return cb(false, 'In bazikon ozv-e gang-e shoma nist ya online nist') end
+    if not tx or not tx.gang or not MayFightFor(gang, tx.gang.name) then return cb(false, 'In bazikon ozv-e gang-e shoma (ya motahed-e tik-dar) nist ya online nist') end
 
     local side = SideOf(war, gang)
     local roster = side == 'a' and war.rosterA or war.rosterB
@@ -945,6 +965,7 @@ ESX.RegisterServerCallback('ZoneWar:GetMenu', function(source, cb)
     local now = os.time()
     local out = {
         hasGang = true, gang = gang, isBoss = boss, fee = FeeFor(gang),
+        allyHelp = AllyHelp[gang] == true,
         rosterMax = RosterMaxFor(gang), rosterMin = ZW.RosterMin,
         scoreToWin = ZW.ScoreToWin, durationMin = ZW.MaxDurationMin, startDelayMin = ZW.StartDelayMin,
         mode = ArenaMode() and 'arena' or 'zone',
@@ -1048,4 +1069,12 @@ AddEventHandler('onResourceStop', function(res)
             if s then s.inWar = false end
         end
     end
+end)
+
+-- Boss ticks / unticks "allies may fight for us" (saved in memory; resets on restart).
+ESX.RegisterServerCallback('ZoneWar:SetAllyHelp', function(source, cb, enabled)
+    local xPlayer = ESX.GetPlayerFromId(source)
+    if not IsBoss(xPlayer) then return cb(false, 'Faghat boss mitoone in tik ro bezanad') end
+    AllyHelp[xPlayer.gang.name] = enabled == true
+    cb(true, AllyHelp[xPlayer.gang.name] and 'Komak-e motahedin faal shod' or 'Komak-e motahedin khamoosh shod')
 end)

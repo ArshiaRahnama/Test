@@ -482,6 +482,31 @@ AddEventHandler('playerDropped', function(reason)
         end
     end
 end)
+
+-- Throw a player out of whatever party they are in (used when a party member
+-- dies - see heist_server.lua). Same bookkeeping as playerDropped above:
+-- leadership moves to another member, an empty party disappears.
+-- Returns true when the player really was in a party.
+function RemoveFromTeam(id)
+    local InTeam, Team, teamid = IsInTeam(id)
+    if not InTeam then return false end
+    local wasLeader = Team[id] and Team[id].rank == "Leader"
+    Teams[teamid][id] = nil
+    if wasLeader then
+        local newLeader = nil
+        for playerid,_ in pairs(Teams[teamid]) do
+            newLeader = playerid
+            break
+        end
+        if newLeader then
+            Teams[teamid][newLeader].rank = "Leader"
+        else
+            Teams[teamid] = nil
+        end
+    end
+    return true, teamid
+end
+exports('RemoveFromTeam', RemoveFromTeam)
 end
 
 do
@@ -535,6 +560,15 @@ AddEventHandler('Morphy_RobSystem:robberyNeeds', function(robname)
         TriggerClientEvent('esx:showNotification', _source, "Shoma Dar Worlde Asli Nistid !!",'error')
 		return
 	end
+    -- Gang Heists (heist_server.lua): plan robberies can only be started by the
+    -- gang that claimed them from Boss Menu > Robbery. Shops etc. pass straight through.
+    if HeistGate then
+        local gateOk, gateMsg = HeistGate(_source, robname)
+        if not gateOk then
+            TriggerClientEvent('esx:showNotification', _source, gateMsg or "In Robbery Dar Dastres Nist", 'error')
+            return
+        end
+    end
     local xPlayer  = ESX.GetPlayerFromId(_source)
 	local xPlayers = ESX.GetPlayers()
     if RobsInProgress[_source] then

@@ -1,4 +1,15 @@
-ESX = nil
+-- Gang bank deposit (Unique_ALLGangs is the gang system now; the old gangaccount event is only a fallback).
+local function DepositToGang(gangName, amount)
+	if not gangName or gangName == '' or gangName == 'none' or amount == nil or amount <= 0 then return end
+	local clean = gangName:gsub('^gang_', '')
+	if AddGangBlackMoney then
+		AddGangBlackMoney(clean, amount)
+	else
+		TriggerEvent('gangaccount:getGangAccount', 'gang_' .. clean, function(account) account.addMoney(amount) end)
+	end
+end
+
+ESX = ESX or nil  -- merged into Unique_ALLGangs: never wipe the ESX object another file already set
 local DrugHandeler
 
 -- Unique_Skills doesn't actually export UpdateSkill on this server (throws
@@ -6,14 +17,6 @@ local DrugHandeler
 -- event handler at that point -- silently skipping every line after it, including the actual
 -- item being handed over and any notification). pcall it so a missing/broken external resource
 -- can never again block giving the player their item.
-function SafeUpdateSkill(source, skill, amount)
-	local ok, err = pcall(function()
-		exports['Unique_Skills']:UpdateSkill(source, skill, amount)
-	end)
-	if not ok then
-		print(('[esx_drugs] Unique_Skills:UpdateSkill failed, continuing without skill XP (%s)'):format(tostring(err)))
-	end
-end
 
 -- xPlayer.getName() is a bridge addition (server/bridge.lua patches it onto essentialmode's
 -- player object), not a native essentialmode method -- if that bridge isn't loaded/active for
@@ -72,13 +75,13 @@ end
 ---------- GRADE-SCALED PAYOUTS ---------
 ----------------------------------------
 -- Returns a multiplier (e.g. 1.15 for +15%) based on the player's ESX job grade, capped at
--- Config.GradeBonus.Max percent. Used for Evidence.CollectReward and the delivery-seizure cash
+-- DrugCfg.GradeBonus.Max percent. Used for Evidence.CollectReward and the delivery-seizure cash
 -- bonus, so higher-ranked DOA officers earn a bit more for the same action. Pure ESX (job.grade
 -- is core, not from esx_uniquejobs), so this has no external dependency to fall back on.
 function GetGradeBonusMultiplier(xPlayer)
-	if not Config.GradeBonus.Enabled or not xPlayer or not xPlayer.job then return 1.0 end
+	if not DrugCfg.GradeBonus.Enabled or not xPlayer or not xPlayer.job then return 1.0 end
 
-	local percent = math.min(Config.GradeBonus.Max, (xPlayer.job.grade or 0) * Config.GradeBonus.PerGradePercent)
+	local percent = math.min(DrugCfg.GradeBonus.Max, (xPlayer.job.grade or 0) * DrugCfg.GradeBonus.PerGradePercent)
 	return 1.0 + (percent / 100)
 end
 
@@ -143,16 +146,16 @@ function GetPlayerHeat(source)
 end
 
 function AddPlayerHeat(source, amount)
-	PlayerHeat[source] = math.min(Config.Heat.Max, GetPlayerHeat(source) + amount)
+	PlayerHeat[source] = math.min(DrugCfg.Heat.Max, GetPlayerHeat(source) + amount)
 	return PlayerHeat[source]
 end
 
 CreateThread(function()
 	while true do
-		Wait(Config.Heat.DecayInterval)
+		Wait(DrugCfg.Heat.DecayInterval)
 
 		for src, heat in pairs(PlayerHeat) do
-			local newHeat = heat - Config.Heat.DecayAmount
+			local newHeat = heat - DrugCfg.Heat.DecayAmount
 
 			if newHeat <= 0 then
 				PlayerHeat[src] = nil
@@ -176,7 +179,7 @@ end)
 -- One persistent evidence "case" per field zone (not one per harvest -- every pickup at the
 -- same field just adds to the same case, tracking who did it, their gang, and how many times).
 -- The case stays open (visible to DOA via the field's investigator ped) until either DOA
--- collects it or it goes Config.Evidence.InactivityTimeout with no new activity. First
+-- collects it or it goes DrugCfg.Evidence.InactivityTimeout with no new activity. First
 -- detection at a field fires a DOA-only siren-blip alert (Unique_AllRobs); later pickups at
 -- that same field quietly add to the case without re-alerting (no notification spam).
 -- Newly-connecting/newly-transferred DOA officers get synced with every currently open case.
@@ -257,17 +260,17 @@ function ReportEvidence(fieldKey, coords, drugLabel, xPlayer, forensics)
 	BroadcastEvidenceSite(fieldKey)
 
 	if isNewSite then
-		exports['Unique_AllRobs']:AlertPolice(coords, ('Faaliate Mashkook: %s'):format(drugLabel), Config.Evidence.AlertDuration, Config.Evidence.AlertRadius, {'doa'})
+		exports['Unique_AllRobs']:AlertPolice(coords, ('Faaliate Mashkook: %s'):format(drugLabel), DrugCfg.Evidence.AlertDuration, DrugCfg.Evidence.AlertRadius, {'doa'})
 	end
 end
 
--- Auto-clears any evidence case that's had no new activity for Config.Evidence.InactivityTimeout
+-- Auto-clears any evidence case that's had no new activity for DrugCfg.Evidence.InactivityTimeout
 CreateThread(function()
 	while true do
 		Wait(60000)
 
 		for fieldKey, site in pairs(EvidenceSites) do
-			if GetGameTimer() - site.lastActivity > Config.Evidence.InactivityTimeout then
+			if GetGameTimer() - site.lastActivity > DrugCfg.Evidence.InactivityTimeout then
 				RemoveEvidenceSite(fieldKey)
 			end
 		end
@@ -302,7 +305,7 @@ AddEventHandler('esx_drugs:collectEvidence', function(fieldKey, streetName)
 		return
 	end
 
-	if not IsPlayerNearCoords(_source, site.coords, Config.Evidence.PedInteractRadius) then
+	if not IsPlayerNearCoords(_source, site.coords, DrugCfg.Evidence.PedInteractRadius) then
 		return
 	end
 
@@ -326,8 +329,8 @@ AddEventHandler('esx_drugs:collectEvidence', function(fieldKey, streetName)
 	local officerName = GetCharacterName(xPlayer)
 
 	-- Cash reward straight to the collecting officer, on top of whatever the case itself does.
-	-- Scaled up by job grade (Config.GradeBonus) so higher-ranked officers earn a bit more.
-	local reward = ESX.Math.Round(Config.Evidence.CollectReward * GetGradeBonusMultiplier(xPlayer))
+	-- Scaled up by job grade (DrugCfg.GradeBonus) so higher-ranked officers earn a bit more.
+	local reward = ESX.Math.Round(DrugCfg.Evidence.CollectReward * GetGradeBonusMultiplier(xPlayer))
 	xPlayer.addMoney(reward)
 	TriggerClientEvent('esx:showNotification', _source, _U('evidence_reward', ESX.Math.GroupDigits(reward)))
 
@@ -346,9 +349,9 @@ AddEventHandler('esx_drugs:collectEvidence', function(fieldKey, streetName)
 
 	-- File this as a REAL, persistent case in the existing DOJ Cases system (/doj -> Parvande-ha),
 	-- not just a chat message -- so CID actually sees it in their case list, tagged as DOA's referral.
-	-- Priority is picked from Config.CasePriority by drug type (heroine-chain fields run 'high',
+	-- Priority is picked from DrugCfg.CasePriority by drug type (heroine-chain fields run 'high',
 	-- weed/mushroom 'low', everything else in between) instead of always being hardcoded 'high'.
-	local casePriority = Config.CasePriority[site.label] or 'medium'
+	local casePriority = DrugCfg.CasePriority[site.label] or 'medium'
 
 	local ok, err = pcall(function()
 		exports['esx_uniquejobs']:CreateExternalCase({
@@ -377,7 +380,7 @@ AddEventHandler('esx_drugs:collectEvidence', function(fieldKey, streetName)
 
 	-- Also log a criminal record against the top suspect (esx_uniquejobs' own criminal_records
 	-- table -- separate from, and in addition to, the DOJ case filed above).
-	if Config.UniqueJobs.LogCriminalRecord and topSuspect then
+	if DrugCfg.UniqueJobs.LogCriminalRecord and topSuspect then
 		local okRec, errRec = pcall(function()
 			exports['esx_uniquejobs']:LogCriminalRecord(
 				topSuspect.identifier,
@@ -413,7 +416,7 @@ end)
 -- (ActiveDeliveries / DeliveryCooldown are declared near the top of the file, alongside PlayerHeat.)
 
 function GetRandomDeliveryPair()
-	local zones = Config.Delivery.DropZones
+	local zones = DrugCfg.Delivery.DropZones
 	local a = zones[math.random(1, #zones)]
 	local b
 
@@ -426,7 +429,7 @@ end
 
 function BriefDOAOnDelivery(startCoords, endCoords, duration)
 	local waypoints = {}
-	local n = Config.Delivery.RouteHintPoints
+	local n = DrugCfg.Delivery.RouteHintPoints
 
 	for i = 1, n do
 		local t = i / (n + 1)
@@ -451,7 +454,7 @@ AddEventHandler('esx_drugs:requestDelivery', function()
 	local _source = source
 	local xPlayer = ESX.GetPlayerFromId(_source)
 
-	if not Config.Delivery.Enabled then return end
+	if not DrugCfg.Delivery.Enabled then return end
 
 	if ActiveDeliveries[_source] then
 		TriggerClientEvent('esx:showNotification', _source, _U('delivery_already_active'))
@@ -459,12 +462,12 @@ AddEventHandler('esx_drugs:requestDelivery', function()
 	end
 
 	local now = GetGameTimer()
-	if DeliveryCooldown[_source] and (now - DeliveryCooldown[_source]) < Config.Delivery.Cooldown then
+	if DeliveryCooldown[_source] and (now - DeliveryCooldown[_source]) < DrugCfg.Delivery.Cooldown then
 		TriggerClientEvent('esx:showNotification', _source, _U('delivery_cooldown'))
 		return
 	end
 
-	local requireDOA = Config.UniqueJobs.Delivery.RequireDOA or 0
+	local requireDOA = DrugCfg.UniqueJobs.Delivery.RequireDOA or 0
 	if requireDOA > 0 and CountOnlineJob('doa') < requireDOA then
 		TriggerClientEvent('esx:showNotification', _source, _U('delivery_no_doa'))
 		return
@@ -473,7 +476,7 @@ AddEventHandler('esx_drugs:requestDelivery', function()
 	local carriedItem
 	for i=1, #DrugItemNames, 1 do
 		local item = xPlayer.getInventoryItem(DrugItemNames[i])
-		if item and item.count >= Config.Delivery.MinAmount then
+		if item and item.count >= DrugCfg.Delivery.MinAmount then
 			carriedItem = item
 			break
 		end
@@ -484,10 +487,10 @@ AddEventHandler('esx_drugs:requestDelivery', function()
 		return
 	end
 
-	local amount = math.min(carriedItem.count, math.random(Config.Delivery.MinAmount, Config.Delivery.MaxAmount))
+	local amount = math.min(carriedItem.count, math.random(DrugCfg.Delivery.MinAmount, DrugCfg.Delivery.MaxAmount))
 	local startZone, endZone = GetRandomDeliveryPair()
 	local unitPrice = DrugDealerItems.get(carriedItem.name)
-	local reward = ESX.Math.Round(unitPrice * amount * Config.Delivery.RewardMultiplier)
+	local reward = ESX.Math.Round(unitPrice * amount * DrugCfg.Delivery.RewardMultiplier)
 
 	ActiveDeliveries[_source] = {
 		item        = carriedItem.name,
@@ -496,7 +499,7 @@ AddEventHandler('esx_drugs:requestDelivery', function()
 		reward      = reward,
 		dropCoords  = endZone.coords,
 		dropName    = endZone.name,
-		expiresAt   = now + Config.Delivery.TimeLimit,
+		expiresAt   = now + DrugCfg.Delivery.TimeLimit,
 	}
 
 	DeliveryCooldown[_source] = now
@@ -507,10 +510,10 @@ AddEventHandler('esx_drugs:requestDelivery', function()
 		reward     = reward,
 		dropCoords = endZone.coords,
 		dropName   = endZone.name,
-		duration   = Config.Delivery.TimeLimit,
+		duration   = DrugCfg.Delivery.TimeLimit,
 	})
 
-	BriefDOAOnDelivery(startZone.coords, endZone.coords, Config.Delivery.TimeLimit)
+	BriefDOAOnDelivery(startZone.coords, endZone.coords, DrugCfg.Delivery.TimeLimit)
 end)
 
 RegisterServerEvent('esx_drugs:completeDelivery')
@@ -566,7 +569,7 @@ AddEventHandler('esx_drugs:seizeDelivery', function(targetId)
 	local targetPlayer = ESX.GetPlayerFromId(targetId)
 	if not targetPlayer then return end
 
-	if not IsPlayerNearCoords(_source, GetEntityCoords(GetPlayerPed(targetId)), Config.Delivery.InterceptRadius) then
+	if not IsPlayerNearCoords(_source, GetEntityCoords(GetPlayerPed(targetId)), DrugCfg.Delivery.InterceptRadius) then
 		return
 	end
 
@@ -587,7 +590,7 @@ AddEventHandler('esx_drugs:seizeDelivery', function(targetId)
 
 	-- Log the seizure into esx_uniquejobs' own DOA seizure ledger (visible in /doj), on top of
 	-- the Discord line above, plus a grade-scaled cash bonus for the seizing officer.
-	if Config.UniqueJobs.LogSeizures then
+	if DrugCfg.UniqueJobs.LogSeizures then
 		local estValue = DrugDealerItems.get(mission.item)
 		estValue = estValue and ESX.Math.Round(estValue * mission.amount) or 0
 
@@ -607,8 +610,8 @@ AddEventHandler('esx_drugs:seizeDelivery', function(targetId)
 		end
 	end
 
-	if Config.GradeBonus.Enabled and Config.GradeBonus.SeizureCashBase > 0 then
-		local seizureCash = ESX.Math.Round(Config.GradeBonus.SeizureCashBase * GetGradeBonusMultiplier(xPlayer))
+	if DrugCfg.GradeBonus.Enabled and DrugCfg.GradeBonus.SeizureCashBase > 0 then
+		local seizureCash = ESX.Math.Round(DrugCfg.GradeBonus.SeizureCashBase * GetGradeBonusMultiplier(xPlayer))
 		xPlayer.addMoney(seizureCash)
 		TriggerClientEvent('esx:showNotification', _source, _U('delivery_seize_cash', ESX.Math.GroupDigits(seizureCash)))
 	end
@@ -672,7 +675,7 @@ function CountCops()
 end
 
 -- Generic version of CountCops() for any single job name -- used by the delivery-mission gate
--- (Config.UniqueJobs.Delivery.RequireDOA) instead of a second copy-pasted counter.
+-- (DrugCfg.UniqueJobs.Delivery.RequireDOA) instead of a second copy-pasted counter.
 function CountOnlineJob(jobName)
 	local xPlayers = ESX.GetPlayers()
 	local total = 0
@@ -700,14 +703,14 @@ AddEventHandler('esx_jk_drugs:pickedUpCannabis', function(forensics)
 		end
 	end
 
-	if Config.MultiPlant then
+	if DrugCfg.MultiPlant then
 		local picked = math.random(3)
 		if xItem.limit ~= -1 and (xItem.count + picked) > xItem.limit then
 			TriggerClientEvent('esx:showNotification', _source, _U('weed_inventoryfull'))
 		else
 			xPlayer.addInventoryItem(xItem.name, picked)
 			SafeUpdateSkill(_source, "Marijuana", 0.006)
-			ReportEvidence('WeedField', Config.FieldZones.WeedField.coords, 'Shah Dane', xPlayer, forensics)
+			ReportEvidence('WeedField', DrugCfg.FieldZones.WeedField.coords, 'Shah Dane', xPlayer, forensics)
 		end
 	elseif xItem.limit ~= -1 and (xItem.count + 1) > xItem.limit then
 		TriggerClientEvent('esx:showNotification', _source, _U('weed_inventoryfull'))
@@ -715,7 +718,7 @@ AddEventHandler('esx_jk_drugs:pickedUpCannabis', function(forensics)
 		xPlayer.addInventoryItem(xItem.name, 1)
 		SafeUpdateSkill(_source, "Marijuana", 0.006)
 		TriggerClientEvent("Task_System:Shahdane", _source, amount, itemName)
-		ReportEvidence('WeedField', Config.FieldZones.WeedField.coords, 'Shah Dane', xPlayer, forensics)
+		ReportEvidence('WeedField', DrugCfg.FieldZones.WeedField.coords, 'Shah Dane', xPlayer, forensics)
 	end
 end)
 
@@ -751,13 +754,13 @@ AddEventHandler('esx_jk_drugs:pickedUpCocaPlant', function(forensics)
 		else
 			xPlayer.addInventoryItem(xItem.name, picked)
 			TriggerClientEvent("Task_System:Bardashtecocaine", _source, amount, itemName)
-			ReportEvidence('CocaineField', Config.FieldZones.CocaineField.coords, 'Giahe Coca', xPlayer, forensics)
+			ReportEvidence('CocaineField', DrugCfg.FieldZones.CocaineField.coords, 'Giahe Coca', xPlayer, forensics)
 		end
 	elseif xItem.limit ~= -1 and (xItem.count + 1) > xItem.limit then
 		TriggerClientEvent('esx:showNotification', _source, _U('cocaine_inventoryfull'))
 	else
 		xPlayer.addInventoryItem(xItem.name, 1)
-		ReportEvidence('CocaineField', Config.FieldZones.CocaineField.coords, 'Giahe Coca', xPlayer, forensics)
+		ReportEvidence('CocaineField', DrugCfg.FieldZones.CocaineField.coords, 'Giahe Coca', xPlayer, forensics)
 	end
 end)
 
@@ -774,21 +777,20 @@ AddEventHandler('esx_jk_drugs:pickedUpEphedra', function(forensics)
 		end
 	end
 
-	if Config.MultiPlant then
+	if DrugCfg.MultiPlant then
 		local picked = math.random(3)
 		if xItem.limit ~= -1 and (xItem.count + picked) > xItem.limit then
 			TriggerClientEvent('esx:showNotification', _source, _U('ephedra_inventoryfull'))
 		else
 			xPlayer.addInventoryItem(xItem.name, picked)
-			ReportEvidence('EphedrineField', Config.FieldZones.EphedrineField.coords, 'Ephedra', xPlayer, forensics)
+			ReportEvidence('EphedrineField', DrugCfg.FieldZones.EphedrineField.coords, 'Ephedra', xPlayer, forensics)
 		end
 	elseif xItem.limit ~= -1 and (xItem.count + 1) > xItem.limit then
 		TriggerClientEvent('esx:showNotification', _source, _U('ephedra_inventoryfull'))
 	else
 		xPlayer.addInventoryItem(xItem.name, 1)
-		TriggerClientEvent("esx_drugs:WeedPickUp", source)
 		TriggerClientEvent("Task_System:BardashteEphedra", _source, amount, itemName)
-		ReportEvidence('EphedrineField', Config.FieldZones.EphedrineField.coords, 'Ephedra', xPlayer, forensics)
+		ReportEvidence('EphedrineField', DrugCfg.FieldZones.EphedrineField.coords, 'Ephedra', xPlayer, forensics)
 	end
 end)
 
@@ -805,20 +807,19 @@ AddEventHandler('esx_jk_drugs:pickedUpmushroom', function(forensics)
 		end
 	end
 
-	if Config.MultiPlant then
+	if DrugCfg.MultiPlant then
 		local picked = math.random(3)
 		if xItem.limit ~= -1 and (xItem.count + picked) > xItem.limit then
 			TriggerClientEvent('esx:showNotification', _source, _U('ephedra_inventoryfull'))
 		else
 			xPlayer.addInventoryItem(xItem.name, picked)
-			ReportEvidence('MushroomField', Config.FieldZones.MushroomField.coords, 'Mashroom', xPlayer, forensics)
+			ReportEvidence('MushroomField', DrugCfg.FieldZones.MushroomField.coords, 'Mashroom', xPlayer, forensics)
 		end
 	elseif xItem.limit ~= -1 and (xItem.count + 1) > xItem.limit then
 		TriggerClientEvent('esx:showNotification', _source, _U('ephedra_inventoryfull'))
 	else
 		xPlayer.addInventoryItem(xItem.name, 1)
-		TriggerClientEvent("esx_drugs:WeedPickUp", source)
-		ReportEvidence('MushroomField', Config.FieldZones.MushroomField.coords, 'Mashroom', xPlayer, forensics)
+		ReportEvidence('MushroomField', DrugCfg.FieldZones.MushroomField.coords, 'Mashroom', xPlayer, forensics)
 	end
 end)
 
@@ -835,13 +836,13 @@ AddEventHandler('esx_jk_drugs:pickedUpPoppy', function(forensics)
 		end
 	end
 
-	if Config.MultiPlant then
+	if DrugCfg.MultiPlant then
 		local picked = math.random(3)
 		if xItem.limit ~= -1 and (xItem.count + picked) > xItem.limit then
 			TriggerClientEvent('esx:showNotification', _source, _U('opium_inventoryfull'))
 		else
 			xPlayer.addInventoryItem(xItem.name, picked)
-			ReportEvidence('PoppyField', Config.FieldZones.PoppyField.coords, 'Khash-Khaash', xPlayer, forensics)
+			ReportEvidence('PoppyField', DrugCfg.FieldZones.PoppyField.coords, 'Khash-Khaash', xPlayer, forensics)
 		end
 	elseif xItem.limit ~= -1 and (xItem.count + 1) > xItem.limit then
 		TriggerClientEvent('esx:showNotification', _source, _U('opium_inventoryfull'))
@@ -849,7 +850,7 @@ AddEventHandler('esx_jk_drugs:pickedUpPoppy', function(forensics)
 		xPlayer.addInventoryItem(xItem.name, 1)
 		SafeUpdateSkill(_source, "Heroine", 0.004)
 		TriggerClientEvent("Task_System:BardashteKhashkhash", _source, amount, itemName)
-		ReportEvidence('PoppyField', Config.FieldZones.PoppyField.coords, 'Khash-Khaash', xPlayer, forensics)
+		ReportEvidence('PoppyField', DrugCfg.FieldZones.PoppyField.coords, 'Khash-Khaash', xPlayer, forensics)
 	end
 end)
 
@@ -860,7 +861,7 @@ AddEventHandler('esx_jk_drugs:processCannabis', function()
 
 	if xPlayer then
 
-		if not IsPlayerNearCoords(_source, Config.ProcessZones.WeedProcessing.coords, Config.MaxInteractDistance) then
+		if not IsPlayerNearCoords(_source, DrugCfg.ProcessZones.WeedProcessing.coords, DrugCfg.MaxInteractDistance) then
 			TriggerClientEvent('esx:showNotification', _source, _U('too_far_process'))
 			return
 		end
@@ -881,7 +882,6 @@ AddEventHandler('esx_jk_drugs:processCannabis', function()
 		else
 			xPlayer.removeInventoryItem('cannabis', 1)
 			xPlayer.addInventoryItem('marijuana', 5)
-			TriggerClientEvent('esx_drugs:MarijuanaProg', _source)
 			TriggerClientEvent("Task_System:SakhteMarijuana", _source, amount, itemName)
 
 			TriggerClientEvent('esx:showNotification', _source, _U('weed_processed'))
@@ -898,7 +898,7 @@ AddEventHandler('esx_jk_drugs:processCocaPlant', function()
 	local xPlayer = ESX.GetPlayerFromId(_source)
 	local xCocaPlant, xCocaine = xPlayer.getInventoryItem('coca'), xPlayer.getInventoryItem('cocaine')
 
-	if not IsPlayerNearCoords(_source, Config.ProcessZones.CocaineProcessing.coords, Config.MaxInteractDistance) then
+	if not IsPlayerNearCoords(_source, DrugCfg.ProcessZones.CocaineProcessing.coords, DrugCfg.MaxInteractDistance) then
 		TriggerClientEvent('esx:showNotification', _source, _U('too_far_process'))
 		return
 	end
@@ -917,7 +917,6 @@ AddEventHandler('esx_jk_drugs:processCocaPlant', function()
 	else
 		xPlayer.removeInventoryItem('coca', 5)
 		xPlayer.addInventoryItem('cocaine', 2)
-		TriggerClientEvent('esx_drugs:MarijuanaProg', _source)
 		TriggerClientEvent("Task_System:SakhteCocaine", _source, amount, itemName)
 
 		TriggerClientEvent('esx:showNotification', _source, _U('cocaine_processed'))
@@ -931,7 +930,7 @@ AddEventHandler('esx_jk_drugs:processEphedra', function()
 	local xPlayer = ESX.GetPlayerFromId(_source)
 	local xEphedra, xEphedrine = xPlayer.getInventoryItem('ephedra'), xPlayer.getInventoryItem('ephedrine')
 
-	if not IsPlayerNearCoords(_source, Config.ProcessZones.EphedrineProcessing.coords, Config.MaxInteractDistance) then
+	if not IsPlayerNearCoords(_source, DrugCfg.ProcessZones.EphedrineProcessing.coords, DrugCfg.MaxInteractDistance) then
 		TriggerClientEvent('esx:showNotification', _source, _U('too_far_process'))
 		return
 	end
@@ -950,7 +949,6 @@ AddEventHandler('esx_jk_drugs:processEphedra', function()
 	else
 		xPlayer.removeInventoryItem('ephedra', 1)
 		xPlayer.addInventoryItem('ephedrine', 2)
-		TriggerClientEvent('esx_drugs:MarijuanaProg', _source)
 		TriggerClientEvent("Task_System:SakhteEphedrine", _source, amount, itemName)
 
 
@@ -965,7 +963,7 @@ AddEventHandler('esx_jk_drugs:processEphedrine', function()
 	local xPlayer = ESX.GetPlayerFromId(_source)
 	local xEphedrine, xMeth = xPlayer.getInventoryItem('ephedrine'), xPlayer.getInventoryItem('meth')
 
-	if not IsPlayerNearCoords(_source, Config.ProcessZones.MethProcessing.coords, Config.MaxInteractDistance) then
+	if not IsPlayerNearCoords(_source, DrugCfg.ProcessZones.MethProcessing.coords, DrugCfg.MaxInteractDistance) then
 		TriggerClientEvent('esx:showNotification', _source, _U('too_far_process'))
 		return
 	end
@@ -984,7 +982,6 @@ AddEventHandler('esx_jk_drugs:processEphedrine', function()
 	else
 		xPlayer.removeInventoryItem('ephedrine', 5)
 		xPlayer.addInventoryItem('meth', 1)
-		TriggerClientEvent('esx_drugs:MarijuanaProg', _source)
 		TriggerClientEvent("Task_System:SakhteShishe", _source, amount, itemName)
 
 		TriggerClientEvent('esx:showNotification', _source, _U('meth_processed'))
@@ -998,7 +995,7 @@ AddEventHandler('esx_jk_drugs:processCoke', function()
 	local xPlayer = ESX.GetPlayerFromId(_source)
 	local xCocaine, xCrack = xPlayer.getInventoryItem('cocaine'), xPlayer.getInventoryItem('crack')
 
-	if not IsPlayerNearCoords(_source, Config.ProcessZones.CrackProcessing.coords, Config.MaxInteractDistance) then
+	if not IsPlayerNearCoords(_source, DrugCfg.ProcessZones.CrackProcessing.coords, DrugCfg.MaxInteractDistance) then
 		TriggerClientEvent('esx:showNotification', _source, _U('too_far_process'))
 		return
 	end
@@ -1017,7 +1014,6 @@ AddEventHandler('esx_jk_drugs:processCoke', function()
 	else
 		xPlayer.removeInventoryItem('cocaine', 2)
 		xPlayer.addInventoryItem('crack', 1)
-		TriggerClientEvent('esx_drugs:MarijuanaProg', _source)
 		TriggerClientEvent("Task_System:SakhteCrack", _source, amount, itemName)
 
 		TriggerClientEvent('esx:showNotification', _source, _U('crack_processed'))
@@ -1031,7 +1027,7 @@ AddEventHandler('esx_jk_drugs:processPoppy', function()
 	local xPlayer = ESX.GetPlayerFromId(_source)
 	local xPoppy, xOpium = xPlayer.getInventoryItem('poppy'), xPlayer.getInventoryItem('opium')
 
-	if not IsPlayerNearCoords(_source, Config.ProcessZones.PoppyProcessing.coords, Config.MaxInteractDistance) then
+	if not IsPlayerNearCoords(_source, DrugCfg.ProcessZones.PoppyProcessing.coords, DrugCfg.MaxInteractDistance) then
 		TriggerClientEvent('esx:showNotification', _source, _U('too_far_process'))
 		return
 	end
@@ -1050,7 +1046,6 @@ AddEventHandler('esx_jk_drugs:processPoppy', function()
 	else
 		xPlayer.removeInventoryItem('poppy', 5)
 		xPlayer.addInventoryItem('opium', 5)
-		TriggerClientEvent('esx_drugs:MarijuanaProg', _source)
 		SafeUpdateSkill(_source, "Heroine", 0.004)
 		TriggerClientEvent("Task_System:SakhteTeryak", _source, amount, itemName)
 
@@ -1064,7 +1059,7 @@ AddEventHandler('esx_jk_drugs:processOpium', function()
 	local xPlayer = ESX.GetPlayerFromId(_source)
 	local xOpium, xHeroine = xPlayer.getInventoryItem('opium'), xPlayer.getInventoryItem('heroine')
 
-	if not IsPlayerNearCoords(_source, Config.ProcessZones.HeroineProcessing.coords, Config.MaxInteractDistance) then
+	if not IsPlayerNearCoords(_source, DrugCfg.ProcessZones.HeroineProcessing.coords, DrugCfg.MaxInteractDistance) then
 		TriggerClientEvent('esx:showNotification', _source, _U('too_far_process'))
 		return
 	end
@@ -1083,7 +1078,6 @@ AddEventHandler('esx_jk_drugs:processOpium', function()
 	else
 		xPlayer.removeInventoryItem('opium', 5)
 		xPlayer.addInventoryItem('heroine', 1)
-		TriggerClientEvent('esx_drugs:MarijuanaProg', _source)
 		SafeUpdateSkill(_source, "Heroine", 0.004)
 		TriggerClientEvent("Task_System:SakhteHeroine", _source, amount, itemName)
 		TriggerClientEvent('esx:showNotification', _source, _U('heroine_processed'))
@@ -1167,17 +1161,17 @@ local DrugAlertJobs = {
 	cid = true, cia = true, marshal = true, judge = true, doa = true,
 }
 
--- Called when a player sells to the generic drug dealer (Kharidare Mavad / Config.CircleZones.DrugDealer).
+-- Called when a player sells to the generic drug dealer (Kharidare Mavad / DrugCfg.CircleZones.DrugDealer).
 -- Delegates the blip + on-screen countdown to Unique_AllRobs's shared export, instead of esx_drugs
 -- running its own copy of that logic (see fxmanifest.lua -> dependency 'Unique_AllRobs').
--- `heat` scales the alert up once it crosses Config.Heat.HighHeatThreshold (bigger radius, longer duration).
+-- `heat` scales the alert up once it crosses DrugCfg.Heat.HighHeatThreshold (bigger radius, longer duration).
 function AlertCopsDealerSale(sellerSource, coords, heat)
-	local duration = Config.DealerAlertDuration
+	local duration = DrugCfg.DealerAlertDuration
 	local radius = 60.0
 
-	if heat and heat >= Config.Heat.HighHeatThreshold then
-		duration = math.floor(duration * Config.Heat.HighHeatDurationMult)
-		radius = radius * Config.Heat.HighHeatRadiusMult
+	if heat and heat >= DrugCfg.Heat.HighHeatThreshold then
+		duration = math.floor(duration * DrugCfg.Heat.HighHeatDurationMult)
+		radius = radius * DrugCfg.Heat.HighHeatRadiusMult
 	end
 
 	exports['Unique_AllRobs']:AlertPolice(coords, _U('dealer_alert_blip'), duration, radius)
@@ -1260,31 +1254,31 @@ AddEventHandler('esx_drugs:sellDrug', function(itemName, amount)
 
 	-- Rate-limit: block rapid-fire selling from the same player (menu-exploit / macro spam)
 	local now = GetGameTimer()
-	if LastSellAt[_source] and (now - LastSellAt[_source]) < Config.SellCooldown then
+	if LastSellAt[_source] and (now - LastSellAt[_source]) < DrugCfg.SellCooldown then
 		TriggerClientEvent('esx:showNotification', _source, _U('dealer_cooldown'))
 		return
 	end
 	LastSellAt[_source] = now
 
 	-- Distance check: the sale must actually happen near the dealer, not from across the map
-	if not IsPlayerNearCoords(_source, Config.CircleZones.DrugDealer.coords, Config.CircleZones.DrugDealer.radius + 3.0) then
+	if not IsPlayerNearCoords(_source, DrugCfg.CircleZones.DrugDealer.coords, DrugCfg.CircleZones.DrugDealer.radius + 3.0) then
 		TriggerClientEvent('esx:showNotification', _source, _U('dealer_too_far'))
 		TriggerEvent('DiscordBot:ToDiscord', 'adminmenu', 'JobSuspiciousLog', '```css\n[ Resource : esx_drugs ]\n[ Player Steam : '..tostring(xPlayer.identifier)..' ]\n[ Attempted : to sell while too far from the dealer ]\n[ Reason Blocked : distance check failed - possible exploit ]\n```', 'user', true, source, false)
 		return
 	end
 
 	-- Heat: rises with every sale, decays over time. Higher heat = lower payout + bigger/likelier alert.
-	local heat = AddPlayerHeat(_source, Config.Heat.PerSale)
-	local heatPercent = heat / Config.Heat.Max
-	local priceMultiplier = 1 - (heatPercent * Config.Heat.MaxPriceDrop)
+	local heat = AddPlayerHeat(_source, DrugCfg.Heat.PerSale)
+	local heatPercent = heat / DrugCfg.Heat.Max
+	local priceMultiplier = 1 - (heatPercent * DrugCfg.Heat.MaxPriceDrop)
 
-	price = ESX.Math.Round(price * amount * Config.DealerSellBonus * priceMultiplier)
+	price = ESX.Math.Round(price * amount * DrugCfg.DealerSellBonus * priceMultiplier)
 
 	-- Gang tax: a cut of the seller's own earnings goes to their own gang's account (separate
 	-- from the drug-territory-controller bonus below, which is unrelated turf-control income)
 	local gangCut = 0
-	if Config.GangTaxPercent > 0 and xPlayer.gang and xPlayer.gang.name and xPlayer.gang.name ~= 'none' then
-		gangCut = ESX.Math.Round(price * (Config.GangTaxPercent / 100))
+	if DrugCfg.GangTaxPercent > 0 and xPlayer.gang and xPlayer.gang.name and xPlayer.gang.name ~= 'none' then
+		gangCut = ESX.Math.Round(price * (DrugCfg.GangTaxPercent / 100))
 	end
 	local netPrice = price - gangCut
 
@@ -1293,29 +1287,28 @@ AddEventHandler('esx_drugs:sellDrug', function(itemName, amount)
 	TriggerClientEvent("Task_System:AddCompleteQuest", _source, amount, xItem.name)
 	TriggerEvent('DiscordBot:ToDiscord', 'rob', 'DrugSaleLog', '```css\n[ Player : '..GetPlayerName(_source)..'(' .. _source .. ') ]\n[ Player Steam : '..xPlayer.identifier..' ]\n[ Sold : '..tostring(xItem.name)..' x'..tostring(amount)..' ]\n[ Earned : '..tostring(netPrice)..' ]\n[ Heat : '..tostring(heat)..' ]\n```', 'user', true, _source, false)
 
-	TriggerEvent('gangaccount:getGangAccount', DrugHandeler, function(account)
-		account.addMoney(price)
-	end)
-
-	if gangCut > 0 then
-		TriggerEvent('gangaccount:getGangAccount', 'gang_' .. xPlayer.gang.name, function(account)
-			account.addMoney(gangCut)
-			TriggerClientEvent('esx:showNotification', _source, _U('dealer_gang_tax', Config.GangTaxPercent, ESX.Math.GroupDigits(gangCut)))
-		end)
+	DepositToGang(DrugHandeler, price) -- the turf controller's gang bank
+	if DrugCfg.GangXPPerSale and DrugCfg.GangXPPerSale > 0 and xPlayer.gang and xPlayer.gang.name and xPlayer.gang.name ~= 'none' then
+		pcall(function() exports['Unique_ALLGangs']:AddGangXPFromDrugs(xPlayer.gang.name, DrugCfg.GangXPPerSale, 'Drug sale') end)
 	end
 
-	-- Alert probability scales from Config.Heat.BaseAlertChance (at 0 heat) up to 100% (at max heat)
-	local alertChance = math.min(100, Config.Heat.BaseAlertChance + heat)
+	if gangCut > 0 then
+		DepositToGang(xPlayer.gang.name, gangCut)
+		TriggerClientEvent('esx:showNotification', _source, _U('dealer_gang_tax', DrugCfg.GangTaxPercent, ESX.Math.GroupDigits(gangCut)))
+	end
+
+	-- Alert probability scales from DrugCfg.Heat.BaseAlertChance (at 0 heat) up to 100% (at max heat)
+	local alertChance = math.min(100, DrugCfg.Heat.BaseAlertChance + heat)
 	if math.random(1, 100) <= alertChance then
 		AlertCopsDealerSale(_source, GetEntityCoords(GetPlayerPed(_source)), heat)
 	end
 
-	if heat >= Config.Heat.HighHeatThreshold then
+	if heat >= DrugCfg.Heat.HighHeatThreshold then
 		TriggerClientEvent('esx:showNotification', _source, _U('dealer_heat_high'))
 	end
 
 	TriggerClientEvent('esx:showNotification', _source, _U('dealer_sold', amount, xItem.label, ESX.Math.GroupDigits(netPrice)))
-	TriggerClientEvent('esx_drugs:updateHeat', _source, heat, Config.Heat.Max)
+	TriggerClientEvent('esx_drugs:updateHeat', _source, heat, DrugCfg.Heat.Max)
 end)
 
 ESX.RegisterUsableItem('marijuana', function(source)
@@ -1482,3 +1475,11 @@ end
 
 loop()
 
+
+-- client reports a finished weed pickup (logging only; the item was already given by esx_jk_drugs:pickedUpCannabis)
+RegisterNetEvent('esx_drugs:notifyPickup')
+AddEventHandler('esx_drugs:notifyPickup', function(amount, itemName)
+	local _src = source
+	if type(amount) ~= 'number' or type(itemName) ~= 'string' or amount < 1 or amount > 50 then return end
+	print(('[esx_drugs] pickup by %s: %s x%s'):format(tostring(_src), itemName, amount))
+end)

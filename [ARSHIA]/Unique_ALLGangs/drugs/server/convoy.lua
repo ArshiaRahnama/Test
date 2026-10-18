@@ -1,7 +1,7 @@
 -- ============================================================
 -- Drug Convoy Event
 -- Periodic server-wide PvP event: an NPC-driven cargo van hauls a big shipment between two of
--- Config.Delivery.DropZones. Anyone (any gang, any player) can attack it to stop it and loot the
+-- DrugCfg.Delivery.DropZones. Anyone (any gang, any player) can attack it to stop it and loot the
 -- cargo -- no case, no menu, just show up and fight. DOA gets an in-game department-chat heads-up
 -- when it spawns, and if a DOA officer is who actually stops it, it's logged as a real seizure
 -- (exports['esx_uniquejobs']:LogSeizure) with a cash payout instead of handing them raw drugs.
@@ -13,14 +13,14 @@
 -- server-side entity creation.
 -- ============================================================
 
-ESX = nil
+ESX = ESX or nil  -- merged into Unique_ALLGangs: never wipe the ESX object another file already set
 TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
 
 local ActiveConvoy = nil -- { id, route = {from, to}, netVeh, netDriver, netGuards, stopped, looted, spawnedAt }
 local NextConvoyId = 1
 
 local function announceToDOA(message)
-	if not (Config.UniqueJobs.Convoy and Config.UniqueJobs.Convoy.AnnounceToDOA) then return end
+	if not (DrugCfg.UniqueJobs.Convoy and DrugCfg.UniqueJobs.Convoy.AnnounceToDOA) then return end
 
 	local ok, err = pcall(function()
 		exports['esx_uniquejobs']:SendDeptMessage('doa', 'DOA', { 200, 60, 60 }, 'Dispatch', '-', message)
@@ -32,7 +32,7 @@ local function announceToDOA(message)
 end
 
 local function pickRoute()
-	local zones = Config.Delivery.DropZones
+	local zones = DrugCfg.Delivery.DropZones
 	if #zones < 2 then return nil end
 
 	local fromIdx = math.random(1, #zones)
@@ -62,7 +62,7 @@ function SpawnConvoy()
 
 	local route = pickRoute()
 	if not route then
-		print('[esx_drugs] Convoy: need at least 2 Config.Delivery.DropZones, skipping spawn.')
+		print('[esx_drugs] Convoy: need at least 2 DrugCfg.Delivery.DropZones, skipping spawn.')
 		return
 	end
 
@@ -84,7 +84,7 @@ function SpawnConvoy()
 
 	TriggerClientEvent('esx_drugs:convoy:becomeSpawner', spawnerSource, convoyId, route)
 
-	SetTimeout(Config.Convoy.DespawnTimeout, function()
+	SetTimeout(DrugCfg.Convoy.DespawnTimeout, function()
 		if ActiveConvoy and ActiveConvoy.id == convoyId and not ActiveConvoy.looted then
 			despawnConvoy('timeout')
 		end
@@ -92,9 +92,9 @@ function SpawnConvoy()
 end
 
 function StartConvoyLoop()
-	if not Config.Convoy.Enabled then return end
+	if not DrugCfg.Convoy.Enabled then return end
 
-	local delay = math.random(Config.Convoy.MinInterval, Config.Convoy.MaxInterval)
+	local delay = math.random(DrugCfg.Convoy.MinInterval, DrugCfg.Convoy.MaxInterval)
 	SetTimeout(delay, function()
 		SpawnConvoy()
 		StartConvoyLoop()
@@ -127,7 +127,7 @@ AddEventHandler('esx_drugs:convoy:driverDown', function(convoyId)
 	TriggerClientEvent('esx_drugs:convoy:stopped', -1, convoyId)
 	announceToDOA('Convoy-e mavad motevaghef shod. Mahmule hanuz ghabele bazyabi ast.')
 
-	SetTimeout(Config.Convoy.DespawnTimeout, function()
+	SetTimeout(DrugCfg.Convoy.DespawnTimeout, function()
 		if ActiveConvoy and ActiveConvoy.id == convoyId and not ActiveConvoy.looted then
 			despawnConvoy('timeout_after_stop')
 		end
@@ -154,11 +154,11 @@ AddEventHandler('esx_drugs:convoy:loot', function(convoyId)
 
 	ActiveConvoy.looted = true
 
-	local cash = math.random(Config.Convoy.CargoCash.min, Config.Convoy.CargoCash.max)
+	local cash = math.random(DrugCfg.Convoy.CargoCash.min, DrugCfg.Convoy.CargoCash.max)
 	local cargoSummary = {}
 	local totalItemValue = 0
 
-	for _, entry in ipairs(Config.Convoy.CargoItems) do
+	for _, entry in ipairs(DrugCfg.Convoy.CargoItems) do
 		if math.random(1, 100) <= entry.chance then
 			local amount = math.random(entry.min, entry.max)
 			table.insert(cargoSummary, { item = entry.item, label = entry.label, amount = amount })
@@ -174,10 +174,10 @@ AddEventHandler('esx_drugs:convoy:loot', function(convoyId)
 		-- DOA (or any other on-duty responder job) securing the convoy is a seizure, not a
 		-- looting run: no raw drugs handed over, log it properly and pay a cash bonus instead.
 		local totalEstValue = totalItemValue + cash
-		local bonusCash = ESX.Math.Round(Config.Convoy.DOASeizureCash * GetGradeBonusMultiplier(xPlayer))
+		local bonusCash = ESX.Math.Round(DrugCfg.Convoy.DOASeizureCash * GetGradeBonusMultiplier(xPlayer))
 		xPlayer.addMoney(bonusCash)
 
-		if Config.UniqueJobs.LogSeizures then
+		if DrugCfg.UniqueJobs.LogSeizures then
 			local okSeize, errSeize = pcall(function()
 				exports['esx_uniquejobs']:LogSeizure(
 					'Convoy Mavad (' .. ActiveConvoy.route.from.name .. ' -> ' .. ActiveConvoy.route.to.name .. ')',

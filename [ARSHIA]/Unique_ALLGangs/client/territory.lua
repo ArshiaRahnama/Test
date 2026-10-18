@@ -202,7 +202,7 @@ CreateThread(function()
     if not Config.Territory or not Config.Territory.Enabled then return end
     ESX.TriggerServerCallback('Territory:GetState', function(state)
         for zoneKey, s in pairs(state) do
-            ZoneState[zoneKey] = { owner = s.owner, contested = s.contested, vulnerable = s.vulnerable }
+            ZoneState[zoneKey] = { owner = s.owner, contested = s.contested, vulnerable = s.vulnerable, upgrades = s.upgrades or {} }
         end
         RefreshAllBlips()
     end)
@@ -414,8 +414,15 @@ function OpenTerritoryUpgradeMenu(gang, zoneKey)
                 icon = 'circle-up',
                 disabled = not nextCost,
                 onSelect = function()
-                    ESX.TriggerServerCallback('Territory:PurchaseUpgrade', function(ok, msg)
+                    ESX.TriggerServerCallback('Territory:PurchaseUpgrade', function(ok, msg, newLevel)
                         ESX.ShowNotification(msg, ok and 'success' or 'error')
+                        -- show the new level straight away (the server also re-broadcasts the state)
+                        if ok and newLevel then
+                            local z = ZoneState[zoneKey] or {}
+                            z.upgrades = z.upgrades or {}
+                            z.upgrades[upgradeType] = newLevel
+                            ZoneState[zoneKey] = z
+                        end
                         OpenTerritoryUpgradeMenu(gang, zoneKey) -- refresh with the new level/cost
                     end, zoneKey, upgradeType)
                 end,
@@ -646,4 +653,9 @@ end)
 AddEventHandler('onResourceStop', function(resourceName)
     if GetCurrentResourceName() ~= resourceName then return end
     if IslandBlip and DoesBlipExist(IslandBlip) then RemoveBlip(IslandBlip) end
+end)
+
+-- The upgrade table for the Unique_AllRobs NUI (territory screen shows and buys upgrades from it).
+exports('GetUpgradeConfig', function()
+    return (Config.Territory and Config.Territory.Upgrades) or {}
 end)

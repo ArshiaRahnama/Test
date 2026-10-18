@@ -93,9 +93,14 @@ function OpenBossActionsMenu()
                     {label = 'Manage Rank Access', value = 'rankaccess'},
                     {label = 'Gang Settings', value = 'settings'},
                     {label = 'Territory Control', value = 'territory'},
+                    {label = 'Gang Friends (Allies)', value = 'allies'},
                 }
                 if Config.ZoneWar and Config.ZoneWar.Enabled then
-                    elements[#elements + 1] = {label = zwLabel, value = 'zonewar'}
+                    elements[#elements + 1] = {label = zwLabel, value = 'zonewar'}  -- opens the Gang War screen
+                end
+                -- Gang Heists (Unique_AllRobs): claim plan robberies, see wins/losses and tokens
+                if GetResourceState('Unique_AllRobs') == 'started' then
+                    elements[#elements + 1] = {label = 'Robbery', value = 'robbery'}
                 end
 
                 ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'boss_actions_' .. gang, {
@@ -121,11 +126,24 @@ function OpenBossActionsMenu()
                         -- player actually clicks it, long after every
                         -- client script has finished loading).
                         menu.close()
-                        OpenTerritoryBossMenu(gang)
-                    elseif data.current.value == 'zonewar' then
-                        -- Defined in client/zonewar.lua (same load-order note as above)
+                        -- new NUI screen (Unique_AllRobs); the old ESX menu is the fallback
+                        local okT = pcall(function() exports['Unique_AllRobs']:OpenTerritoryMenu() end)
+                        if not okT then OpenTerritoryBossMenu(gang) end
+                    elseif data.current.value == 'allies' then
                         menu.close()
-                        OpenZoneWarBossMenu(gang)
+                        local okA = pcall(function() exports['Unique_AllRobs']:OpenAlliesMenu() end)
+                        if not okA then OpenTerritoryAllianceMenu(gang) end
+                    elseif data.current.value == 'robbery' then
+                        menu.close()
+                        local ok, err = pcall(function() exports['Unique_AllRobs']:OpenGangRobberyMenu() end)
+                        if not ok then
+                            print('[Unique_ALLGangs] Robbery menu: ' .. tostring(err))
+                            ESX.ShowNotification('~r~Robbery menu dar dastres nist (F8 ro bebinid)')
+                        end
+                    elseif data.current.value == 'zonewar' then
+                        menu.close()
+                        local okW = pcall(function() exports['Unique_AllRobs']:OpenGangWarMenu() end)
+                        if not okW then OpenZoneWarBossMenu(gang) end
                     end
                 end, function(data, menu)
                     menu.close()

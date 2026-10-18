@@ -120,3 +120,27 @@ exports('AddGangArmoryWeapon', function(gangName, weaponName, count, storeName)
     store.set('weapons', weapons)
     return true
 end)
+
+-- How many of an item the gang armory holds (0 when the store/item is missing).
+--   exports['Unique_inventory']:GetGangArmoryItemCount(gangName, itemName [, storeName])
+exports('GetGangArmoryItemCount', function(gangName, itemName, storeName)
+    if type(itemName) ~= 'string' or itemName == '' then return 0 end
+    local ok, inventory = pcall(EnsureGangStores, gangName, storeName)
+    if not ok or not inventory then return 0 end
+    local item = inventory.getItem(itemName)
+    return item and tonumber(item.count) or 0
+end)
+
+-- Take items out of the armory. All-or-nothing: returns false (and removes nothing)
+-- when the armory doesn't hold enough.
+--   exports['Unique_inventory']:RemoveGangArmoryItem(gangName, itemName, count [, storeName])
+exports('RemoveGangArmoryItem', function(gangName, itemName, count, storeName)
+    count = math.floor(tonumber(count) or 0)
+    if type(itemName) ~= 'string' or itemName == '' or count <= 0 then return false end
+    local ok, inventory = pcall(EnsureGangStores, gangName, storeName)
+    if not ok or not inventory then return false end
+    local item = inventory.getItem(itemName)
+    if not item or (tonumber(item.count) or 0) < count then return false end
+    inventory.removeItem(itemName, count)
+    return true
+end)

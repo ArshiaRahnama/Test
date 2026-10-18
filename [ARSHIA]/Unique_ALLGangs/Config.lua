@@ -244,6 +244,11 @@ Config.GangXP = {
         warWin          = 400,
         warLose         = 100,
     },
+    -- XP cards from robberies (items given by Unique_AllRobs on success). Using one adds this much XP to the gang.
+    -- PLACEHOLDERS: the old card values weren't in the repo - set these to what you want.
+    Cards = {
+        xpshop = 100, xpfleeca = 150, xpjewel = 250, xpbime = 250, xpbankp = 350, xprig = 500,
+    },
     DefendMinProgressSeconds = 60,  -- the challenger must have held the zone this long before a defense counts
     DefendThrottleSeconds    = 300, -- per zone
 }
@@ -302,6 +307,7 @@ Config.ZoneWar = {
     WinnerProtectHours    = 2,           -- zone can't be captured/challenged after a war
     WinnerIncomeBonus     = 0.25,        -- +25% income from that zone...
     WinnerBonusHours      = 24,          -- ...for this long (memory only, resets on restart)
+    WinnerHeistPoints     = 5,           -- Robbery-lottery points the winning gang gets (Unique_AllRobs)
 
     TickSeconds           = 5,
     Webhook               = '',          -- optional Discord webhook for declare/start/result
@@ -643,6 +649,10 @@ Config.Territory = {
         },
         default  = { { name = 'plan_bronze', count = 1 } },
         bossZone = { { name = 'plan_premium', count = 5 } },
+
+        -- Gang POINTS for the Robbery lottery (Unique_AllRobs, Boss Menu > Robbery):
+        -- paid together with the items, so the same per-zone cooldown applies.
+        heistPoints = { [1] = 2, [2] = 3, [3] = 5, default = 2, bossZone = 10 },
 
         -- chance (%) of ONE extra random reward per payout, and what it can be.
         -- type = 'weapon' goes to the armory's weapon list, 'item' to its items.

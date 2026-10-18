@@ -1,5 +1,5 @@
-local spawnedWeeds = 1
-local weedPlants = {}
+local spawnedCoca = 1
+local cocaPlants = {}
 local isPickingUp, isProcessing = false, false
 
 Citizen.CreateThread(function()
@@ -7,9 +7,9 @@ Citizen.CreateThread(function()
 		Citizen.Wait(1000)
 		local coords = GetEntityCoords(PlayerPedId())
 
-		if GetDistanceBetweenCoords(coords, Config.FieldZones.WeedField.coords, true) < 20 then
+		if GetDistanceBetweenCoords(coords, DrugCfg.FieldZones.CocaineField.coords, true) < 30 then
 
-			SpawnWeedPlants()
+			SpawnCocaPlants()
 			Citizen.Wait(1000)
 		else
 			Citizen.Wait(1000)
@@ -23,7 +23,7 @@ Citizen.CreateThread(function()
 		local playerPed = PlayerPedId()
 		local coords = GetEntityCoords(playerPed)
 
-		if GetDistanceBetweenCoords(coords, Config.ProcessZones.WeedProcessing.coords, true) < 15 and GetDistanceBetweenCoords(coords, Config.ProcessZones.WeedProcessing.coords, true) > 10 then
+		if GetDistanceBetweenCoords(coords, DrugCfg.ProcessZones.CocaineProcessing.coords, true) < 15 and GetDistanceBetweenCoords(coords, DrugCfg.ProcessZones.CocaineProcessing.coords, true) > 10 then
 
 		end
 	end
@@ -36,41 +36,31 @@ Citizen.CreateThread(function()
 		local coords = GetEntityCoords(playerPed)
 		local nearbyObject, nearbyID
 
-		for i=1, #weedPlants, 1 do
-			if GetDistanceBetweenCoords(coords, GetEntityCoords(weedPlants[i]), false) < 1 then
-				nearbyObject, nearbyID = weedPlants[i], i
+		for i=1, #cocaPlants, 1 do
+			if GetDistanceBetweenCoords(coords, GetEntityCoords(cocaPlants[i]), false) < 1 then
+				nearbyObject, nearbyID = cocaPlants[i], i
 			end
 		end
 
 		if nearbyObject and IsPedOnFoot(playerPed) and not IsPedUsingAnyScenario(playerPed) then
 
 			if not isPickingUp then
-				ESX.ShowHelpNotification(_U('weed_pickupprompt'))
+				ESX.ShowHelpNotification(_U('cocaine_pickupprompt'))
 			end
 
 			if IsControlJustReleased(0, 38) and not isPickingUp then
 
+
 				ESX.TriggerServerCallback('esx_jk_drugs:canPickUp', function(canPickUp)
 
 					if canPickUp then
-						local TimeOut = 3500
 
-						local ChekSkills = 0
-						if GetResourceState('Unique_Skills') == 'started' then
-							local ok, result = pcall(function() return exports['Unique_Skills']:CheckSkill('Marijuana') end)
-							if ok then ChekSkills = result end
-						end
-						if ChekSkills == 100 then
-							TimeOut = TimeOut / 2
-						else
-							TimeOut = TimeOut
-						end
 						isPickingUp = true
 						TaskStartScenarioInPlace(playerPed, 'world_human_gardener_plant', 0, false)
 						TriggerEvent("mythic_progbar:client:progress", {
-							name = "harvest_weed",
-							duration = TimeOut,
-							label = "Bardasht Shahdane",
+							name = "harvest_crack",
+							duration = 3500,
+							label = "Bardasht Tokhm Cocaine",
 							useWhileDead = false,
 							canCancel = true,
 							controlDisables = {
@@ -82,17 +72,13 @@ Citizen.CreateThread(function()
 						}, function(status)
 							if not status then
 
-								table.remove(weedPlants, nearbyID)
-								spawnedWeeds = spawnedWeeds - 1
-								ClearPedTasksImmediately(playerPed)
+								table.remove(cocaPlants, nearbyID)
+								spawnedCoca = spawnedCoca - 1
+
 								ClearPedTasks(playerPed)
 								ESX.Game.DeleteObject(nearbyObject)
 
-								TriggerServerEvent('esx_jk_drugs:pickedUpCannabis', GetForensicSnapshot())
-
-								local amount = 1
-								local itemName = "cannabis"
-								TriggerServerEvent("esx_drugs:notifyPickup", amount, itemName)
+								TriggerServerEvent('esx_jk_drugs:pickedUpCocaPlant', GetForensicSnapshot())
 
 								isPickingUp = false
 
@@ -105,10 +91,10 @@ Citizen.CreateThread(function()
 						end)
 
 					else
-						ESX.ShowNotification(_U('weed_inventoryfull'))
+						ESX.ShowNotification(_U('cocaine_inventoryfull'))
 					end
-				end, 'cannabis')
-				isPickingUp = false
+				end, 'cocaine')
+
 			end
 		else
 			Citizen.Wait(500)
@@ -118,38 +104,38 @@ end)
 
 AddEventHandler('onResourceStop', function(resource)
 	if resource == GetCurrentResourceName() then
-		for k, v in pairs(weedPlants) do
+		for k, v in pairs(cocaPlants) do
 			ESX.Game.DeleteObject(v)
 		end
 	end
 end)
 
-function SpawnWeedPlants()
-	while spawnedWeeds < 10 do
+function SpawnCocaPlants()
+	while spawnedCoca < 10 do
 		Citizen.Wait(0)
-		local weedCoords = GenerateWeedCoords()
+		local cocaCoords = GenerateCocaCoords()
 
-		ESX.Game.SpawnLocalObject('prop_weed_01', weedCoords, function(obj)
+		ESX.Game.SpawnLocalObject('prop_weed_02', cocaCoords, function(obj)
 			PlaceObjectOnGroundProperly(obj)
 			FreezeEntityPosition(obj, true)
 
-			table.insert(weedPlants, obj)
-			spawnedWeeds = spawnedWeeds + 1
+			table.insert(cocaPlants, obj)
+			spawnedCoca = spawnedCoca + 1
 		end)
 	end
 end
 
-function ValidateWeedCoord(plantCoord)
-	if spawnedWeeds > 0 then
+function ValidateCocaCoord(plantCoord)
+	if spawnedCoca > 0 then
 		local validate = true
 
-		for k, v in pairs(weedPlants) do
+		for k, v in pairs(cocaPlants) do
 			if GetDistanceBetweenCoords(plantCoord, GetEntityCoords(v), true) < 5 then
 				validate = false
 			end
 		end
 
-		if GetDistanceBetweenCoords(plantCoord, Config.FieldZones.WeedField.coords, false) > 5 then
+		if GetDistanceBetweenCoords(plantCoord, DrugCfg.FieldZones.CocaineField.coords, false) > 50 then
 			validate = false
 		end
 
@@ -159,28 +145,27 @@ function ValidateWeedCoord(plantCoord)
 	end
 end
 
-function GenerateWeedCoords()
+function GenerateCocaCoords()
 	while true do
 		Citizen.Wait(1)
 
-		local weedCoordX, weedCoordY
+		local cocaCoordX, cocaCoordY
 
 		math.randomseed(GetGameTimer())
-		local modX = math.random(-20, 20)
+		local modX = math.random(-90, 90)
 
 		Citizen.Wait(100)
 
 		math.randomseed(GetGameTimer())
-		local modY = math.random(-20, 20)
+		local modY = math.random(-90, 90)
 
-		weedCoordX = Config.FieldZones.WeedField.coords.x + modX
-		weedCoordY = Config.FieldZones.WeedField.coords.y + modY
+		cocaCoordX = DrugCfg.FieldZones.CocaineField.coords.x + modX
+		cocaCoordY = DrugCfg.FieldZones.CocaineField.coords.y + modY
 
+		local coordZ = GetCoordZ(cocaCoordX, cocaCoordY)
+		local coord = vector3(cocaCoordX, cocaCoordY, coordZ)
 
-		local coordZ = GetCoordZ(weedCoordX, weedCoordY)
-		local coord = vector3(weedCoordX, weedCoordY, coordZ)
-
-		if ValidateWeedCoord(coord) then
+		if ValidateCocaCoord(coord) then
 			return coord
 		end
 	end
@@ -196,5 +181,17 @@ function GetCoordZ(x, y)
 			return z
 		end
 	end
-	return 45.0
+	return 43.0
 end
+
+Citizen.CreateThread(function()
+	while true do
+		Citizen.Wait(0)
+		local playerPed = PlayerPedId()
+		local coords = GetEntityCoords(playerPed)
+
+		if GetDistanceBetweenCoords(coords, DrugCfg.ProcessZones.CrackProcessing.coords, true) < 15 and GetDistanceBetweenCoords(coords, DrugCfg.ProcessZones.CrackProcessing.coords, true) > 10 then
+
+		end
+	end
+end)
