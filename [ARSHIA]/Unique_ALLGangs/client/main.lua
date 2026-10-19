@@ -29,7 +29,7 @@ RegisterNetEvent('For5M:OpenPanel')
 AddEventHandler('For5M:OpenPanel', function(data)
 	InAdminPanel = true 
 	SetNuiFocus(true, true)
-	SendNUIMessage({
+	SendGangNUI({
 		type = 'OPENADMINPANEL', 
 		Admin = data , 
 	})
@@ -52,7 +52,7 @@ RegisterNetEvent('For5M:OpenBossPanel')
 AddEventHandler('For5M:OpenBossPanel', function(data , GangName )
 	InAdminPanel = true 
 	SetNuiFocus(true, true)
-	SendNUIMessage({
+	SendGangNUI({
 		type = 'OPENBOSSPANEL', 
 		Admin = data , 
 		GangName = GangName , 
@@ -66,7 +66,7 @@ RegisterNUICallback('CLOSEADMINPANEL', function(data, cb)
 	-- hidden - it wasn't being told to close here before, only on the
 	-- Escape-key path below, which could leave a full-screen overlay
 	-- element sitting on top of the game after closing normally.
-	SendNUIMessage({ type = 'displaynone' })
+	SendGangNUI({ type = 'displaynone' })
 	if cb then cb('ok') end
 	-- Defensive re-assertion: if anything else in this resource (or
 	-- another one) re-locks NUI focus back to true in the same frame
@@ -102,8 +102,8 @@ CreateThread(function()
 			if IsControlJustPressed(0, 322) then -- ESC
 				InAdminPanel = false
 				SetNuiFocus(false, false)
-				SendNUIMessage({ type = 'CLOSEPANEL' })
-				SendNUIMessage({ type = 'displaynone' }) -- also closes the boss-panel iframe if it was open
+				SendGangNUI({ type = 'CLOSEPANEL' })
+				SendGangNUI({ type = 'displaynone' }) -- also closes the boss-panel iframe if it was open
 			end
 		else
 			Wait(500)

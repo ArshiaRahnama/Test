@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Unique_ALLGangs</title>
+    <style>
+        html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: transparent; overflow: hidden; }
+        iframe { position: fixed; top: 0; left: 0; width: 100%; height: 100%; border: none; display: none; }
+        iframe.active { display: block; }
+    </style>
+</head>
+<body>
+    <iframe id="frame-gang" src="web/ui.html"></iframe>
+    <iframe id="frame-cafe" src="uniquecafejobs/html/cafe/form.html"></iframe>
+    <iframe id="frame-market" src="uniquecafejobs/html/market/index.html"></iframe>
+    <iframe id="frame-shop" src="uniquecafejobs/html/shop/index.html"></iframe>
+    <iframe id="frame-barber" src="uniquecafejobs/html/vms_barber/ui.html"></iframe>
+    <iframe id="frame-tattoo" src="uniquecafejobs/html/vms_tattooshop/ui.html"></iframe>
+    <iframe id="frame-ah" src="uniquecafejobs/html/auctionhouse/index.html"></iframe>
+
+    <script>
+        const frames = {
+            gang: document.getElementById('frame-gang'),
+            cafe: document.getElementById('frame-cafe'),
+            market: document.getElementById('frame-market'),
+            shop: document.getElementById('frame-shop'),
+            barber: document.getElementById('frame-barber'),
+            tattoo: document.getElementById('frame-tattoo'),
+            ah: document.getElementById('frame-ah'),
+        };
+
+        // While the Auction House is open it owns the screen. Messages for other
+        // frames (market config pushes, crafting queue ticks, barber updates...) are
+        // still delivered to their frame, but they must not hide the open panel.
+        let locked = null;
+
+        window.addEventListener('message', function (event) {
+            const data = event.data;
+            if (!data || !data.__routeTo) return;
+            const target = frames[data.__routeTo];
+            if (!target) return;
+            const payload = data.payload || {};
+
+            if (data.__routeTo === 'ah') {
+                if (payload.ui === 'openui') locked = 'ah';
+                else if (payload.ui === 'closeui') locked = null;
+            }
+
+            const mayShow = !data.__silent && (!locked || data.__routeTo === locked);
+            if (mayShow) {
+                for (const key in frames) {
+                    frames[key].classList.toggle('active', key === data.__routeTo);
+                }
+            }
+            target.contentWindow.postMessage(payload, '*');
+        });
+    </script>
+</body>
+</html>

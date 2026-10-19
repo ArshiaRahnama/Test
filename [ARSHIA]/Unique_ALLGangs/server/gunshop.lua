@@ -460,3 +460,28 @@ end)
 ESX.RegisterServerCallback('Workshop:DepositWeapon', function(source, cb, zoneKey, weapon, count)
     cb(WorkshopDepositWeapon(gangOfSrc(source), zoneKey, tostring(weapon), count))
 end)
+
+-- ================= AUCTION HOUSE LINK (uniquecafejobs/auctionhouse) =================
+-- The auction house runs at each gun shop. Its listings belong to the shop's owner gang.
+-- Plain tables only (vector3 does not survive an export call reliably).
+function GunShopsForAH()
+    local out = {}
+    for _, s in pairs(Shops) do
+        out[#out + 1] = {
+            key = 'gunshop_' .. s.id, id = s.id, label = s.label,
+            coords = { x = s.coords.x, y = s.coords.y, z = s.coords.z },
+            owner = s.owner, ownerLabel = s.ownerLabel,
+        }
+    end
+    table.sort(out, function(a, b) return a.id < b.id end)
+    return out
+end
+
+-- Weapons the auction house may sell at a gun shop: the shop's own catalog.
+function GunShopWeaponCatalog()
+    local out = {}
+    for _, c in ipairs(G.Catalog) do out[#out + 1] = c.weapon end
+    return out
+end
+exports('GunShopsForAH', GunShopsForAH)
+exports('GunShopWeaponCatalog', GunShopWeaponCatalog)

@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Auction House</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="jquery.min.js"></script>
+  <script src="app.js"></script>
+</head>
+<body>
+  <div id="ah" class="ah">
+    <section class="ah-panel" role="dialog" aria-label="Auction House">
+      <header class="ah-head">
+        <div class="ah-brand">
+          <div class="ah-logo"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m14 13-8.4 8.4a2 2 0 0 1-2.8-2.8L11.2 10"/><path d="m16 16 6-6"/><path d="m8 8 6-6"/><path d="m9 7 8 8"/><path d="m21 11-8-8"/></svg></span></div>
+          <div class="ah-titles">
+            <h1>AUCTION HOUSE</h1>
+            <p id="ah-sub">Gun Shop</p>
+          </div>
+        </div>
+        <div class="ah-stats">
+          <div class="ah-stat"><b id="st-shop">0</b><span>On sale</span></div>
+          <div class="ah-stat"><b id="st-mine">0</b><span>Yours</span></div>
+        </div>
+        <button id="btn-close" class="ah-x" title="Close (Esc)"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></span></button>
+      </header>
+
+      <nav class="ah-bar">
+        <label class="ah-search">
+          <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></span>
+          <input id="search" type="text" placeholder="Search weapons and items..." autocomplete="off" />
+        </label>
+        <div class="ah-tabs">
+          <button class="ah-tab is-active" data-tab="shop"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1.5-5h15L21 9"/><path d="M4 9v11h16V9"/><path d="M9 20v-6h6v6"/></svg></span><span>Market</span><em id="cnt-shop">0</em></button>
+          <button class="ah-tab" data-tab="mine"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8 12 3 3 8l9 5 9-5Z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg></span><span>My Listings</span><em id="cnt-mine">0</em></button>
+        </div>
+        <button id="btn-sell" class="ah-sell hidden"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span><span>List Item</span></button>
+      </nav>
+
+      <main id="grid" class="ah-grid"></main>
+
+      <div id="empty" class="ah-empty hidden">
+        <span class="ic big"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8 12 3 3 8l9 5 9-5Z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg></span>
+        <p id="empty-text">Nothing listed here yet.</p>
+      </div>
+    </section>
+
+    <div id="sell-modal" class="ah-modal hidden">
+      <div class="ah-modal-box">
+        <h2><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8Z"/><circle cx="7.5" cy="7.5" r="1.2"/></svg></span><span>List an item</span></h2>
+        <label>Item
+          <select id="sell-item"></select>
+        </label>
+        <div class="ah-row">
+          <label>Amount<input id="sell-amount" type="number" min="1" value="1" /></label>
+          <label>Price ($)<input id="sell-price" type="number" min="1" value="100" /></label>
+        </div>
+        <label class="ah-check"><input id="sell-discord" type="checkbox" /> <span>Announce on Discord (costs $30,000)</span></label>
+        <div class="ah-actions">
+          <button id="sell-cancel" class="ah-btn ghost">Cancel</button>
+          <button id="sell-confirm" class="ah-btn primary"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7"/></svg></span><span>List</span></button>
+        </div>
+      </div>
+    </div>
+
+    <div id="toast" class="ah-toast"></div>
+  </div>
+</body>
+</html>
