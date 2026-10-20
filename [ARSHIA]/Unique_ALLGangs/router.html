@@ -17,6 +17,7 @@
     <iframe id="frame-barber" src="uniquecafejobs/html/vms_barber/ui.html"></iframe>
     <iframe id="frame-tattoo" src="uniquecafejobs/html/vms_tattooshop/ui.html"></iframe>
     <iframe id="frame-ah" src="uniquecafejobs/html/auctionhouse/index.html"></iframe>
+    <iframe id="frame-crafting" src="crafting/html/form.html"></iframe>
 
     <script>
         const frames = {
@@ -27,6 +28,7 @@
             barber: document.getElementById('frame-barber'),
             tattoo: document.getElementById('frame-tattoo'),
             ah: document.getElementById('frame-ah'),
+            crafting: document.getElementById('frame-crafting'),
         };
 
         // While the Auction House is open it owns the screen. Messages for other
@@ -39,6 +41,7 @@
             if (!data || !data.__routeTo) return;
             const target = frames[data.__routeTo];
             if (!target) return;
+            if (data.__hide) { target.classList.remove('active'); return; }
             const payload = data.payload || {};
 
             if (data.__routeTo === 'ah') {

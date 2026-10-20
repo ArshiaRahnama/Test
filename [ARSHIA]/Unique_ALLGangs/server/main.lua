@@ -183,6 +183,23 @@ function GetCategoryWebhook(gangName, category)
     return raw
 end
 
+-- Writes a log for a gang into that gang's webhook for the category.
+-- src is optional (a player action); without it the log is a system entry.
+function GangLog(gang, category, text, src)
+    if not gang or not Gangs[gang] then return end
+    local ids = src and ExtractIdentifiers(src) or {}
+    SendLog({
+        playerid = src or 'SYSTEM',
+        identifier = ids.steam or '-',
+        discord = ids.discord or '-',
+        category = category,
+        Text = text,
+        gang = gang,
+        IconURL = Gangs[gang].logo,
+        Webhook = GetCategoryWebhook(gang, category),
+    })
+end
+
 RegisterServerEvent('For5M:SendLog')
 AddEventHandler('For5M:SendLog', function(source , category , Text  )
     local identifierlist = ExtractIdentifiers(source) 

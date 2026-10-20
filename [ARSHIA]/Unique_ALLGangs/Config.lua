@@ -519,6 +519,20 @@ Config.LogCategories = {
     'Garage',
     'Locker',
     'Territory',
+    'Gun Shop',
+    'Auction House',
+    'Crafting',
+}
+
+-- icon + short description shown in the "Set Log Webhook" menu
+Config.LogCategoryMeta = {
+    ['Boss Action']   = { icon = 'user-tie', desc = 'Hire, fire, ranks, money moves and washing' },
+    ['Garage']        = { icon = 'car',      desc = 'Vehicles taken out and stored' },
+    ['Locker']        = { icon = 'lock',     desc = 'Locker items and edits' },
+    ['Territory']     = { icon = 'map',      desc = 'Zone captures, defences and war nights' },
+    ['Gun Shop']      = { icon = 'gun',      desc = 'Gun shop sales to NPCs and stock deposits' },
+    ['Auction House'] = { icon = 'gavel',    desc = 'Listings and sales on the auction house' },
+    ['Crafting']      = { icon = 'hammer',   desc = 'Crafted items and failed crafts' },
 }
 
 -------------------------------------------------------------------
@@ -554,7 +568,7 @@ Config.Territory = {
     -- its own zombies, so territory zombies would double the load.
     -------------------------------------------------------------------
     Zones = {
-        { key = 'cayo_airstrip',    label = 'Foroodgah Jazire',   coord = vector3(4479.5,  -4590.65,  5.56), radius = 55.0, tier = 2 },
+        { key = 'cayo_airstrip',    label = 'Foroodgah Jazire',   coord = vector3(4479.5,  -4590.65,  5.56), radius = 55.0, tier = 2, armory = false },
         { key = 'cayo_central',     label = 'Markaze Jazire',     coord = vector3(4995.74, -5166.95,  2.7),  radius = 50.0, tier = 1 },
         { key = 'cayo_north_coast', label = 'Sahele Shomal',      coord = vector3(5104.77, -4676.54,  2.29), radius = 50.0, tier = 1 },
         { key = 'cayo_south_hill',  label = 'Tappe-ye Jonoob',    coord = vector3(4901.82, -5336.31, 35.61), radius = 45.0, tier = 2 },

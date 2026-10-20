@@ -322,7 +322,7 @@ function OpenBossRecruitMenu(gang)
         end
 
         if #elements == 0 then
-            ESX.ShowNotification('No recruitable players online')
+            ESX.ShowNotification('No players within 10m to recruit')
         end
 
         ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'boss_recruit_' .. gang, {
@@ -736,8 +736,8 @@ function OpenBossGangSettingsMenu(gang)
                 for _, category in ipairs(Config.LogCategories or {}) do
                     table.insert(contextOptions, {
                         title = category,
-                        description = 'Set the Discord webhook used for ' .. category .. ' logs',
-                        icon = 'webhook',
+                        description = ((Config.LogCategoryMeta or {})[category] or {}).desc or ('Discord webhook for ' .. category .. ' logs'),
+                        icon = ((Config.LogCategoryMeta or {})[category] or {}).icon or 'webhook',
                         onSelect = function()
                             local input = lib.inputDialog('Webhook - ' .. category, {
                                 { type = 'input', label = 'Discord Webhook URL', description = 'Leave empty to clear this category (falls back to Default)' }

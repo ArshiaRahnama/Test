@@ -377,7 +377,7 @@ ESX.RegisterServerCallback('esx_paintball:CreateLobby', function(source, cb, dat
 	end
 
 	local ok, reservedGang = pcall(function()
-		return exports['uniquecafejobs']:GetMapReservation(tostring(data.mapName))
+		return exports['Unique_ALLGangs']:GetMapReservation(tostring(data.mapName))
 	end)
 	reservedGang = ok and reservedGang or nil
 	if reservedGang and (not xPlayer.gang or xPlayer.gang.name ~= reservedGang) then

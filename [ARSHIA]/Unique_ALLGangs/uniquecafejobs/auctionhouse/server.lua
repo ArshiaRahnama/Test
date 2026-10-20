@@ -226,6 +226,7 @@ RegisterServerEvent('auction-house2:AddItemToShop', function(data)
             return notify(src, 'Could not list the item. It was returned to you.')
         end
         notify(src, 'Item listed.')
+        GangLog(shop.owner, 'Auction House', ('Listed %s x%d for $%d'):format(item, amount, price), src)
         TriggerClientEvent('auction-house2:RefreshShop', src)
     end)
 
@@ -302,5 +303,6 @@ RegisterServerEvent('auction-house2:BuyItemFromShop', function(data)
     payIdentifier(row.owner, price)
 
     notify(src, ('You bought %s x%d for $%d.'):format(row.item, row.amount, price))
+    GangLog(shop.owner, 'Auction House', ('Sold %s x%d for $%d'):format(row.item, row.amount, price), src)
     TriggerClientEvent('auction-house2:RefreshShop', src)
 end)

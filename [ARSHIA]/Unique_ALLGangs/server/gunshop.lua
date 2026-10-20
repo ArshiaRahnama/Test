@@ -22,6 +22,7 @@ MySQL.ready(function()
           `zone_key` varchar(60) NOT NULL, `data` longtext, PRIMARY KEY (`zone_key`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     ]])
+    MySQL.Async.execute('ALTER TABLE gunshop_shops ADD COLUMN IF NOT EXISTS craft_rank INT NOT NULL DEFAULT 0', {})
     MySQL.Async.fetchAll('SELECT * FROM gunshop_shops', {}, function(rows)
         for _, r in ipairs(rows or {}) do
             local s = Shops[r.id]
@@ -29,6 +30,7 @@ MySQL.ready(function()
                 s.owner, s.ownerLabel, s.expiresAt, s.paid = r.owner, r.owner_label, tonumber(r.expires_at) or 0, tonumber(r.paid) or 0
                 s.bids = (r.bids and r.bids ~= '') and json.decode(r.bids) or {}
                 s.stock = (r.stock and r.stock ~= '') and json.decode(r.stock) or {}
+                s.craftRank = tonumber(r.craft_rank) or 0
             end
         end
     end)
@@ -156,8 +158,41 @@ function ShopSettle(s, now)
     BroadcastShops()
 end
 
--- Owner moves weapons from the gang armory into its shop stock (the NPC sells only stock).
-function ShopDepositStock(gang, shopId, weapon, count)
+-- ---------------- shop stock = the gun shop's listings on the Auction House ----------------
+-- Listings of a gun shop: auctionhouse2 rows with job = 'gunshop_<id>'.
+function ShopStockFromAH(shopId)
+    local out = {}
+    local rows = MySQL.Sync.fetchAll('SELECT item, SUM(amount) AS amount FROM auctionhouse2 WHERE job = @j GROUP BY item',
+        { ['@j'] = 'gunshop_' .. tostring(shopId) })
+    for _, r in ipairs(rows or {}) do out[r.item] = tonumber(r.amount) or 0 end
+    return out
+end
+
+-- Take `amount` of a weapon out of the shop's listings (oldest first). False if not enough.
+function ShopConsumeAH(shopId, weapon, amount)
+    local job = 'gunshop_' .. tostring(shopId)
+    local rows = MySQL.Sync.fetchAll('SELECT id, amount FROM auctionhouse2 WHERE job = @j AND item = @i ORDER BY id ASC',
+        { ['@j'] = job, ['@i'] = weapon }) or {}
+    local total = 0
+    for _, r in ipairs(rows) do total = total + (tonumber(r.amount) or 0) end
+    if total < amount then return false end
+    local need = amount
+    for _, r in ipairs(rows) do
+        if need <= 0 then break end
+        local have = tonumber(r.amount) or 0
+        if have <= need then
+            MySQL.Sync.execute('DELETE FROM auctionhouse2 WHERE id = @id', { ['@id'] = r.id })
+            need = need - have
+        else
+            MySQL.Sync.execute('UPDATE auctionhouse2 SET amount = amount - @n WHERE id = @id', { ['@n'] = need, ['@id'] = r.id })
+            need = 0
+        end
+    end
+    return true
+end
+
+-- Owner moves weapons from the gang armory into the shop: they become a listing of the depositor.
+function ShopDepositStock(gang, shopId, weapon, count, identifier)
     local s = Shops[shopId]
     count = math.floor(tonumber(count) or 0)
     if not s or s.owner ~= gang then return false, 'In maghaze ye gang-e shoma nist' end
@@ -165,9 +200,12 @@ function ShopDepositStock(gang, shopId, weapon, count)
     if not weapon or not weapon:match('^WEAPON_') then return false, 'Faghat aslahe ro mitoon too maghaze bezarid' end
     local ok, res = pcall(function() return exports['Unique_inventory']:RemoveGangArmoryWeapon(gang, weapon, count) end)
     if not ok or not res then return false, 'Aslahe too armory-e gang kafi nist' end
-    s.stock = s.stock or {}
-    s.stock[weapon] = (s.stock[weapon] or 0) + count
-    SaveShop(s)
+    if not identifier then return false, 'Shenasai-e shoma peyda nashod' end
+    local price = 1
+    for _, c in ipairs(G.Catalog) do if c.weapon == weapon then price = c.price end end
+    MySQL.Sync.execute('INSERT INTO auctionhouse2 (owner, item, amount, price, job) VALUES (@o, @i, @a, @p, @j)',
+        { ['@o'] = identifier, ['@i'] = weapon, ['@a'] = count, ['@p'] = price, ['@j'] = 'gunshop_' .. tostring(shopId) })
+    GangLog(gang, 'Gun Shop', ('Deposited %dx %s into the shop'):format(count, weapon))
     return true, ('%dx %s be maghaze ezafe shod'):format(count, weapon)
 end
 
@@ -176,7 +214,7 @@ function ShopCanSell(shopId, weapon, amount)
     local s = Shops[shopId]
     if not s or not s.owner then return true end
     if not weapon or not weapon:match('^WEAPON_') then return true end
-    return ((s.stock or {})[weapon] or 0) >= (amount or 1)
+    return (ShopStockFromAH(shopId)[weapon] or 0) >= (amount or 1)
 end
 
 -- Owner gang buys a weapon from its shop catalog (paid from gang money, goes to gang armory).
@@ -290,7 +328,7 @@ ESX.RegisterServerCallback('GunShop:GetAll', function(source, cb)
     local gang = gangOfSrc(source)
     local shops = {}
     for _, s in pairs(Shops) do
-        shops[#shops + 1] = { id = s.id, label = s.label, coords = { x = s.coords.x, y = s.coords.y, z = s.coords.z }, owner = s.owner, ownerLabel = s.ownerLabel, expiresAt = s.expiresAt or 0,
+        shops[#shops + 1] = { id = s.id, label = s.label, coords = { x = s.coords.x, y = s.coords.y, z = s.coords.z }, owner = s.owner, ownerLabel = s.ownerLabel, stock = ShopStockFromAH(s.id), expiresAt = s.expiresAt or 0,
                               paid = s.paid or 0, bids = s.bids or {}, mine = gang ~= nil and s.owner == gang }
     end
     table.sort(shops, function(a, b) return a.id < b.id end)
@@ -415,9 +453,8 @@ exports('RecordGunShopSale', function(source, weapon, price, amount)
     weapon = tostring(weapon)
     if weapon:match('^WEAPON_') then
         if not ShopCanSell(shop.id, weapon, amount) then return nil end
-        shop.stock[weapon] = shop.stock[weapon] - amount
-        if shop.stock[weapon] <= 0 then shop.stock[weapon] = nil end
-        SaveShop(shop)
+        ShopConsumeAH(shop.id, weapon, amount)
+        GangLog(shop.owner, 'Gun Shop', ('NPC sold %s x%d'):format(weapon, amount))
     end
     local share = math.floor(price * OWNER_SHARE)
     if share > 0 then AddGangMoney(shop.owner, share) end
@@ -455,7 +492,8 @@ end)
 ESX.RegisterServerCallback('GunShop:DepositStock', function(source, cb, id, weapon, count)
     local gang = gangOfSrc(source)
     if not isBossSrc(source) then return cb(false, 'Faghat boss') end
-    cb(ShopDepositStock(gang, tonumber(id), tostring(weapon), count))
+    local x = ESX.GetPlayerFromId(source)
+    cb(ShopDepositStock(gang, tonumber(id), tostring(weapon), count, x and x.identifier or nil))
 end)
 
 -- the owner boss standing at a shop asks to manage it (the NPC's E menu uses this)
@@ -470,3 +508,54 @@ end)
 ESX.RegisterServerCallback('Workshop:DepositWeapon', function(source, cb, zoneKey, weapon, count)
     cb(WorkshopDepositWeapon(gangOfSrc(source), zoneKey, tostring(weapon), count))
 end)
+
+-- ================= AUCTION HOUSE LINK (uniquecafejobs/auctionhouse) =================
+-- The auction house runs at each gun shop. Its listings belong to the shop's owner gang.
+-- Plain tables only (vector3 does not survive an export call reliably).
+function GunShopsForAH()
+    local out = {}
+    for _, s in pairs(Shops) do
+        out[#out + 1] = {
+            key = 'gunshop_' .. s.id, id = s.id, label = s.label,
+            coords = { x = s.coords.x, y = s.coords.y, z = s.coords.z },
+            owner = s.owner, ownerLabel = s.ownerLabel,
+        }
+    end
+    table.sort(out, function(a, b) return a.id < b.id end)
+    return out
+end
+
+-- Weapons the auction house may sell at a gun shop: the shop's own catalog.
+function GunShopWeaponCatalog()
+    local out = {}
+    for _, c in ipairs(G.Catalog) do out[#out + 1] = c.weapon end
+    return out
+end
+exports('GunShopsForAH', GunShopsForAH)
+exports('GunShopWeaponCatalog', GunShopWeaponCatalog)
+
+-- Does this gang own at least one gun shop? (used by the crafting workbenches)
+function GangHasGunShop(gang)
+    if not gang then return false end
+    for _, s in pairs(Shops) do
+        if s.owner == gang then return true end
+    end
+    return false
+end
+exports('GangHasGunShop', GangHasGunShop)
+
+-- ───────── Gun shop workbenches (crafting) ─────────
+-- Every OWNED gun shop has a workbench at its own coords. Only its owner gang can
+-- craft there, and only members whose gang grade >= craftRank (set by the boss).
+function GunShopBenches()
+    local out = {}
+    for _, s in pairs(Shops) do
+        if s.owner and s.craft then
+            out[#out + 1] = { shopId = s.id, name = s.label, coords = s.craft, radius = 4.0,
+                              public = false, recipes = {}, owner = s.owner, craftRank = s.craftRank or 0 }
+        end
+    end
+    return out
+end
+
+
