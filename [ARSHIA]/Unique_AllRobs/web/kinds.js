@@ -94,6 +94,8 @@
   }
 
   function showKind(kind, data) {
+    if (kind === 'zonearmory') { return openArmory(data); }
+    closeArmory();
     state.kind = kind; state.data = data;
     var mainEl = document.querySelector('main'); if (mainEl) mainEl.scrollTop = 0;
     window.__kindActive = true;
@@ -127,6 +129,7 @@
   }
 
   function leaveKind() {
+    closeArmory();
     window.__kindActive = false;
     $('view-kind').className = 'view hidden';
     clearInterval(state.timer);
@@ -164,7 +167,91 @@
 
   function renderHelp(v, kind) { renderTopics(v, kind); }
 
-  // ---------- Zone armory ----------
+  // ---------- Zone armory: an inventory-style screen (gang armory <-> zone armory) ----------
+  var arm = { data: null, sel: null };
+  function panelEl() { return document.querySelector('.panel'); }
+
+  function openArmory(d) {
+    arm.data = d; arm.sel = null;
+    window.__kindActive = true;
+    state.kind = 'zonearmory';
+    var p = panelEl(); if (p) p.style.display = 'none';
+    $('app').className = '';
+    $('app').setAttribute('data-theme', 'zonearmory');
+    $('armory').className = 'gang-only';
+    $('armTitle').textContent = 'ARMORY - ' + (d.label || '');
+    $('armZoneTitle').textContent = 'ZONE ARMORY';
+    $('armGangTitle').textContent = 'GANG ARMORY';
+    clearInterval(state.timer);
+    state.timer = setInterval(function () { post('refresh'); }, 3000);
+    renderArmory();
+  }
+
+  function closeArmory() {
+    var ar = $('armory'); if (ar) ar.className = 'hidden';
+    var p = panelEl(); if (p) p.style.display = '';
+  }
+
+  function slot(name, count, isWeapon, from, onPick) {
+    var s = el('div', 'arm-slot' + (isWeapon ? ' weapon' : '') + (arm.sel && arm.sel.name === name && arm.sel.from === from ? ' sel' : ''));
+    s.appendChild(el('div', 'n', isWeapon ? name.replace('WEAPON_', '') : name));
+    s.appendChild(el('div', 'c', String(count)));
+    s.onclick = function () { onPick(); };
+    return s;
+  }
+
+  function renderArmory() {
+    var d = arm.data || {};
+    var gl = $('armGang'), zl = $('armZone');
+    gl.textContent = ''; zl.textContent = '';
+    var can = d.mine === true;
+    var gang = d.gangItems || { items: [], weapons: [] };
+    var zoneMats = d.materials || {}, zoneWpn = d.weapons || {};
+
+    (gang.items || []).forEach(function (it) {
+      gl.appendChild(slot(it.name, it.count, false, 'gang', function () { pick('gang', it.name, false, it.count); }));
+    });
+    (gang.weapons || []).forEach(function (it) {
+      gl.appendChild(slot(it.name, it.count, true, 'gang', function () { pick('gang', it.name, true, it.count); }));
+    });
+    // the gang armory only: rewards (items and weapons) from zones go straight into it
+    if (!gl.children.length) gl.appendChild(el('div', 'empty', 'آرموری گنگ خالیه.'));
+    $('armNote').textContent = '';
+  }
+
+  function pick(from, name, isWeapon, max) {
+    arm.sel = { from: from, name: name, isWeapon: isWeapon, max: max };
+    renderArmory();
+  }
+
+  function selectedCount() {
+    var c = parseInt($('armCount').value, 10) || 0;
+    return Math.max(0, Math.min(c, arm.sel ? arm.sel.max : 0));
+  }
+
+  $('armAll').onclick = function () { if (arm.sel) { $('armCount').value = String(arm.sel.max); } };
+  $('armToZone').onclick = function () {
+    var d = arm.data || {}; var s = arm.sel;
+    if (!s || s.from !== 'gang') return;
+    var n = selectedCount(); if (n <= 0) return;
+    if (s.isWeapon) post('wsDepositWeapon', { zone: d.zoneKey, weapon: s.name, count: n });
+    else post('wsDeposit', { zone: d.zoneKey, item: s.name, count: n });
+  };
+  $('armToGang').onclick = function () {
+    var d = arm.data || {}; var s = arm.sel;
+    if (!s || s.from !== 'zone') return;
+    var n = selectedCount(); if (n <= 0) return;
+    if (s.isWeapon) post('wsWithdraw', { zone: d.zoneKey, weapon: s.name, count: n });
+    else post('wsWithdrawMaterial', { zone: d.zoneKey, item: s.name, count: n });
+  };
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && state.kind === 'zonearmory' && !$('armory').className.includes('hidden')) post('close');
+  });
+
+  // called by the client when fresh data arrives
+  function updateArmory(d) { arm.data = d; if (arm.sel) { /* keep selection if still there */ } renderArmory(); }
+
+  // ---------- Zone armory (old menu version, removed) ----------
   function renderZoneArmory(v, d, tab) {
     if (!d.mine) {
       v.appendChild(el('div', 'empty', 'این زون مالک دارد. فقط گنگ مالک زون (' + (d.label || '') + ') به آرموری دسترسی داره.'));
@@ -260,13 +347,6 @@
             var stk = s.stock || {};
             var stockLine = Object.keys(stk).map(function (w) { return w.replace('WEAPON_', '') + ' × ' + fa(stk[w]); }).join(' | ') || 'مغازه خالیه';
             c.appendChild(el('div', 'kind-row', 'موجودی مغازه: ' + stockLine));
-            var srow = el('div', 'kind-row');
-            var sw = el('input'); sw.placeholder = 'WEAPON_...'; sw.className = 'bid-input';
-            var sc = el('input'); sc.type = 'number'; sc.min = '1'; sc.value = '1'; sc.className = 'bid-input';
-            var sbtn = el('button', 'btn ghost', 'گذاشتن در مغازه');
-            sbtn.onclick = function () { post('gsDeposit', { id: s.id, weapon: sw.value.trim(), count: parseInt(sc.value, 10) || 0 }); };
-            srow.appendChild(sw); srow.appendChild(sc); srow.appendChild(sbtn);
-            c.appendChild(srow);
           if (d.isBoss && s.mine) {
           }
         } else {
@@ -514,7 +594,7 @@
   window.addEventListener('message', function (e) {
     var m = e.data || {};
     if (m.action === 'openKind') { showKind(m.kind, m.data); }
-    else if (m.action === 'updateKind') { state.data = m.data; renderKind(); }
+    else if (m.action === 'updateKind') { if (state.kind === 'zonearmory') updateArmory(m.data); else { state.data = m.data; renderKind(); } }
     else if (m.action === 'close') { if (window.__kindActive) leaveKind(); }
   });
 

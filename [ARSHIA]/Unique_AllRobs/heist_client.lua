@@ -158,9 +158,11 @@ end
 local function GatherZoneArmory(zoneKey, label, cb)
     ESX.TriggerServerCallback('Workshop:Get', function(w)
         w = w or {}
-        cb({ zoneKey = zoneKey, label = label, mine = w.mine == true, isBoss = w.isBoss == true,
-             materials = w.materials or {}, weapons = w.weapons or {}, jobs = w.jobs or {},
-             recipes = w.recipes or {}, maxQueue = w.maxQueue or 3 })
+        ESX.TriggerServerCallback('GunShop:GetGangArmory', function(gang)
+            cb({ zoneKey = zoneKey, label = label, mine = w.mine == true,
+                 materials = w.materials or {}, weapons = w.weapons or {},
+                 gangItems = gang or { items = {}, weapons = {} } })
+        end)
     end, zoneKey)
 end
 
@@ -248,7 +250,7 @@ KindAction('wsDeposit', function(b, done) ESX.TriggerServerCallback('Workshop:De
 KindAction('gsDeposit', function(b, done) ESX.TriggerServerCallback('GunShop:DepositStock', done, b.id, b.weapon, b.count) end)
 KindAction('wsDepositWeapon', function(b, done) ESX.TriggerServerCallback('Workshop:DepositWeapon', done, b.zone, b.weapon, b.count) end)
 KindAction('wsWithdrawMaterial', function(b, done) ESX.TriggerServerCallback('Workshop:WithdrawMaterial', done, b.zone, b.item, b.count) end)
-KindAction('wsWithdraw', function(b, done) ESX.TriggerServerCallback('Workshop:Withdraw', done, b.zone, b.weapon) end)
+KindAction('wsWithdraw', function(b, done) ESX.TriggerServerCallback('Workshop:Withdraw', done, b.zone, b.weapon, b.count) end)
 KindAction('alPropose', function(b, done) ESX.TriggerServerCallback('Territory:ProposeAlliance', done, b.gang) end)
 KindAction('alAccept',  function(b, done) ESX.TriggerServerCallback('Territory:AcceptAlliance', done, b.gang) end)
 KindAction('alBreak',   function(b, done) ESX.TriggerServerCallback('Territory:BreakAlliance', done, b.gang) end)

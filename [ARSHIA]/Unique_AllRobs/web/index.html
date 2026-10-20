@@ -7,6 +7,26 @@
 </head>
 <body>
 <div id="app" class="hidden">
+  <div id="armory" class="hidden">
+    <div class="arm-head"><span id="armTitle">ARMORY</span><span class="arm-esc">Esc</span></div>
+    <div class="arm-cols">
+      <div class="arm-col">
+        <div class="arm-col-title" id="armGangTitle">GANG ARMORY</div>
+        <div id="armGang" class="arm-grid"></div>
+      </div>
+      <div class="arm-mid">
+        <div class="arm-sel" id="armSel">یک آیتم انتخاب کنید</div>
+        <div class="arm-count"><input id="armCount" type="number" min="1" value="1"><button id="armAll">همه</button></div>
+        <button class="arm-btn" id="armToZone">← گذاشتن در آرموری زون</button>
+        <button class="arm-btn" id="armToGang">برگرداندن به آرموری گنگ →</button>
+        <div class="arm-note" id="armNote"></div>
+      </div>
+      <div class="arm-col">
+        <div class="arm-col-title" id="armZoneTitle">ZONE ARMORY</div>
+        <div id="armZone" class="arm-grid"></div>
+      </div>
+    </div>
+  </div>
   <div class="panel">
 
     <aside class="side">

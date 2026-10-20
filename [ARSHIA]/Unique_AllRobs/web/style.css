@@ -188,3 +188,31 @@ main::-webkit-scrollbar-thumb { background: rgba(168,85,247,.35); border-radius:
 #app[data-theme="zonearmory"] .tab.active { background: var(--accent-soft); border-color: var(--accent); }
 #app[data-theme="zonearmory"] .btn { background: linear-gradient(135deg, var(--accent-2), var(--accent)); }
 #app[data-theme="zonearmory"] .section-title { color: var(--accent); }
+
+/* ===== zone armory: inventory-style screen (no sidebar) ===== */
+#armory { position: fixed; inset: 0; background: rgba(6,8,12,.82); display: flex; flex-direction: column; padding: 28px 40px; color: #f5e9b8; font-family: 'Vazirmatn', sans-serif; }
+#armory.hidden { display: none !important; }
+.arm-head { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(250,204,21,.35); padding-bottom: 12px; font-size: 22px; font-weight: 700; letter-spacing: 1px; color: #facc15; }
+.arm-esc { font-size: 12px; color: #d6c77a; border: 1px solid #a16207; padding: 4px 10px; border-radius: 6px; }
+.arm-cols { display: flex; gap: 22px; flex: 1; min-height: 0; margin-top: 18px; }
+.arm-col { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.arm-col-title { font-size: 14px; font-weight: 700; color: #facc15; margin-bottom: 10px; letter-spacing: 1px; }
+.arm-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; overflow-y: auto; padding-right: 6px; }
+.arm-slot { background: rgba(250,204,21,.07); border: 1px solid rgba(250,204,21,.22); border-radius: 8px; min-height: 96px; padding: 8px; cursor: pointer; display: flex; flex-direction: column; justify-content: space-between; transition: .12s; }
+.arm-slot:hover { border-color: #facc15; background: rgba(250,204,21,.15); }
+.arm-slot.sel { border-color: #fde68a; box-shadow: 0 0 14px rgba(250,204,21,.35); }
+.arm-slot .n { font-size: 12px; color: #fde68a; word-break: break-all; }
+.arm-slot .c { font-size: 20px; font-weight: 700; text-align: left; direction: ltr; }
+.arm-slot.weapon .n { color: #fca5a5; }
+.arm-mid { width: 260px; display: flex; flex-direction: column; gap: 10px; align-items: stretch; justify-content: center; }
+.arm-sel { font-size: 14px; color: #fde68a; text-align: center; min-height: 40px; }
+.arm-count { display: flex; gap: 6px; }
+.arm-count input { flex: 1; background: rgba(0,0,0,.35); color: #fff; border: 1px solid #a16207; border-radius: 6px; padding: 8px; font-family: inherit; }
+.arm-count button, .arm-btn { background: linear-gradient(135deg, #a16207, #facc15); color: #1a1202; border: 0; border-radius: 8px; padding: 10px; font-weight: 700; cursor: pointer; font-family: inherit; }
+.arm-btn:disabled, .arm-count button:disabled { opacity: .4; cursor: not-allowed; }
+.arm-note { font-size: 12px; color: #d6c77a; text-align: center; min-height: 36px; }
+
+/* gang armory only: no zone column, no transfer panel */
+#armory.gang-only #armZone, #armory.gang-only .arm-mid, #armory.gang-only #armZoneTitle { display: none !important; }
+#armory.gang-only .arm-cols > .arm-col:first-child { flex: 1; }
+#armory.gang-only .arm-grid { grid-template-columns: repeat(6, 1fr); }

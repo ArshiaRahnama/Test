@@ -262,15 +262,17 @@ function WorkshopTick(now)
 end
 
 -- Only the zone's CURRENT owner can take weapons. When the zone changes hands, access moves with it.
-function WorkshopWithdraw(gang, zoneKey, weapon)
+function WorkshopWithdraw(gang, zoneKey, weapon, count)
+    count = math.floor(tonumber(count) or 1)
     if zoneOwner(zoneKey) ~= gang then return false, 'In zone male gang-e shoma nist - aslahe ro gerefte nemishe' end
     local w = ensureWS(zoneKey)
-    if (w.weapons[weapon] or 0) < 1 then return false, 'In aslahe dar karghah nist' end
-    local ok, res = pcall(function() return exports['Unique_inventory']:AddGangArmoryWeapon(gang, weapon, 1) end)
+    if count <= 0 or (w.weapons[weapon] or 0) < count then return false, 'Tedad kafi nist' end
+    local ok, res = pcall(function() return exports['Unique_inventory']:AddGangArmoryWeapon(gang, weapon, count) end)
     if not ok or not res then return false, 'Armory-e gang dar dastres nist' end
-    w.weapons[weapon] = w.weapons[weapon] - 1
+    w.weapons[weapon] = w.weapons[weapon] - count
+    if w.weapons[weapon] <= 0 then w.weapons[weapon] = nil end
     SaveWorkshop(zoneKey)
-    return true, ('%s be armory-e gang ezafe shod'):format(weapon)
+    return true, ('%dx %s be armory-e gang ezafe shod'):format(count, weapon)
 end
 
 -- ---------------- loops ----------------
@@ -351,10 +353,18 @@ ESX.RegisterServerCallback('Workshop:WithdrawMaterial', function(source, cb, zon
 end)
 
 
-ESX.RegisterServerCallback('Workshop:Withdraw', function(source, cb, zoneKey, weapon)
+ESX.RegisterServerCallback('Workshop:Withdraw', function(source, cb, zoneKey, weapon, count)
     local gang = gangOfSrc(source)
     if not gang then return cb(false, 'Gang nadarid') end
-    cb(WorkshopWithdraw(gang, zoneKey, tostring(weapon)))
+    cb(WorkshopWithdraw(gang, zoneKey, tostring(weapon), count))
+end)
+
+-- the gang armory contents, for the zone armory screen (any member)
+ESX.RegisterServerCallback('GunShop:GetGangArmory', function(source, cb)
+    local gang = gangOfSrc(source)
+    if not gang then return cb({ items = {}, weapons = {} }) end
+    local ok, res = pcall(function() return exports['Unique_inventory']:GetGangArmoryContents(gang) end)
+    cb((ok and res) or { items = {}, weapons = {} })
 end)
 
 -- ================= SALES FROM THE SCRIPTPACK GUN SHOP (NPC) =================
@@ -460,28 +470,3 @@ end)
 ESX.RegisterServerCallback('Workshop:DepositWeapon', function(source, cb, zoneKey, weapon, count)
     cb(WorkshopDepositWeapon(gangOfSrc(source), zoneKey, tostring(weapon), count))
 end)
-
--- ================= AUCTION HOUSE LINK (uniquecafejobs/auctionhouse) =================
--- The auction house runs at each gun shop. Its listings belong to the shop's owner gang.
--- Plain tables only (vector3 does not survive an export call reliably).
-function GunShopsForAH()
-    local out = {}
-    for _, s in pairs(Shops) do
-        out[#out + 1] = {
-            key = 'gunshop_' .. s.id, id = s.id, label = s.label,
-            coords = { x = s.coords.x, y = s.coords.y, z = s.coords.z },
-            owner = s.owner, ownerLabel = s.ownerLabel,
-        }
-    end
-    table.sort(out, function(a, b) return a.id < b.id end)
-    return out
-end
-
--- Weapons the auction house may sell at a gun shop: the shop's own catalog.
-function GunShopWeaponCatalog()
-    local out = {}
-    for _, c in ipairs(G.Catalog) do out[#out + 1] = c.weapon end
-    return out
-end
-exports('GunShopsForAH', GunShopsForAH)
-exports('GunShopWeaponCatalog', GunShopWeaponCatalog)

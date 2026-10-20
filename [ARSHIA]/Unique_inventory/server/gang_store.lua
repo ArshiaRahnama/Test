@@ -168,3 +168,21 @@ exports('RemoveGangArmoryWeapon', function(gangName, weaponName, count, storeNam
     end
     return false
 end)
+
+-- Full list of a gang armory (for the zone armory screen).
+--   exports['Unique_inventory']:GetGangArmoryContents(gangName [, storeName])
+--   -> { items = { {name, count}, ... }, weapons = { {name, count}, ... } }
+exports('GetGangArmoryContents', function(gangName, storeName)
+    local out = { items = {}, weapons = {} }
+    local ok, inventory, store = pcall(EnsureGangStores, gangName, storeName)
+    if not ok or not inventory then return out end
+    for _, it in ipairs(inventory.items or {}) do
+        if (tonumber(it.count) or 0) > 0 then out.items[#out.items + 1] = { name = it.name, count = tonumber(it.count) } end
+    end
+    local weapons = (store and store.get('weapons')) or {}
+    for _, w in ipairs(weapons) do
+        local n = tonumber(w.count or w.ammo) or 0
+        if n > 0 then out.weapons[#out.weapons + 1] = { name = string.upper(w.name), count = n } end
+    end
+    return out
+end)
