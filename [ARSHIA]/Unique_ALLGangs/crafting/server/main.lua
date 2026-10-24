@@ -117,7 +117,7 @@ ESX.RegisterServerCallback('Unique_Crafting:open', function(source, cb)
 
     local recipes, stock = {}, {}
     for name, r in pairs(CraftConfig.Recipes) do
-        if recipeAllowed(bench, name) then
+        if recipeAllowed(bench, name) and (not r.Business or GangOwnsBusiness(gangOf(x), r.Business)) then
             recipes[name] = r
             for k in pairs(r.Ingredients) do stock[k] = available(x, bench, k) end
         end
@@ -162,6 +162,9 @@ AddEventHandler('Unique_Crafting:craft', function(item)
 
     if not bench.public and gangLevel(gangOf(x)) < num(r.Level) then
         return notify(src, 'Level-e gang kafi nist')
+    end
+    if r.Business and not GangOwnsBusiness(gangOf(x), r.Business) then
+        return notify(src, 'In recipe faghat baraye gang-e sahebe in kasb-o-kar ast.')
     end
 
     local has, missing = hasIngredients(x, bench, r)

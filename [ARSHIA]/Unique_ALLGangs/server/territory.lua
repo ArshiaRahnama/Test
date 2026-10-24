@@ -471,6 +471,7 @@ end
 
 -- One random extra (weapon or item) with a LOW chance, picked by weight.
 local function RollBonus(cfg, newGang)
+    if Config.Territory.ZoneArmory == false then return nil end
     local rw = Config.Territory.CaptureReward
     local bonus = rw and rw.bonus
     if not bonus then return nil end
@@ -497,6 +498,7 @@ local function RollBonus(cfg, newGang)
 end
 
 local function GiveCaptureReward(zoneKey, newGang, cfg)
+    if Config.Territory.ZoneArmory == false then return end
     local rw = Config.Territory.CaptureReward
     if not rw or not rw.Enabled then return end
     local items = (cfg.bossZone and rw.bossZone) or (rw.byTier and rw.byTier[cfg.tier]) or rw.default
@@ -696,6 +698,10 @@ local function RewardDefense(zoneKey, state, now)
 end
 
 local function ProcessTerritoryTick()
+    -- the E-capture zones are taken by pressing E (server/ecapture.lua), not by presence
+    for _, k in ipairs((Config.Territory and Config.Territory.ECapture and Config.Territory.ECapture.Zones) or {}) do
+        ZoneProgress[k] = nil
+    end
     local now = os.time()
     local staleAfter = Config.Territory.PingStaleSeconds or 12
     local tickSeconds = (Config.Territory.TickIntervalMs or 5000) / 1000
@@ -1395,3 +1401,20 @@ ESX.RegisterServerCallback('Allies:Overview', function(source, cb)
         allies = allies, incoming = incoming, outgoing = outgoing, candidates = candidates,
     })
 end)
+
+-- Same gang, or allied gangs (alliances are stored in the local table above).
+-- Used by the island death / revive rules (server/island_death.lua).
+function AreGangsAllied(a, b)
+    if not a or not b or a == 'nogang' or b == 'nogang' then return false end
+    if a == b then return true end
+    return Alliances[a] ~= nil and Alliances[a][b] == true
+end
+
+-- True for the zones that are taken with E (Config.Territory.ECapture).
+function ECZone(k)
+    for _, z in ipairs((Config.Territory and Config.Territory.ECapture and Config.Territory.ECapture.Zones) or {}) do
+        if z == k then return true end
+    end
+    return false
+end
+

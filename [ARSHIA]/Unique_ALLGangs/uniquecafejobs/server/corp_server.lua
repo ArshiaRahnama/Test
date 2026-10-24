@@ -144,6 +144,21 @@ local function ownerOf(businessJob)
 	return cafe and GetBusinessHolding(cafe) or nil
 end
 
+-- Who may manage a business's staff (set jobs, ranks, uniforms...):
+--  * the holding's own job holders (the old rule), or
+--  * the BOSS of the gang that OWNS that holding (Holding Purchase).
+local function canManageBusiness(businessJob, xPlayer)
+	if not xPlayer then return false end
+	local h = ownerOf(businessJob)
+	if not h then return false end
+	if xPlayer.job and xPlayer.job.name == h then return true end
+	local gang = xPlayer.gang and xPlayer.gang.name
+	if not gang or gang == 'nogang' then return false end
+	if HoldingOwnerOf(h) ~= gang then return false end
+	local ok, boss = pcall(function() return IsGangBoss(xPlayer.source) end)
+	return ok and boss == true
+end
+
 -- ── Per-holding rank ladders ──
 -- HoldingRanks[holdingJob] = { {id, label, feePercent, upgradeCost, sortOrder}, ... }
 -- always kept SORTED by sortOrder ascending (index 1 = lowest/starting tier).
@@ -366,7 +381,7 @@ AddEventHandler('uniquecafejobs:corp:upgradeBusiness', function(job)
 		TriggerClientEvent('esx:showNotification', src, 'Director rank or higher required.')
 		return
 	end
-	if ownerOf(job) ~= xPlayer.job.name then return end
+	if not canManageBusiness(job, xPlayer) then return end
 
 	local state = BusinessState[job]
 	local nextRank = getNextRank(xPlayer.job.name, state.rank)
@@ -604,7 +619,7 @@ AddEventHandler('uniquecafejobs:corp:openSupplyContract', function(businessJob)
 	local holding = xPlayer and GetHoldingConfig(xPlayer.job.name)
 	if not holding or holding.Job == Corp.Meridian.Job then return end
 	if xPlayer.job.grade < 5 then return end
-	if ownerOf(businessJob) ~= xPlayer.job.name then return end
+	if not canManageBusiness(businessJob, xPlayer) then return end
 
 	local cafe = GetBusinessForJob(businessJob)
 	if not cafe then return end
@@ -625,7 +640,7 @@ AddEventHandler('uniquecafejobs:corp:buySupplyContract', function(businessJob, i
 	local holding = xPlayer and GetHoldingConfig(xPlayer.job.name)
 	if not holding or holding.Job == Corp.Meridian.Job then return end
 	if xPlayer.job.grade < 5 then return end
-	if ownerOf(businessJob) ~= xPlayer.job.name then return end
+	if not canManageBusiness(businessJob, xPlayer) then return end
 
 	local unitPrice = Corp.Meridian.SupplyPrices[itemName]
 	if not unitPrice then return end
@@ -679,7 +694,7 @@ AddEventHandler('uniquecafejobs:corp:selfAssignJob', function(job)
 	local src = source
 	local xPlayer = ESX.GetPlayerFromId(src)
 	if not xPlayer then return end
-	if ownerOf(job) ~= xPlayer.job.name then return end
+	if not canManageBusiness(job, xPlayer) then return end
 
 	if not (ESX.Jobs[job] and ESX.Jobs[job].grades[0]) then
 		TriggerClientEvent('esx:showNotification', src, 'That business has no entry grade set up.')
@@ -717,7 +732,7 @@ AddEventHandler('uniquecafejobs:corp:openBusinessBossMenuAsMeridian', function(j
 	local src = source
 	local xPlayer = ESX.GetPlayerFromId(src)
 	if not xPlayer or xPlayer.job.grade < 5 then return end
-	if ownerOf(job) ~= xPlayer.job.name then return end
+	if not canManageBusiness(job, xPlayer) then return end
 
 	exports['esx_society']:grantRemoteBossAccess(src, job)
 	TriggerClientEvent('uniquecafejobs:corp:openRemoteBossMenu', src, job)
@@ -769,7 +784,7 @@ AddEventHandler('uniquecafejobs:corp:appointManager', function(job, targetId)
 	local src = source
 	local xPlayer = ESX.GetPlayerFromId(src)
 	if not xPlayer or xPlayer.job.grade < 5 then return end
-	if ownerOf(job) ~= xPlayer.job.name then return end
+	if not canManageBusiness(job, xPlayer) then return end
 
 	local target = ESX.GetPlayerFromId(tonumber(targetId))
 	if not target then
@@ -789,7 +804,7 @@ AddEventHandler('uniquecafejobs:corp:setEmployeeJob', function(job, targetId, gr
 	local src = source
 	local xPlayer = ESX.GetPlayerFromId(src)
 	if not xPlayer or xPlayer.job.grade < 5 then return end
-	if ownerOf(job) ~= xPlayer.job.name then return end
+	if not canManageBusiness(job, xPlayer) then return end
 
 	local target = ESX.GetPlayerFromId(tonumber(targetId))
 	if not target then
@@ -861,7 +876,7 @@ AddEventHandler('uniquecafejobs:corp:renameBusiness', function(job, newName)
 	local src = source
 	local xPlayer = ESX.GetPlayerFromId(src)
 	if not xPlayer or xPlayer.job.grade < 5 then return end
-	if ownerOf(job) ~= xPlayer.job.name then return end
+	if not canManageBusiness(job, xPlayer) then return end
 
 	newName = tostring(newName):sub(1, 40)
 	if #newName < 3 then
@@ -879,7 +894,7 @@ AddEventHandler('uniquecafejobs:corp:changeBlip', function(job, sprite, colour)
 	local src = source
 	local xPlayer = ESX.GetPlayerFromId(src)
 	if not xPlayer or xPlayer.job.grade < 5 then return end
-	if ownerOf(job) ~= xPlayer.job.name then return end
+	if not canManageBusiness(job, xPlayer) then return end
 
 	sprite = tonumber(sprite)
 	colour = tonumber(colour)
@@ -945,7 +960,7 @@ AddEventHandler('uniquecafejobs:corp:toggleBusinessActive', function(job)
 	local src = source
 	local xPlayer = ESX.GetPlayerFromId(src)
 	if not xPlayer or xPlayer.job.grade < 5 then return end
-	if ownerOf(job) ~= xPlayer.job.name then return end
+	if not canManageBusiness(job, xPlayer) then return end
 
 	local newState = not (ActiveBusinesses[job] ~= false)
 	ActiveBusinesses[job] = newState

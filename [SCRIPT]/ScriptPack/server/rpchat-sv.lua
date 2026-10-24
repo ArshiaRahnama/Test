@@ -120,7 +120,8 @@ AddEventHandler('chatMessage', function(source, name, message)
 				cia = "rgba(25, 25, 25, 0.6)",
 				marshal = "rgba(139, 69, 19, 0.6)",
 				judge = "rgba(0, 100, 0, 0.6)",
-				doa = "rgba(128, 0, 0, 0.6)"
+				doa = "rgba(128, 0, 0, 0.6)",
+				government = "rgba(212, 175, 55, 0.7)"
 			}
 
 			local playerJob = xPlayer.job.name

@@ -509,7 +509,7 @@ window.DXD_DmActionsHTML = DXD_DmActionsHTML;
 
 function DXD_OpenDmByUid(uid) {
     DX_Post("DiscordExt_OpenDM", { uid: uid }, function(r) {
-        if (!r || !r.dmId) { DX_Toast(r && r.error === "NOT_FRIENDS" ? "You can only message friends." : "Could not open that conversation.", "warn"); return; }
+        if (!r || !r.dmId) { DX_Toast(r && r.error === "NOT_FRIENDS" ? "You can only message friends." : (r && r.error === "DMS_CLOSED" ? "This person is not accepting direct messages from server members." : (r && r.error === "TOO_MANY_REQUESTS" ? "You have too many pending message requests." : "Could not open that conversation.")), "warn"); return; }
         DXD_OpenDm(r.dmId, r.user);
     });
 }

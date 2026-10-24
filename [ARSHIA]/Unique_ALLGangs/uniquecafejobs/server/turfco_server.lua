@@ -72,7 +72,9 @@ RegisterNetEvent('uniquecafejobs:turfco:rentMap')
 AddEventHandler('uniquecafejobs:turfco:rentMap', function(mapName, gangName, customerId)
 	local src = source
 	local staff = ESX.GetPlayerFromId(src)
-	if not staff or staff.job.name ~= TurfCo.Job then return end
+	local sg = staff and staff.gang and staff.gang.name
+	local okB, isBoss = pcall(function() return IsGangBoss(src) end)
+	if not staff or not (okB and isBoss and HoldingOwnerOf(TurfCo.Job) == sg) then return end
 
 	local function notify(id, msg) TriggerClientEvent('esx:showNotification', id, msg) end
 

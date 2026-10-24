@@ -57,6 +57,21 @@ CraftConfig = {
 	
 	Recipes = { -- Enter Item name and then the speed value! The higher the value the more torque
 
+	-- OWNER-ONLY (holding businesses): see Business. Only the gang that owns the holding
+	-- of that business can craft these.
+	['cyanide'] = {
+		Level = 0, Category = 'Business', isGun = false, Jobs = {}, JobGrades = {},
+		Amount = 1, SuccessRate = 90, requireBlueprint = false, Time = 20,
+		Business = 'UwU', -- Cafe 1 (Gang 1)
+		Ingredients = { ['essence'] = 2, ['mushroom'] = 1 },
+	},
+	['reviveX'] = {
+		Level = 0, Category = 'Business', isGun = false, Jobs = {}, JobGrades = {},
+		Amount = 1, SuccessRate = 90, requireBlueprint = false, Time = 20,
+		Business = 'Obsidian', -- Cafe 2 (Gang 1)
+		Ingredients = { ['gold_piece'] = 2, ['marijuana'] = 1 },
+	},
+
 	-- Items
 
 	['clip'] = {

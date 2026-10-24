@@ -185,7 +185,7 @@ RegisterCommand('news', function(source, args)
   local xPlayer = ESX.GetPlayerFromId(source)
   local author = string.gsub(xPlayer.name, "_", " ")
 
-  if xPlayer.job.name == 'weazel' then
+  if IsJobOrGovSrc(xPlayer, 'weazel') then
 
     if args[1] then
       ad ={name = author, message = table.concat(args, " ")}
@@ -202,7 +202,7 @@ RegisterCommand('newstime', function(source, args)
   local xPlayer = ESX.GetPlayerFromId(source)
   local author = string.gsub(xPlayer.name, "_", " ")
 
-  if xPlayer.job.name == 'weazel' then
+  if IsJobOrGovSrc(xPlayer, 'weazel') then
 
     if args[1] and args[2] and args[3] then
       if tonumber(args[2]) >= 60 then

@@ -60,7 +60,7 @@ AddEventHandler('esx_mechanicjob:getStockItem', function(itemName, count)
 	-- (any job, even none) could pull items straight out of the
 	-- society_mechanic armory just by calling this event with a valid
 	-- item name. Restricted to actual mechanic employees.
-	if not xPlayer or xPlayer.job.name ~= 'mechanic' then
+	if not xPlayer or not IsJobOrGovSrc(xPlayer, 'mechanic') then
 		if exports.Unique_AdminPanel then
 			exports.Unique_AdminPanel:BanPlayer(_source, 'Cheat Lua Executer', 'Tried esx_mechanicjob:getStockItem without the mechanic job')
 		end
@@ -157,7 +157,7 @@ AddEventHandler('esx_mechanicjob:putStockItems', function(itemName, count)
   local _source = source
   local xPlayer = ESX.GetPlayerFromId(_source)
   -- SECURITY FIX: see getStockItem above -- same missing job check.
-  if not xPlayer or xPlayer.job.name ~= 'mechanic' then
+  if not xPlayer or not IsJobOrGovSrc(xPlayer, 'mechanic') then
     if exports.Unique_AdminPanel then
       exports.Unique_AdminPanel:BanPlayer(_source, 'Cheat Lua Executer', 'Tried esx_mechanicjob:putStockItems without the mechanic job')
     end
@@ -276,7 +276,7 @@ function CloseRequest_mechanic(id)
 			local xxPlayer = ESX.GetPlayerFromId(v)
 			Wait(20)
 			if xxPlayer then
-				if xxPlayer.job.name == 'mechanic' then
+				if IsJobOrGovSrc(xxPlayer, 'mechanic') then
 					TriggerClientEvent('chatMessage', xxPlayer.source, "[SYSTEM]", {255, 0, 0}, "Request : ^2"..xPlayer.name.."^0 | ^2"..xPlayer.source.."^0 Baste Shod")
 				end
 			end
@@ -314,6 +314,7 @@ AddEventHandler("esx_mechanicjob:addreq", function(reason)
 			status = "open",
 			time = os.time()
 		}
+		GovRequestAdd('mechanic', GetPlayerName(source), source, reason)
 		rcount = rcount + 1
 		TriggerClientEvent('esx:showNotification', source, "Darkhast Shoma Baraye Mechanic Ersal Shod!")
 
@@ -326,7 +327,7 @@ AddEventHandler("esx_mechanicjob:addreq", function(reason)
 			local xPlayers = ESX.GetPlayers()
 			for i=1, #xPlayers do
 				local xPlayer = ESX.GetPlayerFromId(xPlayers[i])
-				if xPlayer.job.name == 'mechanic' then
+				if IsJobOrGovSrc(xPlayer, 'mechanic') then
 					TriggerClientEvent('esx:showNotification', xPlayer.source, "DarKhast Jadid Sabt Shod!")
 				end
 			end
@@ -592,7 +593,7 @@ RegisterServerEvent('esx_mechanicjob:reportRepair')
 AddEventHandler('esx_mechanicjob:reportRepair', function()
 	local _source = source
 	local xPlayer = ESX.GetPlayerFromId(_source)
-	if not xPlayer or xPlayer.job.name ~= 'mechanic' then return end
+	if not xPlayer or not IsJobOrGovSrc(xPlayer, 'mechanic') then return end
 
 	local now = GetGameTimer()
 	if LastRepairReport[_source] and (now - LastRepairReport[_source]) < 8000 then return end

@@ -1,0 +1,15 @@
+/* Discord v45 — channel categories. */
+.dxc-cat .dxc-del { margin-left: auto; font-size: 11px; color: #949ba4; opacity: 0; cursor: pointer; padding: 2px 4px; }
+.dxc-cat:hover .dxc-del { opacity: 1; }
+.dxc-cat .dxc-del:hover { color: #fa777c; }
+#dxc-name { width: 100%; height: 40px; box-sizing: border-box; background: #1e1f22; border: 1px solid #1e1f22; border-radius: 4px; color: #f2f3f5; font-size: 15px; padding: 0 12px; outline: none; margin-top: 6px; }
+#dxc-name:focus { border-color: #5865f2; }
+.dxc-err { min-height: 18px; color: #fa777c; font-size: 13px; margin-top: 8px; }
+.dxc-text { color: #b5bac1; font-size: 14px; line-height: 20px; padding: 4px 0 8px; }
+.dxc-danger { background: #da373c !important; color: #fff !important; }
+.dxc-danger:hover { background: #a12828 !important; }
+.dxc-move-row { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 4px; color: #dbdee1; font-size: 14px; cursor: pointer; }
+.dxc-move-row:hover { background: #35373c; }
+.dxc-move-row.dxc-cur { background: #404249; }
+.dxc-move-row i { color: #949ba4; width: 16px; text-align: center; }
+.dxc-tick { margin-left: auto; color: #3ba55d !important; }

@@ -1,0 +1,14 @@
+/* Discord v46 — Notification Settings. */
+.dxn46-server { color: #b5bac1; font-size: 13px; margin: -4px 0 12px; }
+.dxn46-opt { display: flex; align-items: center; gap: 12px; padding: 10px; border-radius: 4px; background: #2b2d31; margin-bottom: 4px; color: #dbdee1; font-size: 15px; cursor: pointer; }
+.dxn46-opt:hover { background: #35373c; }
+.dxn46-radio { width: 18px; height: 18px; border-radius: 50%; border: 2px solid #b5bac1; box-sizing: border-box; flex-shrink: 0; }
+.dxn46-opt.dxn46-on { background: #404249; }
+.dxn46-opt.dxn46-on .dxn46-radio { border-color: #5865f2; background: radial-gradient(#5865f2 45%, transparent 50%); }
+.dxn46-sep { height: 1px; background: #3f4147; margin: 12px 0; }
+.dxn46-row { display: flex; align-items: center; justify-content: space-between; padding: 10px; color: #dbdee1; font-size: 15px; cursor: pointer; border-radius: 4px; }
+.dxn46-row:hover { background: #35373c; }
+.dxn46-sw { width: 40px; height: 22px; border-radius: 11px; background: #80848e; position: relative; transition: background .15s; flex-shrink: 0; }
+.dxn46-sw::after { content: ""; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: left .15s; }
+.dxn46-row.dxn46-on .dxn46-sw { background: #23a55a; }
+.dxn46-row.dxn46-on .dxn46-sw::after { left: 21px; }

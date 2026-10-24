@@ -1,0 +1,12 @@
+/* Discord v42 — server dropdown list, like Discord. */
+.dxm42 { padding: 6px 0; }
+.dxm42-item { display: flex; align-items: center; gap: 10px; padding: 8px 12px; margin: 0 6px; border-radius: 3px; color: #b5bac1; font-size: 14px; cursor: pointer; }
+.dxm42-item i { width: 16px; text-align: center; color: #b5bac1; }
+.dxm42-item span:first-of-type { flex: 1; }
+.dxm42-item:hover { background: #5865f2; color: #fff; }
+.dxm42-item:hover i { color: #fff; }
+.dxm42-danger, .dxm42-danger i { color: #fa777c; }
+.dxm42-danger:hover { background: #da373c; color: #fff; }
+.dxm42-check { color: #3ba55d; font-weight: 700; }
+.dxm42-sep { height: 1px; background: #3f4147; margin: 6px 12px; }
+body.dxm42-hide-muted .discord-channel-item.discord-channel-muted { display: none; }

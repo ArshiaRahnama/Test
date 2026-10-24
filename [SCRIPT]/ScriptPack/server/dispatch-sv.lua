@@ -46,6 +46,7 @@ local organGroups = {
     doj = { "cid", "cia", "marshal", "fbi", "judge", "doa" },        -- Department Of Justice
     le = { "police", "sheriff", "mt" },                              -- Law Enforcement
     services = { "taxi", "mechanic", "ambulance", "weazel" },        -- Organ Services
+    gov = { "government" },                                          -- Government (sees and reaches every organ)
 
     -- Holding 1 (uniquecafejobs): all 17 businesses + the holding job itself.
     -- /f reaches everyone in this whole group; /dep reaches every group above too.
@@ -191,7 +192,7 @@ RegisterCommand('flist', function(source, args)
             end
 
                 local dutytext = nil
-                local jobGrade = xPlayer.job.grade_label
+                local jobGrade = string.upper(xPlayer.job.name) .. " | " .. xPlayer.job.grade_label
                 local name = GetPlayerName(source)
                 local message = table.concat(args, " ")
 
@@ -207,7 +208,8 @@ RegisterCommand('flist', function(source, args)
                 for i=1, #xPlayers do
                     local tplayer = ESX.GetPlayerFromId(xPlayers[i])
                     -- same ORGAN (DOJ / Law Enforcement / Organ Services), not just same exact job
-                    if jobToOrgan[tplayer.job.name] == organ then
+                    local tOrgan = jobToOrgan[tplayer.job.name]
+                    if tOrgan and (tOrgan == organ or tOrgan == "gov") then
                         TriggerClientEvent('chatMessage', xPlayers[i], "", {255, 0, 0}, dutytext .. "^1" ..jobGrade .. "^4]: ^3" .. name .. " ^4(( " .. "^0^*" .. message .. "^4 ))")
                     end
                 end
@@ -249,7 +251,7 @@ RegisterCommand('flist', function(source, args)
             if xPlayer.job.grade >= 4 then
                 local name = string.gsub(xPlayer.name, "_", " ")
                 local job = xPlayer.job.name
-                local jobGrade = xPlayer.job.grade_label
+                local jobGrade = string.upper(xPlayer.job.name) .. " | " .. xPlayer.job.grade_label
                 local message = table.concat(args, " ", 1)
     
                 TriggerClientEvent("sendProximityMessageradio",-1, source, "^4[^2^*Radio^4] ^3" .. name.." ^8^*: ^r", "^0^* " .. message , false)
@@ -270,6 +272,35 @@ RegisterCommand('flist', function(source, args)
             TriggerClientEvent('chatMessage', source, "[SYSTEM]", {255, 0, 0}, " ^0Shoma Ozv hich organ dolati nistid!")
         end
     end, false)
+
+    -- Government only: /fdoj, /flaw, /fservices send to that organ (and to Government)
+    local function sendGovOrganChat(source, targetOrgan, args)
+        local xPlayer = ESX.GetPlayerFromId(source)
+        if not xPlayer or xPlayer.job.name ~= "government" then
+            TriggerClientEvent('chatMessage', source, "[SYSTEM]", {255, 0, 0}, " ^0Faghat Government mitoone az in dastur estefade kone.")
+            return
+        end
+        local text = table.concat(args, " ")
+        if text == "" then
+            TriggerClientEvent('chatMessage', source, "[SYSTEM]", {255, 0, 0}, " ^0Payam khali ast!")
+            return
+        end
+        local name = GetPlayerName(source)
+        local line = "^4[^3^*GOV -> " .. string.upper(targetOrgan) .. "^4] ^3" .. name .. " ^8^*: ^r" .. text
+        for _, pid in ipairs(ESX.GetPlayers()) do
+            local tp = ESX.GetPlayerFromId(pid)
+            if tp then
+                local tOrgan = jobToOrgan[tp.job.name]
+                if tOrgan == targetOrgan or tOrgan == "gov" then
+                    TriggerClientEvent('chatMessage', tp.source, "", {255, 215, 0}, line)
+                end
+            end
+        end
+    end
+
+    RegisterCommand('fdoj', function(source, args) sendGovOrganChat(source, 'doj', args) end, false)
+    RegisterCommand('flaw', function(source, args) sendGovOrganChat(source, 'le', args) end, false)
+    RegisterCommand('fservices', function(source, args) sendGovOrganChat(source, 'services', args) end, false)
 
     RegisterCommand("dep", function(source, args)
         local xPlayer = ESX.GetPlayerFromId(source)

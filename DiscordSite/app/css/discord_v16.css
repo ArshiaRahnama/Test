@@ -1,0 +1,8 @@
+/* Discord v16 — loaded last. */
+.dxf-focus { margin-top: 10px; }
+.dxf-check { display: flex; gap: 8px; align-items: center; font-size: 13px; color: #dbdee1; }
+.dxf-star { color: #f0b232; margin-left: 6px; font-size: 12px; align-self: center; }
+.dxt-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.dxt-lbl { font-size: 12px; font-weight: 700; text-transform: uppercase; color: #b5bac1; min-width: 80px; }
+.dxt-row select { flex: 1; }
+.dxt-save { margin-top: 12px; }

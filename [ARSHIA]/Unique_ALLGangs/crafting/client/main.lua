@@ -193,3 +193,13 @@ function CR_DrawTexet3D(x, y, z, text)
         EndTextCommandDisplayText(_x, _y)
     end
 end
+
+-- /craftdebug : prints the benches this client knows about and the distance to each
+RegisterCommand('craftdebug', function()
+    local pos = GetEntityCoords(PlayerPedId())
+    print(('[Unique_Crafting] benches known to this client: %d'):format(#Benches))
+    for i, v in ipairs(Benches) do
+        print(('  #%d public=%s radius=%.1f dist=%.2f at %.2f, %.2f, %.2f'):format(
+            i, tostring(v.public), v.radius or 0, #(pos - v.coords), v.coords.x, v.coords.y, v.coords.z))
+    end
+end, false)

@@ -95,6 +95,7 @@ function OpenBossActionsMenu()
                     {label = 'Territory Control', value = 'territory'},
                     {label = 'Gang Friends (Allies)', value = 'allies'},
                     {label = 'Gun Shop', value = 'gunshop'},
+                    {label = 'Holding Purchase', value = 'holdingsale'},
                 }
                 if Config.ZoneWar and Config.ZoneWar.Enabled then
                     elements[#elements + 1] = {label = zwLabel, value = 'zonewar'}  -- opens the Gang War screen
@@ -130,6 +131,9 @@ function OpenBossActionsMenu()
                         -- new NUI screen (Unique_AllRobs); the old ESX menu is the fallback
                         local okT = pcall(function() exports['Unique_AllRobs']:OpenTerritoryMenu() end)
                         if not okT then OpenTerritoryBossMenu(gang) end
+                    elseif data.current.value == 'holdingsale' then
+                        menu.close()
+                        TriggerEvent('holding_sale:openMenu')
                     elseif data.current.value == 'gunshop' then
                         menu.close()
                         local okG, errG = pcall(function() exports['Unique_AllRobs']:OpenGunShopMenu() end)

@@ -1,0 +1,7 @@
+/* Discord v18 — loaded last. */
+.dxa-muted { color: #949ba4; font-size: 12px; }
+.dxa-table { max-height: 380px; overflow-y: auto; }
+.dxa-row { display: grid; grid-template-columns: 150px 110px 1fr 1fr; gap: 8px; align-items: center; padding: 7px 8px; border-bottom: 1px solid #3f4147; font-size: 13px; color: #dbdee1; }
+.dxa-time { color: #949ba4; font-size: 12px; }
+.dxa-action { color: #c9cdfb; }
+.dxa-target { color: #b5bac1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

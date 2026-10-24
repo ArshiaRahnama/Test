@@ -110,6 +110,19 @@ AddEventHandler('esx:setJob', function(job)
 	end)
 end)
 
+-- Extra boss-action entries: other resources register an entry for a society, and
+-- the entry fires their event with the society name when it is clicked.
+BossExtras = BossExtras or {}   -- [society] = { { id, label, event } }
+
+RegisterNetEvent('esx_society:registerBossExtra')
+AddEventHandler('esx_society:registerBossExtra', function(society, id, label, event)
+	BossExtras[society] = BossExtras[society] or {}
+	for _, ex in ipairs(BossExtras[society]) do
+		if ex.id == id then return end
+	end
+	table.insert(BossExtras[society], { id = id, label = label, event = event })
+end)
+
 function OpenBossMenu(society, close, options)
 	local isBoss = nil
 	local options  = options or {}
@@ -269,11 +282,23 @@ function OpenBossMenu(society, close, options)
 		table.insert(elements, {label = label, value = 'open_society_pay'})
 	end
 
+	for _, ex in ipairs(BossExtras[society] or {}) do
+		table.insert(elements, {label = ex.label, value = '__extra_' .. ex.id})
+	end
+
 	ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'boss_actions_' .. society, {
 		title    = _U('boss_menu'),
 		align    = 'top-left',
 		elements = elements
 	}, function(data, menu)
+
+		if type(data.current.value) == 'string' and data.current.value:sub(1, 8) == '__extra_' then
+			local id = data.current.value:sub(9)
+			for _, ex in ipairs(BossExtras[society] or {}) do
+				if ex.id == id then TriggerEvent(ex.event, society) end
+			end
+			return
+		end
 
 		if data.current.value == 'withdraw_society_money' then
 			if Config.Withdraw == true then

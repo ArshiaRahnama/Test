@@ -522,6 +522,7 @@ Config.LogCategories = {
     'Gun Shop',
     'Auction House',
     'Crafting',
+    'Business',
 }
 
 -- icon + short description shown in the "Set Log Webhook" menu
@@ -533,6 +534,7 @@ Config.LogCategoryMeta = {
     ['Gun Shop']      = { icon = 'gun',      desc = 'Gun shop sales to NPCs and stock deposits' },
     ['Auction House'] = { icon = 'gavel',    desc = 'Listings and sales on the auction house' },
     ['Crafting']      = { icon = 'hammer',   desc = 'Crafted items and failed crafts' },
+    ['Business']      = { icon = 'store',    desc = 'Sales from the business shop (ox_target)' },
 }
 
 -------------------------------------------------------------------
@@ -591,6 +593,49 @@ Config.Territory = {
         blipColor    = 1,     -- red
         blipOpacity  = 50,    -- 0-255
         captureAnnounce = true, -- when a zone changes hands, everyone physically on the island gets a message
+
+        -- E-CAPTURE (server/ecapture.lua + client/ecapture.lua)
+        -- Replaces the presence capture on these island zones. A gang member
+        -- presses E in the zone, a progress runs, and zombies come out.
+        -- Zone armories are gone: no armory access on zones, no items added to an armory when a zone is taken.
+        ZoneArmory = false,
+
+        ECapture = {
+            Enabled         = true,
+            Zones           = { 'cayo_airstrip', 'cayo_central', 'cayo_north_coast', 'cayo_south_hill', 'cayo_tower_base' },
+            CaptureTime     = 180,        -- seconds the capture runs (like the PvP capture island)
+            Display = {                   -- look copied from Unique_Pvp's capture island
+                ZoneColor   = { r = 255, g = 0, b = 0, a = 100 },
+                Blip        = { sprite = 486, color = 1, scale = 1.2 },
+                BlipPrefix  = 'CAPTURE',  -- "CAPTURE | Foroodgah Jazire | <owner>"
+            },
+            CooldownMins    = 10,         -- minutes before the same zone can be taken with E again
+            RewardMoney     = 15000,      -- black money per capturing member
+            ZombieEssenceChance = 25,     -- % per member
+            ZombiesPerCapture = 4,
+            ZombieModel     = 'u_m_y_zombie_01',
+            ZombieSpawnRadius = 25.0,
+            AggroRange      = 10.0,       -- zombies only attack when a player comes this close
+            InteractRange   = 3.0,
+        },
+
+        -- DEATH ON THE ISLAND (server/island_death.lua + client/island_death.lua)
+        -- Dying here drops your good items where you fell. Gang members and allied
+        -- gangs get a marker on the dead player. The dead can only be revived by
+        -- a gang/ally member doing /e cpr next to them, who needs ReviveItem
+        -- (it is used up on a successful revive).
+        Death = {
+            Enabled         = true,
+            BlockMedicAlert = true,       -- island deaths do not alert the medics (see the ambulance hook in the server file)
+            ReviveWindow    = 300,        -- seconds the dead wait for a revive before they are released
+            ReviveRange     = 3.0,        -- how close the reviver must be
+            ReviveTime      = 5000,       -- ms of the /e cpr progress bar
+            ReviveItem      = 'reviveX',  -- used up by the reviver on a successful revive
+            ReviveHealth    = 150,        -- health the revived player gets back
+            DropItems       = { 'gold', 'iron', 'phone', 'WEAPON_PISTOL', 'WEAPON_SMG', 'WEAPON_CARBINERIFLE' },
+            DropTimeout     = 600,        -- seconds before a dropped pile disappears
+            PickupRange     = 2.0,
+        },
 
         -- No zombies in/near the island's Safe zones (spawn/teleport areas).
         -- radius = the Safe zone's own 50m + a 50m margin, so zombies never hover at the edge.
@@ -868,3 +913,69 @@ Config.Territory = {
         },
     },
 }
+
+-- HOLDING SALE (server/holding_sale.lua): the two existing holdings are sold by auction.
+-- Gang bosses bid from the Boss Action menu ("Holding Sale"). Money is held when bidding
+-- and returned to the gang that gets outbid. The winner owns the holding for OwnershipDays,
+-- then it goes back to auction.
+Config.HoldingSale = {
+    Holdings = {
+        meridian = {
+            label = 'Gang 1',
+            businesses = { 'Cafe 1 (UwU) - Cyanide craft', 'Cafe 2 (Obsidian) - reviveX craft',
+                           'Restaurant 1 (Ember) - ox_target stock', 'Restaurant 3 (Crimson) - Samsari 1' },
+        },
+        turfco = {
+            label = 'Gang 2',
+            businesses = { 'Cafe 3 (Voltage) - Paintball rent', 'Cafe 4 (Nightjar) - Samsari 2',
+                           'Restaurant 2 (Anchor) - Barbers', 'Restaurant 4 (Static) - Tattoo shops' },
+        },
+    },
+    StartPrice     = 50000000,  -- first bid of a free holding
+    BidStepPct     = 10,        -- each next bid must be this many percent above the top
+    AuctionMinutes = 60,        -- a free holding's auction stays open this long
+    OwnershipDays  = 60,        -- the buyer keeps it this long
+    RequestDays    = 7,         -- the last week: requests (bids) open, the highest one gets it at the end
+    CheckSeconds   = 30,
+}
+
+-- PAWNSHOPS (server/pawnshop.lua): two pawn shops, each with a different list.
+-- Stand at the business' menu point and press E; you sell items for money.
+Config.Pawnshops = {
+    crimson = {
+        label = 'Samsari 1 (Crimson)',
+        items = {
+            { name = 'gold_piece',  label = 'Gold Piece',   price = 8500 },
+            { name = 'diamond',     label = 'Diamond',      price = 22000 },
+            { name = 'iron_piece',  label = 'Iron Piece',   price = 3200 },
+            { name = 'cutted_wood', label = 'Cut Wood',     price = 1400 },
+        },
+    },
+    nightjar = {
+        label = 'Samsari 2 (Nightjar)',
+        items = {
+            { name = 'marijuana',   label = 'Marijuana',    price = 2600 },
+            { name = 'mushroom',    label = 'Mushroom',     price = 1900 },
+            { name = 'petrol_raffin', label = 'Refined Petrol', price = 4100 },
+            { name = 'essence',     label = 'Essence',      price = 9800 },
+        },
+    },
+}
+
+-- BUSINESS SHOP (server/business_sale.lua): every holding business has a sale point
+-- (ox_target) 2.5 m from its menu point. The items come from the OWNER GANG'S armory,
+-- the money goes to the gang's treasury, and the sale is logged under "Business".
+Config.BusinessSales = {
+    SalePointOffset = vector3(2.5, 0.0, 0.0),
+    Businesses = {
+        UwU      = { label = 'Cafe 1 (UwU)',       products = { { item = 'cyanide',    label = 'Cyanide',     price = 25000 } } },
+        Obsidian = { label = 'Cafe 2 (Obsidian)',  products = { { item = 'reviveX',    label = 'reviveX',     price = 40000 } } },
+        Ember    = { label = 'Restaurant 1 (Ember)', products = { { item = 'iron_piece', label = 'Iron Piece', price = 3000 } } },
+        Crimson  = { label = 'Samsari 1 (Crimson)', products = { { item = 'diamond',   label = 'Diamond',     price = 22000 } } },
+        Voltage  = { label = 'Cafe 3 (Voltage)',   products = { { item = 'essence',    label = 'Essence',     price = 9000 } } },
+        Nightjar = { label = 'Samsari 2 (Nightjar)', products = { { item = 'marijuana', label = 'Marijuana', price = 3000 } } },
+        Anchor   = { label = 'Restaurant 2 (Anchor)', products = { { item = 'gold_piece', label = 'Gold Piece', price = 9000 } } },
+        Static   = { label = 'Restaurant 4 (Static)', products = { { item = 'fabric',   label = 'Fabric',      price = 2000 } } },
+    },
+}
+

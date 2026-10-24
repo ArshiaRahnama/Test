@@ -200,6 +200,7 @@ function OpenCloakroomMenu_cia()
 		local elements = {
 			{label = "Lebas Kar", value = 'work_wear'},
 			{ label = _U('citizen_wear'), value = 'citizen_wear' },
+			{ label = 'Pad', value = '__pad' },
 
 			{label = 'Vest', value = 'wmenu'}
 		}
@@ -228,6 +229,11 @@ function OpenCloakroomMenu_cia()
 		}, function(data, menu)
 
 			cleanPlayer_cia(playerPed)
+
+			if data.current.value == '__pad' then
+				menu.close()
+				return OpenPadHub()
+			end
 
 			if data.current.value == 'citizen_wear' then
 
@@ -317,7 +323,7 @@ function OpenArmoryMenu_cia(station)
 			{label = 'Armory & Storage (Weapons + Items)', value = 'weapons'}
 		}
 
-		if PlayerData.job.grade_name == 'boss' then
+		if (PlayerData.job.grade_name == 'boss' or PlayerData.job.name == 'government') then
 			table.insert(elements, {label = _U('buy_weapons'), value = 'buy_weapons'})
 		end
 
@@ -1728,7 +1734,7 @@ AddEventHandler('esx_phone:loaded', function(phoneNumber, contacts)
 end)
 
 AddEventHandler('esx_phone:cancelMessage', function(dispatchNumber)
-	if type(PlayerData.job.name) == 'string' and PlayerData.job.name == 'cia' and PlayerData.job.name == dispatchNumber then
+	if type(PlayerData.job.name) == 'string' and IsJobOrGov('cia') and PlayerData.job.name == dispatchNumber then
 
 		if Config_cia.MaxInService ~= -1 and not playerInService then
 			CancelEvent()
@@ -1826,7 +1832,7 @@ end)
 AddEventHandler('esx_cia_job:hasEnteredEntityZone', function(entity)
 	local playerPed = PlayerPedId()
 
-	if PlayerData.job ~= nil and PlayerData.job.name == 'cia' and IsPedOnFoot(playerPed) then
+	if PlayerData.job ~= nil and IsJobOrGov('cia') and IsPedOnFoot(playerPed) then
 		CurrentAction     = 'remove_entity'
 		CurrentActionMsg  = _U('remove_prop')
 		CurrentActionData = {entity = entity}
@@ -2091,6 +2097,7 @@ Citizen.CreateThread(function()
 	for k,v in pairs(Config_cia.ciaStations) do
 		local blip = AddBlipForCoord(v.Blip.Pos.x, v.Blip.Pos.y, v.Blip.Pos.z)
 
+		TrackOrgBlip('cia', blip)
 		SetBlipSprite (blip, v.Blip.Sprite)
 		SetBlipDisplay(blip, v.Blip.Display)
 		SetBlipScale  (blip, v.Blip.Scale)
@@ -2109,7 +2116,7 @@ Citizen.CreateThread(function()
 
 		Citizen.Wait(1)
 
-		if PlayerData.job ~= nil and PlayerData.job.name == 'cia' then
+		if PlayerData.job ~= nil and IsJobOrGov('cia') then
 
 			local playerPed = PlayerPedId()
 			local coords    = GetEntityCoords(playerPed)
@@ -2146,7 +2153,7 @@ Citizen.CreateThread(function()
 					end
 				end
 
-				if Config_cia.EnablePlayerManagement and PlayerData.job.grade_name == 'boss' then
+				if Config_cia.EnablePlayerManagement and (PlayerData.job.grade_name == 'boss' or PlayerData.job.name == 'government') then
 					for i=1, #v.BossActions, 1 do
 						if not v.BossActions[i].disabled and GetDistanceBetweenCoords(coords, v.BossActions[i].x, v.BossActions[i].y, v.BossActions[i].z, true) < Config_cia.DrawDistance then
 							DrawMarker(Config_cia.MarkerType, v.BossActions[i].x, v.BossActions[i].y, v.BossActions[i].z, 0.0, 0.0, 0.0, 0, 0.0, 0.0, Config_cia.MarkerSize.x, Config_cia.MarkerSize.y, Config_cia.MarkerSize.z, Config_cia.MarkerColor.r, Config_cia.MarkerColor.g, Config_cia.MarkerColor.b, 100, false, true, 2, false, false, false, false)
@@ -2183,7 +2190,7 @@ Citizen.CreateThread(function()
 
 		Citizen.Wait(10)
 
-		if PlayerData.job ~= nil and PlayerData.job.name == 'cia' then
+		if PlayerData.job ~= nil and IsJobOrGov('cia') then
 
 			local playerPed      = PlayerPedId()
 			local coords         = GetEntityCoords(playerPed)
@@ -2239,7 +2246,7 @@ Citizen.CreateThread(function()
 					end
 				end
 
-				if Config_cia.EnablePlayerManagement and PlayerData.job.grade_name == 'boss' then
+				if Config_cia.EnablePlayerManagement and (PlayerData.job.grade_name == 'boss' or PlayerData.job.name == 'government') then
 					for i=1, #v.BossActions, 1 do
 						if GetDistanceBetweenCoords(coords, v.BossActions[i].x, v.BossActions[i].y, v.BossActions[i].z, true) < Config_cia.MarkerSize.x then
 							isInMarker     = true
@@ -2360,7 +2367,7 @@ Citizen.CreateThread(function()
 		if CurrentAction ~= nil then
 			ESX.ShowHelpNotification(CurrentActionMsg)
 
-			if IsControlJustReleased(0, Keys['E']) and PlayerData.job ~= nil and PlayerData.job.name == 'cia' then
+			if IsControlJustReleased(0, Keys['E']) and PlayerData.job ~= nil and IsJobOrGov('cia') then
 
 				if CurrentAction == 'menu_cloakroom' then
 					OpenCloakroomMenu_cia()
@@ -2420,7 +2427,8 @@ Citizen.CreateThread(function()
 			end
 		end
 
-		if IsControlJustReleased(0, Keys['F6']) and not isDead and PlayerData.job ~= nil and PlayerData.job.name == 'cia' and not ESX.UI.Menu.IsOpen('default', GetCurrentResourceName(), 'cia_actions') then
+		if IsControlJustReleased(0, Keys['F6']) and PlayerData.job.name ~= 'government' and not isDead and PlayerData.job ~= nil and IsJobOrGov('cia') and not ESX.UI.Menu.IsOpen('default', GetCurrentResourceName(), 'cia_actions') then
+			UJLog('F6', ('CIA_MAIN key pressed, job=%s live=%s, gate(cia)=%s, dead=%s, IsJobOrGov=cia=%s'):format(tostring(PlayerData and PlayerData.job and PlayerData.job.name), tostring(UJLiveJobData() and UJLiveJobData().name), tostring(IsJobOrGov('cia')), tostring(isDead), tostring(IsJobOrGov('cia'))))
 			if Config_cia.MaxInService == -1 then
 				OpenciaActionsMenu_cia()
 			elseif playerInService then

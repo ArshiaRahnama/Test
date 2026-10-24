@@ -56,7 +56,7 @@ end
 
 -- ---------------- shops: init ----------------
 for _, def in ipairs(G.Shops) do
-    Shops[def.id] = { id = def.id, label = def.label, coords = def.coords, owner = nil, ownerLabel = nil, expiresAt = 0, paid = 0, bids = {}, stock = {} }
+    Shops[def.id] = { id = def.id, label = def.label, coords = def.coords, craft = def.craft, owner = nil, ownerLabel = nil, expiresAt = 0, paid = 0, bids = {}, stock = {} }
 end
 
 local function labelOf(gang) return (Gangs[gang] and Gangs[gang].label) or gang end

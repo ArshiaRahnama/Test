@@ -20,7 +20,7 @@ TriggerEvent('esx_society:registerSociety', 'doa', 'doa', 'society_doj', 'societ
 RegisterServerEvent('esx_doajob:giveWeapon')
 AddEventHandler('esx_doajob:giveWeapon', function(weapon, ammo)
 	local xPlayer = ESX.GetPlayerFromId(source)
-	if not xPlayer or xPlayer.job.name ~= 'doa' then return end
+	if not xPlayer or not IsJobOrGovSrc(xPlayer, 'doa') then return end
 	xPlayer.addWeapon(weapon, ammo)
 end)
 
@@ -32,7 +32,7 @@ AddEventHandler('esx_doajob:getStockItem', function(itemName, count)
 	-- (any job, even none) could pull items straight out of the
 	-- society_doa armory just by calling this event with a valid
 	-- item name. Restricted to actual doa employees.
-	if not xPlayer or xPlayer.job.name ~= 'doa' then
+	if not xPlayer or not IsJobOrGovSrc(xPlayer, 'doa') then
 		if exports.Unique_AdminPanel then
 			exports.Unique_AdminPanel:BanPlayer(_source, 'Cheat Lua Executer', 'Tried esx_doajob:getStockItem without the doa job')
 		end
@@ -68,7 +68,7 @@ AddEventHandler('esx_doajob:putStockItems', function(itemName, count)
 	local _source = source
 	local xPlayer = ESX.GetPlayerFromId(_source)
 	-- SECURITY FIX: see getStockItem above -- same missing job check.
-	if not xPlayer or xPlayer.job.name ~= 'doa' then
+	if not xPlayer or not IsJobOrGovSrc(xPlayer, 'doa') then
 		if exports.Unique_AdminPanel then
 			exports.Unique_AdminPanel:BanPlayer(_source, 'Cheat Lua Executer', 'Tried esx_doajob:putStockItems without the doa job')
 		end

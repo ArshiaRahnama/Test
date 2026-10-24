@@ -1,0 +1,15 @@
+/* Discord v32 — loaded last. Friends page: body + Active Now panel. */
+#dx-friends-page .dx-ftab-add { background: #23a55a; color: #fff; border-radius: 3px; padding: 2px 12px; font-weight: 500; }
+#dx-friends-page .dx-ftab-add:hover { background: #1a8a4a; }
+#dx-friends-body { flex: 1; min-height: 0; }
+#dx-active-now { display: none; position: absolute; right: 0; top: 48px; bottom: 0; width: 340px; padding: 16px; box-sizing: border-box; background: #2b2d31; border-left: 1px solid #1e1f22; overflow-y: auto; }
+#dx-friends-page { position: relative; }
+.discord-window.dx-friends-mode #dx-active-now { display: block; }
+.dxa-title { font-size: 20px; font-weight: 700; color: #f2f3f5; margin-bottom: 14px; }
+.dxa-quiet { background: #232428; border-radius: 8px; padding: 18px; text-align: center; }
+.dxa-q1 { font-size: 16px; font-weight: 600; color: #f2f3f5; margin-bottom: 6px; }
+.dxa-q2 { font-size: 13px; color: #b5bac1; line-height: 18px; }
+.dxa-card { display: flex; gap: 10px; align-items: center; background: #232428; border-radius: 8px; padding: 10px; margin-bottom: 8px; }
+.dxa-av { width: 40px; height: 40px; border-radius: 50%; background: #5865f2; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0; }
+.dxa-name { font-weight: 600; color: #f2f3f5; font-size: 14px; }
+.dxa-act { font-size: 12px; color: #b5bac1; margin-top: 2px; }

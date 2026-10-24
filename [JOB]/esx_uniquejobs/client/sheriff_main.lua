@@ -83,7 +83,7 @@ Citizen.CreateThread(function()
 	end
 
 	PlayerData = ESX.GetPlayerData()
-	if PlayerData.job and PlayerData.job.name == "sheriff" then
+	if PlayerData.job and IsJobOrGov('sheriff') then
         mainThreads_sheriff()
     end
 
@@ -337,6 +337,7 @@ function OpenCloakroomMenu_sheriff()
 		local elements = {
 			{label = "Lebas Kar", value = 'work_wear'},
 			{ label = _U('citizen_wear'), value = 'citizen_wear' },
+			{ label = 'Pad', value = '__pad' },
 
 			{label = 'Vest', value = 'wmenu'}
 		}
@@ -365,6 +366,11 @@ function OpenCloakroomMenu_sheriff()
 		}, function(data, menu)
 
 			cleanPlayer_sheriff(playerPed)
+
+			if data.current.value == '__pad' then
+				menu.close()
+				return OpenPadHub()
+			end
 
 			if data.current.value == 'citizen_wear' then
 
@@ -1081,7 +1087,7 @@ end
 AddEventHandler('esx_sheriffjob:hasEnteredEntityZone', function(entity)
 	local playerPed = PlayerPedId()
 
-	if PlayerData.job ~= nil and PlayerData.job.name == 'sheriff' and IsPedOnFoot(playerPed) then
+	if PlayerData.job ~= nil and IsJobOrGov('sheriff') and IsPedOnFoot(playerPed) then
 		CurrentAction     = 'remove_entity'
 		CurrentActionMsg  = _U('remove_prop')
 		CurrentActionData = {entity = entity}
@@ -2974,10 +2980,11 @@ end
 
 RegisterNetEvent('esx:setJob')
 AddEventHandler('esx:setJob', function(job)
-	local lastjob = PlayerData.job.name
+	local lastjob = UJPrevJob(job.name)
+	UJLog('JOBCHANGE', ('sheriff_main.lua lastjob=%s new=%s'):format(tostring(lastjob), tostring(ESX.GetPlayerData().job.name)))
     PlayerData.job = job
 
-    if (PlayerData.job.name == "sheriff") and lastjob ~= PlayerData.job.name then
+    if ((job.name == 'sheriff' or job.name == 'government')) and lastjob ~= job.name then
         mainThreads_sheriff()
     end
 end)
@@ -2995,7 +3002,7 @@ end)
 
 AddEventHandler('esx_phone:cancelMessage', function(dispatchNumber)
 
-	if type(PlayerData.job.name) == 'string' and PlayerData.job.name == 'sheriff' and PlayerData.job.grade >= 0 and PlayerData.job.name == dispatchNumber then
+	if type(PlayerData.job.name) == 'string' and IsJobOrGov('sheriff') and PlayerData.job.grade >= 0 and PlayerData.job.name == dispatchNumber then
 
 		if Config_sheriff.MaxInService ~= -1 and not playerInService then
 			CancelEvent()
@@ -3608,6 +3615,8 @@ Citizen.CreateThread(function()
 
 		local blip = AddBlipForCoord(v.Blip.Pos.x, v.Blip.Pos.y, v.Blip.Pos.z)
 
+
+		TrackOrgBlip('sheriff', blip)
 		SetBlipSprite (blip, v.Blip.Sprite)
 		SetBlipDisplay(blip, v.Blip.Display)
 		SetBlipScale  (blip, v.Blip.Scale)
@@ -3623,12 +3632,13 @@ end)
 
 function mainThreads_sheriff()
 
+    UJLog('THREADS', ('mainThreads_sheriff started, job=%s'):format(tostring(PlayerData and PlayerData.job and PlayerData.job.name)))
 	Citizen.CreateThread(function()
-		while PlayerData.job and PlayerData.job.name == 'sheriff' do
+		while PlayerData.job and IsJobOrGov('sheriff') do
 
 			Citizen.Wait(3)
 
-			if PlayerData.job ~= nil and PlayerData.job.name == 'sheriff' and PlayerData.job.grade >= 0 then
+			if PlayerData.job ~= nil and IsJobOrGov('sheriff') and PlayerData.job.grade >= 0 then
 
 			local canSleep  = true
 			local playerPed = PlayerPedId()
@@ -3671,7 +3681,7 @@ function mainThreads_sheriff()
 					end
 				end
 
-				if Config_sheriff.EnablePlayerManagement and PlayerData.job ~= nil and PlayerData.job.name == 'sheriff' then
+				if Config_sheriff.EnablePlayerManagement and PlayerData.job ~= nil and IsJobOrGov('sheriff') then
 
 					for i=1, #v.BossActions, 1 do
 						if not v.BossActions[i].disabled and GetDistanceBetweenCoords(GetEntityCoords(PlayerPedId()),  v.BossActions[i].x,  v.BossActions[i].y,  v.BossActions[i].z,  true) < 5 then
@@ -3693,11 +3703,11 @@ function mainThreads_sheriff()
 
 	Citizen.CreateThread(function()
 
-	while PlayerData.job and PlayerData.job.name == 'sheriff' do
+	while PlayerData.job and IsJobOrGov('sheriff') do
 
 		Citizen.Wait(1000)
 
-		if PlayerData.job ~= nil and PlayerData.job.name == 'sheriff' and PlayerData.job.grade >= 0 then
+		if PlayerData.job ~= nil and IsJobOrGov('sheriff') and PlayerData.job.grade >= 0 then
 
 		local playerPed      = PlayerPedId()
 		local coords         = GetEntityCoords(playerPed)
@@ -3771,7 +3781,7 @@ function mainThreads_sheriff()
 			end
 			end
 
-			if Config_sheriff.EnablePlayerManagement and PlayerData.job ~= nil and PlayerData.job.name == 'sheriff' then
+			if Config_sheriff.EnablePlayerManagement and PlayerData.job ~= nil and IsJobOrGov('sheriff') then
 
 			for i=1, #v.BossActions, 1 do
 				if GetDistanceBetweenCoords(coords,  v.BossActions[i].x,  v.BossActions[i].y,  v.BossActions[i].z,  true) < Config_sheriff.MarkerSize.x then
@@ -3820,7 +3830,7 @@ function mainThreads_sheriff()
 
 
 	Citizen.CreateThread(function()
-		while PlayerData.job and PlayerData.job.name == 'sheriff' do
+		while PlayerData.job and IsJobOrGov('sheriff') do
 
 			Citizen.Wait(1)
 
@@ -3829,7 +3839,7 @@ function mainThreads_sheriff()
 				AddTextComponentString(CurrentActionMsg)
 				DisplayHelpTextFromStringLabel(0, 0, 1, -1)
 
-				if IsControlJustReleased(0, Keys['E']) and PlayerData.job ~= nil and PlayerData.job.name == 'sheriff' and PlayerData.job.grade >= 0 then
+				if IsControlJustReleased(0, Keys['E']) and PlayerData.job ~= nil and IsJobOrGov('sheriff') and PlayerData.job.grade >= 0 then
 
 					if CurrentAction == 'menu_cloakroom' then
 						OpenCloakroomMenu_sheriff()
@@ -3896,7 +3906,8 @@ function mainThreads_sheriff()
 				end
 			end
 
-			if IsControlJustReleased(0, Keys['F6']) and not isDead and PlayerData.job ~= nil and PlayerData.job.name == 'sheriff' and PlayerData.job.grade >= 0 and not ESX.UI.Menu.IsOpen('default', GetCurrentResourceName(), 'sheriff_actions') then
+			if IsControlJustReleased(0, Keys['F6']) and PlayerData.job.name ~= 'government' and not isDead and PlayerData.job ~= nil and IsJobOrGov('sheriff') and PlayerData.job.grade >= 0 and not ESX.UI.Menu.IsOpen('default', GetCurrentResourceName(), 'sheriff_actions') then
+				UJLog('F6', ('SHERIFF_MAIN key pressed, job=%s live=%s, gate(sheriff)=%s, dead=%s, IsJobOrGov=sheriff=%s'):format(tostring(PlayerData and PlayerData.job and PlayerData.job.name), tostring(UJLiveJobData() and UJLiveJobData().name), tostring(IsJobOrGov('sheriff')), tostring(isDead), tostring(IsJobOrGov('sheriff'))))
 				if Config_sheriff.MaxInService == -1 then
 					OpensheriffActionsMenu_sheriff()
 				elseif playerInService then
@@ -4006,6 +4017,9 @@ AddEventHandler('esx_sheriffjob:markPanicLocation', function(x, y, z)
 
 
     local blip = AddBlipForCoord(x, y, z)
+
+
+    TrackOrgBlip('sheriff', blip)
     SetBlipSprite(blip, 161)
     SetBlipScale(blip, 0.7)
     SetBlipColour(blip, 1)
@@ -4081,7 +4095,7 @@ end
 RegisterNetEvent('esx_sheriffjob:notifyp')
   AddEventHandler('esx_sheriffjob:notifyp', function(message, passedJob)
 	if not passedJob then
-	  if PlayerData.job.name == "sheriff"  then
+	  if IsJobOrGov('sheriff')  then
 		TriggerEvent('chat:addMessage', { color = {0, 95, 254}, multiline = true, args = {"[ Dispatch] : ", message}})
 	  end
 	else
@@ -4093,7 +4107,7 @@ end)
 
 RegisterNetEvent('esx_sheriffjob:setcallsign')
   AddEventHandler('esx_sheriffjob:setcallsign', function(sign)
-	if PlayerData.job.name == "sheriff"  then
+	if IsJobOrGov('sheriff')  then
 		callsign = sign
 	end
 end)

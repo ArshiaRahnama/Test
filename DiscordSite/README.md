@@ -111,6 +111,15 @@ The password must be at least 10 characters. The login then works on this websit
 - Mentions, direct messages and replies each have their own sound, and a banner slides in for new messages. The "Catch up" pill shows unread messages per server.
 - The login page is animated (moving colour, glass card). It uses the same game login.
 
+## Privacy Settings
+Server menu, Privacy Settings: "Allow direct messages from server members". If a person turns it off in every server they share with a stranger, that stranger cannot send them a message request (they get "not accepting direct messages"). Friends and conversations that already exist are not affected. Run sql/discord_v48.sql once.
+
+## Security Actions: Pause Invites
+Owners and admins can pause invites for 24 hours (server menu, Security Actions). While paused, nobody NEW can join with an invite code, a vanity link or Discover, on the website and in the game. People already inside are not affected. Run sql/discord_v47.sql once.
+
+## Channel categories
+Owners and managers can create categories (up to 10), move channels in and out, and delete a category (its channels are kept). Same rules as the game; run sql/discord_v45.sql once.
+
 ## Creators only (optional switch)
 When the game's staff panel turns on "Only creators can create servers and channels", the website also refuses to create channels, stage channels and channels from templates for people who are not on the creators list. Staff in the game panel manage the list; the website reads the same tables.
 

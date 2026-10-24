@@ -46,6 +46,7 @@ const WEB_AUDIT_LABELS = [
     'DiscordExt_CreateChannelFromTemplate' => 'create channel', 'DiscordExt_SaveChannelTemplate' => 'save channel template',
     'DiscordExt_DeleteChannelTemplate' => 'delete channel template', 'DiscordExt_DeleteStaffNote' => 'staff note deleted',
     'DiscordExt_StaffResolveReport' => 'report resolved',
+    'DiscordExt_SetInvitesPaused' => 'pause or resume invites',
 ];
 const WEB_PERM_KEYS = ['view', 'send', 'react', 'mention_roles', 'pin', 'manage_messages', 'speak', 'manage_channels',
                        'manage_roles', 'manage_server', 'kick', 'moderate', 'administrator'];
@@ -525,7 +526,9 @@ case 'DiscordExt_GetMemberMeta': {
     $sid = (int)($in['serverId'] ?? 0);
     if (!$sid || !web_member($ident, $sid)) web_out(false);
     $s = web_server($sid);
-    $rows = web_q('SELECT m.id, m.identifier, p.uid, p.avatar_url FROM phone_discord_members m LEFT JOIN phone_discord_profiles p ON p.identifier = m.identifier WHERE m.server_id = ?', [$sid]);
+    $rows = web_q('SELECT m.id, m.identifier, p.uid, p.avatar_url, p.banner_url, p.avatar_effect, p.handle FROM phone_discord_members m LEFT JOIN phone_discord_profiles p ON p.identifier = m.identifier WHERE m.server_id = ?', [$sid]);
+    $roleOf = [];
+    foreach (web_q('SELECT mr.identifier, r.name, r.color FROM phone_discord_member_roles mr JOIN phone_discord_roles r ON r.id = mr.role_id WHERE mr.server_id = ? AND r.is_default = 0 ORDER BY r.position DESC, r.id ASC', [$sid]) as $rr) $roleOf[$rr['identifier']][] = ['name' => $rr['name'], 'color' => $rr['color']];
     $xp = [];
     foreach (web_q('SELECT identifier, xp FROM phone_discord_xp WHERE server_id = ?', [$sid]) as $x) $xp[$x['identifier']] = (int)$x['xp'];
     $meta = [];
@@ -534,7 +537,8 @@ case 'DiscordExt_GetMemberMeta': {
         if (($s['owner_identifier'] ?? '') === $r['identifier']) $badges[] = 'founder';
         $meta[(string)$r['id']] = [
             'uid' => $r['uid'] !== null ? (int)$r['uid'] : null, 'avatar' => $r['avatar_url'] ?? null,
-            'level' => web_level($xp[$r['identifier']] ?? 0), 'badges' => $badges, 'color' => null, 'roles' => [], 'act' => null,
+            'level' => web_level($xp[$r['identifier']] ?? 0), 'badges' => $badges, 'color' => ($roleOf[$r['identifier']][0]['color'] ?? null), 'roles' => ($roleOf[$r['identifier']] ?? []), 'act' => null,
+            'banner' => $r['banner_url'] ?? null, 'effect' => $r['avatar_effect'] ?? null, 'handle' => $r['handle'] ?? null,
         ];
     }
     web_out(['meta' => (object)$meta, 'defs' => ['founder' => ['icon' => '👑', 'label' => 'Server founder']]]);
@@ -611,6 +615,7 @@ case 'DiscordExt_OpenDM': {
     if (!web_can_talk($ident, $other)) {
         // not friends: a message request, allowed when you share a server
         if (!web_shares_server($ident, $other)) web_out(['error' => 'NOT_FRIENDS']);
+        if (!web_dms_open_to($ident, $other)) web_out(['error' => 'DMS_CLOSED']);
         $pending = (int)(web_one("SELECT COUNT(*) AS c FROM phone_discord_dms WHERE request_state = 'pending' AND requested_by = ?", [$ident])['c'] ?? 0);
         if ($pending >= 5) web_out(['error' => 'TOO_MANY_REQUESTS']);
         web_db()->prepare("INSERT INTO phone_discord_dms (user_low, user_high, created_at, last_at, request_state, requested_by) VALUES (?, ?, ?, 0, 'pending', ?)")
@@ -799,6 +804,7 @@ case 'JoinDiscordPublicServer': {
     if (!$s || !web_bool($s['is_public'])) web_out(false);
     if (web_one('SELECT 1 AS x FROM phone_discord_server_bans WHERE server_id = ? AND identifier = ?', [$sid, $ident])) web_out(['error' => 'BANNED']);
     if (web_member($ident, $sid)) web_out(['error' => 'ALREADY_MEMBER']);
+    if (web_invites_paused($sid, $ident)) web_out(['error' => 'INVITES_PAUSED']);
     web_join($ident, $s);
     web_out(web_server_card_for_join($ident, $s));
 }
@@ -825,6 +831,7 @@ case 'JoinDiscordServer': {
     }
     if (!$s) web_out(['error' => 'NOT_FOUND']);
     if (web_one('SELECT 1 AS x FROM phone_discord_server_bans WHERE server_id = ? AND identifier = ?', [(int)$s['id'], $ident])) web_out(['error' => 'BANNED']);
+    if (web_invites_paused((int)$s['id'], $ident)) web_out(['error' => 'INVITES_PAUSED']);
     if (web_member($ident, (int)$s['id'])) web_out(['error' => 'ALREADY_MEMBER']);
     web_join($ident, $s);
     if ($viaInvite) web_db()->prepare('UPDATE phone_discord_invites SET uses = uses + 1 WHERE id = ?')->execute([$viaInvite]);
@@ -866,7 +873,7 @@ case 'GetDiscordDiscover':
 
 case 'DiscordExt_GetMyDiscord': {
     $p = web_profile($ident);
-    web_out(['uid' => (int)($p['uid'] ?? 0), 'avatar' => $p['avatar_url'] ?? null, 'discriminator' => $p['discriminator'] ?? '0000', 'name' => web_name($ident)]);
+    web_out(['uid' => (int)($p['uid'] ?? 0), 'avatar' => $p['avatar_url'] ?? null, 'banner' => $p['banner_url'] ?? null, 'effect' => $p['avatar_effect'] ?? null, 'handle' => $p['handle'] ?? null, 'discriminator' => $p['discriminator'] ?? '0000', 'name' => web_name($ident)]);
 }
 
 case 'UpdateDiscordMyProfile': {
@@ -1297,6 +1304,91 @@ case 'DiscordExt_SetMute': {
     web_db()->prepare('DELETE FROM phone_discord_mutes WHERE identifier = ? AND kind = ? AND target_id = ?')->execute([$ident, $kind, $target]);
     if (($in['on'] ?? false) === true) web_db()->prepare('INSERT INTO phone_discord_mutes (identifier, kind, target_id) VALUES (?, ?, ?)')->execute([$ident, $kind, $target]);
     web_out(true);
+}
+
+// ---------------------------------------------------------------- channel categories (same rules as the game, v45)
+case 'DiscordExt_GetCategories':
+case 'DiscordExt_CreateCategory':
+case 'DiscordExt_DeleteCategory':
+case 'DiscordExt_SetChannelCategory': {
+    $sid = (int)($in['serverId'] ?? 0);
+    if (!$sid || !web_member($ident, $sid)) web_out($ep === 'DiscordExt_GetCategories' ? ['categories' => [], 'channels' => (object)[]] : false);
+    if ($ep === 'DiscordExt_GetCategories') {
+        $cats = array_map(fn($c) => ['id' => (int)$c['id'], 'name' => $c['name'], 'position' => (int)$c['position']],
+            web_q('SELECT id, name, position FROM phone_discord_categories WHERE server_id = ? ORDER BY position, id', [$sid]));
+        $map = (object)[];
+        foreach (web_q('SELECT id, category_id FROM phone_discord_channels WHERE server_id = ? AND category_id IS NOT NULL', [$sid]) as $r) $map->{(string)$r['id']} = (int)$r['category_id'];
+        web_out(['categories' => $cats, 'channels' => $map]);
+    }
+    if (!web_is_staff($ident, $sid)) web_out(['error' => 'NO_PERMISSION']);
+    if ($ep === 'DiscordExt_CreateCategory') {
+        if (!web_can_create($ident)) web_out(['error' => 'NOT_CREATOR']);
+        $name = web_clip(trim(preg_replace('/[\x00-\x1F]/', '', (string)($in['name'] ?? ''))), 30);
+        if ($name === '') web_out(['error' => 'BAD_NAME']);
+        $n = (int)(web_one('SELECT COUNT(*) AS c FROM phone_discord_categories WHERE server_id = ?', [$sid])['c'] ?? 0);
+        if ($n >= 10) web_out(['error' => 'LIMIT']);
+        if (web_one('SELECT id FROM phone_discord_categories WHERE server_id = ? AND LOWER(name) = LOWER(?)', [$sid, $name])) web_out(['error' => 'TAKEN']);
+        web_db()->prepare('INSERT INTO phone_discord_categories (server_id, name, position, created_at) VALUES (?, ?, ?, ?)')->execute([$sid, $name, $n, web_now()]);
+        web_out(['ok' => true, 'id' => (int)web_db()->lastInsertId(), 'name' => $name]);
+    }
+    if ($ep === 'DiscordExt_DeleteCategory') {
+        $cid = (int)($in['categoryId'] ?? 0);
+        if (!web_one('SELECT id FROM phone_discord_categories WHERE id = ? AND server_id = ?', [$cid, $sid])) web_out(false);
+        web_db()->prepare('UPDATE phone_discord_channels SET category_id = NULL WHERE server_id = ? AND category_id = ?')->execute([$sid, $cid]);
+        web_db()->prepare('DELETE FROM phone_discord_categories WHERE id = ?')->execute([$cid]);
+        web_out(['ok' => true]);
+    }
+    $chId = (int)($in['channelId'] ?? 0); $cid = (int)($in['categoryId'] ?? 0);
+    if (!web_one('SELECT id FROM phone_discord_channels WHERE id = ? AND server_id = ?', [$chId, $sid])) web_out(false);
+    if ($cid !== 0 && !web_one('SELECT id FROM phone_discord_categories WHERE id = ? AND server_id = ?', [$cid, $sid])) web_out(false);
+    web_db()->prepare('UPDATE phone_discord_channels SET category_id = ? WHERE id = ?')->execute([$cid !== 0 ? $cid : null, $chId]);
+    web_out(['ok' => true]);
+}
+
+// ---------------------------------------------------------------- the ID you choose (3-20 chars: a-z 0-9 _ .) and mutual servers
+case 'DiscordExt_SetHandle': {
+    $h = strtolower(trim((string)($in['handle'] ?? '')));
+    if (!preg_match('/^[a-z0-9_.]{3,20}$/', $h)) web_out(['error' => 'BAD_HANDLE']);
+    web_profile($ident);
+    if (web_one('SELECT identifier FROM phone_discord_profiles WHERE handle = ? AND identifier <> ?', [$h, $ident])) web_out(['error' => 'TAKEN']);
+    web_db()->prepare('UPDATE phone_discord_profiles SET handle = ? WHERE identifier = ?')->execute([$h, $ident]);
+    web_out(['ok' => true, 'handle' => $h]);
+}
+case 'DiscordExt_GetMutualServers': {
+    $other = web_one('SELECT identifier FROM phone_discord_profiles WHERE uid = ?', [(int)($in['uid'] ?? 0)]);
+    if (!$other || $other['identifier'] === $ident) web_out([]);
+    web_out(array_map(fn($r) => ['id' => (int)$r['id'], 'name' => $r['name']],
+        web_q('SELECT s.id, s.name FROM phone_discord_servers s JOIN phone_discord_members a ON a.server_id = s.id AND a.identifier = ? JOIN phone_discord_members b ON b.server_id = s.id AND b.identifier = ? ORDER BY s.name LIMIT 50', [$ident, $other['identifier']])));
+}
+
+// ---------------------------------------------------------------- Security Actions: Pause Invites (owner / admins; 24 hours)
+case 'DiscordExt_GetSecurity':
+case 'DiscordExt_SetInvitesPaused': {
+    $sid = (int)($in['serverId'] ?? 0);
+    if (!$sid || !web_server($sid) || !web_is_staff_of($ident, $sid)) web_out($ep === 'DiscordExt_GetSecurity' ? false : ['error' => 'NO_PERMISSION']);
+    if ($ep === 'DiscordExt_GetSecurity') {
+        $r = web_one('SELECT invites_paused_until AS u FROM phone_discord_servers WHERE id = ?', [$sid]);
+        $u = (int)($r['u'] ?? 0);
+        web_out(['invitesPausedUntil' => $u > web_now() ? $u : null, 'now' => web_now()]);
+    }
+    $until = (($in['on'] ?? false) === true) ? web_now() + 86400 : null;
+    web_db()->prepare('UPDATE phone_discord_servers SET invites_paused_until = ? WHERE id = ?')->execute([$until, $sid]);
+    web_out(['ok' => true, 'invitesPausedUntil' => $until]);
+}
+
+// ---------------------------------------------------------------- Privacy Settings: allow direct messages from server members
+case 'DiscordExt_GetPrivacy':
+case 'DiscordExt_SetPrivacy': {
+    $sid = (int)($in['serverId'] ?? 0);
+    if (!$sid || !web_member($ident, $sid)) web_out($ep === 'DiscordExt_GetPrivacy' ? false : ['error' => 'NOT_MEMBER']);
+    if ($ep === 'DiscordExt_GetPrivacy') {
+        $r = web_one('SELECT allow_dms FROM phone_discord_dm_privacy WHERE identifier = ? AND server_id = ?', [$ident, $sid]);
+        web_out(['allowDms' => !$r || (int)$r['allow_dms'] !== 0]);
+    }
+    $allow = (($in['allowDms'] ?? false) === true) ? 1 : 0;
+    web_db()->prepare('DELETE FROM phone_discord_dm_privacy WHERE identifier = ? AND server_id = ?')->execute([$ident, $sid]);
+    web_db()->prepare('INSERT INTO phone_discord_dm_privacy (identifier, server_id, allow_dms) VALUES (?, ?, ?)')->execute([$ident, $sid, $allow]);
+    web_out(['ok' => true, 'allowDms' => $allow === 1]);
 }
 
 default:
@@ -2117,6 +2209,23 @@ function web_can_create(string $ident): bool {
     $restricted = $row ? ($row['v'] === '1') : false;
     if (!$restricted) return true;
     return (bool)web_one('SELECT identifier FROM phone_discord_creators WHERE identifier = ?', [$ident]);
+}
+
+
+/** Pause Invites (Security Actions): true while the server pauses invites and this person is not inside yet */
+function web_invites_paused(int $sid, string $ident): bool {
+    $r = web_one('SELECT invites_paused_until AS u FROM phone_discord_servers WHERE id = ?', [$sid]);
+    $u = (int)($r['u'] ?? 0);
+    return $u > web_now() && !web_member($ident, $sid);
+}
+
+
+/** Privacy Settings: can this person open a message request to $other? Needs one shared server where $other still allows DMs */
+function web_dms_open_to(string $ident, string $other): bool {
+    $rows = web_q('SELECT COALESCE(p.allow_dms, 1) AS allow_dms FROM phone_discord_members m1 JOIN phone_discord_members m2 ON m1.server_id = m2.server_id LEFT JOIN phone_discord_dm_privacy p ON p.server_id = m1.server_id AND p.identifier = ? WHERE m1.identifier = ? AND m2.identifier = ?', [$other, $ident, $other]);
+    if (!$rows) return true;
+    foreach ($rows as $r) if ((int)$r['allow_dms'] !== 0) return true;
+    return false;
 }
 
 // ---------------------------------------------------------------- friends/DM helpers (declared after the switch on purpose: used above)

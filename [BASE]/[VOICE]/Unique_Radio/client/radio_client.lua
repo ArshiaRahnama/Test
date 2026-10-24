@@ -1,3 +1,18 @@
+-- Government has every private frequency; other jobs have their own.
+function FreqsFor(jobName)
+    jobName = tostring(jobName or ''):lower()
+    if jobName == 'government' then
+        local out, seen = {}, {}
+        for _, list in pairs(SI.PrivateFrequency or {}) do
+            for _, v in pairs(list) do
+                if not seen[v] then seen[v] = true; out[#out + 1] = v end
+            end
+        end
+        return out
+    end
+    return (SI.PrivateFrequency and SI.PrivateFrequency[jobName]) or {}
+end
+
 local isUsed = false
 
 RegisterNetEvent("radio")
@@ -25,8 +40,8 @@ Citizen.CreateThread(
 			Wait(0)
 		end
 		PlayerData = ESX.GetPlayerData()
-		if SI.PrivateFrequency[PlayerData.job.name:lower()] then
-			for k,v in pairs(SI.PrivateFrequency[PlayerData.job.name:lower()]) do
+		if FreqsFor(PlayerData.job.name) then
+			for k,v in pairs(FreqsFor(PlayerData.job.name)) do
 				GivePlayerAccessToFrequency(v)
 			end
 		end
@@ -149,13 +164,13 @@ AddEventHandler('esx:setJob', function(job)
 	if not PlayerData or not job then return end
 
 	if not PlayerData.job or job.name ~= PlayerData.job.name then
-		if PlayerData.job and SI.PrivateFrequency[PlayerData.job.name:lower()] then
-			for k,v in pairs(SI.PrivateFrequency[PlayerData.job.name:lower()]) do
+		if PlayerData.job and FreqsFor(PlayerData.job.name) then
+			for k,v in pairs(FreqsFor(PlayerData.job.name)) do
 				RemovePlayerAccessToFrequency(v)
 			end
 		end
-		if SI.PrivateFrequency[job.name:lower()] then
-			for k,v in pairs(SI.PrivateFrequency[job.name:lower()]) do
+		if FreqsFor(job.name) then
+			for k,v in pairs(FreqsFor(job.name)) do
 				GivePlayerAccessToFrequency(v)
 			end
 		end

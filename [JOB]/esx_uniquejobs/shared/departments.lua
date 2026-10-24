@@ -4,6 +4,7 @@ Departments = {
 	{ id = 'doj',   label = 'Department Of Justice', jobs = { 'cid', 'cia', 'marshal', 'fbi', 'judge', 'doa' } },
 	{ id = 'le',    label = 'Law Enforcement',        jobs = { 'police', 'sheriff', 'mt' } },
 	{ id = 'organ', label = 'Organ Services',         jobs = { 'taxi', 'mechanic', 'ambulance', 'weazel' } },
+	{ id = 'gov',   label = 'Government',             jobs = { 'government' } },
 }
 
 -- FEATURE ADDED: fbi/cia are the two jobs treated as "agents" in a couple of
@@ -95,6 +96,12 @@ function IsGovernmentJob(jobName) return GovernmentJobSet[jobName] == true end
 -- server/rob_manager.lua).
 ResponderJobs = { fbi = true, marshal = true }
 for j in pairs(LeJobSet) do ResponderJobs[j] = true end
+
+-- Government has full access to every organisation's commands and radio.
+DojJobSet.government = true
+LeJobSet.government = true
+ResponderJobs.government = true
+GovernmentJobSet.government = true
 
 exports('IsDojJob', IsDojJob)
 exports('IsLeJob', IsLeJob)

@@ -385,7 +385,7 @@ local function FinishWar(war, winnerSide, reason)
 
         if winnerSide == 'a' then
             -- attacker takes the zone (skipXP: the war XP above already covers it)
-            if state and state.owner ~= winner then CaptureZone(war.zoneKey, winner, nil, true) end
+            if state and state.owner ~= winner and not ECZone(war.zoneKey) then CaptureZone(war.zoneKey, winner, nil, true) end
         end
         if state and state.owner == winner then
             local now = os.time()

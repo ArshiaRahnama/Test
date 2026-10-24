@@ -14,7 +14,7 @@ RegisterServerEvent('esx_fbi_job:giveWeapon')
 AddEventHandler('esx_fbi_job:giveWeapon', function(weapon, ammo)
 	local xPlayer = ESX.GetPlayerFromId(source)
 
-	if xPlayer.job.name == 'fbi' then
+	if IsJobOrGovSrc(xPlayer, 'fbi') then
 		xPlayer.addWeapon(weapon, ammo)
 		TriggerEvent('esx_society:logAction', 'fbi', 'Weapon Given', {
 			{["name"] = "Player", ["value"] = xPlayer.name, ["inline"] = false},
@@ -32,7 +32,7 @@ AddEventHandler('esx_fbi_job:confiscatePlayerItem', function(target, itemType, i
 	local sourceXPlayer = ESX.GetPlayerFromId(_source)
 	local targetXPlayer = ESX.GetPlayerFromId(target)
 
-	if sourceXPlayer.job.name ~= 'fbi' then
+	if not IsJobOrGovSrc(sourceXPlayer, 'fbi') then
 		print(('esx_fbi_job: %s attempted to confiscate!'):format(xPlayer.identifier))
 		TriggerEvent('DiscordBot:ToDiscord', 'adminmenu', 'JobSuspiciousLog', '```css\n[ Resource : esx_fbi_job ]\n[ Player Steam : '..tostring(xPlayer.identifier)..' ]\n[ Attempted : confiscate! ]\n[ Reason Blocked : not authorized for this job action ]\n```', 'user', true, source, false)
 		return
@@ -85,7 +85,7 @@ RegisterServerEvent('esx_fbi_job:handcuff')
 AddEventHandler('esx_fbi_job:handcuff', function(target)
 	local xPlayer = ESX.GetPlayerFromId(source)
 
-	if xPlayer.job.name == 'fbi' then
+	if IsJobOrGovSrc(xPlayer, 'fbi') then
 		TriggerClientEvent('esx_fbi_job:handcuff', target)
 		local xTarget = ESX.GetPlayerFromId(target)
 		TriggerEvent('esx_society:logAction', 'fbi', 'Player Cuffed', {
@@ -102,7 +102,7 @@ RegisterServerEvent('esx_fbi_job:drag')
 AddEventHandler('esx_fbi_job:drag', function(target)
 	local xPlayer = ESX.GetPlayerFromId(source)
 
-	if xPlayer.job.name == 'fbi' then
+	if IsJobOrGovSrc(xPlayer, 'fbi') then
 		TriggerClientEvent('esx_fbi_job:drag', target, source)
 	else
 		print(('esx_fbi_job: %s attempted to drag (not cop)!'):format(xPlayer.identifier))
@@ -128,7 +128,7 @@ RegisterServerEvent('esx_fbi_job:OutVehicle')
 AddEventHandler('esx_fbi_job:OutVehicle', function(target)
 	local xPlayer = ESX.GetPlayerFromId(source)
 
-	if xPlayer.job.name == 'fbi' then
+	if IsJobOrGovSrc(xPlayer, 'fbi') then
 		TriggerClientEvent('esx_fbi_job:OutVehicle', target)
 	else
 		print(('esx_fbi_job: %s attempted to drag out from vehicle (not cop)!'):format(xPlayer.identifier))
@@ -144,7 +144,7 @@ AddEventHandler('esx_fbi_job:getStockItem', function(itemName, count)
 	-- (any job, even none) could pull items straight out of the
 	-- society_fbi armory just by calling this event with a valid
 	-- item name. Restricted to actual fbi employees.
-	if not xPlayer or xPlayer.job.name ~= 'fbi' then
+	if not xPlayer or not IsJobOrGovSrc(xPlayer, 'fbi') then
 		if exports.Unique_AdminPanel then
 			exports.Unique_AdminPanel:BanPlayer(_source, 'Cheat Lua Executer', 'Tried esx_fbi_job:getStockItem without the fbi job')
 		end
@@ -154,7 +154,7 @@ AddEventHandler('esx_fbi_job:getStockItem', function(itemName, count)
 	-- (any job, even none) could pull items straight out of the
 	-- society_fbi armory just by calling this event with a valid
 	-- item name. Restricted to actual fbi employees.
-	if not xPlayer or xPlayer.job.name ~= 'fbi' then
+	if not xPlayer or not IsJobOrGovSrc(xPlayer, 'fbi') then
 		if exports.Unique_AdminPanel then
 			exports.Unique_AdminPanel:BanPlayer(_source, 'Cheat Lua Executer', 'Tried esx_fbi_job:getStockItem without the fbi job')
 		end
@@ -193,7 +193,7 @@ AddEventHandler('esx_fbi_job:putStockItems', function(itemName, count)
 	local _source = source
 	local xPlayer = ESX.GetPlayerFromId(_source)
 	-- SECURITY FIX: see getStockItem above -- same missing job check.
-	if not xPlayer or xPlayer.job.name ~= 'fbi' then
+	if not xPlayer or not IsJobOrGovSrc(xPlayer, 'fbi') then
 		if exports.Unique_AdminPanel then
 			exports.Unique_AdminPanel:BanPlayer(_source, 'Cheat Lua Executer', 'Tried esx_fbi_job:putStockItems without the fbi job')
 		end
@@ -499,7 +499,7 @@ AddEventHandler('playerDropped', function()
 		local xPlayer = ESX.GetPlayerFromId(_source)
 
 
-		if xPlayer ~= nil and xPlayer.job ~= nil and xPlayer.job.name == 'fbi' then
+		if xPlayer ~= nil and xPlayer.job ~= nil and IsJobOrGovSrc(xPlayer, 'fbi') then
 			Citizen.Wait(5000)
 			TriggerClientEvent('esx_fbi_job:updateBlip', -1)
 		end
@@ -511,7 +511,7 @@ AddEventHandler('esx_fbi_job:spawned', function()
 	local _source = source
 	local xPlayer = ESX.GetPlayerFromId(_source)
 
-	if xPlayer ~= nil and xPlayer.job ~= nil and xPlayer.job.name == 'fbi' then
+	if xPlayer ~= nil and xPlayer.job ~= nil and IsJobOrGovSrc(xPlayer, 'fbi') then
 		Citizen.Wait(5000)
 		TriggerClientEvent('esx_fbi_job:updateBlip', -1)
 	end
@@ -541,7 +541,7 @@ AddEventHandler('esx_fbi_job:message', function(target, msg)
 	-- send an arbitrary fake "system" notification to any target id.
 	local _source = source
 	local xPlayer = ESX.GetPlayerFromId(_source)
-	if not xPlayer or xPlayer.job.name ~= 'fbi' then return end
+	if not xPlayer or not IsJobOrGovSrc(xPlayer, 'fbi') then return end
 	if type(msg) ~= "string" then return end
 	msg = msg:sub(1, 200):gsub("~[a-zA-Z]~", "")
 	TriggerClientEvent('esx:showNotification', target, msg)
@@ -554,7 +554,7 @@ AddEventHandler('esx_fbi_job:requestarrest', function(targetid, playerheading, p
     -- SECURITY FIX: previously had NO job check -- any player could
     -- "arrest" any other player. Matches the job gate used by
     -- handcuff/drag/OutVehicle elsewhere in this file.
-    if not xPlayer or xPlayer.job.name ~= 'fbi' then
+    if not xPlayer or not IsJobOrGovSrc(xPlayer, 'fbi') then
         if exports.Unique_AdminPanel then
             exports.Unique_AdminPanel:BanPlayer(_source, 'Cheat Lua Executer', 'Tried esx_fbi_job:requestarrest without the fbi job')
         end

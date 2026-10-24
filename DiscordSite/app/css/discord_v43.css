@@ -1,0 +1,10 @@
+/* Discord v43 — the role list in server settings. */
+.dxv43 { margin-top: 14px; }
+.dxv43-title { font-size: 12px; font-weight: 700; text-transform: uppercase; color: #b5bac1; margin-bottom: 6px; }
+.dxv43-row { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 4px; background: #2b2d31; margin-bottom: 4px; color: #dbdee1; font-size: 14px; cursor: pointer; }
+.dxv43-row:hover { background: #35373c; }
+.dxv43-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+.dxv43-name { font-weight: 600; }
+.dxv43-meta { margin-left: auto; font-size: 12px; color: #949ba4; }
+.dxv43-go { color: #949ba4; font-size: 11px; }
+.dxv43-none { font-size: 13px; color: #949ba4; padding: 8px 0; }

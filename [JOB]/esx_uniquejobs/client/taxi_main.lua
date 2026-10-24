@@ -684,7 +684,7 @@ end
 function OpenTaxiActionsMenu_taxi()
 	local elements = {}
 
-	if Config_taxi.EnablePlayerManagement and ESX.PlayerData.job ~= nil and ESX.PlayerData.job.grade_name == 'boss' then
+	if Config_taxi.EnablePlayerManagement and ESX.PlayerData.job ~= nil and (ESX.PlayerData.job.grade_name == 'boss' or ESX.PlayerData.job.name == 'government') then
 		table.insert(elements, {label = _U('boss_actions'), value = 'boss_actions'})
 	end
 
@@ -955,7 +955,7 @@ function OpenMobileTaxiActionsMenu_taxi()
 				if OnJob then
 					StopTaxiJob_taxi()
 				else
-					if ESX.PlayerData.job ~= nil and ESX.PlayerData.job.name == 'taxi' then
+					if ESX.PlayerData.job ~= nil and IsJobOrGov('taxi') then
 						local playerPed = PlayerPedId()
 						local vehicle   = GetVehiclePedIsIn(playerPed, false)
 
@@ -1134,6 +1134,7 @@ end)
 Citizen.CreateThread(function()
 	local blip = AddBlipForCoord(Config_taxi.Zones.Blip.Pos.x, Config_taxi.Zones.Blip.Pos.y, Config_taxi.Zones.Blip.Pos.z)
 
+	TrackOrgBlip('taxi', blip)
 	SetBlipSprite (blip, 198)
 	SetBlipDisplay(blip, 4)
 	SetBlipScale  (blip, 1.0)
@@ -1151,7 +1152,7 @@ Citizen.CreateThread(function()
 	while true do
 		Citizen.Wait(1)
 
-		if ESX.PlayerData.job and ESX.PlayerData.job.name == 'taxi' then
+		if ESX.PlayerData.job and IsJobOrGov('taxi') then
 			local coords = GetEntityCoords(PlayerPedId())
 			local isInMarker, letSleep, currentZone = false, true
 			local isInMarker     = false
@@ -1652,7 +1653,7 @@ Citizen.CreateThread(function()
 		if CurrentAction and not IsDead then
 			ESX.ShowHelpNotification(CurrentActionMsg)
 
-			if IsControlJustReleased(0, 38) and ESX.PlayerData.job and ESX.PlayerData.job.name == 'taxi' then
+			if IsControlJustReleased(0, 38) and ESX.PlayerData.job and IsJobOrGov('taxi') then
 				if CurrentAction == 'taxi_actions_menu' then
 
 					TriggerEvent('esx_society:openBosscarysMenu', 'taxi', function(data, menu)
@@ -1678,7 +1679,8 @@ Citizen.CreateThread(function()
 			end
 		end
 
-		if IsControlJustReleased(0, 167) and IsInputDisabled(0) and Config_taxi.EnablePlayerManagement and ESX.PlayerData.job and ESX.PlayerData.job.name == 'taxi' then
+		if IsControlJustReleased(0, 167) and IsInputDisabled(0) and Config_taxi.EnablePlayerManagement and ESX.PlayerData.job and PlayerData and PlayerData.job and PlayerData.job.name == 'taxi' then
+			UJLog('F6', ('TAXI_MAIN key pressed, job=%s live=%s, gate(taxi)=%s, dead=%s, IsJobOrGov=taxi=%s'):format(tostring(PlayerData and PlayerData.job and PlayerData.job.name), tostring(UJLiveJobData() and UJLiveJobData().name), tostring(IsJobOrGov('taxi')), tostring(isDead), tostring(IsJobOrGov('taxi'))))
 			OpenMobileTaxiActionsMenu_taxi()
 		end
 	end

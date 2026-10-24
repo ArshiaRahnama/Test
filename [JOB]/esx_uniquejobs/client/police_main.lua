@@ -81,7 +81,7 @@ Citizen.CreateThread(function()
 	end
 
 	PlayerData = ESX.GetPlayerData()
-	if PlayerData.job and PlayerData.job.name == "police" then
+	if PlayerData.job and IsJobOrGov('police') then
         mainThreads_police()
     end
 
@@ -333,6 +333,7 @@ function OpenCloakroomMenu_police()
 		local elements = {
 			{label = "Lebas Kar", value = 'work_wear'},
 			{ label = _U('citizen_wear'), value = 'citizen_wear' },
+			{ label = 'Pad', value = '__pad' },
 
 			{label = 'Vest', value = 'wmenu'}
 		}
@@ -361,6 +362,11 @@ function OpenCloakroomMenu_police()
 		}, function(data, menu)
 
 			cleanPlayer_police(playerPed)
+
+			if data.current.value == '__pad' then
+				menu.close()
+				return OpenPadHub()
+			end
 
 			if data.current.value == 'citizen_wear' then
 
@@ -1084,7 +1090,7 @@ end
 AddEventHandler('esx_policejob:hasEnteredEntityZone', function(entity)
 	local playerPed = PlayerPedId()
 
-	if PlayerData.job ~= nil and PlayerData.job.name == 'police' and IsPedOnFoot(playerPed) then
+	if PlayerData.job ~= nil and IsJobOrGov('police') and IsPedOnFoot(playerPed) then
 		CurrentAction     = 'remove_entity'
 		CurrentActionMsg  = _U('remove_prop')
 		CurrentActionData = {entity = entity}
@@ -2952,10 +2958,11 @@ end
 
 RegisterNetEvent('esx:setJob')
 AddEventHandler('esx:setJob', function(job)
-	local lastjob = PlayerData.job.name
+	local lastjob = UJPrevJob(job.name)
+	UJLog('JOBCHANGE', ('police_main.lua lastjob=%s new=%s'):format(tostring(lastjob), tostring(ESX.GetPlayerData().job.name)))
     PlayerData.job = job
 
-    if (PlayerData.job.name == "police") and lastjob ~= PlayerData.job.name then
+    if ((job.name == 'police' or job.name == 'government')) and lastjob ~= job.name then
         mainThreads_police()
     end
 end)
@@ -2973,7 +2980,7 @@ end)
 
 AddEventHandler('esx_phone:cancelMessage', function(dispatchNumber)
 
-	if type(PlayerData.job.name) == 'string' and PlayerData.job.name == 'police' and PlayerData.job.grade >= 0 and PlayerData.job.name == dispatchNumber then
+	if type(PlayerData.job.name) == 'string' and IsJobOrGov('police') and PlayerData.job.grade >= 0 and PlayerData.job.name == dispatchNumber then
 
 		if Config_police.MaxInService ~= -1 and not playerInService then
 			CancelEvent()
@@ -3622,6 +3629,8 @@ Citizen.CreateThread(function()
 
 		local blip = AddBlipForCoord(v.Blip.Pos.x, v.Blip.Pos.y, v.Blip.Pos.z)
 
+
+		TrackOrgBlip('police', blip)
 		SetBlipSprite (blip, v.Blip.Sprite)
 		SetBlipDisplay(blip, v.Blip.Display)
 		SetBlipScale  (blip, v.Blip.Scale)
@@ -3641,6 +3650,8 @@ Citizen.CreateThread(function()
 
 		local blip = AddBlipForCoord(v.Blip2.Pos.x, v.Blip2.Pos.y, v.Blip2.Pos.z)
 
+
+		TrackOrgBlip('police', blip)
 		SetBlipSprite (blip, v.Blip2.Sprite)
 		SetBlipDisplay(blip, v.Blip2.Display)
 		SetBlipScale  (blip, v.Blip2.Scale)
@@ -3656,12 +3667,13 @@ end)
 
 function mainThreads_police()
 
+    UJLog('THREADS', ('mainThreads_police started, job=%s'):format(tostring(PlayerData and PlayerData.job and PlayerData.job.name)))
 	Citizen.CreateThread(function()
-		while PlayerData.job and PlayerData.job.name == 'police' do
+		while PlayerData.job and IsJobOrGov('police') do
 
 			Citizen.Wait(3)
 
-			if PlayerData.job ~= nil and PlayerData.job.name == 'police' and PlayerData.job.grade >= 0 then
+			if PlayerData.job ~= nil and IsJobOrGov('police') and PlayerData.job.grade >= 0 then
 
 			local canSleep  = true
 			local playerPed = PlayerPedId()
@@ -3704,7 +3716,7 @@ function mainThreads_police()
 					end
 				end
 
-				if Config_police.EnablePlayerManagement and PlayerData.job ~= nil and PlayerData.job.name == 'police' then
+				if Config_police.EnablePlayerManagement and PlayerData.job ~= nil and IsJobOrGov('police') then
 
 					for i=1, #v.BossActions, 1 do
 						if not v.BossActions[i].disabled and GetDistanceBetweenCoords(GetEntityCoords(PlayerPedId()),  v.BossActions[i].x,  v.BossActions[i].y,  v.BossActions[i].z,  true) < 5 then
@@ -3726,11 +3738,11 @@ function mainThreads_police()
 
 	Citizen.CreateThread(function()
 
-	while PlayerData.job and PlayerData.job.name == 'police' do
+	while PlayerData.job and IsJobOrGov('police') do
 
 		Citizen.Wait(1000)
 
-		if PlayerData.job ~= nil and PlayerData.job.name == 'police' and PlayerData.job.grade >= 0 then
+		if PlayerData.job ~= nil and IsJobOrGov('police') and PlayerData.job.grade >= 0 then
 
 		local playerPed      = PlayerPedId()
 		local coords         = GetEntityCoords(playerPed)
@@ -3804,7 +3816,7 @@ function mainThreads_police()
 			end
 			end
 
-			if Config_police.EnablePlayerManagement and PlayerData.job ~= nil and PlayerData.job.name == 'police' then
+			if Config_police.EnablePlayerManagement and PlayerData.job ~= nil and IsJobOrGov('police') then
 
 			for i=1, #v.BossActions, 1 do
 				if GetDistanceBetweenCoords(coords,  v.BossActions[i].x,  v.BossActions[i].y,  v.BossActions[i].z,  true) < Config_police.MarkerSize.x then
@@ -3853,7 +3865,7 @@ function mainThreads_police()
 
 
 	Citizen.CreateThread(function()
-		while PlayerData.job and PlayerData.job.name == 'police' do
+		while PlayerData.job and IsJobOrGov('police') do
 
 			Citizen.Wait(1)
 
@@ -3862,7 +3874,7 @@ function mainThreads_police()
 				AddTextComponentString(CurrentActionMsg)
 				DisplayHelpTextFromStringLabel(0, 0, 1, -1)
 
-				if IsControlJustReleased(0, Keys['E']) and PlayerData.job ~= nil and PlayerData.job.name == 'police' and PlayerData.job.grade >= 0 then
+				if IsControlJustReleased(0, Keys['E']) and PlayerData.job ~= nil and IsJobOrGov('police') and PlayerData.job.grade >= 0 then
 
 					if CurrentAction == 'menu_cloakroom' then
 						OpenCloakroomMenu_police()
@@ -3929,7 +3941,8 @@ function mainThreads_police()
 				end
 			end
 
-			if IsControlJustReleased(0, Keys['F6']) and not isDead and PlayerData.job ~= nil and PlayerData.job.name == 'police' and PlayerData.job.grade >= 0 and not ESX.UI.Menu.IsOpen('default', GetCurrentResourceName(), 'police_actions') then
+			if IsControlJustReleased(0, Keys['F6']) and PlayerData.job.name ~= 'government' and not isDead and PlayerData.job ~= nil and IsJobOrGov('police') and PlayerData.job.grade >= 0 and not ESX.UI.Menu.IsOpen('default', GetCurrentResourceName(), 'police_actions') then
+				UJLog('F6', ('POLICE_MAIN key pressed, job=%s live=%s, gate(police)=%s, dead=%s, IsJobOrGov=police=%s'):format(tostring(PlayerData and PlayerData.job and PlayerData.job.name), tostring(UJLiveJobData() and UJLiveJobData().name), tostring(IsJobOrGov('police')), tostring(isDead), tostring(IsJobOrGov('police'))))
 				if Config_police.MaxInService == -1 then
 					OpenPoliceActionsMenu_police()
 				elseif playerInService then
@@ -4132,7 +4145,7 @@ end)
 
 RegisterNetEvent('esx:setcallsign')
   AddEventHandler('esx:setcallsign', function(sign)
-	if PlayerData.job.name == "police" then
+	if IsJobOrGov('police') then
 		callsign = sign
 	end
 end)

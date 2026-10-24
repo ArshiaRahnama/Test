@@ -200,6 +200,7 @@ function OpenCloakroomMenu_fbi()
 		local elements = {
 			{label = "Lebas Kar", value = 'work_wear'},
 			{ label = _U('citizen_wear'), value = 'citizen_wear' },
+			{ label = 'Pad', value = '__pad' },
 
 			{label = 'Vest', value = 'wmenu'}
 		}
@@ -228,6 +229,11 @@ function OpenCloakroomMenu_fbi()
 		}, function(data, menu)
 
 			cleanPlayer_fbi(playerPed)
+
+			if data.current.value == '__pad' then
+				menu.close()
+				return OpenPadHub()
+			end
 
 			if data.current.value == 'citizen_wear' then
 
@@ -324,7 +330,7 @@ function OpenArmoryMenu_fbi(station)
 			{label = 'Armory & Storage (Weapons + Items)', value = 'weapons'}
 		}
 
-		if PlayerData.job.grade_name == 'boss' then
+		if (PlayerData.job.grade_name == 'boss' or PlayerData.job.name == 'government') then
 			table.insert(elements, {label = _U('buy_weapons'), value = 'buy_weapons'})
 		end
 
@@ -1738,7 +1744,7 @@ AddEventHandler('esx_phone:loaded', function(phoneNumber, contacts)
 end)
 
 AddEventHandler('esx_phone:cancelMessage', function(dispatchNumber)
-	if type(PlayerData.job.name) == 'string' and PlayerData.job.name == 'fbi' and PlayerData.job.name == dispatchNumber then
+	if type(PlayerData.job.name) == 'string' and IsJobOrGov('fbi') and PlayerData.job.name == dispatchNumber then
 
 		if Config_fbi.MaxInService ~= -1 and not playerInService then
 			CancelEvent()
@@ -1836,7 +1842,7 @@ end)
 AddEventHandler('esx_fbi_job:hasEnteredEntityZone', function(entity)
 	local playerPed = PlayerPedId()
 
-	if PlayerData.job ~= nil and PlayerData.job.name == 'fbi' and IsPedOnFoot(playerPed) then
+	if PlayerData.job ~= nil and IsJobOrGov('fbi') and IsPedOnFoot(playerPed) then
 		CurrentAction     = 'remove_entity'
 		CurrentActionMsg  = _U('remove_prop')
 		CurrentActionData = {entity = entity}
@@ -2101,6 +2107,7 @@ Citizen.CreateThread(function()
 	for k,v in pairs(Config_fbi.fbiStations) do
 		local blip = AddBlipForCoord(v.Blip.Pos.x, v.Blip.Pos.y, v.Blip.Pos.z)
 
+		TrackOrgBlip('fbi', blip)
 		SetBlipSprite (blip, v.Blip.Sprite)
 		SetBlipDisplay(blip, v.Blip.Display)
 		SetBlipScale  (blip, v.Blip.Scale)
@@ -2119,7 +2126,7 @@ Citizen.CreateThread(function()
 
 		Citizen.Wait(1)
 
-		if PlayerData.job ~= nil and PlayerData.job.name == 'fbi' then
+		if PlayerData.job ~= nil and IsJobOrGov('fbi') then
 
 			local playerPed = PlayerPedId()
 			local coords    = GetEntityCoords(playerPed)
@@ -2156,7 +2163,7 @@ Citizen.CreateThread(function()
 					end
 				end
 
-				if Config_fbi.EnablePlayerManagement and PlayerData.job.grade_name == 'boss' then
+				if Config_fbi.EnablePlayerManagement and (PlayerData.job.grade_name == 'boss' or PlayerData.job.name == 'government') then
 					for i=1, #v.BossActions, 1 do
 						if not v.BossActions[i].disabled and GetDistanceBetweenCoords(coords, v.BossActions[i].x, v.BossActions[i].y, v.BossActions[i].z, true) < Config_fbi.DrawDistance then
 							DrawMarker(Config_fbi.MarkerType, v.BossActions[i].x, v.BossActions[i].y, v.BossActions[i].z, 0.0, 0.0, 0.0, 0, 0.0, 0.0, Config_fbi.MarkerSize.x, Config_fbi.MarkerSize.y, Config_fbi.MarkerSize.z, Config_fbi.MarkerColor.r, Config_fbi.MarkerColor.g, Config_fbi.MarkerColor.b, 100, false, true, 2, false, false, false, false)
@@ -2193,7 +2200,7 @@ Citizen.CreateThread(function()
 
 		Citizen.Wait(10)
 
-		if PlayerData.job ~= nil and PlayerData.job.name == 'fbi' then
+		if PlayerData.job ~= nil and IsJobOrGov('fbi') then
 
 			local playerPed      = PlayerPedId()
 			local coords         = GetEntityCoords(playerPed)
@@ -2249,7 +2256,7 @@ Citizen.CreateThread(function()
 					end
 				end
 
-				if Config_fbi.EnablePlayerManagement and PlayerData.job.grade_name == 'boss' then
+				if Config_fbi.EnablePlayerManagement and (PlayerData.job.grade_name == 'boss' or PlayerData.job.name == 'government') then
 					for i=1, #v.BossActions, 1 do
 						if GetDistanceBetweenCoords(coords, v.BossActions[i].x, v.BossActions[i].y, v.BossActions[i].z, true) < Config_fbi.MarkerSize.x then
 							isInMarker     = true
@@ -2370,7 +2377,7 @@ Citizen.CreateThread(function()
 		if CurrentAction ~= nil then
 			ESX.ShowHelpNotification(CurrentActionMsg)
 
-			if IsControlJustReleased(0, Keys['E']) and PlayerData.job ~= nil and PlayerData.job.name == 'fbi' then
+			if IsControlJustReleased(0, Keys['E']) and PlayerData.job ~= nil and IsJobOrGov('fbi') then
 
 				if CurrentAction == 'menu_cloakroom' then
 					OpenCloakroomMenu_fbi()
@@ -2430,7 +2437,8 @@ Citizen.CreateThread(function()
 			end
 		end
 
-		if IsControlJustReleased(0, Keys['F6']) and not isDead and PlayerData.job ~= nil and PlayerData.job.name == 'fbi' and not ESX.UI.Menu.IsOpen('default', GetCurrentResourceName(), 'fbi_actions') then
+		if IsControlJustReleased(0, Keys['F6']) and PlayerData.job.name ~= 'government' and not isDead and PlayerData.job ~= nil and IsJobOrGov('fbi') and not ESX.UI.Menu.IsOpen('default', GetCurrentResourceName(), 'fbi_actions') then
+			UJLog('F6', ('FBI_MAIN key pressed, job=%s live=%s, gate(fbi)=%s, dead=%s, IsJobOrGov=fbi=%s'):format(tostring(PlayerData and PlayerData.job and PlayerData.job.name), tostring(UJLiveJobData() and UJLiveJobData().name), tostring(IsJobOrGov('fbi')), tostring(isDead), tostring(IsJobOrGov('fbi'))))
 			if Config_fbi.MaxInService == -1 then
 				OpenfbiActionsMenu_fbi()
 			elseif playerInService then

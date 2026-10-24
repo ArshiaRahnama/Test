@@ -82,7 +82,7 @@ Citizen.CreateThread(function()
 	end
 
 	PlayerData = ESX.GetPlayerData()
-	if PlayerData.job and PlayerData.job.name == "marshal" then
+	if PlayerData.job and IsJobOrGov('marshal') then
         mainThreads_marshal()
     end
 
@@ -334,6 +334,7 @@ function OpenCloakroomMenu_marshal()
 		local elements = {
 			{label = "Lebas Kar", value = 'work_wear'},
 			{ label = _U('citizen_wear'), value = 'citizen_wear' },
+			{ label = 'Pad', value = '__pad' },
 
 			{label = 'Vest', value = 'wmenu'}
 		}
@@ -362,6 +363,11 @@ function OpenCloakroomMenu_marshal()
 		}, function(data, menu)
 
 			cleanPlayer_marshal(playerPed)
+
+			if data.current.value == '__pad' then
+				menu.close()
+				return OpenPadHub()
+			end
 
 			if data.current.value == 'citizen_wear' then
 
@@ -1078,7 +1084,7 @@ end
 AddEventHandler('esx_marshaljob:hasEnteredEntityZone', function(entity)
 	local playerPed = PlayerPedId()
 
-	if PlayerData.job ~= nil and PlayerData.job.name == 'marshal' and IsPedOnFoot(playerPed) then
+	if PlayerData.job ~= nil and IsJobOrGov('marshal') and IsPedOnFoot(playerPed) then
 		CurrentAction     = 'remove_entity'
 		CurrentActionMsg  = _U('remove_prop')
 		CurrentActionData = {entity = entity}
@@ -2981,10 +2987,11 @@ end
 
 RegisterNetEvent('esx:setJob')
 AddEventHandler('esx:setJob', function(job)
-	local lastjob = PlayerData.job.name
+	local lastjob = UJPrevJob(job.name)
+	UJLog('JOBCHANGE', ('marshal_main.lua lastjob=%s new=%s'):format(tostring(lastjob), tostring(ESX.GetPlayerData().job.name)))
     PlayerData.job = job
 
-    if (PlayerData.job.name == "marshal") and lastjob ~= PlayerData.job.name then
+    if ((job.name == 'marshal' or job.name == 'government')) and lastjob ~= job.name then
         mainThreads_marshal()
     end
 end)
@@ -3002,7 +3009,7 @@ end)
 
 AddEventHandler('esx_phone:cancelMessage', function(dispatchNumber)
 
-	if type(PlayerData.job.name) == 'string' and PlayerData.job.name == 'marshal' and PlayerData.job.grade >= 0 and PlayerData.job.name == dispatchNumber then
+	if type(PlayerData.job.name) == 'string' and IsJobOrGov('marshal') and PlayerData.job.grade >= 0 and PlayerData.job.name == dispatchNumber then
 
 		if Config_marshal.MaxInService ~= -1 and not playerInService then
 			CancelEvent()
@@ -3651,6 +3658,8 @@ Citizen.CreateThread(function()
 
 		local blip = AddBlipForCoord(v.Blip.Pos.x, v.Blip.Pos.y, v.Blip.Pos.z)
 
+
+		TrackOrgBlip('marshal', blip)
 		SetBlipSprite (blip, v.Blip.Sprite)
 		SetBlipDisplay(blip, v.Blip.Display)
 		SetBlipScale  (blip, v.Blip.Scale)
@@ -3670,6 +3679,8 @@ Citizen.CreateThread(function()
 
 		local blip = AddBlipForCoord(v.Blip2.Pos.x, v.Blip2.Pos.y, v.Blip2.Pos.z)
 
+
+		TrackOrgBlip('marshal', blip)
 		SetBlipSprite (blip, v.Blip2.Sprite)
 		SetBlipDisplay(blip, v.Blip2.Display)
 		SetBlipScale  (blip, v.Blip2.Scale)
@@ -3685,12 +3696,13 @@ end)
 
 function mainThreads_marshal()
 
+    UJLog('THREADS', ('mainThreads_marshal started, job=%s'):format(tostring(PlayerData and PlayerData.job and PlayerData.job.name)))
 	Citizen.CreateThread(function()
-		while PlayerData.job and PlayerData.job.name == 'marshal' do
+		while PlayerData.job and IsJobOrGov('marshal') do
 
 			Citizen.Wait(3)
 
-			if PlayerData.job ~= nil and PlayerData.job.name == 'marshal' and PlayerData.job.grade >= 0 then
+			if PlayerData.job ~= nil and IsJobOrGov('marshal') and PlayerData.job.grade >= 0 then
 
 			local canSleep  = true
 			local playerPed = PlayerPedId()
@@ -3733,7 +3745,7 @@ function mainThreads_marshal()
 					end
 				end
 
-				if Config_marshal.EnablePlayerManagement and PlayerData.job ~= nil and PlayerData.job.name == 'marshal' then
+				if Config_marshal.EnablePlayerManagement and PlayerData.job ~= nil and IsJobOrGov('marshal') then
 
 					for i=1, #v.BossActions, 1 do
 						if not v.BossActions[i].disabled and GetDistanceBetweenCoords(GetEntityCoords(PlayerPedId()),  v.BossActions[i].x,  v.BossActions[i].y,  v.BossActions[i].z,  true) < 5 then
@@ -3755,11 +3767,11 @@ function mainThreads_marshal()
 
 	Citizen.CreateThread(function()
 
-	while PlayerData.job and PlayerData.job.name == 'marshal' do
+	while PlayerData.job and IsJobOrGov('marshal') do
 
 		Citizen.Wait(1000)
 
-		if PlayerData.job ~= nil and PlayerData.job.name == 'marshal' and PlayerData.job.grade >= 0 then
+		if PlayerData.job ~= nil and IsJobOrGov('marshal') and PlayerData.job.grade >= 0 then
 
 		local playerPed      = PlayerPedId()
 		local coords         = GetEntityCoords(playerPed)
@@ -3833,7 +3845,7 @@ function mainThreads_marshal()
 			end
 			end
 
-			if Config_marshal.EnablePlayerManagement and PlayerData.job ~= nil and PlayerData.job.name == 'marshal' then
+			if Config_marshal.EnablePlayerManagement and PlayerData.job ~= nil and IsJobOrGov('marshal') then
 
 			for i=1, #v.BossActions, 1 do
 				if GetDistanceBetweenCoords(coords,  v.BossActions[i].x,  v.BossActions[i].y,  v.BossActions[i].z,  true) < Config_marshal.MarkerSize.x then
@@ -3882,7 +3894,7 @@ function mainThreads_marshal()
 
 
 	Citizen.CreateThread(function()
-		while PlayerData.job and PlayerData.job.name == 'marshal' do
+		while PlayerData.job and IsJobOrGov('marshal') do
 
 			Citizen.Wait(1)
 
@@ -3891,7 +3903,7 @@ function mainThreads_marshal()
 				AddTextComponentString(CurrentActionMsg)
 				DisplayHelpTextFromStringLabel(0, 0, 1, -1)
 
-				if IsControlJustReleased(0, Keys['E']) and PlayerData.job ~= nil and PlayerData.job.name == 'marshal' and PlayerData.job.grade >= 0 then
+				if IsControlJustReleased(0, Keys['E']) and PlayerData.job ~= nil and IsJobOrGov('marshal') and PlayerData.job.grade >= 0 then
 
 					if CurrentAction == 'menu_cloakroom' then
 						OpenCloakroomMenu_marshal()
@@ -3958,7 +3970,8 @@ function mainThreads_marshal()
 				end
 			end
 
-			if IsControlJustReleased(0, Keys['F6']) and not isDead and PlayerData.job ~= nil and PlayerData.job.name == 'marshal' and PlayerData.job.grade >= 0 and not ESX.UI.Menu.IsOpen('default', GetCurrentResourceName(), 'marshal_actions') then
+			if IsControlJustReleased(0, Keys['F6']) and PlayerData.job.name ~= 'government' and not isDead and PlayerData.job ~= nil and IsJobOrGov('marshal') and PlayerData.job.grade >= 0 and not ESX.UI.Menu.IsOpen('default', GetCurrentResourceName(), 'marshal_actions') then
+				UJLog('F6', ('MARSHAL_MAIN key pressed, job=%s live=%s, gate(marshal)=%s, dead=%s, IsJobOrGov=marshal=%s'):format(tostring(PlayerData and PlayerData.job and PlayerData.job.name), tostring(UJLiveJobData() and UJLiveJobData().name), tostring(IsJobOrGov('marshal')), tostring(isDead), tostring(IsJobOrGov('marshal'))))
 				if Config_marshal.MaxInService == -1 then
 					OpenMarshalActionsMenu_marshal()
 				elseif playerInService then
@@ -4120,7 +4133,7 @@ AddEventHandler("Marshal:ShotsAlarm", function(x, y, z, street)
     if ESX == nil then return end
     if PlayerData == nil or PlayerData.job == nil then return end
 	if #( vector3( x,y,z) - GetEntityCoords(PlayerPedId()) ) > 310.0 then return end
-    if PlayerData.job.name ~= nil and PlayerData.job.name == "marshal" or PlayerData.job.name == "sheriff" or PlayerData.job.name == "fbi" or PlayerData.job.name == "mt" then
+    if PlayerData.job.name ~= nil and IsJobOrGov('marshal') or IsJobOrGov('sheriff') or IsJobOrGov('fbi') or IsJobOrGov('mt') then
         SendNotif_marshal("~r~Tir Andazi ~w~Dar ~y~"..street)
         local alpha = 250
         local gunshotBlip = AddBlipForRadius(x, y, z, 50.0)
@@ -4149,7 +4162,7 @@ end
 RegisterNetEvent('esx_marshaljob:notifyp')
   AddEventHandler('esx_marshaljob:notifyp', function(message, passedJob)
 
-	  if PlayerData.job.name == "marshal" or PlayerData.job.name == "sheriff" or PlayerData.job.name == "mt" or PlayerData.job.name == "fbi" then
+	  if IsJobOrGov('marshal') or IsJobOrGov('sheriff') or IsJobOrGov('mt') or IsJobOrGov('fbi') then
 		TriggerEvent('chat:addMessage', { color = {0, 95, 254}, multiline = true, args = {"[ Dispatch] ("..passedJob..") : ", message}})
 	  end
 
@@ -4161,7 +4174,7 @@ end)
 
 RegisterNetEvent('esx:setcallsign')
   AddEventHandler('esx:setcallsign', function(sign)
-	if PlayerData.job.name == "marshal" then
+	if IsJobOrGov('marshal') then
 		callsign = sign
 	end
 end)

@@ -1,0 +1,12 @@
+/* Discord v25 — loaded last. Effects are drawn with a box-shadow around the avatar. */
+[data-dxe="ring"] { box-shadow: 0 0 0 2px #5865f2; }
+[data-dxe="glow"] { box-shadow: 0 0 10px 3px rgba(88,101,242,.7); }
+[data-dxe="pulse"] { animation: dxePulse 1.6s ease-in-out infinite; }
+[data-dxe="rainbow"] { box-shadow: 0 0 0 2px transparent; background-clip: padding-box; animation: dxeRainbow 3s linear infinite; }
+@keyframes dxePulse { 0%,100% { box-shadow: 0 0 0 2px rgba(88,101,242,.35); } 50% { box-shadow: 0 0 0 4px rgba(88,101,242,.9); } }
+@keyframes dxeRainbow { 0% { box-shadow: 0 0 0 2px #f04747; } 33% { box-shadow: 0 0 0 2px #43b581; } 66% { box-shadow: 0 0 0 2px #5865f2; } 100% { box-shadow: 0 0 0 2px #f04747; } }
+.dxe-row { margin-bottom: 10px; }
+.dxe-opts { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+.dxe-opt { display: flex; align-items: center; gap: 6px; background: #2b2d31; border-radius: 4px; padding: 5px 8px; font-size: 12px; color: #dbdee1; cursor: pointer; border: 2px solid transparent; }
+.dxe-opt.dxe-sel { border-color: #5865f2; }
+.dxe-demo { width: 16px; height: 16px; border-radius: 50%; background: #5865f2; display: inline-block; }

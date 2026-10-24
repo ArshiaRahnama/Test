@@ -35,6 +35,7 @@ function DXD2_Card(s, featured) {
            '<div class="dxd-av' + icon + '">' + DX_Esc(s.icon_url ? "" : (s.icon_text || DXD2_Initials(s.name))) + "</div>" +
            '<div class="dxd-body"><div class="dxd-name"><span class="dxd-nt">' + DX_Esc(s.name) + "</span>" + (s.isVerified ? '<i class="fas fa-check-circle dxd-ver" title="Verified"></i>' : "") + (s.isFeatured ? '<i class="fas fa-gem dxd-vip" title="VIP"></i>' : "") + "</div>" +
            '<div class="dxd-desc">' + DX_Esc(s.description || "No description yet.") + "</div>" +
+           (s.tags ? '<div class="dxd-tags">' + String(s.tags).split(",").map(function(t) { return '<span class="dxd-tag">' + DX_Esc(t) + "</span>"; }).join("") + "</div>" : "") +
            '<div class="dxd-stats"><span class="dxd-online"><i class="fas fa-circle"></i>' + (s.onlineCount || 0) + ' online</span><span>' + (s.memberCount || 0) + " member" + (s.memberCount === 1 ? "" : "s") + "</span></div></div>" +
            '<div class="dxd-foot">' + btn + "</div></div>";
 }
@@ -112,6 +113,7 @@ DX_After("DX_RenderTools", function(info) {
     var opts = "";
     $.each(DXD2_CATS.slice(1), function(i, c) { opts += '<option value="' + c[0] + '"' + (info.discover.category === c[0] ? " selected" : "") + ">" + DX_Esc(c[1]) + "</option>"; });
     body.append('<div class="dx-section dxd-settings" data-tab="overview"><h4>Discover</h4>' +
+                '<div class="dxd-set-row"><span class="dxd-set-lbl">Tags</span><input class="dx-input" id="dxd-set-tags" maxlength="80" placeholder="roleplay, police (up to 4)" value="' + DX_Esc(info.tags || "") + '"></div>' +
                 '<div class="dxd-set-row"><label class="dx-check"><input type="checkbox" id="dxd-set-public"' + (info.discover.isPublic ? " checked" : "") + "> List this server on Discover (anyone can join)</label></div>" +
                 '<div class="dxd-set-row"><span class="dxd-set-lbl">Category</span><select class="dx-input" id="dxd-set-cat">' + opts + "</select></div>" +
                 '<div class="dxd-set-row"><div class="dx-btn dx-primary" id="dxd-set-save">Save</div></div></div>');

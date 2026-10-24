@@ -120,11 +120,11 @@ CFG.SETTINGS = {
 		new = true,
 	
 		vans = { -- this is not useable yet
-			[`rumpo`] = true, [`rumpo2`] = true,
-			[`speedo`] = true, [`speedo2`] = true,
-			[`speedo3`] = true, [`policet`] = true,
-			[`EMSf550ambo`] = true, [`EMSf550ambo2`] = true,
-			[`20ramambo`] = true
+			['rumpo'] = true, ['rumpo2'] = true,
+			['speedo'] = true, ['speedo2'] = true,
+			['speedo3'] = true, ['policet'] = true,
+			['EMSf550ambo'] = true, ['EMSf550ambo2'] = true,
+			['20ramambo'] = true
 
 		}
 	},
@@ -247,7 +247,7 @@ CFG.SETTINGS = {
 		},
 	
 		feed = {
-			prop = `v_res_mbowl`, -- object
+			prop = GetHashKey('v_res_mbowl'), -- object
 	
 			item = 'water_bottle', -- item that is required
 	
@@ -270,7 +270,7 @@ CFG.SETTINGS = {
 CFG.DOGS = {
 	-- Only these dog models i found can attack
 	-- label and spawn name
-	['SASP/BCSO Belgian malinois'] = `a_c_shepherd`,
+	['SASP/BCSO Belgian malinois'] = GetHashKey('a_c_shepherd'),
 }
 
 CFG.COMMANDS = {

@@ -17,8 +17,8 @@ local function isDoj(jobname)
 end
 
 local function canApproveWarrant(xPlayer)
-	if xPlayer.job.name == 'judge' then return true end
-	if xPlayer.job.name == 'marshal' and xPlayer.job.grade >= 18 then return true end
+	if IsJobOrGovSrc(xPlayer, 'judge') then return true end
+	if IsJobOrGovSrc(xPlayer, 'marshal') and xPlayer.job.grade >= 18 then return true end
 	return false
 end
 
@@ -121,6 +121,9 @@ AddEventHandler('esx_uniquejobs:dojRequestWarrant', function(warrantType, target
 		}
 
 		TriggerClientEvent('esx:showNotification', source, '~g~Darkhast-e Hokm #' .. warrantCounter .. ' Ersal Shod')
+
+		-- Government sees every warrant request in its F6 (Darkhast-ha) list
+		GovRequestAdd('warrant', name .. ' [' .. tostring(warrantType) .. ']', source, reason or '')
 
 		local xPlayers = ESX.GetPlayers()
 		for i = 1, #xPlayers do

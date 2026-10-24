@@ -43,6 +43,18 @@ end
 local function RefreshBlip(zoneKey)
     local cfg = ZoneConfigByKey[zoneKey]
     if not cfg then return end
+    -- E-capture zones have their own blips (client/ecapture.lua): no second set here
+    for _, ek in ipairs((Config.Territory.ECapture and Config.Territory.ECapture.Zones) or {}) do
+        if ek == zoneKey then
+            local e = ZoneBlips[zoneKey]
+            if e then
+                if e.radius and DoesBlipExist(e.radius) then RemoveBlip(e.radius) end
+                if e.marker and DoesBlipExist(e.marker) then RemoveBlip(e.marker) end
+                ZoneBlips[zoneKey] = nil
+            end
+            return
+        end
+    end
     local state = ZoneState[zoneKey] or {}
     local color = state.contested and 1 or ColorForGang(state.owner)
 
@@ -247,9 +259,16 @@ CreateThread(function()
                         statusText = '~w~Azad - dar hale tasarrof...'
                     end
 
+                    -- E-capture zones: the old presence status is not shown, the E progress bar is.
+                    local isE = false
+                    for _, ek in ipairs((Config.Territory.ECapture and Config.Territory.ECapture.Zones) or {}) do
+                        if ek == zoneKey then isE = true break end
+                    end
+                    if isE then statusText = '~w~Gereftan ba E (on the zone)' end
+
                     -- a capture is running here: show who, and how long until the zone flips
                     local cap = CaptureInfo[zoneKey]
-                    if cap and not state.contested and GetGameTimer() < cap.endsAt + 15000 then
+                    if not isE and cap and not state.contested and GetGameTimer() < cap.endsAt + 15000 then
                         local left = (cap.endsAt - GetGameTimer()) / 1000.0
                         local mine = cap.gang == PlayerData.gang.name
                         statusText = (mine and '~g~Shoma dar hale tasarrof hastid' or ('~r~Dar hale tasarrof tavasot-e ' .. cap.gang))

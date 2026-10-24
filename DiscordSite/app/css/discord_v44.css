@@ -1,0 +1,11 @@
+/* Discord v44 — the ID row in My Discord Profile. */
+.dxv44 { margin: 10px 0; }
+.dxv44-row { display: flex; align-items: center; justify-content: space-between; background: #1e1f22; border-radius: 4px; padding: 8px 10px; color: #dbdee1; font-size: 14px; }
+.dxv44-id { font-family: Consolas, monospace; }
+.dxv44-btn, .dxv44-save { background: #5865f2; color: #fff; border-radius: 3px; padding: 5px 12px; font-size: 13px; font-weight: 500; cursor: pointer; }
+.dxv44-btn:hover, .dxv44-save:hover { background: #4752c4; }
+.dxv44-edit { display: flex; gap: 8px; margin-top: 8px; }
+.dxv44-edit input { flex: 1; height: 34px; background: #1e1f22; border: 1px solid #1e1f22; border-radius: 4px; color: #f2f3f5; padding: 0 10px; font-size: 14px; outline: none; }
+.dxv44-edit input:focus { border-color: #5865f2; }
+.dxv44-save { display: flex; align-items: center; }
+.dxv44-err { min-height: 16px; color: #fa777c; font-size: 12px; margin-top: 6px; }

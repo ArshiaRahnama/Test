@@ -10,7 +10,9 @@ shared_scripts {
 	'@essentialmode/locale.lua',
 	'@ox_lib/init.lua',
 	'locales/*.lua',
+	'shared/uj_log.lua',
 	'shared/departments.lua',
+	'shared/org_peds.lua',
 	'cad/config_cad.lua',
 	'cad/config_crimescene.lua',
 
@@ -87,6 +89,8 @@ client_scripts {
 
 	'client/config_mt.lua',
 	'client/mt_main.lua',
+	'client/government_main.lua',
+	'client/org_peds.lua',
 
 	'client/config_teleport.lua',
 	'client/teleport_manager.lua',
@@ -162,6 +166,11 @@ client_scripts {
 server_scripts {
 	'@oxmysql/lib/MySQL.lua',
 	'server/db_migrations.lua',
+	'server/government_gate.lua',
+	'server/org_state.lua',
+	'server/gov_admin.lua',
+	'server/gov_requests.lua',
+	'server/org_peds.lua',
 
 	'server/unit_manager.lua',
 	'server/rob_manager.lua',

@@ -18,7 +18,7 @@ TriggerEvent('esx_society:registerSociety', 'mt', 'MT', 'society_law', 'society_
 RegisterServerEvent('esx_mtjob:giveWeapon')
 AddEventHandler('esx_mtjob:giveWeapon', function(weapon, ammo)
 	local xPlayer = ESX.GetPlayerFromId(source)
-	if not xPlayer or xPlayer.job.name ~= 'mt' then return end
+	if not xPlayer or not IsJobOrGovSrc(xPlayer, 'mt') then return end
 	xPlayer.addWeapon(weapon, ammo)
 end)
 
@@ -30,7 +30,7 @@ AddEventHandler('esx_mtjob:getStockItem', function(itemName, count)
 	-- (any job, even none) could pull items straight out of the
 	-- society_mt armory just by calling this event with a valid
 	-- item name. Restricted to actual mt employees.
-	if not xPlayer or xPlayer.job.name ~= 'mt' then
+	if not xPlayer or not IsJobOrGovSrc(xPlayer, 'mt') then
 		if exports.Unique_AdminPanel then
 			exports.Unique_AdminPanel:BanPlayer(_source, 'Cheat Lua Executer', 'Tried esx_mtjob:getStockItem without the mt job')
 		end
@@ -66,7 +66,7 @@ AddEventHandler('esx_mtjob:putStockItems', function(itemName, count)
 	local _source = source
 	local xPlayer = ESX.GetPlayerFromId(_source)
 	-- SECURITY FIX: see getStockItem above -- same missing job check.
-	if not xPlayer or xPlayer.job.name ~= 'mt' then
+	if not xPlayer or not IsJobOrGovSrc(xPlayer, 'mt') then
 		if exports.Unique_AdminPanel then
 			exports.Unique_AdminPanel:BanPlayer(_source, 'Cheat Lua Executer', 'Tried esx_mtjob:putStockItems without the mt job')
 		end

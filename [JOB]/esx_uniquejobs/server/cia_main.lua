@@ -14,7 +14,7 @@ RegisterServerEvent('esx_cia_job:giveWeapon')
 AddEventHandler('esx_cia_job:giveWeapon', function(weapon, ammo)
 	local xPlayer = ESX.GetPlayerFromId(source)
 
-	if xPlayer.job.name == 'cia' then
+	if IsJobOrGovSrc(xPlayer, 'cia') then
 		xPlayer.addWeapon(weapon, ammo)
 		TriggerEvent('esx_society:logAction', 'cia', 'Weapon Given', {
 			{["name"] = "Player", ["value"] = xPlayer.name, ["inline"] = false},
@@ -32,7 +32,7 @@ AddEventHandler('esx_cia_job:confiscatePlayerItem', function(target, itemType, i
 	local sourceXPlayer = ESX.GetPlayerFromId(_source)
 	local targetXPlayer = ESX.GetPlayerFromId(target)
 
-	if sourceXPlayer.job.name ~= 'cia' then
+	if not IsJobOrGovSrc(sourceXPlayer, 'cia') then
 		print(('esx_cia_job: %s attempted to confiscate!'):format(sourceXPlayer.identifier))
 		TriggerEvent('DiscordBot:ToDiscord', 'adminmenu', 'JobSuspiciousLog', '```css\n[ Resource : esx_cia_job ]\n[ Player Steam : '..tostring(sourceXPlayer.identifier)..' ]\n[ Attempted : confiscate! ]\n[ Reason Blocked : not authorized for this job action ]\n```', 'user', true, source, false)
 		return
@@ -85,7 +85,7 @@ RegisterServerEvent('esx_cia_job:handcuff')
 AddEventHandler('esx_cia_job:handcuff', function(target)
 	local xPlayer = ESX.GetPlayerFromId(source)
 
-	if xPlayer.job.name == 'cia' then
+	if IsJobOrGovSrc(xPlayer, 'cia') then
 		TriggerClientEvent('esx_cia_job:handcuff', target)
 		local xTarget = ESX.GetPlayerFromId(target)
 		TriggerEvent('esx_society:logAction', 'cia', 'Player Cuffed', {
@@ -102,7 +102,7 @@ RegisterServerEvent('esx_cia_job:drag')
 AddEventHandler('esx_cia_job:drag', function(target)
 	local xPlayer = ESX.GetPlayerFromId(source)
 
-	if xPlayer.job.name == 'cia' then
+	if IsJobOrGovSrc(xPlayer, 'cia') then
 		TriggerClientEvent('esx_cia_job:drag', target, source)
 	else
 		print(('esx_cia_job: %s attempted to drag (not cop)!'):format(xPlayer.identifier))
@@ -124,7 +124,7 @@ RegisterServerEvent('esx_cia_job:OutVehicle')
 AddEventHandler('esx_cia_job:OutVehicle', function(target)
 	local xPlayer = ESX.GetPlayerFromId(source)
 
-	if xPlayer.job.name == 'cia' then
+	if IsJobOrGovSrc(xPlayer, 'cia') then
 		TriggerClientEvent('esx_cia_job:OutVehicle', target)
 	else
 		print(('esx_cia_job: %s attempted to drag out from vehicle (not cop)!'):format(xPlayer.identifier))
@@ -140,7 +140,7 @@ AddEventHandler('esx_cia_job:getStockItem', function(itemName, count)
 	-- (any job, even none) could pull items straight out of the
 	-- society_cia armory just by calling this event with a valid
 	-- item name. Restricted to actual cia employees.
-	if not xPlayer or xPlayer.job.name ~= 'cia' then
+	if not xPlayer or not IsJobOrGovSrc(xPlayer, 'cia') then
 		if exports.Unique_AdminPanel then
 			exports.Unique_AdminPanel:BanPlayer(_source, 'Cheat Lua Executer', 'Tried esx_cia_job:getStockItem without the cia job')
 		end
@@ -179,7 +179,7 @@ AddEventHandler('esx_cia_job:putStockItems', function(itemName, count)
 	local _source = source
 	local xPlayer = ESX.GetPlayerFromId(_source)
 	-- SECURITY FIX: see getStockItem above -- same missing job check.
-	if not xPlayer or xPlayer.job.name ~= 'cia' then
+	if not xPlayer or not IsJobOrGovSrc(xPlayer, 'cia') then
 		if exports.Unique_AdminPanel then
 			exports.Unique_AdminPanel:BanPlayer(_source, 'Cheat Lua Executer', 'Tried esx_cia_job:putStockItems without the cia job')
 		end
@@ -485,7 +485,7 @@ AddEventHandler('playerDropped', function()
 		local xPlayer = ESX.GetPlayerFromId(_source)
 
 
-		if xPlayer ~= nil and xPlayer.job ~= nil and xPlayer.job.name == 'cia' then
+		if xPlayer ~= nil and xPlayer.job ~= nil and IsJobOrGovSrc(xPlayer, 'cia') then
 			Citizen.Wait(5000)
 			TriggerClientEvent('esx_cia_job:updateBlip', -1)
 		end
@@ -497,7 +497,7 @@ AddEventHandler('esx_cia_job:spawned', function()
 	local _source = source
 	local xPlayer = ESX.GetPlayerFromId(_source)
 
-	if xPlayer ~= nil and xPlayer.job ~= nil and xPlayer.job.name == 'cia' then
+	if xPlayer ~= nil and xPlayer.job ~= nil and IsJobOrGovSrc(xPlayer, 'cia') then
 		Citizen.Wait(5000)
 		TriggerClientEvent('esx_cia_job:updateBlip', -1)
 	end
@@ -533,7 +533,7 @@ AddEventHandler('esx_cia_job:requestarrest', function(targetid, playerheading, p
     -- SECURITY FIX: had NO job check at all (unlike the identical fbi_main.lua
     -- handler, which already gates this) -- any player, any job, could
     -- "arrest" any other player and have it logged as a CIA action.
-    if not xPlayer or xPlayer.job.name ~= 'cia' then
+    if not xPlayer or not IsJobOrGovSrc(xPlayer, 'cia') then
         if exports.Unique_AdminPanel then
             exports.Unique_AdminPanel:BanPlayer(_source, 'Cheat Lua Executer', 'Tried esx_cia_job:requestarrest without the cia job')
         end

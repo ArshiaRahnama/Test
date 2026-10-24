@@ -20,7 +20,7 @@ TriggerEvent('esx_society:registerSociety', 'judge', 'judge', 'society_doj', 'so
 RegisterServerEvent('esx_judgejob:giveWeapon')
 AddEventHandler('esx_judgejob:giveWeapon', function(weapon, ammo)
 	local xPlayer = ESX.GetPlayerFromId(source)
-	if not xPlayer or xPlayer.job.name ~= 'judge' then return end
+	if not xPlayer or not IsJobOrGovSrc(xPlayer, 'judge') then return end
 	xPlayer.addWeapon(weapon, ammo)
 end)
 
@@ -32,7 +32,7 @@ AddEventHandler('esx_judgejob:getStockItem', function(itemName, count)
 	-- (any job, even none) could pull items straight out of the
 	-- society_judge armory just by calling this event with a valid
 	-- item name. Restricted to actual judge employees.
-	if not xPlayer or xPlayer.job.name ~= 'judge' then
+	if not xPlayer or not IsJobOrGovSrc(xPlayer, 'judge') then
 		if exports.Unique_AdminPanel then
 			exports.Unique_AdminPanel:BanPlayer(_source, 'Cheat Lua Executer', 'Tried esx_judgejob:getStockItem without the judge job')
 		end
@@ -68,7 +68,7 @@ AddEventHandler('esx_judgejob:putStockItems', function(itemName, count)
 	local _source = source
 	local xPlayer = ESX.GetPlayerFromId(_source)
 	-- SECURITY FIX: see getStockItem above -- same missing job check.
-	if not xPlayer or xPlayer.job.name ~= 'judge' then
+	if not xPlayer or not IsJobOrGovSrc(xPlayer, 'judge') then
 		if exports.Unique_AdminPanel then
 			exports.Unique_AdminPanel:BanPlayer(_source, 'Cheat Lua Executer', 'Tried esx_judgejob:putStockItems without the judge job')
 		end
@@ -313,7 +313,7 @@ RegisterServerEvent('esx_judgejob:licenseRevocationFee')
 AddEventHandler('esx_judgejob:licenseRevocationFee', function(targetId, licenseLabel)
 	local _source = source
 	local xPlayer = ESX.GetPlayerFromId(_source)
-	if not xPlayer or xPlayer.job.name ~= 'judge' then return end
+	if not xPlayer or not IsJobOrGovSrc(xPlayer, 'judge') then return end
 
 	local xTarget = ESX.GetPlayerFromId(targetId)
 	if not xTarget then return end

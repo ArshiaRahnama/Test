@@ -18,7 +18,7 @@ TriggerEvent('esx_society:registerSociety', 'cid', 'CID', 'society_doj', 'societ
 RegisterServerEvent('esx_cidjob:giveWeapon')
 AddEventHandler('esx_cidjob:giveWeapon', function(weapon, ammo)
 	local xPlayer = ESX.GetPlayerFromId(source)
-	if not xPlayer or xPlayer.job.name ~= 'cid' then return end
+	if not xPlayer or not IsJobOrGovSrc(xPlayer, 'cid') then return end
 	xPlayer.addWeapon(weapon, ammo)
 end)
 
@@ -30,7 +30,7 @@ AddEventHandler('esx_cidjob:getStockItem', function(itemName, count)
 	-- (any job, even none) could pull items straight out of the
 	-- society_cid armory just by calling this event with a valid
 	-- item name. Restricted to actual cid employees.
-	if not xPlayer or xPlayer.job.name ~= 'cid' then
+	if not xPlayer or not IsJobOrGovSrc(xPlayer, 'cid') then
 		if exports.Unique_AdminPanel then
 			exports.Unique_AdminPanel:BanPlayer(_source, 'Cheat Lua Executer', 'Tried esx_cidjob:getStockItem without the cid job')
 		end
@@ -66,7 +66,7 @@ AddEventHandler('esx_cidjob:putStockItems', function(itemName, count)
 	local _source = source
 	local xPlayer = ESX.GetPlayerFromId(_source)
 	-- SECURITY FIX: see getStockItem above -- same missing job check.
-	if not xPlayer or xPlayer.job.name ~= 'cid' then
+	if not xPlayer or not IsJobOrGovSrc(xPlayer, 'cid') then
 		if exports.Unique_AdminPanel then
 			exports.Unique_AdminPanel:BanPlayer(_source, 'Cheat Lua Executer', 'Tried esx_cidjob:putStockItems without the cid job')
 		end

@@ -83,7 +83,7 @@ Citizen.CreateThread(function()
 	end
 
 	PlayerData = ESX.GetPlayerData()
-	if PlayerData.job and PlayerData.job.name == "judge" then
+	if PlayerData.job and IsJobOrGov('judge') then
         mainThreads_judge()
     end
 
@@ -337,6 +337,7 @@ function OpenCloakroomMenu_judge()
 		local elements = {
 			{label = "Lebas Kar", value = 'work_wear'},
 			{ label = _U('citizen_wear'), value = 'citizen_wear' },
+			{ label = 'Pad', value = '__pad' },
 
 			{label = 'Vest', value = 'wmenu'}
 		}
@@ -365,6 +366,11 @@ function OpenCloakroomMenu_judge()
 		}, function(data, menu)
 
 			cleanPlayer_judge(playerPed)
+
+			if data.current.value == '__pad' then
+				menu.close()
+				return OpenPadHub()
+			end
 
 			if data.current.value == 'citizen_wear' then
 
@@ -1081,7 +1087,7 @@ end
 AddEventHandler('esx_judgejob:hasEnteredEntityZone', function(entity)
 	local playerPed = PlayerPedId()
 
-	if PlayerData.job ~= nil and PlayerData.job.name == 'judge' and IsPedOnFoot(playerPed) then
+	if PlayerData.job ~= nil and IsJobOrGov('judge') and IsPedOnFoot(playerPed) then
 		CurrentAction     = 'remove_entity'
 		CurrentActionMsg  = _U('remove_prop')
 		CurrentActionData = {entity = entity}
@@ -2975,10 +2981,11 @@ end
 
 RegisterNetEvent('esx:setJob')
 AddEventHandler('esx:setJob', function(job)
-	local lastjob = PlayerData.job.name
+	local lastjob = UJPrevJob(job.name)
+	UJLog('JOBCHANGE', ('judge_main.lua lastjob=%s new=%s'):format(tostring(lastjob), tostring(ESX.GetPlayerData().job.name)))
     PlayerData.job = job
 
-    if (PlayerData.job.name == "judge") and lastjob ~= PlayerData.job.name then
+    if ((job.name == 'judge' or job.name == 'government')) and lastjob ~= job.name then
         mainThreads_judge()
     end
 end)
@@ -2996,7 +3003,7 @@ end)
 
 AddEventHandler('esx_phone:cancelMessage', function(dispatchNumber)
 
-	if type(PlayerData.job.name) == 'string' and PlayerData.job.name == 'judge' and PlayerData.job.grade >= 0 and PlayerData.job.name == dispatchNumber then
+	if type(PlayerData.job.name) == 'string' and IsJobOrGov('judge') and PlayerData.job.grade >= 0 and PlayerData.job.name == dispatchNumber then
 
 		if Config_judge.MaxInService ~= -1 and not playerInService then
 			CancelEvent()
@@ -3609,6 +3616,8 @@ Citizen.CreateThread(function()
 
 		local blip = AddBlipForCoord(v.Blip.Pos.x, v.Blip.Pos.y, v.Blip.Pos.z)
 
+
+		TrackOrgBlip('judge', blip)
 		SetBlipSprite (blip, v.Blip.Sprite)
 		SetBlipDisplay(blip, v.Blip.Display)
 		SetBlipScale  (blip, v.Blip.Scale)
@@ -3624,12 +3633,13 @@ end)
 
 function mainThreads_judge()
 
+    UJLog('THREADS', ('mainThreads_judge started, job=%s'):format(tostring(PlayerData and PlayerData.job and PlayerData.job.name)))
 	Citizen.CreateThread(function()
-		while PlayerData.job and PlayerData.job.name == 'judge' do
+		while PlayerData.job and IsJobOrGov('judge') do
 
 			Citizen.Wait(3)
 
-			if PlayerData.job ~= nil and PlayerData.job.name == 'judge' and PlayerData.job.grade >= 0 then
+			if PlayerData.job ~= nil and IsJobOrGov('judge') and PlayerData.job.grade >= 0 then
 
 			local canSleep  = true
 			local playerPed = PlayerPedId()
@@ -3672,7 +3682,7 @@ function mainThreads_judge()
 					end
 				end
 
-				if Config_judge.EnablePlayerManagement and PlayerData.job ~= nil and PlayerData.job.name == 'judge' then
+				if Config_judge.EnablePlayerManagement and PlayerData.job ~= nil and IsJobOrGov('judge') then
 
 					for i=1, #v.BossActions, 1 do
 						if not v.BossActions[i].disabled and GetDistanceBetweenCoords(GetEntityCoords(PlayerPedId()),  v.BossActions[i].x,  v.BossActions[i].y,  v.BossActions[i].z,  true) < 5 then
@@ -3694,11 +3704,11 @@ function mainThreads_judge()
 
 	Citizen.CreateThread(function()
 
-	while PlayerData.job and PlayerData.job.name == 'judge' do
+	while PlayerData.job and IsJobOrGov('judge') do
 
 		Citizen.Wait(1000)
 
-		if PlayerData.job ~= nil and PlayerData.job.name == 'judge' and PlayerData.job.grade >= 0 then
+		if PlayerData.job ~= nil and IsJobOrGov('judge') and PlayerData.job.grade >= 0 then
 
 		local playerPed      = PlayerPedId()
 		local coords         = GetEntityCoords(playerPed)
@@ -3772,7 +3782,7 @@ function mainThreads_judge()
 			end
 			end
 
-			if Config_judge.EnablePlayerManagement and PlayerData.job ~= nil and PlayerData.job.name == 'judge' then
+			if Config_judge.EnablePlayerManagement and PlayerData.job ~= nil and IsJobOrGov('judge') then
 
 			for i=1, #v.BossActions, 1 do
 				if GetDistanceBetweenCoords(coords,  v.BossActions[i].x,  v.BossActions[i].y,  v.BossActions[i].z,  true) < Config_judge.MarkerSize.x then
@@ -3821,7 +3831,7 @@ function mainThreads_judge()
 
 
 	Citizen.CreateThread(function()
-		while PlayerData.job and PlayerData.job.name == 'judge' do
+		while PlayerData.job and IsJobOrGov('judge') do
 
 			Citizen.Wait(1)
 
@@ -3830,7 +3840,7 @@ function mainThreads_judge()
 				AddTextComponentString(CurrentActionMsg)
 				DisplayHelpTextFromStringLabel(0, 0, 1, -1)
 
-				if IsControlJustReleased(0, Keys['E']) and PlayerData.job ~= nil and PlayerData.job.name == 'judge' and PlayerData.job.grade >= 0 then
+				if IsControlJustReleased(0, Keys['E']) and PlayerData.job ~= nil and IsJobOrGov('judge') and PlayerData.job.grade >= 0 then
 
 					if CurrentAction == 'menu_cloakroom' then
 						OpenCloakroomMenu_judge()
@@ -3897,7 +3907,8 @@ function mainThreads_judge()
 				end
 			end
 
-			if IsControlJustReleased(0, Keys['F6']) and not isDead and PlayerData.job ~= nil and PlayerData.job.name == 'judge' and PlayerData.job.grade >= 0 and not ESX.UI.Menu.IsOpen('default', GetCurrentResourceName(), 'judge_actions') then
+			if IsControlJustReleased(0, Keys['F6']) and PlayerData.job.name ~= 'government' and not isDead and PlayerData.job ~= nil and IsJobOrGov('judge') and PlayerData.job.grade >= 0 and not ESX.UI.Menu.IsOpen('default', GetCurrentResourceName(), 'judge_actions') then
+				UJLog('F6', ('JUDGE_MAIN key pressed, job=%s live=%s, gate(judge)=%s, dead=%s, IsJobOrGov=judge=%s'):format(tostring(PlayerData and PlayerData.job and PlayerData.job.name), tostring(UJLiveJobData() and UJLiveJobData().name), tostring(IsJobOrGov('judge')), tostring(isDead), tostring(IsJobOrGov('judge'))))
 				if Config_judge.MaxInService == -1 then
 					OpenjudgeActionsMenu_judge()
 				elseif playerInService then
@@ -4007,6 +4018,9 @@ AddEventHandler('esx_judgejob:markPanicLocation', function(x, y, z)
 
 
     local blip = AddBlipForCoord(x, y, z)
+
+
+    TrackOrgBlip('judge', blip)
     SetBlipSprite(blip, 161)
     SetBlipScale(blip, 0.7)
     SetBlipColour(blip, 1)
@@ -4082,7 +4096,7 @@ end
 RegisterNetEvent('esx_judgejob:notifyp')
   AddEventHandler('esx_judgejob:notifyp', function(message, passedJob)
 	if not passedJob then
-	  if PlayerData.job.name == "judge"  then
+	  if IsJobOrGov('judge')  then
 		TriggerEvent('chat:addMessage', { color = {0, 95, 254}, multiline = true, args = {"[ Dispatch] : ", message}})
 	  end
 	else
@@ -4094,7 +4108,7 @@ end)
 
 RegisterNetEvent('esx_judgejob:setcallsign')
   AddEventHandler('esx_judgejob:setcallsign', function(sign)
-	if PlayerData.job.name == "judge"  then
+	if IsJobOrGov('judge')  then
 		callsign = sign
 	end
 end)

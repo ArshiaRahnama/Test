@@ -10,6 +10,7 @@ TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
 -- Union of every DOJ + Law Enforcement job (mirrors the broadest
 -- of the old per-job checks, which was police's own)
 local RESPONDER_JOBS = {
+	government = true,
 	police = true, sheriff = true, mt = true,
 	cid = true, cia = true, marshal = true, fbi = true, judge = true, doa = true,
 }

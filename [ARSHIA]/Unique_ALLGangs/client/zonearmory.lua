@@ -12,7 +12,7 @@ local zones = {}
 CreateThread(function()
     while Config == nil or Config.Territory == nil or Config.Territory.Zones == nil do Wait(500) end
     for key, z in pairs(Config.Territory.Zones) do
-        if not z.bossZone and z.coord and z.armory ~= false then
+        if Config.Territory.ZoneArmory ~= false and not z.bossZone and z.coord and z.armory ~= false then
             zones[#zones + 1] = { key = key, label = z.label or key, coord = z.coord }
         end
     end

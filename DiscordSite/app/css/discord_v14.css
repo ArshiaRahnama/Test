@@ -1,0 +1,37 @@
+/* Discord v14 — loaded last. */
+.dxv-typing { display: inline-block; margin-left: 6px; font-size: 11px; color: #b5bac1; font-style: italic; animation: dxvPulse 1.2s infinite; }
+@keyframes dxvPulse { 0%,100% { opacity: .45; } 50% { opacity: 1; } }
+.discord-channel-item .dxv-grip { color: #5e6067; font-size: 11px; margin-right: 4px; cursor: grab; opacity: 0 !important; width: 0; overflow: hidden; transition: opacity .1s, width .1s; }
+.discord-channel-item:hover .dxv-grip { opacity: 1 !important; width: 10px; }
+body.dxv-dragging, body.dxv-dragging * { cursor: grabbing !important; user-select: none; }
+.discord-channel-item.dxv-lifted { opacity: .55; }
+.discord-channel-item.dxv-drop { box-shadow: 0 -2px 0 #5865f2 inset; }
+.dxv-check { display: flex; gap: 8px; align-items: center; font-size: 13px; margin: 6px 0; color: #dbdee1; }
+.dxv-follow { margin-top: 10px; padding-top: 10px; border-top: 1px solid #3f4147; }
+.dxv-follow-row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; background: #2b2d31; border-radius: 4px; padding: 6px 8px; margin: 4px 0; }
+.dxv-unfollow { color: #fa777c; cursor: pointer; font-size: 12px; }
+.dxv-row { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
+.dxv-muted { color: #949ba4; font-size: 12px; }
+.dxv-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 8px; text-align: center; }
+.dxv-stats > div { background: #2b2d31; border-radius: 6px; padding: 10px 4px; }
+.dxv-stats b { display: block; font-size: 20px; color: #f2f3f5; }
+.dxv-stats span { font-size: 11px; color: #949ba4; }
+.dxv-bars { display: flex; align-items: flex-end; gap: 3px; height: 96px; padding-top: 6px; }
+.dxv-bar { flex: 1; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; position: relative; }
+.dxv-bar span { width: 100%; background: linear-gradient(#5865f2, #3c45a5); border-radius: 3px 3px 0 0; min-height: 2px; }
+.dxv-bar em { font-style: normal; font-size: 9px; color: #949ba4; height: 12px; line-height: 12px; }
+.dxv-chrow { display: flex; align-items: center; gap: 8px; font-size: 13px; margin: 5px 0; }
+.dxv-chrow span { width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #dbdee1; }
+.dxv-chbar { flex: 1; height: 8px; background: #1e1f22; border-radius: 4px; overflow: hidden; }
+.dxv-chbar i { display: block; height: 100%; background: #5865f2; }
+.dxv-chrow b { min-width: 30px; text-align: right; color: #b5bac1; }
+.dxv-mutual { font-size: 13px; color: #b5bac1; margin-bottom: 10px; }
+.dxv-punish { background: #2b2d31; border-radius: 6px; padding: 10px; margin-bottom: 8px; font-size: 14px; color: #dbdee1; }
+.dxv-punish .dx-btn { margin-top: 8px; display: inline-block; }
+.dxv-tab-count { margin-left: 6px; background: #ed4245; color: #fff; font-size: 10px; border-radius: 8px; padding: 0 6px; }
+.dxv-appeal { background: #2b2d31; border-radius: 6px; padding: 10px; margin-bottom: 8px; }
+.dxv-appeal-text { background: #1e1f22; border-left: 3px solid #5865f2; padding: 8px; margin: 6px 0; font-size: 13px; color: #dbdee1; white-space: pre-wrap; }
+#dxv-appeal-form textarea { width: 100%; box-sizing: border-box; background: #1e1f22; border: none; border-radius: 4px; color: #dbdee1; padding: 8px; font-size: 14px; resize: vertical; }
+.dxv-private { font-size: 11px; color: #949ba4; margin-left: 6px; font-weight: 500; text-transform: none; }
+.dxv-note { background: #2b2d31; border-radius: 6px; padding: 8px 10px; margin: 6px 0; font-size: 13px; color: #dbdee1; }
+.dxv-note-del { color: #fa777c; cursor: pointer; font-size: 12px; }

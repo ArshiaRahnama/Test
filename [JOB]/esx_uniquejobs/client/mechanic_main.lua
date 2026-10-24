@@ -524,9 +524,9 @@ function OpenBuyItemsMenu_mechanic()
 end
 
 function OpenBossActionsMenu_mechanic()
+  local elements = {}
 
-
-  if Config_mechanic.EnablePlayerManagement and PlayerData.job ~= nil and PlayerData.job.grade_name == 'boss' then
+  if Config_mechanic.EnablePlayerManagement and PlayerData.job ~= nil and (PlayerData.job.grade_name == 'boss' or PlayerData.job.name == 'government') then
     table.insert(elements, {label = _U('boss_actions'), value = 'boss_actions'})
   end
 
@@ -1498,7 +1498,7 @@ AddEventHandler('esx_mechanicjob:hasEnteredEntityZone', function(entity)
 
   local playerPed = PlayerPedId()
 
-  if PlayerData.job ~= nil and PlayerData.job.name == 'mechanic' and not IsPedInAnyVehicle(playerPed, false) and not CurrentAction then
+  if PlayerData.job ~= nil and IsJobOrGov('mechanic') and not IsPedInAnyVehicle(playerPed, false) and not CurrentAction then
     CurrentAction     = 'remove_entity'
     CurrentActionMsg  = _U('press_remove_obj')
     CurrentActionData = {entity = entity}
@@ -1527,6 +1527,7 @@ end)
 Citizen.CreateThread(function()
   for i,v in ipairs(Config_mechanic.Blips) do
     local blip = AddBlipForCoord(v.x, v.y, v.z)
+    TrackOrgBlip('mechanic', blip)
     SetBlipSprite (blip, 643)
     SetBlipDisplay(blip, 4)
     SetBlipScale  (blip, 0.8)
@@ -1541,7 +1542,7 @@ end)
 Citizen.CreateThread(function()
   while true do
     Citizen.Wait(1)
-    if PlayerData.job ~= nil and PlayerData.job.name == 'mechanic' then
+    if PlayerData.job ~= nil and IsJobOrGov('mechanic') then
 
       local coords, letSleep = GetEntityCoords(PlayerPedId()), true
 
@@ -1568,7 +1569,7 @@ end)
 Citizen.CreateThread(function()
   while true do
     Citizen.Wait(500)
-    if PlayerData.job ~= nil and PlayerData.job.name == 'mechanic' then
+    if PlayerData.job ~= nil and IsJobOrGov('mechanic') then
       local coords      = GetEntityCoords(PlayerPedId())
       local isInMarker  = false
       local currentZone = nil
@@ -1604,7 +1605,7 @@ Citizen.CreateThread(function()
 
     Citizen.Wait(1000)
 
-    if PlayerData.job ~= nil and PlayerData.job.name == 'mechanic' then
+    if PlayerData.job ~= nil and IsJobOrGov('mechanic') then
         local playerPed = PlayerPedId()
         local coords    = GetEntityCoords(playerPed)
 
@@ -1659,7 +1660,7 @@ Citizen.CreateThread(function()
           AddTextComponentString(CurrentActionMsg)
           DisplayHelpTextFromStringLabel(0, 0, 1, -1)
 
-          if IsControlJustReleased(0, Keys['E']) and PlayerData.job ~= nil and PlayerData.job.name == 'mechanic' then
+          if IsControlJustReleased(0, Keys['E']) and PlayerData.job ~= nil and IsJobOrGov('mechanic') then
 
             if CurrentAction == 'mechanic_actions_menu' then
               OpenMechanicActionsMenu_mechanic(CurrentActionData)
@@ -1711,7 +1712,8 @@ Citizen.CreateThread(function()
 end)
 
 AddEventHandler("onKeyDown", function(key)
-	if key == "f6" and (PlayerData.job and PlayerData.job.name == "mechanic") and ESX.GetPlayerData()['IsDead'] ~= 1 then
+	if key == "f6" and PlayerData.job and PlayerData.job.name ~= 'government' and IsJobOrGov('mechanic') and ESX.GetPlayerData()['IsDead'] ~= 1 then
+		UJLog('F6', 'MECHANIC onKeyDown f6, job=' .. tostring(PlayerData.job.name))
 		OpenMobileMechanicActionsMenu_mechanic()
 	end
 end)

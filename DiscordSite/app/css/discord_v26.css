@@ -1,0 +1,12 @@
+/* Discord v26 — loaded last. */
+.dxr-inbox { display: flex; align-items: center; gap: 10px; height: 42px; margin: 1px 8px 6px; padding: 0 12px; border-radius: 4px; cursor: pointer; color: #dbdee1; font-size: 15px; font-weight: 500; }
+.dxr-inbox i { width: 22px; text-align: center; color: #b5bac1; }
+.dxr-inbox:hover { background: #3a3c43; }
+.dxr-count { margin-left: auto; font-style: normal; font-size: 12px; background: #ed4245; color: #fff; border-radius: 9px; padding: 0 7px; min-width: 18px; text-align: center; }
+.dxr-req { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid #3f4147; color: #dbdee1; }
+.dxr-req .dx-btn { padding: 6px 10px; }
+.dxr-text { flex: 1; min-width: 0; font-size: 14px; }
+.dxr-av { width: 36px; height: 36px; border-radius: 50%; color: #fff; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.dxr-muted { color: #949ba4; font-size: 12px; }
+.dxr-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: #2b2d31; color: #dbdee1; padding: 10px 14px; margin: 0 16px 8px; border-radius: 8px; font-size: 13px; }
+.dxr-profile-btn { margin-top: 10px; width: 100%; text-align: center; }

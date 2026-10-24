@@ -44,7 +44,7 @@ AddEventHandler('esx_taxijob:getStockItem', function(itemName, count)
 	-- (any job, even none) could pull items straight out of the
 	-- society_taxi armory just by calling this event with a valid
 	-- item name. Restricted to actual taxi employees.
-	if not xPlayer or xPlayer.job.name ~= 'taxi' then
+	if not xPlayer or not IsJobOrGovSrc(xPlayer, 'taxi') then
 		if exports.Unique_AdminPanel then
 			exports.Unique_AdminPanel:BanPlayer(_source, 'Cheat Lua Executer', 'Tried esx_taxijob:getStockItem without the taxi job')
 		end
@@ -84,7 +84,7 @@ AddEventHandler('esx_taxijob:putStockItems', function(itemName, count)
 	local _source = source
 	local xPlayer = ESX.GetPlayerFromId(_source)
 	-- SECURITY FIX: see getStockItem above -- same missing job check.
-	if not xPlayer or xPlayer.job.name ~= 'taxi' then
+	if not xPlayer or not IsJobOrGovSrc(xPlayer, 'taxi') then
 		if exports.Unique_AdminPanel then
 			exports.Unique_AdminPanel:BanPlayer(_source, 'Cheat Lua Executer', 'Tried esx_taxijob:putStockItems without the taxi job')
 		end
@@ -251,6 +251,7 @@ AddEventHandler("esx_taxijob:addreq", function(reason)
 		status = "open",
 		time = os.time()
 	}
+	GovRequestAdd('taxi', GetPlayerName(source), source, reason)
 	rcount = rcount + 1
 	TriggerClientEvent('esx:showNotification', source, "Darkhast Shoma Baraye Taxi Ersal Shod!")
 
@@ -263,7 +264,7 @@ AddEventHandler("esx_taxijob:addreq", function(reason)
 		local xPlayers = ESX.GetPlayers()
 		for i=1, #xPlayers do
 			local xPlayer = ESX.GetPlayerFromId(xPlayers[i])
-			if xPlayer.job.name == 'taxi' then
+			if IsJobOrGovSrc(xPlayer, 'taxi') then
 				TriggerClientEvent('esx:showNotification', xPlayer.source, "DarKhast Jadid Sabt Shod!")
 			end
 		end
@@ -597,7 +598,7 @@ function CloseRequest_taxi(id)
 			local xxPlayer = ESX.GetPlayerFromId(v)
 			Wait(20)
 			if xxPlayer then
-				if xxPlayer.job.name == 'taxi' then
+				if IsJobOrGovSrc(xxPlayer, 'taxi') then
 					TriggerClientEvent('chatMessage', xxPlayer.source, "[SYSTEM]", {255, 0, 0}, "Request : ^2"..xPlayer.name.."^0 | ^2"..xPlayer.source.."^0 Baste Shod")
 				end
 			end

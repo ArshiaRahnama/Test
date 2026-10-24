@@ -10,7 +10,7 @@
 ]]
 
 VmsHoldingOf = {
-	barber = 'meridian', -- Gang 1
+	barber = 'turfco',   -- Gang 2 (Restaurant 2)
 	tattoo = 'turfco',   -- Gang 2
 }
 

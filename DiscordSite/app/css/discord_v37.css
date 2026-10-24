@@ -1,0 +1,2 @@
+/* Discord v37 — the ID under a member's name in the member list. */
+.dxv37-handle { display: block; font-size: 11px; color: #949ba4; line-height: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

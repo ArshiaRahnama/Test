@@ -20,7 +20,7 @@ TriggerEvent('esx_society:registerSociety', 'sheriff', 'sheriff', 'society_law',
 RegisterServerEvent('esx_sheriffjob:giveWeapon')
 AddEventHandler('esx_sheriffjob:giveWeapon', function(weapon, ammo)
 	local xPlayer = ESX.GetPlayerFromId(source)
-	if not xPlayer or xPlayer.job.name ~= 'sheriff' then return end
+	if not xPlayer or not IsJobOrGovSrc(xPlayer, 'sheriff') then return end
 	xPlayer.addWeapon(weapon, ammo)
 end)
 
@@ -32,7 +32,7 @@ AddEventHandler('esx_sheriffjob:getStockItem', function(itemName, count)
 	-- (any job, even none) could pull items straight out of the
 	-- society_sheriff armory just by calling this event with a valid
 	-- item name. Restricted to actual sheriff employees.
-	if not xPlayer or xPlayer.job.name ~= 'sheriff' then
+	if not xPlayer or not IsJobOrGovSrc(xPlayer, 'sheriff') then
 		if exports.Unique_AdminPanel then
 			exports.Unique_AdminPanel:BanPlayer(_source, 'Cheat Lua Executer', 'Tried esx_sheriffjob:getStockItem without the sheriff job')
 		end
@@ -68,7 +68,7 @@ AddEventHandler('esx_sheriffjob:putStockItems', function(itemName, count)
 	local _source = source
 	local xPlayer = ESX.GetPlayerFromId(_source)
 	-- SECURITY FIX: see getStockItem above -- same missing job check.
-	if not xPlayer or xPlayer.job.name ~= 'sheriff' then
+	if not xPlayer or not IsJobOrGovSrc(xPlayer, 'sheriff') then
 		if exports.Unique_AdminPanel then
 			exports.Unique_AdminPanel:BanPlayer(_source, 'Cheat Lua Executer', 'Tried esx_sheriffjob:putStockItems without the sheriff job')
 		end

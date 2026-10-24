@@ -1,0 +1,9 @@
+/* Discord v34 — loaded last. Profile card: roles chips and action buttons. */
+.dxp34 { margin-top: 12px; }
+.dxp34-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .02em; color: #b5bac1; margin-bottom: 6px; }
+.dxp34-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.dxp34-chip { display: inline-flex; align-items: center; gap: 6px; background: #2b2d31; border-radius: 4px; padding: 3px 8px; font-size: 12px; color: #dbdee1; }
+.dxp34-chip i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.dxp34-actions { display: flex; gap: 8px; }
+.dxp34-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; height: 32px; border-radius: 3px; background: #5865f2; color: #fff; font-size: 14px; font-weight: 500; cursor: pointer; }
+.dxp34-btn:hover { background: #4752c4; }

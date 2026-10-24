@@ -165,8 +165,10 @@ end
 Citizen.CreateThread(function()
 	for k,v in pairs(Config_ambulance.Hospitals) do
 		local blip = AddBlipForCoord(v.Blip.coords)
+		TrackOrgBlip('ambulance', blip)
 		local blip2 = AddBlipForCoord(v.Blip.coords2)
 
+		TrackOrgBlip('ambulance', blip2)
 		SetBlipSprite(blip, v.Blip.sprite)
 		SetBlipScale(blip, 0.7)
 		SetBlipColour(blip, v.Blip.color)
@@ -431,6 +433,14 @@ function StartDistressSignal_ambulance()
 			EndTextCommandDisplayText(0.175, 0.805)
 
 			if IsControlPressed(0, Keys['G']) then
+
+				-- Unique_ALLGangs: on the island no medic is called (exports.Unique_ALLGangs:IslandNoMedic)
+				local noMedic = false
+				pcall(function() noMedic = exports['Unique_ALLGangs']:IslandNoMedic() end)
+				if noMedic then
+					ESX.ShowNotification('Dar jazire medic khabar dade nemishavad.')
+					break
+				end
 
 				TriggerServerEvent('esx_ambulancejob:addreq', 'Man be Medic Neyaz Daram')
 				Citizen.CreateThread(function()

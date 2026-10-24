@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Holding Purchase</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<div id="app" class="hidden">
+  <div class="panel">
+    <aside class="side">
+      <div class="side-title">منو</div>
+      <button class="tab is-active" data-tab="holdings">هولدینگ‌ها</button>
+      <button class="tab" data-tab="rules">راهنما</button>
+      <div class="side-note">هر هولدینگ ۶۰ روز مالک دارد. هفته‌ی آخر درخواست‌ها باز می‌شوند.</div>
+      <div class="side-foot">
+        <div class="ok-dot"></div>
+        <span id="me-gang">گنگ شما</span>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="head">
+        <div>
+          <h1 id="title">خرید هولدینگ</h1>
+          <p id="subtitle">دو هولدینگ زیر را گنگ‌ها می‌توانند بخرند.</p>
+        </div>
+        <button id="close" class="x">✕</button>
+      </header>
+
+      <section id="holdings" class="grid"></section>
+
+      <section id="rules" class="rules hidden">
+        <h2>قوانین خرید هولدینگ</h2>
+        <ol>
+          <li>هر هولدینگ بعد از فروش <b>۶۰ روز</b> مال گنگ خریدار است.</li>
+          <li>در این ۶۰ روز هیچ‌کس نمی‌تواند درخواست بدهد.</li>
+          <li><b>هفته‌ی آخر</b> (۷ روز آخر) درخواست‌ها باز می‌شوند. هر گنگ با قیمت بالاتر درخواست می‌دهد.</li>
+          <li>در پایان، <b>بیشترین قیمت درخواست</b> هولدینگ را می‌گیرد و ۶۰ روز جدید شروع می‌شود.</li>
+          <li>اگر کسی درخواست نداد، مالک فعلی ۶۰ روز دیگر تمدید می‌شود.</li>
+          <li>پول هر درخواست همان لحظه از پول گنگ برداشته می‌شود؛ گنگی که بالاتر بزند، پول قبلی‌اش برمی‌گردد.</li>
+          <li>مالک هولدینگ می‌تواند کسب‌وکارهای زیرش را مدیریت کند و از امکانات آن‌ها استفاده کند.</li>
+        </ol>
+      </section>
+    </main>
+  </div>
+</div>
+<script src="app.js"></script>
+</body>
+</html>

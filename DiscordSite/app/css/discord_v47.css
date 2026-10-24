@@ -1,0 +1,11 @@
+/* Discord v47 — Security Actions. */
+.dxs47-text { color: #b5bac1; font-size: 14px; margin: -2px 0 12px; }
+.dxs47-card { background: #2b2d31; border-radius: 6px; padding: 14px; }
+.dxs47-head { display: flex; align-items: center; gap: 10px; color: #f2f3f5; font-size: 16px; margin-bottom: 6px; }
+.dxs47-head i { color: #fa777c; }
+.dxs47-sub { color: #b5bac1; font-size: 13px; line-height: 18px; }
+.dxs47-status { margin-top: 10px; padding: 8px 10px; border-radius: 4px; background: rgba(250,119,124,.12); color: #fa777c; font-size: 13px; display: none; }
+.dxs47-btn { margin-top: 12px; text-align: center; height: 36px; line-height: 36px; border-radius: 3px; background: #da373c; color: #fff; font-size: 14px; font-weight: 500; cursor: pointer; }
+.dxs47-btn:hover { background: #a12828; }
+.dxs47-btn.dxs47-resume { background: #23a55a; }
+.dxs47-btn.dxs47-resume:hover { background: #1a8a4a; }

@@ -266,6 +266,8 @@ function Discord_VerifyLoginCode() {
         }
 
         clearInterval(DiscordResendCooldownTimer);
+        // v35: after a correct code the player chooses their ID first
+        if (window.DXID_Start) { DXID_Start(); return; }
         $("#discord-login-screen").removeClass("discord-visible");
         Discord_LoadServers();
     });
@@ -1596,7 +1598,11 @@ $(document).ready(function() {
         var btn = $(this);
 
         Discord_Post('JoinDiscordPublicServer', { serverId: serverId }, function(result) {
-            if (!result || result.error) return;
+            if (!result || result.error) {
+                var m = { INVITES_PAUSED: "Invites to this server are paused right now.", BANNED: "You are banned from that server.", ALREADY_MEMBER: "You are already in that server." };
+                if (window.DX_Toast) DX_Toast((result && m[result.error]) || "Could not join.", "warn");
+                return;
+            }
             Discord.servers.push(result);
             Discord_CloseModals();
             Discord_SelectServer(result.id);
@@ -1610,6 +1616,9 @@ $(document).ready(function() {
         Discord_Post('JoinDiscordServer', { inviteCode: code }, function(result) {
             if (!result || result.error === "NOT_FOUND") { Discord_ShowModalError('discord-modal-join-server', 'No server found with that code.'); return; }
             if (result.error === "ALREADY_MEMBER") { Discord_ShowModalError('discord-modal-join-server', 'You are already in that server.'); return; }
+            if (result.error === "INVITES_PAUSED") { Discord_ShowModalError('discord-modal-join-server', 'Invites to this server are paused right now. Try again later.'); return; }
+            if (result.error === "BANNED") { Discord_ShowModalError('discord-modal-join-server', 'You are banned from that server.'); return; }
+            if (result.error) { Discord_ShowModalError('discord-modal-join-server', 'Could not join that server.'); return; }
             Discord.servers.push(result);
             Discord_CloseModals();
             Discord_SelectServer(result.id);

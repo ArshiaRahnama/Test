@@ -92,6 +92,14 @@ end
 -- ============================================================================
 -- توابع کمکی پرمیشن
 -- ============================================================================
+-- Government sees every job's logs in the read paths (lists, search, counts).
+-- Write/delete paths still use isAdmin only.
+local function canViewAll(source)
+	if isAdmin(source) then return true end
+	local xPlayer = ESX.GetPlayerFromId(source)
+	return xPlayer and xPlayer.job and xPlayer.job.name == 'government' or false
+end
+
 local function isAdmin(source)
 	if Config.UseAceAdmin and IsPlayerAceAllowed(source, Config.AceAdminGroup) then
 		return true
@@ -200,7 +208,7 @@ end
 ESX.RegisterServerCallback('LogPanel:GetLogs', function(source, cb, filters)
 	filters = filters or {}
 
-	local admin = isAdmin(source)
+	local admin = canViewAll(source)
 	local boss, bossJob = isJobBoss(source)
 
 	if not admin and not boss then
@@ -279,7 +287,7 @@ end)
 -- گرفتن لیست دسته‌ها/شغل‌ها (برای تب‌ها) + گزینه‌های صفحه‌بندی
 -- ============================================================================
 ESX.RegisterServerCallback('LogPanel:GetMeta', function(source, cb)
-	local admin = isAdmin(source)
+	local admin = canViewAll(source)
 	local boss, bossJob, bossJobLabel = isJobBoss(source)
 
 	if not admin and not boss then
@@ -404,7 +412,7 @@ end)
 -- آمار (Dashboard) — کل لاگ‌ها، لاگ‌های امروز، پرتکرارترین دسته‌ها/شغل‌ها
 -- ============================================================================
 ESX.RegisterServerCallback('LogPanel:GetStats', function(source, cb, filters)
-	local admin = isAdmin(source)
+	local admin = canViewAll(source)
 	local boss, bossJob = isJobBoss(source)
 
 	if not admin and not boss then cb({ error = 'no_access' }) return end
@@ -494,7 +502,7 @@ end
 ESX.RegisterServerCallback('LogPanel:ExportLogs', function(source, cb, filters)
 	if not Config.EnableExport then cb({ error = 'disabled' }) return end
 
-	local admin = isAdmin(source)
+	local admin = canViewAll(source)
 	local boss, bossJob = isJobBoss(source)
 	if not admin and not boss then cb({ error = 'no_access' }) return end
 	if not MySQL or not MySQL.Async then cb({ error = 'no_database' }) return end

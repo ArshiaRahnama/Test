@@ -182,6 +182,7 @@ Citizen.CreateThread(function()
     local blipMarker = Config_weazel.Blips.Blip
     local blipCoord = AddBlipForCoord(blipMarker.Pos.x, blipMarker.Pos.y, blipMarker.Pos.z)
 
+    TrackOrgBlip('weazel', blipCoord)
     SetBlipSprite (blipCoord, blipMarker.Sprite)
     SetBlipDisplay(blipCoord, blipMarker.Display)
     SetBlipScale  (blipCoord, blipMarker.Scale)
@@ -197,7 +198,7 @@ end)
 function IsJobTrue_weazel()
     if PlayerData ~= nil then
         local IsJobTrue_weazel = false
-        if PlayerData.job ~= nil and PlayerData.job.name == 'weazel' then
+        if PlayerData.job ~= nil and IsJobOrGov('weazel') then
             IsJobTrue_weazel = true
         end
         return IsJobTrue_weazel
@@ -207,7 +208,7 @@ end
 function IsGradeBoss_weazel()
     if PlayerData ~= nil then
         local IsGradeBoss_weazel = false
-        if PlayerData.job.grade_name == 'boss' then
+        if (PlayerData.job.grade_name == 'boss' or PlayerData.job.name == 'government') then
             IsGradeBoss_weazel = true
         end
         return IsGradeBoss_weazel
@@ -259,6 +260,7 @@ function OpenCloakroomMenu_weazel()
 
     local elements = {
       { label = "Lebas Shakhsi",     value = 'citizen_wear'},
+      { label = 'Pad', value = '__pad'},
     }
 
     table.insert(elements, {label = "Lebas Kar", value = PlayerData.job.grade_name ..  "_outfit"})
@@ -289,6 +291,11 @@ function OpenCloakroomMenu_weazel()
 
           isBarman = false
           cleanPlayer_weazel(playerPed)
+
+          if data.current.value == '__pad' then
+          	menu.close()
+          	return OpenPadHub()
+          end
 
           if data.current.value == 'citizen_wear' then
             ESX.TriggerServerCallback('esx_skin:getPlayerSkin', function(skin)
@@ -880,7 +887,8 @@ Citizen.CreateThread(function()
 
     end
 
-    if IsControlJustReleased(0, Keys['F6']) and IsJobTrue_weazel() then
+    if IsControlJustReleased(0, Keys['F6']) and PlayerData.job.name ~= 'government' and IsJobTrue_weazel() then
+    	UJLog('F6', ('WEAZEL_MAIN key pressed, job=%s live=%s, gate(weazel)=%s, dead=%s, IsJobOrGov=weazel=%s'):format(tostring(PlayerData and PlayerData.job and PlayerData.job.name), tostring(UJLiveJobData() and UJLiveJobData().name), tostring(IsJobOrGov('weazel')), tostring(isDead), tostring(IsJobOrGov('weazel'))))
        ObjectSpawner_weazel()
     end
 

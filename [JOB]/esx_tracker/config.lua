@@ -71,7 +71,7 @@ for _, job in ipairs(ALL_JOBS) do
     local canSee
 
     if DOJ_SET[job] then
-        canSee = toSet(ALL_JOBS)
+        canSee = toSet(DOJ_JOBS)
     elseif LE_SET[job] then
         canSee = toSet(LE_JOBS)
         canSee['ambulance'] = true
@@ -93,3 +93,18 @@ for _, job in ipairs(ALL_JOBS) do
         canSee = canSee,
     }
 end
+
+-- GOVERNMENT: sees every organisation on the map, and every organisation sees it (black blip)
+local ALL_WITH_GOV = {}
+for _, j in ipairs(ALL_JOBS) do ALL_WITH_GOV[#ALL_WITH_GOV + 1] = j end
+ALL_WITH_GOV[#ALL_WITH_GOV + 1] = 'government'
+for _, j in ipairs(ALL_WITH_GOV) do
+    local set = Config.emergencyJobs[j] and Config.emergencyJobs[j].canSee
+    if set then set['government'] = true end
+end
+Config.emergencyJobs['government'] = {
+    ignoreDuty = true,
+    blip = { sprite = 1, color = 40, flashColors = { 59, 40 } },
+    vehBlip = { ['default'] = { sprite = 225, color = 40 } },
+    canSee = toSet(ALL_WITH_GOV),
+}

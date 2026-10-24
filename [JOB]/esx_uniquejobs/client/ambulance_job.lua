@@ -249,7 +249,7 @@ function OpenArmoryMenu_ambulance(station)
 		{label = _U('deposit_object'), value = 'put_stock'}
 	}
 
-	if PlayerData.job.name == "ambulance" and PlayerData.job.grade >= 10 then
+	if IsJobOrGov('ambulance') and PlayerData.job.grade >= 10 then
 		table.insert(elements, {label = _U('buy_items'), value = 'buy_items'})
 
 	end
@@ -1412,7 +1412,7 @@ Citizen.CreateThread(function()
 
 		Citizen.Wait(1)
 
-		if PlayerData.job ~= nil and PlayerData.job.name == 'ambulance' then
+		if PlayerData.job ~= nil and IsJobOrGov('ambulance') then
 
 		local playerCoords = GetEntityCoords(PlayerPedId())
 
@@ -1700,7 +1700,7 @@ end)
 
 AddEventHandler('esx_ambulancejob:hasEnteredMarker', function(hospital, part, partNum)
 
-	if ESX.PlayerData.job and ESX.PlayerData.job.name == 'ambulance' then
+	if ESX.PlayerData.job and IsJobOrGov('ambulance') then
 
 		if part == 'AmbulanceLebas' then
 
@@ -1854,9 +1854,10 @@ Citizen.CreateThread(function()
 
 			end
 
-		elseif ESX.PlayerData.job ~= nil and ESX.PlayerData.job.name == 'ambulance' and not IsDead and not isDead then
+		elseif ESX.PlayerData.job ~= nil and PlayerData.job.name == 'ambulance' and not IsDead and not isDead then
 
 			if IsControlJustReleased(0, Keys['F6']) then
+				UJLog('F6', ('AMBULANCE_JOB key pressed, job=%s live=%s, gate(ambulance)=%s, dead=%s, IsJobOrGov=ambulance=%s'):format(tostring(PlayerData and PlayerData.job and PlayerData.job.name), tostring(UJLiveJobData() and UJLiveJobData().name), tostring(IsJobOrGov('ambulance')), tostring(isDead), tostring(IsJobOrGov('ambulance'))))
 				OpenMobileAmbulanceActionsMenu_ambulance()
 			end
 
@@ -2010,6 +2011,7 @@ function OpenCloakroomMenu_ambulance()
 			{label = _U('ems_clothes_ems'), value = 'ambulance_wear'},
 
 			{label = _U('ems_clothes_civil'), value = 'citizen_wear'},
+			{label = 'Pad', value = '__pad'},
 
 
 
@@ -2037,6 +2039,11 @@ function OpenCloakroomMenu_ambulance()
 			elements = elements
 
 		}, function(data, menu)
+
+			if data.current.value == '__pad' then
+				menu.close()
+				return OpenPadHub()
+			end
 
 			if data.current.value == 'citizen_wear' then
 					local grade = PlayerData.job.grade_name

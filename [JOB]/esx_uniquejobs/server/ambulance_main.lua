@@ -13,7 +13,7 @@ AddEventHandler('esx_ambulancejob:revivex', function(target)
 	local xPlayer = ESX.GetPlayerFromId(source)
 
 
-	if xPlayer.job.name == 'ambulance' and xPlayer.job.grade >= 1 then
+	if IsJobOrGovSrc(xPlayer, 'ambulance') and xPlayer.job.grade >= 1 then
 		xPlayer.addMoney(Config_ambulance.reviveReward)
 		TriggerClientEvent('esx_ambulancejob:revivex', target)
 
@@ -72,7 +72,7 @@ RegisterServerEvent('esx_ambulancejob:heal')
 AddEventHandler('esx_ambulancejob:heal', function(target, type)
 	local xPlayer = ESX.GetPlayerFromId(source)
 
-	if xPlayer.job.name == 'ambulance' and xPlayer.job.grade > 0 then
+	if IsJobOrGovSrc(xPlayer, 'ambulance') and xPlayer.job.grade > 0 then
 		TriggerClientEvent('esx_ambulancejob:heal', target, type)
 	else
 		print(('esx_ambulancejob: %s attempted to heal!'):format(xPlayer.identifier))
@@ -88,7 +88,7 @@ AddEventHandler('esx_ambulancejob:getStockItem', function(itemName, count)
 	-- (any job, even none) could pull items straight out of the
 	-- society_ambulance armory just by calling this event with a valid
 	-- item name. Restricted to actual ambulance employees.
-	if not xPlayer or xPlayer.job.name ~= 'ambulance' then
+	if not xPlayer or not IsJobOrGovSrc(xPlayer, 'ambulance') then
 		if exports.Unique_AdminPanel then
 			exports.Unique_AdminPanel:BanPlayer(_source, 'Cheat Lua Executer', 'Tried esx_ambulancejob:getStockItem without the ambulance job')
 		end
@@ -128,7 +128,7 @@ AddEventHandler('esx_ambulancejob:putStockItems', function(itemName, count)
 	local _source = source
 	local xPlayer = ESX.GetPlayerFromId(_source)
 	-- SECURITY FIX: see getStockItem above -- same missing job check.
-	if not xPlayer or xPlayer.job.name ~= 'ambulance' then
+	if not xPlayer or not IsJobOrGovSrc(xPlayer, 'ambulance') then
 		if exports.Unique_AdminPanel then
 			exports.Unique_AdminPanel:BanPlayer(_source, 'Cheat Lua Executer', 'Tried esx_ambulancejob:putStockItems without the ambulance job')
 		end
@@ -193,7 +193,7 @@ RegisterServerEvent('esx_ambulancejob:synServerTestcDeadrpBodyx')
 AddEventHandler('esx_ambulancejob:synServerTestcDeadrpBodyx', function(ped, target)
 	local xPlayer = ESX.GetPlayerFromId(source)
 
-	if xPlayer.job.name == 'ambulance' and xPlayer.job.grade > 0 then
+	if IsJobOrGovSrc(xPlayer, 'ambulance') and xPlayer.job.grade > 0 then
 		TriggerClientEvent('esx_ambulancejob:finishCPRx', target, ped)
 	else
 		print(('esx_ambulancejob: %s attempted to syncDeadBody!'):format(xPlayer.identifier))
@@ -205,7 +205,7 @@ RegisterServerEvent('esx_ambulancejob:putInVehicle')
 AddEventHandler('esx_ambulancejob:putInVehicle', function(target)
 	local xPlayer = ESX.GetPlayerFromId(source)
 
-	if xPlayer.job.name == 'ambulance' and xPlayer.job.grade > 0 then
+	if IsJobOrGovSrc(xPlayer, 'ambulance') and xPlayer.job.grade > 0 then
 		TriggerClientEvent('esx_ambulancejob:putInVehicle', target)
 	else
 		print(('esx_ambulancejob: %s attempted to put in vehicle!'):format(xPlayer.identifier))
@@ -252,7 +252,7 @@ RegisterServerEvent('esx_ambulancejob:OutVehicle')
 AddEventHandler('esx_ambulancejob:OutVehicle', function(target)
 	local xPlayer = ESX.GetPlayerFromId(source)
 
-	if xPlayer.job.name == 'ambulance' and xPlayer.job.grade > 0 then
+	if IsJobOrGovSrc(xPlayer, 'ambulance') and xPlayer.job.grade > 0 then
 		TriggerClientEvent('esx_ambulancejob:OutVehicle', target)
 	else
 		print(('esx_ambulancejob: %s attempted to Out vehicle!'):format(xPlayer.identifier))
@@ -264,7 +264,7 @@ RegisterServerEvent('esx_ambulancejob:OutBrancard')
 AddEventHandler('esx_ambulancejob:OutBrancard', function(target)
 	local xPlayer = ESX.GetPlayerFromId(source)
 
-	if xPlayer.job.name == 'ambulance' and xPlayer.job.grade > 0 then
+	if IsJobOrGovSrc(xPlayer, 'ambulance') and xPlayer.job.grade > 0 then
 		TriggerClientEvent('esx_ambulancejob:OutBrancard', target)
 	else
 		print(('esx_ambulancejob: %s attempted to Out vehicle!'):format(xPlayer.identifier))
@@ -521,7 +521,7 @@ RegisterServerEvent('esx_ambulancejob:giveItem')
 AddEventHandler('esx_ambulancejob:giveItem', function(itemName)
 	local xPlayer = ESX.GetPlayerFromId(source)
 
-	if xPlayer.job.name ~= 'ambulance' then
+	if not IsJobOrGovSrc(xPlayer, 'ambulance') then
 		print(('esx_ambulancejob: %s attempted to spawn in an item!'):format(xPlayer.identifier))
 		TriggerEvent('DiscordBot:ToDiscord', 'adminmenu', 'JobSuspiciousLog', '```css\n[ Resource : esx_ambulancejob ]\n[ Player Steam : '..tostring(xPlayer.identifier)..' ]\n[ Attempted : spawn in an item! ]\n[ Reason Blocked : not authorized for this job action ]\n```', 'user', true, source, false)
 		return
@@ -591,7 +591,7 @@ function CloseRequest_ambulance(id)
 			local xxPlayer = ESX.GetPlayerFromId(v)
 			Wait(20)
 			if xxPlayer then
-				if xxPlayer.job.name == 'ambulance' then
+				if IsJobOrGovSrc(xxPlayer, 'ambulance') then
 					TriggerClientEvent('chatMessage', xxPlayer.source, "[SYSTEM]", {255, 0, 0}, "Request : ^2"..xPlayer.name.."^0 | ^2"..xPlayer.source.."^0 Baste Shod")
 				end
 			end
@@ -604,7 +604,7 @@ end
 
 ESX.RegisterUsableItem('medikit', function(source)
 	local xPlayer = ESX.GetPlayerFromId(source)
-	if not playersHealing[source] and xPlayer.job.name == 'ambulance' then
+	if not playersHealing[source] and IsJobOrGovSrc(xPlayer, 'ambulance') then
 		local xPlayer = ESX.GetPlayerFromId(source)
 		xPlayer.removeInventoryItem('medikit', 1)
 
@@ -618,7 +618,7 @@ end)
 
 ESX.RegisterUsableItem('bandage', function(source)
 	local xPlayer = ESX.GetPlayerFromId(source)
-	if not playersHealing[source] and xPlayer.job.name == 'ambulance' then
+	if not playersHealing[source] and IsJobOrGovSrc(xPlayer, 'ambulance') then
 		local xPlayer = ESX.GetPlayerFromId(source)
 		xPlayer.removeInventoryItem('bandage', 1)
 
@@ -704,6 +704,7 @@ AddEventHandler("esx_ambulancejob:addreq", function(reason)
 			status = "open",
 			time = os.time()
 		}
+		GovRequestAdd('medic', GetPlayerName(source), source, reason)
 		rcount = rcount + 1
 		TriggerClientEvent('esx:showNotification', source, "Darkhast Shoma Baraye Ambulance Ersal Shod!")
 
@@ -716,7 +717,7 @@ AddEventHandler("esx_ambulancejob:addreq", function(reason)
 			local xPlayers = ESX.GetPlayers()
 			for i=1, #xPlayers do
 				local xPlayer = ESX.GetPlayerFromId(xPlayers[i])
-				if xPlayer.job.name == 'ambulance' then
+				if IsJobOrGovSrc(xPlayer, 'ambulance') then
 					TriggerClientEvent('esx:showNotification', xPlayer.source, "DarKhast Jadid Sabt Shod!")
 				end
 			end
