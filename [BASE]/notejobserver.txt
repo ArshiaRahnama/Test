@@ -1,3 +1,9 @@
 Department Of Justice (CID, CIA, Marshal, FBI, Judge, DOA) 
 Law Enforcement (Police, Sheriff, MT) 
 Organ Services (Taxi, Mechanic, Medic, Weazel) 
+
+گاورمنت میتونه دسته بندی ارگان ها رو عوض کنه مثللا
+CID از DOJ
+بببرتو 
+LAW
+و گاورمنت فول دسترسی کامل به همه ارگان ها داره

@@ -164,8 +164,8 @@ function OpenheliSpawnerMenu_mechanic_legacy(station)
 	local elements = {}
 	local elements2 = {}
 
-	local grade = PlayerData.job.grade
-	local job = PlayerData.job.name
+	local grade = UJOrgGrade('mechanic')
+	local job = UJOrgJob('mechanic')
 	ESX.TriggerServerCallback('esx_society:getHelis', function(authorizedVehicle)
 		ESX.TriggerServerCallback('esx_society:GetDivisionsPlayer', function(getdivision)
 			dvisionName = nil
@@ -1176,8 +1176,8 @@ end
 function OpenGetStocksMenu_mechanic()
   ESX.TriggerServerCallback('esx_mechanicjob:getStockItems', function(items)
 
-		local grade = PlayerData.job.grade
-		local job = PlayerData.job.name
+		local grade = UJOrgGrade('mechanic')
+		local job = UJOrgJob('mechanic')
 		ESX.TriggerServerCallback('esx_society:getItems', function(authorizedItems)
 		local elements = {}
 

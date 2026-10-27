@@ -303,6 +303,13 @@ RegisterCommand('flist', function(source, args)
     RegisterCommand('fservices', function(source, args) sendGovOrganChat(source, 'services', args) end, false)
 
     RegisterCommand("dep", function(source, args)
+        -- per-rank option set by the organisation's boss (esx_uniquejobs / org_options)
+        local okOpt, allowedOpt = pcall(function() return exports['esx_uniquejobs']:HasOption(source, 'dep') end)
+        if okOpt and allowedOpt == false then
+            TriggerClientEvent('chatMessage', source, "[SYSTEM]", {255, 0, 0}, " ^1Dastresi kafi nadarid: ^0rank-e shoma be /dep dastresi nadarad.")
+            TriggerClientEvent('esx:showNotification', source, '~r~Dastresi kafi nadarid~s~ - /dep')
+            return
+        end
         local xPlayer = ESX.GetPlayerFromId(source)
         local organ = jobToOrgan[xPlayer.job.name]
 

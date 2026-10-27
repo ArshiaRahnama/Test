@@ -13,6 +13,7 @@ shared_scripts {
 	'shared/uj_log.lua',
 	'shared/departments.lua',
 	'shared/org_peds.lua',
+	'shared/org_options.lua',
 	'cad/config_cad.lua',
 	'cad/config_crimescene.lua',
 
@@ -91,6 +92,7 @@ client_scripts {
 	'client/mt_main.lua',
 	'client/government_main.lua',
 	'client/org_peds.lua',
+	'client/org_options.lua',
 
 	'client/config_teleport.lua',
 	'client/teleport_manager.lua',
@@ -171,6 +173,7 @@ server_scripts {
 	'server/gov_admin.lua',
 	'server/gov_requests.lua',
 	'server/org_peds.lua',
+	'server/org_options.lua',
 
 	'server/unit_manager.lua',
 	'server/rob_manager.lua',

@@ -66,6 +66,7 @@ local function OpenAcceptRobMenu()
 end
 
 RegisterCommand('acceptrob', function()
+    if not UJCan('robbery') then return end
 	OpenAcceptRobMenu()
 end, false)
 

@@ -301,8 +301,8 @@ function OpenVehicleSpawnerMenu_taxi_legacy(station, partNum)
 	local elements = {}
 	local elements2 = {}
 
-	local grade = ESX.GetPlayerData().job.grade
-	local job = ESX.GetPlayerData().job.name
+	local grade = UJOrgGrade('taxi')
+	local job = UJOrgJob('taxi')
 	local steamhex = ESX.GetPlayerData().identifier
 	ESX.TriggerServerCallback('esx_society:getVehicles', function(authorizedVehicle)
 
@@ -413,8 +413,8 @@ function OpenheliSpawnerMenu_taxi_legacy()
 	local elements = {}
 	local elements2 = {}
 
-	local grade = ESX.PlayerData.job.grade
-	local job = ESX.PlayerData.job.name
+	local grade = UJOrgGrade('taxi')
+	local job = UJOrgJob('taxi')
 	ESX.TriggerServerCallback('esx_society:getHelis', function(authorizedVehicle)
 		ESX.TriggerServerCallback('esx_society:GetDivisionsPlayer', function(getdivision)
 			dvisionName = nil
@@ -1322,9 +1322,8 @@ function GetDivisionName_taxi(getdivision, job)
 end
 
 function OpenGetStocksMenu_taxi()
-    local grade = ESX.PlayerData.job.grade
-    local job = ESX.PlayerData.job.name
-
+    local grade = UJOrgGrade('taxi')
+    local job = UJOrgJob('taxi')
     ESX.TriggerServerCallback("esx_taxijob:getStockItems", function(items)
         ESX.TriggerServerCallback('esx_society:GetDivisionsPlayer', function(getdivision)
             local dvisionName = GetDivisionName_taxi(getdivision, job)

@@ -349,8 +349,8 @@ function OpenVehicleSpawnerMenu_weazel_legacy(station, partNum)
   local elements = {}
   local elements2 = {}
 
-  local grade = ESX.GetPlayerData().job.grade
-  local job = ESX.GetPlayerData().job.name
+  local grade = UJOrgGrade('weazel')
+  local job = UJOrgJob('weazel')
   local steamhex = ESX.GetPlayerData().identifier
   ESX.TriggerServerCallback('esx_society:getVehicles', function(authorizedVehicle)
 
@@ -534,8 +534,8 @@ function OpenHelicopterMenu_weazel()
   local elements = {}
   local elements2 = {}
 
-  local grade = PlayerData.job.grade
-  local job = PlayerData.job.name
+  local grade = UJOrgGrade('weazel')
+  local job = UJOrgJob('weazel')
   ESX.TriggerServerCallback('esx_society:getHelis', function(authorizedVehicle)
     ESX.TriggerServerCallback('esx_society:GetDivisionsPlayer', function(getdivision)
       dvisionName = nil

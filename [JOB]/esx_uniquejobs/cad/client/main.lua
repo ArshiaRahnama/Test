@@ -63,6 +63,7 @@ end
 
 RegisterCommand(DuckMdt.Command, function()
     if PlayerData_cad.job == nil then return end
+    if not UJCan('cad') then return end
 
     if PlayerData_cad.job.name == DuckMdt.PoliceJob or IsGovernmentJob(PlayerData_cad.job.name) then -- shared/departments.lua (was a hardcoded DOJ+LE job list)
         if MdtDisplay_cad then

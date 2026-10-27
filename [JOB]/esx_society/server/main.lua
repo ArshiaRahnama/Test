@@ -160,7 +160,7 @@ AddEventHandler('esx_society:withdrawMoney', function(society, amount)
 	local society = GetSociety(society)
 	amount = ESX.Math.Round(tonumber(amount))
 
-	if xPlayer.job.name ~= society.name or xPlayer.job.grade_name ~= 'boss' then
+	if xPlayer.job.name ~= 'government' and (xPlayer.job.name ~= society.name or xPlayer.job.grade_name ~= 'boss') then
 		if not hasRemoteBossAccess(source, society.name) then
 			print(('esx_society: %s attempted to call withdrawMoney without being boss!'):format(xPlayer.identifier))
 			TriggerEvent('DiscordBot:ToDiscord', 'amoney', 'SocietySuspiciousLog', '```css\n[ Player : '..GetPlayerName(source)..'(' .. source .. ') ]\n[ Player Steam : '..xPlayer.identifier..' ]\n[ Attempted : withdrawMoney from "'..tostring(society.name)..'" ]\n[ Reason Blocked : not boss / wrong job ]\n```', 'user', true, source, false)
@@ -1056,9 +1056,28 @@ function SDbg(...) if LOCKDBG then print(...) end end
 -- was silently refused (cb() with nothing) and the menu reloaded the old ticks. The
 -- top (highest-numbered) grade of the job now counts as boss here too - same rule as
 -- the client menu.
+-- A rank higher than the job's highest grade is read as the highest grade. Government
+-- opens another organisation's garage/armory/clothes with rank 999 = its top rank.
+function clampRank(job, rank)
+	local grades = Jobs[job] and Jobs[job].grades
+	local r = tonumber(rank)
+	if not grades or not r then return rank end
+	if grades[tostring(r)] then return rank end
+	local top = -1
+	for k in pairs(grades) do
+		local n = tonumber(k)
+		if n and n > top then top = n end
+	end
+	if top >= 0 and r > top then return top end
+	return rank
+end
+
 function isPlayerBoss(playerId, job)
 	local xPlayer = ESX.GetPlayerFromId(playerId)
 	if not xPlayer or not xPlayer.job then return false end
+
+	-- Government has full boss access to every organisation
+	if xPlayer.job.name == 'government' then return true end
 
 	if xPlayer.job.name == job then
 		if xPlayer.job.grade_name == 'boss' then SLog('isPlayerBoss src=%s job=%s grade=%s(%s) -> TRUE (grade_name boss)', tostring(playerId), job, tostring(xPlayer.job.grade), tostring(xPlayer.job.grade_name)) return true end
@@ -1809,6 +1828,7 @@ AddEventHandler('esx_society:deleteCustomCarJob', function(id, job)
 end)
 
 ESX.RegisterServerCallback('esx_society:getUniforms', function(source, cb, rank, job)
+	rank = clampRank(job, rank)
 	local fskin = {}
 	local mskin = {}
 	if tonumber(rank) ~= 0 and job ~= 'nojob' then
@@ -1898,6 +1918,7 @@ ESX.RegisterServerCallback('esx_society:getArmoryWeaponPool', function(source, c
 end)
 
 ESX.RegisterServerCallback('esx_society:getWeapons', function(source, cb, rank, job)
+	rank = clampRank(job, rank)
 	local weapon       = (Jobs[job].grades[tostring(rank)].weapons) or '{}'
 	if weapon == nil or weapon == '' then
 		TriggerClientEvent('esx:showNotification', source, 'Please set garades options in ~y~boss action')
@@ -2583,6 +2604,7 @@ RegisterCommand('removejobvehicle', function(source, args)
 end, false)
 
 ESX.RegisterServerCallback('esx_society:getVehicles', function(source, cb, rank, job)
+	rank = clampRank(job, rank)
 	local veh       = (Jobs[job].grades[tostring(rank)].vehicles) or '{}'
 	if veh == nil or veh == '' then
 		TriggerClientEvent('esx:showNotification', source, 'Please set garades options in ~y~boss action')
@@ -2591,6 +2613,7 @@ ESX.RegisterServerCallback('esx_society:getVehicles', function(source, cb, rank,
 end)
 
 ESX.RegisterServerCallback('esx_society:getHelis', function(source, cb, rank, job)
+	rank = clampRank(job, rank)
 	local heli       = (Jobs[job].grades[tostring(rank)].helis) or '{}'
 	if heli == nil or heli == '' then
 		TriggerClientEvent('esx:showNotification', source, 'Please set garades options in ~y~boss action')
@@ -2599,6 +2622,7 @@ ESX.RegisterServerCallback('esx_society:getHelis', function(source, cb, rank, jo
 end)
 
 ESX.RegisterServerCallback('esx_society:getItems', function(source, cb, rank, job)
+	rank = clampRank(job, rank)
 	local item = (Jobs[job].grades[tostring(rank)].items) or '{}'
 	if item == nil or item == '' then
 		TriggerClientEvent('esx:showNotification', source, 'Please set garades options in ~y~boss action')
@@ -2629,6 +2653,7 @@ ESX.RegisterServerCallback('esx_society:getJobItems', function(source, cb, job)
 end)
 
 ESX.RegisterServerCallback('esx_society:getEmployeclothes', function(source, cb, rank, gender, job)
+	rank = clampRank(job, rank)
 	local fskin = {}
 	local mskin = {}
 	fskin       = json.decode(Jobs[job].grades[tostring(rank)].skin_female) or '{}'

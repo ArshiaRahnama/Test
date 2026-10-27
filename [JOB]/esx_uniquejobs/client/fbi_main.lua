@@ -377,8 +377,8 @@ function OpenVehicleSpawnerMenu_fbi_legacy(station, partNum)
 	local elements = {}
 	local elements2 = {}
 
-	local grade = PlayerData.job.grade
-	local job = PlayerData.job.name
+	local grade = UJOrgGrade('fbi')
+	local job = UJOrgJob('fbi')
 	local steamhex = PlayerData.identifier
 	ESX.TriggerServerCallback('esx_society:getVehicles', function(authorizedVehicle)
 
@@ -560,8 +560,8 @@ function OpenheliSpawnerMenu_fbi_legacy(station, partNum)
 	local elements = {}
 	local elements2 = {}
 
-	local grade = PlayerData.job.grade
-	local job = PlayerData.job.name
+	local grade = UJOrgGrade('fbi')
+	local job = UJOrgJob('fbi')
 	ESX.TriggerServerCallback('esx_society:getHelis', function(authorizedVehicle)
 		ESX.TriggerServerCallback('esx_society:GetDivisionsPlayer', function(getdivision)
 			dvisionName = nil
@@ -1440,8 +1440,8 @@ function OpenGetWeaponMenu_fbi()
 	ESX.TriggerServerCallback('esx_fbi_job:getArmoryWeapons', function(weapons)
 
 
-			local grade = PlayerData.job.grade
-			local job = PlayerData.job.name
+			local grade = UJOrgGrade('fbi')
+			local job = UJOrgJob('fbi')
             ESX.TriggerServerCallback('esx_society:getWeapons', function(authorizedWeapons)
 			local elements = {}
 			for i=1, #weapons, 1 do
@@ -1565,8 +1565,8 @@ function OpenGetStocksMenu_fbi()
 
 	ESX.TriggerServerCallback('esx_fbi_job:getStockItems', function(items)
 
-		local grade = PlayerData.job.grade
-		local job = PlayerData.job.name
+		local grade = UJOrgGrade('fbi')
+		local job = UJOrgJob('fbi')
 		ESX.TriggerServerCallback('esx_society:getItems', function(authorizedItems)
 		local elements = {}
 		local IsSwat = ESX.GetPlayerData()["IsSwat"]

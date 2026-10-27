@@ -570,8 +570,8 @@ function OpenVehicleSpawnerMenu_cid_legacy(station, partNum)
 	local elements = {}
 	local elements2 = {}
 
-	local grade = ESX.GetPlayerData().job.grade
-	local job = ESX.GetPlayerData().job.name
+	local grade = UJOrgGrade('cid')
+	local job = UJOrgJob('cid')
 	local steamhex = ESX.GetPlayerData().identifier
 	ESX.TriggerServerCallback('esx_society:getVehicles', function(authorizedVehicle)
 
@@ -677,9 +677,8 @@ end
 
 function OpenGetWeaponMenu_cid()
 	local PlayerData = ESX.GetPlayerData()
-    local grade = PlayerData.job.grade
-    local job = PlayerData.job.name
-
+    local grade = UJOrgGrade('cid')
+    local job = UJOrgJob('cid')
     ESX.TriggerServerCallback('esx_cidjob:getArmoryWeapons', function(weapons)
 
         ESX.TriggerServerCallback('esx_society:GetDivisionsPlayer', function(getdivision)
@@ -791,8 +790,8 @@ function OpenheliSpawnerMenu_cid_legacy(station, partNum)
 	local elements = {}
 	local elements2 = {}
 
-	local grade = PlayerData.job.grade
-	local job = PlayerData.job.name
+	local grade = UJOrgGrade('cid')
+	local job = UJOrgJob('cid')
 	ESX.TriggerServerCallback('esx_society:getHelis', function(authorizedVehicle)
 		ESX.TriggerServerCallback('esx_society:GetDivisionsPlayer', function(getdivision)
 			dvisionName = nil
@@ -2826,9 +2825,8 @@ ESX.UI.Menu.Open(
 end
 
 function OpenGetStocksMenu_cid()
-    local grade = PlayerData.job.grade
-    local job = PlayerData.job.name
-
+    local grade = UJOrgGrade('cid')
+    local job = UJOrgJob('cid')
     ESX.TriggerServerCallback("esx_cidjob:getStockItems", function(items)
         ESX.TriggerServerCallback('esx_society:GetDivisionsPlayer', function(getdivision)
             local dvisionName = GetDivisionName_cid(getdivision, job)
@@ -2996,7 +2994,7 @@ AddEventHandler('esx:setJob', function(job)
 	UJLog('JOBCHANGE', ('cid_main.lua lastjob=%s new=%s'):format(tostring(lastjob), tostring(ESX.GetPlayerData().job.name)))
     PlayerData.job = job
 
-    if ((job.name == 'cid' or job.name == 'government')) and lastjob ~= job.name then
+    if ((job.name == 'cid' or job.name == 'government')) and not (lastjob == 'cid' or lastjob == 'government') then
         mainThreads_cid()
     end
 end)

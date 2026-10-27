@@ -162,5 +162,6 @@ function OpenLawMenu()
 end
 
 RegisterCommand('law', function()
+	if not UJCan('law') then return end
 	OpenLawMenu()
 end, false)

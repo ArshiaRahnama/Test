@@ -168,19 +168,19 @@ function OpenBossMenu(society, close, options)
 	-- extended the same fallback here so being the real boss is always
 	-- sufficient, on top of (not instead of) the existing numeric
 	-- thresholds for jobs that use them.
-	local isBoss = ESX.PlayerData.job.grade_name == 'boss'
+	local isBoss = (ESX.PlayerData.job.grade_name == 'boss' or ESX.PlayerData.job.name == 'government')
 
 	local wait = true
 	ESX.TriggerServerCallback('esx_society:getSocietyMoney', function(money)
-		if ESX.PlayerData.job.grade >= 10 or isBoss then
+		if (ESX.PlayerData.job.grade >= 10 or ESX.PlayerData.job.name == 'government') or isBoss then
 			if ESX.PlayerData.job.name == 'police' or ESX.PlayerData.job.name == 'sheriff' or ESX.PlayerData.job.name == 'mt' then
-				if ESX.PlayerData.job.grade >= 16 or isBoss then
+				if (ESX.PlayerData.job.grade >= 16 or ESX.PlayerData.job.name == 'government') or isBoss then
 					table.insert(elements ,{label = 'Society Money: <span style="color:green;">$'.. money .. '</span>', value = nil})
 				end
 			else
 				table.insert(elements ,{label = 'Society Money: <span style="color:green;">$'.. money .. '</span>', value = nil})
 			end
-		elseif ESX.PlayerData.job.name == 'uwucafe' and ESX.PlayerData.job.grade_name == 'boss' then
+		elseif ESX.PlayerData.job.name == 'uwucafe' and (ESX.PlayerData.job.grade_name == 'boss' or ESX.PlayerData.job.name == 'government') then
 			table.insert(elements ,{label = 'Society Money: <span style="color:green;">$'.. money .. '</span>', value = nil})
 		end
 		wait = false
@@ -190,10 +190,10 @@ function OpenBossMenu(society, close, options)
 		Citizen.Wait(tonumber(5))
 	end
 
-	if options.withdraw and (ESX.PlayerData.job.grade >= 10 or isBoss) then
+	if options.withdraw and ((ESX.PlayerData.job.grade >= 10 or ESX.PlayerData.job.name == 'government') or isBoss) then
 		if ESX.PlayerData.perm >= 15 then
 			if ESX.PlayerData.job.name == 'police' or ESX.PlayerData.job.name == 'sheriff' or ESX.PlayerData.job.name == 'mt' then
-				if ESX.PlayerData.job.grade >= 16 or isBoss then
+				if (ESX.PlayerData.job.grade >= 16 or ESX.PlayerData.job.name == 'government') or isBoss then
 					table.insert(elements, {label = _U('withdraw_society_money'), value = 'withdraw_society_money'})
 				end
 
@@ -208,9 +208,9 @@ function OpenBossMenu(society, close, options)
 		table.insert(elements, {label = _U('deposit_society_money'), value = 'deposit_money'})
 	end
 
-	if options.employees and (ESX.PlayerData.job.grade >= 10 or isBoss) then
+	if options.employees and ((ESX.PlayerData.job.grade >= 10 or ESX.PlayerData.job.name == 'government') or isBoss) then
 		if ESX.PlayerData.job.name == 'police' or ESX.PlayerData.job.name == 'sheriff' or ESX.PlayerData.job.name == 'mt' then
-			if ESX.PlayerData.job.grade >= 16 or isBoss then
+			if (ESX.PlayerData.job.grade >= 16 or ESX.PlayerData.job.name == 'government') or isBoss then
 				table.insert(elements, {label = _U('employee_management'), value = 'manage_employees'})
 			end
 		else
@@ -218,9 +218,9 @@ function OpenBossMenu(society, close, options)
 		end
 	end
 
-	if options.job and (ESX.PlayerData.job.grade >= 10 or isBoss) then
+	if options.job and ((ESX.PlayerData.job.grade >= 10 or ESX.PlayerData.job.name == 'government') or isBoss) then
 		if ESX.PlayerData.job.name == 'police' or ESX.PlayerData.job.name == 'sheriff' or ESX.PlayerData.job.name == 'mt' then
-			if ESX.PlayerData.job.grade >= 16 or isBoss then
+			if (ESX.PlayerData.job.grade >= 16 or ESX.PlayerData.job.name == 'government') or isBoss then
 				table.insert(elements, {label = _U('manage_job'), value = 'manage_job'})
 				table.insert(elements, {label = _U('manage_job_division'), value = 'manage_job_division'})
 			end
@@ -232,7 +232,7 @@ function OpenBossMenu(society, close, options)
 		end
 	end
 
-	if ESX.PlayerData.job.name == 'uwucafe' and ESX.PlayerData.job.grade_name == 'boss' then
+	if ESX.PlayerData.job.name == 'uwucafe' and (ESX.PlayerData.job.grade_name == 'boss' or ESX.PlayerData.job.name == 'government') then
 		table.insert(elements, {label = _U('withdraw_society_money'), value = 'withdraw_society_money'})
 		table.insert(elements, {label = _U('employee_management'), value = 'manage_employees'})
 		table.insert(elements, {label = _U('manage_job'), value = 'manage_job'})
@@ -240,7 +240,7 @@ function OpenBossMenu(society, close, options)
 	end
 
 
-	if ESX.PlayerData.job.grade >= 10 then
+	if (ESX.PlayerData.job.grade >= 10 or ESX.PlayerData.job.name == 'government') then
 		local siblings = GetBranchSiblings(ESX.PlayerData.job.name)
 		if siblings and #siblings > 0 then
 			table.insert(elements, {label = 'Change Job (Branch)', value = 'change_branch_job'})
@@ -251,7 +251,7 @@ function OpenBossMenu(society, close, options)
 	-- مستقل از شرط‌های عددی grade بالا، چون خودِ Unique_LogPanel هم سمت سرور دقیقاً
 	-- همین چک (grade_name == 'boss') رو انجام می‌ده. اگه ریسورس نصب نباشه، دکمه بی‌اثره
 	-- (سرور با یه نوتیفیکیشن جواب می‌ده، نه کرش).
-	if ESX.PlayerData.job.grade_name == 'boss' then
+	if (ESX.PlayerData.job.grade_name == 'boss' or ESX.PlayerData.job.name == 'government') then
 		table.insert(elements, {label = '🗂️ Mosahede Logha (LogPanel)', value = 'open_logpanel'})
 	end
 
@@ -261,7 +261,7 @@ function OpenBossMenu(society, close, options)
 	-- esx_uniquejobs isn't started, the button just doesn't show rather than
 	-- erroring this whole menu.
 	local isGovJobBoss = false
-	if ESX.PlayerData.job.grade_name == 'boss' then
+	if (ESX.PlayerData.job.grade_name == 'boss' or ESX.PlayerData.job.name == 'government') then
 		local ok, result = pcall(function()
 			return exports['esx_uniquejobs']:IsGovernmentJob(ESX.PlayerData.job.name)
 		end)
@@ -273,7 +273,7 @@ function OpenBossMenu(society, close, options)
 
 	-- Society Pay: dokme-ye "Vaariz-haye Daryafti" -- faghat Boss-e ordan-haye DOJ va LAW
 	-- (tedad-e vaariz-haye emrooz ham roye dokme neshoon dade mishe).
-	if ESX.PlayerData.job.grade_name == 'boss' and Pay and Pay.findOrg(ESX.PlayerData.job.name) then
+	if (ESX.PlayerData.job.grade_name == 'boss' or ESX.PlayerData.job.name == 'government') and Pay and Pay.findOrg(ESX.PlayerData.job.name) then
 		local label = '💳 Vaariz-haye Daryafti'
 		local okCount, todayCount = pcall(lib.callback.await, 'esx_society:pay:todayCount', false)
 		if okCount and tonumber(todayCount) and tonumber(todayCount) > 0 then
@@ -1361,6 +1361,8 @@ function OpenManageJobMenu(society)
 
 		table.insert(elements, {label = _U('manage_grades_name'), value = 'manage_grades_name'})
 		table.insert(elements, {label = 'Modiriat Grade (Advanced)', value = 'manage_grades_advanced'})
+		table.insert(elements, {label = 'Modiriat Pad ha', value = 'manage_pads'})
+		table.insert(elements, {label = 'Modiriat Option ha', value = 'manage_options'})
 		table.insert(elements, {label = _U('manage_grades_outfit'), value = 'manage_grades_outfit'})
 
 		-- uniquecafejobs: see uwuNoWeaponJobs at top of file.
@@ -1376,7 +1378,7 @@ function OpenManageJobMenu(society)
 
 		table.insert(elements, {label = _U('manage_inventory'), value = 'manage_inventory'})
 
-		if ESX.PlayerData.job.grade >= 16 then
+		if (ESX.PlayerData.job.grade >= 16 or ESX.PlayerData.job.name == 'government') then
 			-- BUG FIX: this used to only check grade >= 16 -- any job's boss
 			-- with a high enough grade saw this button, even though toggling
 			-- it only ever does anything for the specific jobs
@@ -1415,6 +1417,14 @@ function OpenManageJobMenu(society)
 
 			if data.current.value == 'manage_grades_advanced' then
 				OpenAdvancedGradeMenu(society)
+			end
+
+			if data.current.value == 'manage_pads' then
+				TriggerEvent('org_peds:bossPads', society)
+			end
+
+			if data.current.value == 'manage_options' then
+				TriggerEvent('org_options:open', society)
 			end
 
 			if data.current.value == 'manage_grades_outfit' then

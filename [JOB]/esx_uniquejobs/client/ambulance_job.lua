@@ -361,9 +361,8 @@ function GetDivisionName_ambulance(getdivision, job)
 end
 
 function OpenGetStocksMenu_ambulance()
-    local grade = PlayerData.job.grade
-    local job = PlayerData.job.name
-
+    local grade = UJOrgGrade('ambulance')
+    local job = UJOrgJob('ambulance')
     ESX.TriggerServerCallback("esx_ambulancejob:getStockItems", function(items)
         ESX.TriggerServerCallback('esx_society:GetDivisionsPlayer', function(getdivision)
             local dvisionName = GetDivisionName_ambulance(getdivision, job)
@@ -2121,8 +2120,8 @@ function OpenVehicleSpawnerMenu_ambulance_legacy(station, partNum)
 	local elements = {}
 	local elements2 = {}
 
-	local grade = ESX.GetPlayerData().job.grade
-	local job = ESX.GetPlayerData().job.name
+	local grade = UJOrgGrade('ambulance')
+	local job = UJOrgJob('ambulance')
 	local steamhex = ESX.GetPlayerData().identifier
 	ESX.TriggerServerCallback('esx_society:getVehicles', function(authorizedVehicle)
 
@@ -2439,8 +2438,8 @@ function OpenheliSpawnerMenu_ambulance_legacy(station, partNum)
 	local elements = {}
 	local elements2 = {}
 
-	local grade = PlayerData.job.grade
-	local job = PlayerData.job.name
+	local grade = UJOrgGrade('ambulance')
+	local job = UJOrgJob('ambulance')
 	ESX.TriggerServerCallback('esx_society:getHelis', function(authorizedVehicle)
 		ESX.TriggerServerCallback('esx_society:GetDivisionsPlayer', function(getdivision)
 			dvisionName = nil

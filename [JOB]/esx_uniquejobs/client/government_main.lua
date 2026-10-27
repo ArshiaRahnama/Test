@@ -49,6 +49,20 @@ function UJLiveJobData()
     return PlayerData and PlayerData.job or nil
 end
 
+-- Government uses another organisation's garage / armory / clothes at that organisation's
+-- TOP rank: the job is the organisation's, the grade is 999 (the server clamps it to the top).
+function UJOrgJob(orgJob)
+    local jd = UJLiveJobData()
+    if jd and jd.name == 'government' then return orgJob end
+    return jd and jd.name
+end
+
+function UJOrgGrade(orgJob)
+    local jd = UJLiveJobData()
+    if jd and jd.name == 'government' then return 999 end
+    return jd and jd.grade
+end
+
 function IsJobOrGov(job)
     local jd = UJLiveJobData()
     local j = jd and jd.name
@@ -83,7 +97,7 @@ local function openGovSetJob()
     end, function(_, m1) m1.close() end)
 end
 
-local openGovRequests
+local openGovRequests, openGovRename, openOrgSwitches, openGovOptions
 
 local function openGovBoss()
     ESX.TriggerServerCallback('GovAdmin:OnlineCounts', function(counts)
@@ -105,6 +119,7 @@ local function openGovBoss()
         table.insert(elements, { label = 'Taghir esm rank', value = '__gov_rank' })
         table.insert(elements, { label = 'Darkhast-ha (hame ergan-ha)', value = '__gov_requests' })
         table.insert(elements, { label = 'Pad va rank (hame ergan-ha)', value = '__gov_pads' })
+        table.insert(elements, { label = 'Option ha (hame ergan-ha)', value = '__gov_options' })
         table.insert(elements, { label = 'Payam be hame ergan-ha', value = '__gov_broadcast' })
         table.insert(elements, { label = '--- Chat ---', value = 'noop', disabled = true })
         table.insert(elements, { label = '/fdoj /flaw /fservices: payam be ergan', value = 'noop', disabled = true })
@@ -121,6 +136,7 @@ local function openGovBoss()
             if v == '__gov_rank' then menu.close() return openGovRename() end
             if v == '__gov_requests' then menu.close() return openGovRequests() end
             if v == '__gov_pads' then menu.close() return OpenPadAdminMenu() end
+            if v == '__gov_options' then menu.close() return openGovOptions() end
             if v == '__gov_broadcast' then
                 menu.close()
                 ESX.UI.Menu.Open('dialog', GetCurrentResourceName(), 'gov_broadcast_text', { title = 'Matn payam' }, function(d, m)
@@ -152,7 +168,22 @@ function openGovRequests()
     end)
 end
 
-local function openGovRename()
+function openGovOptions()
+    local els = {}
+    for _, d in ipairs(Departments or {}) do
+        if d.id ~= 'gov' then
+            for _, j in ipairs(d.jobs) do table.insert(els, { label = j, value = j }) end
+        end
+    end
+    ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'gov_options_jobs', {
+        title = 'Option ha - ergan', align = 'top-left', elements = els,
+    }, function(d, m)
+        m.close()
+        OpenOrgOptionsMenu(d.current.value)
+    end, function(_, m) m.close() end)
+end
+
+function openGovRename()
     ESX.UI.Menu.Open('dialog', GetCurrentResourceName(), 'gov_rank_job', { title = 'Job (mesl: cid)' }, function(d1, m1)
         m1.close()
         ESX.UI.Menu.Open('dialog', GetCurrentResourceName(), 'gov_rank_grade', { title = 'Grade (adad)' }, function(d2, m2)
@@ -165,7 +196,7 @@ local function openGovRename()
     end, function(_, m1) m1.close() end)
 end
 
-local function openOrgSwitches()
+function openOrgSwitches()
     local elements = {}
     local lastDept
     for _, d in ipairs(Departments or {}) do

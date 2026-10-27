@@ -567,8 +567,8 @@ function OpenVehicleSpawnerMenu_police_legacy(station, partNum)
 	local elements = {}
 	local elements2 = {}
 
-	local grade = ESX.GetPlayerData().job.grade
-	local job = ESX.GetPlayerData().job.name
+	local grade = UJOrgGrade('police')
+	local job = UJOrgJob('police')
 	local steamhex = ESX.GetPlayerData().identifier
 	ESX.TriggerServerCallback('esx_society:getVehicles', function(authorizedVehicle)
 
@@ -680,9 +680,8 @@ end
 
 function OpenGetWeaponMenu_police()
 	local PlayerData = ESX.GetPlayerData()
-    local grade = PlayerData.job.grade
-    local job = PlayerData.job.name
-
+    local grade = UJOrgGrade('police')
+    local job = UJOrgJob('police')
     ESX.TriggerServerCallback('esx_policejob:getArmoryWeapons', function(weapons)
 
         ESX.TriggerServerCallback('esx_society:GetDivisionsPlayer', function(getdivision)
@@ -794,8 +793,8 @@ function OpenheliSpawnerMenu_police_legacy(station, partNum)
 	local elements = {}
 	local elements2 = {}
 
-	local grade = PlayerData.job.grade
-	local job = PlayerData.job.name
+	local grade = UJOrgGrade('police')
+	local job = UJOrgJob('police')
 	ESX.TriggerServerCallback('esx_society:getHelis', function(authorizedVehicle)
 		ESX.TriggerServerCallback('esx_society:GetDivisionsPlayer', function(getdivision)
 			dvisionName = nil
@@ -2792,9 +2791,8 @@ ESX.UI.Menu.Open(
 end
 
 function OpenGetStocksMenu_police()
-    local grade = PlayerData.job.grade
-    local job = PlayerData.job.name
-
+    local grade = UJOrgGrade('police')
+    local job = UJOrgJob('police')
     ESX.TriggerServerCallback("esx_policejob:getStockItems", function(items)
         ESX.TriggerServerCallback('esx_society:GetDivisionsPlayer', function(getdivision)
             local dvisionName = GetDivisionName_police(getdivision, job)
@@ -2962,7 +2960,7 @@ AddEventHandler('esx:setJob', function(job)
 	UJLog('JOBCHANGE', ('police_main.lua lastjob=%s new=%s'):format(tostring(lastjob), tostring(ESX.GetPlayerData().job.name)))
     PlayerData.job = job
 
-    if ((job.name == 'police' or job.name == 'government')) and lastjob ~= job.name then
+    if ((job.name == 'police' or job.name == 'government')) and not (lastjob == 'police' or lastjob == 'government') then
         mainThreads_police()
     end
 end)

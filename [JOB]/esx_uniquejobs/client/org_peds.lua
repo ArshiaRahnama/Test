@@ -106,7 +106,7 @@ local function openPadListFor(job, isGov, chosen)
     end, chosen)
 end
 
-function OpenPadAdminMenu()
+function OpenPadAdminMenu(forJob)
     local jd = UJLiveJobData()
     local job = jd and jd.name
     local isGov = (job == 'government')
@@ -119,6 +119,7 @@ function OpenPadAdminMenu()
     elseif job then
         table.insert(jobs, job)
     end
+    if forJob then return openPadListFor(job, isGov, forJob) end
     if #jobs == 0 then return end
 
     local elements = {}
@@ -156,19 +157,9 @@ function OpenPadHub()
     end, function(_, menu) menu.close() end)
 end
 
--- Each organisation's boss action menu gets a "Pad - dastresi rank" entry.
-local PadJobs = { 'cid', 'cia', 'marshal', 'fbi', 'judge', 'doa', 'police', 'sheriff', 'mt',
-                  'taxi', 'mechanic', 'ambulance', 'weazel' }
-
+-- Opened from the boss menu: Modiriat Job -> Modiriat Pad ha.
+-- `society` is the organisation (job) whose pads are managed.
 RegisterNetEvent('org_peds:bossPads')
-AddEventHandler('org_peds:bossPads', function()
-UJLog('CLIENT', ('org_peds:bossPads '):format())
-    OpenPadAdminMenu()
-end)
-
-CreateThread(function()
-    Wait(3000)
-    for _, job in ipairs(PadJobs) do
-        TriggerEvent('esx_society:registerBossExtra', job, 'pads', 'Pad - dastresi rank', 'org_peds:bossPads')
-    end
+AddEventHandler('org_peds:bossPads', function(society)
+    OpenPadAdminMenu(society)
 end)

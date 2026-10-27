@@ -367,8 +367,8 @@ function OpenVehicleSpawnerMenu_cia_legacy(station, partNum)
 	local elements = {}
 	local elements2 = {}
 
-	local grade = PlayerData.job.grade
-	local job = PlayerData.job.name
+	local grade = UJOrgGrade('cia')
+	local job = UJOrgJob('cia')
 	local steamhex = PlayerData.identifier
 	ESX.TriggerServerCallback('esx_society:getVehicles', function(authorizedVehicle)
 
@@ -550,8 +550,8 @@ function OpenheliSpawnerMenu_cia_legacy(station, partNum)
 	local elements = {}
 	local elements2 = {}
 
-	local grade = PlayerData.job.grade
-	local job = PlayerData.job.name
+	local grade = UJOrgGrade('cia')
+	local job = UJOrgJob('cia')
 	ESX.TriggerServerCallback('esx_society:getHelis', function(authorizedVehicle)
 		ESX.TriggerServerCallback('esx_society:GetDivisionsPlayer', function(getdivision)
 			dvisionName = nil
@@ -1430,8 +1430,8 @@ function OpenGetWeaponMenu_cia()
 	ESX.TriggerServerCallback('esx_cia_job:getArmoryWeapons', function(weapons)
 
 
-			local grade = PlayerData.job.grade
-			local job = PlayerData.job.name
+			local grade = UJOrgGrade('cia')
+			local job = UJOrgJob('cia')
             ESX.TriggerServerCallback('esx_society:getWeapons', function(authorizedWeapons)
 			local elements = {}
 			for i=1, #weapons, 1 do
@@ -1555,8 +1555,8 @@ function OpenGetStocksMenu_cia()
 
 	ESX.TriggerServerCallback('esx_cia_job:getStockItems', function(items)
 
-		local grade = PlayerData.job.grade
-		local job = PlayerData.job.name
+		local grade = UJOrgGrade('cia')
+		local job = UJOrgJob('cia')
 		ESX.TriggerServerCallback('esx_society:getItems', function(authorizedItems)
 		local elements = {}
 		local IsSwat = ESX.GetPlayerData()["IsSwat"]
