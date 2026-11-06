@@ -156,8 +156,18 @@ end)
 ESX.RegisterServerCallback('GetVehicles', function(source, cb, job, playerjob, vehType)
 	local Player = ESX.GetPlayerFromId(source)
 	if job == 'Job' then
-		MySQL.Async.fetchAll('SELECT * FROM owned_vehicles WHERE owner = ? AND job = ? AND type = ?', {Player.identifier, playerjob,"car"}, function(result)
-			if result[1] then cb(result) else cb(nil) end
+		-- organisation vehicles are ALWAYS available (never red / out / impounded).
+		-- Government sees every vehicle of the organisation, members see their own.
+		local gov = Player and Player.job and Player.job.name == 'government'
+		local sql = gov and 'SELECT * FROM owned_vehicles WHERE job = ? AND type = ?' or 'SELECT * FROM owned_vehicles WHERE owner = ? AND job = ? AND type = ?'
+		local args = gov and {playerjob, "car"} or {Player.identifier, playerjob, "car"}
+		MySQL.Async.fetchAll(sql, args, function(result)
+			if result[1] then
+				for _, row in ipairs(result) do row.stored = 1 end
+				cb(result)
+			else
+				cb(nil)
+			end
 		end)
 	elseif job == 'Gang' then
 		-- Gang-owned garage: vehicles stored under this gang, playerjob here is
@@ -276,7 +286,8 @@ end)
 
 RegisterNetEvent('esx_advancedgarage:policeImpound', function(plate)
 	if IsVehicleOwned(plate) then
-		MySQL.Async.execute('UPDATE owned_vehicles SET stored = 2 WHERE plate = ?', {plate})
+		-- organisation (job) vehicles are never impounded: they stay available
+		MySQL.Async.execute("UPDATE owned_vehicles SET stored = 2 WHERE plate = ? AND (job IS NULL OR job = '' OR job = 'civ')", {plate})
 	end
 end)
 

@@ -58,3 +58,28 @@ UJLog('SERVER', ('org_state:toggle src=%s job=%s enabled=%s'):format(tostring(so
     setOrg(job, enabled and true or false)
     TriggerClientEvent('esx:showNotification', -1, ('Ergan %s %s shod.'):format(job, enabled and 'ROSHAN' or 'KHAMOOSH'))
 end)
+
+-- A switched-OFF organisation can not be given to anybody (admin /setjob, Government,
+-- or an old saved job at login): the player goes back to unemployed with a clear message.
+local function refuseIfOff(src, job)
+    if not (job and job.name and OrgState[job.name] == false) then return end
+    SetTimeout(300, function()
+        local x = ESX.GetPlayerFromId(src)
+        if x and x.job and x.job.name == job.name then
+            x.setJob('unemployed', 0)
+            TriggerClientEvent('esx:showNotification', src,
+                ('~r~Ergan %s khamoosh ast~s~ - ke job dashtan dar an momken nist. Az Government bekhahid roshan konad.'):format(job.name))
+            UJLog('ORG_OFF', ('job %s refused for player %s (organisation is OFF)'):format(job.name, tostring(src)))
+        end
+    end)
+end
+
+AddEventHandler('esx:setJob', function(source, job, lastJob)
+    refuseIfOff(source, job)
+end)
+
+AddEventHandler('esx:playerLoaded', function(source, xPlayer)
+    local x = xPlayer or ESX.GetPlayerFromId(source)
+    if x and x.job then refuseIfOff(source, x.job) end
+end)
+

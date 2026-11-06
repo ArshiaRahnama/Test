@@ -2379,7 +2379,7 @@ end
 -- fleet vehicle their rank may use? If yes the client opens the Unique_Garage
 -- fleet menu straight away at the vehicle marker (no old ESX list first).
 RegisterServerEvent('esx_society:requestJobFleetStatus')
-AddEventHandler('esx_society:requestJobFleetStatus', function(vehType)
+AddEventHandler('esx_society:requestJobFleetStatus', function(vehType, orgJob)
 	local src = source
 	vehType = (type(vehType) == 'string' and vehType ~= '') and vehType or 'car'
 	local xPlayer = ESX.GetPlayerFromId(src)
@@ -2388,16 +2388,23 @@ AddEventHandler('esx_society:requestJobFleetStatus', function(vehType)
 		return
 	end
 	local job, grade = xPlayer.job.name, tostring(xPlayer.job.grade)
-	if isMilitaryJob(job) and not getUnitCallsign(xPlayer.identifier) then
+	local isGov = (job == 'government')
+	if isGov then
+		-- Government opens the garage of the organisation whose marker it stands at, at that
+		-- organisation's TOP rank, without joining a unit.
+		if type(orgJob) ~= 'string' or not Jobs[orgJob] then
+			TriggerClientEvent('esx_society:jobFleetStatusResult', src, false)
+			return
+		end
+		job = orgJob
+		grade = tostring(clampRank(orgJob, 999))
+	end
+	if not isGov and isMilitaryJob(job) and not getUnitCallsign(xPlayer.identifier) then
 		TriggerClientEvent('esx:showNotification', src, 'You must join a unit first (type /unit) before taking out a vehicle')
 		TriggerClientEvent('esx_society:jobFleetStatusResult', src, 'nounit')
 		return
 	end
-	if not isMilitaryJob(job) then
-		-- organ services type their own plate: use the classic list menu flow
-		TriggerClientEvent('esx_society:jobFleetStatusResult', src, false)
-		return
-	end
+	-- every organisation (military or organ services) opens the same Unique_Garage fleet menu
 	local denied = {}
 	local gd = Jobs[job] and Jobs[job].grades and Jobs[job].grades[grade]
 	if gd and gd.vehicles and gd.vehicles ~= '' then

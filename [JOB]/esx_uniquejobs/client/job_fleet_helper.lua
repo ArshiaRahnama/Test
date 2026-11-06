@@ -30,6 +30,10 @@ RegisterNetEvent('esx_society:jobVehicleFailed')
 function OpenJobFleetGarage(model, vehType)
     vehType = vehType or 'car'
     local job = ESX.PlayerData.job and ESX.PlayerData.job.name
+    if job == 'government' then
+        orgJob = orgJob or GovActiveOrg
+        job = orgJob or job
+    end
     if not job or job == 'nojob' then return end
 
     local playerCoords = GetEntityCoords(PlayerPedId())
@@ -96,13 +100,13 @@ end
 -- E at the vehicle marker: if the job has fleet vehicles for this rank, open
 -- the Unique_Garage menu directly; otherwise fall back to the legacy list menu.
 RegisterNetEvent('esx_society:jobFleetStatusResult')
-function OpenJobFleetOrLegacy(legacyFn, vehType)
+function OpenJobFleetOrLegacy(legacyFn, vehType, orgJob)
     vehType = vehType or 'car'
     local job = ESX.PlayerData.job and ESX.PlayerData.job.name
     if not job or job == 'nojob' then if legacyFn then legacyFn() end return end
     local answered, has = false, false
     local h = AddEventHandler('esx_society:jobFleetStatusResult', function(v) answered = true has = v FDbg(('[LOCKDBG][fleet] status reply job=%s vehType=%s -> %s'):format(tostring(job), tostring(vehType), tostring(v))) end)
-    TriggerServerEvent('esx_society:requestJobFleetStatus', vehType)
+    TriggerServerEvent('esx_society:requestJobFleetStatus', vehType, orgJob)
     local p = GetEntityCoords(PlayerPedId())
     local hd = GetEntityHeading(PlayerPedId())
     Citizen.CreateThread(function()

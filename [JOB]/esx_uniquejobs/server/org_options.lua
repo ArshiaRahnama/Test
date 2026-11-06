@@ -70,7 +70,7 @@ ESX.RegisterServerCallback('OrgOptions:List', function(source, cb, job)
         local out = {}
         for _, r in ipairs(rows or {}) do
             local opts = {}
-            for _, o in ipairs(OrgOptionList) do
+            for _, o in ipairs(OrgOptionsFor(job)) do
                 opts[#opts + 1] = { id = o.id, label = o.label, enabled = not isDenied(job, r.grade, o.id) }
             end
             out[#out + 1] = { grade = tonumber(r.grade), label = r.label, options = opts }

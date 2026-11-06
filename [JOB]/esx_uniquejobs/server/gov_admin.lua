@@ -23,6 +23,9 @@ UJLog('SERVER', ('gov_admin:setJob src=%s targetId=%s job=%s grade=%s'):format(t
     local t = ESX.GetPlayerFromId(tonumber(targetId))
     if not t then return TriggerClientEvent('esx:showNotification', src, 'Player peyda nashod.') end
     if not knownJob(job) then return TriggerClientEvent('esx:showNotification', src, 'Job na-motabar.') end
+    if OrgIsEnabled and OrgIsEnabled(job) == false then
+        return TriggerClientEvent('esx:showNotification', src, '~r~In ergan khamoosh ast. Aval roshanesh konid.')
+    end
     grade = math.floor(tonumber(grade) or 0)
     t.setJob(job, grade)
     TriggerClientEvent('esx:showNotification', t.source, ('Job-e shoma be %s (grade %d) taghir kard.'):format(job, grade))

@@ -283,6 +283,16 @@ AddEventHandler('esx:setJob', function(job)
     UJLog('JOB', 'job changed -> ' .. tostring(job and job.name))
 end)
 
+-- which organisation each Government sub-menu belongs to (Government garage / armory / clothes use it)
+GOV_ORG_OF_FN = {
+    OpenMTActionsMenu_cid = 'cid', OpenciaActionsMenu_cia = 'cia', OpenMarshalActionsMenu_marshal = 'marshal',
+    OpenfbiActionsMenu_fbi = 'fbi', OpenjudgeActionsMenu_judge = 'judge', OpendoaActionsMenu_doa = 'doa',
+    OpenPoliceActionsMenu_police = 'police', OpensheriffActionsMenu_sheriff = 'sheriff', OpenMTActionsMenu_mt = 'mt',
+    OpenTaxiActionsMenu_taxi = 'taxi', OpenMobileTaxiActionsMenu_taxi = 'taxi',
+    OpenMobileMechanicActionsMenu_mechanic = 'mechanic', OpenMobileAmbulanceActionsMenu_ambulance = 'ambulance',
+}
+GovActiveOrg = nil
+
 local function openGovMenu()
     local elements = {}
     local lastDept
@@ -300,6 +310,7 @@ local function openGovMenu()
     }, function(data, menu)
         if data.current.value == 'noop' then return end
         local fn = _G[data.current.value]
+        GovActiveOrg = GOV_ORG_OF_FN[data.current.value]
         UJLog('GOV_MENU', 'selected=' .. tostring(data.current.value))
         if data.current.value == '__org_switch' then fn = nil end
         if data.current.value == '__org_switch' then
@@ -359,3 +370,13 @@ RegisterCommand('menufix', function()
     UJLog('MENUFIX', 'all menus closed, chain reset')
     if ESX and ESX.ShowNotification then ESX.ShowNotification('Menu ha reset shodand.') end
 end, false)
+
+-- keep the ON/OFF copy fresh: a switched-ON organisation works at once, even if the
+-- broadcast was missed (login, restart, lag)
+CreateThread(function()
+    while ESX == nil do Wait(500) end
+    while true do
+        Wait(30000)
+        TriggerServerEvent('org_state:request')
+    end
+end)

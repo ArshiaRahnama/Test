@@ -442,6 +442,7 @@ function OpenDojMenu()
 end
 
 RegisterCommand('doj', function()
+	if not UJCan('doj') then return end
 	OpenDojMenu()
 end, false)
 
