@@ -331,7 +331,12 @@ RegisterCommand('flist', function(source, args)
                 -- /dep is department-wide: EVERY organ member sees it, regardless of
                 -- which of the 3 organs (DOJ / Law Enforcement / Organ Services) they're in
                 if jobToOrgan[tplayer.job.name] then
-                    TriggerClientEvent('chatMessage', tplayer.source, "", {255, 0, 0}, "^4[^2^*Department ^4| ^1^*".. job .. "^4] ^3" .. name.." ^8^*:^r" .. "^0^* " .. message)
+                    if organ == "gov" then
+                        -- Government messages stand out (gold banner)
+                        TriggerClientEvent('chatMessage', tplayer.source, "", {255, 215, 0}, "^3^*[GOVERNMENT ^7| ^3" .. string.upper(xPlayer.job.grade_label or "") .. "^3] ^7" .. name .. " ^3^*>>^r ^0^*" .. message)
+                    else
+                        TriggerClientEvent('chatMessage', tplayer.source, "", {255, 0, 0}, "^4[^2^*Department ^4| ^1^*".. job .. "^4] ^3" .. name.." ^8^*:^r" .. "^0^* " .. message)
+                    end
                 end
             end
 

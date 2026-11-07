@@ -30,8 +30,9 @@ RegisterNetEvent('esx_society:jobVehicleFailed')
 function OpenJobFleetGarage(model, vehType)
     vehType = vehType or 'car'
     local job = ESX.PlayerData.job and ESX.PlayerData.job.name
+    local orgJob
     if job == 'government' then
-        orgJob = orgJob or GovActiveOrg
+        orgJob = GovActiveOrg
         job = orgJob or job
     end
     if not job or job == 'nojob' then return end
@@ -71,7 +72,7 @@ function OpenJobFleetGarage(model, vehType)
     end)
 
     FDbg(('[LOCKDBG][fleet] takeJobVehicle model=%s vehType=%s plate=%s military=%s'):format(tostring(model), tostring(vehType), tostring(customPlate), tostring(isMilitary)))
-    TriggerServerEvent('esx_society:takeJobVehicle', model, vehType, customPlate)
+    TriggerServerEvent('esx_society:takeJobVehicle', model, vehType, customPlate, orgJob)
 
     Citizen.CreateThread(function()
         local timeout = GetGameTimer() + 5000
@@ -104,6 +105,7 @@ function OpenJobFleetOrLegacy(legacyFn, vehType, orgJob)
     vehType = vehType or 'car'
     local job = ESX.PlayerData.job and ESX.PlayerData.job.name
     if not job or job == 'nojob' then if legacyFn then legacyFn() end return end
+    if job == 'government' then orgJob = orgJob or GovActiveOrg; job = orgJob or job end
     local answered, has = false, false
     local h = AddEventHandler('esx_society:jobFleetStatusResult', function(v) answered = true has = v FDbg(('[LOCKDBG][fleet] status reply job=%s vehType=%s -> %s'):format(tostring(job), tostring(vehType), tostring(v))) end)
     TriggerServerEvent('esx_society:requestJobFleetStatus', vehType, orgJob)
@@ -116,7 +118,8 @@ function OpenJobFleetOrLegacy(legacyFn, vehType, orgJob)
         if not answered then FDbg(('[LOCKDBG][fleet] NO status reply within 3s (job=%s vehType=%s) -> legacy menu'):format(tostring(job), tostring(vehType))) end
         if answered and has == 'nounit' then
             return -- server already told the player to join a unit
-        elseif answered and has == true then
+        elseif answered then
+            -- every organisation uses the same Unique_Garage NUI (even with an empty fleet)
             TriggerEvent('Unique_Garage:OpenJobFleetGarage', job, { x = p.x, y = p.y, z = p.z, h = hd }, vehType)
         elseif legacyFn then
             legacyFn()

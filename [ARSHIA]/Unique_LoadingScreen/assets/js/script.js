@@ -417,9 +417,7 @@ document.addEventListener("DOMContentLoaded", () => {
       el.playBtn.setAttribute("tabindex", "-1");
     }
 
-    el.video.play().catch(() => {
-      console.warn("[Unique Loading] Silent audio autoplay was blocked.");
-    });
+    el.video.play().catch(() => {});
 
     document.addEventListener("pointerdown", unlockAudio, { once: true });
     document.addEventListener("keydown", unlockAudio, { once: true });

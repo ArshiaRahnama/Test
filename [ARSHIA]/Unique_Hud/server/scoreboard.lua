@@ -40,7 +40,9 @@ ESX.RegisterServerCallback('Unique_Hud:scoreboard:getCounts', function(source, c
     local jobCounts = {}
     for _, org in ipairs(Organizations) do
         for _, jobName in ipairs(org.jobs) do
-            jobCounts[jobName] = 0
+            local on = true
+            pcall(function() on = exports['esx_uniquejobs']:OrgIsEnabled(jobName) ~= false end)
+            if on then jobCounts[jobName] = 0 end   -- an OFF organisation is not listed at all
         end
     end
 

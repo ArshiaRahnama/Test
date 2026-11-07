@@ -498,10 +498,14 @@ $(document).ready(function () {
               config.telefone +
               '</div>\n                    <div class="primeiro-identity segundo">' +
               _0x56c24c.telefone +
-              '</div>\n                </div>\n                <div class="itens-identity">\n                    <div class="primeiro-identity primeiro">' +
+              '</div>\n                </div>\n                <div class="itens-identity job-row">\n                    <div class="primeiro-identity primeiro">' +
               config.profissao +
               '</div>\n                    <div class="primeiro-identity segundo">' +
               _0x56c24c.emprego +
+              '</div>\n                </div>\n                <div class="itens-identity gang-row">\n                    <div class="primeiro-identity primeiro">' +
+              (config.gang || 'Gang: ') +
+              '</div>\n                    <div class="primeiro-identity segundo">' +
+              escapeHtml(_0x56c24c.gang || 'None') +
               '</div>\n                </div>\n                <div class="itens-identity">\n                    <div class="primeiro-identity primeiro">' +
               config.registro +
               '</div>\n                    <div class="primeiro-identity segundo">' +
@@ -756,7 +760,7 @@ function verificarItem() {
   )
 }
 function restFilter() {
-  $('.filtro-button').css('filter', 'invert(0%)')
+  $('.filtro-button').removeClass('active')
   TableFilters = []
   resetarFilter = true
   $('.filtro-button').attr('click', 'false')
@@ -1686,7 +1690,7 @@ circulo = new ProgressBar.Circle(circle, {
   strokeWidth: 10,
   easing: 'easeInOut',
   duration: 1400,
-  color: '#d4af37',
+  color: '#a78bfa',
   trailColor: '#8a6d1f26',
   trailWidth: 8.5,
 })
@@ -1694,7 +1698,7 @@ circulochest = new ProgressBar.Circle(circleChest, {
   strokeWidth: 10,
   easing: 'easeInOut',
   duration: 1400,
-  color: '#d4af37',
+  color: '#a78bfa',
   trailColor: '#8a6d1f26',
   trailWidth: 8.5,
 })
@@ -1702,29 +1706,29 @@ function updatePesoChest(_0x2dd103, _0x33b2c9) {
   var _0xe3cd7b = _0x2dd103 / _0x33b2c9,
     _0x5cbb22 = _0x33b2c9 - _0x2dd103
   circulochest.animate(_0xe3cd7b.toFixed(1))
-  $('.peso-sobrando-chest').html(_0x5cbb22.toFixed(1) + 'free space')
+  $('.peso-sobrando-chest').html(_0x5cbb22.toFixed(1) + ' free space')
   $('.peso-texto-chest').html(_0x2dd103.toFixed(1) + '/' + _0x33b2c9.toFixed(1))
 }
 function updatePeso(_0x327bdb, _0x5621a6) {
-  $('.circle-mochila').css('background', 'rgba(212, 175, 55, 0.25)')
+  $('.circle-mochila').css('background', 'rgba(139, 92, 246, 0.25)')
   $('.circle-mochila').css('box-shadow', '')
   circulo.animate(_0x327bdb)
   if (_0x5621a6 === 90) {
-    $('.circle-mochila').css('background', '#d4af37')
-    $('.circle-mochila').css('box-shadow', '0px 0px 7px 1px #d4af37b0')
+    $('.circle-mochila').css('background', '#a78bfa')
+    $('.circle-mochila').css('box-shadow', '0px 0px 7px 1px #a78bfab0')
   } else {
     if (_0x5621a6 === 75) {
-      $('.circle-mochila.1').css('background', '#d4af37')
-      $('.circle-mochila.2').css('background', '#d4af37')
-      $('.circle-mochila.1').css('box-shadow', '0px 0px 7px 1px #d4af37b0')
-      $('.circle-mochila.2').css('box-shadow', '0px 0px 7px 1px #d4af37b0')
+      $('.circle-mochila.1').css('background', '#a78bfa')
+      $('.circle-mochila.2').css('background', '#a78bfa')
+      $('.circle-mochila.1').css('box-shadow', '0px 0px 7px 1px #a78bfab0')
+      $('.circle-mochila.2').css('box-shadow', '0px 0px 7px 1px #a78bfab0')
     } else {
       if (_0x5621a6 === 51) {
-        $('.circle-mochila.1').css('background', '#d4af37')
-        $('.circle-mochila.1').css('box-shadow', '0px 0px 7px 1px #d4af37b0')
+        $('.circle-mochila.1').css('background', '#a78bfa')
+        $('.circle-mochila.1').css('box-shadow', '0px 0px 7px 1px #a78bfab0')
       } else {
         _0x5621a6 === 6 &&
-          ($('.circle-mochila').css('background', 'rgba(212, 175, 55, 0.25)'),
+          ($('.circle-mochila').css('background', 'rgba(139, 92, 246, 0.25)'),
           $('.circle-mochila').css('box-shadow', ''))
       }
     }
@@ -1760,8 +1764,8 @@ $('.clear-filter').click(function () {
   _0x1861c3.play()
 })
 $('.filtro-button').click(function () {
-  $('.filtro-button').css('filter', 'invert(0%)')
-  $(this).css('filter', 'invert(100%)')
+  $('.filtro-button').removeClass('active')
+  $(this).addClass('active')
   $(this).attr('click', 'true')
   TableFilters = []
   TableFilters.push($(this).attr('class').split(' ')[1])
@@ -1773,7 +1777,7 @@ $('.filtro-button').click(function () {
   _0x315e1e.play()
 })
 function pesquisar() {
-  $('.filtro-button').css('filter', 'invert(0%)')
+  $('.filtro-button').removeClass('active')
   TableFilters = []
   resetarFilter = true
   $('.filtro-button').attr('click', 'false')

@@ -18,7 +18,7 @@ function GetJobGrade()
 end
 
 RegisterNetEvent("esx:setJob", function(job)
-    local oldJob = ESX.PlayerData.job
+    local oldJob = ESX.PlayerData.job or {}
 
     ESX.PlayerData.job = job
 

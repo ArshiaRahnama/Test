@@ -175,7 +175,14 @@ ESX.RegisterServerCallback('GetVehicles', function(source, cb, job, playerjob, v
 		-- vehType lets FMGangs ask for 'car' / 'heli' / 'boat' separately, unlike the
 		-- 'Job' branch above which is hardcoded to 'car'.
 		MySQL.Async.fetchAll('SELECT * FROM owned_vehicles WHERE LOWER(`owner`) = ? AND type = ?', {string.lower(playerjob or ''), vehType or 'car'}, function(result)
-			if result[1] then cb(result) else cb(nil) end
+			if result[1] then
+				-- organisation fleet vehicles (job = 'job_fleet') are ALWAYS available:
+				-- never red / out / impounded. Real gang vehicles keep their real state.
+				for _, row in ipairs(result) do
+					if row.job == 'job_fleet' then row.stored = 1 end
+				end
+				cb(result)
+			else cb(nil) end
 		end)
 	elseif job == 'Impound' then
 		if Player.gang.name == "nogang" then

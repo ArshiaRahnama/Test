@@ -180,3 +180,14 @@ AddEventHandler('playerDropped', function()
         TriggerClientEvent('island_death:clearMarker', -1, src)
     end
 end)
+
+
+-- exported for esx_uniquejobs (server side addreq / /911): true when the
+-- "no medic alert on the island" rule applies to this player right now.
+exports('IslandNoMedicSrc', function(src)
+    local cfg = deathCfg()
+    if not cfg or not cfg.Enabled or not cfg.BlockMedicAlert then return false end
+    local ped = GetPlayerPed(src)
+    if not ped or ped == 0 then return false end
+    return insideIsland(GetEntityCoords(ped))
+end)

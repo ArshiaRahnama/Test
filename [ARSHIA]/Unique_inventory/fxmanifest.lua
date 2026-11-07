@@ -2,7 +2,7 @@ fx_version 'adamant'
 game 'gta5'
 
 description 'Unique_inventory - merged esx_inventory + esx_inventoryhud + esx_inventoryhud_trunk'
-version '1.5.2'
+version '1.6.0'
 
 dependency 'essentialmode'
 dependency 'oxmysql'
@@ -58,5 +58,6 @@ server_scripts {
 files {
     'nui/*.*',
     'nui/app/*',
+    'nui/app/fonts/*',
     'html/img/items/*.png',
 }

@@ -8,6 +8,7 @@ config = {
 	registro: "Coin:",
 	telefone: "Phone Number: ",
 	profissao: "Job: ",
+	gang: "Gang: ",
 	vip: "VIP:",
 	multa: "VIP Type:",
 	admin: "Admin",

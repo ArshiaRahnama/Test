@@ -196,6 +196,26 @@ function openGovRename()
     end, function(_, m1) m1.close() end)
 end
 
+-- turning an organisation OFF needs 3 confirmations (the Yes/No order changes each
+-- step) so a mis-click can never switch an organisation off
+local function confirmOrgOff(job, step)
+    step = step or 1
+    local no  = { label = 'Na - laghv', value = 'no' }
+    local yes = { label = ('Bale - %s khamoosh shavad (%d/3)'):format(job, step), value = 'yes' }
+    local elements = (step % 2 == 0) and { yes, no } or { no, yes }
+    ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'government_org_off_confirm', {
+        title = ('Motmaen hastid? %s (%d/3)'):format(job, step), align = 'top-left', elements = elements,
+    }, function(data, menu)
+        menu.close()
+        if data.current.value ~= 'yes' then return end
+        if step >= 3 then
+            TriggerServerEvent('org_state:toggle', job, false)
+        else
+            confirmOrgOff(job, step + 1)
+        end
+    end, function(_, menu) menu.close() end)
+end
+
 function openOrgSwitches()
     local elements = {}
     local lastDept
@@ -204,7 +224,9 @@ function openOrgSwitches()
             table.insert(elements, { label = '--- ' .. d.label .. ' ---', value = 'noop', disabled = true })
             for _, j in ipairs(d.jobs) do
                 local on = OrgState[j] ~= false
-                table.insert(elements, { label = ('%s: %s'):format(j, on and 'ROSHAN (klik = khamoosh)' or 'KHAMOOSH (klik = roshan)'), value = j, on = on })
+                table.insert(elements, { label = ('<span style="font-weight:bold">%s</span> %s'):format(string.upper(j), on
+                    and '<span style="float:right;color:#4ade80">&#9679; ROSHAN</span>'
+                    or  '<span style="float:right;color:#f87171">&#9679; KHAMOOSH</span>'), value = j, on = on })
             end
         end
     end
@@ -212,8 +234,12 @@ function openOrgSwitches()
         title = 'ON / OFF Ergan-ha', align = 'top-left', elements = elements,
     }, function(data, menu)
         if data.current.value == 'noop' then return end
-        TriggerServerEvent('org_state:toggle', data.current.value, not data.current.on)
         menu.close()
+        if data.current.on then
+            confirmOrgOff(data.current.value, 1)   -- ON -> OFF: 3 confirmations
+        else
+            TriggerServerEvent('org_state:toggle', data.current.value, true)
+        end
     end, function(_, menu) menu.close() end)
 end
 
@@ -376,7 +402,7 @@ end, false)
 CreateThread(function()
     while ESX == nil do Wait(500) end
     while true do
-        Wait(30000)
+        Wait(120000)
         TriggerServerEvent('org_state:request')
     end
 end)

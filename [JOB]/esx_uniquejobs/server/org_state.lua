@@ -21,6 +21,8 @@ function OrgIsEnabled(job)
     return OrgState[job] ~= false
 end
 
+exports('OrgIsEnabled', function(job) return OrgState[job] ~= false end)
+
 local function canSwitch(xPlayer)
     return xPlayer and xPlayer.job and xPlayer.job.name == 'government' and (tonumber(xPlayer.job.grade) or 0) >= 2
 end
@@ -57,6 +59,17 @@ UJLog('SERVER', ('org_state:toggle src=%s job=%s enabled=%s'):format(tostring(so
     if not ORG_JOBS[job] then return end
     setOrg(job, enabled and true or false)
     TriggerClientEvent('esx:showNotification', -1, ('Ergan %s %s shod.'):format(job, enabled and 'ROSHAN' or 'KHAMOOSH'))
+    -- Government members get a clear chat line
+    local by = GetPlayerName(src)
+    local line = enabled
+        and ('^3^*[GOVERNMENT] ^2^*Ergan ^7' .. string.upper(job) .. ' ^2^*ROSHAN shod ^7tavasot ^3' .. by)
+        or  ('^3^*[GOVERNMENT] ^1^*Ergan ^7' .. string.upper(job) .. ' ^1^*KHAMOOSH shod ^7tavasot ^3' .. by .. ' ^7- hame-ye aza az job bargashtand.')
+    for _, pid in ipairs(GetPlayers()) do
+        local tx = ESX.GetPlayerFromId(tonumber(pid))
+        if tx and tx.job and tx.job.name == 'government' then
+            TriggerClientEvent('chatMessage', tx.source, '', {255, 215, 0}, line)
+        end
+    end
 end)
 
 -- A switched-OFF organisation can not be given to anybody (admin /setjob, Government,

@@ -16,6 +16,7 @@ server_scripts {
     'server/bridges.lua',
     'server/menu.lua',
     'server/collections.lua',
+    'server/event.lua',
     'server/skill.lua',
     'server/leaderboard.lua',
     'server/duty.lua',

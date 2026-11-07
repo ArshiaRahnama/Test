@@ -2432,7 +2432,7 @@ AddEventHandler('esx_society:requestJobFleetStatus', function(vehType, orgJob)
 end)
 
 RegisterServerEvent('esx_society:takeJobVehicle')
-AddEventHandler('esx_society:takeJobVehicle', function(model, vehType, customPlate)
+AddEventHandler('esx_society:takeJobVehicle', function(model, vehType, customPlate, orgJob)
 	local source = source
 	vehType = (vehType == 'heli' or vehType == 'boat') and vehType or 'car'
 	-- FIX (reported: "Could not reach the vehicle fleet - try again" every
@@ -2468,6 +2468,16 @@ AddEventHandler('esx_society:takeJobVehicle', function(model, vehType, customPla
 	end
 
 	local job, grade = xPlayer.job.name, xPlayer.job.grade
+	local isGov = (job == 'government')
+	if isGov then
+		if type(orgJob) ~= 'string' or not Jobs[orgJob] then
+			TriggerClientEvent('esx:showNotification', source, 'Open the vehicle menu from an organisation marker first')
+			TriggerClientEvent('esx_society:jobVehicleFailed', source)
+			return
+		end
+		job = orgJob
+		grade = clampRank(orgJob, 999)
+	end
 	SLog('TAKEVEHICLE src=%s job=%s grade=%s model=%s vehType=%s customPlate=%s', tostring(source), tostring(job), tostring(grade), tostring(model), tostring(vehType), tostring(customPlate))
 	local authorized = true -- a model never explicitly toggled, or a job/grade with no saved permission row at all, defaults to accessible (same convention as itemAccess/vehicleAccess elsewhere)
 	local raw = Jobs[job] and Jobs[job].grades and Jobs[job].grades[tostring(grade)] and Jobs[job].grades[tostring(grade)].vehicles
@@ -2490,7 +2500,7 @@ AddEventHandler('esx_society:takeJobVehicle', function(model, vehType, customPla
 	end
 
 	local plate
-	if isMilitaryJob(job) then
+	if isMilitaryJob(job) and not isGov then
 		local callsign = getUnitCallsign(xPlayer.identifier)
 		if not callsign then
 			TriggerClientEvent('esx:showNotification', source, 'You must join a unit first (type /unit) before taking out a vehicle')

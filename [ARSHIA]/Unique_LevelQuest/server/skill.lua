@@ -105,6 +105,9 @@ ESX.RegisterServerCallback('HUD_Menu:GetSkills', function(source, cb)
 
         local skills = {}
         for jobName, label in pairs(Config.TrackedJobs) do
+            local on = true
+            pcall(function() on = exports['esx_uniquejobs']:OrgIsEnabled(jobName) ~= false end)
+            if on then
             table.insert(skills, {
                 label     = label,
                 jobName   = jobName,
@@ -112,6 +115,7 @@ ESX.RegisterServerCallback('HUD_Menu:GetSkills', function(source, cb)
                 target    = Config.SkillTargetMinutes,
                 isCurrent = (xPlayer.job.name == jobName),
             })
+            end
         end
         cb(skills)
     end)

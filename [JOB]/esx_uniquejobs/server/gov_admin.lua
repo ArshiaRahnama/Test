@@ -27,6 +27,10 @@ UJLog('SERVER', ('gov_admin:setJob src=%s targetId=%s job=%s grade=%s'):format(t
         return TriggerClientEvent('esx:showNotification', src, '~r~In ergan khamoosh ast. Aval roshanesh konid.')
     end
     grade = math.floor(tonumber(grade) or 0)
+    local jd = ESX.Jobs and ESX.Jobs[job]
+    if jd and jd.grades and not (jd.grades[tostring(grade)] or jd.grades[grade]) then
+        return TriggerClientEvent('esx:showNotification', src, 'In rank baraye in job vojud nadarad.')
+    end
     t.setJob(job, grade)
     TriggerClientEvent('esx:showNotification', t.source, ('Job-e shoma be %s (grade %d) taghir kard.'):format(job, grade))
     TriggerClientEvent('esx:showNotification', src, ('Job-e %s be %s taghir kard.'):format(GetPlayerName(t.source), job))
@@ -43,7 +47,18 @@ UJLog('SERVER', ('gov_admin:renameGrade src=%s job=%s grade=%s label=%s'):format
     if label == '' then return end
     MySQL.Async.execute('UPDATE job_grades SET label = @l WHERE job_name = @j AND grade = @g',
         { ['@l'] = label, ['@j'] = job, ['@g'] = math.floor(tonumber(grade) or 0) }, function(n)
-        TriggerClientEvent('esx:showNotification', src, (n and n > 0) and 'Esm rank avaz shod (ba restart-e job ejra mishavad).' or 'Rank peyda nashod.')
+        if not (n and n > 0) then return TriggerClientEvent('esx:showNotification', src, 'Rank peyda nashod.') end
+        local g = math.floor(tonumber(grade) or 0)
+        pcall(function()
+            local jd = ESX.Jobs and ESX.Jobs[job]
+            local gd = jd and jd.grades and (jd.grades[tostring(g)] or jd.grades[g])
+            if gd then gd.label = label end
+        end)
+        for _, pid in ipairs(ESX.GetPlayers()) do   -- refresh the label of players who hold this rank now
+            local px = ESX.GetPlayerFromId(pid)
+            if px and px.job and px.job.name == job and tonumber(px.job.grade) == g then px.setJob(job, g) end
+        end
+        TriggerClientEvent('esx:showNotification', src, 'Esm rank avaz shod.')
     end)
 end)
 
@@ -58,7 +73,7 @@ UJLog('SERVER', ('gov_admin:broadcast src=%s text=%s'):format(tostring(source), 
     if not isGovAdmin(src) then return end
     text = tostring(text or ''):sub(1, 200)
     if text == '' then return end
-    local line = '^3[GOVERNMENT] ^r' .. text
+    local line = '^3^*[GOVERNMENT ^7| ^3PAYAM-E RASMI] ^r^7' .. text
     for _, pid in ipairs(ESX.GetPlayers()) do
         local x = ESX.GetPlayerFromId(pid)
         if x and x.job and x.job.name ~= 'unemployed' then

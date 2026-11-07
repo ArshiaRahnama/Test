@@ -1,6 +1,6 @@
 -- Debug log for the Government / organisation systems. Lines start with [UJ].
 -- Server: txAdmin console. Client: F8 console. Search for "[UJ]".
-UJ_DEBUG = true
+UJ_DEBUG = false   -- set true only while debugging (prints every [UJ] line)
 
 function UJLog(tag, msg)
     if UJ_DEBUG then

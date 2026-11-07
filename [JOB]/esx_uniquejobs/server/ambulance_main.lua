@@ -680,6 +680,12 @@ end)
 
 RegisterServerEvent("esx_ambulancejob:addreq")
 AddEventHandler("esx_ambulancejob:addreq", function(reason)
+	local noMedic = false
+	pcall(function() noMedic = exports['Unique_ALLGangs']:IslandNoMedicSrc(source) end)
+	if noMedic then
+		TriggerClientEvent('esx:showNotification', source, 'Dar jazire medic khabar dade nemishavad.')
+		return
+	end
 	local xPlayer = ESX.GetPlayerFromId(source)
 	if xPlayer then
 		local identifier = GetPlayerIdentifier(source)

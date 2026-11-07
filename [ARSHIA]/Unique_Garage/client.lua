@@ -660,6 +660,7 @@ OpenMenuG = function(type, extra)
 			local vehicleAccess = jobVehicleAccess
 
 			Callback('GetVehicles', function(data)
+				data = data or {} -- organisation fleet: open the garage UI even when it is still empty
 				if data ~= nil then
 					inGarage = 0
 					local newData = {}

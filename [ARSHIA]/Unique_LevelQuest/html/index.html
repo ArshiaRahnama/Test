@@ -243,6 +243,12 @@
     </div>
   </div>
 
+  <script>
+    // harmless browser notice ("ResizeObserver loop limit exceeded") - keep the F8 console clean
+    window.addEventListener('error', function (e) {
+      if (e && e.message && e.message.indexOf('ResizeObserver') !== -1) { e.stopImmediatePropagation(); e.preventDefault(); }
+    });
+  </script>
   <script src="scripts/dedupe.js"></script>
   <script src="scripts/sound.js"></script>
   <script src="scripts/confetti.js"></script>

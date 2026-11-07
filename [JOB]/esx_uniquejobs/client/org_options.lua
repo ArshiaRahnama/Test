@@ -43,13 +43,20 @@ function UJCan(option)
 end
 
 -- Boss menu: Modiriat Job -> Modiriat Option ha  (rank -> option on/off)
+OrgOptionIcons = { cad = '&#128187;', law = '&#9878;&#65039;', doj = '&#127963;&#65039;', robbery = '&#128680;', dep = '&#128251;' }
+
 function OpenOrgOptionsMenu(job)
     if not job then return end
     ESX.TriggerServerCallback('OrgOptions:List', function(ranks)
         if not ranks or #ranks == 0 then return ESX.ShowNotification('~r~Dastresi kafi nadarid ya rank peyda nashod.') end
         local els = {}
         for _, r in ipairs(ranks) do
-            table.insert(els, { label = ('%s (rank %d)'):format(r.label or ('rank ' .. r.grade), r.grade), value = r.grade, info = r })
+            local on, total = 0, #r.options
+            for _, o in ipairs(r.options) do if o.enabled then on = on + 1 end end
+            table.insert(els, {
+                label = ('<span style="font-weight:bold">%s</span> <span style="opacity:.55">#%d</span> <span style="float:right;color:%s">%d/%d</span>'):format(
+                    r.label or ('rank ' .. r.grade), r.grade, (on == total) and '#4ade80' or '#fbbf24', on, total),
+                value = r.grade, info = r })
         end
         ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'org_opt_ranks_' .. job, {
             title = 'Option ha - ' .. job, align = 'top-left', elements = els,
@@ -57,7 +64,10 @@ function OpenOrgOptionsMenu(job)
             local r = d.current.info
             local oe = {}
             for _, o in ipairs(r.options) do
-                table.insert(oe, { label = ('%s : %s'):format(o.label, o.enabled and '~g~ROSHAN~s~' or '~r~KHAMOOSH~s~'), value = o.id, enabled = o.enabled })
+                local badge = o.enabled
+                    and '<span style="float:right;font-weight:bold;color:#4ade80">&#9679; ROSHAN</span>'
+                    or  '<span style="float:right;font-weight:bold;color:#f87171">&#9679; KHAMOOSH</span>'
+                table.insert(oe, { label = ('%s %s %s'):format(OrgOptionIcons[o.id] or '&#9881;', o.label, badge), value = o.id, enabled = o.enabled })
             end
             ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'org_opt_list_' .. job, {
                 title = r.label or ('rank ' .. r.grade), align = 'top-left', elements = oe,

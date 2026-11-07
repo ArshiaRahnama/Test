@@ -27,6 +27,7 @@ var robLabels = {
 function renderJobs(jobs) {
   sbJobs.innerHTML = '';
   Object.keys(jobLabels).forEach(function (key) {
+    if (jobs[key] === undefined || jobs[key] === null) return; // organisation is OFF: hidden
     var count = jobs[key] || 0;
     var div = document.createElement('div');
     div.className = 'sb-chip';

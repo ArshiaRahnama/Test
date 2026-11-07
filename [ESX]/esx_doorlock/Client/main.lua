@@ -434,7 +434,7 @@ Citizen.CreateThread(function()
                     door = GetClosestObjectOfType(v.doorCoords.x, v.doorCoords.y, v.doorCoords.z, 1.0, v._doorModel, false, false, false)
                     if not IsDoorRegisteredWithSystem(v._doorModel.. "door"..k) then
                         AddDoorToSystem(v._doorModel.. "door"..k, v._doorModel, _doorCoords, false, false, false)
-                        print(k.. " - Slider Registered")
+                        -- (log removed) slider registered
                     end
                     if _doorState[k] ~= nil then
                         DoorSystemSetDoorState(v._doorModel.. "door"..k, 0, false, false)

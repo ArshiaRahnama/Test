@@ -161,6 +161,8 @@ local function getJobArmoryWeapons(src, xPlayer)
     local authorizedWeapons, answered = GetJobGradePerm(job, grade, 'weapons')
 
     TriggerEvent('esx_datastore:getSharedDataStore', 'society_' .. job, function(store)
+        -- job has no society_<job> datastore (e.g. Government): empty armory instead of a nil crash
+        if not store then DLog('ARMORY open job=%s: no society_%s datastore, empty list', tostring(job), tostring(job)) return end
         local weapons = store.get('weapons') or {}
         DLog('ARMORY open job=%s grade=%s src=%s stock(society_%s)=%d weapons, rankListFound=%s, rankListEntries=%d',
             tostring(job), tostring(grade), tostring(src), tostring(job), #weapons, tostring(answered), #authorizedWeapons)
@@ -334,7 +336,10 @@ RegisterNetEvent('Parzival:GetJobWeapon', function(item)
     -- 0 is removed so it actually disappears from the list once stock
     -- runs out, instead of this becoming an infinite, never-consumed
     -- weapon supply.
+    local storeFound = false
     TriggerEvent('esx_datastore:getSharedDataStore', 'society_' .. xPlayer.job.name, function(store)
+        if not store then return end
+        storeFound = true
         local weapons = store.get('weapons') or {}
         for i = 1, #weapons do
             if weapons[i].name == item then
@@ -347,6 +352,11 @@ RegisterNetEvent('Parzival:GetJobWeapon', function(item)
             end
         end
     end)
+
+    if not storeFound then
+        TriggerClientEvent('esx:showNotification', _source, 'Armory stock is not available for this job')
+        return
+    end
 
     -- armory weapons carry a DOJ- serial (see essentialmode/server/common.lua)
     local serial = ESX.GenerateWeaponSerial and ESX.GenerateWeaponSerial('DOJ') or nil
@@ -363,6 +373,10 @@ RegisterNetEvent('Parzival:PutJobWeapon', function(item)
     if xPlayer.hasWeapon(item) then
         local loadoutNum, weaponData = xPlayer.getWeapon(item)
         TriggerEvent('esx_datastore:getSharedDataStore', 'society_' .. xPlayer.job.name, function(store)
+            if not store then
+                TriggerClientEvent('esx:showNotification', _source, 'Armory stock is not available for this job')
+                return
+            end
             local weapons = store.get('weapons') or {}
             local foundWeapon = false
 

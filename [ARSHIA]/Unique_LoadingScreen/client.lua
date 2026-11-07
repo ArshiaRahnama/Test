@@ -11,6 +11,7 @@ local function closeLoadscreen()
 end
 
 for _, ev in ipairs({ 'playerSpawned', 'esx:playerLoaded', 'loading:Loaded', 'showRegisterForm' }) do
+    if ev ~= 'playerSpawned' then RegisterNetEvent(ev) end   -- these are server->client events
     AddEventHandler(ev, function() CreateThread(closeLoadscreen) end)
 end
 

@@ -570,6 +570,14 @@ RegisterNUICallback("requsetIdentity", function(data, cb)
         telefone = MyData.phone or "N/A",
         emprego = (PlayerData and PlayerData.job and (PlayerData.job.label..' - '..PlayerData.job.grade_label)) or "Unemployed",
 
+        gang = (function()
+            local g = PlayerData and PlayerData.gang
+            if not g or not g.name or g.name == "nogang" or g.name == "none" then return "None" end
+            local label = g.label or g.name
+            if g.grade_label and g.grade_label ~= "" then label = label .. ' - ' .. g.grade_label end
+            return label
+        end)(),
+
         carteira = MyData.money or 0,
         banco = MyData.bank or 0,
 
