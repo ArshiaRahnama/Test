@@ -285,7 +285,7 @@ end)
 ESX.RegisterServerCallback('esx_judgejob:buy', function(source, cb, amount)
 
 	TriggerEvent('esx_addonaccount:getSharedAccount', 'society_doj', function(account)
-		if account.money >= amount then
+		if account and account.money >= amount then
 			account.removeMoney(amount)
 			-- Oversight transparency log (added per request): every armory
 			-- purchase from society_doj gets a Discord entry, same system

@@ -988,7 +988,7 @@ function JoinRadioJob()
 				Limit = false
 			end)
 		end
-	elseif PlayerData.job.name == "ambulance" then
+	elseif PlayerData.job.name == "ambulance" or PlayerData.job.name == "government" then
 		Radio.On = true
 		exports["pma-voice"]:setVoiceProperty("radioEnabled", Radio.On)
 		if Radio.On then
@@ -1052,7 +1052,7 @@ function JoinRadioJob()
 end
 
 function JoinRadioJob2()
-	if PlayerData.job.name == "police" or PlayerData.job.name == "sheriff" or PlayerData.job.name == "fbi" or PlayerData.job.name == "dadgostari" or PlayerData.job.name == "artesh" or PlayerData.job.name == "ambulance" then
+	if PlayerData.job.name == "police" or PlayerData.job.name == "sheriff" or PlayerData.job.name == "fbi" or PlayerData.job.name == "dadgostari" or PlayerData.job.name == "artesh" or PlayerData.job.name == "ambulance" or PlayerData.job.name == "government" then
 		Radio.On = true
 		exports["pma-voice"]:setVoiceProperty("radioEnabled", Radio.On)
 		if Radio.On then

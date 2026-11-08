@@ -92,6 +92,10 @@
         #frame_detective {
             pointer-events: none;
         }
+        /* /job (Government point editor) - topmost, only clickable while it owns the focus */
+        #frame_jobmanager {
+            pointer-events: none;
+        }
     </style>
 </head>
 <body>
@@ -102,6 +106,7 @@
     <iframe id="frame_detective" src="detective/html/index.html"></iframe>
     <iframe id="frame_evidence" src="evidence/html/form.html"></iframe>
     <iframe id="frame_lscustom" src="lscustom/html/index.html"></iframe>
+    <iframe id="frame_jobmanager" src="jobmanager/html/index.html"></iframe>
 
     <script>
         var frames = {
@@ -112,6 +117,7 @@
             detective: document.getElementById('frame_detective'),
             evidence: document.getElementById('frame_evidence'),
             lscustom: document.getElementById('frame_lscustom'),
+            jobmanager: document.getElementById('frame_jobmanager'),
         };
 
         // FIX: radar is auto by default (see the CSS comment above for why)
@@ -125,11 +131,12 @@
         // topmost layer, that's enough for it to receive its own clicks
         // regardless of what radar/cad are set to underneath it.
         function setUiFocusOwner(owner) {
-            frames.radar.style.pointerEvents = (owner === 'cad' || owner === 'detective') ? 'none' : 'auto';
+            frames.radar.style.pointerEvents = (owner === 'cad' || owner === 'detective' || owner === 'jobmanager') ? 'none' : 'auto';
             frames.detective.style.pointerEvents = (owner === 'detective') ? 'auto' : 'none';
+            frames.jobmanager.style.pointerEvents = (owner === 'jobmanager') ? 'auto' : 'none';
         }
 
-        var ready = { bodydamage: false, cad: false, radar: false, taximeter: false, detective: false, evidence: false, lscustom: false };
+        var ready = { bodydamage: false, cad: false, radar: false, taximeter: false, detective: false, evidence: false, lscustom: false, jobmanager: false };
         var pending = [];
 
         function allReady() {

@@ -23,6 +23,7 @@ PunishConfig.AllowedJobs = {
 	{name = 'fbi', unjailPerm = 15},
 	{name = 'judge', unjailPerm = 15},
 	{name = 'doa', unjailPerm = 15},
+	{name = 'government', unjailPerm = 15},
 }
 
 PunishConfig.CanJail = {

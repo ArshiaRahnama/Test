@@ -1,0 +1,44 @@
+/* ---------- Instashot · Direct (apps/social-dm.js) - sem filter/backdrop-filter/color-mix (CEF) ---------- */
+.igdm .igdm-list{ padding:4px 0 10px }
+.igdm-row{ display:flex; align-items:center; gap:12px; padding:8px 16px; cursor:pointer }
+.igdm-row:active{ background:var(--fill3) }
+.igdm-row .igdm-av .avatar{ width:56px; height:56px; font-size:21px }
+.igdm-row .igdm-b{ flex:1; min-width:0; display:flex; flex-direction:column; gap:2px }
+.igdm-row .igdm-b b{ font-size:var(--t-body); font-weight:600; color:var(--label); white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+.igdm-row .igdm-b span{ font-size:var(--t-foot); color:var(--label2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+.igdm-row .igdm-r{ flex:none; display:flex; align-items:center; gap:8px; font-size:var(--t-cap2); color:var(--label3) }
+.igdm-row .igdm-r u{ width:9px; height:9px; border-radius:50%; background:var(--blue); text-decoration:none }
+
+/* cabeçalho da conversa */
+.igdm-head{ display:flex; align-items:center; gap:9px; cursor:pointer; max-width:100% }
+.igdm-head .avatar{ width:32px; height:32px; font-size:13px; flex:none }
+.igdm-head-t{ display:flex; flex-direction:column; align-items:flex-start; min-width:0 }
+.igdm-head-t b{ font-size:15px; font-weight:600; color:var(--label); line-height:1.15; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:190px }
+.igdm-head-t span{ font-size:11px; color:var(--label2); line-height:1.15 }
+
+/* conversa */
+.igdm-th .igdm-thread{ display:flex; flex-direction:column; justify-content:flex-end; flex:1 0 auto; gap:6px; padding:10px 12px 12px }
+.igdm-msg{ display:flex; max-width:100% }
+.igdm-msg.me{ justify-content:flex-end }
+.igdm-b-txt{ max-width:76%; padding:9px 14px; border-radius:20px; font-size:var(--t-body); line-height:1.35; white-space:pre-wrap; word-break:break-word; background:var(--fill2,#EFEFF0); color:var(--label); user-select:text }
+.igdm-msg.me .igdm-b-txt{ background:var(--blue); color:#fff }
+.igdm-img{ width:210px; height:280px; border-radius:18px; background-color:var(--gray5); background-size:cover; background-position:center; cursor:pointer }
+.igdm-msg .vmsg{ max-width:78% }
+
+/* barra de escrever: câmara · campo · galeria · microfone · enviar (a seta só aparece com texto) */
+.igdm-comp{ flex:none; display:flex; align-items:center; gap:8px; padding:8px 12px calc(var(--safe-bottom,20px) + 8px); background:var(--bg); border-top:.5px solid var(--sep,rgba(60,60,67,.18)) }
+.igdm-comp .igdm-cam-btn,.igdm-comp .igdm-ph,.igdm-comp .igdm-mic{ width:38px; height:38px; flex:none; display:flex; align-items:center; justify-content:center; border-radius:50%; color:var(--label); cursor:pointer }
+.igdm-comp .igdm-cam-btn{ background:var(--blue); color:#fff }
+.igdm-comp .igdm-cam-btn:active,.igdm-comp .igdm-ph:active,.igdm-comp .igdm-mic:active{ opacity:.55 }
+.igdm-field{ flex:1; min-width:0 }
+.igdm-field input{ width:100%; height:38px; border-radius:19px; border:1px solid var(--sep,rgba(60,60,67,.29)); padding:0 14px; font:inherit; font-size:var(--t-body); background:var(--bg2,#fff); color:var(--label); outline:none }
+.igdm-comp .igdm-send{ width:36px; height:36px; flex:none; border-radius:50%; background:var(--blue); color:#fff; display:none; align-items:center; justify-content:center; cursor:pointer }
+.igdm-comp.has-text .igdm-send{ display:flex }
+.igdm-comp.has-text .igdm-mic,.igdm-comp.has-text .igdm-ph{ display:none }
+.igdm-comp.rec .igdm-cam-btn,.igdm-comp.rec .igdm-field,.igdm-comp.rec .igdm-ph,.igdm-comp.rec .igdm-mic,.igdm-comp.rec .igdm-send{ display:none }
+
+/* folha "Nova mensagem" (quem eu sigo) */
+.igdm-pick{ padding:0 0 6px } .igdm-pick .search{ margin:2px 16px 8px }
+.igdm-pick-list{ min-height:180px }
+/* PearPhone Fold aberto (880): a barra de escrever acompanha a coluna da conversa (640 ao centro, ui.css) */
+body.form-fold .app-window .nav-stack:not(.split) > .view > .igdm-comp{ padding-left:calc(50% - 308px); padding-right:calc(50% - 308px) }

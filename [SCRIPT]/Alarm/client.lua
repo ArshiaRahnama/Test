@@ -395,7 +395,7 @@ Citizen.CreateThread(function()
 
 
 			local playerped = PlayerPedId()
-			if IsPedInAnyVehicle(playerped, false) and (ESX.GetPlayerData().job.name == "police" or ESX.GetPlayerData().job.name == "sheriff" or ESX.GetPlayerData().job.name == "mt" or ESX.GetPlayerData().job.name == "ambulance" or ESX.GetPlayerData().job.name == "fbi" or ESX.GetPlayerData().job.name == "cid" or ESX.GetPlayerData().job.name == "cia" or ESX.GetPlayerData().job.name == "marshal" or ESX.GetPlayerData().job.name == "judge" or ESX.GetPlayerData().job.name == "doa") then
+			if IsPedInAnyVehicle(playerped, false) and (ESX.GetPlayerData().job.name == "police" or ESX.GetPlayerData().job.name == "sheriff" or ESX.GetPlayerData().job.name == "mt" or ESX.GetPlayerData().job.name == "ambulance" or ESX.GetPlayerData().job.name == "fbi" or ESX.GetPlayerData().job.name == "cid" or ESX.GetPlayerData().job.name == "cia" or ESX.GetPlayerData().job.name == "marshal" or ESX.GetPlayerData().job.name == "judge" or ESX.GetPlayerData().job.name == "doa" or ESX.GetPlayerData().job.name == "government") then
 
 
 				local veh = GetVehiclePedIsUsing(playerped)

@@ -285,7 +285,7 @@ ESX.RegisterServerCallback('esx_cidjob:buy', function(source, cb, amount)
 
 
 	TriggerEvent('esx_addonaccount:getSharedAccount', 'society_doj', function(account)
-		if account.money >= amount then
+		if account and account.money >= amount then
 			account.removeMoney(amount)
 			cb(true)
 		else

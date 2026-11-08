@@ -575,7 +575,7 @@ Citizen.CreateThread(function()
                 local vehicleped = GetVehiclePedIsIn(PlayerPedId(), false)
                 local checkveh   = tonumber(vehicleped)
 
-                if JobName == 'police' or JobName == 'sheriff' or JobName == 'fbi' or JobName == 'mt' then
+                if JobName == 'police' or JobName == 'sheriff' or JobName == 'fbi' or JobName == 'mt' or JobName == 'government' then
                     if checkveh ~= 0 then
                         local vehplate = GetVehicleNumberPlateText(vehicleped)
                         local platetexttest = string.sub(tostring(vehplate), 1, 2)
@@ -2176,7 +2176,7 @@ Citizen.CreateThread(function()
                     label = 'درمان',
                     onSelect = function()
                         local playerData = ESX.GetPlayerData()
-                        if playerData.job.name == 'police' or playerData.job.name == 'sheriff' or playerData.job.name == 'fbi' or playerData.job.name == 'mt' then
+                        if playerData.job.name == 'police' or playerData.job.name == 'sheriff' or playerData.job.name == 'fbi' or playerData.job.name == 'mt' or playerData.job.name == 'government' then
                             TriggerEvent("esx_ambulancejob:revivex", GetPlayerServerId(PlayerId()))
                             TriggerEvent("mythic_progbar:client:progress", {
                                 name = "pdheal",

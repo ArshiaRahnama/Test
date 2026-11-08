@@ -607,3 +607,26 @@ function SendJail()
     trigtimer()
 end
 
+
+
+-- /job (esx_uniquejobs) manages the jail zones: it reads them from here and pushes edits back
+exports('GetJailZones', function()
+    local out = {}
+    for i, v in ipairs(PunishConfig.CanJail) do
+        out[i] = { coords = { x = v.coords.x + 0.0, y = v.coords.y + 0.0, z = v.coords.z + 0.0 }, radius = v.radius,
+                   unjail = { x = v.unjail.x + 0.0, y = v.unjail.y + 0.0, z = v.unjail.z + 0.0 }, cutscene = v.cutscene }
+    end
+    return out
+end)
+RegisterNetEvent('ujjob:jailZones')
+AddEventHandler('ujjob:jailZones', function(list)
+    if type(list) ~= 'table' then return end
+    local nz = {}
+    for i, v in ipairs(list) do
+        if type(v) == 'table' and v.coords and v.unjail then
+            nz[#nz + 1] = { coords = vector3(v.coords.x + 0.0, v.coords.y + 0.0, v.coords.z + 0.0), radius = tonumber(v.radius) or 20.0,
+                            unjail = vector3(v.unjail.x + 0.0, v.unjail.y + 0.0, v.unjail.z + 0.0), cutscene = v.cutscene }
+        end
+    end
+    PunishConfig.CanJail = nz
+end)

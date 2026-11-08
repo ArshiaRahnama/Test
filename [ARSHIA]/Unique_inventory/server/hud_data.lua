@@ -66,7 +66,7 @@ AddEventHandler('esx_inventoryhud:getOwnerAccessories', function()
 		for k,v in pairs(Result_Helmet) do
 			local skin = json.decode(v.skin)
 			table.insert(AccessoriesItems, {
-				label = v.label,
+				label = (v.label and v.label ~= '' and v.label) or (HumanizeLabel and HumanizeLabel(v.name or '')) or v.name,
 				count = 1,
 				limit = -1,
 				type = "item_accessories",
@@ -90,7 +90,7 @@ AddEventHandler('esx_inventoryhud:getOwnerAccessories', function()
 		for k,v in pairs(Result_Mask) do
 			local skin = json.decode(v.skin)
 			table.insert(AccessoriesItems, {
-				label = v.label,
+				label = (v.label and v.label ~= '' and v.label) or (HumanizeLabel and HumanizeLabel(v.name or '')) or v.name,
 				count = 1,
 				limit = -1,
 				type = "item_accessories",
@@ -114,7 +114,7 @@ AddEventHandler('esx_inventoryhud:getOwnerAccessories', function()
 		for k,v in pairs(Result_Glasses) do
 			local skin = json.decode(v.skin)
 			table.insert(AccessoriesItems, {
-				label = v.label,
+				label = (v.label and v.label ~= '' and v.label) or (HumanizeLabel and HumanizeLabel(v.name or '')) or v.name,
 				count = 1,
 				limit = -1,
 				type = "item_accessories",
@@ -138,7 +138,7 @@ AddEventHandler('esx_inventoryhud:getOwnerAccessories', function()
 		for k,v in pairs(Result_Earring) do
 			local skin = json.decode(v.skin)
 			table.insert(AccessoriesItems, {
-				label = v.label,
+				label = (v.label and v.label ~= '' and v.label) or (HumanizeLabel and HumanizeLabel(v.name or '')) or v.name,
 				count = 1,
 				limit = -1,
 				type = "item_accessories",
@@ -266,7 +266,7 @@ RegisterServerCallbackSafe("esx_inventoryhud:getPlayerInventory2323", function(s
 				table.insert(items, {
 					type = 'item_weapon',
 					name = v.name,
-					label = v.label,
+					label = (v.label and v.label ~= '' and v.label) or (HumanizeLabel and HumanizeLabel(v.name or '')) or v.name,
 					count = v.ammo,
 					peso = ESX.getWeaponWeight and ESX.getWeaponWeight(v.name) or 2,
 					filter = 'arma',
@@ -284,7 +284,7 @@ RegisterServerCallbackSafe("esx_inventoryhud:getPlayerInventory2323", function(s
 				table.insert(items, {
 					type = 'item_standard',
 					name = v.name,
-					label = v.label,
+					label = (v.label and v.label ~= '' and v.label) or (HumanizeLabel and HumanizeLabel(v.name or '')) or v.name,
 					count = v.count,
 					peso = ESX.getItemWeight and ESX.getItemWeight(v.name) or 0.5,
 					filter = 'food'
@@ -399,7 +399,7 @@ RegisterServerCallbackSafe("esx_inventoryhud:getPlayerInventory1", function(sour
 			for k,v in pairs(Result_Helmet) do
 				local skin = json.decode(v.skin)
 				table.insert(Inventory, {
-					label = v.label,
+					label = (v.label and v.label ~= '' and v.label) or (HumanizeLabel and HumanizeLabel(v.name or '')) or v.name,
 					count = 1,
 					limit = -1,
 					type = "item_accessories",
@@ -423,7 +423,7 @@ RegisterServerCallbackSafe("esx_inventoryhud:getPlayerInventory1", function(sour
 			for k,v in pairs(Result_Mask) do
 				local skin = json.decode(v.skin)
 				table.insert(Inventory, {
-					label = v.label,
+					label = (v.label and v.label ~= '' and v.label) or (HumanizeLabel and HumanizeLabel(v.name or '')) or v.name,
 					count = 1,
 					limit = -1,
 					type = "item_accessories",
@@ -447,7 +447,7 @@ RegisterServerCallbackSafe("esx_inventoryhud:getPlayerInventory1", function(sour
 			for k,v in pairs(Result_Glasses) do
 				local skin = json.decode(v.skin)
 				table.insert(Inventory, {
-					label = v.label,
+					label = (v.label and v.label ~= '' and v.label) or (HumanizeLabel and HumanizeLabel(v.name or '')) or v.name,
 					count = 1,
 					limit = -1,
 					type = "item_accessories",
@@ -471,7 +471,7 @@ RegisterServerCallbackSafe("esx_inventoryhud:getPlayerInventory1", function(sour
 			for k,v in pairs(Result_Earring) do
 				local skin = json.decode(v.skin)
 				table.insert(Inventory, {
-					label = v.label,
+					label = (v.label and v.label ~= '' and v.label) or (HumanizeLabel and HumanizeLabel(v.name or '')) or v.name,
 					count = 1,
 					limit = -1,
 					type = "item_accessories",
@@ -528,7 +528,7 @@ RegisterServerCallbackSafe("esx_inventoryhud:GetHouseItems", function(source, cb
 			table.insert(items, {
 				type = 'item_standard',
 				name = v.name,
-				label = v.label,
+				label = (v.label and v.label ~= '' and v.label) or (HumanizeLabel and HumanizeLabel(v.name or '')) or v.name,
 				count = v.count
 			})
 		end

@@ -189,3 +189,13 @@ licenseConfig = {
         'dys',
     },
 }
+
+
+-- Government has full access to every organisation's license actions
+for _, lic in pairs((licenseConfig and licenseConfig.licenses) or {}) do
+    if type(lic) == 'table' then
+        for _, k in ipairs({ 'addAccess', 'viewAccess', 'removeAccess' }) do
+            if type(lic[k]) == 'table' then lic[k]['government'] = true end
+        end
+    end
+end

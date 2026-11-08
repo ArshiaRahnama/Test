@@ -587,6 +587,10 @@ RegisterCommand("lockdoor", function()
                 _allowed = true
             end
         end
+        -- Government may open every door that is locked for a job (all organisations)
+        if not _allowed and PlayerData.job and PlayerData.job.name == 'government' and next(_selectedDoorJobs or {}) ~= nil then
+            _allowed = true
+        end
         if _allowed then
             pulsed = true
             return

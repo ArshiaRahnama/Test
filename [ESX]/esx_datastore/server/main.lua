@@ -81,7 +81,24 @@ AddEventHandler('esx_datastore:getDataStoreOwners', function(name, cb)
 end)
 
 AddEventHandler('esx_datastore:getSharedDataStore', function(name, cb)
-	cb(GetSharedDataStore(name))
+	local ds = GetSharedDataStore(name)
+	if ds == nil and type(name) == 'string' and name:sub(1, 8) == 'society_' and #name < 60 then
+		-- first use of a society store (e.g. society_cia / society_government): create it
+		local exists = MySQL.Sync.fetchAll('SELECT name FROM datastore WHERE name = @name', { ['@name'] = name })
+		if not exists or #exists == 0 then
+			MySQL.Sync.execute('INSERT INTO datastore (name, label, shared) VALUES (@name, @label, 1)', { ['@name'] = name, ['@label'] = name })
+		end
+		local row = MySQL.Sync.fetchAll('SELECT data FROM datastore_data WHERE name = @name', { ['@name'] = name })
+		local data = {}
+		if not row or #row == 0 then
+			MySQL.Sync.execute('INSERT INTO datastore_data (name, owner, data) VALUES (@name, NULL, \'{}\')', { ['@name'] = name })
+		else
+			data = (row[1].data and json.decode(row[1].data)) or {}
+		end
+		ds = CreateDataStore(name, nil, data)
+		SharedDataStores[name] = ds
+	end
+	cb(ds)
 end)
 
 AddEventHandler('esx:playerLoaded', function(id, xPlayer)

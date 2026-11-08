@@ -192,7 +192,7 @@ $(document).ready(function () {
                       '" data-item-key="' +
                       _0x316333.name +
                       '" data-item-name="' +
-                      _0x316333.label +
+                      (_0x316333.label || _0x316333.name) +
                       '" data-item-desc="' +
                       _0x316333.descricao +
                       '" data-item-funcao="' +
@@ -214,7 +214,7 @@ $(document).ready(function () {
                       '</div>\n                                    <div class="peso">' +
                       _0x316333.peso.toFixed(1) +
                       'kg</div>\n                                </div>\n                                <div class="bottom-item">\n                                    <div class="name-item">' +
-                      _0x316333.label +
+                      (_0x316333.label || _0x316333.name) +
                       '\n                                    <div class="typeFilter">' +
                       _0x316333.filter +
                       '</div>\n                                </div>\n                            </div>\n                        </div>\n                    </div>\n                    '
@@ -265,7 +265,7 @@ $(document).ready(function () {
                         '" data-item-key="' +
                         _0x286660.name +
                         '" data-item-name="' +
-                        _0x286660.label +
+                        (_0x286660.label || _0x286660.name) +
                         '" data-item-desc="' +
                         _0x286660.descricao +
                         '" data-item-funcao="' +
@@ -287,7 +287,7 @@ $(document).ready(function () {
                         'x</div>\n                                            <div class="peso">' +
                         (_0x286660.type === 'item_weapon' ? (Number(_0x286660.peso) || 0) : (Number(_0x286660.peso) || 0) * (Number(_0x286660.count) || 0)).toFixed(1) +
                         'kg</div>\n                                        </div>\n                                        <div class="bottom-item">\n                                            <div class="name-item">' +
-                        _0x286660.label +
+                        (_0x286660.label || _0x286660.name) +
                         '\n                                            <div class="typeFilter">' +
                         _0x286660.filter +
                         '</div>\n                                        </div>\n                                        </div>\n                                    </div>\n                                    '
@@ -341,7 +341,7 @@ $(document).ready(function () {
                           '" data-item-key="' +
                           _0x286660.name +
                           '" data-item-name="' +
-                          _0x286660.label +
+                          (_0x286660.label || _0x286660.name) +
                           '" data-item-desc="' +
                           _0x286660.descricao +
                           '" data-item-funcao="' +
@@ -363,7 +363,7 @@ $(document).ready(function () {
                           'x</div>\n                                            <div class="peso">' +
                           (_0x286660.type === 'item_weapon' ? (Number(_0x286660.peso) || 0) : (Number(_0x286660.peso) || 0) * (Number(_0x286660.count) || 0)).toFixed(1) +
                           'kg</div>\n                                        </div>\n                                        <div class="bottom-item">\n                                            <div class="name-item">' +
-                          _0x286660.label +
+                          (_0x286660.label || _0x286660.name) +
                           '\n                                            <div class="typeFilter">' +
                           _0x286660.filter +
                           '</div>\n                                        </div>\n                                        </div>\n                                    </div>\n                                    '
@@ -430,7 +430,7 @@ $(document).ready(function () {
                             '" data-item-key="' +
                             _0x286660.name +
                             '" data-item-name="' +
-                            _0x286660.label +
+                            (_0x286660.label || _0x286660.name) +
                             '" data-item-desc="' +
                             _0x286660.descricao +
                             '" data-item-funcao="' +
@@ -454,7 +454,7 @@ $(document).ready(function () {
                             'x</div>\n                                            <div class="peso">' +
                             (_0x286660.type === 'item_weapon' ? (Number(_0x286660.peso) || 0) : (Number(_0x286660.peso) || 0) * (Number(_0x286660.count) || 0)).toFixed(1) +
                             'kg</div>\n                                        </div>\n                                        <div class="bottom-item">\n                                            <div class="name-item">' +
-                            _0x286660.label +
+                            (_0x286660.label || _0x286660.name) +
                             '\n                                            <div class="typeFilter">' +
                             _0x286660.filter +
                             '</div>\n                                        </div>\n                                        </div>\n                                    </div>\n                                    '
@@ -569,6 +569,10 @@ $(document).ready(function () {
           if (_0x17f90f.inventario[i]) {
             var _0x498f3d = _0x17f90f.inventario[i],
               _0x449466 = $('.slot')
+            // FIX: never render 'undefinedx' / NaN weight for entries without count/peso
+            if (_0x498f3d.count == null || isNaN(Number(_0x498f3d.count))) _0x498f3d.count = 1
+            if (_0x498f3d.peso == null || isNaN(Number(_0x498f3d.peso))) _0x498f3d.peso = _0x498f3d.type === 'item_weapon' ? 2 : 0.5
+            if (!_0x498f3d.label) _0x498f3d.label = _0x498f3d.name
             _0x449466 &&
               $('.slot').each(function () {
                 var _0x36bfc2 = $(this).attr('data-slotNovo')
@@ -590,7 +594,7 @@ $(document).ready(function () {
                       '" data-item-key="' +
                       _0x498f3d.name +
                       '" data-item-name="' +
-                      _0x498f3d.label +
+                      (_0x498f3d.label || _0x498f3d.name) +
                       '" data-item-desc="' +
                       _0x498f3d.descricao +
                       '" data-item-funcao="' +
@@ -612,7 +616,7 @@ $(document).ready(function () {
                       'x</div>\n                                            <div class="peso">' +
                       (_0x498f3d.type === 'item_weapon' ? Number(_0x498f3d.peso) : _0x498f3d.peso * _0x498f3d.count).toFixed(1) +
                       'kg</div>\n                                        </div>\n                                        <div class="bottom-item">\n                                            <div class="name-item">' +
-                      _0x498f3d.label +
+                      (_0x498f3d.label || _0x498f3d.name) +
                       '\n                                                <div class="typeFilter">' +
                       _0x498f3d.filter +
                       '</div>\n                                            </div>\n                                        </div>\n                                        <div>\n                                             ' +
@@ -637,7 +641,7 @@ $(document).ready(function () {
                       '" data-item-key="' +
                       _0x498f3d.name +
                       '" data-item-name="' +
-                      _0x498f3d.label +
+                      (_0x498f3d.label || _0x498f3d.name) +
                       '" data-item-desc="' +
                       _0x498f3d.descricao +
                       '" data-item-funcao="' +
@@ -659,7 +663,7 @@ $(document).ready(function () {
                       'x</div>\n                                            <div class="peso">' +
                       (_0x498f3d.type === 'item_weapon' ? Number(_0x498f3d.peso) : _0x498f3d.peso * _0x498f3d.count).toFixed(1) +
                       'kg</div>\n                                        </div>\n                                        <div class="bottom-item">\n                                            <div class="name-item">' +
-                      _0x498f3d.label +
+                      (_0x498f3d.label || _0x498f3d.name) +
                       '\n                                            <div class="typeFilter">' +
                       _0x498f3d.filter +
                       '</div>\n                                        </div>\n                                        </div>\n                                    </div>\n                                    '
@@ -686,7 +690,7 @@ $(document).ready(function () {
               function (_0x431ac5) {}
             )
             var _0x141fb1 = new Audio('vendido.ogg')
-            _0x141fb1.volume = 1
+            _0x141fb1.volume = window.UQ_VOLUME != null ? window.UQ_VOLUME : 1
             _0x141fb1.play()
           })
         var _0x2dddef = Number(_0x17f90f.atualPeso),
@@ -800,7 +804,7 @@ function getDrag() {
               })
             )
             var _0x35a197 = new Audio('slot.ogg')
-            _0x35a197.volume = 1
+            _0x35a197.volume = window.UQ_VOLUME != null ? window.UQ_VOLUME : 1
             _0x35a197.play()
           }
         }
@@ -834,7 +838,7 @@ function getDrag() {
               })
             )
             var _0x35a197 = new Audio('slot.ogg')
-            _0x35a197.volume = 1
+            _0x35a197.volume = window.UQ_VOLUME != null ? window.UQ_VOLUME : 1
             _0x35a197.play()
           }
         }
@@ -869,7 +873,7 @@ function getDrag() {
                 })
               )
               var _0x35a197 = new Audio('slot.ogg')
-              _0x35a197.volume = 1
+              _0x35a197.volume = window.UQ_VOLUME != null ? window.UQ_VOLUME : 1
               _0x35a197.play()
             }
           }
@@ -907,7 +911,7 @@ function getDrag() {
                     })
                   )
                   var _0x35a197 = new Audio('slot.ogg')
-                  _0x35a197.volume = 1
+                  _0x35a197.volume = window.UQ_VOLUME != null ? window.UQ_VOLUME : 1
                   _0x35a197.play()
                 }
               }
@@ -940,7 +944,7 @@ function getDrag() {
                       })
                     )
                     var _0x35a197 = new Audio('slot.ogg')
-                    _0x35a197.volume = 1
+                    _0x35a197.volume = window.UQ_VOLUME != null ? window.UQ_VOLUME : 1
                     _0x35a197.play()
                   }
                 }
@@ -982,7 +986,7 @@ function getDrag() {
                         })
                       )
                       var _0x35a197 = new Audio('slot.ogg')
-                      _0x35a197.volume = 1
+                      _0x35a197.volume = window.UQ_VOLUME != null ? window.UQ_VOLUME : 1
                       _0x35a197.play()
                     }
                   }
@@ -1024,7 +1028,7 @@ function getDrag() {
                           })
                         )
                         var _0x35a197 = new Audio('slot.ogg')
-                        _0x35a197.volume = 1
+                        _0x35a197.volume = window.UQ_VOLUME != null ? window.UQ_VOLUME : 1
                         _0x35a197.play()
                       }
                     }
@@ -1070,7 +1074,7 @@ function getDrag() {
                 })
               )
               var _0x31371a = new Audio('slot.ogg')
-              _0x31371a.volume = 1
+              _0x31371a.volume = window.UQ_VOLUME != null ? window.UQ_VOLUME : 1
               _0x31371a.play()
               restFilter()
             }
@@ -1110,7 +1114,7 @@ function getDrag() {
                   })
                 )
                 var _0x31371a = new Audio('slot.ogg')
-                _0x31371a.volume = 1
+                _0x31371a.volume = window.UQ_VOLUME != null ? window.UQ_VOLUME : 1
                 _0x31371a.play()
               }
             }
@@ -1150,7 +1154,7 @@ function getDrag() {
                     })
                   )
                   var _0x31371a = new Audio('slot.ogg')
-                  _0x31371a.volume = 1
+                  _0x31371a.volume = window.UQ_VOLUME != null ? window.UQ_VOLUME : 1
                   _0x31371a.play()
                 }
               }
@@ -1193,7 +1197,7 @@ function getDrag() {
                       })
                     )
                     var _0x31371a = new Audio('slot.ogg')
-                    _0x31371a.volume = 1
+                    _0x31371a.volume = window.UQ_VOLUME != null ? window.UQ_VOLUME : 1
                     _0x31371a.play()
                   }
                 }
@@ -1219,7 +1223,7 @@ function getDrag() {
             })
           )
           var _0x31371a = new Audio('slot.ogg')
-          _0x31371a.volume = 1
+          _0x31371a.volume = window.UQ_VOLUME != null ? window.UQ_VOLUME : 1
           _0x31371a.play()
         }
       }
@@ -1315,7 +1319,7 @@ function getDrag() {
             )
             _0x5efc8c.css('opacity', '1')
             var _0x4afc10 = new Audio('slot.ogg')
-            _0x4afc10.volume = 1
+            _0x4afc10.volume = window.UQ_VOLUME != null ? window.UQ_VOLUME : 1
             _0x4afc10.play()
             _0x5efc8c.attr('hasItem', 'true')
             _0x5efc8c.css(
@@ -1390,6 +1394,10 @@ function getDrag() {
   $('.action').droppable({
     hoverClass: 'actionDropp',
     drop: function (_0xf984f1, _0x4aba03) {
+      if ($(this).hasClass('deletar')) {
+        window.uqDelete && window.uqDelete(_0x4aba03.draggable)
+        return
+      }
       if ($(this).hasClass('usar')) {
         var _0xa5758 = _0x4aba03.draggable.data('item-type'),
           _0x17c58c = _0x4aba03.draggable.data('item-key'),
@@ -1760,7 +1768,7 @@ function filterItens() {
 $('.clear-filter').click(function () {
   restFilter()
   var _0x1861c3 = new Audio('slot.ogg')
-  _0x1861c3.volume = 1
+  _0x1861c3.volume = window.UQ_VOLUME != null ? window.UQ_VOLUME : 1
   _0x1861c3.play()
 })
 $('.filtro-button').click(function () {
@@ -1773,7 +1781,7 @@ $('.filtro-button').click(function () {
   filterItens()
   document.getElementById('barra-pesquisa').value = ''
   var _0x315e1e = new Audio('slot.ogg')
-  _0x315e1e.volume = 1
+  _0x315e1e.volume = window.UQ_VOLUME != null ? window.UQ_VOLUME : 1
   _0x315e1e.play()
 })
 function pesquisar() {

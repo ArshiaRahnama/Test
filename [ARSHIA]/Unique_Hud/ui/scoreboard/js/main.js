@@ -141,12 +141,19 @@ function renderScoreboard(data) {
       }
     } else {
       count = 0;
+      var anyOn = false;
       card.jobs.forEach(function (jobKey) {
+        // the server leaves an OFF organisation out of data.jobs completely -> hide its row
+        var off = !!data.jobs && data.jobs[jobKey] === undefined;
         var jobCount = (data.jobs && data.jobs[jobKey]) || 0;
-        count += jobCount;
         var rowEl = el.querySelector('[data-job="' + jobKey + '"]');
+        if (rowEl && rowEl.parentElement) rowEl.parentElement.style.display = off ? 'none' : '';
+        if (off) return;
+        anyOn = true;
+        count += jobCount;
         if (rowEl) rowEl.textContent = jobCount;
       });
+      el.style.display = anyOn ? '' : 'none';   // a department with every organisation OFF disappears
     }
     el.querySelector('.uh-value').textContent = count;
   });

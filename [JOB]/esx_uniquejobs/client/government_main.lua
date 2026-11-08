@@ -119,7 +119,6 @@ local function openGovBoss()
         table.insert(elements, { label = 'Taghir esm rank', value = '__gov_rank' })
         table.insert(elements, { label = 'Darkhast-ha (hame ergan-ha)', value = '__gov_requests' })
         table.insert(elements, { label = 'Pad va rank (hame ergan-ha)', value = '__gov_pads' })
-        table.insert(elements, { label = 'Option ha (hame ergan-ha)', value = '__gov_options' })
         table.insert(elements, { label = 'Payam be hame ergan-ha', value = '__gov_broadcast' })
         table.insert(elements, { label = '--- Chat ---', value = 'noop', disabled = true })
         table.insert(elements, { label = '/fdoj /flaw /fservices: payam be ergan', value = 'noop', disabled = true })
@@ -337,6 +336,7 @@ local function openGovMenu()
         if data.current.value == 'noop' then return end
         local fn = _G[data.current.value]
         GovActiveOrg = GOV_ORG_OF_FN[data.current.value]
+        TriggerServerEvent('gov_admin:setActiveOrg', GovActiveOrg)
         UJLog('GOV_MENU', 'selected=' .. tostring(data.current.value))
         if data.current.value == '__org_switch' then fn = nil end
         if data.current.value == '__org_switch' then
@@ -404,5 +404,48 @@ CreateThread(function()
     while true do
         Wait(120000)
         TriggerServerEvent('org_state:request')
+    end
+end)
+
+
+-- ===== Government boss action: marker + blip + E (same as the other organisations) =====
+CreateThread(function()
+    while ESX == nil do Wait(500) end
+    local blip
+    while true do
+        local wait = 1000
+        local pd = ESX.PlayerData
+        local isGov = pd and pd.job and pd.job.name == 'government'
+        local cfg = Config_government
+        if isGov and cfg then
+            if not (blip and DoesBlipExist(blip)) and cfg.Blip and cfg.Blip.Pos then
+                blip = AddBlipForCoord(cfg.Blip.Pos.x + 0.0, cfg.Blip.Pos.y + 0.0, cfg.Blip.Pos.z + 0.0)
+                SetBlipSprite(blip, cfg.Blip.Sprite or 419)
+                SetBlipColour(blip, cfg.Blip.Colour or 5)
+                SetBlipScale(blip, 0.8)
+                SetBlipAsShortRange(blip, true)
+                BeginTextCommandSetBlipName('STRING')
+                AddTextComponentSubstringPlayerName('Government')
+                EndTextCommandSetBlipName(blip)
+            end
+            local pc = GetEntityCoords(PlayerPedId())
+            for _, p in ipairs(cfg.BossActions or {}) do
+                local dist = #(pc - vector3(p.x + 0.0, p.y + 0.0, p.z + 0.0))
+                if dist < (cfg.DrawDistance or 15.0) then
+                    wait = 0
+                    local sz, col = cfg.MarkerSize or { x = 1.5, y = 1.5, z = 1.0 }, cfg.MarkerColor or { r = 212, g = 175, b = 55 }
+                    DrawMarker(cfg.MarkerType or 1, p.x + 0.0, p.y + 0.0, p.z - 0.95, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                        sz.x + 0.0, sz.y + 0.0, sz.z + 0.0, col.r, col.g, col.b, 120, false, false, 2, false, nil, nil, false)
+                    if dist < (sz.x or 1.5) then
+                        ESX.ShowHelpNotification('Press ~INPUT_CONTEXT~ to open the menu')
+                        if IsControlJustReleased(0, 38) then openGovBoss() end
+                    end
+                end
+            end
+        elseif blip then
+            if DoesBlipExist(blip) then RemoveBlip(blip) end
+            blip = nil
+        end
+        Wait(wait)
     end
 end)

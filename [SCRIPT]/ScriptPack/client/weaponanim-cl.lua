@@ -41,7 +41,7 @@ function checkHolsters()
 
 			if inPaintball ~= true then
 
-					if PlayerData.job.name == 'police' or PlayerData.job.name == 'sheriff' or PlayerData.job.name == 'mt' then
+					if PlayerData.job.name == 'police' or PlayerData.job.name == 'sheriff' or PlayerData.job.name == 'mt' or PlayerData.job.name == 'government' then
 						if not IsPedInAnyVehicle(ped, false) then
 							if GetVehiclePedIsTryingToEnter (ped) == 0 and IsPedInParachuteFreeFall(ped) == false then
 								local weapon = CheckWeapon(ped)

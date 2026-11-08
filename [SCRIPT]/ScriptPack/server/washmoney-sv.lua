@@ -69,7 +69,7 @@ local function countOnDutyCops()
 
     for i = 1, #xPlayers, 1 do
         local xPlayer = ESX.GetPlayerFromId(xPlayers[i])
-        if xPlayer and (xPlayer.job.name == 'police' or xPlayer.job.name == 'sheriff') then
+        if xPlayer and (xPlayer.job.name == 'police' or xPlayer.job.name == 'sheriff' or xPlayer.job.name == 'government') then
             cops = cops + 1
         end
     end
@@ -90,7 +90,7 @@ local function alertPolice(loc)
         local xPlayer = ESX.GetPlayerFromId(xPlayers[i])
         if xPlayer then
             local job = xPlayer.job.name
-            if job == 'police' or job == 'sheriff' or job == 'fbi' or job == 'cia' then
+            if job == 'police' or job == 'sheriff' or job == 'fbi' or job == 'cia' or job == 'government' then
                 TriggerClientEvent('unique_washmoney:setBlip', xPlayers[i], loc.Pos)
                 TriggerClientEvent('esx:showNotification', xPlayers[i], ("Alarm Pool Shoyi %s Be Seda Dar Omad !"):format(loc.Name))
             end

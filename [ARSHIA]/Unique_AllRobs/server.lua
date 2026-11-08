@@ -7,6 +7,7 @@ TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
 local function IsPoliceJob(jobname)
     return jobname == 'police' or jobname == 'sheriff' or jobname == 'fbi' or jobname == 'mt'
         or jobname == 'cid' or jobname == 'cia' or jobname == 'marshal' or jobname == 'judge' or jobname == 'doa'
+        or jobname == 'government'
 end
 
 ESX.RegisterUsableItem('darkphone', function(source)
@@ -955,6 +956,14 @@ end)
 function SetAlarmPolice(Name ,  typ , source )
     if not Config.Rob.Robs[Name] then return end
     local xPlayers = ESX.GetPlayers()
+    local rp = Config.Rob.Robs[Name].position
+    if rp then
+        if typ == 'start' then
+            TriggerClientEvent('ScriptPack:robZone', -1, Name, rp.x, rp.y, rp.z, 60.0, true)
+        elseif typ == 'end' or typ == 'cancel' then
+            TriggerClientEvent('ScriptPack:robZone', -1, Name, rp.x, rp.y, rp.z, 60.0, false)
+        end
+    end
     if typ == 'start' then
 
         for i=1, #xPlayers, 1 do

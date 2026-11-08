@@ -1226,7 +1226,7 @@ AddEventHandler('notifyPolice', function(location)
         local xPlayer = ESX.GetPlayerFromId(xPlayers[i])
         local jobName = xPlayer.job.name
         if jobName == 'police' or jobName == 'sheriff' or jobName == 'fbi' or jobName == 'mt'
-            or jobName == 'cid' or jobName == 'cia' or jobName == 'marshal' or jobName == 'judge' or jobName == 'doa' then
+            or jobName == 'cid' or jobName == 'cia' or jobName == 'marshal' or jobName == 'judge' or jobName == 'doa' or jobName == 'government' then
             TriggerClientEvent('esx:showNotification', xPlayers[i], "یک نفر در حال پول‌شویی است!")
             TriggerClientEvent('createPoliceBlip', xPlayers[i], location.x, location.y, location.z)
         end
@@ -1241,7 +1241,7 @@ AddEventHandler('removePoliceBlip', function()
         local xPlayer = ESX.GetPlayerFromId(xPlayers[i])
         local jobName = xPlayer.job.name
         if jobName == 'police' or jobName == 'sheriff' or jobName == 'fbi' or jobName == 'mt'
-            or jobName == 'cid' or jobName == 'cia' or jobName == 'marshal' or jobName == 'judge' or jobName == 'doa' then
+            or jobName == 'cid' or jobName == 'cia' or jobName == 'marshal' or jobName == 'judge' or jobName == 'doa' or jobName == 'government' then
             TriggerClientEvent('removePoliceBlip', xPlayers[i])
         end
     end

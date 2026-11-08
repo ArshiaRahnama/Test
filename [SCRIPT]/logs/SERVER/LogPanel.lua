@@ -92,14 +92,6 @@ end
 -- ============================================================================
 -- توابع کمکی پرمیشن
 -- ============================================================================
--- Government sees every job's logs in the read paths (lists, search, counts).
--- Write/delete paths still use isAdmin only.
-local function canViewAll(source)
-	if isAdmin(source) then return true end
-	local xPlayer = ESX.GetPlayerFromId(source)
-	return xPlayer and xPlayer.job and xPlayer.job.name == 'government' or false
-end
-
 local function isAdmin(source)
 	if Config.UseAceAdmin and IsPlayerAceAllowed(source, Config.AceAdminGroup) then
 		return true
@@ -107,6 +99,14 @@ local function isAdmin(source)
 	local xPlayer = ESX.GetPlayerFromId(source)
 	if not xPlayer then return false end
 	return (xPlayer.permission_level or 0) >= Config.AdminPermissionLevel
+end
+
+-- Government sees every job's logs in the read paths (lists, search, counts).
+-- Write/delete paths still use isAdmin only.
+local function canViewAll(source)
+	if isAdmin(source) then return true end
+	local xPlayer = ESX.GetPlayerFromId(source)
+	return xPlayer and xPlayer.job and xPlayer.job.name == 'government' or false
 end
 
 local function isBossGrade(gradeName)

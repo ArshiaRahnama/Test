@@ -13,7 +13,8 @@
 @font-face{font-family:"Russo One";font-weight:400;font-display:swap;src:url('app/fonts/russo-one-latin-400-normal.woff2') format('woff2')}
 
 :root{
-  --u: min(calc(100vw / 1920), calc(100vh / 1080));
+  --uscale:1;--panel-a:.62;--dim-a:.18;
+  --u: calc(min(calc(100vw / 1920), calc(100vh / 1080)) * var(--uscale));
   --ox: calc((100vw - 1920 * var(--u)) / 2);
   --oy: calc((100vh - 1080 * var(--u)) / 2);
 
@@ -22,7 +23,7 @@
   --line:rgba(167,139,250,.16); --line-2:rgba(167,139,250,.32);
   --text:#f3f1fa; --muted:#b1aec4; --dim:#8c89a3;
   --danger:#ff6b7a; --ok:#5ad17a;
-  --panel:rgba(18,13,38,.46);
+  --panel:rgba(16,11,34,var(--panel-a));
   --glass-blur:blur(22px) saturate(1.5);
   --glass-edge:rgba(196,181,253,.28);
 
@@ -86,7 +87,6 @@ body{user-select:none;font-family:var(--font);color:var(--text)}
   font:500 calc(var(--u)*16) var(--font);color:var(--text);outline:none;
   background:rgba(18,13,38,.5) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23a78bfa' stroke-width='2.2' stroke-linecap='round'><circle cx='11' cy='11' r='7'/><path d='M20 20l-4-4'/></svg>") no-repeat calc(var(--u)*16) 50%;
   background-size:auto,calc(var(--u)*20) calc(var(--u)*20);
-  -webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur);
   border:calc(var(--u)*1) solid var(--glass-edge);border-radius:calc(var(--u)*12);transition:border-color .15s,box-shadow .15s;
 }
 #barra-pesquisa::placeholder,#barra-pesquisa-chest::placeholder{color:var(--dim)}
@@ -107,7 +107,6 @@ body{user-select:none;font-family:var(--font);color:var(--text)}
 
 .identity-inicial,.person-menu-chest,#box-menu-item,.filter-menu,.descricao-menu,.box-peso,.box-action{
   background:linear-gradient(160deg,rgba(255,255,255,.07),rgba(255,255,255,.015) 40%),var(--panel);
-  -webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur);
   border:calc(var(--u)*1) solid var(--glass-edge);border-radius:calc(var(--u)*18);
   box-shadow:0 calc(var(--u)*24) calc(var(--u)*60) rgba(0,0,0,.38),0 0 0 calc(var(--u)*1) rgba(0,0,0,.25),inset 0 calc(var(--u)*1) 0 rgba(255,255,255,.16),inset 0 0 calc(var(--u)*40) rgba(139,92,246,.07);
 }
@@ -391,3 +390,352 @@ body{user-select:none;font-family:var(--font);color:var(--text)}
 .hud,.keyBind,.keyBind-usade,.weapon-box,.slot-craft{display:none}
 
 @media (prefers-reduced-motion:reduce){*{transition:none !important;animation:none !important}}
+
+
+/* =====================================================================
+   v2.1 — FiveM-safe layer
+   NUI cannot do backdrop-filter (renders solid black boxes), so every
+   panel is plain translucency now.
+   ===================================================================== */
+#menu-principal::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:radial-gradient(ellipse at 50% 40%,rgba(0,0,0,0) 30%,rgba(6,4,16,calc(var(--dim-a) + .25)) 100%),rgba(6,4,16,var(--dim-a))}
+.background-color{z-index:1}
+
+/* left character card removed (the live ped is visible instead) */
+.person-menu-inventory{display:none !important}
+
+/* 5 columns */
+.slot,.slotChest{margin:0 calc(var(--u)*6) calc(var(--u)*6) 0 !important}
+#box-menu-item,#box-menu-item-chest{padding:calc(var(--u)*14) calc(var(--u)*2) calc(var(--u)*8) calc(var(--u)*12) !important}
+#box-menu-item::-webkit-scrollbar,#box-menu-item-chest::-webkit-scrollbar{width:calc(var(--u)*6) !important}
+
+/* layout: ped on the left, details/actions in the middle, grid on the right */
+.filter-menu,.right-menu{left:calc(var(--u)*676) !important}
+.right-menu{width:calc(var(--u)*536)}
+.box-action{gap:calc(var(--u)*8);padding:calc(var(--u)*14)}
+.action{font-size:calc(var(--u)*14) !important;letter-spacing:.06em}
+.action.deletar{border:calc(var(--u)*1) solid rgba(255,107,122,.5);background:rgba(255,107,122,.1);color:#ffb3bb}
+.action.deletar:hover{box-shadow:0 0 calc(var(--u)*18) rgba(255,107,122,.4);border-color:#ff6b7a}
+.item-player.uq-sel{outline:calc(var(--u)*2) solid var(--uv-300);outline-offset:calc(var(--u)*-2)}
+
+/* top bar: Esc hint sits next to the tabs, away from the game HUD */
+.esc{right:auto !important;left:calc(var(--u)*1040) !important;top:calc(var(--u)*12) !important}
+.chest-title-menu .esc{right:auto !important;left:calc(var(--u)*1040) !important}
+.uq-tabs{position:absolute;left:calc(var(--u)*330);top:calc(var(--u)*8);display:flex;gap:calc(var(--u)*8)}
+.uq-tab{font:600 calc(var(--u)*15) var(--font);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);cursor:pointer;
+  height:calc(var(--u)*48);padding:0 calc(var(--u)*22);border-radius:calc(var(--u)*12);border:calc(var(--u)*1) solid var(--glass-edge);background:rgba(16,11,34,.55);transition:.15s}
+.uq-tab:hover{color:var(--text);border-color:var(--uv-300)}
+.uq-tab.on{color:#fff;background:linear-gradient(135deg,var(--uv-500),var(--uv-700));border-color:var(--uv-300);box-shadow:0 0 calc(var(--u)*18) rgba(139,92,246,.45)}
+#barra-pesquisa,#barra-pesquisa-chest{background-color:rgba(16,11,34,.72) !important}
+.chest-mode .uq-tabs{display:none}
+
+/* hide inventory pieces while a full-page view is open */
+#menu-principal[data-view="clothing"] :is(.filter-menu,.right-menu,#box-menu-item,#detail-placeholder,.descricao-menu,#barra-pesquisa,.name-car),
+#menu-principal[data-view="settings"] :is(.filter-menu,.right-menu,#box-menu-item,#detail-placeholder,.descricao-menu,#barra-pesquisa,.name-car),
+#menu-principal[data-view="settings"] #uq-badge,
+#menu-principal.chest-mode #uq-badge{display:none !important}
+
+/* ---------- player badge (bottom-left) ---------- */
+#uq-badge,#uq-clothing-card{
+  display:grid;grid-template-columns:calc(var(--u)*96) 1fr;grid-template-rows:auto auto auto;gap:calc(var(--u)*10) calc(var(--u)*16);align-items:center;
+  padding:calc(var(--u)*18);border-radius:calc(var(--u)*18);border:calc(var(--u)*1) solid var(--glass-edge);
+  background:linear-gradient(160deg,rgba(255,255,255,.07),rgba(255,255,255,.015) 40%),var(--panel);
+  box-shadow:0 calc(var(--u)*24) calc(var(--u)*60) rgba(0,0,0,.38),inset 0 calc(var(--u)*1) 0 rgba(255,255,255,.16);
+}
+#uq-badge{position:absolute;left:calc(var(--u)*64);top:calc(var(--u)*776);width:calc(var(--u)*420);height:auto}
+.uq-hs{grid-row:1 / span 2;width:calc(var(--u)*96);height:calc(var(--u)*96);border-radius:calc(var(--u)*20);overflow:hidden;position:relative;
+  background:radial-gradient(circle at 50% 30%,rgba(196,181,253,.35),rgba(109,61,240,.25) 70%);border:calc(var(--u)*1) solid var(--line-2)}
+.uq-hs img{width:100%;height:100%;object-fit:cover;display:block;image-rendering:auto}
+.uq-hs.noimg::after{content:attr(data-ini);position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font:700 calc(var(--u)*34) var(--font);color:#fff;background:linear-gradient(135deg,var(--uv-400),var(--uv-600))}
+.uq-who b{display:block;font:700 calc(var(--u)*22) var(--font);color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:calc(var(--u)*250)}
+.uq-who span{display:block;font:500 calc(var(--u)*14) var(--font);color:var(--muted);margin-top:calc(var(--u)*4)}
+.uq-chip{grid-column:1 / span 2;display:flex;justify-content:space-between;align-items:center;height:calc(var(--u)*46);padding:0 calc(var(--u)*16);
+  border:calc(var(--u)*1) solid var(--line-2);border-radius:calc(var(--u)*12);background:linear-gradient(135deg,rgba(139,92,246,.2),rgba(139,92,246,.06))}
+.uq-chip i{font:700 calc(var(--u)*12) var(--font);font-style:normal;letter-spacing:.12em;text-transform:uppercase;color:var(--uv-300)}
+.uq-chip b{font:700 calc(var(--u)*16) var(--font);color:var(--text);max-width:calc(var(--u)*260);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ---------- icon fallback ---------- */
+.item-player.no-icon{background-image:none !important}
+.uq-glyph{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);width:calc(var(--u)*52);height:calc(var(--u)*52);opacity:.85;pointer-events:none}
+.uq-glyph svg{width:100%;height:100%;fill:none;stroke:var(--uv-300);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+
+/* ---------- full-page views ---------- */
+.uq-view{position:absolute;left:0;top:0;width:calc(var(--u)*1920);height:calc(var(--u)*1080);pointer-events:none}
+.uq-panel{position:absolute;pointer-events:auto;padding:calc(var(--u)*28);border-radius:calc(var(--u)*18);border:calc(var(--u)*1) solid var(--glass-edge);
+  background:linear-gradient(160deg,rgba(255,255,255,.07),rgba(255,255,255,.015) 40%),var(--panel);
+  box-shadow:0 calc(var(--u)*24) calc(var(--u)*60) rgba(0,0,0,.38),inset 0 calc(var(--u)*1) 0 rgba(255,255,255,.16)}
+.uq-panel.left{left:calc(var(--u)*64);top:calc(var(--u)*120);width:calc(var(--u)*520);height:calc(var(--u)*896)}
+#uq-clothing-card{position:absolute;right:calc(var(--u)*64);top:calc(var(--u)*120);width:calc(var(--u)*480);pointer-events:auto;grid-template-columns:calc(var(--u)*120) 1fr}
+#uq-clothing-card .uq-hs{width:calc(var(--u)*120);height:calc(var(--u)*120)}
+.uq-panel.mid{left:calc(var(--u)*560);top:calc(var(--u)*120);width:calc(var(--u)*800);padding:calc(var(--u)*32)}
+.uq-card-h{display:flex;flex-direction:column;gap:calc(var(--u)*4);margin-bottom:calc(var(--u)*18);padding-bottom:calc(var(--u)*16);border-bottom:calc(var(--u)*1) solid var(--line)}
+.uq-card-h b{font:700 calc(var(--u)*24) var(--font);letter-spacing:.08em;text-transform:uppercase;color:var(--text)}
+.uq-card-h span{font:500 calc(var(--u)*14) var(--font);color:var(--muted)}
+.uq-row,.uq-set{display:flex;align-items:center;gap:calc(var(--u)*14);height:calc(var(--u)*72);padding:0 calc(var(--u)*18);margin-bottom:calc(var(--u)*8);cursor:pointer;
+  border-radius:calc(var(--u)*12);border:calc(var(--u)*1) solid var(--line);background:rgba(255,255,255,.04);transition:.15s;font-family:var(--font)}
+.uq-row:hover,.uq-set.tg:hover{border-color:var(--uv-300);background:rgba(139,92,246,.14)}
+.uq-row span,.uq-set label{flex:1;font:600 calc(var(--u)*17) var(--font);color:var(--text)}
+.uq-row em{font:500 calc(var(--u)*13) var(--font);font-style:normal;color:var(--dim);letter-spacing:.06em;text-transform:uppercase}
+.uq-row.on em{color:var(--uv-300)}
+.sw{width:calc(var(--u)*46);height:calc(var(--u)*26);border-radius:calc(var(--u)*13);background:rgba(255,255,255,.14);position:relative;flex:none;transition:.15s}
+.sw::after{content:"";position:absolute;left:calc(var(--u)*3);top:calc(var(--u)*3);width:calc(var(--u)*20);height:calc(var(--u)*20);border-radius:50%;background:#fff;transition:.15s}
+.uq-row.on .sw,.uq-set.on .sw{background:var(--uv-500)}
+.uq-row.on .sw::after,.uq-set.on .sw::after{left:calc(var(--u)*23)}
+.uq-set{cursor:default}.uq-set.tg{cursor:pointer}
+.uq-set input[type=range]{flex:0 0 calc(var(--u)*300);accent-color:#8b5cf6;height:calc(var(--u)*6)}
+.uq-set output{width:calc(var(--u)*56);text-align:right;font:600 calc(var(--u)*15) var(--font);color:var(--uv-300)}
+.uq-btns{display:flex;gap:calc(var(--u)*12);justify-content:flex-end;margin-top:calc(var(--u)*18)}
+.uq-btns button,#uq-confirm button{font:700 calc(var(--u)*14) var(--font);letter-spacing:.08em;text-transform:uppercase;color:var(--text);cursor:pointer;
+  height:calc(var(--u)*46);padding:0 calc(var(--u)*24);border-radius:calc(var(--u)*12);border:calc(var(--u)*1) solid var(--glass-edge);background:rgba(255,255,255,.06)}
+.uq-btns .uq-back,#uq-confirm .yes{background:linear-gradient(135deg,var(--uv-500),var(--uv-700));border-color:var(--uv-300)}
+#uq-confirm .yes{background:linear-gradient(135deg,#ff6b7a,#c2364a);border-color:#ff9aa5}
+
+#uq-confirm{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(6,4,16,.55);z-index:50}
+#uq-confirm.on{display:flex}
+#uq-confirm .box{padding:calc(var(--u)*28);width:calc(var(--u)*460);border-radius:calc(var(--u)*18);border:calc(var(--u)*1) solid var(--glass-edge);background:rgb(22,16,46);text-align:center}
+#uq-confirm p{font:600 calc(var(--u)*18) var(--font);color:var(--text);margin:0 0 calc(var(--u)*20)}
+#uq-confirm .box div{display:flex;gap:calc(var(--u)*12);justify-content:center}
+#uq-toast{position:absolute;left:50%;bottom:calc(var(--u)*40);transform:translateX(-50%);padding:calc(var(--u)*12) calc(var(--u)*22);border-radius:calc(var(--u)*12);
+  background:rgba(22,16,46,.95);border:calc(var(--u)*1) solid var(--glass-edge);font:600 calc(var(--u)*15) var(--font);color:var(--text);opacity:0;pointer-events:none;transition:.2s;z-index:60}
+#uq-toast.on{opacity:1}
+
+/* settings toggles */
+.no-weight .peso-texto,.no-weight .peso-sobrando{visibility:hidden}
+.no-rarity .item-player[data-r]{--rc:var(--r-common);--rcr:154,164,178}
+
+/* =====================================================================
+   v2.1.3 layout (inventory mode): grid left, ped in the middle,
+   player card -> filter -> weight -> actions stacked on the right.
+   Chest/trunk mode keeps the classic arrangement.
+   ===================================================================== */
+#menu-principal:not(.chest-mode) #box-menu-item{left:calc(var(--u)*174) !important;right:auto !important}
+#menu-principal:not(.chest-mode) #uq-badge{left:calc(var(--u)*1146);top:calc(var(--u)*120);width:calc(var(--u)*600)}
+#menu-principal:not(.chest-mode) .filter-menu{left:calc(var(--u)*1146) !important;top:calc(var(--u)*392) !important;width:calc(var(--u)*600)}
+#menu-principal:not(.chest-mode) .right-menu{left:calc(var(--u)*1146) !important;top:calc(var(--u)*712) !important;width:calc(var(--u)*600)}
+#menu-principal:not(.chest-mode) .box-peso,#menu-principal:not(.chest-mode) .box-action{width:calc(var(--u)*600)}
+#menu-principal:not(.chest-mode) #barra-pesquisa{right:auto;left:calc(var(--u)*766);width:calc(var(--u)*380)}
+#menu-principal:not(.chest-mode) .esc{left:calc(var(--u)*1200) !important}
+#menu-principal:not(.chest-mode) #detail-placeholder{display:none !important}
+
+/* =====================================================================
+   v2.1.4 rarity glow — rare / epic / legendary
+   ===================================================================== */
+@keyframes uqGlow{0%,100%{opacity:.35}50%{opacity:1}}
+.item-player{overflow:hidden}
+.item-player[data-r="rare"]{border-color:rgba(74,163,255,.55);box-shadow:0 0 calc(var(--u)*10) rgba(74,163,255,.30),inset 0 0 calc(var(--u)*18) rgba(74,163,255,.14);
+  background-color:rgba(74,163,255,.07)}
+.item-player[data-r="epic"]{border-color:rgba(176,132,255,.85);background-color:rgba(176,132,255,.12);box-shadow:0 0 calc(var(--u)*14) rgba(176,132,255,.55),inset 0 0 calc(var(--u)*22) rgba(176,132,255,.28)}
+.item-player[data-r="legendary"]{border-color:rgba(245,193,75,.95);background-color:rgba(245,193,75,.13);box-shadow:0 0 calc(var(--u)*16) rgba(245,193,75,.65),inset 0 0 calc(var(--u)*26) rgba(245,193,75,.34)}
+.item-player[data-r="legendary"]::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:2;
+  background:radial-gradient(ellipse at 50% 0%,rgba(255,226,140,.38),transparent 70%);opacity:.35;will-change:opacity;animation:uqGlow 2.4s ease-in-out infinite}
+.item-player[data-r="epic"]::after{height:calc(var(--u)*4);box-shadow:0 0 calc(var(--u)*10) rgba(176,132,255,.9)}
+.item-player[data-r="legendary"]::after{height:calc(var(--u)*4);box-shadow:0 0 calc(var(--u)*12) rgba(245,193,75,1)}
+.no-rarity .item-player[data-r]{animation:none !important;box-shadow:none !important;background-color:transparent !important}
+.no-rarity .item-player[data-r]::before{display:none}
+.no-rarity .item-player[data-r]::after{box-shadow:none !important}
+
+/* clothing page: keep the middle clear for the live ped (camera) */
+#menu-principal[data-view="clothing"]::before{background:radial-gradient(ellipse at 50% 50%,rgba(0,0,0,0) 20%,rgba(6,4,16,calc(var(--dim-a) + .3)) 100%)}
+.uq-panel.left{width:calc(var(--u)*440)}
+.uq-panel.left .uq-row{height:calc(var(--u)*64)}
+
+
+/* =====================================================================
+   v2.2 clothing icons + wider settings
+   ===================================================================== */
+.uq-panel.left{display:none}
+.uq-cl-col{position:absolute;top:calc(var(--u)*130);left:calc(var(--u)*600);display:flex;flex-direction:column;gap:calc(var(--u)*8);pointer-events:auto}
+.uq-cl-col.right{left:auto;right:auto;left:calc(var(--u)*1230)}
+.uq-ic{width:calc(var(--u)*92);height:calc(var(--u)*92);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:calc(var(--u)*2);cursor:pointer;
+  border-radius:calc(var(--u)*14);border:calc(var(--u)*1) solid var(--glass-edge);background:linear-gradient(160deg,rgba(255,255,255,.07),rgba(255,255,255,.015) 40%),var(--panel);transition:.15s;padding:0}
+.uq-ic img{width:calc(var(--u)*52);height:calc(var(--u)*52);opacity:.7;transition:.15s;pointer-events:none}
+.uq-ic span{font:600 calc(var(--u)*11) var(--font);letter-spacing:.06em;text-transform:uppercase;color:var(--dim);pointer-events:none}
+.uq-ic:hover{border-color:var(--uv-300);background:rgba(139,92,246,.2)}
+.uq-ic.on{border-color:var(--uv-300);background:linear-gradient(160deg,rgba(139,92,246,.38),rgba(139,92,246,.12))}
+.uq-ic.on img{opacity:1;filter:drop-shadow(0 0 calc(var(--u)*6) rgba(196,181,253,.8))}
+.uq-ic.on span{color:var(--text)}
+.uq-cl-reset{position:absolute;left:calc(var(--u)*830);top:calc(var(--u)*990);width:calc(var(--u)*260);height:calc(var(--u)*52);display:flex;align-items:center;justify-content:center;gap:calc(var(--u)*10);
+  pointer-events:auto;cursor:pointer;font:700 calc(var(--u)*14) var(--font);letter-spacing:.08em;text-transform:uppercase;color:var(--text);
+  border-radius:calc(var(--u)*12);border:calc(var(--u)*1) solid var(--glass-edge);background:var(--panel)}
+.uq-cl-reset img{width:calc(var(--u)*24);height:calc(var(--u)*24)}
+.uq-cl-reset:hover{border-color:var(--uv-300);background:rgba(139,92,246,.25)}
+#uq-clothing-card{right:calc(var(--u)*64);width:calc(var(--u)*440)}
+.uq-panel.mid{left:calc(var(--u)*370);width:calc(var(--u)*1180);top:calc(var(--u)*110);padding:calc(var(--u)*28) calc(var(--u)*32)}
+.uq-grid{display:grid;grid-template-columns:1fr 1fr;gap:calc(var(--u)*8) calc(var(--u)*16)}
+.uq-grid .uq-set{height:calc(var(--u)*62);margin:0}
+.uq-set input[type=range]{flex:0 0 calc(var(--u)*200)}
+.no-bg::before{display:none}
+.no-badge #uq-badge{display:none !important}
+.no-info .top-item{display:none}
+.no-names .bottom-item{visibility:hidden}
+.no-weight .item-player .peso{display:none}
+
+
+/* =====================================================================
+   v2.2.1 — clothing lives inside the inventory page (right column),
+   weapon/serial details sit bottom-left, the middle stays empty
+   ===================================================================== */
+.uq-cl-col,#uq-clothing-card{display:none !important}
+/* clothing: keep grid + badge, swap filter/weight/actions for the icon panel */
+#menu-principal[data-view="clothing"] #box-menu-item,
+#menu-principal[data-view="clothing"] #barra-pesquisa{display:block !important}
+#menu-principal[data-view="clothing"]:not(.chest-mode) #uq-badge{display:grid !important}
+.uq-cl-panel{left:calc(var(--u)*1146);top:calc(var(--u)*392);width:calc(var(--u)*600);padding:calc(var(--u)*22) calc(var(--u)*24)}
+.uq-cl-panel .uq-card-h{margin-bottom:calc(var(--u)*14);padding-bottom:calc(var(--u)*12)}
+#uq-cl-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:calc(var(--u)*10)}
+#uq-cl-grid .uq-ic,#uq-cl-grid .uq-cl-reset{width:auto;height:calc(var(--u)*112);position:static}
+#uq-cl-grid .uq-cl-reset{flex-direction:column;gap:calc(var(--u)*2);border:calc(var(--u)*1) dashed var(--glass-edge);background:rgba(255,255,255,.04);font:600 calc(var(--u)*11) var(--font);letter-spacing:.06em}
+#uq-cl-grid .uq-cl-reset img{width:calc(var(--u)*52);height:calc(var(--u)*52);opacity:.8}
+
+/* inventory mode: shorter grid, details bottom-left */
+#menu-principal:not(.chest-mode) #box-menu-item{height:calc(var(--u)*520) !important}
+#menu-principal:not(.chest-mode) .descricao-menu{left:calc(var(--u)*174) !important;top:calc(var(--u)*656) !important;width:calc(var(--u)*600) !important;height:calc(var(--u)*360) !important}
+#menu-principal:not(.chest-mode) .descricao-menu .desc-normal,
+#menu-principal:not(.chest-mode) .descricao-menu .desc-weapon,
+#menu-principal:not(.chest-mode) .descricao-menu .desc-serial{left:calc(var(--u)*28);right:calc(var(--u)*28)}
+
+/* =====================================================================
+   v2.2.2 — storage / trunk / stash mode: same philosophy, middle is empty
+   left  : the second inventory (chest) + item details below it
+   right : filter, your items, pocket weight
+   ===================================================================== */
+#menu-principal.chest-mode .person-menu-chest{height:calc(var(--u)*640) !important}
+#menu-principal.chest-mode #box-menu-item-chest{height:calc(var(--u)*536) !important}
+#menu-principal.chest-mode .filter-menu{left:calc(var(--u)*1146) !important;top:calc(var(--u)*120) !important;width:calc(var(--u)*600)}
+#menu-principal.chest-mode #box-menu-item{left:auto !important;right:calc(var(--u)*64) !important;top:calc(var(--u)*312) !important;width:calc(var(--u)*600);height:calc(var(--u)*480) !important}
+#menu-principal.chest-mode .right-menu{left:calc(var(--u)*1146) !important;top:calc(var(--u)*808) !important;width:calc(var(--u)*600)}
+#menu-principal.chest-mode .box-peso,#menu-principal.chest-mode .box-action{width:calc(var(--u)*600)}
+#menu-principal.chest-mode .descricao-menu{left:calc(var(--u)*174) !important;top:calc(var(--u)*656) !important;width:calc(var(--u)*600) !important;height:calc(var(--u)*360) !important}
+#menu-principal.chest-mode .descricao-menu :is(.desc-normal,.desc-weapon,.desc-serial){left:calc(var(--u)*28);right:calc(var(--u)*28)}
+#menu-principal.chest-mode #detail-placeholder{display:none !important}
+
+/* =====================================================================
+   v2.3.0 — storage mode mirrored (your items LEFT, second inventory RIGHT)
+   + compact "Hex style" detail strip (icon, name, serial, ammo, weight)
+   ===================================================================== */
+#menu-principal.chest-mode .person-menu{left:calc(var(--u)*1146) !important}
+#menu-principal.chest-mode .filter-menu{left:calc(var(--u)*174) !important}
+#menu-principal.chest-mode #box-menu-item{right:auto !important;left:calc(var(--u)*174) !important}
+#menu-principal.chest-mode .right-menu{left:calc(var(--u)*174) !important}
+#menu-principal.chest-mode .descricao-menu{left:calc(var(--u)*1146) !important}
+.chest-title-menu .name-car{left:calc(var(--u)*1082) !important;right:auto !important}
+.chest-title-menu #barra-pesquisa-chest{left:calc(var(--u)*392) !important;width:calc(var(--u)*380) !important}
+.chest-title-menu .esc{left:calc(var(--u)*800) !important}
+
+/* compact detail strip */
+#menu-principal:not([data-x]) .descricao-menu{height:calc(var(--u)*300) !important;top:calc(var(--u)*716) !important}
+#menu-principal:not(.chest-mode) #box-menu-item{height:calc(var(--u)*580) !important}
+#menu-principal.chest-mode .person-menu-chest{height:calc(var(--u)*580) !important}
+#menu-principal.chest-mode #box-menu-item-chest{height:calc(var(--u)*476) !important}
+.descricao-menu .bloco-image{height:calc(var(--u)*92);padding-left:calc(var(--u)*112);background-position:calc(var(--u)*18) center;background-size:calc(var(--u)*60) calc(var(--u)*60)}
+.descricao-menu .bloco-image::before{left:calc(var(--u)*12);top:calc(var(--u)*12);width:calc(var(--u)*68);height:calc(var(--u)*68)}
+.descricao-menu .item-name-desc{font-size:calc(var(--u)*20)}
+.descricao-menu :is(.desc-normal,.desc-weapon,.desc-serial){top:calc(var(--u)*108) !important}
+.descricao-menu .serial-card{padding:calc(var(--u)*12) calc(var(--u)*16);margin-bottom:calc(var(--u)*8)}
+.descricao-menu .serial-value{font-size:calc(var(--u)*20)}
+.descricao-menu .serial-source{margin-top:calc(var(--u)*4)}
+.descricao-menu .serial-meta-box{padding:calc(var(--u)*8) calc(var(--u)*14)}
+
+/* =====================================================================
+   v2.3.1 — smaller, lower details strip (weapons only)
+   ===================================================================== */
+#menu-principal:not([data-x]) .descricao-menu{width:calc(var(--u)*440) !important;height:calc(var(--u)*200) !important;top:calc(var(--u)*816) !important;left:calc(var(--u)*174) !important}
+#menu-principal.chest-mode .descricao-menu{left:calc(var(--u)*740) !important}
+#menu-principal:not(.chest-mode) #box-menu-item{height:calc(var(--u)*680) !important}
+#menu-principal.chest-mode .person-menu-chest{height:calc(var(--u)*680) !important}
+#menu-principal.chest-mode #box-menu-item-chest{height:calc(var(--u)*576) !important}
+.descricao-menu .bloco-image{height:calc(var(--u)*64);padding-left:calc(var(--u)*84);background-position:calc(var(--u)*12) center;background-size:calc(var(--u)*44) calc(var(--u)*44)}
+.descricao-menu .bloco-image::before{left:calc(var(--u)*8);top:calc(var(--u)*8);width:calc(var(--u)*48);height:calc(var(--u)*48)}
+.descricao-menu .item-name-desc{font-size:calc(var(--u)*16)}
+.descricao-menu :is(.desc-normal,.desc-weapon,.desc-serial){top:calc(var(--u)*76) !important;left:calc(var(--u)*14) !important;right:calc(var(--u)*14) !important}
+.descricao-menu .serial-card{padding:calc(var(--u)*8) calc(var(--u)*12);margin-bottom:calc(var(--u)*6)}
+.descricao-menu .serial-label{font-size:calc(var(--u)*10);margin-bottom:calc(var(--u)*4)}
+.descricao-menu .serial-value{font-size:calc(var(--u)*16)}
+.descricao-menu .serial-tag{font-size:calc(var(--u)*10);padding:calc(var(--u)*2) calc(var(--u)*7)}
+.descricao-menu .serial-source{display:none}
+.descricao-menu .serial-meta{gap:calc(var(--u)*8)}
+.descricao-menu .serial-meta-box{padding:calc(var(--u)*5) calc(var(--u)*10)}
+.descricao-menu .serial-meta-box span{font-size:calc(var(--u)*10);margin-bottom:calc(var(--u)*2)}
+.descricao-menu .serial-meta-box b{font-size:calc(var(--u)*13)}
+
+/* v2.3.2: details strip bottom-center, hidden outside the plain inventory view */
+#menu-principal .descricao-menu{left:calc(var(--u)*740) !important}
+#menu-principal:not(.chest-mode) .descricao-menu{left:calc(var(--u)*740) !important}
+#menu-principal[data-view="clothing"] .descricao-menu,#menu-principal[data-view="settings"] .descricao-menu{display:none !important}
+
+/* =====================================================================
+   v2.3.2 — panels pulled toward the middle, details strip bottom-center
+   (left column x=190..790, right column x=1130..1730, ped in between)
+   ===================================================================== */
+#menu-principal:not(.chest-mode) #box-menu-item{left:calc(var(--u)*190) !important}
+#menu-principal:not(.chest-mode) #uq-badge{left:calc(var(--u)*1130)}
+#menu-principal:not(.chest-mode) .filter-menu,#menu-principal:not(.chest-mode) .right-menu{left:calc(var(--u)*1130) !important}
+.uq-cl-panel{left:calc(var(--u)*1130) !important}
+#menu-principal.chest-mode .person-menu{left:calc(var(--u)*1130) !important}
+#menu-principal.chest-mode .filter-menu,#menu-principal.chest-mode .right-menu,#menu-principal.chest-mode #box-menu-item{left:calc(var(--u)*190) !important}
+.chest-title-menu .name-car{left:calc(var(--u)*1066) !important}
+.chest-title-menu .esc{left:calc(var(--u)*800) !important}
+#menu-principal:not([data-x]) .descricao-menu,#menu-principal.chest-mode .descricao-menu{left:calc(var(--u)*740) !important;top:calc(var(--u)*820) !important}
+#menu-principal:not(.chest-mode) #box-menu-item{height:calc(var(--u)*680) !important}
+#menu-principal[data-view="clothing"] .descricao-menu,#menu-principal[data-view="settings"] .descricao-menu{display:none !important}
+#menu-principal:not([data-x]) .descricao-menu,#menu-principal.chest-mode .descricao-menu{left:calc(var(--u)*806) !important;width:calc(var(--u)*308) !important;top:calc(var(--u)*816) !important}
+.descricao-menu .serial-value{font-size:calc(var(--u)*14)}
+.descricao-menu .serial-meta-box b{font-size:calc(var(--u)*12)}
+
+
+/* =====================================================================
+   v2.4.0
+   ===================================================================== */
+/* numbered slots (1..N) */
+#box-menu-item{counter-reset:uqslot}
+#box-menu-item .slot{counter-increment:uqslot;position:relative}
+#box-menu-item .slot::before{content:counter(uqslot);position:absolute;left:50%;top:calc(var(--u)*5);transform:translateX(-50%);
+  font:700 calc(var(--u)*10) var(--font);color:rgba(255,255,255,.28);z-index:6;pointer-events:none}
+#box-menu-item .slot:has(.item-player)::before{color:rgba(196,181,253,.55)}
+
+/* inventory: tall grid on the left, right column = badge, filter, pocket, actions, details */
+#menu-principal:not(.chest-mode) #box-menu-item{height:calc(var(--u)*880) !important}
+#menu-principal:not(.chest-mode) .filter-menu{top:calc(var(--u)*380) !important}
+#menu-principal:not(.chest-mode) .right-menu{top:calc(var(--u)*570) !important}
+#menu-principal:not(.chest-mode):not([data-x]) .descricao-menu{left:calc(var(--u)*1130) !important;width:calc(var(--u)*600) !important;top:calc(var(--u)*890) !important;height:calc(var(--u)*122) !important}
+#menu-principal:not(.chest-mode) .descricao-menu .bloco-image{height:calc(var(--u)*50)}
+#menu-principal:not(.chest-mode) .descricao-menu .bloco-image::before{width:calc(var(--u)*34);height:calc(var(--u)*34);top:calc(var(--u)*8);left:calc(var(--u)*8)}
+#menu-principal:not(.chest-mode) .descricao-menu .bloco-image{background-size:calc(var(--u)*30) calc(var(--u)*30);background-position:calc(var(--u)*10) center;padding-left:calc(var(--u)*56)}
+#menu-principal:not(.chest-mode) .descricao-menu :is(.desc-normal,.desc-weapon,.desc-serial){top:calc(var(--u)*58) !important}
+#menu-principal:not(.chest-mode) .descricao-menu .serial-card{display:flex;align-items:center;justify-content:space-between;padding:calc(var(--u)*6) calc(var(--u)*12);margin:0}
+#menu-principal:not(.chest-mode) .descricao-menu .serial-label{margin:0}
+#menu-principal:not(.chest-mode) .descricao-menu .serial-meta{display:none}
+
+/* storage: tall second inventory */
+#menu-principal.chest-mode .person-menu-chest{height:calc(var(--u)*860) !important}
+#menu-principal.chest-mode #box-menu-item-chest{height:calc(var(--u)*756) !important}
+
+/* clothing: no camera, the grid steps aside so your ped is visible */
+#menu-principal[data-view="clothing"] #box-menu-item,#menu-principal[data-view="clothing"] #barra-pesquisa{display:none !important}
+#box-menu-item .slot::before{left:calc(var(--u)*8);top:50%;transform:translateY(-50%)}
+
+
+/* v2.5.0 performance: isolate slots, no universal selectors, no infinite repaint */
+
+
+/* v2.5.0 clothing tab */
+#uq-cl-grid{display:block}
+.uq-cl-sum{display:flex;align-items:center;gap:calc(var(--u)*18);margin-bottom:calc(var(--u)*14)}
+.uq-cl-sum b{font:800 calc(var(--u)*34) var(--font);color:var(--text)}
+.uq-cl-sum i{font:600 calc(var(--u)*13) var(--font);letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-left:calc(var(--u)*8);font-style:normal}
+.uq-cl-sum .bar{flex:1;height:calc(var(--u)*8);border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden}
+.uq-cl-sum .bar u{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--uv-400),#e9b5ff);box-shadow:0 0 calc(var(--u)*10) rgba(176,132,255,.7);transition:width .25s}
+.uq-cl-g{margin-bottom:calc(var(--u)*12)}
+.uq-cl-g em{display:block;font:700 calc(var(--u)*12) var(--font);letter-spacing:.16em;text-transform:uppercase;color:var(--uv-300);margin:0 0 calc(var(--u)*6) calc(var(--u)*2);font-style:normal}
+.uq-cl-g .row{display:grid;grid-template-columns:repeat(var(--n,4),1fr);gap:calc(var(--u)*10)}
+#uq-cl-grid .uq-ic{position:relative;height:calc(var(--u)*94);width:auto}
+#uq-cl-grid .uq-ic img{width:calc(var(--u)*44);height:calc(var(--u)*44)}
+#uq-cl-grid .uq-ic s{position:absolute;top:calc(var(--u)*8);right:calc(var(--u)*8);width:calc(var(--u)*8);height:calc(var(--u)*8);border-radius:50%;background:rgba(255,255,255,.18)}
+#uq-cl-grid .uq-ic.on s{background:#7dffb2;box-shadow:0 0 calc(var(--u)*8) #7dffb2}
+#uq-cl-grid .uq-ic:active{transform:scale(.96)}
+#uq-cl-grid .uq-cl-reset{width:100%;height:calc(var(--u)*50);flex-direction:row;margin-top:calc(var(--u)*4)}
+#uq-cl-grid .uq-cl-reset img{width:calc(var(--u)*22);height:calc(var(--u)*22)}
+.uq-cl-panel{top:calc(var(--u)*392) !important}
+.uq-cl-g .row[style*='--n:6'] .uq-ic img{width:calc(var(--u)*36);height:calc(var(--u)*36)}
+.uq-cl-g .row[style*='--n:6'] .uq-ic span{font-size:calc(var(--u)*10);letter-spacing:.02em}

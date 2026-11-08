@@ -32,6 +32,15 @@ local function HasJobPlateAccess(xPlayer, plate)
     local jobName = xPlayer.job and xPlayer.job.name
     if not jobName then return false end
 
+    -- Government can lock / unlock / drive the vehicles of EVERY organisation (DOJ, Law, Organ Services)
+    if jobName == 'government' then
+        local up = string.upper(plate or '')
+        for _, prefix in pairs(JOB_PLATE_ACCESS) do
+            if string.upper(string.sub(up, 1, #prefix)) == prefix then return true end
+        end
+        return false
+    end
+
     local requiredPrefix = JOB_PLATE_ACCESS[jobName]
     if not requiredPrefix then return false end
 

@@ -28,7 +28,7 @@
 
 local GiveCooldownMs = 700   -- حداقل فاصله بین دو تا "Give" پشت‌سرهم
 local DropCooldownMs = 700   -- حداقل فاصله بین دو تا "Drop" پشت‌سرهم
-local MaxDropsPer2Min = 3    -- همون محدودیتی که کلاینت (AlreadyDroped) هم نشون میده، ولی اینجا واقعیه
+local MaxDropsPer2Min = (HudConfig and HudConfig.MaxDrops) or 15    -- همون محدودیتی که کلاینت (AlreadyDroped) هم نشون میده، ولی اینجا واقعیه
 
 local lastGiveAt = {}
 local dropLog    = {} -- src -> { timestamps... } تو ۲ دقیقه‌ی اخیر
@@ -54,12 +54,72 @@ AddEventHandler('Unique_inventory:giveItem', function(target, itemType, itemName
     if last and (now() - last) < GiveCooldownMs then
         return -- silently dropped: client is spamming faster than the UI allows
     end
+    local tid = tonumber(target)
+    if tid and tid ~= src and GetPlayerName(tid) then
+        local ok, allow = pcall(function() return Player(tid).state.uq_allowGive end)
+        if ok and allow == false then
+            TriggerClientEvent('esx:showNotification', src, 'This player does not accept items')
+            return
+        end
+    end
     lastGiveAt[src] = now()
     TriggerEvent('esx:giveInventoryItem', target, itemType, itemName, itemCount)
 end)
 
+-- Drops an item on the ground without depending on `source` surviving a
+-- local TriggerEvent (that is what produced the nil `xPlayer` errors).
+local DropESX = nil
+TriggerEvent('esx:getSharedObject', function(obj) DropESX = obj end)
+
+function UQ_DropItem(src, itemType, itemName, itemCount, ammo)
+    if not DropESX or not DropESX.CreatePickup then return false end
+    local xPlayer = DropESX.GetPlayerFromId(src)
+    if not xPlayer then return false end
+    itemCount = math.floor(tonumber(itemCount) or 0)
+    if itemCount < 1 then return true end
+    local ok, res = pcall(function()
+        if itemType == 'item_standard' then
+            local name = string.lower(itemName)
+            local xItem = xPlayer.getInventoryItem(name)
+            if not xItem or xItem.count < itemCount then return false end
+            xPlayer.removeInventoryItem(name, itemCount)
+            DropESX.CreatePickup('item_standard', name, itemCount, (xItem.label or name) .. ' [' .. itemCount .. ']', src)
+            return true
+        elseif itemType == 'item_money' then
+            if xPlayer.getMoney() < itemCount then return false end
+            xPlayer.removeMoney(itemCount)
+            DropESX.CreatePickup('item_money', 'money', itemCount, '~g~$' .. itemCount, src)
+            return true
+        elseif itemType == 'item_account' or itemType == 'black_money' then
+            local acc = xPlayer.getAccount('black_money')
+            if not acc or acc.money < itemCount then return false end
+            xPlayer.removeAccountMoney('black_money', itemCount)
+            DropESX.CreatePickup('item_account', 'black_money', itemCount, '~r~$' .. itemCount .. ' dirty', src)
+            return true
+        elseif itemType == 'item_weapon' then
+            local w = string.upper(itemName)
+            -- xPlayer.getWeapon throws "invalid vector field: ammo" on this server,
+            -- so never call it. hasWeapon is pcall'd for the same reason.
+            local okH, has = pcall(xPlayer.hasWeapon, w)
+            if okH and has == false then return false end
+            ammo = math.max(0, math.min(math.floor(tonumber(ammo) or 0), 9999))
+            local okR, errR = pcall(xPlayer.removeWeapon, w)
+            if not okR then print(('[Unique_inventory] removeWeapon %s: %s'):format(w, tostring(errR))) end
+            local label = (GetCachedWeaponLabel and GetCachedWeaponLabel(w)) or w
+            DropESX.CreatePickup('item_weapon', w, ammo, label .. ' [' .. ammo .. ']', src)
+            return true
+        end
+        return false
+    end)
+    if not ok then
+        print(('[Unique_inventory] drop failed for %s: %s'):format(tostring(src), tostring(res)))
+        return false
+    end
+    return res == true
+end
+
 RegisterServerEvent('Unique_inventory:dropItem')
-AddEventHandler('Unique_inventory:dropItem', function(itemType, itemName, itemCount, serial)
+AddEventHandler('Unique_inventory:dropItem', function(itemType, itemName, itemCount, serial, ammo)
     local src = source
     local list = pruneDropLog(src)
 
@@ -73,7 +133,16 @@ AddEventHandler('Unique_inventory:dropItem', function(itemType, itemName, itemCo
 
     list[#list + 1] = now()
     dropLog[src] = list
-    TriggerEvent('esx:removeInventoryItem', itemType, itemName, itemCount, serial)
+    itemCount = tonumber(itemCount)
+    if type(itemName) ~= 'string' or not itemCount or itemCount < 1 then return end
+    -- essentialmode's handler throws "attempt to index a nil value (xPlayer)"
+    -- when the player is not loaded yet / already dropped; never let that
+    -- bubble up as a red console error.
+    local done = UQ_DropItem(src, itemType, itemName, itemCount, ammo)
+    if not done then
+        -- no fallback to essentialmode's handler: it throws on nil xPlayer / virtual items (keys)
+        TriggerClientEvent('esx:showNotification', src, 'This item cannot be dropped')
+    end
 end)
 
 AddEventHandler('playerDropped', function()

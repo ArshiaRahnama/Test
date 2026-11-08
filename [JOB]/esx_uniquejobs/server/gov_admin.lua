@@ -62,6 +62,34 @@ UJLog('SERVER', ('gov_admin:renameGrade src=%s job=%s grade=%s label=%s'):format
     end)
 end)
 
+-- the organisation a Government member opened from F6 -> its armory / storage / vehicles
+local GovActive = {}
+local function validOrg(job)
+    for _, d in ipairs(Departments or {}) do
+        if d.id ~= 'gov' then for _, j in ipairs(d.jobs) do if j == job then return true end end end
+    end
+    return false
+end
+RegisterNetEvent('gov_admin:setActiveOrg')
+AddEventHandler('gov_admin:setActiveOrg', function(org)
+    local src = source
+    local x = ESX.GetPlayerFromId(src)
+    if not x or not x.job or x.job.name ~= 'government' then return end
+    GovActive[src] = validOrg(org) and org or nil
+end)
+AddEventHandler('playerDropped', function() GovActive[source] = nil end)
+-- Government acts with the TOP rank of the organisation it opened (used by Unique_inventory)
+exports('GovEffectiveJob', function(src)
+    local org = GovActive[src]
+    if not org then return nil end
+    local g = 0
+    local jd = ESX.Jobs and ESX.Jobs[org]
+    if jd and jd.grades then
+        for k in pairs(jd.grades) do g = math.max(g, tonumber(k) or 0) end
+    end
+    return org, g
+end)
+
 local function isGovAdmin(src)
     return canAdmin(ESX.GetPlayerFromId(src))
 end

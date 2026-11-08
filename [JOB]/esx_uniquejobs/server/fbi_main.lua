@@ -458,7 +458,7 @@ ESX.RegisterServerCallback('esx_fbi_job:buy', function(source, cb, amount)
 
 
 	TriggerEvent('esx_addonaccount:getSharedAccount', 'society_doj', function(account)
-		if account.money >= amount then
+		if account and account.money >= amount then
 			account.removeMoney(amount)
 
 			local xPlayer = ESX.GetPlayerFromId(source)

@@ -1,6 +1,38 @@
 
+function InvBlurIn()
+    if HudConfig and HudConfig.ScreenBlur then TriggerScreenblurFadeIn(1000) end
+end
+
+-- ---------------------------------------------------------------- headshot
+-- Ped headshot (transparent) of the player's own character, shown in the UI
+-- through https://nui-img/<txd>/<txd>. Regenerated every time the inventory opens.
+local hsHandle, hsTxd = nil, nil
+local hsLast = 0
+function UQ_RefreshHeadshot(force)
+    -- a fresh headshot costs a texture upload; reuse the last one for 45s
+    if not force and hsTxd and (GetGameTimer() - hsLast) < 45000 then return end
+    hsLast = GetGameTimer()
+    CreateThread(function()
+        local h = RegisterPedheadshotTransparent(PlayerPedId())
+        if not h or h == 0 then return end
+        local timeout = GetGameTimer() + 4000
+        while not IsPedheadshotReady(h) and GetGameTimer() < timeout do Wait(50) end
+        if IsPedheadshotReady(h) and IsPedheadshotValid(h) then
+            local old = hsHandle
+            hsHandle, hsTxd = h, GetPedheadshotTxdString(h)
+            if old then UnregisterPedheadshot(old) end
+        else
+            UnregisterPedheadshot(h)
+        end
+    end)
+end
+AddEventHandler('onResourceStop', function(res)
+    if res == GetCurrentResourceName() and hsHandle then UnregisterPedheadshot(hsHandle) end
+end)
+
 _SendNUIMessage = SendNUIMessage
 SendNUIMessage = function(data)
+    if data.action == "openInventory" then UQ_RefreshHeadshot() end
     if data.action == "openInventory" or data.action == "updateInventory" then
         TriggerEvent("handappstate", false)
         Citizen.SetTimeout(2000, function()
@@ -103,7 +135,7 @@ AddEventHandler('esx_inventoryhud:OpenHouseInventory', function(ID)
     getEvent = "esx_inventoryhud:removeFromHouse"
     putEvent = "esx_property:putItem"
     SetNuiFocus(true, true)
-    TriggerScreenblurFadeIn(1000)
+    InvBlurIn()
     SetCursorLocation(0.5, 0.5)
     SendNUIMessage({
         action = "openInventory",
@@ -123,7 +155,7 @@ AddEventHandler('esx_inventoryhud:OpenJobInventory1', function(ID)
     getEvent = "esx_inventoryhud:removeFromHouse"
     putEvent = "esx_property:putItem"
     SetNuiFocus(true, true)
-    TriggerScreenblurFadeIn(1000)
+    InvBlurIn()
     SetCursorLocation(0.5, 0.5)
     SendNUIMessage({
         action = "openInventory",
@@ -140,7 +172,7 @@ AddEventHandler('esx_inventoryhud:OpenJobInventory2', function(ID)
     getEvent = "esx_inventoryhud:removeFromHouse"
     putEvent = "esx_property:putItem"
     SetNuiFocus(true, true)
-    TriggerScreenblurFadeIn(1000)
+    InvBlurIn()
     SetCursorLocation(0.5, 0.5)
     SendNUIMessage({
         action = "openInventory",
@@ -159,7 +191,7 @@ AddEventHandler('esx_inventoryhud:OpenGangInventory', function(sec)
     getEvent = "esx_inventoryhud:removeFromGang"
     putEvent = "gangs:addToInventory"
     SetNuiFocus(true, true)
-    TriggerScreenblurFadeIn(1000)
+    InvBlurIn()
     SetCursorLocation(0.5, 0.5)
     SendNUIMessage({
         action = "openInventory",
@@ -180,7 +212,7 @@ AddEventHandler('esx_inventoryhud:AdminOpenPropertyInventory', function(items, m
     getEvent = "esx_inventoryhud:removeFromHouse"
     putEvent = "esx_property:putItem"
     SetNuiFocus(true, true)
-    TriggerScreenblurFadeIn(1000)
+    InvBlurIn()
     SetCursorLocation(0.5, 0.5)
     SendNUIMessage({
         action = "openInventory",
@@ -213,7 +245,7 @@ AddEventHandler("openInventoryHud", function()
 
     secondInventory = nil
     SetNuiFocus(true, true)
-    TriggerScreenblurFadeIn(1000)
+    InvBlurIn()
     SetCursorLocation(0.5, 0.5)
     SendNUIMessage({
         action = "openInventory",
@@ -413,7 +445,7 @@ function openmenuvehicle(entity)
                 trunk = trunk
             }
             SetNuiFocus(true, true)
-            TriggerScreenblurFadeIn(1000)
+            InvBlurIn()
             SetCursorLocation(0.5, 0.5)
             SendNUIMessage({
                 action = "openInventory",
@@ -461,7 +493,7 @@ function OpenGlovebox(vehicle, force)
     }
     secondInventory = "trunckChest"
     SetNuiFocus(true, true)
-    TriggerScreenblurFadeIn(1000)
+    InvBlurIn()
     SetCursorLocation(0.5, 0.5)
     SendNUIMessage({
         action = "openInventory",
@@ -609,14 +641,24 @@ end)
 
 RegisterNUICallback("requestItens", function(data, cb)
     ESX.TriggerServerCallback("esx_inventoryhud:getPlayerInventory2323", function(data)
-       
+        -- grow the grid so EVERY entry is shown (was fixed at 30 -> extra items were hidden);
+        -- rows of 5, at least 30, and the grid scrolls.
+        local n = 0
+        for k, _ in pairs(data.inventory or {}) do
+            if type(k) == 'number' and k + 1 > n then n = k + 1 end
+        end
+        n = math.max(n, #(data.inventory or {}))
+        -- always at least 45 slots; once the bag is nearly full, add another row of 5
+        local slots = math.max(45, math.ceil((n + 5) / 5) * 5)
+        if slots > 200 then slots = 200 end
+
         cb({
             inventario = data.inventory,
             atualPeso = data.atualPeso or 0,
             maximoPeso = data.maximoPeso or 90,
-            slot = 30,
+            slot = slots,
             un = 30,
-            slot2 = 30,
+            slot2 = slots,
             slotsComrpavel = true,
             slotPrice = "500,000"
         })
@@ -630,7 +672,7 @@ AddEventHandler("esx_inventoryhud:CargoInventory", function()
     getEvent = "esx_inventoryhud:removeFromCargo"
     putEvent = "esx_inventoryhud:PutInCargo"
     SetNuiFocus(true, true)
-    TriggerScreenblurFadeIn(1000)
+    InvBlurIn()
     SetCursorLocation(0.5, 0.5)
     SendNUIMessage({
         action = "openInventory",
@@ -985,11 +1027,11 @@ RegisterNUICallback("enviarItem", function(data)
       
         if data.item:find("black_money") then 
 
-            if PlayerData.black_money >= data.amount then
+            if (not PlayerData) or (not PlayerData.black_money) or PlayerData.black_money >= data.amount then
                 type = "black_money"
             end
         elseif data.item:find("cash") then
-            if MyData.money >= data.amount then 
+            if (not MyData) or (not MyData.money) or MyData.money >= data.amount then 
                 type = "item_money"
             end
         elseif data.item:find("WEAPON") then
@@ -1017,11 +1059,11 @@ RegisterNUICallback("droparItem", function(data)
       
         if data.item:find("black_money") then 
 
-            if PlayerData.black_money >= data.amount then
+            if (not PlayerData) or (not PlayerData.black_money) or PlayerData.black_money >= data.amount then
                 type = "black_money"
             end
         elseif data.item:find("cash") then
-            if MyData.money >= data.amount then 
+            if (not MyData) or (not MyData.money) or MyData.money >= data.amount then 
                 type = "item_money"
             end
         elseif data.item:find("WEAPON") then
@@ -1031,7 +1073,7 @@ RegisterNUICallback("droparItem", function(data)
         end
         if type == nil then return end
         
-        if AlreadyDroped >= 3 then
+        if AlreadyDroped >= ((HudConfig and HudConfig.MaxDrops) or 15) then
         -- FIX: pNotify isn't installed anywhere on this server - exports.pNotify:...
         -- would hard-error. Using the real ESX.ShowNotification instead.
         ESX.ShowNotification('You can drop a maximum of 3 items per 2 minutes, please wait')
@@ -1043,7 +1085,12 @@ RegisterNUICallback("droparItem", function(data)
                 -- AlreadyDroped below is a client-only counter and bypassable with a
                 -- mod; server/spam_guard.lua now enforces the same 3-per-2-minutes
                 -- limit for real, server-side.
-                TriggerServerEvent("Unique_inventory:dropItem", type, data.item, data.amount, data.serial)
+                local ammo = 0
+                if type == "item_weapon" then
+                    local okA, a = pcall(GetAmmoInPedWeapon, PlayerPedId(), GetHashKey(data.item))
+                    if okA then ammo = a or 0 end
+                end
+                TriggerServerEvent("Unique_inventory:dropItem", type, data.item, data.amount, data.serial, ammo)
                 dPN.closeInventoryPlayer()
                 Wait(100)
                 TriggerEvent('openInventoryHud')
@@ -1060,6 +1107,9 @@ RegisterNUICallback("moverItem", function(data)
         if data.item:find("money") then return end
         if data.newSlot == 5 or data.newSlot == 6 or data.oldSlot == 5 or data.oldSlot== 6 then return end
         --if data.item:find("weapon") then return end
+        -- v2.3: slot layout is personal and kept by the UI (nui/skin.js);
+        -- set HudConfig.ServerSlots = true to also forward moves to the server.
+        if not (HudConfig and HudConfig.ServerSlots) then return end
         if SpamCheck() then return end
         TriggerServerEvent("esx_inventoryhud:moveItem", data.item, data.oldSlot, data.newSlot, data.amount)
         AS.count = AS.count + 1
@@ -1238,3 +1288,161 @@ function GetGangCoords()
 	end
 	return vector3(coord.x, coord.y, coord.z)
 end
+
+-- ---------------------------------------------------------------- v2.1 NUI callbacks
+RegisterNUICallback("iconMissing", function(data, cb)
+    if cb then cb('ok') end
+    if data and data.names then
+        print('^3[Unique_inventory] items without an icon in html/img/items/: ^7' .. table.concat(data.names, ', '))
+    end
+end)
+
+RegisterNUICallback("getHeadshot", function(data, cb)
+    cb({ txd = hsTxd })
+end)
+
+RegisterNUICallback("deletarItem", function(data, cb)
+    if cb then cb('ok') end
+    if not data or not data.item then return end
+    local amount = tonumber(data.amount) or 1
+    if amount < 1 then amount = 1 end
+    TriggerServerEvent('Unique_inventory:deleteItem', data.type, data.item, amount, data.label)
+    -- refresh comes from the server (RefreshCurrentInventory) - a second refresh here made the grid flash
+end)
+
+-- Clothing: props (hat/glasses/ears/watch/bracelet) + components (mask/bag/chain)
+local MALE_MODEL = GetHashKey('mp_m_freemode_01')
+-- def = drawable that means "nothing worn" (m = male / f = female freemode)
+local ClothSlots = {
+    hat      = { prop = 0 }, glasses = { prop = 1 }, ears = { prop = 2 },
+    watch    = { prop = 6 }, bracelet = { prop = 7 },
+    mask     = { comp = 1,  def = 0 },  hair  = { comp = 2,  def = 0 },
+    arms     = { comp = 3,  def = 15 }, pants = { comp = 4,  def = { m = 21, f = 15 } },
+    bag      = { comp = 5,  def = 0 },  shoes = { comp = 6,  def = { m = 34, f = 35 } },
+    chain    = { comp = 7,  def = 0 },  tshirt = { comp = 8, def = 15 },
+    vest     = { comp = 9,  def = 0 },  decals = { comp = 10, def = 0 },
+    torso    = { comp = 11, def = 15 },
+}
+local ClothSaved = {}
+
+local function ClothDefault(s, ped)
+    if type(s.def) == 'table' then
+        return (GetEntityModel(ped) == MALE_MODEL) and s.def.m or s.def.f
+    end
+    return s.def or 0
+end
+
+local function ClothWorn(key)
+    local ped, s = PlayerPedId(), ClothSlots[key]
+    if s.prop then return GetPedPropIndex(ped, s.prop) ~= -1 end
+    return GetPedDrawableVariation(ped, s.comp) ~= ClothDefault(s, ped)
+end
+
+local function ClothStateAll()
+    local out = {}
+    for k in pairs(ClothSlots) do out[k] = ClothWorn(k) end
+    return out
+end
+
+RegisterNUICallback("getClothingState", function(data, cb)
+    cb(ClothStateAll())
+end)
+
+local function ClothTakeOff(key)
+    local ped, s = PlayerPedId(), ClothSlots[key]
+    if s.prop then
+        ClothSaved[key] = { GetPedPropIndex(ped, s.prop), GetPedPropTextureIndex(ped, s.prop) }
+        ClearPedProp(ped, s.prop)
+    else
+        ClothSaved[key] = { GetPedDrawableVariation(ped, s.comp), GetPedTextureVariation(ped, s.comp) }
+        SetPedComponentVariation(ped, s.comp, ClothDefault(s, ped), 0, 0)
+    end
+end
+
+local function ClothPutOn(key)
+    local ped, s = PlayerPedId(), ClothSlots[key]
+    local sv = ClothSaved[key]
+    if not sv then return false end
+    if s.prop then SetPedPropIndex(ped, s.prop, sv[1], sv[2], true)
+    else SetPedComponentVariation(ped, s.comp, sv[1], sv[2], 0) end
+    ClothSaved[key] = nil
+    return true
+end
+
+RegisterNUICallback("toggleClothing", function(data, cb)
+    local key = data and data.slot
+    if not key or not ClothSlots[key] then cb({ ok = false }) return end
+    if ClothWorn(key) then
+        ClothTakeOff(key)
+    elseif not ClothPutOn(key) then
+        TriggerEvent('esx:showNotification', 'Nothing to put on')
+    end
+    local out = ClothStateAll(); out.ok = true
+    cb(out)
+end)
+
+RegisterNUICallback("resetClothing", function(data, cb)
+    for key in pairs(ClothSaved) do ClothPutOn(key) end
+    local out = ClothStateAll(); out.ok = true
+    cb(out)
+end)
+
+-- Personal preferences from the Settings page
+local uqBlurOn = false
+RegisterNUICallback("setPrefs", function(data, cb)
+    if cb then cb('ok') end
+    if not data then return end
+    if data.allowGive ~= nil then
+        LocalPlayer.state:set('uq_allowGive', data.allowGive and true or false, true)
+    end
+    if data.blur ~= nil then
+        if data.blur and not uqBlurOn then
+            uqBlurOn = true; TriggerScreenblurFadeIn(400)
+        elseif not data.blur and uqBlurOn then
+            uqBlurOn = false; TriggerScreenblurFadeOut(400)
+        end
+    end
+end)
+CreateThread(function()
+    while true do
+        Wait(500)
+        if uqBlurOn and not IsNuiFocused() then
+            uqBlurOn = false; TriggerScreenblurFadeOut(400)
+        end
+    end
+end)
+
+-- Clothing page camera: shows the ped front-and-center while the page is open
+local clothCam = nil
+local function ClothCamOff()
+    if not clothCam then return end
+    RenderScriptCams(false, true, 400, true, false)
+    DestroyCam(clothCam, false)
+    clothCam = nil
+end
+RegisterNUICallback("clothingCam", function(data, cb)
+    if cb then cb('ok') end
+    if data and data.on then
+        if clothCam then return end
+        local ped = PlayerPedId()
+        local pos = GetOffsetFromEntityInWorldCoords(ped, 0.0, 2.1, 0.45)
+        local look = GetOffsetFromEntityInWorldCoords(ped, 0.0, 0.0, 0.05)
+        clothCam = CreateCam('DEFAULT_SCRIPTED_CAMERA', true)
+        SetCamCoord(clothCam, pos.x, pos.y, pos.z)
+        PointCamAtCoord(clothCam, look.x, look.y, look.z)
+        SetCamFov(clothCam, 42.0)
+        SetCamActive(clothCam, true)
+        RenderScriptCams(true, true, 500, true, false)
+    else
+        ClothCamOff()
+    end
+end)
+CreateThread(function()
+    while true do
+        Wait(500)
+        if clothCam and not IsNuiFocused() then ClothCamOff() end
+    end
+end)
+AddEventHandler('onResourceStop', function(res)
+    if res == GetCurrentResourceName() then ClothCamOff() end
+end)

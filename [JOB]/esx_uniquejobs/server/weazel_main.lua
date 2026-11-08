@@ -41,7 +41,7 @@ end, false)
 
 RegisterCommand('ads', function(source)
   local xPlayer = ESX.GetPlayerFromId(source)
-  if xPlayer.job.name == "weazel" and xPlayer.job.grade >= 1 then
+  if (xPlayer.job.name == "weazel" or xPlayer.job.name == "government") and xPlayer.job.grade >= 1 then
 
     if Count_weazel(ads) > 0 then
 
@@ -62,7 +62,7 @@ end, false)
 
 RegisterCommand("ad_weazel", function(source, args)
   local xPlayer = ESX.GetPlayerFromId(source)
-  if xPlayer.job.name == "weazel" and xPlayer.job.grade >= 1 then
+  if (xPlayer.job.name == "weazel" or xPlayer.job.name == "government") and xPlayer.job.grade >= 1 then
 
     if not args[1] then
       SendMessage_weazel(source, "Shoma dar ghesmat ID tabligh chizi vared nakardid!")

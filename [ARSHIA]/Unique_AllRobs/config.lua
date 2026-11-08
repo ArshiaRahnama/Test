@@ -15,7 +15,7 @@ Config.DarkPhone.Pursuit.SuccessTime = 5*60
 
 Config.Rob = {}
 
-Config.Rob.PoliceJobs = { 'police', 'sheriff', 'fbi', 'mt', 'cid', 'cia', 'marshal', 'judge', 'doa' }
+Config.Rob.PoliceJobs = { 'police', 'sheriff', 'fbi', 'mt', 'cid', 'cia', 'marshal', 'judge', 'doa', 'government' }
 Config.Rob.PoliceAlertDuration = 4 * 60 * 1000 -- default duration (ms) for exports.AlertPolice when no duration is passed in
 
 Config.Rob.Marker = {

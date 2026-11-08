@@ -174,3 +174,40 @@ UI کامل بازطراحی شد (پالت بنفش، فونت Chakra Petch، �
 **رده‌ی آیتم (Common → Legendary) فقط ظاهریه** (دیتابیس فیلد rarity نداره): اسلحه = Epic، مهمات/زره = Rare، غذا/نوشیدنی = Uncommon، پول سیاه/طلا = Legendary، بقیه Common. قانونش بالای `nui/skin.js` هست و راحت عوض میشه.
 
 نکته: فایل `html/img/items/sptite.png` توی ریپو خرابه (داخلش متن «Dump failed!» هست) — آیکنش لود نمی‌شه، باید با یه PNG سالم جایگزین بشه.
+
+
+## v2.1.0
+- No more black boxes in game: removed every `backdrop-filter` (not supported by FiveM NUI). Panels are plain translucent; Settings has "Panel opacity" + "Background dim".
+- 5-column grid, Esc hint moved away from the HUD, left card removed (your ped is visible), new player badge with **your own ped headshot**, Job and Gang.
+- Tabs: Inventory / Clothing / Settings. Delete button (+ E / G / Del keys, double-click = use).
+- Readable names for unknown weapons (WEAPON_EMPLAUNCHER -> EMP Launcher); missing PNG icons fall back to a glyph.
+- Fixed `spam_guard.lua` nil `xPlayer` console error.
+- `HudConfig.ScreenBlur` (default false) blurs the game behind the UI; `HudConfig.AllowDelete`.
+Update: replace everything EXCEPT your own `html/img/items` icon folder.
+
+## v2.5.0
+- Drop: weapon drop no longer calls xPlayer.getWeapon (ammo error); ammo sent from client.
+- Delete: robust server handler with pcall, notifications and auto refresh.
+- Slots: positions remembered for every item; stale icon/rarity fixed when items update in place.
+- Performance: no infinite box-shadow animations, no universal selectors, MutationObserver-driven updates, headshot cached 45s.
+- Clothing tab redesigned (grouped, worn counter, status dots).
+
+## v2.5.1
+- Vehicle/house keys (virtual items) can no longer be dropped/deleted (no more essentialmode nil error).
+- Identical items keep their own slots; icons redrawn after in-place refresh; no more "undefinedx".
+
+## v2.5.3
+- Vehicle keys can be deleted (exact entry by plate). Icons try other file-name spellings; items with no icon are listed in F8.
+
+## v2.5.4
+- Grid grows with the number of items (min 30, rows of 5, max 200) and scrolls; no more hidden items.
+
+## v2.5.5
+- No flash after delete/refresh (layout + icons applied before paint, single refresh, min 40 slots).
+
+## v2.5.6
+- server/purge_keys.lua: stale vehicle_keys wiped on first login after a server restart (HudConfig.PurgeKeysOnLoad).
+- At least 45 slots, +1 spare row when the bag is nearly full.
+
+## v2.5.7
+- purge_keys: client refresh after purge, second sweep after 8s, console command uq_purgekeys.

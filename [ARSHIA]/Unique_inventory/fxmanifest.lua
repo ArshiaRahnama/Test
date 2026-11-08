@@ -2,7 +2,7 @@ fx_version 'adamant'
 game 'gta5'
 
 description 'Unique_inventory - merged esx_inventory + esx_inventoryhud + esx_inventoryhud_trunk'
-version '1.6.0'
+version '2.5.7'
 
 dependency 'essentialmode'
 dependency 'oxmysql'
@@ -49,6 +49,8 @@ server_scripts {
     'server/job_gang_lock.lua',
     'server/gang_store.lua', -- EnsureGangStores: creates missing gang_<name> stores (fixes nil inventory/store crashes)
     'server/inventory_main.lua',
+    'server/delete_item.lua',
+    'server/purge_keys.lua',
     'server/hud_data.lua',
     'server/classes/c_trunk.lua',
     'server/trunk_helpers.lua',
@@ -58,6 +60,7 @@ server_scripts {
 files {
     'nui/*.*',
     'nui/app/*',
+    'nui/clothes/*.png',
     'nui/app/fonts/*',
     'html/img/items/*.png',
 }

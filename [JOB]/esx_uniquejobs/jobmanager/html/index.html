@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Unique Job Manager</title>
+<style>
+@font-face{font-family:"Audiowide";src:url("Audiowide.ttf")}
+:root{--gold:#d4af37;--gold2:#f6dd8a;--gold3:#8f6f12;--ink:#0a0b10;--glass:rgba(255,255,255,.045);--glass2:rgba(255,255,255,.085);--line:rgba(212,175,55,.26);--green:#3ddc84;--red:#ff4d5e;--blue:#5ab0ff;--txt:#f2ecd9}
+*{box-sizing:border-box;font-family:"Audiowide",system-ui,sans-serif;letter-spacing:.3px}
+html,body{margin:0;width:100%;height:100%;background:transparent;overflow:hidden;color:var(--txt)}
+#app{display:none;position:fixed;inset:0;align-items:center;justify-content:center}
+#app.on{display:flex}
+.win{width:min(1240px,94vw);height:min(720px,90vh);display:grid;grid-template-columns:250px 1fr;border-radius:26px;border:1px solid var(--line);
+ background:radial-gradient(1200px 500px at 70% -10%,rgba(212,175,55,.10),transparent 60%),linear-gradient(160deg,rgba(14,15,22,.97),rgba(8,9,13,.97));
+ box-shadow:0 30px 90px rgba(0,0,0,.65),0 0 0 1px rgba(212,175,55,.07) inset;overflow:hidden;animation:pop .28s cubic-bezier(.2,.9,.3,1.2)}
+@keyframes pop{from{transform:scale(.94);opacity:0}to{transform:none;opacity:1}}
+aside{border-right:1px solid var(--line);padding:18px 14px;display:flex;flex-direction:column;gap:10px;min-height:0}
+.sech{color:var(--gold);font-size:15px;text-align:center;padding:6px 0 10px;border-bottom:1px solid var(--line);margin-bottom:4px}
+.navbtn{display:flex;align-items:center;gap:10px;width:100%;padding:11px 14px;border-radius:14px;border:1px solid var(--line);background:var(--glass);color:var(--txt);cursor:pointer;font-size:13px;transition:.18s;text-align:left}
+.navbtn:hover{background:var(--glass2);transform:translateX(3px)}
+.navbtn.on{background:linear-gradient(135deg,var(--gold),var(--gold3));color:#1a1405;border-color:var(--gold2)}
+.navbtn .dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);flex:none}
+.navbtn.off .dot{background:var(--red);box-shadow:0 0 8px var(--red)}
+.navbtn .cnt{margin-left:auto;font-size:11px;opacity:.7}
+#orgList{display:flex;flex-direction:column;gap:7px;overflow:auto;min-height:0;padding-right:4px}
+#orgList::-webkit-scrollbar,.scroll::-webkit-scrollbar{width:6px}
+#orgList::-webkit-scrollbar-thumb,.scroll::-webkit-scrollbar-thumb{background:var(--gold3);border-radius:6px}
+.dept{font-size:10px;color:var(--gold);opacity:.8;margin:8px 4px 0;text-transform:uppercase}
+main{display:flex;flex-direction:column;min-width:0;min-height:0}
+header{display:flex;align-items:center;gap:14px;padding:16px 24px;border-bottom:1px solid var(--line)}
+.logo{font-size:22px;color:var(--gold);text-shadow:0 0 18px rgba(212,175,55,.45)}
+.logo small{display:block;font-size:10px;color:var(--gold2);opacity:.75;margin-top:2px}
+.sp{flex:1}
+.x{width:38px;height:38px;border-radius:50%;border:2px solid var(--gold);background:transparent;color:var(--gold);font-size:20px;cursor:pointer;transition:.18s}
+.x:hover{background:var(--gold);color:#111;transform:rotate(90deg)}
+.content{flex:1;min-height:0;padding:18px 24px;display:flex;flex-direction:column;gap:14px}
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.card{border:1px solid var(--line);background:var(--glass);border-radius:18px;padding:16px;position:relative;overflow:hidden}
+.card:before{content:"";position:absolute;left:0;right:0;top:0;height:3px;background:linear-gradient(90deg,transparent,var(--gold),transparent)}
+.card b{display:block;font-size:30px;color:var(--gold2)}
+.card span{font-size:11px;opacity:.7}
+.hint{border:1px dashed var(--line);border-radius:16px;padding:14px 16px;font-size:12px;line-height:1.9;color:#e8dfc2;background:var(--glass)}
+.hint i{color:var(--gold);font-style:normal}
+.tabs{display:flex;flex-wrap:wrap;gap:8px}
+.tab{padding:8px 16px;border-radius:12px;border:1px solid var(--line);background:var(--glass);color:var(--txt);cursor:pointer;font-size:12px;transition:.15s}
+.tab:hover{background:var(--glass2)}
+.tab.on{background:linear-gradient(135deg,var(--gold),var(--gold3));color:#1a1405;border-color:var(--gold2)}
+.tab em{font-style:normal;opacity:.65;margin-left:6px;font-size:10px}
+.bar{display:flex;gap:10px;align-items:center}
+.inp{flex:1;padding:10px 14px;border-radius:12px;border:1px solid var(--line);background:rgba(0,0,0,.35);color:var(--txt);font-size:12px;outline:none}
+.inp:focus{border-color:var(--gold)}
+.btn{padding:10px 16px;border-radius:12px;border:1px solid var(--gold2);background:linear-gradient(135deg,var(--gold),var(--gold3));color:#1a1405;cursor:pointer;font-size:12px;transition:.15s;white-space:nowrap}
+.btn:hover{filter:brightness(1.12);transform:translateY(-1px)}
+.btn.green{background:linear-gradient(135deg,#3ddc84,#1c8f50);border-color:#7bf0b0}
+.btn.red{background:linear-gradient(135deg,#ff4d5e,#a8202e);border-color:#ff9aa4;color:#fff}
+.btn.ghost{background:var(--glass);color:var(--txt);border-color:var(--line)}
+.btn[disabled]{opacity:.35;pointer-events:none}
+.list{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:9px;padding-right:4px}
+.row{display:grid;grid-template-columns:46px 1fr 200px auto;align-items:center;gap:12px;padding:11px 14px;border:1px solid var(--line);border-radius:14px;background:var(--glass);transition:.15s}
+.row:hover{background:var(--glass2);border-color:var(--gold)}
+.row .n{color:var(--gold);font-size:13px}
+.row .t{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .t small{display:block;font-size:10px;opacity:.55;margin-top:3px}
+.row .c{font-size:11px;color:#cdbf92;font-family:ui-monospace,Consolas,monospace}
+.row .a{display:flex;gap:7px}
+.row .a .btn{padding:8px 11px}
+.empty{padding:40px;text-align:center;opacity:.6;font-size:13px}
+.form{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;max-width:820px}
+.form label{display:flex;flex-direction:column;gap:6px;font-size:11px;color:var(--gold2)}
+
+.panel{border:1px solid var(--line);background:var(--glass);border-radius:16px;padding:14px 16px;display:flex;flex-direction:column;gap:12px}
+.panel h4{margin:0;font-size:12px;color:var(--gold2);font-weight:normal}
+.line{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.arrow{width:34px;height:34px;border-radius:50%;border:2px solid var(--gold);background:transparent;color:var(--gold);cursor:pointer;font-size:15px}
+.arrow:hover{background:var(--gold);color:#111}
+.sw{width:26px;height:26px;border-radius:50%;border:2px solid transparent;cursor:pointer}
+.sw.on{border-color:#fff;box-shadow:0 0 10px currentColor}
+.mini{width:84px;flex:none;text-align:center}
+.pill{padding:7px 14px;border-radius:10px;border:1px solid var(--line);background:var(--glass);color:var(--txt);cursor:pointer;font-size:11px}
+.pill.on{background:linear-gradient(135deg,var(--gold),var(--gold3));color:#1a1405;border-color:var(--gold2)}
+.big{font-size:15px;color:var(--gold2);min-width:150px;text-align:center}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px;max-height:236px;overflow:auto;padding:4px}
+.gi{border:1px solid var(--line);border-radius:12px;padding:6px;background:rgba(0,0,0,.32);cursor:pointer;text-align:center;font-size:9px;color:#d9cfae;transition:.15s;display:flex;flex-direction:column;gap:4px;align-items:center}
+.gi:hover{border-color:var(--gold);transform:translateY(-2px)}
+.gi.on{border-color:var(--gold2);background:rgba(212,175,55,.16);box-shadow:0 0 14px rgba(212,175,55,.35)}
+.gi img{width:100%;height:74px;object-fit:contain;filter:drop-shadow(0 4px 8px rgba(255,0,0,.35))}
+.gi span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.msg{position:fixed;left:50%;bottom:36px;transform:translateX(-50%);padding:12px 22px;border-radius:14px;background:rgba(10,11,16,.96);border:1px solid var(--gold);color:var(--gold2);font-size:12px;opacity:0;pointer-events:none;transition:.25s}
+.msg.on{opacity:1;transform:translate(-50%,-6px)}
+</style>
+</head>
+<body>
+<div id="app">
+ <div class="win">
+  <aside>
+   <div class="sech">ORGANS</div>
+   <button class="navbtn on" id="navHome">Home</button>
+   <div id="orgList" class="scroll"></div>
+  </aside>
+  <main>
+   <header>
+    <div class="logo">UNIQUE JOB<small id="who">GOVERNMENT CONTROL</small></div>
+    <div class="sp"></div>
+    <button class="x" id="x">&times;</button>
+   </header>
+   <div class="content" id="content"></div>
+  </main>
+ </div>
+</div>
+<div class="msg" id="msg"></div>
+
+<script>
+const RES = (typeof GetParentResourceName === 'function') ? GetParentResourceName() : 'esx_uniquejobs';
+const $ = (s, r = document) => r.querySelector(s);
+const state = { orgs: [], depts: [], cur: null, tab: 'Blip', q: '', ops: 0 };
+const TABS = ['Blip','Boss','Locker','Armory','Veh','V-Spawn','Heli','H-Spawn','Boat','B-Spawn','Duty','Jail','Other'];
+
+function post(a, extra) {
+  return fetch(`https://${RES}/jm_action`, { method: 'POST', body: JSON.stringify(Object.assign({ a }, extra || {})) }).catch(() => {});
+}
+function toast(t) { const m = $('#msg'); m.textContent = t; m.classList.add('on'); clearTimeout(toast._t); toast._t = setTimeout(() => m.classList.remove('on'), 2400); }
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const f1 = n => (Math.round(Number(n) * 100) / 100).toFixed(2);
+
+function load(data) {
+  state.orgs = data.orgs || []; state.depts = data.depts || []; state.ops = data.ops || 0;
+  $('#who').textContent = (data.who || 'GOVERNMENT') + ' - CHIEF ACCESS';
+  if (state.cur && !state.orgs.find(o => o.job === state.cur)) state.cur = null;
+  renderNav(); render();
+}
+
+function renderNav() {
+  const box = $('#orgList'); box.innerHTML = '';
+  state.depts.forEach(d => {
+    const orgs = state.orgs.filter(o => d.jobs.includes(o.job));
+    if (!orgs.length) return;
+    const h = document.createElement('div'); h.className = 'dept'; h.textContent = d.label; box.appendChild(h);
+    orgs.forEach(o => {
+      const b = document.createElement('button');
+      b.className = 'navbtn' + (state.cur === o.job ? ' on' : '') + (o.off ? ' off' : '');
+      b.innerHTML = `<span class="dot"></span>${esc(o.label)}<span class="cnt">${o.points.length}</span>`;
+      b.onclick = () => { state.cur = o.job; state.tab = firstTab(o); state.q = ''; renderNav(); render(); };
+      box.appendChild(b);
+    });
+  });
+  $('#navHome').classList.toggle('on', !state.cur);
+}
+function firstTab(o) { return TABS.find(t => o.points.some(p => p.cat === t)) || 'Blip'; }
+
+function render() {
+  const c = $('#content');
+  const o = state.orgs.find(x => x.job === state.cur);
+  if (!o) {
+    const pts = state.orgs.reduce((a, b) => a + b.points.length, 0);
+    c.innerHTML = `
+     <div class="cards">
+      <div class="card"><b>${state.orgs.length}</b><span>ORGANS</span></div>
+      <div class="card"><b>${pts}</b><span>POINTS (blip / marker / spawn ...)</span></div>
+      <div class="card"><b>${state.orgs.filter(x => !x.off).length}</b><span>ORGANS ON</span></div>
+      <div class="card"><b>${state.ops}</b><span>SAVED EDITS</span></div>
+     </div>
+     <div class="hint">
+      <i>1.</i> Az list-e chap yek ergan entekhab konid.<br>
+      <i>2.</i> Tab ha (Blip / Boss / Locker / Armory / Veh / V-Spawn / Heli ...) noqte ha-ye hamin ergan ra neshan midahand.<br>
+      <i>3.</i> Be jaye jadid beravid va <i>SET HERE</i> ra bezanid: noqte be mokhtasat-e shoma montaghel mishavad (zakhire dar database, baraye hame zende).<br>
+      <i>4.</i> <i>+ ADD HERE</i> yek noqte-ye jadid hamin noe (copy-e akharin) dar mokhtasat-e shoma misazad. <i>DEL</i> hazf mikonad.<br>
+      <i>5.</i> Tab <i>Style</i>: no-e marker, size, rang va fasele-ye namayesh.<br>
+      <i>*</i> Blip ha ba taghir-e job ya vorud-e mojaddad bazsazi mishavand.
+     </div>`;
+    return;
+  }
+  const counts = {}; o.points.forEach(p => counts[p.cat] = (counts[p.cat] || 0) + 1);
+  c.innerHTML = `
+   <div class="tabs">${TABS.map(t => `<div class="tab ${state.tab === t ? 'on' : ''}" data-t="${t}">${t}<em>${counts[t] || 0}</em></div>`).join('')}
+    <div class="tab ${state.tab === 'Style' ? 'on' : ''}" data-t="Style">Style</div>
+    <div class="tab ${state.tab === 'Options' ? 'on' : ''}" data-t="Options">Options</div>
+    <div class="tab" id="undo" style="margin-left:auto">UNDO LAST</div>
+    <div class="tab" id="reset" style="border-color:var(--red)">RESET ORGAN</div></div>
+   <div id="pane" style="display:flex;flex-direction:column;gap:12px;flex:1;min-height:0"></div>`;
+  c.querySelectorAll('.tab[data-t]').forEach(t => t.onclick = () => { state.tab = t.dataset.t; render(); });
+  const arm = (el, label, fn) => el.onclick = () => {
+    if (!el.dataset.arm) { el.dataset.arm = '1'; el.textContent = 'SURE?'; setTimeout(() => { el.dataset.arm = ''; el.textContent = label; }, 2500); return; }
+    fn();
+  };
+  arm($('#undo'), 'UNDO LAST', () => post('undo', { job: o.job }));
+  arm($('#reset'), 'RESET ORGAN', () => post('reset', { job: o.job }));
+  state.tab === 'Style' ? renderStyle(o) : state.tab === 'Options' ? renderOptions(o) : renderPoints(o);
+}
+
+const PEDS = ['a_m_m_beach_01','cs_dreyfuss','csb_jackhowitzer','g_m_m_chicold_01','g_m_y_ballaorig_01','g_m_y_ballasout_01','g_m_y_famca_01','g_m_y_famdnf_01','g_m_y_lost_01','g_m_y_lost_02','g_m_y_salvagoon_01'];
+const OBJS = ['imp_prop_impexp_boxpile_01','imp_prop_impexp_boxpile_02','imp_prop_impexp_boxwood_01','prop_box_ammo03a_set2','prop_box_wood02a_mws','prop_box_wood02a_pu','prop_toolchest_04','xm_prop_crates_weapon_mix_01a'];
+const MARKERS = Array.from({ length: 44 }, (_, i) => i);
+const BLIPS = [1, 8, 16, 36, 38, 40, 43, 47, 50, 72, 84, 85, 303];
+const BCOLORS = [[1,'#e03232'],[2,'#5cb85c'],[3,'#5db6e5'],[5,'#f0c800'],[17,'#f0a050'],[27,'#7a4cc8'],[38,'#2a6fd6'],[0,'#ffffff']];
+const RGBS = [[224,50,50],[61,220,132],[90,176,255],[212,175,55],[255,255,255]];
+state.vis = { kind: 'none', model: 1, r: 212, g: 175, b: 55, sx: 1.5, sy: 1.5, sz: 0.8, open: false };
+state.editId = null;
+state.blip = { sprite: 60, color: 3, scale: 0.8, label: '' };
+
+function gridHtml(kind, cur) {
+  const list = kind === 'ped' ? PEDS : kind === 'object' ? OBJS : kind === 'marker' ? MARKERS : BLIPS;
+  return `<div class="grid scroll">${list.map(m => `
+    <div class="gi ${String(cur) === String(m) ? 'on' : ''}" data-pick="${esc(m)}">
+      <img src="img/${kind}/${esc(m)}.png" onerror="this.style.visibility='hidden'"><span>${kind === 'marker' ? 'Marker ' + m : kind === 'blip' ? 'Blip ' + m : esc(m)}</span>
+    </div>`).join('')}</div>`;
+}
+
+function rowHtml(p, i) {
+  let btns;
+  if (p.custom === 'decor') {
+    btns = `<button class="btn ghost" data-go="${esc(p.id)}">GO</button><button class="btn" data-edit="${esc(p.cid)}">EDIT</button><button class="btn red" data-undecor="${esc(p.cid)}">DEL</button>`;
+  } else if (p.custom === 'blip') {
+    btns = `<button class="btn ghost" data-gocoord="${p.x},${p.y},${p.z}">GO</button><button class="btn" data-blipmove="${esc(p.cid)}">SET HERE</button><button class="btn red" data-blipdel="${esc(p.cid)}">DEL</button>`;
+  } else if (p.blip) {
+    btns = `<button class="btn ghost" data-go="${esc(p.id)}">GO</button><button class="btn red" data-bliphide="${esc(p.id)}">HIDE</button>`;
+  } else {
+    btns = `<button class="btn ghost" data-go="${esc(p.id)}">GO</button><button class="btn" data-set="${esc(p.id)}">SET HERE</button><button class="btn red" data-del="${esc(p.del || '')}" ${p.del ? '' : 'disabled'}>DEL</button>`;
+  }
+  const extra = p.custom === 'blip' ? ` | sprite ${p.sprite} | col ${p.color} | x${p.scale}` : '';
+  return `<div class="row"><div class="n">#${i + 1}</div>
+    <div class="t">${esc(p.label)}<small>${esc(p.custom ? (p.custom === 'blip' ? 'custom blip' : 'decor (ox_target)') : p.id)}</small></div>
+    <div class="c">${f1(p.x)}, ${f1(p.y)}, ${f1(p.z)}${p.h != null ? ' | h ' + f1(p.h) : ''}${extra}</div>
+    <div class="a">${btns}</div></div>`;
+}
+
+function bindRows(pane, o, all) {
+  const arm = (b, label, fn) => b.onclick = () => {
+    if (b.disabled) return;
+    if (!b.dataset.arm) { b.dataset.arm = '1'; b.textContent = 'SURE?'; setTimeout(() => { b.dataset.arm = ''; b.textContent = label; }, 2500); return; }
+    fn();
+  };
+  pane.querySelectorAll('[data-go]').forEach(b => b.onclick = () => post('goto', { job: o.job, id: b.dataset.go }));
+  pane.querySelectorAll('[data-gocoord]').forEach(b => b.onclick = () => { const [x, y, z] = b.dataset.gocoord.split(',').map(Number); post('gocoord', { job: o.job, x, y, z }); });
+  pane.querySelectorAll('[data-set]').forEach(b => b.onclick = () => post('set', { job: o.job, id: b.dataset.set }));
+  pane.querySelectorAll('[data-blipmove]').forEach(b => b.onclick = () => post('blipmove', { job: o.job, cid: b.dataset.blipmove }));
+  pane.querySelectorAll('[data-del]').forEach(b => arm(b, 'DEL', () => b.dataset.del && post('del', { job: o.job, id: b.dataset.del })));
+  pane.querySelectorAll('[data-bliphide]').forEach(b => arm(b, 'HIDE', () => post('bliphide', { job: o.job, id: b.dataset.bliphide })));
+  pane.querySelectorAll('[data-blipdel]').forEach(b => arm(b, 'DEL', () => post('blipdel', { job: o.job, cid: b.dataset.blipdel })));
+  pane.querySelectorAll('[data-undecor]').forEach(b => arm(b, 'DEL', () => post('undecor', { job: o.job, cid: b.dataset.undecor })));
+  pane.querySelectorAll('[data-edit]').forEach(b => b.onclick = () => {
+    const p = (all || []).find(x => x.cid === b.dataset.edit); if (!p) return;
+    state.editId = p.cid;
+    Object.assign(state.vis, { kind: p.kind, model: p.model, r: p.r, g: p.g, b: p.b, sx: p.sx, sy: p.sy, sz: p.sz, open: true });
+    renderPoints(o);
+  });
+}
+
+function renderPoints(o) {
+  if (state.tab === 'Blip') return renderBlips(o);
+  const pane = $('#pane');
+  const all = o.points.filter(p => p.cat === state.tab);
+  const q = state.q.trim().toLowerCase();
+  const pts = q ? all.filter(p => (p.label + p.id).toLowerCase().includes(q)) : all;
+  const addSrc = all.find(p => p.sec);
+  const v = state.vis;
+  const editing = !!state.editId;
+  const panel = !v.open ? '' : `
+   <div class="panel">
+    <h4>${editing ? 'EDIT VISUAL (ox_target stays)' : 'VISUAL (like Unique Gangs)'}: Ped / Object</h4>
+    <div class="line">${['none', 'ped', 'object'].filter(k => !(editing && k === 'none')).map(k => `<span class="pill ${v.kind === k ? 'on' : ''}" data-vk="${k}">${k === 'none' ? 'Point only' : k[0].toUpperCase() + k.slice(1)}</span>`).join('')}</div>
+    ${v.kind !== 'none' ? gridHtml(v.kind, v.model) : ''}
+    ${(v.kind === 'ped' || v.kind === 'object') ? `<div class="line"><input class="inp" id="vModel" style="max-width:360px" placeholder="or type any model name" value="${esc(v.model)}"></div>` : ''}
+    ${v.kind !== 'none' ? `<div class="line">${RGBS.map(c => `<span class="sw ${v.r == c[0] && v.g == c[1] && v.b == c[2] ? 'on' : ''}" data-rgb="${c.join(',')}" style="background:rgb(${c.join(',')});color:rgb(${c.join(',')})"></span>`).join('')}
+</div>` : ''}
+    <div class="line"><button class="btn green" id="vGo" ${(v.kind === 'none' && !addSrc) ? 'disabled' : ''}>${editing ? 'SAVE CHANGES' : 'ADD HERE'}</button>
+      ${editing ? '<button class="btn ghost" id="vCancel">CANCEL</button>' : `<span style="font-size:11px;opacity:.65">${v.kind === 'none' ? (addSrc ? 'copy of the last point of this tab' : 'no point to copy in this tab') : 'ox_target only: no marker, no E key'}</span>`}</div>
+   </div>`;
+  pane.innerHTML = `
+   <div class="bar">
+    <input class="inp" id="q" placeholder="Search ..." value="${esc(state.q)}">
+    <button class="btn green" id="add">${v.open ? 'CLOSE' : '+ ADD'}</button>
+   </div>${panel}
+   <div class="list scroll">${pts.length ? pts.map(rowHtml).join('') : '<div class="empty">Hich noqte-i dar in tab nist.</div>'}</div>`;
+  $('#q').oninput = e => { state.q = e.target.value; renderPoints(o); const q2 = $('#q'); q2.focus(); q2.setSelectionRange(q2.value.length, q2.value.length); };
+  $('#add').onclick = () => { v.open = !v.open; state.editId = null; renderPoints(o); };
+  pane.querySelectorAll('[data-vk]').forEach(b => b.onclick = () => {
+    v.kind = b.dataset.vk; v.model = v.kind === 'marker' ? 1 : v.kind === 'ped' ? PEDS[0] : v.kind === 'object' ? OBJS[0] : ''; renderPoints(o);
+  });
+  pane.querySelectorAll('[data-pick]').forEach(b => b.onclick = () => { v.model = v.kind === 'marker' ? Number(b.dataset.pick) : b.dataset.pick; renderPoints(o); });
+  const vm = $('#vModel'); if (vm) vm.onchange = () => { v.model = vm.value.trim(); };
+  pane.querySelectorAll('[data-rgb]').forEach(b => b.onclick = () => { [v.r, v.g, v.b] = b.dataset.rgb.split(',').map(Number); renderPoints(o); });
+  pane.querySelectorAll('[data-sz]').forEach(i => i.onchange = () => { v[i.dataset.sz] = Number(i.value) || 1.5; });
+  const cancel = $('#vCancel'); if (cancel) cancel.onclick = () => { state.editId = null; v.open = false; renderPoints(o); };
+  const go = $('#vGo');
+  if (go) go.onclick = () => {
+    if (vm) vm.onchange();
+    const visual = v.kind === 'none' ? null : { kind: v.kind, model: v.model, r: v.r, g: v.g, b: v.b, sx: v.sx, sy: v.sy, sz: v.sz };
+    if (editing) { post('decoredit', { job: o.job, cid: state.editId, visual }); state.editId = null; v.open = false; }
+    else post('add', { job: o.job, sec: addSrc ? addSrc.sec : null, cat: state.tab, visual });
+  };
+  bindRows(pane, o, all);
+}
+
+function renderBlips(o) {
+  const pane = $('#pane');
+  const b = state.blip;
+  const all = o.points.filter(p => p.cat === 'Blip');
+  pane.innerHTML = `
+   <div class="panel">
+    <h4>NEW BLIP (placed where you stand) - blips have no ped / object, only the icon</h4>
+    ${gridHtml('blip', b.sprite)}
+    <div class="line">
+      <input class="inp mini" id="bSprite" type="number" min="0" max="900" value="${b.sprite}" title="sprite id">
+      ${BCOLORS.map(c => `<span class="sw ${b.color == c[0] ? 'on' : ''}" data-bc="${c[0]}" style="background:${c[1]};color:${c[1]}"></span>`).join('')}
+      <input class="inp mini" id="bColor" type="number" min="0" max="90" value="${b.color}" title="color id"></div>
+    <div class="line"><input class="inp" id="bLabel" placeholder="${o.blipName ? esc(o.blipName) + ' (default - type to change)' : 'Blip name'}" maxlength="40" value="${esc(b.label)}" style="max-width:300px">
+      <input class="inp mini" id="bScale" type="number" step="0.1" min="0.1" max="3" value="${b.scale}" title="size (0.7 - 0.8 recommended)">
+      <button class="btn green" id="bAdd">ADD BLIP HERE</button></div>
+   </div>
+   <div class="list scroll">${all.length ? all.map(rowHtml).join('') : '<div class="empty">Hich blip-i nist.</div>'}</div>`;
+  const read = () => { b.sprite = Number($('#bSprite').value) || 60; b.color = Number($('#bColor').value) || 0; b.scale = Number($('#bScale').value) || 0.8; b.label = $('#bLabel').value; };
+  ['#bSprite', '#bColor', '#bScale', '#bLabel'].forEach(id => $(id).onchange = read);
+  pane.querySelectorAll('[data-pick]').forEach(x => x.onclick = () => { read(); b.sprite = Number(x.dataset.pick); renderBlips(o); });
+  pane.querySelectorAll('[data-bc]').forEach(x => x.onclick = () => { read(); b.color = Number(x.dataset.bc); renderBlips(o); });
+  $('#bAdd').onclick = () => { read(); post('blipadd', { job: o.job, sprite: b.sprite, color: b.color, scale: b.scale, label: b.label }); };
+  bindRows(pane, o, all);
+}
+
+state.opts = null;
+function renderOptions(o) {
+  const pane = $('#pane');
+  const ok = state.opts && state.opts.job === o.job;
+  if (!ok) { pane.innerHTML = '<div class="empty">Loading ...</div>'; post('options_load', { job: o.job }); return; }
+  const ranks = state.opts.ranks || [];
+  pane.innerHTML = `
+   <div class="hint">Har rank be kodam option-ha dastresi dare (<i>/cad /law /doj /acceptrob /dep</i>). Ba click roshan / khamoosh mishavad.</div>
+   <div class="list scroll">${ranks.length ? ranks.map(r => `
+    <div class="panel">
+     <h4>${esc(r.label)} <span style="opacity:.55">#${r.grade}</span></h4>
+     <div class="line">${(r.options || []).map(op => `<span class="pill ${op.enabled ? 'on' : ''}" data-og="${r.grade}" data-oo="${esc(op.id)}" data-on="${op.enabled ? 1 : 0}">${esc(op.label)} : ${op.enabled ? 'ROSHAN' : 'KHAMOOSH'}</span>`).join('')}</div>
+    </div>`).join('') : '<div class="empty">Hich rank-i peyda nashod.</div>'}</div>`;
+  pane.querySelectorAll('[data-og]').forEach(b => b.onclick = () => {
+    const enabled = b.dataset.on !== '1';
+    const rk = ranks.find(x => String(x.grade) === b.dataset.og); const op = rk && rk.options.find(x => x.id === b.dataset.oo);
+    if (op) op.enabled = enabled;           // optimistic
+    renderOptions(o);
+    post('options_set', { job: o.job, grade: Number(b.dataset.og), opt: b.dataset.oo, enabled });
+  });
+}
+
+function renderStyle(o) {
+  const s = o.style || {};
+  const pane = $('#pane');
+  const fld = (k, lab, v, step) => `<label>${lab}<input class="inp" data-k="${k}" type="number" step="${step || 1}" value="${v == null ? '' : v}"></label>`;
+  pane.innerHTML = `
+   <div class="hint">Marker-e hame-ye noqte haye <i>${esc(o.label)}</i> ra tanzim konid. Khali = bedun-e taghir.</div>
+   <div class="form">
+    ${fld('MarkerType', 'MARKER TYPE (GTA id)', s.MarkerType)}
+    ${fld('MarkerTypeboss', 'BOSS MARKER TYPE', s.MarkerTypeboss)}
+    ${fld('MarkerTypeveh', 'VEHICLE MARKER TYPE', s.MarkerTypeveh)}
+    ${fld('MarkerTypevehdel', 'DELETE MARKER TYPE', s.MarkerTypevehdel)}
+    ${fld('DrawDistance', 'DRAW DISTANCE', s.DrawDistance, 0.5)}
+    <span></span>
+    ${fld('sx', 'SIZE X', s.sx, 0.1)}${fld('sy', 'SIZE Y', s.sy, 0.1)}${fld('sz', 'SIZE Z', s.sz, 0.1)}
+    ${fld('r', 'COLOR R', s.r)}${fld('g', 'COLOR G', s.g)}${fld('b', 'COLOR B', s.b)}
+   </div>
+   <div><button class="btn green" id="saveStyle">SAVE STYLE</button></div>`;
+  $('#saveStyle').onclick = () => {
+    const v = {}; pane.querySelectorAll('[data-k]').forEach(i => { if (i.value !== '') v[i.dataset.k] = Number(i.value); });
+    post('style', { job: o.job, values: v });
+  };
+}
+
+$('#navHome').onclick = () => { state.cur = null; renderNav(); render(); };
+$('#x').onclick = () => fetch(`https://${RES}/jm_close`, { method: 'POST', body: '{}' });
+window.addEventListener('keydown', e => { if (e.key === 'Escape') $('#x').click(); });
+window.addEventListener('message', e => {
+  const m = e.data || {};
+  if (m.type === 'jm_open') { $('#app').classList.add('on'); load(m.data || {}); }
+  else if (m.type === 'jm_update') { load(m.data || {}); if (m.data && m.data.toast) toast(m.data.toast); }
+  else if (m.type === 'jm_close') { $('#app').classList.remove('on'); }
+  else if (m.type === 'jm_toast') toast(m.text);
+  else if (m.type === 'jm_options') { state.opts = { job: m.job, ranks: m.ranks || [] }; if (state.tab === 'Options' && state.cur === m.job) render(); }
+});
+</script>
+</body>
+</html>

@@ -90,6 +90,7 @@ client_scripts {
 
 	'client/config_mt.lua',
 	'client/mt_main.lua',
+	'client/config_government.lua',
 	'client/government_main.lua',
 	'client/job_manager.lua',
 	'client/org_peds.lua',
@@ -291,6 +292,13 @@ server_exports {
 
 files {
 	'ui.html',
+
+	'jobmanager/html/index.html',
+	'jobmanager/html/Audiowide.ttf',
+	'jobmanager/html/img/ped/*.png',
+	'jobmanager/html/img/object/*.png',
+	'jobmanager/html/img/marker/*.png',
+	'jobmanager/html/img/blip/*.png',
 
 	'bodydamage/html/index.html',
 	'bodydamage/html/css/*.css',

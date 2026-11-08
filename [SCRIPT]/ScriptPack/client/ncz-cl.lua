@@ -105,7 +105,74 @@ local WhitelistJobs = {
 	["fbi"]     = 'fbi',
 	["judge"]   = 'judge',
 	["doa"]     = 'doa',
+	["government"] = 'government',
 }
+
+-- Active robberies inside the city: exactly in that area EVERYONE may shoot (no DYS permit needed).
+-- Filled by Unique_AllRobs (start / end / cancel); a zone also expires by itself after 15 minutes.
+local RobZones = {}
+
+local function RemoveRobZone(name)
+	local r = RobZones[name]
+	if r and r.blip and DoesBlipExist(r.blip) then RemoveBlip(r.blip) end
+	RobZones[name] = nil
+end
+
+RegisterNetEvent('ScriptPack:robZone')
+AddEventHandler('ScriptPack:robZone', function(name, x, y, z, radius, active)
+	RemoveRobZone(name)
+	if active then
+		local zone = { x = x + 0.0, y = y + 0.0, z = z + 0.0, radius = (radius or 60.0) + 0.0, expires = GetGameTimer() + 15 * 60 * 1000 }
+		-- red area on the map for everybody
+		zone.blip = AddBlipForRadius(zone.x, zone.y, zone.z, zone.radius)
+		SetBlipColour(zone.blip, 1)
+		SetBlipAlpha(zone.blip, 110)
+		RobZones[name] = zone
+	end
+end)
+
+-- ground ring + enter / exit notice while a robbery is running
+CreateThread(function()
+	local inside = false
+	while true do
+		local wait = 500
+		local pc = GetEntityCoords(PlayerPedId())
+		local nowIn = false
+		for n, r in pairs(RobZones) do
+			if GetGameTimer() > r.expires then
+				RemoveRobZone(n)
+			else
+				local d = #(pc - vector3(r.x, r.y, r.z))
+				if d <= r.radius then nowIn = true end
+				if d < r.radius + 150.0 then
+					wait = 0
+					local a = 40 + math.floor(math.abs(math.sin(GetGameTimer() / 600.0)) * 70)
+					DrawMarker(1, r.x, r.y, r.z - 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, r.radius * 2.0, r.radius * 2.0, 6.0,
+						255, 40, 40, a, false, false, 2, false, nil, nil, false)
+				end
+			end
+		end
+		if nowIn ~= inside then
+			inside = nowIn
+			if ESX and ESX.ShowNotification then
+				ESX.ShowNotification(inside and '~r~ROB ZONE~s~: tirandazi dar in mantaghe ~g~azad~s~ ast (bedun-e mojavez va silencer)'
+					or '~y~Shoma az mantaghe-ye rob kharej shodid.')
+			end
+		end
+		Wait(wait)
+	end
+end)
+
+local function InRobZone(px, py, pz)
+	for n, r in pairs(RobZones) do
+		if GetGameTimer() > r.expires then
+			RemoveRobZone(n)
+		elseif Vdist(px, py, pz, r.x, r.y, r.z) <= r.radius then
+			return true
+		end
+	end
+	return false
+end
 
 local function RGBRainbow( frequency )
 	local result = {}
@@ -223,7 +290,7 @@ Citizen.CreateThread(function()
 				-- above, which used to force-disarm every non-whitelisted
 				-- player to unarmed the instant they walked in). Any other
 				-- weapon is still fully blocked, same as before.
-				local safeWeapon = isUnarmed or isStunGun
+				local safeWeapon = isUnarmed or isStunGun or isWhitelisted or InRobZone(x, y, z)
 
 				if not safeWeapon then
 					BlockFiring(playerPed, true)
@@ -278,7 +345,9 @@ Citizen.CreateThread(function()
 						lastWeaponSeen = nil
 					end
 
-					if not isWhitelisted then
+					if not isWhitelisted and InRobZone(x, y, z) then
+						BlockFiring(playerPed, false)   -- robbery area: free fire for everyone
+					elseif not isWhitelisted then
 						local currentWeapon = GetSelectedPedWeapon(playerPed)
 
 						-- Reset the notification throttle on every weapon
