@@ -1,0 +1,15 @@
+<svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="pacBg" x1="0" y1="0" x2="120" y2="120" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1F1147"/>
+      <stop offset="1" stop-color="#06060F"/>
+    </linearGradient>
+  </defs>
+  <rect width="120" height="120" rx="27" fill="url(#pacBg)"/>
+  <rect x="0.5" y="0.5" width="119" height="119" rx="26.5" stroke="#FFFFFF" stroke-opacity="0.16"/>
+  <!-- Pac-Man (facing right, mouth open) -->
+  <path d="M44 60 L70.7 47.4 A29.5 29.5 0 1 0 70.7 72.6 Z" fill="#FFD60A"/>
+  <!-- pellets -->
+  <circle cx="84" cy="60" r="5" fill="#FFFFFF"/>
+  <circle cx="99" cy="60" r="3.6" fill="#FFFFFF"/>
+</svg>

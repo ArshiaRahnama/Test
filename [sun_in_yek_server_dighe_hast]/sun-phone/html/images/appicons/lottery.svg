@@ -1,0 +1,19 @@
+<svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="lotBg" x1="0" y1="0" x2="120" y2="120" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#AF52DE"/>
+      <stop offset="1" stop-color="#FF2D78"/>
+    </linearGradient>
+  </defs>
+  <rect width="120" height="120" rx="27" fill="url(#lotBg)"/>
+  <rect x="0.5" y="0.5" width="119" height="119" rx="26.5" stroke="#FFFFFF" stroke-opacity="0.18"/>
+  <!-- ticket body with two notches -->
+  <path d="M34 44 h52 a4 4 0 0 1 4 4 v8 a8 8 0 0 0 0 16 v8 a4 4 0 0 1 -4 4 h-52 a4 4 0 0 1 -4 -4 v-8 a8 8 0 0 0 0 -16 v-8 a4 4 0 0 1 4 -4 z" fill="#FFFFFF"/>
+  <!-- perforation -->
+  <line x1="68" y1="46" x2="68" y2="78" stroke="#AF52DE" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="3 4"/>
+  <!-- star -->
+  <path d="M49 53 l3.2 6.5 7.2 1 -5.2 5.1 1.2 7.1 -6.4 -3.4 -6.4 3.4 1.2 -7.1 -5.2 -5.1 7.2 -1 z" fill="#FF2D78"/>
+  <!-- little sparkle -->
+  <circle cx="80" cy="58" r="2.4" fill="#AF52DE"/>
+  <circle cx="80" cy="68" r="2.4" fill="#AF52DE"/>
+</svg>

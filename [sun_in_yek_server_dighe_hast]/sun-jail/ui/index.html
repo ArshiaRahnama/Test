@@ -1,0 +1,45 @@
+<html dir="rtl" lang="fa">
+
+<head>
+	<meta charset="utf-8" />
+	<link rel="stylesheet" href="app.css" />
+</head>
+
+<body>
+	<div id="ghabz" class="ghabz-wrap">
+		<div class="ghabz-panel">
+			<div class="ghabz-head">
+				<div class="ghabz-title">زندان</div>
+			</div>
+
+			<input id="ghabz-search" class="ghabz-search" type="text" placeholder="Search" autocomplete="off" spellcheck="false" />
+
+			<div id="ghabz-list" class="ghabz-list"></div>
+
+			<div class="ghabz-fields">
+				<div class="ghabz-flabel">دلیل</div>
+				<input id="f-reason" class="ghabz-finput" type="text" placeholder="Dalil (faghat English)..." autocomplete="off" spellcheck="false" />
+				<div class="ghabz-flabel">زمان (Min)</div>
+				<input id="f-time" class="ghabz-finput" type="text" inputmode="numeric" placeholder="0" autocomplete="off" />
+				<button id="f-send" class="ghabz-send" type="button">ثبت</button>
+			</div>
+
+			<div class="ghabz-foot">روی پیشنهاد بزن تا فیلدها پر شن&nbsp;&middot;&nbsp;★ = پین&nbsp;&middot;&nbsp;ESC = بستن</div>
+		</div>
+
+		<div id="ghabz-confirm" class="ghabz-confirm">
+			<div class="ghabz-confirm-box">
+				<div class="ghabz-confirm-title">آیا مطمئن هستید؟</div>
+				<div class="ghabz-confirm-body" id="confirm-body"></div>
+				<div class="ghabz-confirm-btns">
+					<button id="c-no" class="ghabz-cbtn ghabz-cbtn-no" type="button">خیر</button>
+					<button id="c-yes" class="ghabz-cbtn ghabz-cbtn-yes" type="button">بله، زندانی کن</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<script src="app.js"></script>
+</body>
+
+</html>

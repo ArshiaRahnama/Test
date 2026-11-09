@@ -114,9 +114,10 @@ local function openGovBoss()
         }
         for _, l in ipairs(lines) do table.insert(elements, l) end
         table.insert(elements, { label = '--- Modiriyat ---', value = 'noop', disabled = true })
-        table.insert(elements, { label = 'ON / OFF ergan-ha', value = '__org_switch' })
         table.insert(elements, { label = 'Taghir job player', value = '__gov_setjob' })
         table.insert(elements, { label = 'Taghir esm rank', value = '__gov_rank' })
+        table.insert(elements, { label = 'Option ha (hame ergan-ha)', value = '__gov_options' })
+        table.insert(elements, { label = 'Estekhdam & Division (dastresi / level)', value = '__gov_recruit' })
         table.insert(elements, { label = 'Darkhast-ha (hame ergan-ha)', value = '__gov_requests' })
         table.insert(elements, { label = 'Pad va rank (hame ergan-ha)', value = '__gov_pads' })
         table.insert(elements, { label = 'Payam be hame ergan-ha', value = '__gov_broadcast' })
@@ -136,6 +137,7 @@ local function openGovBoss()
             if v == '__gov_requests' then menu.close() return openGovRequests() end
             if v == '__gov_pads' then menu.close() return OpenPadAdminMenu() end
             if v == '__gov_options' then menu.close() return openGovOptions() end
+            if v == '__gov_recruit' then menu.close() return OpenGovRecruitMenu() end
             if v == '__gov_broadcast' then
                 menu.close()
                 ESX.UI.Menu.Open('dialog', GetCurrentResourceName(), 'gov_broadcast_text', { title = 'Matn payam' }, function(d, m)

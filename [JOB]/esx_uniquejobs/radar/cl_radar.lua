@@ -128,7 +128,7 @@ local function RegisterKeyBinds()
 
 			UTIL:Notify( "Radar data deleted, please immediately restart your game without opening the radar's remote." )
 		end, false )
-		TriggerEvent( "chat:addSuggestion", "/reset_radar_data", "Resets the KVP data stored for the sun-rader resource." )
+		TriggerEvent( "chat:addSuggestion", "/reset_radar_data", "Resets the KVP data stored for the Unique Radar resource." )
 
 		-- FEATURE ADDED: Pursuit timer keybinds
 		-- Start/Pause the pursuit timer (elapsed time is preserved on pause)
@@ -157,7 +157,7 @@ local function RegisterKeyBinds()
 		end )
 		RegisterKeyMapping( "radar_pursuit_display", "Show/Hide Pursuit Timer", "keyboard", CONFIG.keyDefaults.pursuit_timer_display )
 	else
-		UTIL:Log( "ERROR: Resource name is not sun-rader. Key binds will not be registered for compatibility reasons. Contact the server owner and ask them to change the resource name back to wk_wars2x" )
+		UTIL:Log( "ERROR: Resource name is not Unique Radar. Key binds will not be registered for compatibility reasons. Contact the server owner and ask them to change the resource name back to wk_wars2x" )
 	end
 end
 

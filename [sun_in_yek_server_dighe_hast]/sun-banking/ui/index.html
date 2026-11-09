@@ -1,0 +1,76 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"/><link rel="icon" href="./favicon.ico"/><meta name="viewport" content="width=device-width,initial-scale=1"/><meta name="theme-color" content="#000000"/><meta name="description" content="Web site created using create-react-app"/><link rel="apple-touch-icon" href="./logo192.png"/><link rel="manifest" href="./manifest.json"/><title>React App</title><script defer="defer" src="./static/js/main.e68cdaeb.js"></script><link href="./static/css/main.6bc0bd7d.css" rel="stylesheet"></head><body><div id="root"></div><script>
+(function () {
+  /* ===== sun-phone -> bank card-to-card auto-fill (ADDITIVE) =====
+     The phone resolves a contact's 6-digit bank code and opens this bank via
+     bank:openMobileBank({ card }). sun-banking/client.lua then posts a
+     'prefillCardTransfer' NUI message carrying that code. We catch it here,
+     jump to the card-to-card sidebar tab and populate the recipient field.
+     The React bundle ignores this message, so opening the bank any other way
+     is completely unaffected.
+
+     The two Persian strings are built from numeric code points via
+     String.fromCharCode so this file stays pure-ASCII (no encoding pitfalls);
+     they evaluate to the exact same text the bundle renders:
+       TAB_LABEL -> the card-to-card sidebar item label
+       CARD_PH   -> the recipient card-number input placeholder prefix       */
+  var TAB_LABEL = String.fromCharCode(0x627,0x646,0x62A,0x642,0x627,0x644,0x20,0x67E,0x648,0x644);
+  var CARD_PH   = String.fromCharCode(0x634,0x645,0x627,0x631,0x647,0x20,0x6A9,0x627,0x631,0x62A);
+
+  function setReactInputValue(el, value) {
+    try {
+      var setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+      setter.call(el, value);
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    } catch (e) {}
+  }
+
+  function findCardInput() {
+    var inputs = document.getElementsByTagName('input');
+    for (var i = 0; i < inputs.length; i++) {
+      var ph = inputs[i].getAttribute('placeholder') || '';
+      if (ph.indexOf(CARD_PH) === 0) return inputs[i];
+    }
+    return null;
+  }
+
+  function clickCardByCardTab() {
+    var ps = document.getElementsByTagName('p');
+    for (var i = 0; i < ps.length; i++) {
+      if ((ps[i].textContent || '').trim() === TAB_LABEL) {
+        var nav = ps[i].closest ? ps[i].closest('div') : ps[i].parentElement;
+        if (nav && typeof nav.click === 'function') { nav.click(); return true; }
+      }
+    }
+    return false;
+  }
+
+  function autofill(card) {
+    card = String(card || '');
+    if (!card) return;
+    var attempts = 0;
+    var timer = setInterval(function () {
+      attempts++;
+      var input = findCardInput();
+      if (!input || input.offsetParent === null) {
+        clickCardByCardTab();            /* navigate to the card-to-card view */
+        input = findCardInput();
+      }
+      if (input && input.offsetParent !== null) {
+        setReactInputValue(input, card);
+        try { input.focus(); } catch (e) {}
+        clearInterval(timer);
+      } else if (attempts >= 50) {        /* ~7.5s safety timeout */
+        clearInterval(timer);
+      }
+    }, 150);
+  }
+
+  window.addEventListener('message', function (ev) {
+    var d = (ev && ev.data) || {};
+    if (d.app === 'sun-banking' && d.method === 'prefillCardTransfer' && d.data) {
+      autofill(d.data);
+    }
+  });
+})();
+</script></body></html>

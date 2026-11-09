@@ -300,12 +300,12 @@ Config.Rob.RobTypes ={
         },
 		successtime = 300,
         cooldown = 600,
-        copsrequired = 3,
+        copsrequired = 2,
         cancelDistance = 20.0,
         lastRobbed = 0,
         blipsprite = 52,
         hacktype = 0,
-        teammatesrequired = 0,
+        teammatesrequired = 1,   -- party robbery now: a party of one (the leader) is enough
     },
     ["Minibank"] ={
         reward = {
@@ -319,7 +319,7 @@ Config.Rob.RobTypes ={
         },
 		successtime = 600,
         cooldown = 1200,
-        copsrequired = 5,
+        copsrequired = 4,
         cancelDistance = 20.0,
         lastRobbed = 0,
         blipsprite = 431,

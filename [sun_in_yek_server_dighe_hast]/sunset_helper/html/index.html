@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SS_HELPER</title>
+    <link rel="stylesheet" href="style.css">
+
+    <script src="nui://game/ui/jquery.js" type="text/javascript"></script>
+    <script src="app.js"></script>
+</head>
+<body>
+    <div class="wrap">
+        <div class="HowTo_Notif" id="Notif">
+            <div class="Notif_Content">
+                <div class="Notif_Header">
+                    1
+                </div>
+                <h1 id="Notif_Title">خاک تو سرم</h1>
+                <h4 dir="rtl" id="Notif_Text">ایموت خاک تو سرم را با /e vay انجام بدید</h4>
+                <img src="giphy.gif" id="Notif_Image">
+                <!-- <div class="Notif_Progressbar">
+                    <div class="Notif_Progressbar_Main" style="width:75%" id="Notif_Progressbar">75%</div>
+                </div> -->
+            </div>
+        </div>
+
+        <div class="Panel">
+            <div class="Panel_Header">
+                <h1>آموزش شغل ها</h1>
+                <button class="ChangePageBtn" id="Learning_area" onclick="LoadCityHall()">مرکز آموزش</button>
+            </div>
+
+            <div class="Panel_Content">
+                <div id="learn_box">
+                    <div class="Learn_Box">
+                        <div class="Job_Box" id="LearnBox">
+                            <div class="Job_Box_Content">
+                                <img src="giphy.gif">
+                                <p class="Job_Box_name" dir="rtl">پلیس</p>
+                                <p class="Job_Box_info" dir="rtl">شبا که ما می خوابیم آغا پلیسه بیداره ما خواب خوب میبینیم</p>
+                                <button class="SetJob_Button">شروع شغل</button>
+                            </div>
+                        </div>
+
+                        <div class="Job_Box" id="LearnBox">
+                            <div class="Job_Box_Content">
+                                <img src="giphy.gif">
+                                <p class="Job_Box_name" dir="rtl">پلیس</p>
+                                <p class="Job_Box_info" dir="rtl">شبا که ما می خوابیم آغا پلیسه بیداره ما خواب خوب میبینیم</p>
+                                <button class="SetJob_Button">شروع شغل</button>
+                            </div>
+                        </div>
+
+                        <div class="Job_Box" id="LearnBox">
+                            <div class="Job_Box_Content">
+                                <img src="giphy.gif">
+                                <p class="Job_Box_name" dir="rtl">پلیس</p>
+                                <p class="Job_Box_info" dir="rtl">شبا که ما می خوابیم آغا پلیسه بیداره ما خواب خوب میبینیم</p>
+                                <button class="SetJob_Button">شروع شغل</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="Learn_Box_info" id="Learn_Box_Info">
+                            <img src="giphy.gif">
+                            <p>توضیحات</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="Job_Center" id="job_center">
+                    <div class="Job_Box">
+                        <div class="Job_Box_Content">
+                            <img src="giphy.gif">
+                            <p class="Job_Box_name" dir="rtl">پلیس</p>
+                            <p class="Job_Box_info" dir="rtl">شبا که ما می خوابیم آغا پلیسه بیداره ما خواب خوب میبینیم</p>
+                            <button class="SetJob_Button">شروع شغل</button>
+                        </div>
+                    </div>
+
+                    <div class="Job_Box">
+                        <div class="Job_Box_Content">
+                            <img src="giphy.gif">
+                            <p class="Job_Box_name" dir="rtl">پلیس</p>
+                            <p class="Job_Box_info" dir="rtl">شبا که ما می خوابیم آغا پلیسه بیداره ما خواب خوب میبینیم</p>
+                            <button class="SetJob_Button">شروع شغل</button>
+                        </div>
+                    </div>
+
+                    <div class="Job_Box">
+                        <div class="Job_Box_Content">
+                            <img src="giphy.gif">
+                            <p class="Job_Box_name" dir="rtl">پلیس</p>
+                            <p class="Job_Box_info" dir="rtl">شبا که ما می خوابیم آغا پلیسه بیداره ما خواب خوب میبینیم</p>
+                            <button class="SetJob_Button">شروع شغل</button>
+                        </div>
+                    </div>
+
+                    <div class="Job_Box">
+                        <div class="Job_Box_Content">
+                            <img src="giphy.gif">
+                            <p class="Job_Box_name" dir="rtl">پلیس</p>
+                            <p class="Job_Box_info" dir="rtl">شبا که ما می خوابیم آغا پلیسه بیداره ما خواب خوب میبینیم</p>
+                            <button class="SetJob_Button">شروع شغل</button>
+                        </div>
+                    </div>
+
+                    <div class="Job_Box">
+                        <div class="Job_Box_Content">
+                            <img src="giphy.gif">
+                            <p class="Job_Box_name" dir="rtl">پلیس</p>
+                            <p class="Job_Box_info" dir="rtl">شبا که ما می خوابیم آغا پلیسه بیداره ما خواب خوب میبینیم</p>
+                            <button class="SetJob_Button">شروع شغل</button>
+                        </div>
+                    </div>
+
+                    <div class="Job_Box">
+                        <div class="Job_Box_Content">
+                            <img src="giphy.gif">
+                            <p class="Job_Box_name" dir="rtl">پلیس</p>
+                            <p class="Job_Box_info" dir="rtl">شبا که ما می خوابیم آغا پلیسه بیداره ما خواب خوب میبینیم</p>
+                            <button class="SetJob_Button">شروع شغل</button>
+                        </div>
+                    </div>
+
+                    <div class="Job_Box">
+                        <div class="Job_Box_Content">
+                            <img src="giphy.gif">
+                            <p class="Job_Box_name" dir="rtl">پلیس</p>
+                            <p class="Job_Box_info" dir="rtl">شبا که ما می خوابیم آغا پلیسه بیداره ما خواب خوب میبینیم</p>
+                            <button class="SetJob_Button">شروع شغل</button>
+                        </div>
+                    </div>
+
+                    <div class="Job_Box">
+                        <div class="Job_Box_Content">
+                            <img src="giphy.gif">
+                            <p class="Job_Box_name" dir="rtl">پلیس</p>
+                            <p class="Job_Box_info" dir="rtl">شبا که ما می خوابیم آغا پلیسه بیداره ما خواب خوب میبینیم</p>
+                            <button class="SetJob_Button">شروع شغل</button>
+                        </div>
+                    </div>
+
+                    <div class="Job_Box">
+                        <div class="Job_Box_Content">
+                            <img src="giphy.gif">
+                            <p class="Job_Box_name" dir="rtl">پلیس</p>
+                            <p class="Job_Box_info" dir="rtl">شبا که ما می خوابیم آغا پلیسه بیداره ما خواب خوب میبینیم</p>
+                            <button class="SetJob_Button">شروع شغل</button>
+                        </div>
+                    </div>
+                </div>
+
+
+
+            </div>
+
+
+        </div>
+    </div>
+</body>
+</html>

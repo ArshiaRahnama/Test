@@ -174,5 +174,6 @@ for _, deptId in ipairs( { "le", "doj" } ) do
 		end
 	end
 end
+CONFIG.jobs.government = true   -- Government has the radar too
 
 CONFIG.jobs["judge"] = nil

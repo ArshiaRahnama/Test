@@ -502,7 +502,7 @@ RegisterCommand('flist', function(source, args)
     end)
     
 
-    RegisterCommand("invite", function(source, args)
+    RegisterCommand("invite_legacy", function(source, args)   -- replaced by esx_uniquejobs /invite
         local xPlayer = ESX.GetPlayerFromId(source)
         local job = xPlayer.job.name
         if job == "police" or job == "ambulance" then

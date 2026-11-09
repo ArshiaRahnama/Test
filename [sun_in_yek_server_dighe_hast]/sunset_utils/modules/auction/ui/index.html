@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="fa">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auction</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="overlay" class="overlay hidden">
+        <div id="panel" class="panel">
+            <div class="topbar"></div>
+
+            <header class="head">
+                <div class="head-right">
+                    <div class="brand">
+                        <span class="brand-mark">⟁</span>
+                        <span class="title" id="title">خانه‌ی مزایده</span>
+                    </div>
+                    <div class="subtitle" id="subtitle"></div>
+                </div>
+                <div class="head-left">
+                    <div class="timer-wrap">
+                        <span class="timer-label">زمان باقی‌مانده</span>
+                        <span class="timer" id="timer">--:--</span>
+                    </div>
+                    <button class="close-btn" id="closeBtn" title="بستن">✕</button>
+                </div>
+            </header>
+
+            <nav class="tabs" id="tabs">
+                <button class="tab" data-tab="bid" id="tabBid">مزایده</button>
+                <button class="tab" data-tab="admin" id="tabAdmin">مدیریت</button>
+            </nav>
+
+            <main class="body">
+                <section id="bidView" class="view"></section>
+                <section id="adminView" class="view hidden"></section>
+            </main>
+
+            <div id="toast" class="toast hidden"></div>
+        </div>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>

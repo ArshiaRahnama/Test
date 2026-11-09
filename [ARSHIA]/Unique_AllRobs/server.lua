@@ -959,7 +959,14 @@ function SetAlarmPolice(Name ,  typ , source )
     local rp = Config.Rob.Robs[Name].position
     if rp then
         if typ == 'start' then
-            TriggerClientEvent('ScriptPack:robZone', -1, Name, rp.x, rp.y, rp.z, 60.0, true)
+            -- only the player who started it and the members of his party may shoot freely in the area
+            local allowed = { source }
+            local inT, team = IsInTeam(source)
+            if inT and type(team) == 'table' then
+                allowed = {}
+                for id in pairs(team) do allowed[#allowed + 1] = id end
+            end
+            TriggerClientEvent('ScriptPack:robZone', -1, Name, rp.x, rp.y, rp.z, 60.0, true, allowed)
         elseif typ == 'end' or typ == 'cancel' then
             TriggerClientEvent('ScriptPack:robZone', -1, Name, rp.x, rp.y, rp.z, 60.0, false)
         end

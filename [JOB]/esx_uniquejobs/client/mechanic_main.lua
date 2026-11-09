@@ -1576,8 +1576,7 @@ Citizen.CreateThread(function()
       for k,v in pairs(Config_mechanic.Zones) do
         if(GetDistanceBetweenCoords(coords, v.Pos.x, v.Pos.y, v.Pos.z, true) < v.Size.x) then
           isInMarker  = true
-          currentZone = k
-
+          currentZone = (tostring(k):gsub('__%d+$', ''))
         end
       end
       if (isInMarker and not HasAlreadyEnteredMarker) or (isInMarker and LastZone ~= currentZone) then

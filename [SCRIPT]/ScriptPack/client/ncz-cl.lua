@@ -119,10 +119,12 @@ local function RemoveRobZone(name)
 end
 
 RegisterNetEvent('ScriptPack:robZone')
-AddEventHandler('ScriptPack:robZone', function(name, x, y, z, radius, active)
+AddEventHandler('ScriptPack:robZone', function(name, x, y, z, radius, active, allowedList)
 	RemoveRobZone(name)
 	if active then
-		local zone = { x = x + 0.0, y = y + 0.0, z = z + 0.0, radius = (radius or 60.0) + 0.0, expires = GetGameTimer() + 15 * 60 * 1000 }
+		local allowed = {}
+		for _, id in ipairs(allowedList or {}) do allowed[id] = true end
+		local zone = { allowed = allowed, x = x + 0.0, y = y + 0.0, z = z + 0.0, radius = (radius or 60.0) + 0.0, expires = GetGameTimer() + 15 * 60 * 1000 }
 		-- red area on the map for everybody
 		zone.blip = AddBlipForRadius(zone.x, zone.y, zone.z, zone.radius)
 		SetBlipColour(zone.blip, 1)
@@ -143,7 +145,7 @@ CreateThread(function()
 				RemoveRobZone(n)
 			else
 				local d = #(pc - vector3(r.x, r.y, r.z))
-				if d <= r.radius then nowIn = true end
+				if d <= r.radius and r.allowed[GetPlayerServerId(PlayerId())] then nowIn = true end
 				if d < r.radius + 150.0 then
 					wait = 0
 					local a = 40 + math.floor(math.abs(math.sin(GetGameTimer() / 600.0)) * 70)
@@ -155,7 +157,7 @@ CreateThread(function()
 		if nowIn ~= inside then
 			inside = nowIn
 			if ESX and ESX.ShowNotification then
-				ESX.ShowNotification(inside and '~r~ROB ZONE~s~: tirandazi dar in mantaghe ~g~azad~s~ ast (bedun-e mojavez va silencer)'
+				ESX.ShowNotification(inside and '~r~ROB ZONE~s~: shoma va party-e shoma dar in mantaghe ~g~azad~s~ be tirandazi hastid (bedun-e mojavez va silencer)'
 					or '~y~Shoma az mantaghe-ye rob kharej shodid.')
 			end
 		end
@@ -167,7 +169,7 @@ local function InRobZone(px, py, pz)
 	for n, r in pairs(RobZones) do
 		if GetGameTimer() > r.expires then
 			RemoveRobZone(n)
-		elseif Vdist(px, py, pz, r.x, r.y, r.z) <= r.radius then
+		elseif r.allowed[GetPlayerServerId(PlayerId())] and Vdist(px, py, pz, r.x, r.y, r.z) <= r.radius then
 			return true
 		end
 	end

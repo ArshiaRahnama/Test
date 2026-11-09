@@ -1173,11 +1173,11 @@ Citizen.CreateThread(function()
 					DrawMarker(v.Type, v.Pos.x, v.Pos.y, v.Pos.z, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, v.Size.x, v.Size.y, v.Size.z, v.Color.r, v.Color.g, v.Color.b, 100, false, false, 2, v.Rotate, nil, nil, false)
 					if v.Type == 24 and v.Isheli then
 						if distance <= v.Size.x+2 and distance <= v.Size.y+2 and distance <= v.Size.z+2 then
-							isInMarker, currentZone = true, k
+							isInMarker, currentZone = true, (tostring(k):gsub('__%d+$', ''))
 						end
 					else
 						if distance < v.Size.x then
-							isInMarker, currentZone = true, k
+							isInMarker, currentZone = true, (tostring(k):gsub('__%d+$', ''))
 						end
 					end
 				end

@@ -174,8 +174,9 @@ function render() {
   c.innerHTML = `
    <div class="tabs">${TABS.map(t => `<div class="tab ${state.tab === t ? 'on' : ''}" data-t="${t}">${t}<em>${counts[t] || 0}</em></div>`).join('')}
     <div class="tab ${state.tab === 'Style' ? 'on' : ''}" data-t="Style">Style</div>
-    <div class="tab ${state.tab === 'Options' ? 'on' : ''}" data-t="Options">Options</div>
-    <div class="tab" id="undo" style="margin-left:auto">UNDO LAST</div>
+
+    ${(o.job === 'jail' || o.job === 'government') ? '' : `<div class="tab" id="orgsw" style="margin-left:auto;border-color:${o.off ? 'var(--red)' : 'var(--green)'}">ORGAN: ${o.off ? 'OFF' : 'ON'}</div>`}
+    <div class="tab" id="undo" ${(o.job === 'jail' || o.job === 'government') ? 'style="margin-left:auto"' : ''}>UNDO LAST</div>
     <div class="tab" id="reset" style="border-color:var(--red)">RESET ORGAN</div></div>
    <div id="pane" style="display:flex;flex-direction:column;gap:12px;flex:1;min-height:0"></div>`;
   c.querySelectorAll('.tab[data-t]').forEach(t => t.onclick = () => { state.tab = t.dataset.t; render(); });
@@ -184,8 +185,10 @@ function render() {
     fn();
   };
   arm($('#undo'), 'UNDO LAST', () => post('undo', { job: o.job }));
+  const sw = $('#orgsw');
+  if (sw) sw.onclick = () => { if (o.off) post('orgswitch', { job: o.job, enabled: true }); else confirmOff(o); };
   arm($('#reset'), 'RESET ORGAN', () => post('reset', { job: o.job }));
-  state.tab === 'Style' ? renderStyle(o) : state.tab === 'Options' ? renderOptions(o) : renderPoints(o);
+  state.tab === 'Style' ? renderStyle(o) : renderPoints(o);
 }
 
 const PEDS = ['a_m_m_beach_01','cs_dreyfuss','csb_jackhowitzer','g_m_m_chicold_01','g_m_y_ballaorig_01','g_m_y_ballasout_01','g_m_y_famca_01','g_m_y_famdnf_01','g_m_y_lost_01','g_m_y_lost_02','g_m_y_salvagoon_01'];
@@ -214,6 +217,8 @@ function rowHtml(p, i) {
     btns = `<button class="btn ghost" data-gocoord="${p.x},${p.y},${p.z}">GO</button><button class="btn" data-blipmove="${esc(p.cid)}">SET HERE</button><button class="btn red" data-blipdel="${esc(p.cid)}">DEL</button>`;
   } else if (p.blip) {
     btns = `<button class="btn ghost" data-go="${esc(p.id)}">GO</button><button class="btn red" data-bliphide="${esc(p.id)}">HIDE</button>`;
+  } else if (p.zoneHide) {
+    btns = `<button class="btn ghost" data-go="${esc(p.id)}">GO</button><button class="btn" data-set="${esc(p.id)}">SET HERE</button><button class="btn red" data-zonehide="${esc(p.zoneHide)}">DEL</button>`;
   } else {
     btns = `<button class="btn ghost" data-go="${esc(p.id)}">GO</button><button class="btn" data-set="${esc(p.id)}">SET HERE</button><button class="btn red" data-del="${esc(p.del || '')}" ${p.del ? '' : 'disabled'}>DEL</button>`;
   }
@@ -235,6 +240,7 @@ function bindRows(pane, o, all) {
   pane.querySelectorAll('[data-set]').forEach(b => b.onclick = () => post('set', { job: o.job, id: b.dataset.set }));
   pane.querySelectorAll('[data-blipmove]').forEach(b => b.onclick = () => post('blipmove', { job: o.job, cid: b.dataset.blipmove }));
   pane.querySelectorAll('[data-del]').forEach(b => arm(b, 'DEL', () => b.dataset.del && post('del', { job: o.job, id: b.dataset.del })));
+  pane.querySelectorAll('[data-zonehide]').forEach(b => arm(b, 'DEL', () => post('zonehide', { job: o.job, id: b.dataset.zonehide })));
   pane.querySelectorAll('[data-bliphide]').forEach(b => arm(b, 'HIDE', () => post('bliphide', { job: o.job, id: b.dataset.bliphide })));
   pane.querySelectorAll('[data-blipdel]').forEach(b => arm(b, 'DEL', () => post('blipdel', { job: o.job, cid: b.dataset.blipdel })));
   pane.querySelectorAll('[data-undecor]').forEach(b => arm(b, 'DEL', () => post('undecor', { job: o.job, cid: b.dataset.undecor })));
@@ -252,7 +258,8 @@ function renderPoints(o) {
   const all = o.points.filter(p => p.cat === state.tab);
   const q = state.q.trim().toLowerCase();
   const pts = q ? all.filter(p => (p.label + p.id).toLowerCase().includes(q)) : all;
-  const addSrc = all.find(p => p.sec);
+  const addSrcPt = all.find(p => p.sec);
+  const addSrc = addSrcPt || ((o.secs && o.secs[state.tab]) ? { sec: o.secs[state.tab] } : null);
   const v = state.vis;
   const editing = !!state.editId;
   const panel = !v.open ? '' : `
@@ -287,7 +294,7 @@ function renderPoints(o) {
     if (vm) vm.onchange();
     const visual = v.kind === 'none' ? null : { kind: v.kind, model: v.model, r: v.r, g: v.g, b: v.b, sx: v.sx, sy: v.sy, sz: v.sz };
     if (editing) { post('decoredit', { job: o.job, cid: state.editId, visual }); state.editId = null; v.open = false; }
-    else post('add', { job: o.job, sec: addSrc ? addSrc.sec : null, cat: state.tab, visual });
+    else post('add', { job: o.job, sec: addSrc ? addSrc.sec : null, tpl: addSrc ? addSrc.tpl : null, cat: state.tab, visual });
   };
   bindRows(pane, o, all);
 }
@@ -315,6 +322,25 @@ function renderBlips(o) {
   pane.querySelectorAll('[data-bc]').forEach(x => x.onclick = () => { read(); b.color = Number(x.dataset.bc); renderBlips(o); });
   $('#bAdd').onclick = () => { read(); post('blipadd', { job: o.job, sprite: b.sprite, color: b.color, scale: b.scale, label: b.label }); };
   bindRows(pane, o, all);
+}
+
+// turning an organisation OFF: 3 confirmations, the Yes / No sides swap every step (no mis-click)
+function confirmOff(o) {
+  let step = 1;
+  const ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:50';
+  document.body.appendChild(ov);
+  const draw = () => {
+    const yes = `<button class="btn red" id="cfY" style="min-width:150px">YES, TURN OFF (${step}/3)</button>`;
+    const no = `<button class="btn ghost" id="cfN" style="min-width:150px">NO, CANCEL</button>`;
+    ov.innerHTML = `<div class="panel" style="min-width:460px;align-items:center;text-align:center">
+      <h4 style="font-size:15px">Turn OFF <b style="color:var(--gold)">${esc(o.label)}</b> ?</h4>
+      <div style="font-size:11px;opacity:.7">All its members become unemployed and nobody can take this job.</div>
+      <div class="line" style="justify-content:center">${step % 2 === 0 ? yes + no : no + yes}</div></div>`;
+    ov.querySelector('#cfN').onclick = () => ov.remove();
+    ov.querySelector('#cfY').onclick = () => { if (step >= 3) { ov.remove(); post('orgswitch', { job: o.job, enabled: false }); } else { step++; draw(); } };
+  };
+  draw();
 }
 
 state.opts = null;

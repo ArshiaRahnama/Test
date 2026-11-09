@@ -93,6 +93,7 @@ client_scripts {
 	'client/config_government.lua',
 	'client/government_main.lua',
 	'client/job_manager.lua',
+	'client/recruit_manager.lua',
 	'client/org_peds.lua',
 	'client/org_options.lua',
 
@@ -174,6 +175,7 @@ server_scripts {
 	'server/org_state.lua',
 	'server/gov_admin.lua',
 	'server/job_manager.lua',
+	'server/recruit_manager.lua',
 	'server/gov_requests.lua',
 	'server/org_peds.lua',
 	'server/org_options.lua',

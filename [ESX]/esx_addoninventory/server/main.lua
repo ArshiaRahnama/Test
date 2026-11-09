@@ -107,7 +107,17 @@ AddEventHandler('esx_addoninventory:getInventory', function(name, owner, cb)
 end)
 
 AddEventHandler('esx_addoninventory:getSharedInventory', function(name, cb)
-	cb(GetSharedInventory(name))
+	local inv = GetSharedInventory(name)
+	if inv == nil and type(name) == 'string' and name:sub(1, 8) == 'society_' and #name < 60 then
+		-- first use of this society (e.g. society_government): create the shared inventory
+		local row = MySQL.Sync.fetchAll('SELECT name FROM addon_inventory WHERE name = @name', { ['@name'] = name })
+		if not row or #row == 0 then
+			MySQL.Sync.execute('INSERT INTO addon_inventory (name, label, shared) VALUES (@name, @label, 1)', { ['@name'] = name, ['@label'] = name })
+		end
+		inv = CreateAddonInventory(name, nil, {})
+		SharedInventories[name] = inv
+	end
+	cb(inv)
 end)
 
 AddEventHandler('esx:playerLoaded', function(playerId, xPlayer)

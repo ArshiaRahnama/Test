@@ -581,7 +581,7 @@ Citizen.CreateThread(function()
                         local platetexttest = string.sub(tostring(vehplate), 1, 2)
                         local platetexttestFBi = string.sub(tostring(vehplate), 1, 3)
 
-                        if platetexttest == "PD" or platetexttest == "SH" or platetexttestFBi == "FBI" or platetexttest == "MT" then
+                        if platetexttest == "PD" or platetexttest == "SH" or platetexttestFBi == "FBI" or platetexttest == "MT" or JobName == 'government' then
                             if not wasActive then
                                 DecorSetBool(PlayerPedId(), "megafan_active", true)
                                 exports["pma-voice"]:overrideProximityRange(50.0, true)

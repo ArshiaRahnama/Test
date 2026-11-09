@@ -1,0 +1,107 @@
+#skill {
+  font-family: "Semplicita Light", "Lucida Sans Unicode", "Lucida Grande",
+    "Lucida Sans", Arial, sans-serif;
+  background-color: transparent;
+
+  width: 70vw;
+  height: 70vh;
+  margin: auto;
+  border-radius: 13px;
+}
+
+/* backGroundImg */
+/* .skillHeader {
+  background-image: url("backHead.jpg");
+} */
+
+/* BORDER OF ACHEVEMENT */
+.box {
+  position: relative;
+  /* top: 50%; */
+  /* left: 50%;  */
+  height: 60px;
+  width: 300px;
+
+  padding: 5px;
+  border: 2px solid #b78846;
+  &:before,
+  &:after {
+    content: "-";
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    font-size: 14px;
+    color: #b78846;
+    border: 2px solid #b78846;
+    line-height: 12px;
+    top: 5px;
+    text-align: center;
+  }
+  &:before {
+    left: 5px;
+  }
+  &:after {
+    right: 5px;
+  }
+  .box-inner {
+    position: relative;
+    border: 2px solid #b78846;
+    padding: 5px;
+    &:before,
+    &:after {
+      content: "-";
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      font-size: 14px;
+      color: #b78846;
+      border: 2px solid #b78846;
+      line-height: 12px;
+      bottom: -2px;
+      text-align: center;
+    }
+    &:before {
+      left: -2px;
+    }
+    &:after {
+      right: -2px;
+    }
+  }
+}
+/* END ACHEVEMENT */
+
+/* LOADPAGE ANIMATION */
+
+@keyframes slideInLeft {
+  0% {
+    transform: translateX(-300%);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+#root {
+  animation: 1s cubic-bezier(0.02, -0.01, 0, 0.9) 0s 1 slideInLeft;
+}
+
+/* END LOADPAGE ANIMATIOn */
+
+.wrapper {
+  /* padding: 10px; */
+  /* width: 500px;
+  height: 200px; */
+  overflow-y: scroll;
+}
+
+.wrapper::-webkit-scrollbar {
+  width: 5px;
+}
+
+.wrapper::-webkit-scrollbar-track {
+  background: rgba(23, 23, 23, 0.04);
+}
+
+.wrapper::-webkit-scrollbar-thumb {
+  background: #a65f40;
+}

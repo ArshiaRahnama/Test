@@ -1,0 +1,183 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Video Player</title>
+<link href="./css/video-js.css" rel="stylesheet">
+<style type="text/css">
+	html, body, div {
+		height: 100%;
+		text-align: center;
+		overflow: hidden;
+		margin: 0;
+		padding:0;
+	}
+	#videoContainer {
+		width: 100%;
+		height: 100%;
+	}
+    #twitchContainer {
+        width: 100vw;
+        height: 100vh;
+    }
+    #imageContainer {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    #radioContainer {
+        width: 100vw;
+        height: 100vh;
+        object-fit: cover;
+    }
+    html, body {
+        margin: 0;
+        padding: 0;
+    }
+
+    #fullscreen-iframe {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        border: none;
+    }
+    .h_iframe-aparat_embed_frame {
+        position: relative;
+    }
+
+    .h_iframe-aparat_embed_frame .ratio {
+        display: block;
+        width: 100%;
+        height: auto;
+    }
+
+    .h_iframe-aparat_embed_frame iframe {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+    }
+</style>
+</head>
+<body>
+    <img id="imageContainer" style="display: none" alt="">
+    <video style="display: none;"
+        id="videoContainer"
+        preload="auto"
+        loop>
+    </video>
+    <iframe id="iframeElement" style="display: none;" src=""
+            frameborder="0" 
+            marginheight="0" 
+            marginwidth="0" 
+            width="100%" 
+            height="100%" 
+            scrolling="auto">
+    </iframe>
+    <script src="./js/jquery.min.js" ></script>
+    <script src="./js/video.js" ></script>
+    <script>
+        const imageElement = $('#imageContainer');
+        const videoElement = $('#videoContainer');
+        const videoElement2 = document.getElementById('videoContainer');
+        const videoPlayer = videojs("videoContainer", "{autoplay: true}");
+        const iframeElement = $('#iframeElement')
+        $(window).on('message', function($event) {
+            const eventData = event.data;
+            if (eventData.type === 'play') {
+                if (eventData.source == 'image') {
+                    videoElement.css('display', 'none');
+                    iframeElement.css('display', 'none');
+                    iframeElement.attr('src', '')
+                    videoPlayer.src({type: 'video/mp4', src: ''})
+                    imageElement.attr('src', eventData.url);
+                    imageElement.css('display', 'block');
+                }else if(eventData.source == 'video'){
+                    imageElement.css('display', 'none');
+                    iframeElement.css('display', 'none');
+                    iframeElement.attr('src', '')
+                    videoElement.css('display', 'block');
+                    videoPlayer.src({type: 'video/mp4', src: eventData.url})
+                    videoPlayer.volume(0.1);
+                    videoPlayer.play();
+                    videoPlayer.on('ready', function () {
+                        videoPlayer.volume(0.1);
+                    })
+                }else if(eventData.source == 'stream'){
+                    imageElement.css('display', 'none');
+                    iframeElement.css('display', 'none');
+                    videoElement.css('display', 'block');
+                    videoPlayer.src({type: 'application/x-mpegURL', src: eventData.url})
+                    videoPlayer.volume(0.5);
+                    videoPlayer.on('ready', function () {
+                        videoPlayer.volume(0.5);
+                    })
+                }else if(eventData.source == 'aparat'){
+                    videoElement.css('display', 'none');
+                    videoPlayer.src({type: 'video/mp4', src: ''})
+                    imageElement.css('display', 'none');
+                    console.log(eventData.url);
+                    iframeElement.attr('src', eventData.url)
+                    iframeElement.css('display', 'block');
+                }
+            } else if (eventData.type === 'pause') {
+                if (eventData.source == 'youtube') {
+                    youtubePlayer.pause();
+                } else if (eventData.source == 'twitch') {
+                    if (twitchPlayer) {
+                        twitchPlayer.pause()
+                    }
+                } else if (eventData.source == 'radio') {
+                    radioAudio.src = ""
+                }
+            } else if (eventData.type === 'stop') {
+                youtubePlayer.pause();
+                youtubePlayer.currentTime(0);
+                if (twitchPlayer) {
+                    twitchPlayer.pause()
+                }
+                radioAudio.src = ""
+                youtubeElement.style.display = 'block';
+                twitchElement.style.display = 'none';
+                imageElement.style.display = 'none';
+                radioElement.style.display = 'none';
+            } else if (eventData.type === 'resume') {
+                if (eventData.source == 'youtube') {
+                    youtubePlayer.play();
+                } else if (eventData.source == 'twitch') {
+                    if (twitchPlayer) {
+                        twitchPlayer.play();
+                    }
+                } else if (eventData.source == 'radio') {
+                    radioAudio.src = "https://radio.bay.life/radio/8000/radio.mp3"
+                    radioAudio.play();
+                }
+            } else if (eventData.type === 'volume') {
+                var iframe = document.getElementById('iframeElement');
+                var innerDoc = iframe.contentDocument || iframe.contentWindow.document;
+                const videoElement3 = innerDoc.getElementById('video-container_html5_api');
+                if (videoElement3 != null) {
+                    videoElement3.volume = eventData.volume
+                }else{
+                    var inputs = innerDoc.getElementsByTagName('video');
+                    for(var i = 0; i < inputs.length; i++) {
+                        inputs[i].volume = eventData.volume
+                    }
+                }
+            }
+        });
+
+        $(document).ready(function() {
+            const queryString = window.location.search;
+            const urlParams = new URLSearchParams(queryString);
+            const id = urlParams.get('id');
+            $.post("https://sun-tv/nuiReady", JSON.stringify({ id: id}));
+        });
+
+    </script>
+</body>
+</html>

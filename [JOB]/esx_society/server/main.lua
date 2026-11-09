@@ -640,6 +640,14 @@ ESX.RegisterServerCallback('esx_society:setJob', function(source, cb, identifier
 			end
 
 			if type == 'hire' then
+				-- same rules as /invite: official-organisation members can't be hired, minimum level (Government may override)
+				local okH, allowed, mInv, mTgt = pcall(function() return exports['esx_uniquejobs']:CanHire(source, xTarget.source, job) end)
+				if okH and allowed == false then
+					TriggerClientEvent('esx:showNotification', source, mInv or 'Emkan-e estekhdam vojud nadarad.')
+					TriggerClientEvent('esx:showNotification', xTarget.source, mTgt or 'Emkan-e estekhdam vojud nadarad.')
+					cb()
+					return
+				end
 				TriggerClientEvent('esx:showNotification', xTarget.source, _U('you_have_been_hired', job))
 				xTarget.setJob(job, grade)
 				grren  = true

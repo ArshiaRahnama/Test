@@ -185,6 +185,16 @@ local function applyOp(op)
             if v == nil or not parent then return end
             local nv = writePoint(v, tonumber(op.x), tonumber(op.y), tonumber(op.z), tonumber(op.h))
             parent[key] = nv
+        elseif op.op == 'zonehide' then
+            local z = resolve(op.path)
+            if type(z) == 'table' and type(z.Pos) == 'table' then z.Pos.x, z.Pos.y, z.Pos.z = 0.0, 0.0, -5000.0 end
+        elseif op.op == 'add' and op.tpl then
+            local zones, tpl = resolve(op.sec), resolve(op.tpl)
+            if type(zones) ~= 'table' or type(tpl) ~= 'table' then return end
+            local base = split(op.tpl)[3]:gsub('__%d+$', '')
+            local clone = deepCopy(tpl)
+            setAllPoints(clone, tonumber(op.x), tonumber(op.y), tonumber(op.z), tonumber(op.h))
+            zones[base .. '__' .. tostring(op.sfx or '1')] = clone
         elseif op.op == 'add' then
             local list = resolve(op.sec)
             if type(list) ~= 'table' then return end
@@ -242,10 +252,18 @@ local function collect(cfgName, node, path, arrPath, delPath, out, depth)
             local nDel = isArr and p or delPath          -- element to delete
             if isPoint(v) then
                 local rec = { id = p, cat = category(p), x = v.x + 0.0, y = v.y + 0.0, z = v.z + 0.0 }
+                local zp = split(p)
+                if zp[2] == 'Zones' and zp[3] then            -- name-keyed zones (taxi / mechanic / weazel)
+                    local zonePath = zp[1] .. '/Zones/' .. zp[3]
+                    rec.sec, rec.tpl = zp[1] .. '/Zones', zonePath
+                    if zp[3]:find('__%d+$') then rec.zoneDel = zonePath      -- a zone we added: real delete
+                    else rec.zoneHide = zonePath end                           -- original: hidden (code uses it by name)
+                    nArr, nDel = nil, nil
+                end
                 local hk = headingKey(v)
                 if hk then rec.h = tonumber(v[hk]) elseif type(v) == 'vector4' then rec.h = v.w end
-                rec.sec = nArr
-                rec.del = nDel
+                rec.sec = rec.sec or nArr
+                rec.del = rec.zoneDel or nDel
                 local parts = split(p)
                 rec.label = table.concat(parts, ' > ', 2)
                 out[#out + 1] = rec
@@ -290,11 +308,25 @@ local function snapshotOrg(r)
                               r = d.r, g = d.g, b = d.b, sx = d.sx, sy = d.sy, sz = d.sz }
         end
     end
+    local secs = {}
+    local SECKEYS = { Boss = 'BossActions', Locker = 'Cloakrooms', Armory = 'Armories' }
+    local function findSec(node, path, depth)
+        if depth > 5 or type(node) ~= 'table' then return end
+        for k, v in pairs(node) do
+            if type(k) == 'string' and type(v) == 'table' and not skipKey(k) then
+                for cat, key in pairs(SECKEYS) do
+                    if k == key and not secs[cat] and (next(v) == nil or isArray(v)) then secs[cat] = path .. '/' .. k end
+                end
+                if not isPoint(v) then findSec(v, path .. '/' .. k, depth + 1) end
+            end
+        end
+    end
+    findSec(cfg, r.cfg, 0)
     local style = {}
     for k in pairs(STYLE_KEYS) do style[k] = cfg[k] end
     if type(cfg.MarkerSize) == 'table' then style.sx, style.sy, style.sz = cfg.MarkerSize.x, cfg.MarkerSize.y, cfg.MarkerSize.z end
     if type(cfg.MarkerColor) == 'table' then style.r, style.g, style.b = cfg.MarkerColor.r, cfg.MarkerColor.g, cfg.MarkerColor.b end
-    return { job = r.job, label = r.label, points = pts, style = style }
+    return { job = r.job, label = r.label, points = pts, style = style, secs = secs }
 end
 
 -- untouched copy of every organisation config, taken before the first saved edit is applied
@@ -398,6 +430,11 @@ AddEventHandler('ujjob:rebuild', function(job, ops, count)
     refreshUI('Anjam shod')
 end)
 
+AddEventHandler('org_state:changed', function(job, enabled)
+    OffJobs[job] = (enabled == false) and true or nil
+    refreshUI()
+end)
+
 RegisterNetEvent('ujjob:openOk')
 AddEventHandler('ujjob:openOk', function(off)
     OffJobs = off or {}
@@ -462,7 +499,8 @@ AddEventHandler('ujjob:nui', function(d)
         -- a ped / object works through ox_target only: no config point is copied, so the
         -- organisation's own marker and E-key never appear there
         if d.sec and validPath(d.job, d.sec) and not targetOnly then
-            TriggerServerEvent('ujjob:save', d.job, { op = 'add', sec = d.sec, x = x, y = y, z = z, h = h })
+            TriggerServerEvent('ujjob:save', d.job, { op = 'add', sec = d.sec, tpl = (d.tpl and validPath(d.job, d.tpl)) and d.tpl or nil,
+                sfx = tostring(GetGameTimer()), x = x, y = y, z = z, h = h })
         end
         if type(v) == 'table' and (v.kind == 'ped' or v.kind == 'object') then
             TriggerServerEvent('ujjob:save', d.job, { op = 'decor', id = newId(), cat = tostring(d.cat or 'Other'), sec = (d.sec and validPath(d.job, d.sec)) and d.sec or nil, kind = v.kind, model = v.model,
@@ -477,6 +515,8 @@ AddEventHandler('ujjob:nui', function(d)
                 x = cur.x, y = cur.y, z = cur.z, h = cur.h, r = tonumber(v.r) or cur.r, g = tonumber(v.g) or cur.g, b = tonumber(v.b) or cur.b,
                 sx = tonumber(v.sx) or cur.sx, sy = tonumber(v.sy) or cur.sy, sz = tonumber(v.sz) or cur.sz })
         end
+    elseif a == 'zonehide' then
+        if validPath(d.job, d.id) then TriggerServerEvent('ujjob:save', d.job, { op = 'zonehide', path = d.id }) end
     elseif a == 'undecor' then
         TriggerServerEvent('ujjob:save', d.job, { op = 'undecor', id = tostring(d.cid) })
     elseif a == 'blipadd' then
@@ -507,6 +547,10 @@ AddEventHandler('ujjob:nui', function(d)
                 SendNUIMessage({ type = 'jm_options', job = d.job, ranks = ranks or {} })
             end, d.job)
         end)
+    elseif a == 'orgswitch' then
+        if d.job ~= 'jail' and d.job ~= 'government' then
+            TriggerServerEvent('org_state:toggle', d.job, d.enabled == true)
+        end
     elseif a == 'undo' then
         TriggerServerEvent('ujjob:undo', d.job)
     elseif a == 'reset' then

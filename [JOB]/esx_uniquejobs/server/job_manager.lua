@@ -85,8 +85,10 @@ local function sanitize(op, job)
     end
     if op.op == 'set' and cleanPath(op.path) and num(op.x) and num(op.y) and num(op.z) then
         return { op = 'set', path = op.path, x = tonumber(op.x), y = tonumber(op.y), z = tonumber(op.z), h = tonumber(op.h) }
+    elseif op.op == 'zonehide' and cleanPath(op.path) then
+        return { op = 'zonehide', path = op.path }
     elseif op.op == 'add' and cleanPath(op.sec) and num(op.x) and num(op.y) and num(op.z) then
-        return { op = 'add', sec = op.sec, x = tonumber(op.x), y = tonumber(op.y), z = tonumber(op.z), h = tonumber(op.h) }
+        return { op = 'add', sec = op.sec, tpl = cleanPath(op.tpl) and op.tpl or nil, sfx = (type(op.sfx) == 'string' and not op.sfx:find('[^%d]') and #op.sfx < 16) and op.sfx or nil, x = tonumber(op.x), y = tonumber(op.y), z = tonumber(op.z), h = tonumber(op.h) }
     elseif op.op == 'del' and cleanPath(op.path) then
         return { op = 'del', path = op.path }
     elseif op.op == 'cfg' and type(op.cfg) == 'string' and op.cfg:match('^Config_%a+$') and STYLE_OK[op.key] then
