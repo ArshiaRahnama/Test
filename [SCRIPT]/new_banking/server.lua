@@ -29,6 +29,36 @@ end)
 
 -- ================= Helpers =================
 
+-- ================= Character (IC) names =================
+-- xPlayer.name can be the FiveM/Steam account name on some ESX builds, so the in-character
+-- name is read from users.firstname / users.lastname and cached per identifier.
+local nameCache = {}
+
+local function CleanName(n)
+	n = tostring(n or ''):gsub('_', ' '):gsub('%s+', ' '):gsub('^%s+', ''):gsub('%s+$', '')
+	return n
+end
+
+local function NameOf(xPlayer)
+	if not xPlayer then return '' end
+	return nameCache[xPlayer.identifier] or CleanName(xPlayer.name)
+end
+
+-- cb(name) — always returns a string (falls back to xPlayer.name / empty)
+local function GetCharacterName(identifier, fallback, cb)
+	if nameCache[identifier] then return cb(nameCache[identifier]) end
+	exports.oxmysql:single('SELECT firstname, lastname FROM users WHERE identifier = ?', {identifier}, function(r)
+		local n = ''
+		if r and r.firstname and tostring(r.firstname) ~= '' then
+			n = CleanName(tostring(r.firstname) .. ' ' .. tostring(r.lastname or ''))
+		end
+		if n == '' then n = CleanName(fallback) end
+		if n ~= '' then nameCache[identifier] = n end
+		cb(n)
+	end)
+end
+
+
 -- Writes one row into our own history table (used for the player-facing "Tarikhche" tab
 -- and for the "recent contacts" quick-pick chips).
 local function RecordTransaction(identifier, txType, amount, counterparty, counterpartyId)
@@ -59,7 +89,9 @@ local function PushBalance(_source)
 	local balance = xPlayer.bank
 	local cash = xPlayer.money
 	exports.oxmysql:scalar('SELECT iban FROM users WHERE identifier = ?', {xPlayer.identifier}, function(iban)
-		TriggerClientEvent('currentbalance1', _source, balance, iban, cash)
+		GetCharacterName(xPlayer.identifier, xPlayer.name, function(charName)
+			TriggerClientEvent('currentbalance1', _source, balance, iban, cash, charName)
+		end)
 	end)
 end
 
@@ -193,11 +225,11 @@ AddEventHandler('bank:transferx', function(to, amountt)
 		xPlayer.removeBank(amountt)
 		zPlayer.addBank(amountt)
 		exports.ScriptPack:TransferLog({source = xPlayer.source, target = zPlayer.source, type = "transfer", amount = amountt})
-		RecordTransaction(xPlayer.identifier, 'transfer_out', amountt, zPlayer.name, zPlayer.source)
-		RecordTransaction(zPlayer.identifier, 'transfer_in', amountt, xPlayer.name, xPlayer.source)
+		RecordTransaction(xPlayer.identifier, 'transfer_out', amountt, NameOf(zPlayer), zPlayer.source)
+		RecordTransaction(zPlayer.identifier, 'transfer_in', amountt, NameOf(xPlayer), xPlayer.source)
 		LogToPanel('Bank Transfer', ('**From:** %s [%s]\n**To:** %s [%s]\n**Amount:** $%s'):format(GetPlayerName(_source), _source, GetPlayerName(zPlayer.source), zPlayer.source, amountt), _source)
-		TriggerClientEvent('esx:showAdvancedNotification', _source, 'Bank', 'Enteqale Vajh', 'Shoma ~r~$' .. amountt .. '~s~ Be ~r~' .. string.gsub(zPlayer.name, "_", " ") .. ' ~s~Enteqal Dadid.', 'CHAR_BANK_MAZE', 9)
-		TriggerClientEvent('esx:showAdvancedNotification', zPlayer.source, 'Bank', 'Enteqale Vajh', '~r~$' .. amountt .. '~s~ Az tarafe ~r~' .. string.gsub(xPlayer.name, "_", " ") .. ' ~s~Be hesabe Shoma Variz Shod.', 'CHAR_BANK_MAZE', 9)
+		TriggerClientEvent('esx:showAdvancedNotification', _source, 'Bank', 'Enteqale Vajh', 'Shoma ~r~$' .. amountt .. '~s~ Be ~r~' .. string.gsub(NameOf(zPlayer), "_", " ") .. ' ~s~Enteqal Dadid.', 'CHAR_BANK_MAZE', 9)
+		TriggerClientEvent('esx:showAdvancedNotification', zPlayer.source, 'Bank', 'Enteqale Vajh', '~r~$' .. amountt .. '~s~ Az tarafe ~r~' .. string.gsub(NameOf(xPlayer), "_", " ") .. ' ~s~Be hesabe Shoma Variz Shod.', 'CHAR_BANK_MAZE', 9)
 		PushResult(_source, true, 'transfer', amountt)
 		PushBalance(_source)
 		PushBalance(zPlayer.source)
@@ -234,10 +266,10 @@ AddEventHandler('bank:transferx', function(to, amountt)
 		if zPlayer then
 			-- recipient is online
 			zPlayer.addBank(amountt)
-			TriggerClientEvent('esx:showAdvancedNotification', zPlayer.source, 'Bank', 'Enteqale Vajh', '~r~$' .. amountt .. '~s~ Az tarafe ~r~' .. string.gsub(xPlayer.name, "_", " ") .. ' ~s~Be hesabe Shoma Variz Shod.', 'CHAR_BANK_MAZE', 9)
+			TriggerClientEvent('esx:showAdvancedNotification', zPlayer.source, 'Bank', 'Enteqale Vajh', '~r~$' .. amountt .. '~s~ Az tarafe ~r~' .. string.gsub(NameOf(xPlayer), "_", " ") .. ' ~s~Be hesabe Shoma Variz Shod.', 'CHAR_BANK_MAZE', 9)
 			exports.ScriptPack:TransferLog({source = xPlayer.source, target = zPlayer.source, type = "transfer", amount = amountt})
-			RecordTransaction(xPlayer.identifier, 'transfer_out', amountt, zPlayer.name, zPlayer.source)
-			RecordTransaction(zPlayer.identifier, 'transfer_in', amountt, xPlayer.name, xPlayer.source)
+			RecordTransaction(xPlayer.identifier, 'transfer_out', amountt, NameOf(zPlayer), zPlayer.source)
+			RecordTransaction(zPlayer.identifier, 'transfer_in', amountt, NameOf(xPlayer), xPlayer.source)
 			LogToPanel('Bank Transfer (IBAN)', ('**From:** %s [%s]\n**To:** %s [%s] (IBAN %s)\n**Amount:** $%s'):format(GetPlayerName(_source), _source, GetPlayerName(zPlayer.source), zPlayer.source, to, amountt), _source)
 			PushBalance(zPlayer.source)
 		else
@@ -245,8 +277,8 @@ AddEventHandler('bank:transferx', function(to, amountt)
 			-- ScriptPack's TransferLog assumes both sides are online, so we log this
 			-- case ourselves instead of calling it (avoids an error on a nil source).
 			exports.oxmysql:update('UPDATE users SET bank = bank + ? WHERE identifier = ?', {amountt, targetIdentifier})
-			RecordTransaction(xPlayer.identifier, 'transfer_out', amountt, to, nil)
-			RecordTransaction(targetIdentifier, 'transfer_in', amountt, xPlayer.name, xPlayer.source)
+			RecordTransaction(xPlayer.identifier, 'transfer_out', amountt, nameCache[targetIdentifier] or to, nil)
+			RecordTransaction(targetIdentifier, 'transfer_in', amountt, NameOf(xPlayer), xPlayer.source)
 			LogToPanel('Bank Transfer (Offline Recipient)', ('**From:** %s [%s]\n**To Identifier:** %s (IBAN %s, offline)\n**Amount:** $%s'):format(GetPlayerName(_source), _source, targetIdentifier, to, amountt), _source)
 		end
 
@@ -254,6 +286,62 @@ AddEventHandler('bank:transferx', function(to, amountt)
 		PushResult(_source, true, 'transfer', amountt)
 		PushBalance(_source)
 	end)
+end)
+
+
+-- ================= Recipient lookup (shows the IC name BEFORE paying) =================
+-- Resolves "to" exactly like the transfer does: up to 4 digits = online player ID,
+-- anything else = card number / IBAN (works for offline players too).
+
+local lookupCooldown = {}
+
+local function PushRecipient(_source, query, ok, name, reason)
+	TriggerClientEvent('bank:recipientInfo', _source, { query = query, ok = ok, name = name, reason = reason })
+end
+
+RegisterServerEvent('bank:lookupRecipient')
+AddEventHandler('bank:lookupRecipient', function(to)
+	local _source = source
+	local xPlayer = ESX.GetPlayerFromId(_source)
+	if not xPlayer then return end
+
+	-- light rate limit so the lookup can't be spammed to enumerate card numbers
+	local now = GetGameTimer()
+	if lookupCooldown[_source] and now - lookupCooldown[_source] < 250 then return end
+	lookupCooldown[_source] = now
+
+	to = tostring(to or ''):gsub('%s+', '')
+	if to == '' or #to > 24 then return end
+
+	local targetId = tonumber(to)
+	if targetId and #to <= 4 then
+		if tonumber(_source) == targetId then
+			return PushRecipient(_source, to, false, nil, 'self')
+		end
+		local zPlayer = ESX.GetPlayerFromId(targetId)
+		if not zPlayer then
+			return PushRecipient(_source, to, false, nil, 'notfound')
+		end
+		return GetCharacterName(zPlayer.identifier, zPlayer.name, function(n)
+			PushRecipient(_source, to, true, n, nil)
+		end)
+	end
+
+	exports.oxmysql:single('SELECT identifier FROM users WHERE iban = ?', {to}, function(result)
+		if not result then
+			return PushRecipient(_source, to, false, nil, 'notfound')
+		end
+		if result.identifier == xPlayer.identifier then
+			return PushRecipient(_source, to, false, nil, 'self')
+		end
+		GetCharacterName(result.identifier, '', function(n)
+			PushRecipient(_source, to, true, n ~= '' and n or nil, n == '' and 'noname' or nil)
+		end)
+	end)
+end)
+
+AddEventHandler('playerDropped', function()
+	lookupCooldown[source] = nil
 end)
 
 -- ================= Balance / IBAN =================
@@ -279,12 +367,14 @@ AddEventHandler('bank:balance', function()
             iban = 'IR' .. table.concat(digits)
             exports.oxmysql:update('UPDATE users SET iban = ? WHERE identifier = ?', {iban, identifier}, function(affectedRows)
                 if affectedRows > 0 then
-                    print(('IBAN generated for player %s: %s'):format(xPlayer.name, iban))
+                    print(('IBAN generated for player %s: %s'):format(NameOf(xPlayer), iban))
                 end
             end)
         end
 
-        TriggerClientEvent('currentbalance1', _source, balance, iban, cash)
+        GetCharacterName(identifier, xPlayer.name, function(charName)
+            TriggerClientEvent('currentbalance1', _source, balance, iban, cash, charName)
+        end)
     end)
 end)
 

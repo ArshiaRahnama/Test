@@ -47,9 +47,13 @@ AddEventHandler('new_banking:disableforhour', function(pos, time)
 end)
 
 RegisterNetEvent('currentbalance1')
-AddEventHandler('currentbalance1', function(balance, iban, cash)
-    local id = PlayerId()
-    local playerName = GetPlayerName(id)
+AddEventHandler('currentbalance1', function(balance, iban, cash, characterName)
+    -- characterName is the in-character (IC) name sent by server.lua; GetPlayerName
+    -- is only the FiveM/Steam account name, so it is just a fallback.
+    local playerName = characterName
+    if not playerName or playerName == '' then
+        playerName = GetPlayerName(PlayerId())
+    end
     SendNUIMessage({
         type = "balanceHUD",
         balance = balance,
@@ -220,4 +224,21 @@ RegisterNUICallback('NUIFocusOff', function(data, cb)
   SetNuiFocus(false, false)
   SendNUIMessage({type = 'closeAll'})
   cb('ok')
+end)
+
+-- Recipient lookup: lets the UI show the receiver's IC name before the player pays
+RegisterNUICallback('lookupRecipient', function(data, cb)
+	TriggerServerEvent('bank:lookupRecipient', data.to)
+	cb('ok')
+end)
+
+RegisterNetEvent('bank:recipientInfo')
+AddEventHandler('bank:recipientInfo', function(info)
+	SendNUIMessage({
+		type = "recipientInfo",
+		query = info.query,
+		ok = info.ok,
+		name = info.name,
+		reason = info.reason
+	})
 end)

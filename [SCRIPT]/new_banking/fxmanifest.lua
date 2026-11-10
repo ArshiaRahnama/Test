@@ -9,8 +9,9 @@ ui_page('client/html/UI.html')
 files {
     'client/html/UI.html',
     'client/html/style.css',
-    'client/html/sun/*.png',
-    'client/html/font/*.woff2'
+    'client/html/img/*.png',
+    'client/html/font/*.woff2',
+    'client/html/font/*.ttf'
 }
 
 dependency 'ox_target'

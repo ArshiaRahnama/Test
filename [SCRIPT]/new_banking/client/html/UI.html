@@ -13,8 +13,8 @@
 			<!-- ===== SIDEBAR ===== -->
 			<aside class="sidebar">
 				<div class="sidebar-logo">
-					<img src="sun/ss.png" alt="">
-					<p class="brand-name fa">بانک یونیک</p>
+					<img src="img/logo.png" alt="">
+					<p class="brand-name">UNIQUE BANK</p>
 				</div>
 
 				<nav class="nav">
@@ -38,8 +38,9 @@
 
 				<div class="profile-card">
 					<div class="profile-top">
-						<img src="sun/avatar.png" alt="">
+						<img src="img/avatar.png" alt="">
 						<p class="profile-name username1">—</p>
+						<span class="online-dot"></span>
 					</div>
 					<div class="profile-stats">
 						<div class="profile-stat">
@@ -67,20 +68,28 @@
 				<div class="panel" id="screen-home" style="display:flex;">
 					<div class="top-row">
 						<div class="account-card" id="accountCard" title="کپی شماره کارت">
-							<img src="sun/card.png" alt="">
-							<h1 class="card-number" id="cardNumber">----</h1>
-							<span class="copy-toast fa" id="copyToast">کپی شد</span>
+							<div class="card-face">
+								<div class="card-arcs"></div>
+								<img class="card-logo" src="img/logo.png" alt="">
+								<span class="card-label fa">شماره کارت</span>
+								<div class="card-chip"></div>
+								<h1 class="card-number" id="cardNumber">----</h1>
+								<span class="card-exp">09/25</span>
+								<p class="card-holder username1">—</p>
+								<div class="card-shine" id="cardShine"></div>
+								<span class="copy-toast fa" id="copyToast">شماره کارت کپی شد</span>
+							</div>
 						</div>
 						<div class="info-col">
 							<div class="info-box">
-								<div class="info-icon"><img src="sun/bank.png" alt=""></div>
+								<div class="info-icon"><img src="img/bank.png" alt=""></div>
 								<div class="info-text">
 									<h1 class="info-label fa">موجودی حساب</h1>
 									<h1 class="info-value">$<span class="curbalance" id="mainBalance">0</span></h1>
 								</div>
 							</div>
 							<div class="info-box">
-								<div class="info-icon"><img src="sun/coin.png" alt=""></div>
+								<div class="info-icon"><img src="img/coin.png" alt=""></div>
 								<div class="info-text">
 									<h1 class="info-label fa">پول نقد</h1>
 									<h1 class="info-value">$<span class="curcash" id="cashDisplay">0</span></h1>
@@ -92,6 +101,7 @@
 					<div class="chart-card">
 						<h1 class="chart-title fa">نمودار موجودی بانک در 30 روز اخیر</h1>
 						<div class="chart-wrap" id="chartWrap"></div>
+						<div class="chart-tip" id="chartTip"></div>
 					</div>
 				</div>
 
@@ -100,9 +110,16 @@
 					<div class="cash-box">
 						<div class="cash-inner">
 							<input id="cashAmount" type="text" inputmode="numeric" class="field-input fa" placeholder="مبلغ ($)" autocomplete="off">
+							<div class="chips" id="cashChips">
+								<button type="button" class="chip" data-v="10000">10K</button>
+								<button type="button" class="chip" data-v="100000">100K</button>
+								<button type="button" class="chip" data-v="1000000">1M</button>
+								<button type="button" class="chip fa" data-v="cash">کل نقد</button>
+								<button type="button" class="chip fa" data-v="bank">کل بانک</button>
+							</div>
 							<div class="btn-row">
-								<button class="btn fa" id="btnDeposit" type="button"><p>واریز</p></button>
-								<button class="btn fa" id="btnWithdraw" type="button"><p>برداشت</p></button>
+								<button class="btn dep fa" id="btnDeposit" type="button"><p>واریز</p></button>
+								<button class="btn wd fa" id="btnWithdraw" type="button"><p>برداشت</p></button>
 							</div>
 						</div>
 					</div>
@@ -115,7 +132,7 @@
 						</div>
 					</div>
 
-					<div class="table-box h340" id="cashTable"></div>
+					<div class="table-box h300" id="cashTable"></div>
 				</div>
 
 				<!-- ===== TRANSFER ===== -->
@@ -124,9 +141,9 @@
 						<h1 class="fa">انتقال</h1>
 						<div class="transfer-fields">
 							<div>
-								<input id="to" type="text" class="field-input to fa" placeholder="آیدی بازیکن، شماره کارت یا نام" autocomplete="off">
+								<input id="to" type="text" class="field-input to fa" placeholder="آیدی بازیکن یا شماره کارت" autocomplete="off">
 								<div class="suggest-box" id="suggestBox"></div>
-								<p class="hint" id="toHint" style="color:transparent">شماره کارت را وارد کنید</p>
+								<div class="recipient" id="toHint"></div>
 								<div class="contacts-row fa" id="contactsRow"></div>
 							</div>
 							<div>
@@ -152,7 +169,7 @@
 				<!-- ===== TRANSFER CONFIRM MODAL ===== -->
 				<div class="modal-overlay" id="confirmOverlay">
 					<div class="modal-box">
-						<img src="sun/warn.png" alt="">
+						<img src="img/warn.png" alt="">
 						<p class="modal-title fa">تایید تراکنش</p>
 						<div class="modal-text fa" id="confirmText"></div>
 						<div class="modal-actions">
@@ -211,8 +228,7 @@
 				post('recentContacts');
 				document.getElementById('to').value = '';
 				document.getElementById('amountt').value = '';
-				delete document.getElementById('to').dataset.pickedName;
-				updateToHint();
+				resetRecipient();
 				document.getElementById('suggestBox').style.display = 'none';
 			}
 		}
@@ -361,7 +377,7 @@
 
 		function burstConfetti(){
 			resizeConfettiCanvas();
-			const colors = ['#6359E9', '#4f47be', '#9333ea', '#4ade80', '#fde047'];
+			const colors = ['#f5b642', '#ffd27a', '#d9962a', '#ffffff', '#4ade80'];
 			const cx = confettiCanvas.width / 2;
 			for (let i = 0; i < 46; i++){
 				confettiParticles.push({
@@ -484,11 +500,22 @@
 			return 10 * magnitude;
 		}
 
+		function fmtShort(n){
+			n = Number(n) || 0;
+			const abs = Math.abs(n);
+			if (abs >= 1e9) return (n / 1e9).toFixed(abs >= 1e10 ? 0 : 1).replace(/\.0$/, '') + 'B';
+			if (abs >= 1e6) return (n / 1e6).toFixed(abs >= 1e7 ? 0 : 1).replace(/\.0$/, '') + 'M';
+			if (abs >= 1e3) return (n / 1e3).toFixed(abs >= 1e4 ? 0 : 1).replace(/\.0$/, '') + 'K';
+			return String(Math.round(n));
+		}
+
+		let chartState = null;
+
 		function drawBalanceChart(rows){
 			const wrap = document.getElementById('chartWrap');
 			const points = computeBalanceSeries(rows);
 			const w = 706, h = 262;
-			const padL = 64, padR = 18, padT = 14, padB = 26;
+			const padL = 52, padR = 18, padT = 16, padB = 26;
 			const plotW = w - padL - padR;
 			const plotH = h - padT - padB;
 
@@ -501,7 +528,7 @@
 			let yLabels = '';
 			for (let g = 0; g <= gridCount; g++){
 				const v = (maxVal / gridCount) * g;
-				yLabels += `<text x="${padL - 10}" y="${yFor(v) + 4}" text-anchor="end" class="chart-axis-text">${formatMoney(v)}</text>`;
+				yLabels += `<text x="${padL - 10}" y="${yFor(v) + 4}" text-anchor="end" class="chart-axis-text">${fmtShort(v)}</text>`;
 			}
 
 			let xLabels = '';
@@ -510,20 +537,62 @@
 			}
 
 			const linePath = points.map((v, i) => `${i === 0 ? 'M' : 'L'} ${xFor(i).toFixed(1)} ${yFor(v).toFixed(1)}`).join(' ');
-			const dots = points.map((v, i) => `<circle cx="${xFor(i).toFixed(1)}" cy="${yFor(v).toFixed(1)}" r="3.5" class="chart-dot"/>`).join('');
-			const axis = `<line x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT + plotH}" stroke="#006BD6" stroke-width="3"/>
-				<line x1="${padL}" y1="${padT + plotH}" x2="${w - padR}" y2="${padT + plotH}" stroke="#006BD6" stroke-width="3"/>`;
+			const areaPath = `${linePath} L ${xFor(30).toFixed(1)} ${(padT + plotH).toFixed(1)} L ${xFor(0).toFixed(1)} ${(padT + plotH).toFixed(1)} Z`;
+			const dots = points.map((v, i) => `<circle cx="${xFor(i).toFixed(1)}" cy="${yFor(v).toFixed(1)}" r="3" class="chart-dot"/>`).join('');
+			const last = points.length - 1;
+			const axis = `<line x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT + plotH}" stroke="#f5b642" stroke-width="2"/>
+				<line x1="${padL}" y1="${padT + plotH}" x2="${w - padR}" y2="${padT + plotH}" stroke="#f5b642" stroke-width="2"/>`;
 
 			wrap.innerHTML = `
-				<svg viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg">
+				<svg viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg" id="chartSvg">
+					<defs>
+						<linearGradient id="chartFade" x1="0" y1="0" x2="0" y2="1">
+							<stop offset="0%" stop-color="#f5b642" stop-opacity="0.38"/>
+							<stop offset="100%" stop-color="#f5b642" stop-opacity="0"/>
+						</linearGradient>
+					</defs>
 					${axis}
 					${yLabels}
 					${xLabels}
+					<path d="${areaPath}" fill="url(#chartFade)"/>
 					<path d="${linePath}" class="chart-line"/>
 					${dots}
+					<circle cx="${xFor(last).toFixed(1)}" cy="${yFor(points[last]).toFixed(1)}" r="9" class="chart-pulse"/>
+					<line id="chartCursor" class="chart-cursor" x1="0" y1="${padT}" x2="0" y2="${padT + plotH}"/>
 				</svg>
 			`;
+			chartState = { points, w, h, padL, padR, xFor, yFor };
 		}
+
+		(function bindChartTip(){
+			const wrap = document.getElementById('chartWrap');
+			const tip = document.getElementById('chartTip');
+			wrap.addEventListener('mousemove', function(e){
+				if (!chartState) return;
+				const svg = document.getElementById('chartSvg');
+				if (!svg) return;
+				const r = svg.getBoundingClientRect();
+				const scale = r.width / chartState.w;
+				const sx = (e.clientX - r.left) / scale;
+				let idx = Math.round(((sx - chartState.padL) / (chartState.w - chartState.padL - chartState.padR)) * 30);
+				idx = Math.max(0, Math.min(30, idx));
+				const cx = chartState.xFor(idx);
+				const cur = document.getElementById('chartCursor');
+				cur.setAttribute('x1', cx); cur.setAttribute('x2', cx); cur.style.opacity = 1;
+				const daysAgo = 30 - idx;
+				tip.innerHTML = `<b>$${formatMoney(chartState.points[idx])}</b><span class="fa">${daysAgo === 0 ? 'امروز' : daysAgo + ' روز پیش'}</span>`;
+				tip.style.display = 'flex';
+				const pr = wrap.parentElement.getBoundingClientRect();
+				const left = Math.min(Math.max(r.left - pr.left + cx * scale - 55, 8), pr.width - 118);
+				tip.style.left = left + 'px';
+				tip.style.top = (r.top - pr.top + chartState.yFor(chartState.points[idx]) * scale - 52) + 'px';
+			});
+			wrap.addEventListener('mouseleave', function(){
+				tip.style.display = 'none';
+				const cur = document.getElementById('chartCursor');
+				if (cur) cur.style.opacity = 0;
+			});
+		})();
 
 		// ================= History tables =================
 
@@ -553,7 +622,7 @@
 				<tbody>${rows.map(r => {
 					const dep = r.type === 'deposit';
 					return `<tr class="row">
-						<td><div class="icon-cell"><img src="sun/${dep ? 'down' : 'up'}.png" alt=""></div></td>
+						<td><div class="icon-cell"><img src="img/${dep ? 'down' : 'up'}.png" alt=""></div></td>
 						<td>${formatDate(r.created_at)}</td>
 						<td class="${dep ? 'pos' : 'neg'}">${dep ? '+' : '-'} $${formatMoney(r.amount)}</td>
 						<td class="gold">$${formatMoney(r.after)}</td>
@@ -579,7 +648,7 @@
 				<tbody>${rows.map(r => {
 					const inn = r.type === 'transfer_in';
 					return `<tr class="row">
-						<td><div class="icon-cell"><img src="sun/${inn ? 'down' : 'up'}.png" alt="">${esc(r.counterparty || '—')}</div></td>
+						<td><div class="icon-cell"><img src="img/${inn ? 'down' : 'up'}.png" alt="">${esc(r.counterparty || '—')}</div></td>
 						<td>${formatDate(r.created_at)}</td>
 						<td class="${inn ? 'pos' : 'neg'}">${inn ? '+' : '-'}$${formatMoney(r.amount)}</td>
 						<td class="gold">$${formatMoney(r.after)}</td>
@@ -606,16 +675,59 @@
 
 		// ================= Contacts / transfer hint =================
 
+		// recipient = { state: 'idle'|'loading'|'ok'|'err', name, query, msg }
+		let recipient = { state: 'idle' };
+		let lookupTimer = null;
+
+		function normTo(v){ return String(v || '').replace(/\s+/g, ''); }
+
 		function updateToHint(){
-			const hint = document.getElementById('toHint');
-			const name = toInput.dataset.pickedName;
-			if (name){
-				hint.style.color = '';
-				hint.innerHTML = `<span class="who">${esc(name)}</span> : انتقال به`;
+			const box = document.getElementById('toHint');
+			const send = document.getElementById('btnSend');
+			box.className = 'recipient';
+			if (recipient.state === 'ok'){
+				box.classList.add('ok');
+				box.innerHTML = `<span class="r-ico">&#10003;</span><div class="r-body"><span class="r-label fa">گیرنده</span><span class="r-name">${esc(recipient.name)}</span></div>`;
+			} else if (recipient.state === 'err'){
+				box.classList.add('err');
+				box.innerHTML = `<span class="r-ico">&#10005;</span><div class="r-body"><span class="r-name fa">${esc(recipient.msg)}</span></div>`;
+			} else if (recipient.state === 'loading'){
+				box.classList.add('loading');
+				box.innerHTML = `<span class="r-ico dots"><i></i><i></i><i></i></span><div class="r-body"><span class="r-label fa">در حال بررسی...</span></div>`;
 			} else {
-				hint.style.color = 'transparent';
-				hint.textContent = 'شماره کارت را وارد کنید';
+				box.innerHTML = '';
 			}
+			send.classList.toggle('disabled', recipient.state !== 'ok');
+		}
+
+		function resetRecipient(){
+			clearTimeout(lookupTimer);
+			recipient = { state: 'idle' };
+			updateToHint();
+		}
+
+		function triggerLookup(immediate){
+			clearTimeout(lookupTimer);
+			const q = normTo(toInput.value);
+			if (!q){ resetRecipient(); return; }
+			recipient = { state: 'loading', query: q };
+			updateToHint();
+			lookupTimer = setTimeout(() => post('lookupRecipient', { to: q }), immediate ? 0 : 350);
+		}
+
+		function applyRecipientInfo(info){
+			if (!info || normTo(info.query) !== normTo(toInput.value)) return; // stale answer
+			if (info.ok && info.name){
+				recipient = { state: 'ok', name: info.name, query: info.query };
+			} else {
+				const msgs = {
+					self: 'نمی‌توانید به خودتان انتقال دهید',
+					notfound: 'شناسه یا شماره کارت پیدا نشد',
+					noname: 'حساب پیدا شد ولی نام آن ثبت نشده'
+				};
+				recipient = { state: 'err', msg: msgs[info.reason] || msgs.notfound, query: info.query };
+			}
+			updateToHint();
 		}
 
 		function renderContacts(rows){
@@ -633,8 +745,7 @@
 			const chip = e.target.closest('.contact-chip');
 			if (!chip) return;
 			toInput.value = chip.dataset.id;
-			toInput.dataset.pickedName = chip.dataset.name;
-			updateToHint();
+			triggerLookup(true);
 		});
 
 		// ================= Wiring =================
@@ -652,6 +763,41 @@
 		document.getElementById('navHome').addEventListener('click', () => showScreen('home'));
 		document.getElementById('navCash').addEventListener('click', () => showScreen('cash'));
 		document.getElementById('navTransfer').addEventListener('click', () => showScreen('transfer'));
+
+		// ---- Card tilt + shine ----
+		const accountCard = document.getElementById('accountCard');
+		const cardShine = document.getElementById('cardShine');
+		accountCard.addEventListener('mousemove', function(e){
+			const r = accountCard.getBoundingClientRect();
+			const px = (e.clientX - r.left) / r.width;
+			const py = (e.clientY - r.top) / r.height;
+			accountCard.style.transform = `perspective(700px) rotateX(${(0.5 - py) * 10}deg) rotateY(${(px - 0.5) * 12}deg) scale(1.04)`;
+			cardShine.style.background = `radial-gradient(circle at ${px * 100}% ${py * 100}%, rgba(255,255,255,0.28), transparent 55%)`;
+		});
+		accountCard.addEventListener('mouseleave', function(){
+			accountCard.style.transform = '';
+			cardShine.style.background = 'transparent';
+		});
+
+		// ---- Live thousands separators on money inputs ----
+		function bindMoneyInput(el){
+			el.addEventListener('input', function(){
+				const digits = el.value.replace(/[^0-9]/g, '').slice(0, 12);
+				el.value = digits ? Number(digits).toLocaleString('en-US') : '';
+			});
+		}
+		['cashAmount', 'amountt'].forEach(id => bindMoneyInput(document.getElementById(id)));
+
+		// ---- Quick amount chips ----
+		document.getElementById('cashChips').addEventListener('click', function(e){
+			const c = e.target.closest('.chip');
+			if (!c) return;
+			let v = c.dataset.v;
+			if (v === 'cash') v = currentCash;
+			else if (v === 'bank') v = currentBank;
+			v = Math.floor(Number(v) || 0);
+			document.getElementById('cashAmount').value = v ? v.toLocaleString('en-US') : '';
+		});
 
 		// ---- Deposit / Withdraw ----
 		const cashInput = document.getElementById('cashAmount');
@@ -676,8 +822,7 @@
 		const suggestBox = document.getElementById('suggestBox');
 
 		toInput.addEventListener('input', function(){
-			delete toInput.dataset.pickedName;
-			updateToHint();
+			triggerLookup(false);
 			const q = toInput.value.trim().toLowerCase();
 			if (!q || /^\d+$/.test(q)){
 				suggestBox.style.display = 'none';
@@ -698,10 +843,9 @@
 			const item = e.target.closest('.suggest-item');
 			if (!item) return;
 			toInput.value = item.dataset.id;
-			toInput.dataset.pickedName = item.dataset.name;
 			suggestBox.style.display = 'none';
 			suggestBox.innerHTML = '';
-			updateToHint();
+			triggerLookup(true);
 		});
 
 		document.addEventListener('click', function(e){
@@ -714,13 +858,17 @@
 		const confirmOverlay = document.getElementById('confirmOverlay');
 
 		document.getElementById('btnSend').addEventListener('click', function(){
-			const to = toInput.value.trim();
+			const to = normTo(toInput.value);
 			const amountt = document.getElementById('amountt').value.replace(/[^0-9]/g, '');
 			if (!to || !amountt) return;
-
-			const label = toInput.dataset.pickedName ? `${toInput.dataset.pickedName} (#${to})` : to;
+			if (recipient.state !== 'ok' || recipient.query !== to){
+				showToast(false, recipient.state === 'loading' ? 'کمی صبر کنید، گیرنده در حال بررسی است' : 'ابتدا شناسه یا شماره کارت معتبر وارد کنید');
+				playErrorBuzz();
+				return;
+			}
 			document.getElementById('confirmText').innerHTML =
-				`<span class="g">${esc(label)}</span> (به) <span class="g">$${formatMoney(amountt)}</span>`;
+				`<div class="confirm-who"><span class="confirm-label">گیرنده</span><span class="g confirm-name">${esc(recipient.name)}</span><span class="confirm-id">${esc(to)}</span></div>` +
+				`<div class="confirm-amt">$${formatMoney(amountt)}</div>`;
 			pendingTransfer = { to, amountt };
 			confirmOverlay.classList.add('show');
 		});
@@ -733,8 +881,7 @@
 			confirmOverlay.classList.remove('show');
 			toInput.value = '';
 			document.getElementById('amountt').value = '';
-			delete toInput.dataset.pickedName;
-			updateToHint();
+			resetRecipient();
 		});
 
 		document.getElementById('confirmNo').addEventListener('click', function(){
@@ -782,6 +929,8 @@
 				renderTables();
 			} else if (data.type === 'recentContacts'){
 				renderContacts(data.rows || []);
+			} else if (data.type === 'recipientInfo'){
+				applyRecipientInfo(data);
 			} else if (data.type === 'actionResult'){
 				handleActionResult(data);
 			}
