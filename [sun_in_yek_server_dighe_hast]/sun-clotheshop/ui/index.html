@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <link rel="stylesheet" href="/ui/style.css"/>
+    <title>فروشگاه لباس</title>
+</head>
+<body>
+    <div id="app" class="hidden">
+        <!-- Right Side: Category Sidebar + Main Panel -->
+        <div class="right-side">
+            <!-- Category Sidebar -->
+            <div class="category-sidebar">
+                <div class="sidebar-header">
+                    <svg class="shop-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
+                        <line x1="3" y1="6" x2="21" y2="6"/>
+                        <path d="M16 10a4 4 0 01-8 0"/>
+                    </svg>
+                </div>
+                <div class="category-icons" id="categoriesList"></div>
+                <div class="sidebar-footer">
+                    <button class="close-btn" onclick="closeShop()">✕</button>
+                </div>
+            </div>
+
+            <!-- Main Panel - Items -->
+            <div class="main-panel">
+                <div class="panel-header">
+                    <div class="header-right">
+                        <span class="category-name" id="currentCategory"><span class="select-arrow">→</span> انتخاب کنید</span>
+                        <span class="items-count"><span id="itemsCount">0</span></span>
+                    </div>
+                    <div class="header-left">
+                        <button class="camera-btn" onclick="resetCamera()" onmouseenter="showBtnTooltip('تنظیم دوربین', this)" onmouseleave="hideBtnTooltip()">🎥</button>
+                        <button class="settings-btn" onclick="toggleSettings()" onmouseenter="showBtnTooltip('تنظیمات', this)" onmouseleave="hideBtnTooltip()">⚙</button>
+                        <div class="rotation-btns">
+                            <button class="rotate-btn" onclick="rotatePlayer(-1)">►</button>
+                            <button class="rotate-btn" onclick="rotatePlayer(1)">◄</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="جستجو..." oninput="searchItems(this.value)">
+                    <span class="search-icon">🔍</span>
+                </div>
+
+                <div class="items-grid" id="itemsGrid">
+                    <div class="empty-state" id="emptyState">یک دسته‌بندی انتخاب کنید</div>
+                </div>
+
+                <div class="selected-info-bar">
+                    <span class="selected-name" id="selectedName">-</span>
+                    <span class="selected-price" id="selectedPrice">-</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Clothing Toggle Toolbar (Global) -->
+        <div class="clothing-toolbar-global" id="clothingToolbarGlobal"></div>
+
+        <!-- Cart Button (Floating) -->
+        <div class="cart-floating" id="cartFloating" onclick="toggleCart()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="9" cy="21" r="1"/>
+                <circle cx="20" cy="21" r="1"/>
+                <path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/>
+            </svg>
+            <span class="cart-badge" id="cartBadge">0</span>
+        </div>
+
+        <!-- Left Side: Colors Panel -->
+        <div class="colors-panel hidden" id="colorsPanel">
+            <div class="panel-header">
+                <div class="header-right">
+                    <span class="category-name">انتخاب رنگ</span>
+                </div>
+            </div>
+
+            <div class="colors-grid" id="colorsGrid">
+                <div class="empty-state">رنگی موجود نیست</div>
+            </div>
+
+            <div class="colors-panel-footer">
+                <button class="add-to-cart-btn" id="addToCartBtn" onclick="addToCart()" disabled>افزودن به سبد</button>
+            </div>
+        </div>
+
+        <!-- Settings Panel -->
+        <div class="settings-overlay hidden" id="settingsOverlay" onclick="toggleSettings()"></div>
+        <div class="settings-panel hidden" id="settingsPanel">
+            <div class="settings-header">
+                <span class="settings-title">تنظیمات نمایش</span>
+                <button class="settings-close" onclick="toggleSettings()">✕</button>
+            </div>
+            <div class="settings-section">
+                <span class="settings-label">تعداد ستون‌ها</span>
+                <div class="settings-grid-selector">
+                    <button class="settings-grid-btn" data-cols="4" onclick="setAllGridColumns(4)">4</button>
+                    <button class="settings-grid-btn active" data-cols="3" onclick="setAllGridColumns(3)">3</button>
+                    <button class="settings-grid-btn" data-cols="2" onclick="setAllGridColumns(2)">2</button>
+                    <button class="settings-grid-btn" data-cols="1" onclick="setAllGridColumns(1)">1</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notification Container -->
+        <div class="notification-container" id="notificationContainer"></div>
+
+        <!-- Cart Panel (Modal) -->
+        <div class="cart-panel hidden" id="cartPanel">
+            <div class="cart-header">
+                <span class="cart-title">سبد خرید</span>
+                <div class="cart-header-btns">
+                    <button class="clear-cart-btn" id="clearCartBtn" onclick="clearCart()" onmouseenter="showBtnTooltip('خالی کردن سبد', this)" onmouseleave="hideBtnTooltip()">🗑</button>
+                    <button class="cart-close" onclick="toggleCart()">✕</button>
+                </div>
+            </div>
+            <div class="cart-items" id="cartItems">
+                <div class="cart-empty">سبد خرید خالی است</div>
+            </div>
+            <div class="cart-footer">
+                <div class="cart-total">
+                    <span>جمع کل:</span>
+                    <span id="cartTotal">$0</span>
+                </div>
+                <div class="cart-buttons">
+                    <button class="tryout-btn" id="tryoutBtn" onclick="tryoutCart()" disabled>پرو کردن</button>
+                    <button class="checkout-btn" id="checkoutBtn" onclick="checkout()" disabled>تکمیل خرید</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/ui/app.js"></script>
+</body>
+</html>

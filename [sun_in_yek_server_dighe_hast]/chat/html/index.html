@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title></title>
+  <link href="vendor/latofonts.css" rel="stylesheet">
+  <link href="vendor/flexboxgrid.6.3.1.min.css" rel="stylesheet"></link>
+  <link href="vendor/animate.3.5.2.min.css" rel="stylesheet"></link>
+  <link href="index.css" rel="stylesheet"></link>
+
+  <script src="vendor/vue.2.3.3.min.js" type="text/javascript"></script>
+  <script src="config.default.js" type="text/javascript"></script>
+  <script src="config.js" type="text/javascript"></script>
+</head>
+<body>
+  <div id="app"></div>
+
+  <!-- App Template -->
+  <script type="text/x-template" id="app_template">
+    <div id="app" :style="[computedAppStyle, themeStyle]" :class="'font-' + settings.fontSize">
+      <!-- Settings Panel (outside chat-container to avoid background overlap) -->
+      <div class="settings-panel" v-show="showSettings" :style="computedSettingsStyle" @click.stop>
+          <div class="settings-header" @mousedown="startDragSettings" style="cursor: move;">
+            <span class="settings-title">Chat Settings</span>
+            <span class="settings-close" @click="showSettings = false">×</span>
+          </div>
+
+          <div class="settings-tabs">
+            <div class="settings-tab" :class="{ active: settingsTab === 'chat' }" @click="settingsTab = 'chat'">Chat</div>
+            <div class="settings-tab" :class="{ active: settingsTab === 'menus' }" @click="settingsTab = 'menus'">Menus</div>
+          </div>
+
+          <div class="settings-body">
+            <div v-show="settingsTab === 'chat'">
+            <!-- Behavior Section -->
+            <div class="settings-section">
+              <div class="section-title">Behavior</div>
+              <div class="setting-row">
+                <span class="setting-label">Show on new message</span>
+                <label class="toggle-switch">
+                  <input type="checkbox" v-model="tempSettings.showOnNewMessage">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <div class="setting-row">
+                <span class="setting-label">Lock position</span>
+                <label class="toggle-switch">
+                  <input type="checkbox" v-model="tempSettings.lockPosition">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Appearance Section -->
+            <div class="settings-section">
+              <div class="section-title">Appearance</div>
+
+              <div class="setting-row">
+                <span class="setting-label">Font Size</span>
+                <div class="button-group">
+                  <button :class="{ active: tempSettings.fontSize === 'small' }" @click="tempSettings.fontSize = 'small'">S</button>
+                  <button :class="{ active: tempSettings.fontSize === 'medium' }" @click="tempSettings.fontSize = 'medium'">M</button>
+                  <button :class="{ active: tempSettings.fontSize === 'large' }" @click="tempSettings.fontSize = 'large'">L</button>
+                </div>
+              </div>
+
+              <div class="setting-row">
+                <span class="setting-label">Width</span>
+                <span class="setting-value">{{ tempSettings.chatWidth }}%</span>
+              </div>
+              <input type="range" class="slider" min="20" max="60" v-model="tempSettings.chatWidth">
+
+              <div class="setting-row">
+                <span class="setting-label">Height</span>
+                <span class="setting-value">{{ tempSettings.chatHeight }}px</span>
+              </div>
+              <input type="range" class="slider" min="150" max="400" v-model="tempSettings.chatHeight">
+            </div>
+
+            <!-- Theme Section -->
+            <div class="settings-section">
+              <div class="section-title">Theme</div>
+              <div class="setting-row">
+                <span class="setting-label">Accent Color</span>
+                <div class="color-picker-wrapper">
+                  <input type="color" class="color-picker" v-model="tempSettings.themeColor">
+                  <span class="color-value">{{ tempSettings.themeColor }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Filter Section - Grouped by category for scalability -->
+            <div class="settings-section show-in-live-section">
+              <div class="section-title">Show in Live Tab</div>
+              <div class="filter-groups-container">
+                <div class="filter-group" v-for="group in showInLiveGrouped" :key="group.name">
+                  <div class="filter-group-header">
+                    <span class="filter-group-name">{{ group.name }}</span>
+                    <span class="filter-group-count">{{ group.items.length }}</span>
+                  </div>
+                  <div class="filter-group-items">
+                    <label class="filter-chip"
+                           v-for="option in group.items"
+                           :key="option.key"
+                           :class="{ active: tempSettings.showInLive[option.key] }">
+                      <input type="checkbox" v-model="tempSettings.showInLive[option.key]">
+                      <span>{{ option.label }}</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+            </div>
+            <div v-show="settingsTab === 'menus'">
+            <!-- Menus Section -->
+            <div class="settings-section">
+              <div class="menu-block" v-for="m in menuDefs" :key="m.key">
+                <div class="menu-block-title">{{ m.label }}</div>
+                <div class="setting-row" v-if="m.dual">
+                  <span class="setting-label">Rang asli az chat</span>
+                  <label class="toggle-switch">
+                    <input type="checkbox" v-model="tempSettings.menus[m.key].usePrimaryChat">
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
+                <div class="setting-row" v-if="m.dual" v-show="!tempSettings.menus[m.key].usePrimaryChat">
+                  <span class="setting-label">Rang asli</span>
+                  <div class="color-picker-wrapper">
+                    <input type="color" class="color-picker" v-model="tempSettings.menus[m.key].colorPrimary">
+                    <span class="color-value">{{ tempSettings.menus[m.key].colorPrimary }}</span>
+                  </div>
+                </div>
+                <div class="setting-row">
+                  <span class="setting-label">{{ m.dual ? 'Rang dovom az chat' : 'Rang az chat' }}</span>
+                  <label class="toggle-switch">
+                    <input type="checkbox" v-model="tempSettings.menus[m.key].useChatColor">
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
+                <div class="setting-row" v-show="!tempSettings.menus[m.key].useChatColor">
+                  <span class="setting-label">{{ m.dual ? 'Rang dovom' : 'Rang menu' }}</span>
+                  <div class="color-picker-wrapper">
+                    <input type="color" class="color-picker" v-model="tempSettings.menus[m.key].color">
+                    <span class="color-value">{{ tempSettings.menus[m.key].color }}</span>
+                  </div>
+                </div>
+                <div class="menu-relocate-hint" v-show="m.pos">Ghost {{ m.label }} ro ba mouse bekesh ta jabeja beshe</div>
+              </div>
+            </div>
+            </div>
+          </div>
+
+          <div class="settings-footer">
+            <div class="unsaved-indicator" v-show="hasUnsavedChanges">
+              <span class="unsaved-dot"></span>
+              <span>Changes not saved</span>
+            </div>
+            <div class="footer-buttons">
+              <button class="btn-reset" @click="resetSettings">Reset</button>
+              <button class="btn-cancel" @click="showSettings = false">Cancel</button>
+              <button class="btn-apply" :class="{ 'has-changes': hasUnsavedChanges }" @click="applySettings">Apply</button>
+            </div>
+          </div>
+          <div class="settings-hint">
+            Tip: Use <span class="hint-command">/chatsetting</span> to open this menu
+          </div>
+        </div>
+
+      <!-- F5/F6 Menu Ghost Preview (relocate) -->
+      <div class="menu-ghost-layer" v-show="showSettings && settingsTab === 'menus'">
+        <div class="menu-ghost" :style="ghostStyle('f5')" @mousedown="startDragGhost($event, 'f5')">
+          <div class="menu-ghost-accent" :style="{ backgroundColor: menuAccent('f5') }"></div>
+          <div class="menu-ghost-row">
+            <div class="menu-ghost-ic" :style="{ backgroundColor: menuAccent('f5') }"></div>
+            <div class="menu-ghost-title" :style="{ color: menuAccent('f5') }">Menu Gang</div>
+          </div>
+          <div class="menu-ghost-tag" :style="{ color: menuAccent('f5'), borderColor: accentRgba('f5', 0.5) }">F5</div>
+        </div>
+        <div class="menu-ghost" :style="ghostStyle('f6')" @mousedown="startDragGhost($event, 'f6')">
+          <div class="menu-ghost-accent" :style="{ backgroundColor: menuAccent('f6') }"></div>
+          <div class="menu-ghost-row">
+            <div class="menu-ghost-ic" :style="{ backgroundColor: menuAccent('f6') }"></div>
+            <div class="menu-ghost-title" :style="{ color: menuAccent('f6') }">Menu Job</div>
+          </div>
+          <div class="menu-ghost-tag" :style="{ color: menuAccent('f6'), borderColor: accentRgba('f6', 0.5) }">F6</div>
+        </div>
+      </div>
+
+      <!-- Main Chat Container -->
+      <div class="chat-container" :class="{ fadeOut: !showWindow && !showInput }">
+        <!-- Tab Bar - Generated from CHAT_TABS config -->
+        <div class="chat-tabs" @mousedown="startDragChat" style="cursor: move;">
+          <div class="chat-tab"
+               v-for="tab in visibleTabs"
+               :key="tab.key"
+               :class="{ active: activeTab === tab.key, 'staff-tab': tab.key === 'staff', 'has-messages': tab.key === 'staff' && (tabs.staff.unread || tabs.staff.messages.length > 0) }"
+               @click="switchTab(tab.key)">
+            {{ tab.label }}
+            <span class="badge" :class="{ show: tab.unread }"></span>
+          </div>
+        </div>
+
+        <!-- Chat Messages -->
+        <div class="chat-window" :style="computedChatStyle">
+          <div class="chat-messages" ref="messages">
+            <message v-for="msg in currentTabMessages"
+                     :templates="templates"
+                     :multiline="msg.multiline"
+                     :args="msg.args"
+                     :color="msg.color"
+                     :template="msg.template"
+                     :template-id="msg.templateId"
+                     :key="msg">
+            </message>
+          </div>
+        </div>
+
+        <!-- Input Area -->
+        <div class="chat-input" v-show="showInput">
+          <span class="settings-icon" @click="toggleSettings">⚙</span>
+          <span class="prefix">›</span>
+          <textarea v-model="message"
+                    ref="input"
+                    type="text"
+                    autofocus
+                    spellcheck="false"
+                    placeholder="Type a message..."
+                    @keyup.tab="On_Tab"
+                    @keyup.esc="hideInput"
+                    @keyup="keyUp"
+                    @keydown="keyDown"
+                    @keypress.enter.prevent="send">
+          </textarea>
+        </div>
+
+        <!-- Suggestions -->
+        <suggestions :message="message" :suggestions="suggestions">
+        </suggestions>
+      </div>
+    </div>
+  </script>
+
+  <!-- Message Template -->
+  <script type="text/x-template" id="message_template">
+    <div class="msg" :class="{ multiline, 'is-hovered': isHovered }"
+         @click="copyMessage"
+         @contextmenu="copyMessage"
+         @mouseenter="isHovered = true"
+         @mouseleave="isHovered = false">
+      <span class="msg-content" v-html="textEscaped"></span>
+      <span class="copy-icon" v-show="isHovered && !showCopied">⎘</span>
+      <span class="copied-badge" v-show="showCopied">✓</span>
+    </div>
+  </script>
+
+  <!-- Suggestions Template -->
+  <script type="text/x-template" id="suggestions_template">
+    <ul class="suggestions" v-show="currentSuggestions.length > 0">
+      <li class="suggestion" v-for="s in currentSuggestions">
+        <p>
+          <span :class="{ 'disabled': s.disabled }">
+            {{s.name}}
+          </span>
+          <span class="param"
+                v-for="(p, index) in s.params"
+                :class="{ 'disabled': p.disabled }">
+            [{{p.name}}]
+          </span>
+        </p>
+        <small class="help">
+          <template v-if="!s.disabled">
+            {{s.help}}
+          </template>
+          <template v-for="p in s.params" v-if="!p.disabled">
+            {{p.help}}
+          </template>
+        </small>
+      </li>
+    </ul>
+  </script>
+
+  <!-- Report Panel (Admin Only) -->
+  <div id="reportPanel">
+    <div class="rp-header">
+      <span class="rp-title">Reports</span>
+      <div class="rp-lock-btn" title="Lock">
+        <svg class="rp-lock-open" viewBox="0 0 24 24"><path d="M12 17a2 2 0 0 0 2-2 2 2 0 0 0-2-2 2 2 0 0 0-2 2 2 2 0 0 0 2 2m6-9a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2h9V6a3 3 0 0 0-3-3 3 3 0 0 0-3 3H7a5 5 0 0 1 5-5 5 5 0 0 1 5 5v2h1z"/></svg>
+        <svg class="rp-lock-closed" viewBox="0 0 24 24" style="display:none"><path d="M12 17a2 2 0 0 0 2-2 2 2 0 0 0-2-2 2 2 0 0 0-2 2 2 2 0 0 0 2 2m6-9a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2h1V6a5 5 0 0 1 5-5 5 5 0 0 1 5 5v2h1m-1-2V6a3 3 0 0 0-3-3 3 3 0 0 0-3 3v2h6z"/></svg>
+      </div>
+      <div class="rp-size-btn" title="Size">
+        <svg viewBox="0 0 24 24"><path d="M19 13H13V19H11V13H5V11H11V5H13V11H19V13Z"/></svg>
+      </div>
+      <div class="rp-sort-btn" title="Sort">
+        <svg viewBox="0 0 24 24"><path d="M3 18h6v-2H3v2zM3 6v2h18V6H3zm0 7h12v-2H3v2z"/></svg>
+      </div>
+      <div class="rp-tabs">
+        <div class="rp-tab active" data-tab="active">Active <span class="rp-tab-count" id="rpActiveCount"></span></div>
+        <div class="rp-tab" data-tab="history">History <span class="rp-tab-count" id="rpHistoryCount"></span></div>
+      </div>
+    </div>
+    <div class="rp-sort-menu">
+      <div class="rp-sort-option active" data-sort="time">Zaman</div>
+      <div class="rp-sort-option" data-sort="category">Category</div>
+    </div>
+    <div class="rp-list"></div>
+  </div>
+  <div id="rpGlobalTooltip"></div>
+
+  <!-- Sun Dispatch — Offer popup (vasat-e safhe) -->
+  <div id="sund-offer">
+    <div class="offer-head">
+      <span class="offer-id" id="sund-offer-id">#—</span>
+      <span class="offer-title">نوبت شماست - یک ریپورت دارید</span>
+      <span class="offer-dot"></span>
+    </div>
+    <div class="offer-body">
+      <div class="row"><span>Player ID :</span><b id="sund-offer-ownerId">—</b></div>
+      <div class="row"><span>Player :</span><b id="sund-offer-owner">—</b></div>
+      <div class="row"><span>Category :</span><b id="sund-offer-cat">—</b></div>
+      <div class="row"><span>Report :</span><b id="sund-offer-msg">—</b></div>
+    </div>
+    <div class="offer-bar-wrap"><div class="offer-bar" id="sund-offer-bar"></div></div>
+    <div class="offer-actions">
+      <button class="offer-btn offer-accept"       id="sund-offer-accept">قبول کردن <span class="offer-cmd">/arq</span></button>
+      <button class="offer-btn offer-accept-spect" id="sund-offer-accept-spect">قبول و اسپکت <span class="offer-cmd">/ars</span></button>
+    </div>
+    <div class="offer-countdown" id="sund-offer-countdown">برای اکسپت کردن ۳۰ ثانیه فرصت دارید</div>
+  </div>
+
+  <!-- Sun Dispatch — Join queue category panel -->
+  <div id="sund-join-panel" style="display:none">
+    <div class="sjp-overlay"></div>
+    <div class="sjp-container">
+      <div class="sjp-header">
+        <span class="sjp-title">نوع ریپورت برای صف را مشخص کنید</span>
+        <div class="sjp-close-btn">
+          <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </div>
+      </div>
+      <div class="sjp-grid"></div>
+      <div class="sjp-empty" style="display:none">دسته بندی موجود نیست</div>
+      <div class="sjp-actions">
+        <button class="sjp-join-btn">ورود به صف</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Report Submit Panel (Player) -->
+  <div id="reportSubmitPanel" style="display:none">
+    <div class="rs-overlay"></div>
+    <div class="rs-container">
+      <div class="rs-header">
+        <div class="rs-back-btn rs-desc-back" style="display:none">
+          <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M4 13h12.17l-5.59 5.59L12 20l8-8-8-8-1.41 1.41L16.17 11H4v2z"/></svg>
+        </div>
+        <span class="rs-title">ثبت گزارش</span>
+        <div class="rs-close-btn">
+          <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </div>
+      </div>
+      <div class="rs-step rs-step-categories">
+        <div class="rs-subtitle">دسته بندی را انتخاب کنید</div>
+        <div class="rs-cat-grid"></div>
+      </div>
+      <div class="rs-step rs-step-desc" style="display:none">
+        <div class="rs-selected-cat rs-desc-cat"></div>
+        <div class="rs-desc-box"></div>
+        <div class="rs-desc-form">
+          <textarea class="rs-message" placeholder="توضیحات خود را بنویسید..." maxlength="128"></textarea>
+          <div class="rs-char-count"><span class="rs-char-current">0</span>/128</div>
+        </div>
+        <button class="rs-submit-btn">ارسال گزارش</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ticket Status Indicator (Player) -->
+  <div id="ticketIndicator" style="display:none">
+    <div class="ti-inner">
+      <svg class="ti-icon" viewBox="0 0 24 24" width="28" height="28"><path fill="currentColor" d="M22 10V6a2 2 0 0 0-2-2H4c-1.1 0-1.99.9-1.99 2v4c1.1 0 1.99.9 1.99 2s-.89 2-2 2v4c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2v-4c-1.1 0-2-.9-2-2s.9-2 2-2zm-2-1.46c-1.19.69-2 1.99-2 3.46s.81 2.77 2 3.46V18H4v-2.54c1.19-.69 2-1.99 2-3.46 0-1.48-.81-2.77-2-3.46V6h16v2.54z"/></svg>
+      <span class="ti-text">گزارش باز</span>
+      <div class="ti-status-dot"></div>
+    </div>
+    <div class="ti-hint">T بزنید و اینجا کلیک کنید</div>
+  </div>
+
+  <!-- Ticket Detail Panel (Player - on click) -->
+  <div id="ticketDetail" style="display:none">
+    <div class="td-overlay"></div>
+    <div class="td-container">
+      <div class="td-header">
+        <svg viewBox="0 0 24 24" width="28" height="28"><path fill="currentColor" d="M22 10V6a2 2 0 0 0-2-2H4c-1.1 0-1.99.9-1.99 2v4c1.1 0 1.99.9 1.99 2s-.89 2-2 2v4c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2v-4c-1.1 0-2-.9-2-2s.9-2 2-2zm-2-1.46c-1.19.69-2 1.99-2 3.46s.81 2.77 2 3.46V18H4v-2.54c1.19-.69 2-1.99 2-3.46 0-1.48-.81-2.77-2-3.46V6h16v2.54z"/></svg>
+        <span class="td-title">گزارش شما</span>
+        <div class="td-close-btn">&times;</div>
+      </div>
+      <div class="td-body">
+        <div class="td-row">
+          <span class="td-label">وضعیت</span>
+          <span class="td-value td-status-value"></span>
+        </div>
+        <div class="td-row">
+          <span class="td-label">دسته بندی</span>
+          <span class="td-value td-cat-value"></span>
+        </div>
+        <div class="td-row">
+          <span class="td-label">زمان</span>
+          <span class="td-value td-time-value"></span>
+        </div>
+        <div class="td-row td-admin-row" style="display:none">
+          <span class="td-label">ادمین</span>
+          <span class="td-value td-admin-value"></span>
+        </div>
+      </div>
+      <div class="td-actions">
+        <button class="td-cancel-btn">لغو گزارش</button>
+      </div>
+      <div class="td-actions td-closed-actions" style="display:none">
+        <button class="td-rate-btn">ثبت امتیاز</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ticket Rating Panel (Player) -->
+  <div id="ticketRating" style="display:none">
+    <div class="tr-overlay"></div>
+    <div class="tr-container">
+      <div class="tr-header">
+        <svg viewBox="0 0 24 24" width="32" height="32"><path fill="currentColor" d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+        <span>ثبت امتیاز</span>
+      </div>
+      <div class="tr-info">گزارش شما بسته شد! لطفا به ادمین امتیاز دهید.</div>
+      <div class="tr-admin-name"></div>
+      <div class="tr-stars">
+        <div class="tr-star" data-value="1">1</div>
+        <div class="tr-star" data-value="2">2</div>
+        <div class="tr-star" data-value="3">3</div>
+        <div class="tr-star" data-value="4">4</div>
+        <div class="tr-star" data-value="5">5</div>
+        <div class="tr-star" data-value="6">6</div>
+        <div class="tr-star" data-value="7">7</div>
+        <div class="tr-star" data-value="8">8</div>
+        <div class="tr-star" data-value="9">9</div>
+        <div class="tr-star" data-value="10">10</div>
+      </div>
+      <textarea class="tr-comment" placeholder="نظر شما (اختیاری)..." maxlength="200"></textarea>
+      <div class="tr-actions">
+        <button class="tr-skip-btn">رد شدن</button>
+        <button class="tr-submit-btn" disabled>ثبت امتیاز</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script type="text/javascript" src="./Suggestions.js"></script>
+  <script type="text/javascript" src="./Message.js"></script>
+  <script type="text/javascript" src="./report_categories.js"></script>
+  <script type="text/javascript" src="./App.js"></script>
+  <script type="text/javascript" src="./sundl_bridge.js"></script>
+
+  <!-- Main Entry -->
+  <script type="text/javascript">
+  window.post = (url, data) => {
+    var request = new XMLHttpRequest();
+    request.open('POST', url, true);
+    request.setRequestHeader('Content-Type', 'application/json; charset=UTF-8');
+    request.send(data);
+  }
+
+  const instance = new Vue({
+    el: '#app',
+    render: h => h(APP),
+  });
+
+  window.emulate = (type, detail = {}) => {
+    detail.type = type;
+    window.dispatchEvent(new CustomEvent('message', {
+      detail,
+    }));
+  };
+  </script>
+
+</body>
+</html>

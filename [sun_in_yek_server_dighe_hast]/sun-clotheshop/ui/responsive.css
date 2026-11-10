@@ -1,0 +1,100 @@
+@media screen and (max-width: 768px) {
+  .menuImgResponsve {
+    width: 90%;
+  }
+  .mainBox {
+    width: 50%;
+  }
+}
+
+@media screen and (max-width: 1024px) {
+  .menuImgResponsve {
+    width: 80%;
+  }
+  .card-hover {
+    height: 110px;
+  }
+}
+
+@media screen and (max-width: 1280px) {
+  .menuImgResponsve {
+    width: 70%;
+  }
+}
+
+@media screen and (min-width: 768px) {
+  .mainBox {
+    width: 40%;
+  }
+
+  .img__responsive_Main {
+    width: 50px;
+    max-width: 50px;
+    height: 50px;
+    max-height: 50px;
+  }
+
+  .item__names {
+    font-size: 12px;
+  }
+
+  .card-hover {
+    height: 160px;
+  }
+}
+
+@media screen and (min-width: 1280px) {
+  .mainBox {
+    width: 30%;
+  }
+
+  .img__responsive_Main {
+    width: 60px;
+    max-width: 60px;
+    height: 60px;
+    max-height: 60px;
+  }
+
+  .item__names {
+    font-size: 15px;
+  }
+}
+
+@media screen and (min-width: 2001px) {
+  .menuImgResponsve {
+    width: 50%;
+  }
+  .mainBox {
+    height: 600px;
+  }
+  .img__responsive_Main {
+    width: 70px;
+    max-width: 70px;
+    height: 70px;
+    max-height: 70px;
+  }
+  .item__names {
+    font-size: 17px;
+  }
+
+  .card-hover {
+    height: 170px;
+  }
+}
+
+@media screen and (min-width: 3000px) {
+  .img__responsive_Main {
+    width: 85px;
+    max-width: 85px;
+    height: 85px;
+    max-height: 85px;
+  }
+
+  .item__names {
+    font-size: 20px;
+  }
+
+  .card-hover {
+    height: 200px;
+  }
+}

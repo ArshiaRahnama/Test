@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>PAC-MAN</title>
+  
+  <link rel="stylesheet" type="text/css" href="css/Pacman.css" />
+  <style>
+    /* Embedded inside the phone: the game is ALWAYS visible (the phone shows /
+       hides it by mounting / unmounting the iframe). Pacman.css hides body /
+       #frame / #main by default and only reveals them on a NUI "display" msg,
+       which is why the embedded game showed a black screen. These rules load
+       AFTER Pacman.css, so they win and the game renders on load.
+       We also drop the 160% zoom (CEF ignores it inside an iframe, which made
+       the canvas mis-sized) so the canvas renders at its natural 540x484 and
+       the phone can scale it to fit. The decorative arcade frame is hidden for
+       a clean fit (it wasn't visible anyway). */
+    html, body { width: 100%; height: 100%; margin: 0; padding: 0; background: #000; overflow: hidden; }
+    /* #main (the canvas) is a CHILD of #frame — so #frame must stay visible,
+       otherwise the whole game is hidden. Drop its decorative background image
+       and the 160% zoom. #main keeps its top/left:50% + translate centering. */
+    body, #frame, #main { display: block !important; }
+    #frame { background-image: none !important; position: absolute !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; }
+    #main { zoom: 1 !important; }
+    /* The maze is only ~80% of the 540-wide canvas (the left/right margins are
+       empty — score & lives sit at the top/bottom). So size the canvas to 120vw
+       → the MAZE fills ~96% of the phone width. The empty side margins overflow
+       and are clipped (they're black). height:auto keeps the aspect ratio. */
+    #main canvas { width: 120vw !important; height: auto !important; display: block; }
+  </style>
+
+  <script type="text/javascript" src="lib/AStar.js"></script>
+  
+  <script type="text/javascript" src="src/Keyboard.js"></script>
+  <script type="text/javascript" src="src/Game.js"></script>
+  <script type="text/javascript" src="src/StartupScene.js"></script>
+  <script type="text/javascript" src="src/PlayScene.js"></script>
+  <script type="text/javascript" src="src/ReadyMessage.js"></script>
+  <script type="text/javascript" src="src/Pacman.js"></script>
+  <script type="text/javascript" src="src/Wall.js"></script>
+  <script type="text/javascript" src="src/Rect.js"></script>
+  <script type="text/javascript" src="src/Pellet.js"></script>
+  <script type="text/javascript" src="src/Gate.js"></script>
+  <script type="text/javascript" src="src/Ghost.js"></script>
+  <script type="text/javascript" src="src/Sprite.js"></script>
+  <script type="text/javascript" src="src/Util.js"></script>
+  <script type="text/javascript" src="src/PowerPellet.js"></script>
+  <script type="text/javascript" src="src/Position.js"></script>
+  <script type="text/javascript" src="src/PointsMessage.js"></script>
+  <script type="text/javascript" src="src/PressEnterText.js"></script>
+  <script type="text/javascript" src="src/BlinkTimer.js"></script>
+  <script type="text/javascript" src="src/PacmanPlaySceneStrategy.js"></script>
+  <script type="text/javascript" src="src/PacmanStartupSceneStrategy.js"></script>
+  <script type="text/javascript" src="src/EventManager.js"></script>
+  <script type="text/javascript" src="src/PacmanDiesPause.js"></script>
+  <script type="text/javascript" src="src/PacmanDiesStrategy.js"></script>
+  <script type="text/javascript" src="src/Cherry.js"></script>
+  
+  <script type="text/javascript" src="lib/jquery-1.7.2.js"></script>
+  <script type="text/javascript" src="lib/Stats.js"></script>
+  
+  <script type="text/javascript" src="src/FPSCounter.js"></script>
+  <script type="text/javascript" src="src/GameRunner.js"></script>
+  <script type="text/javascript" src="src/ImageManager.js"></script>
+  <script type="text/javascript" src="src/SoundManager.js"></script>
+  <script type="text/javascript" src="listener.js"></script>
+  
+  <script type="text/javascript">
+    $(function () {
+      var gameRunner = new GameRunner();
+      gameRunner.run();
+    });
+  </script>
+</head>
+
+<body>
+  <div id="frame">
+    <div id="main">
+    
+    </div>
+  </div>
+</body>
+</html>

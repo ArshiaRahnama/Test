@@ -1,0 +1,25 @@
+#skillUP {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 100vh;
+    z-index: 9999;
+    pointer-events: none;
+}
+.skillUpSymbol {
+    font-size: 40px;
+    color: green;
+    position: absolute;
+    animation: skillUpAnimation 2s linear forwards;
+}
+@keyframes skillUpAnimation {
+    0% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(-100vh);
+    }
+}

@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<PedDecorationCollection>
+  <bRequiredForSync value="true" />
+  <presets>
+  
+  	<Item>
+      <uvPos x="0.000" y="0.450" /> <scale x="0.150" y="0.150" /> <rotation value="0.000" /> <zone>ZONE_HEAD</zone>
+      <nameHash>mp_customtattoos_tattoo_000_M</nameHash>
+      <txdHash>mp_customtattoos_tattoo_000</txdHash>
+      <txtHash>mp_customtattoos_tattoo_000</txtHash>      
+      <type>TYPE_TATTOO</type> <faction>FM</faction> <garment>All</garment>
+      <gender>GENDER_MALE</gender>
+      <award/>
+      <awardLevel/>
+    </Item>
+
+	  <Item>
+      <uvPos x="0.230" y="0.540" /> <scale x="0.250" y="0.250" /> <rotation value="3.000" /> <zone>ZONE_TORSO</zone>
+      <nameHash>mp_customtattoos_tattoo_001_M</nameHash>
+      <txdHash>mp_customtattoos_tattoo_001</txdHash>
+      <txtHash>mp_customtattoos_tattoo_001</txtHash>
+      <type>TYPE_TATTOO</type> <faction>FM</faction> <garment>All</garment>
+      <gender>GENDER_MALE</gender>
+      <award/>
+      <awardLevel/>
+    </Item>
+
+    <Item>
+      <uvPos x="0.470" y="0.620" /> <scale x="0.230" y="0.300" /> <rotation value="0.000" /> <zone>ZONE_RIGHT_ARM</zone>
+      <nameHash>mp_customtattoos_tattoo_002_M</nameHash>
+      <txdHash>mp_customtattoos_tattoo_002</txdHash>
+      <txtHash>mp_customtattoos_tattoo_002</txtHash>
+      <type>TYPE_TATTOO</type> <faction>FM</faction> <garment>All</garment>
+      <gender>GENDER_MALE</gender>
+      <award/>
+      <awardLevel/>
+    </Item>
+  
+	  <Item>
+      <uvPos x="0.525" y="0.220" /> <scale x="0.300" y="0.200" /> <rotation value="0.000" /> <zone>ZONE_HEAD</zone>
+      <nameHash>mp_customtattoos_tattoo_003_M</nameHash>
+      <txdHash>mp_customtattoos_tattoo_003</txdHash>
+      <txtHash>mp_customtattoos_tattoo_003</txtHash>
+      <type>TYPE_TATTOO</type> <faction>FM</faction> <garment>All</garment>
+      <gender>GENDER_MALE</gender>
+      <award />
+      <awardLevel />
+    </Item>
+
+    <Item>
+      <uvPos x="0.235" y="0.500" /> <scale x="0.280" y="0.300" /> <rotation value="0.000" /> <zone>ZONE_TORSO</zone>
+      <nameHash>mp_customtattoos_tattoo_004_M</nameHash>
+      <txdHash>mp_customtattoos_tattoo_004</txdHash>
+      <txtHash>mp_customtattoos_tattoo_004</txtHash>
+      <type>TYPE_TATTOO</type> <faction>FM</faction> <garment>All</garment>
+      <gender>GENDER_MALE</gender>
+      <award />
+      <awardLevel />
+    </Item>
+
+    <Item>
+      <uvPos x="0.500" y="0.750" /> <scale x="0.120" y="0.120" /> <rotation value="0.000" /> <zone>ZONE_HEAD</zone>
+      <nameHash>mp_customtattoos_tattoo_005_M</nameHash>
+      <txdHash>mp_customtattoos_tattoo_005</txdHash>
+      <txtHash>mp_customtattoos_tattoo_005</txtHash>
+      <type>TYPE_TATTOO</type> <faction>FM</faction> <garment>All</garment>
+      <gender>GENDER_MALE</gender>
+      <award />
+      <awardLevel />
+    </Item>
+
+    <Item>
+      <uvPos x="0.820" y="0.600" /> <scale x="0.150" y="0.150" /> <rotation value="0.000" /> <zone>ZONE_TORSO</zone>
+      <nameHash>mp_customtattoos_tattoo_006_M</nameHash>
+      <txdHash>mp_customtattoos_tattoo_006</txdHash>
+      <txtHash>mp_customtattoos_tattoo_006</txtHash>
+      <type>TYPE_TATTOO</type> <faction>FM</faction> <garment>All</garment>
+      <gender>GENDER_MALE</gender>
+      <award />
+      <awardLevel />
+    </Item>
+
+	  <Item>
+      <uvPos x="0.650" y="0.600" /> <scale x="0.100" y="0.100" /> <rotation value="23.000" /> <zone>ZONE_TORSO</zone>
+      <nameHash>mp_customtattoos_tattoo_007_M</nameHash>
+      <txdHash>mp_customtattoos_tattoo_007</txdHash>
+      <txtHash>mp_customtattoos_tattoo_007</txtHash>
+      <type>TYPE_TATTOO</type> <faction>FM</faction> <garment>All</garment>
+      <gender>GENDER_MALE</gender>
+      <award />
+      <awardLevel />
+    </Item>
+
+    <Item>
+      <uvPos x="0.230" y="0.540" /> <scale x="0.250" y="0.250" /> <rotation value="3.000" /> <zone>ZONE_TORSO</zone>
+      <nameHash>mp_customtattoos_tattoo_008_M</nameHash>
+      <txdHash>mp_customtattoos_tattoo_008</txdHash>
+      <txtHash>mp_customtattoos_tattoo_008</txtHash>
+      <type>TYPE_TATTOO</type> <faction>FM</faction> <garment>All</garment>
+      <gender>GENDER_MALE</gender>
+      <award />
+      <awardLevel />
+    </Item>
+
+    <Item>
+      <gender>GENDER_MALE</gender> <uvPos x= "0.150" y= "0.450" /> <scale x= "0.170" y= "0.170" /> <rotation value= "90.000" /> <zone>ZONE_RIGHT_ARM</zone>
+      <nameHash>mp_customtattoos_tattoo_009_M</nameHash>
+      <txdHash>mp_customtattoos_tattoo_009</txdHash>
+      <txtHash>mp_customtattoos_tattoo_009</txtHash>
+      <type>TYPE_TATTOO</type> <faction>FM</faction> <garment>All</garment>
+      <award />
+      <awardLevel />
+    </Item>
+
+    <Item>
+      <gender>GENDER_MALE</gender> <uvPos x= "0.180" y= "0.350" /> <scale x= "0.110" y= "0.110" /> <rotation value= "0.000" /> <zone>ZONE_HEAD</zone>
+      <nameHash>mp_customtattoos_tattoo_010_M</nameHash>
+      <txdHash>mp_customtattoos_tattoo_010</txdHash>
+      <txtHash>mp_customtattoos_tattoo_010</txtHash>
+      <type>TYPE_TATTOO</type> <faction>FM</faction> <garment>All</garment>
+      <award />
+      <awardLevel />
+    </Item>
+
+    <Item>
+      <gender>GENDER_MALE</gender> <uvPos x= "0.717" y= "0.330" /> <scale x= "0.140" y= "0.140" /> <rotation value= "0.000" /> <zone>ZONE_TORSO</zone>
+      <nameHash>mp_customtattoos_tattoo_011_M</nameHash>
+      <txdHash>mp_customtattoos_tattoo_011</txdHash>
+      <txtHash>mp_customtattoos_tattoo_011</txtHash>
+      <type>TYPE_TATTOO</type> <faction>FM</faction> <garment>All</garment>
+      <award />
+      <awardLevel />
+    </Item>
+
+    <Item>
+      <gender>GENDER_MALE</gender> <uvPos x= "0.225" y= "0.450" /> <scale x= "0.300" y= "0.300" /> <rotation value= "0.000" /> <zone>ZONE_TORSO</zone>
+      <nameHash>mp_customtattoos_tattoo_012_M</nameHash>
+      <txdHash>mp_customtattoos_tattoo_012</txdHash>
+      <txtHash>mp_customtattoos_tattoo_012</txtHash>
+      <type>TYPE_TATTOO</type> <faction>FM</faction> <garment>All</garment>
+      <award />
+      <awardLevel />
+    </Item>
+
+    <Item>
+      <gender>GENDER_MALE</gender> <uvPos x= "0.235" y= "0.500" /> <scale x= "0.280" y= "0.300" /> <rotation value= "0.000" /> <zone>ZONE_TORSO</zone>
+      <nameHash>mp_customtattoos_tattoo_013_M</nameHash>
+      <txdHash>mp_customtattoos_tattoo_013</txdHash>
+      <txtHash>mp_customtattoos_tattoo_013</txtHash>
+      <type>TYPE_TATTOO</type> <faction>FM</faction> <garment>All</garment>
+      <award />
+      <awardLevel />
+    </Item>
+
+  </presets>
+  <nameHash>customtattoos_overlays</nameHash>
+  <medalLocations content="vector2_array">
+    0.140000	0.070000
+    0.370000	0.070000
+    0.600000	0.070000
+    0.835000	0.070000
+    0.140000	0.150000
+    0.370000	0.150000
+    0.600000	0.150000
+    0.835000	0.150000
+    0.140000	0.230000
+    0.370000	0.230000
+    0.600000	0.230000
+    0.835000	0.230000
+    0.100000	0.700000
+    0.300000	0.700000
+    0.500000	0.700000
+    0.700000	0.700000
+  </medalLocations>
+  <medalScale x="0.240" y="0.100" />
+</PedDecorationCollection>

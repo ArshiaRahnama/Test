@@ -1,0 +1,100 @@
+@import url("https://fonts.googleapis.com/css2?family=Inconsolata:wght@800&display=swap");
+
+body {
+  overflow: hidden;
+}
+
+.main {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  box-shadow: inset 0px 20px 20px -20px red;
+  /* animation-name: animation;
+  animation-duration: 1500ms;
+  animation-iteration-count: infinite;
+  animation-direction: alternate-reverse; */
+  overflow: hidden;
+}
+
+.main2 {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(-70% - 50px);
+  width: 100%;
+  box-shadow: inset 20px -20px 20px -20px red;
+  /* animation-name: animation1;
+  animation-duration: 1500ms;
+  animation-iteration-count: infinite;
+  animation-direction: alternate-reverse; */
+  overflow: hidden;
+}
+
+.main3 {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(30% + 50px);
+  width: 100%;
+  box-shadow: inset -20px -20px 20px -20px red;
+  /* animation-name: animation2;
+  animation-duration: 1500ms;
+  animation-iteration-count: infinite;
+  animation-direction: alternate-reverse; */
+  overflow: hidden;
+}
+
+.texts {
+  text-align: center;
+  position: absolute;
+  height: 25px;
+  top: 97.5%;
+  left: 30%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  font-family: "Inconsolata", monospace;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 130px;
+  align-items: stretch;
+}
+
+#timer {
+  margin: 0px;
+}
+
+.combatMode {
+  margin: 0px;
+}
+
+/* @keyframes animation {
+  0% {
+    box-shadow: inset 0px 20px 20px -13px red;
+  }
+
+  100% {
+    box-shadow: inset 0px 20px 20px -20px red;
+  }
+}
+
+@keyframes animation1 {
+  0% {
+    box-shadow: inset 20px -20px 20px -13px red;
+  }
+
+  100% {
+    box-shadow: inset 20px -20px 20px -20px red;
+  }
+}
+
+@keyframes animation2 {
+  0% {
+    box-shadow: inset -20px -20px 20px -13px red;
+  }
+
+  100% {
+    box-shadow: inset -20px -20px 20px -20px red;
+  }
+} */

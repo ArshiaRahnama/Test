@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="barber" class="hidden">
+    <!-- ambient glow -->
+    <div class="bg-orb orb-a"></div>
+    <div class="bg-orb orb-b"></div>
+
+    <!-- top-left brand -->
+    <div class="brand">
+      <div class="brand-mark" id="brandMark"></div>
+      <div class="brand-txt">
+        <div class="brand-name">SUN <span>BARBER</span></div>
+        <div class="brand-sub">استودیو پیرایش</div>
+      </div>
+    </div>
+
+    <!-- left section rail -->
+    <div class="rail" id="rail"></div>
+
+    <!-- right selection panel -->
+    <div class="panel">
+      <div class="panel-head">
+        <div class="panel-title" id="panelTitle">مو</div>
+        <div class="panel-badge" id="panelBadge">تنظیمات</div>
+      </div>
+      <div class="panel-body" id="panelBody"></div>
+    </div>
+
+    <!-- bottom camera dock -->
+    <div class="cam-dock">
+      <div class="cam-btn" data-cam="rotate-left"><svg viewBox="0 0 24 24"><path d="M9 14l-4-4 4-4"/><path d="M5 10h11a4 4 0 0 1 0 8h-1"/></svg><span>چرخش</span></div>
+      <div class="cam-btn" data-cam="zoom-in"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg><span>زوم +</span></div>
+      <div class="cam-btn" data-cam="zoom-out"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg><span>زوم -</span></div>
+      <div class="cam-btn" data-cam="rotate-right"><svg viewBox="0 0 24 24"><path d="M15 14l4-4-4-4"/><path d="M19 10H8a4 4 0 0 0 0 8h1"/></svg><span>چرخش</span></div>
+    </div>
+
+    <!-- bottom-right action card -->
+    <div class="action-card">
+      <div class="action-info">
+        <div class="action-label">هزینه</div>
+        <div class="action-price" id="actionPrice">$0</div>
+      </div>
+      <div class="action-btns">
+        <button class="btn btn-ghost" id="btnCancel"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> انصراف</button>
+        <button class="btn btn-solid" id="btnBuy"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg> تأیید و خرید</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

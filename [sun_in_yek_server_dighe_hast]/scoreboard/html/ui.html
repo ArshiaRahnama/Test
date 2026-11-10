@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="fa" style="background: transparent !important; background-color: transparent !important;">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TehranCity RP - Scoreboard</title>
+    <script src="nui://game/ui/jquery.js" type="text/javascript"></script>
+    <link rel="stylesheet" type="text/css" href="css/index.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Force NUI transparency */
+        html, body {
+            background: transparent !important;
+            background-color: transparent !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+    </style>
+</head>
+<body style="background: transparent !important; background-color: transparent !important; margin: 0; padding: 0;">
+    <!-- Main Scoreboard -->
+    <div id="scoreboard" class="scoreboard-container">
+        <!-- Close Button -->
+        <button class="close-scoreboard-btn" onclick="closeScoreboard()">✕</button>
+
+        <!-- Header -->
+        <div class="scoreboard-header">
+            <div class="logo-section">
+                <img id="logo-img" src="images/Assets/silver_logo.png" alt="Logo" class="logo">
+            </div>
+            <div class="title-section">
+                <h1>TehranCity RP</h1>
+            </div>
+            <div class="theme-toggle">
+                <label class="toggle-switch">
+                    <input type="checkbox" id="theme-toggle" checked>
+                    <span class="toggle-slider"></span>
+                </label>
+                <span class="theme-label" id="theme-label">Dark</span>
+            </div>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="stats-grid">
+            <!-- Row 1: Military, FBI, Mechanic, EMS -->
+
+            <!-- Military -->
+            <div class="card-flip" data-job="police" onclick="flipCard(this)">
+                <div class="card-inner">
+                    <div class="card-front stat-card">
+                        <div class="stat-icon police-icon"></div>
+                        <div class="stat-info">
+                            <span class="stat-name">Military</span>
+                            <span class="stat-count" id="police-count">0</span>
+                        </div>
+                    </div>
+                    <div class="card-back stat-card">
+                        <div class="back-stats">
+                            <div class="back-stat-row">
+                                <span class="back-label">Police</span>
+                                <span class="back-value" id="detail-police">0</span>
+                            </div>
+                            <div class="back-stat-row">
+                                <span class="back-label">Sheriff</span>
+                                <span class="back-value" id="detail-sheriff">0</span>
+                            </div>
+                            <div class="back-stat-row">
+                                <span class="back-label">MT</span>
+                                <span class="back-value" id="detail-mt">0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FBI -->
+            <div class="card-flip" data-job="fbi" onclick="flipCard(this)">
+                <div class="card-inner">
+                    <div class="card-front stat-card">
+                        <div class="stat-icon fbi-icon"></div>
+                        <div class="stat-info">
+                            <span class="stat-name">FBI</span>
+                            <span class="stat-count" id="fbi-count">0</span>
+                        </div>
+                    </div>
+                    <div class="card-back stat-card">
+                        <div class="back-text">Federal Bureau of Investigation</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mechanic -->
+            <div class="card-flip" data-job="mechanic" onclick="flipCard(this)">
+                <div class="card-inner">
+                    <div class="card-front stat-card">
+                        <div class="stat-icon mechanic-icon"></div>
+                        <div class="stat-info">
+                            <span class="stat-name">Mechanic</span>
+                            <span class="stat-count" id="mechanic-count">0</span>
+                        </div>
+                    </div>
+                    <div class="card-back stat-card">
+                        <div class="back-text">Vehicle Repair Services</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- EMS/Ambulance -->
+            <div class="card-flip" data-job="ambulance" onclick="flipCard(this)">
+                <div class="card-inner">
+                    <div class="card-front stat-card">
+                        <div class="stat-icon ambulance-icon"></div>
+                        <div class="stat-info">
+                            <span class="stat-name">EMS</span>
+                            <span class="stat-count" id="ambulance-count">0</span>
+                        </div>
+                    </div>
+                    <div class="card-back stat-card">
+                        <div class="back-text">Emergency Medical Services</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row 2: MT, Justice, Taxi, Admins -->
+
+            <!-- MT -->
+            <div class="card-flip" data-job="mt" onclick="flipCard(this)">
+                <div class="card-inner">
+                    <div class="card-front stat-card">
+                        <div class="stat-icon mt-icon"></div>
+                        <div class="stat-info">
+                            <span class="stat-name">MT</span>
+                            <span class="stat-count" id="mt-count">0</span>
+                        </div>
+                    </div>
+                    <div class="card-back stat-card">
+                        <div class="back-stats">
+                            <div class="back-stat-row">
+                                <span class="back-label">MT Ready</span>
+                                <span class="back-value" id="detail-mt-ready">0</span>
+                            </div>
+                            <div class="back-stat-row">
+                                <span class="back-label">MT Busy</span>
+                                <span class="back-value" id="detail-mt-busy">0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Justice -->
+            <div class="card-flip" data-job="justice" onclick="flipCard(this)">
+                <div class="card-inner">
+                    <div class="card-front stat-card">
+                        <div class="stat-icon justice-icon"></div>
+                        <div class="stat-info">
+                            <span class="stat-name">Justice</span>
+                            <span class="stat-count" id="justice-count">0</span>
+                        </div>
+                    </div>
+                    <div class="card-back stat-card">
+                        <div class="back-text">Department of Justice</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Taxi -->
+            <div class="card-flip" data-job="taxi" onclick="flipCard(this)">
+                <div class="card-inner">
+                    <div class="card-front stat-card">
+                        <div class="stat-icon taxi-icon"></div>
+                        <div class="stat-info">
+                            <span class="stat-name">Taxi</span>
+                            <span class="stat-count" id="taxi-count">0</span>
+                        </div>
+                    </div>
+                    <div class="card-back stat-card">
+                        <div class="back-text">Transportation Services</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Admins -->
+            <div class="card-flip" data-job="admins" onclick="flipCard(this)">
+                <div class="card-inner">
+                    <div class="card-front stat-card">
+                        <div class="stat-icon admins-icon"></div>
+                        <div class="stat-info">
+                            <span class="stat-name">Admins</span>
+                            <span class="stat-count" id="admins-count">0</span>
+                        </div>
+                    </div>
+                    <div class="card-back stat-card">
+                        <div class="back-text">Server Administrators</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="scoreboard-footer">
+            <div class="players-count">
+                <span class="players-icon">👥</span>
+                <span>Players: <strong id="players-total">0</strong></span>
+            </div>
+
+            <div class="footer-buttons">
+                <button class="btn btn-discord" onclick="copyDiscord()">
+                    <span class="btn-icon">💬</span>
+                    Discord
+                </button>
+                <button class="btn btn-website" onclick="openWebsite()">
+                    <span class="btn-icon">🌐</span>
+                    Website
+                </button>
+            </div>
+
+            <div class="clock-section">
+                <span id="clock">00:00</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Site Viewer - Tablet Style -->
+    <div id="site-viewer" class="site-viewer-container">
+        <div class="site-viewer-overlay"></div>
+        <div class="tablet-frame">
+            <button class="close-site-btn" onclick="closeSiteViewer()">
+                <span>✕</span>
+            </button>
+            <div class="tablet-screen">
+                <div class="tablet-notch"></div>
+                <iframe id="site-iframe" src="" frameborder="0"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <!-- Copy Notification -->
+    <div id="copy-notification" class="notification">
+        Link copied!
+    </div>
+
+    <script src="js/main.js" type="text/javascript"></script>
+</body>
+</html>

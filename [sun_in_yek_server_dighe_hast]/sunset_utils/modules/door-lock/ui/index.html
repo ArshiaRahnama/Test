@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="fa">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Door Lock</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="overlay" class="overlay hidden">
+        <div id="panel" class="panel">
+            <div class="topbar"></div>
+
+            <header class="head">
+                <div class="head-right">
+                    <div class="brand">
+                        <span class="brand-mark">⚿</span>
+                        <span class="title">مدیریت قفل درها</span>
+                    </div>
+                    <div class="subtitle" id="subtitle"></div>
+                </div>
+                <div class="head-left">
+                    <div class="pick-wrap" id="pickWrap">
+                        <span class="pick-label">انتخاب‌شده</span>
+                        <span class="pick-count" id="pickCount">۰</span>
+                    </div>
+                    <button class="close-btn" id="closeBtn" title="بستن">✕</button>
+                </div>
+            </header>
+
+            <div class="toolbar">
+                <input type="text" class="search" id="search" placeholder="جستجو بر اساس شناسه، شغل یا گنگ…">
+                <button class="btn ghost" id="sortBtn">مرتب‌سازی: فاصله</button>
+                <button class="btn ghost" id="clearOutlineBtn">پاک کردن هایلایت‌ها</button>
+                <span class="tool-sep"></span>
+                <button class="btn ghost" id="gunBtn">حالت انتخاب با اسلحه</button>
+                <button class="btn primary" id="addBtn">ثبت درهای انتخاب‌شده</button>
+                <button class="btn ghost" id="clearPickBtn">پاک کردن انتخاب</button>
+            </div>
+
+            <main class="body">
+                <section class="list-col">
+                    <div class="list" id="list"></div>
+                </section>
+                <section class="edit-col" id="editCol"></section>
+            </main>
+
+            <div id="toast" class="toast hidden"></div>
+        </div>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>

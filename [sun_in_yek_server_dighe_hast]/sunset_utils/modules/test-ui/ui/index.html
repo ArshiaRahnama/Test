@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test UI</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="panel">
+        <div class="header">
+            <h2>Test UI Module</h2>
+            <button id="btn-close">✕</button>
+        </div>
+        <div class="content">
+            <p id="message">Dar hale load...</p>
+            <div class="info">
+                <span>Server ID:</span>
+                <span id="server-id">-</span>
+            </div>
+            <div class="info">
+                <span>Job:</span>
+                <span id="job">-</span>
+            </div>
+            <input type="text" id="input-text" placeholder="Ye chizi benevis..." />
+            <div class="buttons">
+                <button id="btn-send">Ersal</button>
+                <button id="btn-ping">Ping Server</button>
+            </div>
+            <div id="response"></div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>

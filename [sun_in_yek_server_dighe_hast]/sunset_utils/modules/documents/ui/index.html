@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <link rel="icon" href="favicon.ico" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800&family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=Vazirmatn:wght@300;400;500;600;700;800&family=Dancing+Script:wght@500;600;700&display=swap" rel="stylesheet" />
+    <link href="css/style.css" rel="stylesheet" />
+    <title>DOJ - Documents</title>
+</head>
+<body>
+    <div id="menuRoot" class="menu-root">
+        <div class="menu-backdrop"></div>
+
+        <div class="menu-card" id="menuCard">
+            <div class="menu-card-glow"></div>
+
+            <header class="menu-header">
+                <div class="menu-header-emblem">
+                    <img id="menuEmblemImg" class="doj-emblem-img" src="img/doj-seal.png" alt="DOJ" />
+                </div>
+
+                <div class="menu-header-text">
+                    <div class="menu-header-eyebrow">DEPARTMENT OF JUSTICE</div>
+                    <h1 class="menu-header-title" id="menuTitle">منوی اصلی</h1>
+                    <div class="menu-header-subtitle" id="menuSubtitle"></div>
+                </div>
+
+                <button class="menu-header-close" id="menuCloseBtn" type="button" aria-label="بستن">
+                    <svg viewBox="0 0 24 24" width="20" height="20"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+                </button>
+            </header>
+
+            <div class="menu-search" id="menuSearchBox">
+                <svg class="menu-search-icon" viewBox="0 0 24 24" width="16" height="16"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2" fill="none"/><path d="M21 21l-4.5-4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                <input type="text" id="menuSearchInput" class="menu-search-input" placeholder="نام سند را تایپ کنید..." dir="rtl" />
+            </div>
+
+            <div class="menu-items-scroll">
+                <ul class="menu-items" id="menuItems"></ul>
+                <div class="menu-empty" id="menuEmpty">موردی یافت نشد</div>
+            </div>
+
+            <footer class="menu-footer">
+                <div class="menu-footer-line"></div>
+                <div class="menu-footer-text">OFFICIAL <span>•</span> SEALED <span>•</span> RECORDED</div>
+            </footer>
+        </div>
+    </div>
+
+    <div id="app" class="app-root">
+        <div class="doj-backdrop"></div>
+
+        <aside class="doj-sidebar" id="sidebar">
+            <div class="doj-sidebar-logo">
+                <div class="doj-emblem" aria-hidden="true">
+                    <img id="sidebarEmblemImg" class="doj-emblem-img" src="img/doj-seal.png" alt="DOJ" />
+                </div>
+                <div class="doj-sidebar-label">DOJ</div>
+            </div>
+
+            <nav class="doj-actions" id="actions"></nav>
+
+            <div class="doj-sidebar-footer">
+                <div class="doj-divider"></div>
+                <div class="doj-watermark-vert" id="watermarkText">DEPARTMENT OF JUSTICE</div>
+            </div>
+        </aside>
+
+        <main class="doj-document-shell">
+            <div class="doj-paper" id="paper" data-template-type="formal">
+                <header class="doj-paper-header">
+                    <div class="doj-paper-eagle">
+                        <img id="paperEagle" class="doj-paper-eagle-img" src="img/doj-seal.png" alt="Department of Justice" />
+                    </div>
+
+                    <div class="doj-paper-header-text">
+                        <div class="doj-paper-eyebrow" id="paperEyebrow">Official Legal Document</div>
+                        <div class="doj-paper-org" id="paperOrg">Department of Justice</div>
+                        <div class="doj-paper-rule"></div>
+                    </div>
+
+                    <div class="doj-paper-meta">
+                        <div class="doj-paper-meta-label">تاریخ پرونده</div>
+                        <input type="text" class="doj-paper-date doj-datelike" id="docDate" placeholder="--/--/----" readonly />
+                    </div>
+                </header>
+
+                <section class="doj-paper-title-block">
+                    <div class="doj-paper-title-label">عنوان سند</div>
+                    <input type="text" class="doj-paper-title" id="docTitle" placeholder="عنوان سند" dir="auto" />
+                </section>
+
+                <div class="blank-mode-title-bar">
+                    <span class="blank-mode-title-label">نام الگو (داخلی):</span>
+                    <input type="text" class="blank-mode-title-input" id="blankTitle" placeholder="یک نام برای الگو وارد کنید" dir="auto" />
+                </div>
+
+                <div class="publish-bar" id="publishBar">
+                    <button class="publish-toggle" id="publishToggle" type="button" aria-label="انتشار عمومی">
+                        <span class="publish-toggle-knob"></span>
+                    </button>
+                    <div class="publish-bar-text">
+                        <div class="publish-bar-label" id="publishLabel">انتشار عمومی این الگو</div>
+                        <div class="publish-bar-hint" id="publishHint">با فعال کردن این گزینه، تمام بازیکنان می‌توانند از این الگو برای ساخت سند استفاده کنند</div>
+                    </div>
+                </div>
+
+                <section class="doj-paper-blocks" id="userBlocks"></section>
+
+                <section class="doj-paper-body-block" id="legacyBody">
+                    <div class="doj-paper-body-label">متن سند</div>
+                    <textarea class="doj-paper-body" id="docBody" placeholder="متن کامل سند را اینجا وارد کنید..." dir="auto"></textarea>
+                </section>
+
+                <div class="paper-add-wrapper" id="addBlockWrapper">
+                    <button class="paper-add-btn" id="addBlockBtn" type="button">
+                        <span class="paper-add-icon">
+                            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                        </span>
+                        <span class="paper-add-text">افزودن المان جدید</span>
+                    </button>
+                </div>
+
+                <section class="doj-paper-attachments" id="attachments"></section>
+
+                <section class="doj-paper-signatures">
+                    <div class="doj-paper-sig-label">امضاهای رسمی</div>
+                    <div class="doj-paper-sig-grid" id="signatures"></div>
+                </section>
+
+                <footer class="doj-paper-footer">
+                    <div class="doj-paper-footer-rule"></div>
+                    <div class="doj-paper-footer-text">
+                        <span>This document is the property of the Department of Justice.</span>
+                        <span class="doj-paper-footer-stamp">SEALED &amp; FILED</span>
+                    </div>
+                </footer>
+
+                <div class="doj-paper-watermark" id="paperWatermark">DOJ</div>
+                <div class="doj-void-stamp" id="voidStamp">باطل شد</div>
+
+                <div class="doj-justice-seal" id="justiceSeal">
+                    <svg class="doj-justice-seal-ring" viewBox="0 0 150 150">
+                        <circle cx="75" cy="75" r="70" fill="none" stroke="#1f6b4c" stroke-width="2.5"/>
+                        <circle cx="75" cy="75" r="61" fill="none" stroke="#1f6b4c" stroke-width="1"/>
+                        <circle cx="75" cy="75" r="34" fill="none" stroke="#1f6b4c" stroke-width="1.2"/>
+                        <path d="M75 46 L80 62 L97 62 L83 72 L88 88 L75 78 L62 88 L67 72 L53 62 L70 62 Z" fill="#1f6b4c" opacity="0.9"/>
+                        <g fill="#1f6b4c">
+                            <circle cx="75" cy="9" r="1.6"/><circle cx="75" cy="141" r="1.6"/>
+                            <circle cx="9" cy="75" r="1.6"/><circle cx="141" cy="75" r="1.6"/>
+                            <circle cx="28" cy="28" r="1.4"/><circle cx="122" cy="28" r="1.4"/>
+                            <circle cx="28" cy="122" r="1.4"/><circle cx="122" cy="122" r="1.4"/>
+                        </g>
+                    </svg>
+                    <div class="doj-justice-seal-center">
+                        <div class="doj-justice-seal-title">تأیید رسمی</div>
+                        <div class="doj-justice-seal-org">دادگستری</div>
+                        <div class="doj-justice-seal-approver" id="justiceSealApprover"></div>
+                        <div class="doj-justice-seal-date" id="justiceSealDate"></div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <div class="doj-overlay" id="overlay">
+            <div class="doj-modal">
+                <div class="doj-modal-header">
+                    <div class="doj-modal-title">ضمیمه کردن عکس</div>
+                    <button class="doj-modal-close" id="modalClose" type="button">×</button>
+                </div>
+                <div class="doj-modal-body">
+                    <label class="doj-modal-label">آدرس عکس</label>
+                    <input type="text" class="doj-modal-input" id="imageUrl" placeholder="https://..." />
+                    <div class="doj-modal-hint">لینک عکس را اینجا قرار دهید</div>
+                </div>
+                <div class="doj-modal-footer">
+                    <button class="doj-btn doj-btn-ghost" id="modalCancel" type="button">لغو</button>
+                    <button class="doj-btn doj-btn-gold" id="modalConfirm" type="button">افزودن</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="doj-overlay" id="exitOverlay">
+            <div class="doj-modal doj-modal-confirm">
+                <div class="doj-modal-header">
+                    <div class="doj-modal-title">خروج بدون ذخیره</div>
+                </div>
+                <div class="doj-modal-body">
+                    <div class="doj-modal-question">آیا مطمئن هستید که می‌خواهید خارج شوید؟</div>
+                </div>
+                <div class="doj-modal-footer">
+                    <button class="doj-btn doj-btn-ghost" id="exitCancel" type="button">لغو</button>
+                    <button class="doj-btn doj-btn-danger" id="exitConfirm" type="button">خروج</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="doj-overlay block-picker-overlay" id="blockPickerOverlay">
+            <div class="doj-modal block-picker-modal">
+                <div class="doj-modal-header">
+                    <div class="doj-modal-title">انتخاب نوع المان</div>
+                    <button class="doj-modal-close" id="blockPickerClose" type="button">×</button>
+                </div>
+                <div class="doj-modal-body">
+                    <div class="block-picker-grid" id="blockPickerGrid"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="doj-overlay" id="templateChooserOverlay">
+            <div class="doj-modal template-chooser-modal">
+                <div class="doj-modal-header">
+                    <div class="doj-modal-title">انتخاب نوع الگو</div>
+                    <button class="doj-modal-close" id="templateChooserClose" type="button">×</button>
+                </div>
+                <div class="doj-modal-body">
+                    <div class="template-chooser-subtitle">یک نوع برای الگوی جدید انتخاب کنید</div>
+                    <div class="template-chooser-grid">
+                        <button class="template-chooser-item" data-type="formal" type="button">
+                            <div class="template-chooser-preview template-chooser-preview-formal">
+                                <div class="tc-mini-header">
+                                    <div class="tc-mini-seal"></div>
+                                    <div class="tc-mini-title-block">
+                                        <div class="tc-mini-eyebrow"></div>
+                                        <div class="tc-mini-org"></div>
+                                        <div class="tc-mini-rule"></div>
+                                    </div>
+                                    <div class="tc-mini-date"></div>
+                                </div>
+                                <div class="tc-mini-content">
+                                    <div class="tc-mini-line tc-mini-line-w70"></div>
+                                    <div class="tc-mini-line tc-mini-line-w90"></div>
+                                    <div class="tc-mini-line tc-mini-line-w85"></div>
+                                </div>
+                                <div class="tc-mini-footer">
+                                    <div class="tc-mini-stamp"></div>
+                                </div>
+                            </div>
+                            <div class="template-chooser-label">الگوی رسمی</div>
+                            <div class="template-chooser-desc">دارای آرم، تاریخ، تیتر و مهر رسمی DOJ به صورت پیش‌فرض</div>
+                        </button>
+                        <button class="template-chooser-item" data-type="blank" type="button">
+                            <div class="template-chooser-preview template-chooser-preview-blank">
+                                <div class="tc-mini-plus">+</div>
+                                <div class="tc-mini-blank-text">سفارشی</div>
+                            </div>
+                            <div class="template-chooser-label">الگوی سفید</div>
+                            <div class="template-chooser-desc">برگه خالی - تمام بخش‌ها قابل تنظیم توسط شما</div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="doj-toast" id="toast"></div>
+    </div>
+
+    <div class="doj-overlay doj-overlay--standalone" id="blacklistAddOverlay">
+        <div class="doj-modal">
+            <div class="doj-modal-header">
+                <div class="doj-modal-title">افزودن به بلک‌لیست</div>
+                <button class="doj-modal-close" id="blacklistAddClose" type="button">×</button>
+            </div>
+            <div class="doj-modal-body">
+                <label class="doj-modal-label">شناسه بازیکن یا استیم هکس</label>
+                <input type="text" class="doj-modal-input" id="blacklistPlayerId" placeholder="مثلاً: 5  یا  steam:1100001..." dir="ltr" />
+                <label class="doj-modal-label" style="margin-top: 14px;">دلیل ممنوعیت</label>
+                <textarea class="doj-modal-input blacklist-reason" id="blacklistReason" placeholder="دلیل بن کردن را وارد کنید..." dir="rtl"></textarea>
+            </div>
+            <div class="doj-modal-footer">
+                <button class="doj-btn doj-btn-ghost" id="blacklistAddCancel" type="button">لغو</button>
+                <button class="doj-btn doj-btn-danger" id="blacklistAddConfirm" type="button">بن کردن</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="doj-overlay doj-overlay--standalone" id="giveOverlay">
+        <div class="doj-modal">
+            <div class="doj-modal-header">
+                <div class="doj-modal-title" id="giveTitle">اشتراک سند</div>
+                <button class="doj-modal-close" id="giveClose" type="button">×</button>
+            </div>
+            <div class="doj-modal-body">
+                <label class="doj-modal-label" id="giveLabel">شناسه بازیکن یا اسم استیم گیرنده</label>
+                <input type="text" class="doj-modal-input" id="giveInput" placeholder="مثلاً: 12 یا Steam Name" dir="ltr" />
+                <div class="doj-modal-hint">نام داخل بازی فرد را وارد نکنید</div>
+            </div>
+            <div class="doj-modal-footer">
+                <button class="doj-btn doj-btn-ghost" id="giveCancel" type="button">لغو</button>
+                <button class="doj-btn doj-btn-gold" id="giveConfirm" type="button">اشتراک</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="doj-overlay doj-overlay--standalone" id="calendarOverlay">
+        <div class="doj-calendar">
+            <div class="doj-cal-header">
+                <button class="doj-cal-nav" id="calPrev" type="button">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 6 9 12 15 18"/></svg>
+                </button>
+                <div class="doj-cal-title" id="calTitle">—</div>
+                <button class="doj-cal-nav" id="calNext" type="button">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>
+                </button>
+            </div>
+            <div class="doj-cal-weekdays" id="calWeekdays"></div>
+            <div class="doj-cal-grid" id="calGrid"></div>
+            <div class="doj-cal-footer">
+                <button class="doj-btn doj-btn-ghost" id="calClear" type="button">پاک کردن</button>
+                <button class="doj-btn doj-btn-gold" id="calToday" type="button">امروز</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="doj-overlay doj-overlay--standalone" id="confirmOverlay">
+        <div class="doj-modal doj-modal-confirm doj-confirm-modal">
+            <div class="doj-confirm-icon">
+                <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.3 3.6L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.6a2 2 0 0 0-3.4 0z"/></svg>
+            </div>
+            <div class="doj-confirm-title" id="confirmTitleEl">تأیید عملیات</div>
+            <div class="doj-confirm-message" id="confirmMessage">آیا مطمئن هستید؟</div>
+            <div class="doj-confirm-footer">
+                <button class="doj-btn doj-btn-ghost" id="confirmNo" type="button">لغو</button>
+                <button class="doj-btn doj-btn-danger" id="confirmYes" type="button">بله، مطمئنم</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>

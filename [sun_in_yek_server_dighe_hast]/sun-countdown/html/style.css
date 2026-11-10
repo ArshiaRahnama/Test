@@ -1,0 +1,27 @@
+@import url(https://fonts.googleapis.com/css?family=Roboto+Condensed:700italic);
+body {
+	font-family: "Roboto Condensed", sans-serif;
+	font-weight: bold;
+	font-style: italic;
+	text-align: center;
+	user-select: none;
+}
+#countdown {
+	width: 200px;
+	height: 100px;
+	
+	position: absolute;
+	left: 50%;
+	top: 5%;
+	margin-left: -100px;
+	margin-top: -50px;
+	
+	color: rgb(255,255,255);
+	text-shadow: 3px 0 3px rgba(0,0,0,.3), 
+                0 3px 3px rgba(0,0,0,.3), 
+                -3px 0 3px rgba(0,0,0,.3), 
+                0 -3px 3px rgba(0,0,0,.3);
+	
+	font-size: 5em;
+	transition: all 0.45s ease 0s;
+}

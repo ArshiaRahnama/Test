@@ -1,0 +1,47 @@
+-- Pub by FleeX Team , https://discord.gg/87rGBxgCsa
+
+client_script '@sunset_utils/include-cl.lua'
+server_script '@sunset_utils/include-sv.lua'
+fx_version 'cerulean'
+games { 'gta5' }
+
+client_scripts {
+	"config.lua",
+	"client/main.lua",
+	"client/events.lua",
+	"client/commands.lua",
+
+	"client/exports/info.lua",
+	"client/exports/play.lua",
+	"client/exports/manipulation.lua",
+	"client/exports/events.lua",
+	"client/effects/main.lua",
+	"client/emulator/interact_sound/client.lua",
+}
+
+server_scripts {
+	"config.lua",
+	"server/exports/play.lua",
+	"server/exports/manipulation.lua",
+	"server/emulator/interact_sound/server.lua",
+
+}
+
+ui_page "html/index.html"
+
+files {
+	"html/index.html",
+
+	"html/scripts/howler.min.js",
+	"html/scripts/jquery.min.js",
+	"html/scripts/www-widgetapi.js",
+	"html/scripts/iframe_api.js",
+	"html/scripts/purify.min.js",
+	"html/scripts/config.js",
+	"html/scripts/listener.js",
+	"html/scripts/SoundPlayer.js",
+	"html/scripts/functions.js",
+
+	"html/sounds/*.ogg",
+	"html/sounds/*.mp3",
+}

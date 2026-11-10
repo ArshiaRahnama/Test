@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <!-- iOS Calculator app icon — black grid of buttons with the orange
+       column of operators down the right edge, just like the real iOS app.
+       Used by HomeComponent via config.json MENUS entry. -->
+  <defs>
+    <linearGradient id="bgC" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2a2a2c"/>
+      <stop offset="1" stop-color="#1a1a1c"/>
+    </linearGradient>
+    <linearGradient id="orange" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFA040"/>
+      <stop offset="1" stop-color="#FF9500"/>
+    </linearGradient>
+    <linearGradient id="darkBtn" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3a3a3c"/>
+      <stop offset="1" stop-color="#2c2c2e"/>
+    </linearGradient>
+  </defs>
+
+  <!-- App-icon plate -->
+  <rect x="0" y="0" width="120" height="120" rx="27" ry="27" fill="url(#bgC)"/>
+
+  <!-- Display strip (top, dark) -->
+  <rect x="14" y="14" width="92" height="20" rx="3" ry="3" fill="#0c0c0d" opacity="0.55"/>
+
+  <!-- 4×4 button grid. Last column = orange operators. Bottom-left "0" spans 2 cols. -->
+  <!-- Row 1 -->
+  <rect x="14"  y="40" width="20" height="16" rx="3" ry="3" fill="#a0a0a4"/>
+  <rect x="38"  y="40" width="20" height="16" rx="3" ry="3" fill="#a0a0a4"/>
+  <rect x="62"  y="40" width="20" height="16" rx="3" ry="3" fill="#a0a0a4"/>
+  <rect x="86"  y="40" width="20" height="16" rx="3" ry="3" fill="url(#orange)"/>
+  <!-- Row 2 -->
+  <rect x="14"  y="60" width="20" height="16" rx="3" ry="3" fill="url(#darkBtn)"/>
+  <rect x="38"  y="60" width="20" height="16" rx="3" ry="3" fill="url(#darkBtn)"/>
+  <rect x="62"  y="60" width="20" height="16" rx="3" ry="3" fill="url(#darkBtn)"/>
+  <rect x="86"  y="60" width="20" height="16" rx="3" ry="3" fill="url(#orange)"/>
+  <!-- Row 3 -->
+  <rect x="14"  y="80" width="20" height="16" rx="3" ry="3" fill="url(#darkBtn)"/>
+  <rect x="38"  y="80" width="20" height="16" rx="3" ry="3" fill="url(#darkBtn)"/>
+  <rect x="62"  y="80" width="20" height="16" rx="3" ry="3" fill="url(#darkBtn)"/>
+  <rect x="86"  y="80" width="20" height="16" rx="3" ry="3" fill="url(#orange)"/>
+  <!-- Row 4 — "0" spans two cells, then "." then "=" (orange) -->
+  <rect x="14"  y="100" width="44" height="16" rx="3" ry="3" fill="url(#darkBtn)"/>
+  <rect x="62"  y="100" width="20" height="16" rx="3" ry="3" fill="url(#darkBtn)"/>
+  <rect x="86"  y="100" width="20" height="16" rx="3" ry="3" fill="url(#orange)"/>
+
+  <!-- Subtle top sheen overlay so the icon catches light like real iOS -->
+  <rect x="0" y="0" width="120" height="56" rx="27" ry="27"
+        fill="url(#bgC)" opacity="0"/>
+  <rect x="0" y="0" width="120" height="48" rx="27" ry="27"
+        fill="white" opacity="0.04"/>
+</svg>
