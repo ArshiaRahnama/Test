@@ -25,18 +25,6 @@ function SendChannelMessage(target, channel, args, color)
     })
 end
 
-function SetChatPinned(target, author, text)
-    TriggerClientEvent('chat:setPinned', target, author and {
-        author = author,
-        text = text
-    } or nil)
-end
-
-RegisterCommand('pin', function(source, args)
-    local text = table.concat(args, ' ')
-    SetChatPinned(-1, GetPlayerName(source), text)
-end, false)
-
 RegisterServerEvent('chat:logMessage')
 AddEventHandler('chat:logMessage', function(message)
 

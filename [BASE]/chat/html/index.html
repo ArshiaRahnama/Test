@@ -6,7 +6,6 @@
   <link href="vendor/latofonts.css" rel="stylesheet">
   <link href="vendor/flexboxgrid.6.3.1.min.css" rel="stylesheet"></link>
   <link href="vendor/animate.3.5.2.min.css" rel="stylesheet"></link>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Rajdhani:wght@500;700&family=Orbitron:wght@500;700&family=Chakra+Petch:wght@500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
   <link href="index.css" rel="stylesheet"></link>
 
   <script src="vendor/vue.2.3.3.min.js" type="text/javascript"></script>
@@ -18,63 +17,215 @@
 
   <!-- App Template -->
   <script type="text/x-template" id="app_template">
-    <div id="app" :style="appStyle" :class="{ dragging: dragging }">
-      <div class="chat-window" :style="windowStyle" :class="{ 'fadeOut animated': !showWindow }">
-        <div class="chat-tabs">
-          <span class="drag-handle" @mousedown="startDrag" title="بگیر و جابه‌جا کن">
-            <svg fill="currentColor" viewBox="0 0 24 24" width="13" height="13">
-              <circle cx="9" cy="6" r="1.6"></circle><circle cx="9" cy="12" r="1.6"></circle><circle cx="9" cy="18" r="1.6"></circle>
-              <circle cx="15" cy="6" r="1.6"></circle><circle cx="15" cy="12" r="1.6"></circle><circle cx="15" cy="18" r="1.6"></circle>
-            </svg>
-          </span>
-          <div v-for="tab in visibleTabs"
-               :key="tab.id"
-               :ref="'tabref-' + tab.id"
-               class="chat-tab"
-               :class="[{ active: activeTab === tab.id }, 'tab-' + tab.id]"
-               @click="selectTab(tab.id)">
-            <span class="tab-icon">{{ tab.icon }}</span>{{ tab.label }}
-            <span class="unread-dot" v-if="unread[tab.id] && activeTab !== tab.id"></span>
+    <div id="app" :style="[computedAppStyle, themeStyle]" :class="'font-' + settings.fontSize">
+      <!-- Settings Panel (outside chat-container to avoid background overlap) -->
+      <div class="settings-panel" v-show="showSettings" :style="computedSettingsStyle" @click.stop>
+          <div class="settings-header" @mousedown="startDragSettings" style="cursor: move;">
+            <span class="settings-title">Chat Settings</span>
+            <span class="settings-close" @click="showSettings = false">×</span>
           </div>
-          <div class="tab-indicator" :style="indicatorStyle"></div>
+
+          <div class="settings-tabs">
+            <div class="settings-tab" :class="{ active: settingsTab === 'chat' }" @click="settingsTab = 'chat'">Chat</div>
+            <div class="settings-tab" :class="{ active: settingsTab === 'menus' }" @click="settingsTab = 'menus'">Menus</div>
+          </div>
+
+          <div class="settings-body">
+            <div v-show="settingsTab === 'chat'">
+            <!-- Behavior Section -->
+            <div class="settings-section">
+              <div class="section-title">Behavior</div>
+              <div class="setting-row">
+                <span class="setting-label">Show on new message</span>
+                <label class="toggle-switch">
+                  <input type="checkbox" v-model="tempSettings.showOnNewMessage">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <div class="setting-row">
+                <span class="setting-label">Lock position</span>
+                <label class="toggle-switch">
+                  <input type="checkbox" v-model="tempSettings.lockPosition">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Appearance Section -->
+            <div class="settings-section">
+              <div class="section-title">Appearance</div>
+
+              <div class="setting-row">
+                <span class="setting-label">Font Size</span>
+                <div class="button-group">
+                  <button :class="{ active: tempSettings.fontSize === 'small' }" @click="tempSettings.fontSize = 'small'">S</button>
+                  <button :class="{ active: tempSettings.fontSize === 'medium' }" @click="tempSettings.fontSize = 'medium'">M</button>
+                  <button :class="{ active: tempSettings.fontSize === 'large' }" @click="tempSettings.fontSize = 'large'">L</button>
+                </div>
+              </div>
+
+              <div class="setting-row">
+                <span class="setting-label">Width</span>
+                <span class="setting-value">{{ tempSettings.chatWidth }}%</span>
+              </div>
+              <input type="range" class="slider" min="20" max="60" v-model="tempSettings.chatWidth">
+
+              <div class="setting-row">
+                <span class="setting-label">Height</span>
+                <span class="setting-value">{{ tempSettings.chatHeight }}px</span>
+              </div>
+              <input type="range" class="slider" min="150" max="400" v-model="tempSettings.chatHeight">
+            </div>
+
+            <!-- Theme Section -->
+            <div class="settings-section">
+              <div class="section-title">Theme</div>
+              <div class="setting-row">
+                <span class="setting-label">Accent Color</span>
+                <div class="color-picker-wrapper">
+                  <input type="color" class="color-picker" v-model="tempSettings.themeColor">
+                  <span class="color-value">{{ tempSettings.themeColor }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Filter Section - Grouped by category for scalability -->
+            <div class="settings-section show-in-live-section">
+              <div class="section-title">Show in Live Tab</div>
+              <div class="filter-groups-container">
+                <div class="filter-group" v-for="group in showInLiveGrouped" :key="group.name">
+                  <div class="filter-group-header">
+                    <span class="filter-group-name">{{ group.name }}</span>
+                    <span class="filter-group-count">{{ group.items.length }}</span>
+                  </div>
+                  <div class="filter-group-items">
+                    <label class="filter-chip"
+                           v-for="option in group.items"
+                           :key="option.key"
+                           :class="{ active: tempSettings.showInLive[option.key] }">
+                      <input type="checkbox" v-model="tempSettings.showInLive[option.key]">
+                      <span>{{ option.label }}</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+            </div>
+            <div v-show="settingsTab === 'menus'">
+            <!-- Menus Section -->
+            <div class="settings-section">
+              <div class="menu-block" v-for="m in menuDefs" :key="m.key">
+                <div class="menu-block-title">{{ m.label }}</div>
+                <div class="setting-row" v-if="m.dual">
+                  <span class="setting-label">Rang asli az chat</span>
+                  <label class="toggle-switch">
+                    <input type="checkbox" v-model="tempSettings.menus[m.key].usePrimaryChat">
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
+                <div class="setting-row" v-if="m.dual" v-show="!tempSettings.menus[m.key].usePrimaryChat">
+                  <span class="setting-label">Rang asli</span>
+                  <div class="color-picker-wrapper">
+                    <input type="color" class="color-picker" v-model="tempSettings.menus[m.key].colorPrimary">
+                    <span class="color-value">{{ tempSettings.menus[m.key].colorPrimary }}</span>
+                  </div>
+                </div>
+                <div class="setting-row">
+                  <span class="setting-label">{{ m.dual ? 'Rang dovom az chat' : 'Rang az chat' }}</span>
+                  <label class="toggle-switch">
+                    <input type="checkbox" v-model="tempSettings.menus[m.key].useChatColor">
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
+                <div class="setting-row" v-show="!tempSettings.menus[m.key].useChatColor">
+                  <span class="setting-label">{{ m.dual ? 'Rang dovom' : 'Rang menu' }}</span>
+                  <div class="color-picker-wrapper">
+                    <input type="color" class="color-picker" v-model="tempSettings.menus[m.key].color">
+                    <span class="color-value">{{ tempSettings.menus[m.key].color }}</span>
+                  </div>
+                </div>
+                <div class="menu-relocate-hint" v-show="m.pos">Ghost {{ m.label }} ro ba mouse bekesh ta jabeja beshe</div>
+              </div>
+            </div>
+            </div>
+          </div>
+
+          <div class="settings-footer">
+            <div class="unsaved-indicator" v-show="hasUnsavedChanges">
+              <span class="unsaved-dot"></span>
+              <span>Changes not saved</span>
+            </div>
+            <div class="footer-buttons">
+              <button class="btn-reset" @click="resetSettings">Reset</button>
+              <button class="btn-cancel" @click="showSettings = false">Cancel</button>
+              <button class="btn-apply" :class="{ 'has-changes': hasUnsavedChanges }" @click="applySettings">Apply</button>
+            </div>
+          </div>
+          <div class="settings-hint">
+            Tip: Use <span class="hint-command">/chatsetting</span> to open this menu
+          </div>
         </div>
-        <div class="chat-pinned" v-if="pinned">
-          <span class="pin-icon-badge">📌</span>
-          <span class="pin-body">
-            <span class="pin-author" v-if="pinned.author">{{ pinned.author }}</span>
-            <span class="pin-text" v-if="pinned.text">{{ pinned.text }}</span>
-          </span>
+
+      <!-- F5/F6 Menu Ghost Preview (relocate) -->
+      <div class="menu-ghost-layer" v-show="showSettings && settingsTab === 'menus'">
+        <div class="menu-ghost" :style="ghostStyle('f5')" @mousedown="startDragGhost($event, 'f5')">
+          <div class="menu-ghost-accent" :style="{ backgroundColor: menuAccent('f5') }"></div>
+          <div class="menu-ghost-row">
+            <div class="menu-ghost-ic" :style="{ backgroundColor: menuAccent('f5') }"></div>
+            <div class="menu-ghost-title" :style="{ color: menuAccent('f5') }">Menu Gang</div>
+          </div>
+          <div class="menu-ghost-tag" :style="{ color: menuAccent('f5'), borderColor: accentRgba('f5', 0.5) }">F5</div>
         </div>
-        <div class="chat-messages" ref="messages">
-          <message v-for="msg in filteredMessages"
-                   :templates="templates"
-                   :multiline="msg.multiline"
-                   :args="msg.args"
-                   :color="msg.color"
-                   :template="msg.template"
-                   :template-id="msg.templateId"
-                   :action="msg.action"
-                   :msg-id="msg._id"
-                   :key="msg._id">
-          </message>
+        <div class="menu-ghost" :style="ghostStyle('f6')" @mousedown="startDragGhost($event, 'f6')">
+          <div class="menu-ghost-accent" :style="{ backgroundColor: menuAccent('f6') }"></div>
+          <div class="menu-ghost-row">
+            <div class="menu-ghost-ic" :style="{ backgroundColor: menuAccent('f6') }"></div>
+            <div class="menu-ghost-title" :style="{ color: menuAccent('f6') }">Menu Job</div>
+          </div>
+          <div class="menu-ghost-tag" :style="{ color: menuAccent('f6'), borderColor: accentRgba('f6', 0.5) }">F6</div>
         </div>
       </div>
-      <div class="chat-input" :style="inputStyle" v-show="showInput">
-        <div class="chat-input-inner">
-          <span class="gear-btn" @click="toggleSettings" title="تنظیمات چت">⚙</span>
-          <span class="star-toggle-btn" @click="toggleStarredPanel" title="پیام‌های ستاره‌دار">
-            <svg viewBox="0 0 24 24" width="13" height="13">
-              <path :fill="showStarred ? '#ffd166' : 'none'" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" d="M12 2.5l2.9 6.26L22 9.77l-5 4.87 1.18 6.88L12 18.27l-6.18 3.25L7 14.64 2 9.77l7.1-1.01L12 2.5z"/>
-            </svg>
-            <span class="star-count" v-if="starred.length">{{ starred.length }}</span>
-          </span>
-          <span class="chevron">›</span>
+
+      <!-- Main Chat Container -->
+      <div class="chat-container" :class="{ fadeOut: !showWindow && !showInput }">
+        <!-- Tab Bar - Generated from CHAT_TABS config -->
+        <div class="chat-tabs" @mousedown="startDragChat" style="cursor: move;">
+          <div class="chat-tab"
+               v-for="tab in visibleTabs"
+               :key="tab.key"
+               :class="{ active: activeTab === tab.key, 'staff-tab': tab.key === 'staff', 'has-messages': tab.key === 'staff' && (tabs.staff.unread || tabs.staff.messages.length > 0) }"
+               @click="switchTab(tab.key)">
+            {{ tab.label }}
+            <span class="badge" :class="{ show: tab.unread }"></span>
+          </div>
+        </div>
+
+        <!-- Chat Messages -->
+        <div class="chat-window" :style="computedChatStyle">
+          <div class="chat-messages" ref="messages">
+            <message v-for="msg in currentTabMessages"
+                     :templates="templates"
+                     :multiline="msg.multiline"
+                     :args="msg.args"
+                     :color="msg.color"
+                     :template="msg.template"
+                     :template-id="msg.templateId"
+                     :key="msg">
+            </message>
+          </div>
+        </div>
+
+        <!-- Input Area -->
+        <div class="chat-input" v-show="showInput">
+          <span class="settings-icon" @click="toggleSettings">⚙</span>
+          <span class="prefix">›</span>
           <textarea v-model="message"
                     ref="input"
                     type="text"
                     autofocus
                     spellcheck="false"
-					@keyup.tab="On_Tab"
+                    placeholder="Type a message..."
+                    @keyup.tab="On_Tab"
                     @keyup.esc="hideInput"
                     @keyup="keyUp"
                     @keydown="keyDown"
@@ -82,138 +233,8 @@
           </textarea>
         </div>
 
-        <div class="starred-panel animated fadeIn" v-if="showStarred">
-          <div class="settings-header">
-            <span class="settings-title">پیام‌های ستاره‌دار</span>
-            <span class="settings-close" @click="showStarred = false">✕</span>
-          </div>
-          <div class="settings-body">
-            <div class="starred-empty" v-if="starred.length === 0">هنوز پیامی ستاره نزدی</div>
-            <div class="starred-item" v-for="s in [...starred].reverse()" :key="s.id + '-' + s.ts">
-              <span class="starred-item-text">{{ s.text }}</span>
-              <span class="starred-item-remove" @click="removeStar(s.id)">✕</span>
-            </div>
-          </div>
-          <div class="settings-actions" v-if="starred.length">
-            <button class="settings-btn cancel" @click="clearStarred">پاک کردن همه</button>
-          </div>
-        </div>
-
-        <div class="chat-settings animated fadeIn" v-else-if="showSettings">
-          <div class="settings-header">
-            <span class="settings-title">Chat Settings</span>
-            <span class="settings-close" @click="cancelSettings">✕</span>
-          </div>
-
-          <div class="settings-tabswitch">
-            <span class="tabswitch-btn" :class="{ active: settingsTab === 'chat' }" @click="settingsTab = 'chat'">CHAT</span>
-            <span class="tabswitch-btn" :class="{ active: settingsTab === 'live' }" @click="settingsTab = 'live'">SHOW IN LIVE</span>
-          </div>
-
-          <div class="settings-body" v-if="settingsTab === 'chat'">
-            <div class="settings-group-label">BEHAVIOR</div>
-            <div class="toggle-row">
-              <label>Show on new message</label>
-              <div class="toggle-switch" :class="{ on: autoShowOnMessage }" @click="autoShowOnMessage = !autoShowOnMessage">
-                <div class="toggle-knob"></div>
-              </div>
-            </div>
-            <div class="toggle-row">
-              <label>Lock position</label>
-              <div class="toggle-switch" :class="{ on: lockPosition }" @click="lockPosition = !lockPosition">
-                <div class="toggle-knob"></div>
-              </div>
-            </div>
-            <div class="toggle-row">
-              <label>Sound notifications</label>
-              <div class="toggle-switch" :class="{ on: soundEnabled }" @click="soundEnabled = !soundEnabled">
-                <div class="toggle-knob"></div>
-              </div>
-            </div>
-            <div class="toggle-row">
-              <label>Background</label>
-              <div class="toggle-switch" :class="{ on: bgEnabled }" @click="bgEnabled = !bgEnabled">
-                <div class="toggle-knob"></div>
-              </div>
-            </div>
-
-            <div class="settings-group-label">APPEARANCE</div>
-            <div class="toggle-row">
-              <label>Font Size</label>
-              <div class="size-btns">
-                <span class="size-btn" :class="{ active: fontScale === 85 }" @click="fontScale = 85">S</span>
-                <span class="size-btn" :class="{ active: fontScale === 100 }" @click="fontScale = 100">M</span>
-                <span class="size-btn" :class="{ active: fontScale === 115 }" @click="fontScale = 115">L</span>
-              </div>
-            </div>
-
-            <div class="slider-block">
-              <div class="slider-toprow"><label>Width</label><span class="slider-val">{{ sizeWidth }}%</span></div>
-              <input type="range" min="25" max="65" v-model.number="sizeWidth" :style="sliderFill(sizeWidth, 25, 65)">
-            </div>
-            <div class="slider-block">
-              <div class="slider-toprow"><label>Height</label><span class="slider-val">{{ sizeHeight }}px</span></div>
-              <input type="range" min="150" max="420" step="10" v-model.number="sizeHeight" :style="sliderFill(sizeHeight, 150, 420)">
-            </div>
-            <div class="slider-block" :class="{ 'row-disabled': !bgEnabled }">
-              <div class="slider-toprow"><label>Opacity</label><span class="slider-val">{{ opacity }}%</span></div>
-              <input type="range" min="20" max="95" v-model.number="opacity" :disabled="!bgEnabled" :style="sliderFill(opacity, 20, 95)">
-            </div>
-
-            <div class="toggle-row font-row">
-              <label>Message Font</label>
-            </div>
-            <div class="font-chips">
-              <span v-for="f in fontPresets"
-                    :key="f.id"
-                    class="font-chip"
-                    :class="{ selected: msgFont === f.id }"
-                    :style="{ fontFamily: f.family }"
-                    @click="msgFont = f.id">
-                {{ f.label }}
-              </span>
-            </div>
-
-            <div class="settings-group-label">THEME</div>
-            <div class="toggle-row">
-              <label>Accent Color</label>
-              <div class="color-field">
-                <input type="color" class="color-input" v-model="accent">
-                <span class="settings-val mono">{{ accent }}</span>
-              </div>
-            </div>
-            <div class="accent-swatches">
-              <span v-for="c in accentPresets"
-                    :key="c"
-                    class="accent-swatch"
-                    :class="{ selected: accent === c }"
-                    :style="{ backgroundColor: c, boxShadow: accent === c ? ('0 0 10px ' + c) : 'none' }"
-                    @click="accent = c">
-                <span class="accent-check" v-if="accent === c">✓</span>
-              </span>
-            </div>
-          </div>
-
-          <div class="settings-body" v-else>
-            <div class="settings-group-label">SHOW IN LIVE TAB</div>
-            <div class="toggle-row" v-for="tab in tabs.filter(t => t.id !== 'live')" :key="tab.id">
-              <label><span class="tab-icon">{{ tab.icon }}</span> {{ tab.label }}</label>
-              <div class="toggle-switch" :class="{ on: liveInclude[tab.id] }" @click="liveInclude[tab.id] = !liveInclude[tab.id]">
-                <div class="toggle-knob"></div>
-              </div>
-            </div>
-          </div>
-
-          <div class="settings-actions">
-            <button class="settings-btn reset" @click="resetSettings">Reset</button>
-            <button class="settings-btn cancel" @click="cancelSettings">Cancel</button>
-            <button class="settings-btn save" @click="saveSettings()">Apply</button>
-          </div>
-
-          <div class="settings-tip">Tip: Use <b>/chatsetting</b> to open this menu</div>
-        </div>
-
-        <suggestions v-else :message="message" :suggestions="suggestions">
+        <!-- Suggestions -->
+        <suggestions :message="message" :suggestions="suggestions">
         </suggestions>
       </div>
     </div>
@@ -221,51 +242,39 @@
 
   <!-- Message Template -->
   <script type="text/x-template" id="message_template">
-    <div class="msg" :class="{ multiline }">
-      <span v-html="textEscaped"></span>
-      <span class="action-btn" v-if="action" @click="runAction">{{ action.label || 'برو' }} ›</span>
-      <span class="msg-actions">
-        <span class="msg-icon-btn star-btn" :class="{ active: starred }" @click="toggleStar" :title="starred ? 'حذف از ستاره‌دارها' : 'ستاره‌دار کن'">
-          <svg viewBox="0 0 24 24" width="12" height="12">
-            <path :fill="starred ? '#ffd166' : 'none'" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" d="M12 2.5l2.9 6.26L22 9.77l-5 4.87 1.18 6.88L12 18.27l-6.18 3.25L7 14.64 2 9.77l7.1-1.01L12 2.5z"/>
-          </svg>
-        </span>
-        <span class="msg-icon-btn" @click="quoteText" title="پاسخ / درج در چت">
-          <svg viewBox="0 0 24 24" width="12" height="12"><path fill="currentColor" d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z"/></svg>
-        </span>
-        <span class="msg-icon-btn" :class="{ copied }" @click="copyText" :title="copied ? 'کپی شد' : 'کپی متن'">
-          <svg v-if="!copied" viewBox="0 0 24 24" width="12" height="12"><path fill="currentColor" d="M16 1H4a2 2 0 0 0-2 2v14h2V3h12V1zm3 4H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2zm0 16H8V7h11v14z"/></svg>
-          <svg v-else viewBox="0 0 24 24" width="13" height="13"><path fill="#1dd1a1" d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg>
-        </span>
-      </span>
+    <div class="msg" :class="{ multiline, 'is-hovered': isHovered }"
+         @click="copyMessage"
+         @contextmenu="copyMessage"
+         @mouseenter="isHovered = true"
+         @mouseleave="isHovered = false">
+      <span class="msg-content" v-html="textEscaped"></span>
+      <span class="copy-icon" v-show="isHovered && !showCopied">⎘</span>
+      <span class="copied-badge" v-show="showCopied">✓</span>
     </div>
   </script>
 
   <!-- Suggestions Template -->
   <script type="text/x-template" id="suggestions_template">
     <ul class="suggestions" v-show="currentSuggestions.length > 0">
-      <li class="suggestion" v-for="s in currentSuggestions" :class="{ 'disabled': s.disabled }">
-        <span class="suggestion-mark">/</span>
-        <div class="suggestion-body">
-          <p>
-            <span :class="{ 'disabled': s.disabled }">
-              {{s.name}}
-            </span>
-            <span class="param"
-                  v-for="(p, index) in s.params"
-                  :class="{ 'disabled': p.disabled }">
-              [{{p.name}}]
-            </span>
-          </p>
-          <small class="help">
-            <template v-if="!s.disabled">
-              {{s.help}}
-            </template>
-            <template v-for="p in s.params" v-if="!p.disabled">
-              {{p.help}}
-            </template>
-          </small>
-        </div>
+      <li class="suggestion" v-for="s in currentSuggestions">
+        <p>
+          <span :class="{ 'disabled': s.disabled }">
+            {{s.name}}
+          </span>
+          <span class="param"
+                v-for="(p, index) in s.params"
+                :class="{ 'disabled': p.disabled }">
+            [{{p.name}}]
+          </span>
+        </p>
+        <small class="help">
+          <template v-if="!s.disabled">
+            {{s.help}}
+          </template>
+          <template v-for="p in s.params" v-if="!p.disabled">
+            {{p.help}}
+          </template>
+        </small>
       </li>
     </ul>
   </script>

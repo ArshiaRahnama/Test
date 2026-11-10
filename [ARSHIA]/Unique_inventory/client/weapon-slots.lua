@@ -78,6 +78,14 @@ RegisterNUICallback('weaponSlotDrop', function(data, cb)
         return cb({ ok = true })
     end
 
+    -- makets (minigun, sniper, katana, ...) are back-carried weapons: they only fit the maket slots
+    if IsMaketWeapon(name) then
+        ESX.ShowNotification('ماکت فقط داخل اسلات «ماکت» قرار می‌گیرد')
+        Wait(100)
+        exports['Unique_inventory']:reopenInventoryUI()
+        return cb({ ok = false, reason = 'maket_only' })
+    end
+
     exports['Unique_inventory']:moveInside({
         name = name,
         count = 1,

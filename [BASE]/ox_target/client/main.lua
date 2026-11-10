@@ -29,10 +29,184 @@ local menuHistory = {}
 local nearbyZones
 
 -- Toggle ox_target, instead of holding the hotkey
-local toggleHotkey = GetConvarInt('ox_target:toggleHotkey', 0) == 1
+local toggleHotkey = GetConvarInt('ox_target:toggleHotkey', 1) == 1
 local mouseButton = GetConvarInt('ox_target:leftClick', 1) == 1 and 24 or 25
 local debug = GetConvarInt('ox_target:debug', 0) == 1
 local vec0 = vec3(0, 0, 0)
+
+-- Sunset behaviour: the eye is only usable while unarmed (or holding these)
+local whiteListWeapon = {
+    [`WEAPON_UNARMED`] = true,
+    [`WEAPON_OBJECT`] = true,
+    [`WEAPON_PETROLCAN`] = true,
+}
+
+local ESX
+local playerDead = false
+
+---Lazily grabs the shared ESX object (safe if essentialmode is not started yet)
+local function getPlayerData()
+    if not ESX and GetResourceState('essentialmode') == 'started' then
+        local ok, obj = pcall(function() return exports['essentialmode']:getSharedObject() end)
+        if ok and type(obj) == 'table' then ESX = obj end
+    end
+
+    if ESX and ESX.GetPlayerData then
+        local ok, data = pcall(ESX.GetPlayerData)
+        if ok and type(data) == 'table' then return data end
+    end
+
+    return {}
+end
+
+local function isPlayerDead()
+    local ped = cache.ped
+    local ls = LocalPlayer.state
+
+    if ls.isDead or ls.isInjure then return true end
+    if ped and ped ~= 0 and IsEntityDead(ped) then return true end
+
+    local data = getPlayerData()
+
+    return (data.IsDead or data.IsInjure) and true or false
+end
+
+local function isPlayerCuffed()
+    return getPlayerData().HandCuffed == 1
+end
+
+local function isHandsUp()
+    if GetResourceState('sunset_utils') ~= 'started' then return false end
+
+    local ok, result = pcall(function() return exports['sunset_utils']:getHandupState() end)
+
+    return ok and result and true or false
+end
+
+local function isEyeDisabled()
+    if LocalPlayer.state.disableEye then return true end
+
+    if GetResourceState('essentialmode') == 'started' then
+        local ok, result = pcall(function() return exports['essentialmode']:isControlDisabled('f2') end)
+
+        if ok and result then return true end
+    end
+
+    return false
+end
+
+---Returns true when the player is currently not allowed to use the eye
+local function isTargetingBlocked()
+    if not whiteListWeapon[GetSelectedPedWeapon(cache.ped)] then return true end
+    if cache.vehicle then return true end
+
+    return isHandsUp() or isPlayerCuffed()
+end
+
+---Resolves labels that are functions / function references (cross-resource exports)
+---@param label any
+---@return string
+local function resolveLabel(label)
+    local labelType = type(label)
+
+    if labelType == 'string' then return label end
+    if labelType ~= 'function' and labelType ~= 'table' then return '' end
+
+    local ok, result = pcall(label)
+
+    if not ok and labelType == 'table' then
+        ok, result = pcall(function() return msgpack.unpack(msgpack.pack(label))() end)
+    end
+
+    if ok and result ~= nil then return tostring(result) end
+
+    return ''
+end
+
+---@param list table
+---@param extra? table
+---@return table
+local function copyOptions(list, extra)
+    local copy = {}
+    local count = #list
+
+    for i = 1, count do
+        local option = list[i]
+
+        if option.label ~= nil and type(option.label) ~= 'string' then
+            option = table.clone(option)
+            option.label = resolveLabel(option.label)
+        end
+
+        copy[i] = option
+    end
+
+    if extra then copy[count + 1] = extra end
+
+    return copy
+end
+
+---Builds the NUI payload without touching the stored options (labels resolved, close button appended)
+---@param zones table
+---@return table
+local function buildPayload(zones)
+    local payload = {}
+
+    for key, list in pairs(options) do
+        if type(list) == 'table' then
+            local extra
+
+            if key == 'globalTarget' and #list > 0 then
+                extra = {
+                    icon = 'fa-solid fa-circle-chevron-left',
+                    label = 'بستن',
+                    name = 'builtin:close',
+                }
+            end
+
+            payload[key] = copyOptions(list, extra)
+        end
+    end
+
+    local zonePayload = {}
+
+    for i = 1, #zones do
+        zonePayload[i] = copyOptions(zones[i])
+    end
+
+    return { event = 'setTarget', options = payload, zones = zonePayload }
+end
+
+---Finds an entity that can be targeted without aiming at it (addModel2 / addLocalEntity2)
+---@param playerCoords vector3
+---@return number? entity, number? model, vector3? coords
+local function findNoRayEntity(playerCoords)
+    local bestEntity, bestModel, bestDistance
+
+    for model in pairs(state.getNoRayModels()) do
+        local entity = GetClosestObjectOfType(playerCoords.x, playerCoords.y, playerCoords.z, 5.0, model, false, false, false)
+
+        if entity and entity ~= 0 and DoesEntityExist(entity) then
+            local dist = #(playerCoords - GetEntityCoords(entity))
+
+            if not bestDistance or dist < bestDistance then
+                bestEntity, bestModel, bestDistance = entity, model, dist
+            end
+        end
+    end
+
+    for entity in pairs(state.getNoRayEntities()) do
+        if DoesEntityExist(entity) then
+            local dist = #(playerCoords - GetEntityCoords(entity))
+
+            if dist < 3.0 and (not bestDistance or dist < bestDistance) then
+                bestEntity, bestModel, bestDistance = entity, GetEntityModel(entity), dist
+            end
+        end
+    end
+
+    if bestEntity then return bestEntity, bestModel, GetEntityCoords(bestEntity) end
+end
 
 ---@param option OxTargetOption
 ---@param distance number
@@ -45,7 +219,7 @@ local function shouldHide(option, distance, endCoords, entityHit, entityType, en
         return true
     end
 
-    if distance > (option.distance or 7) then
+    if distance > (option.distance or 3) then
         return true
     end
 
@@ -117,6 +291,14 @@ local function shouldHide(option, distance, endCoords, entityHit, entityType, en
         end
     end
 
+    if entityType == 1 and entityHit and entityHit ~= 0 and not IsEntityVisible(entityHit) then
+        return true
+    end
+
+    if playerDead then
+        return true
+    end
+
     if option.canInteract then
         local success, resp = pcall(option.canInteract, entityHit, distance, endCoords, option.name, bone)
         return not success or not resp
@@ -171,7 +353,9 @@ local function startTargeting()
     end)
 
     while state.isActive() do
-        if not state.isNuiFocused() and lib.progressActive() then
+        playerDead = isPlayerDead()
+
+        if not state.isNuiFocused() and lib.progressActive() or isTargetingBlocked() then
             state.setActive(false)
             break
         end
@@ -197,6 +381,18 @@ local function startTargeting()
                     local success, result = pcall(GetEntityType, entityHit)
                     entityType = success and result or 0
                 end
+            end
+        end
+
+        -- addModel2 / addLocalEntity2: target without aiming when nothing else is hit
+        if entityHit == 0 then
+            local noRayEntity, noRayModel, noRayCoords = findNoRayEntity(playerCoords)
+
+            if noRayEntity then
+                entityHit, entityType, entityModel = noRayEntity, GetEntityType(noRayEntity), noRayModel
+                endCoords = noRayCoords
+                distance = #(playerCoords - endCoords)
+                hit = true
             end
         end
 
@@ -305,18 +501,14 @@ local function startTargeting()
                     table.insert(options.__global, 1,
                         {
                             icon = 'fa-solid fa-circle-chevron-left',
-                            label = locale('go_back'),
+                            label = 'بازگشت',
                             name = 'builtin:goback',
                             menuName = currentMenu,
                             openMenu = 'home'
                         })
                 end
 
-                SendNuiMessage(json.encode({
-                    event = 'setTarget',
-                    options = options,
-                    zones = zones,
-                }, { sort_keys = true }))
+                SendNuiMessage(json.encode(buildPayload(zones), { sort_keys = true }))
             end
 
             menuChanged = false
@@ -337,7 +529,11 @@ local function startTargeting()
         SetEntityDrawOutline(lastEntity, false)
     end
 
-    state.setNuiFocus(false)
+    -- only release focus if it is still ours (an onSelect may have opened another menu)
+    if state.isNuiFocused() then
+        state.setNuiFocus(false)
+    end
+
     SendNuiMessage('{"event": "visible", "state": false}')
     table.wipe(currentTarget)
     options:wipe()
@@ -359,6 +555,8 @@ do
             if state.isActive() then
                 return state.setActive(false)
             end
+
+            if isTargetingBlocked() or isPlayerDead() or isEyeDisabled() then return end
 
             return startTargeting()
         end
@@ -431,6 +629,7 @@ RegisterNUICallback('select', function(data, cb)
             options:wipe()
         else
             state.setNuiFocus(false)
+            state.setActive(false)
         end
 
         currentTarget.zone = zone?.id

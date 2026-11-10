@@ -4,8 +4,8 @@ window.CONFIG = {
   defaultTemplateId: 'default', //This is the default template for 2 args1
   defaultAltTemplateId: 'defaultAlt', //This one for 1 arg
   templates: { //You can add static templates here
-    'default': '<b>{0}</b>: {1}',
-    'defaultAlt': '{0}',
+    'default': '<div><b>{0}</b>: {1}</div>',
+    'defaultAlt': '<div>{0}</div>',
     'example:important': '<h1>^2{0}</h1>'
   },
   fadeTimeout: 3000,

@@ -2,18 +2,11 @@ Vue.component('message', {
   template: '#message_template',
   data() {
     return {
-      copied: false,
+      showCopied: false,
+      isHovered: false
     };
   },
   computed: {
-    starred() {
-      return this.$parent.isStarred(this.msgId);
-    },
-    plainText() {
-      const div = document.createElement('div');
-      div.innerHTML = this.textEscaped;
-      return div.textContent || div.innerText || '';
-    },
     textEscaped() {
       let s = this.template ? this.template : this.templates[this.templateId];
 
@@ -40,33 +33,48 @@ Vue.component('message', {
     },
   },
   methods: {
-    toggleStar() {
-      this.$parent.toggleStar(this.msgId, this.plainText);
-    },
-    runAction() {
-      if (!this.action || !this.action.event) return;
-      post('http://chat/action', JSON.stringify({
-        event: this.action.event,
-        args: this.action.args || [],
-      }));
-    },
-    quoteText() {
-      this.$parent.quoteMessage(this.plainText);
-    },
-    copyText() {
-      const tmp = document.createElement('textarea');
-      tmp.value = this.plainText;
-      tmp.style.position = 'fixed';
-      tmp.style.opacity = '0';
-      document.body.appendChild(tmp);
-      tmp.select();
+    copyMessage(e) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      // Get only the message content (last arg), not the author/prefix
+      // args[0] is usually author/prefix like "OOC | (8)" or "Ahmad"
+      // args[1] and beyond is the actual message
+      let plainText = '';
+      if (this.args.length > 1) {
+        // Skip first arg (author/prefix), get the rest
+        plainText = this.args.slice(1).join(' ');
+      } else {
+        // Only one arg, use it
+        plainText = this.args[0] || '';
+      }
+
+      // Clean up color and style codes
+      plainText = plainText
+        .replace(/\^[0-9]/g, '') // Remove color codes
+        .replace(/\^[\*\_\~\=\/r]/g, '') // Remove style codes
+        .trim();
+
+      // Create temporary textarea for copying
+      const textarea = document.createElement('textarea');
+      textarea.value = plainText;
+      textarea.style.position = 'fixed';
+      textarea.style.left = '-9999px';
+      textarea.style.top = '-9999px';
+      document.body.appendChild(textarea);
+      textarea.select();
+
       try {
         document.execCommand('copy');
-      } catch (e) { /* clipboard not available */ }
-      document.body.removeChild(tmp);
-      this.copied = true;
-      clearTimeout(this._copiedTimer);
-      this._copiedTimer = setTimeout(() => { this.copied = false; }, 1200);
+        this.showCopied = true;
+        setTimeout(() => {
+          this.showCopied = false;
+        }, 1500);
+      } catch (err) {
+        console.error('Copy failed:', err);
+      }
+
+      document.body.removeChild(textarea);
     },
     colorizeOld(str) {
       return `<span style="color: rgb(${this.color[0]}, ${this.color[1]}, ${this.color[2]})">${str}</span>`
@@ -119,14 +127,6 @@ Vue.component('message', {
     color: { //deprecated
       type: Array,
       default: false,
-    },
-    action: {
-      type: Object,
-      default: null,
-    },
-    msgId: {
-      type: [Number, String],
-      default: null,
     },
   },
 });

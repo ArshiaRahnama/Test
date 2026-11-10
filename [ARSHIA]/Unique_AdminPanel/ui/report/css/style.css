@@ -1,3 +1,4 @@
+@font-face{font-family:'Vazirmatn';src:url('../font/Vazirmatn-Medium.woff2') format('woff2');font-display:swap;}
 /* ===========================================================================
    Unique RP — Report System
    arshiahub.ir
@@ -22,8 +23,8 @@
   --ink-2:  #aeb8c8;
   --dim:    #7c8698;
 
-  --amber:  #e8a33d;
-  --amber-d:#b97d23;
+  --amber:  #65aeff;
+  --amber-d:#4a8fd4;
   --jade:   #4fb477;
   --rust:   #d9534f;
   --azure:  #4e8cd9;
@@ -41,7 +42,7 @@ html, body {
   width: 100vw; height: 100vh;
   background: transparent;
   overflow: hidden;
-  font-family: 'Vazir', 'Segoe UI', Tahoma, sans-serif;
+  font-family: 'Vazirmatn','Vazir', 'Segoe UI', Tahoma, sans-serif;
   color: var(--ink);
   -webkit-font-smoothing: antialiased;
 }
@@ -91,15 +92,15 @@ button { cursor: pointer; background: none; border: none; }
 .brand__mark {
   width: 9px; height: 9px; border-radius: 50%;
   background: var(--amber);
-  box-shadow: 0 0 0 0 rgba(232,163,61,.55);
+  box-shadow: 0 0 0 0 rgba(101,174,255,.55);
   animation: beacon 2.6s ease-out infinite;
 }
 .brand__mark--admin { background: var(--jade); box-shadow: 0 0 0 0 rgba(79,180,119,.55); }
 
 @keyframes beacon {
-  0%   { box-shadow: 0 0 0 0 rgba(232,163,61,.5); }
-  70%  { box-shadow: 0 0 0 9px rgba(232,163,61,0); }
-  100% { box-shadow: 0 0 0 0 rgba(232,163,61,0); }
+  0%   { box-shadow: 0 0 0 0 rgba(101,174,255,.5); }
+  70%  { box-shadow: 0 0 0 9px rgba(101,174,255,0); }
+  100% { box-shadow: 0 0 0 0 rgba(101,174,255,0); }
 }
 @media (prefers-reduced-motion: reduce) {
   .brand__mark { animation: none; }
@@ -121,7 +122,7 @@ button { cursor: pointer; background: none; border: none; }
   transition: color .14s, background .14s;
 }
 .tab:hover  { color: var(--ink-2); background: rgba(255,255,255,.03); }
-.tab.is-on  { color: var(--ink); background: rgba(232,163,61,.09); }
+.tab.is-on  { color: var(--ink); background: rgba(101,174,255,.09); }
 .tab.is-on::after {
   content: ''; position: absolute; inset-inline: 12px; bottom: -1px;
   height: 2px; background: var(--amber); border-radius: 2px 2px 0 0;
@@ -226,7 +227,7 @@ button { cursor: pointer; background: none; border: none; }
 }
 .cat i { font-size: 16px; color: var(--dim); transition: color .14s; }
 .cat:hover { border-color: var(--edge-2); }
-.cat.is-on { border-color: var(--amber); background: rgba(232,163,61,.07); color: var(--ink); }
+.cat.is-on { border-color: var(--amber); background: rgba(101,174,255,.07); color: var(--ink); }
 .cat.is-on i { color: var(--amber); }
 .cat--sky.is-on { border-color: var(--pc, #38bdf8); background: rgba(56,189,248,.08); color: var(--pc, #7dd3fc); }
 .cat--sky.is-on i { color: var(--pc, #38bdf8); }
@@ -244,8 +245,8 @@ button { cursor: pointer; background: none; border: none; }
   transition: background .14s, border-color .14s, color .14s, opacity .14s;
   border: 1px solid transparent;
 }
-.btn--go    { background: var(--amber); color: #1a1205; }
-.btn--go:hover { background: #f0b055; }
+.btn--go    { background: var(--amber); color: #06121f; }
+.btn--go:hover { background: #8cc4ff; }
 .btn--ghost { border-color: var(--edge-2); color: var(--ink-2); }
 .btn--ghost:hover { border-color: var(--dim); color: var(--ink); }
 .btn--jade  { background: var(--jade); color: #06180e; }
@@ -298,7 +299,7 @@ button { cursor: pointer; background: none; border: none; }
   transition: background .14s;
 }
 .tk:hover { background: rgba(255,255,255,.022); }
-.tk.is-sel { background: rgba(232,163,61,.06); }
+.tk.is-sel { background: rgba(101,174,255,.06); }
 
 .tk__spine { grid-row: 1 / -1; border-radius: 3px; background: var(--dim); }
 
@@ -324,10 +325,10 @@ button { cursor: pointer; background: none; border: none; }
   border: 1px solid var(--edge-2); color: var(--ink-2);
   white-space: nowrap;
 }
-.pill--wait  { border-color: rgba(232,163,61,.45); color: var(--amber);  }
+.pill--wait  { border-color: rgba(101,174,255,.45); color: var(--amber);  }
 .pill--live  { border-color: rgba(79,180,119,.45); color: var(--jade);   }
 .pill--done  { border-color: var(--edge);          color: var(--dim);    }
-.pill--count { background: rgba(232,163,61,.14); border-color: transparent; color: var(--amber); }
+.pill--count { background: rgba(101,174,255,.14); border-color: transparent; color: var(--amber); }
 
 /* unclaimed tickets pulse — the single piece of ambient motion */
 .tk--wait .tk__spine { animation: spine 2.2s ease-in-out infinite; }
@@ -374,7 +375,7 @@ button { cursor: pointer; background: none; border: none; }
   word-break: break-word; white-space: pre-wrap;
   background: var(--raise); border: 1px solid var(--edge);
 }
-.msg--me   .msg__body { background: rgba(232,163,61,.11); border-color: rgba(232,163,61,.3); }
+.msg--me   .msg__body { background: rgba(101,174,255,.11); border-color: rgba(101,174,255,.3); }
 .msg--them .msg__body { background: var(--raise); }
 .msg--sys  .msg__body {
   background: transparent; border: none;
@@ -392,11 +393,11 @@ button { cursor: pointer; background: none; border: none; }
 .composer .input { flex: 1; }
 .sendbtn {
   width: 42px; border-radius: var(--r-md);
-  background: var(--amber); color: #1a1205;
+  background: var(--amber); color: #06121f;
   display: grid; place-items: center;
   transition: background .14s, opacity .14s;
 }
-.sendbtn:hover { background: #f0b055; }
+.sendbtn:hover { background: #8cc4ff; }
 .sendbtn:disabled { opacity: .35; cursor: not-allowed; }
 
 /* ============================================================ empty === */
@@ -516,7 +517,7 @@ button { cursor: pointer; background: none; border: none; }
   position: absolute; inset: 0;
   pointer-events: none;
   background:
-    radial-gradient(900px 300px at 82% -8%, rgba(232,163,61,.07), transparent 62%),
+    radial-gradient(900px 300px at 82% -8%, rgba(101,174,255,.07), transparent 62%),
     radial-gradient(700px 300px at 8% 104%, rgba(78,140,217,.055), transparent 62%);
   z-index: 0;
 }
@@ -538,8 +539,8 @@ button { cursor: pointer; background: none; border: none; }
 .tk { align-items: center; }
 
 /* هرچه ریپورت قدیمی‌تر، پس‌زمینه‌ی گرم‌تر — فوریت بدون افزودن بج جدید */
-.tk[data-heat="1"] { background: rgba(232,163,61,.035); }
-.tk[data-heat="2"] { background: rgba(232,163,61,.075); }
+.tk[data-heat="1"] { background: rgba(101,174,255,.035); }
+.tk[data-heat="2"] { background: rgba(101,174,255,.075); }
 .tk[data-heat="3"] { background: rgba(217,83,79,.085); }
 .tk[data-heat="3"] .tk__age { color: var(--rust); font-weight: 600; }
 .tk[data-heat="2"] .tk__age { color: var(--amber); }
@@ -566,8 +567,8 @@ button { cursor: pointer; background: none; border: none; }
 
 .btn { position: relative; overflow: hidden; }
 .btn--go {
-  background: linear-gradient(180deg, #efb055, var(--amber));
-  box-shadow: 0 1px 0 rgba(255,255,255,.22) inset, 0 6px 16px -8px rgba(232,163,61,.7);
+  background: linear-gradient(180deg, #8cc4ff, var(--amber));
+  box-shadow: 0 1px 0 rgba(255,255,255,.22) inset, 0 6px 16px -8px rgba(101,174,255,.7);
 }
 .btn--jade {
   background: linear-gradient(180deg, #5fc287, var(--jade));
@@ -685,7 +686,7 @@ button { cursor: pointer; background: none; border: none; }
   border: 1px solid; font-weight: 600;
 }
 .risk-badge--low  { color: var(--dim);   border-color: var(--edge-2); }
-.risk-badge--med  { color: var(--amber); border-color: rgba(232,163,61,.4); background: rgba(232,163,61,.08); }
+.risk-badge--med  { color: var(--amber); border-color: rgba(101,174,255,.4); background: rgba(101,174,255,.08); }
 .risk-badge--high { color: var(--rust);  border-color: rgba(217,83,79,.45); background: rgba(217,83,79,.1); }
 
 .target-intel__reasons { font-size: 11.5px; color: var(--dim); }
@@ -752,7 +753,7 @@ button { cursor: pointer; background: none; border: none; }
   color: var(--ink-2); white-space: nowrap;
   transition: border-color .14s, color .14s, background .14s;
 }
-.canned__chip:hover:not(:disabled) { border-color: var(--amber-d); color: var(--amber); background: rgba(232,163,61,.06); }
+.canned__chip:hover:not(:disabled) { border-color: var(--amber-d); color: var(--amber); background: rgba(101,174,255,.06); }
 .canned__chip:disabled { opacity: .5; }
 
 /* -------------------------------------------------- رتبه‌بندی ماهانه --- */
@@ -770,7 +771,7 @@ button { cursor: pointer; background: none; border: none; }
   display: flex; flex-direction: column; align-items: center; gap: 5px;
   text-align: center;
 }
-.monthly__card--0 { border-color: rgba(232,163,61,.45); background: rgba(232,163,61,.06); }
+.monthly__card--0 { border-color: rgba(101,174,255,.45); background: rgba(101,174,255,.06); }
 .monthly__card--1 { border-color: rgba(174,184,200,.4); }
 .monthly__card--2 { border-color: rgba(184,115,51,.4); }
 .monthly__badge { font-size: 26px; line-height: 1; }
@@ -821,10 +822,10 @@ button { cursor: pointer; background: none; border: none; }
 
 .tpanel__add {
   border: 1px solid var(--amber-d); color: var(--amber); flex-shrink: 0;
-  background: rgba(232,163,61,.08); border-radius: var(--r-sm);
+  background: rgba(101,174,255,.08); border-radius: var(--r-sm);
   padding: 5px 13px; font-size: 11.5px; cursor: pointer; transition: background .12s;
 }
-.tpanel__add:hover { background: rgba(232,163,61,.18); }
+.tpanel__add:hover { background: rgba(101,174,255,.18); }
 
 .tpanel__search { margin-bottom: 4px; }
 .tpanel__results { display: flex; flex-direction: column; gap: 6px; min-height: 4px; }

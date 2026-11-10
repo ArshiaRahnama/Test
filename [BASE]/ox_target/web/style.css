@@ -1,4 +1,8 @@
-@import url("https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;500;600;700&display=swap");
+@font-face {
+  font-family: Vazirmatn;
+  src: url("fonts/Vazirmatn-Medium.woff2") format("woff2");
+  font-weight: 100 900;
+}
 
 :root {
   --color-default: #cfd2da;
@@ -28,11 +32,12 @@ p {
   left: 50%;
   transform: translate(-50%, -50%);
   font-size: 22pt;
-  fill: black;
+  fill: rgb(255, 255, 255);
 }
 
 .eye-hover {
   fill: var(--color-default);
+  --color-default: #7F00FF;
 }
 
 #options-wrapper {
@@ -47,7 +52,7 @@ p {
   flex-direction: row;
   justify-content: flex-start;
   align-items: center;
-  font-family: "Nunito";
+  font-family: Vazirmatn, sans-serif;
   background: linear-gradient(
     90deg,
     rgba(20, 20, 20, 0.7) 0%,
@@ -64,6 +69,7 @@ p {
   height: 22pt;
   width: 150pt;
   top: 0;
+  border-radius: 10px;
 }
 
 .option-container:hover {

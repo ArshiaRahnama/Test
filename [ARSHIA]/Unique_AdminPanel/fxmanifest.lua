@@ -201,6 +201,7 @@ files {
 	'html/index.html',
 	'html/adminmenu.html',
 	'html/style.css',
+	'html/fonts/*.woff2',
 	'html/app.js',
 	-- embedded MenuV NUI page (own iframe in html/index.html)
 	'html/menuv/menuv.html',

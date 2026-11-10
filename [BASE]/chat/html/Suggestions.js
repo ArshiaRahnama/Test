@@ -28,7 +28,6 @@ Vue.component('suggestions', {
       currentSuggestions.forEach((s) => {
         // eslint-disable-next-line no-param-reassign
         s.disabled = !s.name.startsWith(this.message);
-
         s.params.forEach((p, index) => {
           const wType = (index === s.params.length - 1) ? '.' : '\\S';
           const regex = new RegExp(`${s.name} (?:\\w+ ){${index}}(?:${wType}*)$`, 'g');

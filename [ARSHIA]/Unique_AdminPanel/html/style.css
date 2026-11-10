@@ -1,15 +1,16 @@
+@font-face{font-family:'Vazirmatn';src:url('fonts/Vazirmatn-Medium.woff2') format('woff2');font-display:swap;}
 /* (Google Fonts @import removed: it blocked rendering when offline; falls back to sans-serif) */
 
-* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Rajdhani', sans-serif; }
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Vazirmatn', 'Rajdhani', sans-serif; }
 html, body { width: 100%; height: 100%; background: transparent; overflow: hidden; }
 .hidden { display: none !important; }
 
 :root {
   --bg: rgba(15, 17, 21, 0.92);
   --bg-soft: rgba(26, 29, 36, 0.92);
-  --accent: #c9a24b;      /* warm amber "RP" accent, replaces default blue */
+  --accent: #4a8fd4;      /* warm amber "RP" accent, replaces default blue */
   --accent-soft: rgba(201, 162, 75, 0.15);
-  --text: #e7e6e2;
+  --text: #e6ecf5;
   --text-dim: #9a9a95;
   --danger: #c85450;
   --good: #5fae72;
@@ -227,12 +228,12 @@ html, body { width: 100%; height: 100%; background: transparent; overflow: hidde
   border-radius: 4px;
 }
 .reportCard.status-open { border-left-color: var(--danger); }
-.reportCard.status-pending { border-left-color: #d6a83a; }
+.reportCard.status-pending { border-left-color: #65aeff; }
 .reportCard .rTitle { font-weight: 700; color: var(--text); }
 .reportCard .rMeta { color: var(--text-dim); font-size: 11px; margin-top: 4px; }
 .statusTag { font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
 .statusTag.status-open { color: var(--danger); }
-.statusTag.status-pending { color: #d6a83a; }
+.statusTag.status-pending { color: #65aeff; }
 
 /* -------------------------------------------------------- SCREENSHOT --- */
 .screenshotImg {
@@ -255,7 +256,7 @@ html, body { width: 100%; height: 100%; background: transparent; overflow: hidde
 .listRowTitle { font-weight: 600; color: var(--text); }
 .listRowActions { display: flex; gap: 6px; flex-shrink: 0; }
 .smallBtn {
-  font-family: 'Rajdhani', sans-serif;
+  font-family: 'Vazirmatn', 'Rajdhani', sans-serif;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.5px;

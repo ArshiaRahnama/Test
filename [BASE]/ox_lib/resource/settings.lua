@@ -22,7 +22,7 @@ end
 
 local settings = {
     default_locale = GetConvar('ox:locale', 'en'),
-    notification_position = safeGetKvp(GetResourceKvpString, 'notification_position', 'center-right'),
+    notification_position = safeGetKvp(GetResourceKvpString, 'notification_position', 'top-right'),
     notification_audio = safeGetKvp(GetResourceKvpInt, 'notification_audio') == 1
 }
 
@@ -53,6 +53,8 @@ local function set(key, value)
     return true
 end
 
+-- Sunset: the /ox_lib settings menu is disabled by default (set `setr ox_lib:settingsCommand 1` to enable)
+if GetConvarInt('ox_lib:settingsCommand', 0) == 1 then
 RegisterCommand('ox_lib', function()
     local inputSettings = {
         {
@@ -105,5 +107,6 @@ RegisterCommand('ox_lib', function()
     set('notification_position', notification_position)
     set('notification_audio', notification_audio)
 end)
+end
 
 return settings

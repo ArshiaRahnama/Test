@@ -174,8 +174,15 @@ local function startProgress(data, nuiMessage)
 
     local disable = data.disable
     local startTime = GetGameTimer()
+    local silent = nuiMessage == nil -- no UI (progressCircle second mode): ends by timer
+    local endTime = startTime + (data.duration or 0)
 
-    SendNUIMessage(nuiMessage)
+    if disable and disable.move then
+        TriggerEvent('dpemote:enable', false)
+        TriggerEvent('phone:disableMove', true)
+    end
+
+    if nuiMessage then SendNUIMessage(nuiMessage) end
 
     while progress do
         if disable then
@@ -190,6 +197,7 @@ local function startProgress(data, nuiMessage)
                 DisableControlAction(0, controls.INPUT_MOVE_LR, true)
                 DisableControlAction(0, controls.INPUT_MOVE_UD, true)
                 DisableControlAction(0, controls.INPUT_DUCK, true)
+                DisableControlAction(0, 22, true) -- jump
             end
 
             if disable.sprint and not disable.move then
@@ -212,10 +220,15 @@ local function startProgress(data, nuiMessage)
 
         if interruptProgress(progress) then
             progress = false
+        elseif silent and progress and GetGameTimer() >= endTime then
+            progress = nil
         end
 
         Wait(0)
     end
+
+    TriggerEvent('dpemote:enable', true)
+    TriggerEvent('phone:disableMove', false)
 
     if data.prop then
         TriggerServerEvent('ox_lib:progressProps', nil)
@@ -230,10 +243,10 @@ local function startProgress(data, nuiMessage)
         end
     end
 
-    local duration = progress ~= false and GetGameTimer() - startTime + 100 -- give slight leeway
+    local duration = progress ~= false and GetGameTimer() - startTime + (100 + (data.duration / 100)) -- give slight leeway
 
     if progress == false or duration <= data.duration then
-        SendNUIMessage({ action = 'progressCancel' })
+        if not silent then SendNUIMessage({ action = 'progressCancel' }) end
         return false
     end
 
@@ -257,11 +270,14 @@ function lib.progressBar(data)
 end
 
 ---@param data ProgressProps
+---@param second? boolean Run the progress (anim, props, disabled controls) without drawing the circle UI
 ---@return boolean?
-function lib.progressCircle(data)
+function lib.progressCircle(data, second)
     while progress ~= nil do Wait(0) end
 
     if not interruptProgress(data) then
+        if second then return startProgress(data) end
+
         return startProgress(data, {
             action = 'circleProgress',
             data = {

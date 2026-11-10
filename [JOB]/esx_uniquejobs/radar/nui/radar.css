@@ -1578,3 +1578,91 @@ button:focus { outline: none; }
 			background-color: rgb( 100, 105, 110 );
 			color: white;
 		}
+
+/*-----------------------------------------------------------------------------------------
+	Pursuit Timer look aligned with the standard Wraith ARS 2X chrono panel:
+	grey gradient plate, black border, dark title bar, orange Seg-7 digits, grey buttons.
+	Only visual overrides - ids, classes, JS hooks and drag behaviour are unchanged.
+	(No !important on position, so the drag system's inline left/top still wins.)
+-----------------------------------------------------------------------------------------*/
+#pursuitTimer {
+	width: 200px;
+	top: calc( 50% + 120px );
+	left: calc( 100% - 220px );
+	padding: 0;
+	background-color: rgb( 45, 45, 45 );
+	background-image: linear-gradient( to bottom, rgb( 62, 62, 62 ), rgb( 35, 35, 35 ) );
+	border: 3px solid rgb( 0, 0, 0 );
+	border-radius: 10px;
+	box-shadow: none;
+}
+	#pursuitTimer .pt_header {
+		justify-content: center;
+		margin: 0;
+		padding: 3px 0 2px 5px;
+		background-color: rgb( 20, 22, 18 );
+		border-radius: 6px 6px 0 0;
+	}
+		#pursuitTimer .pt_title {
+			font-size: 13px;
+			letter-spacing: 5px;
+			color: rgb( 255, 255, 255 );
+		}
+		#pursuitTimer .pt_dot {
+			width: 6px;
+			height: 6px;
+		}
+	#pursuitTimer .pt_callsign {
+		margin: 4px 0 0 0;
+		color: rgb( 200, 200, 200 );
+	}
+	#pursuitTimer .pt_display_container {
+		height: 52px;
+		padding: 0;
+		margin: 0;
+		border-radius: 0;
+		background-color: rgb( 16, 12, 8 );
+		border-top: 2px solid rgb( 0, 0, 0 );
+		border-bottom: 2px solid rgb( 0, 0, 0 );
+		box-shadow: none;
+	}
+		#pursuitTimer .pt_ghost,
+		#pursuitTimer .pt_display {
+			font-size: 30px;
+			letter-spacing: 0;
+		}
+		#pursuitTimer .pt_ghost {
+			color: rgb( 56, 25, 2 );
+		}
+		#pursuitTimer .pt_display {
+			color: rgb( 252, 113, 1 );
+			text-shadow: none;
+		}
+	#pursuitTimer .pt_btns {
+		padding: 6px 0;
+		gap: 0;
+		justify-items: center;
+		align-items: center;
+	}
+		#pursuitTimer .pt_btn {
+			width: 75px;
+			height: 24px;
+			border-radius: 7px;
+			font-size: 13px;
+			font-weight: normal;
+			letter-spacing: 0;
+			color: rgb( 0, 0, 0 );
+			background-color: rgb( 200, 200, 200 );
+			filter: none;
+		}
+			#pursuitTimer .pt_btn:hover {
+				background-color: rgb( 255, 255, 255 );
+			}
+			#pursuitTimer .pt_btn:active {
+				background-color: rgb( 160, 160, 160 );
+			}
+		#pursuitTimer .pt_start,
+		#pursuitTimer .pt_start.pt_is_paused,
+		#pursuitTimer .pt_reset {
+			background-color: rgb( 200, 200, 200 );
+		}

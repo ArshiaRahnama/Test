@@ -14,9 +14,11 @@ function lib.setNuiFocus(allowInput, disableCursor)
     keepInput = IsNuiFocusKeepingInput()
     SetNuiFocus(true, not disableCursor)
     SetNuiFocusKeepInput(allowInput)
+    LocalPlayer.state.nui = true
 end
 
 function lib.resetNuiFocus()
     SetNuiFocus(false, false)
     SetNuiFocusKeepInput(keepInput)
+    LocalPlayer.state.nui = nil
 end

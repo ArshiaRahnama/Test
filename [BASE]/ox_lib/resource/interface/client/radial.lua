@@ -330,7 +330,7 @@ end
 lib.addKeybind({
     name = 'ox_lib-radial',
     description = locale('open_radial_menu'),
-    defaultKey = 'z',
+    defaultKey = 'end',
     onPressed = function()
         if isDisabled then return end
 

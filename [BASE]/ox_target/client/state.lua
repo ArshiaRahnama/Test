@@ -44,4 +44,18 @@ function state.setDisabled(value)
     isDisabled = value
 end
 
+---Models/entities that can be targeted without aiming at them (addModel2 / addLocalEntity2)
+local noRayModels = {}
+local noRayEntities = {}
+
+---@return table<number, true>
+function state.getNoRayModels()
+    return noRayModels
+end
+
+---@return table<number, true>
+function state.getNoRayEntities()
+    return noRayEntities
+end
+
 return state

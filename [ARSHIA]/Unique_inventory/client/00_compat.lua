@@ -129,7 +129,7 @@ RegisterCommand('suninv_debug', function()
     end
     print('  Press F2 now - a "KeyDown:f2" line should appear here.')
 end, false)
-SUN_VERSION = 'stage1-v8'
+SUN_VERSION = 'stage1-v9'
 print(('^2[%s] client compat loaded (%s) - F2 or /suninv to open, /suninv_debug to diagnose^7'):format(GetCurrentResourceName(), SUN_VERSION))
 
 -- --------------------------------------------------------------------------

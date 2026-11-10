@@ -231,6 +231,11 @@ RegisterNetEvent('inventory:setSlot', function(kind, slot, serial, name)
     local max = kind == 'normal' and NORMAL_SLOTS or MAKET_SLOTS
     if not slot or slot % 1 ~= 0 or slot < 1 or slot > max then return end
     if type(name) ~= 'string' or not findWeapon(xp, serial, name) then return end
+    -- maket weapons (shared/weapon-slots.lua) fit ONLY the maket slots, and the maket slots take nothing else
+    local isMaket = IsMaketWeapon and IsMaketWeapon(name) or false
+    if (kind == 'normal' and isMaket) or (kind == 'maket' and not isMaket) then
+        return notify(src, kind == 'normal' and 'ماکت فقط داخل اسلات «ماکت» قرار می‌گیرد' or 'فقط ماکت داخل این اسلات قرار می‌گیرد')
+    end
     local s = loadSlots(xp)
     forgetSerial(s, serial)
     s[kind][slot] = { name = name, serial = serial }

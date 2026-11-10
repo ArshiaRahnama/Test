@@ -272,6 +272,21 @@ else
 
         return players
     end
+
+    local poolNatives = {
+        CPed = GetAllPeds,
+        CObject = GetAllObjects,
+        CVehicle = GetAllVehicles,
+    }
+
+    ---@param poolName 'CPed' | 'CObject' | 'CVehicle'
+    ---@return number[]
+    ---Server-side parity for the `GetGamePool` client native.
+    function GetGamePool(poolName)
+        local fn = poolNatives[poolName]
+
+        return fn and fn() or {}
+    end
 end
 
 for i = 1, GetNumResourceMetadata(cache.resource, 'ox_lib') do

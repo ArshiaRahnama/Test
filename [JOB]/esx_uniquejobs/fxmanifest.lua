@@ -42,6 +42,7 @@ shared_scripts {
 
 client_scripts {
 
+	'client/marker_style.lua',
 	'client/unit_manager.lua',
 	'client/unit_plate_helper.lua',
 	'client/job_fleet_helper.lua',

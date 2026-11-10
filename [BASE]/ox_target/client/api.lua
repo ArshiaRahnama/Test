@@ -2,6 +2,7 @@
 ---@field resource? string
 
 local utils = require 'client.utils'
+local targetState = require 'client.state'
 
 local api = setmetatable({}, {
     __newindex = function(self, index, value)
@@ -265,8 +266,31 @@ function api.removeModel(arr, options)
 
             if not options or #models[model] == 0 then
                 models[model] = nil
+                targetState.getNoRayModels()[model] = nil
             end
         end
+    end
+end
+
+---Same as addModel, but the model can be targeted without aiming at it (when the player is within 5 meters).
+---@param arr number | number[] | string | string[]
+---@param options OxTargetOption | OxTargetOption[]
+function api.addModel2(arr, options)
+    if type(arr) ~= 'table' then arr = { arr } end
+
+    local resource = GetInvokingResource()
+    local noRay = targetState.getNoRayModels()
+
+    for i = 1, #arr do
+        local model = arr[i]
+        model = tonumber(model) or joaat(model)
+
+        if not models[model] then
+            models[model] = {}
+        end
+
+        addTarget(models[model], options, resource)
+        noRay[model] = true
     end
 end
 
@@ -343,6 +367,21 @@ function api.addLocalEntity(arr, options)
     end
 end
 
+---Same as addLocalEntity, but the entity can be targeted without aiming at it (when the player is within 3 meters).
+---@param arr number | number[]
+---@param options? OxTargetOption | OxTargetOption[]
+function api.addLocalEntity2(arr, options)
+    if type(arr) ~= 'table' then arr = { arr } end
+
+    local noRay = targetState.getNoRayEntities()
+
+    for i = 1, #arr do
+        noRay[arr[i]] = true
+    end
+
+    if options then api.addLocalEntity(arr, options) end
+end
+
 ---@param arr number | number[]
 ---@param options? table
 function api.removeLocalEntity(arr, options)
@@ -359,6 +398,7 @@ function api.removeLocalEntity(arr, options)
 
             if not options or #localEntities[entity] == 0 then
                 localEntities[entity] = nil
+                targetState.getNoRayEntities()[entity] = nil
             end
         end
     end
@@ -371,6 +411,12 @@ CreateThread(function()
         for entityId in pairs(localEntities) do
             if not DoesEntityExist(entityId) then
                 localEntities[entityId] = nil
+            end
+        end
+
+        for entityId in pairs(targetState.getNoRayEntities()) do
+            if not DoesEntityExist(entityId) then
+                targetState.getNoRayEntities()[entityId] = nil
             end
         end
     end
@@ -414,6 +460,10 @@ end
 AddEventHandler('onClientResourceStop', function(resource)
     removeResourceGlobals(resource, { peds, vehicles, objects, players })
     removeResourceTargets(resource, { models, entities, localEntities })
+
+    for model in pairs(targetState.getNoRayModels()) do
+        if not models[model] then targetState.getNoRayModels()[model] = nil end
+    end
 
     if Zones then
         for _, v in pairs(Zones) do
