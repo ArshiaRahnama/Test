@@ -2477,7 +2477,7 @@ end
 PhoneLookKey = L78_1
 if "" ~= L76_1 then
   L78_1 = RegisterCommand
-  L79_1 = "+apexphone_look"
+  L79_1 = "+uniquephone_look"
   function L80_1()
     local L0_2, L1_2
     L0_2 = L77_1
@@ -2486,7 +2486,7 @@ if "" ~= L76_1 then
   L81_1 = false
   L78_1(L79_1, L80_1, L81_1)
   L78_1 = RegisterCommand
-  L79_1 = "-apexphone_look"
+  L79_1 = "-uniquephone_look"
   function L80_1()
     local L0_2, L1_2
     L0_2 = L71_1
@@ -2495,7 +2495,7 @@ if "" ~= L76_1 then
   L81_1 = false
   L78_1(L79_1, L80_1, L81_1)
   L78_1 = RegisterKeyMapping
-  L79_1 = "+apexphone_look"
+  L79_1 = "+uniquephone_look"
   L80_1 = Tr
   L81_1 = "Telem\195\179vel: olhar \195\160 volta (manter)"
   L80_1 = L80_1(L81_1)
@@ -3493,7 +3493,7 @@ if "string" == L82_1 then
     end
   end
 end
-L82_1 = "apexphone_open"
+L82_1 = "uniquephone_open"
 ::lbl_297::
 L83_1 = type
 L84_1 = Config
@@ -3514,7 +3514,7 @@ L83_1 = nil
 ::lbl_312::
 L84_1 = {}
 L85_1 = "phone"
-L86_1 = "apexphone"
+L86_1 = "uniquephone"
 L87_1 = "apex_vera"
 L84_1[1] = L85_1
 L84_1[2] = L86_1
@@ -3835,7 +3835,7 @@ if "string" == L86_1 then
   L86_1 = L86_1.VeraKey
   if "" ~= L86_1 then
     L86_1 = RegisterCommand
-    L87_1 = "apexphone_vera"
+    L87_1 = "uniquephone_vera"
     function L88_1()
       local L0_2, L1_2
       L0_2 = L85_1
@@ -3844,7 +3844,7 @@ if "string" == L86_1 then
     L89_1 = false
     L86_1(L87_1, L88_1, L89_1)
     L86_1 = RegisterKeyMapping
-    L87_1 = "apexphone_vera"
+    L87_1 = "uniquephone_vera"
     L88_1 = Tr
     L89_1 = "Assistente Vera"
     L88_1 = L88_1(L89_1)

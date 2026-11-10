@@ -116,8 +116,6 @@ local function openGovBoss()
         table.insert(elements, { label = '--- Modiriyat ---', value = 'noop', disabled = true })
         table.insert(elements, { label = 'Taghir job player', value = '__gov_setjob' })
         table.insert(elements, { label = 'Taghir esm rank', value = '__gov_rank' })
-        table.insert(elements, { label = 'Option ha (hame ergan-ha)', value = '__gov_options' })
-        table.insert(elements, { label = 'Estekhdam & Division (dastresi / level)', value = '__gov_recruit' })
         table.insert(elements, { label = 'Darkhast-ha (hame ergan-ha)', value = '__gov_requests' })
         table.insert(elements, { label = 'Pad va rank (hame ergan-ha)', value = '__gov_pads' })
         table.insert(elements, { label = 'Payam be hame ergan-ha', value = '__gov_broadcast' })
@@ -410,7 +408,46 @@ CreateThread(function()
 end)
 
 
--- ===== Government boss action: marker + blip + E (same as the other organisations) =====
+-- ===== Government's own points: boss action, locker, armory, garage (marker + blip + E) =====
+-- Same idea as every other organisation. Coordinates live in client/config_government.lua and can be
+-- moved / added / deleted from /job (Government -> Boss / Locker / Armory / Veh tabs).
+
+function OpenCloakroomMenu_government()
+    local elements = {
+        { label = 'Lebas Kar', value = 'work_wear' },
+        { label = 'Lebas Shakhsi', value = 'citizen_wear' },
+        { label = 'Vest', value = 'vest' },
+    }
+    ESX.UI.Menu.CloseAll()
+    ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'gov_cloakroom', { title = 'Cloakroom', align = 'left', elements = elements }, function(data, menu)
+        local v = data.current.value
+        if v == 'citizen_wear' then
+            ESX.TriggerServerCallback('esx_skin:getPlayerSkin', function(skin) TriggerEvent('skinchanger:loadSkin', skin) end)
+        elseif v == 'work_wear' then
+            local gradenum = ESX.PlayerData.job.grade
+            ESX.TriggerServerCallback('esx_skin:getPlayerSkin', function(skin)
+                ESX.TriggerServerCallback('esx_society:getUniforms', function(male, female)
+                    TriggerEvent('skinchanger:loadClothes', skin, (skin.sex == 0) and male or female)
+                end, gradenum, 'government')
+            end)
+        elseif v == 'vest' then
+            SetPedArmour(PlayerPedId(), 100)
+        end
+    end, function(_, menu) menu.close() end)
+end
+
+local GOV_POINTS = {
+    { key = 'BossActions', open = function() openGovBoss() end },
+    { key = 'Cloakrooms',  open = function() OpenCloakroomMenu_government() end },
+    { key = 'Armories',    open = function() TriggerEvent('esx_inventoryhud:OpenJobInventory1') end },
+    { key = 'Vehicles',    open = function()
+        -- Government's OWN garage (not the garage of the organisation it browsed from F6)
+        GovActiveOrg = nil
+        TriggerServerEvent('gov_admin:setActiveOrg', nil)
+        OpenJobFleetOrLegacy(nil, 'car')
+    end },
+}
+
 CreateThread(function()
     while ESX == nil do Wait(500) end
     local blip
@@ -431,16 +468,18 @@ CreateThread(function()
                 EndTextCommandSetBlipName(blip)
             end
             local pc = GetEntityCoords(PlayerPedId())
-            for _, p in ipairs(cfg.BossActions or {}) do
-                local dist = #(pc - vector3(p.x + 0.0, p.y + 0.0, p.z + 0.0))
-                if dist < (cfg.DrawDistance or 15.0) then
-                    wait = 0
-                    local sz, col = cfg.MarkerSize or { x = 1.5, y = 1.5, z = 1.0 }, cfg.MarkerColor or { r = 212, g = 175, b = 55 }
-                    DrawMarker(cfg.MarkerType or 1, p.x + 0.0, p.y + 0.0, p.z - 0.95, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                        sz.x + 0.0, sz.y + 0.0, sz.z + 0.0, col.r, col.g, col.b, 120, false, false, 2, false, nil, nil, false)
-                    if dist < (sz.x or 1.5) then
-                        ESX.ShowHelpNotification('Press ~INPUT_CONTEXT~ to open the menu')
-                        if IsControlJustReleased(0, 38) then openGovBoss() end
+            local sz, col = cfg.MarkerSize or { x = 1.5, y = 1.5, z = 1.0 }, cfg.MarkerColor or { r = 212, g = 175, b = 55 }
+            for _, g in ipairs(GOV_POINTS) do
+                for _, p in ipairs(cfg[g.key] or {}) do
+                    local dist = #(pc - vector3(p.x + 0.0, p.y + 0.0, p.z + 0.0))
+                    if dist < (cfg.DrawDistance or 15.0) then
+                        wait = 0
+                        DrawMarker(cfg.MarkerType or 1, p.x + 0.0, p.y + 0.0, p.z - 0.95, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                            sz.x + 0.0, sz.y + 0.0, sz.z + 0.0, col.r, col.g, col.b, 120, false, false, 2, false, nil, nil, false)
+                        if dist < (sz.x or 1.5) then
+                            ESX.ShowHelpNotification('Press ~INPUT_CONTEXT~ to open the menu')
+                            if IsControlJustReleased(0, 38) then g.open() end
+                        end
                     end
                 end
             end

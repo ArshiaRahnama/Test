@@ -1346,7 +1346,7 @@ function L39_1(A0_2, A1_2)
   L3_2 = A0_2.salty
   L3_2 = L3_2.prefix
   if not L3_2 then
-    L3_2 = "apexphone_"
+    L3_2 = "uniquephone_"
   end
   L2_2 = L2_2(L3_2)
   L3_2 = A1_2

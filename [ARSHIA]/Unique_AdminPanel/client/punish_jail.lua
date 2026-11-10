@@ -186,7 +186,9 @@ AddEventHandler("arshia_jail:factionjail", function(target)
         local coords = GetEntityCoords(PlayerPedId())
         for _ , v in pairs(PunishConfig.CanJail) do
             local distance = GetDistanceBetweenCoords(coords,v.coords)
-            if distance <= v.radius then
+            -- zones assigned to organisations in /job only work for those organisations
+            local orgOk = (v.orgs == nil) or v.orgs[PlayerData.job.name] or PlayerData.job.name == 'government'
+            if distance <= v.radius and orgOk then
                 canopen = true
                 unjail = v.unjail
             end
@@ -614,7 +616,7 @@ exports('GetJailZones', function()
     local out = {}
     for i, v in ipairs(PunishConfig.CanJail) do
         out[i] = { coords = { x = v.coords.x + 0.0, y = v.coords.y + 0.0, z = v.coords.z + 0.0 }, radius = v.radius,
-                   unjail = { x = v.unjail.x + 0.0, y = v.unjail.y + 0.0, z = v.unjail.z + 0.0 }, cutscene = v.cutscene }
+                   unjail = { x = v.unjail.x + 0.0, y = v.unjail.y + 0.0, z = v.unjail.z + 0.0 }, cutscene = v.cutscene, orgs = v.orgs }
     end
     return out
 end)
@@ -625,7 +627,7 @@ AddEventHandler('ujjob:jailZones', function(list)
     for i, v in ipairs(list) do
         if type(v) == 'table' and v.coords and v.unjail then
             nz[#nz + 1] = { coords = vector3(v.coords.x + 0.0, v.coords.y + 0.0, v.coords.z + 0.0), radius = tonumber(v.radius) or 20.0,
-                            unjail = vector3(v.unjail.x + 0.0, v.unjail.y + 0.0, v.unjail.z + 0.0), cutscene = v.cutscene }
+                            unjail = vector3(v.unjail.x + 0.0, v.unjail.y + 0.0, v.unjail.z + 0.0), cutscene = v.cutscene, orgs = v.orgs }
         end
     end
     PunishConfig.CanJail = nz

@@ -1363,6 +1363,7 @@ function OpenManageJobMenu(society)
 		table.insert(elements, {label = 'Modiriat Grade (Advanced)', value = 'manage_grades_advanced'})
 		table.insert(elements, {label = 'Modiriat Pad ha', value = 'manage_pads'})
 		table.insert(elements, {label = 'Modiriat Option ha', value = 'manage_options'})
+		table.insert(elements, {label = 'Modiriat Estekhdam / Division', value = 'manage_recruit'})
 		table.insert(elements, {label = _U('manage_grades_outfit'), value = 'manage_grades_outfit'})
 
 		-- uniquecafejobs: see uwuNoWeaponJobs at top of file.
@@ -1425,6 +1426,10 @@ function OpenManageJobMenu(society)
 
 			if data.current.value == 'manage_options' then
 				TriggerEvent('org_options:open', society)
+			end
+
+			if data.current.value == 'manage_recruit' then
+				TriggerEvent('ujrec:openOrg', society)
 			end
 
 			if data.current.value == 'manage_grades_outfit' then

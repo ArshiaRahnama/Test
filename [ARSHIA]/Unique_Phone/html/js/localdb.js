@@ -139,7 +139,7 @@ window.LocalDB = (() => {
       if (String(d.pin == null ? '' : d.pin).slice(0, 10) === pin) { delete pinTry[k]; return { ok: true }; }
       return Object.assign({ ok: false }, pinFail(k)); },
     /* como o ResetAccount do servidor: a conta desta personagem e as linhas dela (no mock, todas as tabelas) */
-    'account.reset': () => { G.remove(accKey()); delete pinTry[cid()]; Object.keys(localStorage).filter(k => k.startsWith('apexphone:db:')).forEach(k => { G.remove(k.slice('apexphone:'.length)); }); return { ok: true }; },
+    'account.reset': () => { G.remove(accKey()); delete pinTry[cid()]; Object.keys(localStorage).filter(k => k.startsWith('uniquephone:db:')).forEach(k => { G.remove(k.slice('uniquephone:'.length)); }); return { ok: true }; },
     'account.swapSim': () => { const a = acc(); a.phone = genNumber(); a.sim_id = 'SIM-' + String(rnd(1e8)).padStart(8, '0'); saveAcc(a); const p = player(); p.phone = a.phone; savePlayer(p); return { phone: a.phone, sim_id: a.sim_id }; },
     'account.usernameFree': d => ({ ok: !['admin', 'root'].includes((d.username || '').toLowerCase()) }),
 

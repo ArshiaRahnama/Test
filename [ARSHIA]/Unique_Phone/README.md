@@ -88,7 +88,7 @@ All commands below are admin only (or the server console).
 | `/phonenotify <target> <app> <text>` | Sends a phone notification. |
 | `/testnotif [id] [app]` | Sends a test notification. |
 | `/phonepos` | Live editor for the phone position in the hand. |
-| `/phonewipe` | Wipes **all** phone data of all players. Shows a summary and a 4 digit code; `/phonewipe confirm <code>` runs it. A backup copy of every table (`zbak_apexphone_<date>_*`) is made first unless you add `nobackup`; add `all` to also wipe the admin panel settings. `/phonewipe backups` lists backups, `/phonewipe dropbackup <stamp>` deletes one. Restart `apex_phone` afterwards. |
+| `/phonewipe` | Wipes **all** phone data of all players. Shows a summary and a 4 digit code; `/phonewipe confirm <code>` runs it. A backup copy of every table (`zbak_uniquephone_<date>_*`) is made first unless you add `nobackup`; add `all` to also wipe the admin panel settings. `/phonewipe backups` lists backups, `/phonewipe dropbackup <stamp>` deletes one. Restart `apex_phone` afterwards. |
 | `/phoneshowcase seed\|clear\|status` | Fills the server with English demo data (14 fictional people, chats, posts, bills...) for screenshots and videos; `clear` removes exactly what `seed` created. |
 | `phoneshop_items` | Server console only: re-checks which shop items exist in the inventory. |
 | `/givesim [id] [number]` | Gives a SIM card item (only with `Config.PhysicalSim.enabled = true`; `Config.PhysicalSim.giveCommand`). |
@@ -392,7 +392,7 @@ relative units (`%`, `vw`/`vh`, flexbox/grid) inside your own page and let it br
 `transform: scale()` on your side. With `wide = true`, lay out for a width that can change and listen to your own
 `window` `resize` event (the iframe is resized when the phone folds or unfolds) or to the `size` message below.
 
-**What your page receives** (`window.addEventListener('message', e => e.data.apexphone …)`):
+**What your page receives** (`window.addEventListener('message', e => e.data.uniquephone …)`):
 
 - `init` when it opens: `{ theme, dark, accent, player, account: { username, phone, avatar }, app,
   screen: { w, h }, form: 'bar' | 'fold', foldOpen, os: 'ios' | 'android', model }` (`screen`, `form`, `foldOpen`,
@@ -401,7 +401,7 @@ relative units (`%`, `vw`/`vh`, flexbox/grid) inside your own page and let it br
 - `theme` `{ theme, dark, accent }`, `player` `{ player }`, `resume` and `pause` (switcher), `rpc` `{ id, result }`,
   `contacts` `{ list }`, `location` `{ coords }`, `auraCommand` (a Vera command you registered).
 
-**What your page can send** (`window.parent.postMessage({ apexphone: '…', … }, '*')`):
+**What your page can send** (`window.parent.postMessage({ uniquephone: '…', … }, '*')`):
 
 - `notify { title, msg }`, `toast { msg }`, `close`, `openApp { id }`, `setWaypoint { x, y, name }`,
   `call { number, name }`, `message { number, name }`.
@@ -423,7 +423,7 @@ soon as the player taps outside your app or closes it. If you prefer the player 
 send `typing` yourself from your page and the phone will lock the keyboard only while one of your fields is focused:
 
 ```js
-const tell = on => window.parent.postMessage({ apexphone: 'typing', on }, '*');
+const tell = on => window.parent.postMessage({ uniquephone: 'typing', on }, '*');
 const isField = el => el && (el.matches('input, textarea, select') || el.isContentEditable);
 document.addEventListener('focusin',  e => { if (isField(e.target)) tell(true); });
 document.addEventListener('focusout', () => setTimeout(() => tell(isField(document.activeElement)), 50));
@@ -587,7 +587,7 @@ Item exports used by the inventory: `apex_phone.useDevice`, `apex_phone.useEarbu
   `Config.AllowWalking` and `Config.KeepVoice` off: the key mapping only fires when the game receives the keyboard.
   The phone page now listens for Alt itself and both paths share the same logic.
 - Fixed: typing in a custom app (an iframe registered with `RegisterApp`) reached the game's key mappings. The phone
-  now locks the keyboard for the game while the iframe has the focus, and apps that send `{ apexphone: 'typing', on }`
+  now locks the keyboard for the game while the iframe has the focus, and apps that send `{ uniquephone: 'typing', on }`
   get fine-grained control (see "Custom apps").
 - Fixed: QBCore without ox_inventory, blank item icons in the inventory. New `installation/qb-core_items.lua` (paste
   into `qb-core/shared/items.lua`), and on start the phone checks every item (exists, `useable`, `image` is a file

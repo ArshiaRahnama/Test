@@ -927,6 +927,7 @@ function CreatePlayer(
 		weaponName = string.upper(weaponNamex)
         local weaponLabel = ESX.GetWeaponLabel(weaponName)
 
+        local newSerial = serial or ESX.GenerateWeaponSerial()
         table.insert(
             self.loadout,
             {
@@ -934,11 +935,14 @@ function CreatePlayer(
                 ammo = ammo,
                 label = weaponLabel,
                 components = {},
-                serial = serial or ESX.GenerateWeaponSerial()
+                serial = newSerial
             }
         )
 
         TriggerClientEvent("esx:addWeapon", self.source, weaponName, ammo)
+        -- sun-inventory-hud: keep the client's loadout (with serials) in sync
+        TriggerClientEvent("esx:updateLoadout", self.source, self.loadout)
+        TriggerClientEvent("core:addWeapon", self.source, weaponName, newSerial)
 		if weaponLabel and weaponLabel ~= "undefind" then
 			TriggerClientEvent("esx:addInventoryItem", self.source, {label = weaponLabel}, 1)
 		end
@@ -955,6 +959,7 @@ function CreatePlayer(
         table.insert(self.loadout[loadoutNum].components, weaponComponent)
 
         TriggerClientEvent("esx:addWeaponComponent", self.source, weaponName, weaponComponent)
+        TriggerClientEvent("esx:updateLoadout", self.source, self.loadout)
     end
 
     -- how many copies of this weapon type are in the pockets (each has its own serial)
@@ -971,12 +976,14 @@ function CreatePlayer(
         local weaponName = string.upper(weaponNamex)
         local weaponLabel
         local removedAmmo = 0
+        local removedSerial
         ammo = tonumber(ammo) or 0
 
         for i = 1, #self.loadout, 1 do
             if self.loadout[i].name == weaponName and (not serial or self.loadout[i].serial == serial) then
                 weaponLabel = self.loadout[i].label
                 removedAmmo = tonumber(self.loadout[i].ammo) or 0
+                removedSerial = self.loadout[i].serial
                 table.remove(self.loadout, i)
                 break
             end
@@ -991,6 +998,9 @@ function CreatePlayer(
             local stillHas = self.hasWeapon(weaponName) and true or nil
             TriggerClientEvent("esx:removeWeapon", self.source, weaponName, stillHas and removedAmmo or ammo, stillHas)
             TriggerClientEvent("esx:removeInventoryItem", self.source, {label = weaponLabel}, 1)
+            -- sun-inventory-hud: keep the client's loadout (with serials) in sync
+            TriggerClientEvent("esx:updateLoadout", self.source, self.loadout)
+            TriggerClientEvent("core:removeWeapon", self.source, weaponName, removedSerial)
         end
     end
 
@@ -1011,6 +1021,7 @@ function CreatePlayer(
                     end
 
                     TriggerClientEvent("esx:removeWeaponComponent", self.source, weaponName, weaponComponent)
+        TriggerClientEvent("esx:updateLoadout", self.source, self.loadout)
                 end
             end
         end

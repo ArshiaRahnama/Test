@@ -115,16 +115,10 @@ CreateThread(function()
     end
 end)
 
--- --------------------------------------------------------- Government configuration menu
-local GovOrgs = function()
-    local out = {}
-    for _, d in ipairs(Departments or {}) do
-        if d.id ~= 'gov' then for _, j in ipairs(d.jobs) do out[#out + 1] = { job = j, dept = d.label } end end
-    end
-    return out
-end
-
-local openGovRecruitOrg
+-- ------------------------------- configuration menu: opened from the organisation BOSS ACTION
+-- (the boss decides which ranks / divisions may /invite and /edivision; the minimum level is set by
+--  Government in /job - the boss can only ASK for a change)
+local openOrgRecruit
 
 local function openPermList(job, kind, typ)
     ESX.TriggerServerCallback('ujrec:getCfg', function(cfg)
@@ -144,37 +138,37 @@ local function openPermList(job, kind, typ)
         end
         if #els == 0 then return ESX.ShowNotification('~y~Mored-i vojud nadarad.') end
         ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'ujrec_perm', {
-            title = ('%s: %s / %s'):format(job, kind == 'invite' and 'Estekhdam' or 'Division', typ == 'grade' and 'Rank ha' or 'Division ha'),
+            title = ('%s / %s'):format(kind == 'invite' and 'Estekhdam (/invite)' or 'Division (/edivision /removedivision)', typ == 'grade' and 'Rank ha' or 'Division ha'),
             align = 'top-left', elements = els,
         }, function(data, menu)
             menu.close()
             TriggerServerEvent('ujrec:setPerm', job, kind, typ, data.current.value, not data.current.on)
             SetTimeout(500, function() openPermList(job, kind, typ) end)
-        end, function(_, menu) menu.close() openGovRecruitOrg(job) end)
+        end, function(_, menu) menu.close() openOrgRecruit(job) end)
     end, job)
 end
 
-openGovRecruitOrg = function(job)
+openOrgRecruit = function(job)
     ESX.TriggerServerCallback('ujrec:getCfg', function(cfg)
-        if not cfg then return ESX.ShowNotification('~r~Dastresi nadarid.') end
+        if not cfg then return ESX.ShowNotification('~r~Faghat boss-e ergan mitavanad.') end
+        local lvl = ('Hadaghal level estekhdam: <b>%d</b>%s'):format(cfg.minLevel or 0, cfg.pending and (' <span style="opacity:.6">(darkhast: ' .. cfg.pending .. ')</span>') or '')
         local els = {
-            { label = ('Hadaghal level estekhdam: <b>%d</b>'):format(cfg.minLevel or 0), value = 'level' },
-            { label = 'Estekhdam (/invite): rank ha', value = 'invite_grade' },
-            { label = 'Estekhdam (/invite): division ha', value = 'invite_division' },
-            { label = 'Division (/edivision): rank ha', value = 'division_grade' },
-            { label = 'Division (/edivision): division ha', value = 'division_division' },
+            { label = lvl .. ' - darkhast-e taghir', value = 'level' },
+            { label = 'Estekhdam (/invite): kodam rank ha', value = 'invite_grade' },
+            { label = 'Estekhdam (/invite): kodam division ha', value = 'invite_division' },
+            { label = 'Division (/edivision /removedivision): kodam rank ha', value = 'division_grade' },
+            { label = 'Division (/edivision /removedivision): kodam division ha', value = 'division_division' },
         }
         ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'ujrec_org', {
-            title = ('Estekhdam / Division - %s'):format(job), align = 'top-left', elements = els,
+            title = 'Estekhdam / Division', align = 'top-left', elements = els,
         }, function(data, menu)
             local v = data.current.value
             menu.close()
             if v == 'level' then
-                ESX.UI.Menu.Open('dialog', GetCurrentResourceName(), 'ujrec_level', { title = 'Hadaghal level (0 = bedun-e mahdudiat)' }, function(d, m)
+                ESX.UI.Menu.Open('dialog', GetCurrentResourceName(), 'ujrec_level', { title = 'Level-e darkhasti (be Government ersal mishavad)' }, function(d, m)
                     m.close()
-                    TriggerServerEvent('ujrec:setLevel', job, tonumber(d.value) or 0)
-                    SetTimeout(500, function() openGovRecruitOrg(job) end)
-                end, function(_, m) m.close() openGovRecruitOrg(job) end)
+                    TriggerServerEvent('ujrec:reqLevel', job, tonumber(d.value) or 0)
+                end, function(_, m) m.close() openOrgRecruit(job) end)
             else
                 local kind, typ = v:match('^(%a+)_(%a+)$')
                 openPermList(job, kind, typ)
@@ -183,10 +177,5 @@ openGovRecruitOrg = function(job)
     end, job)
 end
 
-function OpenGovRecruitMenu()
-    local els = {}
-    for _, o in ipairs(GovOrgs()) do els[#els + 1] = { label = ('%s  <span style="opacity:.6">(%s)</span>'):format(o.job, o.dept), value = o.job } end
-    ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'ujrec_orgs', {
-        title = 'Estekhdam / Division: entekhab-e ergan', align = 'top-left', elements = els,
-    }, function(data, menu) menu.close() openGovRecruitOrg(data.current.value) end, function(_, menu) menu.close() end)
-end
+RegisterNetEvent('ujrec:openOrg')
+AddEventHandler('ujrec:openOrg', function(job) openOrgRecruit(job) end)

@@ -2,14 +2,14 @@
    STORE - persistência (localStorage) + ponte NUI para o FiveM
    ------------------------------------------------------------
    Chaves por PERSONAGEM: depois de Store.setNamespace(citizenid) tudo
-   o que se lê/escreve fica em `apexphone:<cid>:<chave>`. Antes disso
-   (browser sem conta, arranque) usa-se o prefixo antigo `apexphone:`.
+   o que se lê/escreve fica em `uniquephone:<cid>:<chave>`. Antes disso
+   (browser sem conta, arranque) usa-se o prefixo antigo `uniquephone:`.
    Store.global.* lê/escreve SEMPRE no prefixo raiz - é onde o mock do
    servidor (localdb.js) guarda a "base de dados", que no jogo é
    partilhada por todas as personagens e não pertence a nenhuma.
    ============================================================ */
 window.Store = (() => {
-  const ROOT = 'apexphone:';
+  const ROOT = 'uniquephone:';
   const META_NS = ROOT + '__ns';          /* lista de citizenids que já tiveram namespace neste PC */
   const META_LAST = ROOT + '__last';      /* última personagem ativa (reaplicada ao carregar a página) */
   const META_LEGACY = ROOT + '__legacy';  /* quem recebeu a cópia única das chaves antigas */

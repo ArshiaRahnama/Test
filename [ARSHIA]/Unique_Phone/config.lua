@@ -58,7 +58,7 @@ Config.Command  = ''        -- chat command to open (e.g. 'phone' -> /phone). EM
 -- Vera command ('apex_vera') and, in other profiles, to 'phone'. Those old commands are now registered WITHOUT
 -- doing anything (client/main.lua), so those saved binds die, and the open key lives on a NEW command:
 -- changing this name forces FiveM to apply Config.OpenKey to everyone again.
-Config.KeyCommand = 'apexphone_open'
+Config.KeyCommand = 'uniquephone_open'
 
 -- Vera assistant with the phone closed. EMPTY = no key (default).
 -- ⚠️ Never use F2: it is the ox_inventory inventory key.
@@ -488,6 +488,7 @@ Config.Camera = {
     -- ⚠️ The offset uses up the MARGIN between the viewfinder's 3:4 crop and the screen, so the same number
     -- shifts a bit more on a wide screen (21:9) than on 16:9. Tune it on yours.
     SelfieOffsetX = 0.19,   -- was 0.08: with 0.08 the character sat in the LEFT third of the selfie frame on this server (1920x1080); 0.19 centres it. +0.02 = frame slides a bit more to the left, -0.02 = to the right
+    LookSensitivity = 1.0,   -- Unique RP: how fast dragging in the viewfinder turns the camera (0.5 = slower, 2.0 = faster)
     -- Vertical. ⚠️ NO EFFECT in portrait modes (3:4): there the crop is exactly the screen height
     -- and there is no margin to slide. Only applies in PANO mode (16:9). Kept here for symmetry.
     SelfieOffsetY = 0.0,
@@ -1757,7 +1758,7 @@ Config.Radio = {
         provider     = 'pma-voice',    -- this server runs pma-voice ('auto' | 'pma-voice' | 'saltychat' | 'mumble-voip' | 'none')
         channelBase  = 2000000,   -- pma-voice / mumble-voip channel = channelBase + frequency x 10^decimals (calls use 50000+)
         lockChannels = true,      -- pma-voice: only players admitted by the phone can be on these channels
-        saltychat    = { prefix = 'apexphone_', speaker = false, pttCommand = 'primaryRadio' },
+        saltychat    = { prefix = 'uniquephone_', speaker = false, pttCommand = 'primaryRadio' },
         mumble       = { radioControl = 137 },  -- control pressed while the phone transmits (137 = Caps Lock)
     },
 }

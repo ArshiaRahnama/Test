@@ -20,7 +20,7 @@ window.Arcade = (() => {
      mesmo PC partilhavam recordes) e fora do alcance do Store.clear(), por isso o "Apagar todo o
      conteúdo" das Definições - que promete apagar a conta e TODOS os dados deste telemóvel -
      deixava-os atrás. Agora são dois mapas no Store ('arcade' = recordes, 'arcadeOpt' = opções), que
-     já vivem em apexphone:<citizenid>: e vão-se embora com a conta.
+     já vivem em uniquephone:<citizenid>: e vão-se embora com a conta.
      As chaves antigas mudam-se UMA vez por PC (marca na raiz, como a migração do store.js): a
      primeira personagem que abrir um jogo herda-as e elas SAEM do localStorage - se ficassem, um
      "Apagar todo o conteúdo" ressuscitava os recordes na abertura seguinte.

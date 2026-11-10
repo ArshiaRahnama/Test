@@ -760,7 +760,7 @@ function L14_1(A0_2)
     ::lbl_22::
     L5_3 = A0_2.backup
     if L5_3 then
-      L5_3 = "Antes de apagar \195\169 feita uma c\195\179pia de cada tabela (zbak_apexphone_*)."
+      L5_3 = "Antes de apagar \195\169 feita uma c\195\179pia de cada tabela (zbak_uniquephone_*)."
       if L5_3 then
         goto lbl_29
       end

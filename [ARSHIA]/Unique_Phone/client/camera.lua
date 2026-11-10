@@ -910,6 +910,17 @@ function L41_1()
         L3_3 = InvalidateVehicleIdleCam
         L3_3()
       end
+      do
+        local ldx, ldy = PhoneLookDX or 0, PhoneLookDY or 0
+        if ldx ~= 0 or ldy ~= 0 then
+          PhoneLookDX, PhoneLookDY = 0, 0
+          local sens = tonumber(Config.Camera and Config.Camera.LookSensitivity) or 1.0
+          EnableControlAction(0, 1, true)    -- INPUT_LOOK_LR
+          EnableControlAction(0, 2, true)    -- INPUT_LOOK_UD
+          SetControlNormal(0, 1, math.max(-1.0, math.min(1.0, ldx * 0.02 * sens)))
+          SetControlNormal(0, 2, math.max(-1.0, math.min(1.0, ldy * 0.02 * sens)))
+        end
+      end
       L3_3 = Wait
       L4_3 = 0
       L3_3(L4_3)
@@ -1039,7 +1050,7 @@ function L44_1(A0_2, A1_2)
   end
   L2_2 = false
   ::lbl_10::
-  L4_1 = L2_2
+  L4_1 = false   -- Unique RP: look comes from cameraLook (mouse deltas from the UI), not from the game's own mouse look
   L2_2 = A1_2
   L3_2 = "ok"
   L2_2(L3_2)
@@ -1049,6 +1060,10 @@ L42_1 = RegisterNUICallback
 L43_1 = "cameraLook"
 function L44_1(A0_2, A1_2)
   local L2_2, L3_2, L4_2
+  if L0_1 and A0_2 then
+    PhoneLookDX = (PhoneLookDX or 0) + (tonumber(A0_2.dx) or 0)
+    PhoneLookDY = (PhoneLookDY or 0) + (tonumber(A0_2.dy) or 0)
+  end
   L2_2 = L0_1
   if L2_2 then
     L2_2 = L9_1

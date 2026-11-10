@@ -4,9 +4,9 @@
      · id só com letras, números, _ - . : (até 64), o mesmo filtro do servidor; outro id é RECUSADO
      · job/jobs + minGrade (opcionais): o ícone só aparece a quem tem esse emprego. O minGrade só é
        avaliado se o telemóvel receber o NÚMERO do escalão (player.job.gradeLevel) - ver jobOk abaixo
-   Dentro da app (iframe): window.parent.postMessage({ apexphone:'notify', title, msg }, '*')
-     apexphone: 'close' | 'openApp' {id} | 'setWaypoint' {x,y} | 'rpc' {name,data,id} → resposta {apexphone:'rpc', id, result}
-     'getContacts' → {apexphone:'contacts', list} · 'getPlayer' → {apexphone:'player', player} · 'toast' {msg}
+   Dentro da app (iframe): window.parent.postMessage({ uniquephone:'notify', title, msg }, '*')
+     uniquephone: 'close' | 'openApp' {id} | 'setWaypoint' {x,y} | 'rpc' {name,data,id} → resposta {uniquephone:'rpc', id, result}
+     'getContacts' → {uniquephone:'contacts', list} · 'getPlayer' → {uniquephone:'player', player} · 'toast' {msg}
      'activity' { op:'start'|'update'|'stop', id, title, subtitle, icon, progress 0..1, eta, state }
        - atividade ao vivo na Dynamic Island (também em window.RKPhone.startActivity/updateActivity/stopActivity)
      'typing' { on } (1.2.0) - um campo de texto da app tem/perdeu o foco: o jogo deixa de receber o teclado só nesses
@@ -17,7 +17,7 @@
      O player (init/getPlayer/player.get) só leva money depois de o jogador autorizar "Banco" (pedido pelo bank.info).
      'widget' {id, name, size|sizes, template: 'stat'|'list'|'progress'|'text', data: {title, value, unit, sub, items, text, label, color, icon}}
        - só texto/estrutura; um html antigo é reduzido a texto (template 'text').
-   A app recebe {apexphone:'init', theme, accent, dark, player, account} ao abrir e {apexphone:'theme'} quando muda.
+   A app recebe {uniquephone:'init', theme, accent, dark, player, account} ao abrir e {uniquephone:'theme'} quando muda.
    ============================================================================================================ */
 window.ThirdParty = (() => {
   const frames = {}, sigs = {}, defs = {};
@@ -69,8 +69,8 @@ window.ThirdParty = (() => {
       /* 1.1.8: def.wide = a app dispõe-se em largura (no dobrável leva a zona do conteúdo toda em vez dos 440 px ao centro,
          apps.css .ext-wide). O 'init' leva o tamanho real do iframe (px CSS: a escala do telemóvel é um transform e não muda
          isto), o formato e o estado da dobra; 'size' avisa quando mudam (ver geometry abaixo). */
-      open(win) { if (def.wide === true) win.classList.add('ext-wide'); const f = UI.el(`<iframe src="${UI.esc(safeUrl(def.url))}" sandbox="allow-scripts allow-same-origin allow-forms"></iframe>`); win.querySelector('.nav-stack').appendChild(f); frames[id] = f; f.onload = () => send(f, Object.assign({ apexphone: 'init', theme: System.state.theme, dark: System.state.dark, accent: System.state.accent, player: playerFor(id, System.player), account: System.account && { username: System.account.username, phone: System.account.phone, avatar: System.account.avatar }, app: id }, geometry(f))); win.onClose = () => { delete frames[id]; delete typingAware[id]; delete typingWant[id]; Bridge.emit('ext:typing'); }; },
-      resume(win) { const f = frames[id]; if (f) send(f, { apexphone: 'resume' }); }, pause(win) { const f = frames[id]; if (f) send(f, { apexphone: 'pause' }); } });
+      open(win) { if (def.wide === true) win.classList.add('ext-wide'); const f = UI.el(`<iframe src="${UI.esc(safeUrl(def.url))}" sandbox="allow-scripts allow-same-origin allow-forms"></iframe>`); win.querySelector('.nav-stack').appendChild(f); frames[id] = f; f.onload = () => send(f, Object.assign({ uniquephone: 'init', theme: System.state.theme, dark: System.state.dark, accent: System.state.accent, player: playerFor(id, System.player), account: System.account && { username: System.account.username, phone: System.account.phone, avatar: System.account.avatar }, app: id }, geometry(f))); win.onClose = () => { delete frames[id]; delete typingAware[id]; delete typingWant[id]; Bridge.emit('ext:typing'); }; },
+      resume(win) { const f = frames[id]; if (f) send(f, { uniquephone: 'resume' }); }, pause(win) { const f = frames[id]; if (f) send(f, { uniquephone: 'pause' }); } });
     if (System.ready) Bridge.emit('apps:changed');
   }
   function unregister(id) { const d = App.get(id); if (!d || !d.external) return; System.killApp(id); d.hidden = true; delete sigs[id];
@@ -94,7 +94,7 @@ window.ThirdParty = (() => {
      receber o teclado (Config.AllowWalking / KeepVoice) cada letra escrita na app ia TAMBÉM para os key mappings do jogo. Duas vias:
        · por omissão, enquanto o iframe tiver o foco o telemóvel diz ao Lua "a escrever" (system.js editable → wantsTyping):
          teclado só para a app; andar volta assim que se toca fora dela ou se fecha;
-       · a app pode mandar window.parent.postMessage({ apexphone:'typing', on:true|false }, '*') nos focusin/focusout dos seus
+       · a app pode mandar window.parent.postMessage({ uniquephone:'typing', on:true|false }, '*') nos focusin/focusout dos seus
          campos: a partir da primeira mensagem o telemóvel confia nela e só bloqueia o teclado quando ela o pedir (fica a
          andar-se com a app aberta). O estado esquece-se quando a app fecha (window do iframe destruída). */
   const typingAware = {}, typingWant = {};
@@ -105,7 +105,7 @@ window.ThirdParty = (() => {
   }
   /* tamanho do contentor da app em px CSS (o que a app vê em window.innerWidth/Height), formato e dobra */
   const geometry = f => ({ screen: { w: f ? f.clientWidth : 440, h: f ? f.clientHeight : 956 }, form: System.form, foldOpen: !!System.foldOpen, os: System.os, model: System.deviceModel || null });
-  const sendSizes = () => requestAnimationFrame(() => Object.values(frames).forEach(f => send(f, Object.assign({ apexphone: 'size' }, geometry(f)))));
+  const sendSizes = () => requestAnimationFrame(() => Object.values(frames).forEach(f => send(f, Object.assign({ uniquephone: 'size' }, geometry(f)))));
   Bridge.on('fold:state', sendSizes); Bridge.on('form:changed', sendSizes);
   const txt = (v, max) => String(v == null ? '' : v).slice(0, max);
   /* javascript:/data:/blob: no src do iframe correriam com a origem do telemóvel (allow-same-origin) e com acesso ao Bridge */
@@ -266,7 +266,7 @@ window.ThirdParty = (() => {
      O island.js tem activity/update/stop e o modo de navegação desenhados desde o início e ninguém os
      chamava: não havia via nem para um resource em Lua nem para uma app externa. Agora há duas:
        · Lua   → exports StartActivity / UpdateActivity / StopActivity (client/exports.lua), push 'activity';
-       · app externa → postMessage { apexphone:'activity', op, id, title, … } ou RKPhone.startActivity(…).
+       · app externa → postMessage { uniquephone:'activity', op, id, title, … } ou RKPhone.startActivity(…).
      NADA do que vem de fora entra como HTML: o texto é cortado e a ilha escapa-o; o `icon` só pode ser um
      glifo do telemóvel, o id de uma app instalada ou um URL (nui/http(s)/data:image) - a ilha pinta URLs
      por CSSOM. Sem `title` recusa-se (a pílula não teria o que mostrar). Máximo de ACT_MAX ao mesmo tempo:
@@ -312,22 +312,22 @@ window.ThirdParty = (() => {
   const extActivity = (app, op, id, data) => runActivity(('x:' + app + ':' + txt(id, 24)).slice(0, 64), op, data, app);
 
   window.addEventListener('message', async e => {
-    const m = e.data; if (!m || !m.apexphone) return; const src = e.source; const id = Object.keys(frames).find(k => frames[k].contentWindow === src); if (!id) return; const f = frames[id];
-    switch (m.apexphone) {
+    const m = e.data; if (!m || !m.uniquephone) return; const src = e.source; const id = Object.keys(frames).find(k => frames[k].contentWindow === src); if (!id) return; const f = frames[id];
+    switch (m.uniquephone) {
       case 'notify': Notify.push({ app: id, title: txt(m.title, 80), msg: txt(m.msg, 255), onTap: () => System.openApp(id) }); break;
       case 'toast': UI.toast(txt(m.msg, 120)); break;
       case 'close': System.closeApp(); break;
       case 'openApp': if (typeof m.id === 'string') System.openApp(m.id); break;
       case 'setWaypoint': if (isFinite(+m.x) && isFinite(+m.y)) Bridge.call('setWaypoint', { x: +m.x, y: +m.y, name: txt(m.name, 60) }); break;
-      case 'rpc': { const result = await extRpc(id, typeof m.name === 'string' ? m.name : '', m.data); send(f, { apexphone: 'rpc', id: m.id, result }); break; }
-      case 'getContacts': send(f, (await consent(id, 'contacts')) ? { apexphone: 'contacts', list: Contacts.cache } : { apexphone: 'contacts', list: [], error: 'denied' }); break;
-      case 'getPlayer': send(f, { apexphone: 'player', player: playerFor(id, System.player) }); break;
-      case 'getLocation': { if (!(await consent(id, 'location'))) { send(f, { apexphone: 'location', coords: null, error: 'denied' }); break; } const c = await Bridge.call('getCoords'); send(f, { apexphone: 'location', coords: c }); break; }
+      case 'rpc': { const result = await extRpc(id, typeof m.name === 'string' ? m.name : '', m.data); send(f, { uniquephone: 'rpc', id: m.id, result }); break; }
+      case 'getContacts': send(f, (await consent(id, 'contacts')) ? { uniquephone: 'contacts', list: Contacts.cache } : { uniquephone: 'contacts', list: [], error: 'denied' }); break;
+      case 'getPlayer': send(f, { uniquephone: 'player', player: playerFor(id, System.player) }); break;
+      case 'getLocation': { if (!(await consent(id, 'location'))) { send(f, { uniquephone: 'location', coords: null, error: 'denied' }); break; } const c = await Bridge.call('getCoords'); send(f, { uniquephone: 'location', coords: c }); break; }
       case 'call': PhoneApp.call(txt(m.number, 20), m.name != null ? txt(m.name, 64) : undefined); break;
       case 'message': Msgs.open(txt(m.number, 40), m.name != null ? txt(m.name, 64) : undefined); break;
       /* o padrão vira RegExp na Vera: regex inválida não rebenta o handler, quantificadores aninhados ("(a+)+") são
          recusados (backtracking catastrófico congelava a Vera a cada frase) e cada app regista no máx. 20 comandos */
-      case 'vera': if (typeof m.pattern === 'string' && m.pattern.length <= 80 && m.reply && !/\([^)]*[+*}][^)]*\)\s*[+*{]/.test(m.pattern) && (veraCount[id] || 0) < 20) { try { new RegExp(m.pattern, 'i'); } catch (e) { break; } veraCount[id] = (veraCount[id] || 0) + 1; const pat = m.pattern, reply = txt(m.reply, 300); Vera.register(pat, () => { send(f, { apexphone: 'auraCommand', pattern: pat }); return reply; }); } break;
+      case 'vera': if (typeof m.pattern === 'string' && m.pattern.length <= 80 && m.reply && !/\([^)]*[+*}][^)]*\)\s*[+*{]/.test(m.pattern) && (veraCount[id] || 0) < 20) { try { new RegExp(m.pattern, 'i'); } catch (e) { break; } veraCount[id] = (veraCount[id] || 0) + 1; const pat = m.pattern, reply = txt(m.reply, 300); Vera.register(pat, () => { send(f, { uniquephone: 'auraCommand', pattern: pat }); return reply; }); } break;
       case 'widget': putWidget(id, m); break;
       /* { on } - a app diz quando um campo de texto dela tem o foco (ver wantsTyping); a partir daqui manda ela */
       case 'typing': typingAware[id] = true; typingWant[id] = !!m.on; Bridge.emit('ext:typing'); break;
@@ -339,8 +339,8 @@ window.ThirdParty = (() => {
   Bridge.on('registerApp', register);
   /* sai de vez: também se esquece a definição, para o ouvinte do emprego não a ressuscitar */
   Bridge.on('unregisterApp', d => { const id = d && d.id != null ? String(d.id) : ''; if (!id) return; delete defs[id]; unregister(id); });
-  Bridge.on('state', () => broadcast({ apexphone: 'theme', theme: System.state.theme, dark: System.state.dark, accent: System.state.accent }));
-  Bridge.on('player:update', p => Object.keys(frames).forEach(k => send(frames[k], { apexphone: 'player', player: playerFor(k, p) })));
+  Bridge.on('state', () => broadcast({ uniquephone: 'theme', theme: System.state.theme, dark: System.state.dark, accent: System.state.accent }));
+  Bridge.on('player:update', p => Object.keys(frames).forEach(k => send(frames[k], { uniquephone: 'player', player: playerFor(k, p) })));
   Bridge.on('ready', async () => { loadGrants(); const reg = (await Bridge.rpc('apps.registry')) || []; reg.forEach(register);
     /* widgets dos resources em Lua: o registo do NUI é em memória e este arranque é novo (ver luaWidget) */
     let ws = null; try { ws = await Bridge.call('widgetsRegistry'); } catch (e) { ws = null; }

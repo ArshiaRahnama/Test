@@ -150,6 +150,14 @@ local function blipName(b)
     return defaultBlipName(b.job) or 'Blip'
 end
 
+local function militaryJobs()
+    local out = {}
+    for _, d in ipairs(Departments or {}) do
+        if d.id == 'doj' or d.id == 'le' then for _, j in ipairs(d.jobs) do out[j] = true end end
+    end
+    return out
+end
+
 local function removeCustomBlip(id)
     local h = BlipHandles[id]
     if h and DoesBlipExist(h) then RemoveBlip(h) end
@@ -185,6 +193,11 @@ local function applyOp(op)
             if v == nil or not parent then return end
             local nv = writePoint(v, tonumber(op.x), tonumber(op.y), tonumber(op.z), tonumber(op.h))
             parent[key] = nv
+        elseif op.op == 'jailorg' then
+            local z = Config_jail and Config_jail.Zones and Config_jail.Zones[tonumber(op.zone)]
+            if type(z) ~= 'table' then return end
+            if z.orgs == nil then z.orgs = militaryJobs() end   -- a shared zone becomes an explicit list first
+            z.orgs[op.org] = op.enabled and true or nil
         elseif op.op == 'zonehide' then
             local z = resolve(op.path)
             if type(z) == 'table' and type(z.Pos) == 'table' then z.Pos.x, z.Pos.y, z.Pos.z = 0.0, 0.0, -5000.0 end
@@ -207,6 +220,7 @@ local function applyOp(op)
             else
                 local clone = deepCopy(last)
                 setAllPoints(clone, x, y, z, h)
+                if op.org and type(op.sec) == 'string' and op.sec:sub(1, 11) == 'Config_jail' then clone.orgs = { [op.org] = true } end
                 list[#list + 1] = clone
             end
         elseif op.op == 'del' then
@@ -285,6 +299,20 @@ local function snapshotOrg(r)
         pts[#pts + 1] = { id = 'Config_duty/Zones/' .. r.job .. '/Pos', cat = 'Duty', label = 'Duty point (on / off duty)',
                           x = pp.x + 0.0, y = pp.y + 0.0, z = pp.z + 0.0 }
     end
+    local jailOther
+    if militaryJobs()[r.job] and Config_jail and type(Config_jail.Zones) == 'table' then
+        jailOther = {}
+        for i, z in ipairs(Config_jail.Zones) do
+            if z.orgs == nil or z.orgs[r.job] then
+                pts[#pts + 1] = { id = 'Config_jail/Zones/' .. i .. '/coords', cat = 'Jail', label = ('Jail zone %d - jail point'):format(i),
+                                  x = z.coords.x + 0.0, y = z.coords.y + 0.0, z = z.coords.z + 0.0, sec = 'Config_jail/Zones', jailOrg = r.job, zone = i }
+                pts[#pts + 1] = { id = 'Config_jail/Zones/' .. i .. '/unjail', cat = 'Jail', label = ('Jail zone %d - release point'):format(i),
+                                  x = z.unjail.x + 0.0, y = z.unjail.y + 0.0, z = z.unjail.z + 0.0, sec = 'Config_jail/Zones', jailOrg = r.job, zone = i }
+            else
+                jailOther[#jailOther + 1] = { zone = i, x = z.coords.x + 0.0, y = z.coords.y + 0.0, z = z.coords.z + 0.0 }
+            end
+        end
+    end
     local kept = {}
     for _, p in ipairs(pts) do
         if p.cat == 'Blip' then
@@ -326,7 +354,7 @@ local function snapshotOrg(r)
     for k in pairs(STYLE_KEYS) do style[k] = cfg[k] end
     if type(cfg.MarkerSize) == 'table' then style.sx, style.sy, style.sz = cfg.MarkerSize.x, cfg.MarkerSize.y, cfg.MarkerSize.z end
     if type(cfg.MarkerColor) == 'table' then style.r, style.g, style.b = cfg.MarkerColor.r, cfg.MarkerColor.g, cfg.MarkerColor.b end
-    return { job = r.job, label = r.label, points = pts, style = style, secs = secs }
+    return { job = r.job, label = r.label, points = pts, style = style, secs = secs, jailOther = jailOther }
 end
 
 -- untouched copy of every organisation config, taken before the first saved edit is applied
@@ -355,6 +383,7 @@ end
 local OpCount = 0
 local OffJobs = {}
 local Open = false
+local LevelInfo = {}   -- [job] = { level, pending, who }  (Government only)
 
 -- ---- window (html in jobmanager/html, hosted as an iframe by ui.html) ----
 local function nuiOpen(payload)
@@ -384,6 +413,8 @@ local function buildPayload(toast)
         if o then
             o.off = OffJobs[r.job] == true
             o.blipName = defaultBlipName(r.job)
+            local li = LevelInfo[r.job]
+            if li then o.minLevel, o.pendingLevel, o.pendingBy = li.level, li.pending, li.who end
             orgs[#orgs + 1] = o
         end
     end
@@ -403,7 +434,7 @@ end
 function pushJail()
     local list = {}
     for i, z in ipairs((Config_jail and Config_jail.Zones) or {}) do
-        list[i] = { coords = z.coords, radius = z.radius, unjail = z.unjail, cutscene = z.cutscene }
+        list[i] = { coords = z.coords, radius = z.radius, unjail = z.unjail, cutscene = z.cutscene, orgs = z.orgs }
     end
     TriggerEvent('ujjob:jailZones', list)
 end
@@ -411,7 +442,7 @@ end
 RegisterNetEvent('ujjob:op')
 AddEventHandler('ujjob:op', function(op, count)
     applyOp(op)
-    if (op.path and op.path:sub(1, 11) == 'Config_jail') or (op.sec and op.sec:sub(1, 11) == 'Config_jail') then pushJail() end
+    if op.op == 'jailorg' or (op.path and op.path:sub(1, 11) == 'Config_jail') or (op.sec and op.sec:sub(1, 11) == 'Config_jail') then pushJail() end
     OpCount = tonumber(count) or OpCount
     refreshUI('Zakhire shod')
 end)
@@ -438,7 +469,10 @@ end)
 RegisterNetEvent('ujjob:openOk')
 AddEventHandler('ujjob:openOk', function(off)
     OffJobs = off or {}
-    nuiOpen(buildPayload())
+    ESX.TriggerServerCallback('ujrec:levelAll', function(m)
+        LevelInfo = m or {}
+        nuiOpen(buildPayload())
+    end)
 end)
 
 -- replay every saved edit on top of the base config (join / resource restart)
@@ -459,6 +493,12 @@ RegisterCommand('job', function()
 end, false)
 
 -- ------------------------------------------------------------------ NUI actions
+-- ops about the jail zones are stored under the 'jail' job (not under the organisation that clicked)
+local function saveJob(job, path)
+    if type(path) == 'string' and path:sub(1, 11) == 'Config_jail' then return 'jail' end
+    return job
+end
+
 local function newId() return ('%d_%d'):format(GetGameTimer(), math.random(1000, 9999)) end
 
 local function myPos()
@@ -471,6 +511,7 @@ local function validJob(j) return type(j) == 'string' and BYJOB[j] ~= nil end
 local function validPath(job, p)
     if type(p) ~= 'string' or #p >= 200 or p:find('[^%w_/%-%. ]') then return false end
     if p:sub(1, #BYJOB[job].cfg) == BYJOB[job].cfg then return true end
+    if p:sub(1, 12) == 'Config_jail/' then return true end
     local duty = 'Config_duty/Zones/' .. job .. '/'
     return p:sub(1, #duty) == duty
 end
@@ -491,7 +532,7 @@ AddEventHandler('ujjob:nui', function(d)
     elseif a == 'set' then
         if not validPath(d.job, d.id) then return end
         local x, y, z, h = myPos()
-        TriggerServerEvent('ujjob:save', d.job, { op = 'set', path = d.id, x = x, y = y, z = z, h = h })
+        TriggerServerEvent('ujjob:save', saveJob(d.job, d.id), { op = 'set', path = d.id, x = x, y = y, z = z, h = h })
     elseif a == 'add' then
         local x, y, z, h = myPos()
         local v = d.visual
@@ -499,8 +540,8 @@ AddEventHandler('ujjob:nui', function(d)
         -- a ped / object works through ox_target only: no config point is copied, so the
         -- organisation's own marker and E-key never appear there
         if d.sec and validPath(d.job, d.sec) and not targetOnly then
-            TriggerServerEvent('ujjob:save', d.job, { op = 'add', sec = d.sec, tpl = (d.tpl and validPath(d.job, d.tpl)) and d.tpl or nil,
-                sfx = tostring(GetGameTimer()), x = x, y = y, z = z, h = h })
+            TriggerServerEvent('ujjob:save', saveJob(d.job, d.sec), { op = 'add', sec = d.sec, tpl = (d.tpl and validPath(d.job, d.tpl)) and d.tpl or nil,
+                org = (saveJob(d.job, d.sec) == 'jail') and d.job or nil, sfx = tostring(GetGameTimer()), x = x, y = y, z = z, h = h })
         end
         if type(v) == 'table' and (v.kind == 'ped' or v.kind == 'object') then
             TriggerServerEvent('ujjob:save', d.job, { op = 'decor', id = newId(), cat = tostring(d.cat or 'Other'), sec = (d.sec and validPath(d.job, d.sec)) and d.sec or nil, kind = v.kind, model = v.model,
@@ -514,6 +555,10 @@ AddEventHandler('ujjob:nui', function(d)
             TriggerServerEvent('ujjob:save', d.job, { op = 'decor', id = cur.id, cat = cur.cat, sec = cur.sec, kind = v.kind, model = v.model,
                 x = cur.x, y = cur.y, z = cur.z, h = cur.h, r = tonumber(v.r) or cur.r, g = tonumber(v.g) or cur.g, b = tonumber(v.b) or cur.b,
                 sx = tonumber(v.sx) or cur.sx, sy = tonumber(v.sy) or cur.sy, sz = tonumber(v.sz) or cur.sz })
+        end
+    elseif a == 'jailaccess' then
+        if militaryJobs()[d.job] and tonumber(d.zone) then
+            TriggerServerEvent('ujjob:save', 'jail', { op = 'jailorg', zone = math.floor(tonumber(d.zone)), org = d.job, enabled = d.enabled == true })
         end
     elseif a == 'zonehide' then
         if validPath(d.job, d.id) then TriggerServerEvent('ujjob:save', d.job, { op = 'zonehide', path = d.id }) end
@@ -547,6 +592,14 @@ AddEventHandler('ujjob:nui', function(d)
                 SendNUIMessage({ type = 'jm_options', job = d.job, ranks = ranks or {} })
             end, d.job)
         end)
+    elseif a == 'level_set' or a == 'level_decide' then
+        if d.job ~= 'jail' and d.job ~= 'government' then
+            if a == 'level_set' then TriggerServerEvent('ujrec:setLevel', d.job, tonumber(d.level) or 0)
+            else TriggerServerEvent('ujrec:levelDecide', d.job, d.approve == true) end
+            SetTimeout(600, function()
+                ESX.TriggerServerCallback('ujrec:levelAll', function(m) LevelInfo = m or {} refreshUI() end)
+            end)
+        end
     elseif a == 'orgswitch' then
         if d.job ~= 'jail' and d.job ~= 'government' then
             TriggerServerEvent('org_state:toggle', d.job, d.enabled == true)
@@ -749,6 +802,9 @@ CreateThread(function()
                                 SetEntityHeading(ent, (d.h or 0.0) + 0.0)
                                 PlaceObjectOnGroundProperly(ent)
                             end
+                            SetEntityAsMissionEntity(ent, true, true)   -- ambient-ped cleanup scripts leave it alone
+                            SetEntityInvincible(ent, true)
+                            SetEntityCanBeDamaged(ent, false)
                             FreezeEntityPosition(ent, true)
                             decorTarget(ent, d)
                             DecorEnts[id] = ent

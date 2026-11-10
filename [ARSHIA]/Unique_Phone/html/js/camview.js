@@ -76,7 +76,7 @@ window.CamView = (() => {
   /* glifo do botão de diagonal (o icons.js não tem um "rodar"): um quadro inclinado com uma seta em
      arco - mesmo formato do Icons.g (24×24, traço 2, currentColor) para casar com os vizinhos */
   const TILT_GLYPH = `<svg class="gl" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="24" height="24"><rect x="6" y="6" width="12" height="12" rx="2" transform="rotate(-18 12 12)"/><path d="M21.5 9.5a9 9 0 0 0-3.2-4.2M21.5 5.4v4.1h-4.1"/></svg>`;
-  const HINT_KEY = 'apexphone:camHintSeen';
+  const HINT_KEY = 'uniquephone:camHintSeen';
   const MAX_ROLL = (window.GameRender && GameRender.MAX_ROLL) || 45;
 
   /* ---------- ANDROID (Nova UI 8.5): a cara da câmara da Nova UI ----------
@@ -252,7 +252,9 @@ window.CamView = (() => {
          com captura, o pointerup chega na mesma e o arrasto não fica preso */
       try { e.currentTarget && e.currentTarget.setPointerCapture(e.pointerId); } catch (x) {}
       if (Bridge.inFiveM) Bridge.call('cameraDrag', { on: true });
-      else look = { x: e.clientX, y: e.clientY, z: UI.zoom() };
+      /* Unique RP: the NUI keeps the mouse while the button is down, so the game never receives the movement.
+         The deltas measured here are sent to Lua in FiveM as well (cameraLook -> injected as look input, client/camera.lua). */
+      look = { x: e.clientX, y: e.clientY, z: UI.zoom() };
     };
     const dragStop = () => {
       if (!dragging) return;

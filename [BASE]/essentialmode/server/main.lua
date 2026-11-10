@@ -1202,13 +1202,24 @@ RegisterServerEvent("esx:useItem")
 AddEventHandler(
     "esx:useItem",
     function(itemName)
-        local xPlayer = ESX.GetPlayerFromId(source)
-        local count = xPlayer.getInventoryItem(itemName).count
+        local _source = source
+        local xPlayer = ESX.GetPlayerFromId(_source)
+        if not xPlayer or type(itemName) ~= "string" then
+            return
+        end
 
-        if count > 0 then
-            ESX.UseItem(source, itemName)
+        -- getInventoryItem returns nil for names that are not ESX items. The
+        -- inventory UI also sends weapons, clothes and bags through this event
+        -- (they are handled client-side), so unknown names are ignored silently.
+        local item = xPlayer.getInventoryItem(itemName)
+        if not item then
+            return
+        end
+
+        if (item.count or 0) > 0 then
+            ESX.UseItem(_source, itemName)
         else
-            TriggerClientEvent("esx:showNotification", xPlayer.source, _U("act_imp"))
+            TriggerClientEvent("esx:showNotification", _source, _U("act_imp"))
         end
     end
 )

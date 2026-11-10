@@ -549,12 +549,12 @@ local function syncMarketplace()
     for owner, w in pairs(want) do
         if have[owner] then
             pcall(function()
-                MySQL.update.await('UPDATE apex_phone_market SET seller_name = ?, title = ?, description = ?, price = ?, sold = 0 WHERE id = ?',
+                MySQL.update.await("UPDATE apex_phone_market SET seller_name = ?, title = ?, description = ?, price = ?, sold = 0, kind = 'shop' WHERE id = ?",
                     { w.seller, w.title, w.desc, w.price, have[owner] })
             end)
         else
             pcall(function()
-                MySQL.insert.await("INSERT INTO apex_phone_market (owner, seller_name, title, description, price, category, sold, created, kind) VALUES (?, ?, ?, ?, ?, 'Outros', 0, ?, 'other')",
+                MySQL.insert.await("INSERT INTO apex_phone_market (owner, seller_name, title, description, price, category, sold, created, kind) VALUES (?, ?, ?, ?, ?, 'Outros', 0, ?, 'shop')",
                     { owner, w.seller, w.title, w.desc, w.price, now })
             end)
         end

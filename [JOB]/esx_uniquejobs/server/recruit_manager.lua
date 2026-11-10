@@ -99,6 +99,14 @@ local function isGovAdminSrc(src)
     return x and x.job and x.job.name == 'government' and (tonumber(x.job.grade) or 0) >= 2
 end
 
+local function isBossOf(src, job)
+    local x = ESX.GetPlayerFromId(src)
+    return x and x.job and x.job.name == job and (tonumber(x.job.grade) or 0) >= topGrade(job)
+end
+local function canConfig(src, job) return isGovAdminSrc(src) or isBossOf(src, job) end
+
+local LevelReq = {}   -- [job] = { level, by, who }
+
 -- the organisation the caller acts for (Government names it, everybody else = his own job)
 local function actingOrg(x, arg)
     if x.job.name == 'government' then
@@ -242,7 +250,7 @@ end)
 
 -- ---------------------------------------- Government: configure it (F6 -> Estekhdam & Division)
 ESX.RegisterServerCallback('ujrec:getCfg', function(source, cb, job)
-    if not isGovAdminSrc(source) or not isOrg(job) then return cb(nil) end
+    if not canConfig(source, job) or not isOrg(job) then return cb(nil) end
     local ranks = {}
     local jd = ESX.Jobs and ESX.Jobs[job]
     if jd and jd.grades then
@@ -250,12 +258,12 @@ ESX.RegisterServerCallback('ujrec:getCfg', function(source, cb, job)
         table.sort(ranks, function(a, b) return a.grade < b.grade end)
     end
     local divs = MySQL.Sync.fetchAll('SELECT name, label FROM divisions WHERE owner = @o', { ['@o'] = job }) or {}
-    cb({ ranks = ranks, divisions = divs, perms = Perm[job] or {}, minLevel = Level[job] or 0 })
+    cb({ ranks = ranks, divisions = divs, perms = Perm[job] or {}, minLevel = Level[job] or 0, pending = LevelReq[job] and LevelReq[job].level or nil, gov = isGovAdminSrc(source) })
 end)
 
 RegisterNetEvent('ujrec:setPerm')
 AddEventHandler('ujrec:setPerm', function(job, kind, typ, val, enabled)
-    if not isGovAdminSrc(source) or not isOrg(job) then return end
+    if not canConfig(source, job) or not isOrg(job) then return end
     if kind ~= 'invite' and kind ~= 'division' then return end
     if typ ~= 'grade' and typ ~= 'division' then return end
     val = tostring(val or '')
@@ -278,4 +286,65 @@ AddEventHandler('ujrec:setLevel', function(job, level)
     Level[job] = level
     MySQL.Sync.execute('INSERT INTO uj_org_level (job, level) VALUES (@j, @l) ON DUPLICATE KEY UPDATE level = @l', { ['@j'] = job, ['@l'] = level })
     N(source, ('Hadaghal level estekhdam ~y~%s~s~ = ~g~%d~s~'):format(orgLabel(job), level))
+end)
+
+
+-- ------------------------------------------------ minimum level: Government decides, orgs can ask
+MySQL.ready(function()
+    MySQL.Async.execute([[CREATE TABLE IF NOT EXISTS `uj_level_req` (
+        `job` VARCHAR(40) NOT NULL, `level` INT NOT NULL, `who` VARCHAR(60) DEFAULT NULL, PRIMARY KEY (`job`))]], {}, function()
+        MySQL.Async.fetchAll('SELECT job, level, who FROM uj_level_req', {}, function(rows)
+            for _, r in ipairs(rows or {}) do LevelReq[r.job] = { level = tonumber(r.level) or 0, who = r.who } end
+        end)
+    end)
+end)
+
+-- boss of an organisation asks Government to change the minimum level
+RegisterNetEvent('ujrec:reqLevel')
+AddEventHandler('ujrec:reqLevel', function(job, level)
+    local src = source
+    if not isOrg(job) or not isBossOf(src, job) then return end
+    level = math.max(0, math.min(999, math.floor(tonumber(level) or 0)))
+    local x = ESX.GetPlayerFromId(src)
+    LevelReq[job] = { level = level, who = x.name }
+    MySQL.Sync.execute('INSERT INTO uj_level_req (job, level, who) VALUES (@j, @l, @w) ON DUPLICATE KEY UPDATE level = @l, who = @w', { ['@j'] = job, ['@l'] = level, ['@w'] = x.name })
+    N(src, ('Darkhast-e taghir-e level be ~y~%d~s~ baraye Government ersal shod.'):format(level))
+    for _, pid in ipairs(GetPlayers()) do
+        local g = ESX.GetPlayerFromId(tonumber(pid))
+        if g and g.job and g.job.name == 'government' then
+            N(g.source, ('~y~%s~s~ darkhast-e level ~g~%d~s~ dared (/job -> %s)'):format(orgLabel(job), level, job))
+        end
+    end
+end)
+
+-- Government: current levels + pending requests of every organisation (for /job)
+ESX.RegisterServerCallback('ujrec:levelAll', function(source, cb)
+    if not isGovAdminSrc(source) then return cb({}) end
+    local out = {}
+    for _, d in ipairs(Departments or {}) do
+        if d.id ~= 'gov' then
+            for _, j in ipairs(d.jobs) do out[j] = { level = Level[j] or 0, pending = LevelReq[j] and LevelReq[j].level or nil, who = LevelReq[j] and LevelReq[j].who or nil } end
+        end
+    end
+    cb(out)
+end)
+
+RegisterNetEvent('ujrec:levelDecide')
+AddEventHandler('ujrec:levelDecide', function(job, approve)
+    local src = source
+    if not isGovAdminSrc(src) or not isOrg(job) or not LevelReq[job] then return end
+    local req = LevelReq[job]
+    LevelReq[job] = nil
+    MySQL.Sync.execute('DELETE FROM uj_level_req WHERE job = @j', { ['@j'] = job })
+    if approve then
+        Level[job] = req.level
+        MySQL.Sync.execute('INSERT INTO uj_org_level (job, level) VALUES (@j, @l) ON DUPLICATE KEY UPDATE level = @l', { ['@j'] = job, ['@l'] = req.level })
+    end
+    N(src, approve and ('Level ~y~%s~s~ = ~g~%d~s~ taeed shod.'):format(orgLabel(job), req.level) or 'Darkhast rad shod.')
+    for _, pid in ipairs(GetPlayers()) do   -- tell the bosses of that organisation
+        local b = ESX.GetPlayerFromId(tonumber(pid))
+        if b and b.job and b.job.name == job and (tonumber(b.job.grade) or 0) >= topGrade(job) then
+            N(b.source, approve and ('Government level estekhdam ra be ~g~%d~s~ taghir dad.'):format(req.level) or '~r~Government darkhast-e taghir-e level ra rad kard.')
+        end
+    end
 end)

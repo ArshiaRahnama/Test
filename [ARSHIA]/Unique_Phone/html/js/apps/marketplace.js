@@ -11,10 +11,11 @@ App.define('marketplace', {
     /* o `mine` é calculado no servidor (server/marketplace.lua:797) e o `owner` - o citizenid do
        vendedor - deixou de sair nas respostas de propósito. O número fica como rede de segurança para
        um servidor antigo; sozinho tirava o menu de gestão a quem trocasse de SIM. */
+    const MK_TICK = '<svg class="mk-tick" viewBox="0 0 24 24" width="15" height="15" aria-label="Verified shop"><path fill="#0A84FF" d="M12 1.5l2.6 1.9 3.2-.1 1 3.1 2.6 1.9-1 3.1 1 3.1-2.6 1.9-1 3.1-3.2-.1L12 22.5l-2.6-1.9-3.2.1-1-3.1L2.6 15.7l1-3.1-1-3.1 2.6-1.9 1-3.1 3.2.1z"/><path fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" d="M8 12.2l2.8 2.8L16.2 9.5"/></svg>';
     const isMine = l => l.mine === true || l.seller_phone === System.player.phone;
     /* cartão da grelha (Facebook Marketplace): foto quadrada, preço, título, meta. A fotografia vai
        pelo CSSOM - pode ser base64 de um veículo e não passa pelo parser de HTML. */
-    const card = l => { const c = UI.el(`<div class="mk-card ${l.sold ? 'sold' : ''}"><div class="mk-thumb">${l.sold ? '<span class="mk-sold">VENDIDO</span>' : ''}</div><div class="mk-body"><div class="mk-price">${UI.money(l.price)}</div><div class="mk-title">${UI.esc(l.title)}</div><div class="mk-meta">${UI.esc(window.L && L.t ? L.t(l.category) : l.category)} · ${UI.rel(l.created)}</div></div></div>`);
+    const card = l => { const c = UI.el(`<div class="mk-card ${l.sold ? 'sold' : ''}"><div class="mk-thumb">${l.sold ? '<span class="mk-sold">VENDIDO</span>' : ''}</div><div class="mk-body"><div class="mk-price">${UI.money(l.price)}</div><div class="mk-title">${UI.esc(l.title)}${l.kind === 'shop' ? ' ' + MK_TICK : ''}</div><div class="mk-meta">${UI.esc(window.L && L.t ? L.t(l.category) : l.category)} · ${UI.rel(l.created)}</div></div></div>`);
       c.querySelector('.mk-thumb').style.backgroundImage = UI.img(l.image || 7);
       c.onclick = () => detail(l); UI.longPress(c, () => ctx(l, c)); return c; };
     /* ---------- custódia de itens (server/marketplace.lua, ItemEscrow) ----------
@@ -46,8 +47,12 @@ App.define('marketplace', {
       const top = UI.el(`<div class="mk-top"><div class="mk-hero">${l.sold ? '<span class="mk-sold big">VENDIDO</span>' : ''}</div><div class="mk-info"><div class="mk-price big">${UI.money(l.price)}</div><h2>${UI.esc(l.title)}</h2><div class="muted">${UI.esc(l.category)} · publicado ${UI.rel(l.created)}</div><p>${UI.esc(l.description || '')}</p></div></div>`);
       top.querySelector('.mk-hero').style.backgroundImage = UI.img(l.image || 7);   /* pelo CSSOM, nunca na string de HTML */
       v.content.appendChild(top);
-      v.content.appendChild(UI.list([{ header: 'Vendedor', items: [{ avatar: { name: l.seller_name || l.seller_phone }, label: l.seller_name || l.seller_phone, sub: l.seller_phone, chevron: false }] }]));
-      if (!isMine(l) && !l.sold) { const row = UI.el(`<div class="mk-actions"><div class="btn-p btn-s msg">${g('message', 21)} Mensagem</div><div class="btn-p btn-s call">${g('phone', 21)} Ligar</div></div>`); row.querySelector('.msg').onclick = () => Msgs.open(l.seller_phone, l.seller_name); row.querySelector('.call').onclick = () => PhoneApp.call(l.seller_phone, l.seller_name); v.content.appendChild(row);
+      if (l.kind === 'shop') {
+        /* listing mirrored from a server shop (Auction House / gun shop / market): verified seller, price only, bought IN PERSON */
+        v.content.appendChild(UI.el(`<div class="mk-shopseller"><div class="mk-shopname">${UI.esc(l.seller_name || 'Shop')} ${MK_TICK}</div><div class="muted small">Verified shop</div></div>`));
+        v.content.appendChild(UI.el('<div class="mk-shopnote">You cannot buy this from the phone. Go to the shop to buy it.</div>'));
+      } else v.content.appendChild(UI.list([{ header: 'Vendedor', items: [{ avatar: { name: l.seller_name || l.seller_phone }, label: l.seller_name || l.seller_phone, sub: l.seller_phone, chevron: false }] }]));
+      if (l.kind !== 'shop' && !isMine(l) && !l.sold) { const row = UI.el(`<div class="mk-actions"><div class="btn-p btn-s msg">${g('message', 21)} Mensagem</div><div class="btn-p btn-s call">${g('phone', 21)} Ligar</div></div>`); row.querySelector('.msg').onclick = () => Msgs.open(l.seller_phone, l.seller_name); row.querySelector('.call').onclick = () => PhoneApp.call(l.seller_phone, l.seller_name); v.content.appendChild(row);
         const buy = UI.el(`<div class="btn-p green">${g('card', 21)} Comprar por ${UI.money(l.price)}</div>`); buy.onclick = async () => {
           /* sem rede o pagamento nunca sai daqui: mais vale dizê-lo antes de pedir a confirmação da compra */
           if (window.CC && CC.requireNet && !CC.requireNet('comprar')) return;

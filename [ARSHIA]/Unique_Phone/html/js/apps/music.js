@@ -105,7 +105,7 @@ window.Music = (() => {
 
   /* persistência: só as músicas referenciadas; servidor (mesma tabela do CarLink) + localStorage como primeira pintura */
   /* cache local POR PERSONAGEM (Store.namespace): com a chave fixa, a biblioteca de uma personagem aparecia na outra no mesmo PC */
-  const KEY_ = () => 'apexphone:' + ((window.Store && Store.namespace) ? Store.namespace + ':' : '') + 'music';
+  const KEY_ = () => 'uniquephone:' + ((window.Store && Store.namespace) ? Store.namespace + ':' : '') + 'music';
   /* Com a pesquisa aberta a biblioteca cresce com qualquer faixa do YouTube, e a gravação vai NUM evento de rede (NUI → cliente →
      servidor): acima de ~384 KB o limitador do FXServer deita-o fora em silêncio. No fornecedor interno cada música grava-se
      COMPACTA: sem o `vid` (sai do id 'yt:<vid>' no put) e sem a miniatura quando é a do i.ytimg.com que o put refaz do vid
@@ -448,8 +448,8 @@ window.Music = (() => {
     LocalDB.register('music.browse', d => ({ id: d.id, kind: d.kind, t: 'Álbum de demonstração', a: 'Vários artistas', img: tracks[0].img, tracks }));
     LocalDB.register('music.radio', () => tracks.slice().reverse());
     LocalDB.register('music.lyrics', () => ({ text: 'Letra de demonstração\n\nEsta é uma letra de exemplo,\nmostrada apenas no browser.', source: 'Demo' }));
-    LocalDB.register('music.load', () => { try { return JSON.parse(localStorage.getItem('apexphone:music:server') || 'null'); } catch (e) { return null; } });
-    LocalDB.register('music.save', d => { try { localStorage.setItem('apexphone:music:server', JSON.stringify(d)); } catch (e) {} return { ok: true }; });
+    LocalDB.register('music.load', () => { try { return JSON.parse(localStorage.getItem('uniquephone:music:server') || 'null'); } catch (e) { return null; } });
+    LocalDB.register('music.save', d => { try { localStorage.setItem('uniquephone:music:server', JSON.stringify(d)); } catch (e) {} return { ok: true }; });
   }
 
   /* ============================================================ UI - o MESMO design da app Música do apex_carplay (".vm"), em retrato ============================================================

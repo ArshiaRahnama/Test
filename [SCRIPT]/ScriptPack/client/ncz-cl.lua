@@ -111,6 +111,7 @@ local WhitelistJobs = {
 -- Active robberies inside the city: exactly in that area EVERYONE may shoot (no DYS permit needed).
 -- Filled by Unique_AllRobs (start / end / cancel); a zone also expires by itself after 15 minutes.
 local RobZones = {}
+local InRobZone   -- defined below (forward declaration: the robbery threads above use it)
 
 local function RemoveRobZone(name)
 	local r = RobZones[name]
@@ -125,11 +126,62 @@ AddEventHandler('ScriptPack:robZone', function(name, x, y, z, radius, active, al
 		local allowed = {}
 		for _, id in ipairs(allowedList or {}) do allowed[id] = true end
 		local zone = { allowed = allowed, x = x + 0.0, y = y + 0.0, z = z + 0.0, radius = (radius or 60.0) + 0.0, expires = GetGameTimer() + 15 * 60 * 1000 }
-		-- red area on the map for everybody
-		zone.blip = AddBlipForRadius(zone.x, zone.y, zone.z, zone.radius)
-		SetBlipColour(zone.blip, 1)
-		SetBlipAlpha(zone.blip, 110)
+		-- the red area on the map is for the party that started the robbery only
+		if zone.allowed[GetPlayerServerId(PlayerId())] then
+			zone.blip = AddBlipForRadius(zone.x, zone.y, zone.z, zone.radius)
+			SetBlipColour(zone.blip, 1)
+			SetBlipAlpha(zone.blip, 110)
+		end
 		RobZones[name] = zone
+	end
+end)
+
+-- inside the free-fire area nothing may stop the party from shooting: attack controls are forced ON
+-- every frame (other scripts that disable them in the same frame can't win), /robdebug shows the state
+local RobDebug = false
+RegisterCommand('robdebug', function() RobDebug = not RobDebug print('robdebug', RobDebug) end, false)
+CreateThread(function()
+	local lastDbg = 0
+	local dbgShot, dbgPress, dbgAmmo = 0, 0, nil
+	while true do
+		local active = false
+		local px, py, pz
+		for _, r in pairs(RobZones) do
+			if r.allowed[GetPlayerServerId(PlayerId())] then active = true end
+		end
+		if active then
+			local pc = GetEntityCoords(PlayerPedId())
+			if InRobZone(pc.x, pc.y, pc.z) then
+				Wait(0)
+				local ped = PlayerPedId()
+				DisablePlayerFiring(PlayerId(), false)
+				EnableControlAction(0, 24, true)    -- attack
+				EnableControlAction(0, 25, true)    -- aim
+				EnableControlAction(0, 257, true)   -- attack 2
+				EnableControlAction(0, 140, true)
+				SetPlayerCanDoDriveBy(PlayerId(), true)
+				SetPedCanSwitchWeapon(ped, true)
+				if RobDebug then
+					-- counters per window: IsPedShooting is true for ONE frame per bullet, so single samples tell nothing
+					if IsPedShooting(ped) then dbgShot = dbgShot + 1 end
+					if IsControlPressed(0, 24) then dbgPress = dbgPress + 1 end
+					if GetGameTimer() - lastDbg > 1500 then
+						lastDbg = GetGameTimer()
+						local w = GetSelectedPedWeapon(ped)
+						local ammo = GetAmmoInPedWeapon(ped, w)
+						print(('[robdebug] attackFrames=%d shotFrames=%d ammo=%s (was %s) weaponReady=%s controlOn=%s freeAim=%s reloading=%s nuiFocus=%s base=%s smallZone=%s weapon=%s inVeh=%s'):format(
+							dbgPress, dbgShot, tostring(ammo), tostring(dbgAmmo), tostring(IsPedWeaponReadyToShoot(ped)), tostring(IsPlayerControlOn(PlayerId())),
+							tostring(IsPlayerFreeAiming(PlayerId())), tostring(IsPedReloading(ped)), tostring(IsNuiFocused()),
+							tostring(inBaseZone), tostring(coords.label), tostring(w), tostring(IsPedInAnyVehicle(ped, false))))
+						dbgShot, dbgPress, dbgAmmo = 0, 0, ammo
+					end
+				end
+			else
+				Wait(300)
+			end
+		else
+			Wait(800)
+		end
 	end
 end)
 
@@ -146,7 +198,7 @@ CreateThread(function()
 			else
 				local d = #(pc - vector3(r.x, r.y, r.z))
 				if d <= r.radius and r.allowed[GetPlayerServerId(PlayerId())] then nowIn = true end
-				if d < r.radius + 150.0 then
+				if r.allowed[GetPlayerServerId(PlayerId())] and d < r.radius + 150.0 then
 					wait = 0
 					local a = 40 + math.floor(math.abs(math.sin(GetGameTimer() / 600.0)) * 70)
 					DrawMarker(1, r.x, r.y, r.z - 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, r.radius * 2.0, r.radius * 2.0, 6.0,
@@ -165,7 +217,7 @@ CreateThread(function()
 	end
 end)
 
-local function InRobZone(px, py, pz)
+function InRobZone(px, py, pz)
 	for n, r in pairs(RobZones) do
 		if GetGameTimer() > r.expires then
 			RemoveRobZone(n)

@@ -1359,7 +1359,7 @@ window.System = (() => {
       /* 1.2.0: um IFRAME de app externa (thirdparty.js) conta como "a escrever" enquanto tiver o foco - o que se passa lá
          dentro (outra origem nui://) não se vê daqui: o focusin/keydown de um campo do iframe nunca chega a este documento,
          e as letras escritas na app do comprador iam para os key mappings do jogo ("locking keys in my text fields in my
-         phone app doesn't work"). Uma app que avise { apexphone:'typing', on } passa a mandar só nos campos dela. */
+         phone app doesn't work"). Uma app que avise { uniquephone:'typing', on } passa a mandar só nos campos dela. */
       const editable = el => !!(el && el.nodeType === 1 && el.isConnected && !document.body.classList.contains('hidden') && (el.tagName === 'IFRAME' ? !!(window.ThirdParty && ThirdParty.wantsTyping && ThirdParty.wantsTyping(el)) : ((el.matches('input,textarea,select') && !NOT_TEXT.includes(el.type)) || el.isContentEditable)));
       const sendTyping = on => { on = !!on; if (on === typingOn) return; typingOn = on; try { Bridge.call('typing', { on }); } catch (e) {} };
       const checkTyping = () => { clearTimeout(typingT); typingT = setTimeout(() => sendTyping(editable(document.activeElement)), 60); };

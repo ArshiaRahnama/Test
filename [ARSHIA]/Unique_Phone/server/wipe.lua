@@ -128,7 +128,7 @@ function L7_1(A0_2, A1_2)
     L11_2 = "^apex_phone_"
     L12_2 = ""
     L9_2 = L9_2(L10_2, L11_2, L12_2)
-    L10_2 = "zbak_apexphone_%s_%s"
+    L10_2 = "zbak_uniquephone_%s_%s"
     L11_2 = L10_2
     L10_2 = L10_2.format
     L12_2 = A1_2
@@ -206,7 +206,7 @@ function L8_1(A0_2, A1_2, A2_2)
   if A2_2 then
     L5_2 = L3_1
     L6_2 = A0_2
-    L7_2 = "A fazer c\195\179pia de %d tabelas (zbak_apexphone_%s_*)..."
+    L7_2 = "A fazer c\195\179pia de %d tabelas (zbak_uniquephone_%s_*)..."
     L8_2 = L7_2
     L7_2 = L7_2.format
     L9_2 = #L3_2
@@ -372,7 +372,7 @@ function L8_1(A0_2, A1_2, A2_2)
   if A2_2 then
     L7_2 = L3_1
     L8_2 = A0_2
-    L9_2 = "C\195\179pia guardada nas tabelas zbak_apexphone_%s_* (/%s backups)."
+    L9_2 = "C\195\179pia guardada nas tabelas zbak_uniquephone_%s_* (/%s backups)."
     L10_2 = L9_2
     L9_2 = L9_2.format
     L11_2 = L4_2
@@ -421,7 +421,7 @@ function L9_1(A0_2)
   L1_2 = L1_2.await
   L2_2 = [[
 SELECT table_name AS t FROM information_schema.tables WHERE table_schema = DATABASE()
-        AND table_name LIKE 'zbak\_apexphone\_%' ORDER BY table_name]]
+        AND table_name LIKE 'zbak\_uniquephone\_%' ORDER BY table_name]]
   L1_2 = L1_2(L2_2)
   if not L1_2 then
     L1_2 = {}
@@ -439,7 +439,7 @@ SELECT table_name AS t FROM information_schema.tables WHERE table_schema = DATAB
     if L9_2 then
       L11_2 = L9_2
       L10_2 = L9_2.match
-      L12_2 = "^zbak_apexphone_(%d+_%d+)_"
+      L12_2 = "^zbak_uniquephone_(%d+_%d+)_"
       L10_2 = L10_2(L11_2, L12_2)
     end
     if L10_2 then
@@ -501,7 +501,7 @@ function L10_1(A0_2, A1_2)
   L2_2 = L2_2.await
   L3_2 = "SELECT table_name AS t FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name LIKE ?"
   L4_2 = {}
-  L5_2 = "zbak\\_apexphone\\_"
+  L5_2 = "zbak\\_uniquephone\\_"
   L6_2 = A1_2
   L7_2 = "\\_%"
   L5_2 = L5_2 .. L6_2 .. L7_2
@@ -528,7 +528,7 @@ function L10_1(A0_2, A1_2)
       L13_2 = 1
       L14_2 = 15
       L11_2 = L11_2(L12_2, L13_2, L14_2)
-      if "zbak_apexphone_" == L11_2 then
+      if "zbak_uniquephone_" == L11_2 then
         L11_2 = MySQL
         L11_2 = L11_2.query
         L11_2 = L11_2.await

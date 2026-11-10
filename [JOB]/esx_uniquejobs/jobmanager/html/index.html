@@ -178,6 +178,14 @@ function render() {
     ${(o.job === 'jail' || o.job === 'government') ? '' : `<div class="tab" id="orgsw" style="margin-left:auto;border-color:${o.off ? 'var(--red)' : 'var(--green)'}">ORGAN: ${o.off ? 'OFF' : 'ON'}</div>`}
     <div class="tab" id="undo" ${(o.job === 'jail' || o.job === 'government') ? 'style="margin-left:auto"' : ''}>UNDO LAST</div>
     <div class="tab" id="reset" style="border-color:var(--red)">RESET ORGAN</div></div>
+   ${(o.job === 'jail' || o.job === 'government' || o.minLevel === undefined) ? '' : `
+   <div class="bar" id="lvbar">
+    <span style="font-size:11px;color:var(--gold2)">MIN LEVEL TO JOIN</span>
+    <input class="inp mini" id="lvIn" type="number" min="0" max="999" value="${o.minLevel || 0}">
+    <button class="btn green" id="lvSave">SAVE</button>
+    ${o.pendingLevel != null ? `<span style="font-size:11px;color:var(--gold)">Org requested: <b>${o.pendingLevel}</b>${o.pendingBy ? ' (' + esc(o.pendingBy) + ')' : ''}</span>
+      <button class="btn green" id="lvOk">APPROVE</button><button class="btn red" id="lvNo">DENY</button>` : ''}
+   </div>`}
    <div id="pane" style="display:flex;flex-direction:column;gap:12px;flex:1;min-height:0"></div>`;
   c.querySelectorAll('.tab[data-t]').forEach(t => t.onclick = () => { state.tab = t.dataset.t; render(); });
   const arm = (el, label, fn) => el.onclick = () => {
@@ -185,6 +193,9 @@ function render() {
     fn();
   };
   arm($('#undo'), 'UNDO LAST', () => post('undo', { job: o.job }));
+  const lvS = $('#lvSave'); if (lvS) lvS.onclick = () => post('level_set', { job: o.job, level: Number($('#lvIn').value) || 0 });
+  const lvO = $('#lvOk'); if (lvO) lvO.onclick = () => post('level_decide', { job: o.job, approve: true });
+  const lvN = $('#lvNo'); if (lvN) lvN.onclick = () => post('level_decide', { job: o.job, approve: false });
   const sw = $('#orgsw');
   if (sw) sw.onclick = () => { if (o.off) post('orgswitch', { job: o.job, enabled: true }); else confirmOff(o); };
   arm($('#reset'), 'RESET ORGAN', () => post('reset', { job: o.job }));
@@ -212,11 +223,13 @@ function gridHtml(kind, cur) {
 function rowHtml(p, i) {
   let btns;
   if (p.custom === 'decor') {
-    btns = `<button class="btn ghost" data-go="${esc(p.id)}">GO</button><button class="btn" data-edit="${esc(p.cid)}">EDIT</button><button class="btn red" data-undecor="${esc(p.cid)}">DEL</button>`;
+    btns = `<button class="btn ghost" data-gocoord="${p.x},${p.y},${p.z}">GO</button><button class="btn" data-edit="${esc(p.cid)}">EDIT</button><button class="btn red" data-undecor="${esc(p.cid)}">DEL</button>`;
   } else if (p.custom === 'blip') {
     btns = `<button class="btn ghost" data-gocoord="${p.x},${p.y},${p.z}">GO</button><button class="btn" data-blipmove="${esc(p.cid)}">SET HERE</button><button class="btn red" data-blipdel="${esc(p.cid)}">DEL</button>`;
   } else if (p.blip) {
     btns = `<button class="btn ghost" data-go="${esc(p.id)}">GO</button><button class="btn red" data-bliphide="${esc(p.id)}">HIDE</button>`;
+  } else if (p.jailOrg) {
+    btns = `<button class="btn ghost" data-go="${esc(p.id)}">GO</button><button class="btn" data-set="${esc(p.id)}">SET HERE</button><button class="btn red" data-jailoff="${p.zone}">REMOVE</button>`;
   } else if (p.zoneHide) {
     btns = `<button class="btn ghost" data-go="${esc(p.id)}">GO</button><button class="btn" data-set="${esc(p.id)}">SET HERE</button><button class="btn red" data-zonehide="${esc(p.zoneHide)}">DEL</button>`;
   } else {
@@ -240,6 +253,8 @@ function bindRows(pane, o, all) {
   pane.querySelectorAll('[data-set]').forEach(b => b.onclick = () => post('set', { job: o.job, id: b.dataset.set }));
   pane.querySelectorAll('[data-blipmove]').forEach(b => b.onclick = () => post('blipmove', { job: o.job, cid: b.dataset.blipmove }));
   pane.querySelectorAll('[data-del]').forEach(b => arm(b, 'DEL', () => b.dataset.del && post('del', { job: o.job, id: b.dataset.del })));
+  pane.querySelectorAll('[data-jailoff]').forEach(b => arm(b, 'REMOVE', () => post('jailaccess', { job: o.job, zone: Number(b.dataset.jailoff), enabled: false })));
+  pane.querySelectorAll('[data-jailon]').forEach(b => b.onclick = () => post('jailaccess', { job: o.job, zone: Number(b.dataset.jailon), enabled: true }));
   pane.querySelectorAll('[data-zonehide]').forEach(b => arm(b, 'DEL', () => post('zonehide', { job: o.job, id: b.dataset.zonehide })));
   pane.querySelectorAll('[data-bliphide]').forEach(b => arm(b, 'HIDE', () => post('bliphide', { job: o.job, id: b.dataset.bliphide })));
   pane.querySelectorAll('[data-blipdel]').forEach(b => arm(b, 'DEL', () => post('blipdel', { job: o.job, cid: b.dataset.blipdel })));
@@ -278,6 +293,7 @@ function renderPoints(o) {
     <input class="inp" id="q" placeholder="Search ..." value="${esc(state.q)}">
     <button class="btn green" id="add">${v.open ? 'CLOSE' : '+ ADD'}</button>
    </div>${panel}
+   ${(state.tab === 'Jail' && o.jailOther && o.jailOther.length) ? `<div class="panel"><h4>OTHER JAIL ZONES - give ${esc(o.label)} access</h4><div class="line">${o.jailOther.map(z => `<button class="btn ghost" data-jailon="${z.zone}">ASSIGN zone ${z.zone} (${Math.round(z.x)}, ${Math.round(z.y)})</button>`).join('')}</div></div>` : ''}
    <div class="list scroll">${pts.length ? pts.map(rowHtml).join('') : '<div class="empty">Hich noqte-i dar in tab nist.</div>'}</div>`;
   $('#q').oninput = e => { state.q = e.target.value; renderPoints(o); const q2 = $('#q'); q2.focus(); q2.setSelectionRange(q2.value.length, q2.value.length); };
   $('#add').onclick = () => { v.open = !v.open; state.editId = null; renderPoints(o); };
