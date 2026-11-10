@@ -129,7 +129,7 @@ RegisterCommand('suninv_debug', function()
     end
     print('  Press F2 now - a "KeyDown:f2" line should appear here.')
 end, false)
-SUN_VERSION = 'stage1-v6'
+SUN_VERSION = 'stage1-v8'
 print(('^2[%s] client compat loaded (%s) - F2 or /suninv to open, /suninv_debug to diagnose^7'):format(GetCurrentResourceName(), SUN_VERSION))
 
 -- --------------------------------------------------------------------------
@@ -368,6 +368,21 @@ local function installHelpers()
             end
         end)
     end
+    -- the original ESX.Game.SpawnObject(model, coords, cb, await) can return the object
+    -- synchronously (await = true); this server's version only has the callback form
+    ESX.Game = ESX.Game or {}
+    local baseSpawnObject = ESX.Game.SpawnObject
+    if baseSpawnObject then
+        ESX.Game.SpawnObject = function(model, coords, cb, await)
+            if not await then return baseSpawnObject(model, coords, cb) end
+            local p = promise.new()
+            baseSpawnObject(model, coords, function(obj)
+                if cb then cb(obj) end
+                p:resolve(obj)
+            end)
+            return Citizen.Await(p)
+        end
+    end
     ESX.Game = ESX.Game or {}
     ESX.Game.DeleteEntity = function(entity)
         if entity and DoesEntityExist(entity) then
@@ -421,7 +436,17 @@ local function installHelpers()
             loadout[#loadout + 1] = e
         end
         d.loadout = loadout
-        d.inventory = d.inventory or {}
+        -- essentialmode inserts the weapon notification {label = "..."} (no name / count)
+        -- straight into PlayerData.inventory whenever a weapon is added or removed.
+        -- Rows like that crashed the inventory (v.name:find) and left the mouse stuck.
+        local inv = {}
+        for _, it in ipairs(d.inventory or {}) do
+            if type(it) == 'table' and type(it.name) == 'string' and it.name ~= '' then
+                it.count = tonumber(it.count) or 0
+                inv[#inv + 1] = it
+            end
+        end
+        d.inventory = inv
         d.World = d.World or 0
         d.name2 = d.name2 or d.name or GetPlayerName(PlayerId())
         return d
@@ -452,6 +477,24 @@ CreateThread(function()
         if not ok then
             print(('^1[%s] loadPlayerInventory FAILED:\n%s^7'):format(GetCurrentResourceName(), tostring(res)))
             if ESX and ESX.ShowNotification then ESX.ShowNotification('خطا در بارگذاری اینونتوری - F8 را ببین') end
+            return nil
+        end
+        return res
+    end
+end)
+
+-- 1b) if openui itself fails, release the mouse / NUI focus instead of leaving it stuck
+CreateThread(function()
+    while type(openui) ~= 'function' do Wait(100) end
+    local originalOpenui = openui
+    openui = function(...)
+        local ok, res = xpcall(originalOpenui, debug.traceback, ...)
+        if not ok then
+            print(('^1[%s] openui FAILED:\n%s^7'):format(GetCurrentResourceName(), tostring(res)))
+            SetNuiFocus(false, false)
+            SetNuiFocusKeepInput(false)
+            SendNUIMessage({ action = 'hideInventory' })
+            pcall(originalOpenui, false)
             return nil
         end
         return res

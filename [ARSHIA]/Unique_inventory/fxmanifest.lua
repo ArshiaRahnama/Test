@@ -25,6 +25,7 @@ client_scripts {
     'client/clothe.lua',
     'client/ui_bridge.lua',
     'client/main.lua',
+    'client/weapon-wheel.lua', -- weapon wheel = weapons in slots (replaces core:client:giveWeapon)
     -- Stage 2 (need their server side first):
     -- 'modules/**/common/*.lua', 'modules/**/client/*.lua',
 }

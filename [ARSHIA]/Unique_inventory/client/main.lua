@@ -1756,11 +1756,15 @@ function playWeaponAnim(name)
                 PlaceObjectOnGroundProperly(obj)
                 SetEntityCollision(obj, false, false)
                 FreezeEntityPosition(obj2, true)
-                if weapon.model and IsModelInCdimage(GetHashKey(weapon.model)) then
-                    obj2 = ESX.Game.SpawnObject(weapon.model, vec(x2, y2, GetEntityCoords(obj).z) + vec(0, 0, 0.08), nil, true)
+                -- this server's ESX.GetWeapon has no `model` field: ask the game for the weapon's model
+                local modelHash = weapon.model and GetHashKey(weapon.model) or GetWeapontypeModel(GetHashKey(name))
+                if modelHash and modelHash ~= 0 and IsModelInCdimage(modelHash) then
+                    obj2 = ESX.Game.SpawnObject(modelHash, vec(x2, y2, GetEntityCoords(obj).z) + vec(0, 0, 0.08), nil, true)
                     local rotation = GetEntityRotation(obj)
                     SetEntityRotation(obj2, vector3(-90.0, rotation.y, rotation.z))
+                    SetEntityCollision(obj2, false, false)
                     SetEntityDrawOutline(obj2, true)
+                    pcall(SetEntityDrawOutlineColor, 255, 220, 0, 255)   -- yellow, like the original server
                     FreezeEntityPosition(obj2, true)
                 end
                 TriggerEvent("mythic_progbar:client:progress", {
