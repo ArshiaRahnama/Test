@@ -1,0 +1,39 @@
+# unique_character
+
+فلو ثبت‌نام + اسپاون کاراکتر به سبک Sunset (`sun-character`) روی استک Unique (essentialmode + oxmysql + skincreator).
+
+## نصب
+1. پوشه‌ی `unique_character` رو بذار توی `[ARSHIA]` (بعد از `essentialmode`, `oxmysql`, `ps-ui` استارت می‌شه، چون `[ARSHIA]` آخره).
+2. `[SCRIPT]/loading/fxmanifest.lua` رو با نسخه‌ی داخل patch جایگزین کن (کلاینت قدیمی `loading` خاموش می‌شه؛ بدون این کار دو فرم ثبت‌نام همزمان باز می‌شه).
+3. ریستارت سرور (نه فقط ریسورس؛ فلو اسپاون فقط موقع join کار می‌کنه).
+4. اختیاری ولی پیشنهادی (جلوگیری قطعی از نام تکراری حتی اگه ریسورس دیگه‌ای playerName بنویسه):
+   ```sql
+   -- اول چک کن تکراری نداری:
+   SELECT playerName, COUNT(*) c FROM users WHERE playerName IS NOT NULL AND playerName <> '' GROUP BY playerName HAVING c > 1;
+   -- اگه خالی بود:
+   ALTER TABLE users ADD UNIQUE KEY uq_users_playerName (playerName);
+   ```
+
+## اتصال به سیستم لباس
+سیستم لباست وقتی لباس‌ها پوشیده شد این رو صدا بزنه، فید‌این منتظرش می‌مونه (با timeout ۸ ثانیه):
+```lua
+TriggerEvent('unique_character:clothesReady')
+```
+ایونت‌های `sun:clotheLoaded` و `skinchanger:modelLoaded` هم پذیرفته می‌شن (`Config.ClothesEvents`).
+اگه `skinchanger:modelLoaded` زودتر از پوشیدن لباس نهایی میاد، از لیست حذفش کن.
+بعد از اسپاون: `exports.unique_character:isReady()` و ایونت `unique_character:spawned(isNewCharacter)`.
+
+## چی با Sunset فرق داره (عمدی)
+- سمت سرور Sunset توی ریپو نیست؛ این نسخه سمت سرور رو از صفر می‌نویسه (اعتبارسنجی + یکتایی + نوشتن توی یک UPDATE شرط‌دار).
+- هیچ `while` بی‌timeout ای نیست (Sunset برای `loadStep < 2` تا ابد صبر می‌کرد).
+- NUI callbackها همیشه `cb('ok')` می‌دن، cursor با ریستارت ریسورس گیر نمی‌کنه، حلقه‌ی کنترل‌ها دوبل نمی‌شه.
+- `ps-ui` با امضای درست Unique صدا زده می‌شه.
+
+## باگ‌های قبلی که اینجا رفع شده
+- `playerName` هیچ‌جا ذخیره نمی‌شد (`es:newName` فقط RAM، `db:updateUser` فقط `dateofbirth`).
+- `needRegister` با `false` شروع می‌شد ولی منتظر `nil` بود (بازیکن جدید با لاگین کند می‌تونست ثبت‌نام رو رد کنه).
+- چک نام و ذخیره‌ی نام دو مرحله‌ی جدا بودن (race برای نام تکراری).
+- هر کلاینتی می‌تونست با `es:newName` اسم دلخواه بذاره (هنوز توی essentialmode هست؛ پایین ببین).
+
+## هنوز باز (دست نزدم)
+`[BASE]/essentialmode/server/player/login.lua` → `es:newName` رو هر کلاینتی می‌تونه صدا بزنه. الان چیزی ازش استفاده نمی‌کنه؛ پیشنهاد: حذفش یا فقط سروری کردنش.

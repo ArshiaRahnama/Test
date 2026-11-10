@@ -94,186 +94,9 @@ function ToStoredNum(v)
     return tonumber(v) or 0
 end
 
+
 if Customize.ESX == 'ESX' then
     HZ.CreateThread(function() while not ESX do TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end) PlayerData = ESX.GetPlayerData() HZ.Wait(10) end end)
-
-
-    RegisterNUICallback('SpawnVehicle', function(data)
-        -- FIX: this used to json.decode(data.Table.vehicle) straight into the
-        -- spawn call with no validation. If `vehicle` was nil/malformed
-        -- (bad DB row, empty selection, stale NUI state) json.decode either
-        -- errored (killing the whole callback silently client-side, no
-        -- console line) or returned a table with no `.model`, so
-        -- HZSpawnVehicle got called with a nil model and bailed out with
-        -- nothing on screen. Now we validate first and always tell the
-        -- player + print to console instead of doing nothing.
-        if not data or not data.Table or not data.Table.vehicle then
-            SafeNotify('~r~Khataye Spawn: Etelaate Mashin Peyda Nashod. (console ra check konid)')
-            print('^1[Unique_Garage] SpawnVehicle: data.Table.vehicle is missing - NUI sent: ' .. tostring(json.encode(data)) .. '^0')
-            return
-        end
-
-        local ok, vehData = pcall(json.decode, data.Table.vehicle)
-        if not ok or type(vehData) ~= 'table' or not vehData.model then
-            SafeNotify('~r~Khataye Spawn: Etelaate Mashin Kharab Ast. (console ra check konid)')
-            print('^1[Unique_Garage] SpawnVehicle: failed to decode vehicle JSON for plate ' .. tostring(data.Table.plate) .. ' -> ' .. tostring(data.Table.vehicle) .. '^0')
-            return
-        end
-
-        -- FIX (per request): spawning a vehicle you already own from the
-        -- garage should be free -- it was charging Customize.GaragesPrice
-        -- via the 'isPrice' server callback on every spawn. That check now
-        -- only runs for job/impound garages where a price is actually
-        -- configured (Customize.JobGaragesPrice / ImpoundGaragesPrice);
-        -- normal garage spawns skip straight to spawning, no charge.
-        local function proceedSpawn()
-        if (tonumber(data.Price) or 0) > 0 then
-            ESX.TriggerServerCallback('isPrice', function(istrue)
-                if istrue then
-                    HZSpawnVehicle(vehData.model, function(Veh)
-                        SetNetworkIdAlwaysExistsForPlayer(NetworkGetNetworkIdFromEntity(Veh), PlayerPedId(), true)
-                        ESX.Game.SetVehicleProperties(Veh, vehData)
-                        SetVehicleNumberPlateText(Veh, data.Table.plate)
-                        SetEntityHeading(Veh, LastSpawnPos.w)
-                        Customize.SetVehFuel(Veh, data.Table.fuel)
-                        SetVehicleEngineHealth(Veh, (tonumber(data.Table.engine) or 1000.0) + 0.0)
-                        SetVehicleBodyHealth(Veh, (tonumber(data.Table.body) or 1000.0) + 0.0)
-                        SetEntityAsMissionEntity(Veh, true, true)
-                        TaskWarpPedIntoVehicle(PlayerPedId(), Veh, -1)
-                        SetVehicleEngineOn(Veh, true, true)
-                        AttachOwnCarBlip(Veh)
-                        SendReactMessage('Close')
-                        TriggerServerEvent('SetVehState0', 0, data.Table.plate)
-						Wait(100)
-						TriggerServerEvent("CarLock:ToggleKey", true, data.Table.plate)
-                    end, LastSpawnPos, true)
-                end
-            end, data.Price)
-        else
-            HZSpawnVehicle(vehData.model, function(Veh)
-                SetNetworkIdAlwaysExistsForPlayer(NetworkGetNetworkIdFromEntity(Veh), PlayerPedId(), true)
-                ESX.Game.SetVehicleProperties(Veh, vehData)
-                SetVehicleNumberPlateText(Veh, data.Table.plate)
-                SetEntityHeading(Veh, LastSpawnPos.w)
-                Customize.SetVehFuel(Veh, data.Table.fuel)
-                SetVehicleEngineHealth(Veh, (tonumber(data.Table.engine) or 1000.0) + 0.0)
-                SetVehicleBodyHealth(Veh, (tonumber(data.Table.body) or 1000.0) + 0.0)
-                SetEntityAsMissionEntity(Veh, true, true)
-                TaskWarpPedIntoVehicle(PlayerPedId(), Veh, -1)
-                SetVehicleEngineOn(Veh, true, true)
-                AttachOwnCarBlip(Veh)
-                SendReactMessage('Close')
-                TriggerServerEvent('SetVehState0', 0, data.Table.plate)
-				Wait(100)
-				TriggerServerEvent("CarLock:ToggleKey", true, data.Table.plate)
-            end, LastSpawnPos, true)
-        end
-        end
-
-        -------------------------------------------------------------
-        -- FEATURE (requested: a rank BLOCKED from a vehicle model via
-        -- Boss Action > Vehicle Access should not be able to take it
-        -- out of the garage either - it was previously only enforced
-        -- on registering a brand-new vehicle, not on taking an
-        -- already-owned one out). Only applies when this is a GANG
-        -- garage (LastGangJob set by OpenMenuG('gang', ...) above) -
-        -- personal/job/impound garages are completely untouched.
-        -- Derives the model key the exact same way this file already
-        -- does a few lines below for display (VehText: display name,
-        -- whitespace stripped, lowercased) so it matches
-        -- Unique_ALLGangs' vehicleAccess keys regardless of how the
-        -- vehicle was added (config spawn, /getfreecargang, or a
-        -- donated personal vehicle).
-        -------------------------------------------------------------
-        if LastGangJob then
-            local modelKey = string.gsub(GetDisplayNameFromVehicleModel(vehData.model), "%s+", ""):lower()
-            ESX.TriggerServerCallback('FMGangs:GetRankAccess', function(access)
-                local vehicleAccess = access and access.vehicleAccess
-                if vehicleAccess and vehicleAccess[modelKey] == false then
-                    SafeNotify('~r~Your rank does not have access to this vehicle')
-                    return
-                end
-                proceedSpawn()
-            end, LastGangJob)
-        else
-            proceedSpawn()
-        end
-    end)
-
-    RegisterNUICallback('VehicleInfo', function(data, cb)
-        local model = json.decode(data.data.vehicle).model
-        RequestModel(model)
-        while not HasModelLoaded(model) do Wait(7) end
-        currentVeh = CreateVehicle(model, LastCamera.vehSpawn.x, LastCamera.vehSpawn.y, LastCamera.vehSpawn.z, LastCamera.vehSpawn.w, false, true)
-        SetVehicleEngineOn(currentVeh, true, true, false)
-        ESX.Game.SetVehicleProperties(currentVeh, json.decode(data.data.vehicle))
-        Customize.SetVehFuel(currentVeh, (tonumber(data.data.fuel) or 100.0) + 0.0)
-        SetVehicleEngineHealth(currentVeh, (tonumber(data.data.engine) or 1000.0) + 0.0)
-        SetVehicleBodyHealth(currentVeh, (tonumber(data.data.body) or 1000.0) + 0.0)
-        cb({
-            Fuel = math.floor(Customize.GetVehFuel(currentVeh) + 0.5),
-            Speed = GetVehicleEstimatedMaxSpeed(currentVeh),
-            Traction = GetVehicleMaxTraction(currentVeh),
-            Acceleration = GetVehicleAcceleration(currentVeh)
-        })
-    end)
-
-elseif Customize.ESX == 'QBCore' then
-    if Customize.ESX == "OLDQBCore" then while ESX == nil do TriggerEvent('QBCore:GetObject', function(obj) ESX = obj end) HZ.Wait(4) end else ESX = exports['qb-core']:GetCoreObject() end
-
-    RegisterNUICallback('SpawnVehicle', function(data)
-        -- FIX (per request): same free-spawn logic as the ESX branch above --
-        -- only charge when a price is actually configured (job/impound
-        -- garages), otherwise spawn directly with no charge.
-        if (tonumber(data.Price) or 0) > 0 then
-            ESX.Functions.TriggerCallback('isPrice', function(istrue)
-                if istrue then
-                    HZSpawnVehicle(data.Table.vehicle, function(Veh)
-                        SetNetworkIdAlwaysExistsForPlayer(NetworkGetNetworkIdFromEntity(Veh), PlayerPedId(), true)
-                        SetVehicleProperties(json.decode(data.Table.mods), Veh)
-                        SetVehicleNumberPlateText(Veh, data.Table.plate)
-                        SetEntityHeading(Veh, LastSpawnPos.w)
-                        Customize.SetVehFuel(Veh, data.Table.fuel)
-                        SetEntityAsMissionEntity(Veh, true, true)
-                        TaskWarpPedIntoVehicle(PlayerPedId(), Veh, -1)
-                        SetVehicleEngineOn(Veh, true, true)
-                        AttachOwnCarBlip(Veh)
-                        SendReactMessage('Close')
-                        TriggerServerEvent('SetVehState0', 0, data.Table.plate)
-                    end, LastSpawnPos, true)
-                end
-            end, data.Price)
-        else
-            HZSpawnVehicle(data.Table.vehicle, function(Veh)
-                SetNetworkIdAlwaysExistsForPlayer(NetworkGetNetworkIdFromEntity(Veh), PlayerPedId(), true)
-                SetVehicleProperties(json.decode(data.Table.mods), Veh)
-                SetVehicleNumberPlateText(Veh, data.Table.plate)
-                SetEntityHeading(Veh, LastSpawnPos.w)
-                Customize.SetVehFuel(Veh, data.Table.fuel)
-                SetEntityAsMissionEntity(Veh, true, true)
-                TaskWarpPedIntoVehicle(PlayerPedId(), Veh, -1)
-                SetVehicleEngineOn(Veh, true, true)
-                AttachOwnCarBlip(Veh)
-                SendReactMessage('Close')
-                TriggerServerEvent('SetVehState0', 0, data.Table.plate)
-            end, LastSpawnPos, true)
-        end
-    end)
-
-    RegisterNUICallback('VehicleInfo', function(data, cb)
-        local model = GetHashKey(data.data.vehicle)
-        RequestModel(model)
-        while not HasModelLoaded(model) do Wait(7) end
-        currentVeh = CreateVehicle(model, LastCamera.vehSpawn.x, LastCamera.vehSpawn.y, LastCamera.vehSpawn.z, LastCamera.vehSpawn.w, false, true)
-        SetVehicleEngineOn(currentVeh, true, true, false)
-        SetVehicleProperties(json.decode(data.data.mods), currentVeh)
-        cb({
-            Fuel = Customize.GetVehFuel(currentVeh),
-            Speed = GetVehicleEstimatedMaxSpeed(currentVeh),
-            Traction = GetVehicleMaxTraction(currentVeh),
-            Acceleration = GetVehicleAcceleration(currentVeh)
-        })
-    end)
 end
 
 RegisterNetEvent('ImpoundVehicle', function(vehicles)
@@ -396,580 +219,101 @@ end
 
 RegisterNetEvent('esx_SetJobPlayers')
 AddEventHandler('esx_SetJobPlayers', function(job)
-	PlayerData.job = job
+    if PlayerData then PlayerData.job = job end
 end)
 
-HZ.CreateThread(function()
-    HZ.Wait(2000)
 
-    if Customize.ESX == 'ESX' then PlayerData = ESX.GetPlayerData() end
-    while ESX ~= nil do
-        local Callback = nil
-        if Customize.ESX == 'ESX' then Callback = ESX.TriggerServerCallback else Callback = ESX.Functions.TriggerCallback end
-        local Sleep = 2000
-        local PlayerPed = PlayerPedId()
-        local PlayerCoord = GetEntityCoords(PlayerPed)
-        local InVeh = GetVehiclePedIsIn(PlayerPed)
-        for index_, esc in pairs(Customize.Garages) do
-            local NPCDistance = #(PlayerCoord - esc.Npc.Pos)
-            local VehPutDistance = #(PlayerCoord - esc.VehPutPos)
-            if NPCDistance <= 5.0 then
-                Sleep = 5
-                Draw3DText(esc.Npc.Pos.x, esc.Npc.Pos.y, esc.Npc.Pos.z + 0.98,"GARAGE")
-            end
-            if VehPutDistance <= 12.0 then
-                Sleep = 5
-                DrawMarker(2, esc.VehPutPos.x, esc.VehPutPos.y, esc.VehPutPos.z, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.3, 0.2, 0.15, 255, 255, 255, 100, false, false, false, true, false, false, false)
-                if VehPutDistance <= 4.0 and IsPedInAnyVehicle(PlayerPed, false) and GetPedInVehicleSeat(InVeh, -1) == PlayerPed then
-                    ShowHelpNotification("~INPUT_CONTEXT~ Baraye Park Kardan Mashin")
-                end
-                if VehPutDistance <= 4.0 and IsControlJustReleased(0, 38) and IsPedInAnyVehicle(PlayerPed,false)  then
-                    if GetVehicleNumberOfPassengers(InVeh) == 0 then
-                        local Plate = GetPlate(InVeh)
-                        Callback('IsVehOwned', function(owned)
-                            if owned then
-                                local bodyDamage = math.ceil(GetVehicleBodyHealth(InVeh))
-                                local engineDamage = math.ceil(GetVehicleEngineHealth(InVeh))
-                                local totalFuel = Customize.GetVehFuel(InVeh)
-								vehicleProps = ESX.Game.GetVehicleProperties(InVeh)
-                                TriggerServerEvent('SetVehState', 1, Plate, {
-                                    fuel = totalFuel,
-                                    engine = engineDamage,
-                                    body = bodyDamage,
-									props = vehicleProps
-                                }, '')
-                                Wait(200)
-                                for i = -1, 5, 1 do
-                                    local seat = GetPedInVehicleSeat(InVeh, i)
-                                    if seat then
-                                        TaskLeaveVehicle(seat, InVeh, 0)
-                                    end
-                                end
-                                SetVehicleDoorsLocked(InVeh)
-                                Wait(1500)
-                                HZDeleteVehicle(InVeh)
-                            end
-                        end, Plate, '')
-                    end
-                end
-            end
-        end
-
-        for index, esc in pairs(Customize.JobGarages) do
-            if PlayerData ~= nil then
-
-                if PlayerData.job.name == esc.PlayerJob then
-                    local NPCDistance = #(PlayerCoord - esc.Npc.Pos)
-                    local VehPutDistance = #(PlayerCoord - esc.VehPutPos)
-                    if NPCDistance <= 5.0 then
-                        Sleep = 5
-                        Draw3DText(esc.Npc.Pos.x, esc.Npc.Pos.y, esc.Npc.Pos.z + 0.98,"[E] JOB GARAGE")
-                    end
-                    if VehPutDistance <= 12.0 then
-                        Sleep = 5
-                        DrawMarker(2, esc.VehPutPos.x, esc.VehPutPos.y, esc.VehPutPos.z, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.3, 0.2, 0.15, 255, 255, 255, 100, false, false, false, true, false, false, false)
-                        if VehPutDistance <= 4.0 and IsPedInAnyVehicle(PlayerPed, false) and GetPedInVehicleSeat(InVeh, -1) == PlayerPed then
-                            ShowHelpNotification("~INPUT_CONTEXT~ Baraye Park Kardan Mashin")
-                        end
-                        if VehPutDistance <= 4.0 and IsControlJustReleased(0, 38) then
-                            Draw3DText(esc.Npc.Pos.x, esc.Npc.Pos.y, esc.Npc.Pos.z + 0.98,"[E] In Garage")
-                            if GetVehicleNumberOfPassengers(InVeh) == 0 then
-                                local Plate = GetPlate(InVeh)
-                                local model = GetEntityModel(InVeh)
-                                local displaytext = GetDisplayNameFromVehicleModel(model)
-                                local name = GetLabelText(displaytext)
-                                for index, veh in pairs(esc.Vehicles) do
-                                    if string.gsub(displaytext, "%s+", ""):lower() == veh then
-                                        Callback('IsVehOwned', function(owned)
-                                            if owned then
-                                                local bodyDamage = math.ceil(GetVehicleBodyHealth(InVeh))
-                                                local engineDamage = math.ceil(GetVehicleEngineHealth(InVeh))
-                                                local totalFuel = Customize.GetVehFuel(InVeh)
-												vehicleProps = ESX.Game.GetVehicleProperties(InVeh)
-                                                TriggerServerEvent('SetVehState', 1, Plate, {
-                                                    fuel = totalFuel,
-                                                    engine = engineDamage,
-                                                    body = bodyDamage,
-													props = vehicleProps
-                                                }, 'Job', esc.PlayerJob)
-                                                HZ.Wait(200)
-                                                for i = -1, 5, 1 do
-                                                    local seat = GetPedInVehicleSeat(InVeh, i)
-                                                    if seat then TaskLeaveVehicle(seat, InVeh, 0) end
-                                                end
-                                                SetVehicleDoorsLocked(InVeh)
-                                                HZ.Wait(1500)
-                                                HZDeleteVehicle(InVeh)
-                                            end
-                                        end, Plate, 'Job', esc.PlayerJob)
-                                    end
-                                end
-                            end
-
-                        end
-                    end
-                end
-            end
-        end
-        for index, esc in pairs(Customize.ImpoundGarages) do
-            local NPCDistance = #(PlayerCoord - esc.Npc.Pos)
-            if NPCDistance <= 5.0 then
-                Sleep = 5
-                Draw3DText(esc.Npc.Pos.x, esc.Npc.Pos.y, esc.Npc.Pos.z + 0.98,"IMPOUND")
-            end
-        end
-        HZ.Wait(Sleep)
-    end
-end)
-
-RegisterNetEvent("OpenGarage", function() OpenMenuG("garage") end)
-RegisterNetEvent("OpenJob", function() OpenMenuG("job") end)
-RegisterNetEvent("OpenImpound", function() OpenMenuG() end)
+-- gang / organisation fleet camera: same shot at every location (relative to the marker heading)
+local function BuildFleetCamera(extra)
+    local heading = extra.coord.h or 0.0
+    local camAngleOffset, camDistance, camHeight = 40.0, 4.5, 1.3
+    local placeAngle = math.rad(heading + camAngleOffset)
+    LastCamera = {
+        vehSpawn = vector4(extra.coord.x, extra.coord.y, extra.coord.z, extra.coord.h),
+        location = {
+            posX = extra.coord.x + camDistance * -math.sin(placeAngle),
+            posY = extra.coord.y + camDistance * math.cos(placeAngle),
+            posZ = extra.coord.z + camHeight,
+            rotX = -8.0, rotY = 0.0, rotZ = heading + camAngleOffset + 180.0, fov = 45.0
+        }
+    }
+    LastSpawnPos = LastCamera.vehSpawn
+end
 
 OpenMenuG = function(type, extra)
-	local PlayerPed = PlayerPedId()
-	local PlayerCoord = GetEntityCoords(PlayerPed)
-	local InVeh = GetVehiclePedIsIn(PlayerPed)
-	local Callback = ESX.TriggerServerCallback
-	-- FIX: LastGangJob only ever got *set* (line below, "gang" branch) and
-	-- never cleared elsewhere, so after visiting the gang garage once it
-	-- stayed set for every personal/job/impound garage opened afterwards -
-	-- SpawnVehicle's gang-access check below would then wrongly run (and
-	-- possibly block) a normal personal vehicle spawn. Reset it up front
-	-- every open; only the "gang" branch below sets it again.
-	LastGangJob = nil
-	if type == "gang" then
-		-- extra = { gangName = .., coord = {x,y,z,h}, vehType = 'car'|'heli'|'boat' }
-		-- Unlike "garage"/"job" this doesn't loop over a fixed Customize list --
-		-- FMGangs already does its own proximity/E-press detection at its own
-		-- gang-placed markers and just tells us to open here.
-		-- FIX (requested: should show the actual car from a proper
-		-- angle/distance, not just standing right on top of it - the
-		-- camera's posX/posY/posZ were literally the exact same point
-		-- as vehSpawn, i.e. the same spot the ghost preview vehicle
-		-- (VehicleInfo NUI callback below, currentVeh) spawns at. Every
-		-- other branch (garage/job/impound) uses a hand-placed camera
-		-- position genuinely offset away from the vehicle; this
-		-- computes that same kind of offset instead of reusing
-		-- extra.coord directly - a fixed distance/height/angle relative
-		-- to the marker's heading, so it's the exact same shot (car
-		-- seen from the same relative angle and distance) at every gang
-		-- location, and the camera actually looks back at the vehicle
-		-- instead of sitting inside it.
-		local heading = extra.coord.h or 0.0
-		local camAngleOffset = 40.0 -- degrees off the vehicle's own heading - fixed
-		local camDistance = 4.5
-		local camHeight = 1.3
-		local placeAngle = math.rad(heading + camAngleOffset)
-		LastCamera = {
-			vehSpawn = vector4(extra.coord.x, extra.coord.y, extra.coord.z, extra.coord.h),
-			location = {
-				posX = extra.coord.x + camDistance * -math.sin(placeAngle),
-				posY = extra.coord.y + camDistance * math.cos(placeAngle),
-				posZ = extra.coord.z + camHeight,
-				rotX = -8.0, rotY = 0.0, rotZ = heading + camAngleOffset + 180.0, fov = 45.0
-			}
-		}
-		LastSpawnPos = LastCamera.vehSpawn
-		LastGangJob = extra.gangName
-		-------------------------------------------------------------
-		-- FEATURE (requested: a vehicle model this rank is BLOCKED
-		-- from - Boss Action > Vehicle Access - should not even show
-		-- up in the garage list, not just refuse to spawn it after
-		-- the player already sees and picks it). Fetches the caller's
-		-- vehicleAccess first, then filters the vehicle list the same
-		-- way SpawnVehicle checks it (same VehModel key), using
-		-- NewTable like every other branch in this file already does
-		-- - which also fixes "IN GARAGE" always reading 0 here (it
-		-- was never actually incremented in this branch before).
-		-------------------------------------------------------------
-		Callback('FMGangs:GetRankAccess', function(access)
-			local vehicleAccess = access and access.vehicleAccess
-			Callback('GetVehicles', function(data)
-				if data ~= nil then
-					inGarage = 0
-					local newData = {}
-					for index, vh in pairs(data) do
-						vh.stored = ToStoredNum(vh.stored)
-						vh.engine = tonumber(vh.engine) or 1000
-						vh.fuel = tonumber(vh.fuel) or 100
-						vh.body = tonumber(vh.body) or 1000
-						local displaytext = string.gsub(GetDisplayNameFromVehicleModel(json.decode(vh.vehicle).model), "%s+", ""):lower()
-						vh["VehModel"] = displaytext
-						vh["VehText"] = GetLabelText(displaytext)
-						if not (vehicleAccess and vehicleAccess[displaytext] == false) then
-							NewTable(newData, vh)
-						end
-					end
-					Camera()
-					SendReactMessage('setOpen', { setVeh = newData, setName = extra.gangName .. ' Garage', inGarage = inGarage, Price = 0 })
-					SetNuiFocus(true, true)
-				else
-					SafeNotify("Shoma Hich Mashini Nadarid!")
-				end
-			end, "Gang", extra.gangName, extra.vehType)
-		end, extra.gangName)
-	elseif type == "jobfleet" then
-		-- FEATURE (requested): exact mirror of the "gang" branch just
-		-- above - same camera placement, same per-rank access filter
-		-- (just against esx_society:GetJobRankVehicleAccess instead of
-		-- FMGangs:GetRankAccess), same "Gang"-labeled GetVehicles call
-		-- (see the long comment on Unique_Garage:OpenJobFleetGarage at
-		-- the top of this file for why "Gang" is correct here even
-		-- though extra.jobName is an organization, not an actual gang).
-		local heading = extra.coord.h or 0.0
-		local camAngleOffset = 40.0
-		local camDistance = 4.5
-		local camHeight = 1.3
-		local placeAngle = math.rad(heading + camAngleOffset)
-		LastCamera = {
-			vehSpawn = vector4(extra.coord.x, extra.coord.y, extra.coord.z, extra.coord.h),
-			location = {
-				posX = extra.coord.x + camDistance * -math.sin(placeAngle),
-				posY = extra.coord.y + camDistance * math.cos(placeAngle),
-				posZ = extra.coord.z + camHeight,
-				rotX = -8.0, rotY = 0.0, rotZ = heading + camAngleOffset + 180.0, fov = 45.0
-			}
-		}
-		LastSpawnPos = LastCamera.vehSpawn
-		LastGangJob = extra.jobName -- StoreJobFleetVehicle forwards to StoreGangVehicle, which reads this same var
-
-		-- FIX (reported): was Callback('esx_society:GetJobRankVehicleAccess',
-		-- ...) i.e. ESX.TriggerServerCallback - esx_society registers that
-		-- name via ESX.RegisterServerCallback, which (confirmed by reading
-		-- essentialmode/server/common.lua directly) only writes into
-		-- esx_society's OWN disconnected copy of the ESX table, so this
-		-- call could never actually get a reply and the garage would hang
-		-- here forever. Uses a plain request/reply event pair instead
-		-- (esx_society/server/main.lua's matching fix), with a short
-		-- timeout that just shows everything unlocked if esx_society
-		-- somehow still doesn't answer, rather than hanging the menu open.
-		local jobAccessReceived, jobVehicleAccess = false, {}
-		local jobAccessHandler = AddEventHandler('esx_society:jobRankVehicleAccessResult', function(access)
-			jobVehicleAccess = (access and access.vehicleAccess) or {}
-			jobAccessReceived = true
-		end)
-		TriggerServerEvent('esx_society:requestJobRankVehicleAccess')
-
-		Citizen.CreateThread(function()
-			local timeout = GetGameTimer() + 3000
-			while not jobAccessReceived and GetGameTimer() < timeout do
-				Citizen.Wait(0)
-			end
-			RemoveEventHandler(jobAccessHandler)
-			local vehicleAccess = jobVehicleAccess
-
-			Callback('GetVehicles', function(data)
-				data = data or {} -- organisation fleet: open the garage UI even when it is still empty
-				if data ~= nil then
-					inGarage = 0
-					local newData = {}
-					for index, vh in pairs(data) do
-						vh.stored = ToStoredNum(vh.stored)
-						vh.engine = tonumber(vh.engine) or 1000
-						vh.fuel = tonumber(vh.fuel) or 100
-						vh.body = tonumber(vh.body) or 1000
-						local displaytext = string.gsub(GetDisplayNameFromVehicleModel(json.decode(vh.vehicle).model), "%s+", ""):lower()
-						vh["VehModel"] = displaytext
-						vh["VehText"] = GetLabelText(displaytext)
-						if not (vehicleAccess and vehicleAccess[displaytext] == false) then
-							NewTable(newData, vh)
-						end
-					end
-					Camera()
-					SendReactMessage('setOpen', { setVeh = newData, setName = extra.jobName .. ' Garage', inGarage = inGarage, Price = 0 })
-					SetNuiFocus(true, true)
-				else
-					SafeNotify("Shoma Hich Mashini Nadarid!")
-				end
-			end, "Gang", extra.jobName, extra.vehType)
-		end)
-	elseif type == "garage" then
-		for index_, esc in pairs(Customize.Garages) do
-			local NPCDistance = #(PlayerCoord - esc.Npc.Pos)
-			local VehPutDistance = #(PlayerCoord - esc.VehPutPos)
-			if NPCDistance <= 5.0 then
-				Callback('GetVehicles', function(data)
-					if data ~= nil then
-						inGarage = 0
-						local newData = {}
-						for index, vh in pairs(data) do
-							veh = nil
-
-							veh = json.decode(vh.vehicle).model
-							vh.stored = ToStoredNum(vh.stored)
-							vh.engine = tonumber(vh.engine) or 1000
-							vh.fuel = tonumber(vh.fuel) or 100
-							vh.body = tonumber(vh.body) or 1000
-							local vehClass = GetVehicleClassFromName(veh)
-							if vh.stored ~= 2 then
-								local displaytext = string.gsub(GetDisplayNameFromVehicleModel(veh), "%s+", ""):lower();
-								vh["VehModel"] = displaytext
-								vh["VehText"] = GetLabelText(displaytext)
-
-								if esc.Type == 'car' then
-									if vehClass ~= 14 and vehClass ~= 15 and vehClass ~= 16 then
-										NewTable(newData, vh)
-									end
-								end
-								if esc.Type == 'air' then
-									if vehClass == 15 or vehClass == 16 then
-										NewTable(newData, vh)
-									end
-								end
-								if esc.Type == 'sea' then
-									if vehClass == 14 then
-										NewTable(newData, vh)
-									end
-								end
-							end
-						end
-						LastCamera = esc.Camera
-						LastSpawnPos = esc.VehSpawnPos
-						Camera()
-
-						SendReactMessage('setOpen', { setVeh = newData, setName = esc.UIName, inGarage = inGarage, Price = Customize.GaragesPrice })
-						SetNuiFocus(true, true)
-					else
-						SafeNotify("Shoma Hich Mashini Nadarid!")
-					end
-				end, "")
-			end
-		end
-	elseif type == "job" then
-		for index, esc in pairs(Customize.JobGarages) do
-			if PlayerData ~= nil then
-				if PlayerData.job.name == esc.PlayerJob then
-					local NPCDistance = #(PlayerCoord - esc.Npc.Pos)
-					local VehPutDistance = #(PlayerCoord - esc.VehPutPos)
-					if NPCDistance <= 5.0 then
-						Callback('GetVehicles', function(data)
-							if data ~= nil then
-								inGarage = 0
-								local newData = {}
-								for index , vh in pairs(data) do
-									veh = nil
-									veh = json.decode(vh.vehicle).model
-									vh.stored = ToStoredNum(vh.stored)
-									vh.engine = tonumber(vh.engine) or 1000
-									vh.fuel = tonumber(vh.fuel) or 100
-									vh.body = tonumber(vh.body) or 1000
-									local displaytext = string.gsub(GetDisplayNameFromVehicleModel(veh), "%s+", ""):lower();
-									vh["VehModel"] = displaytext
-									vh["VehText"] = GetLabelText(displaytext)
-									if esc.Type == 'car' then
-										if vehClass ~= 14 and vehClass ~= 15 and vehClass ~= 16 then
-											NewTable(newData, vh)
-										end
-									end
-									if esc.Type == 'air' then
-										if vehClass == 15 or vehClass == 16 then
-											NewTable(newData, vh)
-										end
-									end
-									if esc.Type == 'sea' then
-										if vehClass == 14 then
-											NewTable(newData, vh)
-										end
-									end
-								end
-								LastCamera = esc.Camera
-								LastSpawnPos = esc.VehSpawnPos
-								Camera()
-								SendReactMessage('setOpen', { setVeh = data, setName = esc.UIName, inGarage = inGarage, Price = Customize.JobGaragesPrice })
-								SetNuiFocus(true, true)
-							else
-								SafeNotify("Shoma Hich Mashini Nadarid!")
-							end
-						end, "Job", esc.PlayerJob)
-					end
-				end
-			end
-		end
-	else
-		for index, esc in pairs(Customize.ImpoundGarages) do
-			local NPCDistance = #(PlayerCoord - esc.Npc.Pos)
-			if NPCDistance <= 5.0 then
-				Callback('GetVehicles', function(data)
-					if data ~= nil then
-						inGarage = 0
-						local newData = {}
-						for index, vh in pairs(data) do
-							veh = nil
-							veh = json.decode(vh.vehicle).model
-							vh.stored = ToStoredNum(vh.stored)
-							vh.engine = tonumber(vh.engine) or 1000
-							vh.fuel = tonumber(vh.fuel) or 100
-							vh.body = tonumber(vh.body) or 1000
-							local vehClass = GetVehicleClassFromName(veh)
-							if vh.stored == 2 then
-								local displaytext = string.gsub(GetDisplayNameFromVehicleModel(veh), "%s+", ""):lower();
-								vh["VehModel"] = displaytext
-								vh["VehText"] = GetLabelText(displaytext)
-								if esc.Type == 'car' then
-									if vehClass ~= 14 and vehClass ~= 15 and vehClass ~= 16 then
-										NewTable(newData, vh)
-									end
-								end
-								if esc.Type == 'air' then
-									if vehClass == 15 or vehClass == 16 then
-										NewTable(newData, vh)
-									end
-								end
-								if esc.Type == 'sea' then
-									if vehClass == 14 then
-										NewTable(newData, vh)
-									end
-								end
-							end
-						end
-						LastCamera = esc.Camera
-						LastSpawnPos = esc.VehSpawnPos
-						Camera()
-						SendReactMessage('setOpen', { setVeh = newData, setName = esc.UIName, inGarage = inGarage, Price = Customize.ImpoundGaragesPrice })
-						SetNuiFocus(true, true)
-					else
-						SafeNotify("Shoma Hich Mashini Dar Impound Nadarid!")
-					end
-				end, "Impound")
-			end
-		end
-	end
-end
-
-HZ.CreateThread(function()
-    for index, esc in pairs(Customize.Garages) do NPCLoad(esc) MapBlip(esc) end
-    for index, esc in pairs(Customize.JobGarages) do NPCLoad(esc) MapBlip(esc) end
-    for index, esc in pairs(Customize.ImpoundGarages) do NPCLoad(esc) MapBlip(esc) end
-end)
-
-local GarageZoneRadius = 5.0
-
-HZ.CreateThread(function()
-    for index, esc in pairs(Customize.Garages) do
-        exports.ox_target:addSphereZone({
-            coords = esc.Npc.Pos,
-            radius = GarageZoneRadius,
-            debug = false,
-            drawSprite = true,
-            options = {
-                {
-                    name = 'unique_garage_open_' .. tostring(index),
-                    icon = 'fa-solid fa-square-parking fa-beat',
-                    label = esc.UIName or 'Garage',
-                    onSelect = function()
-                        OpenMenuG("garage")
-                    end,
-                }
-            }
-        })
+    local Callback = ESX.TriggerServerCallback
+    LastGangJob = nil
+    MenuContext = { kind = type }
+    if type == 'gang' then
+        BuildFleetCamera(extra)
+        LastGangJob = extra.gangName
+        Callback('FMGangs:GetRankAccess', function(access)
+            local vehicleAccess = access and access.vehicleAccess
+            Callback('GetVehicles', function(data)
+                if data == nil then SafeNotify("Shoma Hich Mashini Nadarid!") return end
+                inGarage = 0
+                local newData = {}
+                for _, vh in pairs(data) do
+                    PrepareRow(vh)
+                    if not (vehicleAccess and vehicleAccess[vh.VehKey] == false) then NewTable(newData, vh) end
+                end
+                Camera()
+                SendReactMessage('setOpen', { setVeh = newData, setName = extra.gangName .. ' Garage', inGarage = inGarage, Price = 0,
+                    allVehicleCount = #GetAllVehicleModels(), ownedVehicleCount = #newData, ownedVehicleCountUniq = #newData })
+                SetNuiFocus(true, true)
+            end, "Gang", extra.gangName, extra.vehType)
+        end, extra.gangName)
+    elseif type == 'jobfleet' then
+        BuildFleetCamera(extra)
+        LastGangJob = extra.jobName
+        local jobAccessReceived, jobVehicleAccess = false, {}
+        local jobAccessHandler = AddEventHandler('esx_society:jobRankVehicleAccessResult', function(access)
+            jobVehicleAccess = (access and access.vehicleAccess) or {}
+            jobAccessReceived = true
+        end)
+        TriggerServerEvent('esx_society:requestJobRankVehicleAccess')
+        Citizen.CreateThread(function()
+            local timeout = GetGameTimer() + 3000
+            while not jobAccessReceived and GetGameTimer() < timeout do Citizen.Wait(0) end
+            RemoveEventHandler(jobAccessHandler)
+            local vehicleAccess = jobVehicleAccess
+            Callback('GetVehicles', function(data)
+                data = data or {}
+                inGarage = 0
+                local newData = {}
+                for _, vh in pairs(data) do
+                    PrepareRow(vh)
+                    if not (vehicleAccess and vehicleAccess[vh.VehKey] == false) then NewTable(newData, vh) end
+                end
+                Camera()
+                SendReactMessage('setOpen', { setVeh = newData, setName = extra.jobName .. ' Garage', inGarage = inGarage, Price = 0,
+                    allVehicleCount = #GetAllVehicleModels(), ownedVehicleCount = #newData, ownedVehicleCountUniq = #newData })
+                SetNuiFocus(true, true)
+            end, "Gang", extra.jobName, extra.vehType)
+        end)
     end
-
-    for index, esc in pairs(Customize.JobGarages) do
-        exports.ox_target:addSphereZone({
-            coords = esc.Npc.Pos,
-            radius = GarageZoneRadius,
-            debug = false,
-            drawSprite = true,
-            options = {
-                {
-                    name = 'unique_garage_job_open_' .. tostring(index),
-                    icon = 'fa-solid fa-square-parking fa-beat',
-                    label = (esc.UIName or 'Job Garage'),
-
-
-
-                    canInteract = function()
-                        return PlayerData ~= nil and PlayerData.job ~= nil and PlayerData.job.name == esc.PlayerJob
-                    end,
-                    onSelect = function()
-                        OpenMenuG("job")
-                    end,
-                }
-            }
-        })
-    end
-
-    for index, esc in pairs(Customize.ImpoundGarages) do
-        exports.ox_target:addSphereZone({
-            coords = esc.Npc.Pos,
-            radius = GarageZoneRadius,
-            debug = false,
-            drawSprite = true,
-            options = {
-                {
-                    name = 'unique_garage_impound_open_' .. tostring(index),
-                    icon = 'fa-solid fa-square-parking fa-beat',
-                    label = esc.UIName or 'Impound',
-                    onSelect = function()
-                        OpenMenuG()
-                    end,
-                }
-            }
-        })
-    end
-end)
-
-function NPCLoad(esc)
-    RequestModel(esc.Npc.Hash)
-    while not HasModelLoaded(esc.Npc.Hash) do Wait(1) end
-    local NpcPed =  CreatePed(4, esc.Npc.Hash, esc.Npc.Pos.x, esc.Npc.Pos.y, esc.Npc.Pos.z-1, 3374176, false, true)
-    SetEntityHeading(NpcPed, esc.Npc.Heading)
-    FreezeEntityPosition(NpcPed, true)
-    SetEntityInvincible(NpcPed, true)
-    SetBlockingOfNonTemporaryEvents(NpcPed, true)
 end
 
-function MapBlip(esc)
-    local blip = AddBlipForCoord(esc.Blips.Position)
-    SetBlipSprite(blip, esc.Blips.Sprite)
-    SetBlipDisplay(blip, esc.Blips.Display)
-    SetBlipScale(blip, 0.7)
-    SetBlipColour(blip, esc.Blips.Color)
-    SetBlipAsShortRange(blip, true)
-    BeginTextCommandSetBlipName("STRING")
-    AddTextComponentString(esc.Blips.Label)
-    EndTextCommandSetBlipName(blip)
+-- Turns a raw owned_vehicles row (gang / org fleet) into what the Sunset UI expects.
+function PrepareRow(vh)
+    local props = type(vh.vehicle) == 'string' and json.decode(vh.vehicle) or vh.vehicle or {}
+    vh.vehicle = props
+    vh.stored  = ToStoredNum(vh.stored)
+    vh.engine  = tonumber(vh.engine) or 1000
+    vh.fuel    = tonumber(vh.fuel) or 100
+    vh.body    = tonumber(vh.body) or 1000
+    local disp = GetDisplayNameFromVehicleModel(props.model or 0)
+    local label = GetLabelText(disp)
+    if label == 'NULL' or label == '' then label = disp end
+    vh.VehKey   = string.gsub(disp, "%s+", ""):lower()
+    vh.VehModel = ('%s - %s'):format(label, vh.plate)
+    vh.VehText  = label
+    vh.image    = Customize.VehicleImageUrl:format(disp:lower())
+    vh.image2   = vh.image
+    vh.state    = (vh.stored == 1) and 1 or 0
+    vh.metaData = { fuel = vh.fuel, engine = vh.engine, body = vh.body }
+    return vh
 end
-
-function ShowHelpNotification(text)
-    BeginTextCommandDisplayHelp("STRING")
-    AddTextComponentSubstringPlayerName(text)
-    EndTextCommandDisplayHelp(0, false, false, -1)
-end
-
-function Draw3DText(x, y, z, text)
-	local onScreen, _x, _y = World3dToScreen2d(x, y, z)
-    local px,py,pz=table.unpack(GetGameplayCamCoords())
-	if onScreen then
-		SetTextScale(0.35, 0.35)
-		SetTextFont(4)
-		SetTextProportional(1)
-		SetTextColour(255, 255, 255, 215)
-		SetTextDropShadow(0, 0, 0, 55)
-		SetTextEdge(0, 0, 0, 150)
-		SetTextDropShadow()
-		SetTextOutline()
-		SetTextEntry("STRING")
-		SetTextCentre(1)
-		AddTextComponentString(text)
-		DrawText(_x,_y)
-	end
-end
-
-RegisterNUICallback('BackPage', function()
-    HZDeleteVehicle(currentVeh)
-end)
-
-RegisterNUICallback('Close', function()
-    if currentVeh ~= nil then HZDeleteVehicle(currentVeh) end
-    SetNuiFocus(false, false)
-    DestroyAllCams(true)
-    RenderScriptCams(false, true, 1700, true, false, false)
-    SetFocusEntity(GetPlayerPed(PlayerId()))
-    LastCamera = nil
-    currentVeh = nil
-end)
 
 function NewTable(newData, vh)
     table.insert(newData, vh)
@@ -985,85 +329,7 @@ function Camera()
     SetFocusPosAndVel(LastCamera.location.posX, LastCamera.location.posY, LastCamera.location.posZ, 0.0, 0.0, 0.0)
 end
 
-RegisterNUICallback("rotateright", function(data)
-    SetEntityHeading(currentVeh, GetEntityHeading(currentVeh) - 2)
-end)
-
-RegisterNUICallback("rotateleft", function()
-    SetEntityHeading(currentVeh, GetEntityHeading(currentVeh) + 2)
-end)
-
 function SendReactMessage(action, data) SendNUIMessage({ action = action, data = data }) end
-
-function SetVehicleProperties(mds,vh)
-    if mds ~= nil then
-        local colorPrimary, colorSecondary = GetVehicleColours(vh)
-        local pearlescentColor, wheelColor = GetVehicleExtraColours(vh)
-        SetVehicleModKit(vh, 0)
-        if mds.plate then SetVehicleNumberPlateText(vh, mds.plate) end
-        if mds.plateIndex then SetVehicleNumberPlateTextIndex(vh, mds.plateIndex) end
-        if mds.color1 then if type(mds.color1) == "number" then SetVehicleColours(vh, mds.color1, colorSecondary) else SetVehicleCustomPrimaryColour(vh, mds.color1[1], mds.color1[2], mds.color1[3]) end end
-        if mds.color2 then if type(mds.color2) == "number" then SetVehicleColours(vh, mds.color1 or colorPrimary, mds.color2) else SetVehicleCustomSecondaryColour(vh, mds.color2[1], mds.color2[2], mds.color2[3]) end end
-        if mds.pearlescentColor then SetVehicleExtraColours(vh, mds.pearlescentColor, wheelColor) end
-        if mds.interiorColor then SetVehicleInteriorColor(vh, mds.interiorColor) end
-        if mds.dashboardColor then SetVehicleDashboardColour(vh, mds.dashboardColor) end
-        if mds.wheelColor then SetVehicleExtraColours(vh, mds.pearlescentColor or pearlescentColor, mds.wheelColor) end
-        if mds.wheels then SetVehicleWheelType(vh, mds.wheels) end
-        if mds.windowTint then SetVehicleWindowTint(vh, mds.windowTint) end
-        if mds.neonEnabled then SetVehicleNeonLightEnabled(vh, 0, mds.neonEnabled[1]) SetVehicleNeonLightEnabled(vh, 1, mds.neonEnabled[2]) SetVehicleNeonLightEnabled(vh, 2, mds.neonEnabled[3]) SetVehicleNeonLightEnabled(vh, 3, mds.neonEnabled[4]) end
-        if mds.extras then for id, enabled in pairs(mds.extras) do if enabled then SetVehicleExtra(vh, tonumber(id), 0) else SetVehicleExtra(vh, tonumber(id), 1) end end end
-        if mds.neonColor then SetVehicleNeonLightsColour(vh, mds.neonColor[1], mds.neonColor[2], mds.neonColor[3]) end
-        if mds.modSmokeEnabled then ToggleVehicleMod(vh, 20, true) end
-        if mds.tyreSmokeColor then SetVehicleTyreSmokeColor(vh, mds.tyreSmokeColor[1], mds.tyreSmokeColor[2], mds.tyreSmokeColor[3]) end
-        if mds.modSpoilers then SetVehicleMod(vh, 0, mds.modSpoilers, false) end
-        if mds.modFrontBumper then SetVehicleMod(vh, 1, mds.modFrontBumper, false) end
-        if mds.modRearBumper then SetVehicleMod(vh, 2, mds.modRearBumper, false) end
-        if mds.modSideSkirt then SetVehicleMod(vh, 3, mds.modSideSkirt, false) end
-        if mds.modExhaust then SetVehicleMod(vh, 4, mds.modExhaust, false) end
-        if mds.modFrame then SetVehicleMod(vh, 5, mds.modFrame, false) end
-        if mds.modGrille then SetVehicleMod(vh, 6, mds.modGrille, false) end
-        if mds.modHood then SetVehicleMod(vh, 7, mds.modHood, false) end
-        if mds.modFender then SetVehicleMod(vh, 8, mds.modFender, false) end
-        if mds.modRightFender then SetVehicleMod(vh, 9, mds.modRightFender, false) end
-        if mds.modRoof then SetVehicleMod(vh, 10, mds.modRoof, false) end
-        if mds.modEngine then SetVehicleMod(vh, 11, mds.modEngine, false) end
-        if mds.modBrakes then SetVehicleMod(vh, 12, mds.modBrakes, false) end
-        if mds.modTransmission then SetVehicleMod(vh, 13, mds.modTransmission, false) end
-        if mds.modHorns then SetVehicleMod(vh, 14, mds.modHorns, false) end
-        if mds.modSuspension then SetVehicleMod(vh, 15, mds.modSuspension, false) end
-        if mds.modArmor then SetVehicleMod(vh, 16, mds.modArmor, false) end
-        if mds.modTurbo then ToggleVehicleMod(vh, 18, mds.modTurbo) end
-        if mds.modXenon then ToggleVehicleMod(vh, 22, mds.modXenon) end
-        if mds.xenonColor then SetVehicleXenonLightsColor(vh, mds.xenonColor) end
-        if mds.modFrontWheels then SetVehicleMod(vh, 23, mds.modFrontWheels, false) end
-        if mds.modBackWheels then SetVehicleMod(vh, 24, mds.modBackWheels, false) end
-        if mds.modCustomTiresF then SetVehicleMod(vh, 23, mds.modFrontWheels, mds.modCustomTiresF) end
-        if mds.modCustomTiresR then SetVehicleMod(vh, 24, mds.modBackWheels, mds.modCustomTiresR) end
-        if mds.modPlateHolder then SetVehicleMod(vh, 25, mds.modPlateHolder, false) end
-        if mds.modVanityPlate then SetVehicleMod(vh, 26, mds.modVanityPlate, false) end
-        if mds.modTrimA then SetVehicleMod(vh, 27, mds.modTrimA, false) end
-        if mds.modOrnaments then SetVehicleMod(vh, 28, mds.modOrnaments, false) end
-        if mds.modDashboard then SetVehicleMod(vh, 29, mds.modDashboard, false) end
-        if mds.modDial then SetVehicleMod(vh, 30, mds.modDial, false) end
-        if mds.modDoorSpeaker then  SetVehicleMod(vh, 31, mds.modDoorSpeaker, false) end
-        if mds.modSeats then  SetVehicleMod(vh, 32, mds.modSeats, false) end
-        if mds.modSteeringWheel then  SetVehicleMod(vh, 33, mds.modSteeringWheel, false) end
-        if mds.modShifterLeavers then  SetVehicleMod(vh, 34, mds.modShifterLeavers, false) end
-        if mds.modAPlate then SetVehicleMod(vh, 35, mds.modAPlate, false) end
-        if mds.modSpeakers then SetVehicleMod(vh, 36, mds.modSpeakers, false) end
-        if mds.modTrunk then SetVehicleMod(vh, 37, mds.modTrunk, false) end
-        if mds.modHydrolic then SetVehicleMod(vh, 38, mds.modHydrolic, false) end
-        if mds.modEngineBlock then SetVehicleMod(vh, 39, mds.modEngineBlock, false) end
-        if mds.modAirFilter then SetVehicleMod(vh, 40, mds.modAirFilter, false) end
-        if mds.modStruts then SetVehicleMod(vh, 41, mds.modStruts, false) end
-        if mds.modArchCover then SetVehicleMod(vh, 42, mds.modArchCover, false) end
-        if mds.modAerials then SetVehicleMod(vh, 43, mds.modAerials, false) end
-        if mds.modTrimB then SetVehicleMod(vh, 44, mds.modTrimB, false) end
-        if mds.modTank then SetVehicleMod(vh, 45, mds.modTank, false) end
-        if mds.modWindows then SetVehicleMod(vh, 46, mds.modWindows, false) end
-        if mds.modLivery then SetVehicleMod(vh, 48, mds.modLivery, false) SetVehicleLivery(vh, mds.modLivery) end
-    end
-end
 
 function GetPlate(vehicle)
     if vehicle == 0 then return end
@@ -1162,4 +428,28 @@ function GetClosestVehicle()
         end
     end
     return closestVehicle, closestDistance
+end
+
+function ShowHelpNotification(text)
+    BeginTextCommandDisplayHelp("STRING")
+    AddTextComponentSubstringPlayerName(text)
+    EndTextCommandDisplayHelp(0, false, false, -1)
+end
+
+function Draw3DText(x, y, z, text)
+    local onScreen, _x, _y = World3dToScreen2d(x, y, z)
+    if onScreen then
+        SetTextScale(0.35, 0.35)
+        SetTextFont(4)
+        SetTextProportional(1)
+        SetTextColour(255, 255, 255, 215)
+        SetTextDropShadow(0, 0, 0, 55)
+        SetTextEdge(0, 0, 0, 150)
+        SetTextDropShadow()
+        SetTextOutline()
+        SetTextEntry("STRING")
+        SetTextCentre(1)
+        AddTextComponentString(text)
+        DrawText(_x, _y)
+    end
 end

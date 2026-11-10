@@ -6,7 +6,10 @@ TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
 AddEventHandler('onResourceStart', function(resourceName)
 	if (GetCurrentResourceName() ~= resourceName) then return end
 	Wait(100)
-	MySQL.Async.execute('UPDATE owned_vehicles SET stored = 1 WHERE stored = 0', {})
+	MySQL.Async.execute('UPDATE owned_vehicles SET stored = 1 WHERE stored = 0', {}, function()
+		-- cars that are sitting in a parking meter are NOT in a garage: keep them "out"
+		MySQL.Async.execute('UPDATE owned_vehicles SET stored = 0 WHERE plate IN (SELECT plate FROM unique_parkmeter)', {})
+	end)
   end)
 
 ESX.RegisterServerCallback("Unique_Garage:checkRepairCost", function(source, cb, fee)

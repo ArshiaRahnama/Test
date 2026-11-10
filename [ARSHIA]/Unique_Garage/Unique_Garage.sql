@@ -27,3 +27,31 @@ UPDATE `owned_vehicles` SET `stored` = 1 WHERE `stored` IS NULL OR `stored` = ''
 -- Widening the display width to TINYINT(4) stops the driver from treating it as boolean.
 -- >>> THIS IS THE MOST IMPORTANT LINE IN THIS FILE. RUN IT. <<<
 ALTER TABLE `owned_vehicles` MODIFY COLUMN `stored` TINYINT(4) NOT NULL DEFAULT 1;
+
+-- =====================================================================
+--  Sunset-style garage additions (run once)
+-- =====================================================================
+ALTER TABLE `owned_vehicles` ADD COLUMN IF NOT EXISTS `location`       INT          NULL DEFAULT NULL;   -- index of the garage the car is parked in (per type)
+ALTER TABLE `owned_vehicles` ADD COLUMN IF NOT EXISTS `damages`        LONGTEXT     NULL DEFAULT NULL;   -- json: tyres / windows / doors
+ALTER TABLE `owned_vehicles` ADD COLUMN IF NOT EXISTS `fine`           INT          NOT NULL DEFAULT 0;  -- police fine that must be paid before release
+ALTER TABLE `owned_vehicles` ADD COLUMN IF NOT EXISTS `transfer_to`    INT          NULL DEFAULT NULL;   -- garage transfer target
+ALTER TABLE `owned_vehicles` ADD COLUMN IF NOT EXISTS `transfer_until` INT          NULL DEFAULT NULL;   -- unix time the transfer finishes
+
+CREATE TABLE IF NOT EXISTS `unique_parkmeter` (
+  `meter`      INT          NOT NULL,
+  `plate`      VARCHAR(12)  NOT NULL,
+  `owner`      VARCHAR(120) NOT NULL,
+  `props`      LONGTEXT     NOT NULL,
+  `damages`    LONGTEXT     NULL,
+  `has_key`    TINYINT(1)   NOT NULL DEFAULT 0,
+  `job`        VARCHAR(60)  NULL,
+  `created_at` INT          NOT NULL,
+  PRIMARY KEY (`meter`),
+  UNIQUE KEY `plate` (`plate`)
+);
+
+CREATE TABLE IF NOT EXISTS `unique_garage_bans` (
+  `identifier` VARCHAR(120) NOT NULL,
+  `reason`     VARCHAR(200) NOT NULL DEFAULT '',
+  PRIMARY KEY (`identifier`)
+);

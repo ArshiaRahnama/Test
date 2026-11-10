@@ -1,0 +1,14 @@
+{
+  "files": {
+    "main.css": "/ui/static/css/main.12aa1f4d.css",
+    "main.js": "/ui/static/js/main.0bb35c9a.js",
+    "static/media/ExoSoft-Bold.ttf": "/ui/static/media/ExoSoft-Bold.539106fdfd5b04ce87db.ttf",
+    "static/media/Proxima_Nova_Condensed_Bold_Italic.otf": "/ui/static/media/Proxima_Nova_Condensed_Bold_Italic.96656f5c636313e635d2.otf",
+    "static/media/Proxima_Nova_Condensed_Regular.otf": "/ui/static/media/Proxima_Nova_Condensed_Regular.36659b2ee9fd0cc9c66d.otf",
+    "index.html": "/ui/index.html"
+  },
+  "entrypoints": [
+    "static/css/main.12aa1f4d.css",
+    "static/js/main.0bb35c9a.js"
+  ]
+}

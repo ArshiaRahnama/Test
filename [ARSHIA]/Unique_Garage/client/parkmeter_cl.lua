@@ -1,476 +1,358 @@
-local vehsdamage = {}
-local vehsprop   = {}
+-- =====================================================================
+--  Unique_Garage  |  Sunset-style ParkMeter (client)
+--  * [E] on the blue ring: park (driver, slower than 10 km/h) / retrieve (on foot)
+--  * leave a car near a meter -> walk >5 m away -> auto parks after 15 s
+--  * parked car stays in the world as a frozen, semi-transparent vehicle
+--    that every nearby player sees (server broadcasts `ParkMeter:Sync`)
+--  * one vehicle per meter, anyone can take it, only the parker gets the key back
+-- =====================================================================
 
-local playerParkingStatus  = {}
-local ParkMeterBlips       = {}
-local PosCorrds            = {}
-local VehLocal             = {}
-local activeAutoParkTimers = {}
-local lastDriver           = nil
--- FIX: this is the debounce lock for the E-press bug (multiple vehicles on
--- multiple E presses). See notes below at IsControlJustReleased and inside
--- HandleParkingOrRetrieve for how it's used.
-local parkingBusy          = false
+local occupied  = {}     -- [key] = { plate, prop, damages }
+local previews  = {}     -- [key] = entity
+local creating  = {}     -- [key] = true while the local vehicle is being created
+local trunkZone = {}     -- [key] = ox_target zone id
+local lastUse   = {}
 
-function SimpleProgressBar(duration, text)
-    return lib.progressBar({
-        duration = duration,
-        label = text or "...",
-        useWhileDead = false,
-        canCancel = false,
-        disable = { move = true, car = true, combat = true, mouse = false },
-    })
+local COLOR_FREE = { r = 3,   g = 119, b = 252 }
+local COLOR_USED = { r = 255, g = 165, b = 0   }
+
+local function notify(kind, msg)
+    lib.notify({ title = 'Park Meter', description = msg, type = kind or 'inform', position = 'center-right' })
 end
 
-Citizen.CreateThread(function()
-    while ESX == nil do Wait(10) end
-    Wait(5)
-    local playerPed = PlayerPedId()
-    local coords    = GetEntityCoords(playerPed)
+local function cooldown(name, ms)
+    local t = GetGameTimer()
+    if lastUse[name] and t - lastUse[name] < ms then return false end
+    lastUse[name] = t
+    return true
+end
 
-    for k , v in pairs(Customize.ParkMeter) do
+local blocked = {}
+for _, m in ipairs(Customize.ParkMeterBlockedModels or {}) do blocked[m] = true end
 
-        local blip = AddBlipForCoord(v.xyz)
+-- ------------------------------------------------------------ blips
+CreateThread(function()
+    while not ESX do Wait(50) end
+    for k, v in ipairs(Customize.ParkMeter) do
+        local blip = AddBlipForCoord(v.coords.x, v.coords.y, v.coords.z)
         SetBlipSprite(blip, 267)
         SetBlipDisplay(blip, 5)
-        SetBlipScale(blip, 0.7)
+        SetBlipScale(blip, 0.3)
+        SetBlipColour(blip, 74)
         SetBlipAsShortRange(blip, true)
-
-
-        SetBlipColour(blip, 2)
-
-        BeginTextCommandSetBlipName("STRING")
+        BeginTextCommandSetBlipName('STRING')
         AddTextComponentString('Park meter')
         EndTextCommandSetBlipName(blip)
-
-
-        ParkMeterBlips[k] = blip
-        Citizen.Wait(10)
+        if k % 20 == 0 then Wait(10) end
     end
 end)
 
-Citizen.CreateThread(function()
-    while ESX == nil do Wait(10) end
+-- ------------------------------------------------------------ preview vehicles (local, frozen, 80% alpha)
+local function GetVehicleGroundCorners(vehicle)
+    local minDim, maxDim = GetModelDimensions(GetEntityModel(vehicle))
+    local offsets = {
+        vector3(minDim.x, minDim.y, 0.0), vector3(maxDim.x, minDim.y, 0.0),
+        vector3(maxDim.x, maxDim.y, 0.0), vector3(minDim.x, maxDim.y, 0.0),
+    }
+    local corners = {}
+    for _, o in ipairs(offsets) do
+        local w = GetOffsetFromEntityInWorldCoords(vehicle, o.x, o.y, o.z)
+        local found, gz = GetGroundZFor_3dCoord(w.x, w.y, w.z, false)
+        corners[#corners + 1] = found and vector3(w.x, w.y, gz) or w
+    end
+    return corners
+end
 
-    local padModel = GetHashKey('prop_para_target')
-    RequestModel(padModel)
-    local waited = 0
-    while not HasModelLoaded(padModel) and waited < 5000 do Wait(50) waited = waited + 50 end
-
-    for i, location in ipairs(Customize.ParkMeter) do
-        if HasModelLoaded(padModel) then
-            local pad = CreateObject(padModel, location.x, location.y, location.z - 0.98, false, false, false)
-            SetEntityHeading(pad, location.w)
-            FreezeEntityPosition(pad, true)
-            SetEntityAsMissionEntity(pad, true, true)
+local function removePreview(key)
+    local v = previews[key]
+    if v then
+        if DoesEntityExist(v) then
+            SetEntityAsMissionEntity(v, true, true)
+            DeleteVehicle(v)           -- NOT ESX.Game.DeleteVehicle: that would also drop the owner's key
         end
+        previews[key] = nil
     end
-end)
+    if trunkZone[key] then
+        exports.ox_target:removeZone(trunkZone[key])
+        trunkZone[key] = nil
+    end
+end
 
-Citizen.CreateThread(function()
-    while true do
-        local sleep = 500
-        local ped = PlayerPedId()
-        local pedCoords = GetEntityCoords(ped)
-
-        for i, location in ipairs(Customize.ParkMeter) do
-            local dist = #(pedCoords - vector3(location.x, location.y, location.z))
-            if dist <= 2.5 then
-                sleep = 0
-                ParkMeter_Draw3DText(location.x, location.y, location.z + 1.2, "~b~Parking Meter")
-                ShowHelpNotification("~INPUT_CONTEXT~ Park / Baziabi Mashin")
-
-                if IsControlJustReleased(0, 38) then
-                    -- FIX: pressing E again while a park/retrieve is still
-                    -- being processed used to fire HandleParkingOrRetrieve a
-                    -- second (or third...) time before the first one
-                    -- finished, spawning an extra decorative parked vehicle
-                    -- each time. Now a second press is simply ignored until
-                    -- the first one fully completes.
-                    if not parkingBusy then
-                        parkingBusy = true
-                        HandleParkingOrRetrieve(i)
-                    end
-                end
-            end
+local function createPreview(key)
+    local data = occupied[key]
+    local meter = Customize.ParkMeter[key]
+    if not data or not meter or previews[key] or creating[key] then return end
+    creating[key] = true
+    local plate = data.plate
+    ESX.Game.SpawnLocalVehicle(data.prop.model, meter.coords.xyz, meter.coords.w, function(vehicle)
+        creating[key] = nil
+        if not occupied[key] or occupied[key].plate ~= plate then
+            SetEntityAsMissionEntity(vehicle, true, true) DeleteVehicle(vehicle)
+            return
         end
+        ESX.Game.SetVehicleProperties(vehicle, data.prop)
+        SetVehicleNumberPlateText(vehicle, data.prop.plate or plate)
+        setVehicleDamages(vehicle, data.damages)
+        SetEntityAlpha(vehicle, 204, true)
+        SetVehicleEngineOn(vehicle, false, true, true)
+        SetVehicleDoorsLocked(vehicle, 2)
+        FreezeEntityPosition(vehicle, true)
+        SetEntityCollision(vehicle, false, true)
+        previews[key] = vehicle
 
-        Wait(sleep)
-    end
-end)
-
-Citizen.CreateThread(function()
-    while true do
-        local sleep = 1000
-        local ped = PlayerPedId()
-        local playerCoords = GetEntityCoords(ped)
-
-        for i, location in ipairs(Customize.ParkMeter) do
-            local distance = #(playerCoords - vector3(location.x, location.y, location.z))
-
-            if distance < 20.0 then
-                sleep = 5
-                local markerColor = {r = 0, g = 255, b = 0}
-                local blipColor = 2
-
-                if playerParkingStatus[i] then
-                    markerColor = {r = 255, g = 0, b = 0}
-                    blipColor = 1
-                end
-
-                PosCorrds = {x = location.x, y = location.y, z = location.z}
-
-                DrawMarker(36, location.x, location.y, location.z, 0.0, 0.0, 0.0, 0, 0.0, 0.0, 1.0, 1.0, 1.0, markerColor.r, markerColor.g, markerColor.b, 100, false, true, 2, false, false, false, false)
-                DrawMarker(6, location.x, location.y, location.z, 0.0, 0.0, 0.0, 0, 0.0, 0.0, 1.5, 1.5, 1.5, markerColor.r, markerColor.g, markerColor.b, 100, false, true, 2, false, false, false, false)
-
-                SetBlipColour(ParkMeterBlips[i], blipColor)
-            else
-                PosCorrds = {}
-            end
-        end
-
-        Citizen.Wait(sleep)
-    end
-end)
-
-function GetVehicleDamagesPM(vehicle)
-	local damages 	   = {['damaged_windows'] = {}, ['burst_tires'] = {}, ['broken_doors'] = {}, ['body_health'] = GetVehicleBodyHealth(vehicle), ['engine_health'] = GetVehicleEngineHealth(vehicle), ['fuel_health'] = GetVehicleFuelLevel(vehicle)}
-
-	for i = 0, GetVehicleNumberOfWheels(vehicle) do
-		if IsVehicleTyreBurst(vehicle, i, false) then table.insert(damages['burst_tires'], i) end
-	end
-	for i = 0, 7 do
-		if not IsVehicleWindowIntact(vehicle, i) then table.insert(damages['damaged_windows'], i) end
-	end
-	for i = 0, GetNumberOfVehicleDoors(vehicle) do
-		if IsVehicleDoorDamaged(vehicle, i) then table.insert(damages['broken_doors'], i) end
-	end
-
-	return damages
-end
-
-function setDamagesPM(car, damages)
-	if type(damages) == 'table' and next (damages) then
-		for i = 0, GetVehicleNumberOfWheels(car) do
-			if damages['burst_tires'] then
-				if damages['burst_tires'][i] then
-					SetVehicleTyreBurst(car, damages['burst_tires'][i], true, 1000.0)
-				end
-			end
-		end
-
-		for i = 0, 7 do
-			if damages['damaged_windows'] then
-				if damages['damaged_windows'][i] then
-					SmashVehicleWindow(car, damages['damaged_windows'][i])
-				end
-			end
-		end
-
-		for i = 0, GetNumberOfVehicleDoors(car) do
-			if damages['broken_doors'] then
-				if damages['broken_doors'][i] then
-					SetVehicleDoorBroken(car, damages['broken_doors'][i], true)
-				end
-			end
-		end
-
-		if damages['body_health'] then
-			SetVehicleBodyHealth(car, (tonumber(damages['body_health']) or 1000) + 0.0)
-		end
-		if damages['engine_health'] then
-			SetVehicleEngineHealth(car, (tonumber(damages['engine_health']) or 1000) + 0.0)
-		end
-		if damages['fuel_health'] then
-			SetVehicleFuelLevel(car, damages['fuel_health'])
-		end
-	end
-end
-
-function ShowFloatingHelpNotification(msg, coords)
-    AddTextEntry('floatingHelp', msg)
-    SetFloatingHelpTextWorldPosition(1, coords)
-    SetFloatingHelpTextStyle(1, 1, 2, -1, 3, 0)
-    BeginTextCommandDisplayHelp('floatingHelp')
-    EndTextCommandDisplayHelp(2, false, false, -1)
-end
-
-function HandleParkingOrRetrieve(markerIndex)
-    local ped = GetPlayerPed(-1)
-    local vehicle = GetVehiclePedIsIn(ped, false)
-    if IsPedInAnyVehicle(ped, false) and GetPedInVehicleSeat(vehicle, -1) == ped then
-
-        vehsprop = ESX.Game.GetVehicleProperties(vehicle)
-        vehsdamage = GetVehicleDamagesPM(vehicle)
-        ESX.TriggerServerCallback('temporaryParking:getVehicleDatas', function(Chek)
-            if not Chek then
-                lib.notify({title = 'Parking', description = 'Error!', type = 'error', position = 'center-right'})
-                parkingBusy = false -- FIX: release the lock on every exit path
-                return
-            end
-
-            if playerParkingStatus[markerIndex] then
-                lib.notify({title = 'Parking', description = 'Shoma Dar In Parking Mashin Darid!', type = 'error', position = 'center-right'})
-                parkingBusy = false -- FIX
-                return
-            end
-
-            local Rest = SimpleProgressBar(3000, "Parking...")
-
-            if Rest then
-                RemoveOwnCarBlip(vehicle)
-                ESX.Game.DeleteVehicle(vehicle)
-                TriggerServerEvent('temporaryParking:storeVehicle', vehsprop, markerIndex)
-                PlaySoundFrontend(-1, "CHECKPOINT_NORMAL", "HUD_MINI_GAME_SOUNDSET", true)
-                lib.notify({title = 'Parking', description = 'Mashin Shoma Park Shod.', type = 'success', position = 'center-right'})
-                playerParkingStatus[markerIndex] = true
-
-                local coords = vector3(Customize.ParkMeter[markerIndex].x, Customize.ParkMeter[markerIndex].y, Customize.ParkMeter[markerIndex].z)
-                local heading = Customize.ParkMeter[markerIndex].w
-
-                -- FIX (the actual "multiple cars" bug): VehLocal[markerIndex]
-                -- only ever tracks the LAST decorative vehicle spawned at
-                -- this spot. If a decorative vehicle was already sitting
-                -- here (stale/leftover from a previous store that never got
-                -- cleaned up), it just got overwritten below and forgotten
-                -- forever -- it stayed in the world, fully visible, with
-                -- nothing left pointing to it to delete later. Deleting any
-                -- existing one first closes that leak.
-                if VehLocal[markerIndex] and DoesEntityExist(VehLocal[markerIndex]) then
-                    ESX.Game.DeleteVehicle(VehLocal[markerIndex])
-                    VehLocal[markerIndex] = nil
-                end
-
-                ESX.Game.SpawnLocalVehicle(vehsprop.model, coords, heading, function(vehicle)
-                    ESX.Game.SetVehicleProperties(vehicle, vehsprop)
-                    SetVehicleNumberPlateText(vehicle, vehsprop.plate)
-                    SetEntityAlpha(vehicle, 150, false)
-                    VehLocal[markerIndex] = vehicle
-                    setDamagesPM(vehicle, vehsdamage)
-                    SetEntityCollision(vehicle, true, true)
-                    SetEntityNoCollisionEntity(vehicle, PlayerPedId(), false)
-                    SetVehicleCanBeVisiblyDamaged(vehicle, false)
-                    SetVehicleUndriveable(vehicle, false)
-                    FreezeEntityPosition(vehicle, true)
-                    SetVehicleDoorsLocked(vehicle, 0)
-                    Wait(500)
-                    SetVehicleEngineHealth(vehicle, 1000.0)
-                    SetVehicleBodyHealth(vehicle, -10000.0)
-                    SetVehiclePetrolTankHealth(vehicle, -10000.0)
-                    SetDisableVehiclePetrolTankDamage(vehicle, true)
-                    SetDisableVehiclePetrolTankFires(vehicle, true)
-                    parkingBusy = false -- FIX
-                end)
-            else
-                parkingBusy = false -- FIX: progress bar got cancelled/interrupted
-            end
-        end, vehsprop.plate)
-    else
-        TriggerServerEvent('temporaryParking:retrieveVehicle', markerIndex)
-        parkingBusy = false -- FIX: retrieve is already duplicate-safe server-side
-                             -- (parkedVehicles[markerIndex][identifier] is cleared
-                             -- the instant the server processes the request), so
-                             -- the lock only needs to guard the store/parking path.
-    end
-end
-
-RegisterNetEvent('temporaryParking:spawnVehicle')
-AddEventHandler('temporaryParking:spawnVehicle', function(vehsprop, markerIndex)
-    local ped = PlayerPedId()
-    local parkingLocation = Customize.ParkMeter[markerIndex]
-    local coords = vector3(parkingLocation.x, parkingLocation.y, parkingLocation.z)
-    local heading = parkingLocation.w
-
-    local Rest = SimpleProgressBar(3000, "Retrieving...")
-
-    if Rest then
-        local Chekorgan = string.sub(vehsprop.plate, 1, 2)
-        RemoveOwnCarBlip(VehLocal[markerIndex])
-        ESX.Game.DeleteVehicle(VehLocal[markerIndex])
-        VehLocal[markerIndex] = nil -- FIX: was left pointing at a deleted
-                                     -- entity handle; nil it so the next
-                                     -- park cycle's existence check works.
-        Wait(50)
-        if Chekorgan == "PD" or Chekorgan == "MD" or Chekorgan == 'MC' or Chekorgan == "SH" or Chekorgan == "FB" or Chekorgan == "TX" or Chekorgan == "WZ" then
-            ESX.Game.SpawnVehicleJobs(vehsprop.model, coords, heading, function(vehicle)
-                ESX.Game.SetVehicleProperties(vehicle, vehsprop)
-                setDamagesPM(vehicle, vehsdamage)
-                TaskWarpPedIntoVehicle(PlayerPedId(), vehicle, -1)
-                AttachOwnCarBlip(vehicle)
-                -- FIX: retrieving a vehicle from the parkmeter never gave
-                -- back a vehicle_keys item - this event had no
-                -- CarLock:ToggleKey call at all. Same pattern as every
-                -- other spawn point in the codebase: warp in first, then
-                -- ask the server for the key (server independently
-                -- verifies the player is actually sitting in this exact
-                -- plate before granting anything).
-                Wait(100)
-                TriggerServerEvent('CarLock:ToggleKey', true, vehsprop.plate)
-            end)
-        else
-            ESX.Game.SpawnVehicle(vehsprop.model, coords, heading, function(vehicle)
-                ESX.Game.SetVehicleProperties(vehicle, vehsprop)
-                setDamagesPM(vehicle, vehsdamage)
-                TaskWarpPedIntoVehicle(PlayerPedId(), vehicle, -1)
-                AttachOwnCarBlip(vehicle)
-                -- FIX: see comment above (job-vehicle branch) - same
-                -- missing key grant, same fix, for the normal/personal
-                -- vehicle branch.
-                Wait(100)
-                TriggerServerEvent('CarLock:ToggleKey', true, vehsprop.plate)
+        if Customize.OpenTrunk then
+            CreateThread(function()
+                trunkZone[key] = exports.ox_target:addPolyZone({
+                    points = GetVehicleGroundCorners(vehicle), thickness = 8, debug = false,
+                    options = { {
+                        label = '🚙باز کردن صندوق عقب', icon = 'fa-solid fa-car-rear', distance = 3.0,
+                        onSelect = function() Customize.OpenTrunk(vehicle, plate) end,
+                    } }
+                })
             end)
         end
-        PlaySoundFrontend(-1, "CHECKPOINT_NORMAL", "HUD_MINI_GAME_SOUNDSET", true)
-        lib.notify({title = 'Parking', description = 'ماشین شما اسپاون شد', type = 'success', position = 'center-right'})
-        playerParkingStatus[markerIndex] = false
+    end)
+end
+
+function DeleteParkMeterPreview(plate)
+    for key, d in pairs(occupied) do
+        if d.plate == plate then occupied[key] = nil removePreview(key) end
     end
+end
+
+RegisterNetEvent('ParkMeter:Sync', function(key, data)
+    removePreview(key)
+    occupied[key] = data
+    creating[key] = nil
 end)
 
-Citizen.CreateThread(function()
+-- stream previews in / out by distance and keep them non-solid
+CreateThread(function()
+    while not ESX do Wait(50) end
+    Wait(2500)
+    ESX.TriggerServerCallback('ParkMeter:GetAll', function(all)
+        for key, d in pairs(all or {}) do occupied[tonumber(key)] = d end
+    end)
     while true do
-        Wait(1000)
-        local ped = PlayerPedId()
-        local vehicle = GetVehiclePedIsIn(ped, false)
-
-        if vehicle ~= 0 and GetPedInVehicleSeat(vehicle, -1) == ped then
-            lastDriver = vehicle
-        end
-    end
-end)
-
-Citizen.CreateThread(function()
-    while true do
-        Wait(500)
-        local ped = PlayerPedId()
-        local isInVehicle = IsPedInAnyVehicle(ped, false)
-
-        if not isInVehicle and lastDriver ~= nil then
-            local veh = lastDriver
-            lastDriver = nil
-
-            local plate = ESX.Math.Trim(GetVehicleNumberPlateText(veh))
-            local coords = GetEntityCoords(veh)
-
-            for i, location in ipairs(Customize.ParkMeter) do
-                local dist = #(coords - vector3(location.x, location.y, location.z))
-                if dist < 10.0 then
-                    ESX.TriggerServerCallback('CarLock:haskey', function(hasKey)
-                        if hasKey then
-                            if not activeAutoParkTimers[plate] then
-                                StartParkCountdown(veh, plate, i)
-                            end
-                        end
-                    end, plate)
-                    break
+        local pc = GetEntityCoords(PlayerPedId())
+        for key, d in pairs(occupied) do
+            local m = Customize.ParkMeter[key]
+            if m then
+                local dist = #(pc - m.coords.xyz)
+                if dist < Customize.ParkMeterStreamIn and not previews[key] then
+                    createPreview(key)
+                elseif dist > Customize.ParkMeterStreamOut and previews[key] then
+                    removePreview(key)
+                elseif previews[key] and DoesEntityExist(previews[key]) then
+                    SetEntityCollision(previews[key], false, true)
                 end
             end
         end
-
-        Wait(1000)
+        Wait(1500)
     end
 end)
 
-function StartParkCountdown(vehicle, plate, zoneIndex)
-    local duration = 15
-    local Sonie = 15
-    local DrawTex = true
-    if playerParkingStatus[zoneIndex] then return end
+AddEventHandler('onResourceStop', function(res)
+    if res ~= GetCurrentResourceName() then return end
+    for key in pairs(previews) do removePreview(key) end
+end)
 
-    activeAutoParkTimers[plate] = duration
-    ESX.TriggerServerCallback('temporaryParking:getVehicleDatas', function(bucket)
+-- ------------------------------------------------------------ park
+local function shuffled(list)
+    local t = {}
+    for _, c in ipairs(list) do t[#t + 1] = c end
+    for i = #t, 2, -1 do
+        local j = math.random(1, i)
+        t[i], t[j] = t[j], t[i]
+    end
+    return t
+end
 
-        if not bucket then activeAutoParkTimers[plate] = nil return end
-
-        local playerPed = PlayerPedId()
-        Citizen.CreateThread(function()
-            while duration ~= 0  and DoesEntityExist(vehicle) do
-                duration = duration - 1
-
-                local playerPed = PlayerPedId()
-                local playerCoords = GetEntityCoords(playerPed)
-                local vehCoords = GetEntityCoords(vehicle)
-                local dist = #(playerCoords - vehCoords)
-
-                if GetPedInVehicleSeat(vehicle, -1) == PlayerPedId() then
-                    activeAutoParkTimers[plate] = nil
-                    DrawTex = false
-                    return
-                end
-
-                if dist < 3.0 then
-                    duration = duration + 1
-                else
-                    Sonie = Sonie - 1
-                end
-
-                Citizen.CreateThread(function()
-                    while DrawTex do
-                        ParkMeter_Draw3DText(vehCoords.x, vehCoords.y, vehCoords.z + 1.5, "~w~Park in : ~r~" .. Sonie .. " s")
-                        Wait(1)
+function parkVehicleMeter(key, vehicle, silent)
+    if not DoesEntityExist(vehicle) or not NetworkGetEntityIsNetworked(vehicle) then return end
+    local plate = GetPlate(vehicle)
+    if blocked[GetEntityModel(vehicle)] then
+        if not silent then notify('error', 'شما نمی‌توانید این وسیله نقلیه را در پارک متر پارک کنید!') end
+        return
+    end
+    ESX.TriggerServerCallback('ParkMeter:CanPark', function(allowed)
+        if not allowed then
+            if not silent then notify('error', 'Shoma nemitavanid in mashin ra park konid!') end
+            return
+        end
+        ESX.TriggerServerCallback('ParkMeter:CheckUsed', function(used)
+            if used then
+                if not silent then notify('error', 'Shoma yek mashin dar in garage gozashtid!') end
+                return
+            end
+            if not silent then payFixVehicle(vehicle) end
+            if not DoesEntityExist(vehicle) then return end
+            local props   = ESX.Game.GetVehicleProperties(vehicle)
+            local damages = json.encode(getVehicleDamages(vehicle))
+            ESX.TriggerServerCallback('CarLock:haskey', function(hasKey)
+                ESX.TriggerServerCallback('ParkMeter:Place', function(ok, reason)
+                    if not ok then
+                        notify('error', reason or 'In parkmeter por ast')
+                        return
                     end
-                end)
-
-                Wait(1000)
-            end
-            DrawTex = false
-
-            if DoesEntityExist(vehicle) and activeAutoParkTimers[plate] then
-                vehsprop = ESX.Game.GetVehicleProperties(vehicle)
-                vehsdamage = GetVehicleDamagesPM(vehicle)
-
-                ESX.Game.DeleteVehicle(vehicle)
-                RemoveOwnCarBlip(vehicle)
-                TriggerServerEvent('temporaryParking:storeVehicle', vehsprop, zoneIndex)
-                playerParkingStatus[zoneIndex] = true
-                local coords = vector3(Customize.ParkMeter[zoneIndex].x, Customize.ParkMeter[zoneIndex].y, Customize.ParkMeter[zoneIndex].z)
-                local heading = Customize.ParkMeter[zoneIndex].w
-
-                -- FIX: same ghost-vehicle leak as HandleParkingOrRetrieve --
-                -- clear any decorative vehicle already sitting at this spot
-                -- before spawning a new one, so it can't be orphaned.
-                if VehLocal[zoneIndex] and DoesEntityExist(VehLocal[zoneIndex]) then
-                    ESX.Game.DeleteVehicle(VehLocal[zoneIndex])
-                    VehLocal[zoneIndex] = nil
-                end
-
-                ESX.Game.SpawnLocalVehicle(vehsprop.model, coords, heading, function(vehicle)
-                    ESX.Game.SetVehicleProperties(vehicle, vehsprop)
-                    SetVehicleNumberPlateText(vehicle, vehsprop.plate)
-                    SetEntityAlpha(vehicle, 150, false)
-                    VehLocal[zoneIndex] = vehicle
-                    setDamagesPM(vehicle, vehsdamage)
-                    SetEntityCollision(vehicle, true, true)
-                    SetEntityNoCollisionEntity(vehicle, PlayerPedId(), false)
-                    SetVehicleCanBeVisiblyDamaged(vehicle, false)
-                    SetVehicleUndriveable(vehicle, false)
-                    FreezeEntityPosition(vehicle, true)
-                    SetVehicleDoorsLocked(vehicle, 0)
-                    Wait(500)
-                    SetVehicleEngineHealth(vehicle, 1000.0)
-                    SetVehicleBodyHealth(vehicle, -10000.0)
-                    SetVehiclePetrolTankHealth(vehicle, -10000.0)
-                    SetDisableVehiclePetrolTankDamage(vehicle, true)
-                    SetDisableVehiclePetrolTankFires(vehicle, true)
-                end)
-
-                lib.notify({title = 'Parking', description = 'ماشین شما به صورت خودکار پارک شد.', type = 'success', position = 'center-right'})
-            end
-
-            activeAutoParkTimers[plate] = nil
-
-        end)
+                    TriggerServerEvent('garage:setVehicleState', plate, false, damages)
+                    RemoveOwnCarBlip(vehicle)
+                    for i = -1, 5 do
+                        local ped = GetPedInVehicleSeat(vehicle, i)
+                        if ped ~= 0 then TaskLeaveVehicle(ped, vehicle, 16) end
+                    end
+                    Wait(300)
+                    ESX.Game.DeleteVehicle(vehicle)
+                    if not silent then notify('success', 'Mashin ba movafaghiat park shod') end
+                end, key, plate, props, damages, hasKey and true or false, nil)
+            end, plate)
+        end, key)
     end, plate)
 end
 
-function ParkMeter_Draw3DText(x, y, z, text)
-    SetTextScale(0.50, 0.50)
-    SetTextFont(4)
-    SetTextProportional(1)
-    SetTextColour(255, 255, 255, 215)
-    SetTextEntry("STRING")
-    SetTextCentre(true)
-    AddTextComponentString(text)
-    SetDrawOrigin(x, y, z, 0)
-    DrawText(0.0, 0.0)
-    ClearDrawOrigin()
+-- ------------------------------------------------------------ retrieve
+local function retrieve(key, meter)
+    if IsEntityDead(PlayerPedId()) then return end
+    ESX.TriggerServerCallback('ParkMeter:CheckUsed', function(used)
+        if not used then
+            notify('error', 'Shoma mashini dar in garage nazashtid!')
+            return
+        end
+        local done = lib.progressCircle({ duration = math.random(1000, 4000), position = 'bottom', canCancel = false,
+            disable = { move = true, car = true, combat = true } })
+        if not done then return end
+
+        local spawnCoord
+        if meter.outputCoords and #meter.outputCoords > 0 then
+            for _, c in ipairs(shuffled(meter.outputCoords)) do
+                if ESX.Game.IsSpawnPointClear(c.xyz, 2) then spawnCoord = c break end
+            end
+        elseif ESX.Game.IsSpawnPointClear(meter.coords.xyz, 2) then
+            spawnCoord = meter.coords
+        end
+        if not spawnCoord then
+            notify('error', 'In makan jahat spawn mashin por ast!')
+            return
+        end
+        Wait(1000)
+        ESX.TriggerServerCallback('ParkMeter:Take', function(res)
+            if not res then
+                notify('error', 'Mashin dige inja nist!')
+                return
+            end
+            removePreview(key)
+            occupied[key] = nil
+            Wait(300)
+            HZSpawnVehicle(res.prop.model, function(vehicle)
+                ESX.Game.SetVehicleProperties(vehicle, res.prop)
+                SetVehicleNumberPlateText(vehicle, res.prop.plate or res.plate)
+                SetVehRadioStation(vehicle, 'OFF')
+                setVehicleDamages(vehicle, res.damages)
+                SetEntityAsMissionEntity(vehicle, true, true)
+                if #(GetEntityCoords(PlayerPedId()) - GetEntityCoords(vehicle)) > 120.0 then
+                    DeleteEntity(vehicle)
+                    notify('warning', 'Fasele shoma az mashin ziad ast, lotfan nazdik bashid')
+                    -- put it back so it is not lost
+                    TriggerServerEvent('ParkMeter:Set', key, res.plate, res.prop, res.damages, nil, res.doesHaveKey, res.job)
+                    return
+                end
+                ClearPedTasksImmediately(PlayerPedId())
+                TaskWarpPedIntoVehicle(PlayerPedId(), vehicle, -1)
+                local t = GetGameTimer() + 3000
+                while GetVehiclePedIsIn(PlayerPedId()) ~= vehicle and GetGameTimer() < t do Wait(0) end
+                AttachOwnCarBlip(vehicle)
+                Wait(100)
+                if res.giveKey then
+                    TriggerServerEvent('CarLock:ToggleKey', true, res.plate)
+                end
+            end, spawnCoord, true)
+        end, key)
+    end, key)
+end
+
+-- ------------------------------------------------------------ E interaction + marker
+CreateThread(function()
+    while not ESX do Wait(50) end
+    for key, meter in ipairs(Customize.ParkMeter) do
+        lib.points.new({
+            coords = meter.coords.xyz,
+            distance = 10.0,
+            nearby = function(self)
+                local c = occupied[key] and COLOR_USED or COLOR_FREE
+                DrawMarker(9, meter.coords.x, meter.coords.y, meter.coords.z + 0.3, 0.0, 0.0, 0.0, 90.0, 0.0, 0.0,
+                    1.5, 1.5, 1.5, c.r, c.g, c.b, 255, false, true, 2, false, nil, nil, false)
+                if self.currentDistance <= 4.0 then
+                    ShowHelpNotification('Dokme ~INPUT_CONTEXT~ jahat estefade az park')
+                end
+                if self.currentDistance <= 1.5 and IsControlJustReleased(0, 38) then
+                    if not cooldown('parkMeterGlobal', 600) then return end
+                    CreateThread(function() OnMeterPress(key, meter) end)
+                end
+            end,
+        })
+    end
+end)
+
+function OnMeterPress(key, meter)
+    local ped = PlayerPedId()
+    if IsEntityDead(ped) then return end
+    local vehicle = GetVehiclePedIsIn(ped, false)
+    if vehicle ~= 0 then
+        if GetEntitySpeed(vehicle) * 3.6 > Customize.ParkMeterMaxSpeed then
+            return notify('warning', 'برای پارک ابتدا ماشین را متوقف کنید')
+        end
+        if GetPedInVehicleSeat(vehicle, -1) ~= ped then
+            return notify('error', 'Shoma ranande mashin nistid!')
+        end
+        if not cooldown('parkMeter', 6000) then return notify('error', 'Spam nakonid') end
+        local plate = GetPlate(vehicle)
+        ESX.TriggerServerCallback('ParkMeter:CanPark', function(allowed)
+            if not allowed then return notify('error', 'Shoma nemitavanid in mashin ra park konid!') end
+            local done = lib.progressCircle({ duration = 3000, position = 'bottom', canCancel = false,
+                disable = { move = true, car = true, combat = true } })
+            if done then parkVehicleMeter(key, vehicle, false) end
+        end, plate)
+    else
+        if not cooldown('parkMeter', 6000) then return notify('error', 'Spam nakonid') end
+        local busy = IsPedRagdoll(ped) or IsEntityAttached(ped)
+        if busy then return notify('error', 'Dar in halat nemitavanid az parking estefade konid') end
+        retrieve(key, meter)
+    end
+end
+
+-- ------------------------------------------------------------ auto park after leaving the car near a meter
+function OnLeaveVehicleNearMeter(vehicle)
+    local coords = GetEntityCoords(PlayerPedId())
+    local nearest, nearestDist
+    for k, v in ipairs(Customize.ParkMeter) do
+        local d = #(coords - v.coords.xyz)
+        if v.range and d < v.range and (not nearestDist or d < nearestDist) then
+            nearest, nearestDist = k, d
+        end
+    end
+    if not nearest then return end
+    ESX.TriggerServerCallback('ParkMeter:CheckUsed', function(used)
+        if used then return end
+        CreateThread(function()
+            local active, timer = true, Customize.ParkMeterAutoParkDelay
+            CreateThread(function()
+                while active do
+                    Wait(1000)
+                    if not DoesEntityExist(vehicle) or GetPedInVehicleSeat(vehicle, -1) ~= 0 then active = false break end
+                    if #(GetEntityCoords(PlayerPedId()) - GetEntityCoords(vehicle)) > 5.0 then
+                        timer = timer - 1
+                        if timer <= 0 then
+                            active = false
+                            parkVehicleMeter(nearest, vehicle, true)
+                        end
+                    end
+                end
+            end)
+            while DoesEntityExist(vehicle) and not GetIsVehicleEngineRunning(vehicle) and active do
+                ESX.Game.Utils.DrawText3D(GetEntityCoords(vehicle) + vec(0, 0, 1), tostring(timer), 3)
+                Wait(0)
+            end
+            active = false
+        end)
+    end, nearest)
 end

@@ -4,13 +4,18 @@ lua54 'yes'
 
 game "gta5"
 
+ox_libs {
+  'zones',
+}
+
 shared_script 'Customize.lua'
 shared_script '@ox_lib/init.lua'
 
-ui_page 'resources/build/index.html'
+ui_page 'ui/index.html'
 
 client_scripts {
   "client.lua",
+  "client/sunset_garage_cl.lua",
   "client/parkmeter_cl.lua",
   "client/carlock_cl.lua",
   "client/lockpick_cl.lua",
@@ -21,6 +26,7 @@ client_scripts {
 server_scripts {
   '@oxmysql/lib/MySQL.lua',
   "server.lua",
+  "server/sunset_garage_sv.lua",
   "server/parkmeter_sv.lua",
   "server/carlock_sv.lua",
   "server/lockpick_sv.lua",
@@ -30,8 +36,7 @@ server_scripts {
 }
 
 files {
-  'resources/build/index.html',
-  'resources/build/**/*',
+  'ui/**/*',
   'resources/images/*.png',
 }
 
@@ -39,4 +44,3 @@ dependencies {
   'ox_lib',
   'ox_target'
 }
-
