@@ -1,12 +1,12 @@
 :root {
-  --orange: #ff8c1a;
-  --orange2: #ffc56d;
+  --orange: #7c3aed;
+  --orange2: #a78bfa;
   --steel: #9aa4b8;
   --green: #1fd34b;
   --red: #e2554e;
   --text: #e9e9ee;
   --muted: #9a9a9a;
-  --font-fa: 'Yekan', 'Tahoma', sans-serif;
+  --font-fa: 'Vazirmatn', 'Yekan', 'Tahoma', sans-serif;
 }
 
 * {
@@ -30,7 +30,7 @@ html, body {
 
 ::-webkit-scrollbar { width: 7px; }
 ::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.06); }
-::-webkit-scrollbar-thumb { background: rgba(255, 140, 26, 0.65); border-radius: 10px; }
+::-webkit-scrollbar-thumb { background: rgba(124, 58, 237, 0.65); border-radius: 10px; }
 
 .container {
   display: none;
@@ -88,7 +88,7 @@ html, body {
   position: absolute;
   left: 0; right: 0; bottom: -1px;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255, 140, 26, 0.35), transparent);
+  background: linear-gradient(90deg, transparent, rgba(124, 58, 237, 0.35), transparent);
 }
 
 .headerName, .headerBadges {
@@ -120,9 +120,9 @@ html, body {
   flex-shrink: 0;
   border-radius: 999px;
   padding: 3px;
-  border: 1px solid rgba(255, 140, 26, 0.55);
-  background: rgba(255, 140, 26, 0.08);
-  box-shadow: 0 0 0 4px rgba(255, 140, 26, 0.06), 0 4px 14px rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(124, 58, 237, 0.55);
+  background: rgba(124, 58, 237, 0.08);
+  box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.06), 0 4px 14px rgba(0, 0, 0, 0.35);
   transition: box-shadow 0.2s ease;
 }
 
@@ -155,7 +155,7 @@ html, body {
   text-overflow: ellipsis;
   white-space: nowrap;
   max-width: 220px;
-  text-shadow: 0 1px 8px rgba(255, 140, 26, 0.15);
+  text-shadow: 0 1px 8px rgba(124, 58, 237, 0.15);
 }
 
 .memberSince {
@@ -267,7 +267,7 @@ html, body {
 .lvBox {
   width: 220px;
   text-align: center;
-  border: 1px solid rgba(255, 140, 26, 0.5);
+  border: 1px solid rgba(124, 58, 237, 0.5);
   background: rgba(0, 0, 0, 0.4);
   border-radius: 10px;
   padding: 10px 18px 12px;
@@ -394,15 +394,15 @@ html, body {
 .rightBox .badgeTile:nth-child(1) .badgeTitle::before { background: #4fa8ff; }
 
 .rightBox .badgeTile:nth-child(2) {
-  border-color: rgba(255, 140, 26, 0.28);
+  border-color: rgba(124, 58, 237, 0.28);
 }
 .rightBox .badgeTile:nth-child(2):hover {
-  border-color: rgba(255, 140, 26, 0.5);
+  border-color: rgba(124, 58, 237, 0.5);
 }
 .rightBox .badgeTile:nth-child(2) .badgeIcon {
-  background-image: linear-gradient(160deg, rgba(255, 140, 26, 0.22), rgba(255, 140, 26, 0.06));
+  background-image: linear-gradient(160deg, rgba(124, 58, 237, 0.22), rgba(124, 58, 237, 0.06));
   color: var(--orange2);
-  box-shadow: inset 0 0 0 1px rgba(255, 140, 26, 0.3);
+  box-shadow: inset 0 0 0 1px rgba(124, 58, 237, 0.3);
 }
 .rightBox .badgeTile:nth-child(2) .badgeTitle::before { background: var(--orange2); }
 
@@ -517,7 +517,7 @@ html, body {
 }
 
 .tab:hover { color: #d8d8dd; background: rgba(255, 255, 255, 0.03); }
-.tab.active { color: #fff; background: linear-gradient(180deg, rgba(255, 140, 26, 0.1), transparent); }
+.tab.active { color: #fff; background: linear-gradient(180deg, rgba(124, 58, 237, 0.1), transparent); }
 .tab.active i { color: var(--orange); }
 .tab.active::after {
   content: '';

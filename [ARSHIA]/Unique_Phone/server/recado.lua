@@ -435,7 +435,7 @@ function L25_1()
     L5_3[1] = L6_3
     L5_3[2] = L7_3
     L2_3, L3_3 = L2_3(L3_3, L4_3, L5_3)
-    L4_3 = L2_3 or L4_3
+    L4_3 = L2_3
     if L2_3 then
       L4_3 = tonumber
       L5_3 = L3_3
@@ -6598,7 +6598,7 @@ SELECT p.message_id, p.pinned_by, p.created AS pinned_at, m.sender, m.receiver, 
     L17_2 = tonumber
     L18_2 = L15_2.expires_at
     L17_2 = L17_2(L18_2)
-    L18_2 = L16_2 or L18_2
+    L18_2 = L16_2
     if L16_2 then
       L18_2 = L15_2.deleted_all
       L18_2 = nil == L18_2 and (not L17_2 or not (L7_2 >= L17_2)) and (not L8_2 or not (L8_2 >= L16_2))

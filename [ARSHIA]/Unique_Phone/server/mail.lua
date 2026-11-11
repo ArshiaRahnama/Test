@@ -1671,7 +1671,7 @@ function L32_1(A0_2, A1_2)
   L7_2 = L21_1
   L8_2 = L6_2.attachments
   L7_2 = L7_2(L8_2)
-  L8_2 = L7_2 or L8_2
+  L8_2 = L7_2
   if L7_2 then
     L8_2 = L7_2[L4_2]
   end
@@ -1960,7 +1960,7 @@ function L31_1(A0_2)
   L7_2 = L3_2
   L6_2[1] = L7_2
   L4_2 = L4_2(L5_2, L6_2)
-  L5_2 = L4_2 or L5_2
+  L5_2 = L4_2
   if L4_2 then
     L5_2 = L4_2.citizenid
   end

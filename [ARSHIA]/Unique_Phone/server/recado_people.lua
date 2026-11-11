@@ -786,7 +786,7 @@ function L48_1(A0_2)
     L10_2 = L1_2[L9_2]
     if not L10_2 then
       L10_2 = L3_2[L9_2]
-      L11_2 = L10_2 or L11_2
+      L11_2 = L10_2
       if L10_2 then
         L11_2 = GetCid
         L12_2 = L10_2

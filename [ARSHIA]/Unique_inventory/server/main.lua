@@ -398,3 +398,13 @@ RegisterNetEvent('core:giveItem', function(target, itemType, name, count, serial
     TriggerClientEvent('esx:updateInventory', src)
     TriggerClientEvent('esx:updateInventory', target)
 end)
+
+
+-- --------------------------------------------------------------------------
+-- shared helpers for server/second.lua (stash / trunk) and the later modules
+-- --------------------------------------------------------------------------
+SUN = {
+    player = player, notify = notify, limited = limited, validCount = validCount,
+    findWeapon = findWeapon, forgetSerial = forgetSerial, isWeaponName = isWeaponName,
+    loadSlots = loadSlots, markDirty = markDirty,
+}

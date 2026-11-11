@@ -1207,7 +1207,7 @@ function L16_1(A0_2, A1_2, ...)
   L2_2 = Integration
   L3_2 = A0_2
   L2_2, L3_2 = L2_2(L3_2)
-  L4_2 = L2_2 or L4_2
+  L4_2 = L2_2
   if L2_2 then
     L4_2 = L2_2[A1_2]
   end
@@ -1253,7 +1253,7 @@ function L16_1(A0_2, A1_2, ...)
   end
   L5_2 = L0_1.builtin
   L5_2 = L5_2[A0_2]
-  L6_2 = L5_2 or L6_2
+  L6_2 = L5_2
   if L5_2 then
     L6_2 = L5_2[A1_2]
   end
@@ -1274,7 +1274,7 @@ function L16_1(A0_2, A1_2, ...)
   L2_2 = Integration
   L3_2 = A0_2
   L2_2, L3_2 = L2_2(L3_2)
-  L4_2 = L2_2 or L4_2
+  L4_2 = L2_2
   if L2_2 then
     L4_2 = L2_2[A1_2]
   end

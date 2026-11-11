@@ -32,7 +32,7 @@ end
 
 local function vehicleTypeOf(vehicle, ped)
     ped = ped or PlayerPedId()
-    if IsThisModelABoat(GetEntityModel(vehicle)) or IsThisModelASubmarine(GetEntityModel(vehicle)) then return 'boat' end
+    if IsThisModelABoat(GetEntityModel(vehicle)) or IsThisModelASubmersible(GetEntityModel(vehicle)) then return 'boat' end
     if IsThisModelAPlane(GetEntityModel(vehicle)) then return 'aircraft' end
     if IsThisModelAHeli(GetEntityModel(vehicle)) then return 'heli' end
     return 'car'
@@ -229,7 +229,7 @@ function openSpawnMenu(kind, zone)
         SendNUIMessage({ action = 'setOpen', data = {
             setVeh = list, setName = Customize.Zones[zone.k].label2 or 'Garage', inGarage = inGarage, Price = 0,
             allVehicleCount = #GetAllVehicleModels(), ownedVehicleCount = #list, ownedVehicleCountUniq = uniqCount } })
-    end, zone.type)
+    end, zone.type, zone.index)
 end
 exports('openSpawnMenu', openSpawnMenu)
 
@@ -424,10 +424,11 @@ end)
 local transferPlate
 RegisterNUICallback('backVehicle', function(data, cb)
     cb('ok')
-    local row = data and data.data
-    if not row or (MenuContext and MenuContext.kind ~= 'self') then return end
+    -- the Sunset UI posts the vehicle row itself (not wrapped in .data)
+    local row = data and (data.plate and data or data.data)
+    if not row or not row.plate or (MenuContext and MenuContext.kind ~= 'self') then return end
     closeMenu()
-    SetNuiFocus(false, false)
+    cleanupMenu()
     local plate = row.plate
     local alert = lib.alertDialog({ header = 'Enteghal Mashin', content = 'Aya mayel be enteghal mashin in be in garage hastid?', centered = true, cancel = true })
     if alert ~= 'confirm' then return end

@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="styles/style.css" />
   <link rel="stylesheet" href="styles/quest.css" />
   <link rel="stylesheet" href="styles/skill.css" />
+  <link rel="stylesheet" href="styles/achievements.css" />
   <link rel="stylesheet" href="styles/duty.css" />
   <link rel="stylesheet" href="styles/record.css" />
   <link rel="stylesheet" href="styles/event.css" />
@@ -129,6 +130,9 @@
         <button class="tab" data-tab="skill">
           <i class="fa-solid fa-chart-line"></i> SKILL
         </button>
+        <button class="tab" data-tab="achievements">
+          <i class="fa-solid fa-award"></i> ACHIEVEMENTS
+        </button>
         <button class="tab" data-tab="collections">
           <i class="fa-solid fa-layer-group"></i> COLLECTIONS
         </button>
@@ -150,11 +154,20 @@
         <div class="panel" id="tab_quests">
           <div class="quests-summary"></div>
           <div class="quests-grid"></div>
+          <div class="weekly-title hidden"><span>Weekly quests</span><span class="weekly-reset"></span></div>
+          <div class="weekly-list"></div>
+        </div>
+
+        <div class="panel hidden" id="tab_achievements">
+          <div class="ach-summary"></div>
+          <div class="ach-list"></div>
         </div>
 
         <div class="panel hidden" id="tab_skill">
           <div class="skill-summary"></div>
           <div class="skill-list"></div>
+          <div class="skill-activity-title hidden">Activity skills</div>
+          <div class="skill-activity"></div>
         </div>
 
         <div class="panel hidden" id="tab_duty">
@@ -258,11 +271,13 @@
   <script src="scripts/personal.js"></script>
   <script src="scripts/quest.js"></script>
   <script src="scripts/skill.js"></script>
+  <script src="scripts/achievements.js"></script>
   <script src="scripts/duty.js"></script>
   <script src="scripts/record.js"></script>
   <script src="scripts/event.js"></script>
   <script src="scripts/collections.js"></script>
   <script src="scripts/leaderboard.js"></script>
   <script src="scripts/compare.js"></script>
+<div class="profileModal" id="profileModal" hidden></div>
 </body>
 </html>

@@ -951,7 +951,7 @@ function L33_1(A0_2)
   L1_2 = L9_1
   L2_2 = A0_2
   L1_2 = L1_2(L2_2)
-  L2_2 = L1_2 or L2_2
+  L2_2 = L1_2
   if L1_2 then
     L2_2 = L20_1
     L3_2 = L1_2
@@ -1609,7 +1609,7 @@ function L37_1(A0_2)
   L4_2, L5_2, L6_2, L7_2 = L4_2(L5_2)
   for L8_2, L9_2 in L4_2, L5_2, L6_2, L7_2 do
     L10_2 = L3_2[L9_2]
-    L11_2 = L10_2 or L11_2
+    L11_2 = L10_2
     if L10_2 then
       L11_2 = GetCid
       L12_2 = L10_2
@@ -2623,7 +2623,7 @@ function L48_1(A0_2, A1_2, A2_2)
   L11_2 = MediaCanRead
   L10_2 = L10_2(L11_2)
   if "function" == L10_2 then
-    L10_2 = L7_2 or L10_2
+    L10_2 = L7_2
     if L7_2 then
       L10_2 = L8_1
       L11_2 = L7_2.mediaId

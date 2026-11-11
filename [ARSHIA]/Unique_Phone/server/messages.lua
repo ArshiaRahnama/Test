@@ -525,7 +525,7 @@ function L21_1(A0_2, A1_2)
   L5_2[1] = L6_2
   L5_2[2] = L7_2
   L3_2 = L3_2(L4_2, L5_2)
-  L4_2 = L3_2 or L4_2
+  L4_2 = L3_2
   if L3_2 then
     L4_2 = L3_2.username
   end
@@ -563,7 +563,7 @@ function L22_1(A0_2, A1_2)
   L3_2 = L3_2.GetPlayerByCid
   L4_2 = L2_2.owner
   L3_2 = L3_2(L4_2)
-  L4_2 = L3_2 or L4_2
+  L4_2 = L3_2
   if L3_2 then
     L4_2 = L3_2.src
   end
@@ -1066,7 +1066,7 @@ function L33_1(A0_2, A1_2)
     L8_2[1] = L9_2
     L8_2[2] = L10_2
     L6_2 = L6_2(L7_2, L8_2)
-    L5_2 = L6_2 or L5_2
+    L5_2 = L6_2
     if L6_2 then
       L5_2 = L6_2.owner
     end
@@ -2631,7 +2631,7 @@ SELECT id, app, sender, receiver, type, content, CASE WHEN type = 'image' THEN N
   for L22_2, L23_2 in L18_2, L19_2, L20_2, L21_2 do
     L24_2 = L4_2[L23_2]
     L25_2 = L8_2[L23_2]
-    L26_2 = L25_2 or L26_2
+    L26_2 = L25_2
     if L25_2 then
       L26_2 = L1_1
       L27_2 = L25_2.cleared_before
@@ -2686,7 +2686,7 @@ SELECT id, app, sender, receiver, type, content, CASE WHEN type = 'image' THEN N
       L29_2 = L29_2 == L3_2
       L30_2 = L45_1
       L31_2 = L24_2.last
-      L32_2 = L29_2 or L32_2
+      L32_2 = L29_2
       if L29_2 then
         L32_2 = L28_2.noReceipts
         if not L32_2 then
@@ -2922,7 +2922,7 @@ function L54_1(A0_2, A1_2, A2_2)
   L11_2 = A1_2
   L10_2 = L10_2 .. L11_2
   L7_2 = L7_2(L8_2, L9_2, L10_2)
-  L8_2 = L7_2 or L8_2
+  L8_2 = L7_2
   if L7_2 then
     L8_2 = L1_1
     L9_2 = L7_2.cleared_before
@@ -3104,7 +3104,7 @@ function L56_1(A0_2, A1_2)
   L10_2 = L3_2
   L11_2 = L5_2
   L8_2 = L8_2(L9_2, L10_2, L11_2)
-  L9_2 = L8_2 or L9_2
+  L9_2 = L8_2
   if L8_2 then
     L9_2 = L1_1
     L10_2 = L8_2.cleared_before
@@ -3792,7 +3792,7 @@ function L58_1(A0_2, A1_2, A2_2, A3_2, A4_2, A5_2)
       L9_2 = "sms"
     end
     L7_2 = L7_2(L8_2, L9_2)
-    L8_2 = L7_2 or L8_2
+    L8_2 = L7_2
     if L7_2 then
       L8_2 = L38_1
       L9_2 = A1_2
@@ -5216,7 +5216,7 @@ function L66_1(A0_2, A1_2)
         L13_2, L14_2, L15_2, L16_2 = L13_2(L14_2)
         for L17_2, L18_2 in L13_2, L14_2, L15_2, L16_2 do
           L19_2 = L11_2[L18_2]
-          L20_2 = L19_2 or L20_2
+          L20_2 = L19_2
           if L19_2 then
             L20_2 = L19_2.src
           end

@@ -59,22 +59,21 @@ local function closePanel()
 end
 
 -- ------------------------------------------------------------- دستورات ---
-RegisterCommand(Ticket_Config.CommandForUser, function()
+-- /ticket الان پنل ریپورتِ تیکت‌محور رو باز میکنه (client/report_main.lua)؛ لیست/چتِ تیکت‌های من
+-- از دکمه‌ی «تیکت‌های من» همون پنل باز میشه، نه یک دستور جدا.
+AddEventHandler('Unique_Ticket:openMine', function()
     openPanel(false)
-end, false)
+end)
 
 RegisterCommand(Ticket_Config.CommandForAdmin, function()
     ESX.TriggerServerCallback('Unique_AdminPanel:GetMyPermissionLevel', function(level)
         if (level or 0) < Ticket_Config.MinPermissionLevel then
             return notify('شما دسترسی مدیریت تیکت را ندارید.')
         end
-        openPanel(true)
+        OpenTicketPanel()
     end)
 end, false)
 
-if Ticket_Config.KeyForUser ~= '' then
-    RegisterKeyMapping(Ticket_Config.CommandForUser, 'باز کردن تیکت‌های من', 'keyboard', Ticket_Config.KeyForUser)
-end
 if Ticket_Config.KeyForAdmin ~= '' then
     RegisterKeyMapping(Ticket_Config.CommandForAdmin, 'پنل مدیریت تیکت‌ها', 'keyboard', Ticket_Config.KeyForAdmin)
 end
@@ -90,7 +89,7 @@ end
 -- ureport message protocol (see ui/report/js/script.js's message switch),
 -- not the ticket: one, since it's the report panel's DOM that needs to react.
 function OpenTicketPanel()
-    ExecuteCommand(Client_Config and Client_Config.CommandForAdmin or 'areport')
+    TriggerEvent('Unique_Report:openLegacyAdmin', true)
     SendNUIMessage({ _uniqueReport = true, ureport = 'openTicketsTab' })
 end
 
@@ -116,6 +115,13 @@ local function cbWrap(cb)
         cb(result == nil and { r = false, msg = 'ارتباط با سرور برقرار نشد. دوباره امتحان کن.' } or result)
     end
 end
+
+RegisterNUICallback('ticket:openMine', function(_, rawCb)
+    local cb = cbWrap(rawCb)
+    TriggerEvent('Unique_Report:closeLegacy')
+    SetTimeout(150, function() openPanel(false) end)
+    cb({ r = true })
+end)
 
 RegisterNUICallback('ticket:create', function(data, rawCb)
     local cb = cbWrap(rawCb)

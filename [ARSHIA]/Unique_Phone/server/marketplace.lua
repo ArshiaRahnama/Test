@@ -1752,7 +1752,7 @@ function L22_1(A0_2, A1_2, A2_2, A3_2)
   L11_2 = L11_2.GetPlayerByCid
   L12_2 = L6_2
   L11_2 = L11_2(L12_2)
-  L12_2 = L11_2 or L12_2
+  L12_2 = L11_2
   if L11_2 then
     L12_2 = tonumber
     L13_2 = L11_2.src

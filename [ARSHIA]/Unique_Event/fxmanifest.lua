@@ -57,9 +57,18 @@ files {
     'html/gungame/callingcards/*',
     'html/gungame/sounds/*',
 
+    -- Capture (UI جدید به سبک sun-capture)
     'html/capture/index.html',
-    'html/capture/img/*.png',
-    'html/capture/imgs/*.png',
-    'html/capture/script/*.js',
-    'html/capture/style/*.css',
+    'html/capture/index.js',
+    'html/capture/index.css',
+    'html/capture/bridge.js',
+    'html/capture/*.woff',
+    'html/capture/*.woff2',
+
+    -- Capture Dashboard (UI قدیمی یونیک: /capture)
+    'html/capture-dash/index.html',
+    'html/capture-dash/img/*.png',
+    'html/capture-dash/imgs/*.png',
+    'html/capture-dash/script/*.js',
+    'html/capture-dash/style/*.css',
 }

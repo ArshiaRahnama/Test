@@ -26,6 +26,7 @@ end)
 
 RegisterNetEvent('showRegisterMenu')
 AddEventHandler('showRegisterMenu', function()
+	TriggerEvent('skinchanger:disableAC', true)
 	showMenu = true
 end)
 
@@ -34,8 +35,9 @@ RegisterCommand('close', function()
 	ESX.UI.Menu.CloseAll()
 end, false)
 
-RegisterNUICallback('updateSkin', function(data)
+RegisterNUICallback('updateSkin', function(data, cb)
 	updateSkin(data, false)
+	cb('ok')
 end)
 
 RegisterNetEvent('esx:playerLoaded')
@@ -77,6 +79,7 @@ AddEventHandler('playerSpawned', function()
 					end
 					playsound = true
 					TriggerEvent('showStatus')
+					TriggerEvent('skinchanger:disableAC', true)
 					showMenu = true
 					toggleMenu(showMenu)
 				end
@@ -87,6 +90,7 @@ end)
 
 RegisterNetEvent('skincreator:newChar')
 AddEventHandler('skincreator:newChar', function()
+	TriggerEvent('skinchanger:disableAC', true)
 	showMenu = true
 end)
 
@@ -206,13 +210,14 @@ function updateSkin(data, dontneed)
 
 		TriggerServerEvent('updateSkin', skinn)
 		TriggerServerEvent('SendReport', 'Man new player hastam.', 'More')
-		if playsound then
+		if playsound and GetResourceState('sunset_quest') == 'started' then
 			exports['sunset_quest']:Play('03_char_menu_finish')
 		end
 		TriggerEvent('skinchanger:loadSkin', skinn)
 		TriggerEvent('esx_voice:loaded')
 		TriggerEvent('showStatus')
 		TriggerServerEvent('sunset_clothe:giveStarter')
+		TriggerEvent('skinchanger:disableAC', false)
 	elseif gender == 0 then
 
 		SetPedDefaultComponentVariation(GetPlayerPed(-1))
@@ -1880,18 +1885,21 @@ function updateSkin(data, dontneed)
 	end
 end
 
-RegisterNUICallback('rotateleftheading', function(data)
+RegisterNUICallback('rotateleftheading', function(data, cb)
 	local currentHeading = GetEntityHeading(GetPlayerPed(-1))
 	SetEntityHeading(GetPlayerPed(-1), currentHeading+tonumber(data.value))
+	cb('ok')
 end)
 
-RegisterNUICallback('rotaterightheading', function(data)
+RegisterNUICallback('rotaterightheading', function(data, cb)
 	local currentHeading = GetEntityHeading(GetPlayerPed(-1))
 	SetEntityHeading(GetPlayerPed(-1), currentHeading-tonumber(data.value))
+	cb('ok')
 end)
 
-RegisterNUICallback('zoom', function(data)
+RegisterNUICallback('zoom', function(data, cb)
 	zoom = data.zoom
+	cb('ok')
 end)
 
 local disabledBefore = false

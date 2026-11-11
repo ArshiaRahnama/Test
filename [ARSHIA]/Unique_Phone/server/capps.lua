@@ -1161,7 +1161,7 @@ function L33_1(A0_2, A1_2)
   L11_2 = A0_2.cid
   L10_2.cid = L11_2
   L10_2.member = L8_2
-  L11_2 = L8_2 or L11_2
+  L11_2 = L8_2
   if L8_2 then
     L11_2 = L9_2.onDutyOnly
     L11_2 = true ~= L11_2 or L11_2
@@ -1895,7 +1895,7 @@ function L55_1()
     L11_2 = L9_2.app
     L10_2 = L6_1
     L10_2 = L10_2[L11_2]
-    L11_2 = L10_2 or L11_2
+    L11_2 = L10_2
     if L10_2 then
       L11_2 = L30_1
       L12_2 = L10_2
@@ -2088,7 +2088,7 @@ function L58_1(A0_2)
       L9_2 = L22_1
       L10_2 = L8_2.data
       L9_2 = L9_2(L10_2)
-      L10_2 = L9_2 or L10_2
+      L10_2 = L9_2
       if L9_2 then
         L10_2 = math
         L10_2 = L10_2.tointeger
@@ -5847,17 +5847,17 @@ function L107_1(A0_2, A1_2)
   L12_2 = nil
   ::lbl_118::
   L11_2.owner_phone = L12_2
-  L12_2 = L7_2 or L12_2
+  L12_2 = L7_2
   if L7_2 then
     L12_2 = L7_2.x
   end
   L11_2.x = L12_2
-  L12_2 = L7_2 or L12_2
+  L12_2 = L7_2
   if L7_2 then
     L12_2 = L7_2.y
   end
   L11_2.y = L12_2
-  L12_2 = L7_2 or L12_2
+  L12_2 = L7_2
   if L7_2 then
     L12_2 = L7_2.z
   end
@@ -6251,17 +6251,17 @@ function L107_1(A0_2, A1_2)
     L13_2 = L10_2.phone
   end
   L12_2.owner_phone = L13_2
-  L13_2 = L9_2 or L13_2
+  L13_2 = L9_2
   if L9_2 then
     L13_2 = L9_2.x
   end
   L12_2.x = L13_2
-  L13_2 = L9_2 or L13_2
+  L13_2 = L9_2
   if L9_2 then
     L13_2 = L9_2.y
   end
   L12_2.y = L13_2
-  L13_2 = L9_2 or L13_2
+  L13_2 = L9_2
   if L9_2 then
     L13_2 = L9_2.z
   end
@@ -6707,17 +6707,17 @@ function L107_1(A0_2, A1_2)
     L16_2 = L13_2.phone
   end
   L15_2.owner_phone = L16_2
-  L16_2 = L12_2 or L16_2
+  L16_2 = L12_2
   if L12_2 then
     L16_2 = L12_2.x
   end
   L15_2.x = L16_2
-  L16_2 = L12_2 or L16_2
+  L16_2 = L12_2
   if L12_2 then
     L16_2 = L12_2.y
   end
   L15_2.y = L16_2
-  L16_2 = L12_2 or L16_2
+  L16_2 = L12_2
   if L12_2 then
     L16_2 = L12_2.z
   end
@@ -9306,7 +9306,7 @@ function L112_1(A0_2, A1_2)
     L14_2 = L103_1
     L15_2 = L13_2
     L14_2 = L14_2(L15_2)
-    L15_2 = L14_2 or L15_2
+    L15_2 = L14_2
     if L14_2 then
       L15_2 = L56_1
       L16_2 = L14_2
@@ -9728,7 +9728,7 @@ function L116_1(A0_2)
                       L18_3.job = L19_3
                       L17_3.data = L18_3
                       L16_3 = L16_3(L17_3)
-                      L15_3 = L16_3 or L15_3
+                      L15_3 = L16_3
                       if L16_3 then
                         L17_3 = L56_1
                         L18_3 = L16_3
@@ -9939,7 +9939,7 @@ function L120_1()
       L8_3 = L6_3.app
       L7_3 = L6_1
       L7_3 = L7_3[L8_3]
-      L8_3 = L7_3 or L8_3
+      L8_3 = L7_3
       if L7_3 then
         L8_3 = L30_1
         L9_3 = L7_3
@@ -10587,7 +10587,7 @@ function L121_1(A0_2, A1_2)
   L4_2 = L2_2.app
   L3_2 = L6_1
   L3_2 = L3_2[L4_2]
-  L4_2 = L3_2 or L4_2
+  L4_2 = L3_2
   if L3_2 then
     L4_2 = L30_1
     L5_2 = L3_2
@@ -10724,7 +10724,7 @@ function L121_1()
     L12_2 = L8_2.app
     L11_2 = L6_1
     L11_2 = L11_2[L12_2]
-    L12_2 = L11_2 or L12_2
+    L12_2 = L11_2
     if L11_2 then
       L12_2 = L30_1
       L13_2 = L11_2

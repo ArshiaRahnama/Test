@@ -77,6 +77,8 @@ end
 -- also be called on its own after QuestSystem:AcceptQuest /
 -- QuestSystem:CancelQuest, instead of re-fetching the whole profile
 -- (GetAcc + GetCC) just to refresh the quest list.
+QuestNpcMode = false -- true only while the menu was opened by a quest giver NPC
+
 function UpdateQuests()
     ESX.TriggerServerCallback('HUD_Menu:GetQuests', function(quests)
         if not quests then return end
@@ -105,17 +107,28 @@ function UpdateQuests()
                         icon = "fa-shield-halved",
                         accepted = accepted,
                         completed = accepted and current >= questDef.requiredTrigger,
+                        pending = quests["Pending"] ~= nil and quests["Pending"][idStr] == true,
                     })
                 end
             end
         end
 
-        SendNUIMessage({ type = "loadQuests", quests = myquests, maxActive = Config.MaxActiveQuests or 1 })
+        local rc = Config.QuestRewardChoice
+        SendNUIMessage({
+            type = "loadQuests", quests = myquests, maxActive = Config.MaxActiveQuests or 1,
+            canAccept = (not Config.QuestAcceptOnlyAtNPC) or QuestNpcMode,
+            choices = (rc and rc.enabled) and rc.options or nil,
+        })
     end)
 end
 
 RegisterNUICallback('acceptQuest', function(data, cb)
     TriggerServerEvent('QuestSystem:AcceptQuest', data.id)
+    cb('ok')
+end)
+
+RegisterNUICallback('claimReward', function(data, cb)
+    TriggerServerEvent('QuestSystem:ClaimReward', data.id, data.option)
     cb('ok')
 end)
 
@@ -175,6 +188,8 @@ RegisterCommand('menu', function()
     menuIsOpen = true
     UpdateProfile()
     UpdateSkills()
+    UpdateAchievements()
+    UpdateWeekly()
     UpdateCollections()
     UpdateLeaderboard()
     UpdateDuty()
@@ -204,6 +219,8 @@ Citizen.CreateThread(function()
         if menuIsOpen then
             UpdateProfile()
             UpdateSkills()
+            UpdateAchievements()
+            UpdateWeekly()
             UpdateLeaderboard()
             UpdateDuty()
             UpdateRecord()
@@ -219,6 +236,7 @@ AddEventHandler('onKeyDown', function(key)
 end)
 
 RegisterNUICallback('menuClosed', function(_, cb)
+    QuestNpcMode = false
     SetNuiFocus(false, false)
     menuIsOpen = false
 

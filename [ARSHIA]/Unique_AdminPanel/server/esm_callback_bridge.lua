@@ -94,6 +94,10 @@ local function push(name)
     return false
 end
 
+--- فقط برای ریسورس‌های هم‌خانواده در همین ریسورس (server/sun_report_bridge.lua):
+--- تابع واقعیِ یک کال‌بک رو برمیگردونه تا منطق تکرار نشه.
+function GetLocalServerCallback(name) return LocalCallbacks[name] end
+
 --- جایگزین امنِ ESX.RegisterServerCallback.
 --- امضاش دقیقاً همونه، پس کدِ موجود بدون تغییر کار میکنه.
 function RegisterServerCallbackSafe(name, cb)

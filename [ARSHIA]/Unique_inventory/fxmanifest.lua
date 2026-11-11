@@ -9,6 +9,10 @@ dependency 'essentialmode'
 dependency 'oxmysql'
 dependency 'ox_lib'
 
+-- every original Sunset resource calls exports['sun-inventory-hud']; this makes them reach this resource
+provide 'sun-inventory-hud'
+provide 'sunset_inventory'
+
 ui_page 'ui/index.html'
 
 shared_scripts {
@@ -26,6 +30,10 @@ client_scripts {
     'client/ui_bridge.lua',
     'client/main.lua',
     'client/weapon-wheel.lua', -- weapon wheel = weapons in slots (replaces core:client:giveWeapon)
+    'client/extras.lua',
+    -- stage 2 modules
+    'modules/trunk/common/config.lua',
+    'modules/trunk/client/main.lua',
     -- Stage 2 (need their server side first):
     -- 'modules/**/common/*.lua', 'modules/**/client/*.lua',
 }
@@ -34,6 +42,7 @@ server_scripts {
     '@oxmysql/lib/MySQL.lua',
     'server/callback_bridge.lua', -- must be before main.lua
     'server/main.lua',
+    'server/second.lua', -- stash store + trunk
 }
 
 files { 'ui/**' }

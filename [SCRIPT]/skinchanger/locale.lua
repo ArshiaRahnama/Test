@@ -1,21 +1,23 @@
 Locales = {}
 
+-- Translate a string. Falls back to the English locale when the active
+-- locale (or one of its keys) is missing, instead of showing an error string.
 function _(str, ...)
+  local active   = Locales[Config.Locale]
+  local fallback = Locales['en']
 
-  if Locales[Config.Locale] ~= nil then
+  local text = (active and active[str]) or (fallback and fallback[str])
 
-    if Locales[Config.Locale][str] ~= nil then
-      return string.format(Locales[Config.Locale][str], ...)
-    else
-      return 'Translation [' .. Config.Locale .. '][' .. str .. '] does not exists'
+  if text == nil then
+    if active == nil and fallback == nil then
+      return 'Locale [' .. tostring(Config.Locale) .. '] does not exists'
     end
-
-  else
-    return 'Locale [' .. Config.Locale .. '] does not exists'
+    return 'Translation [' .. tostring(Config.Locale) .. '][' .. tostring(str) .. '] does not exists'
   end
 
+  return string.format(text, ...)
 end
 
 function _U(str, ...)
-  return tostring(_(str, ...):gsub("^%l", string.upper))
+  return (tostring(_(str, ...)):gsub("^%l", string.upper))
 end

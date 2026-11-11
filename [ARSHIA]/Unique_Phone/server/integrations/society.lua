@@ -1817,7 +1817,7 @@ function L19_1(A0_2, A1_2, A2_2, A3_2)
       end
     end
   end
-  L7_2 = L6_2 or L7_2
+  L7_2 = L6_2
   if L6_2 then
     L7_2 = L6_2[A0_2]
   end

@@ -35,10 +35,10 @@
 .recordStatusCard.jail i { color: #ff6b6b; background: rgba(226, 85, 78, 0.14); }
 
 .recordStatusCard.cs {
-  border-color: rgba(255, 140, 26, 0.35);
-  background: rgba(255, 140, 26, 0.06);
+  border-color: rgba(124, 58, 237, 0.35);
+  background: rgba(124, 58, 237, 0.06);
 }
-.recordStatusCard.cs i { color: var(--orange2); background: rgba(255, 140, 26, 0.14); }
+.recordStatusCard.cs i { color: var(--orange2); background: rgba(124, 58, 237, 0.14); }
 
 .recordStatusCard.clean {
   border-color: rgba(31, 211, 75, 0.3);

@@ -71,6 +71,31 @@ Config_Shared.Categories = {
     { key = 'other',   label = 'موارد دیگر',            priority = 1, icon = 'fa-ellipsis'       },
 }
 
+-- ------------------------------------------- دسته‌های ریپورتِ سبک Sun ---
+-- فرم ریپورتِ چت (Sun-style) فقط همین‌ها رو نشون میده (sun = true).
+-- sunKey همون کلیدهای فرم Sun هست؛ label همون چیزیه که تو لیست ادمین دیده میشه.
+local sunCats = {
+    { 'REPORT_COMBAT_LOGOUT', 'Combat Logout',     3 },
+    { 'REPORT_KOS',           'K.O.S',             3 },
+    { 'REPORT_NCZ_SAFEZONE',  'N.C.Z & Safe Zone', 3 },
+    { 'REPORT_POWER_GAMING',  'Power Gaming',      3 },
+    { 'REPORT_VDM',           'VDM',               3 },
+    { 'REPORT_FEAR_RP',       'Fear Rp',           2 },
+    { 'REPORT_SEARCH',        'Search',            2 },
+    { 'REPORT_META_GAMING',   'Meta Gaming',       2 },
+    { 'REPORT_MIX_IC_OOC',    'MIX IC OOC',        2 },
+    { 'REPORT_FAHASHI',       'Fahashi',           3 },
+    { 'REPORT_BUG_GLITCH',    'Bug & Glitch',      2 },
+    { 'HELP',                 'Soal',              1 },
+    { 'REPORT_MORE',          'More',              1 },
+}
+for _, c in ipairs(sunCats) do
+    Config_Shared.Categories[#Config_Shared.Categories + 1] = {
+        key = 'sun_' .. c[1]:lower(), label = c[2], priority = c[3], icon = 'fa-flag',
+        sun = true, sunKey = c[1],
+    }
+end
+
 -- اولویت‌ها: عدد بزرگ‌تر = فوری‌تر
 Config_Shared.Priorities = {
     [1] = { label = 'کم',   color = '#6C7689' },

@@ -70,7 +70,7 @@ function L6_1(A0_2, A1_2)
   L4_2 = A0_2
   L5_2 = A1_2
   L2_2, L3_2 = L2_2(L3_2, L4_2, L5_2)
-  L4_2 = L2_2 or L4_2
+  L4_2 = L2_2
   if L2_2 then
     L4_2 = true == L3_2
   end
@@ -92,7 +92,7 @@ function L7_1(A0_2, A1_2)
   L4_2[1] = L5_2
   L4_2[2] = L6_2
   L2_2 = L2_2(L3_2, L4_2)
-  L3_2 = L2_2 or L3_2
+  L3_2 = L2_2
   if L2_2 then
     L3_2 = L2_2.name
   end
@@ -492,7 +492,7 @@ function L16_1(A0_2)
   local L1_2, L2_2, L3_2, L4_2, L5_2
   L1_2 = L2_1
   L1_2 = L1_2[A0_2]
-  L2_2 = L1_2 or L2_2
+  L2_2 = L1_2
   if L1_2 then
     L2_2 = L0_1
     L2_2 = L2_2[L1_2]
@@ -572,7 +572,7 @@ function L18_1(A0_2)
   local L1_2, L2_2, L3_2, L4_2, L5_2, L6_2
   L1_2 = L2_1
   L1_2 = L1_2[A0_2]
-  L2_2 = L1_2 or L2_2
+  L2_2 = L1_2
   if L1_2 then
     L2_2 = L0_1
     L2_2 = L2_2[L1_2]
@@ -734,7 +734,7 @@ function L17_1(A0_2)
   local L1_2, L2_2, L3_2
   L1_2 = L2_1
   L1_2 = L1_2[A0_2]
-  L2_2 = L1_2 or L2_2
+  L2_2 = L1_2
   if L1_2 then
     L2_2 = L0_1
     L2_2 = L2_2[L1_2]
@@ -747,7 +747,7 @@ function L17_1(A0_2, A1_2)
   local L2_2, L3_2, L4_2, L5_2, L6_2, L7_2
   L2_2 = L2_1
   L2_2 = L2_2[A0_2]
-  L3_2 = L2_2 or L3_2
+  L3_2 = L2_2
   if L2_2 then
     L3_2 = L0_1
     L3_2 = L3_2[L2_2]

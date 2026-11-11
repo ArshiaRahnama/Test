@@ -719,25 +719,18 @@ function moveInsideHandler(data)
             return loadPlayerInventory()
         end
         if data.droppedTo > reservedSlotForWeapon or itemType == 'item_weapon' then
-            print('----')
-            print(1)
             if data.droppedToData and data.droppedToData.name and data.droppedToData.name:find('kif_') and not checkSomething(data.droppedFromData.name, 2000, 'bag') then
-                print(11)
                 data.droppedFromData.count = ESX.Math.Round(data.count)
                 local bagId, _ = data.droppedToData.name:gsub('kif_', '')
                 data.droppedFromData.itemType = getItemType(data.droppedFromData.name)
                 ESX.TriggerServerEvent('inventory-bag:put', tonumber(bagId), data.droppedFromData)
             else
-                print(2)
                 if reservedSlot[data.droppedTo] and oldIndex and oldIndex > reservedSlotForWeapon and data.droppedTo > reservedSlotForWeapon then
                     reservedSlot[oldIndex] = reservedSlot[data.droppedTo]
-                    print(21)
                 elseif data.droppedTo <= reservedSlotForWeapon and oldIndex2 and oldIndex2 <= reservedSlotForWeapon and weaponSlot[oldIndex2] then
-                    print(22)
                     if blackListWorldSwapWeapon[ESX.GetPlayerData().World] then return end
                     if doesMilitaryWeapon(data.metadata.serial) and not weaponSlot2[data.metadata.serial] then return ESX.chatMessage('In aslahe be dalil serial police budan ghabel estefade nist', 'plarms') end
                     if doesGangWeapon(data.metadata.serial) and not weaponSlot2[data.metadata.serial] then return ESX.chatMessage('In aslahe be dalil serial gang budan ghabel estefade nist', 'plarms') end
-                    print(23)
                     supapWeaponSlot()
                     local old = weaponSlot[oldIndex2]
                     weaponSlot[oldIndex2] = weaponSlot[data.droppedTo]
@@ -746,9 +739,7 @@ function moveInsideHandler(data)
                     ESX.TriggerServerEvent('inventory:swapWeaponSlot', oldIndex, data.droppedTo)
                     gunChangeShode = true
                 elseif oldIndex then
-                    print(3)
                     if itemType == 'item_standard' or (playerInventory[oldIndex] and playerInventory[oldIndex].metadata.serial == data.metadata.serial) then
-                        print(31)
                         reservedSlot[oldIndex] = nil
                     end
                 end
@@ -756,14 +747,11 @@ function moveInsideHandler(data)
                     reservedSlot[data.droppedTo] = {name = data.name, serial = data.droppedFromData and data.droppedFromData.metadata and data.droppedFromData.metadata.serial}
                     ESX.TriggerServerEvent('inventory:setReservedSlot', reservedSlot)
                 end
-                print(4)
                 if itemType == 'item_weapon' and not gunChangeShode then
                     if blackListWorldSwapWeapon[ESX.GetPlayerData().World] then return end
                     if doesMilitaryWeapon(data.metadata.serial) and not weaponSlot2[data.metadata.serial] then return ESX.chatMessage('In aslahe be dalil serial police budan ghabel estefade nist', 'plarms') end
                     if doesGangWeapon(data.metadata.serial) and not weaponSlot2[data.metadata.serial] then return ESX.chatMessage('In aslahe be dalil serial gang budan ghabel estefade nist', 'plarms') end
-                    print(41)
                     supapWeaponSlot()
-                    print(42)
                     local have = false
                     for k, v in pairs(weaponSlot) do
                         if v.name == data.name then
@@ -771,26 +759,18 @@ function moveInsideHandler(data)
                             break
                         end
                     end
-                    print(43, data.name, have)
                     if not have or not weaponSlot2[data.metadata.serial] then
-                        print(44)
                         if data.droppedTo <= reservedSlotForWeapon then
-                            print(45)
                             if (ESX.GetPlayerData().World ~= 0 and not exports['sun-robbery']:doesInRob()) or playWeaponAnim(data.name) then
-                                print(46)
                                 if weaponSlot[data.droppedTo] then
-                                    print(47)
                                     removeWeaponSlot(weaponSlot[data.droppedTo].serial)
                                     Wait(1000)
                                 end
-                                print(48)
                                 addWeaponSlot(data)
                             end
                         end
                     elseif weaponSlot2[data.metadata.serial] then
-                        print(48)
                         if ESX.GetPlayerData().World ~= 0 or playWeaponAnim(data.name) then
-                            print(49)
                             removeWeaponSlot(data.metadata.serial)
                         end
                     end

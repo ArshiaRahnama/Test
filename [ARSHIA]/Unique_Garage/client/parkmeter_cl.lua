@@ -13,8 +13,8 @@ local creating  = {}     -- [key] = true while the local vehicle is being create
 local trunkZone = {}     -- [key] = ox_target zone id
 local lastUse   = {}
 
-local COLOR_FREE = { r = 3,   g = 119, b = 252 }
-local COLOR_USED = { r = 255, g = 165, b = 0   }
+local COLOR_FREE = { r = 0,   g = 255, b = 0   }
+local COLOR_USED = { r = 255, g = 0,   b = 0   }
 
 local function notify(kind, msg)
     lib.notify({ title = 'Park Meter', description = msg, type = kind or 'inform', position = 'center-right' })
@@ -218,10 +218,14 @@ local function retrieve(key, meter)
             notify('error', 'Shoma mashini dar in garage nazashtid!')
             return
         end
-        local done = lib.progressCircle({ duration = math.random(1000, 4000), position = 'bottom', canCancel = false,
+        local done = lib.progressBar({ duration = math.random(1000, 4000), label = 'Dar hale bardashtan...', position = 'bottom', canCancel = false,
             disable = { move = true, car = true, combat = true } })
         if not done then return end
 
+        -- the parked car's own preview sits exactly on the meter and would block the spawn check -> remove it first
+        -- (if the spot turns out to be blocked anyway, the streaming loop recreates it within 1.5 s)
+        removePreview(key)
+        Wait(200)
         local spawnCoord
         if meter.outputCoords and #meter.outputCoords > 0 then
             for _, c in ipairs(shuffled(meter.outputCoords)) do
@@ -270,7 +274,7 @@ local function retrieve(key, meter)
     end, key)
 end
 
--- ------------------------------------------------------------ E interaction + marker
+-- ------------------------------------------------------------ E interaction (no ground marker)
 CreateThread(function()
     while not ESX do Wait(50) end
     for key, meter in ipairs(Customize.ParkMeter) do
@@ -278,13 +282,14 @@ CreateThread(function()
             coords = meter.coords.xyz,
             distance = 10.0,
             nearby = function(self)
+                -- same marker pair as the old Unique parkmeter (green = free, red = occupied)
                 local c = occupied[key] and COLOR_USED or COLOR_FREE
-                DrawMarker(9, meter.coords.x, meter.coords.y, meter.coords.z + 0.3, 0.0, 0.0, 0.0, 90.0, 0.0, 0.0,
-                    1.5, 1.5, 1.5, c.r, c.g, c.b, 255, false, true, 2, false, nil, nil, false)
+                DrawMarker(36, meter.coords.x, meter.coords.y, meter.coords.z, 0.0, 0.0, 0.0, 0, 0.0, 0.0, 1.0, 1.0, 1.0, c.r, c.g, c.b, 100, false, true, 2, false, false, false, false)
+                DrawMarker(6, meter.coords.x, meter.coords.y, meter.coords.z, 0.0, 0.0, 0.0, 0, 0.0, 0.0, 1.5, 1.5, 1.5, c.r, c.g, c.b, 100, false, true, 2, false, false, false, false)
                 if self.currentDistance <= 4.0 then
                     ShowHelpNotification('Dokme ~INPUT_CONTEXT~ jahat estefade az park')
                 end
-                if self.currentDistance <= 1.5 and IsControlJustReleased(0, 38) then
+                if self.currentDistance <= 3.0 and IsControlJustReleased(0, 38) then
                     if not cooldown('parkMeterGlobal', 600) then return end
                     CreateThread(function() OnMeterPress(key, meter) end)
                 end
@@ -308,7 +313,7 @@ function OnMeterPress(key, meter)
         local plate = GetPlate(vehicle)
         ESX.TriggerServerCallback('ParkMeter:CanPark', function(allowed)
             if not allowed then return notify('error', 'Shoma nemitavanid in mashin ra park konid!') end
-            local done = lib.progressCircle({ duration = 3000, position = 'bottom', canCancel = false,
+            local done = lib.progressBar({ duration = 3000, label = 'Dar hale park kardan...', position = 'bottom', useWhileDead = false, canCancel = false,
                 disable = { move = true, car = true, combat = true } })
             if done then parkVehicleMeter(key, vehicle, false) end
         end, plate)

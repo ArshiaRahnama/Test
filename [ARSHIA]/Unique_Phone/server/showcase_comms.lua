@@ -1799,7 +1799,7 @@ function L18_1(A0_2)
     L14_2 = L14_2 + 30
     L9_2(L10_2, L11_2, L12_2, L13_2, L14_2)
     L9_2 = L8_2[11]
-    L10_2 = L9_2 or L10_2
+    L10_2 = L9_2
     if L9_2 then
       L10_2 = L3_1
       L11_2 = A0_2
@@ -1952,7 +1952,7 @@ function L18_1(A0_2)
     L14_2.sec = 0
     L13_2 = L13_2(L14_2)
     L13_2 = L13_2 * 1000
-    L14_2 = L11_2 or L14_2
+    L14_2 = L11_2
     if L11_2 then
       L14_2 = L3_1
       L15_2 = A0_2
@@ -2568,7 +2568,7 @@ function L20_1(A0_2)
   L11_2.type = "text"
   L11_2.content = "\240\159\154\168 BREAKING: Police pursuit ends on the Del Perro Freeway. No injuries reported. More updates soon."
   L9_2 = L9_2(L10_2, L11_2)
-  L10_2 = L4_2 or L10_2
+  L10_2 = L4_2
   if L4_2 then
     L10_2 = L8_2
     L11_2 = L1_1

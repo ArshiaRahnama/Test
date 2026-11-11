@@ -911,14 +911,36 @@ function L41_1()
         L3_3()
       end
       do
+        -- Unique RP: turn the camera with the mouse deltas the UI measured (cameraLook). Two methods, Config.Camera.LookMethod:
+        --   'ped'     (default) turn the character (horizontal) and the gameplay camera pitch (vertical) directly
+        --   'control' inject INPUT_LOOK_LR / INPUT_LOOK_UD for the frame
         local ldx, ldy = PhoneLookDX or 0, PhoneLookDY or 0
         if ldx ~= 0 or ldy ~= 0 then
           PhoneLookDX, PhoneLookDY = 0, 0
-          local sens = tonumber(Config.Camera and Config.Camera.LookSensitivity) or 1.0
-          EnableControlAction(0, 1, true)    -- INPUT_LOOK_LR
-          EnableControlAction(0, 2, true)    -- INPUT_LOOK_UD
-          SetControlNormal(0, 1, math.max(-1.0, math.min(1.0, ldx * 0.02 * sens)))
-          SetControlNormal(0, 2, math.max(-1.0, math.min(1.0, ldy * 0.02 * sens)))
+          local cfg = Config.Camera or {}
+          local sens = tonumber(cfg.LookSensitivity) or 1.0
+          if cfg.LookInvertX then ldx = -ldx end
+          if cfg.LookInvertY then ldy = -ldy end
+          if cfg.LookMethod == 'control' then
+            EnableControlAction(0, 1, true)    -- INPUT_LOOK_LR
+            EnableControlAction(0, 2, true)    -- INPUT_LOOK_UD
+            local setv = SetControlValueNextFrame or SetControlNormal
+            if setv then
+              pcall(setv, 0, 1, math.max(-1.0, math.min(1.0, ldx * 0.02 * sens)))
+              pcall(setv, 0, 2, math.max(-1.0, math.min(1.0, ldy * 0.02 * sens)))
+            end
+          else
+            local ped = PlayerPedId()
+            local turn = ldx * 0.9 * sens                    -- degrees (the UI already scaled the pixels)
+            if IsPedInAnyVehicle(ped, false) then
+              SetGameplayCamRelativeHeading(GetGameplayCamRelativeHeading() - turn)
+            else
+              SetEntityHeading(ped, (GetEntityHeading(ped) - turn) % 360.0)
+            end
+            local pitch = GetGameplayCamRelativePitch() - ldy * 0.5 * sens
+            if pitch > 45.0 then pitch = 45.0 elseif pitch < -45.0 then pitch = -45.0 end
+            SetGameplayCamRelativePitch(pitch, 1.0)
+          end
         end
       end
       L3_3 = Wait

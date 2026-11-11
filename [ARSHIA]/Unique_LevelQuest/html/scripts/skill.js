@@ -1,3 +1,17 @@
+function escapeHtml(v) {
+  return String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+// sun-style "+" burst when an activity skill goes up. Lives on <body>, so it
+// shows even while the menu is closed.
+function skillUpBurst(label, percent) {
+  const box = document.createElement('div');
+  box.className = 'skillUpBurst';
+  box.innerHTML = `<span class="skillUpPlus">+</span><span class="skillUpText">${escapeHtml(label)} ${Number(percent).toFixed(1)}%</span>`;
+  document.body.appendChild(box);
+  setTimeout(() => box.remove(), 1800);
+}
+
 function sortSkills(items) {
   if (!items || !Array.isArray(items)) return [];
   return [...items].sort((a, b) => {
@@ -37,6 +51,40 @@ document.addEventListener('DOMContentLoaded', () => {
 
   window.addEventListener('message', (event) => {
     const data = event.data;
+
+    if (data.type === 'skillUp') {
+      skillUpBurst(data.label, data.percent);
+      if (data.finished && typeof playChime === 'function') playChime();
+      return;
+    }
+
+    if (data.type === 'loadActivitySkills' && Array.isArray(data.skills)) {
+      const box = document.querySelector('.skill-activity');
+      const head = document.querySelector('.skill-activity-title');
+      if (!box) return;
+      box.innerHTML = '';
+      if (head) head.classList.toggle('hidden', data.skills.length === 0);
+      data.skills.forEach(s => {
+        const pct = Math.max(0, Math.min(100, Number(s.percent) || 0));
+        const row = document.createElement('div');
+        row.className = 'skillRow' + (s.finished ? ' mastered' : '');
+        row.innerHTML = `
+          <div class="skillTop">
+            <div class="skillIcon"><i class="fa-solid fa-gauge-high"></i></div>
+            <div class="skillTitleBlock">
+              <span class="skillTitle">${escapeHtml(s.label)}</span>
+              <span class="skillTier tier-${tierFor(pct).toLowerCase()}">${tierFor(pct)}</span>
+            </div>
+            <span class="skillPct">${pct.toFixed(1)}%</span>
+          </div>
+          <div class="skillBar"><div class="skillFill" style="width:0%"></div></div>`;
+        box.appendChild(row);
+        setSkillIcon(row.querySelector('.skillIcon'), s.job);
+        const fill = row.querySelector('.skillFill');
+        requestAnimationFrame(() => { fill.style.width = `${pct}%`; });
+      });
+      return;
+    }
 
     if (data.type === 'loadSkills' && Array.isArray(data.skills)) {
       skillList.innerHTML = '';
@@ -83,7 +131,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="skillTop">
             <div class="skillIcon"><i class="fa-solid fa-briefcase"></i></div>
             <div class="skillTitleBlock">
-              <span class="skillTitle">${s.title}${s.isCurrent ? '<span class="dutyBadge">ON DUTY</span>' : ''}</span>
+              <span class="skillTitle">${escapeHtml(s.title)}${s.isCurrent ? '<span class="dutyBadge">ON DUTY</span>' : ''}</span>
               <span class="skillTier tier-${tierClass}">${tier}</span>
             </div>
             <span class="skillPct">${pct.toFixed(1)}%</span>

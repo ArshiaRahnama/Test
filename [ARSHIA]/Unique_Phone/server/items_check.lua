@@ -471,7 +471,7 @@ function L8_1()
               L26_2 = L21_2
               L27_2 = -1
               L22_2 = L22_2(L23_2, L24_2, L25_2, L26_2, L27_2)
-              L23_2 = L22_2 or L23_2
+              L23_2 = L22_2
               if L22_2 then
                 L23_2 = LoadResourceFile
                 L24_2 = L3_2

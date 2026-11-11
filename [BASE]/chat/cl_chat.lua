@@ -13,6 +13,7 @@ local chatInputActive = false
 local chatInputActivating = false
 local muted = false
 local AntiSpam = 0
+local panelOpen = false   -- true while a report/ticket/rating panel owns NUI focus
 
 -- ------------------------------------------------------------------
 -- Tab routing
@@ -280,6 +281,7 @@ end)
 
 AddEventHandler('onKeyDown', function(key)
     if ESX and ESX.GetPlayerData().InPhone then return end
+    if panelOpen then return end
     if key == 't' then
         OpenChatInput()
     end
@@ -341,4 +343,94 @@ end)
 RegisterNetEvent('chat:showAdminPM')
 AddEventHandler('chat:showAdminPM', function(from, message)
     SendNUIMessage({ type = 'SHOW_ADMIN_PM', from = from, message = message })
+end)
+
+-- ==================================================================
+-- Report / Ticket panels (Sun-style UI)
+-- The server side lives in Unique_AdminPanel (client/sun_report_bridge.lua
+-- + server/sun_report_bridge.lua). This file only drives the NUI and
+-- re-emits plain events the bridge listens to.
+-- ==================================================================
+local function resetChatState()
+    chatInputActive = false
+    chatInputActivating = false
+    panelOpen = false
+    setChatDecor(false)
+    SendNUIMessage({ type = 'FORCE_CLOSE_CHAT' })
+end
+
+-- admin queue panel
+AddEventHandler('chat:rpShowPanel', function(reports, closedReports)
+    SendNUIMessage({ type = 'SHOW_REPORT_PANEL', reports = reports or {}, closedReports = closedReports or {} })
+end)
+AddEventHandler('chat:rpUpdatePanel', function(reports, closedReports)
+    SendNUIMessage({ type = 'UPDATE_REPORT_PANEL', reports = reports or {}, closedReports = closedReports or {} })
+end)
+AddEventHandler('chat:rpHidePanel', function()
+    SendNUIMessage({ type = 'HIDE_REPORT_PANEL' })
+end)
+RegisterNUICallback('reportPanelAction', function(data, cb)
+    TriggerEvent('chat:rpActionFromNUI', data.action, data.id)
+    cb('ok')
+end)
+
+-- player: submit form
+AddEventHandler('chat:openReportSubmit', function(categories)
+    resetChatState()
+    panelOpen = true
+    SendNUIMessage({ type = 'OPEN_REPORT_SUBMIT', categories = categories })
+    SetNuiFocus(true, true)
+end)
+RegisterNUICallback('reportSubmitAction', function(data, cb)
+    resetChatState()
+    SetNuiFocus(false, false)
+    if data.action == 'submit' then
+        TriggerEvent('chat:reportSubmitted', data.message, data.category)
+    end
+    cb('ok')
+end)
+
+-- player: ticket indicator / detail / rating
+AddEventHandler('chat:ticketStatusUpdate', function(status, adminName, cat, message, time, _, reportId)
+    SendNUIMessage({
+        type = 'TICKET_STATUS_UPDATE', status = status, adminName = adminName,
+        cat = cat, message = message, time = time, reportId = reportId
+    })
+end)
+AddEventHandler('chat:ticketHide', function()
+    SendNUIMessage({ type = 'TICKET_HIDE' })
+end)
+AddEventHandler('chat:setTicketCancelAllowed', function(allowed)
+    SendNUIMessage({ type = 'SET_TICKET_CANCEL_ALLOWED', allowed = allowed and true or false })
+end)
+AddEventHandler('chat:openRatingDirect', function(adminName, reportId)
+    resetChatState()
+    panelOpen = true
+    SendNUIMessage({ type = 'OPEN_RATING_DIRECT', adminName = adminName, reportId = reportId })
+    SetNuiFocus(true, true)
+end)
+RegisterNUICallback('ticketAction', function(data, cb)
+    if data.action == 'cancel' then
+        resetChatState()
+        SetNuiFocus(false, false)
+        TriggerEvent('chat:ticketCancel')
+    elseif data.action == 'openDetail' then
+        resetChatState()
+        panelOpen = true
+        SetNuiFocus(true, true)
+    elseif data.action == 'closeDetail' then
+        resetChatState()
+        SetNuiFocus(false, false)
+    end
+    cb('ok')
+end)
+RegisterNUICallback('ticketRatingAction', function(data, cb)
+    resetChatState()
+    SetNuiFocus(false, false)
+    if data.action == 'submit' then
+        TriggerEvent('chat:ratingSubmitted', data.reportId, data.rating, data.comment)
+    elseif data.action == 'skip' then
+        TriggerEvent('chat:ratingSkipped', data.reportId)
+    end
+    cb('ok')
 end)

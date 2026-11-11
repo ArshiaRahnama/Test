@@ -242,7 +242,7 @@ function L3_1()
         L2_3 = L10_2
         L3_3 = A0_3
         L2_3 = L2_3(L3_3)
-        L3_3 = L2_3 or L3_3
+        L3_3 = L2_3
         if L2_3 then
           L3_3 = L2_3.PlayerData
           L3_3 = L3_3.items
@@ -417,7 +417,7 @@ function L3_1()
         L3_3 = L10_2
         L4_3 = A0_3
         L3_3 = L3_3(L4_3)
-        L4_3 = L3_3 or L4_3
+        L4_3 = L3_3
         if L3_3 then
           L4_3 = L3_3.PlayerData
           L4_3 = L4_3.items
@@ -1728,7 +1728,7 @@ function L3_1()
         return L10_3
       end
     end
-    L10_3 = L9_3 or L10_3
+    L10_3 = L9_3
     if L9_3 then
       L10_3 = L0_1.requirePin
       L10_3 = false ~= L10_3
@@ -1960,17 +1960,17 @@ function L3_1()
             L19_3 = L14_3.md
             L19_3 = L19_3.apex_serial
             L18_3.serial = L19_3
-            L19_3 = L15_3 or L19_3
+            L19_3 = L15_3
             if L15_3 then
               L19_3 = L15_3.x
             end
             L18_3.x = L19_3
-            L19_3 = L15_3 or L19_3
+            L19_3 = L15_3
             if L15_3 then
               L19_3 = L15_3.y
             end
             L18_3.y = L19_3
-            L19_3 = L15_3 or L19_3
+            L19_3 = L15_3
             if L15_3 then
               L19_3 = L15_3.z
             end

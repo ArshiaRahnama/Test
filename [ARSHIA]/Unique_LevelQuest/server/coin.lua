@@ -50,19 +50,30 @@ function GrantCoin(targetId, coinAmount)
     targetId = tonumber(targetId)
     local xPlayer = targetId and ESX.GetPlayerFromId(targetId) or nil
     if not xPlayer then return false end
+    coinAmount = tonumber(coinAmount)
 
     if not Config.CoinItem then
-        MySQL.Async.fetchAll('SELECT coin FROM users WHERE identifier = @identifier', {
-            ['@identifier'] = xPlayer.identifier
-        }, function(result)
-            if result[1] then
-                local newCoin = (result[1].coin or 0) + coinAmount
-                MySQL.Async.execute('UPDATE users SET coin = @coin WHERE identifier = @identifier', {
-                    ['@coin'] = newCoin,
-                    ['@identifier'] = xPlayer.identifier,
-                })
-                TriggerEvent("Coin-System:LoadCoin2", targetId)
-            end
+        -- users.coin is an INT column, so a fractional reward (0.04 ...)
+        -- can never be added to it directly - it just rounds away to
+        -- nothing. The whole part goes straight into `coin`; the
+        -- fractional part is accumulated in `coin_frac` and carried into
+        -- `coin` the moment it adds up to a whole coin. One atomic UPDATE
+        -- (no read-modify-write), so two rewards landing in the same tick
+        -- can no longer overwrite each other either.
+        local whole = math.floor(coinAmount)
+        local frac  = math.floor((coinAmount - whole) * 10000 + 0.5) / 10000
+        MySQL.Async.execute([[
+            UPDATE users
+            SET coin      = coin + @whole + FLOOR(coin_frac + @frac),
+                coin_frac = (coin_frac + @frac) - FLOOR(coin_frac + @frac)
+            WHERE identifier = @identifier
+        ]], {
+            ['@whole']      = whole,
+            ['@frac']       = frac,
+            ['@identifier'] = xPlayer.identifier,
+        }, function()
+            -- push the new balance only once the write has really landed
+            TriggerEvent("Coin-System:LoadCoin2", targetId)
         end)
     else
         xPlayer.addInventoryItem("coin", coinAmount, nil, nil, 0)
@@ -130,17 +141,11 @@ AddEventHandler('Coin-System:RemoveCoin', function(playerId, coinAmount)
     if not xPlayer then return end
 
     if not Config.CoinItem then
-        MySQL.Async.fetchAll('SELECT coin FROM users WHERE identifier = @identifier', {
-            ['@identifier'] = xPlayer.identifier
-        }, function(result)
-            if result[1] then
-                local newCoin = math.max(0, (result[1].coin or 0) - coinAmount)
-                MySQL.Async.execute('UPDATE users SET coin = @coin WHERE identifier = @identifier', {
-                    ['@coin'] = newCoin,
-                    ['@identifier'] = xPlayer.identifier,
-                })
-                TriggerEvent("Coin-System:LoadCoin2", xPlayer.source)
-            end
+        MySQL.Async.execute('UPDATE users SET coin = GREATEST(0, coin - @amt) WHERE identifier = @identifier', {
+            ['@amt']        = math.floor(tonumber(coinAmount)),
+            ['@identifier'] = xPlayer.identifier,
+        }, function()
+            TriggerEvent("Coin-System:LoadCoin2", xPlayer.source)
         end)
     else
         xPlayer.removeInventoryItem("coin", coinAmount)
@@ -163,10 +168,11 @@ AddEventHandler('Coin-System:SetCoin', function(playerId, coinAmount)
 
     if not Config.CoinItem then
         MySQL.Async.execute('UPDATE users SET coin = @coin WHERE identifier = @identifier', {
-            ['@coin'] = coinAmount,
+            ['@coin'] = math.floor(tonumber(coinAmount)),
             ['@identifier'] = xPlayer.identifier,
-        })
-        TriggerEvent("Coin-System:LoadCoin2", xPlayer.source)
+        }, function()
+            TriggerEvent("Coin-System:LoadCoin2", xPlayer.source)
+        end)
     end
 end)
 

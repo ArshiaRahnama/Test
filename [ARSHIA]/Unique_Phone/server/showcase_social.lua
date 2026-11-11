@@ -3835,7 +3835,7 @@ function L31_1(A0_2)
   L4_2 = A0_2.cid
   L3_2[1] = L4_2
   L1_2 = L1_2(L2_2, L3_2)
-  L2_2 = L1_2 or L2_2
+  L2_2 = L1_2
   if L1_2 then
     L2_2 = L1_2.id
   end

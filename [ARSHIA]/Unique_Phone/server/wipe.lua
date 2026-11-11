@@ -435,7 +435,7 @@ SELECT table_name AS t FROM information_schema.tables WHERE table_schema = DATAB
     if not L9_2 then
       L9_2 = L8_2.TABLE_NAME
     end
-    L10_2 = L9_2 or L10_2
+    L10_2 = L9_2
     if L9_2 then
       L11_2 = L9_2
       L10_2 = L9_2.match

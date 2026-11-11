@@ -3,7 +3,7 @@ game 'gta5'
 
 description 'Skin Changer'
 
-version '1.0.1'
+version '1.1.0'
 
 client_scripts {
   'locale.lua',
@@ -13,4 +13,3 @@ client_scripts {
   'config.lua',
   'client/main.lua'
 }
-

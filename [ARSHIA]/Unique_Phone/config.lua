@@ -489,6 +489,9 @@ Config.Camera = {
     -- shifts a bit more on a wide screen (21:9) than on 16:9. Tune it on yours.
     SelfieOffsetX = 0.19,   -- was 0.08: with 0.08 the character sat in the LEFT third of the selfie frame on this server (1920x1080); 0.19 centres it. +0.02 = frame slides a bit more to the left, -0.02 = to the right
     LookSensitivity = 1.0,   -- Unique RP: how fast dragging in the viewfinder turns the camera (0.5 = slower, 2.0 = faster)
+    LookMethod = 'ped',      -- 'ped' = turn the character + camera pitch directly (default) | 'control' = inject the game's look input
+    LookInvertX = false,     -- true if dragging right turns the view to the LEFT
+    LookInvertY = false,     -- true if dragging down looks UP
     -- Vertical. ⚠️ NO EFFECT in portrait modes (3:4): there the crop is exactly the screen height
     -- and there is no margin to slide. Only applies in PANO mode (16:9). Kept here for symmetry.
     SelfieOffsetY = 0.0,
@@ -1722,7 +1725,7 @@ Config.Radio = {
     playerModes      = { 'ptt', 'toggle', 'open' },  -- modes players may pick when allowPlayerMode = true
     pttKeyEnabled    = true,      -- false = no key from the phone (players use the voice resource's own radio key)
     pttKey           = 'CAPITAL', -- default key (Caps Lock). Players can rebind it in Settings > Key Bindings > FiveM
-    pttCommand       = 'apexradio_ptt', -- command behind the key (+name / -name). FiveM saves keys per command NAME:
+    pttCommand       = 'uniqueradio_ptt', -- command behind the key (+name / -name). FiveM saves keys per command NAME:
                                   -- to give everyone a new default key, change this name (changing pttKey alone does not)
                                   -- 'toggle' / 'open' with pma-voice or SaltyChat: give their own radio key a DIFFERENT
                                   -- key, otherwise releasing it also ends the phone's transmission for a moment
@@ -1870,3 +1873,38 @@ Config.ContactShare = {
     sharePhoto      = true,        -- send the account photo with "my card" (preview only; the saved contact keeps the colour)
 }
 -- <<< CSHARE
+
+-- ============================================================================================
+-- CONSOLE: quiet by default (Unique RP: quiet console)
+-- ============================================================================================
+-- The phone used to print its startup summary, every rpc, perf timings, "open: key F1 ..." etc. With Config.Debug = false (default)
+-- all of that is hidden. ERRORS are always shown (red lines, anything containing "error" / "failed" / "MONEY STUCK").
+-- The output of the phone's own chat/console commands (/phonefix, /camtest, phoneintegrations ...) is always shown.
+do
+    local rawPrint = print
+    local forceUntil = 0           -- a phone command ran just now: show its output (never gets stuck, unlike a counter)
+
+    local function keep(msg)
+        if Config.Debug or GetGameTimer() < forceUntil then return true end
+        if type(msg) ~= 'string' then return true end
+        if not msg:find('[unique_phone]', 1, true) then return true end   -- not the phone's own line
+        if msg:sub(1, 2) == '^1' then return true end                    -- red = a real error
+        local low = msg:lower()
+        return low:find('error', 1, true) ~= nil or low:find('failed', 1, true) ~= nil or low:find('money stuck', 1, true) ~= nil
+    end
+
+    print = function(a, ...)
+        if keep(a) then return rawPrint(a, ...) end
+    end
+
+    local rawRegisterCommand = RegisterCommand
+    if rawRegisterCommand then
+        RegisterCommand = function(name, handler, restricted)
+            if type(handler) ~= 'function' then return rawRegisterCommand(name, handler, restricted) end
+            return rawRegisterCommand(name, function(...)
+                forceUntil = GetGameTimer() + 2500
+                return handler(...)
+            end, restricted)
+        end
+    end
+end

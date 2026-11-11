@@ -38,6 +38,26 @@ local menuHistory = {}
 ---@type RadialMenuProps?
 local currentRadial = nil
 
+---Radial items registered from inside ox_lib itself hold raw Lua functions (onSelect), which
+---cannot be JSON encoded for the NUI. Send a copy without any function values.
+---@param items table[]
+---@return table[]
+local function serializeItems(items)
+    local out = {}
+
+    for i = 1, #items do
+        local copy = {}
+
+        for k, v in pairs(items[i]) do
+            if type(v) ~= 'function' then copy[k] = v end
+        end
+
+        out[i] = copy
+    end
+
+    return out
+end
+
 ---Open a the global radial menu or a registered radial submenu with the given id.
 ---@param id string?
 ---@param option number?
@@ -64,7 +84,7 @@ local function showRadial(id, option)
     SendNUIMessage({
         action = 'openRadialMenu',
         data = {
-            items = radial and radial.items or menuItems,
+            items = serializeItems(radial and radial.items or menuItems),
             sub = radial and true or nil,
             option = option
         }
@@ -289,7 +309,7 @@ RegisterNUICallback('radialBack', function(_, cb)
     SendNUIMessage({
         action = 'openRadialMenu',
         data = {
-            items = menuItems,
+            items = serializeItems(menuItems),
             option = lastMenu.option
         }
     })
@@ -328,7 +348,7 @@ function lib.disableRadial(state)
 end
 
 lib.addKeybind({
-    name = 'ox_lib-radial',
+    name = 'ox_lib-radial-menu', -- new name so the default key (End) applies even if an old key (Z) was saved
     description = locale('open_radial_menu'),
     defaultKey = 'end',
     onPressed = function()
@@ -345,7 +365,7 @@ lib.addKeybind({
         SendNUIMessage({
             action = 'openRadialMenu',
             data = {
-                items = menuItems
+                items = serializeItems(menuItems)
             }
         })
 

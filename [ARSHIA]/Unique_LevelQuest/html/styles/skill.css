@@ -79,14 +79,14 @@
 .skill-list .skillRow:nth-child(6) { animation-delay: 0.17s; }
 
 .skillRow:hover {
-  border-color: rgba(255, 140, 26, 0.35);
+  border-color: rgba(124, 58, 237, 0.35);
   transform: translateY(-2px);
   box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
 }
 
 .skillRow.current {
-  border-color: rgba(255, 140, 26, 0.55);
-  background: linear-gradient(165deg, rgba(255, 140, 26, 0.09), rgba(0, 0, 0, 0.25));
+  border-color: rgba(124, 58, 237, 0.55);
+  background: linear-gradient(165deg, rgba(124, 58, 237, 0.09), rgba(0, 0, 0, 0.25));
   animation: cardIn 0.3s ease backwards, currentPulse 2.2s ease-in-out infinite;
 }
 
@@ -96,8 +96,8 @@
 }
 
 @keyframes currentPulse {
-  0%, 100% { box-shadow: 0 0 0 rgba(255, 140, 26, 0); }
-  50% { box-shadow: 0 0 16px rgba(255, 140, 26, 0.25); }
+  0%, 100% { box-shadow: 0 0 0 rgba(124, 58, 237, 0); }
+  50% { box-shadow: 0 0 16px rgba(124, 58, 237, 0.25); }
 }
 
 .masteredRibbon {
@@ -182,7 +182,7 @@
 .tier-rookie { color: #9096a6; background: rgba(255, 255, 255, 0.07); }
 .tier-trained { color: #6fb6ff; background: rgba(79, 168, 255, 0.14); }
 .tier-experienced { color: #b18aff; background: rgba(177, 138, 255, 0.14); }
-.tier-veteran { color: var(--orange2); background: rgba(255, 140, 26, 0.14); }
+.tier-veteran { color: var(--orange2); background: rgba(124, 58, 237, 0.14); }
 .tier-master { color: #ffd76a; background: rgba(255, 215, 106, 0.16); }
 
 .dutyBadge {
@@ -191,8 +191,8 @@
   font-weight: 900;
   letter-spacing: 0.5px;
   color: var(--orange);
-  background: rgba(255, 140, 26, 0.15);
-  border: 1px solid rgba(255, 140, 26, 0.4);
+  background: rgba(124, 58, 237, 0.15);
+  border: 1px solid rgba(124, 58, 237, 0.4);
   padding: 2px 6px;
   border-radius: 20px;
 }
@@ -252,3 +252,14 @@
   font-weight: 600;
   color: var(--muted);
 }
+
+.skill-activity-title { margin: 20px 0 10px; font-size: 13px; letter-spacing: .08em; text-transform: uppercase; opacity: .7; }
+.skill-activity { display: flex; flex-direction: column; gap: 10px; }
+.skill-activity-title.hidden { display: none; }
+.skillUpBurst { position: fixed; left: 50%; bottom: 22%; transform: translateX(-50%); display: flex; align-items: center; gap: 10px;
+  padding: 8px 16px; border-radius: 999px; color: #fff; background: rgba(20,24,34,.78); border: 1px solid rgba(255,255,255,.14);
+  backdrop-filter: blur(10px); pointer-events: none; z-index: 9999; animation: skillUpRise 1.8s ease-out forwards; }
+.skillUpPlus { font-size: 22px; font-weight: 800; color: #6ee7a8; }
+@keyframes skillUpRise { 0% { opacity: 0; transform: translate(-50%, 14px) scale(.9); } 15% { opacity: 1; transform: translate(-50%, 0) scale(1); }
+  80% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -46px) scale(1); } }
+@media (prefers-reduced-motion: reduce) { .skillUpBurst { animation: none; } }

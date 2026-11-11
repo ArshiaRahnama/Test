@@ -1,10 +1,10 @@
--- Apex Phone by Apex Scripts
+-- Unique Phone (Unique RP build of Apex Phone, author: Apex Scripts)
 fx_version 'cerulean'
 game 'gta5'
 lua54 'yes'
 
 author 'Apex Scripts'
-description 'Apex Phone: PearOS (iOS style) and Nova UI (Android style) smartphone with foldables, earbuds, eSIM and physical SIM, radio, contact sharing, phone shop, admin panel and integrations (ESX / QBCore / QBox / standalone)'
+description 'Unique Phone: PearOS (iOS style) and Nova UI (Android style) smartphone with foldables, earbuds, eSIM and physical SIM, radio, contact sharing, phone shop, admin panel and integrations (ESX / QBCore / QBox / standalone)'
 version '1.3.0'
 
 shared_scripts {

@@ -18,7 +18,7 @@ L3_1 = L3_1.Music
 if not L3_1 then
   L3_1 = {}
 end
-L4_1 = L1_1 or L4_1
+L4_1 = L1_1
 if L1_1 then
   L4_1 = L3_1.Search
   L4_1 = false ~= L4_1

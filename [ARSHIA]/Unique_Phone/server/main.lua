@@ -3157,7 +3157,7 @@ function L27_1(A0_2)
     L5_2 = nil
     return L5_2
   end
-  L5_2 = L3_2 or L5_2
+  L5_2 = L3_2
   if L3_2 then
     L5_2 = Accounts
     L5_2 = L5_2[L3_2]
@@ -8454,7 +8454,7 @@ DELETE FROM apex_phone_onion_orders WHERE (buyer = ? OR seller = ?) AND status I
     L9_2 = pcall
     L10_2 = MessagesForget
     L11_2 = A0_2
-    L12_2 = L1_2 or L12_2
+    L12_2 = L1_2
     if L1_2 then
       L12_2 = L1_2.phone
     end
@@ -8476,7 +8476,7 @@ DELETE FROM apex_phone_onion_orders WHERE (buyer = ? OR seller = ?) AND status I
     L9_2 = pcall
     L10_2 = RecadoCoreForget
     L11_2 = A0_2
-    L12_2 = L1_2 or L12_2
+    L12_2 = L1_2
     if L1_2 then
       L12_2 = L1_2.phone
     end
@@ -8489,7 +8489,7 @@ DELETE FROM apex_phone_onion_orders WHERE (buyer = ? OR seller = ?) AND status I
     L9_2 = pcall
     L10_2 = RecadoForget
     L11_2 = A0_2
-    L12_2 = L1_2 or L12_2
+    L12_2 = L1_2
     if L1_2 then
       L12_2 = L1_2.phone
     end
@@ -8502,7 +8502,7 @@ DELETE FROM apex_phone_onion_orders WHERE (buyer = ? OR seller = ?) AND status I
     L9_2 = pcall
     L10_2 = RecadoSocialForget
     L11_2 = A0_2
-    L12_2 = L1_2 or L12_2
+    L12_2 = L1_2
     if L1_2 then
       L12_2 = L1_2.phone
     end
@@ -10857,7 +10857,7 @@ function L107_1(A0_2, A1_2)
   L3_2 = Config
   L3_2 = L3_2.PhoneItem
   ::lbl_45::
-  L4_2 = L3_2 or L4_2
+  L4_2 = L3_2
   if L3_2 then
     L4_2 = Config
     L4_2 = L4_2.Devices
@@ -13109,7 +13109,7 @@ function L121_1(A0_2)
   L2_2 = LastDevice
   L2_2 = L2_2[A0_2]
   ::lbl_16::
-  L3_2 = L2_2 or L3_2
+  L3_2 = L2_2
   if L2_2 then
     L3_2 = Config
     L3_2 = L3_2.Devices
@@ -13155,7 +13155,7 @@ function L121_1(A0_2)
   L2_2 = LastDevice
   L2_2 = L2_2[A0_2]
   ::lbl_16::
-  L3_2 = L2_2 or L3_2
+  L3_2 = L2_2
   if L2_2 then
     L3_2 = Config
     L3_2 = L3_2.Devices

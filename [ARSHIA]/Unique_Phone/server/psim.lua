@@ -946,7 +946,7 @@ function L47_1(A0_2)
       L2_2 = L8_1.qbPlayer
       L3_2 = A0_2
       L2_2 = L2_2(L3_2)
-      L3_2 = L2_2 or L3_2
+      L3_2 = L2_2
       if L2_2 then
         L3_2 = L2_2.PlayerData
         L3_2 = L3_2.items
@@ -1868,7 +1868,7 @@ function L65_1(A0_2)
   local L1_2, L2_2, L3_2
   L1_2 = L20_1
   L1_2 = L1_2[A0_2]
-  L2_2 = L1_2 or L2_2
+  L2_2 = L1_2
   if L1_2 then
     L3_2 = L1_2.serial
     L2_2 = L13_1
@@ -2362,11 +2362,11 @@ function L73_1(A0_2, A1_2)
     L12_2 = A1_2
     L8_2(L9_2, L10_2, L11_2, L12_2)
   else
-    L8_2 = L2_2 or L8_2
+    L8_2 = L2_2
     if L2_2 then
       L8_2 = L2_2.serial
     end
-    L9_2 = L6_2 or L9_2
+    L9_2 = L6_2
     if L6_2 then
       L9_2 = L6_2.serial
     end
@@ -2812,7 +2812,7 @@ function L76_1(A0_2, A1_2, A2_2)
     L4_3 = A0_2
     L5_3 = A2_2.slot
     L3_3 = L3_3(L4_3, L5_3)
-    L4_3 = L3_3 or L4_3
+    L4_3 = L3_3
     if L3_3 then
       L4_3 = L32_1
       L5_3 = L3_3.md
@@ -3261,7 +3261,7 @@ function L83_1(A0_2, A1_2)
   L4_2 = {}
   L5_2 = L20_1
   L5_2 = L5_2[A0_2]
-  L6_2 = L5_2 or L6_2
+  L6_2 = L5_2
   if L5_2 then
     L7_2 = L5_2.serial
     L6_2 = L13_1
@@ -3483,7 +3483,7 @@ function L83_1(A0_2, A1_2, A2_2, A3_2)
     L6_3 = L39_1
     L7_3 = A2_2
     L6_3(L7_3)
-    L6_3 = L2_3 or L6_3
+    L6_3 = L2_3
     if L2_3 then
       L6_3 = L21_1
       L6_3 = L6_3[L2_3]
@@ -5420,7 +5420,7 @@ function L92_1()
     end
     L2_3 = L20_1
     L2_3 = L2_3[A0_3]
-    L3_3 = L2_3 or L3_3
+    L3_3 = L2_3
     if L2_3 then
       L4_3 = L2_3.serial
       L3_3 = L13_1
@@ -5758,7 +5758,7 @@ function L92_1()
         L1_3 = L20_1
         L1_3 = L1_3[A0_3]
       end
-      L2_3 = L1_3 or L2_3
+      L2_3 = L1_3
       if L1_3 then
         L3_3 = L1_3.serial
         L2_3 = L13_1

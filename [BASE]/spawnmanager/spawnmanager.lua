@@ -141,6 +141,13 @@ function setAutoSpawnCallback(cb)
     autoSpawnEnabled = true
 end
 
+-- Set the convar `spawnmanager_fade 1` to bring back the black fade-out/fade-in
+-- around every spawn. Default (0) = no fade-out, like the sun server. A fade-in is
+-- ALWAYS done when the screen happens to be faded out, so it can never stay black.
+local function useFade()
+    return GetConvarInt('spawnmanager_fade', 0) == 1
+end
+
 local function freezePlayer(id, freeze)
     local player = id
     SetPlayerControl(player, not freeze, false)
@@ -169,7 +176,6 @@ local function freezePlayer(id, freeze)
 
         SetPlayerInvincible(player, true)
 
-
         if not IsPedFatallyInjured(ped) then
             ClearPedTasksImmediately(ped)
         end
@@ -179,14 +185,123 @@ end
 function loadScene(x, y, z)
     NewLoadSceneStart(x, y, z, 0.0, 0.0, 0.0, 20.0, 0)
 
-    while IsNewLoadSceneActive() do
-        networkTimer = GetNetworkTimer()
+    local timeout = GetGameTimer() + 5000
 
+    while IsNewLoadSceneActive() and GetGameTimer() < timeout do
         NetworkUpdateLoadScene()
+        Citizen.Wait(0)
     end
 end
 
+-- exported in fxmanifest but never defined before
+function getRandomSpawnPoint()
+    if #spawnPoints == 0 then
+        return nil
+    end
+
+    return spawnPoints[GetRandomIntInRange(1, #spawnPoints + 1)]
+end
+
 local spawnLock = false
+
+-- the actual spawn; runs inside pcall so an error can never leave the player
+-- frozen/invisible/invincible or the spawn lock stuck
+local function doSpawn(spawnIdx, cb)
+    if not spawnIdx then
+        if #spawnPoints == 0 then
+            Citizen.Trace("tried to spawn but there are no spawn points\n")
+            return
+        end
+
+        spawnIdx = GetRandomIntInRange(1, #spawnPoints + 1)
+    end
+
+    local spawn
+
+    if type(spawnIdx) == 'table' then
+        spawn = spawnIdx
+    else
+        spawn = spawnPoints[spawnIdx]
+    end
+
+    if not spawn then
+        Citizen.Trace("tried to spawn at an invalid spawn index\n")
+        return
+    end
+
+    if useFade() and not spawn.skipFade then
+        DoScreenFadeOut(500)
+
+        while not IsScreenFadedOut() do
+            Citizen.Wait(0)
+        end
+    end
+
+    freezePlayer(PlayerId(), true)
+
+    if spawn.model then
+        if IsModelInCdimage(spawn.model) and IsModelValid(spawn.model) then
+            RequestModel(spawn.model)
+
+            local timeout = GetGameTimer() + 10000
+
+            while not HasModelLoaded(spawn.model) and GetGameTimer() < timeout do
+                RequestModel(spawn.model)
+
+                Citizen.Wait(0)
+            end
+
+            if HasModelLoaded(spawn.model) then
+                SetPlayerModel(PlayerId(), spawn.model)
+            else
+                Citizen.Trace("spawn model failed to load, keeping the current model\n")
+            end
+
+            SetModelAsNoLongerNeeded(spawn.model)
+        else
+            Citizen.Trace("spawn model is not a valid model, keeping the current model\n")
+        end
+    end
+
+    RequestCollisionAtCoord(spawn.x, spawn.y, spawn.z)
+
+    -- the ped handle changes with the model: fetch it after SetPlayerModel
+    local ped = PlayerPedId()
+
+    SetEntityCoordsNoOffset(ped, spawn.x, spawn.y, spawn.z, false, false, false, true)
+
+    NetworkResurrectLocalPlayer(spawn.x, spawn.y, spawn.z, spawn.heading, true, true, false)
+
+    ClearPedTasksImmediately(ped)
+
+    RemoveAllPedWeapons(ped)
+    ClearPlayerWantedLevel(PlayerId())
+
+    local time = GetGameTimer()
+
+    while (not HasCollisionLoadedAroundEntity(ped) and (GetGameTimer() - time) < 5000) do
+        Citizen.Wait(0)
+    end
+
+    ShutdownLoadingScreen()
+
+    -- never leave the screen black (also covers the very first spawn)
+    if IsScreenFadedOut() then
+        DoScreenFadeIn(500)
+
+        while not IsScreenFadedIn() do
+            Citizen.Wait(0)
+        end
+    end
+
+    freezePlayer(PlayerId(), false)
+
+    TriggerEvent('playerSpawned', spawn)
+
+    if cb then
+        cb(spawn)
+    end
+end
 
 function spawnPlayer(spawnIdx, cb)
     if spawnLock then
@@ -196,111 +311,17 @@ function spawnPlayer(spawnIdx, cb)
     spawnLock = true
 
     Citizen.CreateThread(function()
+        local ok, err = pcall(doSpawn, spawnIdx, cb)
 
-        if not spawnIdx then
-            spawnIdx = GetRandomIntInRange(1, #spawnPoints + 1)
-        end
+        if not ok then
+            Citizen.Trace("spawnmanager: spawn failed: " .. tostring(err) .. "\n")
 
+            -- undo freezePlayer(true) so the player can move again
+            freezePlayer(PlayerId(), false)
 
-        local spawn
-
-        if type(spawnIdx) == 'table' then
-            spawn = spawnIdx
-        else
-            spawn = spawnPoints[spawnIdx]
-        end
-
-        if not spawn.skipFade then
-            DoScreenFadeOut(500)
-
-            while not IsScreenFadedOut() do
-                Citizen.Wait(0)
+            if IsScreenFadedOut() then
+                DoScreenFadeIn(500)
             end
-        end
-
-
-        if not spawn then
-            Citizen.Trace("tried to spawn at an invalid spawn index\n")
-
-            spawnLock = false
-
-            return
-        end
-
-
-        freezePlayer(PlayerId(), true)
-
-
-        if spawn.model then
-            RequestModel(spawn.model)
-
-
-            while not HasModelLoaded(spawn.model) do
-                RequestModel(spawn.model)
-
-                Wait(0)
-            end
-
-
-            SetPlayerModel(PlayerId(), spawn.model)
-
-
-            SetModelAsNoLongerNeeded(spawn.model)
-        end
-
-
-        RequestCollisionAtCoord(spawn.x, spawn.y, spawn.z)
-
-
-
-        local ped = GetPlayerPed(-1)
-
-
-        SetEntityCoordsNoOffset(ped, spawn.x, spawn.y, spawn.z, false, false, false, true)
-
-        NetworkResurrectLocalPlayer(spawn.x, spawn.y, spawn.z, spawn.heading, true, true, false)
-
-
-        ClearPedTasksImmediately(ped)
-
-        RemoveAllPedWeapons(ped)
-        ClearPlayerWantedLevel(PlayerId())
-
-
-
-
-
-
-
-
-
-
-
-
-
-        local time = GetGameTimer()
-
-        while (not HasCollisionLoadedAroundEntity(ped) and (GetGameTimer() - time) < 5000) do
-            Citizen.Wait(0)
-        end
-
-        ShutdownLoadingScreen()
-
-        if IsScreenFadedOut() then
-            DoScreenFadeIn(500)
-
-            while not IsScreenFadedIn() do
-                Citizen.Wait(0)
-            end
-        end
-
-
-        freezePlayer(PlayerId(), false)
-
-        TriggerEvent('playerSpawned', spawn)
-
-        if cb then
-            cb(spawn)
         end
 
         spawnLock = false
@@ -315,7 +336,7 @@ Citizen.CreateThread(function()
     while true do
         Citizen.Wait(50)
 
-        local playerPed = GetPlayerPed(-1)
+        local playerPed = PlayerPedId()
 
         if playerPed and playerPed ~= -1 then
 
@@ -329,6 +350,9 @@ Citizen.CreateThread(function()
                         end
 
                         respawnForced = false
+                        -- death handled: a stale timestamp must not trigger a second respawn
+                        -- (if the player is still dead it is set again on the next pass)
+                        diedAt = nil
                     end
                 end
             end

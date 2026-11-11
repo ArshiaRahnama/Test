@@ -100,7 +100,7 @@ const SKEL = Array.from({length:6}).map(()=>
 
 const S = {
   cfg: { categories: [], priorities: {}, limits: {}, server: 'Unique RP', site: 'arshiahub.ir' },
-  userView:  'compose',
+  userView:  'ticket',
   adminView: 'queue',
   compose:   { category: null },
   tickets:   [],
@@ -339,7 +339,7 @@ async function renderTicketCompose(body) {
     <form class="compose" id="ticketComposeForm" novalidate>
       <p class="compose__lede">
         این بخش برای موضوعاتِ عمومیه (سوال، مشکلِ مالی، باگ، اعتراض به مجازات...) - نه گزارشِ یک بازیکنِ خاص.
-        اگه میخوای یک بازیکن رو گزارش بدی، از تبِ «ریپورت جدید» استفاده کن.
+        اگه میخوای یک بازیکن رو گزارش بدی، از دستور /report استفاده کن.
       </p>
 
       <div class="field">
@@ -368,6 +368,7 @@ async function renderTicketCompose(body) {
         <div class="counter" id="tInfoCount">0 / 1000</div>
       </div>
 
+      <button class="btn" id="tMine" type="button"><i class="fa-solid fa-comments"></i> تیکت‌های من</button>
       <button class="btn btn--go btn--sky" id="tSend" type="submit">
         <i class="fa-solid fa-paper-plane"></i> ثبت تیکت
       </button>
@@ -398,6 +399,7 @@ async function renderTicketCompose(body) {
   bind('tInfo', 'tInfoCount', 1000);
 
   $('#ticketComposeForm').addEventListener('submit', submitTicket);
+  $('#tMine').addEventListener('click', () => nui('ticket:openMine'));
 }
 
 async function submitTicket(ev) {
@@ -428,7 +430,7 @@ async function submitTicket(ev) {
   btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> ثبت تیکت';
 
   if (res && res.r) {
-    toast(`تیکت #${res.id} ثبت شد - برای پیگیری و چت با ادمین از دستور /ticket استفاده کن.`, 'ok');
+    toast(`تیکت #${res.id} ثبت شد - برای پیگیری و چت با ادمین دکمه‌ی «تیکت‌های من» رو بزن.`, 'ok');
     $('#ticketComposeForm').reset();
     S.ticketCompose = { category: (S.ticketCfg.categories[0] || {}).id, priority: 2 };
   } else {

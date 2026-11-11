@@ -40,6 +40,7 @@ client_scripts {
 	'@ox_lib/init.lua',
 	-- migrated from esx_aduty (see server/aduty_* for server-side counterparts)
 	'client/aduty_reportmenu_lib.lua',
+	'client/sun_report_bridge.lua',
 	'client/aduty_client.lua',
 	'client/aduty_spectate.lua',
 	'client/aduty_carp.lua',
@@ -111,6 +112,7 @@ server_scripts {
 	'server/report_schema_guard.lua',
 	'server/report_function.lua',
 	'server/report_main.lua',
+	'server/sun_report_bridge.lua',
 	-- MUST load after report_server_config.lua (extends Config_Server) and
 	-- report_function.lua (extends Rep) - see that file's own header. Fixes:
 	-- pending reports with no admin follow-up now auto-close after 30 min

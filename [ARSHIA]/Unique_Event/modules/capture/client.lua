@@ -1,1025 +1,751 @@
+-- ============================================================================
+--  Unique Capture  -  CLIENT  (Sun-style)
+--  همه‌چیز local هست تا با globalهای warzone/gungame/hub قاطی نشه.
+-- ============================================================================
+local CFG = CapConfig
+local ESX, PlayerData = nil, nil
+local Theme = CFG.Themes[CFG.ActiveTheme] or CFG.Themes.Default
 
+local Active, UntilEnd = false, 0           -- راند فعال؟
+local InCap, ZoneId, Zones = false, nil, {} -- داخل کپچر؟
+local Kills, Deaths = 0, 0
+local IsDead, InProtection, InZoneCircle = false, false, false
+local TeleportBusy, MenuOpen, ScoreboardOpen, TimerHidden, Dying = false, false, false, false, false
+local LastBoard, LastBoardAt = nil, 0
+local Blips = {}
+local LastCoords = nil
+local LoopToken, ProtId, GhostRunning = 0, 0, false
+local CapBlockedUntil = 0
 
-ESX = nil
-PlayerData = nil
-Citizen.CreateThread(function()
-    while not ESX do
-        TriggerEvent(CapConfig.getSharedObjectTrigger, function(obj) ESX = obj end)
-        Citizen.Wait(5)
-    end
-    while not PlayerData do
-        Citizen.Wait(5)
-        PlayerData = ESX.GetPlayerData()
-    end
-    while not PlayerData.gang do
-        Citizen.Wait(5)
-        PlayerData = ESX.GetPlayerData()
-    end
-end)
+local PARACHUTE = GetHashKey('gadget_parachute')
 
-function Notify(message, notifyType, title)
-    local oxType = notifyType
-    if oxType == 'error' then oxType = 'error'
-    elseif oxType == 'success' then oxType = 'success'
-    elseif oxType == 'info' then oxType = 'inform'
-    else oxType = 'inform' end
-
-    lib.notify({
-        title = title or 'Unique Capture',
-        description = message,
-        type = oxType,
-        position = 'center-right',
-    })
+local function nui(action, data) SendNUIMessage({ action = action, data = data or {} }) end
+local function notify(msg, typ)
+    lib.notify({ description = msg, type = typ or 'inform', position = 'top' })
 end
 
-RegisterNetEvent("arshiahub.ir-Capture:OxNotify")
-AddEventHandler("arshiahub.ir-Capture:OxNotify", function(message, notifyType, title)
-    Notify(message, notifyType, title)
-end)
+local function MyGang()
+    local pd = PlayerData or (ESX and ESX.GetPlayerData and ESX.GetPlayerData())
+    local g = pd and pd.gang
+    if type(g) == 'table' then return g.name or 'nogang' end
+    if type(g) == 'string' and g ~= '' then return g end
+    return 'nogang'
+end
 
-local ActiveTheme = CapConfig.Themes[CapConfig.ActiveTheme] or CapConfig.Themes.Default
-RegisterNetEvent("arshiahub.ir-CaptureSystem:SetTheme")
-AddEventHandler("arshiahub.ir-CaptureSystem:SetTheme", function(theme)
-    if theme then ActiveTheme = theme end
-end)
-RegisterNetEvent('esx:setGang')
-AddEventHandler('esx:setGang',function(Gang)
-    PlayerData.gang = Gang
-end)
+local function WaitFor(cond, ms)
+    local t = GetGameTimer() + ms
+    while not cond() and GetGameTimer() < t do Wait(25) end
+    return cond()
+end
 
-CaptureDetails = {
-    CaptureHolderGang = {}
-}
+-- ----------------------------------------------------------------------------
+--  Init
+-- ----------------------------------------------------------------------------
+local function ShowHud(seconds)
+    nui('setVisible', { visible = true })
+    nui('setTimer', { seconds = seconds or UntilEnd or 0 })
+    nui('updateStats', { kills = Kills, deaths = Deaths })
+    if not InCap then nui('setFlagOwner', {}) end
+end
 
-RegisterNetEvent("arshiahub.ir-CaptureSystem:UpdateHolderGang")
-AddEventHandler("arshiahub.ir-CaptureSystem:UpdateHolderGang",function(ZonesHolderGangs)
-    CaptureDetails.CaptureHolderGang = ZonesHolderGangs
-end)
+local function HideHud() nui('setVisible', { visible = false }) end
 
-PlayerCaptureInf = {
-    InCapture = false,
-    Alive = false,
-    InMenu = nil,
-    OnGround = false,
-    IsOnMarker = false,
-    Weapon = nil,
-    Armor = 0,
-    Group = nil,
-    ZoneCoord = nil
-}
+-- cache زون‌ها از سرور (باید داخل thread صدا زده بشه)
+local function FetchCache()
+    if not ESX then return false end
+    local done, ok = false, false
+    ESX.TriggerServerCallback('capture:getCache', function(list, cfg, untilEnd)
+        local zones = {}
+        for _, z in ipairs(list or {}) do
+            zones[z.id] = { id = z.id, label = z.label, coords = vector3(z.coords.x, z.coords.y, z.coords.z), world = z.world,
+                captureBy = z.captureBy, playerCount = z.playerCount, gangPlayerCount = z.gangPlayerCount,
+                maxPlayerCount = z.maxPlayerCount, maxGangCount = z.maxGangCount }
+        end
+        Zones = zones
+        if cfg and cfg.theme then Theme = cfg.theme end
+        Active = (cfg and cfg.active) and true or false
+        UntilEnd = untilEnd or 0
+        ok, done = true, true
+    end)
+    WaitFor(function() return done end, 5000)
+    return ok
+end
 
-RegisterCommand(CapConfig.ReSpawnCaptureCommand,function()
-    if PlayerCaptureInf.InCapture and PlayerCaptureInf.Alive then
-        ReSpawn()
+CreateThread(function()
+    while not ESX do
+        TriggerEvent(CFG.getSharedObjectTrigger, function(o) ESX = o end)
+        Wait(100)
     end
-end,false)
+    while not (ESX.GetPlayerData and ESX.GetPlayerData() and ESX.GetPlayerData().gang) do Wait(250) end
+    PlayerData = ESX.GetPlayerData()
+    if FetchCache() and Active and MyGang() ~= 'nogang' then ShowHud(UntilEnd) end
+end)
 
-RegisterCommand(CapConfig.DashboardCommand, function()
-    ESX.TriggerServerCallback('arshiahub.ir-Capture:GetDashboard', function(data)
+RegisterNetEvent('esx:setGang')
+AddEventHandler('esx:setGang', function(gang)
+    PlayerData = PlayerData or {}
+    PlayerData.gang = gang
+    if MyGang() == 'nogang' and not InCap then HideHud() end
+end)
+
+RegisterNetEvent('capture:notify')
+AddEventHandler('capture:notify', function(msg, typ) notify(msg, typ) end)
+
+RegisterNetEvent('capture:SetTheme')
+AddEventHandler('capture:SetTheme', function(t) if type(t) == 'table' then Theme = t end end)
+
+-- ----------------------------------------------------------------------------
+--  Blips
+-- ----------------------------------------------------------------------------
+local function RemoveBlips()
+    for _, b in ipairs(Blips) do if DoesBlipExist(b) then RemoveBlip(b) end end
+    Blips = {}
+end
+
+local function CreateBlips()
+    RemoveBlips()
+    for _, z in pairs(Zones) do
+        local b = AddBlipForCoord(z.coords.x, z.coords.y, z.coords.z)
+        SetBlipSprite(b, CFG.BlipSprite)
+        SetBlipColour(b, CFG.BlipColor)
+        SetBlipScale(b, CFG.BlipScale)
+        SetBlipAsShortRange(b, false)
+        BeginTextCommandSetBlipName('STRING')
+        AddTextComponentString(z.label)
+        EndTextCommandSetBlipName(b)
+        local r = AddBlipForRadius(z.coords.x, z.coords.y, z.coords.z, CFG.BlipRadius)
+        SetBlipColour(r, 1)
+        SetBlipAlpha(r, 80)
+        Blips[#Blips + 1] = b
+        Blips[#Blips + 1] = r
+    end
+end
+
+-- ----------------------------------------------------------------------------
+--  Spawn protection (نامیرا + چشمک برای بقیه با state bag)
+-- ----------------------------------------------------------------------------
+AddStateBagChangeHandler('captureProtected', nil, function(bagName, _, value)
+    local ply = GetPlayerFromStateBagName(bagName)
+    if not ply or ply == 0 then return end
+    local ped = GetPlayerPed(ply)
+    if not ped or ped == 0 then return end
+    if value then SetEntityAlpha(ped, 150, false) else ResetEntityAlpha(ped) end
+end)
+
+local function EndProtection(id)
+    if id and id ~= ProtId then return end
+    InProtection = false
+    SetPlayerInvincible(PlayerId(), false)
+    LocalPlayer.state:set('captureProtected', false, true)
+    ResetEntityAlpha(PlayerPedId())
+end
+
+local function StartProtection()
+    ProtId = ProtId + 1
+    local id = ProtId
+    InProtection = true
+    SetPlayerInvincible(PlayerId(), true)
+    LocalPlayer.state:set('captureProtected', true, true)
+    SetPedArmour(PlayerPedId(), CFG.SpawnArmor)
+    SetTimeout(CFG.SpawnProtectionTime * 1000, function() EndProtection(id) end)
+end
+
+-- ----------------------------------------------------------------------------
+--  Ghost mode  (مثل sun: بعد مرگ تا انتخاب زون مرده/نامرئی می‌مونی)
+-- ----------------------------------------------------------------------------
+local function ReleaseGhost()
+    local ped = PlayerPedId()
+    SetEntityVisible(ped, true, false)
+    SetEntityInvincible(ped, false)
+    FreezeEntityPosition(ped, false)
+    SetEntityCollision(ped, true, true)
+end
+
+local OpenSpawnMenu
+
+local function StartGhost()
+    if GhostRunning then return end
+    GhostRunning = true
+    CreateThread(function()
+        local t0, reviveSent = GetGameTimer(), false
+        while IsDead and InCap do
+            local ped = PlayerPedId()
+            if IsEntityDead(ped) then
+                -- آمبولانس خودش با capture:inCapture بعد ~۱ ثانیه ریوایو می‌کنه؛ اگه نکرد خودمون
+                if not reviveSent and GetGameTimer() - t0 > 2500 then
+                    reviveSent = true
+                    TriggerEvent(CFG.ReviveTrigger)
+                end
+            else
+                SetEntityVisible(ped, false, false)
+                SetEntityInvincible(ped, true)
+                FreezeEntityPosition(ped, true)
+                SetEntityCollision(ped, false, false)
+            end
+            DisableAllControlActions(0)
+            EnableControlAction(0, 1, true)   -- look
+            EnableControlAction(0, 2, true)
+            EnableControlAction(0, 245, true) -- chat
+            if not MenuOpen and IsDisabledControlJustPressed(0, 38) then CreateThread(OpenSpawnMenu) end
+            Wait(0)
+        end
+        GhostRunning = false
+    end)
+end
+
+local function OnDeath()
+    if IsDead or not InCap then return end
+    IsDead = true
+    nui('hideHeal')
+    nui('stopCaptureTimer')
+    nui('showDeathScreen', {})
+    StartGhost()
+end
+
+AddEventHandler('esx:onPlayerDeath', function() OnDeath() end)
+
+-- ----------------------------------------------------------------------------
+--  Spawn menu
+-- ----------------------------------------------------------------------------
+local function ZoneUiList()
+    local arr = {}
+    for id, z in pairs(Zones) do
+        arr[#arr + 1] = { id = id, zoneLabel = z.label, playerCount = z.playerCount, maxPlayerCount = z.maxPlayerCount,
+            gangPlayerCount = z.gangPlayerCount, maxGangCount = z.maxGangCount }
+    end
+    table.sort(arr, function(a, b) return a.id < b.id end)
+    return arr
+end
+
+OpenSpawnMenu = function()
+    if MenuOpen then return end
+    if not FetchCache() then return notify('Server Pasokh Nadad !', 'error') end
+    if not Active then return notify('Capture Not Active !', 'error') end
+    MenuOpen = true
+    SetNuiFocus(true, true)
+    ShowHud(UntilEnd)
+    nui('openSpawnMenu', { zones = ZoneUiList(), canBackHome = InCap })
+end
+
+local function CloseMenu()
+    if not MenuOpen then return end
+    MenuOpen = false
+    SetNuiFocus(false, false)
+    nui('closeSpawnMenu')
+end
+
+RegisterNetEvent('Cap:OpenMenu')
+AddEventHandler('Cap:OpenMenu', function() CreateThread(OpenSpawnMenu) end)
+
+RegisterNUICallback('requestSpawnZones', function(_, cb)
+    cb('ok')
+    CreateThread(function()
+        if MenuOpen and FetchCache() then nui('updateSpawnZones', { zones = ZoneUiList() }) end
+    end)
+end)
+
+RegisterNUICallback('spawnSelect', function(data, cb)
+    cb('ok')
+    MenuOpen = false
+    SetNuiFocus(false, false)
+    local id = data and tonumber(data.id)
+    if id then TriggerServerEvent('capture:join', id) end
+end)
+
+RegisterNUICallback('spawnCancel', function(_, cb)
+    cb('ok')
+    MenuOpen = false
+    SetNuiFocus(false, false)
+    if IsDead and InCap then nui('showDeathScreen', {}) end
+end)
+
+RegisterNUICallback('spawnBackHome', function(_, cb)
+    cb('ok')
+    MenuOpen = false
+    SetNuiFocus(false, false)
+    TriggerServerEvent('capture:exit')
+end)
+
+RegisterNUICallback('captureTimerComplete', function(_, cb) cb('ok') end)
+
+RegisterNetEvent('capture:joinDenied')
+AddEventHandler('capture:joinDenied', function()
+    if not InCap or IsDead then CreateThread(OpenSpawnMenu) end
+end)
+
+-- ----------------------------------------------------------------------------
+--  Drop / teleport
+-- ----------------------------------------------------------------------------
+local function RingPoint(center, radius)
+    local a = math.random() * 2.0 * math.pi
+    return vector3(center.x + math.cos(a) * radius, center.y + math.sin(a) * radius, CFG.DropHeight)
+end
+
+local function TeleportTo(p, heading)
+    local ped = PlayerPedId()
+    ClearPedTasksImmediately(ped)
+    RequestCollisionAtCoord(p.x, p.y, p.z)
+    SetEntityCoordsNoOffset(ped, p.x, p.y, p.z, false, false, false)
+    if heading then SetEntityHeading(ped, heading) end
+    SetGameplayCamRelativeHeading(0.0)
+end
+
+local function EquipParachute()
+    local ped = PlayerPedId()
+    if not HasPedGotWeapon(ped, PARACHUTE, false) then GiveWeaponToPed(ped, PARACHUTE, 1, false, false) end
+    SetCurrentPedWeapon(ped, PARACHUTE, true)
+end
+
+local function FadeOut(ms)
+    DoScreenFadeOut(ms)
+    WaitFor(IsScreenFadedOut, ms + 1500)
+end
+
+local function Revive()
+    if not IsEntityDead(PlayerPedId()) then return end
+    TriggerEvent(CFG.ReviveTrigger)
+    WaitFor(function() return not IsEntityDead(PlayerPedId()) end, 5000)
+    WaitFor(IsScreenFadedIn, 4000) -- آمبولانس خودش فید می‌کنه
+end
+
+local StartLoops
+
+RegisterNetEvent('capture:teleport')
+AddEventHandler('capture:teleport', function(zoneId)
+    if TeleportBusy then return end
+    TeleportBusy = true
+    FetchCache()
+    local zone = Zones[zoneId]
+    if not zone then
+        TeleportBusy = false
+        return TriggerServerEvent('capture:exit')
+    end
+    CloseMenu()
+    ZoneId = zoneId
+    local first = not InCap
+    if first then
+        InCap = true
+        TriggerEvent('capture:inCapture', true)
+        CreateBlips()
+        StartLoops()
+    end
+    InZoneCircle = false
+    LastCoords = nil
+    CapBlockedUntil = 0
+
+    Revive()
+    IsDead = false
+    nui('hideDeathScreen')
+    FadeOut(500)
+    ReleaseGhost()
+
+    local p = RingPoint(zone.coords, CFG.FirstDropRadius)
+    local heading = GetHeadingFromVector_2d(zone.coords.x - p.x, zone.coords.y - p.y)
+    TeleportTo(p, heading)
+    local ped = PlayerPedId()
+    SetEntityHealth(ped, GetEntityMaxHealth(ped))
+    EquipParachute()
+    StartProtection()
+    nui('setFlagOwner', { owner = zone.captureBy or 'N/A' })
+    ShowHud(UntilEnd)
+    DoScreenFadeIn(800)
+    TeleportBusy = false
+end)
+
+-- وقتی اولین بار وارد دایره‌ی زون شدی: دوباره از ارتفاع داخل دایره اسپان میشی (مثل sun)
+local function EdgeTeleport(zone)
+    TeleportBusy = true
+    local p = RingPoint(zone.coords, CFG.ZoneRange / 2.0 - 5.0)
+    local heading = GetHeadingFromVector_2d(zone.coords.x - p.x, zone.coords.y - p.y)
+    TeleportTo(p, heading)
+    LastCoords = p
+    InZoneCircle = true
+    EquipParachute()
+    StartProtection()
+    TeleportBusy = false
+end
+
+-- ----------------------------------------------------------------------------
+--  Cleanup / exit
+-- ----------------------------------------------------------------------------
+local function Cleanup()
+    InCap, ZoneId, IsDead, InZoneCircle, TeleportBusy, Dying = false, nil, false, false, false, false
+    LoopToken = LoopToken + 1
+    LastCoords = nil
+    RemoveBlips()
+    EndProtection()
+    ReleaseGhost()
+    nui('hideFlagOwner')
+    nui('clearFlagContested')
+    nui('stopCaptureTimer')
+    nui('hideDeathScreen')
+    nui('hideHeal')
+    if ScoreboardOpen then ScoreboardOpen = false nui('closeScoreboard') end
+    CloseMenu()
+    SetNuiFocus(false, false)
+    TriggerEvent('capture:inCapture', false)
+end
+
+RegisterNetEvent('capture:exited')
+AddEventHandler('capture:exited', function(home)
+    if not InCap and not home then return end
+    local ped
+    FadeOut(500)
+    Cleanup()
+    Revive()
+    ped = PlayerPedId()
+    if home then
+        FreezeEntityPosition(ped, true)
+        RequestCollisionAtCoord(home.x, home.y, home.z)
+        SetEntityCoordsNoOffset(ped, home.x, home.y, home.z, false, false, false)
+        local t = GetGameTimer() + 3000
+        while not HasCollisionLoadedAroundEntity(ped) and GetGameTimer() < t do Wait(50) end
+        FreezeEntityPosition(ped, false)
+    end
+    SetEntityHealth(ped, GetEntityMaxHealth(ped))
+    DoScreenFadeIn(800)
+    if Active and MyGang() ~= 'nogang' then ShowHud(UntilEnd) else HideHud() end
+end)
+
+RegisterNetEvent('capture:requestExit')
+AddEventHandler('capture:requestExit', function()
+    if InCap then TriggerServerEvent('capture:exit') end
+end)
+
+-- ----------------------------------------------------------------------------
+--  Round events
+-- ----------------------------------------------------------------------------
+RegisterNetEvent('capture:CaptureStarted')
+AddEventHandler('capture:CaptureStarted', function(untilEnd)
+    Active, UntilEnd, Kills, Deaths = true, untilEnd or 0, 0, 0
+    if MyGang() ~= 'nogang' then ShowHud(UntilEnd) end
+end)
+
+RegisterNetEvent('capture:CaptureEnded')
+AddEventHandler('capture:CaptureEnded', function()
+    Active = false
+    if MenuOpen then CloseMenu() end
+    if not InCap then HideHud() return end
+    notify('Capture Tamam Shod ! Ta 5 Sanie Digar Be Khane Bar Migardid.', 'inform')
+    CreateThread(function()
+        Wait(5000)
+        if InCap then TriggerServerEvent('capture:exit') end
+    end)
+end)
+
+RegisterNetEvent('capture:ChangeCaptureHandler')
+AddEventHandler('capture:ChangeCaptureHandler', function(index, gang)
+    if Zones[index] then Zones[index].captureBy = gang end
+    if InCap and index == ZoneId then
+        nui('setFlagOwner', { owner = gang or 'N/A' })
+        nui('clearFlagContested')
+    end
+end)
+
+RegisterNetEvent('capture:setFlagContested')
+AddEventHandler('capture:setFlagContested', function(attacker)
+    if InCap then nui('setFlagContested', { attacker = attacker }) end
+end)
+
+RegisterNetEvent('capture:contestDenied')
+AddEventHandler('capture:contestDenied', function()
+    CapBlockedUntil = GetGameTimer() + 5000
+end)
+
+RegisterNetEvent('capture:updateKillDeath')
+AddEventHandler('capture:updateKillDeath', function(d)
+    Kills, Deaths = tonumber(d and d.kills) or 0, tonumber(d and d.deaths) or 0
+    nui('updateStats', { kills = Kills, deaths = Deaths })
+end)
+
+-- ----------------------------------------------------------------------------
+--  Main loops (فقط وقتی داخل کپچری)
+-- ----------------------------------------------------------------------------
+local function DisableFire()
+    DisablePlayerFiring(PlayerId(), true)
+    DisableControlAction(0, 24, true)
+    DisableControlAction(0, 25, true)
+    DisableControlAction(0, 257, true)
+    DisableControlAction(0, 263, true)
+    DisableControlAction(0, 140, true)
+    DisableControlAction(0, 141, true)
+    DisableControlAction(0, 142, true)
+end
+
+StartLoops = function()
+    LoopToken = LoopToken + 1
+    local token = LoopToken
+    local function alive() return InCap and token == LoopToken end
+
+    -- مارکرها + دایره‌ی زون + گرفتن پرچم
+    CreateThread(function()
+        local capStart = nil
+        local function cancelCap()
+            if capStart then
+                capStart = nil
+                nui('stopCaptureTimer')
+                TriggerServerEvent('capture:cancelContest')
+            end
+        end
+        while alive() do
+            local zone = ZoneId and Zones[ZoneId]
+            if zone then
+                local owned = zone.captureBy == MyGang()
+                local c = owned and Theme.Owned or Theme.Enemy
+                local zc = zone.coords
+                DrawMarker(1, zc.x, zc.y, zc.z - 100.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, CFG.ZoneRange, CFG.ZoneRange, 2000.0,
+                    c.R, c.G, c.B, c.Alpha, false, true, 2, false, nil, nil, false)
+                DrawMarker(1, zc.x, zc.y, zc.z - 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, CFG.FlagRadius * 2.0, CFG.FlagRadius * 2.0, 1.2,
+                    c.R, c.G, c.B, 180, false, true, 2, false, nil, nil, false)
+
+                local ped = PlayerPedId()
+                local pc = GetEntityCoords(ped)
+                local d2 = #(vector2(pc.x, pc.y) - vector2(zc.x, zc.y))
+                local radius = CFG.ZoneRange / 2.0
+
+                if not InZoneCircle then
+                    DisableFire()
+                    if d2 < radius and not TeleportBusy and not IsDead then EdgeTeleport(zone) end
+                else
+                    if d2 >= radius and not TeleportBusy and not IsDead then
+                        if LastCoords then
+                            SetEntityCoordsNoOffset(ped, LastCoords.x, LastCoords.y, LastCoords.z, false, false, false)
+                            if GetEntityHeightAboveGround(ped) < 5.0 then SetPedToRagdoll(ped, 5000, 5000, 0, false, false, false) end
+                        end
+                    else
+                        LastCoords = pc
+                    end
+                end
+
+                if InProtection and IsPedShooting(ped) then EndProtection() end
+
+                -- گرفتن پرچم
+                local near = InZoneCircle and not IsDead and not TeleportBusy and not owned
+                    and #(pc - zc) <= CFG.FlagRadius and GetGameTimer() >= CapBlockedUntil
+                if near and not capStart then
+                    capStart = GetGameTimer()
+                    TriggerServerEvent('capture:setFlagContested')
+                    nui('startCaptureTimer', { seconds = CFG.CaptureSeconds })
+                elseif capStart and (not near or GetGameTimer() < CapBlockedUntil) then
+                    cancelCap()
+                elseif capStart and GetGameTimer() - capStart >= CFG.CaptureSeconds * 1000 then
+                    capStart = nil
+                    nui('stopCaptureTimer')
+                    TriggerServerEvent('capture:CaptureMe')
+                    CapBlockedUntil = GetGameTimer() + 1500
+                end
+
+                if not IsDead and IsEntityDead(ped) then OnDeath() end
+            end
+            Wait(0)
+        end
+    end)
+
+    -- ریجن (۱ HP / ثانیه بعد از ۵ ثانیه بدون دمیج/شلیک)
+    CreateThread(function()
+        local lastHp, lastCombat, lastTick, shown = nil, 0, 0, false
+        while alive() do
+            local ped = PlayerPedId()
+            local now = GetGameTimer()
+            local hp, maxHp = GetEntityHealth(ped), GetEntityMaxHealth(ped)
+            if lastHp and hp < lastHp then lastCombat = now end
+            lastHp = hp
+            if IsPedShooting(ped) then lastCombat = now end
+            local canHeal = not IsDead and hp > 100 and hp < maxHp and (now - lastCombat) >= CFG.Heal.Delay
+            if canHeal then
+                if not shown then shown = true nui('showHeal') end
+                if now - lastTick >= CFG.Heal.Interval then
+                    lastTick = now
+                    SetEntityHealth(ped, math.min(maxHp, hp + CFG.Heal.Amount))
+                    lastHp = GetEntityHealth(ped)
+                end
+            elseif shown then
+                shown = false
+                nui('hideHeal')
+            end
+            Wait(100)
+        end
+        if shown then nui('hideHeal') end
+    end)
+
+    -- مهمات حداقل + چتر
+    CreateThread(function()
+        while alive() do
+            if not IsDead then
+                local ped = PlayerPedId()
+                if not HasPedGotWeapon(ped, PARACHUTE, false) then GiveWeaponToPed(ped, PARACHUTE, 1, false, false) end
+                local _, w = GetCurrentPedWeapon(ped, true)
+                if w and w ~= 0 and GetWeaponDamageType(w) == 3 and GetAmmoInPedWeapon(ped, w) < CFG.Ammo then
+                    SetPedAmmo(ped, w, CFG.Ammo)
+                end
+            end
+            Wait(1000)
+        end
+    end)
+
+    -- چتر خودکار نزدیک زمین
+    if CFG.AutoParachute then
+        CreateThread(function()
+            while alive() do
+                local ped = PlayerPedId()
+                if not IsDead and IsPedInParachuteFreeFall(ped) and GetEntityHeightAboveGround(ped) < CFG.AutoParachuteHeight then
+                    ForcePedToOpenParachute(ped)
+                end
+                Wait(200)
+            end
+        end)
+    end
+end
+
+-- ----------------------------------------------------------------------------
+--  Keys: Q اسکوربورد | F4 تایمر | /die
+-- ----------------------------------------------------------------------------
+RegisterCommand('captureScoreboard', function()
+    if not InCap or not ESX then return end
+    if ScoreboardOpen then
+        ScoreboardOpen = false
+        return nui('closeScoreboard')
+    end
+    ScoreboardOpen = true
+    if LastBoard and GetGameTimer() - LastBoardAt < 5000 then return nui('openScoreboard', LastBoard) end
+    ESX.TriggerServerCallback('capture:getScoreboard', function(data)
+        if not ScoreboardOpen then return end
+        local families = {}
+        for _, g in ipairs(data and data.gangs or {}) do
+            families[#families + 1] = { name = g.name, capturedFlags = g.capturedFlags or {}, point = g.Score }
+        end
+        LastBoard = { players = data and data.players or {}, families = families }
+        LastBoardAt = GetGameTimer()
+        nui('openScoreboard', LastBoard)
+    end)
+end, false)
+RegisterKeyMapping('captureScoreboard', 'Capture: Scoreboard', 'keyboard', 'Q')
+
+RegisterCommand('captureTimerToggle', function()
+    if not InCap then return end
+    TimerHidden = not TimerHidden
+    nui('setTimerVisibility', { hidden = TimerHidden })
+end, false)
+RegisterKeyMapping('captureTimerToggle', 'Capture: Hide/Show Timer', 'keyboard', 'F4')
+
+RegisterCommand(CFG.DieCommand, function()
+    if not InCap or IsDead or Dying then return end
+    local ped = PlayerPedId()
+    if InProtection or TeleportBusy or IsPedInParachuteFreeFall(ped) or GetPedParachuteState(ped) > 0 then
+        return notify('Dar Hali Ke Parachute Dari Ya Spawn Protection Faal Ast Nemitavanid Bemirid !', 'error')
+    end
+    Dying = true
+    local done = lib.progressCircle({ duration = CFG.DieSeconds * 1000, label = 'Khodkoshi...', position = 'bottom',
+        canCancel = true, disable = { move = true, car = true, combat = true } })
+    Dying = false
+    if done and InCap and not IsDead then SetEntityHealth(PlayerPedId(), 0) end
+end, false)
+
+-- ----------------------------------------------------------------------------
+--  Admin / Stats / History menus (ox_lib)
+-- ----------------------------------------------------------------------------
+RegisterNetEvent('capture:OpenAdminMenu')
+AddEventHandler('capture:OpenAdminMenu', function()
+    if not ESX then return end
+    ESX.TriggerServerCallback('capture:adminInfo', function(info)
+        if not info then return end
+        local removeOpts = {}
+        for _, z in ipairs(info.zones) do
+            removeOpts[#removeOpts + 1] = { title = ('#%d  %s'):format(z.id, z.label), description = 'World ' .. z.world, icon = 'trash',
+                onSelect = function() TriggerServerEvent('capture:admin:removeZone', z.id) end }
+        end
+        if #removeOpts == 0 then removeOpts[1] = { title = 'Zone Nist', readOnly = true } end
+        lib.registerContext({ id = 'capture_remove', title = 'Hazf Zone', menu = 'capture_admin', options = removeOpts })
+        lib.registerContext({ id = 'capture_admin', title = 'Capture Admin', options = {
+            { title = 'Zaman Capture', description = info.minutes .. ' Daghighe', icon = 'clock', onSelect = function()
+                local r = lib.inputDialog('Zaman Capture', { { type = 'number', label = 'Daghighe', default = info.minutes, min = 1, max = 600, required = true } })
+                if r then TriggerServerEvent('capture:admin:setTime', r[1]) end
+            end },
+            { title = 'Set / Update Zone', description = 'Mokhtasat Felie Shoma Be Onvane Parcham Zakhire Mishavad', icon = 'flag', onSelect = function()
+                local r = lib.inputDialog('Set Zone', {
+                    { type = 'number', label = 'Shomare Zone (1-99)', min = 1, max = 99, required = true },
+                    { type = 'input', label = 'Name Zone', max = 24, required = true },
+                    { type = 'number', label = ('World (%d-%d)'):format(CFG.WorldMin, CFG.WorldMax), default = CFG.WorldMin, min = CFG.WorldMin, max = CFG.WorldMax, required = true } })
+                if r then TriggerServerEvent('capture:setCap', { r[1], r[2], r[3] }) end
+            end },
+            { title = 'Hazf Zone', description = #info.zones .. ' Zone', icon = 'trash', menu = 'capture_remove' },
+            { title = info.active and 'Payan Capture' or 'Shoroo Capture', icon = info.active and 'stop' or 'play', onSelect = function()
+                ExecuteCommand(info.active and CFG.EndCaptureCommand or CFG.StartCaptureCommand)
+            end },
+        } })
+        lib.showContext('capture_admin')
+    end)
+end)
+
+RegisterNetEvent('capture:OpenStatsMenu')
+AddEventHandler('capture:OpenStatsMenu', function()
+    if not ESX then return end
+    ESX.TriggerServerCallback('capture:GetMyStats', function(mine, top, zones)
+        mine = mine or {}
+        local opts = {
+            { title = 'Kills / Deaths', description = (mine.kills or 0) .. ' / ' .. (mine.deaths or 0), icon = 'crosshairs', readOnly = true },
+            { title = 'Gang Points', description = tostring(mine.gang_points or 0), icon = 'flag', readOnly = true },
+            { title = 'Top 5 Count', description = tostring(mine.top5_count or 0), icon = 'trophy', readOnly = true },
+        }
+        for i, z in ipairs(zones or {}) do
+            opts[#opts + 1] = { title = ('Best Zone #%d: %s'):format(i, z.zone_name), description = z.points .. ' pts', icon = 'map-pin', readOnly = true }
+        end
+        for i, t in ipairs(top or {}) do
+            opts[#opts + 1] = { title = ('#%d  %s'):format(i, t.name or '?'), description = (t.kills or 0) .. ' kills', icon = 'ranking-star', readOnly = true }
+        end
+        lib.registerContext({ id = 'capture_stats', title = 'Capture Stats', options = opts })
+        lib.showContext('capture_stats')
+    end)
+end)
+
+RegisterNetEvent('capture:OpenHistoryMenu')
+AddEventHandler('capture:OpenHistoryMenu', function()
+    if not ESX then return end
+    ESX.TriggerServerCallback('capture:GetHistory', function(rows)
+        local opts = {}
+        for _, r in ipairs(rows or {}) do
+            opts[#opts + 1] = { title = tostring(r.round_date), readOnly = true, icon = 'clock-rotate-left',
+                description = ('Gang: %s (%s) | Killer: %s (%s)'):format(tostring(r.winner_gang), tostring(r.winner_points), tostring(r.top_killer_name), tostring(r.top_killer_kills)) }
+        end
+        if #opts == 0 then opts[1] = { title = 'Hich Raundi Sabt Nashode', readOnly = true } end
+        lib.registerContext({ id = 'capture_history', title = 'Capture History', options = opts })
+        lib.showContext('capture_history')
+    end)
+end)
+
+-- ----------------------------------------------------------------------------
+--  Dashboard (UI قدیمی یونیک - فریم جدا: capturedash)
+-- ----------------------------------------------------------------------------
+RegisterCommand(CFG.DashboardCommand, function()
+    if not ESX then return end
+    ESX.TriggerServerCallback('capture:GetDashboard', function(data)
         SetNuiFocus(true, true)
-        SendNUIMessage({action = "openDashboard", data = data})
+        nui('openDashboard', data)
     end)
 end, false)
 
-RegisterNUICallback('closeDashboard', function(data, cb)
+RegisterNUICallback('closeDashboard', function(_, cb)
     SetNuiFocus(false, false)
     cb('ok')
 end)
 
 RegisterNUICallback('dashboardAction', function(data, cb)
-    local actionMap = {
-        join = CapConfig.JoinCaptureCommand,
-        leave = CapConfig.LeaveCaptureCommand,
-        respawn = CapConfig.ReSpawnCaptureCommand,
-        seasons = CapConfig.SeasonHistoryCommand,
-        standings = CapConfig.StandingsCommand,
-        medals = CapConfig.ScarcityStatusCommand,
-        mymedals = CapConfig.MyMedalsCommand,
-        halloffame = CapConfig.HallOfFameCommand,
-    }
-    local commandToRun = data and data.action and actionMap[data.action]
-    if commandToRun then
-        ExecuteCommand(commandToRun)
-    end
+    local map = { join = CFG.JoinCaptureCommand, leave = CFG.LeaveCaptureCommand, respawn = CFG.ReSpawnCaptureCommand,
+        seasons = CFG.SeasonHistoryCommand, standings = CFG.StandingsCommand, medals = CFG.ScarcityStatusCommand,
+        mymedals = CFG.MyMedalsCommand, halloffame = CFG.HallOfFameCommand }
+    local c = data and data.action and map[data.action]
+    if c then ExecuteCommand(c) end
     cb('ok')
 end)
 
-function HandleMarkers()
-    Citizen.CreateThread(function()
-        local blip
-        local blip2
-        blip = AddBlipForRadius(PlayerCaptureInf.ZoneCoord.x,PlayerCaptureInf.ZoneCoord.y,PlayerCaptureInf.ZoneCoord.z,CapConfig.ZoneSize)
-        SetBlipAlpha(blip, CapConfig.ZoneBlip.Alpha)
-        SetBlipColour(blip, CapConfig.ZoneBlip.Color)
-
-        blip2 = AddBlipForCoord(PlayerCaptureInf.ZoneCoord.x,PlayerCaptureInf.ZoneCoord.y,PlayerCaptureInf.ZoneCoord.z)
-        SetBlipSprite(blip2, CapConfig.CapturePointBlip.Model)
-        SetBlipScale(blip2, 0.7)
-        SetBlipColour(blip2, CapConfig.CapturePointBlip.Color)
-        SetBlipAsShortRange(blip2, false)
-        BeginTextCommandSetBlipName("STRING")
-        AddTextComponentString(PlayerCaptureInf.InCapture)
-        EndTextCommandSetBlipName(blip2)
-
-        while PlayerCaptureInf.InCapture do
-            Citizen.Wait(0)
-            if PlayerCaptureInf and PlayerCaptureInf.ZoneCoord and PlayerCaptureInf.InCapture and PlayerCaptureInf.Alive then
-
-                local PointColor = {Point = ActiveTheme.Point.Default, Zone = ActiveTheme.Zone.Default}
-                if (CaptureDetails.CaptureHolderGang[PlayerCaptureInf.InCapture] == PlayerData.gang.name) then
-                    PointColor = {Point = ActiveTheme.Point.Owned, Zone = ActiveTheme.Zone.Owned}
-                end
-                DrawMarker(
-                    28,
-                    PlayerCaptureInf.ZoneCoord.x, PlayerCaptureInf.ZoneCoord.y, PlayerCaptureInf.ZoneCoord.z,
-                    0.0, 0.0, 0.0,
-                    0.0, 0.0, 0.0,
-                    5.0, 5.0, 5.0,
-                    PointColor.Point.R, PointColor.Point.G, PointColor.Point.B, PointColor.Point.Alpha,
-                    false, true, 2, false, nil, nil, false
-                )
-
-
-                DrawMarker(
-                    28,
-                    PlayerCaptureInf.ZoneCoord.x, PlayerCaptureInf.ZoneCoord.y, PlayerCaptureInf.ZoneCoord.z + 250.0,
-                    0.0, 0.0, 0.0,
-                    0.0, 0.0, 0.0,
-                    CapConfig.ZoneSize + 3.8, CapConfig.ZoneSize + 3.8, 1200.0,
-                    PointColor.Zone.R, PointColor.Zone.G, PointColor.Zone.B, PointColor.Zone.Alpha,
-                    false, true, 2, false, nil, nil, false
-                )
-            else
-                RemoveBlip(blip)
-                RemoveBlip(blip2)
-            end
-        end
-    end)
-end
-
-RegisterNetEvent("arshiahub.ir-Capture:JoinCapture")
-AddEventHandler("arshiahub.ir-Capture:JoinCapture", function()
-    if not PlayerCaptureInf.InCapture then
-        ShowUi(true)
-        GotoMenu()
-    end
+-- ----------------------------------------------------------------------------
+--  Resource stop safety
+-- ----------------------------------------------------------------------------
+AddEventHandler('onResourceStop', function(res)
+    if res ~= GetCurrentResourceName() then return end
+    SetNuiFocus(false, false)
+    RemoveBlips()
+    EndProtection()
+    ReleaseGhost()
+    if InCap then TriggerEvent('capture:inCapture', false) end
 end)
-
-function MenuSaver()
-    Citizen.Wait(1000)
-    Citizen.CreateThread(function()
-        while PlayerCaptureInf.InMenu and PlayerCaptureInf.InCapture do
-            Citizen.Wait(300)
-            if not ESX.UI.Menu.IsOpen("default", GetCurrentResourceName(), PlayerCaptureInf.InMenu) then
-                if PlayerCaptureInf.InMenu == "CaptureMenu" then
-                    GotoMenu()
-                elseif PlayerCaptureInf.InMenu == "ZoneSelectorCaptureSystem" then
-                    ZoneSelectorMenu()
-                elseif PlayerCaptureInf.InMenu == "WeaponMenu" then
-                    OpenWeaponGroupMenu()
-                end
-            end
-        end
-    end)
-
-end
-
-function GotoMenu()
-    local PlayerPed = PlayerPedId()
-    ESX.UI.Menu.CloseAll()
-    TpRandomOutCaptureCoord()
-    TriggerEvent('es_admin:freezePlayer', true)
-    SetEntityVisible(PlayerPed, false, false)
-    SetArmor()
-    PlayerCaptureInf.InMenu = "CaptureMenu"
-    PlayerCaptureInf.Alive = false
-    ESX.TriggerServerCallback('arshiahub.ir-Capture:GetInfo', function(CaptureInfo)
-        local elements = {}
-
-        table.insert(elements, {label = '========== Your Current Data =========', value = nil})
-
-
-
-        if not CapConfig.UsePersonalWeapons then
-            if not PlayerCaptureInf.Weapon then PlayerCaptureInf.Weapon = {'WEAPON_CARBINERIFLE'} end
-            local weaponLabels = {}
-            for _, weapon in ipairs(PlayerCaptureInf.Weapon) do
-                local label = ESX.GetWeaponLabel(weapon)
-                table.insert(weaponLabels, label or weapon)
-            end
-
-            local fullLabel = table.concat(weaponLabels, " | ")
-            table.insert(elements, {label = '🔫 Weapon : ' .. fullLabel or "None" , value = "changeWeapon"})
-        end
-        table.insert(elements, {label = '⌛ Remaining Time : ' .. tostring(CaptureInfo.Time), value = nil})
-        table.insert(elements, {label = '🛡️ Armor : ' .. tostring(PlayerCaptureInf.Armor), value = nil})
-        table.insert(elements, {label = '========== Actions =========', value = nil})
-        table.insert(elements, {label = 'Goto Capture 🏳️', value = 'gotoCapture'})
-        table.insert(elements, {label = 'Leave Capture 🚪', value = 'leaveCapture'})
-        MenuSaver()
-        ESX.UI.Menu.Open(
-            'default', GetCurrentResourceName(), 'CaptureMenu',
-            {
-                title    = 'Capture Menu',
-                align    = "top-right",
-                elements = elements
-            },
-            function(data, menu)
-                if data.current.value == 'gotoCapture' then
-                    PlayerCaptureInf.InMenu = nil
-                    ZoneSelectorMenu()
-                    menu.close()
-                elseif data.current.value == 'leaveCapture' then
-                    ExecuteCommand(CapConfig.LeaveCaptureCommand)
-                    menu.close()
-                elseif data.current.value == 'changeWeapon' then
-                    PlayerCaptureInf.InMenu = nil
-                    OpenWeaponGroupMenu()
-                    menu.close()
-                end
-            end,
-            function(data, menu)
-            end
-        )
-    end)
-end
-RegisterNetEvent("arshiahub.ir-CaptureSystem:SendAllTimeTop")
-AddEventHandler("arshiahub.ir-CaptureSystem:SendAllTimeTop", function(TopAllTime)
-    if not PlayerCaptureInf.InCapture then return end
-    local msg = { action = "updateAllTime" }
-    for i = 1, 5 do
-        if TopAllTime[i] then
-            msg["alltimeplayer" .. i] = TopAllTime[i].name
-            msg["alltimescore" .. i] = TopAllTime[i].score
-            local photo = TopAllTime[i].Photo
-            if photo and string.sub(photo, 1, 4) == "http" then
-                msg["alltimephoto" .. i] = photo
-            elseif photo then
-                msg["alltimephoto" .. i] = string.format(CapConfig.PlayerPhotoUrlTemplate, photo)
-            else
-                msg["alltimephoto" .. i] = CapConfig.DefaultPlayerPhoto
-            end
-        end
-    end
-    SendNUIMessage(msg)
-end)
-
-RegisterNetEvent("arshiahub.ir-CaptureSystem:SendDataToUi")
-AddEventHandler("arshiahub.ir-CaptureSystem:SendDataToUi", function(KillData, GangsData, Time, Percent)
-    if not PlayerCaptureInf.InCapture then return end
-    local msg = {
-        action = "updateData",
-        time = Time or "00:00",
-        percent = Percent or 0
-    }
-    for i = 1, 5 do
-        if KillData[i] then
-            msg["playercallback" .. i] = KillData[i].Name
-            msg["pointcallback" .. i] = KillData[i].Point
-            local photo = KillData[i].Photo
-            if photo and string.sub(photo, 1, 4) == "http" then
-                msg["playerphotocallback" .. i] = photo
-            elseif photo then
-                msg["playerphotocallback" .. i] = string.format(CapConfig.PlayerPhotoUrlTemplate, photo)
-            else
-                msg["playerphotocallback" .. i] = CapConfig.DefaultPlayerPhoto
-            end
-        end
-    end
-    for i = 1, 5 do
-        if GangsData[i] then
-            msg["gangcallback" .. i] = GangsData[i].Name
-            msg["gangpointcallback" .. i] = GangsData[i].Points
-            local logo = GangsData[i].Logo or CapConfig.DefaultGangLogo
-            if string.sub(logo, 1, 4) == "http" then
-                msg["ganglogocallback" .. i] = logo
-            else
-                msg["ganglogocallback" .. i] = string.format(CapConfig.GangLogoUrlTemplate, logo)
-            end
-        end
-    end
-    SendNUIMessage(msg)
-end)
-local isVisible = false
-AddEventHandler("onKeyDown", function(key)
-    if not PlayerCaptureInf.InCapture then return end
-    if key == "g" then
-        isVisible = not isVisible
-        SendNUIMessage({
-            action = "toggleTips",
-            hide = not isVisible
-        })
-    end
-end)
-
-function ShowUi(show)
-    SendNUIMessage({action = "changeShow", hide = not show})
-end
-
-function ZoneSelectorMenu()
-    local PlayerPed = PlayerPedId()
-    ESX.UI.Menu.CloseAll()
-    TpRandomOutCaptureCoord()
-    TriggerEvent('es_admin:freezePlayer', true)
-    SetEntityVisible(PlayerPed, false, false)
-    ESX.TriggerServerCallback('arshiahub.ir-Capture:GetInfo', function(CaptureInfo)
-        if CaptureInfo.Zones and next(CaptureInfo.Zones) ~= nil then
-            local elements = {}
-
-            table.insert(elements, {label = '========== Zones =========', value = nil})
-
-            for zoneName, coords in pairs(CaptureInfo.Zones) do
-                table.insert(elements, {label = '📍 Zone Name : ' .. zoneName, value = zoneName})
-            end
-
-            if #elements > 2 then
-                PlayerCaptureInf.InMenu = "ZoneSelectorCaptureSystem"
-                MenuSaver()
-                ESX.UI.Menu.Open(
-                    'default', GetCurrentResourceName(), 'ZoneSelectorCaptureSystem',
-                    {
-                        title    = 'Capture Menu',
-                        align    = "top-right",
-                        elements = elements
-                    },
-                    function(data, menu)
-                        if data.current.value then
-                            PlayerCaptureInf.ZoneCoord = CaptureInfo.Zones[data.current.value]
-                            PlayerCaptureInf.InCapture = data.current.value
-                            menu.close()
-                            PlayerCaptureInf.InMenu = nil
-                            SpawnInCapture()
-                        end
-                    end,
-                    function(data, menu)
-                    end
-                )
-            else
-                PlayerCaptureInf.InMenu = nil
-                for k, v in pairs(CaptureInfo.Zones) do
-                    PlayerCaptureInf.ZoneCoord = v
-                    PlayerCaptureInf.InCapture = k
-                    SpawnInCapture()
-                end
-            end
-        end
-    end)
-end
-
-function SpawnInCapture()
-    ShowUi(true)
-    ESX.UI.Menu.CloseAll()
-    local PlayerPed = PlayerPedId()
-    TriggerServerEvent("arshiahub.ir-CaptureSystem:PlayerEnterZone",PlayerCaptureInf.InCapture)
-
-    PlayerCaptureInf.OnGround = false
-    PlayerCaptureInf.InMenu = false
-    PlayerCaptureInf.Alive = true
-
-    HandleMarkers()
-
-    if not CapConfig.UsePersonalWeapons then
-        if not PlayerCaptureInf.Weapon then PlayerCaptureInf.Weapon = {'WEAPON_CARBINERIFLE'} end
-        SetCanPedEquipAllWeapons(PlayerPed, false)
-
-        for _, weapon in ipairs(PlayerCaptureInf.Weapon) do
-            GiveWeaponToPed(PlayerPed, GetHashKey(weapon), 250, false, true)
-            SetCanPedSelectWeapon(PlayerPed, GetHashKey(weapon), true)
-        end
-    end
-    GiveWeaponToPed(PlayerPedId(), GetHashKey("GADGET_PARACHUTE"), 1, false, true)
-
-
-    TriggerEvent('es_admin:freezePlayer', false)
-    SetEntityVisible(PlayerPed, true, false)
-    TpRandomOutCaptureCoord()
-
-
-    TriggerEvent('esx_status:set', 'hunger', 1000000)
-	TriggerEvent('esx_status:set', 'thirst', 1000000)
-	SetEntityHealth(PlayerPed, GetEntityMaxHealth(PlayerPed))
-    SetPedArmour(PlayerPed, PlayerCaptureInf.Armor)
-
-
-
-    DeathLoop()
-    LandingHandel()
-end
-
-function LeaveCapture(Voluntary)
-    SendNUIMessage({action = "resetUi"})
-    if PlayerCaptureInf.InCapture or PlayerCaptureInf.InMenu then
-        local PlayerPed = PlayerPedId()
-        if Voluntary and PlayerCaptureInf.IsOnMarker and PlayerCaptureInf.InCapture then
-            TriggerServerEvent("arshiahub.ir-Capture:PenalizeZoneLeave", PlayerCaptureInf.InCapture)
-        end
-        ESX.UI.Menu.CloseAll()
-        PlayerCaptureInf.InMenu = nil
-        SetEntityVisible(PlayerPed, true, false)
-        Citizen.Wait(2400)
-        TriggerEvent(CapConfig.ReviveTrigger)
-        Citizen.Wait(2000)
-        TriggerServerEvent("arshiahub.ir-Capture:LeaveCapture")
-        SetCanPedEquipAllWeapons(PlayerPed, true)
-        if PlayerCaptureInf.Weapon then
-            for _, weapon in ipairs(PlayerCaptureInf.Weapon) do
-                RemoveWeaponFromPed(PlayerPed, weapon)
-            end
-        end
-        PlayerCaptureInf = {
-            InCapture = false,
-            Alive = false,
-            InMenu = nil,
-            OnGround = false,
-            IsOnMarker = false,
-            Weapon = nil,
-            Armor = 100,
-            Group = nil,
-            ZoneCoord = nil
-        }
-    end
-
-end
-
-function LandingHandel()
-    Citizen.CreateThread(function()
-        local PlayerPed = PlayerPedId()
-        local ZoneX, ZoneY, ZoneZ = PlayerCaptureInf.ZoneCoord.x, PlayerCaptureInf.ZoneCoord.y, PlayerCaptureInf.ZoneCoord.z
-        while true do
-            Citizen.Wait(100)
-            if not PlayerCaptureInf.InCapture then break end
-            local PlayerX, PlayerY, PlayerZ = table.unpack(GetEntityCoords(PlayerPed))
-            if #(vector2(PlayerX, PlayerY) - vector2(ZoneX, ZoneY)) <= CapConfig.ZoneSize or PlayerZ <= CapConfig.zToAutoTeleport and not PlayerCaptureInf.OnGround then
-                local newX, newY = GetRandomInCaptureCoord(ZoneX, ZoneY)
-                local zCoord = GetGroundZ(newX, newY)
-                if zCoord == nil then
-                    Wait(150)
-                    newX, newY = GetRandomInCaptureCoord(ZoneX, ZoneY)
-                    zCoord = GetGroundZ(newX, newY)
-                end
-                if zCoord == nil then zCoord = 30.0 end
-                SetEntityCoords(PlayerPed, newX, newY, zCoord, false, false, false, false)
-                PlayerCaptureInf.OnGround = true
-                if HasPedGotWeapon(PlayerPed, GetHashKey("GADGET_PARACHUTE"), false) then
-                    RemoveWeaponFromPed(PlayerPed, GetHashKey("GADGET_PARACHUTE"))
-                end
-                ZoneController()
-                break
-            end
-        end
-    end)
-end
-
-function GetGroundZ(x, y)
-    local zCoord = 0.0
-    local found = false
-
-    for i = 1, 100 do
-        Citizen.Wait(2)
-        found, zCoord = GetGroundZFor_3dCoord(x, y, 300.0, 0)
-        if found and zCoord ~= 0.0 then
-            return zCoord + 1.0
-        end
-    end
-
-    return nil
-end
-
-function GetRandomInCaptureCoord(baseX, baseY)
-    local angle = math.random() * 2 * math.pi
-    local distance = math.random(CapConfig.ZoneSize - 30, CapConfig.ZoneSize - 10)
-    local offsetX = math.cos(angle) * distance
-    local offsetY = math.sin(angle) * distance
-    return baseX + offsetX, baseY + offsetY
-end
-
-function TpRandomOutCaptureCoord()
-    local PlayerPed = PlayerPedId()
-    if not PlayerCaptureInf.ZoneCoord or not PlayerCaptureInf.InCapture then
-        SetEntityCoords(PlayerPed, 670.52, 844.99, 371.47)
-        SetEntityHeading(PlayerPed, 351.5)
-        SetGameplayCamRelativeHeading(0.0)
-        return
-    end
-    local angle = math.random() * 2 * math.pi
-    local radius = math.random(CapConfig.ParchuteSpawnDistance.min + CapConfig.ZoneSize, CapConfig.ParchuteSpawnDistance.max + CapConfig.ZoneSize)
-    local X = PlayerCaptureInf.ZoneCoord.x + math.cos(angle) * radius
-    local Y = PlayerCaptureInf.ZoneCoord.y + math.sin(angle) * radius
-    local heading = math.deg(math.atan2(PlayerCaptureInf.ZoneCoord.y - Y, PlayerCaptureInf.ZoneCoord.x - X))
-    SetEntityCoords(PlayerPed, X, Y, CapConfig.ParchuteSpawnHeight, false, false, false, false)
-    SetEntityHeading(PlayerPed, heading - 90.0)
-    SetGameplayCamRelativeHeading(0.0)
-end
-
-function ReSpawn()
-    if PlayerCaptureInf.InCapture and PlayerCaptureInf.Alive then
-
-        TriggerServerEvent("arshiahub.ir-Capture:CaptureMarkerStatus", nil, false)
-
-
-        PlayerCaptureInf.Capture = nil
-
-        PlayerCaptureInf.Alive = false
-        PlayerCaptureInf.OnGround = false
-        SetEntityVisible(PlayerPedId(), false, false)
-        Citizen.Wait(2400)
-        TriggerEvent(CapConfig.ReviveTrigger)
-        Citizen.Wait(2000)
-        ZoneSelectorMenu()
-    end
-end
-function DeathLoop()
-    Citizen.CreateThread(function()
-        while PlayerCaptureInf.InCapture and PlayerCaptureInf.Alive do
-            Citizen.Wait(0)
-            if IsEntityDead(PlayerPedId()) then
-                Citizen.Wait(500)
-                local PedKiller = GetPedSourceOfDeath(PlayerPedId())
-                local Killer
-                if IsEntityAPed(PedKiller) and IsPedAPlayer(PedKiller) then
-                    Killer = NetworkGetPlayerIndexFromPed(PedKiller)
-                end
-
-                if Killer ~= nil then
-                    if Killer ~= PlayerId() then
-                        TriggerServerEvent('arshiahub.ir-Capture:KillerPoint',GetPlayerServerId(Killer))
-                    end
-                    TriggerServerEvent("arshiahub.ir-CaptureSystem:SendKillLog", GetPlayerServerId(Killer), PlayerCaptureInf.InCapture)
-                end
-                ReSpawn()
-            end
-        end
-    end)
-end
-
-RegisterNetEvent("arshiahub.ir-CaptureSystem:ShowKillLog")
-AddEventHandler("arshiahub.ir-CaptureSystem:ShowKillLog", function(DamagedID, KillerID, DamagedGang, KillerGang, DamagedName, KillerName, ZoneName, KillTime, KillerRank, DamagedRank)
-    if not PlayerCaptureInf.InCapture then return end
-    if CapConfig.SplitZonesKillLog and ZoneName ~= PlayerCaptureInf.InCapture then return end
-
-    local SelfID = GetPlayerServerId(PlayerId())
-    local DamagedTag,KillerTag
-
-    if DamagedGang == PlayerData.gang.name then
-        DamagedTag = "team"
-    else
-        DamagedTag = "enemy"
-    end
-    if KillerGang == PlayerData.gang.name then
-        KillerTag = "team"
-    else
-        KillerTag = "enemy"
-    end
-    SendNUIMessage({
-        action = "newKill",
-        killer = KillerName,
-        damaged = DamagedName,
-        team1 = KillerTag,
-        team2 = DamagedTag,
-        killerRank = KillerRank,
-        damagedRank = DamagedRank,
-    })
-
-    TriggerEvent('chat:addMessage', {
-        args = {
-            "^1[Capture Kill]",
-            "^3" .. KillTime .. " ^7| ^2" .. KillerName .. " ^6[" .. tostring(KillerRank) .. "]^7 (^5" .. KillerGang .. "^7) ^0killed ^1" .. DamagedName .. " ^6[" .. tostring(DamagedRank) .. "]^7 (^5" .. DamagedGang .. "^7) ^0in zone ^6" .. tostring(ZoneName)
-        }
-    })
-end)
-
-local CapturingThreadActive = false
-local CancelLocalTimer = false
-
-RegisterNetEvent("arshiahub.ir-Capture:CancelLocalZoneTimer")
-AddEventHandler("arshiahub.ir-Capture:CancelLocalZoneTimer", function()
-    CancelLocalTimer = true
-end)
-
-function StartCaptureZoneTimer()
-    if CapturingThreadActive then return end
-    CapturingThreadActive = true
-    CancelLocalTimer = false
-    Citizen.CreateThread(function()
-        local PlayerPed = PlayerPedId()
-        local TimeInZone = 0
-        local HalfwayWarningSent = false
-        if CaptureDetails.CaptureHolderGang[PlayerCaptureInf.InCapture] == PlayerData.gang.name then
-            CapturingThreadActive = false
-            return
-        end
-        TriggerServerEvent("arshiahub.ir-CaptureSystem:ShowMessageToAll","Gang ~r~[~w~"..PlayerData.gang.name.."~r~]~w~ Dar Hale Capture Kardan Ast | Zone : ~g~[~r~"..PlayerCaptureInf.InCapture.."~g~]",5)
-        Citizen.CreateThread(function()
-            local Off = false
-            SetTimeout((CapConfig.TimeToCaptureZone + 2) * 1000 , function()
-                Off = true
-            end)
-            while not Off and not CancelLocalTimer and PlayerCaptureInf.InCapture and PlayerCaptureInf.Alive and PlayerCaptureInf.OnGround and PlayerCaptureInf.IsOnMarker and (CaptureDetails.CaptureHolderGang[PlayerCaptureInf.InCapture] ~= PlayerData.gang.name) do
-                Citizen.Wait(0)
-                Draw3DText(PlayerCaptureInf.ZoneCoord.x, PlayerCaptureInf.ZoneCoord.y, PlayerCaptureInf.ZoneCoord.z + 1.0, "⏱️ " .. TimeInZone .. " / " .. CapConfig.TimeToCaptureZone)
-            end
-        end)
-        while not CancelLocalTimer and PlayerCaptureInf.InCapture and PlayerCaptureInf.Alive and PlayerCaptureInf.OnGround and PlayerCaptureInf.IsOnMarker and (CaptureDetails.CaptureHolderGang[PlayerCaptureInf.InCapture] ~= PlayerData.gang.name) do
-            Citizen.Wait(1000)
-            local Distance = #(GetEntityCoords(PlayerPed) - vector3(PlayerCaptureInf.ZoneCoord.x, PlayerCaptureInf.ZoneCoord.y, PlayerCaptureInf.ZoneCoord.z))
-            if Distance <= 5.0 then
-                if PlayerCaptureInf.IsOnMarker then
-                    TimeInZone = TimeInZone + 1
-
-                    if not HalfwayWarningSent and TimeInZone >= math.floor(CapConfig.TimeToCaptureZone / 2) then
-                        HalfwayWarningSent = true
-                        TriggerServerEvent("arshiahub.ir-Capture:ZoneUnderAttack", PlayerCaptureInf.InCapture, PlayerData.gang.name)
-                    end
-
-                    if TimeInZone >= CapConfig.TimeToCaptureZone then
-                        TriggerServerEvent("arshiahub.ir-Capture:CaptureMarkerWaitPassed")
-                        CapturingThreadActive = false
-                        return
-                    end
-                end
-            end
-        end
-        CapturingThreadActive = false
-    end)
-end
-
-function ZoneController()
-    Citizen.CreateThread(function()
-        local PlayerPed = PlayerPedId()
-        Citizen.Wait(1000)
-        while PlayerCaptureInf.InCapture and PlayerCaptureInf.Alive and PlayerCaptureInf.OnGround and PlayerCaptureInf.ZoneCoord do
-            local Distance = #(GetEntityCoords(PlayerPed) - vector3(PlayerCaptureInf.ZoneCoord.x, PlayerCaptureInf.ZoneCoord.y, PlayerCaptureInf.ZoneCoord.z))
-
-            if Distance >= CapConfig.ZoneSize and PlayerCaptureInf.OnGround then
-                local Hp = GetEntityHealth(PlayerPed)
-                SetEntityHealth(PlayerPed, Hp - CapConfig.OutOfZoneDamage)
-                ShakeGameplayCam("SMALL_EXPLOSION_SHAKE", 0.1)
-            end
-
-            if Distance <= 5 then
-
-                if not PlayerCaptureInf.IsOnMarker then
-                    PlayerCaptureInf.IsOnMarker = true
-                    TriggerServerEvent("arshiahub.ir-Capture:CaptureMarkerStatus", PlayerCaptureInf.InCapture, true)
-                    StartCaptureZoneTimer()
-                end
-            else
-                if PlayerCaptureInf.IsOnMarker then
-                    PlayerCaptureInf.IsOnMarker = false
-                    TriggerServerEvent("arshiahub.ir-Capture:CaptureMarkerStatus", nil, false)
-                end
-            end
-            Citizen.Wait(1000)
-        end
-    end)
-end
-
-RegisterNetEvent("arshiahub.ir-Capture:LeaveCapture")
-AddEventHandler("arshiahub.ir-Capture:LeaveCapture", function(Voluntary)
-    LeaveCapture(Voluntary)
-end)
-
-RegisterNetEvent("arshiahub.ir-Capture:OpenAdminMenu")
-AddEventHandler("arshiahub.ir-Capture:OpenAdminMenu", function()
-    GotoAdminMenu()
-end)
-
-function GotoAdminMenu()
-    ESX.TriggerServerCallback('arshiahub.ir-Capture:GetInfo', function(CaptureInfo)
-        ESX.UI.Menu.CloseAll()
-
-        local elements = {
-            {label = '========== Your Current Time =========', value = nil},
-            {label = '🕒 Capture Time : ' .. tostring(CaptureInfo.Time), value = "changeTime"},
-            {label = '========== Your Current Zones =========', value = nil},
-        }
-
-        if CaptureInfo.Zones and next(CaptureInfo.Zones) ~= nil then
-            for zoneName, _ in pairs(CaptureInfo.Zones) do
-                table.insert(elements, {label = '📍 Zone Name : ' .. zoneName, value = zoneName})
-            end
-        else
-            table.insert(elements, {label = '📍 No Zones', value = nil})
-        end
-
-        local actions = {
-            {label = '========== Actions =========', value = nil},
-            {label = 'Add Zone 📍', value = 'addZone'},
-            {label = 'Start Capture 🚪', value = 'startCap'},
-            {label = 'Start Announce !', value = 'announce'},
-        }
-
-        for _, v in pairs(actions) do
-            table.insert(elements, v)
-        end
-
-        ESX.UI.Menu.Open(
-            'default', GetCurrentResourceName(), 'CaptureAdminMenu',
-            {
-                title    = 'Capture Admin Menu',
-                align    = "top-right",
-                elements = elements
-            },
-            function(data, menu)
-                if data.current.value == 'changeTime' then
-                    ESX.UI.Menu.Open(
-                        'dialog', GetCurrentResourceName(), 'CaptureTime',
-                        { title = 'Change Capture Time' },
-                        function(data2, menu2)
-                            local time = tonumber(data2.value)
-                            if time and time > 0 then
-                                CaptureInfo.Time = time
-                                TriggerServerEvent('arshiahub.ir-CaptureSystem:UpdateInfo', CaptureInfo)
-                                GotoAdminMenu()
-                            end
-                            menu2.close()
-                        end,
-                        function(data2, menu2)
-                            menu2.close()
-                        end
-                    )
-
-                elseif data.current.value == 'addZone' then
-                    ESX.UI.Menu.Open(
-                        'dialog', GetCurrentResourceName(), 'CaptureZoneName',
-                        { title = 'Zone Name' },
-                        function(data2, menu2)
-                            if data2.value then
-                                local coords = GetEntityCoords(PlayerPedId())
-                                if type(CaptureInfo.Zones) ~= "table" then CaptureInfo.Zones = {} end
-                                CaptureInfo.Zones[data2.value] = {x = coords.x, y = coords.y, z = coords.z}
-                                TriggerServerEvent('arshiahub.ir-CaptureSystem:UpdateInfo', CaptureInfo)
-                                GotoAdminMenu()
-                            end
-                            menu2.close()
-                        end,
-                        function(data2, menu2)
-                            menu2.close()
-                        end
-                    )
-
-                elseif data.current.value == 'startCap' then
-                    ExecuteCommand(CapConfig.StartCaptureCommand)
-                    menu.close()
-                elseif CaptureInfo.Zones[data.current.value] then
-                    CaptureInfo.Zones[data.current.value] = nil
-                    TriggerServerEvent('arshiahub.ir-CaptureSystem:UpdateInfo', CaptureInfo)
-                    GotoAdminMenu()
-                elseif data.current.value == 'announce' then
-                    ExecuteCommand("announce Capture Start Shod ! /"..CapConfig.JoinCaptureCommand.." Baraye Join Shodan !")
-                    menu.close()
-                end
-            end,
-            function(data, menu)
-                menu.close()
-            end
-        )
-    end)
-end
-
-RegisterNetEvent("arshiahub.ir-Capture:OpenStatsMenu")
-AddEventHandler("arshiahub.ir-Capture:OpenStatsMenu", function()
-    ESX.TriggerServerCallback('arshiahub.ir-Capture:GetMyStats', function(Mine, TopAllTime, MyZones)
-        ESX.UI.Menu.CloseAll()
-        local elements = {}
-
-        local kills = Mine and Mine.kills or 0
-        local deaths = Mine and Mine.deaths or 0
-        local top5 = Mine and Mine.top5_count or 0
-        local kd = deaths > 0 and string.format("%.2f", kills / deaths) or tostring(kills)
-
-        table.insert(elements, {label = '========== 📊 My Stats ==========', value = nil})
-        table.insert(elements, {label = 'Kills: '..kills, value = nil})
-        table.insert(elements, {label = 'Deaths: '..deaths, value = nil})
-        table.insert(elements, {label = 'K/D Ratio: '..kd, value = nil})
-        table.insert(elements, {label = 'Times In Top 5: '..top5, value = nil})
-
-        table.insert(elements, {label = '========== 📍 My Best Zones ==========', value = nil})
-        if MyZones and #MyZones > 0 then
-            for i, row in ipairs(MyZones) do
-                table.insert(elements, {label = '#'..i..' '..tostring(row.zone_name)..' - '..tostring(row.points)..' pts', value = nil})
-            end
-        else
-            table.insert(elements, {label = 'No Data Yet', value = nil})
-        end
-
-        table.insert(elements, {label = '========== 🏆 All-Time Top Killers ==========', value = nil})
-
-        if TopAllTime and #TopAllTime > 0 then
-            for i, row in ipairs(TopAllTime) do
-                table.insert(elements, {label = '#'..i..' '..tostring(row.name)..' - '..tostring(row.kills)..' kills', value = nil})
-            end
-        else
-            table.insert(elements, {label = 'No Data Yet', value = nil})
-        end
-
-        ESX.UI.Menu.Open(
-            'default', GetCurrentResourceName(), 'CaptureStatsMenu',
-            {
-                title    = 'Capture Stats',
-                align    = "top-right",
-                elements = elements
-            },
-            function(data, menu) end,
-            function(data, menu)
-                menu.close()
-            end
-        )
-    end)
-end)
-
-RegisterNetEvent("arshiahub.ir-Capture:OpenHistoryMenu")
-AddEventHandler("arshiahub.ir-Capture:OpenHistoryMenu", function()
-    ESX.TriggerServerCallback('arshiahub.ir-Capture:GetHistory', function(History)
-        ESX.UI.Menu.CloseAll()
-        local elements = {}
-
-        if not History or #History == 0 then
-            table.insert(elements, {label = 'No Rounds Recorded Yet', value = nil})
-        else
-            for _, round in ipairs(History) do
-                local label = string.format('📅 %s | 🏆 %s (%d pts) | 🔫 %s (%d kills)',
-                    tostring(round.round_date),
-                    tostring(round.winner_gang or 'N/A'),
-                    round.winner_points or 0,
-                    tostring(round.top_killer_name or 'N/A'),
-                    round.top_killer_kills or 0
-                )
-                table.insert(elements, {label = label, value = round})
-            end
-        end
-
-        ESX.UI.Menu.Open(
-            'default', GetCurrentResourceName(), 'CaptureHistoryMenu',
-            {
-                title    = 'Capture History',
-                align    = "top-right",
-                elements = elements
-            },
-            function(data, menu)
-                if data.current.value then
-                    OpenHistoryRoundDetail(data.current.value)
-                end
-            end,
-            function(data, menu)
-                menu.close()
-            end
-        )
-    end)
-end)
-
-function OpenHistoryRoundDetail(round)
-    local elements = {}
-    table.insert(elements, {label = '========== 🥇 Top Gangs ==========', value = nil})
-
-    local ok, gangs = pcall(json.decode, round.top_gangs_json or '[]')
-    if ok and gangs then
-        for i, gang in ipairs(gangs) do
-            table.insert(elements, {label = '#'..i..' '..tostring(gang.Name)..' - '..tostring(gang.Points)..' pts', value = nil})
-        end
-    end
-
-    table.insert(elements, {label = '========== 🏆 Top Killers ==========', value = nil})
-    local ok2, killers = pcall(json.decode, round.top_killers_json or '[]')
-    if ok2 and killers then
-        for i, killer in ipairs(killers) do
-            table.insert(elements, {label = '#'..i..' '..tostring(killer.Name)..' - '..tostring(killer.Point)..' kills', value = nil})
-        end
-    end
-
-    ESX.UI.Menu.Open(
-        'default', GetCurrentResourceName(), 'CaptureHistoryDetail',
-        {
-            title    = tostring(round.round_date),
-            align    = "top-right",
-            elements = elements
-        },
-        function(data, menu) end,
-        function(data, menu)
-            menu.close()
-        end
-    )
-end
-
-function SetArmor()
-    if CapConfig.UseGroupForArmor then
-        if CapConfig.Armor[PlayerData.group] then
-            PlayerCaptureInf.Armor = CapConfig.Armor[PlayerData.group]
-        else
-            PlayerCaptureInf.Armor = CapConfig.DefaultArmor
-        end
-    else
-        PlayerCaptureInf.Armor = CapConfig.DefaultArmor
-    end
-
-end
-
-function Draw3DText(x, y, z, text)
-    local onScreen, _x, _y = World3dToScreen2d(x, y, z)
-    local px, py, pz = table.unpack(GetGameplayCamCoords())
-
-    if onScreen then
-        SetTextScale(0.7, 0.7)
-        SetTextFont(4)
-        SetTextProportional(1)
-        SetTextColour(255, 255, 255, 215)
-        SetTextOutline()
-        SetTextEntry("STRING")
-        AddTextComponentString(text)
-        DrawText(_x, _y)
-    end
-end
-
-RegisterNetEvent("arshiahub.ir-CaptureSystem:TpPlayer")
-AddEventHandler("arshiahub.ir-CaptureSystem:TpPlayer",function(x,y,z)
-    local player = GetPlayerPed(-1)
-    SetEntityCoords(player, x, y, z, false, false, false, true)
-end)
-
-RegisterNetEvent("arshiahub.ir-CaptureSystem:ShowMessage")
-AddEventHandler("arshiahub.ir-CaptureSystem:ShowMessage",function(text,time)
-    if PlayerCaptureInf.InCapture then
-        Citizen.CreateThread(function()
-            local TimeOut = true
-            AddEventHandler("arshiahub.ir-CaptureSystem:ShowMessage",function(text,time)
-                TimeOut = false
-            end)
-            SetTimeout((time) * 1000 , function()
-                TimeOut = false
-            end)
-            while TimeOut do
-                Citizen.Wait(0)
-                DrawTextBottom(text)
-            end
-        end)
-    end
-end)
-function DrawTextBottom(text)
-    SetTextFont(4)
-    SetTextProportional(0)
-    SetTextScale(0.7, 0.7)
-    SetTextColour(255, 255, 255, 255)
-    SetTextDropshadow(0, 0, 0, 0, 255)
-    SetTextEdge(1, 0, 0, 0, 255)
-    SetTextDropShadow()
-    SetTextOutline()
-    SetTextEntry("STRING")
-    AddTextComponentString(text)
-    DrawText(0.35, 0.93)
-end
-
-function OpenWeaponGroupMenu()
-    local elements = {}
-    ESX.UI.Menu.CloseAll()
-    local playerGroup = PlayerData.group
-    for i, weaponGroup in ipairs(CapConfig.Weapons) do
-        local hasAccess = false
-
-        if not weaponGroup.access then
-            hasAccess = true
-        elseif weaponGroup.access == playerGroup or (weaponGroup.access == "vip+" and (playerGroup == "vip+" or playerGroup == "admin")) then
-            hasAccess = true
-        end
-
-        local weaponLabels = {}
-        for _, weapon in ipairs(weaponGroup.Names) do
-            local label = ESX.GetWeaponLabel(weapon)
-            table.insert(weaponLabels, label or weapon)
-        end
-
-        local fullLabel = table.concat(weaponLabels, " | ")
-        if not hasAccess then
-            fullLabel = "[LOCKED("..weaponGroup.access..")] " .. fullLabel
-        end
-
-        table.insert(elements, {
-            label = fullLabel,
-            groupIndex = i,
-            access = hasAccess,
-            group = weaponGroup.access,
-        })
-    end
-    PlayerCaptureInf.InMenu = "WeaponMenu"
-    ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'WeaponMenu', {
-        title    = "Weapon Menu",
-        align    = 'top-right',
-        elements = elements
-    }, function(data, menu)
-        if data.current.access then
-            PlayerCaptureInf.Weapon = CapConfig.Weapons[data.current.groupIndex].Names
-            PlayerCaptureInf.InMenu = nil
-            GotoMenu()
-        else
-            Notify("You Dont Have Access To "..data.current.group.." Group Weapons", 'error')
-        end
-    end, function(data, menu)
-        PlayerCaptureInf.InMenu = nil
-        GotoMenu()
-    end)
-end
-
-RegisterNetEvent('arshiahub.ir-CaptureSystem:ReceiveGroup')
-AddEventHandler('arshiahub.ir-CaptureSystem:ReceiveGroup',function(group)
-    PlayerCaptureInf.Group = group
-end)
-

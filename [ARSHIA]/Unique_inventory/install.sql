@@ -3,3 +3,9 @@ CREATE TABLE IF NOT EXISTS `sun_inv_slots` (
   `data` longtext NOT NULL,
   PRIMARY KEY (`identifier`)
 );
+
+CREATE TABLE IF NOT EXISTS `sun_stash` (
+  `skey` varchar(128) NOT NULL,
+  `data` longtext NOT NULL,
+  PRIMARY KEY (`skey`)
+);

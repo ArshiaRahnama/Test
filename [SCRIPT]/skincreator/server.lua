@@ -11,6 +11,7 @@ end)
 
 ESX.RegisterServerCallback('getGender', function(source, cb)
 	TriggerEvent('es:getPlayerFromId', source, function(user)
+		if not user then return cb(nil) end
 		exports.oxmysql:scalar('SELECT sex FROM users WHERE identifier = @identifier', {
 			['@identifier'] = user.identifier
 		}, function(sex)
@@ -21,7 +22,16 @@ end)
 
 RegisterServerEvent("updateSkin")
 AddEventHandler("updateSkin", function(skin)
-	TriggerEvent('es:getPlayerFromId', source, function(user)
+	local src = source
+
+	-- never trust the client: must be a table with a valid sex
+	if type(skin) ~= 'table' then return end
+	local sex = tonumber(skin.sex)
+	if sex ~= 0 and sex ~= 1 then return end
+	skin.sex = sex
+
+	TriggerEvent('es:getPlayerFromId', src, function(user)
+		if not user then return end
 		local player = user.identifier
 
 		exports.oxmysql:execute('UPDATE users SET `skin` = @skin, `sex` = @sex WHERE identifier = @identifier',
@@ -37,6 +47,7 @@ end)
 
 function getSkin(source, cb)
 	TriggerEvent('es:getPlayerFromId', source, function(user)
+		if not user then return cb(false) end
 		exports.oxmysql:scalar('SELECT skin FROM users WHERE identifier = @identifier', {
 			['@identifier'] = user.identifier
 		}, function(skin)

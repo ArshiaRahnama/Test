@@ -273,7 +273,7 @@ function L14_1(A0_2, A1_2)
   L9_2 = 40
   L6_2 = L6_2(L7_2, L8_2, L9_2)
   L7_2 = tonumber
-  L8_2 = L2_2 or L8_2
+  L8_2 = L2_2
   if L2_2 then
     L8_2 = L2_2.avatar
   end

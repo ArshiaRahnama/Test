@@ -153,27 +153,24 @@ RegisterCommand(Client_Config.CommandForUser, function()
     end
 end, false)
 
-RegisterCommand(Client_Config.CommandForAdmin, function()
-    local now = GetGameTimer()
-    if now - lastAdminCmd < Client_Config.commandCooldown then return end
-    lastAdminCmd = now
-
-    if nuiFocusActive and activePanel == 'admin' then
+-- پنل قدیمی ادمین دیگه دستور نداره (/areport الان صف Sun-style هست: client/sun_report_bridge.lua).
+-- فقط برای بخش تیکتِ ادمین از طریق ایونت باز میشه (client/ticket_client.lua -> OpenTicketPanel).
+RegisterNetEvent('Unique_Report:openLegacyAdmin')
+AddEventHandler('Unique_Report:openLegacyAdmin', function(forceOpen)
+    if not forceOpen and nuiFocusActive and activePanel == 'admin' then
         return closePanels()
     end
-
     if not ESX then return notify(ReportLan.esxNotReady) end
     ESX.TriggerServerCallback('Unique_Report:getAccess', function(has)
         if not has then return notify(ReportLan.notAccess) end
         openAdminPanel()
     end, Config_Shared.accessToAdminCommand)
-end, false)
+end)
+
+AddEventHandler('Unique_Report:closeLegacy', function() closePanels() end)
 
 if Client_Config.KeyForUser ~= "" then
-    RegisterKeyMapping(Client_Config.CommandForUser, 'باز کردن ریپورت', 'keyboard', Client_Config.KeyForUser)
-end
-if Client_Config.KeyForAdmin ~= "" then
-    RegisterKeyMapping(Client_Config.CommandForAdmin, 'پنل ریپورت ادمین', 'keyboard', Client_Config.KeyForAdmin)
+    RegisterKeyMapping(Client_Config.CommandForUser, 'باز کردن تیکت', 'keyboard', Client_Config.KeyForUser)
 end
 
 -- ==================================================== NUI Callbacks ===
@@ -366,6 +363,7 @@ end)
 
 RegisterNetEvent('Unique_Report:askRating')
 AddEventHandler('Unique_Report:askRating', function(reportId, adminName)
+    if Client_Config.SunReportUI then return end   -- امتیازدهی تو چت (sun_report_bridge)
     send('askRating', { id = reportId, adminName = adminName })
     setFocus(true, 'rating')
 end)

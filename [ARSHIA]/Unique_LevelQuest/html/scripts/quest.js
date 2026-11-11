@@ -1,7 +1,7 @@
 function ringColorFor(percentage) {
   if (percentage >= 100) return '#1fd34b'; // complete - green
-  if (percentage >= 70) return '#ff8c1a';  // orange
-  if (percentage >= 30) return '#ffc56d';  // amber
+  if (percentage >= 70) return '#7c3aed';  // orange
+  if (percentage >= 30) return '#a78bfa';  // amber
   return '#6b6b72';                        // muted - just started
 }
 
@@ -39,6 +39,8 @@ function animateQuestRing(ringElement, fracElement, questId, current, required, 
   if (fracElement) fracElement.textContent = `${current}/${required}`;
 }
 
+const qEsc = (v) => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
 function postNui(endpoint, body) {
   const resourceName = window.GetParentResourceName ? window.GetParentResourceName() : 'unknown_resource';
   fetch(`https://${resourceName}/${endpoint}`, {
@@ -57,6 +59,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (data.type === 'loadQuests' && Array.isArray(data.quests)) {
       const maxActive = data.maxActive ?? 6;
+      const canAccept = data.canAccept !== false;
+      const choices = Array.isArray(data.choices) && data.choices.length ? data.choices : null;
       const activeCount = data.quests.filter(q => q.accepted && !q.completed).length;
       const completedCount = data.quests.filter(q => q.completed).length;
 
@@ -93,22 +97,34 @@ document.addEventListener('DOMContentLoaded', () => {
         const slotsFull = activeCount >= maxActive;
 
         let actionHtml = '';
-        if (quest.completed) {
+        if (quest.completed && quest.pending && choices) {
+          if (canAccept) {
+            actionHtml = '<div class="claimRow">' + choices.map((c, i) => {
+              const xp = Math.round((quest.xp || 0) * (c.xpMul ?? 1));
+              const coin = Math.round((quest.coin || 0) * (c.coinMul ?? 1) * 100) / 100;
+              return `<button type="button" class="questBtn claimBtn" data-id="${qEsc(quest.id)}" data-opt="${i + 1}"><i class="fa-solid fa-gift"></i> ${qEsc(c.label)}<small>${xp} XP · ${coin} C</small></button>`;
+            }).join('') + '</div>';
+          } else {
+            actionHtml = `<div class="questDoneBadge"><i class="fa-solid fa-gift"></i> Claim at the quest giver</div>`;
+          }
+        } else if (quest.completed) {
           actionHtml = `<div class="questDoneBadge"><i class="fa-solid fa-circle-check"></i> Completed</div>`;
         } else if (quest.accepted) {
-          actionHtml = `<button type="button" class="questBtn cancelBtn" data-id="${quest.id}"><i class="fa-solid fa-xmark"></i> Cancel</button>`;
+          actionHtml = `<button type="button" class="questBtn cancelBtn" data-id="${qEsc(quest.id)}"><i class="fa-solid fa-xmark"></i> Cancel</button>`;
+        } else if (!canAccept) {
+          actionHtml = `<div class="questDoneBadge npcHint"><i class="fa-solid fa-location-dot"></i> Accept at the quest giver</div>`;
         } else if (slotsFull) {
           actionHtml = `<button type="button" class="questBtn lockedBtn" disabled title="Finish or cancel your current quest first"><i class="fa-solid fa-lock"></i> Locked</button>`;
         } else {
-          actionHtml = `<button type="button" class="questBtn acceptBtn" data-id="${quest.id}"><i class="fa-solid fa-plus"></i> Accept</button>`;
+          actionHtml = `<button type="button" class="questBtn acceptBtn" data-id="${qEsc(quest.id)}"><i class="fa-solid fa-plus"></i> Accept</button>`;
         }
 
         card.innerHTML = `
           <div class="ring" id="ring-${quest.id}" style="--deg:0deg; --ringColor:#6b6b72;">
             <div class="ringText" id="frac-${quest.id}">${quest.accepted ? '0' : '—'}/${required}</div>
           </div>
-          <div class="achTitle">${quest.title}</div>
-          <div class="achDesc">${quest.description}</div>
+          <div class="achTitle">${qEsc(quest.title)}</div>
+          <div class="achDesc">${qEsc(quest.description)}</div>
           <div class="achReward">
             ${quest.xp ? `<span class="rewardChip xpChip"><i class="fa-solid fa-bolt"></i>${quest.xp}</span>` : ''}
             ${quest.coin ? `<span class="rewardChip coinChip"><span class="coin"></span>${quest.coin}</span>` : ''}
@@ -131,6 +147,14 @@ document.addEventListener('DOMContentLoaded', () => {
             postNui('acceptQuest', { id: quest.id });
           });
         }
+
+        card.querySelectorAll('.claimBtn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            card.querySelectorAll('.claimBtn').forEach(b => { b.disabled = true; });
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i>`;
+            postNui('claimReward', { id: quest.id, option: Number(btn.dataset.opt) });
+          });
+        });
 
         const cancelBtn = card.querySelector('.cancelBtn');
         if (cancelBtn) {

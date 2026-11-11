@@ -1797,7 +1797,7 @@ function L22_1(A0_2, A1_2)
     end
     L10_2 = nil
     ::lbl_42::
-    L11_2 = L10_2 or L11_2
+    L11_2 = L10_2
     if L10_2 then
       L11_2 = L8_1
       L12_2 = L10_2.identifier

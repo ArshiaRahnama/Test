@@ -427,7 +427,7 @@ function L33_1(A0_2)
   L6_2 = A0_2
   L5_2[1] = L6_2
   L2_2, L3_2 = L2_2(L3_2, L4_2, L5_2)
-  L4_2 = L2_2 or L4_2
+  L4_2 = L2_2
   if L2_2 then
     L4_2 = tonumber
     L5_2 = L3_2
@@ -773,7 +773,7 @@ function L38_1(A0_2, A1_2)
   L9_2 = 40
   L6_2 = L6_2(L7_2, L8_2, L9_2)
   L7_2 = tonumber
-  L8_2 = L2_2 or L8_2
+  L8_2 = L2_2
   if L2_2 then
     L8_2 = L2_2.avatar
   end
@@ -899,7 +899,7 @@ function L39_1(A0_2, A1_2, A2_2)
   end
   L10_2.number = L11_2
   L11_2 = tonumber
-  L12_2 = L5_2 or L12_2
+  L12_2 = L5_2
   if L5_2 then
     L12_2 = L5_2.avatar
   end

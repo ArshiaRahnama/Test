@@ -32,32 +32,127 @@
 -- happens to be exactly "accepted" now, so no change was needed there.
 -- ================================================================= --
 
-local TRIGGER_COOLDOWN = 2 -- seconds; blocks raw event-spam farming
+math.randomseed(os.time()) -- server Lua is NOT seeded by default: every restart replayed the same "random" daily offers
+
+local TRIGGER_COOLDOWN = 2 -- seconds; flood guard for server-fired (TriggerEvent) triggers
 local lastTriggerAt = {} -- [source..":"..trigger] = os.time()
 
-local function onCooldown(source, trigger)
+-- Only these triggers are ever fired by a CLIENT (TriggerServerEvent):
+--   *:onduty / quest-cafe-onduty:<job>  -> client/bridges.lua (paycheck tick, ~15 min)
+--   *:acceptreq                         -> client/bridges.lua (responder accepted a request)
+--   quest-cafe:bill                     -> uniquecafejobs/client/functions.lua
+-- Everything else is fired server-side by esx_jobs / esx_drugs / uniquecafejobs /
+-- our own bridges and must NOT be reachable from the network at all - it used to be
+-- RegisterServerEvent for every single trigger, so any client could just loop
+-- TriggerServerEvent('quest-police:cuff') every 2s and finish the day's quests.
+-- Returns the minimum seconds between two accepted calls, or nil when the trigger
+-- must stay server-only.
+local function networkCooldown(trigger)
+    if trigger:find(':onduty$') or trigger:find('^quest%-cafe%-onduty:') then
+        return 14 * 60 -- paycheck interval is 15 min; same slack skill-track:tick uses
+    elseif trigger:find(':acceptreq$') then
+        return 20
+    elseif trigger == 'quest-cafe:bill' then
+        return 15
+    end
+    return nil
+end
+
+local function onCooldown(source, trigger, seconds)
     local key = source .. ":" .. trigger
     local now = os.time()
-    if lastTriggerAt[key] and (now - lastTriggerAt[key]) < TRIGGER_COOLDOWN then
+    if lastTriggerAt[key] and (now - lastTriggerAt[key]) < (seconds or TRIGGER_COOLDOWN) then
         return true
     end
     lastTriggerAt[key] = now
     return false
 end
 
-local function grantQuestReward(xPlayer, quest)
+-- Every handler below does read-modify-write on the player's single `quest` row.
+-- Two events landing in the same tick (e.g. Onduty + Onduty Veteran share one
+-- trigger, or a trigger firing while the player presses Accept) both read the same
+-- old JSON and the second write wiped the first one's progress. withRow() queues
+-- work per identifier so they run strictly one after another.
+--   fn(row, done)   row = the DB row or nil
+--   done(newJson, afterFn)   newJson == nil -> nothing to save; afterFn runs after the write
+local rowQueue = {}
+local function withRow(identifier, fn)
+    if rowQueue[identifier] then
+        table.insert(rowQueue[identifier], fn)
+        return
+    end
+    rowQueue[identifier] = {}
+
+    local function run(f)
+        MySQL.Async.fetchAll('SELECT * FROM quest WHERE identifier = @identifier', {
+            ['@identifier'] = identifier
+        }, function(result)
+            local finished = false
+            local function next_()
+                if finished then return end
+                finished = true
+                local nextFn = rowQueue[identifier] and table.remove(rowQueue[identifier], 1)
+                if nextFn then run(nextFn) else rowQueue[identifier] = nil end
+            end
+            local ok, err = pcall(f, result and result[1], function(newJson, afterFn)
+                if newJson then
+                    MySQL.Async.execute('UPDATE quest SET quests = @quests WHERE identifier = @identifier', {
+                        ['@identifier'] = identifier,
+                        ['@quests']     = newJson,
+                    }, function()
+                        if afterFn then afterFn() end
+                        next_()
+                    end)
+                else
+                    if afterFn then afterFn() end
+                    next_()
+                end
+            end)
+            if not ok then
+                print(('[Unique_LevelQuest] quest row handler error: %s'):format(tostring(err)))
+                next_()
+            end
+        end)
+    end
+    run(fn)
+end
+
+local function grantQuestReward(xPlayer, quest, xpMul, coinMul)
+    local xp   = math.max(0, math.floor((quest.XP or 0) * (xpMul or 1) + 0.5))
+    local coin = math.floor((quest.coin or 0) * (coinMul or 1) * 100 + 0.5) / 100
+
     TriggerClientEvent('esx:showNotification', xPlayer.source, "Quest Completed !", "success", quest.name)
-    TriggerClientEvent('esx:showNotification', xPlayer.source, "You Got " .. quest.XP .. " XP And " .. quest.coin .. " Coins", "success", "Quest Rewards")
-    TriggerClientEvent('hud:achievementToast', xPlayer.source, quest.name, ("+%s XP  •  +%s Coin"):format(quest.XP, quest.coin))
+    TriggerClientEvent('esx:showNotification', xPlayer.source, "You Got " .. xp .. " XP And " .. coin .. " Coins", "success", "Quest Rewards")
+    TriggerClientEvent('hud:achievementToast', xPlayer.source, quest.name, ("+%s XP  •  +%s Coin"):format(xp, coin))
 
-    GrantXP(xPlayer.source, quest.XP, nil)
+    GrantXP(xPlayer.source, xp, nil)
+    TriggerEvent('Unique_LevelQuest:questCompleted', xPlayer.source)
 
-    if quest.coin and quest.coin > 0 then
-        local ok = GrantCoin(xPlayer.source, quest.coin)
+    if coin > 0 then
+        local ok = GrantCoin(xPlayer.source, coin)
         if ok == false then
-            print(('[Unique_LevelQuest] GrantCoin refused reward for %s (%s coin)'):format(xPlayer.identifier, tostring(quest.coin)))
+            print(('[Unique_LevelQuest] GrantCoin refused reward for %s (%s coin)'):format(xPlayer.identifier, tostring(coin)))
         end
     end
+end
+
+local choiceEnabled = Config.QuestRewardChoice and Config.QuestRewardChoice.enabled
+    and Config.QuestRewardChoice.options and #Config.QuestRewardChoice.options > 0
+
+-- Server-side "is this player standing at a quest giver?" (accept / claim).
+-- Needs OneSync (GetPlayerPed on the server); without it the ped is 0 and the
+-- check is skipped rather than locking every player out.
+local function nearQuestNPC(src)
+    if not Config.QuestAcceptOnlyAtNPC then return true end
+    local ped = GetPlayerPed(src)
+    if not ped or ped == 0 then return true end
+    local pc = GetEntityCoords(ped)
+    local maxD = Config.QuestNPCServerDistance or 8.0
+    for _, npc in ipairs(Config.QuestNPCs or {}) do
+        local c = npc.coords
+        if #(pc - vector3(c.x, c.y, c.z)) <= maxD then return true end
+    end
+    return false
 end
 
 -- Shared by AcceptQuest/CancelQuest: which pool (job-specific or
@@ -213,25 +308,27 @@ AddEventHandler("QuestSystem:AcceptQuest", function(questId)
     if not xPlayer then return end
     questId = tostring(tonumber(questId)) -- normalize; also rejects non-numeric junk
     if questId == "nil" then return end
+    if not nearQuestNPC(_source) then
+        TriggerClientEvent('esx:showNotification', _source, "Visit a quest giver to accept quests", "error", "Quests")
+        return
+    end
 
-    MySQL.Async.fetchAll('SELECT * FROM quest WHERE identifier = @identifier', {
-        ['@identifier'] = xPlayer.identifier
-    }, function(result)
-        if not result[1] then return end
-        local playerquests = json.decode(result[1].quests)
+    withRow(xPlayer.identifier, function(row, done)
+        if not row then return done(nil) end
+        local ok, playerquests = pcall(json.decode, row.quests)
+        if not ok or type(playerquests) ~= 'table' then return done(nil) end
+
         local pool = poolFor(playerquests)
         local questDef = pool and pool[tonumber(questId)]
-        if not questDef then return end -- id doesn't exist in this player's current pool
-        if not isOffered(playerquests, questId) then return end -- not one of today's 6 offered quests
+        if not questDef then return done(nil) end -- id doesn't exist in this player's current pool
+        if not isOffered(playerquests, questId) then return done(nil) end -- not one of today's offered quests
+        if playerquests[questId] ~= nil then return done(nil) end -- already accepted (active or done)
 
-        if playerquests[questId] ~= nil then return end -- already accepted (active or done)
-
-        -- Cap: only quests still IN PROGRESS count against the daily
-        -- slot limit, so finishing one frees a slot for another right
-        -- away instead of waiting for the next day.
+        -- Cap: only quests still IN PROGRESS count against the slot limit, so
+        -- finishing one frees a slot for another right away.
         local activeCount = 0
         for k, v in pairs(playerquests) do
-            if k ~= "Job" and k ~= "Offered" then
+            if k ~= "Job" and k ~= "Offered" and k ~= "Pending" then
                 local kDef = pool[tonumber(k)]
                 local req = kDef and kDef.requiredTrigger or 1
                 if (tonumber(v) or 0) < req then
@@ -241,15 +338,14 @@ AddEventHandler("QuestSystem:AcceptQuest", function(questId)
         end
         if activeCount >= (Config.MaxActiveQuests or 1) then
             TriggerClientEvent('esx:showNotification', _source, "Quest slots full", "error", "Finish or cancel your current quest first.")
-            return
+            return done(nil, function() TriggerClientEvent('QuestSystem:RefreshQuests', _source) end)
         end
 
         playerquests[questId] = 0
-        MySQL.Async.execute('UPDATE quest SET quests = @quests WHERE identifier = @identifier', {
-            ['@identifier'] = xPlayer.identifier,
-            ['@quests']     = json.encode(playerquests)
-        })
-        TriggerClientEvent('QuestSystem:RefreshQuests', _source)
+        -- refresh only AFTER the write landed, so the client re-read never sees the old row
+        done(json.encode(playerquests), function()
+            TriggerClientEvent('QuestSystem:RefreshQuests', _source)
+        end)
     end)
 end)
 
@@ -261,107 +357,137 @@ AddEventHandler("QuestSystem:CancelQuest", function(questId)
     questId = tostring(tonumber(questId))
     if questId == "nil" then return end
 
-    MySQL.Async.fetchAll('SELECT * FROM quest WHERE identifier = @identifier', {
-        ['@identifier'] = xPlayer.identifier
-    }, function(result)
-        if not result[1] then return end
-        local playerquests = json.decode(result[1].quests)
-        if playerquests[questId] == nil then return end -- wasn't accepted, nothing to cancel
+    withRow(xPlayer.identifier, function(row, done)
+        if not row then return done(nil) end
+        local ok, playerquests = pcall(json.decode, row.quests)
+        if not ok or type(playerquests) ~= 'table' then return done(nil) end
+        if playerquests[questId] == nil then return done(nil) end -- wasn't accepted, nothing to cancel
 
-        -- Can't cancel a finished quest — no reason to, and it'd let
-        -- someone quietly wipe a completed quest instead of it just
-        -- sitting there marked done.
+        -- Can't cancel a finished quest - it'd let someone quietly wipe a
+        -- completed quest instead of it just sitting there marked done.
         local pool = poolFor(playerquests)
         local questDef = pool and pool[tonumber(questId)]
         local req = questDef and questDef.requiredTrigger or 1
-        if (tonumber(playerquests[questId]) or 0) >= req then return end
+        if (tonumber(playerquests[questId]) or 0) >= req then return done(nil) end
 
         playerquests[questId] = nil
-        MySQL.Async.execute('UPDATE quest SET quests = @quests WHERE identifier = @identifier', {
-            ['@identifier'] = xPlayer.identifier,
-            ['@quests']     = json.encode(playerquests)
-        })
-        TriggerClientEvent('QuestSystem:RefreshQuests', _source)
+        done(json.encode(playerquests), function()
+            TriggerClientEvent('QuestSystem:RefreshQuests', _source)
+        end)
     end)
 end)
 
-for id, quest in ipairs(Config.DefaultQuest) do
-    RegisterServerEvent(quest.trigger)
-    AddEventHandler(quest.trigger, function()
-        local _source = source
-        if onCooldown(_source, quest.trigger) then return end
+RegisterServerEvent("QuestSystem:ClaimReward")
+AddEventHandler("QuestSystem:ClaimReward", function(questId, optionIdx)
+    local _source = source
+    local xPlayer = ESX.GetPlayerFromId(_source)
+    if not xPlayer or not choiceEnabled then return end
+    questId = tostring(tonumber(questId))
+    optionIdx = tonumber(optionIdx)
+    local option = optionIdx and Config.QuestRewardChoice.options[optionIdx]
+    if questId == "nil" or not option then return end
+    if not nearQuestNPC(_source) then
+        TriggerClientEvent('esx:showNotification', _source, "Visit a quest giver to claim rewards", "error", "Quests")
+        return
+    end
 
-        local xPlayer = ESX.GetPlayerFromId(_source)
-        if not xPlayer then return end
-        if xPlayer.job.name ~= 'nojob' then return end
+    withRow(xPlayer.identifier, function(row, done)
+        if not row then return done(nil) end
+        local ok, playerquests = pcall(json.decode, row.quests)
+        if not ok or type(playerquests) ~= 'table' then return done(nil) end
+        local pend = playerquests["Pending"]
+        if type(pend) ~= 'table' or not pend[questId] then return done(nil) end -- nothing to claim / already claimed
+        local pool = poolFor(playerquests)
+        local questDef = pool and pool[tonumber(questId)]
+        if not questDef then return done(nil) end
 
-        MySQL.Async.fetchAll('SELECT * FROM quest WHERE identifier = @identifier', {
-            ['@identifier'] = xPlayer.identifier
-        }, function(result)
-            if not result[1] then return end
-            local playerquests = json.decode(result[1].quests)
-            if not playerquests[tostring(id)] then return end
-            if playerquests[tostring(id)] >= quest.requiredTrigger then return end
-
-            playerquests[tostring(id)] = playerquests[tostring(id)] + 1
-            if playerquests[tostring(id)] == quest.requiredTrigger then
-                grantQuestReward(xPlayer, quest)
-            else
-                TriggerClientEvent('esx:showNotification', xPlayer.source, "Quest : " .. playerquests[tostring(id)] .. "/" .. quest.requiredTrigger, "success", quest.name)
-            end
-
-            MySQL.Async.execute('UPDATE quest SET quests = @quests WHERE identifier = @identifier', {
-                ['@identifier'] = xPlayer.identifier,
-                ['@quests']     = json.encode(playerquests)
-            })
+        pend[questId] = nil -- removed BEFORE paying, inside the row lock: a double-click can't pay twice
+        done(json.encode(playerquests), function()
+            grantQuestReward(xPlayer, questDef, option.xpMul, option.coinMul)
+            TriggerClientEvent('QuestSystem:RefreshQuests', _source)
         end)
     end)
+end)
+
+-- ONE dispatcher per distinct trigger name. Before, every pool entry registered
+-- its own handler for its trigger; several pools share a trigger (all 21 cafe/
+-- holding jobs share quest-cafe:craft / :bill / :advertise ..., and the holding
+-- jobs have "Onduty" + "Onduty Veteran" on the same trigger) and each handler
+-- burned the per-trigger cooldown BEFORE checking the player's job - so the
+-- first handler to run (whatever job it belonged to) set the cooldown and the
+-- handler that actually matched the player was then rejected. Those quests could
+-- only progress by luck of iteration order. Now: match the player's pool first,
+-- apply the cooldown once, progress every matching entry in a single DB write.
+local byTrigger = {} -- trigger -> { { job = <string|nil>, id = n, quest = q }, ... }
+local function addEntry(job, id, quest)
+    local list = byTrigger[quest.trigger]
+    if not list then list = {}; byTrigger[quest.trigger] = list end
+    list[#list + 1] = { job = job, id = id, quest = quest }
+end
+for id, quest in ipairs(Config.DefaultQuest) do addEntry(nil, id, quest) end
+for job, quests in pairs(Config.JobQuests) do
+    for id, quest in ipairs(quests) do addEntry(job, id, quest) end
 end
 
-for job, quests in pairs(Config.JobQuests) do
-    for id, quest in ipairs(quests) do
-        RegisterServerEvent(quest.trigger)
-        -- explicitSource: most bridges TriggerEvent() this trigger from
-        -- within a real network-dispatched chain, where the ambient
-        -- global `source` is already correct on its own (kept as the
-        -- fallback below for those, and for direct TriggerServerEvent
-        -- calls from the client, like the Onduty/acceptreq triggers).
-        -- But a trigger that ultimately traces back to a RegisterCommand
-        -- (e.g. Weazel's /cam -> quest-weazel:broadcast) has NO reliable
-        -- global `source` at all -- same bug class as the Unique_Punishment
-        -- /cs command fix -- so those bridges pass the real source
-        -- explicitly instead, and it's preferred here when present.
-        AddEventHandler(quest.trigger, function(explicitSource)
-            local _source = explicitSource or source
-            if onCooldown(_source, quest.trigger) then return end
+for trigger, entries in pairs(byTrigger) do
+    local netCooldown = networkCooldown(trigger)
+    if netCooldown then RegisterServerEvent(trigger) end
 
-            local xPlayer = ESX.GetPlayerFromId(_source)
-            if not xPlayer then return end
-            if xPlayer.job.name ~= job then return end
+    AddEventHandler(trigger, function(explicitSource)
+        -- explicitSource is only trusted for server-only triggers (a bridge fired
+        -- from a RegisterCommand has no reliable global `source`, see
+        -- server/bridges.lua). For client-reachable ones it would let a cheater
+        -- credit progress to somebody else, so the real `source` is always used.
+        local _source = (not netCooldown and explicitSource) or source
+        if not _source then return end
 
-            MySQL.Async.fetchAll('SELECT * FROM quest WHERE identifier = @identifier', {
-                ['@identifier'] = xPlayer.identifier
-            }, function(result)
-                if not result[1] then return end
-                local playerquests = json.decode(result[1].quests)
-                if playerquests["Job"] ~= job then return end
-                if not playerquests[tostring(id)] then return end
-                if playerquests[tostring(id)] >= quest.requiredTrigger then return end
+        local xPlayer = ESX.GetPlayerFromId(_source)
+        if not xPlayer or not xPlayer.job then return end
+        local jobName = xPlayer.job.name
 
-                playerquests[tostring(id)] = playerquests[tostring(id)] + 1
-                if playerquests[tostring(id)] == quest.requiredTrigger then
-                    grantQuestReward(xPlayer, quest)
-                else
-                    TriggerClientEvent('esx:showNotification', xPlayer.source, "Quest : " .. playerquests[tostring(id)] .. "/" .. quest.requiredTrigger, "success", quest.name)
+        local matched = {}
+        for _, e in ipairs(entries) do
+            if (e.job == nil and jobName == 'nojob') or (e.job ~= nil and e.job == jobName) then
+                matched[#matched + 1] = e
+            end
+        end
+        if #matched == 0 then return end
+
+        if onCooldown(_source, trigger, netCooldown) then return end
+
+        withRow(xPlayer.identifier, function(row, done)
+            if not row then return done(nil) end
+            local ok, playerquests = pcall(json.decode, row.quests)
+            if not ok or type(playerquests) ~= 'table' then return done(nil) end
+
+            local changed = false
+            for _, e in ipairs(matched) do
+                local idStr = tostring(e.id)
+                local poolOk = (e.job == nil and playerquests["Job"] == nil) or (e.job ~= nil and playerquests["Job"] == e.job)
+                local cur = tonumber(playerquests[idStr])
+                if poolOk and cur and cur < e.quest.requiredTrigger then
+                    cur = cur + 1
+                    playerquests[idStr] = cur
+                    changed = true
+                    if cur == e.quest.requiredTrigger then
+                        if choiceEnabled then
+                            local pend = playerquests["Pending"]
+                            if type(pend) ~= 'table' then pend = {}; playerquests["Pending"] = pend end
+                            pend[idStr] = true
+                            TriggerClientEvent('esx:showNotification', xPlayer.source, "Quest finished - claim your reward at the quest giver", "success", e.quest.name)
+                            TriggerClientEvent('hud:achievementToast', xPlayer.source, e.quest.name, 'Claim your reward at the quest giver')
+                        else
+                            grantQuestReward(xPlayer, e.quest)
+                        end
+                    else
+                        TriggerClientEvent('esx:showNotification', xPlayer.source, "Quest : " .. cur .. "/" .. e.quest.requiredTrigger, "success", e.quest.name)
+                    end
                 end
+            end
 
-                MySQL.Async.execute('UPDATE quest SET quests = @quests WHERE identifier = @identifier', {
-                    ['@identifier'] = xPlayer.identifier,
-                    ['@quests']     = json.encode(playerquests)
-                })
-            end)
+            if changed then done(json.encode(playerquests)) else done(nil) end
         end)
-    end
+    end)
 end
 
 AddEventHandler('playerDropped', function()

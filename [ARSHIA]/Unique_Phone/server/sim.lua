@@ -680,7 +680,7 @@ function L28_1(A0_2)
   L1_2 = L27_1
   L2_2 = A0_2
   L1_2 = L1_2(L2_2)
-  L2_2 = L1_2 or L2_2
+  L2_2 = L1_2
   if L1_2 then
     L2_2 = L1_2.phone
   end
@@ -978,7 +978,7 @@ function L35_1(A0_2)
   L2_2 = L2_2.GetPlayerByCid
   L3_2 = L1_2.cid
   L2_2 = L2_2(L3_2)
-  L3_2 = L2_2 or L3_2
+  L3_2 = L2_2
   if L2_2 then
     L3_2 = tonumber
     L4_2 = L2_2.src
@@ -1696,7 +1696,7 @@ function L41_1(A0_2, A1_2, A2_2, A3_2)
   end
   L6_2 = Accounts
   L6_2 = L6_2[A1_2]
-  L7_2 = L6_2 or L7_2
+  L7_2 = L6_2
   if L6_2 then
     L7_2 = L6_2.phone
   end

@@ -21,6 +21,7 @@ files {
   'html/App.js',
   'html/Message.js',
   'html/Suggestions.js',
+  'html/report_categories.js',
   'html/vendor/vue.2.3.3.min.js',
   'html/vendor/flexboxgrid.6.3.1.min.css',
   'html/vendor/animate.3.5.2.min.css',

@@ -1877,7 +1877,7 @@ function L45_1(A0_2, A1_2, A2_2)
   L4_2 = nil
   ::lbl_20::
   L3_2 = L3_2(L4_2)
-  L4_2 = L3_2 or L4_2
+  L4_2 = L3_2
   if L3_2 then
     L4_2 = A1_2
     L5_2 = ":"
@@ -3978,14 +3978,14 @@ function L62_1(A0_2, A1_2)
     end
     L11_2 = nil
     ::lbl_40::
-    L12_2 = L11_2 or L12_2
+    L12_2 = L11_2
     if L11_2 then
       L12_2 = L11_2.gif
       if not L12_2 then
         L12_2 = L11_2.mediumgif
       end
     end
-    L13_2 = L11_2 or L13_2
+    L13_2 = L11_2
     if L11_2 then
       L13_2 = L11_2.tinygif
       if not L13_2 then

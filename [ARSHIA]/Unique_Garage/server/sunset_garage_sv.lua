@@ -52,7 +52,7 @@ CreateThread(function()
     end
 end)
 
-ESX.RegisterServerCallback('garage:getOwnedVehicles', function(source, cb, zoneType)
+ESX.RegisterServerCallback('garage:getOwnedVehicles', function(source, cb, zoneType, zoneIndex)
     local xPlayer = ESX.GetPlayerFromId(source)
     if not xPlayer then cb({}, {}) return end
     finishTransfers()
@@ -68,6 +68,11 @@ ESX.RegisterServerCallback('garage:getOwnedVehicles', function(source, cb, zoneT
                 if ok and type(props) == 'table' and props.model then
                     local stored = r.stored
                     if type(stored) == 'boolean' then stored = stored and 1 or 0 end
+                    -- old cars without a garage: the first garage that lists them becomes their home
+                    if zoneIndex and r.location == nil and tonumber(stored) == 1 then
+                        r.location = tonumber(zoneIndex)
+                        MySQL.Async.execute('UPDATE owned_vehicles SET location = ? WHERE plate = ? AND location IS NULL', { tonumber(zoneIndex), r.plate })
+                    end
                     local transferring = r.transfer_until and tonumber(r.transfer_until) and tonumber(r.transfer_until) > now()
                     out[#out + 1] = {
                         plate    = trim(r.plate),

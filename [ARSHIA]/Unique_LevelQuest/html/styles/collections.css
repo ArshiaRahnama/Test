@@ -28,7 +28,7 @@
 .subtab i { font-size: 12px; opacity: 0.85; }
 
 .subtab:hover { color: #d8d8dd; }
-.subtab.active { color: #fff; background: rgba(255, 140, 26, 0.1); }
+.subtab.active { color: #fff; background: rgba(124, 58, 237, 0.1); }
 .subtab.active::after {
   content: '';
   position: absolute;
@@ -129,7 +129,7 @@
 
 .houseIcon {
   color: var(--orange2);
-  background: radial-gradient(circle at 50% 30%, rgba(255, 140, 26, 0.14), rgba(255, 140, 26, 0.02));
+  background: radial-gradient(circle at 50% 30%, rgba(124, 58, 237, 0.14), rgba(124, 58, 237, 0.02));
 }
 
 .cardImg {
@@ -175,8 +175,8 @@
 }
 
 .imgCard.clickable:hover .expandHint {
-  background: rgba(255, 140, 26, 0.25);
-  border-color: rgba(255, 140, 26, 0.5);
+  background: rgba(124, 58, 237, 0.25);
+  border-color: rgba(124, 58, 237, 0.5);
 }
 
 .imgCard.expanded .expandHint {
@@ -194,8 +194,8 @@
   margin: 8px auto 0;
   padding: 6px 14px;
   border-radius: 20px;
-  border: 1px solid rgba(255, 140, 26, 0.3);
-  background: rgba(255, 140, 26, 0.08);
+  border: 1px solid rgba(124, 58, 237, 0.3);
+  background: rgba(124, 58, 237, 0.08);
   color: var(--orange2);
   font-size: 9.5px;
   font-weight: 800;

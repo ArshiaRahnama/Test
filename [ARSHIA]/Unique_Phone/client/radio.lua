@@ -272,7 +272,7 @@ function L28_1()
         L1_3 = FW
         L1_3 = L1_3.GetCore
         L1_3 = L1_3()
-        L0_3 = L1_3 or L0_3
+        L0_3 = L1_3
         if L1_3 then
           L2_3 = L1_3.Functions
           L2_3 = L2_3.GetPlayerData
@@ -280,7 +280,7 @@ function L28_1()
           L0_3 = L2_3
         end
       end
-      L1_3 = L0_3 or L1_3
+      L1_3 = L0_3
       if L0_3 then
         L1_3 = L0_3.metadata
       end
@@ -1535,7 +1535,7 @@ if "string" == L54_1 then
     end
   end
 end
-L54_1 = "apexradio_ptt"
+L54_1 = "uniqueradio_ptt"
 ::lbl_106::
 L55_1 = RegisterCommand
 L56_1 = "+"

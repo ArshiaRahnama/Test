@@ -5,7 +5,7 @@
 Client_Config = {}
 
 -- ------------------------------------------------------------- دستورات ---
-Client_Config.CommandForUser  = "report"
+Client_Config.CommandForUser  = "ticket"   -- پنل قدیمی حالا فقط تیکت + برترین ادمین‌هاست؛ /report = فرم Sun-style چت
 Client_Config.CommandForAdmin = "areport"
 
 -- کیبایند اختیاری (خالی = غیرفعال). بازیکن از Settings > Keybinds میتونه عوضش کنه.
@@ -21,3 +21,6 @@ Client_Config.DeleteAdminCarOnClose = true               -- با بسته شدن
 
 -- --------------------------------------------------------- اسپکتیت ---
 Client_Config.SpectateEvent = "esx_spectate:spectatexxxx"
+
+-- true = فرم/امتیازدهی/نشانگر ریپورت بازیکن داخل چت (سبک Sun) هست و پنل NUI قدیمی askRating نشون نمیده
+Client_Config.SunReportUI = true

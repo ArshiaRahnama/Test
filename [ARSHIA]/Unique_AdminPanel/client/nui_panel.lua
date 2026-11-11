@@ -7,7 +7,7 @@ InAdminNui = false
 -- menu (see the old adminradial command below) - esx_billing already polls
 -- F7 itself (client/main.lua), so removing this keymapping just lets that
 -- poll see the key press again, with no admin-only functionality lost.
-RegisterKeyMapping('adminreports', 'Open Admin Report Queue', 'keyboard', 'F12')
+RegisterKeyMapping((Client_Config and Client_Config.CommandForAdmin) or 'areport', 'Open Admin Report Queue', 'keyboard', 'F12')
 
 -- FIX (یکی‌سازی): این تابع قبلاً یک لیست ریپورتِ کاملاً جداگانه با ox_lib
 -- میساخت (از exports('GetReports', ...) قدیمی، بدون اولویت/دسته‌بندی/چت
@@ -32,7 +32,6 @@ function OpenReportsMenu()
     ExecuteCommand(Client_Config and Client_Config.CommandForAdmin or 'areport')
 end
 
-RegisterCommand('adminreports', OpenReportsMenu, false)
 
 -- Ban History Search + Unban, matching the OpenReportsMenu pattern above.
 -- Permanent bans (external_ban_id set) route the unban through

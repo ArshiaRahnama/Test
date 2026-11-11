@@ -1266,7 +1266,7 @@ function L22_1(A0_2)
     L2_2[L9_2] = L10_2
   end
   L3_2 = L21_1
-  L4_2 = "apex_sc_dev"
+  L4_2 = "unique_sc_dev"
   L5_2 = "Aparelho na m\195\163o"
   L6_2 = L2_2
   L7_2 = "apex_sc_main"
@@ -1289,7 +1289,7 @@ function L22_1(A0_2)
   L5_2.title = "Aparelho na m\195\163o"
   L5_2.description = L3_2
   L5_2.icon = "mobile-screen-button"
-  L5_2.menu = "apex_sc_dev"
+  L5_2.menu = "unique_sc_dev"
   L5_2.arrow = true
   L1_2[L4_2] = L5_2
   L4_2 = #L1_2
@@ -1393,13 +1393,13 @@ function L24_1(A0_2)
       L1_3 = 150
       L0_3(L1_3)
       L0_3 = L20_1
-      L1_3 = "apex_sc_dev"
+      L1_3 = "unique_sc_dev"
       L0_3(L1_3)
     end
     L2_2(L3_2)
   else
     L1_2 = L20_1
-    L2_2 = "apex_sc_dev"
+    L2_2 = "unique_sc_dev"
     L1_2(L2_2)
   end
 end

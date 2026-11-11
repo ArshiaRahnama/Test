@@ -1152,7 +1152,7 @@ function L30_1(A0_2)
   L2_2 = A0_2.restaurant
   L1_2 = L1_1
   L1_2 = L1_2[L2_2]
-  L2_2 = L1_2 or L2_2
+  L2_2 = L1_2
   if L1_2 then
     L2_2 = L1_2.coords
   end
@@ -2072,7 +2072,7 @@ function L43_1(A0_2)
   L2_2 = L2_2.GetPlayerByCid
   L3_2 = A0_2.owner
   L2_2 = L2_2(L3_2)
-  L3_2 = L2_2 or L3_2
+  L3_2 = L2_2
   if L2_2 then
     L3_2 = tonumber
     L4_2 = L2_2.src
@@ -2363,7 +2363,7 @@ function L46_1()
                   L2_3 = math
                   L2_3 = L2_3.sqrt
                   L3_3 = L13_1
-                  L4_3 = L0_3 or L4_3
+                  L4_3 = L0_3
                   if L0_3 then
                     L4_3 = L0_3.coords
                   end

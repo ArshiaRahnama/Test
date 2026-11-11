@@ -6,15 +6,15 @@
 :root {
   --glass: linear-gradient(165deg, rgba(255,255,255,.065), rgba(255,255,255,.018));
   --edge: rgba(255,255,255,.09);
-  --glow: rgba(255,140,26,.45);
+  --glow: rgba(124, 58, 237,.45);
 }
 
 .window {
   background:
-    radial-gradient(900px 380px at 85% -10%, rgba(255,140,26,.10), transparent 60%),
+    radial-gradient(900px 380px at 85% -10%, rgba(124, 58, 237,.10), transparent 60%),
     radial-gradient(700px 320px at 0% 110%, rgba(79,168,255,.07), transparent 60%),
     linear-gradient(180deg, rgba(10,10,12,.94), rgba(5,5,7,.92));
-  border: 1px solid rgba(255,140,26,.18);
+  border: 1px solid rgba(124, 58, 237,.18);
   box-shadow: 0 30px 100px rgba(0,0,0,.75), 0 0 0 1px rgba(0,0,0,.6), 0 0 60px -20px var(--glow);
 }
 
@@ -28,7 +28,7 @@
 .tab { text-transform: uppercase; transition: color .2s, background .2s; }
 .tab i { transition: transform .25s, color .2s; }
 .tab:hover i { transform: translateY(-2px) scale(1.15); }
-.tab.active { background: linear-gradient(180deg, rgba(255,140,26,.16), transparent 90%); text-shadow: 0 0 12px rgba(255,140,26,.55); }
+.tab.active { background: linear-gradient(180deg, rgba(124, 58, 237,.16), transparent 90%); text-shadow: 0 0 12px rgba(124, 58, 237,.55); }
 .tab.active::after { left: 22%; right: 22%; height: 3px; border-radius: 3px 3px 0 0; animation: plIndicator .3s ease; }
 @keyframes plIndicator { from { transform: scaleX(.2); opacity: 0; } }
 
@@ -49,7 +49,7 @@
 .achCard:hover, .skillRow:hover, .imgCard:hover, .champCard:hover, .boardRow:hover,
 .gwRow:hover, .dutyRosterRow:hover, .recordHistoryRow:hover {
   transform: translateY(-2px);
-  border-color: rgba(255,140,26,.5);
+  border-color: rgba(124, 58, 237,.5);
   box-shadow: inset 0 1px 0 rgba(255,255,255,.07), 0 12px 28px -12px var(--glow);
 }
 
@@ -73,7 +73,7 @@
 /* ---- progress bars: glowing, shimmering fill ---- */
 .xp-fill, .skillFill, .fuelFill {
   position: relative; overflow: hidden;
-  box-shadow: 0 0 10px rgba(255,140,26,.55);
+  box-shadow: 0 0 10px rgba(124, 58, 237,.55);
 }
 .xp-fill::after, .skillFill::after {
   content: ''; position: absolute; inset: 0; width: 40%;
@@ -83,8 +83,8 @@
 @keyframes plShimmer { from { transform: translateX(-120%); } to { transform: translateX(320%); } }
 
 /* ---- top stat chips ---- */
-.lvBox { background: linear-gradient(160deg, rgba(255,140,26,.12), rgba(0,0,0,.5)); box-shadow: 0 0 28px -8px var(--glow), inset 0 1px 0 rgba(255,255,255,.08); }
-.lvValue { text-shadow: 0 0 18px rgba(255,140,26,.65); }
+.lvBox { background: linear-gradient(160deg, rgba(124, 58, 237,.12), rgba(0,0,0,.5)); box-shadow: 0 0 28px -8px var(--glow), inset 0 1px 0 rgba(255,255,255,.08); }
+.lvValue { text-shadow: 0 0 18px rgba(124, 58, 237,.65); }
 
 /* ---- buttons ---- */
 .questBtn, .acceptBtn, .subtab, .calApplyBtn, .jobLbPeriodBtn {
@@ -101,7 +101,7 @@
 
 /* ---- inputs ---- */
 input, select { transition: border-color .2s, box-shadow .2s; }
-input:focus, select:focus { outline: none; border-color: var(--orange) !important; box-shadow: 0 0 0 3px rgba(255,140,26,.18); }
+input:focus, select:focus { outline: none; border-color: var(--orange) !important; box-shadow: 0 0 0 3px rgba(124, 58, 237,.18); }
 
 /* ---- accessibility / low-end ---- */
 @media (prefers-reduced-motion: reduce) {
@@ -137,20 +137,20 @@ input:focus, select:focus { outline: none; border-color: var(--orange) !importan
 }
 .achCard.is-available { opacity: .88; }
 .achCard.is-active::before { background: linear-gradient(90deg, transparent, var(--orange), transparent); box-shadow: 0 0 12px var(--orange); }
-.achCard.is-active::after { content: 'ACTIVE'; color: #ffc56d; background: rgba(255,140,26,.14); border-color: rgba(255,140,26,.4); }
+.achCard.is-active::after { content: 'ACTIVE'; color: #a78bfa; background: rgba(124, 58, 237,.14); border-color: rgba(124, 58, 237,.4); }
 .achCard.is-completed::before { background: linear-gradient(90deg, transparent, #1fd34b, transparent); box-shadow: 0 0 12px #1fd34b; }
 .achCard.is-completed::after { content: 'DONE'; color: #4ee08a; background: rgba(31,211,75,.12); border-color: rgba(31,211,75,.4); }
 
 .ring { width: 92px; height: 92px; }
 .ring::after { inset: 8px; background: radial-gradient(circle at 50% 35%, #202026, #0e0e11); }
-.achCard.is-active .ring { box-shadow: 0 0 26px -2px rgba(255,140,26,.45); }
+.achCard.is-active .ring { box-shadow: 0 0 26px -2px rgba(124, 58, 237,.45); }
 .achCard.is-completed .ring { box-shadow: 0 0 26px -2px rgba(31,211,75,.45); }
 .ringText { font-size: 14px; text-shadow: 0 0 10px rgba(255,255,255,.2); }
 .achTitle { margin-top: 14px; font-size: 14px; letter-spacing: .3px; }
 .achDesc { font-size: 10.5px; margin-bottom: 2px; }
 .rewardChip { padding: 5px 11px; background: linear-gradient(160deg, rgba(255,255,255,.08), rgba(0,0,0,.35)); }
 .xpChip { box-shadow: 0 0 12px -4px rgba(109,201,255,.6); }
-.coinChip { box-shadow: 0 0 12px -4px rgba(255,197,109,.6); }
+.coinChip { box-shadow: 0 0 12px -4px rgba(167, 139, 250,.6); }
 .achReward { margin-bottom: 14px; }
 
 /* ============================================================
@@ -158,7 +158,7 @@ input:focus, select:focus { outline: none; border-color: var(--orange) !importan
    ============================================================ */
 .subtabs { padding: 4px; gap: 4px; border-radius: 12px; background: rgba(0,0,0,.5); }
 .subtab { border-radius: 9px; padding: 11px 10px; }
-.subtab.active { background: linear-gradient(180deg, rgba(255,140,26,.22), rgba(255,140,26,.06)); box-shadow: inset 0 0 0 1px rgba(255,140,26,.35); }
+.subtab.active { background: linear-gradient(180deg, rgba(124, 58, 237,.22), rgba(124, 58, 237,.06)); box-shadow: inset 0 0 0 1px rgba(124, 58, 237,.35); }
 .subtab.active::after { display: none; }
 
 .gridCards { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 16px; }
@@ -177,7 +177,7 @@ input:focus, select:focus { outline: none; border-color: var(--orange) !importan
 .garageStatus { margin-top: 8px; padding: 3px 10px; font-size: 9px; border: 1px solid rgba(255,255,255,.06); }
 .status-garage.garageStatus { border-color: rgba(31,211,75,.35); }
 .status-impound.garageStatus { border-color: rgba(226,85,78,.4); }
-.fuelFill { background: linear-gradient(90deg, #ff8c1a, #ffc56d 60%, #4ee08a); }
+.fuelFill { background: linear-gradient(90deg, #7c3aed, #a78bfa 60%, #4ee08a); }
 .expandHint { right: 10px; bottom: 10px; }
-.houseIcon { font-size: 40px; text-shadow: 0 0 22px rgba(255,140,26,.6); }
+.houseIcon { font-size: 40px; text-shadow: 0 0 22px rgba(124, 58, 237,.6); }
 .waypointBtn { padding: 7px 16px; font-size: 10px; }

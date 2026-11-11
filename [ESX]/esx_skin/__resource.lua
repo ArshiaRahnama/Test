@@ -25,3 +25,15 @@ client_scripts {
   'client/main.lua',
 }
 
+-- Sunset-style NUI skin menu
+ui_page 'ui/index.html'
+
+files {
+  'ui/index.html',
+  'ui/assets/index.js',
+  'ui/assets/index.css',
+  'ui/fonts/Vazirmatn-Regular.ttf',
+  'ui/fonts/Vazirmatn-Medium.woff2',
+  'ui/fonts/Vazirmatn-SemiBold.ttf',
+  'ui/fonts/Vazirmatn-Bold.ttf',
+}

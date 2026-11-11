@@ -755,7 +755,7 @@ function L50_1()
     L7_2 = tonumber
     L8_2 = L6_2
     L7_2 = L7_2(L8_2)
-    L8_2 = L7_2 or L8_2
+    L8_2 = L7_2
     if L7_2 then
       L8_2 = GetPlayerNumber
       L9_2 = L7_2
@@ -2660,7 +2660,7 @@ function L76_1(A0_2, A1_2)
   L2_2 = L30_1
   L3_2 = A1_2
   L2_2 = L2_2(L3_2)
-  L3_2 = L2_2 or L3_2
+  L3_2 = L2_2
   if L2_2 then
     L3_2 = L10_1
     L3_2 = L3_2[L2_2]
@@ -5528,12 +5528,12 @@ function L85_1(A0_2)
   L4_2 = 1
   for L5_2 = L2_2, L3_2, L4_2 do
     L6_2 = L1_2[L5_2]
-    L7_2 = L6_2 or L7_2
+    L7_2 = L6_2
     if L6_2 then
       L7_2 = L12_1
       L7_2 = L7_2[L6_2]
     end
-    L8_2 = L7_2 or L8_2
+    L8_2 = L7_2
     if L7_2 then
       L8_2 = L10_1
       L8_2 = L8_2[L7_2]
@@ -5569,7 +5569,7 @@ function L83_1(A0_2)
   L1_2[A0_2] = nil
   L1_2 = L12_1
   L1_2 = L1_2[A0_2]
-  L2_2 = L1_2 or L2_2
+  L2_2 = L1_2
   if L1_2 then
     L2_2 = L10_1
     L2_2 = L2_2[L1_2]

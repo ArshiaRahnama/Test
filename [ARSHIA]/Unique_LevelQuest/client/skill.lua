@@ -21,4 +21,13 @@ function UpdateSkills()
         end
         SendNUIMessage({ type = "loadSkills", skills = formatted })
     end)
+
+    ESX.TriggerServerCallback('HUD_Menu:GetActivitySkills', function(list)
+        SendNUIMessage({ type = "loadActivitySkills", skills = list or {} })
+    end)
 end
+
+RegisterNetEvent('Unique_LevelQuest:skillUp')
+AddEventHandler('Unique_LevelQuest:skillUp', function(skill, label, percent, finished)
+    SendNUIMessage({ type = "skillUp", skill = skill, label = label, percent = percent, finished = finished })
+end)

@@ -14,7 +14,7 @@ function L0_1(A0_2, A1_2)
   L4_2[2] = L6_2
   L4_2[3] = L7_2
   L2_2 = L2_2(L3_2, L4_2)
-  L3_2 = L2_2 or L3_2
+  L3_2 = L2_2
   if L2_2 then
     L3_2 = L2_2.username
   end
@@ -2395,7 +2395,7 @@ function L22_1(A0_2, A1_2)
       end
     end
   end
-  L8_2 = L3_2 or L8_2
+  L8_2 = L3_2
   if L3_2 then
     L8_2 = L3_2.author
   end
@@ -4918,7 +4918,7 @@ INSERT INTO apex_phone_stories
   L15_2 = nil
   ::lbl_145::
   L16_2 = tonumber
-  L17_2 = L7_2 or L17_2
+  L17_2 = L7_2
   if L7_2 then
     L17_2 = L7_2.x
   end
@@ -4932,7 +4932,7 @@ INSERT INTO apex_phone_stories
     end
   end
   L17_2 = tonumber
-  L18_2 = L7_2 or L18_2
+  L18_2 = L7_2
   if L7_2 then
     L18_2 = L7_2.y
   end
@@ -4948,7 +4948,7 @@ INSERT INTO apex_phone_stories
   L18_2 = math
   L18_2 = L18_2.floor
   L19_2 = tonumber
-  L20_2 = L7_2 or L20_2
+  L20_2 = L7_2
   if L7_2 then
     L20_2 = L7_2.size
   end

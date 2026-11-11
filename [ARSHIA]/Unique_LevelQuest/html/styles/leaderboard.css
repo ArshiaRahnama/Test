@@ -166,7 +166,7 @@
 }
 
 .jobLbBackBtn:hover {
-  border-color: rgba(255, 140, 26, 0.5);
+  border-color: rgba(124, 58, 237, 0.5);
   color: #f0f0f3;
 }
 
@@ -212,8 +212,8 @@
 
 .champCard:hover {
   transform: translateY(-3px);
-  border-color: rgba(255, 140, 26, 0.5);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4), 0 0 14px rgba(255, 140, 26, 0.15);
+  border-color: rgba(124, 58, 237, 0.5);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4), 0 0 14px rgba(124, 58, 237, 0.15);
 }
 
 .champCard:active { transform: translateY(-1px); }

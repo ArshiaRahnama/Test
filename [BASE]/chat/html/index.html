@@ -279,9 +279,142 @@
     </ul>
   </script>
 
+  <!-- Report Panel (Admin Only) -->
+  <div id="reportPanel">
+    <div class="rp-header">
+      <span class="rp-title">Reports</span>
+      <div class="rp-lock-btn" title="Lock">
+        <svg class="rp-lock-open" viewBox="0 0 24 24"><path d="M12 17a2 2 0 0 0 2-2 2 2 0 0 0-2-2 2 2 0 0 0-2 2 2 2 0 0 0 2 2m6-9a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2h9V6a3 3 0 0 0-3-3 3 3 0 0 0-3 3H7a5 5 0 0 1 5-5 5 5 0 0 1 5 5v2h1z"/></svg>
+        <svg class="rp-lock-closed" viewBox="0 0 24 24" style="display:none"><path d="M12 17a2 2 0 0 0 2-2 2 2 0 0 0-2-2 2 2 0 0 0-2 2 2 2 0 0 0 2 2m6-9a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2h1V6a5 5 0 0 1 5-5 5 5 0 0 1 5 5v2h1m-1-2V6a3 3 0 0 0-3-3 3 3 0 0 0-3 3v2h6z"/></svg>
+      </div>
+      <div class="rp-size-btn" title="Size">
+        <svg viewBox="0 0 24 24"><path d="M19 13H13V19H11V13H5V11H11V5H13V11H19V13Z"/></svg>
+      </div>
+      <div class="rp-sort-btn" title="Sort">
+        <svg viewBox="0 0 24 24"><path d="M3 18h6v-2H3v2zM3 6v2h18V6H3zm0 7h12v-2H3v2z"/></svg>
+      </div>
+      <div class="rp-tabs">
+        <div class="rp-tab active" data-tab="active">Active <span class="rp-tab-count" id="rpActiveCount"></span></div>
+        <div class="rp-tab" data-tab="history">History <span class="rp-tab-count" id="rpHistoryCount"></span></div>
+      </div>
+    </div>
+    <div class="rp-sort-menu">
+      <div class="rp-sort-option active" data-sort="time">Zaman</div>
+      <div class="rp-sort-option" data-sort="category">Category</div>
+    </div>
+    <div class="rp-list"></div>
+  </div>
+  <div id="rpGlobalTooltip"></div>
+
+  <!-- Report Submit Panel (Player) -->
+  <div id="reportSubmitPanel" style="display:none">
+    <div class="rs-overlay"></div>
+    <div class="rs-container">
+      <div class="rs-header">
+        <div class="rs-back-btn rs-desc-back" style="display:none">
+          <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M4 13h12.17l-5.59 5.59L12 20l8-8-8-8-1.41 1.41L16.17 11H4v2z"/></svg>
+        </div>
+        <span class="rs-title">ثبت گزارش</span>
+        <div class="rs-close-btn">
+          <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </div>
+      </div>
+      <div class="rs-step rs-step-categories">
+        <div class="rs-subtitle">دسته بندی را انتخاب کنید</div>
+        <div class="rs-cat-grid"></div>
+      </div>
+      <div class="rs-step rs-step-desc" style="display:none">
+        <div class="rs-selected-cat rs-desc-cat"></div>
+        <div class="rs-desc-box"></div>
+        <div class="rs-desc-form">
+          <textarea class="rs-message" placeholder="توضیحات خود را بنویسید..." maxlength="128"></textarea>
+          <div class="rs-char-count"><span class="rs-char-current">0</span>/128</div>
+        </div>
+        <button class="rs-submit-btn">ارسال گزارش</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ticket Status Indicator (Player) -->
+  <div id="ticketIndicator" style="display:none">
+    <div class="ti-inner">
+      <svg class="ti-icon" viewBox="0 0 24 24" width="28" height="28"><path fill="currentColor" d="M22 10V6a2 2 0 0 0-2-2H4c-1.1 0-1.99.9-1.99 2v4c1.1 0 1.99.9 1.99 2s-.89 2-2 2v4c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2v-4c-1.1 0-2-.9-2-2s.9-2 2-2zm-2-1.46c-1.19.69-2 1.99-2 3.46s.81 2.77 2 3.46V18H4v-2.54c1.19-.69 2-1.99 2-3.46 0-1.48-.81-2.77-2-3.46V6h16v2.54z"/></svg>
+      <span class="ti-text">گزارش باز</span>
+      <div class="ti-status-dot"></div>
+    </div>
+    <div class="ti-hint">T بزنید و اینجا کلیک کنید</div>
+  </div>
+
+  <!-- Ticket Detail Panel (Player - on click) -->
+  <div id="ticketDetail" style="display:none">
+    <div class="td-overlay"></div>
+    <div class="td-container">
+      <div class="td-header">
+        <svg viewBox="0 0 24 24" width="28" height="28"><path fill="currentColor" d="M22 10V6a2 2 0 0 0-2-2H4c-1.1 0-1.99.9-1.99 2v4c1.1 0 1.99.9 1.99 2s-.89 2-2 2v4c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2v-4c-1.1 0-2-.9-2-2s.9-2 2-2zm-2-1.46c-1.19.69-2 1.99-2 3.46s.81 2.77 2 3.46V18H4v-2.54c1.19-.69 2-1.99 2-3.46 0-1.48-.81-2.77-2-3.46V6h16v2.54z"/></svg>
+        <span class="td-title">گزارش شما</span>
+        <div class="td-close-btn">&times;</div>
+      </div>
+      <div class="td-body">
+        <div class="td-row">
+          <span class="td-label">وضعیت</span>
+          <span class="td-value td-status-value"></span>
+        </div>
+        <div class="td-row">
+          <span class="td-label">دسته بندی</span>
+          <span class="td-value td-cat-value"></span>
+        </div>
+        <div class="td-row">
+          <span class="td-label">زمان</span>
+          <span class="td-value td-time-value"></span>
+        </div>
+        <div class="td-row td-admin-row" style="display:none">
+          <span class="td-label">ادمین</span>
+          <span class="td-value td-admin-value"></span>
+        </div>
+      </div>
+      <div class="td-actions">
+        <button class="td-cancel-btn">لغو گزارش</button>
+      </div>
+      <div class="td-actions td-closed-actions" style="display:none">
+        <button class="td-rate-btn">ثبت امتیاز</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ticket Rating Panel (Player) -->
+  <div id="ticketRating" style="display:none">
+    <div class="tr-overlay"></div>
+    <div class="tr-container">
+      <div class="tr-header">
+        <svg viewBox="0 0 24 24" width="32" height="32"><path fill="currentColor" d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+        <span>ثبت امتیاز</span>
+      </div>
+      <div class="tr-info">گزارش شما بسته شد! لطفا به ادمین امتیاز دهید.</div>
+      <div class="tr-admin-name"></div>
+      <div class="tr-stars">
+        <div class="tr-star" data-value="1">1</div>
+        <div class="tr-star" data-value="2">2</div>
+        <div class="tr-star" data-value="3">3</div>
+        <div class="tr-star" data-value="4">4</div>
+        <div class="tr-star" data-value="5">5</div>
+        <div class="tr-star" data-value="6">6</div>
+        <div class="tr-star" data-value="7">7</div>
+        <div class="tr-star" data-value="8">8</div>
+        <div class="tr-star" data-value="9">9</div>
+        <div class="tr-star" data-value="10">10</div>
+      </div>
+      <textarea class="tr-comment" placeholder="نظر شما (اختیاری)..." maxlength="200"></textarea>
+      <div class="tr-actions">
+        <button class="tr-skip-btn">رد شدن</button>
+        <button class="tr-submit-btn" disabled>ثبت امتیاز</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Scripts -->
   <script type="text/javascript" src="./Suggestions.js"></script>
   <script type="text/javascript" src="./Message.js"></script>
+  <script type="text/javascript" src="./report_categories.js"></script>
   <script type="text/javascript" src="./App.js"></script>
 
   <!-- Main Entry -->

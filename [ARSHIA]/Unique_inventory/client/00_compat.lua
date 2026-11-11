@@ -129,7 +129,7 @@ RegisterCommand('suninv_debug', function()
     end
     print('  Press F2 now - a "KeyDown:f2" line should appear here.')
 end, false)
-SUN_VERSION = 'stage1-v9'
+SUN_VERSION = 'stage2-v10'
 print(('^2[%s] client compat loaded (%s) - F2 or /suninv to open, /suninv_debug to diagnose^7'):format(GetCurrentResourceName(), SUN_VERSION))
 
 -- --------------------------------------------------------------------------
@@ -388,6 +388,28 @@ local function installHelpers()
         if entity and DoesEntityExist(entity) then
             SetEntityAsMissionEntity(entity, false, true)
             DeleteEntity(entity)
+        end
+    end
+
+    -- used by the trunk module
+    ESX.getWeaponWeight = function(name) return 2.0 end
+    ESX.progressCircle = function(ms, canCancel)
+        if lib and lib.progressCircle then
+            return lib.progressCircle({ duration = ms, position = 'bottom', canCancel = canCancel ~= false,
+                disable = { move = true, car = true, combat = true } }) and true or false
+        end
+        Wait(ms)
+        return true
+    end
+    -- the original ESX.Math.Round(value, decimals, floor) has a third "round down" flag
+    if ESX.Math and ESX.Math.Round then
+        local baseRound = ESX.Math.Round
+        ESX.Math.Round = function(value, decimals, floor)
+            if floor then
+                local m = 10 ^ (decimals or 0)
+                return math.floor((tonumber(value) or 0) * m) / m
+            end
+            return baseRound(value, decimals)
         end
     end
 

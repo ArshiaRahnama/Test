@@ -2660,7 +2660,7 @@ function L17_1(A0_2)
   L5_2 = L5_2.GetPlayer
   L6_2 = A0_2.src
   L5_2 = L5_2(L6_2)
-  L6_2 = L5_2 or L6_2
+  L6_2 = L5_2
   if L5_2 then
     L6_2 = L5_2.job
     if L6_2 then

@@ -1882,7 +1882,7 @@ function L16_1(A0_2, A1_2, A2_2, A3_2)
     L1_3 = L1_3.floor
     L2_3 = L0_1.num
     L3_3 = L0_1.decode
-    L4_3 = L0_3 or L4_3
+    L4_3 = L0_3
     if L0_3 then
       L4_3 = L0_3.accounts
     end

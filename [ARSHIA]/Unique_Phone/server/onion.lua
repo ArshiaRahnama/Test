@@ -621,7 +621,7 @@ function L20_1()
   L8_2 = L8_2 - L5_2
   L7_2 = L7_2 / L8_2
   L8_2 = L2_2 > 0
-  L9_2 = L8_2 or L9_2
+  L9_2 = L8_2
   if L8_2 then
     L9_2 = L0_2.enforceBand
     L9_2 = false ~= L9_2
