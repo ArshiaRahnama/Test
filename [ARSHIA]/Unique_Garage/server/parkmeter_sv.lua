@@ -1,5 +1,5 @@
 -- =====================================================================
---  Unique_Garage  |  Sunset-style ParkMeter (server)
+--  Unique_Garage  |  Unique ParkMeter (server)
 --  One vehicle per meter, state persisted in `unique_parkmeter`, synced
 --  to every client so everybody sees the semi-transparent parked car.
 -- =====================================================================

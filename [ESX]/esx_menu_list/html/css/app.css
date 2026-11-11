@@ -1,17 +1,16 @@
-body {
-  background: transparent !important;
-  margin: 0;
-  padding: 0;
-}
 .laptop {
   position: fixed;
   width: calc(100% - 200px);
   height: calc(100% - 200px);
-  left: 20px;
-  top: 20px;
-  border: 80px solid transparent;
+  /* left: 20px; */
+  /* top: 20px; */
+  border: 10px solid;
   z-index: 10;
-  border-radius: 20px;
+  border-radius: 10px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
 }
 .screen {
 width: 100%;
@@ -25,11 +24,6 @@ z-index: 11;
 color: #fff;
 font-family: monospace;
 font-size: 2rem;
-}
-
-@font-face {
-font-family: peyda;
-src: url('../fonts/Peyda-Medium.ttf');
 }
 
 @font-face {
@@ -50,134 +44,231 @@ src: url('../fonts/pdown.ttf');
   width: 100%;
   height: 100%;
   overflow-y: auto;
-  background: #3a3a3a;
-  padding: 30px;
-  box-sizing: border-box;
-}
+  background: #3e3e3e;
 
-/* Search bar */
-.menu-search-wrap {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 30px;
-}
-.menu-search {
-  width: 50%;
-  max-width: 860px;
-  padding: 14px 20px;
-  border: 0;
-  border-radius: 10px;
-  background: #e6e6e6;
-  color: #333;
-  font-family: bankgothic;
-  font-size: 1.1rem;
-  text-align: center;
-  outline: none;
-}
-.menu-search::placeholder {
-  color: #666;
-}
-
-/* Card grid */
-.menu-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 24px;
-  justify-content: flex-start;
-}
-
-.menu-card {
-  width: 210px;
-  height: 254px;
-  background: linear-gradient(160deg, #9134ea 0%, #4b0fd6 100%);
-  border-radius: 14px;
-  box-shadow: 0 6px 14px rgba(0,0,0,.35);
-  padding: 26px 14px 20px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  text-align: center;
-  color: #fff;
-  box-sizing: border-box;
-}
+  width: 100%;
+  /* background-image: linear-gradient(to right, #e54c00, #eb6900, #ef8300, #f19c00, #f2b400); */
 
-/* First cell = avatar */
-.menu-card .menu-cell:first-child {
-  min-height: 70px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 12px;
-}
-.menu-card .menu-cell:first-child img {
-  width: 70px;
-  height: 70px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 2px solid rgba(255,255,255,.5);
-}
-
-/* Second cell = name */
-.menu-card .menu-cell:nth-child(2) {
-  font-size: 1.1rem;
-  font-weight: bold;
-  letter-spacing: .5px;
-  margin-bottom: 12px;
-  word-break: break-word;
-}
-
-/* Third cell = rank badge */
-.menu-card .menu-cell:nth-child(3) {
-  background: rgba(0,0,0,.25);
-  border-radius: 20px;
-  padding: 6px 14px;
-  font-size: .8rem;
-  margin-bottom: 8px;
-}
-
-/* Last cell = action buttons */
-.menu-card .menu-cell:last-child {
-  margin-top: auto;
-  display: flex;
-  gap: 8px;
-  justify-content: center;
+  
 }
 
 .menu button {
-font-family: bankgothic;
-color: inherit;
-text-transform: uppercase;
-word-wrap: break-word;
-white-space: normal;
-cursor: pointer;
-border: 0;
-border-radius: 50px;
-box-shadow: 0 2px 5px 0 rgba(0,0,0,.16), 0 2px 10px 0 rgba(0,0,0,.12);
-transition: color .15s ease-in-out,background-color .15s ease-in-out,border-color .15s ease-in-out,box-shadow .15s ease-in-out;
-padding: 0.5rem 0.9rem;
-font-size: .78rem;
-background: rgba(255,255,255,.18);
-color: #fff;
-display: inline-flex;
-align-items: center;
-justify-content: center;
-min-width: 34px;
-min-height: 34px;
-box-sizing: border-box;
-}
-.menu button:hover{
-  background-color: rgba(255,255,255,.32);
+  font-family: bankgothic;
+  margin: .375rem;
+  color: inherit;
+  text-transform: uppercase;
+  word-wrap: break-word;
+  white-space: normal;
+  cursor: pointer;
+  border: 0;
+  border-radius: .125rem;
+  box-shadow: 0 2px 5px 0 rgb(0 0 0 / 16%), 0 2px 10px 0 rgb(0 0 0 / 12%);
+  transition: color .15s ease-in-out,background-color .15s ease-in-out,border-color .15s ease-in-out,box-shadow .15s ease-in-out;
+  padding: 0.64rem 1.14rem;
+  font-size: .81rem;
+  /* background: #ffb817; */
+  color: #fff;
+
+  background: rgb(235, 105, 0);
 }
 
-.logo {
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 70px;
+.menu>table {
+  border: 1px transparent;
+  border-spacing: 0;
+  min-width: 400px;
+  background-color: #FFF;
+  width: 100%;
 }
-.header-cell {
-  position: relative;
+
+.menu>table>thead {
+  background-color: #ffb817;
+  text-align: center;
+  height: 40px;
+  line-height: 40px;
+  color: #fff;
 }
+
+.menu td {
+text-align: center;
+padding: 20px;
+}
+
+.menu tbody tr:nth-child(even) {
+  background: #3e3e3e;
+  color: #fff;
+}
+
+.menu tbody tr:nth-child(odd) {
+  background: #333;
+  color: #fff;
+}
+
 #macbook { 
   display: none;
 }
+
+
+.search {
+  height: 50px;
+  border: none;
+  outline: none;
+
+  font-size: 1.5rem;
+
+  width: 50%;
+  background-color: #ffffffc9;
+  border-radius: 25px;
+  padding: 10px;
+  margin: 15px;
+  color: black;
+
+  text-align: center;
+  background: #ffffffde;
+}
+
+.search::placeholder {
+  color: rgba(0, 0, 0, 0.726);
+  font-size: 1.5rem;
+}
+
+#data {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  width: 90%;
+  padding: 5px;
+
+  justify-content: flex-start;
+  align-content: center;
+  flex-wrap: wrap;
+}
+
+.row {
+  /* display: flex;
+  flex-direction: column;
+  align-items: center; */
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+
+  width: 200px;
+  height: 230px;
+
+  margin-top: 5px;
+  margin-bottom: 5px;
+  padding: 5px;
+  /* background-image: linear-gradient(to right, #e54c00, #eb6900, #ef8300, #f19c00, #f2b400); */
+  border-radius: 15px;
+  box-shadow: 0px 0px 4px #00000069;
+  
+  background: rgb(241, 156, 0);
+
+  background: linear-gradient(
+    to right bottom,
+    #9c05ff,
+    #9a07fb,
+    #9909f6,
+    #970bf2,
+    #950dee,
+    #900ceb,
+    #8c0ce9,
+    #870be6,
+    #7e08e5,
+    #7606e3,
+    #6c05e2,
+    #6204e0
+  );
+
+  margin: 1vw;
+}
+
+.row img {
+  width: 100px;
+  height: 100px;
+  border-radius: 100%;
+}
+
+.rank {
+  background: #0000001a;
+  padding: 5px;
+  width: 60%;
+  text-align: center;
+  color: #ffffffe0;
+  border-radius: 20px;
+}
+
+.icons {
+  color: white;
+  cursor: pointer;
+}
+/* ---- additions (Sunset loads Material Icons + Vue from its CDN; this build is self-contained) ---- */
+body { background: transparent !important; margin: 0; }
+.data { display: flex; flex-direction: row; align-items: center; width: 90%; padding: 5px; justify-content: flex-start; align-content: center; flex-wrap: wrap; }
+.row .name { color: white; max-width: 100%; text-align: center; word-break: break-word; }
+.row .actions { display: flex; align-items: center; justify-content: center; min-height: 28px; }
+.icons { display: inline-flex; align-items: center; justify-content: center; margin: 0 5px; opacity: .92; transition: opacity .15s, transform .15s; }
+.icons:hover { opacity: 1; transform: scale(1.12); }
+.icons svg { width: 24px; height: 24px; fill: currentColor; stroke: none; }
+.icons svg[stroke] { fill: none; stroke: currentColor; }
+.row.clickable { cursor: pointer; }
+.row.clickable:hover { filter: brightness(1.08); }
+.empty { color: rgba(255,255,255,.6); margin-top: 40px; font-size: 1.2rem; }
+
+/* ---- table mode ('list2', Sunset sun-list look) ---- */
+.table-mode .laptop {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  transform: none;
+  border: 80px solid;
+  border-radius: 20px;
+}
+.menu.menu-table {
+  display: block;
+  align-items: initial;
+  overflow-y: auto;
+  background: #3e3e3e;
+}
+.menu.menu-table > table {
+  border: 1px transparent;
+  border-spacing: 0;
+  min-width: 400px;
+  background-color: #FFF;
+  width: 100%;
+}
+.menu.menu-table > table > thead {
+  background-color: #fe892a;
+  text-align: center;
+  height: 40px;
+  line-height: 40px;
+  color: #fff;
+}
+.menu.menu-table td {
+  text-align: center;
+  padding: 20px;
+  overflow-wrap: anywhere;
+}
+.menu.menu-table tbody tr:nth-child(even) { background: #3e3e3e; color: #fff; }
+.menu.menu-table tbody tr:nth-child(odd)  { background: #333;    color: #fff; }
+.menu.menu-table button {
+  font-family: bankgothic;
+  margin: .375rem;
+  color: #fff;
+  text-transform: uppercase;
+  word-wrap: break-word;
+  white-space: normal;
+  cursor: pointer;
+  border: 0;
+  border-radius: .125rem;
+  box-shadow: 0 2px 5px 0 rgba(0,0,0,.16), 0 2px 10px 0 rgba(0,0,0,.12);
+  transition: color .15s ease-in-out, background-color .15s ease-in-out, border-color .15s ease-in-out, box-shadow .15s ease-in-out;
+  padding: 0.64rem 1.14rem;
+  font-size: .81rem;
+  background: #fe892a;
+}
+.menu.menu-table button:hover { background: #ff9a47; }

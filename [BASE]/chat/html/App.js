@@ -312,8 +312,8 @@ window.APP = {
         { key: 'tattoo', label: 'Tattoo Shop', pos: false, dual: true },
         { key: 'barber', label: 'Barber Shop', pos: false },
         { key: 'documents', label: 'DOJ Documents (F9)', pos: false, dual: true },
-        { key: 'ghabz', label: 'Ghabz (Sun Billing)', pos: false },
-        { key: 'jail', label: 'Jail (Sun Jail)', pos: false },
+        { key: 'ghabz', label: 'Ghabz (Unique Billing)', pos: false },
+        { key: 'jail', label: 'Jail (Unique Jail)', pos: false },
         { key: 'boss', label: 'Boss Action', pos: false, dual: true },
         { key: 'skill', label: 'Skill Menu (I)', pos: false, dual: true },
         { key: 'skin', label: 'Skin Menu (/skin)', pos: false, dual: true }
@@ -947,13 +947,13 @@ const stripEmojis = (str) =>
     return Math.floor(diff / 86400) + "d";
   }
 
-  window.addEventListener('sund:rerender-rp', function() {
+  window.addEventListener('uniqd:rerender-rp', function() {
     rpRender();
   });
 
   function rpGetSorted() {
     var arr = [];
-    var hidden = window.__sundHiddenIds || {};
+    var hidden = window.__uniqdHiddenIds || {};
     for (var id in rpReports) {
       if (rpReports.hasOwnProperty(id)) {
         if (hidden[id]) continue;
@@ -998,7 +998,7 @@ const stripEmojis = (str) =>
     if (!panel) return;
     var list = panel.querySelector('.rp-list');
     if (!list) return;
-    if (window.__sundActiveTab) return;
+    if (window.__uniqdActiveTab) return;
     list.innerHTML = '';
 
     var activeCount = 0;
@@ -1034,7 +1034,7 @@ const stripEmojis = (str) =>
       var moreTooltip = hasMore ? rpEscape(report.message || "") : "";
       var respondName = (report.status === "pending" && report.respond && report.respond.name && report.respond.name !== "none") ? rpEscape(report.respond.name) : "";
 
-      var mineMap = window.__sundMineIds || {};
+      var mineMap = window.__uniqdMineIds || {};
       var isMine  = !!mineMap[String(id)];
 
 
@@ -1207,6 +1207,12 @@ const stripEmojis = (str) =>
   if (panel) rpLoadSize();
 
   document.addEventListener('click', function(e) {
+    if (!e.target.closest('.rp-tickets-btn')) return;
+    e.stopPropagation();
+    post('http://chat/reportPanelAction', JSON.stringify({ action: 'tickets', id: '0' }));
+  });
+
+  document.addEventListener('click', function(e) {
     if (!e.target.closest('.rp-size-btn')) return;
     e.stopPropagation();
     rpSizeLevel = rpSizeLevel >= 4 ? 1 : rpSizeLevel + 1;
@@ -1259,7 +1265,7 @@ const stripEmojis = (str) =>
   if (rpHeader) {
     rpHeader.addEventListener('mousedown', function(e) {
       if (rpLocked) return;
-      if (e.target.closest('.rp-lock-btn') || e.target.closest('.rp-size-btn') || e.target.closest('.rp-sort-btn')) return;
+      if (e.target.closest('.rp-lock-btn') || e.target.closest('.rp-tickets-btn') || e.target.closest('.rp-size-btn') || e.target.closest('.rp-sort-btn')) return;
       rpDragging = true;
       rpOffX = e.clientX - panel.offsetLeft;
       rpOffY = e.clientY - panel.offsetTop;
@@ -1406,7 +1412,7 @@ const stripEmojis = (str) =>
     if (!e.target || !e.target.closest) return;
     var item = e.target.closest('.rp-item');
     if (item) item.classList.add('rp-hovered');
-    var btn = e.target.closest('.rp-lock-btn, .rp-size-btn, .rp-sort-btn, .rp-sort-option');
+    var btn = e.target.closest('.rp-lock-btn, .rp-tickets-btn, .rp-size-btn, .rp-sort-btn, .rp-sort-option');
     if (btn) btn.classList.add('rp-btn-hovered');
   }, true);
 
@@ -1414,7 +1420,7 @@ const stripEmojis = (str) =>
     if (!e.target || !e.target.closest) return;
     var item = e.target.closest('.rp-item');
     if (item) item.classList.remove('rp-hovered');
-    var btn = e.target.closest('.rp-lock-btn, .rp-size-btn, .rp-sort-btn, .rp-sort-option');
+    var btn = e.target.closest('.rp-lock-btn, .rp-tickets-btn, .rp-size-btn, .rp-sort-btn, .rp-sort-option');
     if (btn) btn.classList.remove('rp-btn-hovered');
   }, true);
 
@@ -1495,7 +1501,7 @@ const stripEmojis = (str) =>
       rpClosedReports = data.closedReports || [];
       rpSyncTheme();
       rpRender();
-    } else if (data.type === 'SUND_ARM_AR') {
+    } else if (data.type === 'UNIQD_ARM_AR') {
       var oid = String(data.targetId || '');
       if (!oid) return;
       rpSpectateState[oid] = 'active';

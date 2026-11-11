@@ -9,7 +9,7 @@ dependency 'essentialmode'
 dependency 'oxmysql'
 dependency 'ox_lib'
 
--- every original Sunset resource calls exports['sun-inventory-hud']; this makes them reach this resource
+-- resources taken from the original server call exports['sun-inventory-hud'] / ['sunset_inventory']; these two lines make them reach THIS resource
 provide 'sun-inventory-hud'
 provide 'sunset_inventory'
 

@@ -781,7 +781,7 @@ CreateThread(function()
         for id, d in pairs(Decor) do
             local dist = #(pc - vector3(d.x + 0.0, d.y + 0.0, d.z + 0.0))
             if d.kind == 'marker' then
-                if (myjob == d.job or myjob == 'government') and not (OrgState and OrgState[d.job] == false) and dist < 35.0 then near[#near + 1] = d end
+                -- (not drawn any more: a second marker on the same spot z-fights with the organisation's own one = blinking)
             else
                 local e = DecorEnts[id]
                 if dist < 90.0 and not (e and DoesEntityExist(e)) and type(d.model) == 'string' then

@@ -23,6 +23,28 @@
     });
   }
 
+  function line(box, key, parts) {
+    var d = document.createElement('div');
+    var k = document.createElement('kbd'); k.textContent = key; d.appendChild(k);
+    parts.forEach(function (p) {
+      if (typeof p === 'string') d.appendChild(document.createTextNode(p));
+      else { var s = document.createElement('span'); s.className = p.c; s.textContent = p.t; d.appendChild(s); }
+    });
+    box.appendChild(d);
+  }
+
+  function renderHelp(m) {
+    var box = $('ur-help');
+    box.textContent = '';
+    if (!m.visible) { box.hidden = true; return; }
+    line(box, 'BACKSPACE', [' to hide.']);
+    line(box, 'E', [' to turn radio ', m.on ? { c: 'off', t: 'off' } : { c: 'on', t: 'on' }, '.']);
+    line(box, 'ENTER', [' to choose frequency']);
+    line(box, 'TAB', [' to ', m.clicks ? { c: 'off', t: 'disable' } : { c: 'on', t: 'enable' }, ' mic clicks']);
+    var f = document.createElement('div'); f.textContent = 'Frequency: ' + Number(m.freq) + ' MHz'; box.appendChild(f);
+    box.hidden = false;
+  }
+
   function play(name, vol) {
     var a = $(name === 'on' ? 'ur-on' : 'ur-off');
     if (!a) return;
@@ -60,6 +82,7 @@
     var m = e.data;
     if (!m || m.uniqueRadio !== true) return;
     if (m.action === 'list') renderList(m);
+    else if (m.action === 'help') renderHelp(m);
     else if (m.action === 'sound') play(m.name, m.volume);
     else if (m.action === 'openMenu') {
       access = (m.access && typeof m.access === 'object') ? m.access : {};

@@ -12,7 +12,7 @@ Ticket_Config = {}
 
 -- --------------------------------------------------------------- دستورات ---
 Ticket_Config.CommandForUser  = 'ticket'    -- (فقط برای مستندات) /ticket = پنل تیکتِ ریپورت؛ لیست من از دکمه‌ی داخلش باز میشه
-Ticket_Config.CommandForAdmin = 'atickets'  -- /atickets -> پنل مدیریت تیکت‌ها
+-- (دیگه ثبت نمیشه) Ticket_Config.CommandForAdmin = 'atickets'  -- /atickets -> پنل مدیریت تیکت‌ها
 
 Ticket_Config.KeyForUser  = ''   -- مثلا 'F8'
 Ticket_Config.KeyForAdmin = ''

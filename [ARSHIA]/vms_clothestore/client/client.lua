@@ -1714,6 +1714,7 @@ end)
 RegisterNetEvent('vms_clothestore:open')
 AddEventHandler('vms_clothestore:open', function(storeId)
     local store = Config.Stores[storeId]
+    if not store then return end
     OpenClothestore(store)
 end)
 

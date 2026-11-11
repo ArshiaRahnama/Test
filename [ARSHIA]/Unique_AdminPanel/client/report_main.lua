@@ -153,7 +153,7 @@ RegisterCommand(Client_Config.CommandForUser, function()
     end
 end, false)
 
--- پنل قدیمی ادمین دیگه دستور نداره (/areport الان صف Sun-style هست: client/sun_report_bridge.lua).
+-- پنل قدیمی ادمین دیگه دستور نداره (/areport الان صف Unique-style هست: client/unique_report_bridge.lua).
 -- فقط برای بخش تیکتِ ادمین از طریق ایونت باز میشه (client/ticket_client.lua -> OpenTicketPanel).
 RegisterNetEvent('Unique_Report:openLegacyAdmin')
 AddEventHandler('Unique_Report:openLegacyAdmin', function(forceOpen)
@@ -363,7 +363,7 @@ end)
 
 RegisterNetEvent('Unique_Report:askRating')
 AddEventHandler('Unique_Report:askRating', function(reportId, adminName)
-    if Client_Config.SunReportUI then return end   -- امتیازدهی تو چت (sun_report_bridge)
+    if Client_Config.UniqueReportUI then return end   -- امتیازدهی تو چت (unique_report_bridge)
     send('askRating', { id = reportId, adminName = adminName })
     setFocus(true, 'rating')
 end)

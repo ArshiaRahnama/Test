@@ -23,7 +23,7 @@ Customize.BoatPoundPrice     = 50000
 Customize.AircraftPoundPrice = 100000
 
 -- =====================================================================
---  Sunset-style garage settings (copied 1:1 from sun-garage/config.lua)
+--  Unique garage settings (ported from the reference garage config)
 -- =====================================================================
 Customize.CarPoundPrice      = 5000      -- Car pound price (also used as repair base price)
 Customize.AircraftPoundPrice = 100000
@@ -41,7 +41,7 @@ Customize.TransferOptions = {
 -- Vehicle thumbnails shown in the garage UI (docs.fivem.net hosts every GTA vehicle)
 Customize.VehicleImageUrl    = 'https://docs.fivem.net/vehicles/%s.webp'
 
--- Parking meter behaviour (same numbers as sun-garage)
+-- Parking meter behaviour (same values as the reference garage)
 Customize.ParkMeterBlockedModels = { `stockade` }
 Customize.ParkMeterMaxSpeed      = 10      -- km/h, must be slower than this to park
 Customize.ParkMeterAutoParkDelay = 15      -- seconds after walking >5m away from the vehicle

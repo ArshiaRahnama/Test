@@ -32,7 +32,7 @@ local function validateTrunkAccess(vehicle, realOwner, gloveBox)
 end
 
 local function haveAccessLegal(vehicle)
-    return exports['sunset_utils']:canAccessToVehicle(vehicle)
+    return exports['Unique_utils']:canAccessToVehicle(vehicle)
 end
 
 function openTrunk(vehicle, gloveBox, parkMeter)
@@ -48,7 +48,7 @@ function openTrunk(vehicle, gloveBox, parkMeter)
         if IsPedInAnyVehicle(ped) and not gloveBox then return false end
         if configTrunk.noTrunkClass[class] then return false end
         ESX.UI.Menu.CloseAll()
-        local owner = (exports['sunset_utils']:canAccessToVehicle(vehicle) or ESX.militaryJobs2[ESX.GetPlayerData().job.name]) or NetworkGetEntityIsNetworked(vehicle) == false
+        local owner = (exports['Unique_utils']:canAccessToVehicle(vehicle) or ESX.militaryJobs2[ESX.GetPlayerData().job.name]) or NetworkGetEntityIsNetworked(vehicle) == false
         if gloveBox and not (GetPedInVehicleSeat(vehicle, -1) == ped or GetPedInVehicleSeat(vehicle, 0) == ped ) then
             ESX.Alert('', 'Shoma dastresi be dashboard nadarid.', 5000, 'error')
             return false
@@ -84,7 +84,7 @@ function openTrunk(vehicle, gloveBox, parkMeter)
                     canAccess = true
                     realOwner = true
                 elseif not exports['esx_vehiclecontrol']:IsGOV(vehicle) then
-                    if exports['sunset_utils']:checkncz() then
+                    if exports['Unique_utils']:checkncz() then
                         canAccess = owner
                     else
                         canAccess = true

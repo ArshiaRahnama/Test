@@ -2,7 +2,7 @@
 
 local function isClotheItem(name)
     local ok, data = pcall(function()
-        return exports['sunset_clothe']:getClotheData(name)
+        return exports['Unique_clothe']:getClotheData(name)
     end)
     return ok and data ~= nil
 end
@@ -206,7 +206,7 @@ function SendUIInventory(playerItems, usedClotheWeight, maxWeight)
     local job = ESX.GetPlayerData().job
 
     local serverTime = 0
-    local okT, st = pcall(function() return exports['sunset_utils']:GetServerOSTime() end)
+    local okT, st = pcall(function() return exports['Unique_utils']:GetServerOSTime() end)
     if okT and tonumber(st) then serverTime = tonumber(st) end
 
     SendNUIMessage({
@@ -227,7 +227,7 @@ end
 
 function getSecondLazy(key, mode, weaponName, location)
     local p = promise.new()
-    ESX.TriggerServerCallback('sunset_inventory:getSecond', function(data)
+    ESX.TriggerServerCallback('Unique_inventory:getSecond', function(data)
         p:resolve(data)
     end, key, mode, weaponName, location)
     return Citizen.Await(p)

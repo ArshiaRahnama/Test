@@ -39,13 +39,31 @@ end)
 -- --------------------------------------------------------------------------
 -- slot store: which weapon (by serial) sits in which weapon/maket slot, plus
 -- the client's reserved (hotbar) slots. Pure placement data, persisted in
--- sun_inv_slots. Ownership is always re-checked against xPlayer.loadout.
+-- unique_inv_slots. Ownership is always re-checked against xPlayer.loadout.
 -- --------------------------------------------------------------------------
 local NORMAL_SLOTS, MAKET_SLOTS = 3, 2
 local store, idBySource = {}, {}
 
+
+-- tables used to be called sun_*; keep the data when they are renamed
+local function migrateTable(old, new)
+    local ok, err = pcall(function()
+        local function exists(n)
+            return (MySQL.Sync.fetchScalar(
+                'SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = @t',
+                { ['@t'] = n }) or 0) > 0
+        end
+        if exists(old) and not exists(new) then
+            MySQL.Sync.execute('RENAME TABLE `' .. old .. '` TO `' .. new .. '`')
+            print(('^2[Unique_inventory]^0 table %s renamed to %s (data kept)'):format(old, new))
+        end
+    end)
+    if not ok then print(('^1[Unique_inventory]^0 table migration %s -> %s failed: %s'):format(old, new, tostring(err))) end
+end
+
 MySQL.ready(function()
-    MySQL.Async.execute([[CREATE TABLE IF NOT EXISTS `sun_inv_slots` (
+    migrateTable('sun_inv_slots', 'unique_inv_slots')
+    MySQL.Async.execute([[CREATE TABLE IF NOT EXISTS `unique_inv_slots` (
         `identifier` varchar(64) NOT NULL,
         `data` longtext NOT NULL,
         PRIMARY KEY (`identifier`)
@@ -66,10 +84,10 @@ local function loadSlots(xp)
     idBySource[xp.source] = id
     if store[id] then return store[id] end
     local okDb, raw = pcall(function()
-        return MySQL.Sync.fetchScalar('SELECT data FROM sun_inv_slots WHERE identifier = @i', { ['@i'] = id })
+        return MySQL.Sync.fetchScalar('SELECT data FROM unique_inv_slots WHERE identifier = @i', { ['@i'] = id })
     end)
     if not okDb then
-        print(('^1[Unique_inventory]^0 could not read sun_inv_slots (%s) - using empty slots'):format(tostring(raw)))
+        print(('^1[Unique_inventory]^0 could not read unique_inv_slots (%s) - using empty slots'):format(tostring(raw)))
         raw = nil
     end
     local okJson, data = pcall(function() return raw and json.decode(raw) or {} end)
@@ -97,7 +115,7 @@ local function markDirty(xp)
         if not cur or not cur.dirty then return end
         cur.dirty = false
         MySQL.Async.execute(
-            'INSERT INTO sun_inv_slots (identifier, data) VALUES (@i, @d) ON DUPLICATE KEY UPDATE data = @d',
+            'INSERT INTO unique_inv_slots (identifier, data) VALUES (@i, @d) ON DUPLICATE KEY UPDATE data = @d',
             { ['@i'] = id, ['@d'] = json.encode({ normal = cur.normal, maket = cur.maket, reserved = cur.reserved }) }
         )
     end)
@@ -112,7 +130,7 @@ AddEventHandler('playerDropped', function()
         if s.dirty then
             s.dirty = false
             MySQL.Async.execute(
-                'INSERT INTO sun_inv_slots (identifier, data) VALUES (@i, @d) ON DUPLICATE KEY UPDATE data = @d',
+                'INSERT INTO unique_inv_slots (identifier, data) VALUES (@i, @d) ON DUPLICATE KEY UPDATE data = @d',
                 { ['@i'] = id, ['@d'] = json.encode({ normal = s.normal, maket = s.maket, reserved = s.reserved }) }
             )
         end
@@ -403,7 +421,7 @@ end)
 -- --------------------------------------------------------------------------
 -- shared helpers for server/second.lua (stash / trunk) and the later modules
 -- --------------------------------------------------------------------------
-SUN = {
+UNIQUE = {
     player = player, notify = notify, limited = limited, validCount = validCount,
     findWeapon = findWeapon, forgetSerial = forgetSerial, isWeaponName = isWeaponName,
     loadSlots = loadSlots, markDirty = markDirty,

@@ -95,6 +95,8 @@ AddEventHandler('es_admin:teleportUser', function(x, y, z)
 	states.frozenPos = {x = x, y = y, z = z}
 end)
 
+exports('IsAdminNcz', function() return activencz == true end)
+
 RegisterNetEvent('esx:ncz')
 AddEventHandler('esx:ncz', function(active)
 	activencz = active
@@ -102,6 +104,10 @@ AddEventHandler('esx:ncz', function(active)
 		Citizen.CreateThread(function()
 			while activencz do
 				Wait(1)
+			-- the party of a running robbery may shoot inside its area even while the admin NCZ is on
+			local robFree = false
+			pcall(function() robFree = exports['ScriptPack']:IsInRobZone() end)
+			if not robFree then
 			DisableControlAction(2, 24, true)
 			DisableControlAction(2, 257, true)
 			DisableControlAction(2, 25, true)
@@ -125,7 +131,8 @@ AddEventHandler('esx:ncz', function(active)
 			DisableControlAction(0, 24,  true)
 			DisableControlAction(0, 92,  true)
 			DisablePlayerFiring(player, true)
-			end
+			end   -- not robFree
+			end   -- while
 		end)
 	end
 end)

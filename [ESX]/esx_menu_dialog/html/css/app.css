@@ -1,110 +1,209 @@
-@font-face {
-  font-family: bankgothic;
-  src: url('../fonts/bankgothic.ttf');
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
 }
 
-@font-face {
-  font-family: pcdown;
-  src: url('../fonts/pdown.ttf');
+html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: transparent;
+    font-family: 'Vazirmatn', 'Segoe UI', 'Tahoma', 'Arial', sans-serif;
 }
 
-#controls {
-  font-family: pcdown;
-  font-size     : 3em;
-  position      : absolute;
-  bottom        : 40;
-  right         : 40;
-  
-  text-shadow:
-    -1px -1px 0 #000,
-     1px -1px 0 #000,
-    -1px  1px 0 #000,
-     1px  1px 0 #000
-  ;
+#menus {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: -webkit-box;
+    display: flex;
+    -webkit-box-align: center;
+    align-items: center;
+    -webkit-box-pack: center;
+    justify-content: center;
 }
 
-.controls {
-  display: none;
+.ainput {
+    position: relative;
+    width: 430px;
+    padding: 22px;
+    border-radius: 18px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background-color: rgba(14, 16, 24, 0.95);
+    background-image: -webkit-linear-gradient(top, rgba(34, 38, 54, 0.55), rgba(10, 11, 18, 0.2));
+    background-image: linear-gradient(180deg, rgba(34, 38, 54, 0.55), rgba(10, 11, 18, 0.2));
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(0, 0, 0, 0.4);
+    color: #e9ecf5;
+    -webkit-user-select: none;
+    user-select: none;
+    --acc: #3aa0ff;
+    --acc2: #2ee6d6;
+    --soft: rgba(58, 160, 255, 0.16);
+    --line: rgba(58, 160, 255, 0.55);
+    --glow: rgba(58, 160, 255, 0.4);
 }
 
-.dialog { 
-  border-color: rgba(248, 163, 25, 0);
-  border-style: solid;
-  border-radius: 20px;
-  font-family: bankgothic;  
-  position        : absolute;
-  overflow        : hidden;
-  top             : 50%;
-  left            : 50%;
-  width           : 360px;
-  height          : 175px;
-  transform       : translate(-50%, -50%);
+.ainput.big { width: 520px; }
+
+.ainput-glow {
+    position: absolute;
+    top: -50px;
+    left: -50px;
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    opacity: 0.45;
+    pointer-events: none;
+    background-image: -webkit-radial-gradient(circle, var(--glow), rgba(0, 0, 0, 0) 70%);
+    background-image: radial-gradient(circle, var(--glow), rgba(0, 0, 0, 0) 70%);
 }
 
-.dialog.big {
-  height: 200px;
+.ainput-head {
+    position: relative;
+    display: -webkit-box;
+    display: flex;
+    -webkit-box-align: center;
+    align-items: center;
+    margin-bottom: 16px;
 }
 
-.dialog .head {
-  font-size: 0%;  
-  background:url('http://');
-  text-align      : center;
-  background-size: cover ;
-  background-repeat: no-repeat;
-  height          : 85px;
+.ainput-ic {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    margin-right: 12px;
+    -webkit-box-flex: 0;
+    flex: 0 0 auto;
+    display: -webkit-box;
+    display: flex;
+    -webkit-box-align: center;
+    align-items: center;
+    -webkit-box-pack: center;
+    justify-content: center;
+    background-color: var(--acc);
+    background-image: -webkit-linear-gradient(315deg, var(--acc), var(--acc2));
+    background-image: linear-gradient(135deg, var(--acc), var(--acc2));
+    box-shadow: 0 8px 20px var(--glow);
 }
 
-.dialog .head span:before {
-  content: "";
-  display: inline-block;
-  height: 100%;
-  vertical-align: middle;
+.ainput-ic svg {
+    width: 22px;
+    height: 22px;
+    fill: none;
+    stroke: #fff;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
 }
 
-.dialog .text {
-  text-align      : center;  
-  font-family: bankgothic;
-  font-size: 100%;
-  display         : block;
-  background-color: #e24b00;
-  box-shadow      : inset 1px 0px 0px 1px #e24b00;
-  height          : 25px;
-  line-height     : 25px;
-  opacity: 1.0;  
+.ainput-title {
+    -webkit-box-flex: 1;
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    color: #f1f3fa;
+    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.5);
+    word-break: break-word;
 }
 
-.dialog input[type="text"] {
-  width : 100%;
-  height: 32px;
-  background-color: rgba(250, 250, 250, 0.678);
-  border-color: rgba(248, 163, 25, 0);
-  border-style: solid;
-  border-radius: 5px 5px 0px 0px;
+.ainput-body {
+    margin-bottom: 16px;
 }
 
-.dialog textarea {
-  width : 100%;
-  height: 128px;
-  background-color: #020100;
-  opacity: 0.8; 
+.ainput-field {
+    width: 100%;
+    height: 48px;
+    padding: 0 16px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background-color: rgba(0, 0, 0, 0.28);
+    color: #ffffff;
+    font-family: inherit;
+    font-size: 15px;
+    outline: none;
+    -webkit-user-select: text;
+    user-select: text;
 }
 
-.dialog button[name="submit"] {
-  width : 65%;
-  height: 32px;
-  background-color: #e24b00;
-  opacity: 1;  
-  border-color: rgba(248, 163, 25, 0);
-  border-style: solid;
-  border-radius: 5px 0px 0px 0px;
+.ainput-field::-webkit-input-placeholder { color: #6f7689; }
+
+.ainput-field:focus {
+    border-color: var(--line);
+    box-shadow: 0 0 0 3px var(--soft);
 }
 
-.dialog button[name="cancel"] {
-  width : 35%;
-  height: 32px;
-  background-color: #e24b00;
-  opacity: 1;  
-  border-color: rgba(248, 163, 25, 0);
-  border-style: solid;
-  border-radius: 0px 5px 0px 0px;
+.ainput-area {
+    height: 120px;
+    padding: 12px 16px;
+    resize: none;
+    line-height: 1.5;
+}
+
+.ainput-actions {
+    display: -webkit-box;
+    display: flex;
+    -webkit-box-pack: end;
+    justify-content: flex-end;
+    margin-bottom: 14px;
+}
+
+.ainput-btn {
+    height: 42px;
+    padding: 0 22px;
+    border: none;
+    border-radius: 11px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    cursor: pointer;
+}
+
+.ainput-btn.ghost {
+    margin-right: 10px;
+    color: #c2c7d6;
+    background-color: rgba(255, 255, 255, 0.06);
+}
+
+.ainput-btn.ghost:hover { background-color: rgba(255, 255, 255, 0.1); }
+
+.ainput-btn.solid {
+    color: #0b0d14;
+    background-color: var(--acc);
+    background-image: -webkit-linear-gradient(315deg, var(--acc), var(--acc2));
+    background-image: linear-gradient(135deg, var(--acc), var(--acc2));
+    box-shadow: 0 6px 18px var(--glow);
+}
+
+.ainput-foot {
+    display: -webkit-box;
+    display: flex;
+    -webkit-box-pack: center;
+    justify-content: center;
+    padding-top: 13px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.ainput-hint {
+    margin: 0 10px;
+    font-size: 10.5px;
+    font-weight: 600;
+    color: #6f7689;
+    letter-spacing: 0.3px;
+}
+
+.kbd {
+    display: inline-block;
+    margin-right: 3px;
+    padding: 1px 5px;
+    border-radius: 5px;
+    font-size: 10px;
+    color: #aab0c2;
+    background-color: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.08);
 }

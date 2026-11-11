@@ -1,16 +1,16 @@
 -- ============================================================================
--- sun-inventory-hud | client/weapon-wheel.lua
+-- Unique_inventory | client/weapon-wheel.lua
 -- Replacement for the original server's 'core:client:giveWeapon' /
 -- 'core:client:removeWeapon' handlers (they lived in its essentialmode).
 --
--- Sunset rule: a weapon sits in the player's inventory; only weapons placed in
+-- Rule: a weapon sits in the player's inventory; only weapons placed in
 -- a weapon slot / maket slot are given to the ped, so only those show up in the
 -- GTA weapon wheel. Slot order = give order (slot 1 first, then 2, 3, then the
 -- maket slots).
 --
 -- Only weapons the inventory manages (names present in the player's loadout) are
 -- ever touched. Weapons given by other scripts (paintball, parachute, ...) are
--- left alone. Set `set sun_inv_wheel_sync 0` in server.cfg to turn this off.
+-- left alone. Set `set unique_inv_wheel_sync 0` in server.cfg to turn this off.
 --
 -- GTA decides the wheel's category order itself (pistols at the top, ...); what
 -- this controls is WHICH weapons are in the wheel and the order inside a category.
@@ -19,7 +19,7 @@
 local ammoCache = {}      -- [WEAPON_NAME] = ammo left on the ped when it was taken off
 local lastKey = nil       -- last applied slot layout, so unrelated refreshes do nothing
 
-local function enabled() return GetConvarInt('sun_inv_wheel_sync', 1) == 1 end
+local function enabled() return GetConvarInt('unique_inv_wheel_sync', GetConvarInt('sun_inv_wheel_sync', 1)) == 1 end
 
 local function managedWeapons()
     local set = {}
@@ -70,7 +70,7 @@ local function giveTo(ped, name, w)
     end
 end
 
-function SunSyncWeaponWheel(force)
+function UniqueSyncWeaponWheel(force)
     if not enabled() or not ESX then return end
     local managed = managedWeapons()
     local list, want = slottedNames()
@@ -103,16 +103,16 @@ function SunSyncWeaponWheel(force)
 end
 
 -- the inventory raises these when a weapon is put into / taken out of a slot
-AddEventHandler('core:client:giveWeapon', function() SunSyncWeaponWheel() end)
-AddEventHandler('core:client:removeWeapon', function() SunSyncWeaponWheel() end)
+AddEventHandler('core:client:giveWeapon', function() UniqueSyncWeaponWheel() end)
+AddEventHandler('core:client:removeWeapon', function() UniqueSyncWeaponWheel() end)
 
 -- the server just added a weapon: essentialmode hands it to the ped at once,
 -- but it only belongs in the wheel once it sits in a slot
 RegisterNetEvent('esx:addWeapon', function()
-    SetTimeout(600, function() SunSyncWeaponWheel(true) end)
+    SetTimeout(600, function() UniqueSyncWeaponWheel(true) end)
 end)
 RegisterNetEvent('esx:removeWeapon', function()
-    SetTimeout(600, function() SunSyncWeaponWheel(true) end)
+    SetTimeout(600, function() UniqueSyncWeaponWheel(true) end)
 end)
 
 -- after login / respawn: wait for the slots, then apply the layout once
@@ -120,7 +120,7 @@ local function initialSync()
     CreateThread(function()
         Wait(4000)
         lastKey = nil
-        SunSyncWeaponWheel(true)
+        UniqueSyncWeaponWheel(true)
     end)
 end
 RegisterNetEvent('esx:playerLoaded', initialSync)
@@ -128,12 +128,12 @@ AddEventHandler('playerSpawned', initialSync)
 CreateThread(function()
     Wait(6000)
     lastKey = nil
-    SunSyncWeaponWheel(true)
+    UniqueSyncWeaponWheel(true)
 end)
 
-RegisterCommand('sunwheel', function()
+RegisterCommand('uniquewheel', function()
     lastKey = nil
-    SunSyncWeaponWheel(true)
+    UniqueSyncWeaponWheel(true)
     local list = slottedNames()
     print(('[%s] weapon wheel synced: %s'):format(GetCurrentResourceName(), #list > 0 and table.concat(list, ', ') or '(no weapon in any slot)'))
 end, false)

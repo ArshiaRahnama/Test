@@ -49,7 +49,7 @@ function UniqueRadio.IsNoGang(name)
     return name == nil or Config.NoGangNames[name] == true
 end
 
--- Sunset: basic job / nojob with no gang cannot use the radio at all
+-- basic job / nojob with no gang cannot use the radio at all
 function UniqueRadio.IsRestricted(job, gangName)
     if not Config.RestrictBasicJobs then return false end
     if job == nil then return true end

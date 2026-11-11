@@ -1,5 +1,5 @@
 -- =====================================================================
---  Unique_Garage  |  Sunset-style ParkMeter (client)
+--  Unique_Garage  |  Unique ParkMeter (client)
 --  * [E] on the blue ring: park (driver, slower than 10 km/h) / retrieve (on foot)
 --  * leave a car near a meter -> walk >5 m away -> auto parks after 15 s
 --  * parked car stays in the world as a frozen, semi-transparent vehicle

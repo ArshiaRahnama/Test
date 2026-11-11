@@ -1,8 +1,8 @@
 -- ============================================================================
 -- Unique_inventory | client/00_compat.lua
--- Glue between the original "Sunset" client and Unique RP's essentialmode.
+-- Glue between the original inventory client and Unique RP's essentialmode.
 -- Loads FIRST. Builds ESX (essentialmode has no getObject export) and adds the
--- helpers the Sunset client calls but essentialmode does not have.
+-- helpers the inventory client calls but essentialmode does not have.
 -- ============================================================================
 
 local function loadESX()
@@ -26,7 +26,7 @@ local function waitESX() while ESX == nil do Wait(50) end end
 -- --------------------------------------------------------------------------
 local realExports = exports
 local stubs = {
-    sunset_clothe = {
+    Unique_clothe = {
         getUsedType = function() return {} end,
         getClotheData = function() return nil end,
         getUsed = function() return {} end,
@@ -35,7 +35,7 @@ local stubs = {
         toggleClothe = function() return false end,
         unUseByType = function() end,
     },
-    sunset_utils = {
+    Unique_utils = {
         GetServerOSTime = function() return GetCloudTimeAsInt() end,
         checkncz = function() return false end,
         canAccessToVehicle = function() return true end,
@@ -46,9 +46,9 @@ local stubs = {
         startTrade = function() end,
         me = function() end,
     },
-    ['sun-jobs'] = { notBlackListCoords = function() return true end },
-    ['sun-robbery'] = { doesInRob = function() return false end },
-    ['sun-animmenu'] = { PlayEmote = function() end },
+    ['Unique_jobs'] = { notBlackListCoords = function() return true end },
+    ['Unique_robbery'] = { doesInRob = function() return false end },
+    ['Unique_animmenu'] = { PlayEmote = function() end },
     gangs = { isInGangWorld = function() return false end },
     esx_vehiclecontrol = {
         IsGOV = function() return false end,
@@ -56,11 +56,22 @@ local stubs = {
     },
 }
 
+-- If a resource is brought over under its ORIGINAL name (sunset_utils, sunset_clothe, ...)
+-- instead of the Unique_* name, calls are routed to it.
+local originalNames = {
+    Unique_clothe = 'sunset_clothe', Unique_utils = 'sunset_utils', Unique_jobs = 'sun-jobs',
+    Unique_robbery = 'sun-robbery', Unique_animmenu = 'sun-animmenu',
+}
+
 exports = setmetatable({}, {
     __call = function(_, ...) return realExports(...) end,
     __index = function(_, res)
         local stub = stubs[res]
         if stub and GetResourceState(res) ~= 'started' then
+            local original = originalNames[res]
+            if original and GetResourceState(original) == 'started' then
+                return realExports[original]
+            end
             return setmetatable({}, {
                 __index = function(_, fn)
                     local f = stub[fn]
@@ -76,12 +87,12 @@ exports = setmetatable({}, {
 
 -- --------------------------------------------------------------------------
 -- key events: the original server got 'KeyDown:<key>' events from its
--- sunset_utils resource. Without it F2 / Alt+number do nothing, so we raise the
+-- Unique_utils resource. Without it F2 / Alt+number do nothing, so we raise the
 -- same events ourselves by polling controls - the same method this server's
 -- Unique_inventory used for F2 (control 289), so it is known to work here.
 -- --------------------------------------------------------------------------
-local SUN_DEBUG = false
-if GetResourceState('sunset_utils') ~= 'started' then
+local UNIQUE_DEBUG = false
+if GetResourceState('Unique_utils') ~= 'started' and GetResourceState('sunset_utils') ~= 'started' then
     local controls = {
         f2 = 289, lmenu = 19,
         ['1'] = 157, ['2'] = 158, ['3'] = 160, ['4'] = 164, ['5'] = 165,
@@ -91,9 +102,9 @@ if GetResourceState('sunset_utils') ~= 'started' then
         while true do
             Wait(0)
             for name, ctrl in pairs(controls) do
-                -- disabled controls (sunset disables weapon-select while Alt is held) report via the Disabled variant
+                -- disabled controls (the inventory disables weapon-select while Alt is held) report via the Disabled variant
                 if IsControlJustPressed(0, ctrl) or IsDisabledControlJustPressed(0, ctrl) then
-                    if SUN_DEBUG then print(('[Unique_inventory] KeyDown:%s'):format(name)) end
+                    if UNIQUE_DEBUG then print(('[Unique_inventory] KeyDown:%s'):format(name)) end
                     TriggerEvent('KeyDown:' .. name)
                 elseif IsControlJustReleased(0, ctrl) or IsDisabledControlJustReleased(0, ctrl) then
                     TriggerEvent('KeyUp:' .. name)
@@ -104,12 +115,12 @@ if GetResourceState('sunset_utils') ~= 'started' then
 end
 
 -- manual open (works even if a key is blocked) and a quick self-check
-RegisterCommand('suninv', function() TriggerEvent('KeyDown:f2') end, false)
-RegisterCommand('suninv_debug', function()
-    SUN_DEBUG = not SUN_DEBUG
+RegisterCommand('uniqueinv', function() TriggerEvent('KeyDown:f2') end, false)
+RegisterCommand('uniqueinv_debug', function()
+    UNIQUE_DEBUG = not UNIQUE_DEBUG
     local items = ESX and ESX.getItems and ESX.getItems() or nil
     local function n(t) local c = 0 for _ in pairs(t or {}) do c = c + 1 end return c end
-    print('^3[Unique_inventory] debug ' .. (SUN_DEBUG and 'ON' or 'OFF') .. '^7')
+    print('^3[Unique_inventory] debug ' .. (UNIQUE_DEBUG and 'ON' or 'OFF') .. '^7')
     print(('  ESX: %s | items loaded: %s (%d) | isOpen: %s | state.nui: %s | HandCuffed: %s'):format(
         tostring(ESX ~= nil), tostring(items ~= nil), n(items), tostring(isOpen),
         tostring(LocalPlayer.state.nui), tostring(ESX and ESX.GetPlayerData().HandCuffed)))
@@ -123,14 +134,14 @@ RegisterCommand('suninv_debug', function()
     -- what the server answers for the slots/weight request
     if ESX then
         ESX.TriggerServerCallback('inventory:getSlots', function(r)
-            if not r then print('  ^1server answered NOTHING for inventory:getSlots^7 (check the server console for a red [sun-inventory-hud] line)') return end
+            if not r then print('  ^1server answered NOTHING for inventory:getSlots^7 (check the server console for a red [Unique_inventory] line)') return end
             print(('  server getSlots: maxWeight=%s | weapons=%d'):format(tostring(r.maxWeight), #(r.loadout or {})))
         end)
     end
     print('  Press F2 now - a "KeyDown:f2" line should appear here.')
 end, false)
-SUN_VERSION = 'stage2-v10'
-print(('^2[%s] client compat loaded (%s) - F2 or /suninv to open, /suninv_debug to diagnose^7'):format(GetCurrentResourceName(), SUN_VERSION))
+UNIQUE_VERSION = 'stage2-v11'
+print(('^2[%s] client compat loaded (%s) - F2 or /uniqueinv to open, /uniqueinv_debug to diagnose^7'):format(GetCurrentResourceName(), UNIQUE_VERSION))
 
 -- --------------------------------------------------------------------------
 -- stand-ins for functions that live in modules not loaded in stage 1
@@ -421,7 +432,7 @@ local function installHelpers()
     end
 
     -- essentialmode's client rebuilds PlayerData.loadout from the ped's weapons
-    -- every few seconds (one entry per weapon TYPE, no serial). The Sunset client
+    -- every few seconds (one entry per weapon TYPE, no serial). The inventory client
     -- needs the real, serial-bearing loadout, so we keep the server's copy here:
     --   * captured from every 'inventory:getSlots' answer (sent when the UI opens)
     --   * refreshed by the server's 'esx:updateLoadout' push after any weapon change

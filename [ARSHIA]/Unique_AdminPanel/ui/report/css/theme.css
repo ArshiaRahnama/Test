@@ -1,6 +1,6 @@
 @font-face{font-family:'Vazirmatn';src:url('../font/Vazirmatn-Medium.woff2') format('woff2');font-display:swap;}
 /* ===========================================================================
-   Unique RP - Report / aReport  |  sun-glass theme (blue, matches chat) (loaded AFTER style.css)
+   Unique RP - Report / aReport  |  unique-glass theme (blue, matches chat) (loaded AFTER style.css)
    =========================================================================== */
 :root{
   --void:#07080c; --shell:rgba(16,17,23,.92); --raise:#1b1c25; --sunk:rgba(255,255,255,.04);

@@ -145,7 +145,7 @@ api.addGlobalVehicle({
 end -- ox_target:vehicleDoors
 
 -- ============================================================================
--- Sunset default options (Persian). Every option that depends on a resource
+-- Unique default options (Persian). Every option that depends on a resource
 -- which is not started is hidden / ignored safely - nothing errors.
 -- ============================================================================
 local utils = require 'client.utils'
@@ -167,10 +167,9 @@ local function callExport(resource, fn, ...)
     if ok then return result end
 end
 
----sun-inventory-hud was renamed to Unique_inventory
+---The inventory resource
 local function inventoryResource()
     if started('Unique_inventory') then return 'Unique_inventory' end
-    if started('sun-inventory-hud') then return 'sun-inventory-hud' end
 end
 
 local function inventory(fn, ...)
@@ -221,7 +220,7 @@ local function notifyError(text)
 end
 
 local function me(text, state)
-    callExport('sunset_utils', 'me', text, state)
+    callExport('Unique_utils', 'me', text, state)
 end
 
 local jobCanSearchBag = {
@@ -254,11 +253,11 @@ local infoChildren = {
     honors = function(ped)
         local id = serverIdFromPed(ped)
 
-        return id ~= nil and started('sunset_utils') and not Entity(ped).state.inventoryName and not Entity(ped).state.killMe
+        return id ~= nil and started('Unique_utils') and not Entity(ped).state.inventoryName and not Entity(ped).state.killMe
             and not playerState(id, 'hideInfo')
     end,
     offenses = function(ped)
-        return serverIdFromPed(ped) ~= nil and started('sun-jobs')
+        return serverIdFromPed(ped) ~= nil and started('Unique_jobs')
     end,
 }
 
@@ -290,12 +289,12 @@ api.addGlobalPlayer({
     {
         label = '🧲بلند کردن',
         canInteract = function(ped)
-            return serverIdFromPed(ped) ~= nil and started('sun-jobs')
+            return serverIdFromPed(ped) ~= nil and started('Unique_jobs')
         end,
         onSelect = function(data)
             local id = serverIdFromPed(data.entity)
 
-            if id then callExport('sun-jobs', 'carry', id) end
+            if id then callExport('Unique_jobs', 'carry', id) end
         end,
     },
     {
@@ -336,7 +335,7 @@ api.addGlobalPlayer({
         onSelect = function(data)
             local id = serverIdFromPed(data.entity)
 
-            if id then callExport('sunset_utils', 'openOtherSkillMenu', id) end
+            if id then callExport('Unique_utils', 'openOtherSkillMenu', id) end
         end,
     },
     {
@@ -371,11 +370,11 @@ api.addGlobalPlayer({
     {
         label = '🐶بازرسی',
         canInteract = function(entity)
-            return serverIdFromPed(entity) ~= nil and militaryJobs[jobName()] and started('sunset_utils')
-                and callExport('sunset_utils', 'doesHaveTempPet')
+            return serverIdFromPed(entity) ~= nil and militaryJobs[jobName()] and started('Unique_utils')
+                and callExport('Unique_utils', 'doesHaveTempPet')
         end,
         onSelect = function(data)
-            callExport('sunset_utils', 'checkPlayerForDrug', data.entity)
+            callExport('Unique_utils', 'checkPlayerForDrug', data.entity)
         end,
     },
 })
@@ -420,7 +419,7 @@ api.addModel({ `prop_fire_hydrant_2` }, {
     },
 })
 
-api.addModel({ `sun_lootbox` }, {
+api.addModel({ `unique_lootbox` }, {
     {
         label = '👜باز کردن',
         canInteract = function(entity)
@@ -443,7 +442,7 @@ local function vehiclePlate(vehicle)
 end
 
 local function canAccessToVehicle(vehicle)
-    return callExport('sunset_utils', 'canAccessToVehicle', vehicle)
+    return callExport('Unique_utils', 'canAccessToVehicle', vehicle)
 end
 
 api.addGlobalVehicle({
@@ -459,7 +458,7 @@ api.addGlobalVehicle({
     {
         label = '👊بیرون انداختن سرنشینان',
         canInteract = function()
-            return started('sun-jobs')
+            return started('Unique_jobs')
         end,
         onSelect = function(data)
             local vehicle = data.entity
@@ -499,35 +498,35 @@ api.addGlobalVehicle({
     {
         label = 'وصل کردن طناب',
         canInteract = function(vehicle)
-            return started('sunset_utils') and utils.hasPlayerGotItems('rope') and canAccessToVehicle(vehicle)
-                and not callExport('sunset_utils', 'doesVehicleInRopeList', vehicle)
+            return started('Unique_utils') and utils.hasPlayerGotItems('rope') and canAccessToVehicle(vehicle)
+                and not callExport('Unique_utils', 'doesVehicleInRopeList', vehicle)
         end,
         onSelect = function(data)
-            callExport('sunset_utils', 'putCarriedHouseObject', data.entity)
+            callExport('Unique_utils', 'putCarriedHouseObject', data.entity)
         end,
     },
     {
         label = 'جدا کردن طناب',
         canInteract = function(vehicle)
-            return callExport('sunset_utils', 'doesVehicleInRopeList', vehicle)
+            return callExport('Unique_utils', 'doesVehicleInRopeList', vehicle)
         end,
         onSelect = function(data)
-            callExport('sunset_utils', 'removeVehicleRope', data.entity)
+            callExport('Unique_utils', 'removeVehicleRope', data.entity)
         end,
     },
     {
         label = 'گذاشتن گروگان',
         canInteract = function()
-            return callExport('sunset_utils', 'doesCarrySoghra')
+            return callExport('Unique_utils', 'doesCarrySoghra')
         end,
         onSelect = function(data)
-            callExport('sunset_utils', 'putSoghraInVehicle', data.entity)
+            callExport('Unique_utils', 'putSoghraInVehicle', data.entity)
         end,
     },
     {
         label = 'بیرون انداختن گروگان',
         canInteract = function(vehicle)
-            if not started('sunset_utils') then return false end
+            if not started('Unique_utils') then return false end
 
             for seat = GetVehicleMaxNumberOfPassengers(vehicle) - 1, 0, -1 do
                 if not IsVehicleSeatFree(vehicle, seat) then
@@ -540,16 +539,16 @@ api.addGlobalVehicle({
             return false
         end,
         onSelect = function(data)
-            callExport('sunset_utils', 'putOutSoghra', data.entity)
+            callExport('Unique_utils', 'putOutSoghra', data.entity)
         end,
     },
     {
         label = '⛽بنزین زدن',
         canInteract = function()
-            return callExport('sunset_utils', 'DoesNearPump')
+            return callExport('Unique_utils', 'DoesNearPump')
         end,
         onSelect = function(data)
-            callExport('sunset_utils', 'RefuelVehicleFromPump', true, data.entity)
+            callExport('Unique_utils', 'RefuelVehicleFromPump', true, data.entity)
         end,
     },
     {
@@ -557,35 +556,35 @@ api.addGlobalVehicle({
         canInteract = function()
             local ped = cache.ped
 
-            return started('sunset_utils') and HasPedGotWeapon(ped, `WEAPON_PETROLCAN`, false)
+            return started('Unique_utils') and HasPedGotWeapon(ped, `WEAPON_PETROLCAN`, false)
                 and GetAmmoInPedWeapon(ped, `WEAPON_PETROLCAN`) > 100
         end,
         onSelect = function(data)
-            callExport('sunset_utils', 'RefuelVehicleFromPump', nil, data.entity)
+            callExport('Unique_utils', 'RefuelVehicleFromPump', nil, data.entity)
         end,
     },
     {
         label = '👜بار زدن شیء',
         canInteract = function(vehicle)
-            return callExport('sunset_utils', 'houseRobGetCurrentCarry') and canAccessToVehicle(vehicle)
+            return callExport('Unique_utils', 'houseRobGetCurrentCarry') and canAccessToVehicle(vehicle)
         end,
         onSelect = function(data)
-            callExport('sunset_utils', 'putCarriedHouseObject', data.entity)
+            callExport('Unique_utils', 'putCarriedHouseObject', data.entity)
         end,
     },
     {
         label = '🐶صدا زدن',
         canInteract = function()
-            return jobPet[jobName()] and started('sunset_utils')
+            return jobPet[jobName()] and started('Unique_utils')
         end,
         onSelect = function()
             local pet = jobPet[jobName()]
 
             if not pet then return end
 
-            callExport('sun-animmenu', 'PlayEmote', 'whistle')
+            callExport('Unique_animmenu', 'PlayEmote', 'whistle')
             Wait(1000)
-            callExport('sunset_utils', 'spawnTemporaryPet', pet)
+            callExport('Unique_utils', 'spawnTemporaryPet', pet)
         end,
     },
 })

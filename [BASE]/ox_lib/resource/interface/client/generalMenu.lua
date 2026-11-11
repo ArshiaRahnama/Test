@@ -1,8 +1,8 @@
--- General menu (منو جنرال) - ported from Sunset sunset_utils/modules/radial.
+-- General menu (منو جنرال) - ported from Unique Unique_utils/modules/radial.
 -- Built into ox_lib: opens with the End key through the radial menu (rebind it in FiveM key settings).
 --
--- Items fire the same events Sunset used. Events whose resource is not on this
--- server yet (sun-phone, sun-jobs serial, pma-voice radio, sunset_housing) simply
+-- Items fire the same events Unique used. Events whose resource is not on this
+-- server yet (Unique_phone, Unique_jobs serial, pma-voice radio, Unique_housing) simply
 -- do nothing until that resource is started - no errors.
 
 local ESX
@@ -64,7 +64,7 @@ CreateThread(function()
                 label = 'کپی شماره تلفن',
                 icon = 'phone-volume',
                 onSelect = function()
-                    TriggerEvent('sunset_phone:CopyNumber')
+                    TriggerEvent('unique_phone:CopyNumber')
                 end
             },
             {

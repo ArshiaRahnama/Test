@@ -4,6 +4,31 @@ TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
 
 local activeDutyPlayers = {}
 
+-- Never call PerformHttpRequest with a missing/empty URL (it errors); jobs without a webhook just skip it.
+function DutyWebhook(job, body, headers)
+    local url = Config_duty.Webhooks[job]
+    if url and url ~= '' then
+        PerformHttpRequest(url, function() end, 'POST', body, headers)
+    end
+end
+
+-- Going ON duty must happen at a duty point of that job. If the player's position is not
+-- available (OneSync off -> 0,0,0) the check is skipped instead of blocking everyone.
+local function isNearDutyPoint(src, job)
+    local ped = GetPlayerPed(src)
+    if not ped or ped == 0 then return true end
+    local c = GetEntityCoords(ped)
+    if c.x == 0.0 and c.y == 0.0 and c.z == 0.0 then return true end
+    local maxDist = Config_duty.ServerMaxDist or 15.0
+    for _, p in ipairs(Config_duty.BuildPoints()) do
+        if p.jobs[job] then
+            local dx, dy, dz = c.x - p.x, c.y - p.y, c.z - p.z
+            if (dx * dx + dy * dy + dz * dz) <= (maxDist * maxDist) then return true end
+        end
+    end
+    return false
+end
+
 RegisterServerEvent('esx_duty:setjob')
 AddEventHandler('esx_duty:setjob', function(job)
     local source = source
@@ -13,6 +38,7 @@ AddEventHandler('esx_duty:setjob', function(job)
         print(('[esx_duty] esx_duty:setjob fired with a missing job (source=%s, job=%s) — check the client trigger'):format(source, tostring(job)))
         return
     end
+    if type(job) ~= 'string' or not Config_duty.IsDutyJob(job) then return end
     local steamIdentifier = GetPlayerIdentifiers(source)[1]  
     local steamName = GetPlayerName(source)                  
     local playerName = xPlayer.get('name')                  
@@ -61,7 +87,7 @@ AddEventHandler('esx_duty:setjob', function(job)
         end
 
        
-        PerformHttpRequest(Config_duty.Webhooks[job], function(err, text, headers) end, 'POST', json.encode({
+        DutyWebhook(job, json.encode({
             content = "",
             embeds = {
                 {
@@ -81,6 +107,11 @@ AddEventHandler('esx_duty:setjob', function(job)
         }), {['Content-Type'] = 'application/json'})
 
     elseif xPlayer.job.name == "off"..job then
+
+        if not isNearDutyPoint(source, job) then
+            TriggerClientEvent('esx:showNotification', source, "Shoma nemitavanid az in location estefade konid")
+            return
+        end
 
         -- Restore the grade saved when they went off-duty (falls back to the
         -- current, now-0, grade only if nothing was ever saved).
@@ -106,7 +137,7 @@ AddEventHandler('esx_duty:setjob', function(job)
 
         activeDutyPlayers[source] = job
        
-        PerformHttpRequest(Config_duty.Webhooks[job], function(err, text, headers) end, 'POST', json.encode({
+        DutyWebhook(job, json.encode({
             content = "",
             embeds = {
                 {
@@ -152,7 +183,7 @@ Citizen.CreateThread(function()
                 -- BUG FIX: was the same 33-way hardcoded job-name chain as the
                 -- client-side one above -- now just checks Config_duty.Zones,
                 -- which already has to list every one of these jobs anyway.
-                if Config_duty.Zones[JobName] then
+                if Config_duty.IsDutyJob(JobName) then
                     local steamHex = GetPlayerIdentifiers(source)[1]
                     local todayDate = os.date("%Y-%m-%d")
                     local jgrade = xPlayer.job.grade_label

@@ -1,35 +1,16 @@
-local CurrentAction           = nil
-local CurrentActionJob       = nil
-local HasAlreadyEnteredMarker = false
-local lastDutyChangeTime     = 0 
-local lastNotifyTime         = 0 
-local dutyChangeCooldown      = 5 
-local notifyCooldown           = 5000  
-ESX                           = nil
+-- On/off duty points.
+-- Every point in Config_duty.Zones (one per job) and Config_duty.Locations (several per job,
+-- each with the list of jobs allowed to use it) is drawn as a marker. Press E on a point
+-- that your job is allowed to use to toggle on/off duty (15s anti-spam between toggles).
+-- The AFK check lives in [SCRIPT]/ScriptPack/client/afkkick-cl.lua (single AFK system).
 
-Citizen.CreateThread(function ()
+ESX = nil
+
+CreateThread(function()
     while ESX == nil do
         TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
-        Citizen.Wait(0)
+        Wait(50)
     end
-end)
-
-AddEventHandler('esx_duty:hasEnteredMarker', function (zone)
-    -- BUG FIX: was a 33-way hardcoded `zone == "police" or zone == "ambulance"
-    -- or ...` chain -- a duplicate of the exact key list Config_duty.Zones
-    -- already has (and has to have, since that's what actually places the
-    -- markers). Deriving from it means a zone added to Config_duty.Zones
-    -- automatically works here too, instead of needing a second edit that's
-    -- easy to forget.
-    if Config_duty.Zones[zone] then
-        CurrentAction     = 'duty'
-        CurrentActionJob  = zone
-    end
-end)
-
-AddEventHandler('esx_duty:hasExitedMarker', function ()
-    CurrentAction = nil
-    CurrentActionJob = nil
 end)
 
 local typeMap = { info = 'inform', information = 'inform' }
@@ -44,80 +25,82 @@ AddEventHandler('esx_duty:sendnot', function(msg, type, timeout)
     })
 end)
 
-Citizen.CreateThread(function ()
+-- marker_style.lua wraps DrawMarker for the job zones; duty points keep their own colours.
+local drawMarker = RawDrawMarker or DrawMarker
+
+local points = {}
+local spam = false
+
+local function say(msg)
+    TriggerEvent('chatMessage', '[SYSTEM]', { 255, 0, 0 }, msg, 'plarms')
+end
+
+local function toggleDuty(point)
+    local pd = ESX and ESX.GetPlayerData and ESX.GetPlayerData()
+    local jobName = pd and pd.job and pd.job.name
+    if not jobName or jobName == 'nojob' then
+        TriggerEvent('esx_duty:sendnot', 'Shoma nemitavanid az in location estefade konid', 'error', 5000)
+        return
+    end
+
+    -- "offpolice" -> "police" (anchored, so a job that merely contains "off" is never touched)
+    local base = jobName:gsub('^off', '')
+    if not point.jobs[base] then
+        TriggerEvent('esx_duty:sendnot', 'Shoma nemitavanid az in location estefade konid', 'error', 5000)
+        return
+    end
+
+    if spam then
+        say('Spam nakonid!')
+        return
+    end
+    spam = true
+    SetTimeout(Config_duty.Cooldown or 15000, function() spam = false end)
+
+    -- The server decides on/off from the job the player really has (it is a toggle).
+    TriggerServerEvent('esx_duty:setjob', base)
+end
+
+CreateThread(function()
+    local nextRebuild = 0
+    local drawDistance = Config_duty.DrawDistance or 10.0
+    local interact = Config_duty.InteractRadius or 2.0
+
     while true do
-        Citizen.Wait(0)
-        if CurrentAction ~= nil then
-            SetTextComponentFormat('STRING')
-            AddTextComponentString("Az ~INPUT_CONTEXT~ Baraye ~r~OFFDuty~w~/~g~OnDuty ~w~Estefade Konid")
-            DisplayHelpTextFromStringLabel(0, 0, 1, -1)
-            if IsControlPressed(0, 38) then
-                local currentTime = GetGameTimer() -- زمان فعلی بازی
-                if currentTime - lastDutyChangeTime >= dutyChangeCooldown then -- چک کردن اینکه آیا زمان کافی گذشته است
-                    if CurrentAction == 'duty' then
-                        -- FIX: snapshot جاب رو قبل از هر تغییری بگیر تا اگه بازیکن
-                        -- سریع از مارکر خارج بشه و CurrentActionJob نال بشه،
-                        -- مقدار درست همچنان به سرور فرستاده بشه (رفع باگ concatenate nil سمت سرور)
-                        local jobToSend = CurrentActionJob
+        local sleep = 500
+        local now = GetGameTimer()
 
-                        CurrentAction = nil
-                        Citizen.Wait(100)
+        -- Rebuild now and then: the job manager can move Config_duty.Zones while the server runs.
+        if now >= nextRebuild then
+            points = Config_duty.BuildPoints()
+            nextRebuild = now + 5000
+        end
 
-                        if jobToSend then
-                            TriggerServerEvent('esx_duty:setjob', jobToSend)
-                            -- BUG FIX: esx_duty:setjob2 was triggered here but has no
-                            -- server-side handler anywhere in this resource (or anywhere
-                            -- else in the repo) -- a dead, no-op call. Removed.
-                            lastDutyChangeTime = currentTime -- زمان آخرین تغییر وضعیت را ثبت کنید
-                        end
-                    end
-                else
-                    -- در صورت تلاش برای تغییر وضعیت قبل از اتمام زمان
-                    if currentTime - lastNotifyTime >= notifyCooldown then
-                        TriggerEvent('esx_duty:sendnot', "Lotfan sabr konid, mitavanid ba'd az " .. tostring(math.ceil((dutyChangeCooldown - (currentTime - lastDutyChangeTime)) / 1000)) .. " saniye dige dastoor ra estefade konid!", "error", 5000)
-                        lastNotifyTime = currentTime -- زمان آخرین نوتیفیکیشن را ثبت کنید
-                    end
-                end
+        local coords = GetEntityCoords(PlayerPedId())
+        local inRange = nil
+
+        for i = 1, #points do
+            local p = points[i]
+            local dx, dy, dz = coords.x - p.x, coords.y - p.y, coords.z - p.z
+            local dist = math.sqrt(dx * dx + dy * dy + dz * dz)
+            if dist < drawDistance then
+                sleep = 0
+                local c, s = p.Color, p.Size
+                drawMarker(p.Type or 20, p.x, p.y, p.z, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                    s.x, s.y, s.z, c.r, c.g, c.b, 100, false, true, 2, false, nil, nil, false)
+                if dist < interact then inRange = p end
             end
         end
-    end
-end)
 
-Citizen.CreateThread(function ()
-    while true do
-        Wait(0)
-        local coords = GetEntityCoords(GetPlayerPed(-1))
-        for k, v in pairs(Config_duty.Zones) do
-        
-            if (GetDistanceBetweenCoords(coords, v.Pos.x, v.Pos.y, v.Pos.z, true) < 10.0) then
-                DrawMarker(20, v.Pos.x, v.Pos.y, v.Pos.z, 0.0, 0.0, 0.0, 0, 0.0, 0.0, Config_duty.Size.x, Config_duty.Size.y, Config_duty.Size.z, Config_duty.Color.r, Config_duty.Color.g, Config_duty.Color.b, 100, false, true, 2, false, false, false, false)
+        if inRange then
+            BeginTextCommandDisplayHelp('STRING')
+            AddTextComponentSubstringPlayerName('Dokme ~INPUT_CONTEXT~ jahat on/off duty')
+            EndTextCommandDisplayHelp(0, false, true, -1)
+            if IsControlJustReleased(0, 38) then
+                toggleDuty(inRange)
             end
         end
+
+        Wait(sleep)
     end
 end)
-
-Citizen.CreateThread(function ()
-    while true do
-        Wait(0)
-        local coords      = GetEntityCoords(GetPlayerPed(-1))
-        local isInMarker  = false
-        local currentZone = nil
-        for k, v in pairs(Config_duty.Zones) do
-            if (GetDistanceBetweenCoords(coords, v.Pos.x, v.Pos.y, v.Pos.z, true) < Config_duty.Size.x) then
-                isInMarker  = true
-                currentZone = k
-            end
-        end
-        if (isInMarker and not HasAlreadyEnteredMarker) or (isInMarker) then
-            HasAlreadyEnteredMarker = true
-            TriggerEvent('esx_duty:hasEnteredMarker', currentZone)
-        end
-        if not isInMarker and HasAlreadyEnteredMarker then
-            HasAlreadyEnteredMarker = false
-            TriggerEvent('esx_duty:hasExitedMarker')
-        end
-    end
-end)
-
-
--- AFK check moved to [SCRIPT]/ScriptPack/client/afkkick-cl.lua (single AFK system).

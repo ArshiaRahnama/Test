@@ -71,10 +71,10 @@ Config_Shared.Categories = {
     { key = 'other',   label = 'موارد دیگر',            priority = 1, icon = 'fa-ellipsis'       },
 }
 
--- ------------------------------------------- دسته‌های ریپورتِ سبک Sun ---
--- فرم ریپورتِ چت (Sun-style) فقط همین‌ها رو نشون میده (sun = true).
--- sunKey همون کلیدهای فرم Sun هست؛ label همون چیزیه که تو لیست ادمین دیده میشه.
-local sunCats = {
+-- ------------------------------------------- دسته‌های ریپورتِ سبک Unique ---
+-- فرم ریپورتِ چت (Unique-style) فقط همین‌ها رو نشون میده (unique = true).
+-- uniqueKey همون کلیدهای فرم Unique هست؛ label همون چیزیه که تو لیست ادمین دیده میشه.
+local uniqueCats = {
     { 'REPORT_COMBAT_LOGOUT', 'Combat Logout',     3 },
     { 'REPORT_KOS',           'K.O.S',             3 },
     { 'REPORT_NCZ_SAFEZONE',  'N.C.Z & Safe Zone', 3 },
@@ -89,10 +89,10 @@ local sunCats = {
     { 'HELP',                 'Soal',              1 },
     { 'REPORT_MORE',          'More',              1 },
 }
-for _, c in ipairs(sunCats) do
+for _, c in ipairs(uniqueCats) do
     Config_Shared.Categories[#Config_Shared.Categories + 1] = {
-        key = 'sun_' .. c[1]:lower(), label = c[2], priority = c[3], icon = 'fa-flag',
-        sun = true, sunKey = c[1],
+        key = 'unique_' .. c[1]:lower(), label = c[2], priority = c[3], icon = 'fa-flag',
+        unique = true, uniqueKey = c[1],
     }
 end
 

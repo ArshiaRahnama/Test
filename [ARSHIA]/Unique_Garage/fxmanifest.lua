@@ -15,7 +15,7 @@ ui_page 'ui/index.html'
 
 client_scripts {
   "client.lua",
-  "client/sunset_garage_cl.lua",
+  "client/unique_garage_cl.lua",
   "client/parkmeter_cl.lua",
   "client/carlock_cl.lua",
   "client/lockpick_cl.lua",
@@ -26,7 +26,7 @@ client_scripts {
 server_scripts {
   '@oxmysql/lib/MySQL.lua',
   "server.lua",
-  "server/sunset_garage_sv.lua",
+  "server/unique_garage_sv.lua",
   "server/parkmeter_sv.lua",
   "server/carlock_sv.lua",
   "server/lockpick_sv.lua",

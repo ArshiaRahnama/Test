@@ -437,7 +437,9 @@ function OpenCloakroomMenu_government()
 end
 
 local GOV_POINTS = {
-    { key = 'BossActions', open = function() openGovBoss() end },
+    { key = 'BossActions', open = function()
+        TriggerEvent('esx_society:openBosscarysMenu', 'government', function(_, menu) menu.close() end, { wash = false })
+    end },
     { key = 'Cloakrooms',  open = function() OpenCloakroomMenu_government() end },
     { key = 'Armories',    open = function() TriggerEvent('esx_inventoryhud:OpenJobInventory1') end },
     { key = 'Vehicles',    open = function()

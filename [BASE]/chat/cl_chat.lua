@@ -1,4 +1,4 @@
--- Chat (Sun-style UI) | adapted to this server's essentialmode/ESX
+-- Chat (Unique-style UI) | adapted to this server's essentialmode/ESX
 
 ESX = nil
 Citizen.CreateThread(function()
@@ -270,10 +270,10 @@ end)
 
 -- menu colours / positions chosen in Settings -> Menus (consumed by the menu resources)
 RegisterNUICallback('saveMenuSettings', function(data, cb)
-    TriggerEvent('sun_menu:settings', data)
+    TriggerEvent('unique_menu:settings', data)
     if data.skill then
         pcall(function()
-            exports['sun-ui']:sendMessage({ id = 'skill', event = 'settings', colors = data.skill })
+            exports['unique-ui']:sendMessage({ id = 'skill', event = 'settings', colors = data.skill })
         end)
     end
     cb('ok')
@@ -346,9 +346,9 @@ AddEventHandler('chat:showAdminPM', function(from, message)
 end)
 
 -- ==================================================================
--- Report / Ticket panels (Sun-style UI)
--- The server side lives in Unique_AdminPanel (client/sun_report_bridge.lua
--- + server/sun_report_bridge.lua). This file only drives the NUI and
+-- Report / Ticket panels (Unique-style UI)
+-- The server side lives in Unique_AdminPanel (client/unique_report_bridge.lua
+-- + server/unique_report_bridge.lua). This file only drives the NUI and
 -- re-emits plain events the bridge listens to.
 -- ==================================================================
 local function resetChatState()

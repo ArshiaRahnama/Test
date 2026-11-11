@@ -6,6 +6,7 @@
 -- Must be the FIRST client script in fxmanifest.lua so it is defined before any job file runs.
 
 local nativeDrawMarker = DrawMarker
+RawDrawMarker = nativeDrawMarker -- unstyled native, for resources/files that keep their own marker look (duty points)
 
 MarkerStyle = {
     size  = { 0.5, 0.5, 0.5 },

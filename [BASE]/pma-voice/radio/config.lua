@@ -6,7 +6,7 @@ Config = {}
 Config.Item        = 'radio'   -- inventory item that opens the radio
 Config.RequireItem = true      -- server also refuses channels to players without the item
 
-Config.MinFrequency = 1        -- same range as Sunset
+Config.MinFrequency = 1        -- standard range
 Config.MaxFrequency = 2500
 
 Config.ToggleCooldown    = 3000   -- ms, E on/off
@@ -17,7 +17,7 @@ Config.GPSDuration       = 60000  -- ms blips stay on the map
 Config.AlertDuration     = 60000  -- ms panic blip stays on the map
 
 ---------------------------------------------------------------------------
--- Who may use a radio (Sunset rule: no job / basic job and no gang = no radio)
+-- Who may use a radio (rule: no job / basic job and no gang = no radio)
 ---------------------------------------------------------------------------
 Config.RestrictBasicJobs = true
 Config.BasicJobs  = { nojob = true }
@@ -82,8 +82,8 @@ Config.QuickChannels = {
 ---------------------------------------------------------------------------
 -- Radio list (top-left), names, chat messages
 ---------------------------------------------------------------------------
-Config.ShowNamesInList = true      -- false = "[id]" only (what non-VIP players see on Sunset)
-Config.ShowSelfInList  = true      -- true = you also appear in your own list (handy for testing; Sunset = false)
+Config.ShowNamesInList = true      -- false = "[id]" only (ids only)
+Config.ShowSelfInList  = true      -- true = you also appear in your own list (handy for testing; false = others only)
 Config.NameMaxLength   = 24
 Config.ResetCustomNameOnExit = true
 

@@ -65,18 +65,9 @@ AddEventHandler('Unique_Ticket:openMine', function()
     openPanel(false)
 end)
 
-RegisterCommand(Ticket_Config.CommandForAdmin, function()
-    ESX.TriggerServerCallback('Unique_AdminPanel:GetMyPermissionLevel', function(level)
-        if (level or 0) < Ticket_Config.MinPermissionLevel then
-            return notify('شما دسترسی مدیریت تیکت را ندارید.')
-        end
-        OpenTicketPanel()
-    end)
-end, false)
+-- /atickets حذف شد: بخش تیکتِ ادمین از دکمه‌ی 🎫 هدرِ پنل /areport (و دکمه‌ی Tickets منوی F4) باز میشه.
 
-if Ticket_Config.KeyForAdmin ~= '' then
-    RegisterKeyMapping(Ticket_Config.CommandForAdmin, 'پنل مدیریت تیکت‌ها', 'keyboard', Ticket_Config.KeyForAdmin)
-end
+
 
 -- Called from client/menuv_ui.lua's "🎫 Tickets" button (F4 menu) - same
 -- entry point as the command, so permissions stay in exactly one place.

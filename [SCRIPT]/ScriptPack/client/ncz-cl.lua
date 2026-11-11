@@ -139,6 +139,11 @@ end)
 -- inside the free-fire area nothing may stop the party from shooting: attack controls are forced ON
 -- every frame (other scripts that disable them in the same frame can't win), /robdebug shows the state
 local RobDebug = false
+-- other resources (Unique_AdminPanel's global /ncz) ask: is this player inside a free-fire robbery area?
+exports('IsInRobZone', function()
+	local pc = GetEntityCoords(PlayerPedId())
+	return InRobZone(pc.x, pc.y, pc.z)
+end)
 RegisterCommand('robdebug', function() RobDebug = not RobDebug print('robdebug', RobDebug) end, false)
 CreateThread(function()
 	local lastDbg = 0
@@ -155,6 +160,9 @@ CreateThread(function()
 				Wait(0)
 				local ped = PlayerPedId()
 				DisablePlayerFiring(PlayerId(), false)
+				EnableControlAction(2, 24, true)    -- attack (group 2: handcuff-style scripts disable this one)
+				EnableControlAction(2, 257, true)
+				EnableControlAction(2, 25, true)
 				EnableControlAction(0, 24, true)    -- attack
 				EnableControlAction(0, 25, true)    -- aim
 				EnableControlAction(0, 257, true)   -- attack 2
@@ -169,10 +177,11 @@ CreateThread(function()
 						lastDbg = GetGameTimer()
 						local w = GetSelectedPedWeapon(ped)
 						local ammo = GetAmmoInPedWeapon(ped, w)
-						print(('[robdebug] attackFrames=%d shotFrames=%d ammo=%s (was %s) weaponReady=%s controlOn=%s freeAim=%s reloading=%s nuiFocus=%s base=%s smallZone=%s weapon=%s inVeh=%s'):format(
+						print(('[robdebug] attackFrames=%d shotFrames=%d ammo=%s (was %s) weaponReady=%s controlOn=%s freeAim=%s reloading=%s nuiFocus=%s base=%s smallZone=%s weapon=%s inVeh=%s attackEnabledG2=%s adminNcz=%s'):format(
 							dbgPress, dbgShot, tostring(ammo), tostring(dbgAmmo), tostring(IsPedWeaponReadyToShoot(ped)), tostring(IsPlayerControlOn(PlayerId())),
 							tostring(IsPlayerFreeAiming(PlayerId())), tostring(IsPedReloading(ped)), tostring(IsNuiFocused()),
-							tostring(inBaseZone), tostring(coords.label), tostring(w), tostring(IsPedInAnyVehicle(ped, false))))
+							tostring(inBaseZone), tostring(coords.label), tostring(w), tostring(IsPedInAnyVehicle(ped, false)),
+							tostring(IsControlEnabled(2, 24)), tostring(pcall(function() return exports['Unique_AdminPanel']:IsAdminNcz() end) and exports['Unique_AdminPanel']:IsAdminNcz())))
 						dbgShot, dbgPress, dbgAmmo = 0, 0, ammo
 					end
 				end

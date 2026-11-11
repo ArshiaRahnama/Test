@@ -34,7 +34,7 @@ local mouseButton = GetConvarInt('ox_target:leftClick', 1) == 1 and 24 or 25
 local debug = GetConvarInt('ox_target:debug', 0) == 1
 local vec0 = vec3(0, 0, 0)
 
--- Sunset behaviour: the eye is only usable while unarmed (or holding these)
+-- Unique behaviour: the eye is only usable while unarmed (or holding these)
 local whiteListWeapon = {
     [`WEAPON_UNARMED`] = true,
     [`WEAPON_OBJECT`] = true,
@@ -76,9 +76,9 @@ local function isPlayerCuffed()
 end
 
 local function isHandsUp()
-    if GetResourceState('sunset_utils') ~= 'started' then return false end
+    if GetResourceState('Unique_utils') ~= 'started' then return false end
 
-    local ok, result = pcall(function() return exports['sunset_utils']:getHandupState() end)
+    local ok, result = pcall(function() return exports['Unique_utils']:getHandupState() end)
 
     return ok and result and true or false
 end

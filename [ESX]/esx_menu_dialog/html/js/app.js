@@ -1,14 +1,21 @@
 (function(){
 
 	let MenuTpl =
-		'<div id="menu_{{_namespace}}_{{_name}}" class="dialog {{#isBig}}big{{/isBig}}">' +
-			'<div class="head"><span>{{title}}</span></div>' +
-			'<div class="text"><span>{{title}}</span></div>' +			
-				'{{#isDefault}}<input type="text" name="value" id="inputText"/>{{/isDefault}}' +
-				'{{#isBig}}<textarea name="value"/>{{/isBig}}' +
-				'<button type="button" name="submit">Taid</button>' +
-				'<button type="button" name="cancel">Enseraf</button>'
+		'<div id="menu_{{_namespace}}_{{_name}}" class="ainput {{#isBig}}big{{/isBig}}">' +
+			'<div class="ainput-glow"></div>' +
+			'<div class="ainput-head">' +
+				'<div class="ainput-ic"><svg viewBox="0 0 24 24"><path d="M4 7V5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v2"/><path d="M9 20h6"/><path d="M12 4v16"/></svg></div>' +
+				'<div class="ainput-title">{{title}}</div>' +
 			'</div>' +
+			'<div class="ainput-body">' +
+				'{{#isDefault}}<input type="text" name="value" id="inputText" class="ainput-field" autocomplete="off" />{{/isDefault}}' +
+				'{{#isBig}}<textarea name="value" id="inputText" class="ainput-field ainput-area"></textarea>{{/isBig}}' +
+			'</div>' +
+			'<div class="ainput-actions">' +
+				'<button type="button" name="cancel" class="ainput-btn ghost">Enseraf</button>' +
+				'<button type="button" name="submit" class="ainput-btn solid">Taid</button>' +
+			'</div>' +
+			'<div class="ainput-foot"><span class="ainput-hint"><span class="kbd">Enter</span> Taid</span><span class="ainput-hint"><span class="kbd">Esc</span> Enseraf</span></div>' +
 		'</div>'
 	;
 

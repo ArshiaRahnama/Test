@@ -1277,6 +1277,7 @@ textarea:focus {
 }
 
 .rp-lock-btn,
+.rp-tickets-btn,
 .rp-size-btn,
 .rp-sort-btn {
   width: 22px;
@@ -1290,12 +1291,14 @@ textarea:focus {
 }
 
 .rp-lock-btn.rp-btn-hovered,
+.rp-tickets-btn.rp-btn-hovered,
 .rp-size-btn.rp-btn-hovered,
 .rp-sort-btn.rp-btn-hovered {
   background: rgba(var(--theme-rgb, 101, 174, 255), 0.2);
 }
 
 .rp-lock-btn svg,
+.rp-tickets-btn svg,
 .rp-size-btn svg,
 .rp-sort-btn svg {
   width: 16px;
@@ -1410,9 +1413,9 @@ textarea:focus {
 }
 
 /* ========================================
-   Sun Dispatch — Offer popup (vasat-e safhe)
+   Unique Dispatch — Offer popup (vasat-e safhe)
    ======================================== */
-#sund-offer {
+#uniqd-offer {
   position: fixed;
   top: 50%;
   left: 50%;
@@ -1428,32 +1431,32 @@ textarea:focus {
   box-shadow: 0 14px 40px rgba(0, 0, 0, 0.6);
   display: none;
   direction: rtl;
-  animation: sundOfferIn 220ms ease-out;
+  animation: uniqdOfferIn 220ms ease-out;
 }
 
-#sund-offer.show { display: block; }
+#uniqd-offer.show { display: block; }
 
-@keyframes sundOfferIn {
+@keyframes uniqdOfferIn {
   from { opacity: 0; transform: translate(-50%, -50%) scale(.96); }
   to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
 }
 
-#sund-offer .offer-head {
+#uniqd-offer .offer-head {
   display: flex; align-items: center; gap: 10px;
   margin-bottom: 10px;
 }
-#sund-offer .offer-dot {
+#uniqd-offer .offer-dot {
   width: 8px; height: 8px; border-radius: 50%;
   background: #5b8cff;
   box-shadow: 0 0 8px rgba(91, 140, 255, 0.7);
-  animation: sundPulse 2s ease-in-out infinite;
+  animation: uniqdPulse 2s ease-in-out infinite;
   flex-shrink: 0;
 }
-@keyframes sundPulse {
+@keyframes uniqdPulse {
   0%, 100% { opacity: 0.85; }
   50%      { opacity: 1; }
 }
-#sund-offer .offer-title {
+#uniqd-offer .offer-title {
   font-size: 13px;
   font-weight: 500;
   color: #5b8cff;
@@ -1461,7 +1464,7 @@ textarea:focus {
   margin-right: auto;
   text-align: right;
 }
-#sund-offer .offer-id {
+#uniqd-offer .offer-id {
   font-size: 11px;
   color: rgba(255, 255, 255, 0.5);
   background: rgba(255, 255, 255, 0.05);
@@ -1469,7 +1472,7 @@ textarea:focus {
   border-radius: 6px;
 }
 
-#sund-offer .offer-body {
+#uniqd-offer .offer-body {
   background: rgba(0, 0, 0, 0.22);
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 8px;
@@ -1480,35 +1483,35 @@ textarea:focus {
   direction: ltr;
   text-align: left;
 }
-#sund-offer .offer-body .row { display: flex; gap: 8px; align-items: flex-start; }
-#sund-offer .offer-body .row span {
+#uniqd-offer .offer-body .row { display: flex; gap: 8px; align-items: flex-start; }
+#uniqd-offer .offer-body .row span {
   color: rgba(255, 255, 255, 0.45);
   min-width: 78px;
   font-family: 'Roboto', sans-serif;
 }
-#sund-offer .offer-body .row b {
+#uniqd-offer .offer-body .row b {
   color: #f1f4fb;
   font-weight: 500;
   word-break: break-word;
   font-family: 'Roboto', sans-serif;
 }
 
-#sund-offer .offer-bar-wrap {
+#uniqd-offer .offer-bar-wrap {
   height: 3px;
   background: rgba(255, 255, 255, 0.07);
   border-radius: 2px;
   overflow: hidden;
   margin-bottom: 12px;
 }
-#sund-offer .offer-bar {
+#uniqd-offer .offer-bar {
   height: 100%;
   background: linear-gradient(90deg, #3ddc97, #5b8cff, #ff5e7a);
   width: 100%;
   transition: width 1s linear;
 }
 
-#sund-offer .offer-actions { display: flex; gap: 8px; }
-#sund-offer .offer-btn {
+#uniqd-offer .offer-actions { display: flex; gap: 8px; }
+#uniqd-offer .offer-btn {
   flex: 1;
   padding: 7px 10px;
   border-radius: 8px;
@@ -1520,28 +1523,28 @@ textarea:focus {
   display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
   line-height: 1.2;
 }
-#sund-offer .offer-btn:active { transform: scale(.97); }
-#sund-offer .offer-accept {
+#uniqd-offer .offer-btn:active { transform: scale(.97); }
+#uniqd-offer .offer-accept {
   background: linear-gradient(180deg, #3ddc97, #2ab885);
   border: 1px solid rgba(61, 220, 151, 0.5);
   color: #001b0e;
 }
-#sund-offer .offer-accept:hover { background: linear-gradient(180deg, #4be6a4, #3ddc97); }
-#sund-offer .offer-decline {
+#uniqd-offer .offer-accept:hover { background: linear-gradient(180deg, #4be6a4, #3ddc97); }
+#uniqd-offer .offer-decline {
   background: rgba(255, 94, 122, 0.15);
   border: 1px solid rgba(255, 94, 122, 0.4);
   color: #ff8a8a;
 }
-#sund-offer .offer-decline:hover { background: rgba(255, 94, 122, 0.28); }
-#sund-offer .offer-accept-spect {
+#uniqd-offer .offer-decline:hover { background: rgba(255, 94, 122, 0.28); }
+#uniqd-offer .offer-accept-spect {
   background: linear-gradient(180deg, #5b8cff, #3a6ed8);
   border: 1px solid rgba(91, 140, 255, 0.5);
   color: #fff;
 }
-#sund-offer .offer-accept-spect:hover { background: linear-gradient(180deg, #7aa4ff, #5b8cff); }
+#uniqd-offer .offer-accept-spect:hover { background: linear-gradient(180deg, #7aa4ff, #5b8cff); }
 
-#sund-offer kbd,
-#sund-offer .offer-cmd {
+#uniqd-offer kbd,
+#uniqd-offer .offer-cmd {
   display: inline-block;
   background: rgba(0, 0, 0, 0.3);
   border: 1px solid rgba(255, 255, 255, 0.18);
@@ -1557,7 +1560,7 @@ textarea:focus {
 }
 
 
-#sund-offer .offer-countdown {
+#uniqd-offer .offer-countdown {
   font-size: 12px;
   color: rgba(255, 255, 255, 0.55);
   text-align: center;
@@ -1566,9 +1569,9 @@ textarea:focus {
 }
 
 /* ========================================
-   Sun Dispatch — Controls bar dar reportPanel
+   Unique Dispatch — Controls bar dar reportPanel
    ======================================== */
-#sund-controls {
+#uniqd-controls {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -1580,7 +1583,7 @@ textarea:focus {
   position: relative;
 }
 
-#sund-controls .sund-btn {
+#uniqd-controls .uniqd-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1595,45 +1598,45 @@ textarea:focus {
   transition: background 0.15s, border-color 0.15s, transform 0.1s;
 }
 
-#sund-controls .sund-btn:hover {
+#uniqd-controls .uniqd-btn:hover {
   background: rgba(var(--theme-rgb, 101, 174, 255), 0.22);
   border-color: rgba(var(--theme-rgb, 101, 174, 255), 0.45);
 }
 
-#sund-controls .sund-btn:active { transform: scale(0.92); }
+#uniqd-controls .uniqd-btn:active { transform: scale(0.92); }
 
-#sund-controls .sund-play {
+#uniqd-controls .uniqd-play {
   background: rgba(80, 200, 120, 0.18);
   border-color: rgba(80, 200, 120, 0.4);
   color: #6fd99a;
 }
-#sund-controls .sund-play:hover {
+#uniqd-controls .uniqd-play:hover {
   background: rgba(80, 200, 120, 0.32);
   border-color: rgba(80, 200, 120, 0.65);
 }
-#sund-controls .sund-stop {
+#uniqd-controls .uniqd-stop {
   background: rgba(220, 80, 80, 0.18);
   border-color: rgba(220, 80, 80, 0.4);
   color: #ff8a8a;
 }
-#sund-controls .sund-stop:hover {
+#uniqd-controls .uniqd-stop:hover {
   background: rgba(220, 80, 80, 0.32);
   border-color: rgba(220, 80, 80, 0.65);
 }
 
-#sund-controls #sund-pos {
+#uniqd-controls #uniqd-pos {
   margin-right: auto;
   font-size: 0.7rem;
   font-weight: 500;
   color: rgba(255, 255, 255, 0.45);
   letter-spacing: 0.3px;
 }
-#sund-controls #sund-pos.in-queue { color: #6fd99a; }
+#uniqd-controls #uniqd-pos.in-queue { color: #6fd99a; }
 
 /* ========================================
-   Sun Dispatch — More popover (Saf / Gomshode / Accept-nashode)
+   Unique Dispatch — More popover (Saf / Gomshode / Accept-nashode)
    ======================================== */
-#sund-more-pop {
+#uniqd-more-pop {
   display: none;
   position: absolute;
   top: 100%;
@@ -1650,13 +1653,13 @@ textarea:focus {
   overflow: hidden;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
 }
-#sund-more-pop.open { display: block; }
+#uniqd-more-pop.open { display: block; }
 
-#sund-more-pop .sund-tabs {
+#uniqd-more-pop .uniqd-tabs {
   display: flex;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
-#sund-more-pop .sund-tab {
+#uniqd-more-pop .uniqd-tab {
   flex: 1;
   text-align: center;
   padding: 6px 4px;
@@ -1666,21 +1669,21 @@ textarea:focus {
   border-bottom: 2px solid transparent;
   transition: color 0.15s, border-color 0.15s, background 0.15s;
 }
-#sund-more-pop .sund-tab:hover { background: rgba(var(--theme-rgb, 101, 174, 255), 0.06); }
-#sund-more-pop .sund-tab.active {
+#uniqd-more-pop .uniqd-tab:hover { background: rgba(var(--theme-rgb, 101, 174, 255), 0.06); }
+#uniqd-more-pop .uniqd-tab.active {
   color: var(--theme-color, #65aeff);
   border-bottom-color: var(--theme-color, #65aeff);
 }
 
-#sund-more-pop .sund-pop-list {
+#uniqd-more-pop .uniqd-pop-list {
   max-height: 220px;
   overflow-y: auto;
   padding: 4px 0;
 }
-#sund-more-pop .sund-pop-list::-webkit-scrollbar { width: 4px; }
-#sund-more-pop .sund-pop-list::-webkit-scrollbar-thumb { background: rgba(var(--theme-rgb, 101, 174, 255), 0.3); border-radius: 2px; }
+#uniqd-more-pop .uniqd-pop-list::-webkit-scrollbar { width: 4px; }
+#uniqd-more-pop .uniqd-pop-list::-webkit-scrollbar-thumb { background: rgba(var(--theme-rgb, 101, 174, 255), 0.3); border-radius: 2px; }
 
-#sund-more-pop .sund-row {
+#uniqd-more-pop .uniqd-row {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -1689,43 +1692,43 @@ textarea:focus {
   color: rgba(255, 255, 255, 0.78);
   border-bottom: 1px solid rgba(255, 255, 255, 0.03);
 }
-#sund-more-pop .sund-row:last-child { border-bottom: none; }
-#sund-more-pop .sund-q-row.me {
+#uniqd-more-pop .uniqd-row:last-child { border-bottom: none; }
+#uniqd-more-pop .uniqd-q-row.me {
   background: rgba(80, 200, 120, 0.08);
   color: #c8f5d9;
 }
-#sund-more-pop .sund-row .sund-pos {
+#uniqd-more-pop .uniqd-row .uniqd-pos {
   color: var(--theme-color, #65aeff);
   font-weight: 500;
   min-width: 22px;
 }
-#sund-more-pop .sund-row .sund-name { flex: 1; }
-#sund-more-pop .sund-row .sund-cat {
+#uniqd-more-pop .uniqd-row .uniqd-name { flex: 1; }
+#uniqd-more-pop .uniqd-row .uniqd-cat {
   color: var(--theme-color, #65aeff);
   font-weight: 500;
   min-width: 80px;
 }
-#sund-more-pop .sund-row .sund-owner {
+#uniqd-more-pop .uniqd-row .uniqd-owner {
   flex: 1;
   color: rgba(255, 255, 255, 0.6);
 }
-#sund-more-pop .sund-row .sund-who {
+#uniqd-more-pop .uniqd-row .uniqd-who {
   color: rgba(255, 200, 130, 0.85);
   min-width: 110px;
   text-align: left;
 }
-#sund-more-pop .sund-row .sund-meta {
+#uniqd-more-pop .uniqd-row .uniqd-meta {
   color: rgba(255, 255, 255, 0.4);
   min-width: 30px;
   text-align: left;
 }
-#sund-more-pop .sund-lost-row {
+#uniqd-more-pop .uniqd-lost-row {
   cursor: pointer;
   transition: background 0.12s;
 }
-#sund-more-pop .sund-lost-row:hover { background: rgba(var(--theme-rgb, 101, 174, 255), 0.10); }
+#uniqd-more-pop .uniqd-lost-row:hover { background: rgba(var(--theme-rgb, 101, 174, 255), 0.10); }
 
-#sund-more-pop .sund-empty {
+#uniqd-more-pop .uniqd-empty {
   text-align: center;
   padding: 12px 8px;
   color: rgba(255, 255, 255, 0.35);
@@ -1733,11 +1736,11 @@ textarea:focus {
 }
 
 /* ========================================
-   Sun Dispatch — Source label (roy history items)
+   Unique Dispatch — Source label (roy history items)
    Faghat tiny text khili kuchak ba rang neutral (cyan-gray) ke
    ba rang-haye status (sabz/ghermez/khakestari) ghaati nasheh.
    ======================================== */
-.sund-source-badge {
+.uniqd-source-badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1757,26 +1760,26 @@ textarea:focus {
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.15);
 }
-.sund-source-badge.sund-source-queue {
+.uniqd-source-badge.uniqd-source-queue {
   color: #8de1ff;
   background: rgba(80, 170, 220, 0.18);
   border-color: rgba(80, 170, 220, 0.45);
 }
-.sund-source-badge.sund-source-lost {
+.uniqd-source-badge.uniqd-source-lost {
   color: #ffd28a;
   background: rgba(220, 160, 80, 0.18);
   border-color: rgba(220, 160, 80, 0.45);
 }
 
 /* ========================================
-   Sun Dispatch — inline tab content (Saf/Gomshode/Accept-nashode)
+   Unique Dispatch — inline tab content (Saf/Gomshode/Accept-nashode)
    داخل .rp-list رندر می‌شه — همون استایل قبلی pop-list
    ======================================== */
-.sund-extra-tab { /* تب‌های اضافه‌ی sund — همون استایل rp-tab رو ارث می‌بره */ }
+.uniqd-extra-tab { /* تب‌های اضافه‌ی uniqd — همون استایل rp-tab رو ارث می‌بره */ }
 
-.rp-list .sund-pop-list-inline { padding: 4px 0; }
+.rp-list .uniqd-pop-list-inline { padding: 4px 0; }
 
-.rp-list .sund-row {
+.rp-list .uniqd-row {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -1785,42 +1788,42 @@ textarea:focus {
   color: rgba(255, 255, 255, 0.82);
   border-bottom: 1px solid rgba(255, 255, 255, 0.04);
 }
-.rp-list .sund-row:last-child { border-bottom: none; }
-.rp-list .sund-q-row.me {
+.rp-list .uniqd-row:last-child { border-bottom: none; }
+.rp-list .uniqd-q-row.me {
   background: rgba(80, 200, 120, 0.10);
   color: #c8f5d9;
 }
-.rp-list .sund-row .sund-pos {
+.rp-list .uniqd-row .uniqd-pos {
   color: var(--theme-color, #65aeff);
   font-weight: 600;
   min-width: 26px;
 }
-.rp-list .sund-row .sund-name { flex: 1; }
-.rp-list .sund-row .sund-cat {
+.rp-list .uniqd-row .uniqd-name { flex: 1; }
+.rp-list .uniqd-row .uniqd-cat {
   color: var(--theme-color, #65aeff);
   font-weight: 500;
   min-width: 80px;
 }
-.rp-list .sund-row .sund-owner {
+.rp-list .uniqd-row .uniqd-owner {
   flex: 1;
   color: rgba(255, 255, 255, 0.65);
 }
-.rp-list .sund-row .sund-who {
+.rp-list .uniqd-row .uniqd-who {
   color: rgba(255, 200, 130, 0.85);
   min-width: 110px;
   text-align: left;
 }
-.rp-list .sund-row .sund-meta {
+.rp-list .uniqd-row .uniqd-meta {
   color: rgba(255, 255, 255, 0.4);
   min-width: 30px;
   text-align: left;
 }
-.rp-list .sund-lost-row {
+.rp-list .uniqd-lost-row {
   cursor: pointer;
   transition: background 0.12s;
 }
-.rp-list .sund-lost-row:hover { background: rgba(var(--theme-rgb, 101, 174, 255), 0.10); }
-.rp-list .sund-empty {
+.rp-list .uniqd-lost-row:hover { background: rgba(var(--theme-rgb, 101, 174, 255), 0.10); }
+.rp-list .uniqd-empty {
   text-align: center;
   padding: 16px 8px;
   color: rgba(255, 255, 255, 0.4);
@@ -2540,9 +2543,9 @@ textarea:focus {
 }
 
 /* ============================================================
-   Sun Dispatch — universal in-queue indicator
+   Unique Dispatch — universal in-queue indicator
    ============================================================ */
-#sund-queue-indicator {
+#uniqd-queue-indicator {
   position: fixed;
   right: 8px;
   top: 50%;
@@ -2563,40 +2566,40 @@ textarea:focus {
   z-index: 9999;
   box-shadow: 0 1px 6px rgba(0, 0, 0, 0.35);
 }
-#sund-queue-indicator.show { display: inline-flex; }
-#sund-queue-indicator .sund-qi-dot {
+#uniqd-queue-indicator.show { display: inline-flex; }
+#uniqd-queue-indicator .uniqd-qi-dot {
   width: 7px;
   height: 7px;
   border-radius: 50%;
   background: #6fd99a;
   box-shadow: 0 0 5px rgba(111, 217, 154, 0.85);
-  animation: sund-qi-pulse 1.6s ease-in-out infinite;
+  animation: uniqd-qi-pulse 1.6s ease-in-out infinite;
 }
-#sund-queue-indicator .sund-qi-pos {
+#uniqd-queue-indicator .uniqd-qi-pos {
   line-height: 1;
 }
-@keyframes sund-qi-pulse {
+@keyframes uniqd-qi-pulse {
   0%, 100% { opacity: 1; }
   50%      { opacity: 0.45; }
 }
-#sund-queue-indicator { font-family: Vazirmatn, 'Lato', sans-serif; }
+#uniqd-queue-indicator { font-family: Vazirmatn, 'Lato', sans-serif; }
 
 /* ========================================
-   Sun Dispatch — Join queue category panel
+   Unique Dispatch — Join queue category panel
    ======================================== */
-#sund-join-panel {
+#uniqd-join-panel {
   position: fixed;
   inset: 0;
   z-index: 10000;
   font-family: Vazirmatn, 'Roboto', sans-serif;
   direction: rtl;
 }
-#sund-join-panel .sjp-overlay {
+#uniqd-join-panel .sjp-overlay {
   position: absolute;
   inset: 0;
   background: transparent;
 }
-#sund-join-panel .sjp-container {
+#uniqd-join-panel .sjp-container {
   position: absolute;
   top: 50%;
   left: 50%;
@@ -2613,13 +2616,13 @@ textarea:focus {
   overflow: hidden;
   animation: rsSlideIn 0.2s ease-out;
 }
-#sund-join-panel .sjp-container.shake { animation: sjpShake 0.4s ease; }
+#uniqd-join-panel .sjp-container.shake { animation: sjpShake 0.4s ease; }
 @keyframes sjpShake {
   0%, 100% { transform: translate(-50%, -50%); }
   20%, 60% { transform: translate(calc(-50% - 7px), -50%); }
   40%, 80% { transform: translate(calc(-50% + 7px), -50%); }
 }
-#sund-join-panel .sjp-header {
+#uniqd-join-panel .sjp-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -2628,13 +2631,13 @@ textarea:focus {
   background: rgba(var(--theme-rgb, 101, 174, 255), 0.12);
   border-bottom: 1px solid rgba(var(--theme-rgb, 101, 174, 255), 0.15);
 }
-#sund-join-panel .sjp-title {
+#uniqd-join-panel .sjp-title {
   font-size: 0.85rem;
   font-weight: 600;
   letter-spacing: 0.3px;
   color: var(--theme-color, #65aeff);
 }
-#sund-join-panel .sjp-close-btn {
+#uniqd-join-panel .sjp-close-btn {
   width: 24px;
   height: 24px;
   flex-shrink: 0;
@@ -2648,22 +2651,22 @@ textarea:focus {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
-#sund-join-panel .sjp-close-btn svg { width: 14px; height: 14px; }
-#sund-join-panel .sjp-close-btn:hover {
+#uniqd-join-panel .sjp-close-btn svg { width: 14px; height: 14px; }
+#uniqd-join-panel .sjp-close-btn:hover {
   background: rgba(220, 80, 80, 0.18);
   border-color: rgba(220, 80, 80, 0.4);
   color: #ff8a8a;
 }
-#sund-join-panel .sjp-grid {
+#uniqd-join-panel .sjp-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 6px;
   padding: 10px;
   overflow-y: auto;
 }
-#sund-join-panel .sjp-grid::-webkit-scrollbar { width: 4px; }
-#sund-join-panel .sjp-grid::-webkit-scrollbar-thumb { background: rgba(var(--theme-rgb, 101, 174, 255), 0.3); border-radius: 4px; }
-#sund-join-panel .sjp-item {
+#uniqd-join-panel .sjp-grid::-webkit-scrollbar { width: 4px; }
+#uniqd-join-panel .sjp-grid::-webkit-scrollbar-thumb { background: rgba(var(--theme-rgb, 101, 174, 255), 0.3); border-radius: 4px; }
+#uniqd-join-panel .sjp-item {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -2677,17 +2680,17 @@ textarea:focus {
   font-size: 0.82rem;
   user-select: none;
 }
-#sund-join-panel .sjp-item:hover {
+#uniqd-join-panel .sjp-item:hover {
   background: rgba(var(--theme-rgb, 101, 174, 255), 0.14);
   border-color: rgba(var(--theme-rgb, 101, 174, 255), 0.3);
   color: rgba(255, 255, 255, 0.95);
 }
-#sund-join-panel .sjp-item.on {
+#uniqd-join-panel .sjp-item.on {
   background: rgba(var(--theme-rgb, 101, 174, 255), 0.2);
   border-color: rgba(var(--theme-rgb, 101, 174, 255), 0.55);
   color: #fff;
 }
-#sund-join-panel .sjp-check {
+#uniqd-join-panel .sjp-check {
   width: 15px;
   height: 15px;
   flex-shrink: 0;
@@ -2697,11 +2700,11 @@ textarea:focus {
   position: relative;
   transition: all 0.15s;
 }
-#sund-join-panel .sjp-item.on .sjp-check {
+#uniqd-join-panel .sjp-item.on .sjp-check {
   background: var(--theme-color, #65aeff);
   border-color: var(--theme-color, #65aeff);
 }
-#sund-join-panel .sjp-item.on .sjp-check::after {
+#uniqd-join-panel .sjp-item.on .sjp-check::after {
   content: '';
   position: absolute;
   left: 4px;
@@ -2712,24 +2715,24 @@ textarea:focus {
   border-width: 0 2px 2px 0;
   transform: rotate(45deg);
 }
-#sund-join-panel .sjp-dot {
+#uniqd-join-panel .sjp-dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
   flex-shrink: 0;
 }
-#sund-join-panel .sjp-label { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-#sund-join-panel .sjp-empty {
+#uniqd-join-panel .sjp-label { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#uniqd-join-panel .sjp-empty {
   padding: 22px 12px;
   text-align: center;
   font-size: 0.8rem;
   color: rgba(255, 255, 255, 0.4);
 }
-#sund-join-panel .sjp-actions {
+#uniqd-join-panel .sjp-actions {
   padding: 10px;
   border-top: 1px solid rgba(var(--theme-rgb, 101, 174, 255), 0.12);
 }
-#sund-join-panel .sjp-join-btn {
+#uniqd-join-panel .sjp-join-btn {
   width: 100%;
   padding: 9px;
   border: none;
@@ -2742,15 +2745,15 @@ textarea:focus {
   cursor: pointer;
   transition: all 0.2s;
 }
-#sund-join-panel .sjp-join-btn:hover {
+#uniqd-join-panel .sjp-join-btn:hover {
   filter: brightness(1.1);
   box-shadow: 0 4px 15px rgba(var(--theme-rgb, 101, 174, 255), 0.3);
 }
 
 /* ========================================
-   Sun Dispatch — Membership badge
+   Unique Dispatch — Membership badge
    ======================================== */
-#sund-controls .sund-badge {
+#uniqd-controls .uniqd-badge {
   margin-right: auto;
   display: inline-flex;
   align-items: center;
@@ -2765,21 +2768,21 @@ textarea:focus {
   color: var(--theme-color, #65aeff);
   transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
-#sund-controls .sund-badge.active {
+#uniqd-controls .uniqd-badge.active {
   background: rgba(80, 200, 120, 0.16);
   border-color: rgba(80, 200, 120, 0.45);
   color: #9ff0c2;
 }
-#sund-controls .sund-badge .sund-badge-ico {
+#uniqd-controls .uniqd-badge .uniqd-badge-ico {
   display: inline-flex;
   align-items: center;
   opacity: 0.9;
 }
-#sund-controls .sund-badge .sund-badge-ico svg { width: 12px; height: 12px; display: block; }
-#sund-controls .sund-badge .sund-badge-count { line-height: 1; }
-#sund-controls .sund-badge .sund-badge-count:empty { display: none; }
+#uniqd-controls .uniqd-badge .uniqd-badge-ico svg { width: 12px; height: 12px; display: block; }
+#uniqd-controls .uniqd-badge .uniqd-badge-count { line-height: 1; }
+#uniqd-controls .uniqd-badge .uniqd-badge-count:empty { display: none; }
 
-#sund-badge-pop {
+#uniqd-badge-pop {
   display: none;
   position: fixed;
   z-index: 100000;
@@ -2794,14 +2797,14 @@ textarea:focus {
   font-family: Vazirmatn, 'Roboto', sans-serif;
   pointer-events: none;
 }
-#sund-badge-pop .sund-bt-title {
+#uniqd-badge-pop .uniqd-bt-title {
   font-size: 0.62rem;
   font-weight: 700;
   color: var(--theme-color, #65aeff);
   padding: 2px 5px 5px;
   letter-spacing: 0.2px;
 }
-#sund-badge-pop .sund-bt-row {
+#uniqd-badge-pop .uniqd-bt-row {
   display: flex;
   align-items: center;
   gap: 7px;
@@ -2811,25 +2814,25 @@ textarea:focus {
   font-weight: 500;
   color: rgba(255, 255, 255, 0.42);
 }
-#sund-badge-pop .sund-bt-row.on {
+#uniqd-badge-pop .uniqd-bt-row.on {
   color: #d7ffe9;
   background: rgba(80, 200, 120, 0.08);
 }
-#sund-badge-pop .sund-bt-dot {
+#uniqd-badge-pop .uniqd-bt-dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
   flex-shrink: 0;
   opacity: 0.45;
 }
-#sund-badge-pop .sund-bt-row.on .sund-bt-dot { opacity: 1; }
-#sund-badge-pop .sund-bt-label { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-#sund-badge-pop .sund-bt-state {
+#uniqd-badge-pop .uniqd-bt-row.on .uniqd-bt-dot { opacity: 1; }
+#uniqd-badge-pop .uniqd-bt-label { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#uniqd-badge-pop .uniqd-bt-state {
   font-size: 0.58rem;
   color: #6fd99a;
   flex-shrink: 0;
 }
-#sund-badge-pop .sund-bt-empty {
+#uniqd-badge-pop .uniqd-bt-empty {
   padding: 6px;
   text-align: center;
   font-size: 0.7rem;
@@ -2837,17 +2840,17 @@ textarea:focus {
 }
 
 /* ========================================
-   Sun Dispatch — Manager per-category queue
+   Unique Dispatch — Manager per-category queue
    ======================================== */
-.rp-list .sund-qcat {
+.rp-list .uniqd-qcat {
   margin-top: 6px;
   border: 1px solid rgba(var(--theme-rgb, 101, 174, 255), 0.12);
   border-radius: 7px;
   overflow: hidden;
   background: rgba(var(--theme-rgb, 101, 174, 255), 0.04);
 }
-.rp-list .sund-pop-list-inline .sund-qcat:first-child { margin-top: 0; }
-.rp-list .sund-qcat-head {
+.rp-list .uniqd-pop-list-inline .uniqd-qcat:first-child { margin-top: 0; }
+.rp-list .uniqd-qcat-head {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -2859,31 +2862,31 @@ textarea:focus {
   user-select: none;
   transition: background 0.15s;
 }
-.rp-list .sund-qcat-head:hover { background: rgba(var(--theme-rgb, 101, 174, 255), 0.1); }
-.rp-list .sund-qcat.open .sund-qcat-head { background: rgba(var(--theme-rgb, 101, 174, 255), 0.12); }
-.rp-list .sund-qcat-head .sund-dot {
+.rp-list .uniqd-qcat-head:hover { background: rgba(var(--theme-rgb, 101, 174, 255), 0.1); }
+.rp-list .uniqd-qcat.open .uniqd-qcat-head { background: rgba(var(--theme-rgb, 101, 174, 255), 0.12); }
+.rp-list .uniqd-qcat-head .uniqd-dot {
   width: 9px;
   height: 9px;
   border-radius: 50%;
   flex-shrink: 0;
 }
-.rp-list .sund-qcat-head .sund-qcat-name { flex: 1; }
-.rp-list .sund-qcat-head .sund-qcat-size {
+.rp-list .uniqd-qcat-head .uniqd-qcat-name { flex: 1; }
+.rp-list .uniqd-qcat-head .uniqd-qcat-size {
   font-size: 0.68rem;
   color: rgba(255, 255, 255, 0.5);
   background: rgba(255, 255, 255, 0.08);
   padding: 1px 7px;
   border-radius: 8px;
 }
-.rp-list .sund-qcat-head .sund-qcat-arrow {
+.rp-list .uniqd-qcat-head .uniqd-qcat-arrow {
   display: inline-flex;
   align-items: center;
   color: rgba(255, 255, 255, 0.45);
   transition: transform 0.18s ease;
 }
-.rp-list .sund-qcat.open .sund-qcat-head .sund-qcat-arrow { transform: rotate(180deg); }
-.rp-list .sund-qcat-body {
+.rp-list .uniqd-qcat.open .uniqd-qcat-head .uniqd-qcat-arrow { transform: rotate(180deg); }
+.rp-list .uniqd-qcat-body {
   display: none;
   padding: 2px 6px 6px;
 }
-.rp-list .sund-qcat.open .sund-qcat-body { display: block; }
+.rp-list .uniqd-qcat.open .uniqd-qcat-body { display: block; }

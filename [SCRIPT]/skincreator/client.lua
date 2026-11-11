@@ -216,7 +216,7 @@ function updateSkin(data, dontneed)
 		TriggerEvent('skinchanger:loadSkin', skinn)
 		TriggerEvent('esx_voice:loaded')
 		TriggerEvent('showStatus')
-		TriggerServerEvent('sunset_clothe:giveStarter')
+		TriggerServerEvent('Unique_Clothe:giveStarter')
 		TriggerEvent('skinchanger:disableAC', false)
 	elseif gender == 0 then
 

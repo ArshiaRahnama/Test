@@ -53,7 +53,7 @@ local function set(key, value)
     return true
 end
 
--- Sunset: the /ox_lib settings menu is disabled by default (set `setr ox_lib:settingsCommand 1` to enable)
+-- Unique: the /ox_lib settings menu is disabled by default (set `setr ox_lib:settingsCommand 1` to enable)
 if GetConvarInt('ox_lib:settingsCommand', 0) == 1 then
 RegisterCommand('ox_lib', function()
     local inputSettings = {

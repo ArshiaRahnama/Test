@@ -45,7 +45,7 @@ function openJobInventory()
             ESX.TriggerServerEvent('inventory-job:updateSlot', jobName, data.data)
         elseif data.type == 'moveToOther' then
             if ESX.isDead() then return end
-            local clotheData = exports['sunset_clothe']:getClotheData(data.data.name)
+            local clotheData = exports['Unique_clothe']:getClotheData(data.data.name)
             if not clotheData then
                 ESX.TriggerServerEvent('inventory-job:put', jobName, data.data)
             else

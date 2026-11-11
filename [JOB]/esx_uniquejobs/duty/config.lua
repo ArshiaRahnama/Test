@@ -94,3 +94,88 @@ Config_duty.Webhooks = {
   cratecarry = "https://discord.com/api/webhooks/CRATECARRY_WEBHOOK_ID/CRATECARRY_WEBHOOK_TOKEN",
   turfco = "https://discord.com/api/webhooks/TURFCO_WEBHOOK_ID/TURFCO_WEBHOOK_TOKEN",
 }
+
+
+-- ---------------------------------------------------------------------------
+-- Extra duty points: several points per job, each point lists every job that may
+-- use it (the same layout the sunset duty list uses). Config_duty.Zones above
+-- stays the one-point-per-job base list (the job manager edits it live) and
+-- these are ADDED on top. A point within 1m of a Zones point is merged into it,
+-- so you never get two markers on top of each other.
+-- Job names are the ones that exist on this server ('judge' = sunset's 'justice';
+-- 'detective' does not exist here so it is left out).
+-- ---------------------------------------------------------------------------
+Config_duty.InteractRadius = 2.0   -- how close you must stand to press E
+Config_duty.DrawDistance   = 10.0  -- markers are drawn within this distance
+Config_duty.Cooldown       = 15000 -- ms between two manual toggles (anti spam)
+Config_duty.ServerMaxDist  = 15.0  -- server rejects going ON duty farther than this from every allowed point
+
+local LE   = { police = true, sheriff = true, mt = true }
+local BLUE   = { r = 0,   g = 0,   b = 255 }
+local YELLOW = { r = 204, g = 204, b = 0 }
+local RED    = { r = 255, g = 0,   b = 0 }
+
+Config_duty.Locations = {
+  -- Police / Sheriff / MT
+  { label = 'PD 2',    Pos = { x = 628.93,  y = -5.87,    z = 82.78 }, Type = 20, Color = BLUE, job = LE },
+  { label = 'PD 3',    Pos = { x = -56.45,  y = -2505.81, z = 7.39  }, Type = 20, Color = BLUE, job = LE },
+  { label = 'Army',    Pos = { x = -2354.38, y = 3259.08, z = 32.81 }, Type = 20, Color = BLUE, job = LE },
+  { label = 'Sandy',   Pos = { x = 1830.5,  y = 3683.59,  z = 34.33 }, Type = 20, Color = BLUE, job = LE },
+  { label = 'Paleto',  Pos = { x = -437.34, y = 6002.07,  z = 31.72 }, Type = 20, Color = BLUE, job = LE },
+
+  -- Mechanic
+  { label = 'Mechanic New City', Pos = { x = 620.93, y = 628.05, z = 128.97 }, Type = 20, Color = YELLOW,
+    job = { mechanic = true } },
+
+  -- Ambulance
+  { label = 'MD Central', Pos = { x = 1147.64,  y = -1546.3, z = 35.38 }, Type = 21, Color = RED, job = { ambulance = true } },
+  { label = 'MD 2',       Pos = { x = -1855.15, y = -335.0,  z = 49.25 }, Type = 21, Color = RED, job = { ambulance = true } },
+
+  -- Taxi
+  { label = 'Taxi Center', Pos = { x = 357.64, y = -1590.6, z = 29.29 }, Type = 20, Color = YELLOW, job = { taxi = true } },
+
+  -- FBI building: shared point for the federal / emergency jobs
+  { label = 'FBI Shared', Pos = { x = 123.71, y = -769.7, z = 242.15 }, Type = 20, Color = YELLOW,
+    job = { fbi = true, police = true, sheriff = true, mt = true, judge = true, taxi = true, ambulance = true, mechanic = true } },
+
+  -- Justice (judge)
+  { label = 'Justice',   Pos = { x = -548.54, y = -182.18, z = 38.22 }, Type = 20, Color = YELLOW, job = { judge = true } },
+  { label = 'Justice 2', Pos = { x = 216.94,  y = -413.66, z = 47.98 }, Type = 20, Color = YELLOW, job = { judge = true } },
+}
+
+-- Shared helpers (this file loads on both client and server).
+-- Every duty point as { x, y, z, jobs = {job=true}, Type, Color }, with points <1m apart merged.
+function Config_duty.BuildPoints()
+  local points = {}
+  local function add(pos, jobs, mType, color, size)
+    for i = 1, #points do
+      local p = points[i]
+      local dx, dy, dz = p.x - pos.x, p.y - pos.y, p.z - pos.z
+      if (dx * dx + dy * dy + dz * dz) < 1.0 then
+        for j in pairs(jobs) do p.jobs[j] = true end
+        return
+      end
+    end
+    local set = {}
+    for j in pairs(jobs) do set[j] = true end
+    points[#points + 1] = { x = pos.x, y = pos.y, z = pos.z, jobs = set,
+      Type = mType or 20, Color = color or Config_duty.Color, Size = size or Config_duty.Size }
+  end
+  for k, v in pairs(Config_duty.Zones) do
+    if v.Pos then add(v.Pos, { [k] = true }) end
+  end
+  for _, v in ipairs(Config_duty.Locations) do
+    add(v.Pos, v.job, v.Type, v.Color, v.Size)
+  end
+  return points
+end
+
+-- Is `job` (base name, without the "off" prefix) a job that can go on/off duty at all?
+function Config_duty.IsDutyJob(job)
+  if not job then return false end
+  if Config_duty.Zones[job] then return true end
+  for _, v in ipairs(Config_duty.Locations) do
+    if v.job[job] then return true end
+  end
+  return false
+end

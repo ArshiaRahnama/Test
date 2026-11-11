@@ -294,7 +294,7 @@ OpenMenuG = function(type, extra)
     end
 end
 
--- Turns a raw owned_vehicles row (gang / org fleet) into what the Sunset UI expects.
+-- Turns a raw owned_vehicles row (gang / org fleet) into what the Unique expects.
 function PrepareRow(vh)
     local props = type(vh.vehicle) == 'string' and json.decode(vh.vehicle) or vh.vehicle or {}
     vh.vehicle = props

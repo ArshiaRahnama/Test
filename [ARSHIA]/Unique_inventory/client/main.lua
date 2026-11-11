@@ -276,7 +276,7 @@ AddEventHandler('KeyDown:f2',function()
     SetTimeout(1000, function()
         openCD = false
     end)
-    if isCuffed() or LocalPlayer.state.nui or exports['sunset_utils']:getHandupState() then return end
+    if isCuffed() or LocalPlayer.state.nui or exports['Unique_utils']:getHandupState() then return end
     if pendingTrade and not isOpen then
         local p = pendingTrade
         pendingTrade = nil
@@ -321,8 +321,8 @@ function openui(state, disablePreviewPed)
         exports['ox_target']:disableTargeting(true)
         exports['ox_target']:disableTargeting(false)
         if IsPedInAnyVehicle(PlayerPedId()) and not otherInventoryData.type and not tradeMode then
-            if not ((not exports['sunset_utils']:checkncz() or exports['sunset_utils']:canAccessToVehicle(GetVehiclePedIsIn(PlayerPedId()))) and openTrunk(GetVehiclePedIsIn(PlayerPedId()), true)) then
-                SendNUIMessage({action = 'openInventory', isMale = IsPedMale(PlayerPedId()), data = exports['sunset_clothe']:getUsedType(), disablePreviewPed = disablePreviewPed or tradeMode})
+            if not ((not exports['Unique_utils']:checkncz() or exports['Unique_utils']:canAccessToVehicle(GetVehiclePedIsIn(PlayerPedId()))) and openTrunk(GetVehiclePedIsIn(PlayerPedId()), true)) then
+                SendNUIMessage({action = 'openInventory', isMale = IsPedMale(PlayerPedId()), data = exports['Unique_clothe']:getUsedType(), disablePreviewPed = disablePreviewPed or tradeMode})
                 loadPlayerInventory()
             end
         else
@@ -336,7 +336,7 @@ function openui(state, disablePreviewPed)
             if bagId and not disablePreviewPed and autoOpenBag and not tradeMode then
                 ESX.TriggerServerEvent('esx:useItem', bagId)
             else
-                SendNUIMessage({action = 'openInventory', isMale = IsPedMale(PlayerPedId()), data = exports['sunset_clothe']:getUsedType(), disablePreviewPed = disablePreviewPed or tradeMode})
+                SendNUIMessage({action = 'openInventory', isMale = IsPedMale(PlayerPedId()), data = exports['Unique_clothe']:getUsedType(), disablePreviewPed = disablePreviewPed or tradeMode})
                 loadPlayerInventory()
             end
         end
@@ -359,7 +359,7 @@ function closeInventory()
     deletePedScreen()
     if otherInventoryData.type == 'custom' then
         otherInventoryData.cb({type = 'close'})
-        TriggerServerEvent('sunset_inventory:unsubscribe')
+        TriggerServerEvent('Unique_inventory:unsubscribe')
     end
     if tradeMode then
         tradeMode = false
@@ -405,13 +405,13 @@ exports('setPendingTrade', function(owner, name)
 end)
 
 RegisterNUICallback('trade:ui', function(data, cb)
-    exports['sunset_utils']:tradeUICallback(data)
+    exports['Unique_utils']:tradeUICallback(data)
     cb({ ok = true })
 end)
 
 RegisterNUICallback('trade:startWith', function(data, cb)
     if otherInventoryData.type == 'player' and otherInventoryData.target then
-        exports['sunset_utils']:startTrade(otherInventoryData.target)
+        exports['Unique_utils']:startTrade(otherInventoryData.target)
     end
     cb({ ok = true })
 end)
@@ -420,7 +420,7 @@ function loadPlayerInventory(doesReturn)
     local playerItems = {}
     local items = ESX.GetPlayerData().inventory
     local itemsName = {}
-    local usedClothe = exports['sunset_clothe']:getUsed()
+    local usedClothe = exports['Unique_clothe']:getUsed()
     local usedClotheWeight = 0
     resolveBagTypes(items)
     for k, v in pairs(items) do
@@ -570,7 +570,7 @@ function resolveBagTypes(targetItems)
 end
 
 function getImage(name, temp)
-    local clotheData = exports['sunset_clothe']:getClotheData(name)
+    local clotheData = exports['Unique_clothe']:getClotheData(name)
     if clotheData then
         return 'http://cdn.sunrp.ir/clothes/'.. clotheData.type ..'/'.. clotheData.name .. '.png'
     elseif string.find(name,'pack_') then
@@ -612,7 +612,7 @@ RegisterNUICallback('inventory:useItem', function(name)
 end)
 
 RegisterNUICallback('inventory:throwItem', function(data)
-    if ESX.militaryJobs2[ESX.GetPlayerData().job.name] or exports['sun-robbery']:doesInRob() then
+    if ESX.militaryJobs2[ESX.GetPlayerData().job.name] or exports['Unique_robbery']:doesInRob() then
         if checkSomething(data.name, 1000) then return end
         if IsPedSittingInAnyVehicle(PlayerPedId()) then
             return
@@ -635,7 +635,7 @@ RegisterNUICallback('inventory:throwItem', function(data)
                 Wait(1000)
             end
             local serial = itemType == 'item_weapon' and data.metadata.serial or nil
-            ESX.TriggerServerEvent('core:dropItem', itemType, data.name, data.count, serial, GetEntityCoords(PlayerPedId()), GetEntityForwardVector(PlayerPedId()), exports['sun-jobs']:notBlackListCoords(), ESX.Game.GetPlayersToSend(50), ESX.Game.GetPlayersToSend(150))
+            ESX.TriggerServerEvent('core:dropItem', itemType, data.name, data.count, serial, GetEntityCoords(PlayerPedId()), GetEntityForwardVector(PlayerPedId()), exports['Unique_jobs']:notBlackListCoords(), ESX.Game.GetPlayersToSend(50), ESX.Game.GetPlayersToSend(150))
         end
     end
     -- loadPlayerInventory()
@@ -662,7 +662,7 @@ RegisterNUICallback('inventory:deleteItem', function(data, cb)
         if type(data.count) ~= 'number' or math.floor(data.count) ~= data.count then return end
         local serial = itemType == 'item_weapon' and data.serial or nil
         if itemType == 'item_weapon' and not serial then return end
-        ESX.TriggerServerEvent('core:dropItem', itemType, data.name, data.count, serial, GetEntityCoords(PlayerPedId()), GetEntityForwardVector(PlayerPedId()), exports['sun-jobs']:notBlackListCoords(), ESX.Game.GetPlayersToSend(50), ESX.Game.GetPlayersToSend(150))
+        ESX.TriggerServerEvent('core:dropItem', itemType, data.name, data.count, serial, GetEntityCoords(PlayerPedId()), GetEntityForwardVector(PlayerPedId()), exports['Unique_jobs']:notBlackListCoords(), ESX.Game.GetPlayersToSend(50), ESX.Game.GetPlayersToSend(150))
         return
     end
 
@@ -761,7 +761,7 @@ function moveInsideHandler(data)
                     end
                     if not have or not weaponSlot2[data.metadata.serial] then
                         if data.droppedTo <= reservedSlotForWeapon then
-                            if (ESX.GetPlayerData().World ~= 0 and not exports['sun-robbery']:doesInRob()) or playWeaponAnim(data.name) then
+                            if (ESX.GetPlayerData().World ~= 0 and not exports['Unique_robbery']:doesInRob()) or playWeaponAnim(data.name) then
                                 if weaponSlot[data.droppedTo] then
                                     removeWeaponSlot(weaponSlot[data.droppedTo].serial)
                                     Wait(1000)
@@ -782,7 +782,7 @@ function moveInsideHandler(data)
                 isOpen = true
                 LocalPlayer.state.nui = true
                 SetNuiFocus(true, true)
-                SendNUIMessage({action = 'openInventory', isMale = IsPedMale(PlayerPedId()), data = exports['sunset_clothe']:getUsedType(), disablePreviewPed = false})
+                SendNUIMessage({action = 'openInventory', isMale = IsPedMale(PlayerPedId()), data = exports['Unique_clothe']:getUsedType(), disablePreviewPed = false})
                 loadPlayerInventory()
             end
         end
@@ -806,7 +806,7 @@ exports('reopenInventoryUI', function()
         isOpen = true
         LocalPlayer.state.nui = true
         SetNuiFocus(true, true)
-        SendNUIMessage({action = 'openInventory', isMale = IsPedMale(PlayerPedId()), data = exports['sunset_clothe']:getUsedType(), disablePreviewPed = false})
+        SendNUIMessage({action = 'openInventory', isMale = IsPedMale(PlayerPedId()), data = exports['Unique_clothe']:getUsedType(), disablePreviewPed = false})
         loadPlayerInventory()
     end
 end)
@@ -893,7 +893,7 @@ end
 RegisterNetEvent('esx:updateInventory', updateHandler)
 RegisterNetEvent('esx:updateLoadout', updateHandler)
 
-RegisterNetEvent('sunset_inventory:changed', function()
+RegisterNetEvent('Unique_inventory:changed', function()
     if isOpen and otherInventoryData.type == 'custom' then
         pushSecondView()
     end
@@ -916,7 +916,7 @@ function openOtherPlayerInventory(src, admin)
         local job = ESX.GetPlayerData().job.name
         if distance < 5 or admin then
             local canSearch = false
-            if (ESX.GetPlayerData().World == 0 or exports['sun-robbery']:doesInRob() or exports['gangs']:isInGangWorld()) and not IsPedInAnyVehicle(targetPed) then
+            if (ESX.GetPlayerData().World == 0 or exports['Unique_robbery']:doesInRob() or exports['gangs']:isInGangWorld()) and not IsPedInAnyVehicle(targetPed) then
                 if canSearchJob[job] then
                     canSearch = true
                 elseif ESX.GetPlayerData().gang.name ~= 'nogang' then
@@ -930,7 +930,7 @@ function openOtherPlayerInventory(src, admin)
                 end
             end
             if canSearch then
-                exports['sunset_utils']:me('Eghdam be gashtan fard mikone', false)
+                exports['Unique_utils']:me('Eghdam be gashtan fard mikone', false)
             end
             if admin then
                 canSearch = admin
@@ -959,7 +959,7 @@ function openOtherPlayerInventory(src, admin)
                     end
                     ESX.fetchListedItems(data.inventory)
                     for k, v in pairs(data.inventory) do
-                        if not exports['sunset_clothe']:getClotheData(v.name)
+                        if not exports['Unique_clothe']:getClotheData(v.name)
                         and not string.find(v.name,'pack_') and not data.protectedItems[v.name]
                         and not ESX.blackListSearch[v.name:lower()]
                         and (not ESX.doesBlockedItem(v.name) or ESX.doesBlockedItemButCanGive(v.name))
@@ -1178,7 +1178,7 @@ function moveToOtherHandler(data)
         data.count = ESX.Math.Round(data.count)
         if checkSomething(data.name, otherInventoryData.data and otherInventoryData.data.timeout or 3000, otherInventoryData.type, otherInventoryData.data.type) then return end
         if canPlayAnim() then
-            exports['sun-animmenu']:PlayEmote('damn2', true)
+            exports['Unique_animmenu']:PlayEmote('damn2', true)
         end
         data.itemType = getItemType(data.name)
         if data.itemType == 'item_standard' and otherInventoryData.type == 'custom' then
@@ -1201,7 +1201,7 @@ RegisterNUICallback('inventory:swapMoney', function(amount)
     if type(amount) == 'number' and math.floor(amount) == amount then
         if checkSomething(nil, 3000) then return end
         if canPlayAnim() then
-            exports['sun-animmenu']:PlayEmote('damn2', true)
+            exports['Unique_animmenu']:PlayEmote('damn2', true)
         end
         if otherInventoryData.type == 'player' and not otherInventoryData.admin then
             local src = otherInventoryData.target
@@ -1278,7 +1278,7 @@ function moveToMainHandler(data)
         data.count = ESX.Math.Round(data.count)
         if checkSomething(data.name, otherInventoryData.data and otherInventoryData.data.timeout or 3000, otherInventoryData.type, otherInventoryData.data.type) then return end
         if canPlayAnim() then
-            exports['sun-animmenu']:PlayEmote('damn2', true)
+            exports['Unique_animmenu']:PlayEmote('damn2', true)
         end
         data.itemType = getItemType(data.name)
         if data.itemType == 'item_standard' then
@@ -1304,7 +1304,7 @@ RegisterNUICallback('inventory:instantToMain', moveToMainHandler)
 RegisterNUICallback('inventory:moveToMain', moveToMainHandler)
 
 function fillItems(targetItems, _type)
-    local ts = exports['sunset_utils']:GetServerOSTime()
+    local ts = exports['Unique_utils']:GetServerOSTime()
     local trunk = _type == 'trunk'
     ESX.fetchListedItems(targetItems)
     resolveBagTypes(targetItems)
@@ -1797,9 +1797,9 @@ RegisterNUICallback('check', function(data)
 end)
 
 RegisterNetEvent('dropWeapon', function(name, count, serial)
-    ESX.TriggerServerEvent('core:dropItem', 'item_weapon', name, count, serial, GetEntityCoords(PlayerPedId()), GetEntityForwardVector(PlayerPedId()), exports['sun-jobs']:notBlackListCoords(), ESX.Game.GetPlayersToSend(50), ESX.Game.GetPlayersToSend(150))
+    ESX.TriggerServerEvent('core:dropItem', 'item_weapon', name, count, serial, GetEntityCoords(PlayerPedId()), GetEntityForwardVector(PlayerPedId()), exports['Unique_jobs']:notBlackListCoords(), ESX.Game.GetPlayersToSend(50), ESX.Game.GetPlayersToSend(150))
 end)
 
 RegisterNetEvent('dropItem', function(name, count)
-    ESX.TriggerServerEvent('core:dropItem', 'item_standard', name, count, nil, GetEntityCoords(PlayerPedId()), GetEntityForwardVector(PlayerPedId()), exports['sun-jobs']:notBlackListCoords(), ESX.Game.GetPlayersToSend(50), ESX.Game.GetPlayersToSend(150))
+    ESX.TriggerServerEvent('core:dropItem', 'item_standard', name, count, nil, GetEntityCoords(PlayerPedId()), GetEntityForwardVector(PlayerPedId()), exports['Unique_jobs']:notBlackListCoords(), ESX.Game.GetPlayersToSend(50), ESX.Game.GetPlayersToSend(150))
 end)

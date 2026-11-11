@@ -1,4 +1,4 @@
--- Unique radio (merged into pma-voice) - handheld radio modelled on the Sunset rp_radio.
+-- Unique radio (merged into pma-voice) - handheld radio.
 -- Everything here is local on purpose: this file shares a Lua VM with pma-voice.
 
 local ESX = nil
@@ -270,6 +270,19 @@ AddTextEntry('UNIQUE_RADIO_HELP_OFF',
 AddTextEntry('UNIQUE_RADIO_HELP_ON',
     '~INPUT_CELLPHONE_CANCEL~ to hide.~n~~INPUT_CONTEXT~ to turn radio ~r~off~s~.~n~~INPUT_FRONTEND_ACCEPT~ to choose frequency~n~~INPUT_SELECT_WEAPON~ to ~a~ mic clicks~n~Frequency: ~1~ MHz')
 
+local helpKey = nil
+local function showHelp()
+    local key = ('%s|%s|%d'):format(tostring(Radio.On), tostring(Radio.Clicks), Radio.Frequency)
+    if key == helpKey then return end
+    helpKey = key
+    nui({ action = 'help', visible = true, on = Radio.On, clicks = Radio.Clicks, freq = Radio.Frequency })
+end
+
+local function hideHelp()
+    helpKey = nil
+    nui({ action = 'help', visible = false })
+end
+
 local function openLoop()
     while Radio.Open do
         Wait(0)
@@ -292,10 +305,7 @@ local function openLoop()
             end
         end
 
-        BeginTextCommandDisplayHelp(Radio.On and 'UNIQUE_RADIO_HELP_ON' or 'UNIQUE_RADIO_HELP_OFF')
-        AddTextComponentSubstringPlayerName(Radio.Clicks and '~r~disable~s~' or '~g~enable~s~')
-        AddTextComponentInteger(Radio.Frequency)
-        EndTextCommandDisplayHelp(0, false, false, -1)
+        showHelp()
 
         DisableControlAction(0, 37, true)   -- weapon wheel (TAB)
         if not Radio.InputOpen then
@@ -317,6 +327,7 @@ local function openLoop()
             end
         end
     end
+    hideHelp()
 end
 
 local function openRadio()

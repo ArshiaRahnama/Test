@@ -1,9 +1,9 @@
 fx_version 'bodacious'
 game 'gta5'
 
-description 'ESX Menu List'
+description 'ESX Menu List (Sunset-style)'
 
-version '1.0.2'
+version '1.1.0'
 
 client_scripts {
     'client/main.lua'
@@ -16,7 +16,6 @@ files {
 
     'html/css/app.css',
 
-    'html/js/mustache.min.js',
     'html/js/app.js',
 
     'html/fonts/*.ttf',

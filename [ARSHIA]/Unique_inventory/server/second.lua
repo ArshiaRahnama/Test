@@ -1,22 +1,40 @@
 -- ============================================================================
--- sun-inventory-hud | server/second.lua   (STAGE 2: "second inventory" + trunk)
+-- Unique_inventory | server/second.lua   (STAGE 2: "second inventory" + trunk)
 --
--- Generic key-based stash store behind sunset_inventory:getSecond, plus the
--- vehicle trunk / glove box on top of it. Stashes live in table sun_stash.
+-- Generic key-based stash store behind Unique_inventory:getSecond, plus the
+-- vehicle trunk / glove box on top of it. Stashes live in table unique_stash.
 -- Items and weapons are MOVED between the player (essentialmode) and a stash,
 -- never copied, and every move is validated here, not on the client.
--- Later modules (bag / public / job) plug in with SunStash.register(prefix, ...).
+-- Later modules (bag / public / job) plug in with UniqueStash.register(prefix, ...).
 -- ============================================================================
 
-local SUN = SUN
+local UNIQUE = UNIQUE
 
 local DEFAULT_TRUNK_KG, MAX_TRUNK_KG = 60.0, 1000.0
 
 -- --------------------------------------------------------------------------
 -- persistence
 -- --------------------------------------------------------------------------
+
+-- tables used to be called sun_*; keep the data when they are renamed
+local function migrateTable(old, new)
+    local ok, err = pcall(function()
+        local function exists(n)
+            return (MySQL.Sync.fetchScalar(
+                'SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = @t',
+                { ['@t'] = n }) or 0) > 0
+        end
+        if exists(old) and not exists(new) then
+            MySQL.Sync.execute('RENAME TABLE `' .. old .. '` TO `' .. new .. '`')
+            print(('^2[Unique_inventory]^0 table %s renamed to %s (data kept)'):format(old, new))
+        end
+    end)
+    if not ok then print(('^1[Unique_inventory]^0 table migration %s -> %s failed: %s'):format(old, new, tostring(err))) end
+end
+
 MySQL.ready(function()
-    MySQL.Async.execute([[CREATE TABLE IF NOT EXISTS `sun_stash` (
+    migrateTable('sun_stash', 'unique_stash')
+    MySQL.Async.execute([[CREATE TABLE IF NOT EXISTS `unique_stash` (
         `skey` varchar(128) NOT NULL,
         `data` longtext NOT NULL,
         PRIMARY KEY (`skey`)
@@ -28,10 +46,10 @@ local stashes, saving = {}, {}
 local function loadStash(key)
     if stashes[key] then return stashes[key] end
     local okDb, raw = pcall(function()
-        return MySQL.Sync.fetchScalar('SELECT data FROM sun_stash WHERE skey = @k', { ['@k'] = key })
+        return MySQL.Sync.fetchScalar('SELECT data FROM unique_stash WHERE skey = @k', { ['@k'] = key })
     end)
     if not okDb then
-        print(('^1[sun-inventory-hud]^0 cannot read sun_stash (%s) - treating %s as empty'):format(tostring(raw), key))
+        print(('^1[Unique_inventory]^0 cannot read unique_stash (%s) - treating %s as empty'):format(tostring(raw), key))
         raw = nil
     end
     local okJson, data = pcall(function() return raw and json.decode(raw) or {} end)
@@ -49,7 +67,7 @@ local function saveNow(key)
     local st = stashes[key]
     if not st then return end
     MySQL.Async.execute(
-        'INSERT INTO sun_stash (skey, data) VALUES (@k, @d) ON DUPLICATE KEY UPDATE data = @d',
+        'INSERT INTO unique_stash (skey, data) VALUES (@k, @d) ON DUPLICATE KEY UPDATE data = @d',
         { ['@k'] = key, ['@d'] = json.encode({ items = st.items, weapons = st.weapons, slots = st.slots }) }
     )
 end
@@ -109,8 +127,8 @@ end
 -- --------------------------------------------------------------------------
 -- providers: who may open which key.  provider = { authorize = function(src, key) -> bool }
 -- --------------------------------------------------------------------------
-SunStash = { providers = {} }
-function SunStash.register(prefix, provider) SunStash.providers[prefix] = provider end
+UniqueStash = { providers = {} }
+function UniqueStash.register(prefix, provider) UniqueStash.providers[prefix] = provider end
 
 local subscribers = {}   -- [key] = { [src] = true }
 
@@ -122,14 +140,14 @@ end
 local function broadcast(key, except)
     for id in pairs(subscribers[key] or {}) do
         if GetPlayerPing(id) > 0 then
-            TriggerClientEvent('sunset_inventory:changed', id)
+            TriggerClientEvent('Unique_inventory:changed', id)
         else
             subscribers[key][id] = nil
         end
     end
 end
 
-RegisterNetEvent('sunset_inventory:unsubscribe', function()
+RegisterNetEvent('Unique_inventory:unsubscribe', function()
     local src = source
     for _, set in pairs(subscribers) do set[src] = nil end
 end)
@@ -140,7 +158,7 @@ end)
 
 local function authorize(src, key)
     if type(key) ~= 'string' or #key > 128 then return false end
-    for prefix, provider in pairs(SunStash.providers) do
+    for prefix, provider in pairs(UniqueStash.providers) do
         if key:sub(1, #prefix) == prefix then
             return provider.authorize(src, key) and true or false
         end
@@ -149,7 +167,7 @@ local function authorize(src, key)
 end
 
 -- --------------------------------------------------------------------------
--- sunset_inventory:getSecond(key, mode, weaponName)   (what the UI shows)
+-- Unique_inventory:getSecond(key, mode, weaponName)   (what the UI shows)
 -- --------------------------------------------------------------------------
 local function weaponEntry(w)
     return {
@@ -159,7 +177,7 @@ local function weaponEntry(w)
     }
 end
 
-RegisterServerCallbackSafe('sunset_inventory:getSecond', function(source, cb, key, mode, weaponName)
+RegisterServerCallbackSafe('Unique_inventory:getSecond', function(source, cb, key, mode, weaponName)
     if not authorize(source, key) then
         return cb(mode == 'groups' and {} or (mode == 'instances' and {} or { items = {}, weight = 0, tabCounts = { items = 0, guns = 0 } }))
     end
@@ -215,38 +233,38 @@ local function clampMax(w)
 end
 
 -- returns true when it moved something
-function SunStash.put(src, key, data, maxWeight)
-    local xp = SUN.player(src)
+function UniqueStash.put(src, key, data, maxWeight)
+    local xp = UNIQUE.player(src)
     if not xp or type(data) ~= 'table' or type(data.name) ~= 'string' then return false end
     local st = loadStash(key)
     local maxW = clampMax(maxWeight)
     local meta = type(data.metadata) == 'table' and data.metadata or {}
 
-    if SUN.isWeaponName(data.name) then
-        local w = SUN.findWeapon(xp, meta.serial, data.name)
+    if UNIQUE.isWeaponName(data.name) then
+        local w = UNIQUE.findWeapon(xp, meta.serial, data.name)
         if not w then return false end
         if stashWeight(st) + ESX.getWeaponWeight(w.name) > maxW + 1e-6 then
-            SUN.notify(src, 'فضای مخزن پر شده است')
+            UNIQUE.notify(src, 'فضای مخزن پر شده است')
             return false
         end
         local ammo, comps = tonumber(w.ammo) or 0, w.components or {}
         xp.removeWeapon(w.name, ammo, w.serial)
         TriggerClientEvent('core:removeWeapon', src, w.name, w.serial)
-        local slots = SUN.loadSlots(xp)
-        SUN.forgetSerial(slots, w.serial)
-        SUN.markDirty(xp)
+        local slots = UNIQUE.loadSlots(xp)
+        UNIQUE.forgetSerial(slots, w.serial)
+        UNIQUE.markDirty(xp)
         st.weapons[#st.weapons + 1] = { name = w.name, ammo = ammo, serial = w.serial, components = comps, tintIndex = w.tintIndex }
     else
         local item = xp.getInventoryItem(data.name)
         if not item or item.canRemove == false then return false end
         if hasInfoRows(xp, data.name) then
-            SUN.notify(src, 'این آیتم (مثل کلید ماشین) قابل ذخیره در این مخزن نیست')
+            UNIQUE.notify(src, 'این آیتم (مثل کلید ماشین) قابل ذخیره در این مخزن نیست')
             return false
         end
-        local count = SUN.validCount(data.count, item.count)
+        local count = UNIQUE.validCount(data.count, item.count)
         if not count then return false end
         if stashWeight(st) + ESX.getItemWeight(data.name) * count > maxW + 1e-6 then
-            SUN.notify(src, 'فضای مخزن پر شده است')
+            UNIQUE.notify(src, 'فضای مخزن پر شده است')
             return false
         end
         xp.removeInventoryItem(data.name, count)
@@ -259,17 +277,17 @@ function SunStash.put(src, key, data, maxWeight)
     return true
 end
 
-function SunStash.take(src, key, data)
-    local xp = SUN.player(src)
+function UniqueStash.take(src, key, data)
+    local xp = UNIQUE.player(src)
     if not xp or type(data) ~= 'table' or type(data.name) ~= 'string' then return false end
     local st = loadStash(key)
     local meta = type(data.metadata) == 'table' and data.metadata or {}
 
-    if SUN.isWeaponName(data.name) then
+    if UNIQUE.isWeaponName(data.name) then
         local w = findStashWeapon(st, meta.serial)
         if not w or w.name ~= data.name then return false end
         if not xp.canCarryItem(w.name, 1) then
-            SUN.notify(src, 'ظرفیت حمل شما کافی نیست')
+            UNIQUE.notify(src, 'ظرفیت حمل شما کافی نیست')
             return false
         end
         local hadBefore = xp.countWeapon and xp.countWeapon(w.name) or 0
@@ -281,16 +299,16 @@ function SunStash.take(src, key, data)
         end
     else
         local have = itemCount(st, data.name)
-        local count = SUN.validCount(data.count, have)
+        local count = UNIQUE.validCount(data.count, have)
         if not count then return false end
         if not xp.canCarryItem(data.name, count) then
-            SUN.notify(src, 'ظرفیت حمل شما کافی نیست')
+            UNIQUE.notify(src, 'ظرفیت حمل شما کافی نیست')
             return false
         end
         local limit = tonumber(ESX.Items and ESX.Items[data.name] and ESX.Items[data.name].limit)
         local cur = xp.getInventoryItem(data.name)
         if limit and limit > 0 and cur and (cur.count or 0) + count > limit then
-            SUN.notify(src, 'بیشتر از این نمی‌توانید حمل کنید')
+            UNIQUE.notify(src, 'بیشتر از این نمی‌توانید حمل کنید')
             return false
         end
         if not removeItem(st, data.name, count) then return false end
@@ -303,7 +321,7 @@ function SunStash.take(src, key, data)
     return true
 end
 
-function SunStash.setSlot(src, key, data)
+function UniqueStash.setSlot(src, key, data)
     if type(data) ~= 'table' or type(data.name) ~= 'string' then return end
     local idx = tonumber(data.droppedTo)
     if not idx or idx % 1 ~= 0 or idx < 1 or idx > 500 then return end
@@ -330,9 +348,9 @@ local function trunkKey(plate, gloveBox)
 end
 
 -- the player must be standing next to a vehicle that carries this plate
--- (turn off with `set sun_inv_trunk_check 0` if you use non-networked vehicles)
+-- (turn off with `set unique_inv_trunk_check 0` if you use non-networked vehicles)
 local function nearPlate(src, plate)
-    if GetConvarInt('sun_inv_trunk_check', 1) == 0 then return true end
+    if GetConvarInt('unique_inv_trunk_check', GetConvarInt('sun_inv_trunk_check', 1)) == 0 then return true end
     local ped = GetPlayerPed(src)
     if ped == 0 then return false end
     local me = GetEntityCoords(ped)
@@ -344,7 +362,7 @@ local function nearPlate(src, plate)
     return false
 end
 
-SunStash.register('trunk:', {
+UniqueStash.register('trunk:', {
     authorize = function(src, key)
         local plate = key:match('^trunk:glove%-box:(.+)$') or key:match('^trunk:(.+)$')
         return plate ~= nil and nearPlate(src, normPlate(plate))
@@ -364,32 +382,32 @@ end)
 
 RegisterNetEvent('inventory-trunk:put', function(plate, data, maxWeight)
     local src = source
-    if SUN.limited(src, 'trunkput', 300) then return end
+    if UNIQUE.limited(src, 'trunkput', 300) then return end
     local key = trunkKey(plate, type(data) == 'table' and data.gloveBox)
     if not key or not authorize(src, key) then return end
-    SunStash.put(src, key, data, maxWeight)
+    UniqueStash.put(src, key, data, maxWeight)
 end)
 
 RegisterNetEvent('inventory-trunk:get', function(plate, data)
     local src = source
-    if SUN.limited(src, 'trunkget', 300) then return end
+    if UNIQUE.limited(src, 'trunkget', 300) then return end
     local key = trunkKey(plate, type(data) == 'table' and data.gloveBox)
     if not key or not authorize(src, key) then return end
-    SunStash.take(src, key, data)
+    UniqueStash.take(src, key, data)
 end)
 
 RegisterNetEvent('inventory-trunk:updateSlot', function(plate, data)
     local src = source
-    if SUN.limited(src, 'trunkslot', 150) then return end
+    if UNIQUE.limited(src, 'trunkslot', 150) then return end
     local key = trunkKey(plate, type(data) == 'table' and data.gloveBox)
     if not key or not authorize(src, key) then return end
-    SunStash.setSlot(src, key, data)
+    UniqueStash.setSlot(src, key, data)
 end)
 
 -- the garage asks whether a dashboard is locked; this server has no per-vehicle lock metadata yet
 RegisterServerCallbackSafe('parking:getVehicleMetadataWithKey', function(source, cb) cb(false) end)
 
--- weight of a vehicle's trunk (used by exports['sun-inventory-hud']:getVehicleWeight)
+-- weight of a vehicle's trunk (used by exports['Unique_inventory']:getVehicleWeight)
 RegisterServerCallbackSafe('inventory-trunk:getWeight', function(source, cb, plate)
     local key = trunkKey(plate, false)
     if not key then return cb(0) end

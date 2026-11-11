@@ -94,7 +94,7 @@ local function push(name)
     return false
 end
 
---- فقط برای ریسورس‌های هم‌خانواده در همین ریسورس (server/sun_report_bridge.lua):
+--- فقط برای ریسورس‌های هم‌خانواده در همین ریسورس (server/unique_report_bridge.lua):
 --- تابع واقعیِ یک کال‌بک رو برمیگردونه تا منطق تکرار نشه.
 function GetLocalServerCallback(name) return LocalCallbacks[name] end
 

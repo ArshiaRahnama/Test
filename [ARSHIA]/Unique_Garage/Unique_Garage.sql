@@ -29,7 +29,7 @@ UPDATE `owned_vehicles` SET `stored` = 1 WHERE `stored` IS NULL OR `stored` = ''
 ALTER TABLE `owned_vehicles` MODIFY COLUMN `stored` TINYINT(4) NOT NULL DEFAULT 1;
 
 -- =====================================================================
---  Sunset-style garage additions (run once)
+--  Unique garage additions (run once)
 -- =====================================================================
 ALTER TABLE `owned_vehicles` ADD COLUMN IF NOT EXISTS `location`       INT          NULL DEFAULT NULL;   -- index of the garage the car is parked in (per type)
 ALTER TABLE `owned_vehicles` ADD COLUMN IF NOT EXISTS `damages`        LONGTEXT     NULL DEFAULT NULL;   -- json: tyres / windows / doors

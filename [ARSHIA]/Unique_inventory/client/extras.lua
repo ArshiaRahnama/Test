@@ -1,5 +1,5 @@
 -- ============================================================================
--- client/extras.lua - exports the other sunset resources call on the inventory
+-- client/extras.lua - exports the other resources call on the inventory
 -- ============================================================================
 
 -- weapon of the local player by serial (nil when not carried)
