@@ -31,7 +31,7 @@
 
 .dutyChip.highlight i {
   color: var(--orange2);
-  background: rgba(124, 58, 237, 0.14);
+  background: rgba(255, 140, 26, 0.14);
 }
 
 .dutyChipText {
@@ -110,8 +110,8 @@
   gap: 7px;
   padding: 6px 12px;
   border-radius: 8px;
-  border: 1px solid rgba(124, 58, 237, 0.3);
-  background: rgba(124, 58, 237, 0.1);
+  border: 1px solid rgba(255, 140, 26, 0.3);
+  background: rgba(255, 140, 26, 0.1);
   color: var(--orange2);
   font-size: 10.5px;
   font-weight: 700;
@@ -188,7 +188,7 @@
   cursor: pointer;
 }
 
-.calNav:hover:not(:disabled) { background: rgba(124, 58, 237, 0.2); color: var(--orange2); }
+.calNav:hover:not(:disabled) { background: rgba(255, 140, 26, 0.2); color: var(--orange2); }
 .calNav:disabled { opacity: 0.3; cursor: default; }
 
 .calWeekdays,
@@ -221,7 +221,7 @@
 .calDay.empty { cursor: default; }
 
 .calDay:not(.empty):not(.disabled):hover {
-  background: rgba(124, 58, 237, 0.18);
+  background: rgba(255, 140, 26, 0.18);
   color: var(--orange2);
 }
 
@@ -236,7 +236,7 @@
 }
 
 .calDay.in-range {
-  background: rgba(124, 58, 237, 0.16);
+  background: rgba(255, 140, 26, 0.16);
   color: var(--orange2);
   border-radius: 3px;
 }
@@ -277,8 +277,8 @@
   justify-content: space-between;
   padding: 14px 16px;
   border-radius: 10px;
-  background: rgba(124, 58, 237, 0.07);
-  border: 1px solid rgba(124, 58, 237, 0.25);
+  background: rgba(255, 140, 26, 0.07);
+  border: 1px solid rgba(255, 140, 26, 0.25);
 }
 
 .dutyPersonalResultDate {

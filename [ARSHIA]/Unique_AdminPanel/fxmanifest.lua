@@ -42,6 +42,8 @@ client_scripts {
 	'client/aduty_reportmenu_lib.lua',
 	'client/aduty_client.lua',
 	'client/aduty_spectate.lua',
+	'client/unique_spectate_hud.lua',
+	'client/unique_admin_extras.lua',
 	'client/aduty_carp.lua',
 	-- original Unique_AdminPanel
 	-- MenuV (embedded, see client/menuv/menuv.lua) - replaces client/warmenu.lua
@@ -113,6 +115,7 @@ server_scripts {
 	'server/report_function.lua',
 	'server/report_main.lua',
 	'server/unique_report_bridge.lua',
+	'server/unique_admin_extras.lua',
 	-- MUST load after report_server_config.lua (extends Config_Server) and
 	-- report_function.lua (extends Rep) - see that file's own header. Fixes:
 	-- pending reports with no admin follow-up now auto-close after 30 min

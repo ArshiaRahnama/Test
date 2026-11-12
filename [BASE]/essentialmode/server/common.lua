@@ -69,6 +69,22 @@ function RegisterUsableItem(name, callback)
     return true
 end
 
+-- RELAY version of RegisterUsableItem. A function passed through `exports` arrives here as a
+-- "table" (see the RegisterServerCallback notes below), which the type() check in
+-- RegisterUsableItem rejects - so a usable handler from another resource was never registered
+-- ("item has no usable handler registered"). This registers a REAL local function instead;
+-- using the item fires `essentialmode:relayUsableItem:<calling resource>` (name, source) and
+-- the calling resource runs its own handler. Only plain data crosses the resource boundary.
+function RegisterUsableItemRelay(name)
+    if type(name) ~= 'string' or name == '' then return false end
+    local owner = GetInvokingResource()
+    if not owner then return false end
+    ESX.RegisterUsableItem(name, function(source)
+        TriggerEvent('essentialmode:relayUsableItem:' .. owner, name, source)
+    end)
+    return true
+end
+
 -- Same reasoning again, for custom server callbacks. Any resource in this
 -- pack that does `ESX.RegisterServerCallback('myresource:something', fn)`
 -- from ITS OWN copy of ESX has the same silent-no-op problem - the client

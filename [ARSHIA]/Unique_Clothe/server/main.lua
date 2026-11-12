@@ -1,4 +1,4 @@
--- Unique_clothe / server
+-- Unique_Clothe / server
 -- Clothes are INVENTORY ITEMS (item name = Clothes.byName key, e.g. tshirt_m_12_3).
 --  * buying   -> money removed, item added to the inventory (server decides prices)
 --  * wearing  -> the client reports the worn set, the server validates ownership and
@@ -105,18 +105,27 @@ local function ensureItem(name, label, weight)
     return false
 end
 
--- "Use" on a clothing item in the inventory = put it on / take it off. essentialmode keeps
--- usable handlers in memory only, so this is re-done for owned clothes whenever a player loads.
+-- "Use" on a clothing item / outfit pack in the inventory. essentialmode keeps usable handlers
+-- in memory only, so this is re-done for owned items whenever a player loads. It goes through
+-- essentialmode's RegisterUsableItemRelay export (a plain callback cannot cross the resource
+-- boundary on this base) which answers with the relay event handled below.
 local registeredUsable = {}
 local function ensureUsable(name)
     if registeredUsable[name] then return end
-    local ok, res = pcall(function()
-        return exports['essentialmode']:RegisterUsableItem(name, function(source)
-            TriggerClientEvent('Unique_Clothe:toggle', source, name)
-        end)
-    end)
+    local ok, res = pcall(function() return exports['essentialmode']:RegisterUsableItemRelay(name) end)
     if ok and res then registeredUsable[name] = true end
 end
+
+AddEventHandler('essentialmode:relayUsableItem:' .. RES, function(name, source)
+    if not ESX or type(name) ~= 'string' then return end
+    local xPlayer = ESX.GetPlayerFromId(source)
+    if not xPlayer or ownedCount(xPlayer, name) < 1 then return end
+    if Clothes.byName[name] then
+        TriggerClientEvent('Unique_Clothe:toggle', source, name)
+    elseif name:find('^pack_%d+$') then
+        TriggerClientEvent('Unique_Clothe:usePack', source, name)
+    end
+end)
 
 local function ensureClotheItem(item)
     local ok = ensureItem(item.name, item.label, Config.ClotheWeight)
@@ -126,8 +135,9 @@ end
 
 local function registerOwnedClothes(xPlayer)
     for _, it in ipairs(xPlayer.inventory or {}) do
-        local item = (it.count or 0) > 0 and Clothes.byName[it.name] or nil
-        if item then ensureUsable(item.name) end
+        if (it.count or 0) > 0 and type(it.name) == 'string' and (Clothes.byName[it.name] or it.name:find('^pack_%d+$')) then
+            ensureUsable(it.name)
+        end
     end
 end
 
@@ -425,10 +435,20 @@ AddEventHandler('clothe:createPack', function(toPack, label)
     end
     if n < 2 or n > 20 then return end
 
-    -- the pieces must not be worn any more (the client already took them off)
+    -- The pieces go into the pack, so they cannot stay worn. The client takes them off first,
+    -- but its debounced setUsed can arrive AFTER this event - so do it here as well instead
+    -- of refusing (which would silently lose the pack).
     local used = loadUsed(xPlayer.identifier)
+    local stillWorn = false
     for name in pairs(items) do
-        if used[name] then return end
+        if used[name] then stillWorn = true break end
+    end
+    if stillWorn then
+        local rest = {}
+        for name in pairs(used) do
+            if not items[name] then rest[name] = true end
+        end
+        applyUsed(src, rest)
     end
 
     local ok, id = pcall(MySQL.insert.await, 'INSERT INTO unique_clothe_packs (identifier, label, items) VALUES (?, ?, ?)',
@@ -440,6 +460,7 @@ AddEventHandler('clothe:createPack', function(toPack, label)
         pcall(MySQL.update.await, 'DELETE FROM unique_clothe_packs WHERE id = ?', { id })
         return
     end
+    ensureUsable(packName)
     for name in pairs(items) do xPlayer.removeInventoryItem(name, 1) end
     xPlayer.addInventoryItem(packName, 1)
 end)

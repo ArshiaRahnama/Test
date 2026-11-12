@@ -1,4 +1,4 @@
--- Unique_clothe / client / wardrobe
+-- Unique_Clothe / client / wardrobe
 -- Exports used by Unique_inventory (the clothing tab): getClotheData, getUsed,
 -- getUsedType, getOwnedClotheByType, getOwnedPack, toggleClothe, unUseByType.
 -- Clothes are inventory items; what is worn is tracked here and validated/saved
@@ -100,6 +100,16 @@ exports('getClotheData', function(name)
     return { name = item.name, type = item.type, label = item.label, sex = item.sex, num = item.num, price = item.price, antiSearch = false }
 end)
 
+-- picture URL for an item name (clothing item or outfit pack), used by Unique_inventory
+exports('getImageUrl', function(name)
+    local base = Config.ImageServer
+    if type(name) ~= 'string' or not base or base == '' then return nil end
+    local item = Clothes.byName[name]
+    if item then return ('%s/clothes/%s/%s.png'):format(base, item.type, item.name) end
+    if name:find('^pack_') then return base .. '/clothes/menu/box.png' end
+    return nil
+end)
+
 exports('getUsed', function()
     return copyMap(usedMap)
 end)
@@ -159,6 +169,16 @@ exports('toggleClothe', toggleClothe)
 RegisterNetEvent('Unique_Clothe:toggle')
 AddEventHandler('Unique_Clothe:toggle', function(name)
     if type(name) == 'string' then toggleClothe(name) end
+end)
+
+-- "Use" on an outfit pack from the inventory grid: the server hands the pieces back, we wear them
+RegisterNetEvent('Unique_Clothe:usePack')
+AddEventHandler('Unique_Clothe:usePack', function(packName)
+    if type(packName) ~= 'string' or not ESX or not ESX.TriggerServerCallback then return end
+    ESX.TriggerServerCallback('clothe:usePack', function(items)
+        if type(items) ~= 'table' then return end
+        for name in pairs(items) do Wardrobe.wear(name, true) end
+    end, packName)
 end)
 
 exports('unUseByType', function(ctype)

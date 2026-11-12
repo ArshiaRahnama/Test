@@ -181,15 +181,31 @@ CreateMenu('abilities', 'My Abilities', function(m)
     end)
     Checkbox(m, '🦘', 'Super Jump', 'Jump much higher', superjump, function() RequestSuperjump() end)
     Checkbox(m, '🏃', 'Fast Run', 'Run faster', fastrun, function() RequestFastrun() end)
+    Checkbox(m, '🎙️', 'Talking Players', 'Live list of who is talking in voice (left side)', UniqueTalkActive, function() UniqueTalkToggle() end)
+    if Lvl(8) then
+        Checkbox(m, '📷', 'Freecam', 'Free camera (WASD, Shift fast, Ctrl slow, Q/E up-down)', UniqueFreecamActive, function() UniqueFreecamToggle() end)
+    end
     LSubMenu(5, m, '🎁', 'Spawn Weapon (me)', 'Give yourself a weapon from the list', 'weapons_self')
 end)
 
 -- ------------------------------------------------------------ SPECTATE -----
 
+local SpectateFilter = nil
+
 CreateMenu('spectate', 'Spectate Players', function(m)
+    Button(m, '🔎', SpectateFilter and ('Search: ' .. SpectateFilter) or 'Search Player',
+        'Filter the list by name or ID (empty = show everyone)', function()
+            local r = Ask('Search Player', { { type = 'input', label = 'Name or ID', default = SpectateFilter or '' } })
+            if r then
+                SpectateFilter = tostring(r[1] or ''):lower()
+                if SpectateFilter == '' then SpectateFilter = nil end
+                Go('spectate')
+            end
+        end)
     RefreshPlayers(function()
         for _, i in ipairs(SortedPlayerIds()) do
             local name = PlayersCache[i]
+            if SpectateFilter and not (tostring(name):lower():find(SpectateFilter, 1, true) or tostring(i) == SpectateFilter) then goto continue end
             Checkbox(m, '👁️', ('[%s] %s'):format(i, name), 'Toggle spectating this player', spec[i], function(now)
                 spec[i] = now
                 if now then
@@ -205,6 +221,7 @@ CreateMenu('spectate', 'Spectate Players', function(m)
                     resetNormalCamera()
                 end
             end)
+            ::continue::
         end
     end)
 end)
@@ -533,6 +550,9 @@ CreateMenu('vehicle_tools', 'Vehicle Tools', function(m)
     SubMenu(m, '🚙', 'Spawn & Give', 'Spawn vehicles, repair, give to a player', 'vehicle_spawn')
     SubMenu(m, '🛠️', 'Nearby Vehicle Actions', 'Lock, upgrade, delete nearby vehicles', 'vehicle_nearby')
     Button(m, '🪑', 'Get In Nearest Vehicle', '', function() GetIntoNearestVehicle() end)
+    LButton(1, m, '🔄', 'Flip Vehicle Upright', 'Your vehicle, or the nearest one', function() UniqueFlipVehicle() end)
+    LButton(4, m, '🚀', 'Toggle Turbo', 'Turbo on the vehicle you are in', function() UniqueToggleTurbo() end)
+    LButton(8, m, '🧩', 'Vehicle Extras', 'Show / hide extras of your vehicle', Leave(UniqueVehicleExtras))
     Button(m, '🎨', 'Set Current Vehicle Livery', '', function()
         local r = Ask('Livery', { { type = 'number', label = 'Livery number', default = 0, min = 0, required = true } })
         if r then SetCurrentVehicleLivery(tonumber(r[1]) or 0) end
@@ -630,6 +650,20 @@ local WeatherPresets = { 'EXTRASUNNY', 'CLEAR', 'CLOUDS', 'OVERCAST', 'RAIN', 'T
 CreateMenu('world_tools', 'World Tools', function(m)
     SubMenu(m, '🌦️', 'Weather, Time & Traffic', '', 'world_weather')
     SubMenu(m, '🧭', 'Teleport & Locations', '', 'world_teleport')
+    LButton(8, m, '🌐', 'Move Nearby Players To World', 'Everyone within range (max 50m, you included) goes to the world you choose', function()
+        local r = Ask('Move Players To World', {
+            { type = 'number', label = 'Range (meters)', default = 10, min = 1, max = 50, required = true },
+            { type = 'number', label = 'World (0 = main)', default = 0, min = 0, max = 9999, required = true },
+        })
+        if r then UniqueWorldRange(r[1], r[2]) end
+    end)
+    Button(m, '🏛️', 'IPL On / Off', 'Load or unload an interior/map IPL (only for you)', function()
+        local r = Ask('IPL', {
+            { type = 'input', label = 'IPL name', required = true },
+            { type = 'checkbox', label = 'Enabled', checked = true },
+        })
+        if r then UniqueIpl(r[1], r[2] and true or false) end
+    end)
 end)
 
 CreateMenu('world_weather', 'Weather, Time & Traffic', function(m)
@@ -768,6 +802,13 @@ CreateMenu('server_comms', 'Communication', function(m)
         local r = Ask('Broadcast', { { type = 'input', label = 'Announcement text', required = true, max = 120 } })
         if r and r[1] ~= '' then TriggerServerEvent('Unique_AdminPanel:AnnounceWithSound', r[1]) end
     end)
+    Button(m, '⏰', 'Set Reminder', 'Notifies you 2 min, 1 min and at the time (notification + chat)', function()
+        local r = Ask('Reminder', {
+            { type = 'number', label = 'Minutes', default = 10, min = 1, max = 600, required = true },
+            { type = 'input', label = 'Text', required = true, max = 100 },
+        })
+        if r then UniqueReminder(r[1], r[2]) end
+    end)
     Button(m, '💬', 'Admin Chat', 'Only visible to on-duty admins', function()
         local r = Ask('Admin Chat', { { type = 'input', label = 'Message', required = true, max = 150 } })
         if r and r[1] ~= '' then TriggerServerEvent('Unique_AdminPanel:AdminChat', r[1]) end
@@ -813,6 +854,10 @@ end)
 local devState = { coords = false, vehinfo = false }
 
 CreateMenu('dev_tools', 'Developer Tools', function(m)
+    Button(m, '🗑️', 'Delete Object by Model', 'Deletes the closest object of a model within 300m (e.g. prop_bench_01a)', function()
+        local r = Ask('Delete Object', { { type = 'input', label = 'Model name or hash', required = true } })
+        if r then UniqueDeleteObject(r[1]) end
+    end)
     Button(m, '📋', 'Copy vector2', 'Your position as vector2', function() DevTools.CopyCoords('vec2') end)
     Button(m, '📋', 'Copy vector3', 'Your position as vector3', function() DevTools.CopyCoords('vec3') end)
     Button(m, '📋', 'Copy vector4', 'Position + heading as vector4', function() DevTools.CopyCoords('vec4') end)

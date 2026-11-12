@@ -322,7 +322,7 @@ function openui(state, disablePreviewPed)
         exports['ox_target']:disableTargeting(false)
         if IsPedInAnyVehicle(PlayerPedId()) and not otherInventoryData.type and not tradeMode then
             if not ((not exports['Unique_utils']:checkncz() or exports['Unique_utils']:canAccessToVehicle(GetVehiclePedIsIn(PlayerPedId()))) and openTrunk(GetVehiclePedIsIn(PlayerPedId()), true)) then
-                SendNUIMessage({action = 'openInventory', isMale = IsPedMale(PlayerPedId()), data = exports['Unique_Clothe']:getUsedType(), disablePreviewPed = disablePreviewPed or tradeMode})
+                SendNUIMessage({action = 'openInventory', isMale = IsPedMale(PlayerPedId()), data = exports['Unique_clothe']:getUsedType(), disablePreviewPed = disablePreviewPed or tradeMode})
                 loadPlayerInventory()
             end
         else
@@ -336,7 +336,7 @@ function openui(state, disablePreviewPed)
             if bagId and not disablePreviewPed and autoOpenBag and not tradeMode then
                 ESX.TriggerServerEvent('esx:useItem', bagId)
             else
-                SendNUIMessage({action = 'openInventory', isMale = IsPedMale(PlayerPedId()), data = exports['Unique_Clothe']:getUsedType(), disablePreviewPed = disablePreviewPed or tradeMode})
+                SendNUIMessage({action = 'openInventory', isMale = IsPedMale(PlayerPedId()), data = exports['Unique_clothe']:getUsedType(), disablePreviewPed = disablePreviewPed or tradeMode})
                 loadPlayerInventory()
             end
         end
@@ -420,7 +420,7 @@ function loadPlayerInventory(doesReturn)
     local playerItems = {}
     local items = ESX.GetPlayerData().inventory
     local itemsName = {}
-    local usedClothe = exports['Unique_Clothe']:getUsed()
+    local usedClothe = exports['Unique_clothe']:getUsed()
     local usedClotheWeight = 0
     resolveBagTypes(items)
     for k, v in pairs(items) do
@@ -570,11 +570,11 @@ function resolveBagTypes(targetItems)
 end
 
 function getImage(name, temp)
-    local clotheData = exports['Unique_Clothe']:getClotheData(name)
+    local clotheData = exports['Unique_clothe']:getClotheData(name)
     if clotheData then
-        return 'http://cdn.sunrp.ir/clothes/'.. clotheData.type ..'/'.. clotheData.name .. '.png'
+        return exports['Unique_clothe']:getImageUrl(name)
     elseif string.find(name,'pack_') then
-        return 'http://cdn.sunrp.ir/clothes/menu/box.png'
+        return exports['Unique_clothe']:getImageUrl(name)
     else
         if name:find('key_') then
             name = 'key'
@@ -782,7 +782,7 @@ function moveInsideHandler(data)
                 isOpen = true
                 LocalPlayer.state.nui = true
                 SetNuiFocus(true, true)
-                SendNUIMessage({action = 'openInventory', isMale = IsPedMale(PlayerPedId()), data = exports['Unique_Clothe']:getUsedType(), disablePreviewPed = false})
+                SendNUIMessage({action = 'openInventory', isMale = IsPedMale(PlayerPedId()), data = exports['Unique_clothe']:getUsedType(), disablePreviewPed = false})
                 loadPlayerInventory()
             end
         end
@@ -806,7 +806,7 @@ exports('reopenInventoryUI', function()
         isOpen = true
         LocalPlayer.state.nui = true
         SetNuiFocus(true, true)
-        SendNUIMessage({action = 'openInventory', isMale = IsPedMale(PlayerPedId()), data = exports['Unique_Clothe']:getUsedType(), disablePreviewPed = false})
+        SendNUIMessage({action = 'openInventory', isMale = IsPedMale(PlayerPedId()), data = exports['Unique_clothe']:getUsedType(), disablePreviewPed = false})
         loadPlayerInventory()
     end
 end)
@@ -959,7 +959,7 @@ function openOtherPlayerInventory(src, admin)
                     end
                     ESX.fetchListedItems(data.inventory)
                     for k, v in pairs(data.inventory) do
-                        if not exports['Unique_Clothe']:getClotheData(v.name)
+                        if not exports['Unique_clothe']:getClotheData(v.name)
                         and not string.find(v.name,'pack_') and not data.protectedItems[v.name]
                         and not ESX.blackListSearch[v.name:lower()]
                         and (not ESX.doesBlockedItem(v.name) or ESX.doesBlockedItemButCanGive(v.name))

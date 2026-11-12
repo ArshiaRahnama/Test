@@ -17,4 +17,5 @@ files {
     'ui/css/style.css',
     'ui/js/script.js',
     'ui/fonts/Vazirmatn-Medium.woff2',
+    'ui/fonts/Roboto-Regular.ttf',
 }

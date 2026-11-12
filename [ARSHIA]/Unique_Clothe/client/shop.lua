@@ -1,4 +1,4 @@
--- Unique_clothe / client / shop (essentialmode + skinchanger). ESX comes from wardrobe.lua.
+-- Unique_Clothe / client / shop (essentialmode + skinchanger). ESX comes from wardrobe.lua.
 
 local shopOpen, currentShop, originalSkin, cam
 local currentType
@@ -88,7 +88,7 @@ local function openShop(index)
     for _, c in ipairs(shop.categories) do
         categories[#categories + 1] = { name = c, label = Config.TypeLabels[c] or c }
     end
-    SendNUIMessage({ display = true, category = categories })
+    SendNUIMessage({ display = true, category = categories, imageServer = Config.ImageServer })
     SetNuiFocus(true, true)
     if ESX and ESX.UI and ESX.UI.Menu then ESX.UI.Menu.CloseAll() end
 end
@@ -137,7 +137,7 @@ CreateThread(function()
                         false, false, 2, false, nil, nil, false)
                     if d < m.OpenDistance then
                         ESX.ShowHelpNotification(Config.Strings.help_open)
-                        if IsControlJustReleased(0, Config.Key)
+                        if IsControlJustReleased(0, Config.Key) and not IsNuiFocused()
                             and not IsEntityDead(ped) and not IsPedCuffed(ped) and not IsPedInAnyVehicle(ped, false) then
                             openShop(p.shop)
                         end

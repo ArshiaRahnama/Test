@@ -13,6 +13,13 @@ Config.ClotheWeight    = 0.2       -- inventory weight of one clothing item
 Config.PackWeight      = 0.5       -- inventory weight of one outfit pack
 Config.MaxPackNameLen  = 30
 
+-- Where item pictures come from (shop UI + inventory). The file path is always
+--   <ImageServer>/clothes/<category>/<item_name>.png      e.g. .../clothes/tshirt/tshirt_m_12_3.png
+-- Sunset's CDN (default) - NOTE: that is someone else's server, it can block or drop the images:
+Config.ImageServer     = 'https://cdn.sunrp.ir'
+-- To serve them from this resource instead, put the PNGs in ui/items/clothes/<category>/ and use:
+-- Config.ImageServer  = 'https://cfx-nui-Unique_Clothe/ui/items'
+
 -- Items handed to a brand-new character right after the character creator
 -- (event Unique_Clothe:giveStarter). Item names look like tshirt_m_12_3. Empty = nothing.
 Config.StarterClothes = {

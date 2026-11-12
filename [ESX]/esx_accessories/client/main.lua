@@ -245,6 +245,7 @@ AddEventHandler('esx_accessories:hasExitedMarker', function(zone)
 end)
 
 Citizen.CreateThread(function()
+	if Config.DisableShopZones then return end
 	for k,v in pairs(Config.ShopsBlips) do
 		if v.Pos ~= nil then
 			for i=1, #v.Pos, 1 do
@@ -265,6 +266,7 @@ Citizen.CreateThread(function()
 end)
 
 Citizen.CreateThread(function()
+	if Config.DisableShopZones then return end
 	local coords
 	local distance
 	while true do
@@ -284,6 +286,7 @@ Citizen.CreateThread(function()
 end)
 
 Citizen.CreateThread(function()
+	if Config.DisableShopZones then return end
 	while true do
 		Citizen.Wait(200)
 
@@ -314,6 +317,7 @@ Citizen.CreateThread(function()
 end)
 
 Citizen.CreateThread(function()
+	if Config.DisableShopZones then return end
 	while true do
 		Citizen.Wait(10)
 

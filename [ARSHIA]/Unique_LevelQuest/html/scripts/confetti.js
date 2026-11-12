@@ -1,4 +1,4 @@
-const CONFETTI_COLORS = ['#7c3aed', '#a78bfa', '#1fd34b', '#6dc9ff', '#ffffff'];
+const CONFETTI_COLORS = ['#ff8c1a', '#ffc56d', '#1fd34b', '#6dc9ff', '#ffffff'];
 
 function spawnConfetti(originEl) {
   if (!originEl) return;

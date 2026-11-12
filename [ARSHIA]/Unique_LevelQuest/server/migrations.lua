@@ -105,40 +105,6 @@ CreateThread(function()
         end)
     end)
 
-    tableExists('player_achievements', function(exists)
-        if exists then return end
-        MySQL.Async.execute([[
-            CREATE TABLE `player_achievements` (
-                `identifier`  VARCHAR(60) NOT NULL,
-                `achievement` VARCHAR(50) NOT NULL,
-                `progress`    INT(11) NOT NULL DEFAULT 0,
-                `completed`   TINYINT(1) NOT NULL DEFAULT 0,
-                PRIMARY KEY (`identifier`, `achievement`)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-        ]], {}, function() print('[Unique_LevelQuest] migrated: created table player_achievements') end)
-    end)
-
-    tableExists('achievement_firsts', function(exists)
-        if exists then return end
-        MySQL.Async.execute([[
-            CREATE TABLE `achievement_firsts` (
-                `skill`      VARCHAR(50) NOT NULL PRIMARY KEY,
-                `identifier` VARCHAR(60) NOT NULL
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-        ]], {}, function() print('[Unique_LevelQuest] migrated: created table achievement_firsts') end)
-    end)
-
-    tableExists('quest_weekly', function(exists)
-        if exists then return end
-        MySQL.Async.execute([[
-            CREATE TABLE `quest_weekly` (
-                `identifier` VARCHAR(60) NOT NULL PRIMARY KEY,
-                `week`       VARCHAR(10) NOT NULL,
-                `progress`   TEXT NOT NULL
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-        ]], {}, function() print('[Unique_LevelQuest] migrated: created table quest_weekly') end)
-    end)
-
     tableExists('weapon_skins', function(exists)
         if exists then return end
         MySQL.Async.execute([[

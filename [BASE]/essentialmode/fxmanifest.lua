@@ -80,6 +80,7 @@ server_exports {
     "IcName",
     "RegisterItem",
     "RegisterUsableItem",
+    "RegisterUsableItemRelay",
     "RegisterServerCallback",
 }
 

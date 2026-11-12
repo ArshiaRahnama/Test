@@ -10,7 +10,9 @@
 --   * NUI callbacks must always answer cb(); the controls thread must not be
 --     spawned again on every showUI(); the cursor must be released when the
 --     resource restarts; the NUI url must use GetParentResourceName().
---   * ps-ui must be called with Unique's signature (title, description, icon, values).
+--   * the bottom status panel lives in this resource's own NUI (no ps-ui dependency).
+--   * the screen must stay black until everything is loaded: other scripts that fade it
+--     in early are overridden (Config.HoldBlack), and Config.MinBlackMs is a hard minimum.
 
 local ESX = nil
 local needRegister = nil     -- nil = unknown yet, true = new player, false = has character
@@ -20,7 +22,8 @@ local flowDone = false       -- spawn finished (set exactly once per session)
 local clothesReady = false
 local loadedFired = false    -- 'loading:Loaded' must fire once (AdminPanel + essentialmode rely on that)
 local isNewCharacter = false
-local holding = true        -- keep the ped hidden/frozen until finishSpawn
+local holding = true        -- keep the ped hidden/frozen AND the screen black until finishSpawn
+local blackSince = nil      -- GetGameTimer() when the screen went black
 
 ---------------------------------------------------------------------------
 -- small helpers
@@ -33,16 +36,20 @@ CreateThread(function()
     end
 end)
 
--- Unique's ps-ui signature: StatusShow(title, description, icon, values).
--- (a different argument shape, e.g. (title, {lines}), would throw here.)
+-- Bottom status panel (part of this resource's NUI, no ps-ui needed).
+-- Messages sent before the NUI page is ready are remembered and replayed on 'initialize'.
+local lastStatus = nil
+
 local function status(message)
-    pcall(function()
-        exports['ps-ui']:StatusShow(Config.Text.loadingTitle, message, 'fas fa-user', {})
-    end)
+    lastStatus = message
+    if uiReady then
+        SendNUIMessage({ action = 'status', show = true, title = Config.Text.loadingTitle, values = { message } })
+    end
 end
 
 local function statusHide()
-    pcall(function() exports['ps-ui']:StatusHide() end)
+    lastStatus = nil
+    SendNUIMessage({ action = 'status', show = false })
 end
 
 local function setHidden(state)
@@ -129,6 +136,7 @@ end
 RegisterNUICallback('initialize', function(_, cb)
     uiReady = true
     cb('ok')
+    if lastStatus ~= nil and not flowDone then status(lastStatus) end -- replay what was shown before the page loaded
 end)
 
 local function notify(message)
@@ -161,14 +169,24 @@ end)
 -- driven by conditions + timeouts instead of ~20 s of fixed sleeps)
 ---------------------------------------------------------------------------
 
+local function stage(message, minMs, cond, timeoutMs)
+    status(message)
+    local started = GetGameTimer()
+    if cond then waitFor(cond, timeoutMs or 0, 100) end
+    local left = minMs - (GetGameTimer() - started)
+    if left > 0 then Wait(left) end
+end
+
 local function waitForWorld()
-    waitFor(function() return ESX.IsPlayerLoaded and ESX.IsPlayerLoaded() end, Config.WorldTimeoutMs, 100)
+    -- 'Preparing for spawn'
+    stage(Config.Text.preparing, math.max(Config.PrepareMs, Config.SettleMs), nil)
 
-    status(Config.Text.preparing)
-    Wait(Config.SettleMs)
+    -- 'Teleporting to last location': ESX loaded + ground collision under the ped
+    stage(Config.Text.teleporting, Config.TeleportMs, function()
+        return ESX.IsPlayerLoaded and ESX.IsPlayerLoaded()
+    end, Config.WorldTimeoutMs)
 
-    local ped = PlayerPedId()
-    local c = GetEntityCoords(ped)
+    local c = GetEntityCoords(PlayerPedId())
     RequestCollisionAtCoord(c.x, c.y, c.z)
     waitFor(function()
         c = GetEntityCoords(PlayerPedId())
@@ -176,21 +194,19 @@ local function waitForWorld()
         return HasCollisionLoadedAroundEntity(PlayerPedId())
     end, Config.CollisionTimeout, 50)
 
-    if Config.WaitForClothes then
-        status(Config.Text.clothes)
-        waitFor(function() return clothesReady end, Config.ClothesTimeoutMs, 100)
+    -- 'Wearing clothe': clothing/skin system finished
+    stage(Config.Text.clothes, Config.ClothesMinMs, Config.WaitForClothes and function() return clothesReady end or nil, Config.ClothesTimeoutMs)
+
+    -- never fade in earlier than MinBlackMs after the screen went black
+    while blackSince and (GetGameTimer() - blackSince) < Config.MinBlackMs do
+        Wait(100)
     end
 end
 
 local function finishSpawn()
-    holding = false
-    local ped = PlayerPedId()
     TriggerServerEvent('asgm_LoadingSystem:ChangeKobs', false)
 
-    SetEntityInvincible(ped, false)
-    SetEntityVisible(ped, true, false)
-    FreezeEntityPosition(ped, false)
-    SetPedDiesInWater(ped, true)
+    SetPedDiesInWater(PlayerPedId(), true)
     TriggerEvent('es_admin:freezePlayer', false)
 
     TriggerEvent('esx:restoreLoadout')
@@ -215,6 +231,14 @@ local function finishSpawn()
     TriggerEvent('esx_best:checkVanish')
     ESX.SetPlayerData('IsLoaded', 1)
     DisplayRadar(true)
+
+    -- release the black screen + the hidden/frozen ped together, then fade in
+    holding = false
+    local ped = PlayerPedId()
+    SetEntityInvincible(ped, false)
+    SetEntityVisible(ped, true, false)
+    FreezeEntityPosition(ped, false)
+    TriggerEvent('es_admin:freezePlayer', false)
 
     status(Config.Text.welcome)
     DoScreenFadeIn(Config.FadeInMs)
@@ -252,21 +276,26 @@ CreateThread(function()
     end
 
     DoScreenFadeOut(Config.FadeOutMs)
+    blackSince = GetGameTimer()
     ShutdownLoadingScreen() -- Unique_LoadingScreen closes its own NUI (fade) from the events below
 
     while not NetworkIsPlayerActive(PlayerId()) do Wait(100) end
 
     status(Config.Text.retrieving)
     setHidden(true)
-    -- spawnmanager / essentialmode can re-create or re-freeze the ped after we
-    -- hid it; re-apply until the spawn sequence takes over
+    -- spawnmanager / essentialmode can re-create or re-freeze the ped after we hid it,
+    -- and other scripts may fade the screen back in while we are still loading.
+    -- Re-apply both until the spawn sequence takes over.
     CreateThread(function()
         while holding do
             setHidden(true)
-            Wait(500)
+            if Config.HoldBlack and not IsScreenFadedOut() then
+                DoScreenFadeOut(0)
+            end
+            Wait(100)
         end
     end)
-    Wait(1500)
+    Wait(Config.RetrieveMs)
 
     -- Ask the server ourselves if registerForm never arrived (and keep asking).
     local deadline = GetGameTimer() + Config.StateFallbackMs

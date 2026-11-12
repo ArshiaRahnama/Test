@@ -24,7 +24,8 @@ html, body { width: 100%; height: 100%; background: transparent; overflow: hidde
    (starts ~70% down) - so it never overlaps either. pointer-events:none
    since it's purely informational (see the note in app.js) and should
    never intercept clicks even by accident. */
-#statsWidget {
+#statsWidget { display: none !important; }   /* حذف شده - هیچ‌وقت نشون داده نشه */
+#statsWidget__old {
   position: fixed;
   top: 48%;
   right: 20px;

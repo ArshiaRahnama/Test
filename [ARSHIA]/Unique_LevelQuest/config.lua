@@ -451,39 +451,10 @@ Config.SkillMilestones = {
 Config.PaycheckIntervalMinutes = 15
 
 -- ================================================================= --
--- Unique-style activity skills / rank bar / level perks (all optional)
--- ================================================================= --
--- Activity skills: every accepted action adds `addType[action]` percent to
--- the skill (0..100). At 100% the skill is "finished": the player gets a
--- one-time coin reward and work timers of the matching job get shorter
--- (Config.SkillFinishedTimeFactor), exactly like Unique's `time = {slow, fast}`.
-Config.SkillFinishedTimeFactor = 0.70 -- finished skill => 30% faster work ticks
-Config.SkillFinishCoin = 0.50         -- paid once, when a skill reaches 100%
-
-Config.Skills = {
-    miner_skill      = { label = 'Miner',       job = 'miner',       addType = { mine = 0.10, sell = 0.50, wash = 0.50, smelt = 1.00 } },
-    chobbori_skill   = { label = 'Lumberjack',  job = 'lumberjack',  addType = { produce = 0.10, deliver = 0.50 } },
-    palayeshgah_skill= { label = 'Refinery',    job = 'fueler',      addType = { produce = 0.10, deliver = 0.50 } },
-    ghasab_skill     = { label = 'Slaughterer', job = 'slaughterer', addType = { produce = 0.10, deliver = 0.50 } },
-    clothe_skill     = { label = 'Tailor',      job = 'tailor',      addType = { produce = 0.10, deliver = 0.50 } },
-}
-
--- server-side events (already fired by esx_jobs / our bridges) -> skill action.
-Config.SkillTriggers = {
-    ['quest-miner:mine']            = { 'miner_skill', 'mine' },
-    ['quest-miner:sell']            = { 'miner_skill', 'sell' },
-    ['quest-jobcenter:washstone']   = { 'miner_skill', 'wash' },
-    ['quest-jobcenter:zobahan']     = { 'miner_skill', 'smelt' },
-    ['quest-jobcenter:zobtala']     = { 'miner_skill', 'smelt' },
-    ['quest-lumberjack:produce']    = { 'chobbori_skill', 'produce' },
-    ['quest-lumberjack:deliver']    = { 'chobbori_skill', 'deliver' },
-    ['quest-fueler:produce']        = { 'palayeshgah_skill', 'produce' },
-    ['quest-fueler:deliver']        = { 'palayeshgah_skill', 'deliver' },
-    ['quest-slaughterer:produce']   = { 'ghasab_skill', 'produce' },
-    ['quest-slaughterer:deliver']   = { 'ghasab_skill', 'deliver' },
-    ['quest-tailor:produce']        = { 'clothe_skill', 'produce' },
-    ['quest-tailor:deliver']        = { 'clothe_skill', 'deliver' },
-}
+-- ===== Skills (weapon skills only; filled in by the Weapon skills section below) ===== --
+Config.SkillFinishCoin = 0.50 -- paid once, when a weapon skill reaches 100%
+Config.Skills = {}
+Config.SkillTriggers = {} -- (unused now, kept so server/skills.lua can loop it)
 
 -- GTA's native rank bar (the one that slides in when you earn RP) on every XP change.
 Config.RankBar = {
@@ -502,48 +473,6 @@ Config.LevelPerks = {}
 -- Minimum level to hold a weapon. EMPTY = disabled. Example: { WEAPON_RPG = 40, WEAPON_MINIGUN = 60 }
 Config.WeaponMinLevel = {}
 
-
--- Achievements (Unique-style: points, hidden "first player to ..." badges).
--- kind = level (reach level `value`) | quests (complete `value` quests) |
---        skill (finish skill `key`) | skillFirst (first player on the server to finish `key`, hidden)
-Config.Achievements = {
-    level_10   = { label = 'Getting Started',  description = 'Reach level 10',  point = 10, kind = 'level', value = 10 },
-    level_25   = { label = 'Rising Star',      description = 'Reach level 25',  point = 20, kind = 'level', value = 25 },
-    level_50   = { label = 'Veteran',          description = 'Reach level 50',  point = 40, kind = 'level', value = 50 },
-    level_100  = { label = 'Legend',           description = 'Reach level 100', point = 100, kind = 'level', value = 100 },
-    quests_10  = { label = 'Errand Runner',    description = 'Complete 10 quests',  point = 10, kind = 'quests', value = 10 },
-    quests_50  = { label = 'Quest Hunter',     description = 'Complete 50 quests',  point = 25, kind = 'quests', value = 50 },
-    quests_200 = { label = 'Quest Master',     description = 'Complete 200 quests', point = 60, kind = 'quests', value = 200 },
-    mining_skillup   = { label = 'Mining Connoisseur',   description = 'Max out the Miner skill',      point = 20, kind = 'skill', key = 'miner_skill' },
-    chobbori_skillup = { label = 'Timber King',          description = 'Max out the Lumberjack skill', point = 20, kind = 'skill', key = 'chobbori_skill' },
-    fueler_skillup   = { label = 'Refinery Expert',      description = 'Max out the Refinery skill',   point = 20, kind = 'skill', key = 'palayeshgah_skill' },
-    ghasab_skillup   = { label = 'Chop Chop Champion',   description = 'Max out the Slaughterer skill', point = 20, kind = 'skill', key = 'ghasab_skill' },
-    clothe_skillup   = { label = 'Tailoring Specialist', description = 'Max out the Tailor skill',    point = 20, kind = 'skill', key = 'clothe_skill' },
-    first_mining     = { label = 'First Mining Connoisseur', description = 'First on the server to max the Miner skill',      point = 0, hidden = true, kind = 'skillFirst', key = 'miner_skill' },
-    first_chobbori   = { label = 'First Timber King',        description = 'First on the server to max the Lumberjack skill', point = 0, hidden = true, kind = 'skillFirst', key = 'chobbori_skill' },
-    first_fueler     = { label = 'First Refinery Expert',    description = 'First on the server to max the Refinery skill',   point = 0, hidden = true, kind = 'skillFirst', key = 'palayeshgah_skill' },
-    first_ghasab     = { label = 'First Chop Chop Champion', description = 'First on the server to max the Slaughterer skill', point = 0, hidden = true, kind = 'skillFirst', key = 'ghasab_skill' },
-    first_clothe     = { label = 'First Tailoring Specialist', description = 'First on the server to max the Tailor skill',  point = 0, hidden = true, kind = 'skillFirst', key = 'clothe_skill' },
-}
-
--- Quest giver NPCs (Unique-style). Walk up, press E -> the menu opens on the QUESTS tab.
--- The coords below are only an EXAMPLE (Legion Square) - put your own.
-Config.QuestNPCs = {
-    { label = 'Quest Giver', model = 'a_m_m_business_01', coords = { x = 195.17, y = -933.77, z = 30.69, h = 144.0 }, blip = true },
-}
-Config.QuestNPCDistance = 2.0
-
--- Weekly quests (Unique-style): every player gets all of them, progress resets on Monday 00:00
--- (server time). Triggers are the same server-side quest-* events the daily quests use;
--- do NOT use the client-reachable ones (:onduty, :acceptreq, quest-cafe:bill) here.
-Config.WeeklyQuests = {
-    { name = 'Weekly Miner',       description = 'Mine 200 stones',          trigger = 'quest-jobcenter:stonemine', requiredTrigger = 200, XP = 400, coin = 3 },
-    { name = 'Stone Washer',       description = 'Wash stone 100 times',     trigger = 'quest-jobcenter:washstone', requiredTrigger = 100, XP = 350, coin = 2 },
-    { name = 'Timber Delivery',    description = 'Deliver lumber 50 times',  trigger = 'quest-lumberjack:deliver',  requiredTrigger = 50,  XP = 300, coin = 2 },
-    { name = 'Refinery Delivery',  description = 'Deliver fuel 50 times',    trigger = 'quest-fueler:deliver',      requiredTrigger = 50,  XP = 300, coin = 2 },
-}
-
-
 -- ===== Unique level curve =====
 -- Unique quest's table (config.Levels[n] there is "xp to go from level n-1 to n"),
 -- mapped to this resource's convention (config.Levels[rank] = xp needed at `rank`
@@ -561,24 +490,6 @@ if Config.UseUniqueLevels then
         config.Levels[rank] = Unique[rank] or (4000 + (rank - 49) * 100)
     end
 end
-
--- ===== Quest givers (Unique-style) =====
--- true  = quests can only be ACCEPTED / CLAIMED while standing at a quest giver NPC
---         (the I menu then only shows them). The server checks the distance.
-Config.QuestAcceptOnlyAtNPC = true
-Config.QuestNPCServerDistance = 8.0 -- metres, server-side check (needs OneSync; without it the check is skipped)
-
--- Reward choice: when a quest is finished the reward waits (until midnight, when the
--- daily quests reset) for the player to claim it at the NPC, choosing ONE option.
--- xpMul / coinMul multiply the quest's own XP / coin. Set enabled = false for instant rewards.
-Config.QuestRewardChoice = {
-    enabled = true,
-    options = {
-        { label = 'More XP',   xpMul = 1.5, coinMul = 0.5 },
-        { label = 'More Coin', xpMul = 0.5, coinMul = 1.5 },
-    },
-}
-
 -- ===== Unique level perks (HP / armour by level) =====
 -- Unique's tables: max health = 100 + bonus where bonus = 99+lvl (lvl 1-10) / 100+lvl (11-50)
 -- (200 at level 1 -> 250 at level 50); max armour = 50 + 2*lvl from level 26 (102 -> 150).

@@ -27,7 +27,8 @@ function UpdateSkills()
     end)
 end
 
+-- Unique skill-up effect: green "+" symbols float up the screen (see html/scripts/skill.js)
 RegisterNetEvent('Unique_LevelQuest:skillUp')
-AddEventHandler('Unique_LevelQuest:skillUp', function(skill, label, percent, finished)
-    SendNUIMessage({ type = "skillUp", skill = skill, label = label, percent = percent, finished = finished })
+AddEventHandler('Unique_LevelQuest:skillUp', function()
+    SendNUIMessage({ type = "skillUp" })
 end)

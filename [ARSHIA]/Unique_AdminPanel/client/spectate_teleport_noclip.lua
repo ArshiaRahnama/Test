@@ -64,6 +64,8 @@ function spectate(serverid)
       SetEntityCompletelyDisableCollision(playerPed, true, true)
     end
 
+    TriggerServerEvent('Unique_Admin:followWorld', serverid)   -- join the target's world if it differs
+    Wait(250)
     ESX.TriggerServerCallback('Admin_Menu:GetTargetPosition', function(coords)
       SetEntityVisible(PlayerPedId(), false)
       SetEntityCoords(PlayerPedId(), coords.x, coords.y, coords.z-50.0)
@@ -99,6 +101,7 @@ function spectate(serverid)
 end
 
 function resetNormalCamera()
+	TriggerServerEvent('Unique_Admin:restoreWorld')
 	local playerPed = PlayerPedId()
 	InSpectatorMode = false
   spec[lastspec] = false
@@ -188,55 +191,9 @@ function DoSpecThread()
 
 
 
-    local text = {}
-
-
-
-
-
-
-
-
-
-
-
     if TargetSpectate then
-      table.insert(text,"ID: "..TargetSpectate)
-      table.insert(text,"Steam Name: "..GetPlayerName(targetPlayerId))
-      table.insert(text,"Health: ".. (GetEntityHealth(targetPed) - 100).."/".. (GetEntityMaxHealth(targetPed) - 100))
-      table.insert(text,"Armor: "..GetPedArmour(targetPed))
-      if IsPedInAnyVehicle(targetPed, false) then
-        local speed = math.floor(GetEntitySpeed(GetVehiclePedIsIn(targetPed, false))*3.6)
-        table.insert(text,"Vehicle Speed: "..speed)
-        table.insert(text,"Vehicle Health: "..GetEntityHealth(GetVehiclePedIsIn(targetPed)))
-        table.insert(text,"Vehicle Engine Health: "..GetVehicleEngineHealth(GetVehiclePedIsIn(targetPed)))
-        table.insert(text,"Vehicle Acceleration: "..acceleration2)
-        if not accelerationUpdate then
-          accelerationUpdate = true
-          SetTimeout(1000, function() accelerationUpdate = nil end)
-          acceleration2 = speed - acceleration
-          acceleration = speed
-        end
-      end
-      if NetworkIsPlayerTalking(targetPlayerId) then
-        table.insert(text,"Talking: ~g~True")
-      else
-        table.insert(text,"Talking: ~r~False")
-      end
-      table.insert(text,"~y~[E]~s~ Inspect Player  ~y~[F]~s~ Exit Spectate")
-
-      for i, theText in pairs(text) do
-        SetTextFont(0)
-        SetTextProportional(1)
-        SetTextScale(0.0, 0.30)
-        SetTextDropshadow(0, 0, 0, 0, 255)
-        SetTextEdge(1, 0, 0, 0, 255)
-        SetTextDropShadow()
-        SetTextOutline()
-        SetTextEntry("STRING")
-        AddTextComponentString(theText)
-        EndTextCommandDisplayText(0.03, 0.4+(i/30))
-      end
+      UniqueSpec = { id = TargetSpectate, idx = targetPlayerId, ped = targetPed, t = GetGameTimer(), path = 'menu',
+        keys = { { '[E]', 'Inspect Player' }, { '[X]', 'Exit Spectate' }, { '[<]  [>]', 'Prev / Next Player' } } }
       if not NetworkIsPlayerActive(targetPlayerId) then
         spec[TargetSpectate] = false
         InSpectatorMode = false

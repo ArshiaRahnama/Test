@@ -14,20 +14,7 @@ function post(endpoint, data) {
 // ============================================================================
 // STATS WIDGET
 // ============================================================================
-function renderStats(data) {
-  document.getElementById('statsWidget').classList.remove('hidden');
-  document.getElementById('statsOnline').textContent = `${data.online}/${data.maxPlayers}`;
-  const mins = Math.floor(data.uptimeSeconds / 60);
-  const hrs = Math.floor(mins / 60);
-  document.getElementById('statsUptime').textContent = hrs > 0 ? `${hrs}h ${mins % 60}m` : `${mins}m`;
-  document.getElementById('statsReports').textContent = data.openReports ?? 0;
-  document.getElementById('statsReportsRow').classList.toggle('hasOpen', (data.openReports ?? 0) > 0);
-}
-// Note: this row is display-only, not clickable - the always-on stats
-// widget renders without NUI focus (so it never blocks mouse/keyboard
-// control of the game), and FiveM only delivers click events to NUI while
-// focus is active. Use the "Report Queue" button in Server Tools to open
-// the full list.
+function renderStats() {}   // پنل SERVER (Online/Uptime/Reports) حذف شد
 
 // ============================================================================
 // PANEL: INSPECT / REPORTS / CHATLOG

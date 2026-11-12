@@ -24,8 +24,6 @@ server_scripts {
     'server/capture.lua',
     'server/drugskill.lua',
     'server/skills.lua',
-    'server/achievements.lua',
-    'server/weekly.lua',
     'server/weaponskins.lua',
 }
 
@@ -41,8 +39,6 @@ client_scripts {
     'client/leaderboard.lua',
     'client/toast.lua',
     'client/perks.lua',
-    'client/npc.lua',
-    'client/achievements.lua',
     'client/weaponskins.lua',
 }
 

@@ -506,7 +506,7 @@ Citizen.CreateThread(function()
         if aduty then
             ESX.TriggerServerCallback('Unique_AdminPanel:GetServerStats', function(stats)
                 if stats then
-                    SendNUIMessage({ type = 'stats', data = stats })
+                    -- (ویجت SERVER: Online/Uptime/Reports حذف شد - دیگه 'stats' به NUI فرستاده نمیشه)
                     local openReports = stats.openReports or 0
                     if openReports > lastOpenReports then
                         PlaySoundFrontend(-1, "CHALLENGE_UNLOCKED", "HUD_AWARDS", true)

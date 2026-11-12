@@ -4,7 +4,7 @@
 .event-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; align-items: start; }
 
 .ev-card {
-  --c: #ff9d2f; --c-light: #a78bfa; --c-a15: rgba(255,157,47,.15); --c-a30: rgba(255,157,47,.3);
+  --c: #ff9d2f; --c-light: #ffc56d; --c-a15: rgba(255,157,47,.15); --c-a30: rgba(255,157,47,.3);
   position: relative; overflow: hidden; padding: 14px 16px; direction: rtl;
   background: linear-gradient(165deg, rgba(255,255,255,.035), rgba(0,0,0,.25));
   border: 1px solid rgba(255,255,255,.1); border-radius: 12px;

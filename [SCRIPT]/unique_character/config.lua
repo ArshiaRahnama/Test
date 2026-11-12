@@ -33,13 +33,23 @@ Config.FadeOutMs = 50
 -- (essentialmode playerSpawned) freeze it late. Same window, one loop.
 Config.UnfreezeWindowSec = 15
 
+-- Black-screen timing. The screen goes black first and is only faded in when
+-- EVERYTHING below is done. While black, the bottom status panel shows each step.
+Config.MinBlackMs     = 8000   -- never fade in earlier than this after the screen went black
+Config.RetrieveMs     = 2000   -- 'Retrieving data'
+Config.PrepareMs      = 2000   -- 'Preparing for spawn'
+Config.TeleportMs     = 1000   -- 'Teleporting to last location' (at least; waits for the world too)
+Config.ClothesMinMs   = 3000   -- 'Wearing clothe' (at least; waits for the clothing system too)
+Config.HoldBlack      = true   -- re-fade-out if another script (spawnmanager...) fades the screen in early
+
 Config.Text = {
     loadingTitle = 'Loading character...',
     retrieving   = 'Retrieving data',
     register     = 'Register',
     preparing    = 'Preparing for spawn',
-    clothes      = 'Wearing clothes',
-    welcome      = 'Welcome',
+    teleporting  = 'Teleporting to last location',
+    clothes      = 'Wearing clothe',
+    welcome      = 'Welcome🙂',
     invalid      = 'نام یا نام خانوادگی نامعتبر است (فقط حروف انگلیسی، ۳ تا ۱۰ حرف)',
     taken        = 'این نام قبلا ثبت شده، یک نام دیگر انتخاب کنید',
     busy         = 'درخواست قبلی شما در حال بررسی است',

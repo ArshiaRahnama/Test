@@ -92,7 +92,6 @@ local function saveXPRank(playerId, xp, rank, delta)
     -- Drives the on-screen rank bar / level-up banner (client/perks.lua).
     -- `oldRank` lets the client tell a level-up from a plain xp gain.
     TriggerClientEvent('Unique_LevelQuest:xpUpdate', playerId, rank, xp, delta or 0, oldRank or rank)
-    if oldRank ~= rank then TriggerEvent('Unique_LevelQuest:levelChanged', playerId, rank) end
 
     -- Tells essentialmode (server/main.lua) to recompute this player's
     -- inventory capacity (Config.DefaultMaxWeight + Config.WeightPerLevel

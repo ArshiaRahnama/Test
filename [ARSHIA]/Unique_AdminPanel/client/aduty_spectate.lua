@@ -59,6 +59,8 @@ function AdutySpectate(target)
 		if not InSpectatorMode then
 			LastPosition = GetEntityCoords(PlayerPedId())
 		end
+		TriggerServerEvent('Unique_Admin:followWorld', target)   -- join the target's world if it differs
+		Wait(250)
 
 		local playerPed = PlayerPedId()
 
@@ -94,6 +96,7 @@ end
 
 function AdutyResetNormalCamera()
 	InSpectatorMode = false
+	TriggerServerEvent('Unique_Admin:restoreWorld')
 	TargetSpectate  = nil
 	local playerPed = PlayerPedId()
 
@@ -357,38 +360,8 @@ Citizen.CreateThread(function()
 			end
 
 
-			local text = {}
-
-
-			local targetGod = GetPlayerInvincible(targetPlayerId)
-			local vehicle =  GetVehiclePedIsIn(targetPed, false )
-			if targetGod then
-				table.insert(text,"Godmode: ~r~Found~w~")
-			else
-				table.insert(text,"Godmode: ~g~Not Found~w~")
-			end
-			if not CanPedRagdoll(targetPed) and not IsPedInAnyVehicle(targetPed, false) and (GetPedParachuteState(targetPed) == -1 or GetPedParachuteState(targetPed) == 0) and not IsPedInParachuteFreeFall(targetPed) then
-				table.insert(text,"~r~Anti-Ragdoll~w~")
-			end
-
-			table.insert(text,"Health"..": "..(GetEntityHealth(targetPed)-100).."/".. 200-100)
-			table.insert(text,"Armor : "..GetPedArmour(targetPed).."/100")
-			if vehicle ~= 0 then
-				table.insert(text,"Vehicle Engine : "..GetVehicleEngineHealth(vehicle).."/1000.0")
-			end
-
-			for i,theText in pairs(text) do
-				SetTextFont(0)
-				SetTextProportional(1)
-				SetTextScale(0.0, 0.30)
-				SetTextDropshadow(0, 0, 0, 0, 255)
-				SetTextEdge(1, 0, 0, 0, 255)
-				SetTextDropShadow()
-				SetTextOutline()
-				SetTextEntry("STRING")
-				AddTextComponentString(theText)
-				EndTextCommandDisplayText(0.3, 0.7+(i/30))
-			end
+			UniqueSpec = { id = TargetSpectate, idx = targetPlayerId, ped = targetPed, t = GetGameTimer(), path = 'report',
+				keys = { { '[X]', 'Player Control' }, { '[~]', 'Exit Spectate' }, { '[<]  [>]', 'Prev / Next Player' }, { '[Scroll]', 'Zoom' } } }   -- HUD: client/unique_spectate_hud.lua
 		end
   	end
 end)

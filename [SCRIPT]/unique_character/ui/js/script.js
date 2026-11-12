@@ -35,7 +35,7 @@ $(function () {
         var data = event.data;
 
         if (data.type === 'enableui') {
-            document.body.style.display = data.enable ? 'block' : 'none';
+            document.getElementById('register-root').style.display = data.enable ? 'block' : 'none';
             if (data.enable) {
                 $('#firstname').val('');
                 $('#lastname').val('');
@@ -44,6 +44,7 @@ $(function () {
             }
         }
 
+        if (data.action === 'status') handleStatus(data);
         if (data.action === 'notification') showNotification(data.message);
         if (data.action === 'unlock') unlock();
     });
@@ -95,4 +96,37 @@ function showNotification(message) {
         notification.removeClass('show');
         setTimeout(function () { notification.addClass('hidden'); }, 400);
     }, 3000);
+}
+
+
+// ---- loading status panel ----
+// Same behaviour as the status bar: slides up from the bottom, title + one line per value.
+function statusParagraph(text, className) {
+    return $('<p>').addClass(className).text(text === null || text === undefined ? '' : String(text));
+}
+
+function fillStatus(panel, title, values) {
+    panel.empty();
+    panel.append(statusParagraph(title, 'title'));
+    (Array.isArray(values) ? values : []).forEach(function (v) {
+        panel.append(statusParagraph(v, 'text'));
+    });
+}
+
+function handleStatus(data) {
+    var panel = $('.status');
+
+    if (data.update) {
+        fillStatus(panel, data.title, data.values);
+    } else if (data.show) {
+        panel.stop(true, false); // a quick hide -> show must not end up blank
+        fillStatus(panel, data.title, data.values);
+        panel.show();
+        panel.animate({ bottom: '0px' }, 250);
+    } else {
+        panel.stop(true, false).animate({ bottom: '-500px' }, 250, function () {
+            panel.empty();
+            panel.hide();
+        });
+    }
 }

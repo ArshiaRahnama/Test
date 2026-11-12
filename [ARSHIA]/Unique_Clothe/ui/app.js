@@ -1,7 +1,7 @@
 // Item pictures are optional: drop PNGs in ui/items/clothes/<category>/<item_name>.png
 // (e.g. ui/items/clothes/tshirt/tshirt_m_12_0.png). Missing pictures fall back to the category icon.
-const RESOURCE = (typeof GetParentResourceName === 'function') ? GetParentResourceName() : 'Unique_clothe';
-const imageServer = '/ui/items';
+const RESOURCE = (typeof GetParentResourceName === 'function') ? GetParentResourceName() : 'Unique_Clothe';
+let imageServer = ''; // set from Config.ImageServer when the shop opens
 
 document.addEventListener('dragstart', (e) => e.preventDefault());
 document.addEventListener('drop', (e) => e.preventDefault());
@@ -46,6 +46,7 @@ window.addEventListener('message', function(event) {
     const data = event.data;
 
     if (data.display) {
+        if (data.imageServer) imageServer = data.imageServer;
         showShop(data.category);
     }
 
@@ -139,6 +140,7 @@ function showShop(categoryList) {
     renderCategories();
     renderClothingToolbar();
     clearItems();
+    clearSelection(); // otherwise the name/price of the last item of the previous visit stays in the footer
     hideColorsPanel();
     updateCartUI();
 }
@@ -165,6 +167,7 @@ function resetState() {
     categorySelectedItems = {};
     document.getElementById('settingsPanel').classList.add('hidden');
     document.getElementById('settingsOverlay').classList.add('hidden');
+    clearSelection();
 }
 
 let globalTooltip = null;

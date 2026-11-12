@@ -166,6 +166,24 @@ local function isWeaponName(name)
     return l:find('weapon_', 1, true) ~= nil or l:find('gadget_', 1, true) ~= nil
 end
 
+
+-- --------------------------------------------------------------------------
+-- persistence safety net: essentialmode only writes inventory/loadout to the
+-- database on disconnect and every 8 minutes. After anything is moved through
+-- this resource we save that player a few seconds later (debounced).
+-- --------------------------------------------------------------------------
+local pendingSave = {}
+local function saveSoon(src)
+    if pendingSave[src] then return end
+    pendingSave[src] = true
+    SetTimeout(4000, function()
+        pendingSave[src] = nil
+        if ESX and player(src) then
+            pcall(function() ESX.SavePlayer(src) end)
+        end
+    end)
+end
+
 -- --------------------------------------------------------------------------
 -- callbacks
 -- --------------------------------------------------------------------------
@@ -345,6 +363,7 @@ RegisterNetEvent('core:dropItem', function(itemType, name, count, serial)
     end
 
     TriggerClientEvent('esx:updateInventory', src)
+    saveSoon(src)
 end)
 
 -- --------------------------------------------------------------------------
@@ -415,6 +434,8 @@ RegisterNetEvent('core:giveItem', function(target, itemType, name, count, serial
 
     TriggerClientEvent('esx:updateInventory', src)
     TriggerClientEvent('esx:updateInventory', target)
+    saveSoon(src)
+    saveSoon(target)
 end)
 
 
@@ -424,5 +445,5 @@ end)
 UNIQUE = {
     player = player, notify = notify, limited = limited, validCount = validCount,
     findWeapon = findWeapon, forgetSerial = forgetSerial, isWeaponName = isWeaponName,
-    loadSlots = loadSlots, markDirty = markDirty,
+    loadSlots = loadSlots, markDirty = markDirty, saveSoon = saveSoon,
 }

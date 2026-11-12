@@ -6,13 +6,9 @@
 -- Exports:
 --   AddSkillProgress(source, skill, action)      -> true if accepted
 --   IsSkillFinished(source, skill)               -> bool
---   GetSkillTimeFor(source, job, baseMs)         -> baseMs, or reduced when that job's skill is finished
 -- ================================================================= --
 
 local Cache, Dirty, Loading, IdentOf = {}, {}, {}, {} -- Cache[identifier] = { [skill] = {percent, finished} }
-
-local jobToSkill = {}
-for key, def in pairs(Config.Skills) do if def.job then jobToSkill[def.job] = key end end
 
 local function load(identifier, cb)
     if Cache[identifier] then return cb(Cache[identifier]) end
@@ -107,16 +103,6 @@ exports('IsSkillFinished', function(src, skill)
     return t and t[skill] and t[skill].finished or false
 end)
 
-exports('GetSkillTimeFor', function(src, job, baseMs)
-    local skill = jobToSkill[job]
-    local id = skill and (IdentOf[tonumber(src)] or identOf(tonumber(src)))
-    local t = id and Cache[id]
-    if t and t[skill] and t[skill].finished then
-        return math.floor(baseMs * (Config.SkillFinishedTimeFactor or 1.0))
-    end
-    return baseMs
-end)
-
 -- The triggers are server-side events fired by esx_jobs/our bridges inside the
 -- player's own call chain, so the ambient `source` is theirs (same assumption
 -- server/bridges.lua already relies on). They are NOT registered as net events.
@@ -127,7 +113,7 @@ for trigger, map in pairs(Config.SkillTriggers) do
     end)
 end
 
--- warm the cache on join so GetSkillTimeFor is synchronous-safe
+-- warm the cache on join
 AddEventHandler('esx:playerLoaded', function(src)
     local id = identOf(src)
     if id then load(id, function() end) end

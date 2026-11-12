@@ -117,16 +117,15 @@ local function withRow(identifier, fn)
     run(fn)
 end
 
-local function grantQuestReward(xPlayer, quest, xpMul, coinMul)
-    local xp   = math.max(0, math.floor((quest.XP or 0) * (xpMul or 1) + 0.5))
-    local coin = math.floor((quest.coin or 0) * (coinMul or 1) * 100 + 0.5) / 100
+local function grantQuestReward(xPlayer, quest)
+    local xp   = quest.XP or 0
+    local coin = quest.coin or 0
 
     TriggerClientEvent('esx:showNotification', xPlayer.source, "Quest Completed !", "success", quest.name)
     TriggerClientEvent('esx:showNotification', xPlayer.source, "You Got " .. xp .. " XP And " .. coin .. " Coins", "success", "Quest Rewards")
     TriggerClientEvent('hud:achievementToast', xPlayer.source, quest.name, ("+%s XP  •  +%s Coin"):format(xp, coin))
 
     GrantXP(xPlayer.source, xp, nil)
-    TriggerEvent('Unique_LevelQuest:questCompleted', xPlayer.source)
 
     if coin > 0 then
         local ok = GrantCoin(xPlayer.source, coin)
@@ -134,25 +133,6 @@ local function grantQuestReward(xPlayer, quest, xpMul, coinMul)
             print(('[Unique_LevelQuest] GrantCoin refused reward for %s (%s coin)'):format(xPlayer.identifier, tostring(coin)))
         end
     end
-end
-
-local choiceEnabled = Config.QuestRewardChoice and Config.QuestRewardChoice.enabled
-    and Config.QuestRewardChoice.options and #Config.QuestRewardChoice.options > 0
-
--- Server-side "is this player standing at a quest giver?" (accept / claim).
--- Needs OneSync (GetPlayerPed on the server); without it the ped is 0 and the
--- check is skipped rather than locking every player out.
-local function nearQuestNPC(src)
-    if not Config.QuestAcceptOnlyAtNPC then return true end
-    local ped = GetPlayerPed(src)
-    if not ped or ped == 0 then return true end
-    local pc = GetEntityCoords(ped)
-    local maxD = Config.QuestNPCServerDistance or 8.0
-    for _, npc in ipairs(Config.QuestNPCs or {}) do
-        local c = npc.coords
-        if #(pc - vector3(c.x, c.y, c.z)) <= maxD then return true end
-    end
-    return false
 end
 
 -- Shared by AcceptQuest/CancelQuest: which pool (job-specific or
@@ -308,10 +288,6 @@ AddEventHandler("QuestSystem:AcceptQuest", function(questId)
     if not xPlayer then return end
     questId = tostring(tonumber(questId)) -- normalize; also rejects non-numeric junk
     if questId == "nil" then return end
-    if not nearQuestNPC(_source) then
-        TriggerClientEvent('esx:showNotification', _source, "Visit a quest giver to accept quests", "error", "Quests")
-        return
-    end
 
     withRow(xPlayer.identifier, function(row, done)
         if not row then return done(nil) end
@@ -328,7 +304,7 @@ AddEventHandler("QuestSystem:AcceptQuest", function(questId)
         -- finishing one frees a slot for another right away.
         local activeCount = 0
         for k, v in pairs(playerquests) do
-            if k ~= "Job" and k ~= "Offered" and k ~= "Pending" then
+            if k ~= "Job" and k ~= "Offered" then
                 local kDef = pool[tonumber(k)]
                 local req = kDef and kDef.requiredTrigger or 1
                 if (tonumber(v) or 0) < req then
@@ -372,38 +348,6 @@ AddEventHandler("QuestSystem:CancelQuest", function(questId)
 
         playerquests[questId] = nil
         done(json.encode(playerquests), function()
-            TriggerClientEvent('QuestSystem:RefreshQuests', _source)
-        end)
-    end)
-end)
-
-RegisterServerEvent("QuestSystem:ClaimReward")
-AddEventHandler("QuestSystem:ClaimReward", function(questId, optionIdx)
-    local _source = source
-    local xPlayer = ESX.GetPlayerFromId(_source)
-    if not xPlayer or not choiceEnabled then return end
-    questId = tostring(tonumber(questId))
-    optionIdx = tonumber(optionIdx)
-    local option = optionIdx and Config.QuestRewardChoice.options[optionIdx]
-    if questId == "nil" or not option then return end
-    if not nearQuestNPC(_source) then
-        TriggerClientEvent('esx:showNotification', _source, "Visit a quest giver to claim rewards", "error", "Quests")
-        return
-    end
-
-    withRow(xPlayer.identifier, function(row, done)
-        if not row then return done(nil) end
-        local ok, playerquests = pcall(json.decode, row.quests)
-        if not ok or type(playerquests) ~= 'table' then return done(nil) end
-        local pend = playerquests["Pending"]
-        if type(pend) ~= 'table' or not pend[questId] then return done(nil) end -- nothing to claim / already claimed
-        local pool = poolFor(playerquests)
-        local questDef = pool and pool[tonumber(questId)]
-        if not questDef then return done(nil) end
-
-        pend[questId] = nil -- removed BEFORE paying, inside the row lock: a double-click can't pay twice
-        done(json.encode(playerquests), function()
-            grantQuestReward(xPlayer, questDef, option.xpMul, option.coinMul)
             TriggerClientEvent('QuestSystem:RefreshQuests', _source)
         end)
     end)
@@ -470,15 +414,7 @@ for trigger, entries in pairs(byTrigger) do
                     playerquests[idStr] = cur
                     changed = true
                     if cur == e.quest.requiredTrigger then
-                        if choiceEnabled then
-                            local pend = playerquests["Pending"]
-                            if type(pend) ~= 'table' then pend = {}; playerquests["Pending"] = pend end
-                            pend[idStr] = true
-                            TriggerClientEvent('esx:showNotification', xPlayer.source, "Quest finished - claim your reward at the quest giver", "success", e.quest.name)
-                            TriggerClientEvent('hud:achievementToast', xPlayer.source, e.quest.name, 'Claim your reward at the quest giver')
-                        else
-                            grantQuestReward(xPlayer, e.quest)
-                        end
+                        grantQuestReward(xPlayer, e.quest)
                     else
                         TriggerClientEvent('esx:showNotification', xPlayer.source, "Quest : " .. cur .. "/" .. e.quest.requiredTrigger, "success", e.quest.name)
                     end

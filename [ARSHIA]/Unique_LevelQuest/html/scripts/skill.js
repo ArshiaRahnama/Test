@@ -2,14 +2,19 @@ function escapeHtml(v) {
   return String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
-// Unique-style "+" burst when an activity skill goes up. Lives on <body>, so it
-// shows even while the menu is closed.
-function skillUpBurst(label, percent) {
-  const box = document.createElement('div');
-  box.className = 'skillUpBurst';
-  box.innerHTML = `<span class="skillUpPlus">+</span><span class="skillUpText">${escapeHtml(label)} ${Number(percent).toFixed(1)}%</span>`;
-  document.body.appendChild(box);
-  setTimeout(() => box.remove(), 1800);
+function createSkillUpSymbols() {
+  const container = document.getElementById('skillUP');
+  if (!container) return;
+  const count = 10; // same amount as the original effect
+  for (let i = 0; i < count; i++) {
+    const symbol = document.createElement('span');
+    symbol.className = 'skillUpSymbol';
+    symbol.textContent = '+';
+    symbol.style.left = Math.random() * (window.innerWidth - 30) + 'px';
+    symbol.style.top = Math.random() * (window.innerHeight - 40) + 'px';
+    container.appendChild(symbol);
+    setTimeout(() => symbol.remove(), 2000);
+  }
 }
 
 let skinOptions = null;
@@ -63,68 +68,35 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (data.type === 'skinOptions' && data.options) { skinOptions = data.options; return; }
 
-    if (data.type === 'skillUp') {
-      skillUpBurst(data.label, data.percent);
-      if (data.finished && typeof playChime === 'function') playChime();
-      return;
-    }
+    if (data.type === 'skillUp') { createSkillUpSymbols(); return; }
 
     if (data.type === 'loadActivitySkills' && Array.isArray(data.skills)) {
-      const box = document.querySelector('.skill-activity');
-      const head = document.querySelector('.skill-activity-title');
-      if (!box) return;
       const wbox = document.querySelector('.weapon-skill-list');
-      if (wbox) {
-        wbox.innerHTML = '';
-        data.skills.filter(s => s.weapon)
-          .sort((a, b) => (b.finished - a.finished) || (b.percent - a.percent) || String(a.label).localeCompare(String(b.label)))
-          .forEach(s => {
-            const pct = Math.max(0, Math.min(100, Number(s.percent) || 0));
-            const row = document.createElement('div');
-            row.className = 'skillRow' + (s.finished ? ' mastered' : '');
-            row.innerHTML = `
-              <div class="skillTop">
-                <div class="skillIcon"><i class="fa-solid fa-crosshairs"></i></div>
-                <div class="skillTitleBlock">
-                  <span class="skillTitle">${escapeHtml(s.label)}</span>
-                  <span class="skillTier tier-${tierFor(pct).toLowerCase()}">${s.finished ? 'Mastered' : tierFor(pct)}</span>
-                </div>
-                <span class="skillPct">${pct.toFixed(2)}%</span>
-              </div>
-              <div class="skillBar"><div class="skillFill" style="width:${pct}%"></div></div>
-              ${skinPickerHtml(s)}`;
-            const sel = row.querySelector('select');
-            if (sel) sel.addEventListener('change', () => {
-              fetch(`https://${GetParentResourceName()}/setWeaponSkin`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ weapon: sel.dataset.weapon, tint: Number(sel.value) }),
-              });
-            });
-            wbox.appendChild(row);
-          });
-      }
-      const activity = data.skills.filter(s => !s.weapon);
-      box.innerHTML = '';
-      if (head) head.classList.toggle('hidden', activity.length === 0);
-      activity.forEach(s => {
-        const pct = Math.max(0, Math.min(100, Number(s.percent) || 0));
-        const row = document.createElement('div');
-        row.className = 'skillRow' + (s.finished ? ' mastered' : '');
-        row.innerHTML = `
-          <div class="skillTop">
-            <div class="skillIcon"><i class="fa-solid fa-gauge-high"></i></div>
-            <div class="skillTitleBlock">
+      if (!wbox) return;
+      const frag = document.createDocumentFragment(); // one DOM write for ~50 rows
+      data.skills.filter(s => s.weapon)
+        .sort((a, b) => (b.finished - a.finished) || (b.percent - a.percent) || String(a.label).localeCompare(String(b.label)))
+        .forEach(s => {
+          const pct = Math.max(0, Math.min(100, Number(s.percent) || 0));
+          const row = document.createElement('div');
+          row.className = 'skillRow wsRow' + (s.finished ? ' mastered' : '');
+          row.innerHTML = `
+            <div class="skillTop">
               <span class="skillTitle">${escapeHtml(s.label)}</span>
-              <span class="skillTier tier-${tierFor(pct).toLowerCase()}">${tierFor(pct)}</span>
+              <span class="skillPct">${pct.toFixed(2)}%</span>
             </div>
-            <span class="skillPct">${pct.toFixed(1)}%</span>
-          </div>
-          <div class="skillBar"><div class="skillFill" style="width:0%"></div></div>`;
-        box.appendChild(row);
-        setSkillIcon(row.querySelector('.skillIcon'), s.job);
-        const fill = row.querySelector('.skillFill');
-        requestAnimationFrame(() => { fill.style.width = `${pct}%`; });
-      });
+            <div class="skillBar"><div class="skillFill" style="width:${pct}%"></div></div>
+            ${skinPickerHtml(s)}`;
+          const sel = row.querySelector('select');
+          if (sel) sel.addEventListener('change', () => {
+            fetch(`https://${GetParentResourceName()}/setWeaponSkin`, {
+              method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ weapon: sel.dataset.weapon, tint: Number(sel.value) }),
+            });
+          });
+          frag.appendChild(row);
+        });
+      wbox.replaceChildren(frag);
       return;
     }
 

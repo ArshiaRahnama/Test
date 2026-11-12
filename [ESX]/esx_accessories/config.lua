@@ -4,6 +4,11 @@ Config.Locale = 'en'
 
 Config.Price = 100
 
+-- Unique_Clothe now sells ears / glasses / helmets / masks on the SAME spots (item based).
+-- With this on, the old accessory shops are switched off so E does not open two menus.
+-- Set to false to bring the old accessory shops back (and stop selling them in Unique_Clothe).
+Config.DisableShopZones = true
+
 Config.EnableControls = true
 
 Config.DrawDistance = 100

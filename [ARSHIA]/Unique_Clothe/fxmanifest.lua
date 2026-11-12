@@ -3,7 +3,7 @@ game 'gta5'
 lua54 'yes'
 
 author 'Unique'
-description 'Unique_clothe - clothing shop + item based wardrobe (clothes are inventory items)'
+description 'Unique_Clothe - clothing shop + item based wardrobe (clothes are inventory items)'
 
 ui_page 'ui/index.html'
 

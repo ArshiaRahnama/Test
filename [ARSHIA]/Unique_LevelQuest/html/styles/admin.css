@@ -18,7 +18,7 @@
 }
 
 .player-item:hover {
-  border-color: rgba(124, 58, 237, 0.4);
+  border-color: rgba(255, 140, 26, 0.4);
 }
 
 .player-item.active {
@@ -81,5 +81,5 @@
 }
 
 .spect-btn:hover { border-color: #6dc9ff; color: #6dc9ff; background: rgba(109, 201, 255, 0.12); }
-.goto-btn:hover { border-color: var(--orange); color: var(--orange); background: rgba(124, 58, 237, 0.12); }
+.goto-btn:hover { border-color: var(--orange); color: var(--orange); background: rgba(255, 140, 26, 0.12); }
 .freeze-btn:hover { border-color: var(--red); color: var(--red); background: rgba(226, 85, 78, 0.12); }

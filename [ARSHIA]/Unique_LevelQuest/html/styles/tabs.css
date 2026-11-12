@@ -1,0 +1,30 @@
+/* Loaded last. Two jobs: (1) keep the long lists cheap to render, (2) make every tab's
+   cards share one shape so the tabs look like one family. */
+
+/* ---- weapon skill tab (51 rows): no per-row animation, offscreen rows aren't painted ---- */
+.weapon-skill-list { display: flex; flex-direction: column; gap: 10px; }
+.wsRow { animation: none; content-visibility: auto; contain-intrinsic-size: auto 78px; padding: 12px 16px; }
+.wsRow .skillTop { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+.wsRow .skillBar { margin: 0; }
+.wsSkin { display: inline-flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 12px; color: var(--muted); }
+.wsSkin select { background: rgba(0,0,0,.35); color: var(--text); border: 1px solid var(--edge); border-radius: 8px;
+  padding: 6px 10px; min-height: 40px; font: inherit; font-size: 13px; }
+.wsSkin select:focus-visible { outline: 2px solid var(--orange); outline-offset: 2px; }
+
+/* ---- one card shape for every tab ---- */
+.skillRow, .achCard, .boardRow, .ev-card, .recordStatusCard, .recordHistoryRow, .dutyChip, .summaryChip {
+  border-radius: 14px;
+  border: 1px solid var(--edge);
+  background: var(--glass);
+}
+/* same inner spacing and the same scrolling behaviour in every panel */
+.panel { overflow-y: auto; overscroll-behavior: contain; }
+
+/* people on weak PCs / reduced-motion: no decorative motion at all */
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+
+/* ---- skill-up effect: green "+" symbols float to the top (transform + opacity only) ---- */
+#skillUP { position: fixed; inset: 0; z-index: 9999; pointer-events: none; overflow: hidden; }
+.skillUpSymbol { position: absolute; font-size: 40px; font-weight: 700; line-height: 1; color: #2ecc40;
+  text-shadow: 0 2px 6px rgba(0,0,0,.6); animation: skillUpAnimation 2s linear forwards; will-change: transform, opacity; }
+@keyframes skillUpAnimation { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-100vh); } }

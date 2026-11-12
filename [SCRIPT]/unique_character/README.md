@@ -3,7 +3,7 @@
 فلو ثبت‌نام + اسپاون کاراکتر یونیک روی استک Unique (essentialmode + oxmysql + skincreator).
 
 ## نصب
-1. پوشه‌ی `unique_character` رو بذار توی `[ARSHIA]` (بعد از `essentialmode`, `oxmysql`, `ps-ui` استارت می‌شه، چون `[ARSHIA]` آخره).
+1. پوشه‌ی `unique_character` رو بذار توی `[ARSHIA]` (بعد از `essentialmode` و `oxmysql` استارت می‌شه، چون `[ARSHIA]` آخره؛ دیگه به `ps-ui` نیازی نداره).
 2. `[SCRIPT]/loading/fxmanifest.lua` رو با نسخه‌ی داخل patch جایگزین کن (کلاینت قدیمی `loading` خاموش می‌شه؛ بدون این کار دو فرم ثبت‌نام همزمان باز می‌شه).
 3. ریستارت سرور (نه فقط ریسورس؛ فلو اسپاون فقط موقع join کار می‌کنه).
 4. اختیاری ولی پیشنهادی (جلوگیری قطعی از نام تکراری حتی اگه ریسورس دیگه‌ای playerName بنویسه):
@@ -37,3 +37,11 @@ TriggerEvent('unique_character:clothesReady')
 
 ## هنوز باز (دست نزدم)
 `[BASE]/essentialmode/server/player/login.lua` → `es:newName` رو هر کلاینتی می‌تونه صدا بزنه. الان چیزی ازش استفاده نمی‌کنه؛ پیشنهاد: حذفش یا فقط سروری کردنش.
+
+## صفحه‌ی سیاه و نوار وضعیت پایین صفحه
+- صفحه همون اول سیاه می‌شه و فقط وقتی **همه‌چیز** لود شد فید‌این می‌شه (۳ ثانیه).
+- پایین صفحه یه پنل کوچیک بالا میاد و مرحله‌ها رو نشون می‌ده، به همین ترتیب:
+  `Retrieving data` ← `Register` (فقط بازیکن جدید) ← `Preparing for spawn` ← `Teleporting to last location` ← `Wearing clothe` ← `Welcome🙂`
+- اگه اسکریپت دیگه‌ای (مثل `spawnmanager`) وسط لودینگ صفحه رو فید‌این کنه، سریع دوباره سیاه می‌شه (`Config.HoldBlack`).
+- حداقل زمان سیاهی `Config.MinBlackMs` هست (پیش‌فرض ۸ ثانیه)، حتی اگه همه‌چیز زودتر آماده باشه. مدت هر مرحله: `RetrieveMs`, `PrepareMs`, `TeleportMs`, `ClothesMinMs`.
+- متن پیام‌ها از `Config.Text` عوض می‌شه.

@@ -3,7 +3,7 @@
 }
 
 .boardRow.clickable:hover {
-  border-color: rgba(124, 58, 237, 0.4);
+  border-color: rgba(255, 140, 26, 0.4);
 }
 
 .compareOverlay {
@@ -14,7 +14,6 @@
   align-items: center;
   justify-content: center;
   background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(4px);
 }
 
 .compareCard {

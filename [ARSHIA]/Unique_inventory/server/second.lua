@@ -272,6 +272,7 @@ function UniqueStash.put(src, key, data, maxWeight)
     end
 
     touch(key)
+    UNIQUE.saveSoon(src)
     TriggerClientEvent('esx:updateInventory', src)
     broadcast(key)
     return true
@@ -316,6 +317,7 @@ function UniqueStash.take(src, key, data)
     end
 
     touch(key)
+    UNIQUE.saveSoon(src)
     TriggerClientEvent('esx:updateInventory', src)
     broadcast(key)
     return true
