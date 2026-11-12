@@ -163,6 +163,16 @@ AddEventHandler('Unique_Crafting:craft', function(item)
     if not bench.public and gangLevel(gangOf(x)) < num(r.Level) then
         return notify(src, 'Level-e gang kafi nist')
     end
+
+    -- Unique_LevelQuest weapon skill (Unique weapon-factory rule): on a PUBLIC bench you may only
+    -- craft a gun after mastering that gun's skill (100%). Gun-shop benches stay gang-only, which
+    -- is the "gang OR skill" access. pcall'd: if Unique_LevelQuest is stopped, nothing is blocked.
+    if CraftConfig.WeaponSkillGate and bench.public and r.isGun and item:find('^WEAPON_') then
+        local okCall, access = pcall(function() return exports['Unique_LevelQuest']:HasWeaponAccess(src, item) end)
+        if okCall and access == false then
+            return notify(src, 'Aval skill-e in aslahe ro be 100% beresoon (ba kosht-e baazikon-ha)')
+        end
+    end
     if r.Business and not GangOwnsBusiness(gangOf(x), r.Business) then
         return notify(src, 'In recipe faghat baraye gang-e sahebe in kasb-o-kar ast.')
     end

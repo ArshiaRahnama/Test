@@ -33,7 +33,6 @@
     <iframe id="frame-warzone" class="game-frame" src="warzone/ui.html"></iframe>
     <iframe id="frame-gungame" class="game-frame" src="gungame/index.html"></iframe>
     <iframe id="frame-capture" class="game-frame" src="capture/index.html"></iframe>
-    <iframe id="frame-capturedash" class="game-frame" src="capture-dash/index.html"></iframe>
 
     <!-- منوی جدید /event -->
     <iframe id="frame-hub" class="game-frame" src="hub/index.html"></iframe>
@@ -43,7 +42,6 @@
         warzone: document.getElementById('frame-warzone'),
         gungame: document.getElementById('frame-gungame'),
         capture: document.getElementById('frame-capture'),
-        capturedash: document.getElementById('frame-capturedash'),
         hub:     document.getElementById('frame-hub'),
     };
 
@@ -97,7 +95,6 @@
         frames.warzone.contentWindow.postMessage(data, '*');
         frames.gungame.contentWindow.postMessage(data, '*');
         frames.capture.contentWindow.postMessage(data, '*');
-        frames.capturedash.contentWindow.postMessage(data, '*');
     });
 
     // اگه هاب چیزی نیاز داشت به لوا برسونه (مثل اجرای یه کامند)، مستقیم

@@ -19,7 +19,7 @@ $(function () {
         btn.find('span').text('ایجاد کاراکتر');
     }
 
-    // Auto-capitalize first letter, lowercase the rest (same as Sunset)
+    // Auto-capitalize first letter, lowercase the rest
     $('.input-wrapper input[type="text"]').on('input', function (event) {
         var box = event.target;
         var start = box.selectionStart, end = box.selectionEnd;

@@ -8,7 +8,6 @@ version '2.0.0'
 
 -- وابستگی‌های همون سه ریسورس اصلی، بدون تغییر:
 dependency 'oxmysql'    -- WarZone + Capture (از طریق MySQL.Async.* compat) + GunGame (exports.oxmysql)
-dependency 'icon_menu'  -- منوی /warzone (پارتی/آمار/آخرین مچ) روی این ساخته شده
 dependency 'ox_lib'     -- Capture
 dependency 'ox_target'  -- Capture
 
@@ -46,10 +45,6 @@ files {
     'html/hub/index.html',
 
     'html/warzone/ui.html',
-    'html/warzone/css/style.css',
-    'html/warzone/js/script.js',
-    'html/warzone/sounds/*.mp3',
-    'html/warzone/img/*.png',
 
     'html/gungame/index.html',
     'html/gungame/style.css',
@@ -64,11 +59,4 @@ files {
     'html/capture/bridge.js',
     'html/capture/*.woff',
     'html/capture/*.woff2',
-
-    -- Capture Dashboard (UI قدیمی یونیک: /capture)
-    'html/capture-dash/index.html',
-    'html/capture-dash/img/*.png',
-    'html/capture-dash/imgs/*.png',
-    'html/capture-dash/script/*.js',
-    'html/capture-dash/style/*.css',
 }

@@ -3,7 +3,7 @@ game 'gta5'
 lua54 'yes'
 
 author 'Unique RP'
-description 'Unique character - Sunset-style registration + safe spawn flow (replaces [SCRIPT]/loading client flow)'
+description 'Unique character - registration + safe spawn flow (replaces [SCRIPT]/loading client flow)'
 version '1.0.0'
 
 shared_script 'config.lua'

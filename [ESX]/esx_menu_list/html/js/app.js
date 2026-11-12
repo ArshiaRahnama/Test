@@ -1,9 +1,7 @@
 /*
- * esx_menu_list UI - Sunset look, self-contained.
+ * esx_menu_list UI - Unique, self-contained.
  *
- * Sunset's version is an obfuscated Vue 2 app that loads Vue from cdn.sunrp.ir and
- * icons from Google Fonts. This one reproduces the same layout/behaviour with plain
- * DOM code, so nothing external is needed.
+ * Plain DOM code: no Vue, no CDN, no icon font. Icons are inline SVG.
  *
  * Data contract (unchanged, what esx_society / Unique_ALLGangs already send):
  *   rows[i].cols = [ avatarHtml, name, rank, actions ]      (4 columns)
@@ -11,7 +9,7 @@
  *   actions: '{{label|value}} {{label|value}}'  -> icon buttons; 'DISABLE' -> none
  *   rows[i].data is handed back to Lua on submit.
  *
- * Table mode ('list2', Sunset's sun-list): same payload shape, but head/rows are drawn
+ * Table mode ('list2'): same payload shape, but head/rows are drawn
  * as a table (orange header, striped rows):
  *   head = { 'TS', 'Date', 'Content' },  rows[i].cols = { a, b, c }
  *   A cell is shown as plain text (so log lines containing < > are shown literally),
@@ -33,7 +31,7 @@
 		'<circle cx="50" cy="38" r="18" fill="#ffffff" fill-opacity=".85"/>' +
 		'<path d="M14 92c4-24 20-34 36-34s32 10 36 34z" fill="#ffffff" fill-opacity=".85"/></svg>');
 
-	// Material "edit" / "swap_horiz" / "person_remove" (what Sunset shows for Promote / Swap / anything else)
+	// Material "edit" / "swap_horiz" / "person_remove" (shown for Promote / Swap / anything else)
 	var ICONS = {
 		edit: '<svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>',
 		swap: '<svg viewBox="0 0 24 24"><path d="M6.99 11 3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z"/></svg>',
@@ -276,7 +274,7 @@
 				if (cols[2] !== undefined) rankText = rankText + (rankText && textOf(cols[2]) ? ' - ' : '') + textOf(cols[2]);
 			}
 
-			// Sunset hides rows that are missing name / rank / actions; here only truly empty rows are skipped
+			// only truly empty rows are skipped (rows missing actions are still shown)
 			if (!nameText && !rankText) return;
 
 			var card = document.createElement('div');
@@ -287,7 +285,7 @@
 			img.alt = '';
 			img.src = avatarSrc || PLACEHOLDER_AVATAR;
 			img.addEventListener('error', function () {
-				if (img.src !== PLACEHOLDER_AVATAR) img.src = PLACEHOLDER_AVATAR; // Sunset used an external discord image here
+				if (img.src !== PLACEHOLDER_AVATAR) img.src = PLACEHOLDER_AVATAR; // local placeholder, never an external image
 			});
 			card.appendChild(img);
 

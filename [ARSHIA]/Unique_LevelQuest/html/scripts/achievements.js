@@ -24,7 +24,7 @@
           <span class="achDesc">${esc(a.description)}</span>
           ${a.max > 1 ? `<div class="skillBar"><div class="skillFill" style="width:${pct}%"></div></div>` : ''}
         </div>
-        <span class="achPoint">${a.point ? '+' + a.point : ''}</span>`;
+        <span class="achPoint">${a.point ? '+' + esc(a.point) : ''}</span>`;
       box.appendChild(row);
     });
   }

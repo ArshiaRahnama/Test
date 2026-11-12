@@ -2,7 +2,7 @@
 
 local function isClotheItem(name)
     local ok, data = pcall(function()
-        return exports['Unique_clothe']:getClotheData(name)
+        return exports['Unique_Clothe']:getClotheData(name)
     end)
     return ok and data ~= nil
 end

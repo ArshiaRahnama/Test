@@ -1085,9 +1085,9 @@ Config.Stores = {
     },
 }
 
--- The public clothing shops are now handled by Unique_Clothe (same coords).
+-- The public clothing shops are now handled by Unique_clothe (same coords).
 -- Config.ManagementStore (esx_society uniform management) is NOT affected.
--- Set to false to bring the old vms public shops back (and stop Unique_Clothe).
+-- Set to false to bring the old vms public shops back (and stop Unique_clothe).
 Config.DisablePublicStores = true
 if Config.DisablePublicStores then
     Config.PublicStoresBackup = Config.Stores

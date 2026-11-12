@@ -1,39 +1,22 @@
 -- ============================================================================
---  Unique Capture  -  SERVER  (Sun-style core)
---  هسته‌ی بازی (زون‌ها، worldها، join/exit، پرچم، امتیاز، اسکوربورد) از نو نوشته شده.
---  بخش دیتابیس/فصل/مدال/هال‌آوفیم/داشبورد از نسخه‌ی قبلی بدون تغییر منتقل شده.
---  تمام رویدادهای حساس سمت سرور اعتبارسنجی میشن (دیگه هیچ کلاینتی نمی‌تونه
---  راند رو استارت/پایان بده، کیل بده یا پرچم رو آنی بگیره).
+--  Unique Capture  -  SERVER  (Sun-style, lean)
+--  زون‌ها، worldها، join/exit، پرچم، امتیاز، اسکوربورد. تمام رویدادها سمت سرور اعتبارسنجی میشن.
+--  دیتابیس فقط دو جدول: capture_history (تاریخچه راندها) و capture_player_stats (کیل/دث/امتیاز کل).
 -- ============================================================================
 ESX = nil
 TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
 
-
--- ===== [kept from previous Unique version: logging, DB, seasons, hall of fame] =====
 function SendLog(category, embed)
     if not CapConfig.EnableDetailedLogging then return end
     local url = CapConfig.Webhooks and CapConfig.Webhooks[category]
-    if not url or url == "" then return end
-
-    embed.footer = embed.footer or { text = CapConfig.LogUsername .. " | " .. category }
-    embed.timestamp = embed.timestamp or os.date("!%Y-%m-%dT%H:%M:%SZ")
-
-    local payload = {
-        username = CapConfig.LogUsername,
-        embeds = { embed },
-    }
-    if CapConfig.LogAvatarUrl and CapConfig.LogAvatarUrl ~= "" then
-        payload.avatar_url = CapConfig.LogAvatarUrl
-    end
-
-    PerformHttpRequest(url, function(err, text, headers)
-        if err and err ~= 200 and err ~= 204 then
-            print("^1[Unique-Capture]^7 Discord log failed for category '" .. category .. "' (HTTP " .. tostring(err) .. ")")
-        end
-    end, 'POST', json.encode(payload), { ['Content-Type'] = 'application/json' })
+    if not url or url == '' then return end
+    embed.footer = embed.footer or { text = CapConfig.LogUsername .. ' | ' .. category }
+    embed.timestamp = embed.timestamp or os.date('!%Y-%m-%dT%H:%M:%SZ')
+    PerformHttpRequest(url, function() end, 'POST', json.encode({ username = CapConfig.LogUsername, embeds = { embed } }),
+        { ['Content-Type'] = 'application/json' })
 end
 
-Citizen.CreateThread(function()
+CreateThread(function()
     MySQL.Async.execute([[
         CREATE TABLE IF NOT EXISTS `capture_history` (
           `id` INT NOT NULL AUTO_INCREMENT,
@@ -46,643 +29,27 @@ Citizen.CreateThread(function()
           `top_killers_json` TEXT,
           PRIMARY KEY (`id`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-    ]], {}, function(rowsChanged) end)
-
+    ]], {}, function() end)
     MySQL.Async.execute([[
         CREATE TABLE IF NOT EXISTS `capture_player_stats` (
           `identifier` VARCHAR(60) NOT NULL,
           `name` VARCHAR(100) DEFAULT NULL,
           `kills` INT NOT NULL DEFAULT 0,
           `deaths` INT NOT NULL DEFAULT 0,
-          `top5_count` INT NOT NULL DEFAULT 0,
           `gang_points` INT NOT NULL DEFAULT 0,
+          `last_active` DATETIME DEFAULT NULL,
           PRIMARY KEY (`identifier`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-    ]], {}, function(rowsChanged) end)
-    MySQL.Async.execute("ALTER TABLE capture_player_stats ADD COLUMN IF NOT EXISTS gang_points INT NOT NULL DEFAULT 0", {}, function() end)
-    MySQL.Async.execute("ALTER TABLE capture_player_stats ADD COLUMN IF NOT EXISTS last_rank VARCHAR(20) DEFAULT 'Bronze'", {}, function() end)
-    MySQL.Async.execute("ALTER TABLE capture_player_stats ADD COLUMN IF NOT EXISTS last_active DATETIME DEFAULT NULL", {}, function() end)
-
-    MySQL.Async.execute([[
-        CREATE TABLE IF NOT EXISTS `capture_player_zone_stats` (
-          `identifier` VARCHAR(60) NOT NULL,
-          `zone_name` VARCHAR(100) NOT NULL,
-          `points` INT NOT NULL DEFAULT 0,
-          PRIMARY KEY (`identifier`, `zone_name`)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-    ]], {}, function(rowsChanged) end)
-
-    MySQL.Async.execute([[
-        CREATE TABLE IF NOT EXISTS `capture_meta` (
-          `id` INT NOT NULL AUTO_INCREMENT,
-          `season_number` INT NOT NULL DEFAULT 1,
-          `last_reset` DATETIME NOT NULL,
-          PRIMARY KEY (`id`)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-    ]], {}, function(rowsChanged) end)
-
-    MySQL.Async.execute([[
-        CREATE TABLE IF NOT EXISTS `capture_seasons` (
-          `id` INT NOT NULL AUTO_INCREMENT,
-          `season_number` INT NOT NULL,
-          `ended_date` DATETIME NOT NULL,
-          `winner_identifier` VARCHAR(60) DEFAULT NULL,
-          `winner_name` VARCHAR(100) DEFAULT NULL,
-          `winner_score` INT DEFAULT 0,
-          `winner_gang_name` VARCHAR(50) DEFAULT NULL,
-          `winner_gang_points` INT DEFAULT 0,
-          PRIMARY KEY (`id`)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-    ]], {}, function(rowsChanged) end)
-    MySQL.Async.execute("ALTER TABLE capture_seasons ADD COLUMN IF NOT EXISTS winner_gang_name VARCHAR(50) DEFAULT NULL", {}, function() end)
-    MySQL.Async.execute("ALTER TABLE capture_seasons ADD COLUMN IF NOT EXISTS winner_gang_points INT DEFAULT 0", {}, function() end)
-
-    MySQL.Async.execute([[
-        CREATE TABLE IF NOT EXISTS `capture_season_archive` (
-          `id` INT NOT NULL AUTO_INCREMENT,
-          `season_number` INT NOT NULL,
-          `identifier` VARCHAR(60) NOT NULL,
-          `name` VARCHAR(100) DEFAULT NULL,
-          `kills` INT DEFAULT 0,
-          `deaths` INT DEFAULT 0,
-          `gang_points` INT DEFAULT 0,
-          `top5_count` INT DEFAULT 0,
-          `score` INT DEFAULT 0,
-          `rank_position` INT DEFAULT 0,
-          PRIMARY KEY (`id`)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-    ]], {}, function(rowsChanged) end)
-
-    MySQL.Async.execute([[
-        CREATE TABLE IF NOT EXISTS `capture_gang_stats` (
-          `gang_name` VARCHAR(50) NOT NULL,
-          `points` INT NOT NULL DEFAULT 0,
-          PRIMARY KEY (`gang_name`)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-    ]], {}, function(rowsChanged) end)
-
-    MySQL.Async.execute([[
-        CREATE TABLE IF NOT EXISTS `capture_gang_season_archive` (
-          `id` INT NOT NULL AUTO_INCREMENT,
-          `season_number` INT NOT NULL,
-          `gang_name` VARCHAR(50) NOT NULL,
-          `points` INT DEFAULT 0,
-          `rank_position` INT DEFAULT 0,
-          PRIMARY KEY (`id`)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-    ]], {}, function(rowsChanged) end)
-
-    MySQL.Async.execute([[
-        CREATE TABLE IF NOT EXISTS `capture_playoffs` (
-          `id` INT NOT NULL AUTO_INCREMENT,
-          `season_number` INT NOT NULL,
-          `match_label` VARCHAR(50) NOT NULL,
-          `gang_a` VARCHAR(50) DEFAULT NULL,
-          `gang_b` VARCHAR(50) DEFAULT NULL,
-          `winner` VARCHAR(50) DEFAULT NULL,
-          PRIMARY KEY (`id`)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-    ]], {}, function(rowsChanged) end)
-
-    MySQL.Async.execute([[
-        CREATE TABLE IF NOT EXISTS `capture_scarce_medals` (
-          `id` INT NOT NULL AUTO_INCREMENT,
-          `season_number` INT NOT NULL,
-          `serial_number` INT NOT NULL,
-          `identifier` VARCHAR(60) NOT NULL,
-          `name` VARCHAR(100) DEFAULT NULL,
-          `awarded_at` DATETIME NOT NULL,
-          PRIMARY KEY (`id`),
-          UNIQUE KEY `season_serial` (`season_number`, `serial_number`)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-    ]], {}, function(rowsChanged) end)
-
-    MySQL.Async.execute([[
-        CREATE TABLE IF NOT EXISTS `capture_hall_of_fame` (
-          `id` INT NOT NULL AUTO_INCREMENT,
-          `identifier` VARCHAR(60) NOT NULL,
-          `name` VARCHAR(100) DEFAULT NULL,
-          `career_kills` INT DEFAULT 0,
-          `career_gang_points` INT DEFAULT 0,
-          `final_rank` VARCHAR(20) DEFAULT NULL,
-          `inducted_at` DATETIME NOT NULL,
-          PRIMARY KEY (`id`),
-          UNIQUE KEY `identifier_unique` (`identifier`)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-    ]], {}, function(rowsChanged) end)
-
-    Citizen.Wait(1000)
-    MySQL.Async.fetchAll('SELECT * FROM capture_meta ORDER BY id DESC LIMIT 1', {}, function(results)
-        if not results or not results[1] then
-            MySQL.Async.execute('INSERT INTO capture_meta (season_number, last_reset) VALUES (1, @now)', {
-                ['@now'] = os.date('%Y-%m-%d %H:%M:%S')
-            })
-        end
-        StartSeasonCheckThread()
-        StartHallOfFameThread()
-    end)
+    ]], {}, function() end)
 end)
-
-function UpsertZoneStat(identifier, zoneName, amount)
-    MySQL.Async.execute(
-        'INSERT INTO capture_player_zone_stats (identifier, zone_name, points) VALUES (@identifier, @zone, @amount) '..
-        'ON DUPLICATE KEY UPDATE points = points + @amount',
-        {
-            ['@identifier'] = identifier,
-            ['@zone'] = zoneName,
-            ['@amount'] = amount,
-        }
-    )
-end
-
-function UpsertGangStat(gangName, amount)
-    if type(gangName) ~= "string" or gangName == "" or gangName == "nogang" then return end
-    MySQL.Async.execute(
-        'INSERT INTO capture_gang_stats (gang_name, points) VALUES (@gang, @amount) '..
-        'ON DUPLICATE KEY UPDATE points = points + @amount',
-        {
-            ['@gang'] = gangName,
-            ['@amount'] = amount,
-        }
-    )
-end
-
-local SeasonWarningsSent = {}
-
-function StartSeasonCheckThread()
-    Citizen.CreateThread(function()
-        while true do
-            Wait(60 * 60 * 1000)
-            MySQL.Async.fetchAll('SELECT * FROM capture_meta ORDER BY id DESC LIMIT 1', {}, function(results)
-                local meta = results and results[1]
-                if not meta then return end
-                MySQL.Async.fetchAll('SELECT TIMESTAMPDIFF(HOUR, @lastReset, NOW()) as hours', {
-                    ['@lastReset'] = meta.last_reset
-                }, function(diffResult)
-                    local hoursPassed = diffResult and diffResult[1] and diffResult[1].hours or 0
-                    local totalHours = CapConfig.SeasonAutoResetDays * 24
-                    local hoursRemaining = totalHours - hoursPassed
-
-                    if CapConfig.EnableSeasonWarning and not SeasonWarningsSent[meta.season_number]
-                       and hoursRemaining <= CapConfig.SeasonWarningHoursBefore and hoursRemaining > 0 then
-                        SeasonWarningsSent[meta.season_number] = true
-                        TriggerClientEvent('chat:addMessage', -1, {args = {"^1Unique-CaptureSystem", "Fasl "..meta.season_number.." Kamtar Az "..CapConfig.SeasonWarningHoursBefore.." Saat Dige Tamam Mishe! Amadeh Bashid !"}})
-                        SendLog("Season", {
-                            title = "⏳ Season Ending Soon",
-                            color = 0xF1C40F,
-                            description = "Season " .. meta.season_number .. " ends in less than " .. CapConfig.SeasonWarningHoursBefore .. " hours.",
-                        })
-                    end
-
-                    if hoursPassed >= totalHours then
-                        RunSeasonReset(meta.season_number)
-                    end
-                end)
-            end)
-        end
-    end)
-end
-
-function StartHallOfFameThread()
-    if not CapConfig.EnableHallOfFame then return end
-    Citizen.CreateThread(function()
-        while true do
-            Wait(6 * 60 * 60 * 1000)
-            MySQL.Async.fetchAll(
-                'SELECT identifier, name, kills, gang_points, last_rank FROM capture_player_stats '..
-                'WHERE last_rank = @rank AND last_active IS NOT NULL AND last_active < DATE_SUB(NOW(), INTERVAL @days DAY) '..
-                'AND identifier NOT IN (SELECT identifier FROM capture_hall_of_fame)',
-                {
-                    ['@rank'] = CapConfig.ScarceMedalRank,
-                    ['@days'] = CapConfig.HallOfFameInactivityDays,
-                },
-                function(candidates)
-                    if not candidates then return end
-                    for _, row in ipairs(candidates) do
-                        MySQL.Async.execute(
-                            'INSERT INTO capture_hall_of_fame (identifier, name, career_kills, career_gang_points, final_rank, inducted_at) '..
-                            'VALUES (@id, @name, @kills, @gp, @rank, @date)',
-                            {
-                                ['@id'] = row.identifier,
-                                ['@name'] = row.name,
-                                ['@kills'] = row.kills,
-                                ['@gp'] = row.gang_points,
-                                ['@rank'] = row.last_rank,
-                                ['@date'] = os.date('%Y-%m-%d %H:%M:%S'),
-                            }
-                        )
-                        TriggerClientEvent('chat:addMessage', -1, {args = {
-                            "^1🎖️ HALL OF FAME", "^2" .. tostring(row.name) .. " ^7Has Been Inducted Into The Hall Of Fame (" .. tostring(row.kills) .. " Career Kills) !"
-                        }})
-                        SendLog("Season", {
-                            title = "🎖️ Hall Of Fame Induction",
-                            color = 0xF2C744,
-                            fields = {
-                                {name = "Player", value = tostring(row.name), inline = true},
-                                {name = "Final Rank", value = tostring(row.last_rank), inline = true},
-                                {name = "Career Kills", value = tostring(row.kills), inline = true},
-                                {name = "Career Gang Points", value = tostring(row.gang_points), inline = true},
-                            },
-                        })
-                    end
-                end
-            )
-        end
-    end)
-end
-
-if CapConfig.EnableHallOfFame then
-    RegisterCommand(CapConfig.HallOfFameCommand, function(source, args, rawCommand)
-        MySQL.Async.fetchAll('SELECT * FROM capture_hall_of_fame ORDER BY inducted_at DESC LIMIT 20', {}, function(rows)
-            if not rows or #rows == 0 then
-                TriggerClientEvent("chat:addMessage", source, {args = {"^1Unique-CaptureSystem", "Hall Of Fame Is Empty So Far."}})
-                return
-            end
-            TriggerClientEvent("chat:addMessage", source, {args = {"^3Unique-CaptureSystem", "=== 🎖️ Hall Of Fame ==="}})
-            for _, row in ipairs(rows) do
-                TriggerClientEvent("chat:addMessage", source, {args = {
-                    "^1🎖️", tostring(row.name) .. " - " .. tostring(row.final_rank) .. " (" .. tostring(row.career_kills) .. " kills, " .. tostring(row.career_gang_points) .. " gang pts)"
-                }})
-            end
-        end)
-    end)
-end
-
-function RunSeasonReset(currentSeasonNumber)
-    if not CapConfig.BackupBeforeSeasonReset then
-        PerformSeasonReset(currentSeasonNumber)
-        return
-    end
-
-    MySQL.Async.fetchAll('SELECT * FROM capture_player_stats', {}, function(playerRows)
-        MySQL.Async.fetchAll('SELECT * FROM capture_gang_stats', {}, function(gangRows)
-            local backup = {
-                season_number = currentSeasonNumber,
-                backed_up_at = os.date('%Y-%m-%d %H:%M:%S'),
-                players = playerRows or {},
-                gangs = gangRows or {},
-            }
-
-            local fileName = CapConfig.BackupFolder .. "/season_" .. currentSeasonNumber .. "_" .. os.date('%Y-%m-%d_%H-%M-%S') .. ".json"
-            local ok = SaveResourceFile(GetCurrentResourceName(), fileName, json.encode(backup), -1)
-
-            if ok then
-                print("^2[Unique-Capture]^7 Season " .. currentSeasonNumber .. " backup saved: " .. fileName)
-            else
-                print("^1[Unique-Capture]^7 WARNING: Season " .. currentSeasonNumber .. " backup FAILED to save (check server write permissions). Proceeding with reset anyway.")
-            end
-
-            PerformSeasonReset(currentSeasonNumber)
-        end)
-    end)
-end
-
-function PerformSeasonReset(currentSeasonNumber)
-    MySQL.Async.fetchAll(
-        'SELECT identifier, name, kills, deaths, gang_points, top5_count, '..
-        '(kills*@wk + gang_points*@wg - deaths*@wd) as score '..
-        'FROM capture_player_stats ORDER BY score DESC',
-        {
-            ['@wk'] = CapConfig.AllTimeScoreWeights.Kills,
-            ['@wg'] = CapConfig.AllTimeScoreWeights.GangPoints,
-            ['@wd'] = CapConfig.AllTimeScoreWeights.DeathPenalty,
-        },
-        function(rows)
-            rows = rows or {}
-
-            for i, row in ipairs(rows) do
-                MySQL.Async.execute(
-                    'INSERT INTO capture_season_archive (season_number, identifier, name, kills, deaths, gang_points, top5_count, score, rank_position) '..
-                    'VALUES (@season, @identifier, @name, @kills, @deaths, @gang_points, @top5, @score, @rank)',
-                    {
-                        ['@season'] = currentSeasonNumber,
-                        ['@identifier'] = row.identifier,
-                        ['@name'] = row.name,
-                        ['@kills'] = row.kills,
-                        ['@deaths'] = row.deaths,
-                        ['@gang_points'] = row.gang_points,
-                        ['@top5'] = row.top5_count,
-                        ['@score'] = row.score,
-                        ['@rank'] = i,
-                    }
-                )
-            end
-
-            local winner = rows[1]
-
-            MySQL.Async.fetchAll('SELECT gang_name, points FROM capture_gang_stats ORDER BY points DESC', {}, function(gangRows)
-                gangRows = gangRows or {}
-
-                for i, gangRow in ipairs(gangRows) do
-                    MySQL.Async.execute(
-                        'INSERT INTO capture_gang_season_archive (season_number, gang_name, points, rank_position) VALUES (@season, @gang, @points, @rank)',
-                        {
-                            ['@season'] = currentSeasonNumber,
-                            ['@gang'] = gangRow.gang_name,
-                            ['@points'] = gangRow.points,
-                            ['@rank'] = i,
-                        }
-                    )
-                end
-
-                local winnerGang = gangRows[1]
-
-                MySQL.Async.execute(
-                    'INSERT INTO capture_seasons (season_number, ended_date, winner_identifier, winner_name, winner_score, winner_gang_name, winner_gang_points) '..
-                    'VALUES (@season, @date, @wid, @wname, @wscore, @wgang, @wgangpoints)',
-                    {
-                        ['@season'] = currentSeasonNumber,
-                        ['@date'] = os.date('%Y-%m-%d %H:%M:%S'),
-                        ['@wid'] = winner and winner.identifier or nil,
-                        ['@wname'] = winner and winner.name or nil,
-                        ['@wscore'] = winner and winner.score or 0,
-                        ['@wgang'] = winnerGang and winnerGang.gang_name or nil,
-                        ['@wgangpoints'] = winnerGang and winnerGang.points or 0,
-                    }
-                )
-
-                if winner then
-                    TriggerClientEvent('chat:addMessage', -1, {args = {"^1Unique-CaptureSystem", "Fasl "..currentSeasonNumber.." Tamam Shod! Barande Bazikon: "..tostring(winner.name).." ("..tostring(winner.score).." pts)"}})
-                end
-                if winnerGang then
-                    TriggerClientEvent('chat:addMessage', -1, {args = {"^1Unique-CaptureSystem", "Barande Gang Fasl "..currentSeasonNumber..": "..tostring(winnerGang.gang_name).." ("..tostring(winnerGang.points).." pts) | Fasle Jadid Shoro Shod!"}})
-                end
-
-                SendLog("Season", {
-                    title = "🏁 Season " .. currentSeasonNumber .. " Ended",
-                    color = 0x9B59B6,
-                    fields = {
-                        {name = "Player Champion", value = winner and (tostring(winner.name) .. " (" .. tostring(winner.score) .. " pts)") or "N/A", inline = true},
-                        {name = "Gang Champion", value = winnerGang and (tostring(winnerGang.gang_name) .. " (" .. tostring(winnerGang.points) .. " pts)") or "N/A", inline = true},
-                        {name = "Total Players Ranked", value = tostring(#rows), inline = true},
-                    },
-                })
-
-
-                if CapConfig.EnableLeagueMode then
-                    MySQL.Async.fetchAll('SELECT gang_name, rank_position FROM capture_gang_season_archive WHERE season_number = @prev', {
-                        ['@prev'] = currentSeasonNumber - 1
-                    }, function(prevRows)
-                        if prevRows and #prevRows > 0 then
-                            local prevRank = {}
-                            for _, r in ipairs(prevRows) do prevRank[r.gang_name] = r.rank_position end
-                            local bestImprovement = 0
-                            local bestGang = nil
-                            for i, row in ipairs(gangRows) do
-                                local oldRank = prevRank[row.gang_name]
-                                if oldRank then
-                                    local improvement = oldRank - i
-                                    if improvement > bestImprovement then
-                                        bestImprovement = improvement
-                                        bestGang = row.gang_name
-                                    end
-                                end
-                            end
-                            if bestGang then
-                                TriggerClientEvent('chat:addMessage', -1, {args = {"^1Unique-CaptureSystem", "Comeback Of The Season: "..bestGang.." ("..bestImprovement.." Rank Jump !)"}})
-                            end
-                        end
-                    end)
-
-
-                    if CapConfig.EnablePlayoffs and #gangRows >= 4 then
-                        local semi1a, semi1b = gangRows[1].gang_name, gangRows[4].gang_name
-                        local semi2a, semi2b = gangRows[2].gang_name, gangRows[3].gang_name
-                        MySQL.Async.execute('INSERT INTO capture_playoffs (season_number, match_label, gang_a, gang_b) VALUES (@s,"Semifinal 1",@a,@b)', {['@s'] = currentSeasonNumber, ['@a'] = semi1a, ['@b'] = semi1b})
-                        MySQL.Async.execute('INSERT INTO capture_playoffs (season_number, match_label, gang_a, gang_b) VALUES (@s,"Semifinal 2",@a,@b)', {['@s'] = currentSeasonNumber, ['@a'] = semi2a, ['@b'] = semi2b})
-                        MySQL.Async.execute('INSERT INTO capture_playoffs (season_number, match_label, gang_a, gang_b) VALUES (@s,"Final",NULL,NULL)', {['@s'] = currentSeasonNumber})
-                        TriggerClientEvent('chat:addMessage', -1, {args = {"^1Unique-CaptureSystem", "PLAYOFFS Fasl "..currentSeasonNumber..": Semifinal1 "..semi1a.." vs "..semi1b.." | Semifinal2 "..semi2a.." vs "..semi2b}})
-                    end
-                end
-
-                MySQL.Async.execute('DELETE FROM capture_gang_stats', {})
-            end)
-
-            MySQL.Async.execute('DELETE FROM capture_player_stats', {}, function()
-                MySQL.Async.execute(
-                    'INSERT INTO capture_meta (season_number, last_reset) VALUES (@season, @now)',
-                    {
-                        ['@season'] = currentSeasonNumber + 1,
-                        ['@now'] = os.date('%Y-%m-%d %H:%M:%S')
-                    }
-                )
-            end)
-        end
-    )
-end
 
 function UpsertPlayerStat(identifier, name, column, amount)
-    if column ~= 'kills' and column ~= 'deaths' and column ~= 'top5_count' and column ~= 'gang_points' then return end
+    if column ~= 'kills' and column ~= 'deaths' and column ~= 'gang_points' then return end
     MySQL.Async.execute(
-        'INSERT INTO capture_player_stats (identifier, name, '..column..', last_active) VALUES (@identifier, @name, @amount, @now) '..
-        'ON DUPLICATE KEY UPDATE '..column..' = '..column..' + @amount, name = @name, last_active = @now',
-        {
-            ['@identifier'] = identifier,
-            ['@name'] = name,
-            ['@amount'] = amount,
-            ['@now'] = os.date('%Y-%m-%d %H:%M:%S'),
-        }
-    )
+        'INSERT INTO capture_player_stats (identifier, name, ' .. column .. ', last_active) VALUES (@identifier, @name, @amount, @now) ' ..
+        'ON DUPLICATE KEY UPDATE ' .. column .. ' = ' .. column .. ' + @amount, name = @name, last_active = @now',
+        { ['@identifier'] = identifier, ['@name'] = name, ['@amount'] = amount, ['@now'] = os.date('%Y-%m-%d %H:%M:%S') })
 end
-
--- ===== [kept: ranks, medals, dashboard] =====
-function GetRankForScore(score)
-    local rank = CapConfig.RankThresholds[1].Name
-    for _, tier in ipairs(CapConfig.RankThresholds) do
-        if score >= tier.Min then
-            rank = tier.Name
-        end
-    end
-    return rank
-end
-
-function GetPlayerRank(identifier, cb)
-    MySQL.Async.fetchAll('SELECT kills, deaths, gang_points FROM capture_player_stats WHERE identifier = @identifier LIMIT 1', {
-        ['@identifier'] = identifier
-    }, function(results)
-        local row = results and results[1]
-        local kills = row and row.kills or 0
-        local deaths = row and row.deaths or 0
-        local gangPoints = row and row.gang_points or 0
-        local score = (kills * CapConfig.AllTimeScoreWeights.Kills) + (gangPoints * CapConfig.AllTimeScoreWeights.GangPoints) - (deaths * CapConfig.AllTimeScoreWeights.DeathPenalty)
-        cb(GetRankForScore(score))
-    end)
-end
-
-function CheckScarceMedalEligibility(identifier, name)
-    if not CapConfig.EnableScarcityEngine then return end
-    MySQL.Async.fetchAll('SELECT kills, deaths, gang_points, last_rank FROM capture_player_stats WHERE identifier = @identifier LIMIT 1', {
-        ['@identifier'] = identifier
-    }, function(results)
-        local row = results and results[1]
-        if not row then return end
-        local score = ((row.kills or 0) * CapConfig.AllTimeScoreWeights.Kills) + ((row.gang_points or 0) * CapConfig.AllTimeScoreWeights.GangPoints) - ((row.deaths or 0) * CapConfig.AllTimeScoreWeights.DeathPenalty)
-        local newRank = GetRankForScore(score)
-        local oldRank = row.last_rank or "Bronze"
-
-        if newRank ~= oldRank then
-            MySQL.Async.execute('UPDATE capture_player_stats SET last_rank = @r WHERE identifier = @id', {['@r'] = newRank, ['@id'] = identifier})
-        end
-
-        if newRank == CapConfig.ScarceMedalRank and oldRank ~= CapConfig.ScarceMedalRank then
-            AwardScarceMedal(identifier, name)
-        end
-    end)
-end
-
-function AwardScarceMedal(identifier, name)
-    MySQL.Async.fetchAll('SELECT * FROM capture_meta ORDER BY id DESC LIMIT 1', {}, function(metaResults)
-        local meta = metaResults and metaResults[1]
-        local seasonNumber = meta and meta.season_number or 1
-
-        MySQL.Async.fetchAll('SELECT COUNT(*) as c FROM capture_scarce_medals WHERE season_number = @s', {
-            ['@s'] = seasonNumber
-        }, function(countResult)
-            local mintedCount = countResult and countResult[1] and countResult[1].c or 0
-            if mintedCount >= CapConfig.ScarceMedalSupplyPerSeason then
-                return
-            end
-
-            MySQL.Async.fetchAll('SELECT 1 as x FROM capture_scarce_medals WHERE season_number = @s AND identifier = @id LIMIT 1', {
-                ['@s'] = seasonNumber, ['@id'] = identifier
-            }, function(already)
-                if already and already[1] then return end
-
-                local serial = mintedCount + 1
-                MySQL.Async.execute(
-                    'INSERT INTO capture_scarce_medals (season_number, serial_number, identifier, name, awarded_at) VALUES (@s, @serial, @id, @name, @date)',
-                    {
-                        ['@s'] = seasonNumber,
-                        ['@serial'] = serial,
-                        ['@id'] = identifier,
-                        ['@name'] = name,
-                        ['@date'] = os.date('%Y-%m-%d %H:%M:%S'),
-                    }
-                )
-                TriggerClientEvent('chat:addMessage', -1, {args = {
-                    "^1🏅 SCARCE MEDAL",
-                    "^2" .. tostring(name) .. " ^7Claimed " .. CapConfig.ScarceMedalName .. " #" .. serial .. "/" .. CapConfig.ScarceMedalSupplyPerSeason .. " For Season " .. seasonNumber .. " !"
-                }})
-                SendLog("Medals", {
-                    title = "🏅 Scarce Medal Claimed",
-                    color = 0xFFD700,
-                    fields = {
-                        {name = "Player", value = tostring(name), inline = true},
-                        {name = "Serial", value = "#" .. serial .. "/" .. CapConfig.ScarceMedalSupplyPerSeason, inline = true},
-                        {name = "Season", value = tostring(seasonNumber), inline = true},
-                    },
-                })
-            end)
-        end)
-    end)
-end
-
-if CapConfig.EnableScarcityEngine then
-    RegisterCommand(CapConfig.ScarcityStatusCommand, function(source, args, rawCommand)
-        MySQL.Async.fetchAll('SELECT * FROM capture_meta ORDER BY id DESC LIMIT 1', {}, function(metaResults)
-            local meta = metaResults and metaResults[1]
-            local seasonNumber = meta and meta.season_number or 1
-            MySQL.Async.fetchAll('SELECT COUNT(*) as c FROM capture_scarce_medals WHERE season_number = @s', {
-                ['@s'] = seasonNumber
-            }, function(countResult)
-                local minted = countResult and countResult[1] and countResult[1].c or 0
-                local remaining = math.max(0, CapConfig.ScarceMedalSupplyPerSeason - minted)
-                TriggerClientEvent("chat:addMessage", source, {args = {
-                    "^1Unique-CaptureSystem",
-                    CapConfig.ScarceMedalName .. " (Season " .. seasonNumber .. "): " .. minted .. "/" .. CapConfig.ScarceMedalSupplyPerSeason .. " Claimed | " .. remaining .. " Remaining !"
-                }})
-            end)
-        end)
-    end)
-
-    RegisterCommand(CapConfig.MyMedalsCommand, function(source, args, rawCommand)
-        local xPlayer = ESX.GetPlayerFromId(source)
-        MySQL.Async.fetchAll('SELECT season_number, serial_number, awarded_at FROM capture_scarce_medals WHERE identifier = @id ORDER BY season_number DESC', {
-            ['@id'] = xPlayer.identifier
-        }, function(rows)
-            if not rows or #rows == 0 then
-                TriggerClientEvent("chat:addMessage", source, {args = {"^1Unique-CaptureSystem", "You Don't Have Any Scarce Medals Yet."}})
-                return
-            end
-            for _, row in ipairs(rows) do
-                TriggerClientEvent("chat:addMessage", source, {args = {
-                    "^1🏅", CapConfig.ScarceMedalName .. " #" .. row.serial_number .. " (Season " .. row.season_number .. ") - " .. tostring(row.awarded_at)
-                }})
-            end
-        end)
-    end)
-end
-
-ESX.RegisterServerCallback("capture:GetDashboard", function(source, cb)
-    local xPlayer = ESX.GetPlayerFromId(source)
-
-    MySQL.Async.fetchAll('SELECT * FROM capture_player_stats WHERE identifier = @id LIMIT 1', {
-        ['@id'] = xPlayer.identifier
-    }, function(mine)
-        local myRow = mine and mine[1]
-        local kills = myRow and myRow.kills or 0
-        local deaths = myRow and myRow.deaths or 0
-        local gangPoints = myRow and myRow.gang_points or 0
-        local top5 = myRow and myRow.top5_count or 0
-        local score = (kills * CapConfig.AllTimeScoreWeights.Kills) + (gangPoints * CapConfig.AllTimeScoreWeights.GangPoints) - (deaths * CapConfig.AllTimeScoreWeights.DeathPenalty)
-        local rank = GetRankForScore(score)
-
-        MySQL.Async.fetchAll('SELECT zone_name, points FROM capture_player_zone_stats WHERE identifier = @id ORDER BY points DESC LIMIT 5', {
-            ['@id'] = xPlayer.identifier
-        }, function(myZones)
-            MySQL.Async.fetchAll('SELECT name, kills FROM capture_player_stats ORDER BY kills DESC LIMIT 10', {}, function(topKillers)
-                MySQL.Async.fetchAll('SELECT gang_name, points FROM capture_gang_stats ORDER BY points DESC LIMIT 10', {}, function(gangStandings)
-                    MySQL.Async.fetchAll('SELECT * FROM capture_meta ORDER BY id DESC LIMIT 1', {}, function(metaResults)
-                        local meta = metaResults and metaResults[1]
-                        local seasonNumber = meta and meta.season_number or 1
-                        local lastReset = meta and meta.last_reset or os.date('%Y-%m-%d %H:%M:%S')
-
-                        MySQL.Async.fetchAll('SELECT TIMESTAMPDIFF(HOUR, @lastReset, NOW()) as hours', {
-                            ['@lastReset'] = lastReset
-                        }, function(diffResult)
-                            local hoursPassed = diffResult and diffResult[1] and diffResult[1].hours or 0
-                            local hoursRemaining = math.max(0, (CapConfig.SeasonAutoResetDays * 24) - hoursPassed)
-
-                            MySQL.Async.fetchAll('SELECT COUNT(*) as c FROM capture_scarce_medals WHERE season_number = @s', {
-                                ['@s'] = seasonNumber
-                            }, function(medalCount)
-                                local minted = medalCount and medalCount[1] and medalCount[1].c or 0
-
-                                MySQL.Async.fetchAll('SELECT serial_number, season_number, awarded_at FROM capture_scarce_medals WHERE identifier = @id ORDER BY season_number DESC', {
-                                    ['@id'] = xPlayer.identifier
-                                }, function(myMedals)
-                                    MySQL.Async.fetchAll('SELECT inducted_at FROM capture_hall_of_fame WHERE identifier = @id LIMIT 1', {
-                                        ['@id'] = xPlayer.identifier
-                                    }, function(hofResult)
-                                        cb({
-                                            brand = "arshiahub.ir",
-                                            myStats = {
-                                                kills = kills, deaths = deaths, gang_points = gangPoints,
-                                                top5 = top5, score = score, rank = rank,
-                                            },
-                                            myZones = myZones or {},
-                                            topKillers = topKillers or {},
-                                            gangStandings = gangStandings or {},
-                                            season = {number = seasonNumber, hours_remaining = hoursRemaining},
-                                            medals = {
-                                                minted = minted,
-                                                supply = CapConfig.ScarceMedalSupplyPerSeason,
-                                                enabled = CapConfig.EnableScarcityEngine,
-                                                mine = myMedals or {},
-                                            },
-                                            hallOfFame = hofResult and hofResult[1] and true or false,
-                                            leagueEnabled = CapConfig.EnableLeagueMode,
-                                        })
-                                    end)
-                                end)
-                            end)
-                        end)
-                    end)
-                end)
-            end)
-        end)
-    end)
-end)
 
 
 -- ============================================================================
@@ -694,7 +61,6 @@ local Board      = {}   -- [identifier] = {name,kills,deaths}   (اسکوربو�
 local GangScore  = {}   -- [gang] = points
 local Round      = { active = false, id = 0, startedAt = 0, endsAt = 0, minutes = CapConfig.DefaultTime }
 local HomeCache, LeavePenalty, JoinTokens, JoinCooldown = {}, {}, {}, {}
-local CurrentThemeName = CapConfig.ActiveTheme
 
 local function NowMs() return GetGameTimer() end
 
@@ -709,19 +75,8 @@ local function HasPerm(src)
     return xPlayer ~= nil and (tonumber(xPlayer.permission_level) or 0) > CapConfig.CommandPerm
 end
 
-local adminCooldowns = {}
-function IsRateLimited(src, name)
-    if not CapConfig.EnableAdminRateLimit or src == 0 then return false end
-    local key, now = src .. ':' .. name, os.time()
-    if adminCooldowns[key] and (now - adminCooldowns[key]) < CapConfig.AdminCommandCooldown then return true end
-    adminCooldowns[key] = now
-    return false
-end
-
--- چک دسترسی + ریت‌لیمیت یکجا؛ true یعنی اجازه داره
-local function AdminGate(src, name)
+local function AdminGate(src)
     if not HasPerm(src) then Reply(src, '^1', "You Don't Have Permissions !") return false end
-    if IsRateLimited(src, name) then Reply(src, '^1', 'Lotfan Sabr Konid Ghabl Az Estefadeye Dobare !') return false end
     return true
 end
 
@@ -920,13 +275,15 @@ ESX.RegisterServerCallback('capture:getCache', function(src, cb)
             maxPlayerCount = CapConfig.MaxPlayersInZone, maxGangCount = CapConfig.MaxGangInZone }
     end
     table.sort(list, function(a, b) return a.id < b.id end)
-    cb(list, { active = Round.active, theme = CapConfig.Themes[CurrentThemeName] },
+    cb(list, { active = Round.active },
         Round.active and math.max(0, Round.endsAt - os.time()) or nil)
 end)
 
 ESX.RegisterServerCallback('capture:getScoreboard', function(src, cb)
     local players, gangs = {}, {}
-    for _, b in pairs(Board) do players[#players + 1] = { name = b.name, kills = b.kills, deaths = b.deaths } end
+    for _, b in pairs(Board) do
+        players[#players + 1] = { name = b.gang and (b.name .. ' [' .. b.gang .. ']') or b.name, kills = b.kills, deaths = b.deaths }
+    end
     table.sort(players, function(a, b) return a.kills > b.kills end)
     for g, p in pairs(GangScore) do
         local flags = {}
@@ -1005,6 +362,7 @@ AddEventHandler('capture:join', function(zoneId)
     zone.players[src] = true
     JoinTokens[src] = nil
     Board[s.identifier] = Board[s.identifier] or { name = s.name, kills = 0, deaths = 0 }
+    Board[s.identifier].gang = s.gang
     ExemptFromAC(src, (CapConfig.SpawnProtectionTime + 6) * 1000)
     SetPlayerRoutingBucket(src, zone.world)
     TriggerClientEvent('capture:updateKillDeath', src, { kills = s.kills, deaths = s.deaths })
@@ -1066,10 +424,7 @@ local function CaptureZone(zone, s)
     zone.captureBy = s.gang
     local pts, ppts = CapConfig.Points.Capture, CapConfig.Points.CapturePlayer
     GangScore[s.gang] = (GangScore[s.gang] or 0) + pts
-    UpsertGangStat(s.gang, pts)
     UpsertPlayerStat(s.identifier, s.name, 'gang_points', ppts)
-    UpsertZoneStat(s.identifier, zone.label, ppts)
-    CheckScarceMedalEligibility(s.identifier, s.name)
     for _, src in ipairs(InCaptureList()) do
         TriggerClientEvent('capture:ChangeCaptureHandler', src, zone.id, zone.captureBy)
         Notify(src, 'Gang [' .. s.gang .. '] Zone [' .. zone.label .. '] Ra Capture Kard !', 'inform')
@@ -1106,6 +461,7 @@ AddEventHandler('esx:onPlayerDeath', function(data)
     s.lastDeath, s.contest = now, nil
     s.deaths = s.deaths + 1
     Board[s.identifier] = Board[s.identifier] or { name = s.name, kills = 0, deaths = 0 }
+    Board[s.identifier].gang = s.gang
     Board[s.identifier].deaths = s.deaths
     UpsertPlayerStat(s.identifier, s.name, 'deaths', 1)
     TriggerClientEvent('capture:updateKillDeath', victim, { kills = s.kills, deaths = s.deaths })
@@ -1115,19 +471,15 @@ AddEventHandler('esx:onPlayerDeath', function(data)
     if k and k.zoneId == s.zoneId then
         k.kills = k.kills + 1
         Board[k.identifier] = Board[k.identifier] or { name = k.name, kills = 0, deaths = 0 }
+        Board[k.identifier].gang = k.gang
         Board[k.identifier].kills = k.kills
         UpsertPlayerStat(k.identifier, k.name, 'kills', 1)
-        CheckScarceMedalEligibility(k.identifier, k.name)
         TriggerClientEvent('capture:updateKillDeath', kid, { kills = k.kills, deaths = k.deaths })
         local z = Zones[s.zoneId]
-        GetPlayerRank(k.identifier, function(kr)
-            GetPlayerRank(s.identifier, function(vr)
-                SendLog('Kills', { title = '🔫 Kill', color = 0xE74C3C, fields = {
-                    { name = 'Killer', value = k.name .. ' [' .. kr .. '] (' .. k.gang .. ')' },
-                    { name = 'Victim', value = s.name .. ' [' .. vr .. '] (' .. s.gang .. ')' },
-                    { name = 'Zone', value = tostring(z and z.label), inline = true } } })
-            end)
-        end)
+        SendLog('Kills', { title = '🔫 Kill', color = 0xE74C3C, fields = {
+            { name = 'Killer', value = k.name .. ' (' .. k.gang .. ')' },
+            { name = 'Victim', value = s.name .. ' (' .. s.gang .. ')' },
+            { name = 'Zone', value = tostring(z and z.label), inline = true } } })
     end
 end)
 
@@ -1140,13 +492,10 @@ local function HoldTick()
         local owner = zone.captureBy
         if owner then
             GangScore[owner] = (GangScore[owner] or 0) + P.HoldTick
-            UpsertGangStat(owner, P.HoldTick)
             for psrc in pairs(zone.players) do
                 local ps = Sessions[psrc]
                 if ps and ps.gang == owner and NearFlag(psrc, zone, P.HoldPresence) then
                     UpsertPlayerStat(ps.identifier, ps.name, 'gang_points', 1)
-                    UpsertZoneStat(ps.identifier, zone.label, 1)
-                    CheckScarceMedalEligibility(ps.identifier, ps.name)
                 end
             end
         end
@@ -1160,6 +509,7 @@ local function EnforceGangs()
             local now = RefreshGang(s)
             if now == 'nogang' or now ~= old then
                 Notify(src, 'Gang Shoma Taghir Kard ! Az Capture Kharej Shodid.', 'error')
+                TriggerClientEvent('capture:requestExit', src)
                 ForceExit(src)
             end
         end
@@ -1187,7 +537,6 @@ end
 local function SendResult()
     local topGangs, topKillers = TopLists()
     local wg, tk = topGangs[1], topKillers[1]
-    for _, k in ipairs(topKillers) do UpsertPlayerStat(k.Identifier, k.Name, 'top5_count', 1) end
     MySQL.Async.execute(
         'INSERT INTO capture_history (round_date, winner_gang, winner_points, top_killer_name, top_killer_kills, top_gangs_json, top_killers_json) ' ..
         'VALUES (@d, @wg, @wp, @tn, @tk, @gj, @kj)', {
@@ -1275,7 +624,7 @@ end, false)
 -- ----------------------------------------------------------------------------
 RegisterCommand(CapConfig.EditCaptureCommand, function(src)
     if src == 0 then return end
-    if not AdminGate(src, CapConfig.EditCaptureCommand) then return end
+    if not AdminGate(src) then return end
     TriggerClientEvent('capture:OpenAdminMenu', src)
 end, false)
 
@@ -1344,7 +693,7 @@ RegisterCommand(CapConfig.StatsCommand, function(src)
 end, false)
 
 RegisterCommand(CapConfig.HistoryCommand, function(src)
-    if src == 0 or not AdminGate(src, CapConfig.HistoryCommand) then return end
+    if src == 0 or not AdminGate(src) then return end
     TriggerClientEvent('capture:OpenHistoryMenu', src)
 end, false)
 
@@ -1355,160 +704,13 @@ end)
 
 ESX.RegisterServerCallback('capture:GetMyStats', function(src, cb)
     local xPlayer = ESX.GetPlayerFromId(src)
-    if not xPlayer then return cb(nil, {}, {}) end
+    if not xPlayer then return cb(nil, {}) end
     MySQL.Async.fetchAll('SELECT * FROM capture_player_stats WHERE identifier = @i LIMIT 1', { ['@i'] = xPlayer.identifier }, function(mine)
         MySQL.Async.fetchAll('SELECT name, kills FROM capture_player_stats ORDER BY kills DESC LIMIT 10', {}, function(top)
-            MySQL.Async.fetchAll('SELECT zone_name, points FROM capture_player_zone_stats WHERE identifier = @i ORDER BY points DESC LIMIT 3',
-                { ['@i'] = xPlayer.identifier }, function(zs) cb(mine and mine[1] or nil, top or {}, zs or {}) end)
+            cb(mine and mine[1] or nil, top or {})
         end)
     end)
 end)
-
--- ----------------------------------------------------------------------------
---  Admin utility commands
--- ----------------------------------------------------------------------------
-RegisterCommand(CapConfig.SeasonResetCommand, function(src)
-    if not AdminGate(src, CapConfig.SeasonResetCommand) then return end
-    MySQL.Async.fetchAll('SELECT * FROM capture_meta ORDER BY id DESC LIMIT 1', {}, function(r)
-        local n = r and r[1] and r[1].season_number or 1
-        RunSeasonReset(n)
-        Reply(src, '^2', 'Season Reset Anjam Shod !')
-        SendLog('Admin', { title = '⚠️ Manual Season Reset Triggered', color = 0xE67E22, fields = {
-            { name = 'Admin', value = src == 0 and 'console' or GetPlayerName(src), inline = true }, { name = 'Season', value = tostring(n), inline = true } } })
-    end)
-end, false)
-
-RegisterCommand(CapConfig.SeasonHistoryCommand, function(src)
-    MySQL.Async.fetchAll('SELECT * FROM capture_seasons ORDER BY season_number DESC LIMIT 10', {}, function(rows)
-        if not rows or #rows == 0 then return Reply(src, '^1', 'Hich Fasli Hanoz Tamam Nashode.') end
-        for _, s in ipairs(rows) do
-            Reply(src, '^3', '[Season ' .. s.season_number .. '] ' .. tostring(s.ended_date) .. ' | Player: ' .. tostring(s.winner_name) ..
-                ' (' .. tostring(s.winner_score) .. 'pts) | Gang: ' .. tostring(s.winner_gang_name) .. ' (' .. tostring(s.winner_gang_points) .. 'pts)')
-        end
-    end)
-end, false)
-
-if CapConfig.EnableDryRun then
-    RegisterCommand(CapConfig.DryRunCommand, function(src)
-        if not AdminGate(src, CapConfig.DryRunCommand) then return end
-        local issues, worlds = {}, {}
-        if CountZones() == 0 then issues[#issues + 1] = 'No zones configured' end
-        if Round.minutes <= 0 then issues[#issues + 1] = 'Round duration invalid' end
-        if not CapConfig.Themes[CapConfig.ActiveTheme] then issues[#issues + 1] = 'ActiveTheme not found' end
-        for id, z in pairs(Zones) do
-            if z.world < CapConfig.WorldMin or z.world > CapConfig.WorldMax then issues[#issues + 1] = 'Zone ' .. id .. ' world out of range' end
-            if worlds[z.world] then issues[#issues + 1] = 'Zones ' .. worlds[z.world] .. ' & ' .. id .. ' share world ' .. z.world end
-            worlds[z.world] = id
-        end
-        MySQL.Async.fetchAll('SELECT ' .. CapConfig.GangsNameColumn .. ', ' .. CapConfig.GangsBossColumn .. ' FROM ' .. CapConfig.GangsTable .. ' LIMIT 1', {}, function(g)
-            if not g then issues[#issues + 1] = 'Cannot query gangs table' end
-            MySQL.Async.fetchAll('SELECT ' .. CapConfig.UsersIdentifierColumn .. ' FROM ' .. CapConfig.UsersTable .. ' LIMIT 1', {}, function(u)
-                if not u then issues[#issues + 1] = 'Cannot query users table' end
-                if #issues == 0 then Reply(src, '^2', 'Dry-Run OK (' .. CountZones() .. ' zones)')
-                else
-                    Reply(src, '^1', 'Dry-Run Found ' .. #issues .. ' Issue(s):')
-                    for _, i in ipairs(issues) do Reply(src, '^1', ' - ' .. i) end
-                end
-            end)
-        end)
-    end, false)
-end
-
-if CapConfig.EnableHealthCheck then
-    RegisterCommand(CapConfig.HealthCheckCommand, function(src)
-        if not AdminGate(src, CapConfig.HealthCheckCommand) then return end
-        Reply(src, '^3', '=== Health === Active: ' .. tostring(Round.active) .. ' | Theme: ' .. CurrentThemeName .. ' | Zones: ' .. CountZones() ..
-            ' | InCapture: ' .. #InCaptureList())
-        local tables = { 'capture_history', 'capture_player_stats', 'capture_player_zone_stats', 'capture_meta', 'capture_seasons', 'capture_season_archive', 'capture_gang_stats', 'capture_gang_season_archive' }
-        local function nxt(i)
-            if i > #tables then return end
-            MySQL.Async.fetchAll('SELECT COUNT(*) as c FROM ' .. tables[i], {}, function(r)
-                Reply(src, '^3', tables[i] .. ': ' .. (r and r[1] and (r[1].c .. ' rows') or 'ERROR'))
-                nxt(i + 1)
-            end)
-        end
-        nxt(1)
-    end, false)
-end
-
-RegisterCommand(CapConfig.ThemeCommand, function(src, args)
-    if not AdminGate(src, CapConfig.ThemeCommand) then return end
-    local name = args[1]
-    if not name or not CapConfig.Themes[name] then
-        local names = {}
-        for n in pairs(CapConfig.Themes) do names[#names + 1] = n end
-        return Reply(src, '^1', 'Available Themes: ' .. table.concat(names, ', '))
-    end
-    CurrentThemeName = name
-    TriggerClientEvent('capture:SetTheme', -1, CapConfig.Themes[name])
-    TriggerClientEvent('chat:addMessage', -1, { args = { '^1Unique-CaptureSystem', 'Capture Theme Changed To: ' .. name } })
-end, false)
-
-AddEventHandler('esx:playerLoaded', function(playerId)
-    if CurrentThemeName ~= CapConfig.ActiveTheme then
-        TriggerClientEvent('capture:SetTheme', playerId, CapConfig.Themes[CurrentThemeName])
-    end
-end)
-
-RegisterCommand(CapConfig.ExportZonesCommand, function(src)
-    if not AdminGate(src, CapConfig.ExportZonesCommand) then return end
-    Reply(src, SaveZones() and '^2' or '^1', SaveZones() and ('Zones Exported To ' .. CapConfig.ZonesFileName) or 'Export FAILED (check write permissions)')
-end, false)
-
-RegisterCommand(CapConfig.ImportZonesCommand, function(src)
-    if not AdminGate(src, CapConfig.ImportZonesCommand) then return end
-    if Round.active then return Reply(src, '^1', 'Cannot Import Zones While A Capture Is Active !') end
-    local z = LoadZones(true)
-    if not z then return Reply(src, '^1', 'Failed To Load ' .. CapConfig.ZonesFileName .. ' (missing or invalid JSON)') end
-    Zones = z
-    Reply(src, '^2', 'Imported ' .. CountZones() .. ' Zones')
-end, false)
-
-if CapConfig.EnableLeagueMode then
-    RegisterCommand(CapConfig.StandingsCommand, function(src)
-        MySQL.Async.fetchAll('SELECT gang_name, points FROM capture_gang_stats ORDER BY points DESC LIMIT 15', {}, function(rows)
-            if not rows or #rows == 0 then return Reply(src, '^1', 'No Standings Data Yet This Season.') end
-            Reply(src, '^3', '=== Season Standings ===')
-            for i, r in ipairs(rows) do Reply(src, '^2', '#' .. i .. ' ' .. tostring(r.gang_name) .. ' - ' .. tostring(r.points) .. ' pts') end
-        end)
-    end, false)
-    if CapConfig.EnablePlayoffs then
-        RegisterCommand(CapConfig.PlayoffResultCommand, function(src, args)
-            if not AdminGate(src, CapConfig.PlayoffResultCommand) then return end
-            local map = { semi1 = 'Semifinal 1', semi2 = 'Semifinal 2', final = 'Final' }
-            local label, winner = args[1] and map[string.lower(args[1])], args[2]
-            if not label or not winner then return Reply(src, '^1', 'Usage: /' .. CapConfig.PlayoffResultCommand .. ' [semi1|semi2|final] [gang_name]') end
-            MySQL.Async.fetchAll('SELECT * FROM capture_playoffs WHERE match_label = @l ORDER BY id DESC LIMIT 1', { ['@l'] = label }, function(r)
-                local m = r and r[1]
-                if not m then return Reply(src, '^1', 'No Match Found For ' .. label) end
-                MySQL.Async.execute('UPDATE capture_playoffs SET winner = @w WHERE id = @id', { ['@w'] = winner, ['@id'] = m.id })
-                TriggerClientEvent('chat:addMessage', -1, { args = { '^1Unique-CaptureSystem', label .. ' Winner: ' .. winner .. ' !' } })
-                if label ~= 'Final' then
-                    MySQL.Async.fetchAll('SELECT * FROM capture_playoffs WHERE season_number = @s AND match_label IN ("Semifinal 1","Semifinal 2")', { ['@s'] = m.season_number }, function(semis)
-                        if semis and #semis == 2 and semis[1].winner and semis[2].winner then
-                            MySQL.Async.execute('UPDATE capture_playoffs SET gang_a = @a, gang_b = @b WHERE season_number = @s AND match_label = "Final"',
-                                { ['@a'] = semis[1].winner, ['@b'] = semis[2].winner, ['@s'] = m.season_number })
-                            TriggerClientEvent('chat:addMessage', -1, { args = { '^1Unique-CaptureSystem', 'FINAL: ' .. semis[1].winner .. ' vs ' .. semis[2].winner .. ' !' } })
-                        end
-                    end)
-                end
-            end)
-        end, false)
-    end
-end
-
-if CapConfig.EnablePublicAPI then
-    print('^3[Unique-Capture]^7 Public API enabled at ' .. CapConfig.PublicAPIPath .. ' - NOTE: takes over SetHttpHandler.')
-    SetHttpHandler(function(req, res)
-        if req.path ~= CapConfig.PublicAPIPath then
-            res.writeHead(404, { ['Content-Type'] = 'application/json' }) res.send(json.encode({ error = 'not found' })) return
-        end
-        local g, k = TopLists()
-        res.writeHead(200, { ['Content-Type'] = 'application/json', ['Access-Control-Allow-Origin'] = '*' })
-        res.send(json.encode({ active = Round.active, time_remaining = Round.active and (Round.endsAt - os.time()) or 0,
-            zone_count = CountZones(), active_theme = CurrentThemeName, top_killers = k, top_gangs = g }))
-    end)
-end
 
 -- exports (برای اسکریپت‌های دیگه)
 exports('IsCaptureActive', function() return Round.active end)

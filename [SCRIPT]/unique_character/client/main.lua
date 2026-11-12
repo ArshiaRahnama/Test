@@ -1,17 +1,16 @@
 -- unique_character / client
 --
--- Same flow as Sunset's sun-character (fade out -> status text -> hide ped ->
--- register form -> "wearing clothes" -> slow fade-in), rebuilt on Unique's stack
--- and with the bugs of both versions removed:
+-- Unique character flow: fade out -> status text -> hide ped -> register form ->
+-- "wearing clothes" -> slow fade-in.
 --
---   Unique loading.lua : needRegister started as `false` but the loop waited for
---                        `nil` -> a slow login could skip registration entirely.
---                        Here it starts as nil and is re-asked from the server.
---   Sunset sun-character: infinite `while loadStep < 2` waits, NUI callbacks never
---                        answered with cb(), controls thread spawned on every
---                        showUI(), cursor stuck if the resource restarts, hard-
---                        coded 'sun-character' NUI url, ps-ui called with the
---                        wrong argument shape for Unique's ps-ui.
+-- Pitfalls this client is written to avoid:
+--   * needRegister must start as nil (not false) and be re-asked from the server;
+--     otherwise a slow login could skip registration entirely.
+--   * no unbounded `while step < N` waits: every wait has a timeout.
+--   * NUI callbacks must always answer cb(); the controls thread must not be
+--     spawned again on every showUI(); the cursor must be released when the
+--     resource restarts; the NUI url must use GetParentResourceName().
+--   * ps-ui must be called with Unique's signature (title, description, icon, values).
 
 local ESX = nil
 local needRegister = nil     -- nil = unknown yet, true = new player, false = has character
@@ -35,7 +34,7 @@ CreateThread(function()
 end)
 
 -- Unique's ps-ui signature: StatusShow(title, description, icon, values).
--- (Sunset's version takes (title, {lines}); calling that shape here would throw.)
+-- (a different argument shape, e.g. (title, {lines}), would throw here.)
 local function status(message)
     pcall(function()
         exports['ps-ui']:StatusShow(Config.Text.loadingTitle, message, 'fas fa-user', {})
@@ -87,7 +86,7 @@ end
 ---------------------------------------------------------------------------
 
 local function controlLoop()
-    if controlLock then return end -- never stack a second loop (Sunset leaked one per open)
+    if controlLock then return end -- never stack a second loop
     controlLock = true
     CreateThread(function()
         while uiOpen do
@@ -118,7 +117,7 @@ end
 
 local function showUI(state)
     if state then
-        -- Sunset slept 5 s unconditionally; poll instead, give up after 5 s
+        -- poll instead of sleeping a fixed 5 s, give up after 5 s
         waitFor(function() return uiReady end, 5000, 50)
     end
     uiOpen = state
@@ -246,7 +245,7 @@ CreateThread(function()
     while ESX == nil do Wait(100) end
 
     -- Resource restarted while the player is already playing: do nothing
-    -- (Sunset would black out the screen and freeze a live player here).
+    -- (otherwise the screen would black out and a live player would be frozen).
     if ESX.IsPlayerLoaded and ESX.IsPlayerLoaded() and IsScreenFadedIn() then
         flowDone, loadedFired, needRegister = true, true, false
         return
@@ -298,7 +297,7 @@ end)
 AddEventHandler('onResourceStop', function(res)
     if res ~= GetCurrentResourceName() then return end
     uiOpen = false
-    SetNuiFocus(false, false) -- Sunset left the cursor stuck on restart
+    SetNuiFocus(false, false) -- never leave the cursor stuck on restart
     statusHide()
 end)
 

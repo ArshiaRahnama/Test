@@ -26,7 +26,7 @@ local function waitESX() while ESX == nil do Wait(50) end end
 -- --------------------------------------------------------------------------
 local realExports = exports
 local stubs = {
-    Unique_clothe = {
+    Unique_Clothe = {
         getUsedType = function() return {} end,
         getClotheData = function() return nil end,
         getUsed = function() return {} end,
@@ -59,7 +59,7 @@ local stubs = {
 -- If a resource is brought over under its ORIGINAL name (sunset_utils, sunset_clothe, ...)
 -- instead of the Unique_* name, calls are routed to it.
 local originalNames = {
-    Unique_clothe = 'sunset_clothe', Unique_utils = 'sunset_utils', Unique_jobs = 'sun-jobs',
+    Unique_Clothe = 'sunset_clothe', Unique_utils = 'sunset_utils', Unique_jobs = 'sun-jobs',
     Unique_robbery = 'sun-robbery', Unique_animmenu = 'sun-animmenu',
 }
 
@@ -140,7 +140,7 @@ RegisterCommand('uniqueinv_debug', function()
     end
     print('  Press F2 now - a "KeyDown:f2" line should appear here.')
 end, false)
-UNIQUE_VERSION = 'stage2-v11'
+UNIQUE_VERSION = 'stage2-v12'
 print(('^2[%s] client compat loaded (%s) - F2 or /uniqueinv to open, /uniqueinv_debug to diagnose^7'):format(GetCurrentResourceName(), UNIQUE_VERSION))
 
 -- --------------------------------------------------------------------------

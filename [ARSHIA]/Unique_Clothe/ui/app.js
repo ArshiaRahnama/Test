@@ -1,6 +1,6 @@
 // Item pictures are optional: drop PNGs in ui/items/clothes/<category>/<item_name>.png
 // (e.g. ui/items/clothes/tshirt/tshirt_m_12_0.png). Missing pictures fall back to the category icon.
-const RESOURCE = (typeof GetParentResourceName === 'function') ? GetParentResourceName() : 'Unique_Clothe';
+const RESOURCE = (typeof GetParentResourceName === 'function') ? GetParentResourceName() : 'Unique_clothe';
 const imageServer = '/ui/items';
 
 document.addEventListener('dragstart', (e) => e.preventDefault());

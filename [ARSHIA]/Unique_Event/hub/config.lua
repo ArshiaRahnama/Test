@@ -13,13 +13,13 @@ HubConfig.Events = {
         id          = 'warzone',
         name        = 'وار زون',
         nameEn      = 'WARZONE',
-        desc        = 'حالت بتل‌رویال تیمی. اسکواد ببند، تو زون بمون، آخرین نفر باش.',
+        desc        = 'بتل‌رویال تک‌نفره. از هواپیما بپر، لوت کن، تو دایره بمون، آخرین نفر باش.',
         icon        = '🪖',
         color       = '#ff9d2f',
         colorSoft   = 'rgba(255, 157, 47, 0.16)',
         joinCmd     = 'wz',              -- WZConfig.JoinLobbeyCommend
         startCmd    = 'startwarzone',    -- WZConfig.StartCommend
-        panelCmd    = 'warzone',         -- WZConfig.menuCommend
+        panelCmd    = nil,
         statsCmd    = 'wzstats',         -- WZConfig.statsCommend
         permDisplay = 16,                -- WZConfig.permission
     },
@@ -47,7 +47,7 @@ HubConfig.Events = {
         colorSoft   = 'rgba(255, 84, 104, 0.16)',
         joinCmd     = 'joinCap',         -- CapConfig.JoinCaptureCommand
         startCmd    = 'startCap',        -- CapConfig.StartCaptureCommand
-        panelCmd    = 'capture',         -- CapConfig.DashboardCommand
+        panelCmd    = nil,
         statsCmd    = 'captureStats',    -- CapConfig.StatsCommand
         permDisplay = 11,                -- CapConfig.CommandPerm(10) + 1
     },

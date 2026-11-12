@@ -1,6 +1,6 @@
 # unique_character
 
-فلو ثبت‌نام + اسپاون کاراکتر به سبک Sunset (`sun-character`) روی استک Unique (essentialmode + oxmysql + skincreator).
+فلو ثبت‌نام + اسپاون کاراکتر یونیک روی استک Unique (essentialmode + oxmysql + skincreator).
 
 ## نصب
 1. پوشه‌ی `unique_character` رو بذار توی `[ARSHIA]` (بعد از `essentialmode`, `oxmysql`, `ps-ui` استارت می‌شه، چون `[ARSHIA]` آخره).
@@ -19,13 +19,13 @@
 ```lua
 TriggerEvent('unique_character:clothesReady')
 ```
-ایونت‌های `sun:clotheLoaded` و `skinchanger:modelLoaded` هم پذیرفته می‌شن (`Config.ClothesEvents`).
+ایونت `skinchanger:modelLoaded` هم پذیرفته می‌شه (`Config.ClothesEvents`).
 اگه `skinchanger:modelLoaded` زودتر از پوشیدن لباس نهایی میاد، از لیست حذفش کن.
 بعد از اسپاون: `exports.unique_character:isReady()` و ایونت `unique_character:spawned(isNewCharacter)`.
 
-## چی با Sunset فرق داره (عمدی)
-- سمت سرور Sunset توی ریپو نیست؛ این نسخه سمت سرور رو از صفر می‌نویسه (اعتبارسنجی + یکتایی + نوشتن توی یک UPDATE شرط‌دار).
-- هیچ `while` بی‌timeout ای نیست (Sunset برای `loadStep < 2` تا ابد صبر می‌کرد).
+## ویژگی‌های طراحی
+- سمت سرور (اعتبارسنجی + یکتایی نام + نوشتن توی یک UPDATE شرط‌دار) کامل توی خود ریسورس نوشته شده.
+- هیچ `while` بی‌timeout ای نیست؛ همه‌ی انتظارها سقف زمانی دارن.
 - NUI callbackها همیشه `cb('ok')` می‌دن، cursor با ریستارت ریسورس گیر نمی‌کنه، حلقه‌ی کنترل‌ها دوبل نمی‌شه.
 - `ps-ui` با امضای درست Unique صدا زده می‌شه.
 

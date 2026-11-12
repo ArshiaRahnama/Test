@@ -1,7 +1,7 @@
 Config = {}
 Config.Locale = 'en'
 
--- Skin menu theme (Sunset default red). Can also be pushed live via TriggerEvent('sun_menu:settings', {...}).
+-- Skin menu theme (default red). Can also be pushed live via TriggerEvent('unique_menu:settings', {...}).
 Config.MenuColors = { primary = '#b91c1c', secondary = '#ef4444' }
 
 Config.whitelist = {
@@ -19,7 +19,7 @@ Config.whitelist = {
 
 -- Values hidden in SHOP mode only (esx_skin:openRestrictedMenu with a 4th arg `shop = true`).
 -- Structure: [sex] = { [component] = { [value] = true } }   (0 = male, 1 = female)
--- NOTE: copied verbatim from Sunset, so these ids refer to *Sunset's* clothing pack
+-- NOTE: these ids were made for a different clothing pack
 -- (e.g. PD uniforms, oxygen mask). Check/replace them for your own drawables.
 Config.ShopBlacklist = {
     -- MALE

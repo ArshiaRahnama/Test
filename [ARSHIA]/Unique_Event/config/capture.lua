@@ -16,15 +16,7 @@ CapConfig.EnableDetailedLogging = true
 CapConfig.LogUsername  = "Unique Capture System"
 CapConfig.LogAvatarUrl = ""
 
-CapConfig.Webhooks = {
-    RoundStart  = "",
-    RoundEnd    = "",
-    ZoneCapture = "",
-    Kills       = "",
-    Season      = "",
-    Medals      = "",
-    Admin       = "",
-}
+CapConfig.Webhooks = { RoundStart = "", RoundEnd = "", ZoneCapture = "", Kills = "", Admin = "" }
 
 -- ----------------------------------------------------------------------------
 --  Framework
@@ -43,8 +35,6 @@ CapConfig.GangsTable      = "gangs_data"
 CapConfig.GangsNameColumn = "gang_name"
 CapConfig.GangsBossColumn = "boss"   -- JSON: یا {x,y,z} یا آرایه‌ی مارکرها [{coord={x,y,z},code=1,...}]
 
-CapConfig.UsersTable            = "users"
-CapConfig.UsersIdentifierColumn = "identifier"
 
 -- مختصات وقتی HQ گنگ پیدا نشد
 CapConfig.FallbackHome = { x = 216.672, y = -815.4998, z = 30.63524 }
@@ -61,7 +51,6 @@ CapConfig.LeaveCaptureCommand    = "leaveCap"
 CapConfig.ReSpawnCaptureCommand  = "reCap"     -- منوی انتخاب زون (وقتی گیر کردی)
 CapConfig.HistoryCommand         = "captureHistory"
 CapConfig.StatsCommand           = "captureStats"
-CapConfig.DashboardCommand       = "capture"
 CapConfig.DieCommand             = "die"       -- مثل sun: ۵ ثانیه پروگرس و خودکشی (برای گیرکردن)
 
 -- ----------------------------------------------------------------------------
@@ -117,8 +106,6 @@ CapConfig.LeaveZonePenaltySeconds = 180
 -- ----------------------------------------------------------------------------
 CapConfig.PersistZones = true
 CapConfig.ZonesFileName = "zones.json"
-CapConfig.ExportZonesCommand = "captureExportZones"
-CapConfig.ImportZonesCommand = "captureImportZones"
 
 CapConfig.DefaultZones = {
     { id = 1, label = "Bime",         x = -1085.34,  y = -253.7799, z = 37.76331, world = 301 },
@@ -131,62 +118,9 @@ CapConfig.DefaultZones = {
 }
 
 -- ----------------------------------------------------------------------------
---  Marker themes  (Default = رنگ‌های sun: سبز برای مال خودت، نارنجی برای بقیه)
+--  Marker colors  (رنگ‌های sun: سبز برای مال گنگ خودت، نارنجی برای بقیه)
 -- ----------------------------------------------------------------------------
-CapConfig.ThemeCommand = "captureTheme"
-CapConfig.ActiveTheme  = "Default"
-CapConfig.Themes = {
-    Default   = { Owned = {R = 3,   G = 144, B = 0,   Alpha = 100}, Enemy = {R = 255, G = 102, B = 0,  Alpha = 100} },
-    Halloween = { Owned = {R = 128, G = 0,   B = 200, Alpha = 100}, Enemy = {R = 255, G = 100, B = 0,  Alpha = 100} },
-    Christmas = { Owned = {R = 0,   G = 200, B = 60,  Alpha = 100}, Enemy = {R = 220, G = 0,   B = 0,  Alpha = 100} },
-    Bloodmoon = { Owned = {R = 255, G = 0,   B = 0,   Alpha = 100}, Enemy = {R = 180, G = 0,   B = 0,  Alpha = 100} },
+CapConfig.Colors = {
+    Owned = { R = 3,   G = 144, B = 0, Alpha = 100 },
+    Enemy = { R = 255, G = 102, B = 0, Alpha = 100 },
 }
-
--- ----------------------------------------------------------------------------
---  Stats / Ranks / Seasons / Medals / Hall of Fame  (بدون تغییر نسبت به قبل)
--- ----------------------------------------------------------------------------
-CapConfig.AllTimeScoreWeights = { Kills = 2, GangPoints = 1, DeathPenalty = 1 }
-
-CapConfig.RankThresholds = {
-    {Name = "Bronze", Min = 0},
-    {Name = "Silver", Min = 50},
-    {Name = "Gold",   Min = 150},
-    {Name = "Legend", Min = 400},
-}
-
-CapConfig.SeasonResetCommand   = "captureSeasonReset"
-CapConfig.SeasonHistoryCommand = "captureSeasons"
-CapConfig.SeasonAutoResetDays  = 30
-CapConfig.BackupBeforeSeasonReset = true
-CapConfig.BackupFolder = "backups"
-
-CapConfig.EnableSeasonWarning = true
-CapConfig.SeasonWarningHoursBefore = 24
-
-CapConfig.EnableDryRun = true
-CapConfig.DryRunCommand = "captureDryRun"
-
-CapConfig.EnableAdminRateLimit = true
-CapConfig.AdminCommandCooldown = 5
-
-CapConfig.EnableHealthCheck = true
-CapConfig.HealthCheckCommand = "captureHealth"
-
-CapConfig.EnablePublicAPI = false
-CapConfig.PublicAPIPath = "/uniquecapture/status"
-
-CapConfig.EnableLeagueMode = false
-CapConfig.StandingsCommand = "captureStandings"
-CapConfig.EnablePlayoffs = false
-CapConfig.PlayoffResultCommand = "capturePlayoffResult"
-
-CapConfig.EnableScarcityEngine = true
-CapConfig.ScarceMedalName = "Legend Medal"
-CapConfig.ScarceMedalRank = "Legend"
-CapConfig.ScarceMedalSupplyPerSeason = 100
-CapConfig.ScarcityStatusCommand = "captureMedals"
-CapConfig.MyMedalsCommand = "mymedals"
-
-CapConfig.EnableHallOfFame = true
-CapConfig.HallOfFameInactivityDays = 60
-CapConfig.HallOfFameCommand = "hallOfFame"

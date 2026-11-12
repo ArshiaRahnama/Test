@@ -188,6 +188,7 @@ RegisterCommand('menu', function()
     menuIsOpen = true
     UpdateProfile()
     UpdateSkills()
+    UpdateSkinOptions()
     UpdateAchievements()
     UpdateWeekly()
     UpdateCollections()

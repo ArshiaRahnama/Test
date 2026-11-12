@@ -206,7 +206,7 @@ padding: 20px;
   color: white;
   cursor: pointer;
 }
-/* ---- additions (Sunset loads Material Icons + Vue from its CDN; this build is self-contained) ---- */
+/* ---- additions (icons are inline SVG and there is no Vue/CDN dependency: self-contained) ---- */
 body { background: transparent !important; margin: 0; }
 .data { display: flex; flex-direction: row; align-items: center; width: 90%; padding: 5px; justify-content: flex-start; align-content: center; flex-wrap: wrap; }
 .row .name { color: white; max-width: 100%; text-align: center; word-break: break-word; }
@@ -219,7 +219,7 @@ body { background: transparent !important; margin: 0; }
 .row.clickable:hover { filter: brightness(1.08); }
 .empty { color: rgba(255,255,255,.6); margin-top: 40px; font-size: 1.2rem; }
 
-/* ---- table mode ('list2', Sunset sun-list look) ---- */
+/* ---- table mode ('list2') ---- */
 .table-mode .laptop {
   position: fixed;
   top: 20px;

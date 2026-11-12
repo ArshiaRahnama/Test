@@ -230,16 +230,39 @@ AddEventHandler('UniqueRep:spectate', function(ownerPid)
 end)
 
 -- phone button (after the spectate delay): accept the reporter's report
+-- phone button (shows after the spectate delay): accept the report if nobody has, then dial the
+-- reporter through Unique_Phone (like Sunset's /acall). Pressing it again just redials.
+local function dialReporter(adminSrc, ownerPid)
+    local col = Config_Server.PhoneColumn or 'phone'      -- essentialmode: users.phone
+    local ok, number = pcall(function()
+        return MySQL.Sync.fetchScalar(('SELECT `%s` FROM users WHERE identifier = @id LIMIT 1'):format(col),
+            { ['@id'] = Rep.GetIdentifier(ownerPid) })
+    end)
+    if not ok or not number or tostring(number) == '' then
+        return Rep.Notify(adminSrc, 'شماره‌ی تلفن این بازیکن پیدا نشد.')
+    end
+    TriggerClientEvent('UniqueRep:startCall', adminSrc, tostring(number))
+end
+
 RegisterNetEvent('UniqueRep:accept')
 AddEventHandler('UniqueRep:accept', function(ownerPid)
     local src = source
     ownerPid = tonumber(ownerPid)
     if not ownerPid or ownerPid <= 0 or not GetPlayerName(ownerPid) then return Rep.Notify(src, ReportLan.notOnline) end
     local rows = MySQL.Sync.fetchAll(
-        "SELECT ID FROM reports WHERE identifier = @t AND status = 'pending' ORDER BY ID DESC LIMIT 1",
+        "SELECT ID, status, admin FROM reports WHERE identifier = @t AND status IN ('pending','accept') ORDER BY ID DESC LIMIT 1",
         { ['@t'] = Rep.GetIdentifier(ownerPid) })
-    if not rows or #rows == 0 then return Rep.Notify(src, ReportLan.acceptByauthor) end
-    AcceptReport(src, rows[1].ID, function(res)
-        if not res.r then Rep.Notify(src, res.msg or ReportLan.err) end
-    end)
+    local r = rows and rows[1]
+    if not r then return Rep.Notify(src, ReportLan.reportnotfound) end
+
+    if r.status == 'pending' then
+        AcceptReport(src, r.ID, function(res)
+            if res and res.r then dialReporter(src, ownerPid)
+            else Rep.Notify(src, (res and res.msg) or ReportLan.err) end
+        end)
+    elseif r.admin == Rep.GetIdentifier(src) then
+        dialReporter(src, ownerPid)                       -- already mine: redial
+    else
+        Rep.Notify(src, ReportLan.acceptByauthor)         -- another admin has it
+    end
 end)

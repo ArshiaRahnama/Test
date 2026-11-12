@@ -6,6 +6,7 @@ client_script 'client/main.lua'
 ui_page 'html/ui.html'
 
 files {
+	'html/fonts/Vazirmatn-*',
 	'html/ui.html',
 	'html/css/app.css',
 	'html/js/mustache.min.js',

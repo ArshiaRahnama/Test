@@ -1,6 +1,6 @@
--- esx_menu_dialog (Sunset-style UI, hardened client)
+-- esx_menu_dialog (Unique UI, hardened client)
 --
--- UI (html/) is Sunset's. The client logic was already identical; fixed here:
+-- Fixes in this client:
 --   * menu_submit/menu_cancel/menu_change crashed when GetOpened() returned nil
 --     (menu closed while the NUI event was in flight) -> guarded
 --   * the 200 ms "give focus" timer could fire AFTER the menu was closed and leave

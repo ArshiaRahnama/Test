@@ -1,7 +1,6 @@
 -- unique_character / server
 --
--- Replaces the server half Sunset keeps in its (unpublished) suncore:
---   core:registerCheck / core:isNameAvailable / db:updateUserName / newName
+-- Server half of the character registration (name check, name save, state check).
 --
 -- Why this exists instead of reusing es:newName + db:updateUser:
 --   * es:newName only does Users[src].set('name', ...) which is RAM only, and
@@ -29,7 +28,7 @@ end
 
 -- Returns a normalized "Abc" or nil. Letters A-Z only (never %a: it is locale
 -- dependent), length from Config.Name, first letter upper / rest lower exactly
--- like the Sunset UI does.
+-- like the register form does.
 local function normalizeName(s)
     if type(s) ~= 'string' then return nil end
     s = trim(s)
@@ -145,7 +144,7 @@ ESX.RegisterServerCallback('unique_character:register', function(source, cb, fir
 end)
 
 ---------------------------------------------------------------------------
--- fallback state check (Sunset: core:registerCheck)
+-- fallback state check
 -- essentialmode already pushes `registerForm` on login; this covers the case
 -- where that event was missed. Rate limited so it cannot be used to spam SQL.
 ---------------------------------------------------------------------------

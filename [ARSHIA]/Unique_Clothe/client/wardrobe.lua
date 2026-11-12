@@ -1,4 +1,4 @@
--- Unique_Clothe / client / wardrobe
+-- Unique_clothe / client / wardrobe
 -- Exports used by Unique_inventory (the clothing tab): getClotheData, getUsed,
 -- getUsedType, getOwnedClotheByType, getOwnedPack, toggleClothe, unUseByType.
 -- Clothes are inventory items; what is worn is tracked here and validated/saved
@@ -140,7 +140,7 @@ exports('getOwnedPack', function()
 end)
 
 -- toggleClothe(name, silent, force): wear it, or take it off if it is already worn.
-exports('toggleClothe', function(name, silent, force)
+local function toggleClothe(name, silent, force)
     local item = Clothes.byName[name]
     if not item then return false end
     if usedMap[name] then
@@ -152,6 +152,13 @@ exports('toggleClothe', function(name, silent, force)
         ESX.ShowNotification(item.sex ~= mySex() and Config.Strings.wrong_sex or Config.Strings.invalid)
     end
     return ok
+end
+exports('toggleClothe', toggleClothe)
+
+-- the server sends this when a clothing item is "used" from the inventory
+RegisterNetEvent('Unique_Clothe:toggle')
+AddEventHandler('Unique_Clothe:toggle', function(name)
+    if type(name) == 'string' then toggleClothe(name) end
 end)
 
 exports('unUseByType', function(ctype)

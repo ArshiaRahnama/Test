@@ -1,0 +1,106 @@
+/* ===== "Unique" look for the I menu (colours measured from Unique-ui/ui/skill) =====
+   black header + gold text, 4-up tab bar with a salmon underline, #202020 body,
+   blue progress rings / bars. Loaded LAST so it wins over the older themes. */
+:root {
+  --uq-gold: #ffc72c;
+  --uq-frame: #b78846;
+  --uq-underline: #e0875a;
+  --uq-blue: #1976d2;
+  --uq-body: #202020;
+  --uq-track: #3a3a3a;
+  --uq-card-border: #808080;
+}
+
+.window { background: var(--uq-body); border: 0; border-radius: 13px; box-shadow: 0 20px 60px rgba(0,0,0,.6); }
+
+/* header */
+.topbar { background: #000; border-bottom: 1px solid #fff; box-shadow: none; }
+.topbar::after { display: none; }
+.pname, .memberSince, .memberSince span, .wealthChip span, .paycheckTimer, .paycheck_span,
+.lvTitle, .lvValue, .xp-fraction, .badgeValue, .badgeTitle, .iban_span, .accountNum_span { color: var(--uq-gold); text-shadow: none; }
+.pname { font-weight: 700; }
+.memberSince::before, .wealthChip, .bankCard, .badgeTile, .badgeIcon, .avatar { background: transparent; border-color: transparent; box-shadow: none; }
+.avatar { background: #bdbdbd; color: #fff; border: 0; }
+.wealthChip i, .badgeIcon i { color: var(--uq-gold); background: transparent; }
+.bankCard { display: none; }
+
+/* level box = Unique's gold double frame */
+.lvBox { background: transparent; border: 2px solid var(--uq-frame); border-radius: 0; box-shadow: none; position: relative; outline: 2px solid var(--uq-frame); outline-offset: -8px; padding: 14px 22px; }
+.lvBox::before, .lvBox::after { display: none; }
+.lvValue { font-size: 28px; }
+.xp-bar { background: var(--uq-track); border-radius: 4px; height: 8px; }
+.xp-fill { background: var(--uq-blue); box-shadow: none; }
+
+/* tabs */
+.tabs { background: #0a0a0a; border: 0; box-shadow: 0 6px 12px rgba(0,0,0,.45); }
+.tab { color: #9a9a9a; background: transparent; letter-spacing: .04em; }
+.tab i { display: none; }
+.tab:hover { background: transparent; color: #fff; }
+.tab.active { color: #fff; background: transparent; text-shadow: none; }
+.tab.active::after { left: 0; right: 0; height: 2px; border-radius: 0; background: var(--uq-underline); box-shadow: none; }
+
+.content, .panel { background: var(--uq-body); }
+
+/* skills: white label, blue bar on a grey track, bold percentage on the right */
+.skillRow, .skillRow:hover, .skillRow.current, .skillRow.mastered { background: transparent; border: 0; box-shadow: none; padding: 8px 4px; }
+.skillIcon, .skillTier { display: none; }
+.skillTitle { color: #fff; font-size: 17px; }
+.skillPct { color: #fff; font-weight: 800; font-size: 18px; }
+.skillBar { height: 22px; background: var(--uq-track); border-radius: 6px; }
+.skillFill { background: var(--uq-blue); border-radius: 6px; box-shadow: none; }
+
+/* achievements: Unique cards = grey frame, blue ring, gold title, shield + points */
+.ach-list { display: grid; grid-template-columns: repeat(auto-fill, 108px); gap: 28px 36px; justify-content: start; }
+.achRow { flex-direction: column; width: 108px; padding: 10px 0 14px; gap: 10px; background: transparent; border: 3px solid var(--uq-card-border);
+  border-radius: 14px; opacity: 1; text-align: center; }
+.achRow:not(.done) { opacity: .75; }
+.achRow.done { border-color: var(--uq-gold); }
+.achIcon { display: none; }
+.uqRing { width: 100px; height: 100px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto;
+  background: conic-gradient(var(--uq-blue) calc(var(--p) * 1%), #2b2b2b 0); position: relative; color: #fff; font-size: 13px; direction: ltr; }
+.uqRing::before { content: ""; position: absolute; inset: 9px; border-radius: 50%; background: var(--uq-body); }
+.uqRing span { position: relative; }
+.achBody { align-items: center; gap: 4px; }
+.achTitle { color: #e8b100; font-weight: 600; font-size: 15px; }
+.achDesc { display: none; }
+.achRow .skillBar { display: none; }
+.achPoint { color: #fff; display: flex; align-items: center; gap: 6px; font-weight: 600; }
+.achPoint::before { content: ""; width: 16px; height: 18px; background: var(--uq-gold);
+  clip-path: polygon(50% 0, 100% 15%, 100% 55%, 50% 100%, 0 55%, 0 15%); }
+.summaryChip { background: transparent; border: 2px solid var(--uq-frame); border-radius: 0; color: var(--uq-gold); box-shadow: none; }
+.summaryChip i { color: var(--uq-gold); background: transparent; }
+.summaryChipValue, .summaryChipLabel { color: var(--uq-gold); }
+.weeklyRow { flex-direction: row; width: auto; text-align: start; }
+.weeklyRow .achDesc, .weeklyRow .skillBar { display: block; }
+.weeklyRow .achIcon { display: flex; }
+
+/* Unique is left-to-right; the page is dir=rtl for Persian text elsewhere */
+.ach-list, .ach-summary, .skill-list, .skill-activity { direction: ltr; }
+.ach-summary { justify-content: flex-start; }
+.wealthChip:nth-child(1) i, .wealthChip:nth-child(2) i, .wealthChip:nth-child(3) i { background: transparent; color: var(--uq-gold); }
+.avatar, .avatarWrap { border: 0; box-shadow: none; }
+.avatarWrap::before, .avatarWrap::after { display: none; }
+.badgeTile, .badgeTile:hover, .headerName, .leftRow { border-color: transparent; background: transparent; box-shadow: none; }
+.badgeIcon { border: 0 !important; }
+.badgeIcon:not(.hasImage) { background: transparent !important; }
+.summaryChip i { display: none; }
+
+/* weekly rows keep a wide row layout (they are not ring cards) */
+.weekly-list .achRow { width: 100%; flex-direction: row; border: 2px solid var(--uq-card-border); text-align: start; padding: 12px 16px; gap: 14px; }
+.weekly-list .achBody { align-items: stretch; flex: 1; }
+.weekly-list .achRow .skillBar { display: block; height: 10px; }
+.weekly-list .achRow .achDesc { display: block; }
+.weekly-list .achPoint::before { display: none; }
+.weekly-list .achRow.done { border-color: var(--uq-gold); }
+.weekly-list .achIcon { display: flex; color: var(--uq-gold); background: transparent; }
+
+/* weapon skill tab: same rows as Unique's skill list */
+.weapon-skill-list { direction: ltr; display: flex; flex-direction: column; gap: 14px; padding: 4px; }
+.weaponSkillRow .wsTop { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
+.weaponSkillRow .wsName { color: #fff; font-size: 17px; }
+.weaponSkillRow .wsPct { color: #fff; font-weight: 800; font-size: 17px; }
+.weaponSkillRow.mastered .wsName { color: var(--uq-gold); }
+
+.wsSkin { display: inline-flex; align-items: center; gap: 8px; margin-top: 6px; color: var(--uq-gold); font-size: 13px; }
+.wsSkin select { background: #0a0a0a; color: #fff; border: 1px solid var(--uq-frame); border-radius: 6px; padding: 6px 10px; min-height: 36px; font-size: 14px; }
+.wsSkin select:focus-visible { outline: 2px solid var(--uq-gold); }

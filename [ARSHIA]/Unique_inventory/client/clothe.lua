@@ -33,7 +33,7 @@ end
 RegisterNUICallback('Select', function(data)
     if not guardClothing() then return end
     mode = data.mode
-    local list = exports['Unique_clothe']:getOwnedClotheByType(mode, true)
+    local list = exports['Unique_Clothe']:getOwnedClotheByType(mode, true)
     for _, v in ipairs(list) do
         v.iconUrl = getImage(v.name)
     end
@@ -41,12 +41,12 @@ RegisterNUICallback('Select', function(data)
         action = "loadClothe",
         obj = list,
         mode = mode,
-        used = exports['Unique_clothe']:getUsedType()
+        used = exports['Unique_Clothe']:getUsedType()
     }))
 end)
 
 RegisterNUICallback('LoadPack', function()
-    local list = exports['Unique_clothe']:getOwnedPack()
+    local list = exports['Unique_Clothe']:getOwnedPack()
     for _, v in ipairs(list) do
         v.iconUrl = getImage(v.name)
     end
@@ -61,7 +61,7 @@ local clotheCountTypes = { 'torso', 'tshirt', 'pants', 'shoes', 'helmet', 'mask'
 RegisterNUICallback('ClotheCounts', function(data, cb)
     local counts = {}
     for _, t in ipairs(clotheCountTypes) do
-        counts[t] = #exports['Unique_clothe']:getOwnedClotheByType(t, true)
+        counts[t] = #exports['Unique_Clothe']:getOwnedClotheByType(t, true)
     end
     SendNuiMessage(json.encode({ action = 'clotheCounts', counts = counts }))
     cb({ ok = true })
@@ -77,7 +77,7 @@ local function orderedPackItems(packItems)
     local byType = {}
     for itemName, owned in pairs(packItems) do
         if owned then
-            local cData = exports['Unique_clothe']:getClotheData(itemName)
+            local cData = exports['Unique_Clothe']:getClotheData(itemName)
             local t = (cData and cData.type) or 'zzz'
             byType[t] = byType[t] or {}
             byType[t][#byType[t] + 1] = itemName
@@ -117,7 +117,7 @@ RegisterNUICallback('ChangeClothe', function(data)
     end)
     TriggerEvent('removeSwatHelmet')
     if componentIds[data.name] then
-		exports['Unique_clothe']:unUseByType(data.name)
+		exports['Unique_Clothe']:unUseByType(data.name)
 		playClotheAnim(data.name)
         if data.name == 'bproof' then
             if GetPedArmour(PlayerPedId()) > 0 then
@@ -130,13 +130,13 @@ RegisterNUICallback('ChangeClothe', function(data)
             exports['Unique_utils']:deactiveArmoredHelmet()
         end
 	else
-		exports['Unique_clothe']:toggleClothe(data.name)
-		playClotheAnim(exports['Unique_clothe']:getClotheData(data.name).type)
+		exports['Unique_Clothe']:toggleClothe(data.name)
+		playClotheAnim(exports['Unique_Clothe']:getClotheData(data.name).type)
     end
 	Citizen.Wait(300)
     SendNuiMessage(json.encode({
         action = "update",
-        obj = exports['Unique_clothe']:getUsedType()
+        obj = exports['Unique_Clothe']:getUsedType()
     }))
     refreshPedScreen()
     loadPlayerInventory()
@@ -154,7 +154,7 @@ RegisterNUICallback('TakeOffAll', function(data, cb)
     spam = true
     Citizen.SetTimeout(15000, function() spam = false end)
     TriggerEvent('removeSwatHelmet')
-    local used = exports['Unique_clothe']:getUsedType()
+    local used = exports['Unique_Clothe']:getUsedType()
     local wornTypes = {}
     for typeName, isWorn in pairs(used) do
         if isWorn then wornTypes[typeName] = true end
@@ -180,8 +180,8 @@ RegisterNUICallback('TakeOffAll', function(data, cb)
             elseif typeName == 'helmet' and exports['Unique_utils']:checkArmoredHelmetActive() then
                 exports['Unique_utils']:deactiveArmoredHelmet()
             end
-            exports['Unique_clothe']:unUseByType(typeName)
-            SendNuiMessage(json.encode({ action = 'update', obj = exports['Unique_clothe']:getUsedType() }))
+            exports['Unique_Clothe']:unUseByType(typeName)
+            SendNuiMessage(json.encode({ action = 'update', obj = exports['Unique_Clothe']:getUsedType() }))
             Wait(250)
         end
         SendNuiMessage(json.encode({ action = 'takeOffResult', ok = true }))
@@ -197,7 +197,7 @@ RegisterNUICallback('PackDetail', function(data, cb)
         if packItems then
             for itemName, owned in pairs(packItems) do
                 if owned then
-                    local c = exports['Unique_clothe']:getClotheData(itemName)
+                    local c = exports['Unique_Clothe']:getClotheData(itemName)
                     list[#list + 1] = {
                         name = itemName,
                         label = c and c.label or itemName,
@@ -232,18 +232,18 @@ RegisterNUICallback('UsePack', function(data, cb)
         CreateThread(function()
             Wait(500)
             for _, itemName in ipairs(orderedPackItems(packItems)) do
-                local cData = exports['Unique_clothe']:getClotheData(itemName)
+                local cData = exports['Unique_Clothe']:getClotheData(itemName)
                 if cData then
                     focusCameraOn(cData.type)
                     Wait(450)
-                    exports['Unique_clothe']:toggleClothe(itemName, true, true)
-                    SendNuiMessage(json.encode({ action = 'update', obj = exports['Unique_clothe']:getUsedType() }))
+                    exports['Unique_Clothe']:toggleClothe(itemName, true, true)
+                    SendNuiMessage(json.encode({ action = 'update', obj = exports['Unique_Clothe']:getUsedType() }))
                     Wait(250)
                 end
             end
             local counts = {}
             for _, t in ipairs(clotheCountTypes) do
-                counts[t] = #exports['Unique_clothe']:getOwnedClotheByType(t, true)
+                counts[t] = #exports['Unique_Clothe']:getOwnedClotheByType(t, true)
             end
             SendNuiMessage(json.encode({ action = 'clotheCounts', counts = counts }))
             SendNuiMessage(json.encode({ action = 'packResult', ok = true }))
@@ -266,9 +266,9 @@ RegisterNUICallback('CreatePack', function(data, cb)
     spam = true
     Citizen.SetTimeout(15000, function() spam = false end)
     local toPack, n = {}, 0
-    for k, v in pairs(exports['Unique_clothe']:getUsed()) do
+    for k, v in pairs(exports['Unique_Clothe']:getUsed()) do
         if v then
-            local c = exports['Unique_clothe']:getClotheData(k)
+            local c = exports['Unique_Clothe']:getClotheData(k)
             if c and not c.antiSearch then
                 toPack[k] = true
                 n = n + 1
@@ -283,12 +283,12 @@ RegisterNUICallback('CreatePack', function(data, cb)
     end
     CreateThread(function()
         for _, itemName in ipairs(orderedPackItems(toPack)) do
-            local cData = exports['Unique_clothe']:getClotheData(itemName)
+            local cData = exports['Unique_Clothe']:getClotheData(itemName)
             if cData then
                 focusCameraOn(cData.type)
                 Wait(450)
-                exports['Unique_clothe']:toggleClothe(itemName, true, true)
-                SendNuiMessage(json.encode({ action = 'update', obj = exports['Unique_clothe']:getUsedType() }))
+                exports['Unique_Clothe']:toggleClothe(itemName, true, true)
+                SendNuiMessage(json.encode({ action = 'update', obj = exports['Unique_Clothe']:getUsedType() }))
                 Wait(250)
             end
         end
@@ -296,7 +296,7 @@ RegisterNUICallback('CreatePack', function(data, cb)
         Wait(800)
         local counts = {}
         for _, t in ipairs(clotheCountTypes) do
-            counts[t] = #exports['Unique_clothe']:getOwnedClotheByType(t, true)
+            counts[t] = #exports['Unique_Clothe']:getOwnedClotheByType(t, true)
         end
         SendNuiMessage(json.encode({ action = 'clotheCounts', counts = counts }))
         SendNuiMessage(json.encode({ action = 'packCreateResult', ok = true }))

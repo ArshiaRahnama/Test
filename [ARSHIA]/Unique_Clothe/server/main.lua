@@ -1,4 +1,4 @@
--- Unique_Clothe / server
+-- Unique_clothe / server
 -- Clothes are INVENTORY ITEMS (item name = Clothes.byName key, e.g. tshirt_m_12_3).
 --  * buying   -> money removed, item added to the inventory (server decides prices)
 --  * wearing  -> the client reports the worn set, the server validates ownership and
@@ -68,6 +68,13 @@ CreateThread(function()
         TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
         Wait(100)
     end
+    -- resource restarted while players are online: re-wire their clothes
+    for _, id in ipairs(GetPlayers()) do
+        pcall(function()
+            local xPlayer = ESX.GetPlayerFromId(tonumber(id))
+            if xPlayer then registerOwnedClothes(xPlayer) end
+        end)
+    end
 end)
 
 -- ───────────── helpers ─────────────
@@ -98,9 +105,35 @@ local function ensureItem(name, label, weight)
     return false
 end
 
-local function ensureClotheItem(item)
-    return ensureItem(item.name, item.label, Config.ClotheWeight)
+-- "Use" on a clothing item in the inventory = put it on / take it off. essentialmode keeps
+-- usable handlers in memory only, so this is re-done for owned clothes whenever a player loads.
+local registeredUsable = {}
+local function ensureUsable(name)
+    if registeredUsable[name] then return end
+    local ok, res = pcall(function()
+        return exports['essentialmode']:RegisterUsableItem(name, function(source)
+            TriggerClientEvent('Unique_Clothe:toggle', source, name)
+        end)
+    end)
+    if ok and res then registeredUsable[name] = true end
 end
+
+local function ensureClotheItem(item)
+    local ok = ensureItem(item.name, item.label, Config.ClotheWeight)
+    if ok then ensureUsable(item.name) end
+    return ok
+end
+
+local function registerOwnedClothes(xPlayer)
+    for _, it in ipairs(xPlayer.inventory or {}) do
+        local item = (it.count or 0) > 0 and Clothes.byName[it.name] or nil
+        if item then ensureUsable(item.name) end
+    end
+end
+
+AddEventHandler('esx:playerLoaded', function(_, xPlayer)
+    if xPlayer then pcall(registerOwnedClothes, xPlayer) end
+end)
 
 local function readSkin(identifier)
     local ok, raw = pcall(MySQL.scalar.await, 'SELECT skin FROM users WHERE identifier = ?', { identifier })

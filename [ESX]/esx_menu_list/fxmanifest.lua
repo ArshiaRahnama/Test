@@ -1,7 +1,7 @@
 fx_version 'bodacious'
 game 'gta5'
 
-description 'ESX Menu List (Sunset-style)'
+description 'ESX Menu List (Unique)'
 
 version '1.1.0'
 

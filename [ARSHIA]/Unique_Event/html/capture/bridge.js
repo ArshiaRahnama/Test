@@ -5,6 +5,10 @@
   - کلید ESC روی منوی اسپان = دکمه‌ی Cancel (تو UI اصلی ESC هندل نشده بود و NUI focus گیر می‌کرد).
 */
 (function () {
+  // ایمنی: منوی اسپان همیشه بالاتر از صفحه‌ی مرگ؛ صفحه‌ی مرگ هیچ‌وقت کلیک نخوره
+  var st = document.createElement('style');
+  st.textContent = '.spawn-overlay{z-index:1000 !important}.death-screen{pointer-events:none !important}';
+  document.head.appendChild(st);
   var last = null;
   function post(visible) {
     if (visible === last) return;

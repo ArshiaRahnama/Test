@@ -2,7 +2,7 @@ function escapeHtml(v) {
   return String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
-// sun-style "+" burst when an activity skill goes up. Lives on <body>, so it
+// Unique-style "+" burst when an activity skill goes up. Lives on <body>, so it
 // shows even while the menu is closed.
 function skillUpBurst(label, percent) {
   const box = document.createElement('div');
@@ -10,6 +10,15 @@ function skillUpBurst(label, percent) {
   box.innerHTML = `<span class="skillUpPlus">+</span><span class="skillUpText">${escapeHtml(label)} ${Number(percent).toFixed(1)}%</span>`;
   document.body.appendChild(box);
   setTimeout(() => box.remove(), 1800);
+}
+
+let skinOptions = null;
+function skinPickerHtml(s) {
+  if (!s.finished || !skinOptions) return '';
+  const list = s.mk2 ? skinOptions.mk2 : skinOptions.standard;
+  const names = Array.isArray(list) ? list : Object.keys(list).sort((a, b) => a - b).map(k => list[k]);
+  const opts = names.map((n, i) => `<option value="${i}"${Number(s.skin) === i ? ' selected' : ''}>${escapeHtml(n)}</option>`).join('');
+  return `<label class="wsSkin"><span>Skin</span><select data-weapon="${escapeHtml(s.weaponName)}">${opts}</select></label>`;
 }
 
 function sortSkills(items) {
@@ -52,6 +61,8 @@ document.addEventListener('DOMContentLoaded', () => {
   window.addEventListener('message', (event) => {
     const data = event.data;
 
+    if (data.type === 'skinOptions' && data.options) { skinOptions = data.options; return; }
+
     if (data.type === 'skillUp') {
       skillUpBurst(data.label, data.percent);
       if (data.finished && typeof playChime === 'function') playChime();
@@ -62,9 +73,40 @@ document.addEventListener('DOMContentLoaded', () => {
       const box = document.querySelector('.skill-activity');
       const head = document.querySelector('.skill-activity-title');
       if (!box) return;
+      const wbox = document.querySelector('.weapon-skill-list');
+      if (wbox) {
+        wbox.innerHTML = '';
+        data.skills.filter(s => s.weapon)
+          .sort((a, b) => (b.finished - a.finished) || (b.percent - a.percent) || String(a.label).localeCompare(String(b.label)))
+          .forEach(s => {
+            const pct = Math.max(0, Math.min(100, Number(s.percent) || 0));
+            const row = document.createElement('div');
+            row.className = 'skillRow' + (s.finished ? ' mastered' : '');
+            row.innerHTML = `
+              <div class="skillTop">
+                <div class="skillIcon"><i class="fa-solid fa-crosshairs"></i></div>
+                <div class="skillTitleBlock">
+                  <span class="skillTitle">${escapeHtml(s.label)}</span>
+                  <span class="skillTier tier-${tierFor(pct).toLowerCase()}">${s.finished ? 'Mastered' : tierFor(pct)}</span>
+                </div>
+                <span class="skillPct">${pct.toFixed(2)}%</span>
+              </div>
+              <div class="skillBar"><div class="skillFill" style="width:${pct}%"></div></div>
+              ${skinPickerHtml(s)}`;
+            const sel = row.querySelector('select');
+            if (sel) sel.addEventListener('change', () => {
+              fetch(`https://${GetParentResourceName()}/setWeaponSkin`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ weapon: sel.dataset.weapon, tint: Number(sel.value) }),
+              });
+            });
+            wbox.appendChild(row);
+          });
+      }
+      const activity = data.skills.filter(s => !s.weapon);
       box.innerHTML = '';
-      if (head) head.classList.toggle('hidden', data.skills.length === 0);
-      data.skills.forEach(s => {
+      if (head) head.classList.toggle('hidden', activity.length === 0);
+      activity.forEach(s => {
         const pct = Math.max(0, Math.min(100, Number(s.percent) || 0));
         const row = document.createElement('div');
         row.className = 'skillRow' + (s.finished ? ' mastered' : '');

@@ -101,7 +101,15 @@ local function Work(source, job, zoneKey)
 
 	local item = zone.Item
 
-	SetTimeout(item[1].time, function()
+	-- Unique_LevelQuest skills: a finished (100%) job skill shortens the work tick.
+	-- pcall'd so esx_jobs keeps working if that resource is stopped/missing.
+	local waitMs = item[1].time
+	local okSkill, reduced = pcall(function()
+		return exports['Unique_LevelQuest']:GetSkillTimeFor(source, job, item[1].time)
+	end)
+	if okSkill and type(reduced) == 'number' and reduced > 0 then waitMs = reduced end
+
+	SetTimeout(waitMs, function()
 		if not PlayersWorking[source] then return end
 
 		local xPlayer = ESX.GetPlayerFromId(source)

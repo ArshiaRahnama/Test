@@ -36,7 +36,7 @@ Citizen.CreateThread(function()
 
 end)
 
--- ===== Sunset-style NUI skin menu (ported from Sunset esx_skin) =====
+-- ===== Unique NUI skin menu =====
 -- Server-specific rules kept from the previous menu: Config.whitelist hides
 -- certain values for admins (perm >= 100) and for nojob/uwucafe.
 
@@ -193,8 +193,8 @@ function OpenMenu(submitCb, cancelCb, restrict, shop)
   end)
 end
 
--- optional live theme (Sunset pushes per-player colors through this event)
-AddEventHandler('sun_menu:settings', function(s)
+-- optional live theme (push per-player colors through this event)
+AddEventHandler('unique_menu:settings', function(s)
   if type(s) ~= 'table' then return end
   local c = type(s.skin) == 'table' and s.skin or {}
   local secondary = c.color or s.default
@@ -214,7 +214,7 @@ RegisterNUICallback('skin_change', function(data, cb)
   if element.min and value < element.min then value = element.min end
   if element.max and value > element.max then value = element.max end
 
-  -- shop mode: Sunset's per-sex blacklist (Config.ShopBlacklist)
+  -- shop mode: per-sex blacklist (Config.ShopBlacklist)
   if menuShop and Config.ShopBlacklist then
     local skinSex
     TriggerEvent('skinchanger:getSkin', function(skin) skinSex = skin and skin.sex end)
@@ -501,7 +501,7 @@ end)
 
 RegisterNetEvent('esx_skin:openRestrictedMenu')
 AddEventHandler('esx_skin:openRestrictedMenu', function(submitCb, cancelCb, restrict, shop)
-  -- NOTE: stays OpenMenu (no auto-save). Sunset routes this to OpenSaveableMenu, which would
+  -- NOTE: stays OpenMenu (no auto-save). Routing this to OpenSaveableMenu would
   -- let esx_accessories save a skin before payment.
   OpenMenu(submitCb, cancelCb, restrict, shop)
 end)

@@ -26,6 +26,7 @@ server_scripts {
     'server/skills.lua',
     'server/achievements.lua',
     'server/weekly.lua',
+    'server/weaponskins.lua',
 }
 
 client_scripts {
@@ -42,6 +43,7 @@ client_scripts {
     'client/perks.lua',
     'client/npc.lua',
     'client/achievements.lua',
+    'client/weaponskins.lua',
 }
 
 ui_page 'html/index.html'

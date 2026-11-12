@@ -11,7 +11,7 @@ end)
 local MyRank, MyXP = nil, 0 -- nil until the server told us (otherwise everybody would be "level 1" for the first seconds)
 
 local function xpNeeded(rank)
-    return Config.Levels[rank] or Config.Levels[#Config.Levels] or 1
+    return config.Levels[rank] or config.Levels[#config.Levels] or 1
 end
 
 local function setColour(id, c)
@@ -103,7 +103,7 @@ if next(Config.WeaponMinLevel or {}) then
 end
 
 
--- Newbie restriction (sun: level 1 can't attack). Runs a per-frame loop ONLY
+-- Newbie restriction (Unique: level 1 can't attack). Runs a per-frame loop ONLY
 -- while the player is actually restricted; otherwise it polls once a second.
 local newbieControls = { 24, 25, 45, 47, 140, 141, 142, 143, 170, 257, 263, 264 }
 local lastNewbieMsg = 0

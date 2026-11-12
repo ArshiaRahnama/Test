@@ -4,6 +4,8 @@ CraftConfig = {
 	BlipColor = 47,
 	BlipText = 'Crafting Table',
 
+	WeaponSkillGate = true, -- PUBLIC benches: guns need the matching Unique_LevelQuest weapon skill at 100% (false = off)
+
 	UseLimitSystem = false, -- Enable if your esx uses limit system
 	
 	CraftingStopWithDistance = true, -- Crafting will stop when not near workbench

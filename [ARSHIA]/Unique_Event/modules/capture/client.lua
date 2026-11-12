@@ -4,7 +4,7 @@
 -- ============================================================================
 local CFG = CapConfig
 local ESX, PlayerData = nil, nil
-local Theme = CFG.Themes[CFG.ActiveTheme] or CFG.Themes.Default
+local Theme = CFG.Colors
 
 local Active, UntilEnd = false, 0           -- راند فعال؟
 local InCap, ZoneId, Zones = false, nil, {} -- داخل کپچر؟
@@ -62,7 +62,6 @@ local function FetchCache()
                 maxPlayerCount = z.maxPlayerCount, maxGangCount = z.maxGangCount }
         end
         Zones = zones
-        if cfg and cfg.theme then Theme = cfg.theme end
         Active = (cfg and cfg.active) and true or false
         UntilEnd = untilEnd or 0
         ok, done = true, true
@@ -90,9 +89,6 @@ end)
 
 RegisterNetEvent('capture:notify')
 AddEventHandler('capture:notify', function(msg, typ) notify(msg, typ) end)
-
-RegisterNetEvent('capture:SetTheme')
-AddEventHandler('capture:SetTheme', function(t) if type(t) == 'table' then Theme = t end end)
 
 -- ----------------------------------------------------------------------------
 --  Blips
@@ -198,7 +194,7 @@ local function OnDeath()
     IsDead = true
     nui('hideHeal')
     nui('stopCaptureTimer')
-    nui('showDeathScreen', {})
+    if not MenuOpen then nui('showDeathScreen', {}) end
     StartGhost()
 end
 
@@ -224,6 +220,7 @@ OpenSpawnMenu = function()
     MenuOpen = true
     SetNuiFocus(true, true)
     ShowHud(UntilEnd)
+    nui('hideDeathScreen') -- پنل مرگ z-index بالاتری داره و روی منو می‌افتاد
     nui('openSpawnMenu', { zones = ZoneUiList(), canBackHome = InCap })
 end
 
@@ -588,8 +585,12 @@ StartLoops = function()
         CreateThread(function()
             while alive() do
                 local ped = PlayerPedId()
-                if not IsDead and IsPedInParachuteFreeFall(ped) and GetEntityHeightAboveGround(ped) < CFG.AutoParachuteHeight then
-                    ForcePedToOpenParachute(ped)
+                if not IsDead and not InProtection and GetPedParachuteState(ped) <= 0 then
+                    local falling = IsPedInParachuteFreeFall(ped) or (IsPedFalling(ped) and GetEntityVelocity(ped).z < -12.0)
+                    if falling and GetEntityHeightAboveGround(ped) < CFG.AutoParachuteHeight then
+                        if not HasPedGotWeapon(ped, PARACHUTE, false) then GiveWeaponToPed(ped, PARACHUTE, 1, false, false) end
+                        ForcePedToOpenParachute(ped)
+                    end
                 end
                 Wait(200)
             end
@@ -680,16 +681,12 @@ end)
 RegisterNetEvent('capture:OpenStatsMenu')
 AddEventHandler('capture:OpenStatsMenu', function()
     if not ESX then return end
-    ESX.TriggerServerCallback('capture:GetMyStats', function(mine, top, zones)
+    ESX.TriggerServerCallback('capture:GetMyStats', function(mine, top)
         mine = mine or {}
         local opts = {
             { title = 'Kills / Deaths', description = (mine.kills or 0) .. ' / ' .. (mine.deaths or 0), icon = 'crosshairs', readOnly = true },
             { title = 'Gang Points', description = tostring(mine.gang_points or 0), icon = 'flag', readOnly = true },
-            { title = 'Top 5 Count', description = tostring(mine.top5_count or 0), icon = 'trophy', readOnly = true },
         }
-        for i, z in ipairs(zones or {}) do
-            opts[#opts + 1] = { title = ('Best Zone #%d: %s'):format(i, z.zone_name), description = z.points .. ' pts', icon = 'map-pin', readOnly = true }
-        end
         for i, t in ipairs(top or {}) do
             opts[#opts + 1] = { title = ('#%d  %s'):format(i, t.name or '?'), description = (t.kills or 0) .. ' kills', icon = 'ranking-star', readOnly = true }
         end
@@ -711,31 +708,6 @@ AddEventHandler('capture:OpenHistoryMenu', function()
         lib.registerContext({ id = 'capture_history', title = 'Capture History', options = opts })
         lib.showContext('capture_history')
     end)
-end)
-
--- ----------------------------------------------------------------------------
---  Dashboard (UI قدیمی یونیک - فریم جدا: capturedash)
--- ----------------------------------------------------------------------------
-RegisterCommand(CFG.DashboardCommand, function()
-    if not ESX then return end
-    ESX.TriggerServerCallback('capture:GetDashboard', function(data)
-        SetNuiFocus(true, true)
-        nui('openDashboard', data)
-    end)
-end, false)
-
-RegisterNUICallback('closeDashboard', function(_, cb)
-    SetNuiFocus(false, false)
-    cb('ok')
-end)
-
-RegisterNUICallback('dashboardAction', function(data, cb)
-    local map = { join = CFG.JoinCaptureCommand, leave = CFG.LeaveCaptureCommand, respawn = CFG.ReSpawnCaptureCommand,
-        seasons = CFG.SeasonHistoryCommand, standings = CFG.StandingsCommand, medals = CFG.ScarcityStatusCommand,
-        mymedals = CFG.MyMedalsCommand, halloffame = CFG.HallOfFameCommand }
-    local c = data and data.action and map[data.action]
-    if c then ExecuteCommand(c) end
-    cb('ok')
 end)
 
 -- ----------------------------------------------------------------------------

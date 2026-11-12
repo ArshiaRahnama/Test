@@ -413,3 +413,13 @@ RegisterServerCallbackSafe('inventory-trunk:getWeight', function(source, cb, pla
     if not key then return cb(0) end
     cb(stashWeight(loadStash(key)))
 end)
+
+-- standard items stored in a vehicle's trunk, for other resources (e.g. the K9 drug search in esx_uniquejobs)
+--   exports['Unique_inventory']:GetTrunkItems(plate)  ->  { {name=..., count=...}, ... }
+exports('GetTrunkItems', function(plate)
+    local key = trunkKey(plate, false)
+    if not key then return {} end
+    local out = {}
+    for _, it in ipairs(loadStash(key).items) do out[#out + 1] = { name = it.name, count = it.count } end
+    return out
+end)

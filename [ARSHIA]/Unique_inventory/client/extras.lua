@@ -18,3 +18,8 @@ exports('getVehicleWeight', function(vehicle)
     ESX.TriggerServerCallback('inventory-trunk:getWeight', function(w) p:resolve(tonumber(w) or 0) end, plate)
     return Citizen.Await(p)
 end)
+
+-- Unique_Garage's lockpick (server side) and other resources ask the inventory to close with this event
+RegisterNetEvent('esx_inventoryhud:closeHud', function()
+    if closeInventory then pcall(closeInventory) end
+end)

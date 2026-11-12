@@ -451,12 +451,12 @@ Config.SkillMilestones = {
 Config.PaycheckIntervalMinutes = 15
 
 -- ================================================================= --
--- sun-style activity skills / rank bar / level perks (all optional)
+-- Unique-style activity skills / rank bar / level perks (all optional)
 -- ================================================================= --
 -- Activity skills: every accepted action adds `addType[action]` percent to
 -- the skill (0..100). At 100% the skill is "finished": the player gets a
 -- one-time coin reward and work timers of the matching job get shorter
--- (Config.SkillFinishedTimeFactor), exactly like sun's `time = {slow, fast}`.
+-- (Config.SkillFinishedTimeFactor), exactly like Unique's `time = {slow, fast}`.
 Config.SkillFinishedTimeFactor = 0.70 -- finished skill => 30% faster work ticks
 Config.SkillFinishCoin = 0.50         -- paid once, when a skill reaches 100%
 
@@ -503,7 +503,7 @@ Config.LevelPerks = {}
 Config.WeaponMinLevel = {}
 
 
--- Achievements (sun-style: points, hidden "first player to ..." badges).
+-- Achievements (Unique-style: points, hidden "first player to ..." badges).
 -- kind = level (reach level `value`) | quests (complete `value` quests) |
 --        skill (finish skill `key`) | skillFirst (first player on the server to finish `key`, hidden)
 Config.Achievements = {
@@ -526,14 +526,14 @@ Config.Achievements = {
     first_clothe     = { label = 'First Tailoring Specialist', description = 'First on the server to max the Tailor skill',  point = 0, hidden = true, kind = 'skillFirst', key = 'clothe_skill' },
 }
 
--- Quest giver NPCs (sun-style). Walk up, press E -> the menu opens on the QUESTS tab.
+-- Quest giver NPCs (Unique-style). Walk up, press E -> the menu opens on the QUESTS tab.
 -- The coords below are only an EXAMPLE (Legion Square) - put your own.
 Config.QuestNPCs = {
     { label = 'Quest Giver', model = 'a_m_m_business_01', coords = { x = 195.17, y = -933.77, z = 30.69, h = 144.0 }, blip = true },
 }
 Config.QuestNPCDistance = 2.0
 
--- Weekly quests (sun-style): every player gets all of them, progress resets on Monday 00:00
+-- Weekly quests (Unique-style): every player gets all of them, progress resets on Monday 00:00
 -- (server time). Triggers are the same server-side quest-* events the daily quests use;
 -- do NOT use the client-reachable ones (:onduty, :acceptreq, quest-cafe:bill) here.
 Config.WeeklyQuests = {
@@ -544,25 +544,25 @@ Config.WeeklyQuests = {
 }
 
 
--- ===== sun level curve =====
--- sunset_quest's table (config.Levels[n] there is "xp to go from level n-1 to n"),
+-- ===== Unique level curve =====
+-- Unique quest's table (config.Levels[n] there is "xp to go from level n-1 to n"),
 -- mapped to this resource's convention (config.Levels[rank] = xp needed at `rank`
--- to reach rank+1). Levels 1-49 are sun's exact numbers. sun stops at 50; this
--- server goes to 100, so 50+ continue sun's own +100-per-level pattern and
+-- to reach rank+1). Levels 1-49 are Unique's exact numbers. Unique stops at 50; this
+-- server goes to 100, so 50+ continue Unique's own +100-per-level pattern and
 -- nobody's existing rank becomes invalid. Set to false to get the old curve back.
-Config.UseSunLevels = true
-if Config.UseSunLevels then
-    local sun = {
+Config.UseUniqueLevels = true
+if Config.UseUniqueLevels then
+    local Unique = {
         100,200,200,200,300,300,300,300,400,400,400,400,500,500,600,700,800,900,1000,1100,
         1200,1300,1400,1500,1600,1700,1800,1900,2000,2100,2200,2300,2400,2500,2600,2700,2800,2900,3000,3100,
         3200,3300,3400,3500,3600,3700,3800,3900,4000,
     }
     for rank = 1, 100 do
-        config.Levels[rank] = sun[rank] or (4000 + (rank - 49) * 100)
+        config.Levels[rank] = Unique[rank] or (4000 + (rank - 49) * 100)
     end
 end
 
--- ===== Quest givers (sun-style) =====
+-- ===== Quest givers (Unique-style) =====
 -- true  = quests can only be ACCEPTED / CLAIMED while standing at a quest giver NPC
 --         (the I menu then only shows them). The server checks the distance.
 Config.QuestAcceptOnlyAtNPC = true
@@ -579,13 +579,13 @@ Config.QuestRewardChoice = {
     },
 }
 
--- ===== sun level perks (HP / armour by level) =====
--- sun's tables: max health = 100 + bonus where bonus = 99+lvl (lvl 1-10) / 100+lvl (11-50)
+-- ===== Unique level perks (HP / armour by level) =====
+-- Unique's tables: max health = 100 + bonus where bonus = 99+lvl (lvl 1-10) / 100+lvl (11-50)
 -- (200 at level 1 -> 250 at level 50); max armour = 50 + 2*lvl from level 26 (102 -> 150).
--- Level 50+ keeps the level-50 values (sun stops at 50). Generated here so the table is
--- not 50 lines long. Set Config.UseSunPerks = false to disable, or write Config.LevelPerks yourself.
-Config.UseSunPerks = true
-if Config.UseSunPerks then
+-- Level 50+ keeps the level-50 values (Unique stops at 50). Generated here so the table is
+-- not 50 lines long. Set Config.UseUniquePerks = false to disable, or write Config.LevelPerks yourself.
+Config.UseUniquePerks = true
+if Config.UseUniquePerks then
     Config.LevelPerks = {}
     for lvl = 1, 50 do
         local perk = { level = lvl, hp = (lvl <= 10) and (99 + lvl) or (100 + lvl) }
@@ -594,7 +594,7 @@ if Config.UseSunPerks then
     end
 end
 
--- ===== newbie restriction (sun: level 1 cannot attack) =====
+-- ===== newbie restriction (Unique: level 1 cannot attack) =====
 -- Players at level <= maxLevel can't shoot, aim, reload or melee. Jobs listed in
 -- exemptJobs (and their off-duty 'off<job>' variant) are never restricted.
 Config.NewbieRestriction = {
@@ -602,4 +602,91 @@ Config.NewbieRestriction = {
     maxLevel = 1,
     exemptJobs = { police = true, sheriff = true, metropolitan = true, ambulance = true },
     message = 'You must reach level 2 before you can fight',
+}
+
+
+-- ===== Weapon skills (Unique-style) =====
+-- One skill per weapon, key = '<weapon name without WEAPON_>_skill' (same naming Unique uses, so
+-- exports.Unique_LevelQuest:IsWeaponSkillFinished('WEAPON_PISTOL') maps straight onto it).
+-- Progress comes from PLAYER kills made with that weapon: each kill adds `Config.WeaponSkillKill`
+-- percent. Anti-farm: the victim must really be dead on the server (OneSync), and the same
+-- killer/victim pair only counts once per `Config.WeaponSkillPairCooldown` seconds.
+-- At 100% the weapon is "mastered": one-time coin reward (Config.SkillFinishCoin) + an
+-- 'Unique_LevelQuest:skillFinished' event + the IsWeaponSkillFinished export for your own
+-- shops/crafting (Unique gates its weapon factory on exactly this).
+Config.WeaponSkillKill = 0.20
+Config.WeaponSkillPairCooldown = 600
+Config.WeaponSkillList = {
+    { 'pistol', 'Pistol' },
+    { 'pistol_mk2', 'Pistol Mk2' },
+    { 'combatpistol', 'Combat Pistol' },
+    { 'appistol', 'Ap Pistol' },
+    { 'pistol50', 'Pistol.50' },
+    { 'snspistol', 'SNS Pistol' },
+    { 'snspistol_mk2', 'Sns Pistol Mk2' },
+    { 'heavypistol', 'Heavy Pistol' },
+    { 'vintagepistol', 'Vintage Pistol' },
+    { 'doubleaction', 'Doubleaction' },
+    { 'ceramicpistol', 'Ceramic Pistol' },
+    { 'gadgetpistol', 'Gadget Pistol' },
+    { 'marksmanpistol', 'Marksman Pistol' },
+    { 'pistolxm3', 'Pistol XM3' },
+    { 'revolver', 'Revolver' },
+    { 'revolver_mk2', 'Revolver Mk2' },
+    { 'navyrevolver', 'Navy Revolver' },
+    { 'machinepistol', 'Machine Pistol' },
+    { 'smg', 'Smg' },
+    { 'smg_mk2', 'Smg Mk2' },
+    { 'assaultsmg', 'Assault Smg' },
+    { 'microsmg', 'Micro Smg' },
+    { 'minismg', 'Mini SMG' },
+    { 'tecpistol', 'Tactical SMG' },
+    { 'combatpdw', 'CombatPDW' },
+    { 'pumpshotgun', 'Pump Shotgun' },
+    { 'pumpshotgun_mk2', 'Pump Shotgun Mk2' },
+    { 'sawnoffshotgun', 'SawnOff Shotgun' },
+    { 'assaultshotgun', 'Assault Shotgun' },
+    { 'bullpupshotgun', 'Bullpup Shotgun' },
+    { 'combatshotgun', 'Combat Shotgun' },
+    { 'autoshotgun', 'Auto Shotgun' },
+    { 'dbshotgun', 'DB Shotgun' },
+    { 'heavyshotgun', 'Heavy Shotgun' },
+    { 'assaultrifle', 'Assault Rifle' },
+    { 'assaultrifle_mk2', 'Assault Rifle Mk2' },
+    { 'carbinerifle', 'Carbine Rifle' },
+    { 'carbinerifle_mk2', 'Carbine Rifle Mk2' },
+    { 'advancedrifle', 'Advanced Rifle' },
+    { 'specialcarbine', 'Special Carbine' },
+    { 'specialcarbine_mk2', 'Special Carbine Mk2' },
+    { 'bullpuprifle', 'Bullpup Rifle' },
+    { 'bullpuprifle_mk2', 'Bullpup Rifle Mk2' },
+    { 'compactrifle', 'Compact Rifle' },
+    { 'militaryrifle', 'Military Rifle' },
+    { 'tacticalrifle', 'Tactical Rifle' },
+    { 'heavyrifle', 'Heavy Rifle' },
+    { 'gusenberg', 'GusenBerg' },
+    { 'combatmg', 'Combat MG' },
+    { 'combatmg_mk2', 'Combat MG Mk2' },
+    { 'mg', 'MG' },
+}
+for _, w in ipairs(Config.WeaponSkillList) do
+    Config.Skills[w[1] .. '_skill'] = {
+        label = w[2], weapon = true, weaponName = 'WEAPON_' .. w[1]:upper(),
+        addType = { kill = Config.WeaponSkillKill },
+    }
+end
+
+
+-- ===== Mastery skins (Unique-style weapon tints) =====
+-- A weapon whose skill reached 100% unlocks skins for it. The player picks one in the
+-- WEAPON SKILL tab (stored per weapon, applied every time that weapon is in the loadout).
+-- Until they choose, the DEFAULT skin below is applied automatically.
+-- Tint indices + names are Unique's own (factory-config.lua): standard weapons 0-7, Mk2 weapons 0-12.
+Config.WeaponSkins = {
+    enabled = true,
+    defaultTint = 2,      -- Gold, for normal weapons
+    defaultTintMk2 = 9,   -- Red Contrast, for *_MK2 weapons
+    standard = { [0] = 'No skin', 'Green', 'Gold', 'Pink', 'Army', 'Blue', 'Orange', 'Platinum' },
+    mk2 = { [0] = 'No skin', 'Gray', 'Two-Tone', 'White', 'Beige', 'Green', 'Blue', 'Earth', 'Brown & Black',
+            'Red Contrast', 'Blue Contrast', 'Yellow Contrast', 'Orange Contrast' },
 }

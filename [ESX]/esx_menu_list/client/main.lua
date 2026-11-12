@@ -1,8 +1,8 @@
--- esx_menu_list (Sunset-style UI, hardened client)
+-- esx_menu_list (Unique UI, hardened client)
 --
 -- Two menu types share this resource and UI:
 --   'list'  -> card grid  (esx_society / Unique_ALLGangs)
---   'list2' -> table      (Sunset's sun-list; head = {...}, rows = {{cols = {...}}})
+--   'list2' -> table      (table; head = {...}, rows = {{cols = {...}}})
 --
 -- Fixes vs the previous client: nil-menu guards (GetOpened returns nil when the menu
 -- closed while the NUI event was in flight), cursor can no longer get stuck when the

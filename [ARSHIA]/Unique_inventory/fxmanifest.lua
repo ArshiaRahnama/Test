@@ -43,6 +43,7 @@ server_scripts {
     'server/callback_bridge.lua', -- must be before main.lua
     'server/main.lua',
     'server/second.lua', -- stash store + trunk
+    'server/gang_store.lua', -- exports['Unique_inventory']:Add/RemoveGangArmoryItem|Weapon, GetGangArmory* (used by Unique_ALLGangs / Unique_AllRobs)
 }
 
 files { 'ui/**' }

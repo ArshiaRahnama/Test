@@ -484,3 +484,18 @@
     });
   }
 })();
+
+// ===== Responsive scale-to-fit: panel is designed for 1920x1080 and scales with the screen (any resolution/aspect) =====
+(function () {
+  function fit() {
+    var z = Math.max(0.55, Math.min(innerHeight / 1080, innerWidth / 1920, 1.6));
+    document.querySelectorAll('#tablet').forEach(function (el) {
+      el.style.zoom = z;
+      el.style.width  = Math.min(1220, innerWidth  * 0.94 / z) + 'px';
+      el.style.height = Math.min(800, innerHeight * 0.92 / z) + 'px';
+    });
+  }
+  window.addEventListener('resize', fit);
+  window.addEventListener('message', function () { setTimeout(fit, 0); });
+  fit();
+})();

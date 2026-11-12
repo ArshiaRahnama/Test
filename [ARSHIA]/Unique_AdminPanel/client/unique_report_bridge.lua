@@ -72,6 +72,16 @@ CreateThread(function()
     if ESX and ESX.GetPlayerData and ESX.GetPlayerData().job then TriggerServerEvent('UniqueRep:sync') end
 end)
 
+RegisterNetEvent('UniqueRep:startCall')
+AddEventHandler('UniqueRep:startCall', function(number)
+    if GetResourceState('Unique_Phone') ~= 'started' then
+        if ESX then ESX.ShowNotification('~r~گوشی در دسترس نیست.') end
+        return
+    end
+    local ok = pcall(function() exports['Unique_Phone']:StartCall(tostring(number)) end)
+    if not ok and ESX then ESX.ShowNotification('~r~شروع تماس ناموفق بود.') end
+end)
+
 -- ------------------------------------------------------------------- admin ---
 local panelOpen = false
 

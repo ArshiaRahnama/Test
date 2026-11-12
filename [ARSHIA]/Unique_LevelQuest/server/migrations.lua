@@ -88,7 +88,7 @@ CreateThread(function()
         end)
     end)
 
-    -- player_skills: per-player activity skills (sun-style). `percent` is
+    -- player_skills: per-player activity skills (Unique-style). `percent` is
     -- 0..100, `finished` flips to 1 the moment it reaches 100.
     tableExists('player_skills', function(exists)
         if exists then return end
@@ -137,6 +137,18 @@ CreateThread(function()
                 `progress`   TEXT NOT NULL
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
         ]], {}, function() print('[Unique_LevelQuest] migrated: created table quest_weekly') end)
+    end)
+
+    tableExists('weapon_skins', function(exists)
+        if exists then return end
+        MySQL.Async.execute([[
+            CREATE TABLE `weapon_skins` (
+                `identifier` VARCHAR(60) NOT NULL,
+                `weapon`     VARCHAR(50) NOT NULL,
+                `tint`       INT(11) NOT NULL DEFAULT 0,
+                PRIMARY KEY (`identifier`, `weapon`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        ]], {}, function() print('[Unique_LevelQuest] migrated: created table weapon_skins') end)
     end)
 
 end)

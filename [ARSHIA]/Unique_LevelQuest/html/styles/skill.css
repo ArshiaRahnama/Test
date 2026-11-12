@@ -263,3 +263,8 @@
 @keyframes skillUpRise { 0% { opacity: 0; transform: translate(-50%, 14px) scale(.9); } 15% { opacity: 1; transform: translate(-50%, 0) scale(1); }
   80% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -46px) scale(1); } }
 @media (prefers-reduced-motion: reduce) { .skillUpBurst { animation: none; } }
+
+.weapon-skill-list { display: flex; flex-direction: column; gap: 10px; }
+.wsSkin { display: inline-flex; align-items: center; gap: 8px; margin: 8px 4px 2px; font-size: 13px; opacity: .9; }
+.wsSkin select { background: rgba(0,0,0,.35); color: #fff; border: 1px solid rgba(255,255,255,.18); border-radius: 8px; padding: 6px 10px; min-height: 40px; font-size: 14px; font-family: inherit; }
+.wsSkin select:focus-visible { outline: 2px solid var(--orange, #7c3aed); outline-offset: 2px; }

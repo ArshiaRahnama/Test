@@ -1,4 +1,4 @@
--- Unique_Clothe / client / shop (essentialmode + skinchanger). ESX comes from wardrobe.lua.
+-- Unique_clothe / client / shop (essentialmode + skinchanger). ESX comes from wardrobe.lua.
 
 local shopOpen, currentShop, originalSkin, cam
 local currentType

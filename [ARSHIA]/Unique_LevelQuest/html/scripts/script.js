@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', function () {
     quests: document.getElementById('tab_quests'),
     skill: document.getElementById('tab_skill'),
     achievements: document.getElementById('tab_achievements'),
+    weapon: document.getElementById('tab_weapon'),
     collections: document.getElementById('tab_collections'),
     leaderboard: document.getElementById('tab_leaderboard'),
     duty: document.getElementById('tab_duty'),

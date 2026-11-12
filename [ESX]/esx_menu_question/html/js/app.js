@@ -1,17 +1,86 @@
 (function(){
+	// ---- safe HTML for title/label (Mustache prints these raw with {{{ }}}) ----
+	// Keeps what callers really use (<span style="color:rgb(..)">, <b>, <i>, <br>, <img src=https/nui/data>)
+	// and drops scripts, event handlers, iframes, javascript: urls and unsafe css.
+	var SAFE_TAGS  = { span: 1, b: 1, i: 1, u: 1, strong: 1, em: 1, br: 1, small: 1, font: 1, img: 1 };
+	var DROP_TAGS  = { script: 1, style: 1, iframe: 1, object: 1, embed: 1, link: 1, meta: 1, template: 1, noscript: 1, svg: 1, math: 1 };
+	var SAFE_PROPS = { 'color': 1, 'background-color': 1, 'font-weight': 1, 'font-style': 1, 'font-size': 1, 'text-decoration': 1, 'opacity': 1 };
+	var SAFE_VALUE = /^[#a-z0-9 .,%()\-]+$/i;
+	var SAFE_SRC   = /^(https?:\/\/|nui:\/\/|data:image\/(png|jpe?g|gif|webp);base64,)/i;
+
+	function cleanStyle(style) {
+		var out = [];
+		String(style).split(';').forEach(function (decl) {
+			var i = decl.indexOf(':');
+			if (i < 1) return;
+			var prop = decl.slice(0, i).trim().toLowerCase();
+			var val  = decl.slice(i + 1).trim();
+			if (SAFE_PROPS[prop] && SAFE_VALUE.test(val) && !/url|expression|javascript|import/i.test(val)) {
+				out.push(prop + ':' + val);
+			}
+		});
+		return out.join(';');
+	}
+
+	function cleanWalk(src, dst) {
+		var nodes = src.childNodes;
+		for (var i = 0; i < nodes.length; i++) {
+			var n = nodes[i];
+			if (n.nodeType === 3) {
+				dst.appendChild(document.createTextNode(n.nodeValue));
+			} else if (n.nodeType === 1) {
+				var tag = n.localName.toLowerCase();
+				if (DROP_TAGS[tag]) continue;                  // dangerous: drop with content
+				if (!SAFE_TAGS[tag]) { cleanWalk(n, dst); continue; } // unknown wrapper: keep its text
+				var el = document.createElement(tag);
+				var ok = true;
+				for (var a = 0; a < n.attributes.length; a++) {
+					var an = n.attributes[a].name.toLowerCase(), av = n.attributes[a].value;
+					if (an === 'style') { var s = cleanStyle(av); if (s) el.setAttribute('style', s); }
+					else if (an === 'src' && tag === 'img') { if (SAFE_SRC.test(av.trim())) el.setAttribute('src', av.trim()); else ok = false; }
+					else if ((an === 'width' || an === 'height') && /^\d{1,4}$/.test(av)) el.setAttribute(an, av);
+					else if (an === 'color' && tag === 'font' && SAFE_VALUE.test(av)) el.setAttribute('color', av);
+				}
+				if (!ok) continue;
+				cleanWalk(n, el);
+				dst.appendChild(el);
+			}
+		}
+	}
+
+	function cleanHtml(html) {
+		if (html === null || typeof html === 'undefined') return '';
+		var tpl = document.createElement('template');
+		tpl.innerHTML = String(html);
+		var out = document.createElement('div');
+		cleanWalk(tpl.content, out);
+		return out.innerHTML;
+	}
+
+	function stripTags(html) {
+		return String(html === null || typeof html === 'undefined' ? '' : html).replace(/<[^>]*>/g, ' ');
+	}
+
+	function scrollSelected(namespace, name) {
+		var found = $('#menu_' + namespace + '_' + name).find('.menu-item.selected');
+		if (found.length > 0 && found[0].scrollIntoView) found[0].scrollIntoView();
+	}
+
 
 	let MenuTpl =
-		'<div id="menu_{{_namespace}}_{{_name}}" class="menu{{#align}} align-{{align}}{{/align}}">' +
-			'<div class="head"><h1>{{title}}</h1></div>' +
-			'<div class="question"><p>{{question}}</p></div>' +
-				'<div class="menu-items">' +
-					'{{#elements}}' +
-						'<div class="menu-item {{#selected}}selected{{/selected}}">' +
-							'{{{label}}}{{#isSlider}} : &lt;{{{sliderLabel}}}&gt;{{/isSlider}}' +
-						'</div>' +
-					'{{/elements}}' +
-				'</div>'+
+		'<div id="menu_{{_namespace}}_{{_name}}" class="aconfirm{{#align}} align-{{align}}{{/align}}">' +
+			'<div class="aconfirm-glow"></div>' +
+			'<div class="aconfirm-head">' +
+				'<div class="aconfirm-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="M9.3 9a2.7 2.7 0 1 1 3.6 2.5c-.7.3-1.4.9-1.4 1.8v.2"/><circle cx="11.5" cy="16.6" r="0.7" fill="currentColor" stroke="none"/></svg></div>' +
+				'<div class="aconfirm-title">{{{title}}}</div>' +
 			'</div>' +
+			'{{#question}}<div class="aconfirm-q">{{question}}</div>{{/question}}' +
+			'<div class="aconfirm-opts">' +
+				'{{#elements}}' +
+					'<div class="menu-item aconfirm-opt{{#selected}} selected{{/selected}}">{{{label}}}</div>' +
+				'{{/elements}}' +
+			'</div>' +
+			'<div class="aconfirm-foot"><span class="aconfirm-hint"><span class="kbd">&#8596;</span> Entekhab</span><span class="aconfirm-hint"><span class="kbd">Enter</span> Taid</span></div>' +
 		'</div>'
 	;
 
@@ -22,6 +91,9 @@
 	ESX_MENU.pos          = {};
 
 	ESX_MENU.open = function(namespace, name, data) {
+
+		data = data || {};
+		if (!Array.isArray(data.elements)) data.elements = [];
 
 		if (typeof ESX_MENU.opened[namespace] == 'undefined') {
 			ESX_MENU.opened[namespace] = {};
@@ -67,12 +139,12 @@
 		});
 
 		ESX_MENU.render();
-		$('#menu_' + namespace + '_' + name).find('.menu-item.selected')[0].scrollIntoView();
+		scrollSelected(namespace, name);
 	};
 
 	ESX_MENU.close = function(namespace, name) {
 
-		delete ESX_MENU.opened[namespace][name];
+		if (ESX_MENU.opened[namespace]) delete ESX_MENU.opened[namespace][name];
 
 		for (let i=0; i<ESX_MENU.focus.length; i++) {
 			if (ESX_MENU.focus[i].namespace == namespace && ESX_MENU.focus[i].name == name) {
@@ -98,16 +170,18 @@
 
 				let menuData = ESX_MENU.opened[namespace][name];
 				let view     = JSON.parse(JSON.stringify(menuData));
+				view.title = cleanHtml(view.title);
 
 				for (let i=0; i<menuData.elements.length; i++) {
 					let element = view.elements[i];
+					element.label = cleanHtml(element.label);
 
 					switch (element.type) {
 						case 'default' : break;
 
 						case 'slider' : {
 							element.isSlider    = true;
-							element.sliderLabel = (typeof element.options == 'undefined') ? element.value : element.options[element.value];
+							element.sliderLabel = cleanHtml((typeof element.options == 'undefined') ? element.value : element.options[element.value]);
 
 							break;
 						}
@@ -179,6 +253,12 @@
 
 			case 'controlPressed': {
 
+				{
+					let f = ESX_MENU.getFocused();
+					let m = f && ESX_MENU.opened[f.namespace] ? ESX_MENU.opened[f.namespace][f.name] : null;
+					if ((!f || !m || m.elements.length === 0) && data.control !== 'BACKSPACE') break;
+				}
+
 				switch (data.control) {
 
 					case 'ENTER': {
@@ -235,7 +315,7 @@
 							ESX_MENU.change(focused.namespace, focused.name, elem);
 							ESX_MENU.render();
 
-							$('#menu_' + focused.namespace + '_' + focused.name).find('.menu-item.selected')[0].scrollIntoView();
+							scrollSelected(focused.namespace, focused.name);
 						}
 
 						break;
@@ -270,7 +350,7 @@
 							ESX_MENU.change(focused.namespace, focused.name, elem);
 							ESX_MENU.render();
 
-							$('#menu_' + focused.namespace + '_' + focused.name).find('.menu-item.selected')[0].scrollIntoView();
+							scrollSelected(focused.namespace, focused.name);
 						}
 
 						break;
@@ -303,7 +383,7 @@
 								default: break;
 							}
 
-							$('#menu_' + focused.namespace + '_' + focused.name).find('.menu-item.selected')[0].scrollIntoView();
+							scrollSelected(focused.namespace, focused.name);
 						}
 
 						break;
@@ -339,7 +419,7 @@
 								default: break;
 							}
 
-							$('#menu_' + focused.namespace + '_' + focused.name).find('.menu-item.selected')[0].scrollIntoView();
+							scrollSelected(focused.namespace, focused.name);
 						}
 
 						break;
@@ -356,10 +436,8 @@
 
 	};
 
-	window.onload = function(e){
-		window.addEventListener('message', (event) => {
-			onData(event.data);
-		});
-	};
+	window.addEventListener('message', (event) => {
+		if (event.data) onData(event.data);
+	});
 
 })();

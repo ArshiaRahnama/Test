@@ -1,4 +1,4 @@
--- Achievements + public profile (sun-style "menu I" extras).
+-- Achievements + public profile (Unique-style "menu I" extras).
 local function award(src, identifier, key)
     local def = Config.Achievements[key]
     if not def then return end
@@ -117,7 +117,7 @@ ESX.RegisterServerCallback('HUD_Menu:GetProfile', function(source, cb, targetId)
                 cb({
                     name = (target.name or 'Unknown'):gsub('_', ' '),
                     id = targetId,
-                    level = rank or 1, xp = xp or 0, xpNeeded = Config.Levels[rank or 1] or 0,
+                    level = rank or 1, xp = xp or 0, xpNeeded = config.Levels[rank or 1] or 0,
                     job = target.job and target.job.label or 'No Job',
                     points = points, achievements = doneCount, skills = top,
                 })

@@ -25,7 +25,7 @@ client_scripts {
   'client/main.lua',
 }
 
--- Sunset-style NUI skin menu
+-- Unique NUI skin menu
 ui_page 'ui/index.html'
 
 files {

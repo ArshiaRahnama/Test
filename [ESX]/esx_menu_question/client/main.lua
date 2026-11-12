@@ -1,3 +1,12 @@
+-- esx_menu_question (Unique UI, hardened client)
+--
+-- Key handling stays on this server's polling thread (essentialmode here has no
+-- onKeyDown / isAnyUiOpen export). Fixes vs the previous client:
+--   * menu_submit / menu_cancel / menu_change crashed when GetOpened() returned nil
+--   * the key thread polled and posted to the NUI on EVERY Enter/Backspace/arrow press
+--     even with no question open; it now sleeps unless a question menu is open
+--   * closeMenu sent an undefined `data` variable
+
 ESX = nil
 
 Citizen.CreateThread(function()
@@ -21,8 +30,11 @@ Citizen.CreateThread(function()
 	local GUI      = {}
 	GUI.Time       = 0
 	local MenuType = 'question'
+	local Opened   = {}
 
 	local openMenu = function(namespace, name, data)
+		Opened[namespace .. '_' .. name] = true
+
 		SetNuiFocus(true)
 		SendNUIMessage({
 			action    = 'openMenu',
@@ -34,117 +46,86 @@ Citizen.CreateThread(function()
 	end
 
 	local closeMenu = function(namespace, name)
+		Opened[namespace .. '_' .. name] = nil
+
 		SendNUIMessage({
 			action    = 'closeMenu',
 			namespace = namespace,
 			name      = name,
-			data      = data,
 		})
 	end
 
 	ESX.UI.Menu.RegisterType(MenuType, openMenu, closeMenu)
 
 	RegisterNUICallback('menu_submit', function(data, cb)
-		local menu = ESX.UI.Menu.GetOpened(MenuType, data._namespace, data._name)
+		cb('OK')
+		if type(data) ~= 'table' then return end
 
-		if menu.submit ~= nil then
+		local menu = ESX.UI.Menu.GetOpened(MenuType, data._namespace, data._name)
+		if menu ~= nil and menu.submit ~= nil then
 			menu.submit(data, menu)
 		end
-
-		cb('OK')
 	end)
 
 	RegisterNUICallback('menu_cancel', function(data, cb)
-		local menu = ESX.UI.Menu.GetOpened(MenuType, data._namespace, data._name)
+		cb('OK')
+		if type(data) ~= 'table' then return end
 
-		if menu.cancel ~= nil then
+		local menu = ESX.UI.Menu.GetOpened(MenuType, data._namespace, data._name)
+		if menu ~= nil and menu.cancel ~= nil then
 			menu.cancel(data, menu)
 		end
-
-		cb('OK')
 	end)
 
 	RegisterNUICallback('menu_change', function(data, cb)
+		cb('OK')
+		if type(data) ~= 'table' then return end
+
 		local menu = ESX.UI.Menu.GetOpened(MenuType, data._namespace, data._name)
+		if menu == nil then return end
 
-		for i=1, #data.elements, 1 do
-			menu.setElement(i, 'value', data.elements[i].value)
+		if type(data.elements) == 'table' then
+			for i = 1, #data.elements, 1 do
+				menu.setElement(i, 'value', data.elements[i].value)
 
-			if data.elements[i].selected then
-				menu.setElement(i, 'selected', true)
-			else
-				menu.setElement(i, 'selected', false)
+				if data.elements[i].selected then
+					menu.setElement(i, 'selected', true)
+				else
+					menu.setElement(i, 'selected', false)
+				end
 			end
-
 		end
 
 		if menu.change ~= nil then
 			menu.change(data, menu)
 		end
-
-		cb('OK')
 	end)
+
+	local function press(control, debounce)
+		if IsControlPressed(0, Keys[control]) and GetLastInputMethod(2) and (GetGameTimer() - GUI.Time) > debounce then
+			SendNUIMessage({
+				action  = 'controlPressed',
+				control = control
+			})
+
+			GUI.Time = GetGameTimer()
+		end
+	end
 
 	Citizen.CreateThread(function()
 		while true do
-
 			Citizen.Wait(10)
 
-			if IsControlPressed(0, Keys['ENTER']) and GetLastInputMethod(2) and (GetGameTimer() - GUI.Time) > 150 then
-				SendNUIMessage({
-					action  = 'controlPressed',
-					control = 'ENTER'
-				})
-
-				GUI.Time = GetGameTimer()
+			if next(Opened) ~= nil then
+				press('ENTER', 150)
+				press('BACKSPACE', 150)
+				press('TOP', 200)
+				press('DOWN', 200)
+				press('LEFT', 150)
+				press('RIGHT', 150)
+			else
+				Citizen.Wait(250)
 			end
-
-			if IsControlPressed(0, Keys['BACKSPACE']) and GetLastInputMethod(2) and (GetGameTimer() - GUI.Time) > 150 then
-				SendNUIMessage({
-					action  = 'controlPressed',
-					control = 'BACKSPACE'
-				})
-
-				GUI.Time = GetGameTimer()
-			end
-
-			if IsControlPressed(0, Keys['TOP']) and GetLastInputMethod(2) and (GetGameTimer() - GUI.Time) > 200 then
-				SendNUIMessage({
-					action  = 'controlPressed',
-					control = 'TOP'
-				})
-
-				GUI.Time = GetGameTimer()
-			end
-
-			if IsControlPressed(0, Keys['DOWN']) and GetLastInputMethod(2) and (GetGameTimer() - GUI.Time) > 200 then
-				SendNUIMessage({
-					action  = 'controlPressed',
-					control = 'DOWN'
-				})
-
-				GUI.Time = GetGameTimer()
-			end
-
-			if IsControlPressed(0, Keys['LEFT']) and GetLastInputMethod(2) and (GetGameTimer() - GUI.Time) > 150 then
-				SendNUIMessage({
-					action  = 'controlPressed',
-					control = 'LEFT'
-				})
-
-				GUI.Time = GetGameTimer()
-			end
-
-			if IsControlPressed(0, Keys['RIGHT']) and GetLastInputMethod(2) and (GetGameTimer() - GUI.Time) > 150 then
-				SendNUIMessage({
-					action  = 'controlPressed',
-					control = 'RIGHT'
-				})
-
-				GUI.Time = GetGameTimer()
-			end
-
 		end
 	end)
-
 end)
