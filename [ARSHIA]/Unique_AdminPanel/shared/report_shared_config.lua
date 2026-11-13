@@ -24,20 +24,21 @@ Config_Shared.ESX_Event     = "esx:getSharedObject"
 
 -- ---------------------------------------------------------------- رنک‌ها ---
 Config_Shared.Rank = {
-    [1]   = 'Intern',
-    [2]   = 'Helper',
-    [3]   = 'Senior Helper',
-    [4]   = 'Head Helper',
-    [5]   = 'Admin',
-    [6]   = 'Senior Admin',
-    [7]   = 'Executive Admin',
-    [8]   = 'Head Admin',
-    [9]   = 'Moderator',
-    [10]  = 'Supervisor',
-    [11]  = 'Administrator',
-    [16]  = 'Manager',
-    [17]  = 'Owner',
-    [100] = 'Developer',
+    -- اسم رنک‌های Sunset، روی شماره‌ی لول‌های همین سرور (۱۲ تا ۱۵ استفاده نمی‌شه؛ اگه بود، Manager نشون داده می‌شه)
+    [1]   = 'SUPPORT',
+    [2]   = 'HELPER',
+    [3]   = 'SENIOR HELPER',
+    [4]   = 'HEAD HELPER',
+    [5]   = 'ADMIN',
+    [6]   = 'SENIOR ADMIN',
+    [7]   = 'HEAD ADMIN',
+    [8]   = 'EXECUTIVE ADMIN',
+    [9]   = 'ADMIN MANAGEMENT',
+    [10]  = 'MODERATOR',
+    [11]  = 'MANAGER',
+    [16]  = 'MANAGER',
+    [17]  = 'OWNER',
+    [100] = 'DEVELOPER',
 }
 
 -- -------------------------------------------------------------- دسترسی‌ها ---

@@ -7,7 +7,7 @@
   --c: #ff9d2f; --c-light: #ffc56d; --c-a15: rgba(255,157,47,.15); --c-a30: rgba(255,157,47,.3);
   position: relative; overflow: hidden; padding: 14px 16px; direction: rtl;
   background: linear-gradient(165deg, rgba(255,255,255,.035), rgba(0,0,0,.25));
-  border: 1px solid rgba(255,255,255,.1); border-radius: 12px;
+  border: 1px solid rgba(255,255,255,.1); border-radius: 12px; box-shadow: inset 0 2px 0 var(--c);
   transition: border-color .2s ease, transform .2s ease;
   animation: cardIn .3s ease backwards;
 }
@@ -22,8 +22,7 @@
 .ev-fa { font-size: 10.5px; font-weight: 700; color: var(--muted); }
 .ev-live { flex-shrink: 0; display: flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 99px;
   font-size: 10px; font-weight: 800; color: #dfe1e7; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1); }
-.ev-live i { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: evBlink 1.2s infinite; }
-@keyframes evBlink { 50% { opacity: .3; } }
+.ev-live i { width: 6px; height: 6px; border-radius: 50%; background: var(--green);  }
 
 .ev-desc { margin: 10px 0 12px; font-size: 11px; line-height: 1.6; color: var(--muted); font-weight: 600; }
 
@@ -33,7 +32,7 @@
 .ev-stats span { font-size: 9.5px; font-weight: 700; color: var(--muted); }
 
 .ev-table { display: flex; flex-direction: column; gap: 5px; }
-.ev-row { position: relative; display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 8px;
+.ev-row { position: relative; overflow: hidden; display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 8px;
   font-size: 12px; background: rgba(28,28,28,.88); border: 1px solid rgba(255,255,255,.08); }
 .ev-th { padding: 0 10px; background: none; border: 0; font-size: 9.5px; font-weight: 800; color: var(--muted); letter-spacing: .5px; }
 .ev-rank { width: 20px; flex-shrink: 0; text-align: center; font-weight: 900; font-size: 12px; color: var(--steel); }
@@ -51,3 +50,7 @@
   border-radius: 8px; background: rgba(255,255,255,.04); border: 1px dashed rgba(255,255,255,.14); }
 .ev-cmd span { font-size: 10.5px; font-weight: 700; color: var(--muted); }
 .ev-cmd b { direction: ltr; font-family: Consolas, monospace !important; font-size: 12px; font-weight: 800; color: var(--c-light); }
+
+.ev-row:not(.ev-th)::before { content: ""; position: absolute; top: 0; bottom: 0; right: 0; width: var(--w, 0%);
+  background: var(--c-a15); pointer-events: none; }
+.ev-row > * { position: relative; }

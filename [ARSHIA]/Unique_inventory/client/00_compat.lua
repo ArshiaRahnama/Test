@@ -63,11 +63,33 @@ local originalNames = {
     Unique_robbery = 'sun-robbery', Unique_animmenu = 'sun-animmenu',
 }
 
+-- Resource names are CASE-SENSITIVE and come from the folder name on disk, so a folder
+-- called "unique_clothe" or "Unique_clothe" is NOT "Unique_Clothe". Find the real name
+-- of a running resource by comparing case-insensitively.
+local resolved = {}
+function UniqueFindResource(wanted)
+    if GetResourceState(wanted) == 'started' then return wanted end
+    local cached = resolved[wanted]
+    if cached and GetResourceState(cached) == 'started' then return cached end
+    local lowered = wanted:lower()
+    for i = 0, GetNumResources() - 1 do
+        local res = GetResourceByFindIndex(i)
+        if res and res:lower() == lowered and GetResourceState(res) == 'started' then
+            resolved[wanted] = res
+            print(('^3[%s]^0 "%s" is running as "%s" (different letter case) - using it'):format(GetCurrentResourceName(), wanted, res))
+            return res
+        end
+    end
+    return nil
+end
+
 exports = setmetatable({}, {
     __call = function(_, ...) return realExports(...) end,
     __index = function(_, res)
         local stub = stubs[res]
-        if stub and GetResourceState(res) ~= 'started' then
+        if stub then
+            local real = UniqueFindResource(res)
+            if real then return realExports[real] end
             local original = originalNames[res]
             if original and GetResourceState(original) == 'started' then
                 return realExports[original]
@@ -138,9 +160,50 @@ RegisterCommand('uniqueinv_debug', function()
             print(('  server getSlots: maxWeight=%s | weapons=%d'):format(tostring(r.maxWeight), #(r.loadout or {})))
         end)
     end
+    -- first rows the client holds, and what the clothing resource says about them
+    local sample = {}
+    for _, it in ipairs(pd.inventory or {}) do
+        if (it.count or 0) > 0 and #sample < 8 then sample[#sample + 1] = ('%s x%d'):format(it.name, it.count) end
+    end
+    print('  first client rows: ' .. (#sample > 0 and table.concat(sample, ', ') or '(none)'))
+    local clotheRes = UniqueFindResource('Unique_Clothe')
+    print(('  Unique_Clothe: %s | job: %s | gang: %s'):format(
+        clotheRes and ('started as "' .. clotheRes .. '"') or GetResourceState('Unique_Clothe'), tostring(pd.job and pd.job.name), tostring(pd.gang and pd.gang.name)))
+    local like = {}
+    for i = 0, GetNumResources() - 1 do
+        local res = GetResourceByFindIndex(i)
+        if res and res:lower():find('cloth') then like[#like + 1] = res .. '=' .. GetResourceState(res) end
+    end
+    print('  resources with "cloth" in the name: ' .. (#like > 0 and table.concat(like, ', ') or '(none at all - the folder is not in your resources)'))
+    if clotheRes then
+        local ok, used = pcall(function() return exports['Unique_Clothe']:getUsed() end)
+        local n = 0
+        if ok and type(used) == 'table' then for _ in pairs(used) do n = n + 1 end end
+        print(('  Unique_Clothe:getUsed() -> %s (%d used pieces)'):format(ok and type(used) or ('ERROR ' .. tostring(used)), n))
+        -- worn pieces by name, owned clothing items per type, and what the skin actually shows
+        local worn = {}
+        if ok and type(used) == 'table' then for name in pairs(used) do worn[#worn + 1] = name end end
+        print('  tracked as worn:   ' .. (#worn > 0 and table.concat(worn, ', ') or '(nothing)'))
+        local ownedTypes = {}
+        for _, t in ipairs({ 'torso', 'tshirt', 'pants', 'shoes', 'helmet', 'mask', 'glasses', 'bag', 'bproof', 'chain', 'watches', 'bracelets', 'ears', 'arms', 'decals' }) do
+            local okOwned, list = pcall(function() return exports['Unique_Clothe']:getOwnedClotheByType(t, false) end)
+            if okOwned and type(list) == 'table' and #list > 0 then
+                local names = {}
+                for _, v in ipairs(list) do names[#names + 1] = v.name .. (v.used and '*' or '') end
+                ownedTypes[#ownedTypes + 1] = t .. '=' .. table.concat(names, '/')
+            end
+        end
+        print('  owned clothing items (* = worn): ' .. (#ownedTypes > 0 and table.concat(ownedTypes, ' | ') or '(none)'))
+        TriggerEvent('skinchanger:getSkin', function(skin)
+            if type(skin) ~= 'table' then print('  skin: (skinchanger gave no skin)') return end
+            print(('  skin shows: sex=%s torso=%s/%s tshirt=%s/%s pants=%s/%s shoes=%s/%s'):format(
+                tostring(skin.sex), tostring(skin.torso_1), tostring(skin.torso_2), tostring(skin.tshirt_1), tostring(skin.tshirt_2),
+                tostring(skin.pants_1), tostring(skin.pants_2), tostring(skin.shoes_1), tostring(skin.shoes_2)))
+        end)
+    end
     print('  Press F2 now - a "KeyDown:f2" line should appear here.')
 end, false)
-UNIQUE_VERSION = 'stage2-v13'
+UNIQUE_VERSION = 'stage2-v16'
 print(('^2[%s] client compat loaded (%s) - F2 or /uniqueinv to open, /uniqueinv_debug to diagnose^7'):format(GetCurrentResourceName(), UNIQUE_VERSION))
 
 -- --------------------------------------------------------------------------

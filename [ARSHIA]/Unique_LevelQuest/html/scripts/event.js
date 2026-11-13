@@ -5,6 +5,7 @@
   const esc = (v) => String(v == null ? '' : v).replace(/[&<>"']/g, (c) =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const num = (v) => Number(v || 0).toLocaleString('en-US');
+  const stat = (v) => (v == null ? '—' : num(v)); // no data yet -> dash, not a misleading 0
 
   // CEF in FiveM is old: no color-mix(), so derive every tint in JS.
   function tints(hex) {
@@ -37,7 +38,6 @@
 
     return `
     <div class="ev-card" style="${tints(ev.color)} animation-delay:${idx * 90}ms">
-      <div class="ev-glow"></div><div class="ev-stripe"></div>
       <div class="ev-head">
         <div class="ev-icon"><i class="fa-solid ${esc(ev.icon)}"></i></div>
         <div class="ev-titles">
@@ -48,9 +48,9 @@
       </div>
       <div class="ev-desc">${esc(ev.desc)}</div>
       <div class="ev-stats">
-        <div><b>${num(sum.players)}</b><span>بازیکن</span></div>
-        <div><b>${num(sum.kills)}</b><span>کل کیل</span></div>
-        <div><b>${num(sum.wins)}</b><span>${ev.id === 'capture' ? 'امتیاز' : 'برد'}</span></div>
+        <div><b>${stat(sum.players)}</b><span>بازیکن</span></div>
+        <div><b>${stat(sum.kills)}</b><span>کل کیل</span></div>
+        <div><b>${stat(sum.wins)}</b><span>${ev.id === 'capture' ? 'امتیاز' : 'برد'}</span></div>
       </div>
       <div class="ev-table">
         <div class="ev-row ev-th">

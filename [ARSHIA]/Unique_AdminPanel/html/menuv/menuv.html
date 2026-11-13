@@ -11,10 +11,29 @@
 <link rel="stylesheet" href="./vendor/css/fa.min.css">
 <link rel="stylesheet" href="./assets/css/main.css">
 <link rel="stylesheet" href="./assets/css/native_theme.css">
+<link rel="stylesheet" href="./assets/css/unique_theme.css">
 <style>html,body{background:transparent!important;overflow:hidden}</style>
 </head>
 <body>
 <div id="menuv"></div>
 <script src="./assets/js/menuv.js"></script>
+<script>
+/* "n / total" counter in the sub bar (like Sunset's WarMenu). Sets a CSS variable only - Vue never touches it. */
+(function () {
+  var root = document.getElementById('menuv'), pending = false;
+  function update() {
+    pending = false;
+    var m = root && root.querySelector('.menuv');
+    if (!m) return;
+    var items = m.querySelectorAll('.menuv-items > .menuv-item');
+    var idx = -1;
+    for (var i = 0; i < items.length; i++) if (items[i].classList.contains('active')) { idx = i; break; }
+    m.style.setProperty('--uq-count', items.length ? '"' + (idx + 1) + ' / ' + items.length + '"' : '""');
+  }
+  function schedule() { if (!pending) { pending = true; requestAnimationFrame(update); } }
+  if (root && window.MutationObserver) new MutationObserver(schedule).observe(root, { subtree: true, childList: true, attributes: true, attributeFilter: ['class'] });
+  schedule();
+})();
+</script>
 </body>
 </html>

@@ -176,3 +176,35 @@ end)
 
 -- exports for other resources (clothing system, admin panel, ...)
 exports('NormalizeName', normalizeName)
+
+
+---------------------------------------------------------------------------
+-- conflicting loaders (see Config.ConflictingResources)
+---------------------------------------------------------------------------
+
+local function stopConflicts(reason)
+    if not Config.StopConflicting then return end
+    for _, name in ipairs(Config.ConflictingResources or {}) do
+        if name ~= GetCurrentResourceName() then
+            local state = GetResourceState(name)
+            if state == 'started' or state == 'starting' then
+                print(('[unique_character] stopping conflicting loader "%s" (%s)'):format(name, reason))
+                StopResource(name)
+            end
+        end
+    end
+end
+
+CreateThread(function()
+    Wait(0)
+    stopConflicts('unique_character started')
+end)
+
+AddEventHandler('onResourceStart', function(resource)
+    for _, name in ipairs(Config.ConflictingResources or {}) do
+        if name == resource then
+            -- let it finish starting, then stop it again
+            SetTimeout(500, function() stopConflicts('"' .. resource .. '" was (re)started') end)
+        end
+    end
+end)

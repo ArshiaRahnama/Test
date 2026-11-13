@@ -44,11 +44,24 @@ local function query(sql, cb)
     if not ok then finish(nil) end
 end
 
+local EVENT_CACHE_SECONDS = 30
+local cached, cachedAt, building, waiting = nil, 0, false, {}
+
 ESX.RegisterServerCallback('HUD_Menu:GetEvents', function(source, cb)
+    -- the numbers are the same for every player, so build them once per 30s
+    if cached and (os.time() - cachedAt) < EVENT_CACHE_SECONDS then return cb(cached) end
+    table.insert(waiting, cb)
+    if building then return end -- someone is already fetching; we get answered with them
+    building = true
+
     local out, pending = {}, #EventDefs * 2
     local function step()
         pending = pending - 1
-        if pending == 0 then cb({ events = out }) end
+        if pending == 0 then
+            cached, cachedAt, building = { events = out }, os.time(), false
+            local list = waiting; waiting = {}
+            for _, f in ipairs(list) do f(cached) end
+        end
     end
 
     for i, def in ipairs(EventDefs) do

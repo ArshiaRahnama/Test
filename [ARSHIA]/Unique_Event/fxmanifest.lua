@@ -19,6 +19,7 @@ shared_scripts {
     'config/warzone.lua',
     'config/gungame.lua',
     'config/capture.lua',
+    'config/gangpvp.lua',
     'hub/config.lua',
 }
 
@@ -26,6 +27,7 @@ client_scripts {
     'modules/warzone/client.lua',
     'modules/gungame/client.lua',
     'modules/capture/client.lua',
+    'modules/gangpvp/client.lua',
     'hub/client.lua',
 }
 
@@ -34,6 +36,7 @@ server_scripts {
     'modules/warzone/server.lua',
     'modules/gungame/server.lua',
     'modules/capture/server.lua',
+    'modules/gangpvp/server.lua',
     'hub/server.lua',
 }
 

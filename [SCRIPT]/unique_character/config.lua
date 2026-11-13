@@ -15,7 +15,10 @@ Config.StateRetryMs    = 10000
 -- Spawn gate: every wait has a
 -- timeout so a missing event can never leave a player on a black screen.
 Config.SettleMs         = 2500   -- minimum settle time after esx:playerLoaded
-Config.WorldTimeoutMs   = 20000  -- max wait for esx:playerLoaded
+Config.WorldTimeoutMs   = 60000  -- max wait for esx:playerLoaded + playerSpawned + the teleport to the last position.
+                                 -- The server can be slow here (user load = DB queries); showing the wrong
+                                 -- place is worse than a longer black screen, so this is generous.
+Config.PlaceRadius      = 50.0   -- the ped must be within this many metres (x,y) of its saved last position
 Config.CollisionTimeout = 5000   -- max wait for ground collision
 Config.WaitForClothes   = true   -- wait for the clothing/skin system before fade-in
 Config.ClothesTimeoutMs = 8000
@@ -40,7 +43,23 @@ Config.RetrieveMs     = 2000   -- 'Retrieving data'
 Config.PrepareMs      = 2000   -- 'Preparing for spawn'
 Config.TeleportMs     = 1000   -- 'Teleporting to last location' (at least; waits for the world too)
 Config.ClothesMinMs   = 3000   -- 'Wearing clothe' (at least; waits for the clothing system too)
-Config.HoldBlack      = true   -- re-fade-out if another script (spawnmanager...) fades the screen in early
+Config.HoldBlack      = true   -- cover the screen with a black rectangle while loading (other scripts such as
+                               -- spawnmanager fade the engine screen in on their own; the cover hides that).
+                               -- Do NOT replace this with forced DoScreenFadeOut calls: spawnmanager waits for
+                               -- IsScreenFadedIn() before firing 'playerSpawned' -> deadlock.
+Config.CoverHud       = true   -- also hide the native HUD/radar while covered
+
+-- Two loaders at the same time = two register forms, 'loading:Loaded' twice, fades and
+-- freezes fighting each other. Any resource listed here is stopped automatically
+-- (on start AND whenever it is restarted). The old [SCRIPT]/loading client flow is the
+-- known one; add others (esx_identity, esx_multicharacter, ...) if you ever run them.
+Config.StopConflicting     = true
+Config.ConflictingResources = { 'loading' }
+
+-- Prints a timeline of everything load-related this client sees (spawn events, fades,
+-- freezes, skin loads, ped swaps) and counts events that fire more than once.
+-- Toggle in game with the F8 console command:  uc_trace
+Config.Trace = false
 
 Config.Text = {
     loadingTitle = 'Loading character...',

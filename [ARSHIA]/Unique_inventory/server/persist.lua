@@ -42,3 +42,47 @@ end)
 AddEventHandler('onResourceStop', function(res)
     if res == 'essentialmode' then saveAll('essentialmode stopping') end
 end)
+
+
+-- --------------------------------------------------------------------------
+-- diagnostics: what the server actually holds for a player
+--   * a line in the server console every time somebody logs in
+--   * console/RCON command:  uniqueinv_check <server id>
+-- --------------------------------------------------------------------------
+local function describe(xp)
+    local stacks, units, lines = 0, 0, {}
+    for _, row in ipairs(xp.inventory or {}) do
+        if (row.count or 0) > 0 then
+            stacks = stacks + 1
+            units = units + row.count
+            if #lines < 15 then lines[#lines + 1] = ('%s x%d'):format(tostring(row.name), row.count) end
+        end
+    end
+    local weapons = {}
+    for _, w in ipairs(xp.loadout or {}) do
+        weapons[#weapons + 1] = ('%s%s'):format(tostring(w.name), w.serial and '' or ' (NO SERIAL)')
+    end
+    return stacks, units, lines, weapons
+end
+
+AddEventHandler('esx:playerLoaded', function(src)
+    SetTimeout(2500, function()
+        local xp = ESX and ESX.GetPlayerFromId(src)
+        if not xp then return end
+        local stacks, units, _, weapons = describe(xp)
+        print(('^3[Unique_inventory]^0 login: id %s (%s) -> %d item stacks (%d units), %d weapons, max weight %s'):format(
+            src, tostring(xp.identifier), stacks, units, #weapons, tostring(xp.getMaxWeight())))
+    end)
+end)
+
+RegisterCommand('uniqueinv_check', function(source, args)
+    if source ~= 0 then return end   -- console / RCON only
+    local id = tonumber(args[1])
+    local xp = id and ESX and ESX.GetPlayerFromId(id)
+    if not xp then print('usage: uniqueinv_check <server id of an online player>') return end
+    local stacks, units, lines, weapons = describe(xp)
+    print(('^3[Unique_inventory]^0 id %d (%s): %d stacks / %d units, %d weapons, used %.2f / max %s kg'):format(
+        id, tostring(xp.identifier), stacks, units, #weapons, xp.getUsedWeight(), tostring(xp.getMaxWeight())))
+    print('  items:   ' .. (#lines > 0 and table.concat(lines, ', ') or '(none)'))
+    print('  weapons: ' .. (#weapons > 0 and table.concat(weapons, ', ') or '(none)'))
+end, true)

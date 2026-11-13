@@ -1,0 +1,79 @@
+/* ============================================================================
+   Unique RP - admin menu theme (Sunset-style WarMenu look on MenuV)
+   Title bar in the accent colour with dark bold text, black sub-bar showing the
+   menu name (+ "n / total" counter), dark list, near-white focused row with black text.
+   Accent: change --uq (r,g,b) here AND COLOR_R/G/B in client/menuv_ui.lua.
+   ========================================================================== */
+@font-face{font-family:'Vazirmatn';src:url('../../../fonts/Vazirmatn-Medium.woff2') format('woff2');font-display:swap;}
+
+.menuv.default {
+  --uq: 101, 174, 255;
+  --uq-dark: 54, 120, 210;
+  font-family: 'Vazirmatn', 'Segoe UI', sans-serif !important;
+  border-radius: 7px;
+  overflow: hidden;
+  box-shadow: 0 10px 34px rgba(0,0,0,.55), 0 0 0 1px rgba(var(--uq), .28), 0 0 26px rgba(var(--uq), .16);
+}
+.menuv.default * { font-family: inherit; }
+
+/* title bar */
+.menuv.default .menuv-header {
+  height: 3em !important; max-height: 3em !important; line-height: 3em !important;
+  background: linear-gradient(135deg, rgb(var(--uq)) 0%, rgb(var(--uq-dark)) 100%) !important;
+  letter-spacing: .22em !important; font-size: 1.25em !important; font-weight: 800 !important;
+  text-transform: uppercase;
+  box-shadow: inset 0 -2px 0 rgba(0,0,0,.25);
+}
+.menuv.default .menuv-header strong { color: #06101d !important; text-shadow: 0 1px 0 rgba(255,255,255,.25); }
+.menuv.default .menuv-header .menuv-bg-icon { display: none !important; }
+
+/* sub bar: menu name in accent on black + counter on the right */
+.menuv.default .menuv-subheader {
+  position: relative;
+  background: #05070b !important;
+  color: rgb(var(--uq)) !important;
+  font-weight: 700 !important; letter-spacing: .08em;
+  border-bottom: 1px solid rgba(var(--uq), .25);
+}
+.menuv.default .menuv-subheader::after {
+  content: var(--uq-count, '');
+  position: absolute; right: 1em; top: 0;
+  color: rgba(255,255,255,.55); font-weight: 600; letter-spacing: .04em;
+}
+
+/* list */
+.menuv.default .menuv-items {
+  background: rgba(7, 9, 14, .78) !important;
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+}
+.menuv.default .menuv-items .menuv-item {
+  color: #f1f4f9;
+  border-left: .35em solid transparent !important; border-right: .35em solid transparent !important;
+  transition: background .12s ease, color .12s ease;
+}
+.menuv.default .menuv-items .menuv-item .item-title { color: inherit; }
+
+/* focused row = Sunset's near-white highlight with black text, accent edge */
+.menuv.default .menuv-items .menuv-item.active {
+  background: #f2f6fc !important; color: #0a1220 !important;
+  border-left: .35em solid rgb(var(--uq)) !important; border-right: .35em solid transparent !important;
+  box-shadow: 0 0 18px rgba(var(--uq), .35);
+}
+.menuv.default .menuv-items .menuv-item.active .item-title,
+.menuv.default .menuv-items .menuv-item.active i,
+.menuv.default .menuv-items .menuv-item.active svg { color: #0a1220 !important; }
+.menuv.default .menuv-items .menuv-item.active span.menuv-icon { border-right: 1px solid rgba(10,18,32,.25) !important; }
+.menuv.default .menuv-items .menuv-item.disabled { background: rgba(255,255,255,.04) !important; color: #6c7586 !important; }
+
+/* checkbox / confirm / slider options keep contrast on both states */
+.menuv.default .menuv-items span.menuv-options span.menuv-btn { color: #f1f4f9 !important; }
+.menuv.default .menuv-items .menuv-item.active span.menuv-options span.menuv-btn { background: rgba(10,18,32,.12) !important; color: #0a1220 !important; }
+.menuv.default .menuv-items .menuv-item.active span.menuv-options span.menuv-btn.active { background: rgb(var(--uq-dark)) !important; color: #fff !important; }
+
+/* description footer */
+.menuv.default .menuv-description {
+  background: #05070b !important; color: #cfd6e4 !important;
+  border-top: 1px solid rgba(var(--uq), .3); border-left: .35em solid rgb(var(--uq));
+}
+.menuv.default .menuv-description strong { color: #cfd6e4; font-weight: 500; }
+.menuv.default .menuv-items .menuv-desc { border-left: .35em solid rgb(var(--uq)) !important; }

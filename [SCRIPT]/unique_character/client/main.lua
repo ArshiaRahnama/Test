@@ -12,7 +12,10 @@
 --     resource restarts; the NUI url must use GetParentResourceName().
 --   * the bottom status panel lives in this resource's own NUI (no ps-ui dependency).
 --   * the screen must stay black until everything is loaded: other scripts that fade it
---     in early are overridden (Config.HoldBlack), and Config.MinBlackMs is a hard minimum.
+--     in early (spawnmanager does) must not be visible: a black rectangle covers the screen
+--     (Config.HoldBlack) while the engine fade is left alone, and Config.MinBlackMs is a hard minimum.
+--     NEVER force the engine fade back to black: spawnmanager waits for IsScreenFadedIn()
+--     before it fires 'playerSpawned', so doing that deadlocks the whole spawn.
 
 local ESX = nil
 local needRegister = nil     -- nil = unknown yet, true = new player, false = has character
@@ -24,6 +27,9 @@ local loadedFired = false    -- 'loading:Loaded' must fire once (AdminPanel + es
 local isNewCharacter = false
 local holding = true        -- keep the ped hidden/frozen AND the screen black until finishSpawn
 local blackSince = nil      -- GetGameTimer() when the screen went black
+local covering = false      -- a black rectangle is being drawn over the screen
+local spawnedSeen = false   -- spawnmanager fired 'playerSpawned' (ped spawned at the default spawn point)
+local teleportDone = false  -- essentialmode finished moving the ped to its last position
 
 ---------------------------------------------------------------------------
 -- small helpers
@@ -59,6 +65,24 @@ local function setHidden(state)
     FreezeEntityPosition(ped, state)
 end
 
+-- Black cover drawn every frame. Unlike DoScreenFadeOut it does not touch the engine's
+-- fade state, so spawnmanager can finish its own fade-in and fire 'playerSpawned'.
+local function startCover()
+    if covering or not Config.HoldBlack then return end
+    covering = true
+    CreateThread(function()
+        while covering do
+            DrawRect(0.5, 0.5, 1.0, 1.0, 0, 0, 0, 255)
+            if Config.CoverHud then HideHudAndRadarThisFrame() end
+            Wait(0)
+        end
+    end)
+end
+
+local function stopCover()
+    covering = false
+end
+
 local function waitFor(cond, timeoutMs, step)
     local started = GetGameTimer()
     while not cond() and (GetGameTimer() - started) < timeoutMs do
@@ -66,6 +90,114 @@ local function waitFor(cond, timeoutMs, step)
     end
     return cond()
 end
+
+---------------------------------------------------------------------------
+-- trace: "who is loading my player?"  (F8 command: uc_trace)
+---------------------------------------------------------------------------
+
+local traceOn     = Config.Trace == true
+local traceStart  = GetGameTimer()
+local traceCounts = {}
+local traceOrder  = {}
+
+local function trace(fmt, ...)
+    if not traceOn then return end
+    print(('[unique_character +%5dms] '):format(GetGameTimer() - traceStart) .. fmt:format(...))
+end
+
+local function traceCount(name)
+    if traceCounts[name] == nil then
+        traceCounts[name] = 0
+        traceOrder[#traceOrder + 1] = name
+    end
+    traceCounts[name] = traceCounts[name] + 1
+    trace('event %s (#%d)', name, traceCounts[name])
+end
+
+local function traceSummary()
+    print('[unique_character] ---- load trace summary ----')
+    local repeated = 0
+    for _, name in ipairs(traceOrder) do
+        local n = traceCounts[name]
+        print(('  %-26s x%d%s'):format(name, n, n > 1 and '   <-- fired more than once' or ''))
+        if n > 1 then repeated = repeated + 1 end
+    end
+    print(repeated == 0 and '  (nothing fired twice)' or ('  ' .. repeated .. ' event(s) fired more than once: something else is loading the player too'))
+end
+
+-- every load-related event, counted always (cheap), printed only when tracing
+for _, ev in ipairs({
+    'playerSpawned', 'esx:playerLoaded', 'esx:playerSpawned', 'loading:Loaded', 'es_admin:freezePlayer',
+    'skinchanger:loadSkin', 'skinchanger:modelLoaded', 'skincreator:newChar', 'registerForm', 'showRegisterForm',
+}) do
+    if ev == 'esx:playerLoaded' or ev == 'registerForm' then RegisterNetEvent(ev) end -- sent by the server
+    AddEventHandler(ev, function() traceCount(ev) end)
+end
+
+RegisterCommand('uc_trace', function()
+    traceOn = not traceOn
+    print('[unique_character] trace ' .. (traceOn and 'ON' or 'OFF'))
+    if not traceOn or next(traceCounts) ~= nil then traceSummary() end
+end, false)
+
+-- state changes of the screen and of the ped (swapped ped / model / visibility / freeze)
+CreateThread(function()
+    local last = {}
+    while true do
+        if not traceOn then
+            Wait(500)
+        else
+            local ped = PlayerPedId()
+            local now = {
+                fade    = IsScreenFadedOut() and 'black' or (IsScreenFadingIn() and 'fading-in' or (IsScreenFadingOut() and 'fading-out' or 'visible')),
+                ped     = ped,
+                model   = GetEntityModel(ped),
+                visible = IsEntityVisible(ped),
+                frozen  = IsEntityPositionFrozen(ped),
+            }
+            for k, v in pairs(now) do
+                if last[k] ~= v then
+                    trace('%s: %s -> %s', k, tostring(last[k]), tostring(v))
+                    last[k] = v
+                end
+            end
+            Wait(100)
+        end
+    end
+end)
+
+-- another loader still running? (the server stops these, this only warns if it could not)
+CreateThread(function()
+    Wait(8000)
+    for _, name in ipairs(Config.ConflictingResources or {}) do
+        if GetResourceState(name) == 'started' then
+            print(('[unique_character] WARNING: "%s" is still running and also loads the player. Stop it or remove it from ensure.'):format(name))
+        end
+    end
+end)
+
+---------------------------------------------------------------------------
+-- spawn progress (who puts the ped where, and when)
+--
+-- spawnmanager spawns the ped at the DEFAULT spawn point and fires 'playerSpawned'.
+-- essentialmode then waits for esx:playerLoaded, teleports the ped to its LAST
+-- position and finishes with es_admin:freezePlayer(true). If we fade in before that,
+-- the player sees: default spawn -> jump to the last position -> freeze.
+-- So the fade-in waits for both signals below.
+---------------------------------------------------------------------------
+
+AddEventHandler('playerSpawned', function()
+    spawnedSeen = true
+    trace('playerSpawned (ped is at the default spawn point)')
+end)
+
+AddEventHandler('es_admin:freezePlayer', function(state)
+    -- only the freeze that essentialmode sends right after placing the ped counts
+    if state == true and spawnedSeen and not teleportDone then
+        teleportDone = true
+        trace('essentialmode placed the ped at its last position')
+    end
+end)
 
 ---------------------------------------------------------------------------
 -- state from the server
@@ -169,10 +301,47 @@ end)
 -- driven by conditions + timeouts instead of ~20 s of fixed sleeps)
 ---------------------------------------------------------------------------
 
-local function stage(message, minMs, cond, timeoutMs)
+-- true once the ped REALLY is at its saved last position (not just "events arrived")
+local function isPlaced()
+    if not (ESX.IsPlayerLoaded and ESX.IsPlayerLoaded()) then return false end
+    if not (spawnedSeen and teleportDone) then return false end
+
+    local data = ESX.GetPlayerData and ESX.GetPlayerData() or ESX.PlayerData
+    local lp = data and data.lastPosition
+    if lp and lp.x and lp.y then
+        local c = GetEntityCoords(PlayerPedId())
+        local dx, dy = c.x - lp.x, c.y - lp.y
+        -- x,y only: if the ground has not streamed in yet the ped can fall, z would never match
+        if (dx * dx + dy * dy) > (Config.PlaceRadius * Config.PlaceRadius) then return false end
+    end
+    return true
+end
+
+local function placementReport()
+    local data = ESX.GetPlayerData and ESX.GetPlayerData() or ESX.PlayerData
+    local lp = data and data.lastPosition
+    local dist = 'n/a'
+    if lp and lp.x and lp.y then
+        local c = GetEntityCoords(PlayerPedId())
+        dist = ('%.0fm'):format(math.sqrt((c.x - lp.x) ^ 2 + (c.y - lp.y) ^ 2))
+    end
+    return ('esx loaded: %s, playerSpawned: %s, essentialmode placed it: %s, distance to last position: %s'):format(
+        tostring(ESX.IsPlayerLoaded and ESX.IsPlayerLoaded() or false), tostring(spawnedSeen), tostring(teleportDone), dist)
+end
+
+local function stage(message, minMs, cond, timeoutMs, report)
     status(message)
     local started = GetGameTimer()
-    if cond then waitFor(cond, timeoutMs or 0, 100) end
+    if cond then
+        local nextReport = started + 10000
+        while not cond() and (GetGameTimer() - started) < (timeoutMs or 0) do
+            if report and GetGameTimer() >= nextReport then
+                nextReport = nextReport + 10000
+                print(('[unique_character] still waiting (+%ds) "%s": %s'):format((GetGameTimer() - started) // 1000, message, report()))
+            end
+            Wait(100)
+        end
+    end
     local left = minMs - (GetGameTimer() - started)
     if left > 0 then Wait(left) end
 end
@@ -182,9 +351,12 @@ local function waitForWorld()
     stage(Config.Text.preparing, math.max(Config.PrepareMs, Config.SettleMs), nil)
 
     -- 'Teleporting to last location': ESX loaded + ground collision under the ped
-    stage(Config.Text.teleporting, Config.TeleportMs, function()
-        return ESX.IsPlayerLoaded and ESX.IsPlayerLoaded()
-    end, Config.WorldTimeoutMs)
+    stage(Config.Text.teleporting, Config.TeleportMs, isPlaced, Config.WorldTimeoutMs, placementReport)
+
+    if not isPlaced() then
+        print(('[unique_character] WARNING: the player was not placed at the last position within %ds (%s). Fading in anyway; run uc_trace to see what is late.')
+            :format(Config.WorldTimeoutMs // 1000, placementReport()))
+    end
 
     local c = GetEntityCoords(PlayerPedId())
     RequestCollisionAtCoord(c.x, c.y, c.z)
@@ -240,11 +412,18 @@ local function finishSpawn()
     FreezeEntityPosition(ped, false)
     TriggerEvent('es_admin:freezePlayer', false)
 
+    -- hand over from the black cover to a real fade, without a single visible frame:
+    -- make the engine fade fully black first, only then drop the cover and fade in
+    DoScreenFadeOut(0)
+    waitFor(function() return IsScreenFadedOut() end, 1000, 0)
+    stopCover()
     status(Config.Text.welcome)
     DoScreenFadeIn(Config.FadeInMs)
     statusHide()
 
     flowDone = true
+    trace('spawn flow finished (new character: %s)', tostring(isNewCharacter))
+    if traceOn then traceSummary() end
     TriggerEvent('unique_character:spawned', isNewCharacter)
 
     if isNewCharacter then
@@ -276,6 +455,7 @@ CreateThread(function()
     end
 
     DoScreenFadeOut(Config.FadeOutMs)
+    startCover()
     blackSince = GetGameTimer()
     ShutdownLoadingScreen() -- Unique_LoadingScreen closes its own NUI (fade) from the events below
 
@@ -283,15 +463,12 @@ CreateThread(function()
 
     status(Config.Text.retrieving)
     setHidden(true)
-    -- spawnmanager / essentialmode can re-create or re-freeze the ped after we hid it,
-    -- and other scripts may fade the screen back in while we are still loading.
-    -- Re-apply both until the spawn sequence takes over.
+    -- spawnmanager / essentialmode can re-create or re-freeze the ped after we hid it.
+    -- Re-apply that until the spawn sequence takes over. (The screen is covered by
+    -- startCover(); we deliberately do NOT re-force the engine fade, see the header.)
     CreateThread(function()
         while holding do
             setHidden(true)
-            if Config.HoldBlack and not IsScreenFadedOut() then
-                DoScreenFadeOut(0)
-            end
             Wait(100)
         end
     end)
@@ -326,6 +503,7 @@ end)
 AddEventHandler('onResourceStop', function(res)
     if res ~= GetCurrentResourceName() then return end
     uiOpen = false
+    covering = false
     SetNuiFocus(false, false) -- never leave the cursor stuck on restart
     statusHide()
 end)

@@ -11,7 +11,8 @@ local function BroadcastAdminTags()
     for i = 1, #players do
         local src = players[i]
         if IsOnDutyAdmin(src) then
-            tags[#tags + 1] = { source = src }
+            local xp = ESX.GetPlayerFromId(src)
+            tags[#tags + 1] = { source = src, level = xp and xp.permission_level or 1 }
             if not DutySessionStart[src] then
                 DutySessionStart[src] = os.time()
             end
@@ -51,7 +52,8 @@ AddEventHandler('esx:playerLoaded', function(playerId)
             local players = ESX.GetPlayers()
             for i = 1, #players do
                 if IsOnDutyAdmin(players[i]) then
-                    tags[#tags + 1] = { source = players[i] }
+                    local xp = ESX.GetPlayerFromId(players[i])
+                    tags[#tags + 1] = { source = players[i], level = xp and xp.permission_level or 1 }
                 end
             end
             return tags
