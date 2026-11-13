@@ -188,6 +188,9 @@ CreateThread(function()
                 `identifier` VARCHAR(80) NOT NULL PRIMARY KEY,
                 `used` LONGTEXT NULL
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4]])
+            MySQL.update.await([[CREATE TABLE IF NOT EXISTS `unique_clothe_starter` (
+                `identifier` VARCHAR(80) NOT NULL PRIMARY KEY
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4]])
             MySQL.update.await([[CREATE TABLE IF NOT EXISTS `unique_clothe_packs` (
                 `id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
                 `identifier` VARCHAR(80) NOT NULL,
@@ -476,6 +479,12 @@ AddEventHandler('Unique_Clothe:giveStarter', function()
     Wait(1500) -- let the character creator's skin save land first
     local xPlayer = ESX.GetPlayerFromId(src)
     if not xPlayer then return end
+
+    -- once per character, ever (not just once per connection)
+    local okIns, affected = pcall(MySQL.update.await,
+        'INSERT IGNORE INTO unique_clothe_starter (identifier) VALUES (?)', { xPlayer.identifier })
+    if not okIns or not affected or affected < 1 then return end
+
     local dbSkin = readSkin(xPlayer.identifier)
     local list = Config.StarterClothes[dbSkin and dbSkin.sex == 1 and 1 or 0] or {}
     for _, name in ipairs(list) do
@@ -492,4 +501,7 @@ AddEventHandler('playerDropped', function()
     lastBuy[src], lastUsed[src], gaveStarter[src] = nil, nil, nil
     local ok, xPlayer = pcall(function() return ESX and ESX.GetPlayerFromId(src) end)
     if ok and xPlayer then usedCache[xPlayer.identifier] = nil end
+    -- xPlayer is often already gone when playerDropped fires, which used to leave the
+    -- cache entry behind forever: also clear by the raw identifiers of the connection
+    for _, id in ipairs(GetPlayerIdentifiers(src) or {}) do usedCache[id] = nil end
 end)

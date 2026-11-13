@@ -338,8 +338,9 @@ end)
 
 RegisterNetEvent('esx:setJob')
 AddEventHandler('esx:setJob', function(job)
+  -- can fire before the first GetPlayerData() thread has finished
+  PlayerData = PlayerData or {}
   PlayerData.job = job
-
 end)
 
 function CreateSkinCam()

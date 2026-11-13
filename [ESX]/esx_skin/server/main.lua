@@ -8,10 +8,17 @@ AddEventHandler('esx_skin:save', function(skin)
   local xPlayer = ESX.GetPlayerFromId(source)
   if not xPlayer then return end
 
+  -- never trust the client: a real skin is a small table with a valid sex
+  if type(skin) ~= 'table' then return end
+  local sex = tonumber(skin.sex)
+  if sex ~= 0 and sex ~= 1 then return end
+  local encoded = json.encode(skin)
+  if #encoded > 8192 then return end
+
   exports.oxmysql:execute(
     'UPDATE users SET `skin` = @skin WHERE identifier = @identifier',
     {
-      ['@skin']       = json.encode(skin),
+      ['@skin']       = encoded,
       ['@identifier'] = xPlayer.identifier
     }
   )
@@ -51,9 +58,10 @@ ESX.RegisterServerCallback('esx_skin:getPlayerSkin', function(source, cb)
       if not user then cb(nil, {}) return end
       local skin = nil
 
+      local job = xPlayer.job or {}
       local jobSkin = {
-        skin_male   = xPlayer.job.skin_male,
-        skin_female = xPlayer.job.skin_female
+        skin_male   = job.skin_male,
+        skin_female = job.skin_female
       }
 
       if user.skin ~= nil then
@@ -70,8 +78,9 @@ end)
 RegisterCommand('skin', function(source)
 
   local xPlayer = ESX.GetPlayerFromId(source)
+  if not xPlayer then return end
 
-  if xPlayer.permission_level > 3 then
+  if (xPlayer.permission_level or 0) > 3 then
 
     TriggerClientEvent('esx_skin:openSaveableMenu', source)
     TriggerClientEvent('esx_skin:requestSaveSkin', source)
@@ -87,8 +96,9 @@ end, false)
 RegisterCommand('saveskin', function(source)
 
   local xPlayer = ESX.GetPlayerFromId(source)
+  if not xPlayer then return end
 
-  if xPlayer.permission_level > 8 then
+  if (xPlayer.permission_level or 0) > 8 then
 
     TriggerClientEvent('esx_skin:requestSaveSkin', source)
 
@@ -103,8 +113,9 @@ end, false)
 RegisterCommand('changevest', function(source, args)
 
   local xPlayer = ESX.GetPlayerFromId(source)
+  if not xPlayer then return end
 
-      if xPlayer.permission_level > 8 then
+      if (xPlayer.permission_level or 0) > 8 then
 
         if args[1] and args[2] then
 

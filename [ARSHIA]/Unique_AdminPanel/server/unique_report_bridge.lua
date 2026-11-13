@@ -141,9 +141,7 @@ CreateThread(function()
 end)
 
 -- -------------------------------------------------------------- player events ---
-RegisterNetEvent('UniqueRep:submit')
-AddEventHandler('UniqueRep:submit', function(message, categoryLabel)
-    local src = source
+local function submitReport(src, message, categoryLabel)
     local cat = catByLabel(tostring(categoryLabel or ''))
     if not cat then return Rep.Notify(src, ReportLan.invalidCategory) end
 
@@ -167,6 +165,28 @@ AddEventHandler('UniqueRep:submit', function(message, categoryLabel)
         local row = Rep.GetReport(res.id)
         if row then pushStatus(row, 'open') end
     end, { category = cat.key, title = title, info = info })
+end
+
+RegisterNetEvent('UniqueRep:submit')
+AddEventHandler('UniqueRep:submit', function(message, categoryLabel)
+    submitReport(source, message, categoryLabel)
+end)
+
+-- skincreator fires this when a brand-new character is finished ("I am a new player").
+-- Always filed under the "More" category, and only once per connection, so it cannot be
+-- used to spam the staff queue.
+local newPlayerSent = {}
+
+RegisterNetEvent('SendReport')
+AddEventHandler('SendReport', function(message)
+    local src = source
+    if newPlayerSent[src] then return end
+    newPlayerSent[src] = true
+    submitReport(src, message, 'More')
+end)
+
+AddEventHandler('playerDropped', function()
+    newPlayerSent[source] = nil
 end)
 
 RegisterNetEvent('UniqueRep:rate')

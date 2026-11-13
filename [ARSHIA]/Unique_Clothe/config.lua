@@ -22,9 +22,10 @@ Config.ImageServer     = 'https://cdn.sunrp.ir'
 
 -- Items handed to a brand-new character right after the character creator
 -- (event Unique_Clothe:giveStarter). Item names look like tshirt_m_12_3. Empty = nothing.
+-- Default = the cheapest basic piece of each category (valid names, edit freely).
 Config.StarterClothes = {
-    [0] = {},
-    [1] = {},
+    [0] = { 'tshirt_m_2_0', 'torso_m_0_1', 'pants_m_2_11', 'shoes_m_94_0' },
+    [1] = { 'tshirt_f_0_0', 'torso_f_9_0',  'pants_f_15_0', 'shoes_f_5_0' },
 }
 
 Config.Marker = {
