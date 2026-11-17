@@ -32,6 +32,15 @@ client_scripts {
 	'locales/sv.lua',
 	'locales/pl.lua',
 	'config.lua',
-	'client/main.lua'
+	'client/main.lua',
+	'client/ghabz.lua'
 }
 
+ui_page 'ui/index.html'
+
+files {
+	'ui/index.html',
+	'ui/app.css',
+	'ui/app.js',
+	'ui/fonts/*.woff2'
+}

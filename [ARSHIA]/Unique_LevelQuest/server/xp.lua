@@ -30,12 +30,9 @@
 local PlayerXP   = {} -- [source] = number, cached
 local PlayerRank = {} -- [source] = number, cached
 
-local Loading    = {} -- [source] = { cb, cb ... } while the FIRST db read for that player is in flight
-
 local function clearCache(source)
     PlayerXP[source] = nil
     PlayerRank[source] = nil
-    Loading[source] = nil
 end
 
 -- Always returns via callback(xp, rank). Uses the cache if we already
@@ -46,37 +43,22 @@ local function getXPRank(playerId, cb)
         return
     end
 
-    -- A second GrantXP arriving while the first one's SELECT is still running
-    -- used to start its own SELECT, then both computed from the same old xp
-    -- and the later save overwrote the earlier one (a lost reward). Queue
-    -- behind the in-flight read instead.
-    if Loading[playerId] then
-        table.insert(Loading[playerId], cb)
-        return
-    end
-
     local xPlayer = ESX.GetPlayerFromId(playerId)
     if not xPlayer then cb(nil, nil) return end
 
-    Loading[playerId] = { cb }
     MySQL.Async.fetchAll('SELECT xp, rank FROM users WHERE identifier = @identifier', {
         ['@identifier'] = xPlayer.identifier
     }, function(result)
-        local xp   = (result and result[1] and tonumber(result[1].xp)) or 0
-        local rank = (result and result[1] and tonumber(result[1].rank)) or 1
+        local xp   = (result[1] and tonumber(result[1].xp)) or 0
+        local rank = (result[1] and tonumber(result[1].rank)) or 1
         if rank < 1 then rank = 1 end
-
-        local waiting = Loading[playerId]
-        Loading[playerId] = nil
-        if not waiting then return end -- player left while we were reading
-
         PlayerXP[playerId] = xp
         PlayerRank[playerId] = rank
-        for _, f in ipairs(waiting) do f(xp, rank) end
+        cb(xp, rank)
     end)
 end
 
-local function saveXPRank(playerId, xp, rank, delta)
+local function saveXPRank(playerId, xp, rank)
     local xPlayer = ESX.GetPlayerFromId(playerId)
     if not xPlayer then return end
     local oldRank = PlayerRank[playerId]
@@ -88,10 +70,6 @@ local function saveXPRank(playerId, xp, rank, delta)
         ['@rank']       = rank,
     })
     TriggerClientEvent('XP_System:SetDecor', playerId, rank)
-
-    -- Drives the on-screen rank bar / level-up banner (client/perks.lua).
-    -- `oldRank` lets the client tell a level-up from a plain xp gain.
-    TriggerClientEvent('Unique_LevelQuest:xpUpdate', playerId, rank, xp, delta or 0, oldRank or rank)
 
     -- Tells essentialmode (server/main.lua) to recompute this player's
     -- inventory capacity (Config.DefaultMaxWeight + Config.WeightPerLevel
@@ -134,7 +112,7 @@ function GrantXP(playerId, xp, notifySource)
             newrank = 100
         end
 
-        saveXPRank(playerId, sumxp, newrank, xp)
+        saveXPRank(playerId, sumxp, newrank)
 
         if notifySource then
             local xPlayer = ESX.GetPlayerFromId(playerId)
@@ -176,7 +154,7 @@ function RevokeXP(playerId, xp, notifySource)
             newrank = 1
         end
 
-        saveXPRank(playerId, sumxp, newrank, -xp)
+        saveXPRank(playerId, sumxp, newrank)
 
         if notifySource then
             local xPlayer = ESX.GetPlayerFromId(playerId)

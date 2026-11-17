@@ -203,7 +203,7 @@ RegisterCommand('uniqueinv_debug', function()
     end
     print('  Press F2 now - a "KeyDown:f2" line should appear here.')
 end, false)
-UNIQUE_VERSION = 'stage2-v16'
+UNIQUE_VERSION = 'stage2-v19'
 print(('^2[%s] client compat loaded (%s) - F2 or /uniqueinv to open, /uniqueinv_debug to diagnose^7'):format(GetCurrentResourceName(), UNIQUE_VERSION))
 
 -- --------------------------------------------------------------------------
@@ -401,8 +401,9 @@ local function installHelpers()
     if baseGetWeapon then
         ESX.GetWeapon = function(name)
             local a, b = baseGetWeapon(name)
-            if type(a) == 'table' then return a end
-            return b or {}
+            local w = type(a) == 'table' and a or b or {}
+            if not w.maxShots and WeaponLife then w.maxShots = WeaponLife.MaxShots(name) end
+            return w
         end
     end
 

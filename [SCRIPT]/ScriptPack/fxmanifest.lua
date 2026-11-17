@@ -22,6 +22,7 @@ client_scripts {
 	'boombox_config.lua',
 	'washmoney_config.lua',
 	'license_config.lua',
+	'changeworld_config.lua',
 	'client/*.lua',
 	'config.lua',
 	'locales/*.lua',
@@ -34,6 +35,7 @@ client_scripts {
 server_scripts {
 	'@essentialmode/locale.lua',
 	'@async/async.lua',
+	'@ox_lib/init.lua',
 	'@oxmysql/lib/MySQL.lua',
 	'config.lua',
 	'changwinwood_config.lua',
@@ -44,6 +46,7 @@ server_scripts {
 	'boombox_config.lua',
 	'washmoney_config.lua',
 	'license_config.lua',
+	'changeworld_config.lua',
 	'server/*.lua',
 	'config.lua',
 	'locales/*.lua',

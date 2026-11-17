@@ -1,440 +1,253 @@
---[[
-    Unique_GunGame - client logic
+-- ============================================================================
+--  Unique GunGame  -  CLIENT  (Sun-style)
+-- ============================================================================
+local CFG = GGConfig
 
-    Handles everything for the local player once the server places them into an
-    arena: the scripted-camera spawn intro, death/respawn loop (waiting on your
-    server's own revive flow), kill reporting, arena leash, player blips, the
-    winner MVP screen, and relaying server events into NUI messages for the HUD.
+local InLobby, InMatch, Dead = false, false, false
+local Level, TotalLevels = 1, #CFG.Progression
+local Token = 0
+local Invincible = false
 
-    See config.lua for every tunable value and README.md for command/setup docs.
-]]
+local function notify(msg, typ) lib.notify({ description = msg, type = typ or 'inform', position = 'top' }) end
+local function nui(action, data) SendNUIMessage({ action = action, data = data or {} }) end
 
-ESX = nil
-Citizen.CreateThread(function()
-    while ESX == nil do
-        TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
-        Citizen.Wait(0)
-    end
-end)
-
--- ============================================================
--- Constants
--- ============================================================
-
-local CAM_PAN_WAIT = 3000       -- ms the scripted camera holds before teleporting the player
-local CAM_SETTLE_WAIT = 2000    -- ms to hold position after teleport before releasing the camera
-local BUCKET_SWITCH_WAIT = 200  -- ms given to the routing bucket switch to settle before teleporting
-local OUTFIT_APPLY_WAIT = 500   -- ms given to the outfit swap before spawning weapons
-local RESPAWN_DELAY = 3000      -- ms after death before the first revive attempt
-local REVIVE_RETRY_WAIT = 2500  -- ms between repeated revive attempts if the first one didn't take
-local FREEZE_SETTLE_WAIT = 1000 -- ms after a successful revive before freezing the player for the progress bar
-local RESPAWN_PROGRESS_MS = 2000 -- duration of the on-screen "Respawning..." progress bar
-local WEAPON_SWAP_WAIT = 100    -- ms between clearing weapons and giving the new one on a level-up
-local LEASH_CHECK_MS = 1000     -- how often to check the arena-leash distance
-local FIREWORKS_ASSET_WAIT_MS = 2000 -- safety cap while waiting for the firework particle asset to load
-
--- ============================================================
--- Runtime state
--- ============================================================
-
-local inEvent = false
-local alreadyDead = false
-local currentLocationSet = nil -- the {Lobby, ArenaPoints, Center, Exit} set for the arena this player is currently in
-local matchBlips = {}          -- blips currently shown for other players in this arena
-
--- ============================================================
--- Helpers
--- ============================================================
-
-local function teleportWithCam(coords)
-    local cam = CreateCam('DEFAULT_SCRIPTED_CAMERA', false)
-    SetCamCoord(cam, coords.x + 1.5, coords.y - 5.0, coords.z + 2.0)
-    SetCamActive(cam, true)
-    PointCamAtCoord(cam, coords.x, coords.y, coords.z)
-    RenderScriptCams(true, true, 1000, true, false)
-    Citizen.Wait(CAM_PAN_WAIT)
-
-    SetEntityCoords(PlayerPedId(), coords.x, coords.y, coords.z + 3.0)
-    RemoveAllPedWeapons(PlayerPedId(), true)
-    Citizen.Wait(CAM_SETTLE_WAIT)
-
-    ClearFocus()
-    RenderScriptCams(false, false, 0, true, false)
-    DestroyCam(cam, false)
+local function WaitFor(cond, ms)
+    local t = GetGameTimer() + ms
+    while not cond() and GetGameTimer() < t do Wait(25) end
+    return cond()
 end
 
-local function applyEventOutfit()
-    if not GGConfig.ChangeOutfitOnJoin then return end
-    TriggerEvent('skinchanger:getSkin', function(skin)
-        local outfit = (skin.sex == 0) and GGConfig.OutfitMale or GGConfig.OutfitFemale
-        TriggerEvent('skinchanger:loadClothes', skin, outfit)
+local function DrawTxt(x, y, text, scale, r, g, b, centre)
+    SetTextFont(4)
+    SetTextScale(0.0, scale or 0.5)
+    SetTextColour(r or 255, g or 255, b or 255, 255)
+    SetTextOutline()
+    if centre then SetTextCentre(true) end
+    SetTextEntry('STRING')
+    AddTextComponentString(text)
+    DrawText(x, y)
+end
+
+local function Revive()
+    if not IsEntityDead(PlayerPedId()) then return end
+    TriggerEvent(CFG.ReviveEvent)
+    WaitFor(function() return not IsEntityDead(PlayerPedId()) end, 5000)
+    WaitFor(IsScreenFadedIn, 4000)
+end
+
+local function FadeOut(ms)
+    DoScreenFadeOut(ms)
+    WaitFor(IsScreenFadedOut, ms + 1500)
+end
+
+local function Teleport(c)
+    local ped = PlayerPedId()
+    ClearPedTasksImmediately(ped)
+    RequestCollisionAtCoord(c.x, c.y, c.z)
+    SetEntityCoordsNoOffset(ped, c.x, c.y, c.z, false, false, false)
+end
+
+-- سلاح معتبر برای این build (اگه معتبر نبود نزدیک‌ترین سلاح معتبر قبلی)
+local function ValidWeapon(level)
+    for i = math.min(level, TotalLevels), 1, -1 do
+        local h = GetHashKey(CFG.Progression[i])
+        if IsWeaponValid(h) then return h, CFG.Progression[i] end
+    end
+    return GetHashKey('WEAPON_PISTOL'), 'WEAPON_PISTOL'
+end
+
+local function GiveLevelWeapon(level)
+    local ped = PlayerPedId()
+    local hash = ValidWeapon(level)
+    RemoveAllPedWeapons(ped, true)
+    GiveWeaponToPed(ped, hash, CFG.WeaponAmmo, false, true)
+    SetCurrentPedWeapon(ped, hash, true)
+    SetPedAmmo(ped, hash, CFG.WeaponAmmo)
+end
+
+local function StartInvincibility()
+    if CFG.SpawnInvincibility <= 0 then return end
+    local tok = Token
+    Invincible = true
+    SetPlayerInvincible(PlayerId(), true)
+    SetTimeout(CFG.SpawnInvincibility * 1000, function()
+        if tok == Token or Invincible then
+            Invincible = false
+            SetPlayerInvincible(PlayerId(), false)
+        end
     end)
 end
 
--- Picks a random point from the current arena's ArenaPoints list, so a fight
--- doesn't always start/restart from the exact same corner.
-local function pickArenaPoint()
-    local points = currentLocationSet.ArenaPoints
-    if not points or #points == 0 then
-        return currentLocationSet.Center
-    end
-    return points[math.random(#points)]
+local function Cleanup()
+    Token = Token + 1
+    InLobby, InMatch, Dead, Invincible = false, false, false, false
+    local ped = PlayerPedId()
+    SetPlayerInvincible(PlayerId(), false)
+    FreezeEntityPosition(ped, false)
+    nui('ggHide')
+    TriggerEvent('esx_paintball:inPaintBall', false)
 end
 
-local function spawnIntoArena()
-    RemoveAllPedWeapons(PlayerPedId(), true)
-    teleportWithCam(pickArenaPoint())
-    GiveWeaponToPed(PlayerPedId(), GetHashKey(GGConfig.Weapons[1]), GGConfig.WeaponAmmo, false, true)
-    -- Fix: the parachute used to be requested through a server event that was never
-    -- registered (so it never arrived, and RemoveAllPedWeapons would have wiped it anyway).
-    if GGConfig.GiveParachuteOnSpawn then
-        GiveWeaponToPed(PlayerPedId(), GetHashKey('GADGET_PARACHUTE'), 1, false, false)
-    end
-
-    if GGConfig.Sounds and GGConfig.Sounds.MatchStart then
-        SendNUIMessage({ action = 'playSound', sound = GGConfig.Sounds.MatchStart, volume = GGConfig.SoundVolume })
-    end
+local function Leave(c)
+    FadeOut(500)
+    Cleanup()
+    Revive()
+    local ped = PlayerPedId()
+    RemoveAllPedWeapons(ped, true)
+    if c then Teleport(c) end
+    -- sun: موقعیت مقصد فوراً ذخیره میشه تا ریلاگ بعد از ایونت داخل world ایونت لود نشه
+    local pp = GetEntityCoords(PlayerPedId())
+    TriggerServerEvent('updatePositions', pp.x, pp.y, pp.z, GetEntityHeading(PlayerPedId()))
+    SetEntityHealth(ped, GetEntityMaxHealth(ped))
+    SetPedArmour(ped, 0)
+    TriggerEvent('esx:restoreLoadout')
+    DoScreenFadeIn(800)
 end
 
--- Scans every active player ped against the ped that killed us to resolve a
--- server id. GetPedKiller only returns a ped handle, so this is unavoidable
--- for turning "who killed me" into "which player id do I report".
-local function findKillerServerId(killerPed, ownPed)
-    if not killerPed or killerPed == ownPed then return 0 end
-    for _, id in ipairs(GetActivePlayers()) do
-        if GetPlayerPed(id) == killerPed then
-            return GetPlayerServerId(id)
+-- ----------------------------------------------------------------------------
+--  Events
+-- ----------------------------------------------------------------------------
+RegisterNetEvent('gg:notify')
+AddEventHandler('gg:notify', function(msg, typ) notify(msg, typ) end)
+
+RegisterNetEvent('gg:lobby')
+AddEventHandler('gg:lobby', function(c)
+    Cleanup()
+    InLobby = true
+    TriggerEvent('esx_paintball:inPaintBall', true)
+    TriggerEvent('esx_status:set', 'hunger', 1000000)
+    TriggerEvent('esx_status:set', 'thirst', 1000000)
+    Revive()
+    local ped = PlayerPedId()
+    RemoveAllPedWeapons(ped, true)
+    Teleport(c)
+    SetEntityHealth(ped, GetEntityMaxHealth(ped))
+    SetPedArmour(ped, 0)
+    notify('Montazer Shoroo GunGame Bashid...', 'success')
+    local tok = Token
+    CreateThread(function()
+        while InLobby and tok == Token do
+            DisablePlayerFiring(PlayerId(), true)
+            DisableControlAction(0, 24, true)
+            DisableControlAction(0, 25, true)
+            Wait(0)
         end
-    end
-    return 0
-end
-
-local function clearMatchBlips()
-    for _, blip in ipairs(matchBlips) do
-        if DoesBlipExist(blip) then RemoveBlip(blip) end
-    end
-    matchBlips = {}
-end
-
--- ============================================================
--- Join / leave
--- ============================================================
-
--- locationSet is picked server-side per arena (round-robin over GGConfig.Locations) and
--- isolation between concurrent arenas comes from the server assigning each one its own
--- routing bucket, so this client never needs to know about other arenas running at once.
-RegisterNetEvent('Unique_GunGame:JoinToMach')
-AddEventHandler('Unique_GunGame:JoinToMach', function(locationSet)
-    currentLocationSet = locationSet
-    inEvent = true
-    alreadyDead = false
-
-    SendNUIMessage({ action = 'hideCountdown' })
-    SendNUIMessage({ action = 'showScoreboard' })
-
-    Citizen.Wait(BUCKET_SWITCH_WAIT)
-    teleportWithCam(currentLocationSet.Lobby)
-    applyEventOutfit()
-    Citizen.Wait(OUTFIT_APPLY_WAIT)
-    spawnIntoArena()
-end)
-
-RegisterNetEvent('Unique_GunGame:End')
-AddEventHandler('Unique_GunGame:End', function(locationSet)
-    inEvent = false
-    alreadyDead = false
-    SetEntityInvincible(PlayerPedId(), false)
-    RemoveAllPedWeapons(PlayerPedId(), true)
-
-    SendNUIMessage({ action = 'hideScoreboard' })
-    SendNUIMessage({ action = 'hideTimer' })
-    clearMatchBlips()
-
-    local exitLoc = (locationSet or currentLocationSet or GGConfig.Locations[1]).Exit
-    SetEntityCoords(PlayerPedId(), exitLoc.x + math.random(-10, 10), exitLoc.y + math.random(-10, 10), exitLoc.z + 2.0)
-
-    ESX.TriggerServerCallback('esx_skin:getPlayerSkin', function(skin)
-        TriggerEvent('skinchanger:loadSkin', skin)
     end)
 end)
 
--- ============================================================
--- Death / kill reporting
--- ============================================================
+RegisterNetEvent('gg:countdown')
+AddEventHandler('gg:countdown', function(n) nui('ggCountdown', { seconds = n }) end)
 
--- Runs the full death -> revive -> respawn sequence. Bails out early at every
--- stage if the arena ends (inEvent goes false) while this is still in progress,
--- so a player who dies right as their arena is won doesn't get stuck frozen or
--- teleported back into an arena that no longer exists for them.
-local function handleDeath(playerPed)
-    alreadyDead = true
-    SetEntityInvincible(playerPed, true)
+RegisterNetEvent('gg:time')
+AddEventHandler('gg:time', function(sec) nui('ggTime', { seconds = sec }) end)
 
-    local killerServerId = findKillerServerId(GetPedKiller(playerPed), playerPed)
-    if killerServerId ~= 0 then
-        TriggerServerEvent('Unique_GunGame:ReportKill', killerServerId, GetPlayerName(PlayerId()))
-    end
-    TriggerServerEvent('Unique_GunGame:PlayerDied')
-
-    Citizen.Wait(RESPAWN_DELAY)
-    if not inEvent then
-        alreadyDead = false
-        SetEntityInvincible(PlayerPedId(), false)
-        return
-    end
-
-    if GGConfig.ReviveEvent and GGConfig.ReviveEvent ~= '' then
-        TriggerEvent(GGConfig.ReviveEvent)
-    end
-    while ESX.GetPlayerData().IsDead do
-        Citizen.Wait(REVIVE_RETRY_WAIT)
-        if GGConfig.ReviveEvent and GGConfig.ReviveEvent ~= '' then
-            TriggerEvent(GGConfig.ReviveEvent)
-        end
-        if not inEvent then
-            alreadyDead = false
-            SetEntityInvincible(PlayerPedId(), false)
-            return
-        end
-    end
-
-    Citizen.Wait(FREEZE_SETTLE_WAIT)
-    if not inEvent then
-        alreadyDead = false
-        SetEntityInvincible(PlayerPedId(), false)
-        return
-    end
-
-    TriggerEvent('es_admin:freezePlayer', true)
-    TriggerEvent('mythic_progbar:client:progress', {
-        name = 'unique_gungame_respawn',
-        duration = RESPAWN_PROGRESS_MS,
-        label = 'Respawning...',
-        useWhileDead = true,
-        canCancel = false,
-        controlDisables = {
-            disableMovement = true,
-            disableCarMovement = true,
-            disableMouse = false,
-            disableCombat = true,
-        },
-    })
-    Citizen.Wait(RESPAWN_PROGRESS_MS)
-    TriggerEvent('es_admin:freezePlayer', false)
-
-    if inEvent then
-        spawnIntoArena()
-    end
-    SetEntityInvincible(PlayerPedId(), false)
-    alreadyDead = false
-end
-
-Citizen.CreateThread(function()
-    while true do
-        Citizen.Wait(1)
-        if inEvent then
-            local playerPed = PlayerPedId()
-            if IsEntityDead(playerPed) and not alreadyDead then
-                handleDeath(playerPed)
-            end
-        end
-    end
+RegisterNetEvent('gg:board')
+AddEventHandler('gg:board', function(top, mine, total)
+    nui('ggBoard', { top = top, mine = mine, total = total })
 end)
 
-RegisterNetEvent('Unique_GunGame:LevelUp')
-AddEventHandler('Unique_GunGame:LevelUp', function(weapon)
-    RemoveAllPedWeapons(PlayerPedId(), true)
-    Citizen.Wait(WEAPON_SWAP_WAIT)
-    GiveWeaponToPed(PlayerPedId(), GetHashKey(weapon), GGConfig.WeaponAmmo, false, true)
-    if GGConfig.GiveParachuteOnSpawn then
-        GiveWeaponToPed(PlayerPedId(), GetHashKey('GADGET_PARACHUTE'), 1, false, false)
-    end
+RegisterNetEvent('gg:kill')
+AddEventHandler('gg:kill', function(killer, victim, weapon)
+    nui('ggKill', { killer = killer, killed = victim, weapon = weapon })
 end)
 
--- ============================================================
--- Arena leash
--- ============================================================
--- Keeps players from wandering (or driving) away from the fight instead of
--- actually playing. Pulls them back to a random arena point if they stray too far.
-
-Citizen.CreateThread(function()
-    while true do
-        Citizen.Wait(LEASH_CHECK_MS)
-        if inEvent and GGConfig.ArenaLeashRadius and GGConfig.ArenaLeashRadius > 0 and currentLocationSet then
-            local center = currentLocationSet.Center
-            local ped = PlayerPedId()
-            local dist = #(GetEntityCoords(ped) - vector3(center.x, center.y, center.z))
-            if dist > GGConfig.ArenaLeashRadius then
-                local point = pickArenaPoint()
-                SetEntityCoords(ped, point.x, point.y, point.z + 1.0, false, false, false, true)
-            end
+RegisterNetEvent('gg:spawn')
+AddEventHandler('gg:spawn', function(point, level, weapon, warmup)
+    local firstTime = not InMatch
+    InLobby, InMatch, Dead = false, true, false
+    Level = level or 1
+    local tok = Token
+    Revive()
+    FadeOut(300)
+    local ped = PlayerPedId()
+    Teleport(point)
+    SetEntityHealth(ped, CFG.SpawnHP)
+    SetPedArmour(ped, CFG.SpawnArmor)
+    GiveLevelWeapon(Level)
+    nui('ggLevel', { level = Level, total = TotalLevels, weapon = weapon })
+    DoScreenFadeIn(500)
+    if (warmup or 0) > 0 then
+        FreezeEntityPosition(PlayerPedId(), true)
+        SetPlayerInvincible(PlayerId(), true)
+        local untilT = GetGameTimer() + warmup * 1000
+        while GetGameTimer() < untilT and tok == Token do
+            DrawTxt(0.5, 0.35, ('Shoroo Dar %d'):format(math.ceil((untilT - GetGameTimer()) / 1000)), 0.9, 255, 80, 80, true)
+            DisablePlayerFiring(PlayerId(), true)
+            Wait(0)
         end
+        FreezeEntityPosition(PlayerPedId(), false)
+        SetPlayerInvincible(PlayerId(), false)
     end
-end)
+    StartInvincibility()
 
--- ============================================================
--- Player blips
--- ============================================================
--- Shows a blip for every other player currently in this arena (the roster the
--- server sends is scoped to this match only, so other concurrent arenas never
--- show up here).
-
-RegisterNetEvent('Unique_GunGame:UpdateRoster')
-AddEventHandler('Unique_GunGame:UpdateRoster', function(roster)
-    clearMatchBlips()
-    if not GGConfig.ShowPlayerBlips then return end
-
-    local myServerId = GetPlayerServerId(PlayerId())
-    for _, entry in ipairs(roster) do
-        if entry.source ~= myServerId then
-            local targetIndex = GetPlayerFromServerId(entry.source)
-            if targetIndex ~= -1 then
-                local targetPed = GetPlayerPed(targetIndex)
-                local blip = AddBlipForEntity(targetPed)
-                SetBlipSprite(blip, GGConfig.PlayerBlipSprite)
-                SetBlipColour(blip, GGConfig.PlayerBlipColor)
-                SetBlipScale(blip, 0.8)
-                SetBlipAsShortRange(blip, false)
-                BeginTextCommandSetBlipName('STRING')
-                AddTextComponentString(entry.name)
-                EndTextCommandSetBlipName(blip)
-                matchBlips[#matchBlips + 1] = blip
+    if firstTime then
+        -- محدوده‌ی arena: دورتر از Center برگردونده میشه
+        CreateThread(function()
+            local center = vector3(CFG.Center.x, CFG.Center.y, CFG.Center.z)
+            while InMatch and tok == Token do
+                if CFG.ArenaLeashRadius > 0 and not Dead then
+                    local pc = GetEntityCoords(PlayerPedId())
+                    if #(vector2(pc.x, pc.y) - vector2(center.x, center.y)) > CFG.ArenaLeashRadius then
+                        local pt = CFG.ArenaPoints[math.random(#CFG.ArenaPoints)]
+                        Teleport(pt)
+                        notify('Az Arena Kharej Shodid !', 'error')
+                    end
+                end
+                Wait(1000)
             end
-        end
-    end
-end)
-
--- ============================================================
--- Winner MVP screen
--- ============================================================
-
-RegisterNetEvent('Unique_GunGame:ShowMVP')
-AddEventHandler('Unique_GunGame:ShowMVP', function(winnerName, winnerKills, winnerServerId)
-    local isMe = winnerServerId == GetPlayerServerId(PlayerId())
-    local card = (GGConfig.CallingCards and #GGConfig.CallingCards > 0)
-        and GGConfig.CallingCards[math.random(#GGConfig.CallingCards)]
-        or nil
-
-    SendNUIMessage({ action = 'showMVP', name = winnerName, kills = winnerKills, isYou = isMe, card = card })
-
-    if GGConfig.Sounds and GGConfig.Sounds.MatchWin then
-        SendNUIMessage({ action = 'playSound', sound = GGConfig.Sounds.MatchWin, volume = GGConfig.SoundVolume })
-    end
-
-    if GGConfig.WinnerFireworks then
-        Citizen.CreateThread(function()
-            local winnerIndex = GetPlayerFromServerId(winnerServerId)
-            local fxCoords = (winnerIndex ~= -1) and GetEntityCoords(GetPlayerPed(winnerIndex)) or GetEntityCoords(PlayerPedId())
-
-            RequestNamedPtfxAsset('scr_indep_fireworks')
-            local waited = 0
-            while not HasNamedPtfxAssetLoaded('scr_indep_fireworks') and waited < FIREWORKS_ASSET_WAIT_MS do
-                Citizen.Wait(50)
-                waited = waited + 50
-            end
-            if HasNamedPtfxAssetLoaded('scr_indep_fireworks') then
-                UseParticleFxAssetNextCall('scr_indep_fireworks')
-                StartParticleFxNonLoopedAtCoord('scr_indep_firework_finale', fxCoords.x, fxCoords.y, fxCoords.z + 3.0, 0.0, 0.0, 0.0, 1.0, false, false, false)
+        end)
+        -- ممنوع بودن کنترل‌های F5/F6
+        CreateThread(function()
+            while InMatch and tok == Token do
+                DisableControlAction(0, 166, true)
+                DisableControlAction(0, 167, true)
+                Wait(0)
             end
         end)
     end
-
-    Citizen.SetTimeout(GGConfig.WinnerCameraSeconds * 1000, function()
-        SendNUIMessage({ action = 'hideMVP' })
-    end)
 end)
 
--- ============================================================
--- Physical join point (optional)
--- ============================================================
+RegisterNetEvent('gg:weapon')
+AddEventHandler('gg:weapon', function(weapon, level)
+    if not InMatch then return end
+    Level = level or Level
+    GiveLevelWeapon(Level)
+    nui('ggLevel', { level = Level, total = TotalLevels, weapon = weapon })
+    nui('ggBanner', { label = ('Salah Jadid  -  Level %s'):format(Level) }) -- sun: killstreakBanner
+    PlaySoundFrontend(-1, 'PICK_UP', 'HUD_FRONTEND_DEFAULT_SOUNDSET', false)
+end)
 
-if GGConfig.JoinPed and GGConfig.JoinPed.Enabled then
-    Citizen.CreateThread(function()
-        local modelHash = GetHashKey(GGConfig.JoinPed.Model)
-        RequestModel(modelHash)
-        while not HasModelLoaded(modelHash) do Citizen.Wait(50) end
-
-        local c = GGConfig.JoinPed.Coords
-        local ped = CreatePed(4, modelHash, c.x, c.y, c.z - 1.0, c.heading or 0.0, false, true)
-        FreezeEntityPosition(ped, true)
-        SetEntityInvincible(ped, true)
-        SetBlockingOfNonTemporaryEvents(ped, true)
-        SetModelAsNoLongerNeeded(modelHash)
-
-        while true do
-            Citizen.Wait(0)
-            local dist = #(GetEntityCoords(PlayerPedId()) - vector3(c.x, c.y, c.z))
-            if dist < GGConfig.JoinPed.MarkerDistance then
-                DrawMarker(2, c.x, c.y, c.z + 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.3, 0.3, 0.3, 255, 140, 0, 180, false, true, 2, false, nil, nil, false)
-
-                if dist < GGConfig.JoinPed.InteractDistance then
-                    local onScreen, sx, sy = GetScreenCoordFromWorldCoord(c.x, c.y, c.z + 1.0)
-                    if onScreen then
-                        SetTextScale(0.35, 0.35)
-                        SetTextFont(4)
-                        SetTextColour(255, 255, 255, 215)
-                        SetTextEntry('STRING')
-                        AddTextComponentString('~y~E~w~ - ' .. GGConfig.JoinPed.Label)
-                        SetTextCentre(true)
-                        DrawText(sx, sy)
-                    end
-
-                    if IsControlJustReleased(0, 38) then -- E
-                        ExecuteCommand(GGConfig.JoinCommand)
-                    end
-                end
-            else
-                Citizen.Wait(400) -- far away, no need to check every frame
-            end
+RegisterNetEvent('gg:died')
+AddEventHandler('gg:died', function(delay)
+    if not InMatch then return end
+    Dead = true
+    local tok = Token
+    CreateThread(function()
+        local untilT = GetGameTimer() + (delay or CFG.RespawnDelay) * 1000
+        while Dead and tok == Token and GetGameTimer() < untilT do
+            DrawTxt(0.5, 0.45, ('Respawn Dar %d'):format(math.ceil((untilT - GetGameTimer()) / 1000)), 0.7, 255, 80, 80, true)
+            Wait(0)
         end
     end)
-end
-
--- ============================================================
--- NUI relay: scoreboard / countdown / timer / kill feed
--- ============================================================
-
-RegisterNetEvent('Unique_GunGame:UpdateScoreboard')
-AddEventHandler('Unique_GunGame:UpdateScoreboard', function(board)
-    SendNUIMessage({ action = 'updateScoreboard', players = board })
 end)
 
-RegisterNetEvent('Unique_GunGame:UpdateCountdown')
-AddEventHandler('Unique_GunGame:UpdateCountdown', function(seconds)
-    SendNUIMessage({ action = 'showCountdown', seconds = seconds, total = GGConfig.CountdownTime })
+RegisterNetEvent('gg:leave')
+AddEventHandler('gg:leave', function(c) CreateThread(function() Leave(c) end) end)
+
+RegisterNetEvent('gg:end')
+AddEventHandler('gg:end', function(c, winnerName)
+    if not InMatch and not InLobby then return end
+    if winnerName then notify('Barande: ' .. winnerName, 'success') end
+    nui('ggBanner', { label = winnerName and ('Winner: ' .. winnerName) or 'GunGame Tamam Shod' })
+    local tok = Token
+    CreateThread(function()
+        Wait(5000)
+        if tok == Token then Leave(c) end
+    end)
 end)
 
-RegisterNetEvent('Unique_GunGame:UpdateTimer')
-AddEventHandler('Unique_GunGame:UpdateTimer', function(seconds)
-    SendNUIMessage({ action = 'showTimer', seconds = seconds })
-end)
-
-RegisterNetEvent('Unique_GunGame:KillFeed')
-AddEventHandler('Unique_GunGame:KillFeed', function(killerName, victimName)
-    SendNUIMessage({ action = 'addKillFeed', killer = killerName, victim = victimName })
-end)
-
-RegisterNetEvent('Unique_GunGame:PlaySound')
-AddEventHandler('Unique_GunGame:PlaySound', function(sound)
-    SendNUIMessage({ action = 'playSound', sound = sound, volume = GGConfig.SoundVolume })
-end)
-
--- ============================================================
--- Cleanup on resource restart
--- ============================================================
-
-AddEventHandler('onResourceStop', function(resourceName)
-    if resourceName ~= GetCurrentResourceName() then return end
-    if inEvent then
-        SetEntityInvincible(PlayerPedId(), false)
-    end
-    clearMatchBlips()
-    -- safety: never leave the player stuck on a scripted camera / faded screen
-    RenderScriptCams(false, false, 0, true, false)
-    ClearFocus()
-    if IsScreenFadedOut() or IsScreenFadingOut() then DoScreenFadeIn(0) end
-    SendNUIMessage({ action = 'hideCountdown' })
-    SendNUIMessage({ action = 'hideTimer' })
-    SendNUIMessage({ action = 'hideScoreboard' })
-    SendNUIMessage({ action = 'hideMVP' })
+AddEventHandler('onResourceStop', function(res)
+    if res ~= GetCurrentResourceName() then return end
+    SetPlayerInvincible(PlayerId(), false)
+    FreezeEntityPosition(PlayerPedId(), false)
 end)

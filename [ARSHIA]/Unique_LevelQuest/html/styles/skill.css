@@ -87,7 +87,7 @@
 .skillRow.current {
   border-color: rgba(255, 140, 26, 0.55);
   background: linear-gradient(165deg, rgba(255, 140, 26, 0.09), rgba(0, 0, 0, 0.25));
-  animation: cardIn 0.3s ease backwards;
+  animation: cardIn 0.3s ease backwards, currentPulse 2.2s ease-in-out infinite;
 }
 
 .skillRow.mastered {
@@ -230,7 +230,7 @@
   inset: 0;
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
   width: 40%;
-  display: none; /* shimmer removed: one infinite animation per bar was the main source of lag */
+  animation: skillShine 2.4s ease-in-out infinite;
 }
 
 @keyframes skillShine {

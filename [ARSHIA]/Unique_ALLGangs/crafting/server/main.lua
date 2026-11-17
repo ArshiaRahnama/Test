@@ -46,15 +46,22 @@ local function shopOf(bench)
     return Shops[bench.shopId]
 end
 
+-- a 30/7-day variant (Weapon = base gun) is allowed wherever its base gun is
+local function baseOf(item)
+    local r = CraftConfig.Recipes[item]
+    return (r and r.Weapon) or item
+end
+
 local function recipeAllowed(bench, item)
     if not CraftConfig.Recipes[item] then return false end
+    local want = baseOf(item)
     local list = bench.recipes or {}
     if bench.public then
-        for _, n in ipairs(list) do if n == item then return true end end
+        for _, n in ipairs(list) do if n == item or n == want then return true end end
         return false
     end
     if #list == 0 then return true end
-    for _, n in ipairs(list) do if n == item then return true end end
+    for _, n in ipairs(list) do if n == item or n == want then return true end end
     return false
 end
 
@@ -140,6 +147,11 @@ ESX.RegisterServerCallback('Unique_Crafting:getItemNames', function(source, cb)
     MySQL.Async.fetchAll('SELECT name, label FROM items', {}, function(rows)
         local names = {}
         for _, v in ipairs(rows or {}) do names[v.name] = v.label end
+        for key, r in pairs(CraftConfig.Recipes) do
+            if r.Weapon and not names[key] then
+                names[key] = ('%s (%d Days)'):format(names[r.Weapon] or r.Weapon:gsub('^WEAPON_', ''), r.Days or 0)
+            end
+        end
         cb(names)
     end)
 end)
@@ -167,8 +179,9 @@ AddEventHandler('Unique_Crafting:craft', function(item)
     -- Unique_LevelQuest weapon skill (Unique weapon-factory rule): on a PUBLIC bench you may only
     -- craft a gun after mastering that gun's skill (100%). Gun-shop benches stay gang-only, which
     -- is the "gang OR skill" access. pcall'd: if Unique_LevelQuest is stopped, nothing is blocked.
-    if CraftConfig.WeaponSkillGate and bench.public and r.isGun and item:find('^WEAPON_') then
-        local okCall, access = pcall(function() return exports['Unique_LevelQuest']:HasWeaponAccess(src, item) end)
+    local weaponName = baseOf(item)
+    if CraftConfig.WeaponSkillGate and bench.public and r.isGun and weaponName:find('^WEAPON_') then
+        local okCall, access = pcall(function() return exports['Unique_LevelQuest']:HasWeaponAccess(src, weaponName) end)
         if okCall and access == false then
             return notify(src, 'Aval skill-e in aslahe ro be 100% beresoon (ba kosht-e baazikon-ha)')
         end
@@ -224,7 +237,10 @@ AddEventHandler('Unique_Crafting:itemCrafted', function(item)
     end
 
     if r.isGun then
-        x.addWeapon(item, p.count)
+        -- Unique_inventory gives the weapon a lifetime (r.Days: 30 / 7; nil = permanent)
+        local wname = r.Weapon or item
+        local okGive = pcall(function() exports['Unique_inventory']:CreateWeapon(src, wname, p.count, r.Days) end)
+        if not okGive then x.addWeapon(wname, p.count) end
     else
         if CraftConfig.UseLimitSystem then
             local xItem = x.getInventoryItem(item)
@@ -234,8 +250,8 @@ AddEventHandler('Unique_Crafting:itemCrafted', function(item)
         end
         x.addInventoryItem(item, p.count)
     end
-    notify(src, 'Item Craft Shod')
-    GangLog(gang, 'Crafting', ('Crafted %s x%d'):format(item, p.count), src)
+    notify(src, r.Days and ('Item Craft Shod (%d rooz)'):format(r.Days) or 'Item Craft Shod')
+    GangLog(gang, 'Crafting', ('Crafted %s x%d%s'):format(item, p.count, r.Days and (' (%d days)'):format(r.Days) or ''), src)
 
     if gang and num(CraftConfig.ExperiancePerCraft) > 0 and GrantGangXP then
         GrantGangXP(gang, num(CraftConfig.ExperiancePerCraft), 'Crafting')

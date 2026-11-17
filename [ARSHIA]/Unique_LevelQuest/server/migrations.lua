@@ -40,13 +40,6 @@ CreateThread(function()
     ensureColumn('users', 'xp',   "`xp` INT(11) NOT NULL DEFAULT 0")
     ensureColumn('users', 'rank', "`rank` INT(11) NOT NULL DEFAULT 1")
 
-    -- users.coin is an INT(11) on this server, but quest/skill rewards are
-    -- fractional (0.04, 0.10 ...). Writing 5 + 0.04 into an INT column
-    -- silently rounds back to 5, so nearly every reward was being lost.
-    -- The fractional part is accumulated here and only whole coins are
-    -- ever written to users.coin (see GrantCoin in server/coin.lua).
-    ensureColumn('users', 'coin_frac', "`coin_frac` DECIMAL(8,4) NOT NULL DEFAULT 0")
-
     -- quest table (create if missing, then make sure `date` exists even
     -- if the table was already there from an older/partial version)
     tableExists('quest', function(exists)
@@ -86,35 +79,6 @@ CreateThread(function()
         ]], {}, function()
             print('[Unique_LevelQuest] migrated: created table job_skill')
         end)
-    end)
-
-    -- player_skills: per-player activity skills (Unique-style). `percent` is
-    -- 0..100, `finished` flips to 1 the moment it reaches 100.
-    tableExists('player_skills', function(exists)
-        if exists then return end
-        MySQL.Async.execute([[
-            CREATE TABLE `player_skills` (
-                `identifier` VARCHAR(60) NOT NULL,
-                `skill`      VARCHAR(50) NOT NULL,
-                `percent`    DECIMAL(8,4) NOT NULL DEFAULT 0,
-                `finished`   TINYINT(1)  NOT NULL DEFAULT 0,
-                PRIMARY KEY (`identifier`, `skill`)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-        ]], {}, function()
-            print('[Unique_LevelQuest] migrated: created table player_skills')
-        end)
-    end)
-
-    tableExists('weapon_skins', function(exists)
-        if exists then return end
-        MySQL.Async.execute([[
-            CREATE TABLE `weapon_skins` (
-                `identifier` VARCHAR(60) NOT NULL,
-                `weapon`     VARCHAR(50) NOT NULL,
-                `tint`       INT(11) NOT NULL DEFAULT 0,
-                PRIMARY KEY (`identifier`, `weapon`)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-        ]], {}, function() print('[Unique_LevelQuest] migrated: created table weapon_skins') end)
     end)
 
 end)

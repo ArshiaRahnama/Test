@@ -19,7 +19,6 @@ local LootList, LootObj, DeadLoot = {}, {}, {}
 local Plane, Pilot = nil, nil
 local Shrinking = false
 local LootCooldown = 0
-local SavedViewMode = nil
 
 CreateThread(function()
     while not ESX do
@@ -96,12 +95,6 @@ local function GiveParachuteAndSns()
     SetCurrentPedWeapon(ped, PARACHUTE, true)
 end
 
-local function RandomInRing(fraction)
-    local a = math.random() * 2.0 * math.pi
-    local r = math.max(10.0, MarkerRadius * fraction) * math.sqrt(math.random())
-    return Center.x + math.cos(a) * r, Center.y + math.sin(a) * r
-end
-
 local function KeepStatusFull()
     TriggerEvent('esx_status:set', 'hunger', 1000000)
     TriggerEvent('esx_status:set', 'thirst', 1000000)
@@ -141,7 +134,8 @@ local function Cleanup()
     SetEntityVisible(ped, true, false)
     SetEntityCollision(ped, true, true)
     SetPedSuffersCriticalHits(ped, true)
-    if SavedViewMode then SetFollowPedCamViewMode(SavedViewMode) SavedViewMode = nil end
+    SetPlayerHealthRechargeMultiplier(PlayerId(), 1.0)
+    SetFollowPedCamViewMode(2)
     TriggerEvent('esx_paintball:inPaintBall', false)
 end
 
@@ -152,6 +146,9 @@ local function Leave(c)
     local ped = PlayerPedId()
     RemoveAllPedWeapons(ped, true)
     if c then Teleport(c.x, c.y, c.z) end
+    -- sun: موقعیت مقصد فوراً ذخیره میشه تا ریلاگ بعد از ایونت داخل world ایونت لود نشه
+    local pp = GetEntityCoords(PlayerPedId())
+    TriggerServerEvent('updatePositions', pp.x, pp.y, pp.z, GetEntityHeading(PlayerPedId()))
     SetEntityHealth(ped, GetEntityMaxHealth(ped))
     SetPedArmour(ped, 0)
     TriggerEvent('esx:restoreLoadout')
@@ -210,10 +207,10 @@ local function StartLoops(tok)
             end
             if Countdown then
                 local left = math.max(0, math.ceil((StartAt - GetGameTimer()) / 1000))
-                DrawTxt(0.01, 0.40, 'Start at : ' .. left .. 's', 0.5, 255, 80, 80)
+                DrawTxt(0.01, 0.40, 'Start at : ' .. left .. 's', 0.5, 255, 0, 0)
             end
-            DrawTxt(0.01, 0.45, 'Blood : ' .. Blood, 0.5, 255, 60, 60)
-            DrawTxt(0.01, 0.50, 'Alive Player : ' .. AliveCount, 0.5, 255, 255, 255)
+            DrawTxt(0.01, 0.30, 'Blood : ' .. Blood, 0.5, 255, 0, 0)
+            DrawTxt(0.01, 0.50, 'Alive Player : ' .. AliveCount, 0.5, 255, 0, 0)
             DisableControlAction(0, 166, true) -- F5
             DisableControlAction(0, 167, true) -- F6
             if OnPlane or NoCombat or Countdown then
@@ -288,7 +285,7 @@ local function StartLoops(tok)
                             if wok and wz > gz then
                                 e.skip = true -- زیر آب
                             else
-                                local o = CreateObject(model, e.coords.x, e.coords.y, gz, false, false, false)
+                                local o = CreateObject(model, e.coords.x, e.coords.y, gz, false, true, true)
                                 PlaceObjectOnGroundProperly(o)
                                 FreezeEntityPosition(o, true)
                                 LootObj[e.id] = o
@@ -328,6 +325,7 @@ local function StartLoops(tok)
                 end
                 if bestId then
                     sleep = 0
+                    DrawMarker(0, bestPos.x, bestPos.y, bestPos.z + 2.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 255, 0, 0, 100, true, false, 0, true)
                     local label
                     if bestKind == 'loot' then
                         local e
@@ -338,7 +336,7 @@ local function StartLoops(tok)
                     end
                     Draw3D(bestPos.x, bestPos.y, bestPos.z + 0.8, label)
                     if bestDist <= L.PickupDistance then
-                        Help('Press ~INPUT_CONTEXT~ to pick up')
+                        Help('Dokme ~INPUT_CONTEXT~ jahat loot kardan box')
                         if IsControlJustReleased(0, 38) and GetGameTimer() >= LootCooldown then
                             LootCooldown = GetGameTimer() + 500
                             TriggerServerEvent(bestKind == 'loot' and 'br:useloot' or 'br:useploot', bestId)
@@ -362,6 +360,7 @@ AddEventHandler('br:join', function(center, radius, count, blood)
     TriggerEvent('esx_paintball:inPaintBall', true)
     KeepStatusFull()
     SetPedSuffersCriticalHits(PlayerPedId(), false)
+    SetPlayerHealthRechargeMultiplier(PlayerId(), 0.0)
     StartLoops(tok)
     WaitFor(function() return ESX ~= nil end, 5000)
     if not ESX or tok ~= Token then return end
@@ -384,15 +383,16 @@ local function Jump()
     OnPlane = false
     DetachEntity(ped, true, true)
     local c = GetEntityCoords(ped)
-    SetEntityCoordsNoOffset(ped, c.x, c.y, c.z - 20.0, false, false, false)
+    SetEntityCoordsNoOffset(ped, c.x, c.y, c.z - 20.0, false, false, false) -- Sun: z - 20
     SetEntityVisible(ped, true, false)
     SetEntityCollision(ped, true, true)
     FreezeEntityPosition(ped, false)
     GiveParachuteAndSns()
     local tok = Token
-    SetTimeout(5000, function() if tok == Token then DeletePlane() end end)
+    SetTimeout(120000, function() if tok == Token then DeletePlane() end end) -- Sun: هواپیما ۱۲۰ ثانیه می‌مونه
 end
 
+-- هواپیمای Titan دقیقاً مثل sun (فیزیک واقعی + خلبان)؛ اگه به هر دلیل پرواز نکرد، خودکار جابه‌جایی دستی میشه
 local function StartDrop(tok)
     Revive()
     local ped = PlayerPedId()
@@ -405,38 +405,77 @@ local function StartDrop(tok)
     local ex, ey = Center.x - math.cos(a) * R, Center.y - math.sin(a) * R
     local alt = CFG.PlaneAltitude
     local heading = GetHeadingFromVector_2d(ex - sx, ey - sy)
-    Plane = CreateVehicle(model, sx, sy, alt, heading, false, true)
-    SetEntityInvincible(Plane, true)
-    SetEntityCollision(Plane, false, false)
-    FreezeEntityPosition(Plane, true)
+
+    Plane = CreateVehicle(model, sx, sy, alt, 10.0, false, true)
+    local tries = 0
+    while not DoesEntityExist(Plane) and tries < 20 do
+        Plane = CreateVehicle(model, sx, sy, alt, 10.0, false, true)
+        tries = tries + 1
+        Wait(100)
+    end
+    if not DoesEntityExist(Plane) then return notify('Plane Sakhte Nashod !', 'error') end
+    SetEntityHeading(Plane, heading)
+    SetEntityDynamic(Plane, true)
+    ActivatePhysics(Plane)
+    SetVehicleForwardSpeed(Plane, CFG.PlaneSpeed)
+    SetHeliBladesFullSpeed(Plane)
     SetVehicleEngineOn(Plane, true, true, false)
+    ControlLandingGear(Plane, 3)
+    OpenBombBayDoors(Plane)
+    SetEntityProofs(Plane, true, false, true, false, false, false, false, false)
+    Pilot = CreatePedInsideVehicle(Plane, 1, GetHashKey('mp_m_freemode_01'), -1, false, true)
+    SetBlockingOfNonTemporaryEvents(Pilot, true)
+    SetPedKeepTask(Pilot, true)
+    SetPlaneMinHeightAboveTerrain(Plane, 50)
+    TaskVehicleDriveToCoord(Pilot, Plane, ex, ey, alt, 2500.0 * 3.6, 500, model, 16777216, 1.0, 1)
+
     FadeOut(300)
+    ClearPedTasksImmediately(ped)
+    FreezeEntityPosition(ped, true)
     RemoveAllPedWeapons(ped, true)
+    Wait(1000)
     SetEntityVisible(ped, false, false)
     SetEntityCollision(ped, false, false)
-    SetEntityCoordsNoOffset(ped, sx, sy, alt + 4.0, false, false, false)
-    AttachEntityToEntity(ped, Plane, 0, 0.0, 0.0, 4.0, 0.0, 0.0, 0.0, false, false, false, false, 2, true)
+    local att = 0
+    AttachEntityToEntity(ped, Plane, 0, 5.0, 0.0, 7.0, 0.0, 0.0, 0.0, true, true, false, true, 0, false)
+    while not IsEntityAttached(ped) and att < 60 do
+        AttachEntityToEntity(ped, Plane, 0, 5.0, 0.0, 7.0, 0.0, 0.0, 0.0, true, true, false, true, 0, false)
+        att = att + 1
+        Wait(50)
+    end
     OnPlane = true
     DoScreenFadeIn(600)
 
-    local total = R * 2.0
-    local dx, dy = (ex - sx) / total, (ey - sy) / total
-    local dist, wasInside, t0 = 0.0, false, GetGameTimer()
+    local dx, dy = ex - sx, ey - sy
+    local total = math.sqrt(dx * dx + dy * dy)
+    dx, dy = dx / total, dy / total
+    local t0, wasInside, manual = GetGameTimer(), false, false
+    local mx, my = sx, sy
     while OnPlane and tok == Token do
-        local dt = GetFrameTime()
-        dist = dist + CFG.PlaneSpeed * dt
-        local px, py = sx + dx * dist, sy + dy * dist
-        SetEntityCoordsNoOffset(Plane, px, py, alt, false, false, false)
-        SetEntityHeading(Plane, heading)
-        local inside = #(vector2(px, py) - vector2(Center.x, Center.y)) < MarkerRadius
+        -- فالبک: اگه هواپیما بعد از ۴ ثانیه پرواز نکرد، دستی جابه‌جاش میکنیم
+        if not manual and GetGameTimer() - t0 > 4000 and (not DoesEntityExist(Plane) or GetEntitySpeed(Plane) < 25.0) then
+            manual = true
+            local pc = GetEntityCoords(Plane)
+            mx, my = pc.x, pc.y
+            FreezeEntityPosition(Plane, true)
+            SetEntityCollision(Plane, false, false)
+        end
+        if manual then
+            local step = CFG.PlaneSpeed * GetFrameTime()
+            mx, my = mx + dx * step, my + dy * step
+            SetEntityCoordsNoOffset(Plane, mx, my, alt, false, false, false)
+            SetEntityHeading(Plane, heading)
+        end
+        local pc = GetEntityCoords(ped)
+        local inside = #(pc - Center) < MarkerRadius -- sun: GetDistanceBetweenCoords سه‌بعدی < شعاع
         if inside then
             wasInside = true
-            Help('Press ~INPUT_CONTEXT~ to jump')
-            if IsControlJustReleased(0, 38) then Jump() break end
+            Help('Dokme ~INPUT_CONTEXT~ jahat jump')
+            if IsControlJustReleased(1, 51) then Jump() break end
         elseif wasInside then
             Jump() break -- از دایره رد شدی: خودکار می‌پری
         end
-        if dist >= total or GetGameTimer() - t0 > CFG.JumpTimeout * 1000 then Jump() break end
+        if GetGameTimer() - t0 > CFG.JumpTimeout * 1000 then Jump() break end
         Wait(0)
     end
 end
@@ -485,7 +524,7 @@ AddEventHandler('br:updateblood', function(n) Blood = n or Blood end)
 
 RegisterNetEvent('br:pkilled')
 AddEventHandler('br:pkilled', function(killer, killed, weapon, head)
-    SendNUIMessage({ action = 'wzAddKill', killer = killer, killed = killed, weapon = weapon, head = head })
+    SendNUIMessage({ type = 'addKill', killer = killer, weapon = weapon, killed = killed, headshot = head }) -- فرمت sun
 end)
 
 -- ----------------------------------------------------------------------------
@@ -502,11 +541,11 @@ end)
 RegisterNetEvent('br:createploot')
 AddEventHandler('br:createploot', function(d)
     if not InEvent or not d or not d.coords then return end
-    local model = GetHashKey('prop_big_bag_01')
+    local model = GetHashKey('prop_box_ammo06a')
     RequestModel(model)
     WaitFor(function() return HasModelLoaded(model) end, 3000)
     local c = vector3(d.coords.x, d.coords.y, d.coords.z)
-    local o = CreateObject(model, c.x, c.y, c.z - 0.9, false, false, false)
+    local o = CreateObject(model, c.x, c.y, c.z - 0.9, false, true, true)
     PlaceObjectOnGroundProperly(o)
     FreezeEntityPosition(o, true)
     DeadLoot[d.id] = { obj = o, coords = c }
@@ -532,9 +571,21 @@ AddEventHandler('br:lootGranted', function(d)
         last = h
     end
     if last then SetCurrentPedWeapon(ped, last, true) end
-    if d.armor then SetPedArmour(ped, math.min(100, GetPedArmour(ped) + d.armor)) end
-    if d.heal then SetEntityHealth(ped, GetEntityMaxHealth(ped)) end
-    PlaySoundFrontend(-1, 'PICK_UP', 'HUD_FRONTEND_DEFAULT_SOUNDSET', true)
+    if d.armor then
+        SetPedArmour(ped, math.min(100, GetPedArmour(ped) + d.armor))
+        notify('Shoma yek armor ' .. d.armor .. ' poushidid', 'success')
+    elseif d.heal then
+        SetEntityHealth(ped, GetEntityMaxHealth(ped))
+        notify('Shoma yek bandage estefade kardid', 'success')
+    end
+    PlaySoundFrontend(-1, 'PICK_UP', 'HUD_FRONTEND_DEFAULT_SOUNDSET', false)
+    local dict = 'weapons@first_person@aim_rng@generic@projectile@thermal_charge@'
+    RequestAnimDict(dict)
+    if WaitFor(function() return HasAnimDictLoaded(dict) end, 2000) then
+        TaskPlayAnim(ped, dict, 'plant_floor', 8.0, -8.0, 3750, 2, 0, false, false, false)
+        local tok = Token
+        SetTimeout(1850, function() if tok == Token then ClearPedTasks(PlayerPedId()) end end)
+    end
 end)
 
 RegisterNetEvent('br:droploot')
@@ -573,7 +624,14 @@ AddEventHandler('br:reviveth', function(blood)
             SetEntityInvincible(ped, true)
             SetPedToRagdoll(ped, 1000, 1000, 0, false, false, false)
             if not busy then
-                Help('Press ~INPUT_CONTEXT~ to heal yourself')
+                SetTextFont(4)
+                SetTextScale(0.0, 0.5)
+                SetTextColour(255, 255, 255, 255)
+                SetTextOutline()
+                SetTextCentre(true)
+                SetTextEntry('STRING')
+                AddTextComponentString('press [E] to heal your self')
+                DrawText(0.5, 0.8)
                 if IsControlJustReleased(0, 38) then
                     busy = true
                     local done = lib.progressCircle({ duration = CFG.ReviveProgressMs, label = 'Dar Hale Zende Shodan...', position = 'bottom',
@@ -594,6 +652,7 @@ AddEventHandler('br:redeploy', function()
     local ped = PlayerPedId()
     local c = GetEntityCoords(ped)
     SetEntityInvincible(ped, false)
+    ClearPedBloodDamage(ped)
     ClearPedTasksImmediately(ped)
     SetEntityCoordsNoOffset(ped, c.x, c.y, CFG.RedeployHeight, false, false, false)
     SetEntityHealth(ped, GetEntityMaxHealth(ped))
@@ -603,10 +662,13 @@ end)
 -- ----------------------------------------------------------------------------
 --  Gulag
 -- ----------------------------------------------------------------------------
+local function GulagSound() SendNUIMessage({ type = 'sound', name = 'gulag', volume = 0.9 }) end -- sun: InteractSound_CL:PlayOnOne gulag 0.9
+
 local function EnterGulagSpot(c, heading)
     FadeOut(400)
     Revive()
     local ped = PlayerPedId()
+    ClearPedBloodDamage(ped)
     RemoveAllPedWeapons(ped, true)
     Teleport(c.x, c.y, c.z, heading)
     SetEntityHealth(ped, GetEntityMaxHealth(ped))
@@ -618,6 +680,7 @@ RegisterNetEvent('br:waitgulag')
 AddEventHandler('br:waitgulag', function(c)
     if not InEvent then return end
     RevivePending, InGulag, NoCombat = false, true, true
+    GulagSound()
     EnterGulagSpot(c)
     SetEntityInvincible(PlayerPedId(), true)
     notify('Dar Gulag Montazer Harif Bemanid...', 'inform')
@@ -626,6 +689,7 @@ end)
 local function Duel(c, freeze, weapon, ammo, opp)
     if not InEvent then return end
     InGulag, NoCombat = true, true
+    GulagSound()
     local heading = GetHeadingFromVector_2d(opp.x - c.x, opp.y - c.y)
     EnterGulagSpot(c, heading)
     local ped = PlayerPedId()
@@ -633,10 +697,18 @@ local function Duel(c, freeze, weapon, ammo, opp)
     FreezeEntityPosition(ped, true)
     GiveWeaponToPed(ped, GetHashKey(weapon), ammo, false, true)
     SetCurrentPedWeapon(ped, GetHashKey(weapon), true)
-    if not SavedViewMode then SavedViewMode = GetFollowPedCamViewMode() end
-    SetFollowPedCamViewMode(4)
     notify('Duel Shoroo Mishavad !', 'inform')
     local tok = Token
+    CreateThread(function() -- Sun: FristPersonView
+        while InGulag and tok == Token do
+            DisableControlAction(0, 0, true)
+            SetFollowPedCamViewMode(4)
+            DisableControlAction(0, 22, true)
+            SetCurrentPedWeapon(PlayerPedId(), GetHashKey(weapon), true)
+            Wait(0)
+        end
+        SetFollowPedCamViewMode(2)
+    end)
     SetTimeout((freeze or 3) * 1000, function()
         if tok ~= Token then return end
         local p = PlayerPedId()
@@ -660,10 +732,9 @@ AddEventHandler('br:backwar', function()
     local ped = PlayerPedId()
     SetEntityInvincible(ped, false)
     FreezeEntityPosition(ped, false)
-    if SavedViewMode then SetFollowPedCamViewMode(SavedViewMode) SavedViewMode = nil end
+    SetFollowPedCamViewMode(2)
     RemoveAllPedWeapons(ped, true)
-    local x, y = RandomInRing(0.6)
-    Teleport(x, y, 800.0)
+    Teleport(Center.x, Center.y, 800.0) -- sun: دقیقاً مرکز دایره
     SetEntityHealth(ped, GetEntityMaxHealth(ped))
     GiveParachuteAndSns()
     DoScreenFadeIn(600)
@@ -678,10 +749,10 @@ AddEventHandler('br:leavemeg', function(c) CreateThread(function() Leave(c) end)
 RegisterNetEvent('br:end')
 AddEventHandler('br:end', function(c)
     if not InEvent and not InLobby then return end
-    notify('WarZone Tamam Shod ! Ta 5 Sanie Digar Bar Migardid.', 'inform')
+    notify('WarZone Tamam Shod !', 'inform')
     local tok = Token
     CreateThread(function()
-        Wait(5000)
+        Wait(1000) -- sun: br:end => Wait(1000)
         if tok == Token then Leave(c) end
     end)
 end)

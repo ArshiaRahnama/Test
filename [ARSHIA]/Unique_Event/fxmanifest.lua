@@ -48,12 +48,9 @@ files {
     'html/hub/index.html',
 
     'html/warzone/ui.html',
+    'html/warzone/gulag.ogg',
 
     'html/gungame/index.html',
-    'html/gungame/style.css',
-    'html/gungame/script.js',
-    'html/gungame/callingcards/*',
-    'html/gungame/sounds/*',
 
     -- Capture (UI جدید به سبک sun-capture)
     'html/capture/index.html',

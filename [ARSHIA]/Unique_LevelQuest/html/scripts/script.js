@@ -3,7 +3,6 @@ document.addEventListener('DOMContentLoaded', function () {
   const panels = {
     quests: document.getElementById('tab_quests'),
     skill: document.getElementById('tab_skill'),
-    weapon: document.getElementById('tab_weapon'),
     collections: document.getElementById('tab_collections'),
     leaderboard: document.getElementById('tab_leaderboard'),
     duty: document.getElementById('tab_duty'),

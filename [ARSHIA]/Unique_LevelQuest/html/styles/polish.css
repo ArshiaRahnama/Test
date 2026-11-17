@@ -15,7 +15,7 @@
     radial-gradient(700px 320px at 0% 110%, rgba(79,168,255,.07), transparent 60%),
     linear-gradient(180deg, rgba(10,10,12,.94), rgba(5,5,7,.92));
   border: 1px solid rgba(255,140,26,.18);
-  box-shadow: 0 20px 60px rgba(0,0,0,.65);
+  box-shadow: 0 30px 100px rgba(0,0,0,.75), 0 0 0 1px rgba(0,0,0,.6), 0 0 60px -20px var(--glow);
 }
 
 /* ---- scrollbar ---- */
@@ -73,11 +73,12 @@
 /* ---- progress bars: glowing, shimmering fill ---- */
 .xp-fill, .skillFill, .fuelFill {
   position: relative; overflow: hidden;
+  box-shadow: 0 0 10px rgba(255,140,26,.55);
 }
 .xp-fill::after, .skillFill::after {
   content: ''; position: absolute; inset: 0; width: 40%;
   background: linear-gradient(100deg, transparent, rgba(255,255,255,.35), transparent);
-  display: none;
+  animation: plShimmer 2.4s linear infinite;
 }
 @keyframes plShimmer { from { transform: translateX(-120%); } to { transform: translateX(320%); } }
 

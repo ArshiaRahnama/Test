@@ -1,6 +1,6 @@
 -- ============================================================================
 --  Unique Gang PvP  -  SERVER  (Sun gangprop PVP + Unique_inventory)
---  ورود/خروج، کیل، SC (آیتم واقعی اینونتوری)، فروشگاه چرخشی (اسلحه‌ی PV)،
+--  ورود/خروج (فقط وقتی ادمین باز کرده)، کیل، UToken (آیتم واقعی اینونتوری)، فروشگاه چرخشی (اسلحه‌ی PV)،
 --  کارواش (PV -> واقعی با بلک‌مانی)، ماشین PvP، قفل ورود و CPR هم‌گنگی.
 --  همه‌چیز سمت سرور اعتبارسنجی میشه.
 -- ============================================================================
@@ -13,9 +13,19 @@ local CmdCooldown = {}
 local Bases, BasesAt = {}, 0
 local Shops = { list = {}, since = 0 }
 local PV = GPConfig.WeaponSerialPrefix
+local Active, ActiveId = false, 0       -- PvP فقط وقتی ادمین باز کرده فعاله
 
 local function NowMs() return GetGameTimer() end
 local function V(c) return { x = c.x, y = c.y, z = c.z } end
+local function HasPerm(src)
+    if src == 0 then return true end
+    local x = ESX.GetPlayerFromId(src)
+    return x ~= nil and (tonumber(x.permission_level) or 0) >= GPConfig.Permission
+end
+local function Reply(src, msg)
+    if src == 0 then print('[GangPvP] ' .. msg) return end
+    TriggerClientEvent('chat:addMessage', src, { args = { '^1Gang PvP', msg } })
+end
 local function Notify(src, msg, typ) TriggerClientEvent('gpvp:notify', src, msg, typ or 'inform') end
 
 local function ExemptAC(src, ms)
@@ -25,7 +35,7 @@ local function ExemptAC(src, ms)
 end
 
 -- ----------------------------------------------------------------------------
---  DB + آیتم SC
+--  DB + آیتم UToken
 -- ----------------------------------------------------------------------------
 CreateThread(function()
     MySQL.Async.execute([[
@@ -44,13 +54,10 @@ CreateThread(function()
             PRIMARY KEY (`identifier`)
         )
     ]], {})
-    -- آیتم SC توی جدول items (و همون لحظه توی ESX.Items تا نیاز به ریستارت نباشه)
-    local sc = GPConfig.SC
+    -- آیتم UToken توی جدول items (بعد از اولین insert، essentialmode باید ریستارت بشه تا آیتم رو لود کنه)
+    local tk = GPConfig.Token
     MySQL.Async.execute('INSERT IGNORE INTO items (name, label, `limit`, rare, can_remove, weight) VALUES (@n, @l, -1, 0, 1, @w)',
-        { ['@n'] = sc.item, ['@l'] = sc.label, ['@w'] = sc.weight })
-    if ESX and ESX.Items and not ESX.Items[sc.item] then
-        ESX.Items[sc.item] = { label = sc.label, limit = -1, rare = false, canRemove = true, weight = sc.weight }
-    end
+        { ['@n'] = tk.item, ['@l'] = tk.label, ['@w'] = tk.weight })
 end)
 
 local function LoadStats(identifier, name, cb)
@@ -74,19 +81,19 @@ end
 -- ----------------------------------------------------------------------------
 --  Inventory helpers
 -- ----------------------------------------------------------------------------
-local function GetSC(xPlayer)
-    local it = xPlayer and xPlayer.getInventoryItem(GPConfig.SC.item)
+local function GetToken(xPlayer)
+    local it = xPlayer and xPlayer.getInventoryItem(GPConfig.Token.item)
     return it and tonumber(it.count) or 0
 end
 
-local function AddSC(xPlayer, n)
-    local ok = pcall(function() xPlayer.addInventoryItem(GPConfig.SC.item, n) end)
+local function AddToken(xPlayer, n)
+    local ok = pcall(function() xPlayer.addInventoryItem(GPConfig.Token.item, n) end)
     return ok
 end
 
-local function RemoveSC(xPlayer, n)
-    if GetSC(xPlayer) < n then return false end
-    return (pcall(function() xPlayer.removeInventoryItem(GPConfig.SC.item, n) end))
+local function RemoveToken(xPlayer, n)
+    if GetToken(xPlayer) < n then return false end
+    return (pcall(function() xPlayer.removeInventoryItem(GPConfig.Token.item, n) end))
 end
 
 local function IsPV(w) return type(w) == 'table' and tostring(w.serial or ''):sub(1, #PV) == PV end
@@ -106,7 +113,7 @@ local function PushStats(src)
     local p = InPvp[src]
     if not p then return end
     local st = Stats[p.identifier]
-    TriggerClientEvent('gpvp:stats', src, { kills = st and st.kills or 0, deaths = st and st.deaths or 0, sc = GetSC(ESX.GetPlayerFromId(src)) })
+    TriggerClientEvent('gpvp:stats', src, { kills = st and st.kills or 0, deaths = st and st.deaths or 0, token = GetToken(ESX.GetPlayerFromId(src)) })
 end
 
 -- ----------------------------------------------------------------------------
@@ -238,7 +245,7 @@ AddEventHandler('gpvp:buyWeapon', function(shopIdx, weaponId)
     if sh.stock[wi] <= 0 then return Notify(src, 'Mojoodi Tamam Shode !', 'error') end
     local xPlayer = ESX.GetPlayerFromId(src)
     if not xPlayer then return end
-    if not RemoveSC(xPlayer, w.price) then return Notify(src, 'Shoma SC Kafi Nadarid !', 'error') end
+    if not RemoveToken(xPlayer, w.price) then return Notify(src, 'Shoma UToken Kafi Nadarid !', 'error') end
     sh.stock[wi] = sh.stock[wi] - 1
     xPlayer.addWeapon(w.name, GPConfig.WeaponAmmo, ESX.GenerateWeaponSerial(PV))
     Notify(src, 'Aslahe PvP Kharidari Shod (Bayad Dar Karvash Shaste Shavad)', 'success')
@@ -256,7 +263,7 @@ AddEventHandler('gpvp:buyCar', function(model)
     if (p.buyCd or 0) > NowMs() then return end
     p.buyCd = NowMs() + 1500
     local xPlayer = ESX.GetPlayerFromId(src)
-    if not xPlayer or not RemoveSC(xPlayer, car.price) then return Notify(src, 'Shoma SC Kafi Nadarid !', 'error') end
+    if not xPlayer or not RemoveToken(xPlayer, car.price) then return Notify(src, 'Shoma UToken Kafi Nadarid !', 'error') end
     TriggerClientEvent('gpvp:spawnCar', src, car.model)
     PushStats(src)
 end)
@@ -364,6 +371,7 @@ end)
 --  Join / Leave
 -- ----------------------------------------------------------------------------
 local function Join(src)
+    if not Active then return Notify(src, 'PvP Gang Faal Nist ! Montazer Admin Bashid.', 'error') end
     local xPlayer = ESX.GetPlayerFromId(src)
     if not xPlayer then return end
     local gang, grade = GangOf(xPlayer)
@@ -387,7 +395,7 @@ local function Join(src)
                 ExemptAC(src, 15000)
                 SetPlayerRoutingBucket(src, GPConfig.World)
                 TriggerClientEvent('gpvp:joined', src, { home = V(home), safe = SafeList(bases), kills = st.kills, deaths = st.deaths,
-                    sc = GetSC(xPlayer), lock = math.max(0, lockUntil - os.time()) })
+                    token = GetToken(xPlayer), lock = math.max(0, lockUntil - os.time()) })
                 BroadcastCount()
             end)
         end)
@@ -409,6 +417,42 @@ local function Leave(src, silent)
     end
     BroadcastCount()
 end
+
+-- ----------------------------------------------------------------------------
+--  Admin: باز/بسته کردن PvP
+-- ----------------------------------------------------------------------------
+local function EndPvp(reason)
+    if not Active then return false end
+    Active = false
+    ActiveId = ActiveId + 1
+    local list = {}
+    for src in pairs(InPvp) do list[#list + 1] = src end
+    for _, src in ipairs(list) do
+        Leave(src)
+        Notify(src, 'PvP Gang Baste Shod. Shoma Be Khane Bargashtid.', 'inform')
+    end
+    TriggerClientEvent('chat:addMessage', -1, { args = { '^1Gang PvP', 'PvP Gang Baste Shod !' .. (reason and (' (' .. reason .. ')') or '') } })
+    return true
+end
+
+RegisterCommand(GPConfig.StartCommand, function(src, args)
+    if not HasPerm(src) then return Reply(src, "You Don't Have Permissions !") end
+    if Active then return Reply(src, 'PvP Gang Ghablan Baz Shode !') end
+    Active = true
+    ActiveId = ActiveId + 1
+    local id = ActiveId
+    local minutes = math.floor(tonumber(args[1]) or GPConfig.DefaultMinutes or 0)
+    TriggerClientEvent('chat:addMessage', -1, { args = { '^1Gang PvP', 'PvP Gang Baz Shod ! Nazdik Khane Gang Khod /' .. GPConfig.Command .. ' Bezanid' ..
+        (minutes > 0 and (' (' .. minutes .. ' Daghighe)') or '') } })
+    if minutes > 0 then
+        SetTimeout(minutes * 60000, function() if Active and ActiveId == id then EndPvp('Zaman Tamam Shod') end end)
+    end
+end, false)
+
+RegisterCommand(GPConfig.EndCommand, function(src)
+    if not HasPerm(src) then return Reply(src, "You Don't Have Permissions !") end
+    if not EndPvp() then Reply(src, 'PvP Gang Baz Nist !') end
+end, false)
 
 RegisterCommand(GPConfig.Command, function(src)
     if src == 0 then return end
@@ -464,7 +508,7 @@ AddEventHandler('esx:onPlayerDeath', function(data)
             local last = k.lastKillOn[p.identifier]
             if not (last and (now - last) < GPConfig.SameVictimCooldown * 1000) then
                 local kx = ESX.GetPlayerFromId(kid)
-                if kx and AddSC(kx, GPConfig.RewardSC) then k.lastKillOn[p.identifier] = now end
+                if kx and AddToken(kx, GPConfig.RewardToken) then k.lastKillOn[p.identifier] = now end
             end
             SaveStats(k.identifier)
             PushStats(kid)

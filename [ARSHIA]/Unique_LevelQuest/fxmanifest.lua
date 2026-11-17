@@ -23,8 +23,6 @@ server_scripts {
     'server/record.lua',
     'server/capture.lua',
     'server/drugskill.lua',
-    'server/skills.lua',
-    'server/weaponskins.lua',
 }
 
 client_scripts {
@@ -38,8 +36,6 @@ client_scripts {
     'client/skill.lua',
     'client/leaderboard.lua',
     'client/toast.lua',
-    'client/perks.lua',
-    'client/weaponskins.lua',
 }
 
 ui_page 'html/index.html'

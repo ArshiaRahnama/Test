@@ -18,6 +18,7 @@ local LoopToken, ProtId, GhostRunning = 0, 0, false
 local CapBlockedUntil = 0
 
 local PARACHUTE = GetHashKey('gadget_parachute')
+local FLARE, MOLOTOV = GetHashKey('WEAPON_FLARE'), GetHashKey('WEAPON_MOLOTOV')
 
 local function nui(action, data) SendNUIMessage({ action = action, data = data or {} }) end
 local function notify(msg, typ)
@@ -125,13 +126,26 @@ AddStateBagChangeHandler('captureProtected', nil, function(bagName, _, value)
     if not ply or ply == 0 then return end
     local ped = GetPlayerPed(ply)
     if not ped or ped == 0 then return end
-    if value then SetEntityAlpha(ped, 150, false) else ResetEntityAlpha(ped) end
+    if value then
+        CreateThread(function() -- sun: چشمک زدن آلفا ۱۰۰/۲۵۵ هر ۵۰۰ms
+            local endTime, dim = GetGameTimer() + CFG.SpawnProtectionTime * 1000, true
+            while GetGameTimer() < endTime do
+                SetEntityAlpha(ped, dim and 100 or 255, false)
+                dim = not dim
+                Wait(500)
+            end
+            ResetEntityAlpha(ped)
+        end)
+    else
+        ResetEntityAlpha(ped)
+    end
 end)
 
 local function EndProtection(id)
     if id and id ~= ProtId then return end
     InProtection = false
     SetPlayerInvincible(PlayerId(), false)
+    NetworkSetFriendlyFireOption(true)
     LocalPlayer.state:set('captureProtected', false, true)
     ResetEntityAlpha(PlayerPedId())
 end
@@ -140,7 +154,7 @@ local function StartProtection()
     ProtId = ProtId + 1
     local id = ProtId
     InProtection = true
-    SetPlayerInvincible(PlayerId(), true)
+    NetworkSetFriendlyFireOption(false) -- sun: فقط friendly-fire خاموش میشه، نامیرا نیست
     LocalPlayer.state:set('captureProtected', true, true)
     SetPedArmour(PlayerPedId(), CFG.SpawnArmor)
     SetTimeout(CFG.SpawnProtectionTime * 1000, function() EndProtection(id) end)
@@ -342,7 +356,6 @@ AddEventHandler('capture:teleport', function(zoneId)
     local ped = PlayerPedId()
     SetEntityHealth(ped, GetEntityMaxHealth(ped))
     EquipParachute()
-    StartProtection()
     nui('setFlagOwner', { owner = zone.captureBy or 'N/A' })
     ShowHud(UntilEnd)
     DoScreenFadeIn(800)
@@ -398,6 +411,10 @@ AddEventHandler('capture:exited', function(home)
         local t = GetGameTimer() + 3000
         while not HasCollisionLoadedAroundEntity(ped) and GetGameTimer() < t do Wait(50) end
         FreezeEntityPosition(ped, false)
+    -- sun: موقعیت مقصد فوراً ذخیره میشه تا ریلاگ بعد از ایونت داخل world ایونت لود نشه
+    local pp = GetEntityCoords(PlayerPedId())
+    TriggerServerEvent('updatePositions', pp.x, pp.y, pp.z, GetEntityHeading(PlayerPedId()))
+
     end
     SetEntityHealth(ped, GetEntityMaxHealth(ped))
     DoScreenFadeIn(800)
@@ -490,10 +507,14 @@ StartLoops = function()
                 local owned = zone.captureBy == MyGang()
                 local c = owned and Theme.Owned or Theme.Enemy
                 local zc = zone.coords
-                DrawMarker(1, zc.x, zc.y, zc.z - 100.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, CFG.ZoneRange, CFG.ZoneRange, 2000.0,
+                -- sun: مالک = کره‌ی ۱.۵ + ستون زون؛ غیرمالک = ستون بلند ۱۰۰.۵ + ستون زون (ارتفاع ۵۰۰ از z-50)
+                if owned then
+                    DrawMarker(28, zc.x, zc.y, zc.z, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.5, 1.5, 1.5, c.R, c.G, c.B, c.Alpha, false, true, 2, false, nil, nil, false)
+                else
+                    DrawMarker(1, zc.x, zc.y, zc.z, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.5, 1.5, 100.5, c.R, c.G, c.B, c.Alpha, false, true, 2, false, nil, nil, false)
+                end
+                DrawMarker(1, zc.x, zc.y, zc.z - 50.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, CFG.ZoneRange, CFG.ZoneRange, 500.0,
                     c.R, c.G, c.B, c.Alpha, false, true, 2, false, nil, nil, false)
-                DrawMarker(1, zc.x, zc.y, zc.z - 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, CFG.FlagRadius * 2.0, CFG.FlagRadius * 2.0, 1.2,
-                    c.R, c.G, c.B, 180, false, true, 2, false, nil, nil, false)
 
                 local ped = PlayerPedId()
                 local pc = GetEntityCoords(ped)
@@ -513,8 +534,6 @@ StartLoops = function()
                         LastCoords = pc
                     end
                 end
-
-                if InProtection and IsPedShooting(ped) then EndProtection() end
 
                 -- گرفتن پرچم
                 local near = InZoneCircle and not IsDead and not TeleportBusy and not owned
@@ -571,9 +590,9 @@ StartLoops = function()
             if not IsDead then
                 local ped = PlayerPedId()
                 if not HasPedGotWeapon(ped, PARACHUTE, false) then GiveWeaponToPed(ped, PARACHUTE, 1, false, false) end
-                local _, w = GetCurrentPedWeapon(ped, true)
-                if w and w ~= 0 and GetWeaponDamageType(w) == 3 and GetAmmoInPedWeapon(ped, w) < CFG.Ammo then
-                    SetPedAmmo(ped, w, CFG.Ammo)
+                local w = GetSelectedPedWeapon(ped)
+                if w and w ~= 0 and w ~= FLARE and w ~= MOLOTOV then
+                    SetPedAmmo(ped, w, CFG.Ammo) -- sun: همیشه ۵۰
                 end
             end
             Wait(1000)
@@ -636,8 +655,8 @@ RegisterCommand(CFG.DieCommand, function()
         return notify('Dar Hali Ke Parachute Dari Ya Spawn Protection Faal Ast Nemitavanid Bemirid !', 'error')
     end
     Dying = true
-    local done = lib.progressCircle({ duration = CFG.DieSeconds * 1000, label = 'Khodkoshi...', position = 'bottom',
-        canCancel = true, disable = { move = true, car = true, combat = true } })
+    local done = lib.progressCircle({ duration = CFG.DieSeconds * 1000, position = 'bottom', canCancel = false,
+        allowRagdoll = true, allowFalling = true, disable = { car = true, move = true, combat = true } }) -- sun
     Dying = false
     if done and InCap and not IsDead then SetEntityHealth(PlayerPedId(), 0) end
 end, false)
@@ -663,11 +682,11 @@ AddEventHandler('capture:OpenAdminMenu', function()
                 if r then TriggerServerEvent('capture:admin:setTime', r[1]) end
             end },
             { title = 'Set / Update Zone', description = 'Mokhtasat Felie Shoma Be Onvane Parcham Zakhire Mishavad', icon = 'flag', onSelect = function()
-                local r = lib.inputDialog('Set Zone', {
-                    { type = 'number', label = 'Shomare Zone (1-99)', min = 1, max = 99, required = true },
-                    { type = 'input', label = 'Name Zone', max = 24, required = true },
-                    { type = 'number', label = ('World (%d-%d)'):format(CFG.WorldMin, CFG.WorldMax), default = CFG.WorldMin, min = CFG.WorldMin, max = CFG.WorldMax, required = true } })
-                if r then TriggerServerEvent('capture:setCap', { r[1], r[2], r[3] }) end
+                local r = lib.inputDialog('Etela\'at zone ra vared konid', { -- sun: capture:openSetZoneMenu
+                    { type = 'number', label = 'Shomare zone', required = true },
+                    { type = 'input', label = 'Label zone', required = true },
+                    { type = 'number', label = 'World', min = CFG.WorldMin, max = CFG.WorldMax, icon = 'hashtag', required = true, default = CFG.WorldMin } })
+                if r and r[1] and r[2] and r[3] then TriggerServerEvent('capture:setCap', { r[1], r[2], r[3] }) end
             end },
             { title = 'Hazf Zone', description = #info.zones .. ' Zone', icon = 'trash', menu = 'capture_remove' },
             { title = info.active and 'Payan Capture' or 'Shoroo Capture', icon = info.active and 'stop' or 'play', onSelect = function()

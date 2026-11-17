@@ -17,6 +17,8 @@ ui_page 'ui/index.html'
 
 shared_scripts {
     'shared/weapon-slots.lua',
+    'shared/weapon-life.lua',
+    'shared/crafting.lua',
 }
 
 client_scripts {
@@ -29,6 +31,8 @@ client_scripts {
     'client/clothe.lua',
     'client/ui_bridge.lua',
     'client/main.lua',
+    'client/weapon-life.lua', -- shots / health / broken weapon / cleaner
+    'client/crafting.lua', -- /craft workbench menu
     'client/weapon-wheel.lua', -- weapon wheel = weapons in slots (replaces core:client:giveWeapon)
     'client/extras.lua',
     -- stage 2 modules
@@ -43,8 +47,13 @@ server_scripts {
     'server/callback_bridge.lua', -- must be before main.lua
     'server/main.lua',
     'server/second.lua', -- stash store + trunk
+    'server/weapons.lua', -- weapon expiry, wear and cleaning
+    'server/crafting.lua', -- weapon crafting with lifetimes
     'server/persist.lua', -- autosave + save on shutdown so items/guns survive restarts
     'server/gang_store.lua', -- exports['Unique_inventory']:Add/RemoveGangArmoryItem|Weapon, GetGangArmory* (used by Unique_ALLGangs / Unique_AllRobs)
 }
 
-files { 'ui/**' }
+files {
+    'ui/**',
+    'html/**', -- item images that other resources load from nui://Unique_inventory/html/img/items/
+}

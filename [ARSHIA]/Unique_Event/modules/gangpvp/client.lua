@@ -6,7 +6,7 @@ local ESX = nil
 
 local InPvp, IsDown = false, false          -- IsDown: خودم مُردم و منتظر CPR/E هستم
 local Home, Safe = nil, {}
-local Kills, Deaths, SC, Count = 0, 0, 0, 0
+local Kills, Deaths, UTokens, Count = 0, 0, 0, 0
 local LockEnd = 0
 local ShopBlips, ShopData = {}, {}
 local DownMates = {}
@@ -43,6 +43,31 @@ local function Help(text)
     BeginTextCommandDisplayHelp('STRING')
     AddTextComponentSubstringPlayerName(text)
     EndTextCommandDisplayHelp(0, false, false, -1)
+end
+
+-- منوها مثل sun با icon_menu؛ اگه نبود ox_lib
+local function MenuLabel(name)
+    local up = name:upper()
+    local ok, label = pcall(function() return ESX and ESX.GetWeaponLabel and ESX.GetWeaponLabel(up) end)
+    if ok and label and label ~= '' then return label end
+    return (up:gsub('^WEAPON_', ''))
+end
+
+local function OpenMenuList(id, title, list)
+    if GetResourceState('icon_menu') == 'started' then
+        exports.icon_menu:OpenMenu(list)
+    else
+        local opts = {}
+        for _, it in ipairs(list) do
+            opts[#opts + 1] = { title = it.text, description = it.text2, onSelect = it.callBack, readOnly = it.callBack == nil }
+        end
+        lib.registerContext({ id = id, title = title, options = opts })
+        lib.showContext(id)
+    end
+end
+
+local function CloseIconMenu()
+    if GetResourceState('icon_menu') == 'started' then exports.icon_menu:ForceCloseMenu() end
 end
 
 local function Revive()
@@ -117,15 +142,30 @@ AddEventHandler('gpvp:shopsChanged', function()
 end)
 
 local function OpenShop(sh)
-    local opts = {}
+    local list = {}
     for _, w in ipairs(sh.weapons) do
-        local label = w.name:gsub('^weapon_', ''):upper()
-        opts[#opts + 1] = { title = label, description = ('Price: %d SC | Stock: %d'):format(w.price, w.count),
-            icon = 'gun', disabled = w.count <= 0,
-            onSelect = function() TriggerServerEvent('gpvp:buyWeapon', sh.idx, w.id) end }
+        if w.count > 0 then
+            list[#list + 1] = { img = '', text = MenuLabel(w.name), text2 = 'Price : ' .. w.price .. ' UToken',
+                callBack = function()
+                    CloseIconMenu()
+                    TriggerServerEvent('gpvp:buyWeapon', sh.idx, w.id)
+                    -- sun: بعد از خرید دوباره منو باز میشه (با موجودی تازه)
+                    SetTimeout(1800, function()
+                        if not InPvp or not ESX then return end
+                        ESX.TriggerServerCallback('gpvp:getShops', function(l)
+                            for _, x in ipairs(l or {}) do
+                                if x.idx == sh.idx then
+                                    sh.weapons = x.weapons
+                                    return OpenShop(sh)
+                                end
+                            end
+                        end)
+                    end)
+                end }
+        end
     end
-    lib.registerContext({ id = 'gpvp_shop', title = ('PVP Shop  |  %d SC'):format(SC), options = opts })
-    lib.showContext('gpvp_shop')
+    if #list == 0 then return notify('Guni haye in shop be etmam reside!', 'error') end
+    OpenMenuList('gpvp_shop', 'PVP Shop', list)
 end
 
 -- ----------------------------------------------------------------------------
@@ -145,15 +185,14 @@ local function DoWash(w)
 end
 
 local function OpenWash()
-    ESX.TriggerServerCallback('gpvp:getWashList', function(list)
-        local opts = {}
-        for _, w in ipairs(list or {}) do
-            opts[#opts + 1] = { title = w.label, description = ('Wash: $%s (Black Money) | %s'):format(w.price, w.serial), icon = 'soap',
-                onSelect = function() DoWash(w) end }
+    ESX.TriggerServerCallback('gpvp:getWashList', function(wl)
+        local list = {}
+        for _, w in ipairs(wl or {}) do
+            list[#list + 1] = { img = '', text = MenuLabel(w.name), text2 = 'Price : ' .. w.price .. ' Black money',
+                callBack = function() CloseIconMenu() DoWash(w) end }
         end
-        if #opts == 0 then opts[1] = { title = 'Hich Aslahe PvP Nadarid', readOnly = true } end
-        lib.registerContext({ id = 'gpvp_wash', title = 'Gun Wash', options = opts })
-        lib.showContext('gpvp_wash')
+        if #list == 0 then return notify('Shoma guni nadarid!', 'error') end
+        OpenMenuList('gpvp_wash', 'Gun Wash', list)
     end)
 end
 
@@ -162,13 +201,12 @@ end
 -- ----------------------------------------------------------------------------
 RegisterCommand(CFG.CarCommand, function()
     if not InPvp or IsDown then return end
-    local opts = {}
+    local list = {}
     for _, c in ipairs(CFG.Cars) do
-        opts[#opts + 1] = { title = c.label, description = c.price .. ' SC', icon = 'car',
-            onSelect = function() TriggerServerEvent('gpvp:buyCar', c.model) end }
+        list[#list + 1] = { img = '', text = c.label, text2 = 'Price : ' .. c.price .. ' UToken',
+            callBack = function() CloseIconMenu() TriggerServerEvent('gpvp:buyCar', c.model) end }
     end
-    lib.registerContext({ id = 'gpvp_cars', title = ('PVP Cars  |  %d SC'):format(SC), options = opts })
-    lib.showContext('gpvp_cars')
+    OpenMenuList('gpvp_cars', 'PVP Cars', list)
 end, false)
 
 RegisterNetEvent('gpvp:spawnCar')
@@ -199,7 +237,7 @@ AddEventHandler('gpvp:count', function(n) Count = n or Count end)
 RegisterNetEvent('gpvp:stats')
 AddEventHandler('gpvp:stats', function(s)
     if not s then return end
-    Kills, Deaths, SC = s.kills or Kills, s.deaths or Deaths, s.sc or SC
+    Kills, Deaths, UTokens = s.kills or Kills, s.deaths or Deaths, s.token or UTokens
 end)
 
 RegisterNetEvent('gpvp:mateDown')
@@ -224,7 +262,7 @@ AddEventHandler('gpvp:joined', function(d)
     Home = vector3(d.home.x, d.home.y, d.home.z)
     Safe = {}
     for i, c in ipairs(d.safe or {}) do Safe[i] = vector3(c.x, c.y, c.z) end
-    Kills, Deaths, SC = d.kills or 0, d.deaths or 0, d.sc or 0
+    Kills, Deaths, UTokens = d.kills or 0, d.deaths or 0, d.token or 0
     LockEnd = GetGameTimer() + (d.lock or 0) * 1000
     TriggerEvent('esx_paintball:inPaintBall', true)
     notify('Shoma Be PVP Zone Peyvastid !', 'success')
@@ -249,10 +287,13 @@ AddEventHandler('gpvp:joined', function(d)
                 DisableControlAction(0, 24, true)
                 DisableControlAction(0, 25, true)
             end
-            DrawTxt(0.5 - 0.06, 0.965, ('PVP ZONE | %d Players'):format(Count), 0.4, 255, 255, 255)
-            DrawTxt(0.65, 0.95, ('~r~PVP Kill : %d  ~s~|  ~y~SC : %d'):format(Kills, SC), 0.4)
+            -- sun: ShowMissionText / DrawText2D(…, 0.65, 0.95) / Cooldown (0.65, 0.90)
+            SetTextFont(4) SetTextScale(0.0, 0.5) SetTextColour(255, 255, 255, 255) SetTextOutline() SetTextCentre(true)
+            SetTextEntry('STRING') AddTextComponentString(('PVP ZONE | %d Players'):format(Count)) DrawText(0.5, 0.955)
+            DrawTxt(0.65, 0.95, ('~r~PVP Kill : %d'):format(Kills), 0.4)
+            DrawTxt(0.65, 0.925, ('~y~UToken : %d'):format(UTokens), 0.4)
             local lockLeft = math.ceil((LockEnd - GetGameTimer()) / 1000)
-            if lockLeft > 0 then DrawTxt(0.44, 0.06, ('PVP Cooldown : %ds'):format(lockLeft), 0.6, 255, 80, 80) end
+            if lockLeft > 0 then DrawTxt(0.65, 0.90, ('~r~PVP Cooldown %ds'):format(lockLeft), 0.4) end
             Wait(0)
         end
     end)
@@ -346,6 +387,9 @@ AddEventHandler('gpvp:left', function(home)
     Revive()
     local ped = PlayerPedId()
     if home then Teleport(home) end
+    -- sun: موقعیت مقصد فوراً ذخیره میشه تا ریلاگ بعد از ایونت داخل world ایونت لود نشه
+    local pp = GetEntityCoords(PlayerPedId())
+    TriggerServerEvent('updatePositions', pp.x, pp.y, pp.z, GetEntityHeading(PlayerPedId()))
     RemoveAllPedWeapons(ped, true)
     TriggerEvent('esx:restoreLoadout') -- اسلحه‌های PvP پاک، لودوات واقعی برمی‌گرده
     SetEntityHealth(ped, GetEntityMaxHealth(ped))

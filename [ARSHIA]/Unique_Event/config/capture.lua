@@ -75,7 +75,7 @@ CapConfig.MaxGangInZone       = 10       -- ظرفیت هر گنگ در هر ز�
 
 CapConfig.Heal = { Delay = 5000, Amount = 1, Interval = 1000 } -- ۵ ثانیه بدون دمیج/شلیک => هر ثانیه ۱ HP
 CapConfig.Ammo = 50                      -- حداقل مهمات سلاح انتخابی (sun: ۵۰)
-CapConfig.AutoParachute       = true     -- باز شدن خودکار چتر نزدیک زمین (جلوگیری از مرگ بی‌دلیل)
+CapConfig.AutoParachute       = false    -- sun: چتر خودکار نداره (true = باز شدن خودکار نزدیک زمین)
 CapConfig.AutoParachuteHeight = 140.0
 
 CapConfig.DieSeconds          = 5

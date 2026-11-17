@@ -219,6 +219,7 @@ RegisterNetEvent('esx:playerLoaded')
 AddEventHandler('esx:playerLoaded', function(xPlayer)
 	ESX.PlayerLoaded = true
 	ESX.PlayerData   = xPlayer
+	ESX.PlayerData.World = LocalPlayer.state.world or 0
 	if xPlayer.group == 'vip' then
 		Citizen.CreateThread(function()
 			while true do
@@ -515,6 +516,12 @@ end)
 RegisterNetEvent('ox_inventory:showItemNotification')
 AddEventHandler('ox_inventory:showItemNotification', function(added, item, count)
 	ESX.UI.ShowInventoryItemNotification(added, item, count)
+end)
+
+-- Current world (routing bucket) of this player. Sent by ScriptPack's change world; 0 = main world.
+RegisterNetEvent('esx:changeworld')
+AddEventHandler('esx:changeworld', function(world)
+	ESX.PlayerData.World = tonumber(world) or 0
 end)
 
 RegisterNetEvent('esx:setJob')

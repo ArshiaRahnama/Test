@@ -1,49 +1,101 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <title>Unique GunGame HUD</title>
-    <link rel="stylesheet" href="style.css" />
+<meta charset="UTF-8">
+<title>GunGame</title>
+<style>
+  html, body { margin: 0; background: transparent; overflow: hidden; font-family: 'Poppins', 'Segoe UI', Tahoma, sans-serif; color: #fff; }
+  .hide { display: none !important; }
+  #hud { position: fixed; top: 14px; left: 50%; transform: translateX(-50%); text-align: center; text-shadow: 2px 2px 0 #000; }
+  #timer { font-size: 30px; font-weight: 700; letter-spacing: 2px; background: rgba(0,0,0,.5); padding: 2px 18px; border-radius: 6px; }
+  #level { margin-top: 6px; font-size: 14px; background: rgba(0,0,0,.5); padding: 3px 14px; border-radius: 5px; display: inline-block; }
+  #level b { color: #4ce065; }
+  #board { position: fixed; top: 120px; right: 16px; width: 250px; background: rgba(0,0,0,.5); border-radius: 6px; padding: 6px 8px; font-size: 13px; text-shadow: 1px 1px 0 #000; }
+  #board .row { display: flex; justify-content: space-between; padding: 2px 0; }
+  #board .row.me { color: #4ce065; font-weight: 700; }
+  #board .h { color: #c9c9d1; font-size: 11px; text-transform: uppercase; margin-bottom: 3px; }
+  #banner { position: fixed; top: 22%; left: 50%; transform: translateX(-50%); font-size: 26px; font-weight: 700; text-shadow: 2px 2px 0 #000;
+            background: rgba(0,0,0,.55); padding: 6px 26px; border-radius: 8px; border-bottom: 3px solid #4ce065; animation: pop .35s ease-out; }
+  #countdown { position: fixed; top: 35%; left: 50%; transform: translateX(-50%); font-size: 34px; font-weight: 700; text-shadow: 2px 2px 0 #000; }
+  /* Killfeed - همون چیدمان sun */
+  .killfeed { position: absolute; top: 30rem; right: 1rem; width: 25rem; height: 25rem; text-align: right; overflow-y: hidden; }
+  .killfeed .kill { display: inline-flex; background: rgba(0,0,0,.5); border-radius: 5px; padding: 5px; margin: 2.5px; align-items: center; animation: in .4s ease-out; transition: opacity .5s; }
+  .killfeed .kill.out { opacity: 0; }
+  .killfeed p { margin: 0; color: #fff; font-size: 15px; text-shadow: 2px 2px 0 #000; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .killfeed p.green { color: #4ce065; } .killfeed p.red { color: #ff4f4f; }
+  .killfeed img { max-width: 35px; max-height: 25px; padding: 0 10px; }
+  .killfeed .wname { font-size: 12px; padding: 0 10px; }
+  @keyframes in { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: none; } }
+  @keyframes pop { from { opacity: 0; transform: translateX(-50%) scale(.8); } to { opacity: 1; transform: translateX(-50%) scale(1); } }
+</style>
 </head>
 <body>
-
-    <div id="countdown" class="panel hidden">
-        <div class="countdown-bar"></div>
-        <div class="countdown-label">GunGame starts in</div>
-        <div class="countdown-number">15</div>
-    </div>
-
-    <div id="timer" class="panel hidden">
-        <span class="timer-tag">ROUND</span>
-        <span class="timer-value">10:00</span>
-    </div>
-
-    <div id="killfeed"></div>
-
-    <div id="scoreboard" class="panel hidden">
-        <div class="scoreboard-head">
-            <span class="scoreboard-title">UNIQUE GUNGAME</span>
-        </div>
-        <div class="scoreboard-columns">
-            <span class="col-rank">#</span>
-            <span class="col-name">Player</span>
-            <span class="col-lvl">LVL</span>
-            <span class="col-kills">Kills</span>
-        </div>
-        <div id="scoreboard-rows"></div>
-    </div>
-
-    <div id="mvp-screen" class="hidden">
-        <div class="mvp-card">
-            <div class="mvp-label">MVP</div>
-            <div id="mvp-callingcard" class="mvp-callingcard">
-                <div class="mvp-callingcard-fallback">★</div>
-            </div>
-            <div id="mvp-name" class="mvp-name">Player</div>
-            <div id="mvp-kills" class="mvp-kills">0 KILLS</div>
-        </div>
-    </div>
-
-    <script src="script.js"></script>
+<div id="hud" class="hide"><div id="timer">00:00</div><div id="level"></div></div>
+<div id="board" class="hide"></div>
+<div id="banner" class="hide"></div>
+<div id="countdown" class="hide"></div>
+<div class="killfeed" id="feed"></div>
+<script>
+(function () {
+  var ICON = 'https://cfx-nui-Unique_inventory/ui/img/items/';
+  var $ = function (id) { return document.getElementById(id); };
+  var timerSec = 0, tick = null, bannerT = null;
+  function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  function clean(s) { return String(s == null ? '' : s).replace(/[^a-z0-9áéíóúñü \.,_\-\u0600-\u06FF]/gim, ''); }
+  function fmt(s) { s = Math.max(0, s | 0); return ('0' + ((s / 60) | 0)).slice(-2) + ':' + ('0' + (s % 60)).slice(-2); }
+  function setTimer(s) {
+    timerSec = s; $('hud').classList.remove('hide'); $('timer').textContent = fmt(timerSec);
+    if (tick) clearInterval(tick);
+    tick = setInterval(function () { if (timerSec > 0) { timerSec--; $('timer').textContent = fmt(timerSec); } }, 1000);
+  }
+  window.addEventListener('message', function (e) {
+    var m = e.data; if (!m || !m.action) return;
+    var d = m.data || {};
+    switch (m.action) {
+      case 'ggTime': setTimer(d.seconds || 0); break;
+      case 'ggLevel':
+        $('hud').classList.remove('hide');
+        $('level').innerHTML = 'LEVEL <b>' + (d.level | 0) + '</b> / ' + (d.total | 0) + ' &nbsp;·&nbsp; ' + clean(String(d.weapon || '').replace('WEAPON_', ''));
+        break;
+      case 'ggBoard':
+        var b = $('board'); b.classList.remove('hide'); b.innerHTML = '';
+        b.appendChild(el('div', 'h', 'Gun Game'));
+        (d.top || []).forEach(function (r, i) {
+          var row = el('div', 'row' + (r.me ? ' me' : ''));
+          row.appendChild(el('span', '', (i + 1) + '. ' + clean(r.name)));
+          row.appendChild(el('span', '', 'L' + r.level + ' · ' + r.kills + 'K'));
+          b.appendChild(row);
+        });
+        break;
+      case 'ggBanner':
+        var bn = $('banner'); bn.textContent = clean(d.label); bn.classList.remove('hide');
+        if (bannerT) clearTimeout(bannerT); bannerT = setTimeout(function () { bn.classList.add('hide'); }, 2500);
+        break;
+      case 'ggCountdown':
+        var c = $('countdown');
+        if (d.seconds > 0) { c.textContent = 'GunGame Starts In ' + d.seconds; c.classList.remove('hide'); } else c.classList.add('hide');
+        break;
+      case 'ggKill':
+        var feed = $('feed'), row2 = el('div', 'kill');
+        row2.appendChild(el('p', 'green', clean(d.killer)));
+        var w = String(d.weapon || '');
+        if (/^WEAPON_[A-Z0-9_]+$/.test(w)) {
+          var img = new Image(); img.src = ICON + w + '.png';
+          img.onerror = function () { var t = el('span', 'wname', w.replace('WEAPON_', '')); if (img.parentNode) img.parentNode.replaceChild(t, img); };
+          row2.appendChild(img);
+        } else row2.appendChild(el('span', 'wname', clean(w)));
+        row2.appendChild(el('p', 'red', clean(d.killed)));
+        feed.appendChild(row2);
+        while (feed.children.length > 8) feed.removeChild(feed.firstChild);
+        setTimeout(function () { row2.classList.add('out'); setTimeout(function () { if (row2.parentNode) row2.parentNode.removeChild(row2); }, 500); }, 5000);
+        break;
+      case 'ggHide':
+        ['hud', 'board', 'banner', 'countdown'].forEach(function (i) { $(i).classList.add('hide'); });
+        $('feed').innerHTML = ''; if (tick) { clearInterval(tick); tick = null; }
+        break;
+    }
+  });
+})();
+</script>
 </body>
 </html>

@@ -304,9 +304,26 @@ AddEventHandler(
     end
 )
 
+-- SECURITY: this used to be `Users[source].set("name", newName)` with the string taken
+-- straight from the client, so any player could rename himself to anything (another
+-- player's / an admin's name, markup, ...) and crashed with a nil error when the player
+-- was not loaded yet. Names are now registered by unique_character (validated, unique,
+-- saved to the database); server code that needs to rename a player calls
+-- Users[src].setName(name) directly. The event stays registered only so that attempts
+-- are logged instead of silently doing nothing.
+local newNameAttempts = {}
 RegisterNetEvent("es:newName")
 AddEventHandler("es:newName", function(newName)
-	Users[source].set("name", newName)
+	local src = source
+	local now = GetGameTimer()
+	if newNameAttempts[src] == nil or (now - newNameAttempts[src]) > 10000 then
+		newNameAttempts[src] = now
+		print(("^1[essentialmode] blocked es:newName from player %s (clients can no longer rename themselves)^7"):format(tostring(src)))
+	end
+end)
+
+AddEventHandler("playerDropped", function()
+	newNameAttempts[source] = nil
 end)
 
 AddEventHandler(

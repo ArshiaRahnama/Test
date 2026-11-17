@@ -45,12 +45,17 @@ WZConfig.Gulagworld  = 52
 -- ----------------------------------------------------------------------------
 --  Locations
 -- ----------------------------------------------------------------------------
-WZConfig.LobbeyCoord = vector3(-2131.17, 3262.66, 34.81)
+-- لابی: رندوم بین این‌ها انتخاب میشه (sun: lobbycoords / lobbycoords2 — مختصات دومی از خود sun)
+WZConfig.LobbeyCoords = {
+    vector3(-2131.17, 3262.66, 34.81),
+    vector3(-2001.27, 3195.47, 32.81),
+}
+WZConfig.LobbeyCoord = WZConfig.LobbeyCoords[1]
 WZConfig.LastCoord   = vector3(231.45, -746.1, 34.59)   -- بعد از مچ/حذف اینجا برمی‌گردی
 
 WZConfig.Maps = {
-    SANDY  = { center = vector3(401.42, 2985.57, 42.68),   radius = 1000.0 },
-    ISLAND = { center = vector3(5265.58, -5428.06, 65.6),  radius = 1000.0 },
+    SANDY  = { center = vector3(401.42, 2985.57, 42.68),   radius = 1500.0 },  -- sun: ۱۵۰۰
+    ISLAND = { center = vector3(5265.58, -5428.06, 65.6),  radius = 1500.0 },
 }
 
 WZConfig.Gulag = {
@@ -95,7 +100,7 @@ WZConfig.RedeployHeight   = 1000.0
 WZConfig.ReviveTimeout    = 30     -- اگه E نزدی بعد از این ثانیه خودکار ریوایو میشی
 WZConfig.ReviveProgressMs = 3000   -- مدت نگه داشتن E (sun: 3 ثانیه)
 WZConfig.Parachute        = 'gadget_parachute'
-WZConfig.AutoParachute    = true   -- باز شدن خودکار چتر نزدیک زمین
+WZConfig.AutoParachute    = false  -- sun: چتر خودکار نداره (true = باز شدن خودکار نزدیک زمین)
 WZConfig.AutoParachuteHeight = 140.0
 
 -- ----------------------------------------------------------------------------
@@ -136,3 +141,103 @@ WZConfig.AntiCheatExempt = { Enabled = true, Resource = 'Unique_AdminPanel' }
 --  Client helpers
 -- ----------------------------------------------------------------------------
 WZConfig.ReviveTrigger = 'esx_ambulancejob:revivex'
+
+-- لیست کامل سلاح‌ها برای اسم/آیکون کیل‌فید (کپی allwep از sunset_battleroyal)
+WZConfig.AllWeapons = {
+    'WEAPON_DAGGER',
+    'WEAPON_BAT',
+    'WEAPON_BOTTLE',
+    'WEAPON_CROWBAR',
+    'WEAPON_UNARMED',
+    'WEAPON_FLASHLIGHT',
+    'WEAPON_GOLFCLUB',
+    'WEAPON_HAMMER',
+    'WEAPON_HATCHET',
+    'WEAPON_KNUCKLE',
+    'WEAPON_KNIFE',
+    'WEAPON_MACHETE',
+    'WEAPON_SWITCHBLADE',
+    'WEAPON_NIGHTSTICK',
+    'WEAPON_WRENCH',
+    'WEAPON_BATTLEAXE',
+    'WEAPON_POOLCUE',
+    'WEAPON_STONE_HATCHET',
+    'WEAPON_PISTOL',
+    'WEAPON_PISTOL_MK2',
+    'WEAPON_COMBATPISTOL',
+    'WEAPON_APPISTOL',
+    'WEAPON_STUNGUN',
+    'WEAPON_PISTOL50',
+    'WEAPON_SNSPISTOL',
+    'WEAPON_SNSPISTOL_MK2',
+    'WEAPON_HEAVYPISTOL',
+    'WEAPON_VINTAGEPISTOL',
+    'WEAPON_FLAREGUN',
+    'WEAPON_MARKSMANPISTOL',
+    'WEAPON_REVOLVER',
+    'WEAPON_REVOLVER_MK2',
+    'WEAPON_DOUBLEACTION',
+    'WEAPON_RAYPISTOL',
+    'WEAPON_CERAMICPISTOL',
+    'WEAPON_NAVYREVOLVER',
+    'WEAPON_GADGETPISTOL',
+    'WEAPON_MICROSMG',
+    'WEAPON_SMG',
+    'WEAPON_SMG_MK2',
+    'WEAPON_ASSAULTSMG',
+    'WEAPON_COMBATPDW',
+    'WEAPON_MACHINEPISTOL',
+    'WEAPON_MINISMG',
+    'WEAPON_RAYCARBINE',
+    'WEAPON_PUMPSHOTGUN',
+    'WEAPON_PUMPSHOTGUN_MK2',
+    'WEAPON_SAWNOFFSHOTGUN',
+    'WEAPON_ASSAULTSHOTGUN',
+    'WEAPON_BULLPUPSHOTGUN',
+    'WEAPON_MUSKET',
+    'WEAPON_HEAVYSHOTGUN',
+    'WEAPON_DBSHOTGUN',
+    'WEAPON_AUTOSHOTGUN',
+    'WEAPON_COMBATSHOTGUN',
+    'WEAPON_ASSAULTRIFLE',
+    'WEAPON_ASSAULTRIFLE_MK2',
+    'WEAPON_CARBINERIFLE',
+    'WEAPON_CARBINERIFLE_MK2',
+    'WEAPON_ADVANCEDRIFLE',
+    'WEAPON_SPECIALCARBINE',
+    'WEAPON_SPECIALCARBINE_MK2',
+    'WEAPON_BULLPUPRIFLE',
+    'WEAPON_BULLPUPRIFLE_MK2',
+    'WEAPON_COMPACTRIFLE',
+    'WEAPON_MILITARYRIFLE',
+    'WEAPON_MG',
+    'WEAPON_COMBATMG',
+    'WEAPON_COMBATMG_MK2',
+    'WEAPON_GUSENBERG',
+    'WEAPON_SNIPERRIFLE',
+    'WEAPON_HEAVYSNIPER',
+    'WEAPON_HEAVYSNIPER_MK2',
+    'WEAPON_MARKSMANRIFLE',
+    'WEAPON_MARKSMANRIFLE_MK2',
+    'WEAPON_RPG',
+    'WEAPON_GRENADELAUNCHER',
+    'WEAPON_GRENADELAUNCHER_SMOKE',
+    'WEAPON_MINIGUN',
+    'WEAPON_FIREWORK',
+    'WEAPON_RAILGUN',
+    'WEAPON_HOMINGLAUNCHER',
+    'WEAPON_COMPACTLAUNCHER',
+    'WEAPON_RAYMINIGUN',
+    'WEAPON_GRENADE',
+    'WEAPON_BZGAS',
+    'WEAPON_MOLOTOV',
+    'WEAPON_PROXMINE',
+    'WEAPON_SNOWBALL',
+    'WEAPON_PIPEBOMB',
+    'WEAPON_BALL',
+    'WEAPON_SMOKEGRENADE',
+    'WEAPON_FLARE',
+    'WEAPON_PETROLCAN',
+    'WEAPON_FIREEXTINGUISHER',
+    'WEAPON_HAZARDCAN',
+}

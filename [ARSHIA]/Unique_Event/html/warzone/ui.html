@@ -4,41 +4,57 @@
 <meta charset="UTF-8">
 <title>WarZone</title>
 <style>
-  html, body { margin: 0; background: transparent; overflow: hidden; font-family: 'Segoe UI', Tahoma, sans-serif; }
-  #feed { position: fixed; top: 70px; right: 20px; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
-  .kill {
-    display: flex; align-items: center; gap: 8px; padding: 6px 12px;
-    background: rgba(10, 10, 14, .78); border-right: 3px solid #e63946; border-radius: 4px;
-    color: #fff; font-size: 15px; font-weight: 600; letter-spacing: .3px;
-    animation: in .25s ease-out; transition: opacity .5s, transform .5s;
-  }
-  .kill.out { opacity: 0; transform: translateX(30px); }
-  .killer { color: #ff4d5a; }
-  .victim { color: #fff; }
-  .weapon { color: #c9c9d1; font-size: 12px; padding: 2px 7px; background: rgba(255,255,255,.1); border-radius: 3px; text-transform: uppercase; }
-  .head { color: #ffd166; font-size: 12px; }
-  @keyframes in { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: none; } }
+  /* Killfeed - کپی sunset_battleroyal (رنگ‌ها و چیدمان) */
+  html, body { margin: 0; background: transparent; overflow: hidden; font-family: 'Poppins', 'Segoe UI', Tahoma, sans-serif; }
+  .killfeed { position: absolute; top: 30rem; right: 1rem; width: 25rem; height: 25rem; text-align: right; overflow-y: hidden; }
+  .killfeed .kill-wrapper { width: 100%; text-overflow: ellipsis; }
+  .killfeed .kill { display: inline-flex; background-color: rgba(0, 0, 0, .5); border-radius: 5px; padding: 5px; margin: 2.5px;
+                    justify-content: center; align-items: center; animation: in .4s ease-out; transition: opacity .5s; }
+  .killfeed .kill.out { opacity: 0; }
+  .killfeed p { padding: 0; margin: 0; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; color: #fff;
+                text-shadow: 2px 2px 0 #000; font-size: 15px; }
+  .killfeed p.green { color: #4ce065; }
+  .killfeed p.red { color: #ff4f4f; }
+  .killfeed img { max-width: 35px; max-height: 25px; padding-left: 10px; padding-right: 10px; }
+  .killfeed .wname { color: #fff; font-size: 12px; padding: 0 10px; text-shadow: 2px 2px 0 #000; }
+  .killfeed .hs { color: #fff; text-shadow: 2px 2px 0 #000; padding-right: 8px; font-size: 13px; }
+  @keyframes in { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: none; } }
 </style>
 </head>
 <body>
-<div id="feed"></div>
+<div class="killfeed" id="feed"></div>
 <script>
   (function () {
     var feed = document.getElementById('feed');
-    var MAX = 6, LIFE = 6000;
-    function esc(s) { var d = document.createElement('div'); d.textContent = String(s == null ? '' : s); return d.innerHTML; }
-    window.addEventListener('message', function (e) {
-      var d = e.data;
-      if (!d || d.action !== 'wzAddKill') return;
-      var row = document.createElement('div');
-      row.className = 'kill';
-      row.innerHTML = '<span class="killer">' + esc(d.killer) + '</span>' +
-        '<span class="weapon">' + esc(d.weapon) + '</span>' +
-        (d.head ? '<span class="head">HS</span>' : '') +
-        '<span class="victim">' + esc(d.killed) + '</span>';
-      feed.insertBefore(row, feed.firstChild);
-      while (feed.children.length > MAX) feed.removeChild(feed.lastChild);
-      setTimeout(function () { row.classList.add('out'); setTimeout(function () { if (row.parentNode) row.parentNode.removeChild(row); }, 500); }, LIFE);
+    var MAX = 12, LIFE = 5000;
+    // آیکون سلاح از خود Unique_inventory (بدون CDN خارجی)
+    var ICON = 'https://cfx-nui-Unique_inventory/ui/img/items/';
+    function clean(s) { return String(s == null ? '' : s).replace(/[^a-z0-9áéíóúñü \.,_\-\u0600-\u06FF]/gim, ''); }
+    function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+    window.addEventListener('message', function (ev) {
+      var d = ev.data;
+      if (d && d.type === 'sound' && d.name === 'gulag') { // sun: InteractSound 'gulag' 0.9
+        try { var a = new Audio('gulag.ogg'); a.volume = Math.max(0, Math.min(1, +d.volume || 0.9)); a.play(); } catch (e) {}
+        return;
+      }
+      if (!d || d.type !== 'addKill') return;
+      var wrap = el('div', 'kill-wrapper'), row = el('div', 'kill');
+      row.appendChild(el('p', 'green', clean(d.killer)));
+      var w = String(d.weapon || '');
+      if (/^WEAPON_[A-Z0-9_]+$/.test(w)) {
+        var img = new Image();
+        img.src = ICON + w + '.png';
+        img.onerror = function () { var t = el('span', 'wname', w.replace('WEAPON_', '')); if (img.parentNode) img.parentNode.replaceChild(t, img); };
+        row.appendChild(img);
+      } else {
+        row.appendChild(el('span', 'wname', clean(w)));
+      }
+      if (d.headshot) row.appendChild(el('span', 'hs', '\u25CE'));
+      row.appendChild(el('p', 'red', clean(d.killed)));
+      wrap.appendChild(row);
+      feed.appendChild(wrap);
+      while (feed.children.length > MAX) feed.removeChild(feed.firstChild);
+      setTimeout(function () { row.classList.add('out'); setTimeout(function () { if (wrap.parentNode) wrap.parentNode.removeChild(wrap); }, 500); }, LIFE);
     });
   })();
 </script>

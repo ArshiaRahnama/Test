@@ -21,14 +21,4 @@ function UpdateSkills()
         end
         SendNUIMessage({ type = "loadSkills", skills = formatted })
     end)
-
-    ESX.TriggerServerCallback('HUD_Menu:GetActivitySkills', function(list)
-        SendNUIMessage({ type = "loadActivitySkills", skills = list or {} })
-    end)
 end
-
--- Unique skill-up effect: green "+" symbols float up the screen (see html/scripts/skill.js)
-RegisterNetEvent('Unique_LevelQuest:skillUp')
-AddEventHandler('Unique_LevelQuest:skillUp', function()
-    SendNUIMessage({ type = "skillUp" })
-end)

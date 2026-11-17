@@ -121,10 +121,11 @@ end
 
 local WeaponLabel, LootSet = {}, {}
 for _, w in ipairs(WZConfig.Loot.Weapons) do
-    WeaponLabel[Norm(GetHashKey(w))] = w:gsub('^WEAPON_', '')
+    WeaponLabel[Norm(GetHashKey(w))] = w
     LootSet[w] = true
 end
-local function LabelFor(hash) return WeaponLabel[Norm(hash)] or 'UNKNOWN' end
+for _, w in ipairs(WZConfig.AllWeapons) do WeaponLabel[Norm(GetHashKey(w))] = w end
+local function LabelFor(hash) return WeaponLabel[Norm(hash)] or 'UNKNOWN' end  -- اسم کامل (WEAPON_X) برای آیکون کیل‌فید
 
 local function Clamp(n, lo, hi, def)
     n = tonumber(n)
@@ -558,7 +559,7 @@ RegisterCommand(WZConfig.JoinLobbeyCommend, function(src)
         state = 'lobby', prevBucket = GetPlayerRoutingBucket(src), lastDeath = 0 }
     SetPlayerRoutingBucket(src, WZConfig.LobbeyWorld)
     ExemptAC(src, 20000)
-    TriggerClientEvent('br:lobby', src, V(WZConfig.LobbeyCoord))
+    TriggerClientEvent('br:lobby', src, V(WZConfig.LobbeyCoords[math.random(#WZConfig.LobbeyCoords)]))
     Notify(src, 'Shoma Vared Lobby Shodid. Montazer Start Bashid.', 'success')
 end, false)
 

@@ -450,154 +450,24 @@ Config.SkillMilestones = {
 -- on this server: 15 * 60000 ms = 15 minutes.
 Config.PaycheckIntervalMinutes = 15
 
--- ================================================================= --
--- ===== Skills (weapon skills only; filled in by the Weapon skills section below) ===== --
-Config.SkillFinishCoin = 0.50 -- paid once, when a weapon skill reaches 100%
-Config.Skills = {}
-Config.SkillTriggers = {} -- (unused now, kept so server/skills.lua can loop it)
-
--- GTA's native rank bar (the one that slides in when you earn RP) on every XP change.
-Config.RankBar = {
-    enabled    = true,
-    showOnJoin = true,
-    bar    = { r = 45,  g = 110, b = 185, a = 255 },
-    circle = { r = 0,   g = 0,   b = 0,   a = 186 },
+-- ===== UToken delivery quests (کپی «درخواست توکن اس‌سی (SC)» سان) ===== --
+-- بازیکن کوئست رو accept میکنه و با دستور /givetoken توکن‌ها رو تحویل میده.
+-- هیچ تریگری لازم نیست؛ تحویل و جایزه توی server/quest.lua انجام میشه.
+Config.TokenItem = 'UToken'
+Config.TokenCommand = 'givetoken'
+local tokenQuests = {
+    { cost = 2, XP = 15, coin = 0.08 },
+    { cost = 3, XP = 25, coin = 0.12 },
 }
-
--- Level perks. EMPTY = disabled (nothing changes on your server). The highest
--- entry whose level <= player level applies. hp = extra max health on top of
--- 100, armor = max armour. Example:
---   Config.LevelPerks = { { level = 10, hp = 10, armor = 20 }, { level = 30, hp = 30, armor = 50 } }
-Config.LevelPerks = {}
-
--- Minimum level to hold a weapon. EMPTY = disabled. Example: { WEAPON_RPG = 40, WEAPON_MINIGUN = 60 }
-Config.WeaponMinLevel = {}
-
--- ===== Unique level curve =====
--- Unique quest's table (config.Levels[n] there is "xp to go from level n-1 to n"),
--- mapped to this resource's convention (config.Levels[rank] = xp needed at `rank`
--- to reach rank+1). Levels 1-49 are Unique's exact numbers. Unique stops at 50; this
--- server goes to 100, so 50+ continue Unique's own +100-per-level pattern and
--- nobody's existing rank becomes invalid. Set to false to get the old curve back.
-Config.UseUniqueLevels = true
-if Config.UseUniqueLevels then
-    local Unique = {
-        100,200,200,200,300,300,300,300,400,400,400,400,500,500,600,700,800,900,1000,1100,
-        1200,1300,1400,1500,1600,1700,1800,1900,2000,2100,2200,2300,2400,2500,2600,2700,2800,2900,3000,3100,
-        3200,3300,3400,3500,3600,3700,3800,3900,4000,
-    }
-    for rank = 1, 100 do
-        config.Levels[rank] = Unique[rank] or (4000 + (rank - 49) * 100)
+local function addTokenQuests(pool, poolName)
+    for _, t in ipairs(tokenQuests) do
+        pool[#pool + 1] = {
+            name = "UToken Request " .. t.cost,
+            description = t.cost .. " Ta UToken Tahvil Bede (/givetoken)",
+            trigger = ("quest-utoken:%s:%d"):format(poolName, t.cost), -- فقط برای ثبت؛ هیچوقت fire نمیشه
+            requiredTrigger = t.cost, tokenCost = t.cost, XP = t.XP, coin = t.coin,
+        }
     end
 end
--- ===== Unique level perks (HP / armour by level) =====
--- Unique's tables: max health = 100 + bonus where bonus = 99+lvl (lvl 1-10) / 100+lvl (11-50)
--- (200 at level 1 -> 250 at level 50); max armour = 50 + 2*lvl from level 26 (102 -> 150).
--- Level 50+ keeps the level-50 values (Unique stops at 50). Generated here so the table is
--- not 50 lines long. Set Config.UseUniquePerks = false to disable, or write Config.LevelPerks yourself.
-Config.UseUniquePerks = true
-if Config.UseUniquePerks then
-    Config.LevelPerks = {}
-    for lvl = 1, 50 do
-        local perk = { level = lvl, hp = (lvl <= 10) and (99 + lvl) or (100 + lvl) }
-        if lvl >= 26 then perk.armor = 50 + 2 * lvl end
-        Config.LevelPerks[#Config.LevelPerks + 1] = perk
-    end
-end
-
--- ===== newbie restriction (Unique: level 1 cannot attack) =====
--- Players at level <= maxLevel can't shoot, aim, reload or melee. Jobs listed in
--- exemptJobs (and their off-duty 'off<job>' variant) are never restricted.
-Config.NewbieRestriction = {
-    enabled = true,
-    maxLevel = 1,
-    exemptJobs = { police = true, sheriff = true, metropolitan = true, ambulance = true },
-    message = 'You must reach level 2 before you can fight',
-}
-
-
--- ===== Weapon skills (Unique-style) =====
--- One skill per weapon, key = '<weapon name without WEAPON_>_skill' (same naming Unique uses, so
--- exports.Unique_LevelQuest:IsWeaponSkillFinished('WEAPON_PISTOL') maps straight onto it).
--- Progress comes from PLAYER kills made with that weapon: each kill adds `Config.WeaponSkillKill`
--- percent. Anti-farm: the victim must really be dead on the server (OneSync), and the same
--- killer/victim pair only counts once per `Config.WeaponSkillPairCooldown` seconds.
--- At 100% the weapon is "mastered": one-time coin reward (Config.SkillFinishCoin) + an
--- 'Unique_LevelQuest:skillFinished' event + the IsWeaponSkillFinished export for your own
--- shops/crafting (Unique gates its weapon factory on exactly this).
-Config.WeaponSkillKill = 0.20
-Config.WeaponSkillPairCooldown = 600
-Config.WeaponSkillList = {
-    { 'pistol', 'Pistol' },
-    { 'pistol_mk2', 'Pistol Mk2' },
-    { 'combatpistol', 'Combat Pistol' },
-    { 'appistol', 'Ap Pistol' },
-    { 'pistol50', 'Pistol.50' },
-    { 'snspistol', 'SNS Pistol' },
-    { 'snspistol_mk2', 'Sns Pistol Mk2' },
-    { 'heavypistol', 'Heavy Pistol' },
-    { 'vintagepistol', 'Vintage Pistol' },
-    { 'doubleaction', 'Doubleaction' },
-    { 'ceramicpistol', 'Ceramic Pistol' },
-    { 'gadgetpistol', 'Gadget Pistol' },
-    { 'marksmanpistol', 'Marksman Pistol' },
-    { 'pistolxm3', 'Pistol XM3' },
-    { 'revolver', 'Revolver' },
-    { 'revolver_mk2', 'Revolver Mk2' },
-    { 'navyrevolver', 'Navy Revolver' },
-    { 'machinepistol', 'Machine Pistol' },
-    { 'smg', 'Smg' },
-    { 'smg_mk2', 'Smg Mk2' },
-    { 'assaultsmg', 'Assault Smg' },
-    { 'microsmg', 'Micro Smg' },
-    { 'minismg', 'Mini SMG' },
-    { 'tecpistol', 'Tactical SMG' },
-    { 'combatpdw', 'CombatPDW' },
-    { 'pumpshotgun', 'Pump Shotgun' },
-    { 'pumpshotgun_mk2', 'Pump Shotgun Mk2' },
-    { 'sawnoffshotgun', 'SawnOff Shotgun' },
-    { 'assaultshotgun', 'Assault Shotgun' },
-    { 'bullpupshotgun', 'Bullpup Shotgun' },
-    { 'combatshotgun', 'Combat Shotgun' },
-    { 'autoshotgun', 'Auto Shotgun' },
-    { 'dbshotgun', 'DB Shotgun' },
-    { 'heavyshotgun', 'Heavy Shotgun' },
-    { 'assaultrifle', 'Assault Rifle' },
-    { 'assaultrifle_mk2', 'Assault Rifle Mk2' },
-    { 'carbinerifle', 'Carbine Rifle' },
-    { 'carbinerifle_mk2', 'Carbine Rifle Mk2' },
-    { 'advancedrifle', 'Advanced Rifle' },
-    { 'specialcarbine', 'Special Carbine' },
-    { 'specialcarbine_mk2', 'Special Carbine Mk2' },
-    { 'bullpuprifle', 'Bullpup Rifle' },
-    { 'bullpuprifle_mk2', 'Bullpup Rifle Mk2' },
-    { 'compactrifle', 'Compact Rifle' },
-    { 'militaryrifle', 'Military Rifle' },
-    { 'tacticalrifle', 'Tactical Rifle' },
-    { 'heavyrifle', 'Heavy Rifle' },
-    { 'gusenberg', 'GusenBerg' },
-    { 'combatmg', 'Combat MG' },
-    { 'combatmg_mk2', 'Combat MG Mk2' },
-    { 'mg', 'MG' },
-}
-for _, w in ipairs(Config.WeaponSkillList) do
-    Config.Skills[w[1] .. '_skill'] = {
-        label = w[2], weapon = true, weaponName = 'WEAPON_' .. w[1]:upper(),
-        addType = { kill = Config.WeaponSkillKill },
-    }
-end
-
-
--- ===== Mastery skins (Unique-style weapon tints) =====
--- A weapon whose skill reached 100% unlocks skins for it. The player picks one in the
--- WEAPON SKILL tab (stored per weapon, applied every time that weapon is in the loadout).
--- Until they choose, the DEFAULT skin below is applied automatically.
--- Tint indices + names are Unique's own (factory-config.lua): standard weapons 0-7, Mk2 weapons 0-12.
-Config.WeaponSkins = {
-    enabled = true,
-    defaultTint = 2,      -- Gold, for normal weapons
-    defaultTintMk2 = 9,   -- Red Contrast, for *_MK2 weapons
-    standard = { [0] = 'No skin', 'Green', 'Gold', 'Pink', 'Army', 'Blue', 'Orange', 'Platinum' },
-    mk2 = { [0] = 'No skin', 'Gray', 'Two-Tone', 'White', 'Beige', 'Green', 'Blue', 'Earth', 'Brown & Black',
-            'Red Contrast', 'Blue Contrast', 'Yellow Contrast', 'Orange Contrast' },
-}
+addTokenQuests(Config.DefaultQuest, 'default')
+for job, pool in pairs(Config.JobQuests) do addTokenQuests(pool, job) end

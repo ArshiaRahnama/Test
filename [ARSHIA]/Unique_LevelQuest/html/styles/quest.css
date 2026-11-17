@@ -21,6 +21,7 @@
 .questSlotChip.full {
   border-color: rgba(255, 107, 107, 0.4);
   color: #ff8f8f;
+  animation: slotFullPulse 2.2s ease-in-out infinite;
 }
 .questSlotChip.full i { color: #ff6b6b; }
 .questSlotChip.done { color: #4ee08a; border-color: rgba(78, 224, 138, 0.25); }
@@ -60,7 +61,7 @@
 .achCard.is-active {
   border-color: rgba(255, 140, 26, 0.45);
   box-shadow: 0 0 0 1px rgba(255, 140, 26, 0.1), 0 0 22px rgba(255, 140, 26, 0.12);
-  animation: cardIn 0.35s ease backwards;
+  animation: cardIn 0.35s ease backwards, activeGlow 2.6s ease-in-out infinite;
 }
 
 @keyframes activeGlow {

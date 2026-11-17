@@ -1,12 +1,17 @@
 -- ============================================================================
 --  Unique Gang PvP  (Sun-style: gangprop PVP zone)
+--  ادمین با /startpvp بازش میکنه (و /endpvp میبنده)؛ تا باز نشده هیچکس نمیتونه join بده.
 --  /pvp نزدیک HQ گنگ => ورود به World جدا (PvP آزاد)، /pvp دوباره => خروج.
---  کیل => SC => خرید اسلحه (فروشگاه چرخشی) و ماشین PvP.
+--  کیل => UToken => خرید اسلحه (فروشگاه چرخشی) و ماشین PvP.
 -- ============================================================================
 GPConfig = {}
 GPConfig.ESX = 'esx:getSharedObject'
 
-GPConfig.Command        = 'pvp'
+GPConfig.Command        = 'pvp'          -- ورود/خروج بازیکن (فقط وقتی PvP باز باشه)
+GPConfig.StartCommand   = 'startpvp'     -- (ادمین) باز کردن PvP:  /startpvp [دقیقه]  (بدون عدد = تا /endpvp)
+GPConfig.EndCommand     = 'endpvp'       -- (ادمین) بستن PvP و برگردوندن همه
+GPConfig.Permission     = 16             -- permission_level >= این عدد = ادمین
+GPConfig.DefaultMinutes = 0              -- مدت پیش‌فرض (0 = دستی)
 GPConfig.CarCommand     = 'pvpcar'
 GPConfig.World          = 97            -- routing bucket دنیای PvP (sun: 97)
 GPConfig.MinGrade       = 2             -- حداقل grade گنگ (sun: grade > 1)
@@ -15,9 +20,8 @@ GPConfig.CommandCooldown = 30           -- ثانیه؛ ضد اسپم join/leave
 GPConfig.LeaveLock      = 10            -- بعد از کیل/مرگ تا این ثانیه نمیشه خارج شد (ضد فرار از درگیری)
 GPConfig.SafeRadius     = 100.0         -- نزدیک پایگاه همه‌ی گنگ‌ها شلیک ممنوع (sun: 100)
 GPConfig.RespawnSeconds = 5             -- بعد از مرگ، ریسپاون سر HQ
-GPConfig.RewardSC       = 1             -- هر کیل چند SC
-GPConfig.SameVictimCooldown = 60        -- کیل دوباره‌ی همون نفر تو این مدت SC نداره (ضد فارم)
-GPConfig.FriendlyKillSC = false         -- کیل هم‌گنگی SC بده؟
+GPConfig.RewardToken    = 1             -- هر کیل چند UToken
+GPConfig.SameVictimCooldown = 60        -- کیل دوباره‌ی همون نفر تو این مدت UToken نداره (ضد فارم)
 
 GPConfig.FallbackHome   = { x = 216.672, y = -815.4998, z = 30.63524 }
 GPConfig.ReviveTrigger  = 'esx_ambulancejob:revivex'
@@ -26,10 +30,10 @@ GPConfig.WeaponAmmo     = 250
 
 -- ----------------------------------------------------------------------------
 --  Inventory (Unique_inventory روی essentialmode)
---  SC یه آیتم واقعی اینونتوریه. اسلحه‌های PvP سریالشون با پیشوند PV شروع میشه؛
+--  UToken یه آیتم واقعی اینونتوریه (جایگزین SC سان). اسلحه‌های PvP سریالشون با پیشوند PV شروع میشه؛
 --  با خروج از PvP پاک میشن مگه اینکه تو کارواش (با بلک‌مانی) به اسلحه‌ی واقعی تبدیل بشن.
 -- ----------------------------------------------------------------------------
-GPConfig.SC = { item = 'sc', label = 'SC', weight = 0.01 }
+GPConfig.Token = { item = 'UToken', label = 'UToken', weight = 0.01 }
 GPConfig.WeaponSerialPrefix = 'PV'
 
 GPConfig.JoinLockSeconds   = 60    -- بعد از ورود تا این مدت باید نزدیک HQ بمونی (قفل ماندگاره؛ relog ردش نمیکنه) - 0 = خاموش
@@ -77,7 +81,7 @@ GPConfig.Shop = {
 }
 
 -- ----------------------------------------------------------------------------
---  ماشین‌های PvP (با SC)  -  اسم مدل‌ها رو با ماشین‌های سرور خودت عوض کن
+--  ماشین‌های PvP (با UToken)  -  اسم مدل‌ها رو با ماشین‌های سرور خودت عوض کن
 -- ----------------------------------------------------------------------------
 GPConfig.Cars = {
     { model = 'sanchez',   label = 'Sanchez',   price = 1 },

@@ -757,3 +757,39 @@ CraftConfig = {
         },
     },
 }
+
+
+-- ───────────────────────────── weapon lifetimes (Unique_inventory) ─────────────────────────────
+-- Every gun recipe above is the PERMANENT weapon. For each of them two cheaper variants are generated:
+-- a 30-day and a 7-day weapon. Fewer days = fewer ingredients (`cost` multiplies the permanent
+-- recipe, rounded up, at least 1 of each ingredient).
+-- They appear in their own categories and are crafted exactly like any other recipe.
+CraftConfig.WeaponTiers = {
+	{ id = 'D30', days = 30, cost = 0.8, category = 'weapons30' },
+	{ id = 'D7',  days = 7,  cost = 0.6, category = 'weapons7'  },
+}
+CraftConfig.Categories['weapons30'] = { Label = 'Guns - 30 Days', Image = 'WEAPON_PISTOL', Jobs = {}, Gang = {} }
+CraftConfig.Categories['weapons7']  = { Label = 'Guns - 7 Days',  Image = 'WEAPON_PISTOL', Jobs = {}, Gang = {} }
+
+do
+	local guns = {}
+	for name, r in pairs(CraftConfig.Recipes) do
+		if r.isGun and not r.requireBlueprint and not r.Weapon then guns[#guns + 1] = name end
+	end
+	table.sort(guns)
+	for _, name in ipairs(guns) do
+		local r = CraftConfig.Recipes[name]
+		for _, t in ipairs(CraftConfig.WeaponTiers) do
+			local v = {}
+			for k, val in pairs(r) do v[k] = val end
+			v.Ingredients = {}
+			for item, n in pairs(r.Ingredients) do
+				v.Ingredients[item] = math.max(1, math.ceil(n * t.cost - 1e-9))
+			end
+			v.Category = t.category
+			v.Weapon = name          -- the weapon that is really given
+			v.Days = t.days          -- its lifetime; the base recipe (no Days) is permanent
+			CraftConfig.Recipes[name .. '_' .. t.id] = v
+		end
+	end
+end
