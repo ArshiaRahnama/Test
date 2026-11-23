@@ -22,6 +22,67 @@ local ALLOWED_UPDATE_FIELDS = {
     dateofbirth = "string",
 }
 
+-- Columns a SERVER side save may write (autosave, disconnect, shutdown, license ...).
+-- A client can NOT reach this list: the db:updateUser net event below filters its payload with
+-- ALLOWED_UPDATE_FIELDS (dateofbirth only) BEFORE it calls db.updateUser. Before this list existed
+-- db.updateUser shared the client whitelist, so every server save of money / bank / inventory /
+-- loadout / status that went through it (player disconnect, ESX.savePlayerMoney, license) was
+-- silently dropped and only the 8 minute autosave ever stored anything.
+local SERVER_UPDATE_FIELDS = {
+    dateofbirth = true,
+    license = true,
+    money = true,
+    bank = true,
+    black_money = true,
+    position = true,
+    inventory = true,
+    loadout = true,
+    invslots = true,
+    status = true,
+}
+
+-- invslots is created by the boot migration (asynchronously) and status may be missing on old
+-- databases. A single unknown column makes the whole UPDATE fail and then NOTHING is saved,
+-- so these are only written once we know the column exists.
+local OPTIONAL_COLUMNS = { invslots = true, status = true }
+local knownColumns = nil
+local warnedMissing = {}
+
+local function refreshColumns()
+    local ok = pcall(function()
+        exports.oxmysql:execute(
+            "SELECT COLUMN_NAME AS c FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users'",
+            {},
+            function(rows)
+                if type(rows) ~= "table" or #rows == 0 then return end
+                local found = {}
+                for _, r in ipairs(rows) do found[r.c] = true end
+                knownColumns = found
+            end
+        )
+    end)
+    return ok
+end
+
+CreateThread(function()
+    Wait(4000)
+    refreshColumns()
+    Wait(26000) -- again after the boot migrations had time to add their columns
+    refreshColumns()
+end)
+
+local function columnUsable(name)
+    if knownColumns then
+        if knownColumns[name] then return true end
+        if not warnedMissing[name] then
+            warnedMissing[name] = true
+            print(("^3[essentialmode]^0 users.%s does not exist - it is not saved"):format(name))
+        end
+        return false
+    end
+    return not OPTIONAL_COLUMNS[name]
+end
+
 RegisterServerEvent("db:updateUser")
 AddEventHandler(
     "db:updateUser",
@@ -54,10 +115,9 @@ AddEventHandler(
     end
 )
 
--- `new` here MUST already be pre-filtered to whitelisted fields only
--- (see ALLOWED_UPDATE_FIELDS above) -- this function no longer accepts
--- arbitrary keys and builds the SQL fully parameterized, no string
--- concatenation of values into the query text.
+-- Only SERVER_UPDATE_FIELDS (above) can be written, whatever `new` contains, and the SQL is
+-- fully parameterized: no value is ever concatenated into the query text. Data that comes from
+-- a client is filtered by the db:updateUser net event first (ALLOWED_UPDATE_FIELDS).
 function db.updateUser(identifier, new, callback, playerSource)
     local setClauses = {}
     local params = {
@@ -67,7 +127,7 @@ function db.updateUser(identifier, new, callback, playerSource)
 
     local i = 0
     for k, v in pairs(new) do
-        if ALLOWED_UPDATE_FIELDS[k] then
+        if SERVER_UPDATE_FIELDS[k] and columnUsable(k) then
             i = i + 1
             local paramName = "p" .. i
             table.insert(setClauses, "`" .. k .. "` = @" .. paramName)
@@ -95,8 +155,11 @@ function db.updateUser(identifier, new, callback, playerSource)
         "UPDATE users SET " .. table.concat(setClauses, ", ") .. nameClause .. " WHERE `identifier` = @identifier",
         params,
         function(done)
+            if done == nil then
+                print(("^1[essentialmode]^0 saving %s failed (see the oxmysql error above)"):format(tostring(identifier)))
+            end
             if callback then
-                callback(true)
+                callback(done ~= nil)
             end
         end
     )

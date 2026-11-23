@@ -825,3 +825,5 @@ Config.DispatchJobs = {'taxi', 'mechanic', 'ambulance'}
 -- requests get auto-accepted for whoever's been waiting longest in the queue.
 Config.DispatchQueueJobs = {'taxi', 'mechanic', 'ambulance'}
 Config.DispatchOfferTimeout = 15000 -- ms a queued worker has to accept/decline before it moves to the next person
+-- Boss UI (Sunset-style NUI, client/boss_ui.lua + boss_ui_more.lua). It replaces the whole classic boss menu; false = classic menu again.
+Config.BossUI = true

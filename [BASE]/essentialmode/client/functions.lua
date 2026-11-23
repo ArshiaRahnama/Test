@@ -1613,3 +1613,8 @@ Citizen.CreateThread(
         end
     end
 )
+
+-- true while the player is in the main world (world 0). Kept up to date by esx:changeworld.
+ESX.inRealWorld = function()
+    return (ESX.PlayerData and ESX.PlayerData.World or 0) == 0
+end

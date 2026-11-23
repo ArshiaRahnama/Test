@@ -10,3 +10,6 @@ CREATE TABLE IF NOT EXISTS `auctionhouse2` (
   KEY `job_idx` (`job`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 ALTER TABLE `auctionhouse2` ADD COLUMN IF NOT EXISTS `job` varchar(64) NOT NULL DEFAULT '';
+-- A listed weapon keeps its serial and its state (days left, wear, ammo, components) so selling it never creates a new weapon.
+ALTER TABLE `auctionhouse2` ADD COLUMN IF NOT EXISTS `serial` varchar(64) NULL DEFAULT NULL;
+ALTER TABLE `auctionhouse2` ADD COLUMN IF NOT EXISTS `meta` longtext NULL DEFAULT NULL;

@@ -74,6 +74,7 @@ ESX.RegisterServerCallback('ParkMeter:GetAll', function(source, cb)
 end)
 
 ESX.RegisterServerCallback('ParkMeter:CanPark', function(source, cb, plate)
+    if GetPlayerRoutingBucket(source) ~= 0 then cb(false) return end
     local xPlayer = ESX.GetPlayerFromId(source)
     if not xPlayer then cb(false) return end
     CanParkPlate(xPlayer, plate, cb)
@@ -115,10 +116,12 @@ local function Place(src, key, plate, prop, damages, doesHaveKey, job, cb)
 end
 
 ESX.RegisterServerCallback('ParkMeter:Place', function(source, cb, key, plate, prop, damages, doesHaveKey, job)
+    if GetPlayerRoutingBucket(source) ~= 0 then cb(false) return end
     Place(source, key, plate, prop, damages, doesHaveKey, job, cb)
 end)
 
 RegisterNetEvent('ParkMeter:Set', function(key, plate, prop, damages, metaData, doesHaveKey, job)
+    if (tonumber(source) or 0) > 0 and GetPlayerRoutingBucket(tonumber(source)) ~= 0 then return end
     local src = source
     key = tonumber(key)
     plate = trim(plate)
@@ -135,6 +138,7 @@ end)
 
 -- retrieve (atomic: first caller gets it, everybody after gets false)
 ESX.RegisterServerCallback('ParkMeter:Take', function(source, cb, key)
+    if GetPlayerRoutingBucket(source) ~= 0 then cb(false) return end
     local xPlayer = ESX.GetPlayerFromId(source)
     key = tonumber(key)
     local m = key and meters[key]

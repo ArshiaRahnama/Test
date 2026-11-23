@@ -78,6 +78,8 @@
 <iframe id="ticket-frame" src="ticket/index.html"></iframe>
 <!-- MenuV (F4 admin menu). Never takes pointer events: it is keyboard-driven and NUI focus stays off. -->
 <iframe id="menuv-frame" src="menuv/menuv.html"></iframe>
+<!-- Jail picker (client/unique_jail_ui.lua). Tagged _uniqueJail; receives ONLY its own messages. -->
+<iframe id="jail-frame" src="jailui/index.html"></iframe>
 <script>
   var RES = 'Unique_AdminPanel';
 
@@ -96,6 +98,19 @@
     var acFrame = document.getElementById('ac-frame');
     var reportFrame = document.getElementById('report-frame');
     var ticketFrame = document.getElementById('ticket-frame');
+    var jailFrame = document.getElementById('jail-frame');
+
+    // Jail picker traffic (tagged _uniqueJail by client/unique_jail_ui.lua) goes ONLY to the jail
+    // iframe (its 'open'/'close' actions must never reach the other panels, nor theirs reach it).
+    if (data._uniqueJail) {
+      if (data.action === 'close') {
+        if (jailFrame) jailFrame.style.pointerEvents = 'none';
+      } else if (data.action === 'open') {
+        activate(jailFrame, [adminFrame, acFrame, reportFrame, ticketFrame]);
+      }
+      if (jailFrame && jailFrame.contentWindow) jailFrame.contentWindow.postMessage(data, '*');
+      return;
+    }
 
     function activate(frame, others) {
       if (frame) {
@@ -113,6 +128,8 @@
         }
       }
       others.forEach(function (f) { if (f) f.style.pointerEvents = 'none'; });
+      // another panel taking over also releases the jail picker
+      if (jailFrame && frame !== jailFrame) jailFrame.style.pointerEvents = 'none';
     }
 
     // BUG FIX ("the panel is open, the mouse is stuck on screen, nothing is clickable"):

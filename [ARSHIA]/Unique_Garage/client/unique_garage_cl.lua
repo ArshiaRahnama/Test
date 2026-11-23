@@ -136,6 +136,7 @@ function parkVehicle(vehicle, zoneIndex)
 end
 
 local function tryPark(vehicle, askDialog)
+    if (LocalPlayer.state.world or 0) ~= 0 then return end
     if busy then return end
     busy = true
     local zone = currentZone
@@ -197,6 +198,7 @@ end
 
 -- ------------------------------------------------------------ open menu
 function openSpawnMenu(kind, zone)
+    if (LocalPlayer.state.world or 0) ~= 0 then return end
     if isPlayerBusy() then return end
     if doesBan then
         notify('error', ('Shoma be dalile %s dastresi estefade az parking ra nadarid!'):format(tostring(doesBan)))
@@ -562,6 +564,7 @@ lib.registerMenu({
 end)
 
 function openImpoundMenu()
+    if (LocalPlayer.state.world or 0) ~= 0 then TriggerEvent('esx:showNotification', 'Dar World Nemitavanid Az In Bakhsh Estefade Konid.') return end
     lib.showMenu('garageImpound')
 end
 

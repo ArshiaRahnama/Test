@@ -141,25 +141,9 @@ AddEventHandler(
             -- esx:playerDropped handler or the slower writes below can fail).
             SavePlayerPosition(Source)
             TriggerEvent("esx:playerDropped", Source, reason)
-            local invent = {}
-            for _, v in ipairs(Users[Source].inventory) do
-                table.insert(invent, {item = v.name, count = v.count})
-            end
-            db.updateUser(
-                Users[Source].get("identifier"),
-                {
-                    money = Users[Source].money,
-                    bank = Users[Source].bank,
-
-                    position = json.encode(SC(Users[Source].coords)),
-                    inventory = json.encode(invent),
-                    -- #1/#2/#15: grid placement map, saved alongside the
-                    -- totals it describes so the two can't drift apart.
-                    invslots = json.encode(Users[Source].getSlots and Users[Source].getSlots() or {}),
-                    loadout = json.encode(Users[Source].loadout),
-                    status = json.encode(Users[Source].status)
-                }
-            )
+            -- position is written above by SavePlayerPosition (live ped position); everything else
+            -- (money, bank, black money, inventory, slots, loadout, status) is written here.
+            db.updateUser(Users[Source].get("identifier"), ESX.BuildSaveData(Users[Source], true))
 
             local discord
             for k, v in ipairs(GetPlayerIdentifiers(Source)) do
@@ -212,21 +196,7 @@ AddEventHandler(
         if (Users[Source]) then
             SavePlayerPosition(Source)
             TriggerEvent("esx:playerDropped", Source)
-            local invent = {}
-            for _, v in ipairs(Users[Source].inventory) do
-                table.insert(invent, {item = v.name, count = v.count})
-            end
-            db.updateUser(
-                Users[Source].get("identifier"),
-                {
-                    money = Users[Source].money,
-                    bank = Users[Source].bank,
-                    position = json.encode(SC(Users[Source].coords)),
-                    inventory = json.encode(invent),
-                    invslots = json.encode(Users[Source].getSlots and Users[Source].getSlots() or {}),
-                    loadout = json.encode(Users[Source].loadout)
-                }
-            )
+            db.updateUser(Users[Source].get("identifier"), ESX.BuildSaveData(Users[Source], true))
 
             Users[Source] = nil
         end

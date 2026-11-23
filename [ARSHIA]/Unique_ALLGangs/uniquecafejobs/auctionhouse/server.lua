@@ -98,6 +98,39 @@ local function hasSpaceFor(xPlayer, name, amount)
     return true
 end
 
+-- Weapons go through Unique_inventory so a weapon keeps its serial, its days left and its wear while it is
+-- listed, cancelled or sold. (xPlayer.addWeapon(name, ammo) would create a NEW weapon with a fresh lifetime.)
+MySQL.ready(function()
+    MySQL.Async.execute('ALTER TABLE auctionhouse2 ADD COLUMN IF NOT EXISTS serial varchar(64) NULL DEFAULT NULL', {})
+    MySQL.Async.execute('ALTER TABLE auctionhouse2 ADD COLUMN IF NOT EXISTS meta longtext NULL DEFAULT NULL', {})
+end)
+
+local function takeWeapon(src, serial)
+    local ok, data = pcall(function() return exports['Unique_inventory']:TakeWeapon(src, serial) end)
+    if ok and type(data) == 'table' then return data end
+    return nil
+end
+
+-- returns true, or false + reason ('expired' | 'cannotcarry' | 'badweapon' | 'noplayer' | 'error')
+local function giveWeapon(src, data)
+    local ok, done, reason = pcall(function() return exports['Unique_inventory']:GiveWeapon(src, data) end)
+    if not ok then return false, 'error' end
+    return done and true or false, reason
+end
+
+local function weaponEntry(xPlayer, name)
+    for _, w in ipairs(xPlayer.loadout or {}) do
+        if w.name == name then return w end
+    end
+end
+
+local function relist(row)
+    MySQL.Sync.execute('INSERT INTO auctionhouse2 (owner, item, amount, price, job, serial, meta) VALUES (@owner, @item, @amount, @price, @job, @serial, @meta)', {
+        ['@owner'] = row.owner, ['@item'] = row.item, ['@amount'] = row.amount, ['@price'] = row.price or 0,
+        ['@job'] = row.job or '', ['@serial'] = row.serial, ['@meta'] = row.meta,
+    })
+end
+
 -- Pay a seller, online or offline.
 local function payIdentifier(identifier, amount)
     local xp = ESX.GetPlayerFromIdentifier(identifier)
@@ -201,11 +234,17 @@ RegisterServerEvent('auction-house2:AddItemToShop', function(data)
     local price = toInt(data.price, 1, 1000000000)
     if not price then return notify(src, 'Invalid price.') end
 
-    local amount
+    local amount, escrow
     if isWeapon(item) then
-        amount = weaponAmmo(xPlayer, item)
-        if amount <= 0 then return notify(src, 'You do not have this weapon.') end
-        xPlayer.removeWeapon(item, amount)
+        local w = weaponEntry(xPlayer, item)
+        amount = w and (tonumber(w.ammo) or 0) or 0
+        if not w or amount <= 0 then return notify(src, 'You do not have this weapon.') end
+        if w.serial then
+            escrow = takeWeapon(src, w.serial)
+            if not escrow then return notify(src, 'Could not take this weapon.') end
+        else
+            xPlayer.removeWeapon(item, amount)
+        end
     else
         amount = toInt(data.amount, 1, 100000)
         if not amount then return notify(src, 'Invalid amount.') end
@@ -216,13 +255,16 @@ RegisterServerEvent('auction-house2:AddItemToShop', function(data)
         xPlayer.removeInventoryItem(item, amount)
     end
 
-    MySQL.Async.execute('INSERT INTO auctionhouse2 (owner, item, amount, price, job) VALUES (@owner, @item, @amount, @price, @job)', {
+    MySQL.Async.execute('INSERT INTO auctionhouse2 (owner, item, amount, price, job, serial, meta) VALUES (@owner, @item, @amount, @price, @job, @serial, @meta)', {
         ['@owner'] = xPlayer.identifier, ['@item'] = item, ['@amount'] = amount,
         ['@price'] = price, ['@job'] = shop.key,
+        ['@serial'] = escrow and escrow.serial or nil, ['@meta'] = escrow and json.encode(escrow) or nil,
     }, function(affected)
         if not affected or affected < 1 then
             -- give it back if the insert failed
-            if isWeapon(item) then xPlayer.addWeapon(item, amount) else xPlayer.addInventoryItem(item, amount) end
+            if escrow then giveWeapon(src, escrow)
+            elseif isWeapon(item) then xPlayer.addWeapon(item, amount)
+            else xPlayer.addInventoryItem(item, amount) end
             return notify(src, 'Could not list the item. It was returned to you.')
         end
         notify(src, 'Item listed.')
@@ -249,7 +291,7 @@ RegisterServerEvent('auction-house2:RemoveItemFromShop', function(data)
     local id = toInt(data.id, 1, 2147483647)
     if not id then return end
 
-    local row = MySQL.Sync.fetchAll('SELECT id, owner, item, amount FROM auctionhouse2 WHERE id = @id AND owner = @owner',
+    local row = MySQL.Sync.fetchAll('SELECT id, owner, item, amount, price, job, serial, meta FROM auctionhouse2 WHERE id = @id AND owner = @owner',
         { ['@id'] = id, ['@owner'] = xPlayer.identifier })[1]
     if not row then return notify(src, 'This listing is not yours or no longer exists.') end
 
@@ -262,8 +304,16 @@ RegisterServerEvent('auction-house2:RemoveItemFromShop', function(data)
         { ['@id'] = id, ['@owner'] = xPlayer.identifier })
     if (affected or 0) ~= 1 then return notify(src, 'Listing already changed.') end
 
-    if isWeapon(row.item) then
-        xPlayer.addWeapon(row.item, row.amount)
+    if isWeapon(row.item) and row.serial and row.meta then
+        local data = json.decode(row.meta)
+        local ok, reason = giveWeapon(src, data)
+        if not ok then
+            if reason == 'expired' then return notify(src, 'This weapon expired while it was listed.') end
+            relist(row)   -- put the listing back, the weapon is still in escrow
+            return notify(src, 'Could not return the weapon (' .. tostring(reason) .. ').')
+        end
+    elseif isWeapon(row.item) then
+        xPlayer.addWeapon(row.item, row.amount)   -- listing made before weapons were tracked
     else
         xPlayer.addInventoryItem(row.item, row.amount)
     end
@@ -281,7 +331,7 @@ RegisterServerEvent('auction-house2:BuyItemFromShop', function(data)
     local id = toInt(data.id, 1, 2147483647)
     if not id then return end
 
-    local row = MySQL.Sync.fetchAll('SELECT id, owner, item, amount, price, job FROM auctionhouse2 WHERE id = @id', { ['@id'] = id })[1]
+    local row = MySQL.Sync.fetchAll('SELECT id, owner, item, amount, price, job, serial, meta FROM auctionhouse2 WHERE id = @id', { ['@id'] = id })[1]
     if not row then return notify(src, 'This listing no longer exists.') end
     if row.job ~= shop.key then return notify(src, 'This listing is at another gun shop.') end
     if row.owner == xPlayer.identifier then return notify(src, "You can't buy your own item.") end
@@ -294,11 +344,22 @@ RegisterServerEvent('auction-house2:BuyItemFromShop', function(data)
     local affected = MySQL.Sync.execute('DELETE FROM auctionhouse2 WHERE id = @id', { ['@id'] = id })
     if (affected or 0) ~= 1 then return notify(src, 'Someone else bought this item first.') end
 
-    removeBankMoney(src, price)
-    if isWeapon(row.item) then
-        xPlayer.addWeapon(row.item, row.amount)
+    -- a tracked weapon is handed over first: if that fails nobody is charged
+    if isWeapon(row.item) and row.serial and row.meta then
+        local ok, reason = giveWeapon(src, json.decode(row.meta))
+        if not ok then
+            if reason == 'expired' then return notify(src, 'This weapon has expired.') end
+            relist(row)
+            return notify(src, 'You cannot take this weapon (' .. tostring(reason) .. ').')
+        end
+        removeBankMoney(src, price)
     else
-        xPlayer.addInventoryItem(row.item, row.amount)
+        removeBankMoney(src, price)
+        if isWeapon(row.item) then
+            xPlayer.addWeapon(row.item, row.amount)   -- listing made before weapons were tracked
+        else
+            xPlayer.addInventoryItem(row.item, row.amount)
+        end
     end
     payIdentifier(row.owner, price)
 

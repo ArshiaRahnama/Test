@@ -39,44 +39,44 @@ ESX.TriggerServerCallback = function(name, requestId, source, cb, ...)
     end
 end
 
-ESX.SavePlayer = function(Source, cb)
-    local asyncTasks = {}
-
+-- The ONE place that decides what a player save writes (autosave, disconnect, shutdown ...).
+-- skipPosition: the disconnect path stores the position itself (SavePlayerPosition in main.lua,
+-- live ped position) and must not overwrite it with the last client report.
+ESX.BuildSaveData = function(xPlayer, skipPosition)
     local invent = {}
-    if not Users[Source] then
+    for _, v in ipairs(xPlayer.inventory or {}) do
+        table.insert(invent, {item = v.name, count = v.count})
+    end
+
+    local data = {
+        money = xPlayer.money,
+        bank = xPlayer.bank,
+        black_money = xPlayer.black_money,
+        inventory = json.encode(invent),
+        loadout = json.encode(xPlayer.loadout or {}),
+        -- grid placement of the inventory, stored together with the totals it describes
+        invslots = json.encode(xPlayer.getSlots and xPlayer.getSlots() or {}),
+        status = json.encode(xPlayer.status or {})
+    }
+    if not skipPosition and xPlayer.coords then
+        data.position = json.encode(xPlayer.coords)
+    end
+    return data
+end
+
+ESX.SavePlayer = function(Source, cb)
+    local xPlayer = Users[Source]
+    if not xPlayer then
+        if cb ~= nil then
+            cb()
+        end
         return
     end
-    if #Users[Source].inventory > 0 then
-        for _, v in ipairs(Users[Source].inventory) do
-            table.insert(invent, {item = v.name, count = v.count})
-        end
-    end
 
-    table.insert(
-        asyncTasks,
-        function(cb)
-            MySQL.Async.execute(
-                "UPDATE users SET `money` = @money, `bank` = @bank, `black_money` = @black_money, `position` = @position, `inventory` = @inventory, `loadout` = @loadout WHERE identifier = @identifier",
-                {
-                    ["@money"] = Users[Source].money,
-                    ["@bank"] = Users[Source].bank,
-                    ["@black_money"] = Users[Source].black_money,
-                    ["@position"] = json.encode(Users[Source].coords),
-                    ["@inventory"] = json.encode(invent),
-                    ["@loadout"] = json.encode(Users[Source].loadout),
-                    ["@identifier"] = Users[Source].identifier
-                },
-                function(rowsChanged)
-                    cb()
-                end
-            )
-        end
-    )
-    Async.parallel(
-        asyncTasks,
-        function(results)
-
-
+    db.updateUser(
+        xPlayer.identifier,
+        ESX.BuildSaveData(xPlayer),
+        function()
             if cb ~= nil then
                 cb()
             end

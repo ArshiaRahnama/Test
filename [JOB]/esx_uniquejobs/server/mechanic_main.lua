@@ -321,7 +321,7 @@ AddEventHandler("esx_mechanicjob:addreq", function(reason)
 		-- Try the dispatch duty queue first (esx_society /dduty). Offers the
 		-- request to whoever's been waiting longest with a Yes/No prompt; if
 		-- they decline or don't answer in time it moves to the next person.
-		local wasOffered = exports['esx_society']:offerToQueue('mechanic', newReqId)
+		local wasOffered = exports['esx_society']:offerToQueue('mechanic', newReqId, GetEntityCoords(GetPlayerPed(source)))
 
 		if not wasOffered then
 			local xPlayers = ESX.GetPlayers()

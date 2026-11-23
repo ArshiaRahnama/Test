@@ -16,6 +16,7 @@ end
 -- ---------------------------------------------------------
 RegisterServerEvent('esx_property:plus:upgradeStorage')
 AddEventHandler('esx_property:plus:upgradeStorage', function(propertyName)
+	if (tonumber(source) or 0) > 0 and GetPlayerRoutingBucket(tonumber(source)) ~= 0 then return end
 	local _source = source
 	local xPlayer = ESX.GetPlayerFromId(_source)
 	if not xPlayer then return end
@@ -56,6 +57,7 @@ end)
 -- ---------------------------------------------------------
 RegisterServerEvent('esx_property:plus:upgradeSafe')
 AddEventHandler('esx_property:plus:upgradeSafe', function(propertyName)
+	if (tonumber(source) or 0) > 0 and GetPlayerRoutingBucket(tonumber(source)) ~= 0 then return end
 	local _source = source
 	local xPlayer = ESX.GetPlayerFromId(_source)
 	if not xPlayer then return end
@@ -106,6 +108,7 @@ end)
 -- ---------------------------------------------------------
 RegisterServerEvent('esx_property:plus:listForSale')
 AddEventHandler('esx_property:plus:listForSale', function(propertyName, price)
+	if (tonumber(source) or 0) > 0 and GetPlayerRoutingBucket(tonumber(source)) ~= 0 then return end
 	local _source = source
 	local xPlayer = ESX.GetPlayerFromId(_source)
 	price = tonumber(price)
@@ -147,6 +150,7 @@ end)
 
 RegisterServerEvent('esx_property:plus:buyFromPlayer')
 AddEventHandler('esx_property:plus:buyFromPlayer', function(propertyName)
+	if (tonumber(source) or 0) > 0 and GetPlayerRoutingBucket(tonumber(source)) ~= 0 then return end
 	local _source = source
 	local buyer   = ESX.GetPlayerFromId(_source)
 	if not buyer then return end
@@ -203,6 +207,7 @@ end)
 -- ---------------------------------------------------------
 RegisterServerEvent('esx_property:plus:buyMortgage')
 AddEventHandler('esx_property:plus:buyMortgage', function(propertyName, storageData)
+	if (tonumber(source) or 0) > 0 and GetPlayerRoutingBucket(tonumber(source)) ~= 0 then return end
 	if not ConfigPlus.Mortgage.enabled then return end
 
 	local _source = source
@@ -299,6 +304,7 @@ end)
 
 RegisterServerEvent('esx_property:plus:buyFurniture')
 AddEventHandler('esx_property:plus:buyFurniture', function(propertyName, catalogIndex)
+	if (tonumber(source) or 0) > 0 and GetPlayerRoutingBucket(tonumber(source)) ~= 0 then return end
 	local _source = source
 	local xPlayer = ESX.GetPlayerFromId(_source)
 	local item    = ConfigPlus.FurnitureCatalog[catalogIndex]
@@ -331,6 +337,7 @@ end)
 
 RegisterServerEvent('esx_property:plus:saveFurniture')
 AddEventHandler('esx_property:plus:saveFurniture', function(propertyName, model, x, y, z, heading, scale)
+	if (tonumber(source) or 0) > 0 and GetPlayerRoutingBucket(tonumber(source)) ~= 0 then return end
 	local _source = source
 	local xPlayer = ESX.GetPlayerFromId(_source)
 	if not xPlayer then return end
@@ -356,6 +363,7 @@ end)
 
 RegisterServerEvent('esx_property:plus:moveFurniture')
 AddEventHandler('esx_property:plus:moveFurniture', function(furnitureId, x, y, z, heading, scale)
+	if (tonumber(source) or 0) > 0 and GetPlayerRoutingBucket(tonumber(source)) ~= 0 then return end
 	local _source = source
 	local xPlayer = ESX.GetPlayerFromId(_source)
 	if not xPlayer then return end
@@ -373,6 +381,7 @@ end)
 
 RegisterServerEvent('esx_property:plus:removeFurniture')
 AddEventHandler('esx_property:plus:removeFurniture', function(furnitureId)
+	if (tonumber(source) or 0) > 0 and GetPlayerRoutingBucket(tonumber(source)) ~= 0 then return end
 	local _source = source
 	local xPlayer = ESX.GetPlayerFromId(_source)
 	if not xPlayer then return end

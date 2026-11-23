@@ -64,6 +64,7 @@ CapConfig.ZoneRange           = 350.0    -- قطر دایره‌ی زون (شع�
 CapConfig.DropHeight          = 1500.0   -- ارتفاع پرش
 CapConfig.FirstDropRadius     = 495.0    -- فاصله‌ی اولین اسپان از پرچم
 CapConfig.SpawnProtectionTime = 6        -- ثانیه
+CapConfig.EdgeRedrop         = true     -- sun: اولین بار که وارد دایره‌ی زون میشی دوباره از ارتفاع ۱۵۰۰ بالای لبه اسپان میشی (false = بدون اسپان دوباره)
 CapConfig.SpawnArmor          = 100
 
 CapConfig.CaptureSeconds      = 10       -- چند ثانیه روی پرچم بمونی

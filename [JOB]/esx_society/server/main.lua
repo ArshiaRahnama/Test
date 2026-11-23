@@ -1669,37 +1669,51 @@ end)
 
 local offerNext -- forward declare
 
-offerNext = function(job, reqid)
-	DispatchQueue[job] = DispatchQueue[job] or {}
-	local worker = table.remove(DispatchQueue[job], 1)
+-- Pops the next worker from the queue. In 'distance' mode (Boss UI -> Home -> dispatch priority) it pops the
+-- queued worker closest to `coords` (the customer) instead of the one who waited longest.
+local function popWorker(job, coords)
+	local queue = DispatchQueue[job]
+	if not queue or #queue == 0 then return nil end
+	local pickIndex = 1
+	if coords and GetDispatchMode and GetDispatchMode(job) == 'distance' then
+		local best
+		for i = 1, #queue do
+			local ped = GetPlayerPed(queue[i])
+			if ped and ped ~= 0 then
+				local d = #(GetEntityCoords(ped) - coords)
+				if not best or d < best then best, pickIndex = d, i end
+			end
+		end
+	end
+	return table.remove(queue, pickIndex)
+end
 
+offerNext = function(job, reqid, coords)
+	DispatchQueue[job] = DispatchQueue[job] or {}
+	local worker = popWorker(job, coords)
 	if not worker then
 		PendingOffer[job] = nil
 		return false
 	end
-
-	PendingOffer[job] = { worker = worker, reqid = reqid }
+	PendingOffer[job] = { worker = worker, reqid = reqid, coords = coords }
 	TriggerClientEvent('esx_society:dispatchOffer', worker, job)
-
 	SetTimeout(Config.DispatchOfferTimeout, function()
 		local offer = PendingOffer[job]
 		if offer and offer.worker == worker and offer.reqid == reqid then
 			PendingOffer[job] = nil
 			TriggerClientEvent('esx:showNotification', worker, 'Dispatch: ~r~Timeout~s~ - Az Saf Kharej Shodid')
-			offerNext(job, reqid)
+			offerNext(job, reqid, coords)
 		end
 	end)
-
 	return true
 end
-
 -- Called by esx_uniquejobs when a new request is created. Returns true if it
 -- was offered to someone (an accept/decline is now in flight), false if the
 -- queue was empty (caller should fall back to broadcasting to everyone).
-exports('offerToQueue', function(job, reqid)
-	return offerNext(job, reqid)
+-- `coords` (optional, the customer's position) is only used in 'distance' mode.
+exports('offerToQueue', function(job, reqid, coords)
+	return offerNext(job, reqid, coords)
 end)
-
 RegisterServerEvent('esx_society:dispatchOfferRespond')
 AddEventHandler('esx_society:dispatchOfferRespond', function(job, accepted)
 	local source = source
@@ -1720,7 +1734,7 @@ AddEventHandler('esx_society:dispatchOfferRespond', function(job, accepted)
 		end
 	else
 		TriggerClientEvent('esx:showNotification', source, 'Dispatch: ~r~Rad Shod~s~ - Az Saf Kharej Shodid')
-		offerNext(job, reqid)
+		offerNext(job, reqid, offer.coords)
 	end
 end)
 

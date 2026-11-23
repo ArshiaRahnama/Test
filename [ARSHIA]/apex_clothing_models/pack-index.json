@@ -1,0 +1,10 @@
+{
+  "_comment": "Written by apex_clothing/tools/convert.js - which model lives in this pack. Do not edit.",
+  "resource": "apex_clothing",
+  "groups": {
+    "male/jbib/mp_m_freemode_01_jbib_007_u": [
+      "models/male/jbib/mp_m_freemode_01_jbib_007_u.glb",
+      "models/male/jbib/mp_m_freemode_01_jbib_007_u_a.png"
+    ]
+  }
+}

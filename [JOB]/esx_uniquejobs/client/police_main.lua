@@ -2450,6 +2450,17 @@ function OpenBodySearchMenu_police(player)
 end
 
 function OpenFinev2Menu_police(Playerid)
+	-- Ghabz UI (esx_billing/client/ghabz.lua). The dialogs below stay as a fallback if esx_billing isn't running.
+	if GetResourceState('esx_billing') == 'started' then
+		local ok, opened = pcall(function()
+			return exports['esx_billing']:openGhabzMenu('police', function(target, reason, amount)
+				TriggerServerEvent('PdBillingWebhook', target, amount, reason)
+				if amount >= 100 then TriggerEvent("Quest-System:Billing") end
+			end)
+		end)
+		if ok and opened then return end
+	end
+
 
 			ESX.UI.Menu.Open(
           		'dialog', GetCurrentResourceName(), 'new_fine',

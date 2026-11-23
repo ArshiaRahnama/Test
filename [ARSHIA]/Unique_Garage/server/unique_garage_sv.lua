@@ -118,6 +118,7 @@ end
 
 -- park: client already deleted the car; this stores state/location/props atomically
 RegisterNetEvent('garage:parkVehicle', function(plate, zoneIndex, state)
+    if (tonumber(source) or 0) > 0 and GetPlayerRoutingBucket(tonumber(source)) ~= 0 then return end
     local src = source
     local xPlayer = ESX.GetPlayerFromId(src)
     if not xPlayer or type(state) ~= 'table' then return end
@@ -152,6 +153,7 @@ ESX.RegisterServerCallback('gangprop:carAvalible', function(source, cb, plate)
 end)
 
 RegisterNetEvent('garage:setVehicleState', function(plate, stored, damages)
+    if (tonumber(source) or 0) > 0 and GetPlayerRoutingBucket(tonumber(source)) ~= 0 then return end
     local src = source
     local xPlayer = ESX.GetPlayerFromId(src)
     if not xPlayer then return end
@@ -167,6 +169,7 @@ RegisterNetEvent('garage:setVehicleState', function(plate, stored, damages)
 end)
 
 RegisterNetEvent('garage:setvehiclelocation', function(plate, index)
+    if (tonumber(source) or 0) > 0 and GetPlayerRoutingBucket(tonumber(source)) ~= 0 then return end
     local src = source
     local xPlayer = ESX.GetPlayerFromId(src)
     if not xPlayer then return end
@@ -185,6 +188,7 @@ ESX.RegisterServerCallback('garage:checkRepairCost', function(source, cb, cost)
 end)
 
 RegisterNetEvent('garage:pay', function(cost)
+    if (tonumber(source) or 0) > 0 and GetPlayerRoutingBucket(tonumber(source)) ~= 0 then return end
     local src = source
     local xPlayer = ESX.GetPlayerFromId(src)
     cost = math.floor(tonumber(cost) or 0)
@@ -196,6 +200,7 @@ end)
 
 -- ---------------------------------------------------------------- transfer between garages
 RegisterNetEvent('garage:changeGarage', function(plate, zoneIndex, minutes)
+    if (tonumber(source) or 0) > 0 and GetPlayerRoutingBucket(tonumber(source)) ~= 0 then return end
     local src = source
     local xPlayer = ESX.GetPlayerFromId(src)
     if not xPlayer then return end
@@ -248,6 +253,7 @@ ESX.RegisterServerCallback('garage:getOutVehicles', function(source, cb, zoneTyp
 end)
 
 RegisterNetEvent('garage:payFine', function(plate)
+    if (tonumber(source) or 0) > 0 and GetPlayerRoutingBucket(tonumber(source)) ~= 0 then return end
     local src = source
     local xPlayer = ESX.GetPlayerFromId(src)
     if not xPlayer then return end
@@ -270,6 +276,7 @@ end)
 local pendingFind = {}  -- plate -> { src, cost, zoneType, timeout }
 
 RegisterNetEvent('garage:StartFindingVehicle', function(args)
+    if (tonumber(source) or 0) > 0 and GetPlayerRoutingBucket(tonumber(source)) ~= 0 then return end
     local src = source
     local xPlayer = ESX.GetPlayerFromId(src)
     if not xPlayer or type(args) ~= 'table' then return end

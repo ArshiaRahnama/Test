@@ -10,8 +10,8 @@ local Active, UntilEnd = false, 0           -- راند فعال؟
 local InCap, ZoneId, Zones = false, nil, {} -- داخل کپچر؟
 local Kills, Deaths = 0, 0
 local IsDead, InProtection, InZoneCircle = false, false, false
-local TeleportBusy, MenuOpen, ScoreboardOpen, TimerHidden, Dying = false, false, false, false, false
-local LastBoard, LastBoardAt = nil, 0
+local TeleportBusy, MenuOpen, TimerHidden, Dying = false, false, false, false
+local BoardHidden = false -- لیدربورد دائمی؛ با Q مثل F4 پنهان/نمایان میشه
 local Blips = {}
 local LastCoords = nil
 local LoopToken, ProtId, GhostRunning = 0, 0, false
@@ -320,6 +320,7 @@ local function Revive()
 end
 
 local StartLoops
+local PushBoard -- forward-declare: توی StartLoops استفاده میشه ولی پایین‌تر تعریف میشه
 
 RegisterNetEvent('capture:teleport')
 AddEventHandler('capture:teleport', function(zoneId)
@@ -390,7 +391,8 @@ local function Cleanup()
     nui('stopCaptureTimer')
     nui('hideDeathScreen')
     nui('hideHeal')
-    if ScoreboardOpen then ScoreboardOpen = false nui('closeScoreboard') end
+    BoardHidden = false
+    nui('capBoardHide')
     CloseMenu()
     SetNuiFocus(false, false)
     TriggerEvent('capture:inCapture', false)
@@ -523,15 +525,24 @@ StartLoops = function()
 
                 if not InZoneCircle then
                     DisableFire()
-                    if d2 < radius and not TeleportBusy and not IsDead then EdgeTeleport(zone) end
+                    if d2 < radius and not TeleportBusy and not IsDead then
+                        if CFG.EdgeRedrop == false then
+                            InZoneCircle = true -- بدون اسپان دوباره: فقط وارد دایره حساب میشی
+                            StartProtection()
+                        else
+                            EdgeTeleport(zone) -- sun: اولین ورود به دایره => دوباره از ارتفاع بالای لبه اسپان میشی
+                        end
+                    end
                 else
                     if d2 >= radius and not TeleportBusy and not IsDead then
-                        if LastCoords then
-                            SetEntityCoordsNoOffset(ped, LastCoords.x, LastCoords.y, LastCoords.z, false, false, false)
-                            if GetEntityHeightAboveGround(ped) < 5.0 then SetPedToRagdoll(ped, 5000, 5000, 0, false, false, false) end
-                        end
-                    else
-                        LastCoords = pc
+                        -- دیوار نامرئی دایره: روی لبه‌ی دایره و با همون ارتفاع نگه داشته میشی
+                        -- (قبلاً به آخرین نقطه‌ی داخل دایره با ارتفاع بالاتر برمی‌گشتی و حس «اسپان دوباره» میداد)
+                        local dx, dy = pc.x - zc.x, pc.y - zc.y
+                        local k = (radius - 3.0) / math.max(d2, 0.001)
+                        local v = GetEntityVelocity(ped)
+                        SetEntityCoordsNoOffset(ped, zc.x + dx * k, zc.y + dy * k, pc.z, false, false, false)
+                        SetEntityVelocity(ped, 0.0, 0.0, v.z) -- سرعت افقی به سمت بیرون صفر؛ سقوط ادامه داره
+                        if GetEntityHeightAboveGround(ped) < 5.0 then SetPedToRagdoll(ped, 2000, 2000, 0, false, false, false) end
                     end
                 end
 
@@ -554,6 +565,15 @@ StartLoops = function()
                 if not IsDead and IsEntityDead(ped) then OnDeath() end
             end
             Wait(0)
+        end
+    end)
+
+    -- لیدربورد دائمی: هر ۵ ثانیه
+    CreateThread(function()
+        Wait(1500)
+        while alive() do
+            PushBoard()
+            Wait(5000)
         end
     end)
 
@@ -620,26 +640,29 @@ end
 -- ----------------------------------------------------------------------------
 --  Keys: Q اسکوربورد | F4 تایمر | /die
 -- ----------------------------------------------------------------------------
-RegisterCommand('captureScoreboard', function()
-    if not InCap or not ESX then return end
-    if ScoreboardOpen then
-        ScoreboardOpen = false
-        return nui('closeScoreboard')
-    end
-    ScoreboardOpen = true
-    if LastBoard and GetGameTimer() - LastBoardAt < 5000 then return nui('openScoreboard', LastBoard) end
+-- لیدربورد دائمی (گنگ‌ها + بازیکن‌ها): هر ۵ ثانیه آپدیت میشه، با Q پنهان/نمایان
+PushBoard = function()
+    if not ESX or not InCap or BoardHidden then return end
     ESX.TriggerServerCallback('capture:getScoreboard', function(data)
-        if not ScoreboardOpen then return end
-        local families = {}
+        if not InCap or BoardHidden then return end
+        local fams, plys = {}, {}
         for _, g in ipairs(data and data.gangs or {}) do
-            families[#families + 1] = { name = g.name, capturedFlags = g.capturedFlags or {}, point = g.Score }
+            fams[#fams + 1] = { name = g.name, point = g.Score, flags = #(g.capturedFlags or {}) }
         end
-        LastBoard = { players = data and data.players or {}, families = families }
-        LastBoardAt = GetGameTimer()
-        nui('openScoreboard', LastBoard)
+        for _, p in ipairs(data and data.players or {}) do
+            plys[#plys + 1] = { name = p.name, kills = p.kills, deaths = p.deaths }
+        end
+        nui('capBoard', { families = fams, players = plys, myGang = MyGang(), myName = GetPlayerName(PlayerId()) })
     end)
+end
+
+RegisterCommand('captureScoreboard', function()
+    if not InCap then return end
+    BoardHidden = not BoardHidden
+    nui('capBoardVisible', { hidden = BoardHidden })
+    if not BoardHidden then PushBoard() end
 end, false)
-RegisterKeyMapping('captureScoreboard', 'Capture: Scoreboard', 'keyboard', 'Q')
+RegisterKeyMapping('captureScoreboard', 'Capture: Hide/Show Leaderboard', 'keyboard', 'Q')
 
 RegisterCommand('captureTimerToggle', function()
     if not InCap then return end

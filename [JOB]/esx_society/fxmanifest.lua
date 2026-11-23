@@ -18,6 +18,7 @@ server_scripts {
 	'locales/pl.lua',
 	'config.lua',
 	'server/main.lua',
+	'server/boss_ui.lua',
 	'@ox_lib/init.lua',
 	'@oxmysql/lib/MySQL.lua',
 	-- Society Pay (/pay + Boss Action)
@@ -35,6 +36,8 @@ client_scripts {
 	'locales/pl.lua',
 	'config.lua',
 	'client/main.lua',
+	'client/boss_ui.lua',
+	'client/boss_ui_more.lua',
 	'@ox_lib/init.lua',
 	'@oxmysql/lib/MySQL.lua',
 	-- Society Pay (/pay + Boss Action)
@@ -49,6 +52,9 @@ files {
 	'html/index.html',
 	'html/style.css',
 	'html/app.js',
+	'html/boss/index.html',
+	'html/boss/assets/*',
+	'html/boss/fonts/*',
 }
 
 shared_script '@scoreboard/html/images/Assets/*.png'

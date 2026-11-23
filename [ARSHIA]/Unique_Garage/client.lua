@@ -241,6 +241,7 @@ local function BuildFleetCamera(extra)
 end
 
 OpenMenuG = function(type, extra)
+	if (LocalPlayer.state.world or 0) ~= 0 then TriggerEvent('esx:showNotification', 'Dar World Nemitavanid Az In Bakhsh Estefade Konid.') return end
     local Callback = ESX.TriggerServerCallback
     LastGangJob = nil
     MenuContext = { kind = type }

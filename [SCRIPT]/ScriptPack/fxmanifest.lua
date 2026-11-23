@@ -86,6 +86,9 @@ files {
 	'html/ncz_hud/style.css',
 	'html/ncz_hud/script.js',
 	'html/ncz_hud/HeadingNowTrial-67Extrabold.ttf',
+	'html/changeworld/index.html',
+	'html/changeworld/style.css',
+	'html/changeworld/script.js',
 }
 
 server_exports {

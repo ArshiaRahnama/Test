@@ -13,7 +13,7 @@
 -- than the GTA on-screen keyboard and lets one dialog ask several questions.
 
 local POSITION = 'centerright'
-local COLOR_R, COLOR_G, COLOR_B = 255, 0, 66
+local COLOR_R, COLOR_G, COLOR_B = 101, 174, 255   -- Unique accent (Sunset orange = 245, 127, 23)
 local SIZE = 'size-125'
 
 local Menus, Builders, JustBuilt = {}, {}, {}

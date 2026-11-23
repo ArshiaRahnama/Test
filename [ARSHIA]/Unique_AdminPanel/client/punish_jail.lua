@@ -194,6 +194,13 @@ AddEventHandler("arshia_jail:factionjail", function(target)
             end
         end
         if canopen then
+            -- Jail UI (client/unique_jail_ui.lua): preset reasons + minutes per job. The dialogs below stay as a fallback.
+            if type(openJailMenu) == 'function' then
+                local opened = openJailMenu(PlayerData.job.name, nil, target, function(t, minutes, reason)
+                    TriggerServerEvent("arshia_jail:sendto", t, 'faction', minutes, reason, unjail)
+                end)
+                if opened then return end
+            end
             ESX.UI.Menu.Open('dialog', GetCurrentResourceName(), 'get_jail_reason', {
                 title = 'Dalile Jail'
             }, function(data, menu)

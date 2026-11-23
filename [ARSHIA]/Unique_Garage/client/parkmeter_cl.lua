@@ -299,6 +299,7 @@ CreateThread(function()
 end)
 
 function OnMeterPress(key, meter)
+    if (LocalPlayer.state.world or 0) ~= 0 then TriggerEvent('esx:showNotification', 'Dar World Nemitavanid Az In Bakhsh Estefade Konid.') return end
     local ped = PlayerPedId()
     if IsEntityDead(ped) then return end
     local vehicle = GetVehiclePedIsIn(ped, false)

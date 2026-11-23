@@ -27,6 +27,7 @@ shared_scripts {
 	'@essentialmode/locale.lua',
 	'locales/punish_en.lua',
 	'shared/punish_config.lua',
+	'shared/jailui_config.lua',
 	-- Report System (merged from standalone PNG_ReportSystem) - Config_Shared
 	-- is read by both server/report_main.lua and client/report_main.lua
 	'shared/report_shared_config.lua',
@@ -74,6 +75,7 @@ client_scripts {
 	-- migrated from Unique_Punishment
 	'client/punish_utils.lua',
 	'client/punish_jail.lua',
+	'client/unique_jail_ui.lua',
 	'client/punish_cs.lua',
 	-- Report System (merged from standalone PNG_ReportSystem, replaces the
 	-- old JayMenu-based esx_Report:* system that used to live in
@@ -230,6 +232,10 @@ files {
 	'html/ticket/*.html',
 	'html/ticket/css/*.css',
 	'html/ticket/js/*.js',
+	'html/jailui/*.html',
+	'html/jailui/*.css',
+	'html/jailui/*.js',
+	'html/admintag/logo.html',
 }
 
 -- FIX: server/aduty_commands.lua (migrated from esx_aduty) registers ~36 of its

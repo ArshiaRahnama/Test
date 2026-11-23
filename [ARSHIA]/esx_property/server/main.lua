@@ -167,6 +167,7 @@ end)
 
 RegisterServerEvent('esx_property:rentProperty')
 AddEventHandler('esx_property:rentProperty', function(propertyName, storage_data)
+	if (tonumber(source) or 0) > 0 and GetPlayerRoutingBucket(tonumber(source)) ~= 0 then return end
 	local xPlayer  = ESX.GetPlayerFromId(source)
 	local property = GetProperty(propertyName)
 	local rent     = ESX.Math.Round(property.price / 200)
@@ -176,6 +177,7 @@ end)
 
 RegisterServerEvent('esx_property:buyProperty')
 AddEventHandler('esx_property:buyProperty', function(propertyName, storage_data)
+	if (tonumber(source) or 0) > 0 and GetPlayerRoutingBucket(tonumber(source)) ~= 0 then return end
 	local xPlayer  = ESX.GetPlayerFromId(source)
 	local property = GetProperty(propertyName)
 
@@ -234,6 +236,7 @@ end)
 
 RegisterServerEvent('esx_property:getItem')
 AddEventHandler('esx_property:getItem', function(owner, type, item, count)
+	if (tonumber(source) or 0) > 0 and GetPlayerRoutingBucket(tonumber(source)) ~= 0 then return end
 	local _source      = source
 	local xPlayer      = ESX.GetPlayerFromId(_source)
 	local xPlayerOwner = ESX.GetPlayerFromIdentifier(owner)
@@ -354,6 +357,7 @@ end)
 
 RegisterServerEvent('esx_property:putItem')
 AddEventHandler('esx_property:putItem', function(owner, type, item, count)
+	if (tonumber(source) or 0) > 0 and GetPlayerRoutingBucket(tonumber(source)) ~= 0 then return end
 	local _source      = source
 	local xPlayer      = ESX.GetPlayerFromId(_source)
 	local xPlayerOwner = ESX.GetPlayerFromIdentifier(owner)

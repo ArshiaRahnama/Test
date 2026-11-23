@@ -32,6 +32,7 @@ local REPAIR_PRICE_PER_DAMAGE_POINT = 10 -- $ per point of (1000 - health), summ
 
 RegisterServerEvent("Unique_Garage:payhealth")
 AddEventHandler("Unique_Garage:payhealth", function(netId)
+	if (tonumber(source) or 0) > 0 and GetPlayerRoutingBucket(tonumber(source)) ~= 0 then return end
 	local xPlayer = ESX.GetPlayerFromId(source)
 	if not xPlayer then return end
 
@@ -73,6 +74,7 @@ AddEventHandler("Unique_Garage:payhealth", function(netId)
 end)
 
 ESX.RegisterServerCallback('Unique_Garage:storeVehicle', function(source, cb, vehicleProps)
+	if GetPlayerRoutingBucket(source) ~= 0 then cb(false) return end
 	local ownedCars = {}
 	local vehplate = vehicleProps.plate:match("^%s*(.-)%s*$")
 	local vehiclemodel = vehicleProps.model
@@ -215,6 +217,7 @@ RegisterNetEvent('Unique_Garage:saveProps', function(plate, props)
 end)
 
 RegisterNetEvent('SetVehState', function(stored, plate, table, job, playerjob)
+	if (tonumber(source) or 0) > 0 and GetPlayerRoutingBucket(tonumber(source)) ~= 0 then return end
 	if job == 'Job' then
 		if stored == 1 then
 			MySQL.Async.execute('UPDATE owned_vehicles SET stored = ?, fuel = ?, engine = ?, body = ?, vehicle = ?, job = ? WHERE plate = ?', {stored, table.fuel, table.engine, table.body, json.encode(table.props), playerjob, plate})
@@ -238,6 +241,7 @@ RegisterNetEvent('SetVehState', function(stored, plate, table, job, playerjob)
 end)
 
 RegisterNetEvent('SetVehState0', function(stored, plate)
+	if (tonumber(source) or 0) > 0 and GetPlayerRoutingBucket(tonumber(source)) ~= 0 then return end
 	MySQL.Async.execute('UPDATE owned_vehicles SET stored = ? WHERE plate = ?', {stored, plate})
 end)
 
@@ -288,6 +292,7 @@ ESX.RegisterServerCallback("isPrice", function(source, cb, money)
 end)
 
 RegisterNetEvent('SetVehImpound', function(plate, body, engine, fuel)
+	if (tonumber(source) or 0) > 0 and GetPlayerRoutingBucket(tonumber(source)) ~= 0 then return end
 
 	if IsVehicleOwned(plate) then
 		MySQL.Async.fetchAll('UPDATE owned_vehicles SET stored = ?, body = ?, engine = ?, fuel = ? WHERE plate = ?',{2, body, engine, fuel, plate})

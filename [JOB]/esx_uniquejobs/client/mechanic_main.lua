@@ -598,24 +598,36 @@ function PlayerBlingMenu_mechanic()
 
 					local playerid = data.current.value
 
-                    ESX.UI.Menu.Open('dialog', GetCurrentResourceName(), 'billing', {
-                        title = 'Qeymat'
-                    }, function(data2, menu2)
-                        local amount = tonumber(data2.value)
-                        if amount == nil then
+                    -- Ghabz UI (esx_billing/client/ghabz.lua): preset price list; the customer still has to confirm (esx_mechanicjob:blingrequest).
+                    local ghabzOpened = false
+                    if GetResourceState('esx_billing') == 'started' then
+                    	local ok, res = pcall(function()
+                    		return exports['esx_billing']:openGhabzMenu('mechanic', nil, tonumber(playerid), function(target, _, _, amount)
+                    			TriggerServerEvent("esx_mechanicjob:blingrequest", target, GetPlayerServerId(PlayerId()), amount)
+                    		end)
+                    	end)
+                    	ghabzOpened = ok and res
+                    end
+                    if not ghabzOpened then
+	                    ESX.UI.Menu.Open('dialog', GetCurrentResourceName(), 'billing', {
+	                        title = 'Qeymat'
+	                    }, function(data2, menu2)
+	                        local amount = tonumber(data2.value)
+	                        if amount == nil then
 
-                        else
-                            menu2.close()
-                            if closestPlayer == -1 or closestDistance > 3.0 then
-                                ESX.ShowNotification("No players nearby!")
-                            else
-                                TriggerServerEvent("esx_mechanicjob:blingrequest", playerid, GetPlayerServerId(PlayerId()), amount)
+	                        else
+	                            menu2.close()
+	                            if closestPlayer == -1 or closestDistance > 3.0 then
+	                                ESX.ShowNotification("No players nearby!")
+	                            else
+	                                TriggerServerEvent("esx_mechanicjob:blingrequest", playerid, GetPlayerServerId(PlayerId()), amount)
 
-                            end
-                        end
-                    end, function(data2, menu2)
-                        menu2.close()
-                    end)
+	                            end
+	                        end
+	                    end, function(data2, menu2)
+	                        menu2.close()
+	                    end)
+                    end
 
 					stopActiveMarker_mechanic()
 

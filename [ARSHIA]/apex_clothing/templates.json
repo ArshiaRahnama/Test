@@ -1,0 +1,25 @@
+{
+  "_comment": "Auto-updated by tools/convert.js. The NUI fetches this directly. Safe to edit by hand. \"res\" = the model pack resource that holds an entry's files (absent = this resource).",
+  "templates": [
+    {
+      "glb": "models/male/jbib/mp_m_freemode_01_jbib_007_u.glb",
+      "textures": [
+        {
+          "id": "a",
+          "txn": "jbib_diff_007_a_uni",
+          "png": "models/male/jbib/mp_m_freemode_01_jbib_007_u_a.png",
+          "w": 1704,
+          "h": 1704
+        }
+      ],
+      "txn": "jbib_diff_007_a_uni",
+      "id": "male_jbib_mp_m_freemode_01_jbib_007_u",
+      "name": "Jbib 007 U",
+      "gender": "male",
+      "component": 11,
+      "componentKey": "jbib",
+      "txd": "mp_m_freemode_01/jbib_diff_007_a_uni",
+      "res": "apex_clothing_models"
+    }
+  ]
+}

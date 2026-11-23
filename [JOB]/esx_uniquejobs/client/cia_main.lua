@@ -1248,6 +1248,16 @@ end
   end
 
 function OpenFineMenu_cia(player)
+	-- Ghabz UI (esx_billing/client/ghabz.lua). The category menus below stay as a fallback if esx_billing isn't running.
+	if GetResourceState('esx_billing') == 'started' then
+		local ok, opened = pcall(function()
+			return exports['esx_billing']:openGhabzMenu('cia', function()
+				TriggerEvent("Quest-System:Billing")
+			end, GetPlayerServerId(player))
+		end)
+		if ok and opened then return end
+	end
+
 
 	ESX.UI.Menu.Open('default', GetCurrentResourceName(), 'fine', {
 		title    = _U('fine'),

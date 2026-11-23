@@ -124,6 +124,10 @@ AddEventHandler('esx_society:registerBossExtra', function(society, id, label, ev
 end)
 
 function OpenBossMenu(society, close, options)
+	-- Boss UI (client/boss_ui.lua + boss_ui_more.lua) replaces this whole classic menu. Config.BossUI = false brings it back.
+	if Config.BossUI ~= false and type(OpenJobBossMenu) == 'function' then
+		if OpenJobBossMenu(society, close, options) then return end
+	end
 	local isBoss = nil
 	local options  = options or {}
 	if type(options) ~= 'table' then options = {} end -- defensive: a bad caller may pass a function here instead of a table

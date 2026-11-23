@@ -1,3 +1,6 @@
+-- how often LoadUser tried to store a missing license for a player (stops endless reload loops)
+local licenseAttempts = {}
+
 function LoadUser(identifier, source, licenseNotRequired)
     local Source = source
     db.retrieveUser(
@@ -112,6 +115,7 @@ function LoadUser(identifier, source, licenseNotRequired)
                         end)()
                     )
                     Identifiers[user.identifier] = source
+                    licenseAttempts[Source] = nil
 
                     -- #15: size the dedicated backpack band from the same
                     -- `equipped_backpack` column RecalculateMaxWeight reads
@@ -238,7 +242,14 @@ function LoadUser(identifier, source, licenseNotRequired)
                             discord = "N/A"
                         end
                     end
-                    if license then
+                    licenseAttempts[Source] = (licenseAttempts[Source] or 0) + 1
+                    if licenseAttempts[Source] > 3 then
+                        -- the license could not be stored after several tries: let the player in
+                        -- instead of reloading him forever
+                        licenseAttempts[Source] = nil
+                        print(("^3[essentialmode]^0 could not store the license of %s, loading without it"):format(tostring(user.identifier)))
+                        LoadUser(user.identifier, Source, true)
+                    elseif license then
                         db.updateUser(
                             user.identifier,
                             {license = license},
@@ -247,7 +258,9 @@ function LoadUser(identifier, source, licenseNotRequired)
                             end
                         )
                     else
-                        LoadUser(user.identifier, Source, false, true)
+                        -- no license identifier at all: this is not a normal FiveM client and retrying cannot
+                        -- change that. (It used to reload the player forever.)
+                        DropPlayer(Source, "license identifier was not found")
                     end
                 end
             else
@@ -353,34 +366,13 @@ AddEventHandler(
     end
 )
 
--- FIX (pre-existing, found while adding the slot map): this periodic save
--- passed `inventory = v.inventory` -- the RICH runtime table
--- ({name,count,label,limit,usable,rare,canRemove,weight}) -- straight into
--- the query as a Lua table, while LoadUser reads that column back with
--- json.decode and expects the compact {item=,count=} shape that
--- playerDropped writes. So every periodic autosave wrote either a failed
--- parameter or a structure the loader couldn't read, and the only save
--- that actually round-tripped was the one on disconnect. Now encodes the
--- same shape playerDropped does. Also persists `invslots` (#1/#2/#15).
+-- Periodic save of every online player (not called by default, ESX.SavePlayers is the 8 minute autosave).
 ESX.savePlayerMoney = function()
     for k, v in pairs(Users) do
         if Users[k] ~= nil then
-            local invent = {}
-            for _, entry in ipairs(v.inventory or {}) do
-                table.insert(invent, {item = entry.name, count = entry.count})
-            end
-
-            db.updateUser(
-                v.get("identifier"),
-                {
-                    money = v.money,
-                    bank = v.bank,
-                    position = v.lastPosition,
-                    inventory = json.encode(invent),
-                    invslots = json.encode(v.getSlots and v.getSlots() or {}),
-                    loadout = json.encode(v.loadout or {})
-                }
-            )
+            -- same data as every other save (ESX.BuildSaveData in functions.lua); the position is
+            -- left alone here, the autosave and the disconnect handler store it
+            db.updateUser(v.get("identifier"), ESX.BuildSaveData(v, true))
         end
         Wait(300)
     end

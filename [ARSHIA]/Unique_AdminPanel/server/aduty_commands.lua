@@ -287,7 +287,7 @@ TriggerEvent('es:addAdminCommand', 'changeworld', 1, function(source, args)
 	if args[1] then
 		if args[2] then
 			if tonumber(args[2]) >= 0 and tonumber(args[2]) < 100000 then
-				exports.ScriptPack:SetWorld(target, tonumber(args[2]), {force = true})
+				exports.ScriptPack:SetWorld(target, tonumber(args[2]), {force = true, by = source})
 				TriggerClientEvent('chatMessage', source, "[SYSTEM]", {255, 0, 0}, " ^0Shoma Word^1" .. GetPlayerName(target) .. "^0Ra Be^1" .. args[2] .. " ]")
 				PerformHttpRequest(WebHook, function(Error, Content, Head) end, 'POST', json.encode({username = "MidNight-lOG", content = " ```Admin : "..GetPlayerName(source).. " ID: " .. source .. "\nWord: " ..GetPlayerName(target).. "ID" .. target .. " Ra Change Dad Be \nWord ID: " ..args[2]..  " ```"}), {['Content-Type'] = 'application/json'})
 				TriggerClientEvent('esx:showNotification',target, "~r~Word Shoma Be Word~y~"..args[2].."~r~Chnage Shod")

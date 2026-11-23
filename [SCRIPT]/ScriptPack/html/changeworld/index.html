@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>World menu</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- always-on pill while the player is inside a world -->
+    <div id="badge" class="badge hidden">
+        <span class="badge-dot"></span>
+        <span id="badge-text" class="badge-text"></span>
+        <span id="badge-sub" class="badge-sub"></span>
+    </div>
+
+    <!-- announcement from the host + countdown (shown even while the menu is closed) -->
+    <div id="banner" class="banner hidden">
+        <div class="banner-from" id="banner-from"></div>
+        <div class="banner-text" id="banner-text"></div>
+    </div>
+    <div id="count" class="count hidden"></div>
+
+    <!-- the menu -->
+    <div id="app" class="app hidden">
+        <div class="panel" id="panel">
+            <header class="head">
+                <button class="x back hidden" id="btn-back" title="Back (Backspace)" aria-label="Back">
+                    <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>
+                </button>
+                <div class="head-mark" id="head-icon"></div>
+                <div class="head-text">
+                    <div class="head-title" id="title">World menu</div>
+                    <div class="head-sub" id="subtitle"></div>
+                </div>
+                <button class="x" id="btn-close" title="Close (Esc)" aria-label="Close">
+                    <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>
+                </button>
+            </header>
+
+            <div class="stats hidden" id="stats">
+                <div class="stat"><svg viewBox="0 0 24 24"><path d="M12 20s-7.5-4.6-7.5-10A4.2 4.2 0 0112 7.6 4.2 4.2 0 0119.5 10c0 5.4-7.5 10-7.5 10z"/></svg><div class="bar"><i id="bar-health" class="health"></i></div><span id="stat-health">100</span></div>
+                <div class="stat"><svg viewBox="0 0 24 24"><path d="M12 3l7 2.8v5.4c0 4.4-3 8-7 9.8-4-1.8-7-5.4-7-9.8V5.8z"/></svg><div class="bar"><i id="bar-armor" class="armor"></i></div><span id="stat-armor">0</span></div>
+            </div>
+
+            <nav class="tabs" id="tabs"></nav>
+
+            <div class="search" id="search-wrap">
+                <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>
+                <input id="search" type="text" placeholder="Search" autocomplete="off" spellcheck="false">
+            </div>
+
+            <div class="body">
+                <ul class="list" id="list" role="listbox"></ul>
+                <aside class="preview hidden" id="preview">
+                    <div class="preview-img" id="preview-img"></div>
+                    <div class="preview-name" id="preview-name"></div>
+                </aside>
+            </div>
+
+            <!-- inline input (spawn vehicle, give weapon ...) -->
+            <div class="prompt hidden" id="prompt">
+                <div class="prompt-title" id="prompt-title"></div>
+                <div id="prompt-fields">
+                    <input id="prompt-input" class="pi" type="text" autocomplete="off" spellcheck="false">
+                </div>
+                <div class="prompt-hint">Enter to confirm &middot; Esc to cancel</div>
+            </div>
+
+            <footer class="foot">
+                <span><kbd>&uarr;</kbd><kbd>&darr;</kbd> move</span>
+                <span><kbd>&larr;</kbd><kbd>&rarr;</kbd> / <kbd>1-9</kbd> tabs</span>
+                <span><kbd>Enter</kbd> select</span>
+                <span class="foot-alt hidden" id="foot-back"><kbd>&#9003;</kbd> back</span>
+                <span class="foot-alt hidden" id="foot-del"><kbd>Del</kbd> remove</span>
+                <span class="foot-alt hidden" id="foot-pin"><kbd>F</kbd> pin</span>
+                <span class="foot-alt" id="foot-search"><kbd>/</kbd> search all</span>
+                <span><kbd>Esc</kbd> close</span>
+            </footer>
+        </div>
+        <div class="toast hidden" id="toast"></div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

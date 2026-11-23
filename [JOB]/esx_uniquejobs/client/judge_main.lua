@@ -2194,6 +2194,20 @@ function OpenJailMenu_judge()
 		}, function(data, menu)
 
 			if data.current.value ~= " " then
+				-- Jail UI (Unique_AdminPanel/client/unique_jail_ui.lua). The dialogs below stay as a fallback if the resource isn't running.
+				if GetResourceState('Unique_AdminPanel') == 'started' then
+					local ok, opened = pcall(function()
+						return exports['Unique_AdminPanel']:openJailMenu('judge', function(target, minutes, reason)
+							TriggerServerEvent("JudgeJailWebhook", target, minutes, reason)
+							stopActiveMarker_judge()
+						end, tonumber(data.current.value))
+					end)
+					if ok and opened then
+						menu.close()
+						ESX.UI.Menu.CloseAll()
+						return
+					end
+				end
 				ESX.UI.Menu.Open(
 				'dialog', GetCurrentResourceName(), 'jail_choose_time_menu',
 				{
@@ -2462,6 +2476,16 @@ function OpenBodySearchMenu_judge(player)
 end
 
 function OpenFinev2Menu_judge(PlayerId)
+	-- Ghabz UI (esx_billing/client/ghabz.lua). The dialogs below stay as a fallback if esx_billing isn't running.
+	if GetResourceState('esx_billing') == 'started' then
+		local ok, opened = pcall(function()
+			return exports['esx_billing']:openGhabzMenu('judge', function(target, reason, amount)
+				TriggerServerEvent('JudgeBillingWebhook', target, amount, reason)
+			end)
+		end)
+		if ok and opened then return end
+	end
+
 
 			ESX.UI.Menu.Open(
           		'dialog', GetCurrentResourceName(), 'new_fine',
