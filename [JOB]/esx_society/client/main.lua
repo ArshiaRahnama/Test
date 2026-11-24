@@ -1,4 +1,21 @@
 ESX = nil
+
+-- Outfit editor for boss uniform management: esx_skin's own NUI menu (full
+-- component list). Replaces the removed vms_clothestore management store.
+-- Globals on purpose: boss_ui_more.lua (same resource) uses them too.
+local _outfitEditorOpen = false
+function OpenOutfitEditor()
+	_outfitEditorOpen = true
+	TriggerEvent('esx_skin:openMenu', function(data, menu)
+		_outfitEditorOpen = false
+		if menu then menu.close() end
+	end, function(data, menu)
+		_outfitEditorOpen = false
+	end)
+end
+function IsOutfitEditorOpen()
+	return _outfitEditorOpen
+end
 local InBossMenu	= false
 local LastPosition		= nil
 local jobPermissions   = {}
@@ -2134,17 +2151,14 @@ function OpenOutfitM(society)
 					end
 					Citizen.Wait(tonumber(100))
 					-- FIX (requested): was TriggerEvent(tostring(Config.MenuSkintrigger), source),
-					-- esx_skin's bare editor. Opens vms_clothestore's shop UI instead, in its
-					-- unrestricted management mode (every category, no blockedClothes, free -
-					-- see Config.ManagementStore in vms_clothestore/config.lua) so the boss can
-					-- pick from EVERYTHING, including items blockedClothes hides from the
-					-- public in the regular shops. The capture-current-skin-and-save-as-uniform
+					-- the old editor. Opens esx_skin's full NUI menu (all components,
+					-- no shop blacklist) through OpenOutfitEditor(). The capture-current-skin-and-save-as-uniform
 					-- logic below is unchanged - it only cared that the player's live skin
 					-- object had settled, not which UI got them there.
-					exports['vms_clothestore']:OpenManagementStore()
+					OpenOutfitEditor()
 					local WaitForSave = true
 					while WaitForSave do
-						if exports['vms_clothestore']:IsMenuOpened() then
+						if IsOutfitEditorOpen() then
 							Citizen.Wait(tonumber(1000))
 						else
 							TriggerEvent('skinchanger:getSkin', function(skin)
@@ -2199,17 +2213,14 @@ function OpenOutfitF(society)
 					end
 					Citizen.Wait(tonumber(100))
 					-- FIX (requested): was TriggerEvent(tostring(Config.MenuSkintrigger), source),
-					-- esx_skin's bare editor. Opens vms_clothestore's shop UI instead, in its
-					-- unrestricted management mode (every category, no blockedClothes, free -
-					-- see Config.ManagementStore in vms_clothestore/config.lua) so the boss can
-					-- pick from EVERYTHING, including items blockedClothes hides from the
-					-- public in the regular shops. The capture-current-skin-and-save-as-uniform
+					-- the old editor. Opens esx_skin's full NUI menu (all components,
+					-- no shop blacklist) through OpenOutfitEditor(). The capture-current-skin-and-save-as-uniform
 					-- logic below is unchanged - it only cared that the player's live skin
 					-- object had settled, not which UI got them there.
-					exports['vms_clothestore']:OpenManagementStore()
+					OpenOutfitEditor()
 					local WaitForSave = true
 					while WaitForSave do
-						if exports['vms_clothestore']:IsMenuOpened() then
+						if IsOutfitEditorOpen() then
 							Citizen.Wait(tonumber(1000))
 						else
 							TriggerEvent('skinchanger:getSkin', function(skin)
@@ -2263,17 +2274,14 @@ function OpenOutfitMdivision(society)
 					end
 					Citizen.Wait(tonumber(100))
 					-- FIX (requested): was TriggerEvent(tostring(Config.MenuSkintrigger), source),
-					-- esx_skin's bare editor. Opens vms_clothestore's shop UI instead, in its
-					-- unrestricted management mode (every category, no blockedClothes, free -
-					-- see Config.ManagementStore in vms_clothestore/config.lua) so the boss can
-					-- pick from EVERYTHING, including items blockedClothes hides from the
-					-- public in the regular shops. The capture-current-skin-and-save-as-uniform
+					-- the old editor. Opens esx_skin's full NUI menu (all components,
+					-- no shop blacklist) through OpenOutfitEditor(). The capture-current-skin-and-save-as-uniform
 					-- logic below is unchanged - it only cared that the player's live skin
 					-- object had settled, not which UI got them there.
-					exports['vms_clothestore']:OpenManagementStore()
+					OpenOutfitEditor()
 					local WaitForSave = true
 					while WaitForSave do
-						if exports['vms_clothestore']:IsMenuOpened() then
+						if IsOutfitEditorOpen() then
 							Citizen.Wait(tonumber(1000))
 						else
 							TriggerEvent('skinchanger:getSkin', function(skin)
@@ -2327,17 +2335,14 @@ function OpenOutfitFdivision(society)
 
 					Citizen.Wait(tonumber(100))
 					-- FIX (requested): was TriggerEvent(tostring(Config.MenuSkintrigger), source),
-					-- esx_skin's bare editor. Opens vms_clothestore's shop UI instead, in its
-					-- unrestricted management mode (every category, no blockedClothes, free -
-					-- see Config.ManagementStore in vms_clothestore/config.lua) so the boss can
-					-- pick from EVERYTHING, including items blockedClothes hides from the
-					-- public in the regular shops. The capture-current-skin-and-save-as-uniform
+					-- the old editor. Opens esx_skin's full NUI menu (all components,
+					-- no shop blacklist) through OpenOutfitEditor(). The capture-current-skin-and-save-as-uniform
 					-- logic below is unchanged - it only cared that the player's live skin
 					-- object had settled, not which UI got them there.
-					exports['vms_clothestore']:OpenManagementStore()
+					OpenOutfitEditor()
 					local WaitForSave = true
 					while WaitForSave do
-						if exports['vms_clothestore']:IsMenuOpened() then
+						if IsOutfitEditorOpen() then
 							Citizen.Wait(tonumber(1000))
 						else
 							TriggerEvent('skinchanger:getSkin', function(skin)

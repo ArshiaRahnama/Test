@@ -1376,11 +1376,14 @@ end
 
 AddEventHandler('onResourceStop', function(resourceName)
 	if (GetCurrentResourceName() == resourceName) then
-		DetachEntity(prop, false, false)
-		DeleteEntity(prop)
+		if prop and DoesEntityExist(prop) then
+			DetachEntity(prop, false, false)
+			DeleteEntity(prop)
+		end
 		ClearPedTasks(PlayerPedId())
 		prop = nil
-		ESX.UI.Menu.CloseAll()
+		-- ESX can still be nil when the resource stops early (e.g. a failed start / restart)
+		if ESX and ESX.UI and ESX.UI.Menu then ESX.UI.Menu.CloseAll() end
 	end
 end)
 

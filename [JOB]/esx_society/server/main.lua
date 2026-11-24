@@ -1080,6 +1080,15 @@ function clampRank(job, rank)
 	return rank
 end
 
+function resolveBossSociety(xPlayer, requested)
+	-- the boss UI edits the society it is open on; government may edit any society, everybody else only their own
+	local own = xPlayer.job.name
+	if type(requested) == 'string' and requested ~= '' and Jobs[requested] and (requested == own or own == 'government') then
+		return requested
+	end
+	return own
+end
+
 function isPlayerBoss(playerId, job)
 	local xPlayer = ESX.GetPlayerFromId(playerId)
 	if not xPlayer or not xPlayer.job then return false end
@@ -1159,7 +1168,7 @@ ESX.RegisterServerCallback('esx_society:renameGrade', function(source, cb, grade
 				{["name"] = "👤 **Player Name**", ["value"] = xPlayer.name, ["inline"] = false},
 				{["name"] = "🎮 **Steam Hex**", ["value"] = xPlayer.identifier, ["inline"] = false},
 				{["name"] = "🌍 **Server ID**", ["value"] = xPlayer.source, ["inline"] = false},
-				{["name"] = "🔠 **Data**", ["value"] = "Rank ("..result[1].label.." {"..grade.."}) Ra Be ("..name..") Tagir Dad", ["inline"] = false},
+				{["name"] = "🔠 **Data**", ["value"] = "Rank ("..(result and result[1] and result[1].label or tostring(grade)).." {"..grade.."}) Ra Be ("..name..") Tagir Dad", ["inline"] = false},
 			}
 
 			JobsLog('Change Grade Name', true, xPlayer.job.name, 'option', messagess)
@@ -1252,10 +1261,10 @@ ESX.RegisterServerCallback('esx_society:newGrade', function(source, cb, job)
 end)
 
 RegisterServerEvent('esx_society:deleteGrade')
-AddEventHandler('esx_society:deleteGrade', function(grade)
+AddEventHandler('esx_society:deleteGrade', function(grade, society)
 	local source = source
 	local xPlayer = ESX.GetPlayerFromId(source)
-	local job = xPlayer.job.name
+	local job = resolveBossSociety(xPlayer, society)
 
 	if not isPlayerBoss(source, job) then
 		print(('esx_society: %s attempted to deleteGrade without being boss!'):format(xPlayer.identifier))
@@ -1345,10 +1354,10 @@ local function swapGradeContent(job, gradeA, gradeB, cb)
 end
 
 RegisterServerEvent('esx_society:upgradeGrade')
-AddEventHandler('esx_society:upgradeGrade', function(grade)
+AddEventHandler('esx_society:upgradeGrade', function(grade, society)
 	local source = source
 	local xPlayer = ESX.GetPlayerFromId(source)
-	local job = xPlayer.job.name
+	local job = resolveBossSociety(xPlayer, society)
 
 	if not isPlayerBoss(source, job) then
 		print(('esx_society: %s attempted to upgradeGrade without being boss!'):format(xPlayer.identifier))
@@ -1373,10 +1382,10 @@ AddEventHandler('esx_society:upgradeGrade', function(grade)
 end)
 
 RegisterServerEvent('esx_society:downgradeGrade')
-AddEventHandler('esx_society:downgradeGrade', function(grade)
+AddEventHandler('esx_society:downgradeGrade', function(grade, society)
 	local source = source
 	local xPlayer = ESX.GetPlayerFromId(source)
-	local job = xPlayer.job.name
+	local job = resolveBossSociety(xPlayer, society)
 
 	if not isPlayerBoss(source, job) then
 		print(('esx_society: %s attempted to downgradeGrade without being boss!'):format(xPlayer.identifier))
@@ -1401,10 +1410,10 @@ AddEventHandler('esx_society:downgradeGrade', function(grade)
 end)
 
 RegisterServerEvent('esx_society:toggleBoss')
-AddEventHandler('esx_society:toggleBoss', function(grade, makeBoss)
+AddEventHandler('esx_society:toggleBoss', function(grade, makeBoss, society)
 	local source = source
 	local xPlayer = ESX.GetPlayerFromId(source)
-	local job = xPlayer.job.name
+	local job = resolveBossSociety(xPlayer, society)
 
 	if not isPlayerBoss(source, job) then
 		print(('esx_society: %s attempted to toggleBoss without being boss!'):format(xPlayer.identifier))
@@ -1459,10 +1468,10 @@ AddEventHandler('esx_society:toggleBoss', function(grade, makeBoss)
 end)
 
 local function togglePermColumn(columnName, logTitle)
-	return function(grade, state)
+	return function(grade, state, society)
 		local source = source
 		local xPlayer = ESX.GetPlayerFromId(source)
-		local job = xPlayer.job.name
+		local job = resolveBossSociety(xPlayer, society)
 
 		if not isPlayerBoss(source, job) then
 			print(('esx_society: %s attempted to toggle %s without being boss!'):format(xPlayer.identifier, columnName))
@@ -1521,10 +1530,10 @@ ESX.RegisterServerCallback('esx_society:getJobPerm', function(source, cb)
 end)
 
 RegisterServerEvent('esx_society:togglePermKey')
-AddEventHandler('esx_society:togglePermKey', function(grade, key, state)
+AddEventHandler('esx_society:togglePermKey', function(grade, key, state, society)
 	local source = source
 	local xPlayer = ESX.GetPlayerFromId(source)
-	local job = xPlayer.job.name
+	local job = resolveBossSociety(xPlayer, society)
 
 	if not isPlayerBoss(source, job) then
 		print(('esx_society: %s attempted to togglePermKey without being boss!'):format(xPlayer.identifier))
@@ -2772,7 +2781,7 @@ ESX.RegisterServerCallback('esx_society:setSocietyItemPerm', function(source, cb
 				{["name"] = "🎮 **Steam Hex**", ["value"] = xPlayer.identifier, ["inline"] = false},
 				{["name"] = "🌍 **Server ID**", ["value"] = xPlayer.source, ["inline"] = false},
 				{["name"] = "📦 **Item Name**", ["value"] = ItemLabel, ["inline"] = false},
-				{["name"] = "🔠 **Data**", ["value"] = IsNull.ChekAZ.." Rank ("..result[1].label..")-{"..rank.."} "..IsNull.Chekdad, ["inline"] = false},
+				{["name"] = "🔠 **Data**", ["value"] = IsNull.ChekAZ.." Rank ("..(result and result[1] and result[1].label or tostring(rank))..")-{"..rank.."} "..IsNull.Chekdad, ["inline"] = false},
 			}
 
 
@@ -2829,7 +2838,7 @@ ESX.RegisterServerCallback('esx_society:setSocietyWeapPerm', function(source, cb
 				{["name"] = "🎮 **Steam Hex**", ["value"] = xPlayer.identifier, ["inline"] = false},
 				{["name"] = "🌍 **Server ID**", ["value"] = xPlayer.source, ["inline"] = false},
 				{["name"] = "🔫 **Weapon Name**", ["value"] = ESX.GetWeaponLabel(choice), ["inline"] = false},
-				{["name"] = "🔠 **Data**", ["value"] = IsNull.ChekAZ.." Rank ("..result[1].label..")-{"..rank.."} "..IsNull.Chekdad, ["inline"] = false},
+				{["name"] = "🔠 **Data**", ["value"] = IsNull.ChekAZ.." Rank ("..(result and result[1] and result[1].label or tostring(rank))..")-{"..rank.."} "..IsNull.Chekdad, ["inline"] = false},
 			}
 
 
@@ -2887,7 +2896,7 @@ ESX.RegisterServerCallback('esx_society:setSocietyVehPerm', function(source, cb,
 				{["name"] = "🎮 **Steam Hex**", ["value"] = xPlayer.identifier, ["inline"] = false},
 				{["name"] = "🌍 **Server ID**", ["value"] = xPlayer.source, ["inline"] = false},
 				{["name"] = "🚗 **Vehicle Name**", ["value"] = vehlabel, ["inline"] = false},
-				{["name"] = "🔠 **Data**", ["value"] = IsNull.ChekAZ.." Rank ("..result[1].label..")-{"..rank.."} "..IsNull.Chekdad, ["inline"] = false},
+				{["name"] = "🔠 **Data**", ["value"] = IsNull.ChekAZ.." Rank ("..(result and result[1] and result[1].label or tostring(rank))..")-{"..rank.."} "..IsNull.Chekdad, ["inline"] = false},
 			}
 
 
@@ -2962,7 +2971,7 @@ ESX.RegisterServerCallback('esx_society:setSocietyHeliPerm', function(source, cb
 				{["name"] = "🎮 **Steam Hex**", ["value"] = xPlayer.identifier, ["inline"] = false},
 				{["name"] = "🌍 **Server ID**", ["value"] = xPlayer.source, ["inline"] = false},
 				{["name"] = "🚁 **Heli Name**", ["value"] = heliLabel, ["inline"] = false},
-				{["name"] = "🔠 **Data**", ["value"] = IsNull.ChekAZ.." Rank ("..result[1].label..")-{"..rank.."} "..IsNull.Chekdad, ["inline"] = false},
+				{["name"] = "🔠 **Data**", ["value"] = IsNull.ChekAZ.." Rank ("..(result and result[1] and result[1].label or tostring(rank))..")-{"..rank.."} "..IsNull.Chekdad, ["inline"] = false},
 			}
 
 
@@ -3010,14 +3019,14 @@ ESX.RegisterServerCallback('esx_society:setUniform', function(source, cb, job, r
 		end)
 	end
 	local result = MySQL.Sync.fetchAll('SELECT label FROM job_grades WHERE job_name = @job_name AND grade = @grade', {
-		['@job_name'] = xPlayer.job.name,
+		['@job_name'] = job,
 		['@grade'] = rank
 	})
 	messagess = {
 		{["name"] = "👤 **Player Name**", ["value"] = xPlayer.name, ["inline"] = false},
 		{["name"] = "🎮 **Steam Hex**", ["value"] = xPlayer.identifier, ["inline"] = false},
 		{["name"] = "🌍 **Server ID**", ["value"] = xPlayer.source, ["inline"] = false},
-		{["name"] = "🔠 **Data**", ["value"] = "Lebas Rank ("..result[1].label..")-{"..rank.."} Ra Taghir Dad", ["inline"] = false},
+		{["name"] = "🔠 **Data**", ["value"] = "Lebas Rank ("..(result and result[1] and result[1].label or tostring(rank))..")-{"..rank.."} Ra Taghir Dad", ["inline"] = false},
 	}
 	if gender == 'female' then
 		names = 'Female'

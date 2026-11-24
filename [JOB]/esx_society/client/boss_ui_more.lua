@@ -210,11 +210,15 @@ local function outfitSession(society, kind, target, sex)
     if skinjob ~= nil then TriggerEvent('skinchanger:loadClothes', default, skinjob)
     else TriggerEvent('skinchanger:loadSkin', default) end
     Wait(100)
-    exports['vms_clothestore']:OpenManagementStore()
+    OpenOutfitEditor()
     while true do
         Wait(1000)
-        if not exports['vms_clothestore']:IsMenuOpened() then
-            local skin = sc('esx_skin:getPlayerSkin')
+        if not IsOutfitEditorOpen() then
+            -- current (edited) skin from skinchanger; esx_skin:getPlayerSkin would
+            -- return the boss's saved DB skin, not the uniform just edited.
+            local skinP = promise.new()
+            TriggerEvent('skinchanger:getSkin', function(s) skinP:resolve(s) end)
+            local skin = Citizen.Await(skinP)
             if kind == 'grade' then sc('esx_society:setUniform', society, tonumber(target), sex, skin)
             else sc('esx_society:setUniformdivision', society, target, sex, skin) end
             break

@@ -3636,7 +3636,7 @@ function mainThreads_cid()
 	Citizen.CreateThread(function()
 		while PlayerData.job and IsJobOrGov('cid') do
 
-			Citizen.Wait(3)
+			Citizen.Wait(0)
 
 			if PlayerData.job ~= nil and IsJobOrGov('cid') and PlayerData.job.grade >= 0 then
 
@@ -3685,6 +3685,7 @@ function mainThreads_cid()
 
 					for i=1, #v.BossActions, 1 do
 						if not v.BossActions[i].disabled and GetDistanceBetweenCoords(GetEntityCoords(PlayerPedId()),  v.BossActions[i].x,  v.BossActions[i].y,  v.BossActions[i].z,  true) < 5 then
+						canSleep = false
 						DrawMarker(29, v.BossActions[i].x, v.BossActions[i].y, v.BossActions[i].z, 0.0, 0.0, 0.0, 0, 0.0, 0.0, 1.0, 1.0, 1.0, 255, 255, 255, 100, false, true, 2, false, false, false, false)
 						end
 					end

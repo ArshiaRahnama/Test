@@ -52,6 +52,18 @@ end)
 -- extras registry: boss_ui_more.lua (or any other script) can add buttons to the Home tab's extras card.
 --   BossUI.addExtra({ key, label = string | function(ctx), show = function(ctx) -> bool, run = function(ctx), reopen = bool })
 BossUI = { extras = {} }
+-- which tab each extra button belongs to (anything not listed stays on the Home tab)
+BossUI.extraSection = {
+    paintball    = 'ranks',      -- paintball minimum rank
+    org_pads     = 'ranks',      -- pads (ped models) per rank
+    org_options  = 'ranks',      -- per-rank organisation options
+    org_recruit  = 'members',    -- recruit system
+    div_members  = 'divisions',
+    div_edit     = 'divisions',
+    div_vehicles = 'vehicles',
+    div_helis    = 'vehicles',
+    rank_helis   = 'vehicles',
+}
 local lastCtx = nil
 function BossUI.addExtra(def) BossUI.extras[#BossUI.extras + 1] = def end
 
@@ -75,8 +87,14 @@ function BossUI.flow(fn)
     CreateThread(function()
         local ok, err = pcall(fn, soc)
         if not ok then print(('^1[esx_society]^0 boss UI flow error: %s'):format(tostring(err))) end
+        -- never leave an ox_lib menu behind, and always start the reopen from a clean state
+        pcall(function()
+            if lib and lib.getOpenContextMenu and lib.getOpenContextMenu() then lib.hideContext(false) end
+        end)
         Wait(150)
-        OpenJobBossMenu(soc, close, opts)
+        uiOpen = false
+        local okOpen, errOpen = pcall(OpenJobBossMenu, soc, close, opts)
+        if not okOpen then print(('^1[esx_society]^0 boss UI reopen error: %s'):format(tostring(errOpen))) end
     end)
 end
 
@@ -179,6 +197,18 @@ local function buildData(soc, options)
             result.extras[#result.extras + 1] = { key = def.key, label = label }
         end
     end
+    -- each extra button lives in its own tab instead of the Home card. Only when that tab is
+    -- visible for this player (otherwise the button would vanish) - else it stays on Home.
+    local tabVisible = {
+        members   = result.canManageMember,
+        ranks     = result.canManageGrade,
+        vehicles  = result.canVehicle,
+        divisions = result.canDivision,
+    }
+    for _, ex in ipairs(result.extras) do
+        local sec = BossUI.extraSection[ex.key]
+        if sec and tabVisible[sec] then ex.section = sec end
+    end
     return result
 end
 
@@ -193,11 +223,16 @@ function OpenJobBossMenu(soc, close, options)
 
     currentSociety, currentOptions, currentClose = soc, options, close
     CreateThread(function()
-        local data = buildData(soc, options)
+        local okBuild, data = pcall(buildData, soc, options)
+        if not okBuild then
+            print(('^1[esx_society]^0 boss UI buildData error: %s'):format(tostring(data)))
+            return ESX.ShowNotification('~r~Boss menu: khata dar load (F8 ra bebinid)')
+        end
         if not data.ok then
             return ESX.ShowNotification('~r~Boss menu: etelaate job paida nashod')
         end
         data.type, data.colors = 'show', menuColors
+        data.tab, BossUI.nextTab = BossUI.nextTab, nil
         uiOpen = true
         SetNuiFocus(true, true)
         nui(data)
@@ -373,13 +408,13 @@ end)
 RegisterNUICallback('setRankPerm', function(data, cb)
     local state = data.state and true or false
     if data.kind == 'boss' then
-        TriggerServerEvent('esx_society:toggleBoss', tonumber(data.grade), state)
+        TriggerServerEvent('esx_society:toggleBoss', tonumber(data.grade), state, currentSociety)
     elseif data.kind == 'employee' then
-        TriggerServerEvent('esx_society:toggleEmployeeManagementPerm', tonumber(data.grade), state)
+        TriggerServerEvent('esx_society:toggleEmployeeManagementPerm', tonumber(data.grade), state, currentSociety)
     elseif data.kind == 'custom' then
-        TriggerServerEvent('esx_society:toggleVehicleCustomPerm', tonumber(data.grade), state)
+        TriggerServerEvent('esx_society:toggleVehicleCustomPerm', tonumber(data.grade), state, currentSociety)
     else
-        TriggerServerEvent('esx_society:togglePermKey', tonumber(data.grade), data.key, state)
+        TriggerServerEvent('esx_society:togglePermKey', tonumber(data.grade), data.key, state, currentSociety)
     end
     cb('ok')
 end)
@@ -388,13 +423,13 @@ RegisterNUICallback('addGrade', function(_, cb)
     ESX.TriggerServerCallback('esx_society:newGrade', function() cb('ok') end, currentSociety)
 end)
 RegisterNUICallback('deleteGrade', function(data, cb)
-    TriggerServerEvent('esx_society:deleteGrade', tonumber(data.grade)); cb('ok')
+    TriggerServerEvent('esx_society:deleteGrade', tonumber(data.grade), currentSociety); cb('ok')
 end)
 RegisterNUICallback('upgradeGrade', function(data, cb)
-    TriggerServerEvent('esx_society:upgradeGrade', tonumber(data.grade)); cb('ok')
+    TriggerServerEvent('esx_society:upgradeGrade', tonumber(data.grade), currentSociety); cb('ok')
 end)
 RegisterNUICallback('downgradeGrade', function(data, cb)
-    TriggerServerEvent('esx_society:downgradeGrade', tonumber(data.grade)); cb('ok')
+    TriggerServerEvent('esx_society:downgradeGrade', tonumber(data.grade), currentSociety); cb('ok')
 end)
 RegisterNUICallback('renameGrade', function(data, cb)
     ESX.TriggerServerCallback('esx_society:renameGrade', function() cb('ok') end, tonumber(data.grade), tostring(data.name))
@@ -581,6 +616,11 @@ end)
 RegisterNUICallback('bossExtra', function(data, cb)
     cb('ok')
     local key, society = tostring(data.key or ''), currentSociety
+    -- reopen on the tab the button was pressed in (only for extras that bring the menu back)
+    BossUI.nextTab = nil
+    for _, def in ipairs(BossUI.extras) do
+        if def.key == key and def.reopen then BossUI.nextTab = data.section end
+    end
     hideUI()
     if key == 'pay' then
         if type(OpenPayBossPanel) == 'function' then OpenPayBossPanel() end
