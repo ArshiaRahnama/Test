@@ -2037,10 +2037,7 @@ AddEventHandler(
 )
 
 Citizen.CreateThread(function()
-	TriggerEvent('chat:addSuggestion', '/engine', 'On / Off Kardan Engine', {})
-			RegisterCommand('engine', function()
-				toggleEngine()
-			end, false)
+	-- /engine is registered by [SCRIPT]/vehcontrol (it was registered here too: both toggled the engine = it did nothing)
 		while true do
 			Citizen.Wait(1)
 			local vehicle = GetVehiclePedIsIn(PlayerPedId(), false)

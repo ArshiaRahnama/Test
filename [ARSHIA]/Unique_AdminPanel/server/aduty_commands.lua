@@ -407,24 +407,7 @@ end, function(source, args, user)
 	TriggerClientEvent('chat:addMessage', source, { args = { '^1SYSTEM', 'Insufficient Permissions.' } })
 end, {help = "add car for gang", params = {{name = "Gang", help = "Esm Gang"}, {name = "Pelak", help = "Mitonid in bakhsh ro khali bezarid"}}})
 
-RegisterCommand('ncz', function(source, args)
-	local xPlayer = ESX.GetPlayerFromId(source)
-
-	if xPlayer.permission_level >= 9 then
-		ncz = not ncz
-		TriggerClientEvent('esx:ncz', -1, ncz)
-		if ncz == true then
-			TriggerClientEvent('chatMessage', source, "[SYSTEM]", {255, 0, 0}, "NCZ Enabled!")
-			TriggerClientEvent("chat:addMessage", -1, { template = '<div style="padding: 0.5vw; margin: 0.7vw; background-color: rgba(205, 216, 100, 0.6); border-radius: 3px;"><i class="fa fa-newspaper-o"></i> SafeMode:<br> Halat SafeMode Faal Shod!</div>', args = {"Console", msg}})
-		else
-			TriggerClientEvent('chatMessage', source, "[SYSTEM]", {255, 0, 0}, "NCZ Disabled!")
-			TriggerClientEvent("chat:addMessage", -1, { template = '<div style="padding: 0.5vw; margin: 0.7vw; background-color: rgba(205, 216, 100, 0.6); border-radius: 3px;"><i class="fa fa-newspaper-o"></i> SafeMode:<br> Halat SafeMode GheyreFaal Shod!</div>', args = {"Console", msg}})
-		end
-	else
-		TriggerClientEvent('chatMessage', source, "[SYSTEM]", {255, 0, 0}, " Shoma ^8Admin ^0Nistid!")
-	end
-
-end)
+-- /ncz lives in Unique_Garage/server/addcar_sv.lua (it was registered twice: both handlers toggled their own state and broadcast esx:ncz)
 
 TriggerEvent(
     "es:addAdminCommand",

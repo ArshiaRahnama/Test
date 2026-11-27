@@ -1,0 +1,23 @@
+FINAL (on top of commit 2b10ba0) - copy these 4 files over the repo at the same paths
+
+FIXED: scripts that existed twice and fought each other
+1. /ncz  registered by Unique_AdminPanel AND Unique_Garage -> state desync + double chat.  Kept: Unique_Garage.
+   [ARSHIA]/Unique_AdminPanel/server/aduty_commands.lua
+2. /removecar registered by Unique_Garage AND ScriptPack -> 2nd copy said "car not found" after the 1st deleted it.  Kept: Unique_Garage.
+   [SCRIPT]/ScriptPack/server/rc-sv.lua
+3. /engine registered by ScriptPack AND vehcontrol -> both toggled the engine = no effect.  Kept: vehcontrol.
+   [SCRIPT]/ScriptPack/client/vehiclecontrol-cl.lua
+4. addDonationCar / ChangeCarPlate / RemoveCar / addGangCar handled by essentialmode AND Unique_Garage -> every event ran twice.  Kept: Unique_Garage.
+   [BASE]/essentialmode/client/main.lua
+
+NOT FIXABLE FROM THE REPO (needs you)
+A. Unique_inventory/fxmanifest.lua loads 3 files that were never committed:
+     shared/weapon-life.lua, client/weapon-life.lua, server/weapons.lua   ("shots / health / broken weapon / cleaner")
+   shared/crafting.lua and client/00_compat.lua depend on the WeaponLife table defined there.
+   This is very likely what blocks shooting: robdebug showed attack pressed, aiming, controls enabled, ammo constant, shotFrames=0.
+   -> Check the weapon's health % in the inventory. If 0 / broken: repair or give a NEW weapon and test again.
+   -> Push the 3 files so they can be reviewed. (I did NOT recreate them: a stub would overwrite your real files.)
+B. interact_sound + xsound (InteractSound emulator) both handle InteractSound_* -> every sound plays twice. Delete [SCRIPT]/interact_sound and test.
+C. Folder [sun_in_yek_server_dighe_hast] is not started but 25 of its resource names equal started ones (ox_lib, ox_target, essentialmode, chat...). Move it out of resources/.
+
+Test after copying: /ncz -> one message; /engine and /removecar once each; admin add-car event -> one vehicle.
