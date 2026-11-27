@@ -572,9 +572,9 @@ end
 function getImage(name, temp)
     local clotheData = exports['Unique_Clothe']:getClotheData(name)
     if clotheData then
-        return exports['Unique_Clothe']:getImageUrl(name)
+        return 'http://cdn.sunrp.ir/clothes/'.. clotheData.type ..'/'.. clotheData.name .. '.png'
     elseif string.find(name,'pack_') then
-        return exports['Unique_Clothe']:getImageUrl(name)
+        return 'http://cdn.sunrp.ir/clothes/menu/box.png'
     else
         if name:find('key_') then
             name = 'key'

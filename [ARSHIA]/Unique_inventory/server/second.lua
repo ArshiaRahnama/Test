@@ -156,6 +156,43 @@ AddEventHandler('playerDropped', function()
     for _, set in pairs(subscribers) do set[src] = nil end
 end)
 
+function UniqueStash.providerFor(key)
+    for prefix, provider in pairs(UniqueStash.providers) do
+        if type(key) == 'string' and key:sub(1, #prefix) == prefix then return provider end
+    end
+end
+UniqueStash.broadcast = function(key) broadcast(key) end
+
+-- a provider with `view` keeps its data elsewhere (society inventories, gang chests ...):
+-- view(src, key) -> { items = { {name, count, locked} }, weapons = { {name, count, locked} } }
+local function viewToMode(view, mode, weaponName)
+    view = view or {}
+    local items, weapons = view.items or {}, view.weapons or {}
+    if mode == 'groups' then
+        local out = {}
+        for _, w in ipairs(weapons) do out[#out + 1] = { name = w.name, count = w.count or 1, locked = w.locked or nil } end
+        return out
+    elseif mode == 'instances' then
+        local out = {}
+        for _, w in ipairs(weapons) do
+            if w.name == weaponName then
+                for i = 1, math.min(tonumber(w.count) or 1, 60) do
+                    out[#out + 1] = { name = w.name, count = 1, ammo = 0, locked = w.locked or nil,
+                        metadata = { serial = ('STOCK-%s-%d'):format(w.name, i), shots = 0 } }
+                end
+            end
+        end
+        return out
+    end
+    local rows, total = {}, 0
+    for _, it in ipairs(items) do
+        rows[#rows + 1] = { name = it.name, count = it.count, locked = it.locked or nil }
+        total = total + (it.count or 0)
+    end
+    return { items = rows, weight = 0, tabCounts = { items = total, guns = #weapons } }
+end
+UniqueStash.viewToMode = viewToMode
+
 local function authorize(src, key)
     if type(key) ~= 'string' or #key > 128 then return false end
     for prefix, provider in pairs(UniqueStash.providers) do
@@ -170,10 +207,11 @@ end
 -- Unique_inventory:getSecond(key, mode, weaponName)   (what the UI shows)
 -- --------------------------------------------------------------------------
 local function weaponEntry(w)
+    local m = UNIQUE.weaponMeta and UNIQUE.weaponMeta(w.serial, w.name)
     return {
         name = w.name, count = 1, ammo = w.ammo or 0,
         components = w.components or {}, tintIndex = w.tintIndex,
-        metadata = { serial = w.serial, components = w.components or {} },
+        metadata = { serial = w.serial, components = w.components or {}, shots = m and m.shots or 0, expireTS = m and m.expireTS or nil },
     }
 end
 
@@ -182,6 +220,10 @@ RegisterServerCallbackSafe('Unique_inventory:getSecond', function(source, cb, ke
         return cb(mode == 'groups' and {} or (mode == 'instances' and {} or { items = {}, weight = 0, tabCounts = { items = 0, guns = 0 } }))
     end
     subscribe(key, source)
+    local provider = UniqueStash.providerFor(key)
+    if provider and provider.view then
+        return cb(viewToMode(provider.view(source, key), mode, weaponName))
+    end
     local st = loadStash(key)
 
     if mode == 'groups' then
@@ -287,6 +329,15 @@ function UniqueStash.take(src, key, data)
     if UNIQUE.isWeaponName(data.name) then
         local w = findStashWeapon(st, meta.serial)
         if not w or w.name ~= data.name then return false end
+        local wm = UNIQUE.weaponMeta and UNIQUE.weaponMeta(w.serial, w.name)
+        if wm and wm.expireTS and wm.expireTS <= os.time() and WeaponLife.deleteExpired then
+            local _, idx = findStashWeapon(st, w.serial)
+            table.remove(st.weapons, idx)
+            touch(key)
+            broadcast(key)
+            UNIQUE.notify(src, 'این اسلحه منقضی شده بود و از بین رفت')
+            return false
+        end
         if not xp.canCarryItem(w.name, 1) then
             UNIQUE.notify(src, 'ظرفیت حمل شما کافی نیست')
             return false

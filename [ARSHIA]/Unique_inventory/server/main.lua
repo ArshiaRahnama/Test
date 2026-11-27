@@ -222,7 +222,7 @@ RegisterServerCallbackSafe('inventory:getSlots', function(source, cb)
             normal = s.normal,
             maket = s.maket,
             reserved = s.reserved,
-            loadout = xp.loadout or {},
+            loadout = (UNIQUE and UNIQUE.decorateLoadout and UNIQUE.decorateLoadout(xp)) or xp.loadout or {},
         }
     end)
     if not ok then

@@ -33,6 +33,7 @@ client_scripts {
     'client/main.lua',
     'client/weapon-life.lua', -- shots / health / broken weapon / cleaner
     'client/crafting.lua', -- /craft workbench menu
+    'client/jobs.lua', -- job lockers + gang armory chest, legacy esx_inventoryhud:Open* events
     'client/weapon-wheel.lua', -- weapon wheel = weapons in slots (replaces core:client:giveWeapon)
     'client/extras.lua',
     -- stage 2 modules
@@ -50,7 +51,10 @@ server_scripts {
     'server/weapons.lua', -- weapon expiry, wear and cleaning
     'server/crafting.lua', -- weapon crafting with lifetimes
     'server/persist.lua', -- autosave + save on shutdown so items/guns survive restarts
+    'server/config_joblock.lua', -- Config.JobStockMinGrade (item locks for job storage)
+    'server/job_gang_lock.lua',  -- grade / gang lock helpers
     'server/gang_store.lua', -- exports['Unique_inventory']:Add/RemoveGangArmoryItem|Weapon, GetGangArmory* (used by Unique_ALLGangs / Unique_AllRobs)
+    'server/jobs.lua', -- job lockers + gang armory chest
 }
 
 files {
